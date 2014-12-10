@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaLJLtY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:49:24 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:46183 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaLJLtX (ORCPT
+	id S1755600AbaLJLtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:49:52 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:58976 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaLJLtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:49:23 -0500
-Date: Wed, 10 Dec 2014 17:18:44 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        acme@kernel.org, ananth@in.ibm.com
-Subject: Re: [RFC PATCH 7/8] perf probe powerpc: Use DWARF info only if
- necessary
-Message-ID: <20141210114844.GE16045@naverao1-tp.in.ibm.com>
-References: <cover.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
- <50dd0fedb50e3a56ff8f25c44098db3e2a2d6374.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
- <1418206640.9279.10.camel@ellerman.id.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418206640.9279.10.camel@ellerman.id.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121011-0033-0000-0000-00000342FEF7
+	Wed, 10 Dec 2014 06:49:50 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-d4-5488335d7fc8
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.szyprowski@samsung.com, kyungmin.park@samsung.com,
+        l.czerwinski@samsung.com, s.nawrocki@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 0/6] serial: samsung: add DMA support
+Date: Wed, 10 Dec 2014 12:49:21 +0100
+Message-id: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t9jQd1Y444Qg5PtChZz1q9hs2hevJ7N
+	4vPvXawWvQuuslmcbXrDbvFr2iQ2i8u75rBZnFncy26x9shddosHh3eyWxx+087qwO1xYsZv
+	Fo/9c9ewe/RtWcXocWbBEXaPz5vkAlijuGxSUnMyy1KL9O0SuDJm75vFXLCDp+LcxwOMDYyN
+	XF2MnBwSAiYS71/NYYOwxSQu3FsPZHNxCAlMZ5R4d3UBI4TTziRx//UXdpAqNgEdiS3fJzCC
+	2CICchJPbv9hBiliFpjKJLHp+iQmkISwgKnE5C13wRpYBFQl3s1oYwaxeQVcJaY93coOsU5O
+	4uSxyawTGLkXMDKsYhRNLUguKE5KzzXSK07MLS7NS9dLzs/dxAgOqGfSOxhXNVgcYhTgYFTi
+	4Q243B4ixJpYVlyZe4hRgoNZSYT3jWRHiBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXFeJfu2ECGB
+	9MSS1OzU1ILUIpgsEwenVAMjQ6AwV97xHYxuG1U3l//4dUphS8X8OplFMpcffVrV8+fb3KNS
+	T02XScXP1RDilyjbP8Xf8FzUt7srTNK5F5orvHTUmsF+Z3KK1CHDv/l93BrMvXrFuVN0u7/k
+	N3t5vHJ/eKtxqehl08ATlnc7Xc7NurTV//ZzAbcstkS7oE2/XjYdfPZ0w7F9SizFGYmGWsxF
+	xYkA4S3aXSQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/10 09:17PM, Michael Ellerman wrote:
-> On Tue, 2014-12-09 at 23:04 +0530, Naveen N. Rao wrote:
-> > Use symbol table lookups by default if DWARF is not necessary, since
-> > powerpc ABIv2 encodes local entry points in the symbol table and the
-> > function entry address in DWARF may not be appropriate for kprobes,
-> > as described here:
-> > https://sourceware.org/bugzilla/show_bug.cgi?id=17638
-> 
-> Needs a better changelog.
+Hi,
 
-Ok. Will add, but to elaborate quickly: DWARF will only include the 
-entire function in low_pc/entry_pc and high_pc. It can't indicate the 
-local entry point. Hence, we need to use the symbol table instead of 
-DWARF on ABIv2.
+This patch introduces DMA mode in samsung serial driver. It reduces
+number of interrupts and CPU usage while sending large data blocks.
 
-> 
-> > diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> > index 174c22e..adcdbd2 100644
-> > --- a/tools/perf/util/probe-event.c
-> > +++ b/tools/perf/util/probe-event.c
-> > @@ -2382,6 +2382,14 @@ static int convert_to_probe_trace_events(struct perf_probe_event *pev,
-> >  		}
-> >  	}
-> >  
-> > +#if defined(__powerpc64__) && defined(_CALL_ELF) && _CALL_ELF == 2
-> > +	if (!perf_probe_event_need_dwarf(pev)) {
-> > +		ret = find_probe_trace_events_from_map(pev, tevs, max_tevs, target);
-> > +		if (ret > 0)
-> > +			return ret;	/* Found in symbol table */
-> > +	}
-> > +#endif
-> 
-> And should be in an arch helper, not a big powerpc wart dropped in the middle
-> of the generic code.
+For TX transfers DMA mode is used when number of bytes to send it larger
+than TX FIFO size, for smaller transfers PIO mode is used.
 
-Sure - will change.
+For RX transfers DMA mode is used when number of bytes in RX FIFO is
+larger than threshold level. If it's not, we obtain RX timeout interrupt
+and we receive data in PIO mode.
 
-Thanks for the review!
-- Naveen
+DMA mode is enabled when "dmas" property is defined in device-tree node
+of serial port. Otherwise PIO mode is used.
+
+To have this working, proper residue handling and DMA_PAUSE support in
+DMAC driver are necessary. At many samsung platforms DMAC is pl330, which
+does not have those features in mainline driver yet, so if you would
+like to test series, my patches for pl330 driver are needed. You can
+find them here:
+https://lkml.org/lkml/2014/12/10/156
+
+Entire series is based on previous work of Sylwester Nawrocki and
+Lukasz Czerwinski.
+
+Best regards,
+Robert Baldyga
+
+Robert Baldyga (6):
+  serial: samsung: add struct s3c24xx_uart_dma
+  serial: samsung: alloc dma stucture in ourport
+  serial: s3c: add missing register definitions
+  serial: samsung: add dma reqest/release functions
+  serial: samsung: add DMA support for TX
+  serial: samsung: add DMA support for RX
+
+ drivers/tty/serial/samsung.c | 582 +++++++++++++++++++++++++++++++++++++++++--
+ drivers/tty/serial/samsung.h |  42 ++++
+ include/linux/serial_s3c.h   |  28 +++
+ 3 files changed, 634 insertions(+), 18 deletions(-)
+
+-- 
+1.9.1
 
