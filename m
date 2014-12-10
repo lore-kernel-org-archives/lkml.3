@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117AbaLJItK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 03:49:10 -0500
-Received: from mail-bn1bon0130.outbound.protection.outlook.com ([157.56.111.130]:52841
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752163AbaLJItG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 03:49:06 -0500
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <p.zabel@pengutronix.de>,
-        <thierry.reding@gmail.com>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <mturquette@linaro.org>, <airlied@linux.ie>
-Subject: [PATCH RFC 06/15] ARM: dts: imx6q: Add MIPI DSI remote end points for IPU2 DI0/1 end points
-Date: Wed, 10 Dec 2014 16:37:19 +0800
-Message-ID: <1418200648-32656-7-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
-References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(48376002)(68736005)(77096005)(50466002)(31966008)(92566001)(46102003)(36756003)(104016003)(4396001)(50226001)(110136001)(50986999)(106466001)(97736003)(99396003)(19580395003)(19580405001)(87936001)(84676001)(76176999)(105606002)(21056001)(107046002)(20776003)(64706001)(47776003)(89996001)(62966003)(86362001)(2351001)(77156002)(229853001)(6806004)(120916001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0640;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+	id S1755217AbaLJItO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:49:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43130 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163AbaLJItL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 03:49:11 -0500
+Date: Wed, 10 Dec 2014 16:46:52 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: "Li, ZhenHua" <zhen-hual@hp.com>, Takao Indoh <indou.takao@jp.fujitsu.com>,
+        dwmw2@infradead.org, vgoyal@redhat.com, dyoung@redhat.com,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        alex.williamson@redhat.com, ddutile@redhat.com,
+        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, doug.hatch@hp.com,
+        jerry.hoemann@hp.com, tom.vaden@hp.com, li.zhang6@hp.com,
+        lisa.mitchell@hp.com
+Subject: Re: [PATCH 0/5] iommu/vt-d: Fix crash dump failure caused by legacy
+ DMA/IO
+Message-ID: <20141210084652.GA25091@dhcp-16-105.nay.redhat.com>
+References: <1413878659-1383-1-git-send-email-zhen-hual@hp.com>
+ <20141022100525.GD9060@dhcp-16-116.nay.redhat.com>
+ <545ACF66.9050509@jp.fujitsu.com>
+ <545AD061.4000102@hp.com>
+ <545AD353.8060207@jp.fujitsu.com>
+ <545AD8D3.90709@hp.com>
+ <545B2885.8070009@jp.fujitsu.com>
+ <545B2C07.1070701@hp.com>
+ <5465A0E0.4020001@hp.com>
+ <20141117133858.GA31920@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB0640;
-X-Forefront-PRVS: 0421BF7135
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141117133858.GA31920@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MIPI DSI remote end points for IPU2 DI0/1 end points.
+Hi Joerg, ZhenHua,
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
- arch/arm/boot/dts/imx6q.dtsi | 2 ++
- 1 file changed, 2 insertions(+)
+This issue happens on AMD iommu too, do you have any plans or
+thoughts on that?
 
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index e6a6d90..82507e7 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -185,6 +185,7 @@
- 				};
- 
- 				ipu2_di0_mipi: endpoint@2 {
-+					remote-endpoint = <&mipi_mux_2>;
- 				};
- 
- 				ipu2_di0_lvds0: endpoint@3 {
-@@ -206,6 +207,7 @@
- 				};
- 
- 				ipu2_di1_mipi: endpoint@2 {
-+					remote-endpoint = <&mipi_mux_3>;
- 				};
- 
- 				ipu2_di1_lvds0: endpoint@3 {
--- 
-2.1.0
+Thanks
+Baoquan
 
+On 11/17/14 at 02:38pm, Joerg Roedel wrote:
+> On Fri, Nov 14, 2014 at 02:27:44PM +0800, Li, ZhenHua wrote:
+> > I am working following  your directions:
+> > 
+> > 1.  If the VT-d driver finds the IOMMU enabled, it reuses its root entry
+> > table, and do NOT disable-enable iommu. Other data will be copied.
+> > 
+> > 2. When a device driver issues the first dma_map command for a
+> > device, we assign a new and empty page-table, thus removing all
+> > mappings from the old kernel for the device.
+> > 
+> > Please let me know if I get something wrong.
+> 
+> Yes, this sounds right. Happily waiting for patches :)
+> 
+> 
+> 	Joerg
+> 
