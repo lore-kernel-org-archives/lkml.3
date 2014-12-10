@@ -1,206 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386AbaLJPw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:52:56 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:8751 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967AbaLJPtC (ORCPT
+	id S1758102AbaLJPxK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:53:10 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:48737 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127AbaLJPxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:49:02 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-a3-54886b6ce4fd
-From: Andrzej Hajda <a.hajda@samsung.com>
-To: linux-kernel@vger.kernel.org (open list)
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/CLKDEV SUPPORT),
-        linux-gpio@vger.kernel.org (open list:GPIO SUBSYSTEM),
-        dri-devel@lists.freedesktop.org (open list:DRM PANEL DRIVERS),
-        linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
-        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        boris.brezillon@free-electrons.com
-Subject: [RFC 04/15] regulator: add restrack support
-Date: Wed, 10 Dec 2014 16:48:22 +0100
-Message-id: <1418226513-14105-5-git-send-email-a.hajda@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xy7o52R0hBtOWylvcWneO1eLAi4Us
-	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
-	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
-	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
-	pKTmZJalFunbJXBlXPxxgb2gW7li37TFrA2MJ2W7GDk5JARMJPadf88CYYtJXLi3nq2LkYtD
-	SGApo8ScW2ugnD4miRXvFzCBVLEJaEr83XyTDcQWEdCRuN7TzQxSxCywgV1i3fR9YAlhoLFr
-	p79nBLFZBFQlendPB1rBzsEr4CxxQAZimZzEyWOTWUFsTgEXib/P94JVCwFVLNn2nnUCI+8C
-	RoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCGR8WUH4+JjVocYBTgYlXh4zRVbQ4RYE8uK
-	K3MPMUpwMCuJ8C5M7ggR4k1JrKxKLcqPLyrNSS0+xMjEwSnVwKh2UCvhznEvm+8xZz9/ZX98
-	XeGTwVuDB48L1gtGbrWJrKgrDd/h/YTn/cfJh6Ufxx5J1Ft2p4vv0Mm9SoqGFZOUegstZTR8
-	9A/edm3p4zReOq9XSrfQlPOqPJ9g/IE5WdXTbl95uEM0Xya84IMVy7rmvcEK4o7pJiv3uFy+
-	c8CPweR1Z+Tk00osxRmJhlrMRcWJAAPLpV1qAgAA
+	Wed, 10 Dec 2014 10:53:06 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCHSET -mm] bitmap, cpumask, nodemask: implement pr_cont functions and use di"
+Date: Wed, 10 Dec 2014 10:52:42 -0500
+Message-Id: <1418226774-30215-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulators supports various methods of lookup.
-The patch adds restrack support only to DT based regulators.
+Hello,
 
-Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
----
- drivers/regulator/core.c           | 77 ++++++++++++++++++++++++++++++++++++++
- include/linux/regulator/consumer.h | 10 +++++
- include/linux/restrack.h           |  1 +
- 3 files changed, 88 insertions(+)
+bitmap implements two variants of scnprintf functions to format a
+bitmap into a string and cpumask and nodemask wrap them to provide
+equivalent interfaces.  The scnprintf family of functions require a
+string buffer as an output target which complicates code paths which
+just want to print out the mask through printk for informational or
+debug purposes as they have to worry about how large the buffer should
+be and whether it's too large to allocate on stack.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index cd87c0c..5641e85 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -32,6 +32,7 @@
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
- #include <linux/module.h>
-+#include <linux/restrack.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/regulator.h>
-@@ -3733,6 +3734,10 @@ add_dev:
- 	rdev_init_debugfs(rdev);
- out:
- 	mutex_unlock(&regulator_list_mutex);
-+
-+	if (rdev->dev.of_node)
-+		restrack_up(RESTRACK_TYPE_REGULATOR, rdev->dev.of_node, rdev);
-+
- 	return rdev;
- 
- unset_supplies:
-@@ -3767,6 +3772,9 @@ void regulator_unregister(struct regulator_dev *rdev)
- 	if (rdev == NULL)
- 		return;
- 
-+	if (rdev->dev.of_node)
-+		restrack_down(RESTRACK_TYPE_REGULATOR, rdev->dev.of_node, rdev);
-+
- 	if (rdev->supply) {
- 		while (rdev->use_count--)
- 			regulator_disable(rdev->supply);
-@@ -3971,6 +3979,75 @@ static const struct file_operations supply_map_fops = {
- #endif
- };
- 
-+struct regulator_restrack_desc {
-+	struct regulator **ptr;
-+	const char *name;
-+	struct restrack_desc desc;
-+};
-+
-+static int regulator_restrack_init(struct device *dev,
-+		struct restrack_desc *desc)
-+{
-+	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
-+
-+	desc->if_id = of_get_regulator(dev, rd->name);
-+	return PTR_ERR_OR_ZERO(desc->if_id);
-+}
-+
-+static void regulator_restrack_destroy(struct device *dev,
-+		struct restrack_desc *desc)
-+{
-+	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
-+
-+	of_node_put(desc->if_id);
-+	kfree(rd);
-+}
-+
-+static int regulator_restrack_ifup(struct device *dev,
-+		struct restrack_desc *desc, void *data)
-+{
-+	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
-+
-+	*rd->ptr = regulator_get(dev, rd->name);
-+	return PTR_ERR_OR_ZERO(*rd->ptr);
-+}
-+
-+static void regulator_restrack_ifdown(struct device *dev,
-+		struct restrack_desc *desc, void *data)
-+{
-+	struct regulator_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
-+
-+	regulator_put(*rd->ptr);
-+	*rd->ptr = ERR_PTR(-EPROBE_DEFER);
-+}
-+
-+static const struct restrack_ops regulator_restrack_ops = {
-+	.if_type = RESTRACK_TYPE_REGULATOR,
-+	.init = regulator_restrack_init,
-+	.destroy = regulator_restrack_destroy,
-+	.if_up = regulator_restrack_ifup,
-+	.if_down = regulator_restrack_ifdown,
-+};
-+
-+/**
-+ * regulator_restrack_desc - regulator resource descriptor allocator
-+ * @regulator: pointer to variable which will be set to regulator handle
-+ * @name: name of regulator
-+ *
-+ * The function creates resource description for regulator, which shall be used
-+ * by *restrack_register functions.
-+ */
-+struct restrack_desc *regulator_restrack_desc(struct regulator **regulator,
-+		const char *name)
-+{
-+	struct regulator_restrack_desc *rd;
-+
-+	RESTRACK_DESC_ALLOC(rd, regulator_restrack_ops, regulator, name);
-+
-+	return rd ? &rd->desc : ERR_PTR(-ENOMEM);
-+}
-+EXPORT_SYMBOL_GPL(regulator_restrack_desc);
-+
- static int __init regulator_init(void)
- {
- 	int ret;
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index f540b14..69e71ebb 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -551,4 +551,14 @@ static inline int regulator_is_supported_voltage_tol(struct regulator *regulator
- 					      target_uV + tol_uV);
- }
- 
-+struct restrack_desc;
-+struct restrack_desc *regulator_restrack_desc(struct regulator **regulator,
-+		const char *supply);
-+
-+static inline struct restrack_desc *
-+regulator_bulk_restrack_desc(struct regulator_bulk_data *data)
-+{
-+	return regulator_restrack_desc(&data->consumer, data->supply);
-+}
-+
- #endif
-diff --git a/include/linux/restrack.h b/include/linux/restrack.h
-index af5b617..4e4eec6 100644
---- a/include/linux/restrack.h
-+++ b/include/linux/restrack.h
-@@ -4,6 +4,7 @@
- #include <linux/track.h>
- 
- #define RESTRACK_TYPE_DRM_PANEL 1
-+#define RESTRACK_TYPE_REGULATOR 2
- 
- struct device;
- struct restrack_ctx;
--- 
-1.9.1
+Neither cpumask or nodemask provides a guildeline on how large the
+target buffer should be forcing users come up with their own solutions
+- some allocate an arbitrarily sized buffer which is small enough to
+allocate on stack but may be too short in corner cases, other come up
+with a custom upper limit calculation considering the output format,
+some allocate the buffer dynamically while one resorted to using lock
+to synchronize access to a static buffer.
 
+This is an artificial problem which is being solved repeatedly for no
+benefit.  In a lot of cases, the output area already exists and can be
+targeted directly making the intermediate buffer unnecessary.  This
+patchset implement pr_cont variants of the formatting functions and
+convert the scnprintf output function users to use them or seq_*()
+functions to directly target the output area and remove the
+intermediate buffers where possible.
+
+This patchset contains the following 12 patches.
+
+ 0001-bitmap-restructure-bitmap_sn-list-printf.patch
+ 0002-bitmap-cpumask-nodemask-implement-pr_cont-variants-o.patch
+ 0003-mips-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
+ 0004-powerpc-use-cpu-node-mask-pr_cont-and-seq-output-fun.patch
+ 0005-tile-use-cpu-node-mask-pr_cont-and-seq-output-functi.patch
+ 0006-x86-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
+ 0007-xtensa-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
+ 0008-cpuset-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
+ 0009-rcu-use-cpu-node-mask-pr_cont-and-seq-output-functio.patch
+ 0010-sched-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
+ 0011-timer-use-cpu-node-mask-pr_cont-and-seq-output-funct.patch
+ 0012-percpu-use-cpu-node-mask-pr_cont-and-seq-output-func.patch
+
+The first two patches implement the pr_cont variants of the formatting
+functions.  The rest convert the existing users to pr_cont and seq
+functions subsystem-by-subsystem.  It'd be the easiest to route all
+through -mm but the conversion patches can go through individual
+subsystem trees afterwards if necessary.
+
+While there's ~70 line increase in LOC, the increase is from the
+restructuring of bitmap output functions and addition of inline
+interface functions along with comments and things get simplified /
+more robust on the user side and future users won't have to try to
+solve the same fruitless problem over and over again.
+
+The patchset is based on top of -mm as of Dec 9, 2014 and also
+available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-bitmap-pr_cont
+
+ arch/mips/netlogic/common/smp.c     |   11 +-
+ arch/powerpc/sysdev/xics/ics-opal.c |    7 -
+ arch/powerpc/sysdev/xics/ics-rtas.c |    8 -
+ arch/tile/kernel/hardwall.c         |    6 -
+ arch/tile/kernel/proc.c             |    6 -
+ arch/tile/kernel/setup.c            |   12 +-
+ arch/tile/mm/homecache.c            |   14 +--
+ arch/tile/mm/init.c                 |   12 +-
+ arch/x86/mm/numa.c                  |    9 --
+ arch/x86/platform/uv/uv_nmi.c       |   27 ++----
+ arch/xtensa/kernel/setup.c          |   10 --
+ drivers/net/ethernet/tile/tilegx.c  |    6 -
+ drivers/net/ethernet/tile/tilepro.c |    6 -
+ include/linux/bitmap.h              |    4 
+ include/linux/cpumask.h             |   18 ++++
+ include/linux/nodemask.h            |   16 +++
+ kernel/cpuset.c                     |   13 ---
+ kernel/rcu/tree_plugin.h            |    6 -
+ kernel/sched/core.c                 |   11 +-
+ kernel/sched/stats.c                |   11 --
+ kernel/time/tick-sched.c            |   12 --
+ lib/bitmap.c                        |  148 ++++++++++++++++++++++++++----------
+ mm/percpu.c                         |    7 -
+ 23 files changed, 224 insertions(+), 156 deletions(-)
+
+Thanks.
+
+--
+tejun
