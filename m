@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502AbaLJO3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:29:22 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:58787 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416AbaLJO3R (ORCPT
+	id S1757568AbaLJOel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:34:41 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:52479 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756235AbaLJOej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:29:17 -0500
-Message-ID: <548858B7.1020307@gmail.com>
-Date: Wed, 10 Dec 2014 17:29:11 +0300
-From: Dmitry Tunin <hanipouspilot@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 10 Dec 2014 09:34:39 -0500
+Date: Wed, 10 Dec 2014 22:34:28 +0800
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Gavin Shan <gwshan@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
+        Alexey Voronkov <zermond@gmail.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non
+ mem64
+Message-ID: <20141210143428.GB12497@richard>
+Reply-To: Wei Yang <weiyang@linux.vnet.ibm.com>
+References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
+ <CAErSpo5tZU=zBKNDt2UtUE_AMG3zzrdq2CX2A4ZL7tdLELXgqA@mail.gmail.com>
+ <CAE9FiQWLaNSsFTWEpWRFR4xTd0hKOwENdQR7N6T=K65VM+vDQg@mail.gmail.com>
+ <20141210141537.GA9298@richard>
 MIME-Version: 1.0
-To: platform-driver-x86@vger.kernel.org
-CC: linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
-Subject: Re: [PATCH v2] acpi: Add "acpi_osi=" for ASUS X200MA to enable brightness
-References: <54845180.4060206@gmail.com> <548465CA.8020905@gmail.com>
-In-Reply-To: <548465CA.8020905@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210141537.GA9298@richard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121014-0029-0000-0000-000000C9B21B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is only a temporary hack. This issue should be fixed by other ways.
-See https://bugzilla.kernel.org/show_bug.cgi?id=70241#c70
+My mutt hang, in case the mail isn't sent out, I resend it.
 
-07.12.2014 17:35, Dmitry Tunin пишет:
-> Add "acpi_osi=" quirk for ASUS X200MA
-> More information can be found in UX302LA bugreport
-> https://bugzilla.kernel.org/show_bug.cgi?id=70241
+On Wed, Dec 10, 2014 at 10:15:37PM +0800, Wei Yang wrote:
+>On Tue, Dec 09, 2014 at 03:13:49PM -0800, Yinghai Lu wrote:
+>>On Tue, Dec 9, 2014 at 1:53 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> On Tue, Dec 9, 2014 at 2:34 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>>> +       list_for_each_entry(window, &bridge->windows, list) {
+>>>> +               res = window->res;
+>>>> +               if (resource_type(res) == IORESOURCE_MEM ||
+>>>> +                   res->end > 0xffffffff) {
+>>>> +                       bridge->has_mem64_res = true;
+>>>
+>>> This is an interesting idea, but I think you're checking CPU addresses
+>>> here, and you need to check PCI bus addresses.
+>>
+>>Looks like those IBM platforms have res > 4g, but pci bus address < 4g.
+>>If we check pci bus address, and then we would break those platforms.
+>>
+
+Hi, Yinghai
+
+I did some test with patch on my machine. It looks good.
+
+While as Bjorn mentioned, I think we could change it a little. The pci space
+on our machine is like this:
+
+        cpu address                               pci address
+  MEM   0x00003ff280000000..0x00003ff2fffeffff -> 0x00000000 8000 0000
+  MEM64 0x00003d5000000000..0x00003d5fffffffff -> 0x00003d50 0000 0000
+
+Each root bridge has two MMIO window. From this output we could see the pci
+address for 64-bit window is above 4G.
+
+I did a little change on your code, like this
+
+        list_for_each_entry(window, &bridge->windows, list) {
+                res = window->res;
+                if (resource_type(res) == IORESOURCE_MEM ||
+-                   res->end > 0xffffffff) {
++                   (res->end - window->offset) > 0xffffffff) {
+                        bridge->has_mem64_res = true;
+                        break;
+                }
+        }
+
+This also works on my machine.
+
+One more question, with this patch, do we still need previous patch for
+Marek's problem?
+
+>>Yinghai
 >
-> I reported it to launchpad too
-> https://bugs.launchpad.net/ubuntu/bug/1400068
->
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
-> ---
->   drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
->   1 file changed, 20 insertions(+)
->
-> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-> index 7556e7c..f78ed08 100644
-> --- a/drivers/acpi/blacklist.c
-> +++ b/drivers/acpi/blacklist.c
-> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
->       acpi_osi_setup("!Windows 2012");
->       return 0;
->   }
-> +/*
-> + * Some ASUS models firmware declares 16 devices instead of 8
-> + * 'acpi_osi=' kernel parameter fixes it
-> + * Without this parameters brightness keys Fn+F5 and F6 do not work
-> + */
-> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
-> +{
-> +    printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
-> +    acpi_osi_setup("");
-> +    return 0;
-> +}
->
->   static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->       {
-> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->                DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
->           },
->       },
-> +    /* Without this brightness keys do not work */
-> +    {
-> +    .callback = dmi_disable_osi_all,
-> +    .ident = "ASUSTeK COMPUTER INC. X200MA",
-> +    .matches = {
-> +             DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-> +             DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
-> +        },
-> +    },
->       {}
->   };
->
+>-- 
+>Richard Yang
+>Help you, Help me
+
+-- 
+Richard Yang
+Help you, Help me
+
