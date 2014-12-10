@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933217AbaLJTxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:53:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:57532 "EHLO mga02.intel.com"
+	id S933235AbaLJTyK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:54:10 -0500
+Received: from mga02.intel.com ([134.134.136.20]:61026 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932803AbaLJTtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:49:04 -0500
+	id S932918AbaLJTtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 14:49:03 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="621770532"
+   d="scan'208";a="621770563"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
@@ -16,9 +16,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
         Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next 01/13] misc: mic: SCIF header file and IOCTL interface
-Date: Wed, 10 Dec 2014 11:47:41 -0800
-Message-Id: <f1e39531f80caf7ce014b31400064ec98863e182.1418237176.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next 11/13] misc: mic: MIC host driver specific changes to enable SCIF
+Date: Wed, 10 Dec 2014 11:47:51 -0800
+Message-Id: <53f0c80e2a0898136ec3357ed6e71a5c58526104.1418237176.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1418237176.git.sudeep.dutt@intel.com>
 References: <cover.1418237176.git.sudeep.dutt@intel.com>
@@ -28,1528 +28,575 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces the SCIF documentation in the header file
-and describes the IOCTL interface for user mode. mic_overview.txt
-is updated with documentation on SCIF and a new document
-describing SCIF in more details is available in scif_overview.txt.
+MIC host driver specific changes to enable SCIF. This patch implements
+the SCIF hardware bus operations and registers a SCIF device on the
+SCIF hardware bus.
 
 Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
 Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 ---
- Documentation/mic/mic_overview.txt  |   28 +-
- Documentation/mic/scif_overview.txt |   62 ++
- include/uapi/linux/Kbuild           |    1 +
- include/linux/scif.h                | 1132 +++++++++++++++++++++++++++++++++++
- include/uapi/linux/scif_ioctl.h     |  233 +++++++
- 5 files changed, 1444 insertions(+), 12 deletions(-)
- create mode 100644 Documentation/mic/scif_overview.txt
- create mode 100644 include/linux/scif.h
- create mode 100644 include/uapi/linux/scif_ioctl.h
+ drivers/misc/mic/Kconfig            |   2 +-
+ drivers/misc/mic/host/mic_device.h  |  11 +-
+ drivers/misc/mic/host/mic_intr.h    |   3 +-
+ drivers/misc/mic/host/mic_smpt.h    |   1 +
+ drivers/misc/mic/host/mic_boot.c    | 264 ++++++++++++++++++++++++++++++++++--
+ drivers/misc/mic/host/mic_debugfs.c |  13 ++
+ drivers/misc/mic/host/mic_main.c    |   6 +
+ drivers/misc/mic/host/mic_smpt.c    |   7 +-
+ drivers/misc/mic/host/mic_virtio.c  |   6 +-
+ drivers/misc/mic/host/mic_x100.c    |   3 +-
+ 10 files changed, 292 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/mic/mic_overview.txt b/Documentation/mic/mic_overview.txt
-index 77c5418..1a2f2c8 100644
---- a/Documentation/mic/mic_overview.txt
-+++ b/Documentation/mic/mic_overview.txt
-@@ -24,6 +24,10 @@ a virtual bus called mic bus is created and virtual dma devices are
- created on it by the host/card drivers. On host the channels are private
- and used only by the host driver to transfer data for the virtio devices.
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index bcf6e36..a2ea3ab 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -36,7 +36,7 @@ comment "Intel MIC Host Driver"
  
-+The Symmetric Communication Interface (SCIF (pronounced as skiff)) is a
-+low level communications API across PCIe currently implemented for MIC.
-+More details are available at scif_overview.txt.
+ config INTEL_MIC_HOST
+ 	tristate "Intel MIC Host Driver"
+-	depends on 64BIT && PCI && X86 && INTEL_MIC_BUS
++	depends on 64BIT && PCI && X86 && INTEL_MIC_BUS && SCIF_BUS
+ 	select VHOST_RING
+ 	help
+ 	  This enables Host Driver support for the Intel Many Integrated
+diff --git a/drivers/misc/mic/host/mic_device.h b/drivers/misc/mic/host/mic_device.h
+index 016bd15..01a7555 100644
+--- a/drivers/misc/mic/host/mic_device.h
++++ b/drivers/misc/mic/host/mic_device.h
+@@ -27,7 +27,7 @@
+ #include <linux/irqreturn.h>
+ #include <linux/dmaengine.h>
+ #include <linux/mic_bus.h>
+-
++#include "../bus/scif_bus.h"
+ #include "mic_intr.h"
+ 
+ /* The maximum number of MIC devices supported in a single host system. */
+@@ -90,7 +90,9 @@ enum mic_stepping {
+  * @vdev_list: list of virtio devices.
+  * @pm_notifier: Handles PM notifications from the OS.
+  * @dma_mbdev: MIC BUS DMA device.
+- * @dma_ch: DMA channel reserved by this driver for use by virtio devices.
++ * @dma_ch - Array of DMA channels
++ * @num_dma_ch - Number of DMA channels available
++ * @scdev: SCIF device on the SCIF virtual bus.
+  */
+ struct mic_device {
+ 	struct mic_mw mmio;
+@@ -129,7 +131,9 @@ struct mic_device {
+ 	struct list_head vdev_list;
+ 	struct notifier_block pm_notifier;
+ 	struct mbus_device *dma_mbdev;
+-	struct dma_chan *dma_ch;
++	struct dma_chan *dma_ch[MIC_MAX_DMA_CHAN];
++	int num_dma_ch;
++	struct scif_hw_dev *scdev;
+ };
+ 
+ /**
+@@ -228,4 +232,5 @@ void mic_exit_debugfs(void);
+ void mic_prepare_suspend(struct mic_device *mdev);
+ void mic_complete_resume(struct mic_device *mdev);
+ void mic_suspend(struct mic_device *mdev);
++extern atomic_t g_num_mics;
+ #endif
+diff --git a/drivers/misc/mic/host/mic_intr.h b/drivers/misc/mic/host/mic_intr.h
+index 9f783d4a..cce2882 100644
+--- a/drivers/misc/mic/host/mic_intr.h
++++ b/drivers/misc/mic/host/mic_intr.h
+@@ -28,8 +28,9 @@
+  * 3 for virtio network, console and block devices.
+  * 1 for card shutdown notifications.
+  * 4 for host owned DMA channels.
++ * 1 for SCIF
+  */
+-#define MIC_MIN_MSIX 8
++#define MIC_MIN_MSIX 9
+ #define MIC_NUM_OFFSETS 32
+ 
+ /**
+diff --git a/drivers/misc/mic/host/mic_smpt.h b/drivers/misc/mic/host/mic_smpt.h
+index 51970ab..68721c6 100644
+--- a/drivers/misc/mic/host/mic_smpt.h
++++ b/drivers/misc/mic/host/mic_smpt.h
+@@ -78,6 +78,7 @@ void mic_unmap_single(struct mic_device *mdev,
+ dma_addr_t mic_map(struct mic_device *mdev,
+ 	dma_addr_t dma_addr, size_t size);
+ void mic_unmap(struct mic_device *mdev, dma_addr_t mic_addr, size_t size);
++dma_addr_t mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr);
+ 
+ /**
+  * mic_map_error - Check a MIC address for errors.
+diff --git a/drivers/misc/mic/host/mic_boot.c b/drivers/misc/mic/host/mic_boot.c
+index ff2b0fb..bb15506 100644
+--- a/drivers/misc/mic/host/mic_boot.c
++++ b/drivers/misc/mic/host/mic_boot.c
+@@ -21,6 +21,7 @@
+ #include <linux/delay.h>
+ #include <linux/firmware.h>
+ #include <linux/pci.h>
++#include <linux/kmod.h>
+ 
+ #include <linux/mic_common.h>
+ #include <linux/mic_bus.h>
+@@ -29,6 +30,188 @@
+ #include "mic_smpt.h"
+ #include "mic_virtio.h"
+ 
++static inline struct mic_device *scdev_to_mdev(struct scif_hw_dev *scdev)
++{
++	return dev_get_drvdata(scdev->dev.parent);
++}
 +
- Here is a block diagram of the various components described above. The
- virtio backends are situated on the host rather than the card given better
- single threaded performance for the host compared to MIC, the ability of
-@@ -47,18 +51,18 @@ the fact that the virtio block storage backend can only be on the host.
-                       |               |       | Virtio over PCIe IOCTLs  |
-                       |               |       +--------------------------+
- +-----------+         |               |                   |  +-----------+
--| MIC DMA   |         |               |                   |  | MIC DMA   |
--| Driver    |         |               |                   |  | Driver    |
--+-----------+         |               |                   |  +-----------+
--      |               |               |                   |        |
--+---------------+     |               |                   |  +----------------+
--|MIC virtual Bus|     |               |                   |  |MIC virtual Bus |
--+---------------+     |               |                   |  +----------------+
--      |               |               |                   |              |
--      |   +--------------+            |            +---------------+     |
--      |   |Intel MIC     |            |            |Intel MIC      |     |
--      +---|Card Driver   |            |            |Host Driver    |     |
--          +--------------+            |            +---------------+-----+
-+| MIC DMA   |         |  +----------+ | +-----------+     |  | MIC DMA   |
-+| Driver    |         |  |  SCIF    | | |   SCIF    |     |  | Driver    |
-++-----------+         |  +----------+ | +-----------+     |  +-----------+
-+      |               |       |       |       |           |        |
-++---------------+     | +-----+-----+ | +-----+-----+     | +---------------+
-+|MIC virtual Bus|     | |SCIF HW Bus| | |SCIF HW BUS|     | |MIC virtual Bus|
-++---------------+     | +-----------+ | +-----+-----+     | +---------------+
-+      |               |       |       |       |           |              |
-+      |   +--------------+    |       |       |    +---------------+     |
-+      |   |Intel MIC     |    |       |       |    |Intel MIC      |     |
-+      +---|Card Driver   +----+       |       |    |Host Driver    |     |
-+          +--------------+            |       +----+---------------+-----+
-                       |               |                   |
-              +-------------------------------------------------------------+
-              |                                                             |
-diff --git a/Documentation/mic/scif_overview.txt b/Documentation/mic/scif_overview.txt
-new file mode 100644
-index 0000000..75549c4
---- /dev/null
-+++ b/Documentation/mic/scif_overview.txt
-@@ -0,0 +1,62 @@
-+The Symmetric Communication Interface (SCIF (pronounced as skiff)) is a low
-+level communications API across PCIe currently implemented for MIC. Currently
-+SCIF provides inter-node communication within a single host platform, where a
-+node is a MIC Coprocessor or Xeon based host. SCIF abstracts the details of
-+communicating over the PCIe bus while providing an API that is symmetric
-+across all the nodes in the PCIe network. An important design objective for SCIF
-+is to deliver the maximum possible performance given the communication
-+abilities of the hardware. SCIF has been used to implement an offload compiler
-+runtime and OFED support for MPI implementations for MIC coprocessors.
++static void *__mic_dma_alloc(struct device *dev, size_t size,
++			     dma_addr_t *dma_handle, gfp_t gfp,
++			     struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	dma_addr_t tmp;
++	void *va = kmalloc(size, gfp);
 +
-+==== SCIF API Components ====
-+The SCIF API has the following parts:
-+1. Connection establishment using a client server model
-+2. Byte stream messaging intended for short messages
-+3. Node enumeration to determine online nodes
-+4. Poll semantics for detection of incoming connections and messages
-+5. Memory registration to pin down pages
-+6. Remote memory mapping for low latency CPU accesses via mmap
-+7. Remote DMA (RDMA) for high bandwidth DMA transfers
-+8. Fence APIs for RDMA synchronization
++	if (va) {
++		tmp = mic_map_single(mdev, va, size);
++		if (dma_mapping_error(dev, tmp)) {
++			kfree(va);
++			va = NULL;
++		} else {
++			*dma_handle = tmp;
++		}
++	}
++	return va;
++}
 +
-+SCIF exposes the notion of a connection which can be used by peer processes on
-+nodes in a SCIF PCIe "network" to share memory "windows" and to communicate. A
-+process in a SCIF node initiates a SCIF connection to a peer process on a
-+different node via a SCIF "endpoint". SCIF endpoints support messaging APIs
-+which are similar to connection oriented socket APIs. Connected SCIF endpoints
-+can also register local memory which is followed by data transfer using either
-+DMA, CPU copies or remote memory mapping via mmap. SCIF supports both user and
-+kernel mode clients which are functionally equivalent.
++static void __mic_dma_free(struct device *dev, size_t size, void *vaddr,
++			   dma_addr_t dma_handle, struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
 +
-+==== SCIF Performance for MIC ====
-+DMA bandwidth comparison between the TCP (over ethernet over PCIe) stack versus
-+SCIF shows the performance advantages of SCIF for HPC applications and runtimes.
++	mic_unmap_single(mdev, dma_handle, size);
++	kfree(vaddr);
++}
 +
-+             Comparison of TCP and SCIF based BW
++static dma_addr_t
++__mic_dma_map_page(struct device *dev, struct page *page, unsigned long offset,
++		   size_t size, enum dma_data_direction dir,
++		   struct dma_attrs *attrs)
++{
++	void *va = phys_to_virt(page_to_phys(page)) + offset;
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
 +
-+  Throughput (GB/sec)
-+    8 +                                             PCIe Bandwidth ******
-+      +                                                        TCP ######
-+    7 +    **************************************             SCIF %%%%%%
-+      |                       %%%%%%%%%%%%%%%%%%%
-+    6 +                   %%%%
-+      |                 %%
-+      |               %%%
-+    5 +              %%
-+      |            %%
-+    4 +           %%
-+      |          %%
-+    3 +         %%
-+      |        %
-+    2 +      %%
-+      |     %%
-+      |    %
-+    1 +
-+      +    ######################################
-+    0 +++---+++--+--+-+--+--+-++-+--+-++-+--+-++-+-
-+      1       10     100      1000   10000   100000
-+                   Transfer Size (KBytes)
++	return mic_map_single(mdev, va, size);
++}
 +
-+SCIF allows memory sharing via mmap(..) between processes on different PCIe
-+nodes and thus provides bare-metal PCIe latency. The round trip SCIF mmap
-+latency from the host to an x100 MIC for an 8 byte message is 0.44 usecs.
-diff --git a/include/uapi/linux/Kbuild b/include/uapi/linux/Kbuild
-index 4c94f31..9083b60 100644
---- a/include/uapi/linux/Kbuild
-+++ b/include/uapi/linux/Kbuild
-@@ -345,6 +345,7 @@ header-y += rtc.h
- header-y += rtnetlink.h
- header-y += scc.h
- header-y += sched.h
-+header-y += scif_ioctl.h
- header-y += screen_info.h
- header-y += sctp.h
- header-y += sdla.h
-diff --git a/include/linux/scif.h b/include/linux/scif.h
-new file mode 100644
-index 0000000..a0652a6
---- /dev/null
-+++ b/include/linux/scif.h
-@@ -0,0 +1,1132 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+ * * Redistributions of source code must retain the above copyright
-+ *   notice, this list of conditions and the following disclaimer.
-+ * * Redistributions in binary form must reproduce the above copyright
-+ *   notice, this list of conditions and the following disclaimer in
-+ *   the documentation and/or other materials provided with the
-+ *   distribution.
-+ * * Neither the name of Intel Corporation nor the names of its
-+ *   contributors may be used to endorse or promote products derived
-+ *   from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+#ifndef __SCIF_H__
-+#define __SCIF_H__
++static void
++__mic_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
++		     size_t size, enum dma_data_direction dir,
++		     struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
 +
-+#include <linux/types.h>
-+#include <linux/poll.h>
-+#include <linux/scif_ioctl.h>
++	mic_unmap_single(mdev, dma_addr, size);
++}
 +
-+#define SCIF_ACCEPT_SYNC	1
-+#define SCIF_SEND_BLOCK		1
-+#define SCIF_RECV_BLOCK		1
++static int __mic_dma_map_sg(struct device *dev, struct scatterlist *sg,
++			    int nents, enum dma_data_direction dir,
++			    struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	struct scatterlist *s;
++	int i, j, ret;
++	dma_addr_t da;
 +
-+enum {
-+	SCIF_PROT_READ = (1 << 0),
-+	SCIF_PROT_WRITE = (1 << 1)
++	ret = dma_map_sg(mdev->sdev->parent, sg, nents, dir);
++	if (ret <= 0)
++		return 0;
++
++	for_each_sg(sg, s, nents, i) {
++		da = mic_map(mdev, sg_dma_address(s) + s->offset, s->length);
++		if (!da)
++			goto err;
++		sg_dma_address(s) = da;
++	}
++	return nents;
++err:
++	for_each_sg(sg, s, i, j) {
++		mic_unmap(mdev, sg_dma_address(s), s->length);
++		sg_dma_address(s) = mic_to_dma_addr(mdev, sg_dma_address(s));
++	}
++	dma_unmap_sg(mdev->sdev->parent, sg, nents, dir);
++	return 0;
++}
++
++static void __mic_dma_unmap_sg(struct device *dev,
++			       struct scatterlist *sg, int nents,
++			       enum dma_data_direction dir,
++			       struct dma_attrs *attrs)
++{
++	struct scif_hw_dev *scdev = dev_get_drvdata(dev);
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++	struct scatterlist *s;
++	dma_addr_t da;
++	int i;
++
++	for_each_sg(sg, s, nents, i) {
++		da = mic_to_dma_addr(mdev, sg_dma_address(s));
++		mic_unmap(mdev, sg_dma_address(s), s->length);
++		sg_dma_address(s) = da;
++	}
++	dma_unmap_sg(mdev->sdev->parent, sg, nents, dir);
++}
++
++static struct dma_map_ops __mic_dma_ops = {
++	.alloc = __mic_dma_alloc,
++	.free = __mic_dma_free,
++	.map_page = __mic_dma_map_page,
++	.unmap_page = __mic_dma_unmap_page,
++	.map_sg = __mic_dma_map_sg,
++	.unmap_sg = __mic_dma_unmap_sg,
 +};
 +
-+enum {
-+	SCIF_MAP_FIXED = 0x10,
-+	SCIF_MAP_KERNEL	= 0x20,
++static struct mic_irq *
++___mic_request_irq(struct scif_hw_dev *scdev,
++		   irqreturn_t (*func)(int irq, void *data),
++				       const char *name,
++				       void *data, int db)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_request_threaded_irq(mdev, func, NULL, name, data,
++					db, MIC_INTR_DB);
++}
++
++static void
++___mic_free_irq(struct scif_hw_dev *scdev,
++		struct mic_irq *cookie, void *data)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_free_irq(mdev, cookie, data);
++}
++
++static void ___mic_ack_interrupt(struct scif_hw_dev *scdev, int num)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mdev->ops->intr_workarounds(mdev);
++}
++
++static int ___mic_next_db(struct scif_hw_dev *scdev)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mic_next_db(mdev);
++}
++
++static void ___mic_send_intr(struct scif_hw_dev *scdev, int db)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	mdev->ops->send_intr(mdev, db);
++}
++
++static void __iomem *___mic_ioremap(struct scif_hw_dev *scdev,
++				    phys_addr_t pa, size_t len)
++{
++	struct mic_device *mdev = scdev_to_mdev(scdev);
++
++	return mdev->aper.va + pa;
++}
++
++static void ___mic_iounmap(struct scif_hw_dev *scdev, void __iomem *va)
++{
++	/* nothing to do */
++}
++
++static struct scif_hw_ops scif_hw_ops = {
++	.request_irq = ___mic_request_irq,
++	.free_irq = ___mic_free_irq,
++	.ack_interrupt = ___mic_ack_interrupt,
++	.next_db = ___mic_next_db,
++	.send_intr = ___mic_send_intr,
++	.ioremap = ___mic_ioremap,
++	.iounmap = ___mic_iounmap,
 +};
 +
-+enum {
-+	SCIF_FENCE_INIT_SELF = (1 << 0),
-+	SCIF_FENCE_INIT_PEER = (1 << 1),
-+	SCIF_SIGNAL_LOCAL = (1 << 4),
-+	SCIF_SIGNAL_REMOTE = (1 << 5)
-+};
-+
-+enum {
-+	SCIF_RMA_USECPU = (1 << 0),
-+	SCIF_RMA_USECACHE = (1 << 1),
-+	SCIF_RMA_SYNC = (1 << 2),
-+	SCIF_RMA_ORDERED = (1 << 3)
-+};
-+
-+/* End of SCIF Admin Reserved Ports */
-+#define SCIF_ADMIN_PORT_END	1024
-+
-+/* End of SCIF Reserved Ports */
-+#define SCIF_PORT_RSVD		1088
-+
-+typedef struct scif_endpt *scif_epd_t;
-+
-+#define SCIF_OPEN_FAILED ((scif_epd_t)-1)
-+#define SCIF_REGISTER_FAILED ((off_t)-1)
-+#define SCIF_MMAP_FAILED ((void *)-1)
+ static inline struct mic_device *mbdev_to_mdev(struct mbus_device *mbdev)
+ {
+ 	return dev_get_drvdata(mbdev->dev.parent);
+@@ -127,6 +310,58 @@ void mic_bootparam_init(struct mic_device *mdev)
+ 	bootparam->h2c_config_db = -1;
+ 	bootparam->shutdown_status = 0;
+ 	bootparam->shutdown_card = 0;
++	/* Total nodes = number of MICs + 1 for self node */
++	bootparam->tot_nodes = atomic_read(&g_num_mics) + 1;
++	bootparam->node_id = mdev->id + 1;
++	bootparam->scif_host_dma_addr = 0x0;
++	bootparam->scif_card_dma_addr = 0x0;
++	bootparam->c2h_scif_db = -1;
++	bootparam->h2c_scif_db = -1;
++}
 +
 +/**
-+ * scif_open - Create an endpoint
++ * mic_request_dma_chans - Request DMA channels
++ * @mdev: pointer to mic_device instance
 + *
-+ *\return
-+ * Upon successful completion, scif_open() returns an endpoint descriptor to
-+ * be used in subsequent SCIF functions calls to refer to that endpoint;
-+ * otherwise: in user mode SCIF_OPEN_FAILED (that is ((scif_epd_t)-1)) is
-+ * returned and errno is set to indicate the error; in kernel mode a NULL
-+ * scif_epd_t is returned.
-+ *
-+ *\par Errors:
-+ *- ENOMEM
-+ * - Insufficient kernel memory was available
++ * returns number of DMA channels acquired
 + */
-+scif_epd_t scif_open(void);
++static int mic_request_dma_chans(struct mic_device *mdev)
++{
++	dma_cap_mask_t mask;
++	struct dma_chan *chan;
++
++	request_module("mic_x100_dma");
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_MEMCPY, mask);
++
++	do {
++		chan = dma_request_channel(mask, mdev->ops->dma_filter,
++					   mdev->sdev->parent);
++		if (chan) {
++			mdev->dma_ch[mdev->num_dma_ch++] = chan;
++			if (mdev->num_dma_ch >= MIC_MAX_DMA_CHAN)
++				break;
++		}
++	} while (chan);
++	dev_info(mdev->sdev->parent, "DMA channels # %d\n", mdev->num_dma_ch);
++	return mdev->num_dma_ch;
++}
 +
 +/**
-+ * scif _bind - Bind an endpoint to a port
-+ *	\param epd			endpoint descriptor
-+ *	\param pn			port number
++ * mic_free_dma_chans - release DMA channels
++ * @mdev: pointer to mic_device instance
 + *
-+ * scif_bind() binds endpoint epd to port pn, where pn is a port number on the
-+ * local node. If pn is zero, a port number greater than or equal to
-+ * SCIF_PORT_RSVD is assigned and returned. Each endpoint may be bound to
-+ * exactly one local port. Ports less than 1024 when requested can only be bound
-+ * by system (or root) processes or by processes executed by privileged users.
-+ *
-+ *\return
-+ * Upon successful completion, scif_bind() returns the port number to which epd
-+ * is bound; otherwise: in user mode -1 is returned and errno is set to
-+ * indicate the error; in kernel mode the negative of one of the following
-+ * errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - The endpoint or the port are already bound
-+ *- EISCONN
-+ * - The endpoint is already connected
-+ *- ENOSPC
-+ * - No port number available for assignment
-+ *- EACCES
-+ * - The port requested is protected and the user is not the superuser
-+*/
-+int scif_bind(scif_epd_t epd, uint16_t pn);
-+
-+/**
-+ * scif_listen - Listen for connections on an endpoint
-+ *
-+ *	\param epd		endpoint descriptor
-+ *	\param backlog		maximum pending connection requests
-+ *
-+ * scif_listen() marks the endpoint epd as a listening endpoint - that is, as
-+ * an endpoint that will be used to accept incoming connection requests. Once
-+ * so marked, the endpoint is said to be in the listening state and may not be
-+ * used as the endpoint of a connection.
-+ *
-+ * The endpoint, epd, must have been bound to a port.
-+ *
-+ * The backlog argument defines the maximum length to which the queue of
-+ * pending connections for epd may grow. If a connection request arrives when
-+ * the queue is full, the client may receive an error with an indication that
-+ * the connection was refused.
-+ *
-+ *\return
-+ * Upon successful completion, scif_listen() returns 0; otherwise: in user mode
-+ * -1 is returned and errno is set to indicate the error; in kernel mode the
-+ * negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - The endpoint is not bound to a port
-+ *- EISCONN
-+ * - The endpoint is already connected or listening
-+*/
-+int scif_listen(scif_epd_t epd, int backlog);
-+
-+/**
-+ * scif_connect - Initiate a connection on a port
-+ *	\param epd		endpoint descriptor
-+ *	\param dst		global id of port to which to connect
-+ *
-+ * The scif_connect() function requests the connection of endpoint epd to remote
-+ * port dst. If the connection is successful, a peer endpoint, bound to dst, is
-+ * created on node dst.node. On successful return, the connection is complete.
-+ *
-+ * If the endpoint epd has not already been bound to a port, scif_connect()
-+ * will bind it to an unused local port.
-+ *
-+ * A connection is terminated when an endpoint of the connection is closed,
-+ * either explicitly by scif_close(), or when a process that owns one of the
-+ * endpoints of the connection is terminated.
-+ *
-+ * In user space, scif_connect() supports an asynchronous connection mode
-+ * if the application has set the O_NONBLOCK flag on the endpoint via the
-+ * fcntl() system call. Setting this flag will result in the calling process
-+ * not to wait during scif_connect().
-+ *
-+ *\return
-+ * Upon successful completion, scif_connect() returns the port ID to which the
-+ * endpoint, epd, is bound; otherwise: in user mode -1 is returned and errno is
-+ * set to indicate the error; in kernel mode the negative of one of the
-+ * following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNREFUSED
-+ * - The destination was not listening for connections or refused the
-+ *	connection request
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - dst.port is not a valid port ID
-+ *- EISCONN
-+ * - The endpoint is already connected
-+ *- ENOMEM
-+ * - No buffer space is available
-+ *- ENODEV
-+ * - The destination node does not exist, or
-+ * - The node is lost or existed, but is not currently in the network since it
-+ *	may have crashed
-+ *- ENOSPC
-+ * - No port number available for assignment
-+ *- EOPNOTSUPP
-+ * - The endpoint is listening and cannot be connected
-+*/
-+int scif_connect(scif_epd_t epd, struct scif_port_id *dst);
-+
-+/**
-+ * scif_accept - Accept a connection on an endpoint
-+ *	\param epd		endpoint descriptor
-+ *	\param peer		global id of port to which connected
-+ *	\param newepd		new connected endpoint descriptor
-+ *	\param flags		flags
-+ *
-+ * The scif_accept() call extracts the first connection request from the queue
-+ * of pending connections for the port on which epd is listening. scif_accept()
-+ * creates a new endpoint, bound to the same port as epd, and allocates a new
-+ * SCIF endpoint descriptor, returned in newepd, for the endpoint. The new
-+ * endpoint is connected to the endpoint through which the connection was
-+ * requested. epd is unaffected by this call, and remains in the listening
-+ * state.
-+ *
-+ * On successful return, peer holds the global port identifier (node id and
-+ * local port number) of the port which requested the connection.
-+ *
-+ * A connection is terminated when an endpoint of the connection is closed,
-+ * either explicitly by scif_close(), or when a process that owns one of the
-+ * endpoints of the connection is terminated.
-+ *
-+ * The number of connections that can (subsequently) be accepted on epd is only
-+ * limited by system resources (memory).
-+ *
-+ * The flags argument is formed by OR'ing together zero or more of the
-+ * following values:
-+ *- SCIF_ACCEPT_SYNC: block until a connection request is presented. If
-+ *			SCIF_ACCEPT_SYNC is not in flags, and no pending
-+ *			connections are present on the queue, scif_accept()
-+ *			fails with an EAGAIN error
-+ *
-+ * In user mode, the select() and poll() functions can be used to determine
-+ * when there is a connection request. In kernel mode, the scif_poll()
-+ * function may be used for this purpose. A readable event will be delivered
-+ * when a connection is requested.
-+ *
-+ *\return
-+ * Upon successful completion, scif_accept() returns 0; otherwise: in user mode
-+ * -1 is returned and errno is set to indicate the error; in kernel mode the
-+ *	negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EAGAIN
-+ * - SCIF_ACCEPT_SYNC is not set and no connections are present to be accepted,
-+ *	or
-+ * - SCIF_ACCEPT_SYNC is not set and remote node failed to complete its
-+ *	connection request
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- EINTR
-+ * - Interrupted function
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - epd is not a listening endpoint
-+ * - flags is invalid
-+ * - peer is NULL
-+ * - newepd is NULL
-+ *- ENODEV
-+ * - The requesting node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOMEM
-+ * - Not enough space
-+ *- ENOENT
-+ * - Secondary part of epd registration failed
-+*/
-+int scif_accept(scif_epd_t epd, struct scif_port_id *peer, scif_epd_t
-+		*newepd, int flags);
-+
-+/**
-+ * scif_close - Close an endpoint
-+ *	\param epd	endpoint descriptor
-+ *
-+ * scif_close() closes an endpoint and performs necessary teardown of
-+ * facilities associated with that endpoint.
-+ *
-+ * If epd is a listening endpoint then it will no longer accept connection
-+ * requests on the port to which it is bound. Any pending connection requests
-+ * are rejected.
-+ *
-+ * If epd is a connected endpoint, then its peer endpoint is also closed. RMAs
-+ * which are in-process through epd or its peer endpoint will complete before
-+ * scif_close() returns. Registered windows of the local and peer endpoints are
-+ * released as if scif_unregister() was called against each window.
-+ *
-+ * Closing a SCIF endpoint does not affect local registered memory mapped by
-+ * a SCIF endpoint on a remote node. The local memory remains mapped by the peer
-+ * SCIF endpoint explicitly removed by calling munmap(..) by the peer.
-+ *
-+ * If the peer endpoint's receive queue is not empty at the time that epd is
-+ * closed, then the peer endpoint can be passed as the endpoint parameter to
-+ * scif_recv() until the receive queue is empty.
-+ *
-+ * epd is freed and may no longer be accessed.
-+ *
-+ *\return
-+ * Upon successful completion, scif_close() returns 0; otherwise: in user mode
-+ * -1 is returned and errno is set to indicate the error; in kernel mode the
-+ * negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor
++ * returns none
 + */
-+int scif_close(scif_epd_t epd);
++static void mic_free_dma_chans(struct mic_device *mdev)
++{
++	int i = 0;
 +
-+/**
-+ * scif_send - Send a message
-+ *	\param epd		endpoint descriptor
-+ *	\param msg		message buffer address
-+ *	\param len		message length
-+ *	\param flags		blocking mode flags
-+ *
-+ * scif_send() sends data to the peer of endpoint epd. Up to len bytes of data
-+ * are copied from memory starting at address msg. On successful execution the
-+ * return value of scif_send() is the number of bytes that were sent, and is
-+ * zero if no bytes were sent because len was zero. scif_send() may be called
-+ * only when the endpoint is in a connected state.
-+ *
-+ * If a scif_send() call is non-blocking, then it sends only those bytes which
-+ * can be sent without waiting, up to a maximum of len bytes.
-+ *
-+ * If a scif_send() call is blocking, then it normally returns after sending
-+ * all len bytes. If a blocking call is interrupted or the connection is
-+ * reset, the call is considered successful if some bytes were sent or len is
-+ * zero, otherwise the call is considered unsuccessful.
-+ *
-+ * In user mode, the select() and poll() functions can be used to determine
-+ * when the send queue is not full. In kernel mode, the scif_poll() function
-+ * may be used for this purpose.
-+ *
-+ * It is recommended that scif_send()/scif_recv() only be used for short
-+ * control-type message communication between SCIF endpoints. The SCIF RMA
-+ * APIs are expected to provide better performance for transfer sizes of
-+ * 1024 bytes or longer for the current MIC hardware and software
-+ * implementation.
-+ *
-+ * The flags argument is formed by ORing together zero or more of the following
-+ * values:
-+ *- SCIF_SEND_BLOCK: block until the entire message is sent.
-+ *
-+ *\return
-+ * Upon successful completion, scif_send() returns the number of bytes sent;
-+ * otherwise: in user mode -1 is returned and errno is set to indicate the
-+ * error; in kernel mode the negative of one of the following errors is
-+ * returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EFAULT
-+ * - An invalid address was specified for a parameter
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - flags is invalid
-+ * - len is negative
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOMEM
-+ * - Not enough space
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ */
-+int scif_send(scif_epd_t epd, void *msg, int len, int flags);
++	for (i = 0; i < mdev->num_dma_ch; i++) {
++		dma_release_channel(mdev->dma_ch[i]);
++		mdev->dma_ch[i] = NULL;
++	}
++	mdev->num_dma_ch = 0;
+ }
+ 
+ /**
+@@ -141,6 +376,7 @@ int mic_start(struct mic_device *mdev, const char *buf)
+ {
+ 	int rc;
+ 	mutex_lock(&mdev->mic_mutex);
++	mic_bootparam_init(mdev);
+ retry:
+ 	if (MIC_OFFLINE != mdev->state) {
+ 		rc = -EINVAL;
+@@ -161,14 +397,22 @@ retry:
+ 		rc = PTR_ERR(mdev->dma_mbdev);
+ 		goto unlock_ret;
+ 	}
+-	mdev->dma_ch = mic_request_dma_chan(mdev);
+-	if (!mdev->dma_ch) {
+-		rc = -ENXIO;
++	if (!mic_request_dma_chans(mdev)) {
++		rc = -ENODEV;
+ 		goto dma_remove;
+ 	}
++	mdev->scdev = scif_register_device(mdev->sdev->parent, MIC_SCIF_DEV,
++					   &__mic_dma_ops, &scif_hw_ops,
++					   mdev->id + 1, 0, &mdev->mmio,
++					   &mdev->aper, mdev->dp, NULL,
++					   mdev->dma_ch, mdev->num_dma_ch);
++	if (IS_ERR(mdev->scdev)) {
++		rc = PTR_ERR(mdev->scdev);
++		goto dma_free;
++	}
+ 	rc = mdev->ops->load_mic_fw(mdev, buf);
+ 	if (rc)
+-		goto dma_release;
++		goto scif_remove;
+ 	mic_smpt_restore(mdev);
+ 	mic_intr_restore(mdev);
+ 	mdev->intr_ops->enable_interrupts(mdev);
+@@ -177,8 +421,10 @@ retry:
+ 	mdev->ops->send_firmware_intr(mdev);
+ 	mic_set_state(mdev, MIC_ONLINE);
+ 	goto unlock_ret;
+-dma_release:
+-	dma_release_channel(mdev->dma_ch);
++scif_remove:
++	scif_unregister_device(mdev->scdev);
++dma_free:
++	mic_free_dma_chans(mdev);
+ dma_remove:
+ 	mbus_unregister_device(mdev->dma_mbdev);
+ unlock_ret:
+@@ -197,11 +443,9 @@ void mic_stop(struct mic_device *mdev, bool force)
+ {
+ 	mutex_lock(&mdev->mic_mutex);
+ 	if (MIC_OFFLINE != mdev->state || force) {
++		scif_unregister_device(mdev->scdev);
+ 		mic_virtio_reset_devices(mdev);
+-		if (mdev->dma_ch) {
+-			dma_release_channel(mdev->dma_ch);
+-			mdev->dma_ch = NULL;
+-		}
++		mic_free_dma_chans(mdev);
+ 		mbus_unregister_device(mdev->dma_mbdev);
+ 		mic_bootparam_init(mdev);
+ 		mic_reset(mdev);
+diff --git a/drivers/misc/mic/host/mic_debugfs.c b/drivers/misc/mic/host/mic_debugfs.c
+index 028ba5d6..f024d29 100644
+--- a/drivers/misc/mic/host/mic_debugfs.c
++++ b/drivers/misc/mic/host/mic_debugfs.c
+@@ -214,6 +214,19 @@ static int mic_dp_show(struct seq_file *s, void *pos)
+ 		   bootparam->shutdown_status);
+ 	seq_printf(s, "Bootparam: shutdown_card %d\n",
+ 		   bootparam->shutdown_card);
++	seq_printf(s, "Bootparam: tot_nodes %d\n",
++		   bootparam->tot_nodes);
++	seq_printf(s, "Bootparam: node_id %d\n",
++		   bootparam->node_id);
++	seq_printf(s, "Bootparam: c2h_scif_db %d\n",
++		   bootparam->c2h_scif_db);
++	seq_printf(s, "Bootparam: h2c_scif_db %d\n",
++		   bootparam->h2c_scif_db);
++	seq_printf(s, "Bootparam: scif_host_dma_addr 0x%llx\n",
++		   bootparam->scif_host_dma_addr);
++	seq_printf(s, "Bootparam: scif_card_dma_addr 0x%llx\n",
++		   bootparam->scif_card_dma_addr);
 +
-+/**
-+ * scif_recv - Receive a message
-+ *	\param epd		endpoint descriptor
-+ *	\param msg		message buffer address
-+ *	\param len		message buffer length
-+ *	\param flags		blocking mode flags
-+ *
-+ * scif_recv() receives data from the peer of endpoint epd. Up to len bytes of
-+ * data are copied to memory starting at address msg. On successful execution
-+ * the return value of scif_recv() is the number of bytes that were received,
-+ * and is zero if no bytes were received because len was zero. scif_recv() may
-+ * be called only when the endpoint is in a connected state.
-+ *
-+ * If a scif_recv() call is non-blocking, then it receives only those bytes
-+ * which can be received without waiting, up to a maximum of len bytes.
-+ *
-+ * If a scif_recv() call is blocking, then it normally returns after receiving
-+ * all len bytes. If the blocking call was interrupted due to a disconnection,
-+ * subsequent calls to scif_recv() will copy all bytes received upto the point
-+ * of disconnection.
-+ *
-+ * In user mode, the select() and poll() functions can be used to determine
-+ * when data is available to be received. In kernel mode, the scif_poll()
-+ * function may be used for this purpose.
-+ *
-+ * It is recommended that scif_send()/scif_recv() only be used for short
-+ * control-type message communication between SCIF endpoints. The SCIF RMA
-+ * APIs are expected to provide better performance for transfer sizes of
-+ * 1024 bytes or longer for the current MIC hardware and software
-+ * implementation.
-+ *
-+ * The flags argument is formed by ORing together zero or more of the following
-+ * values:
-+ *- SCIF_RECV_BLOCK: block until the entire message is received.
-+ *
-+ *\return
-+ * Upon successful completion, scif_recv() returns the number of bytes
-+ * received; otherwise: in user mode -1 is returned and errno is set to
-+ * indicate the error; in kernel mode the negative of one of the following
-+ * errors is returned.
-+ *
-+ *\par Errors:
-+ *- EAGAIN
-+ * - The destination node is returning from a low power state
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EFAULT
-+ * - An invalid address was specified for a parameter
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - flags is invalid, or
-+ * - len is negative
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOMEM
-+ * - Not enough space
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ */
-+int scif_recv(scif_epd_t epd, void *msg, int len, int flags);
+ 
+ 	for (i = sizeof(*bootparam); i < MIC_DP_SIZE;
+ 	     i += mic_total_desc_size(d)) {
+diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_main.c
+index ab37a31..4564629 100644
+--- a/drivers/misc/mic/host/mic_main.c
++++ b/drivers/misc/mic/host/mic_main.c
+@@ -67,6 +67,8 @@ static struct ida g_mic_ida;
+ static struct class *g_mic_class;
+ /* Base device node number for MIC devices */
+ static dev_t g_mic_devno;
++/* Track the total number of MIC devices */
++atomic_t g_num_mics;
+ 
+ static const struct file_operations mic_fops = {
+ 	.open = mic_open,
+@@ -408,6 +410,7 @@ static int mic_probe(struct pci_dev *pdev,
+ 		dev_err(&pdev->dev, "cdev_add err id %d rc %d\n", mdev->id, rc);
+ 		goto cleanup_debug_dir;
+ 	}
++	atomic_inc(&g_num_mics);
+ 	return 0;
+ cleanup_debug_dir:
+ 	mic_delete_debug_dir(mdev);
+@@ -459,6 +462,7 @@ static void mic_remove(struct pci_dev *pdev)
+ 		return;
+ 
+ 	mic_stop(mdev, false);
++	atomic_dec(&g_num_mics);
+ 	cdev_del(&mdev->cdev);
+ 	mic_delete_debug_dir(mdev);
+ 	mutex_lock(&mdev->mic_mutex);
+@@ -478,6 +482,7 @@ static void mic_remove(struct pci_dev *pdev)
+ 	ida_simple_remove(&g_mic_ida, mdev->id);
+ 	kfree(mdev);
+ }
 +
-+/**
-+ * scif_register - Mark a memory region for remote access.
-+ *	\param epd		endpoint descriptor
-+ *	\param addr		starting virtual address
-+ *	\param len		length of range
-+ *	\param offset		offset of window
-+ *	\param prot_flags	read/write protection flags
-+ *	\param map_flags	mapping flags
-+ *
-+ * The scif_register() function opens a window, a range of whole pages of the
-+ * registered address space of the endpoint epd, starting at offset po and
-+ * continuing for len bytes. The value of po, further described below, is a
-+ * function of the parameters offset and len, and the value of map_flags. Each
-+ * page of the window represents the physical memory page which backs the
-+ * corresponding page of the range of virtual address pages starting at addr
-+ * and continuing for len bytes. addr and len are constrained to be multiples
-+ * of the page size. A successful scif_register() call returns po.
-+ *
-+ * When SCIF_MAP_FIXED is set in the map_flags argument, po will be offset
-+ * exactly, and offset is constrained to be a multiple of the page size. The
-+ * mapping established by scif_register() will not replace any existing
-+ * registration; an error is returned if any page within the range [offset,
-+ * offset + len - 1] intersects an existing window.
-+ * Note: When SCIF_MAP_FIXED is set the current implementation limits
-+ * offset to the range [0..2^62-1] and returns EADDRINUSE if the offset
-+ * requested with SCIF_MAP_FIXED is in the range [2^62..2^63-1].
-+ *
-+ * When SCIF_MAP_FIXED is not set, the implementation uses offset in an
-+ * implementation-defined manner to arrive at po. The po value so chosen will
-+ * be an area of the registered address space that the implementation deems
-+ * suitable for a mapping of len bytes. An offset value of 0 is interpreted as
-+ * granting the implementation complete freedom in selecting po, subject to
-+ * constraints described below. A non-zero value of offset is taken to be a
-+ * suggestion of an offset near which the mapping should be placed. When the
-+ * implementation selects a value for po, it does not replace any extant
-+ * window. In all cases, po will be a multiple of the page size.
-+ *
-+ * The physical pages which are so represented by a window are available for
-+ * access in calls to mmap(), scif_readfrom(), scif_writeto(),
-+ * scif_vreadfrom(), and scif_vwriteto(). While a window is registered, the
-+ * physical pages represented by the window will not be reused by the memory
-+ * subsystem for any other purpose. Note that the same physical page may be
-+ * represented by multiple windows.
-+ *
-+ * Subsequent operations which change the memory pages to which virtual
-+ * addresses are mapped (such as mmap(), munmap()) have no effect on
-+ * existing window.
-+ *
-+ * If the process will fork(), it is recommended that the registered
-+ * virtual address range be marked with MADV_DONTFORK. Doing so will prevent
-+ * problems due to copy-on-write semantics.
-+ *
-+ * The prot_flags argument is formed by OR'ing together one or more of the
-+ * following values:
-+ *- SCIF_PROT_READ: allow read operations from the window
-+ *- SCIF_PROT_WRITE: allow write operations to the window
-+ *
-+ * The map_flags argument is formed by OR'ing together zero or more of
-+ * the following values:
-+ *- SCIF_MAP_FIXED: interpret offset exactly
-+ *
-+ *\return
-+ * Upon successful completion, scif_register() returns the offset at which the
-+ * mapping was placed (po); otherwise: in user mode SCIF_REGISTER_FAILED (that
-+ * is (off_t *)-1) is returned and errno is set to indicate the error; in
-+ * kernel mode the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EADDRINUSE
-+ * - SCIF_MAP_FIXED is set in map_flags, and pages in the range [offset,
-+ *	offset + len -1] are already registered
-+ *- EAGAIN
-+ * - The mapping could not be performed due to lack of resources
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EFAULT
-+ * - Addresses in the range [addr, addr + len - 1] are invalid
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - map_flags is invalid, or
-+ * - prot_flags is invalid, or
-+ * - SCIF_MAP_FIXED is set in flags, and offset is not a multiple of
-+ *	the page size, or
-+ * - addr is not a multiple of the page size, or
-+ * - len is not a multiple of the page size, or is 0, or
-+ * - offset is negative
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOMEM
-+ * - Not enough space
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ */
-+off_t scif_register(scif_epd_t epd, void *addr, size_t len, off_t offset,
-+		    int prot_flags, int map_flags);
-+
-+/**
-+ * scif_unregister - Mark a memory region for remote access.
-+ *	\param epd		endpoint descriptor
-+ *	\param offset		start of range to unregister
-+ *	\param len		length of range to unregister
-+ *
-+ * The scif_unregister() function closes those previously registered windows
-+ * which are entirely within the range [offset, offset + len - 1]. It is an
-+ * error to specify a range which intersects only a subrange of a window.
-+ *
-+ * On a successful return, pages within the window may no longer be specified
-+ * in calls to mmap(), scif_readfrom(), scif_writeto(), scif_vreadfrom(),
-+ * scif_vwriteto(), scif_get_pages, and scif_fence_signal(). The window,
-+ * however, continues to exist until all previous references against it are
-+ * removed. A window is referenced if there is a mapping to it created by
-+ * mmap(), or if scif_get_pages() was called against the window
-+ * (and the pages have not been returned via scif_put_pages()). A window is
-+ * also referenced while an RMA, in which some range of the window is a source
-+ * or destination, is in progress. Finally a window is referenced while some
-+ * offset in that window was specified to scif_fence_signal(), and the RMAs
-+ * marked by that call to scif_fence_signal() have not completed. While a
-+ * window is in this state, its registered address space pages are not
-+ * available for use in a new registered window.
-+ *
-+ * When all such references to the window have been removed, its references to
-+ * all the physical pages which it represents are removed. Similarly, the
-+ * registered address space pages of the window become available for
-+ * registration in a new window.
-+ *
-+ *\return
-+ * Upon successful completion, scif_unregister() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned. In the event of an
-+ * error, no windows are unregistered.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - The range [offset, offset + len - 1] intersects a subrange of a window, or
-+ * - offset is negative
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - Offsets in the range [offset, offset + len - 1] are invalid for the
-+ *	registered address space of epd
-+ */
-+int scif_unregister(scif_epd_t epd, off_t offset, size_t len);
-+
-+/**
-+ * scif_readfrom - Copy from a remote address space
-+ *	\param epd		endpoint descriptor
-+ *	\param loffset		offset in local registered address space to
-+ *				which to copy
-+ *	\param len		length of range to copy
-+ *	\param roffset		offset in remote registered address space
-+ *				from which to copy
-+ *	\param rma_flags	transfer mode flags
-+ *
-+ * scif_readfrom() copies len bytes from the remote registered address space of
-+ * the peer of endpoint epd, starting at the offset roffset to the local
-+ * registered address space of epd, starting at the offset loffset.
-+ *
-+ * Each of the specified ranges [loffset, loffset + len - 1] and [roffset,
-+ * roffset + len - 1] must be within some registered window or windows of the
-+ * local and remote nodes. A range may intersect multiple registered windows,
-+ * but only if those windows are contiguous in the registered address space.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECPU, then the data is copied using
-+ * programmed read/writes. Otherwise the data is copied using DMA. If rma_-
-+ * flags includes SCIF_RMA_SYNC, then scif_readfrom() will return after the
-+ * transfer is complete. Otherwise, the transfer may be performed asynchron-
-+ * ously. The order in which any two asynchronous RMA operations complete
-+ * is non-deterministic. The synchronization functions, scif_fence_mark()/
-+ * scif_fence_wait() and scif_fence_signal(), can be used to synchronize to
-+ * the completion of asynchronous RMA operations on the same endpoint.
-+ *
-+ * The DMA transfer of individual bytes is not guaranteed to complete in
-+ * address order. If rma_flags includes SCIF_RMA_ORDERED, then the last
-+ * cacheline or partial cacheline of the source range will become visible on
-+ * the destination node after all other transferred data in the source
-+ * range has become visible on the destination node.
-+ *
-+ * The optimal DMA performance will likely be realized if both
-+ * loffset and roffset are cacheline aligned (are a multiple of 64). Lower
-+ * performance will likely be realized if loffset and roffset are not
-+ * cacheline aligned but are separated by some multiple of 64. The lowest level
-+ * of performance is likely if loffset and roffset are not separated by a
-+ * multiple of 64.
-+ *
-+ * The rma_flags argument is formed by ORing together zero or more of the
-+ * following values:
-+ *- SCIF_RMA_USECPU: perform the transfer using the CPU, otherwise use the DMA
-+ *	engine.
-+ *- SCIF_RMA_SYNC: perform the transfer synchronously, returning after the
-+ *		transfer has completed. Passing this flag results in the
-+ *		current implementation busy waiting and consuming CPU cycles
-+ *		while the DMA transfer is in progress for best performance by
-+ *		avoiding the interrupt latency.
-+ *- SCIF_RMA_ORDERED: ensure that the last cacheline or partial cacheline of
-+ *		the source range becomes visible on the destination node
-+ *		after all other transferred data in the source range has
-+ *		become visible on the destination
-+ *
-+ *\return
-+ * Upon successful completion, scif_readfrom() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors
-+ *- EACCESS
-+ * - Attempt to write to a read-only range
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - rma_flags is invalid
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - The range [loffset, loffset + len - 1] is invalid for the registered
-+ *	address space of epd, or,
-+ * - The range [roffset, roffset + len - 1] is invalid for the registered
-+ *	address space of the peer of epd, or
-+ * - loffset or roffset is negative
-+*/
-+int scif_readfrom(scif_epd_t epd, off_t loffset, size_t len, off_t
-+		  roffset, int rma_flags);
-+
-+/**
-+ * scif_writeto - Copy to a remote address space
-+ *	\param epd		endpoint descriptor
-+ *	\param loffset		offset in local registered address space
-+ *				from which to copy
-+ *	\param len		length of range to copy
-+ *	\param roffset		offset in remote registered address space to
-+ *				which to copy
-+ *	\param rma_flags	transfer mode flags
-+ *
-+ * scif_writeto() copies len bytes from the local registered address space of
-+ * epd, starting at the offset loffset to the remote registered address space
-+ * of the peer of endpoint epd, starting at the offset roffset.
-+ *
-+ * Each of the specified ranges [loffset, loffset + len - 1] and [roffset,
-+ * roffset + len - 1] must be within some registered window or windows of the
-+ * local and remote nodes. A range may intersect multiple registered windows,
-+ * but only if those windows are contiguous in the registered address space.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECPU, then the data is copied using
-+ * programmed read/writes. Otherwise the data is copied using DMA. If rma_-
-+ * flags includes SCIF_RMA_SYNC, then scif_writeto() will return after the
-+ * transfer is complete. Otherwise, the transfer may be performed asynchron-
-+ * ously. The order in which any two asynchronous RMA operations complete
-+ * is non-deterministic. The synchronization functions, scif_fence_mark()/
-+ * scif_fence_wait() and scif_fence_signal(), can be used to synchronize to
-+ * the completion of asynchronous RMA operations on the same endpoint.
-+ *
-+ * The DMA transfer of individual bytes is not guaranteed to complete in
-+ * address order. If rma_flags includes SCIF_RMA_ORDERED, then the last
-+ * cacheline or partial cacheline of the source range will become visible on
-+ * the destination node after all other transferred data in the source
-+ * range has become visible on the destination node.
-+ *
-+ * The optimal DMA performance will likely be realized if both
-+ * loffset and roffset are cacheline aligned (are a multiple of 64). Lower
-+ * performance will likely be realized if loffset and roffset are not cacheline
-+ * aligned but are separated by some multiple of 64. The lowest level of
-+ * performance is likely if loffset and roffset are not separated by a multiple
-+ * of 64.
-+ *
-+ * The rma_flags argument is formed by ORing together zero or more of the
-+ * following values:
-+ *- SCIF_RMA_USECPU: perform the transfer using the CPU, otherwise use the DMA
-+ *			engine.
-+ *- SCIF_RMA_SYNC: perform the transfer synchronously, returning after the
-+ *		transfer has completed. Passing this flag results in the
-+ *		current implementation busy waiting and consuming CPU cycles
-+ *		while the DMA transfer is in progress for best performance by
-+ *		avoiding the interrupt latency.
-+ *- SCIF_RMA_ORDERED: ensure that the last cacheline or partial cacheline of
-+ *		the source range becomes visible on the destination node
-+ *		after all other transferred data in the source range has
-+ *		become visible on the destination
-+ *
-+ *\return
-+ * Upon successful completion, scif_readfrom() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EACCESS
-+ * - Attempt to write to a read-only range
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - rma_flags is invalid
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - The range [loffset, loffset + len - 1] is invalid for the registered
-+ *	address space of epd, or,
-+ * - The range [roffset , roffset + len -1] is invalid for the registered
-+ *	address space of the peer of epd, or
-+ * - loffset or roffset is negative
-+ */
-+int scif_writeto(scif_epd_t epd, off_t loffset, size_t len, off_t
-+		 roffset, int rma_flags);
-+
-+/**
-+ * scif_vreadfrom - Copy from a remote address space
-+ *	\param epd		endpoint descriptor
-+ *	\param addr		address to which to copy
-+ *	\param len		length of range to copy
-+ *	\param roffset		offset in remote registered address space
-+ *				from which to copy
-+ *	\param rma_flags	transfer mode flags
-+ *
-+ * scif_vreadfrom() copies len bytes from the remote registered address
-+ * space of the peer of endpoint epd, starting at the offset roffset, to local
-+ * memory, starting at addr.
-+ *
-+ * The specified range [roffset, roffset + len - 1] must be within some
-+ * registered window or windows of the remote nodes. The range may
-+ * intersect multiple registered windows, but only if those windows are
-+ * contiguous in the registered address space.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECPU, then the data is copied using
-+ * programmed read/writes. Otherwise the data is copied using DMA. If rma_-
-+ * flags includes SCIF_RMA_SYNC, then scif_vreadfrom() will return after the
-+ * transfer is complete. Otherwise, the transfer may be performed asynchron-
-+ * ously. The order in which any two asynchronous RMA operations complete
-+ * is non-deterministic. The synchronization functions, scif_fence_mark()/
-+ * scif_fence_wait() and scif_fence_signal(), can be used to synchronize to
-+ * the completion of asynchronous RMA operations on the same endpoint.
-+ *
-+ * The DMA transfer of individual bytes is not guaranteed to complete in
-+ * address order. If rma_flags includes SCIF_RMA_ORDERED, then the last
-+ * cacheline or partial cacheline of the source range will become visible on
-+ * the destination node after all other transferred data in the source
-+ * range has become visible on the destination node.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECACHE, then the physical pages which back
-+ * the specified local memory range may be remain in a pinned state even after
-+ * the specified transfer completes. This may reduce overhead if some or all of
-+ * the same virtual address range is referenced in a subsequent call of
-+ * scif_vreadfrom() or scif_vwriteto().
-+ *
-+ * The optimal DMA performance will likely be realized if both
-+ * addr and roffset are cacheline aligned (are a multiple of 64). Lower
-+ * performance will likely be realized if addr and roffset are not
-+ * cacheline aligned but are separated by some multiple of 64. The lowest level
-+ * of performance is likely if addr and roffset are not separated by a
-+ * multiple of 64.
-+ *
-+ * The rma_flags argument is formed by ORing together zero or more of the
-+ * following values:
-+ *- SCIF_RMA_USECPU: perform the transfer using the CPU, otherwise use the DMA
-+ *	engine.
-+ *- SCIF_RMA_USECACHE: enable registration caching
-+ *- SCIF_RMA_SYNC: perform the transfer synchronously, returning after the
-+ *		transfer has completed. Passing this flag results in the
-+ *		current implementation busy waiting and consuming CPU cycles
-+ *		while the DMA transfer is in progress for best performance by
-+ *		avoiding the interrupt latency.
-+ *- SCIF_RMA_ORDERED: ensure that the last cacheline or partial cacheline of
-+ *	the source range becomes visible on the destination node
-+ *	after all other transferred data in the source range has
-+ *	become visible on the destination
-+ *
-+ *\return
-+ * Upon successful completion, scif_vreadfrom() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EACCESS
-+ * - Attempt to write to a read-only range
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EFAULT
-+ * - Addresses in the range [addr, addr + len - 1] are invalid
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - rma_flags is invalid
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - Offsets in the range [roffset, roffset + len - 1] are invalid for the
-+ *	registered address space of epd
-+ */
-+int scif_vreadfrom(scif_epd_t epd, void *addr, size_t len, off_t roffset,
-+		   int rma_flags);
-+
-+/**
-+ * scif_vwriteto - Copy to a remote address space
-+ *	\param epd		endpoint descriptor
-+ *	\param addr		address from which to copy
-+ *	\param len		length of range to copy
-+ *	\param roffset		offset in remote registered address space to
-+ *				which to copy
-+ *	\param rma_flags	transfer mode flags
-+ *
-+ * scif_vwriteto() copies len bytes from the local memory, starting at addr, to
-+ * the remote registered address space of the peer of endpoint epd, starting at
-+ * the offset roffset.
-+ *
-+ * The specified range [roffset, roffset + len - 1] must be within some
-+ * registered window or windows of the remote nodes. The range may intersect
-+ * multiple registered windows, but only if those windows are contiguous in the
-+ * registered address space.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECPU, then the data is copied using
-+ * programmed read/writes. Otherwise the data is copied using DMA. If rma_-
-+ * flags includes SCIF_RMA_SYNC, then scif_vwriteto() will return after the
-+ * transfer is complete. Otherwise, the transfer may be performed asynchron-
-+ * ously. The order in which any two asynchronous RMA operations complete
-+ * is non-deterministic. The synchronization functions, scif_fence_mark()/
-+ * scif_fence_wait() and scif_fence_signal(), can be used to synchronize to
-+ * the completion of asynchronous RMA operations on the same endpoint.
-+ *
-+ * The DMA transfer of individual bytes is not guaranteed to complete in
-+ * address order. If rma_flags includes SCIF_RMA_ORDERED, then the last
-+ * cacheline or partial cacheline of the source range will become visible on
-+ * the destination node after all other transferred data in the source
-+ * range has become visible on the destination node.
-+ *
-+ * If rma_flags includes SCIF_RMA_USECACHE, then the physical pages which back
-+ * the specified local memory range may be remain in a pinned state even after
-+ * the specified transfer completes. This may reduce overhead if some or all of
-+ * the same virtual address range is referenced in a subsequent call of
-+ * scif_vreadfrom() or scif_vwriteto().
-+ *
-+ * The optimal DMA performance will likely be realized if both
-+ * addr and offset are cacheline aligned (are a multiple of 64). Lower
-+ * performance will likely be realized if addr and offset are not cacheline
-+ * aligned but are separated by some multiple of 64. The lowest level of
-+ * performance is likely if addr and offset are not separated by a multiple of
-+ * 64.
-+ *
-+ * The rma_flags argument is formed by ORing together zero or more of the
-+ * following values:
-+ *- SCIF_RMA_USECPU: perform the transfer using the CPU, otherwise use the DMA
-+ *	engine.
-+ *- SCIF_RMA_USECACHE: allow registration caching
-+ *- SCIF_RMA_SYNC: perform the transfer synchronously, returning after the
-+ *		transfer has completed. Passing this flag results in the
-+ *		current implementation busy waiting and consuming CPU cycles
-+ *		while the DMA transfer is in progress for best performance by
-+ *		avoiding the interrupt latency.
-+ *- SCIF_RMA_ORDERED: ensure that the last cacheline or partial cacheline of
-+ *		the source range becomes visible on the destination node
-+ *		after all other transferred data in the source range has
-+ *		become visible on the destination
-+ *
-+ *\return
-+ * Upon successful completion, scif_vwriteto () returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EACCESS
-+ * - Attempt to write to a read-only range
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EFAULT
-+ * - Addresses in the range [addr, addr + len - 1] are invalid
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - rma_flags is invalid
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - Offsets in the range [roffset, roffset + len - 1] are invalid for the
-+ *	registered address space of epd
-+ */
-+int scif_vwriteto(scif_epd_t epd, void *addr, size_t len, off_t roffset,
-+		  int rma_flags);
-+
-+/**
-+ * scif_fence_mark - Mark previously issued RMAs
-+ *	\param epd		endpoint descriptor
-+ *	\param flags		control flags
-+ *	\param mark		marked value returned as output.
-+ *
-+ * scif_fence_mark() returns after marking the current set of all uncompleted
-+ * RMAs initiated through the endpoint epd or the current set of all
-+ * uncompleted RMAs initiated through the peer of endpoint epd. The RMAs are
-+ * marked with a value returned at mark. The application may subsequently call
-+ * scif_fence_wait(), passing the value returned at mark, to await completion
-+ * of all RMAs so marked.
-+ *
-+ * The flags argument has exactly one of the following values:
-+ *- SCIF_FENCE_INIT_SELF: RMA operations initiated through endpoint
-+ *	epd are marked
-+ *- SCIF_FENCE_INIT_PEER: RMA operations initiated through the peer
-+ *	of endpoint epd are marked
-+ *
-+ * \return
-+ * Upon successful completion, scif_fence_mark() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - flags is invalid, or
-+ * - epd is not a valid endpoint descriptor, or
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENOMEM
-+ * - Insufficient kernel memory was available
-+ */
-+int scif_fence_mark(scif_epd_t epd, int flags, int *mark);
-+
-+/**
-+ * scif_fence_wait - Wait for completion of marked RMAs
-+ *
-+ *	\param epd		endpoint descriptor
-+ *	\param mark		mark request
-+ *
-+ * scif_fence_wait() returns after all RMAs marked with mark have completed.
-+ * The value passed in mark must have been obtained in a previous call to
-+ * scif_fence_mark().
-+ *
-+ *\return
-+ * Upon successful completion, scif_fence_wait() returns 0; otherwise: in user
-+ * mode -1 is returned and errno is set to indicate the error; in kernel mode
-+ * the negative of one of the following errors is returned.
-+ *
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENOMEM
-+ * - Insufficient kernel memory was available
-+ */
-+int scif_fence_wait(scif_epd_t epd, int mark);
-+
-+/**
-+ * scif_fence_signal - Request a memory update on completion of RMAs
-+ *	\param loff		local offset
-+ *	\param lval		local value to write to loffset
-+ *	\param roff		remote offset
-+ *	\param rval		remote value to write to roffset
-+ *	\param flags		flags
-+ *
-+ * scif_fence_signal() returns after marking the current set of all uncompleted
-+ * RMAs initiated through the endpoint epd or marking the current set of all
-+ * uncompleted RMAs initiated through the peer of endpoint epd.
-+ *
-+ * If flags includes SCIF_SIGNAL_LOCAL, then on completion of the RMAs in the
-+ * marked set, lval is written to memory at the address corresponding to offset
-+ * loff in the local registered address space of epd. loff must be within a
-+ * registered window. If flags includes SCIF_SIGNAL_REMOTE, then on completion
-+ * of the RMAs in the marked set, rval is written to memory at the address
-+ * corresponding to offset roff in the remote registered address space of epd.
-+ * roff must be within a remote registered window of the peer of epd. Note
-+ * that any specified offset must be DWORD (4 byte / 32 bit) aligned.
-+ *
-+ * The flags argument is formed by OR'ing together the following:
-+ *- Exactly one of the following values:
-+ * - SCIF_FENCE_INIT_SELF: RMA operations initiated through endpoint
-+ *	epd are marked
-+ * - SCIF_FENCE_INIT_PEER: RMA operations initiated through the peer
-+ *	of endpoint epd are marked
-+ *- One or more of the following values:
-+ * - SCIF_SIGNAL_LOCAL: On completion of the marked set of RMAs, write lval to
-+ *	memory at the address corresponding to offset loff in the local
-+ *	registered address space of epd.
-+ * - SCIF_SIGNAL_REMOTE: On completion of the marked set of RMAs, write rval to
-+ *	memory at the address corresponding to offset roff in the remote
-+ *	registered address space of epd.
-+ *
-+ *\return
-+ * Upon successful completion, scif_fence_signal() returns 0; otherwise: in
-+ * user mode -1 is returned and errno is set to indicate the error; in kernel
-+ * mode the negative of one of the following errors is returned.
-+ *\par Errors:
-+ *- EBADF, ENOTTY
-+ * - epd is not a valid endpoint descriptor
-+ *- ECONNRESET
-+ * - Connection reset by peer
-+ *- EINVAL
-+ * - epd is not a valid endpoint descriptor, or
-+ * - flags is invalid, or
-+ * - loff or roff are not DWORD aligned
-+ *- ENODEV
-+ * - The remote node is lost or existed, but is not currently in the
-+ *	network since it may have crashed
-+ *- ENOTCONN
-+ * - The endpoint is not connected
-+ *- ENXIO
-+ * - loff is invalid for the registered address of epd, or
-+ * - roff is invalid for the registered address space, of the peer of epd
-+ */
-+int scif_fence_signal(scif_epd_t epd, off_t loff, uint64_t lval, off_t roff,
-+		      uint64_t rval, int flags);
-+
-+/**
-+ * scif_get_node_ids - Return information about online nodes
-+ *	\param nodes		array in which to return online node IDs
-+ *	\param len		number of entries in the nodes array
-+ *	\param self		address to place the node ID of the local node
-+ *
-+ * scif_get_node_ids() fills in the nodes array with up to len node IDs of the
-+ * nodes in the SCIF network. If there is not enough space in nodes, as
-+ * indicated by the len parameter, only len node IDs are returned in nodes. The
-+ * return value of scif_get_node_ids() is the total number of nodes currently in
-+ * the SCIF network. By checking the return value against the len parameter,
-+ * the user may determine if enough space for nodes was allocated.
-+ *
-+ * The node ID of the local node is returned at self.
-+ *
-+ *\return
-+ * Upon successful completion, scif_get_node_ids() returns the actual number of
-+ * online nodes in the SCIF network including 'self'; otherwise: in user mode
-+ * -1 is returned and errno is set to indicate the error; in kernel mode no
-+ * errors are returned.
-+ *
-+ *\par Errors:
-+ *- EFAULT
-+ * - Bad address
-+ */
-+int scif_get_node_ids(uint16_t *nodes, int len, uint16_t *self);
-+
-+#endif /* __SCIF_H__ */
-diff --git a/include/uapi/linux/scif_ioctl.h b/include/uapi/linux/scif_ioctl.h
-new file mode 100644
-index 0000000..22aa0ae
---- /dev/null
-+++ b/include/uapi/linux/scif_ioctl.h
-@@ -0,0 +1,233 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+ * * Redistributions of source code must retain the above copyright
-+ *   notice, this list of conditions and the following disclaimer.
-+ * * Redistributions in binary form must reproduce the above copyright
-+ *   notice, this list of conditions and the following disclaimer in
-+ *   the documentation and/or other materials provided with the
-+ *   distribution.
-+ * * Neither the name of Intel Corporation nor the names of its
-+ *   contributors may be used to endorse or promote products derived
-+ *   from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ * Intel SCIF driver.
-+ *
-+ */
-+/*
-+ * -----------------------------------------
-+ * SCIF IOCTL interface information
-+ * -----------------------------------------
-+ */
-+#ifndef SCIF_IOCTL_H
-+#define SCIF_IOCTL_H
-+
-+struct scif_port_id {
-+	uint16_t node; /* node on which port resides */
-+	uint16_t port; /* Local port number */
-+};
-+
-+/**
-+ * struct scifioctl_connect:
-+ *
-+ * \param self			used to read back the assigned port_id
-+ * \param peer			destination node and port to connect to
-+ *
-+ * This structure is used for CONNECT IOCTL.
-+ */
-+struct scifioctl_connect {
-+	struct scif_port_id	self;
-+	struct scif_port_id	peer;
-+};
-+
-+/**
-+ * struct scifioctl_accept:
-+ *
-+ * \param flags			flags
-+ * \param peer			global id of peer endpoint
-+ * \param endpt			new connected endpoint descriptor
-+ *
-+ * This structure is used for SCIF_ACCEPTREQ IOCTL.
-+ */
-+struct scifioctl_accept {
-+	int			flags;
-+	struct scif_port_id	peer;
-+	void			*endpt;
-+};
-+
-+/**
-+ * struct scifioctl_msg:
-+ *
-+ * \param msg			message buffer address
-+ * \param len			message length
-+ * \param flags			flags
-+ * \param out_len		Number of bytes sent/received.
-+ *
-+ * This structure is used for SCIF_SEND/SCIF_RECV IOCTL.
-+ */
-+struct scifioctl_msg {
-+	void	__user *msg;
-+	int	len;
-+	int	flags;
-+	int	out_len;
-+};
-+
-+/**
-+ * struct scifioctl_reg:
-+ *
-+ * \param addr starting virtual address
-+ * \param len			length of range
-+ * \param offset		offset of window
-+ * \param prot			read/write protection
-+ * \param flags			flags
-+ * \param out_len		offset returned.
-+ *
-+ * This structure is used for SCIF_REG IOCTL.
-+ */
-+struct scifioctl_reg {
-+	void		*addr;
-+	uint64_t	len;
-+	off_t		offset;
-+	int		prot;
-+	int		flags;
-+	off_t		out_offset;
-+};
-+
-+/**
-+ * struct scifioctl_unreg:
-+ *
-+ * \param offset		start of range to unregister
-+ * \param len			length of range to unregister
-+ *
-+ * This structure is used for SCIF_UNREG IOCTL.
-+ */
-+struct scifioctl_unreg {
-+	off_t		offset;
-+	uint64_t	len;
-+};
-+
-+/**
-+ * struct scifioctl_copy:
-+ *
-+ * \param loffset	offset in local registered address space to/from
-+which to copy
-+ * \param len		length of range to copy
-+ * \param roffset	offset in remote registered address space to/from
-+which to copy
-+ * \param addr		user virtual address to/from which to copy
-+ * \param flags		flags
-+ *
-+ * This structure is used for SCIF_READFROM, SCIF_WRITETO, SCIF_VREADFROM
-+and
-+ * SCIF_VREADFROM IOCTL's.
-+ */
-+struct scifioctl_copy {
-+	off_t		loffset;
-+	uint64_t	len;
-+	off_t		roffset;
-+	uint8_t		__user *addr;
-+	int		flags;
-+};
-+
-+/**
-+ * struct scifioctl_fence_mark:
-+ *
-+ * \param flags		flags
-+ * \param mark		Fence handle returned by reference.
-+ *
-+ * This structure is used from SCIF_FENCE_MARK IOCTL.
-+ */
-+struct scifioctl_fence_mark {
-+	int		flags;
-+	int		__user *mark;
-+};
-+
-+/**
-+ * struct scifioctl_fence_signal:
-+ *
-+ * \param loff		local offset
-+ * \param lval		local value to write to loffset
-+ * \param roff		remote offset
-+ * \param rval		remote value to write to roffset
-+ * \param flags		flags
-+ *
-+ * This structure is used for SCIF_FENCE_SIGNAL IOCTL.
-+ */
-+struct scifioctl_fence_signal {
-+	off_t		loff;
-+	uint64_t	lval;
-+	off_t		roff;
-+	uint64_t	rval;
-+	int		flags;
-+};
-+
-+/**
-+ * struct scifioctl_node_ids:
-+ *
-+ * \param nodes		pointer to an array of node_ids
-+ * \param len		length of array
-+ * \param self		ID of the current node
-+ *
-+ * This structure is used for the SCIF_GET_NODEIDS ioctl
-+ */
-+struct scifioctl_node_ids {
-+	uint16_t __user		*nodes;
-+	int			len;
-+	uint16_t __user		*self;
-+};
-+
-+#define SCIF_BIND		_IOWR('s', 1, int *)
-+#define SCIF_LISTEN		_IOW('s', 2, int)
-+#define SCIF_CONNECT		_IOWR('s', 3, struct scifioctl_connect *)
-+#define SCIF_ACCEPTREQ		_IOWR('s', 4, struct scifioctl_accept *)
-+#define SCIF_ACCEPTREG		_IOWR('s', 5, void *)
-+#define SCIF_SEND		_IOWR('s', 6, struct scifioctl_msg *)
-+#define SCIF_RECV		_IOWR('s', 7, struct scifioctl_msg *)
-+#define SCIF_REG		_IOWR('s', 8, struct scifioctl_reg *)
-+#define SCIF_UNREG		_IOWR('s', 9, struct scifioctl_unreg *)
-+#define SCIF_READFROM		_IOWR('s', 10, struct scifioctl_copy *)
-+#define SCIF_WRITETO		_IOWR('s', 11, struct scifioctl_copy *)
-+#define SCIF_VREADFROM		_IOWR('s', 12, struct scifioctl_copy *)
-+#define SCIF_VWRITETO		_IOWR('s', 13, struct scifioctl_copy *)
-+#define SCIF_GET_NODEIDS	_IOWR('s', 14, struct scifioctl_node_ids *)
-+#define SCIF_FENCE_MARK		_IOWR('s', 15, struct scifioctl_fence_mark *)
-+#define SCIF_FENCE_WAIT		_IOWR('s', 16, int)
-+#define SCIF_FENCE_SIGNAL	_IOWR('s', 17, struct scifioctl_fence_signal *)
-+
-+#endif /* SCIF_IOCTL_H */
+ static struct pci_driver mic_driver = {
+ 	.name = mic_driver_name,
+ 	.id_table = mic_pci_tbl,
+@@ -512,6 +517,7 @@ static int __init mic_init(void)
+ 	}
+ 	return ret;
+ cleanup_debugfs:
++	ida_destroy(&g_mic_ida);
+ 	mic_exit_debugfs();
+ 	class_destroy(g_mic_class);
+ cleanup_chrdev:
+diff --git a/drivers/misc/mic/host/mic_smpt.c b/drivers/misc/mic/host/mic_smpt.c
+index fae474c..cec8203 100644
+--- a/drivers/misc/mic/host/mic_smpt.c
++++ b/drivers/misc/mic/host/mic_smpt.c
+@@ -174,8 +174,7 @@ static int mic_get_smpt_ref_count(struct mic_device *mdev, dma_addr_t dma_addr,
+  *
+  * returns a DMA address.
+  */
+-static dma_addr_t
+-mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr)
++dma_addr_t mic_to_dma_addr(struct mic_device *mdev, dma_addr_t mic_addr)
+ {
+ 	struct mic_smpt_info *smpt_info = mdev->smpt;
+ 	int spt;
+@@ -214,7 +213,7 @@ dma_addr_t mic_map(struct mic_device *mdev, dma_addr_t dma_addr, size_t size)
+ 	if (!size || size > mic_max_system_memory(mdev))
+ 		return mic_addr;
+ 
+-	ref = kmalloc(mdev->smpt->info.num_reg * sizeof(s64), GFP_KERNEL);
++	ref = kmalloc_array(mdev->smpt->info.num_reg, sizeof(s64), GFP_ATOMIC);
+ 	if (!ref)
+ 		return mic_addr;
+ 
+@@ -271,7 +270,7 @@ void mic_unmap(struct mic_device *mdev, dma_addr_t mic_addr, size_t size)
+ 	}
+ 
+ 	spt = mic_sys_addr_to_smpt(mdev, mic_addr);
+-	ref = kmalloc(mdev->smpt->info.num_reg * sizeof(s64), GFP_KERNEL);
++	ref = kmalloc_array(mdev->smpt->info.num_reg, sizeof(s64), GFP_ATOMIC);
+ 	if (!ref)
+ 		return;
+ 
+diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
+index a020e4e..cc08e9f 100644
+--- a/drivers/misc/mic/host/mic_virtio.c
++++ b/drivers/misc/mic/host/mic_virtio.c
+@@ -40,7 +40,7 @@ static int mic_sync_dma(struct mic_device *mdev, dma_addr_t dst,
+ {
+ 	int err = 0;
+ 	struct dma_async_tx_descriptor *tx;
+-	struct dma_chan *mic_ch = mdev->dma_ch;
++	struct dma_chan *mic_ch = mdev->dma_ch[0];
+ 
+ 	if (!mic_ch) {
+ 		err = -EBUSY;
+@@ -80,7 +80,7 @@ static int mic_virtio_copy_to_user(struct mic_vdev *mvdev, void __user *ubuf,
+ 	struct mic_device *mdev = mvdev->mdev;
+ 	void __iomem *dbuf = mdev->aper.va + daddr;
+ 	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
+-	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
++	size_t dma_alignment = 1 << mdev->dma_ch[0]->device->copy_align;
+ 	size_t dma_offset;
+ 	size_t partlen;
+ 	int err;
+@@ -129,7 +129,7 @@ static int mic_virtio_copy_from_user(struct mic_vdev *mvdev, void __user *ubuf,
+ 	struct mic_device *mdev = mvdev->mdev;
+ 	void __iomem *dbuf = mdev->aper.va + daddr;
+ 	struct mic_vringh *mvr = &mvdev->mvr[vr_idx];
+-	size_t dma_alignment = 1 << mdev->dma_ch->device->copy_align;
++	size_t dma_alignment = 1 << mdev->dma_ch[0]->device->copy_align;
+ 	size_t partlen;
+ 	int err;
+ 
+diff --git a/drivers/misc/mic/host/mic_x100.c b/drivers/misc/mic/host/mic_x100.c
+index b7a21e1..3341e90 100644
+--- a/drivers/misc/mic/host/mic_x100.c
++++ b/drivers/misc/mic/host/mic_x100.c
+@@ -167,8 +167,7 @@ static void mic_x100_send_intr(struct mic_device *mdev, int doorbell)
+ 	if (doorbell < MIC_X100_NUM_SBOX_IRQ) {
+ 		mic_x100_send_sbox_intr(mdev, doorbell);
+ 	} else {
+-		rdmasr_db = doorbell - MIC_X100_NUM_SBOX_IRQ +
+-			MIC_X100_RDMASR_IRQ_BASE;
++		rdmasr_db = doorbell - MIC_X100_NUM_SBOX_IRQ;
+ 		mic_x100_send_rdmasr_intr(mdev, rdmasr_db);
+ 	}
+ }
 -- 
 1.8.2.1
 
