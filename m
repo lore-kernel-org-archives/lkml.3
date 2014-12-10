@@ -1,198 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747AbaLJNWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:22:51 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:55403 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044AbaLJNWs (ORCPT
+	id S1756632AbaLJNWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:22:38 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:54690 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248AbaLJNV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 08:22:48 -0500
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com, borntraeger@de.ibm.com,
-        rafael.j.wysocki@intel.com, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
-Subject: [PATCH v4] CPU hotplug: active_writer not woken up in some cases - deadlock
-Date: Wed, 10 Dec 2014 14:22:01 +0100
-Message-Id: <1418217721-42919-1-git-send-email-dahi@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.5.5
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121013-0021-0000-0000-000002166688
+	Wed, 10 Dec 2014 08:21:57 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Subject: [PATCH v2 2/3] gpio/xilinx: Convert the driver to platform device interface
+Date: Wed, 10 Dec 2014 14:21:49 +0100
+Message-Id: <1418217710-11987-3-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
+References: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
-grace periods") introduced another problem that can easily be reproduced by
-starting/stopping cpus in a loop.
+This way we do not need to transverse the device tree manually and we
+support hot plugged devices.
 
-E.g.:
-  for i in `seq 5000`; do
-      echo 1 > /sys/devices/system/cpu/cpu1/online
-      echo 0 > /sys/devices/system/cpu/cpu1/online
-  done
+Also Implement remove callback so the driver can be unloaded
 
-Will result in:
-  INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
-  Call Trace:
-  ([<00000000006a028e>] __schedule+0x406/0x91c)
-   [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
-   [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
-   [<0000000000131232>] cpu_up+0xb6/0xd4
-   [<00000000004a5720>] device_online+0x80/0xc0
-   [<00000000004a57f0>] online_store+0x90/0xb0
-  ...
-
-And a deadlock.
-
-Problem is that if the last ref in put_online_cpus() can't get the
-cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
-active_writer might never be woken up, therefore never exiting the loop in
-cpu_hotplug_begin().
-
-This fix removes puts_pending and turns refcount into an atomic variable. We
-also introduce a wait queue for the active_writer, to avoid possible races and
-use-after-free. There is no need to take the lock in put_online_cpus() anymore.
-
-Also rearrange the lockdep anotations so we won't get false positives.
-
-Can't reproduce it with this fix.
-
-Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- kernel/cpu.c | 60 ++++++++++++++++++++++++++----------------------------------
- 1 file changed, 26 insertions(+), 34 deletions(-)
 
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 5d22023..3f1d5ba 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -58,22 +58,23 @@ static int cpu_hotplug_disabled;
+v2: Suggested by Alexandre Courbot <gnurou@gmail.com>
+
+Merge convert to platform device and implement remove callback in one patch
+
+ drivers/gpio/gpio-xilinx.c | 79 ++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 59 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
+index 9483950..f946d96 100644
+--- a/drivers/gpio/gpio-xilinx.c
++++ b/drivers/gpio/gpio-xilinx.c
+@@ -51,6 +51,11 @@ struct xgpio_instance {
+ 	u32 gpio_state;
+ 	u32 gpio_dir;
+ 	spinlock_t gpio_lock;
++	bool inited;
++};
++
++struct xgpio {
++	struct xgpio_instance port[2];
+ };
  
- static struct {
- 	struct task_struct *active_writer;
--	struct mutex lock; /* Synchronizes accesses to refcount, */
-+	/* wait queue to wake up the active_writer */
-+	wait_queue_head_t wq;
-+	/* verifies that no writer will get active while readers are active */
-+	struct mutex lock;
- 	/*
- 	 * Also blocks the new readers during
- 	 * an ongoing cpu hotplug operation.
- 	 */
--	int refcount;
--	/* And allows lockless put_online_cpus(). */
--	atomic_t puts_pending;
-+	atomic_t refcount;
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	struct lockdep_map dep_map;
- #endif
- } cpu_hotplug = {
- 	.active_writer = NULL,
-+	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(cpu_hotplug.wq),
- 	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
--	.refcount = 0,
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 	.dep_map = {.name = "cpu_hotplug.lock" },
- #endif
-@@ -86,15 +87,6 @@ static struct {
- #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
- #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
- 
--static void apply_puts_pending(int max)
--{
--	int delta;
--
--	if (atomic_read(&cpu_hotplug.puts_pending) >= max) {
--		delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
--		cpu_hotplug.refcount -= delta;
--	}
--}
- 
- void get_online_cpus(void)
- {
-@@ -103,9 +95,9 @@ void get_online_cpus(void)
- 		return;
- 	cpuhp_lock_acquire_read();
- 	mutex_lock(&cpu_hotplug.lock);
--	apply_puts_pending(65536);
--	cpu_hotplug.refcount++;
-+	atomic_inc(&cpu_hotplug.refcount);
- 	mutex_unlock(&cpu_hotplug.lock);
-+	cpuhp_lock_release();
+ /**
+@@ -173,24 +178,57 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
  }
- EXPORT_SYMBOL_GPL(get_online_cpus);
  
-@@ -116,9 +108,9 @@ bool try_get_online_cpus(void)
- 	if (!mutex_trylock(&cpu_hotplug.lock))
- 		return false;
- 	cpuhp_lock_acquire_tryread();
--	apply_puts_pending(65536);
--	cpu_hotplug.refcount++;
-+	atomic_inc(&cpu_hotplug.refcount);
- 	mutex_unlock(&cpu_hotplug.lock);
-+	cpuhp_lock_release();
- 	return true;
- }
- EXPORT_SYMBOL_GPL(try_get_online_cpus);
-@@ -127,20 +119,16 @@ void put_online_cpus(void)
- {
- 	if (cpu_hotplug.active_writer == current)
- 		return;
--	if (!mutex_trylock(&cpu_hotplug.lock)) {
--		atomic_inc(&cpu_hotplug.puts_pending);
--		cpuhp_lock_release();
--		return;
--	}
--
--	if (WARN_ON(!cpu_hotplug.refcount))
--		cpu_hotplug.refcount++; /* try to fix things up */
- 
--	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
--		wake_up_process(cpu_hotplug.active_writer);
--	mutex_unlock(&cpu_hotplug.lock);
--	cpuhp_lock_release();
-+	if (atomic_dec_and_test(&cpu_hotplug.refcount) &&
-+	    waitqueue_active(&cpu_hotplug.wq))
-+		wake_up(&cpu_hotplug.wq);
- 
-+	/* missing get - try to fix things up */
-+	if (WARN_ON(atomic_read(&cpu_hotplug.refcount) < 0))
-+		atomic_set(&cpu_hotplug.refcount, 0);
-+		if (waitqueue_active(&cpu_hotplug.wq))
-+			wake_up(&cpu_hotplug.wq);
- }
- EXPORT_SYMBOL_GPL(put_online_cpus);
- 
-@@ -168,18 +156,22 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
+ /**
++ * xgpio_remove - Remove method for the GPIO device.
++ * @pdev: pointer to the platform device
++ *
++ * This function remove gpiochips and frees all the allocated resources.
++ */
++static int xgpio_remove(struct platform_device *pdev)
++{
++	struct xgpio *xgpio = platform_get_drvdata(pdev);
++	int i;
++
++	for (i = 0; i < 2; i++) {
++		if (!xgpio->port[i].inited)
++			continue;
++		gpiochip_remove(&xgpio->port[i].mmchip.gc);
++
++		if (i == 1)
++			xgpio->port[i].mmchip.regs -= XGPIO_CHANNEL_OFFSET;
++
++		iounmap(xgpio->port[i].mmchip.regs);
++		kfree(xgpio->port[i].mmchip.gc.label);
++	}
++
++	return 0;
++}
++
++/**
+  * xgpio_of_probe - Probe method for the GPIO device.
+- * @np: pointer to device tree node
++ * @pdev: pointer to the platform device
+  *
+  * This function probes the GPIO device in the device tree. It initializes the
+  * driver data structure. It returns 0, if the driver is bound to the GPIO
+  * device, or a negative value if there is an error.
   */
- void cpu_hotplug_begin(void)
+-static int xgpio_of_probe(struct device_node *np)
++static int xgpio_probe(struct platform_device *pdev)
  {
-+	DEFINE_WAIT(wait);
-+
- 	cpu_hotplug.active_writer = current;
++	struct xgpio *xgpio;
+ 	struct xgpio_instance *chip;
+ 	int status = 0;
++	struct device_node *np = pdev->dev.of_node;
+ 	const u32 *tree_info;
+ 	u32 ngpio;
  
--	cpuhp_lock_acquire();
- 	for (;;) {
-+		cpuhp_lock_acquire();
- 		mutex_lock(&cpu_hotplug.lock);
--		apply_puts_pending(1);
--		if (likely(!cpu_hotplug.refcount))
-+		prepare_to_wait(&cpu_hotplug.wq, &wait, TASK_UNINTERRUPTIBLE);
-+		if (likely(!atomic_read(&cpu_hotplug.refcount)))
- 			break;
--		__set_current_state(TASK_UNINTERRUPTIBLE);
- 		mutex_unlock(&cpu_hotplug.lock);
-+		cpuhp_lock_release();
- 		schedule();
+-	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+-	if (!chip)
++	xgpio = (struct xgpio *) devm_kzalloc(&pdev->dev, sizeof(*xgpio),
++					      GFP_KERNEL);
++	if (!xgpio)
+ 		return -ENOMEM;
+ 
++	platform_set_drvdata(pdev, xgpio);
++
++	chip = &xgpio->port[0];
++
+ 	/* Update GPIO state shadow register with default value */
+ 	of_property_read_u32(np, "xlnx,dout-default", &chip->gpio_state);
+ 
+@@ -210,6 +248,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 
+ 	spin_lock_init(&chip->gpio_lock);
+ 
++	chip->mmchip.gc.dev = &pdev->dev;
+ 	chip->mmchip.gc.direction_input = xgpio_dir_in;
+ 	chip->mmchip.gc.direction_output = xgpio_dir_out;
+ 	chip->mmchip.gc.get = xgpio_get;
+@@ -220,20 +259,18 @@ static int xgpio_of_probe(struct device_node *np)
+ 	/* Call the OF gpio helper to setup and register the GPIO device */
+ 	status = of_mm_gpiochip_add(np, &chip->mmchip);
+ 	if (status) {
+-		kfree(chip);
+ 		pr_err("%s: error in probe function with status %d\n",
+ 		       np->full_name, status);
+ 		return status;
  	}
-+
-+	finish_wait(&cpu_hotplug.wq, &wait);
- }
++	chip->inited = true;
  
- void cpu_hotplug_done(void)
+ 	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
+ 							chip->mmchip.gc.base);
+ 
+ 	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
+ 	if (tree_info && be32_to_cpup(tree_info)) {
+-		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+-		if (!chip)
+-			return -ENOMEM;
++		chip = &xgpio->port[1];
+ 
+ 		/* Update GPIO state shadow register with default value */
+ 		of_property_read_u32(np, "xlnx,dout-default-2",
+@@ -255,6 +292,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 
+ 		spin_lock_init(&chip->gpio_lock);
+ 
++		chip->mmchip.gc.dev = &pdev->dev;
+ 		chip->mmchip.gc.direction_input = xgpio_dir_in;
+ 		chip->mmchip.gc.direction_output = xgpio_dir_out;
+ 		chip->mmchip.gc.get = xgpio_get;
+@@ -265,7 +303,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 		/* Call the OF gpio helper to setup and register the GPIO dev */
+ 		status = of_mm_gpiochip_add(np, &chip->mmchip);
+ 		if (status) {
+-			kfree(chip);
++			xgpio_remove(pdev);
+ 			pr_err("%s: error in probe function with status %d\n",
+ 			np->full_name, status);
+ 			return status;
+@@ -273,6 +311,7 @@ static int xgpio_of_probe(struct device_node *np)
+ 
+ 		/* Add dual channel offset */
+ 		chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
++		chip->inited = true;
+ 
+ 		pr_info("XGpio: %s: dual channel registered, base is %d\n",
+ 					np->full_name, chip->mmchip.gc.base);
+@@ -286,19 +325,19 @@ static const struct of_device_id xgpio_of_match[] = {
+ 	{ /* end of list */ },
+ };
+ 
+-static int __init xgpio_init(void)
+-{
+-	struct device_node *np;
+-
+-	for_each_matching_node(np, xgpio_of_match)
+-		xgpio_of_probe(np);
++MODULE_DEVICE_TABLE(of, xgpio_of_match);
+ 
+-	return 0;
+-}
++static struct platform_driver xgpio_plat_driver = {
++	.probe		= xgpio_probe,
++	.remove		= xgpio_remove,
++	.driver		= {
++			.name = "gpio-xilinx",
++			.owner = THIS_MODULE,
++			.of_match_table	= xgpio_of_match,
++	},
++};
+ 
+-/* Make sure we get initialized before anyone else tries to use us */
+-subsys_initcall(xgpio_init);
+-/* No exit call at the moment as we cannot unregister of GPIO chips */
++module_platform_driver(xgpio_plat_driver);
+ 
+ MODULE_AUTHOR("Xilinx, Inc.");
+ MODULE_DESCRIPTION("Xilinx GPIO driver");
 -- 
-1.8.5.5
+2.1.3
 
