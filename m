@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860AbaLJTiK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:38:10 -0500
-Received: from smtprelay0056.hostedemail.com ([216.40.44.56]:37388 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932721AbaLJTiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:38:08 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:4321:5007:6261:7904:10004:10400:10848:11026:11232:11658:11914:12043:12295:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: flesh31_299fadd2be51c
-X-Filterd-Recvd-Size: 1666
-Message-ID: <1418240283.18092.15.camel@perches.com>
-Subject: Re: [PATCH] irda: Convert function pointer arrays and uses to const
-From: Joe Perches <joe@perches.com>
-To: "Rustad, Mark D" <mark.d.rustad@intel.com>
-Cc: Samuel Ortiz <samuel@sortiz.org>, "David S. Miller" <davem@davemloft.net>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Dec 2014 11:38:03 -0800
-In-Reply-To: <3333024A-D21C-41E2-80ED-7590CE6E9BD1@intel.com>
-References: <1418236138.18092.13.camel@perches.com>
-	 <3333024A-D21C-41E2-80ED-7590CE6E9BD1@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
+	id S1757620AbaLJTl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:41:59 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29296 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088AbaLJTl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 14:41:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="427466627"
+Message-ID: <5488A203.7000600@linux.intel.com>
+Date: Wed, 10 Dec 2014 11:41:55 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [GIT pull] x86 mpx support for 3.19
+References: <alpine.DEB.2.11.1412091504490.16275@nanos> <CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>
+In-Reply-To: <CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 19:32 +0000, Rustad, Mark D wrote:
-> On Dec 10, 2014, at 10:28 AM, Joe Perches <joe@perches.com> wrote:
-[]
-> > diff --git a/include/net/irda/parameters.h b/include/net/irda/parameters.h
-[]
-> > typedef struct {
-> > -	pi_minor_info_t *pi_minor_call_table;
-> > +	const pi_minor_info_t *pi_minor_call_table;
-> 
-> Might you want to go a little further and make it:
-> 	const pi_minor_into_t * const pi_minor_call_table;
-> so that the pointer itself is also constant? That could apply to some others below as well.
-> 
-> > 	int len;
-> > } pi_major_info_t;
+On 12/10/2014 11:05 AM, Linus Torvalds wrote:
+> Why would I want to enable this in my kernel when there are no actual
+> CPU's out yet that support it? And even when there are, why would I do
+> it if the CPU I have doesn't support it?
 
-I don't think that's necessary as all the pi_major_info_t uses
-become const and this is a typedef, but if you want to, go ahead.
+For folks that build their own kernels and know what CPU they have,
+you'd never want to enable it other than compile testing (or maybe some
+basic runtime testing to make sure we didn't mess up the #BR code on
+CPUs without the feature).
 
+But, this is the kind of option that we want to be *sure* is enabled
+unless folks know exactly what they are doing, so we should probably
+hide it behind CONFIG_EXPERT as well, just as SMEP is.
 
+We might be getting to the point where we need to bury all these
+Intel-specific options somewhere, but that's a patch for another day.
+
+Patch is attached to convert it over to this:
+
+config X86_INTEL_MPX
+        prompt "Intel MPX (Memory Protection Extensions)" if EXPERT
+        def_bool y
+        depends on CPU_SUP_INTEL
+        ---help---
+          MPX provides hardware features that can be used in
+          conjunction with compiler-instrumented code to check
+          memory references.  It is designed to detect buffer
+          overflow or underflow bugs.
+
+          Enabling this option will make the kernel larger and
+          slightly increase the size of some data structures.
+
+          If unsure, say Y.
