@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983AbaLJTYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:24:23 -0500
-Received: from gproxy6-pub.mail.unifiedlayer.com ([67.222.39.168]:56861 "HELO
-	gproxy6-pub.mail.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932319AbaLJTYV (ORCPT
+	id S1757591AbaLJTdO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:33:14 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:55283 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752416AbaLJTdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:24:21 -0500
-X-Authority-Analysis: v=2.1 cv=W++rC3mk c=1 sm=1 tr=0
- a=yEjhGPV9XlbPNRGz7jjbow==:117 a=yEjhGPV9XlbPNRGz7jjbow==:17 a=DsvgjBjRAAAA:8
- a=f5113yIGAAAA:8 a=IkcTkHD0fZMA:10 a=wCmvBT1CAAAA:8 a=djd9j7hWnewA:10
- a=YP2Gd-mDGRwA:10 a=A92cGCtB03wA:10 a=jNzdnLwGHkp4IYTkdewA:9 a=QEXdDO2ut3YA:10
-Message-ID: <1418239407.2963.1.camel@ubuntu>
-Subject: Re: [PATCH] fs: hfs: Fix comparison bug in hfs_cat_keycmp
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Dec 2014 11:23:27 -0800
-In-Reply-To: <1418229164-4132-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1418165449.5917.4.camel@ubuntu>
-	 <1418229164-4132-1-git-send-email-linux@rasmusvillemoes.dk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 199.255.44.5 authed with slava@dubeyko.com}
+	Wed, 10 Dec 2014 14:33:13 -0500
+Message-ID: <54889FF6.2000508@hurleysoftware.com>
+Date: Wed, 10 Dec 2014 14:33:10 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>, Denis Du <dudenis2000@yahoo.ca>,
+        gregkh@linuxfoundation.org, jmmahler@gmail.com
+CC: Linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] TTY: Fix the missing lock for the TTY ldisc buffer
+References: <5488931C.4040308@yahoo.ca> <548895D9.6090402@suse.cz>
+In-Reply-To: <548895D9.6090402@suse.cz>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 17:32 +0100, Rasmus Villemoes wrote:
-> Relying on the sign (after casting to int) of the difference of two
-> quantities for comparison is usually wrong. For example, should a-b
-> turn out to be 2^31, the return value of cmp(a,b) is -2^31; but that
-> would also be the return value from cmp(b, a). So a compares less than
-> b and b compares less than a. One can also easily find three values
-> a,b,c such that a compares less than b, b compares less than c, but a
-> does not compare less than c.
+On 12/10/2014 01:50 PM, Jiri Slaby wrote:
+> On 12/10/2014, 07:38 PM, Denis Du wrote:
+>>
+>> Hi, Guys:
 > 
-
-Looks good for me. Thank you for the fix.
-
-Reviewed-by: Vyacheslav Dubeyko <slava@dubeyko.com>
-
-Thanks,
-Vyacheslav Dubeyko.
-
-> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-> ---
->  fs/hfs/catalog.c | 14 ++++++++------
->  1 file changed, 8 insertions(+), 6 deletions(-)
+> Hi, are you sending this using some robot? I think I have seen like ten
+> copies of this patch already.
 > 
-> diff --git a/fs/hfs/catalog.c b/fs/hfs/catalog.c
-> index ff0316b925a5..db458ee3a546 100644
-> --- a/fs/hfs/catalog.c
-> +++ b/fs/hfs/catalog.c
-> @@ -162,14 +162,16 @@ err2:
->   */
->  int hfs_cat_keycmp(const btree_key *key1, const btree_key *key2)
->  {
-> -	int retval;
-> +	__be32 k1p, k2p;
->  
-> -	retval = be32_to_cpu(key1->cat.ParID) - be32_to_cpu(key2->cat.ParID);
-> -	if (!retval)
-> -		retval = hfs_strcmp(key1->cat.CName.name, key1->cat.CName.len,
-> -				    key2->cat.CName.name, key2->cat.CName.len);
-> +	k1p = key1->cat.ParID;
-> +	k2p = key2->cat.ParID;
->  
-> -	return retval;
-> +	if (k1p != k2p)
-> +		return be32_to_cpu(k1p) < be32_to_cpu(k2p) ? -1 : 1;
-> +
-> +	return hfs_strcmp(key1->cat.CName.name, key1->cat.CName.len,
-> +			  key2->cat.CName.name, key2->cat.CName.len);
->  }
->  
->  /* Try to get a catalog entry for given catalog id */
+>> It was found that the 3.12 kernel tty layer will lose or corrupt data
+>> when have a full-duplex communication, especially in high baud rate, for
+>> example 230k for my OMAP5 uart. Eventually I found there is lock missing
+>> between copy data to ldisc layer buffer and copy data from the same
+>> buffer to user space. I believe this issue existed since 3.8
+>> kernel(since this kernel , it start to remove most of the spin-locks)
+>> and I didn't find any fix even through 3.17 kernel. This patch was
+>> tested to be works great with no any data loss again on 3.12 kernel.
+>>
+>> This patch was built for the latest kernel, but I cannot test it.
+>> Somebody may give a test.
+>>
+>> I did try to use the existed lock atomic_read_lock, but it doesn’t work.
+> 
+> Anyway, adding Peter Hurley to CC who was working on eliminating locks
+> from this code lately. More precisely since 3.12 we have no locks there,
+> which would explain why are you seeing it starting 3.12.
 
+Yeah, sorry. A new version of gcc for ARM exposed the lack of barriers for
+the head pointer in raw mode. I got tied up on something else, but this
+is my #1 priority now.
+
+I hope to have something testable in the next day or two.
+Sorry for the delay.
+
+Regards,
+Peter Hurley
 
