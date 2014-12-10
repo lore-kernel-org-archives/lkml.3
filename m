@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758212AbaLJWxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:53:48 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:46794 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091AbaLJWxq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:53:46 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: logitech-hidpp: do not return the name length
-Date: Wed, 10 Dec 2014 23:53:27 +0100
-Message-ID: <4561294.qneDZ51mgu@al>
-User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1758239AbaLJW4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:56:42 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:58054 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399AbaLJW4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 17:56:41 -0500
+Date: Wed, 10 Dec 2014 14:56:29 -0800
+From: Shaohua Li <shli@fb.com>
+To: Andy Lutomirski <luto@amacapital.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, <kernel-team@fb.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 3/3] X86: Add a thread cpu time implementation to vDSO
+Message-ID: <20141210225627.GA11754@devbig257.prn2.facebook.com>
+References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
+ <862cbb2ab71a9f71d1123b5512605350a4b61846.1418006970.git.shli@fb.com>
+ <CALCETrUU-vb34550mbE-yqoWYrzVNarVf++Logt0gmSTh_Cg2w@mail.gmail.com>
+ <20141210215713.GA30230@devbig257.prn2.facebook.com>
+ <CALCETrUi--fmZLBUB=tjmGt_D3y+HJ+MtJTRZ0=JUKFgAvxyuA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: -0.0 (/)
+Content-Disposition: inline
+In-Reply-To: <CALCETrUi--fmZLBUB=tjmGt_D3y+HJ+MtJTRZ0=JUKFgAvxyuA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-10_09:2014-12-10,2014-12-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=21.7374254348843
+ compositescore=0.923639739835017 urlsuspect_oldscore=0.923639739835017
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.923639739835017 spamscore=0
+ recipient_to_sender_domain_totalscore=35 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412100217
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 December 2014 17:21:09 Benjamin Tissoires wrote:
-> We do not make any use of the actual name length get through
-> hidpp_get_device_name().
+On Wed, Dec 10, 2014 at 02:13:23PM -0800, Andy Lutomirski wrote:
+> On Wed, Dec 10, 2014 at 1:57 PM, Shaohua Li <shli@fb.com> wrote:
+> > On Wed, Dec 10, 2014 at 11:10:52AM -0800, Andy Lutomirski wrote:
+> >> On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
+> >> > This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..). We
+> >> > use the following method to compute the thread cpu time:
+> >>
+> >> I like the idea, and I like making this type of profiling fast.  I
+> >> don't love the implementation because it's an information leak (maybe
+> >> we don't care) and it's ugly.
+> >>
+> >> The info leak could be fixed completely by having a per-process array
+> >> instead of a global array.  That's currently tricky without wasting
+> >> memory, but it could be created on demand if we wanted to do that,
+> >> once my vvar .fault patches go in (assuming they do -- I need to ping
+> >> the linux-mm people).
+> >
+> > those info leak really doesn't matter.
 > 
-> We can drop the extra code and simplify the API a bit.
+> Why not?
+
+Ofcourse I can't make sure completely, but how could this info be used
+as attack?
+
+> > But we need the global array
+> > anyway. The context switch detection should be per-cpu data and should
+> > be able to access in remote cpus.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->
-> ---
->  drivers/hid/hid-logitech-hidpp.c | 10 +++-------
->  1 file changed, 3 insertions(+), 7 deletions(-)
+> Right, but the whole array could be per process instead of global.
 > 
-> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> index 1a6395d..3846305 100644
-> --- a/drivers/hid/hid-logitech-hidpp.c
-> +++ b/drivers/hid/hid-logitech-hidpp.c
-> @@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
->  	return count;
->  }
->  
-> -static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
-> +static char *hidpp_get_device_name(struct hidpp_device *hidpp)
->  {
->  	u8 feature_type;
->  	u8 feature_index;
-> @@ -484,7 +484,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
->  	if (!name)
->  		goto out_err;
->  
-> -	*name_length = __name_length + 1;
->  	while (index < __name_length)
->  		index += hidpp_devicenametype_get_device_name(hidpp,
->  			feature_index, index, name + index,
+> I'm not saying I'm sure that would be better, but I think it's worth
+> considering.
 
-hidpp_devicenametype_get_device_name can return a non-positive value if
-the USB device is unplugged at the wrong time, or if a malicious device
-is attached (and 0 is returned). An infinite loop is the result.
+right, it's possible to be per process. As you said, this will waster a
+lot of memory. and you can't even do on-demand, as the context switch
+path will write the count to the per-process/per-thread vvar. Or you can
+maintain the count in kernel and let the .fault copy the count to vvar
+page (if the vvar page is absent). But this still wastes memory if
+applications use the vdso. I'm wondering how you handle page fault in
+context switch too if you don't pin the vdso pages.
 
-Can you apply this change in the patch or should I send you a separate
-one?
-
-	while (index < __name_length) {
-		ret = hidpp_devicenametype_get_device_name(hidpp,
-			feature_index, index, name + index,
-			__name_length - index);
-		if (ret <= 0) {
-			kfree(name);
-			return NULL;
-		}
-		index += ret;
-	}
-
-> @@ -493,7 +492,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
->  	return name;
->  
->  out_err:
-> -	*name_length = 0;
->  	return NULL;
-
-What about dropping the label out_err here and returning NULL in the
-previous places?
-
->  }
->  
-> @@ -989,7 +987,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
->  {
->  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
->  	char *name;
-> -	u8 name_length;
->  
->  	if (use_unifying)
->  		/*
-> @@ -999,7 +996,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
->  		 */
->  		name = hidpp_get_unifying_name(hidpp);
->  	else
-> -		name = hidpp_get_device_name(hidpp, &name_length);
-> +		name = hidpp_get_device_name(hidpp);
->  
->  	if (!name)
->  		hid_err(hdev, "unable to retrieve the name of the device");
-> @@ -1053,7 +1050,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
->  	bool connected = atomic_read(&hidpp->connected);
->  	struct input_dev *input;
->  	char *name, *devm_name;
-> -	u8 name_length;
->  
->  	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
->  		wtp_connect(hdev, connected);
-> @@ -1080,7 +1076,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
->  		return;
->  	}
->  
-> -	name = hidpp_get_device_name(hidpp, &name_length);
-> +	name = hidpp_get_device_name(hidpp);
->  	if (!name) {
->  		hid_err(hdev, "unable to retrieve the name of the device");
->  	} else {
-> 
-
+Thanks,
+Shaohua
