@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259AbaLJOJn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:09:43 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53757 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180AbaLJOJl (ORCPT
+	id S932115AbaLJOKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:10:46 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:52530 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753874AbaLJOKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:09:41 -0500
-Date: Wed, 10 Dec 2014 15:08:57 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, yuyang.du@intel.com,
-        lkp@01.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
-        Daniel J Blueman <daniel@numascale.com>, subbaram@codeaurora.org,
-        Brian Norris <computersforpeace@gmail.com>,
-        Slava Pestov <sp@datera.io>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, mpe@ellerman.id.au
-Subject: Re: [PATCH] powerpc: secondary CPUs signal to master before setting
- active and online (fixes kernel BUG at kernel/smpboot.c:134!)
-In-Reply-To: <CA+55aFyR5PzNkojvEej1NXnpEFOPOYfnxCcPDAjg1rE79tQv7A@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1412101427080.13233@nanos>
-References: <1418009221-12719-1-git-send-email-anton@samba.org> <20141208083408.GA8023@gmail.com> <20141208211859.6e81ec81@kryten> <20141209105819.0e847b4b@kryten> <CA+55aFyR5PzNkojvEej1NXnpEFOPOYfnxCcPDAjg1rE79tQv7A@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 10 Dec 2014 09:10:45 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <5486BFCB.4040305@suse.cz>
+References: <000201d01385$25a6c950$70f45bf0$%yang@samsung.com>
+	<5486BFCB.4040305@suse.cz>
+Date: Wed, 10 Dec 2014 22:10:44 +0800
+Message-ID: <CAL1ERfPsSs9GnvP4S3L+4OQUZ71Eps89_0qGgE7_2OQkPDyJ-w@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mm: page_isolation: remove unnecessary
+ freepage_migratetype check for unused page
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014, Linus Torvalds wrote:
-> On Mon, Dec 8, 2014 at 3:58 PM, Anton Blanchard <anton@samba.org> wrote:
-> > Hi Ingo,
-> >
-> >> At that point I thought the previous task_cpu() was somewhat ingrained
-> >> in the scheduler and came up with the patch. If not, we could go on a
-> >> hunt to see what else needs fixing.
-> >
-> > I had another look. The scheduled does indeed make assumptions about the
-> > previous task_cpu, but we have a hammer to fix it up called
-> > select_fallback_rq.
-> >
-> > I annotated select_fallback_rq, and did hit a case where the CPU was
-> > not active. ppc64 patch below.
-> 
-> Anton, I'll assume I will get this through the usual powerpc pull requests?
-> 
-> > I think x86 have a similar (although harder to hit) issue.
+On Tue, Dec 9, 2014 at 5:24 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+> On 12/09/2014 08:51 AM, Weijie Yang wrote:
+>>
+>> when we test the pages in a range is free or not, there is a little
+>> chance we encounter some page which is not in buddy but page_count is 0.
+>> That means that page could be in the page-freeing path but not in the
+>> buddy freelist, such as in pcplist
+>
+>
+> This shouldn't happen anymore IMHO. The pageblock is marked as
+> MIGRATE_ISOLATE and then a lru+pcplist drain is performed. Nothing should be
+> left on pcplist - anything newly freed goes directly to free lists. Hm,
+> maybe it could be on lru cache, but that holds a page reference IIRC, so
+> this test won't pass.
 
-Indeed way harder to hit:
+Yes, you are right. I made a mistake, this shouldn't happen.
+I will remove this description in next version. Thanks.
 
-CPU 0				CPU 1
+>> or wait for the zone->lock which the
+>> tester is holding.
+>
+>
+> That could maybe happen, but is it worth testing? If yes, please add it in a
+> comment to the code.
 
-    				set_cpu_online(1, true) {
-while (!cpu_online(cpu1))	   cpumask_set_cpu(1, to_cpumask(cpu_online_bits));
-      relax();
+This could happen even though the chance is very tiny.
+As for cma_alloc, the test makes no difference.
+However, as for offline_page, the test makes sense. If we leave the test and
+pass it when page_count is zero, it could trigger the BUG_ON(!PageBuddy(page))
+in the __offline_isolated_pages() if the page hasn't finish its free journey.
 
-wakeup_thread_on_cpu1();
-				   cpumask_set_cpu(1, to_cpumask(cpu_active_bits));
+>From the literal meaning of this test_pages_isolated() function, I think it is
+better get a definite result and not leave some middle status even if
+they are rare.
 
-On bare metal probably impossible, but on virt it should be
-observable. Fix is simple.
+So, Let's remove the whole test branch
+(page_count(page) == 0 && get_freepage_migratetype(page) == MIGRATE_ISOLATE)
 
-Thanks,
+Thanks for your remind and suggestion.
 
-	tglx
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 668d8f2a8781..534f3384f03f 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -222,7 +222,6 @@ static void notrace start_secondary(void *unused)
- 	lock_vector_lock();
- 	set_cpu_online(smp_processor_id(), true);
- 	unlock_vector_lock();
--	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
- 	x86_platform.nmi_init();
- 
- 	/* enable local interrupts */
-@@ -234,6 +233,7 @@ static void notrace start_secondary(void *unused)
- 	x86_cpuinit.setup_percpu_clockev();
- 
- 	wmb();
-+	per_cpu(cpu_state, smp_processor_id()) = CPU_ONLINE;
- 	cpu_startup_entry(CPUHP_ONLINE);
- }
- 
-@@ -932,7 +932,7 @@ int native_cpu_up(unsigned int cpu, struct task_struct *tidle)
- 	check_tsc_sync_source(cpu);
- 	local_irq_restore(flags);
- 
--	while (!cpu_online(cpu)) {
-+	while (per_cpu(cpu_state,cpu) != CPU_ONLINE) {
- 		cpu_relax();
- 		touch_nmi_watchdog();
- 	}
-
-
+>
+>> Back to the freepage_migratetype, we use it for a cached value for decide
+>> which free-list the page go when freeing page. If the pageblock is
+>> isolated
+>> the page will go to free-list[MIGRATE_ISOLATE] even if the cached type is
+>> not MIGRATE_ISOLATE, the commit ad53f92e(fix incorrect isolation behavior
+>> by rechecking migratetype) patch series have ensure this.
+>>
+>> So the freepage_migratetype check for page_count==0 page in
+>> __test_page_isolated_in_pageblock() is meaningless.
+>> This patch removes the unnecessary freepage_migratetype check.
+>>
+>> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+>> ---
+>>   mm/page_isolation.c |    3 +--
+>>   1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+>> index 6e5174d..f7c9183 100644
+>> --- a/mm/page_isolation.c
+>> +++ b/mm/page_isolation.c
+>> @@ -223,8 +223,7 @@ __test_page_isolated_in_pageblock(unsigned long pfn,
+>> unsigned long end_pfn,
+>>                 page = pfn_to_page(pfn);
+>>                 if (PageBuddy(page))
+>>                         pfn += 1 << page_order(page);
+>> -               else if (page_count(page) == 0 &&
+>> -                       get_freepage_migratetype(page) == MIGRATE_ISOLATE)
+>> +               else if (page_count(page) == 0)
+>>                         pfn += 1;
+>>                 else if (skip_hwpoisoned_pages && PageHWPoison(page)) {
+>>                         /*
+>>
+>
