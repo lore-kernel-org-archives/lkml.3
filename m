@@ -1,94 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788AbaLJSac (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:30:32 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39317 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932479AbaLJSa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:30:29 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="651723413"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
-        David Cohen <david.a.cohen@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v1] x86, ioapic: fix kernel crash on boot on non-PC platforms
-Date: Wed, 10 Dec 2014 20:29:25 +0200
-Message-Id: <1418236165-13961-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S932804AbaLJSbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:31:09 -0500
+Received: from nm44-vm6.bullet.mail.gq1.yahoo.com ([67.195.87.29]:37287 "EHLO
+	nm44-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932479AbaLJSbH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 13:31:07 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.ca;
+	b=Ca88iMU4SvEgFF5N+1vBPFFiVELJWogtnyEVK6/lxpMcs4eJJCr/6CKzSzarbX9J7dSlHOc5IkCNgbjiM5P9UeNuAiq1BcctfDDvPY/gt7FLOXk4YY8ehLu2PNxKrByaEnERzq0Rbel2vCdbFtP5MoUbtJqJkjlms0T64ftwmOX69h5f8EiK+hMJzjR1iuwujsNFTZ5yMIi3POSNZPEDlU129quhzLVy5EBAhIWFyEDpfx12/2ztVEaJ3Pscl5dd89N9HcfylUaXLLR3yfU9KdzZN65fcerq8IqLrefB+1JIHQBu9DWBg7RION8MZQlTpB4eGJwz+GI1w1cQjxJ0Uw==;
+X-Yahoo-Newman-Id: 768424.35416.bm@smtp226.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-4
+X-YMail-OSG: BQIAeIsVM1kDVhzZWTBvhgMJd4PB1GDAxygVHqYIg8Pv4rk
+ 3_nDJ_seAXRC.Bh2.RbM9i9Eu.78wjtnx1ZYzjdnOi5F0FHpwTy9L0RIKBCo
+ hpusTz0P9iFb6GAiylASrqj8YtLRCDiWXSiodHXkdgrU3X0wUNAffM1nyXh8
+ llAhlRCcxm5mvWpSS2wmq5A.PufOP9cpgShtREzrSq8IvaM80zA0kvlTT.NC
+ ZBqRJkHGRLQNtBzTH87OmtHPLVXrqAFby7uhX07i6Vm7lnUasId9skGbcaWs
+ HleO5xgZ2o5.ZUjp8pLTyB_y6G1TabED6WLefbDbQcOGN77_1lTIc.._BhlU
+ obfIirPWOVH9CeftylIB3.Hw73A6TGCjap0Bfqm3achdoyoQOl7ys9eqHj9z
+ rZ5Y9Q2ZCBHO2HTF58E0NZ4tafciZFkDfeX5C_Kz3p8aVsdX4zzcKTshCoSe
+ OXmBGS2NNWd7nYGPZ9cDnWIsxkaHHQzTl8icowpyrG9REJ4rHOZHf1dYDsl9
+ ub4_KkM4jrH9tcd.MufBEgAZ5.JmwmbZW_eRQraRNqUw70UqipELNF3DO4CS
+ psfxX4trkvDXO53Un0uyytsQXI1W_99urO6g-
+X-Yahoo-SMTP: erUHay2swBAHy3fhG3khiNpFvMLWTM_N
+Message-ID: <5488905A.3060606@yahoo.ca>
+Date: Wed, 10 Dec 2014 13:26:34 -0500
+From: Denis Du <dudenis2000@yahoo.ca>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, dudenis2000@yahoo.ca
+Subject: [PATCH] Fix the missing lock for the TTY ldisc buffer
+X-Forwarded-Message-Id: 
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel MID platforms have no legacy IRQ support. The commit bfa644bfa9e3 (x86,
-irq: Convert IOAPIC to use hierarchy irqdomain interfaces) introduces new
-scheme of allocating IRQs for IOAPIC, though it maps a pin disregarding whether
-or not the platform supports legacy IRQs. Thus, during boot we end up with a
-kernel crash like following:
 
-	Enabling APIC mode:  Flat.  Using 1 I/O APICs
-	BUG: unable to handle kernel NULL pointer dereference at 00000018
-	IP: [<c107bdc6>] __irq_domain_alloc_irqs+0xff/0x250
+Hi, Guys:
+It was found that the 3.12 kernel tty layer will lose or corrupt data 
+when have a full-duplex communication, especially in high baud rate, for 
+example 230k for my OMAP5 uart. Eventually I found there is lock missing 
+between copy data to ldisc layer buffer and copy data from the same 
+buffer to user space. I believe this issue existed since 3.8 
+kernel(since this kernel , it start to remove most of the spin-locks) 
+and I didn't find any fix even through 3.17 kernel. This patch was 
+tested to be works great with no any data loss again on 3.12 kernel.
 
-The patch fixes the issue by threating legacy property correctly on non-PC
-platforms.
+This patch was built fro the latest kernel, but I cannot test 
+it.Somebody may give a test.
 
-Cc: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
-Cc: David Cohen <david.a.cohen@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+I did try to use the existed lock atomic_read_lock, but it doesn’t work.
+
+
+
+Signed-off-by: Hui Du <dudenis2000@yahoo.ca>
+
 ---
- arch/x86/kernel/apic/io_apic.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+  drivers/tty/n_tty.c |    9 ++++++++-
+  1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index fe67a5d..14144d8 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -149,6 +149,11 @@ static inline u32 mp_pin_to_gsi(int ioapic, int pin)
- 	return mp_ioapic_gsi_routing(ioapic)->gsi_base + pin;
- }
- 
-+static inline bool mp_is_legacy_irq(int irq)
-+{
-+	return irq >= 0 && irq < nr_legacy_irqs();
-+}
-+
- /*
-  * Initialize all legacy IRQs and all pins on the first IOAPIC
-  * if we have legacy interrupt controller. Kernel boot option "pirq="
-@@ -159,7 +164,7 @@ static inline int mp_init_irq_at_boot(int ioapic, int irq)
- 	if (!nr_legacy_irqs())
- 		return 0;
- 
--	return ioapic == 0 || (irq >= 0 && irq < nr_legacy_irqs());
-+	return ioapic == 0 || mp_is_legacy_irq(irq);
- }
- 
- static inline struct irq_domain *mp_ioapic_irqdomain(int ioapic)
-@@ -960,7 +965,7 @@ static int alloc_irq_from_domain(struct irq_domain *domain, int ioapic, u32 gsi,
- 		 */
- 		if (!ioapic_initialized || gsi >= nr_legacy_irqs())
- 			irq = gsi;
--		legacy = irq >= 0 && irq < nr_legacy_irqs();
-+		legacy = mp_is_legacy_irq(irq);
- 		break;
- 	case IOAPIC_DOMAIN_STRICT:
- 		irq = gsi;
-@@ -1031,8 +1036,8 @@ static int mp_map_pin_to_irq(u32 gsi, int idx, int ioapic, int pin,
- 		return -ENOSYS;
- 
- 	if (idx >= 0 && test_bit(mp_irqs[idx].srcbus, mp_bus_not_pci)) {
--		legacy = true;
- 		irq = mp_irqs[idx].srcbusirq;
-+		legacy = mp_is_legacy_irq(irq);
- 	}
- 
- 	mutex_lock(&ioapic_mutex);
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 2e900a9..6e5c6ae 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -125,6 +125,7 @@ struct n_tty_data {
+  
+  	struct mutex atomic_read_lock;
+  	struct mutex output_lock;
++	struct mutex read_buf_lock;
+  };
+  
+  static inline size_t read_cnt(struct n_tty_data *ldata)
+@@ -1691,7 +1692,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
+  	int room, n, rcvd = 0;
+  
+  	down_read(&tty->termios_rwsem);
+-
++	mutex_lock(&ldata->read_buf_lock);
+  	while (1) {
+  		room = receive_room(tty);
+  		n = min(count, room);
+@@ -1710,6 +1711,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
+  
+  	tty->receive_room = room;
+  	n_tty_check_throttle(tty);
++	mutex_unlock(&ldata->read_buf_lock);
+  	up_read(&tty->termios_rwsem);
+  
+  	return rcvd;
+@@ -1876,6 +1878,7 @@ static int n_tty_open(struct tty_struct *tty)
+  	ldata->overrun_time = jiffies;
+  	mutex_init(&ldata->atomic_read_lock);
+  	mutex_init(&ldata->output_lock);
++	mutex_init(&ldata->read_buf_lock);
+  
+  	tty->disc_data = ldata;
+  	reset_buffer_flags(tty->disc_data);
+@@ -1939,6 +1942,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
+  	size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
+  
+  	retval = 0;
++	mutex_lock(&ldata->read_buf_lock);
+  	n = min(read_cnt(ldata), N_TTY_BUF_SIZE - tail);
+  	n = min(*nr, n);
+  	if (n) {
+@@ -1954,6 +1958,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
+  		*b += n;
+  		*nr -= n;
+  	}
++	mutex_unlock(&ldata->read_buf_lock);
+  	return retval;
+  }
+  
+@@ -1992,6 +1997,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+  	bool eof_push = 0;
+  
+  	/* N.B. avoid overrun if nr == 0 */
++	mutex_lock(&ldata->read_buf_lock);
+  	n = min(*nr, read_cnt(ldata));
+  	if (!n)
+  		return 0;
+@@ -2052,6 +2058,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
+  			ldata->push = 0;
+  		tty_audit_push(tty);
+  	}
++	mutex_unlock(&ldata->read_buf_lock);
+  	return eof_push ? -EAGAIN : 0;
+  }
+  
 -- 
-2.1.3
+1.7.10.4
+
+
 
