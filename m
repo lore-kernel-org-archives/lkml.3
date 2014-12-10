@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbaLJIqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 03:46:34 -0500
-Received: from mail.windriver.com ([147.11.1.11]:46452 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaLJIqa (ORCPT
+	id S1752965AbaLJIqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:46:53 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:9400 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752476AbaLJIqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 03:46:30 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <paulmck@linux.vnet.ibm.com>
-CC: <davem@davemloft.net>, <eric.dumazet@gmail.com>, <jon.maloy@ericsson.com>,
-        <erik.hugne@ericsson.com>, <netdev@vger.kernel.org>,
-        <kbuild-all@01.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH net-next RESEND 1/2] tipc: fix RCU sparse error
-Date: Wed, 10 Dec 2014 16:46:06 +0800
-Message-ID: <1418201167-9591-2-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418201167-9591-1-git-send-email-ying.xue@windriver.com>
-References: <1418201167-9591-1-git-send-email-ying.xue@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Wed, 10 Dec 2014 03:46:48 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-98-548808757293
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: robh+dt@kernel.org, kgene@kernel.org, alim.akhtar@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] Documentation: dt-bindings: Add aliases information for
+ Exynos7 pin controllers
+Date: Wed, 10 Dec 2014 14:09:39 +0530
+Message-id: <1418200780-22363-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 2.2.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsWyRsSkWreUoyPEYO8Ea4sH87axWcw/co7V
+	ou3KQXaL/sevmS2m/FnOZHF51xw2ixnn9zFZLFrWymzRuvcIu8WqXX8YHbg8ds66y+6xaVUn
+	m8eda3vYPPq2rGL0+LxJLoA1issmJTUnsyy1SN8ugSvjwFuZgstcFduuPWJuYGzm7GLk5JAQ
+	MJHY/uEoE4QtJnHh3nq2LkYuDiGBpYwSB27MZYUpmtPbzAyRWMQo8f/uZkYIZwKTxOa+J4wg
+	VWwCuhJNb3eB2SICNRJTbl1hByliFtjLKHFv1yGwUcICaRI9HR/B9rEIqEpMWNLHDmLzCnhI
+	nGqeCXWHnMSWW4/AmiUEprNLHLv9iRGiQUDi2+RDLF2MHEAJWYlNB5gh6iUlDq64wTKBUXAB
+	I8MqRtHUguSC4qT0IiO94sTc4tK8dL3k/NxNjMCwPv3vWd8OxpsHrA8xCnAwKvHwBlxuDxFi
+	TSwrrsw9xGgKtGEis5Rocj4wevJK4g2NzYwsTE1MjY3MLc2UxHkTpH4GCwmkJ5akZqemFqQW
+	xReV5qQWH2Jk4uCUamAsrtxUpDlvUlpxFdPJv/fjMlruN1jPlc8Va69W1y7q7n4uVs4lX71A
+	KzJAbkLy5vuTvC6cmRLZ/GziX+7tuw/3yna0KwdNqvd+zx/zRD9+HadlqJr01BP5n5sLgp6d
+	MT2dPHfqnrAJWYyzilIeT7dcGpYpNf9by4uHzxa84O/TWpyS1+cvoafEUpyRaKjFXFScCABw
+	Q7SqZgIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLIsWRmVeSWpSXmKPExsVy+t9jAd1Sjo4Qg203DS0ezNvGZjH/yDlW
+	i7YrB9kt+h+/ZraY8mc5k8XlXXPYLGac38dksWhZK7NF694j7Bardv1hdODy2DnrLrvHplWd
+	bB53ru1h8+jbsorR4/MmuQDWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3Ml
+	hbzE3FRbJRefAF23zBygs5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWM
+	GQfeyhRc5qrYdu0RcwNjM2cXIyeHhICJxJzeZmYIW0ziwr31bF2MXBxCAosYJf7f3cwI4Uxg
+	ktjc94QRpIpNQFei6e0uMFtEoEZiyq0r7CBFzAJ7GSXu7TrECpIQFkiT6On4yARiswioSkxY
+	0scOYvMKeEicap7JBLFOTmLLrUfsExi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQI
+	jppn0jsYVzVYHGIU4GBU4uENuNweIsSaWFZcmXuIUYKDWUmEdztrR4gQb0piZVVqUX58UWlO
+	avEhRlOg7ROZpUST84ERnVcSb2hsYm5qbGppYmFiZqkkzqtk3xYiJJCeWJKanZpakFoE08fE
+	wSnVwNi4QsL/bITcFb3Pq15dWyZZ7feyTigispZRRPEd95s1Vx/arNFv+SEzVfShoNiGz9OW
+	2J6dPHsPT05lMI+S6oUpS+KCvv+UmX1ln8erP+cDVl2qSRe7/DTtLFO9s/HuiZ5/CoNkX0n6
+	fzwftO59nIvK12p1eZ19AYdED081FzktaNhY4hn3L1iJpTgj0VCLuag4EQCWTMagsAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 97ede29e80ee ("tipc: convert name table read-write lock to
-RCU") involves the following sparse when using
+Adding list of aliases for supported Exynos7 pin controller blocks.
 
-  make ARCH=x86_64 allmodconfig
-  make C=1 CF=-D__CHECK_ENDIAN__
-
-net/tipc/name_table.c:1136:17: sparse: incompatible types in comparison expression (different address spaces)
-net/tipc/name_table.c:1136:17: sparse: incompatible types in comparison expression (different address spaces)
-
-To silence above spare complaint, an RCU annotation should be added
-to "next" pointer of hlist_node structure through hlist_next_rcu()
-macro when iterating over a hlist with hlist_for_each_entry_from_rcu().
-
-By the way, this commit also simplifies the way of dereferencing
-the first element of a hlist_head list by replacing
-hlist_for_each_entry_rcu() with hlist_entry_safe().
-
-Reported-by: Kbuild test robot <kbuild-all@01.org>
-Cc: Kbuild test robot <kbuild-all@01.org>
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
 ---
- include/linux/rculist.h |    4 ++--
- net/tipc/name_table.c   |    6 +++---
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ .../devicetree/bindings/pinctrl/samsung-pinctrl.txt          |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index aa79b3c..866d9c9 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -549,8 +549,8 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
-  */
- #define hlist_for_each_entry_from_rcu(pos, member)			\
- 	for (; pos;							\
--	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
--			typeof(*(pos)), member))
-+	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
-+			&(pos)->member)), typeof(*(pos)), member))
+diff --git a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+index 8425838..742e472 100644
+--- a/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/samsung-pinctrl.txt
+@@ -171,6 +171,16 @@ Aliases:
+ All the pin controller nodes should be represented in the aliases node using
+ the following format 'pinctrl{n}' where n is a unique number for the alias.
  
- #endif	/* __KERNEL__ */
- #endif
-diff --git a/net/tipc/name_table.c b/net/tipc/name_table.c
-index c8df022..fa4341f 100644
---- a/net/tipc/name_table.c
-+++ b/net/tipc/name_table.c
-@@ -1110,7 +1110,7 @@ static int __tipc_nl_seq_list(struct tipc_nl_msg *msg, u32 *last_type,
- 			      u32 *last_lower, u32 *last_publ)
- {
- 	struct hlist_head *seq_head;
--	struct name_seq *seq = NULL;
-+	struct name_seq *seq;
- 	int err;
- 	int i;
++Aliases for controllers compatible with "samsung,exynos7-pinctrl":
++- pinctrl0: pin controller of ALIVE block,
++- pinctrl1: pin controller of BUS0 block,
++- pinctrl2: pin controller of NFC block,
++- pinctrl3: pin controller of TOUCH block,
++- pinctrl4: pin controller of FF block,
++- pinctrl5: pin controller of ESE block,
++- pinctrl6: pin controller of FSYS0 block,
++- pinctrl7: pin controller of FSYS1 block,
++
+ Example: A pin-controller node with pin banks:
  
-@@ -1127,8 +1127,8 @@ static int __tipc_nl_seq_list(struct tipc_nl_msg *msg, u32 *last_type,
- 			if (!seq)
- 				return -EPIPE;
- 		} else {
--			hlist_for_each_entry_rcu(seq, seq_head, ns_list)
--				break;
-+			seq = hlist_entry_safe(rcu_dereference_raw(
-+			hlist_first_rcu(seq_head)), struct name_seq, ns_list);
- 			if (!seq)
- 				continue;
- 		}
+ 	pinctrl_0: pinctrl@11400000 {
 -- 
-1.7.9.5
+1.7.10.4
 
