@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaLJJBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:01:53 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:40571 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaLJJBw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:01:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418031490-17716-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-References: <1418031490-17716-1-git-send-email-rebecca.swee.fun.chang@intel.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 10 Dec 2014 18:01:31 +0900
-Message-ID: <CAAVeFuLRpjXy38-auJ4FS-gpdVZ0V=S8BE6X6OkHP0+QCWe3DQ@mail.gmail.com>
-Subject: Re: [PATCHv5 0/2] Enable Quark X1000 support in gpio-sch
-To: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis.turischev@compulab.co.il>
-Content-Type: text/plain; charset=UTF-8
+	id S1751816AbaLJJCr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:02:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35541 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488AbaLJJCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 04:02:43 -0500
+Message-ID: <1418202153.7241.6.camel@linux-0dmf.site>
+Subject: Re: [V3 PATCH 4/4] scsi:stex.c Add S3/S4 support
+From: Oliver Neukum <oneukum@suse.de>
+To: Charles Chiou <ch1102chiou@gmail.com>
+Cc: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, grace.chang@tw.promise.com,
+        victor.p@promise.com, ed.lin@promise.com
+Date: Wed, 10 Dec 2014 10:02:33 +0100
+In-Reply-To: <5487A406.8060902@gmail.com>
+References: <5487A406.8060902@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 6:38 PM, Chang Rebecca Swee Fun
-<rebecca.swee.fun.chang@intel.com> wrote:
-> Hi all,
->
-> This is a revised version for enabling Quark X1000 support in gpio-sch.
-> This version of patch series had changed according to the feedback provided
-> by Alexandre and Linus.
->
-> Change log for V5:
-> Patch 1:
-> - Change variable curr_dirs to reg_val in order to make driver code easier to
->   understand.
->
-> Patch 3:
-> - Dropped patch 3 for now. We need to re-design the driver's IRQ implementation.
->
-> The patches need to be patched on top of Mika Westerberg's commit at:
-> gpio: sch: Consolidate core and resume banks
-> http://marc.info/?l=linux-kernel&m=141392647225885&w=2
->
-> The patches has been verifed and tested working on Galileo Board. GPIO sysfs
-> was able to export gpio pins and changing pin direction. GPIO values were
-> able to controlled. One of the GPIO pins which is connected to on-board LED
-> was used to test GPIO functionality. We are able to turn the LED on/off by
-> changing the pin direction and pin value.
+On Wed, 2014-12-10 at 09:38 +0800, Charles Chiou wrote:
+>  From 91868d4afe10533b8a4496075109e411100217bb Mon Sep 17 00:00:00 2001
+> From: Charles Chiou <charles.chiou@tw.promise.com>
+> Date: Fri, 7 Nov 2014 10:15:18 +0800
+> Subject: [PATCH 4/4] scsi:stex.c Add S3/S4 support
+> 
+> Add S3/S4 support, add .suspend and .resume function in pci_driver.
+> 
+> Pegasus need 30~40 seconds to boot up. We don't want to OS wait
+> in .resume function. Create a thread to handle device boot up.
+> 
 
-I think these patches are good to go, if Linus is ok with it. Nice job
-making this driver simpler and more legible. Looking forward to seeing
-the IRQ implementation!
+> +static int stex_resume(struct pci_dev *pdev)
+> +{
+> +	struct st_hba *hba = pci_get_drvdata(pdev);
+> +	struct hba_handshake_workstruct *hswork;
+> +	int sts;
+> +
+> +	hba->mu_status = MU_STATE_STARTING;
+> +	hswork = kzalloc(sizeof(struct hba_handshake_workstruct), GFP_KERNEL);
+
+The system is coming back from sleep. You cannot swap or page out
+as disks may still be asleep. GFP_KERNEL is automatically changed
+to GFP_NOIO. It would be nice to outright use GFP_NOIO.
+
+> +	INIT_WORK(&hswork->handshake_work, resume_handshake);
+
+Memory allocations can fail.
+I suggest you allocate the memory in suspend(). There you can just
+return -ENOMEM in the error case.
+
+	Regards
+		Oliver
+
+
+
