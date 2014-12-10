@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558AbaLJOzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:55:05 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:56106 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423AbaLJOzD (ORCPT
+	id S1757536AbaLJO7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:59:10 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54112 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755993AbaLJO7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:55:03 -0500
+	Wed, 10 Dec 2014 09:59:08 -0500
+Date: Wed, 10 Dec 2014 15:59:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Santosh Shukla <santosh.shukla@linaro.org>
+cc: fweisbec@gmail.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        preeti@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
+        Kevin Hilman <khilman@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [Query] Spurious interrupts from clockevent device on X86
+ Ivybridge
+In-Reply-To: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1412101539200.13233@nanos>
+References: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <CAKMK7uHNeM9ebkpWKi30zz73-xferz39WQMvh6G4SrKAJyFxjw@mail.gmail.com>
-References: <20141210140306.GC32722@mwanda>
-	<CAKMK7uHNeM9ebkpWKi30zz73-xferz39WQMvh6G4SrKAJyFxjw@mail.gmail.com>
-Date: Wed, 10 Dec 2014 15:55:02 +0100
-Message-ID: <CAKMK7uGg7cpKvU=VUgDBmeNYVrj-8yeSv=RBVruMrWkZorhESg@mail.gmail.com>
-Subject: Re: [drm-intel:topic/core-stuff 32/37] drivers/gpu/drm/drm_crtc.c:4472
- drm_mode_crtc_set_gamma_size() warn: double check that we're allocating
- correct size: 2 vs 6
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: kbuild@01.org, Thierry Reding <treding@nvidia.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgotten to add mailing lists.
--Daniel
+On Wed, 10 Dec 2014, Santosh Shukla wrote:
+> The causes I could find:
+> - Clockevent device's counter overflow: When we need to program a clockevt
+>   device for times larger than it can handle, we program it for max time and
+>   then reprogram again on expiration. Because of hardware counter limitations we
+>   have to do it this way and this isn't really a spurious interrupt as we
+>   programmed it that way.
+> 
+> - Hardware timer firing before its expiration: Yes, its hard to digest but from
+>   my tests it looks like this does happen. Will circulate another mail once I am
+>   sure about it.
 
-On Wed, Dec 10, 2014 at 3:53 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Wed, Dec 10, 2014 at 3:03 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
->> From a style prespective this should be:
->>
->>         crtc->gamma_store = kcalloc(gamma_size * 3, sizeof(uint16_t),
->>                                     GFP_KERNEL);
->>
->> Because the elements are sizeof(uint16_t), we are allocating 3
->> arrays of gamma_size elements.  But I guess it's nice to move all the
->> constants to one side of the equation so that it tests for integer
->> overflows...  Whatever you decided is fine, this is a one time email
->> that is auto-genenerated.
->
-> Imo the point of kcalloc and kmalloc_array is to get the overflow
-> checks correct. Putting the *3 to the gamma_size (which can be fairly
-> big and migth come from dubios places) means we still have to deal
-> with overflow headaches. sizeof(uint16_t)*3 is trivial to see that
-> it's not overflowing.
->
-> I think your style guide here is exactly _not_ what we should do as
-> best practice for safe code.
-> -Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Nothing we can do about.
+ 
+> - Difference between time returned by hrtimer_update_base() and clockevt
+>   device's notion of time: Wanted to discuss this here..
+
+The clock event device and the clock source can run at different
+frequencies. So the conversion from nsec to event ticks can cause
+slight errors which are only observable when the delta gets larger.
+
+The clock event device conversion from nsecs to timer ticks is
+calculated at setup time once. It's known to be not completely
+precise.
+
+The clock source conversion which we use for reading time can be
+changed by recalibration (we do that for TSC) and by NTP adjustments.
+
+So even if we would calibrate the clock event device better, then we
+still would need to take the NTP adjustments into account. And given
+the zoo of timers we have, certainly not a trivial exercise.
+
+Need to think about a bit more.
+
+Thanks,
+
+	tglx
 
 
 
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
