@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743AbaLJDMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 22:12:13 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:15890 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752651AbaLJDML (ORCPT
+	id S1754314AbaLJDOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 22:14:06 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:57688 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261AbaLJDOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 22:12:11 -0500
-Date: Tue, 9 Dec 2014 19:11:02 -0800
-From: Calvin Owens <calvinowens@fb.com>
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@fb.com" <kernel-team@fb.com>
-Subject: Re: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt
- storms.
-Message-ID: <20141210031102.GB1437888@mail.thefacebook.com>
-References: <1417746575-23299-1-git-send-email-calvinowens@fb.com>
- <20141209180835.GF3990@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329640BC@ORSMSX114.amr.corp.intel.com>
+	Tue, 9 Dec 2014 22:14:04 -0500
+Message-ID: <5487BA75.4010604@roeck-us.net>
+Date: Tue, 09 Dec 2014 19:13:57 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F329640BC@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-10_01:2014-12-09,2014-12-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=26.7046773694174
- compositescore=0.928862112264561 urlsuspect_oldscore=0.928862112264561
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.928862112264561 spamscore=0
- recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412100031
-X-FB-Internal: deliver
+To: rkuo <rkuo@codeaurora.org>
+CC: linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kevin Cernekee <cernekee@gmail.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH] hexagon: Fix build failures in linux-next
+References: <1418163705-1816-1-git-send-email-linux@roeck-us.net> <20141210002523.GA17946@codeaurora.org>
+In-Reply-To: <20141210002523.GA17946@codeaurora.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A010204.5487BA7A.031E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12/09 at 23:00 +0000, Luck, Tony wrote:
-> > Right, so this polling thing once again proves its fragility to me - we
-> > have had problems with it in the past so maybe we should think about
-> > replacing it with something simpler and and much more robust instead of
-> > this flaky dynamically adjustable polling thing.
-> 
-> Dynamic intervals for polling make sense for cpus that don't support
-> CMCI.  We need to check occasionally to see if there are any corrected errors,
-> but we don't want to waste a lot of cpu time doing that too often. There are
-> almost never any errors to be found. So begin polling at 5 minute intervals
-> (eternity on a multi-GHz cpu). If we do find an error, then look more frequently,
-> because there are several cases where a single error source might generate
-> multiple errors (e.g. stuck bit).
-> 
-> But then we came along an co-opted this mechanism  for CMCI storm
-> control.  And you are right that we made things needlessly complex
-> by using the same variable rate mechanism.  If we had a storm, we know
-> we are having a high rate of errors (15 in one second) ... so we just want
-> to poll at a high-ish rate to collect a good sample of subsequent errors.
-> Also to detect when the storm ends in a timely manner. So we don't
-> gain much by tweaking the poll rate, and we have complex code.
-> 
-> > So I'm thinking of leaving the detection code as it is, when we detect
-> > a storm on a CPU, we set CMCI_STORM_ACTIVE and start a kernel thread at
-> > max freq HZ/100 and polling the MCA banks. No adjustable frequency, no
-> > timers, no nothing. A stupid per-cpu thread which polls.
-> 
-> Go for it.
+On 12/09/2014 04:25 PM, rkuo wrote:
+> On Tue, Dec 09, 2014 at 02:21:45PM -0800, Guenter Roeck wrote:
+>> hexagon:defconfig fails to build in linux-next since commit 332fd7c4fef5
+>> ("genirq: Generic chip: Change irq_reg_{readl,writel} arguments").
+>>
+>> The primary build failure is
+>>
+>> arch/hexagon/include/asm/cacheflush.h: In function 'copy_to_user_page':
+>> arch/hexagon/include/asm/cacheflush.h:89:22: error: 'VM_EXEC' undeclared
+>>
+>> This is the result of including of <linux/io.h> from <linux/irq.h>,
+>> which is now necessary due to the use of readl and writel from irq.h.
+>> This causes recursive inclusions in hexagon code; cacheflush.h is included
+>> from mm.h prior to the definition of VM_EXEC.
+>>
+>> Fix the problem by moving copy_to_user_page from the hexagon include file to
+>> arch/hexagon/mm/cache.c, similar to other architectures. After this change,
+>> several redefinitions of readl and writel are reported. Those are caused
+>> by recursive inclusions of io.h and asm/cacheflush.h. Fix those problems by
+>> reducing the number of files included from those files. Also, it was necessary
+>> to stop including asm-generic/cacheflush.h from asm/cacheflush.h. Instead,
+>> functionality originally provided by asm-generic/cacheflush.h is now coded
+>> in asm/cacheflush.h directly.
+>>
+>> Cc: Kevin Cernekee <cernekee@gmail.com>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+>> ---
+>> Compile tested only. Applies to linux-next as well as mainline.
+>>
+>>   arch/hexagon/include/asm/cacheflush.h | 36 ++++++++++++++++++-----------------
+>>   arch/hexagon/include/asm/io.h         |  5 -----
+>>   arch/hexagon/kernel/setup.c           |  1 +
+>>   arch/hexagon/mm/cache.c               | 10 ++++++++++
+>>   arch/hexagon/mm/ioremap.c             |  1 +
+>>   5 files changed, 31 insertions(+), 22 deletions(-)
+>>
+>
+> Thanks for the cleanup; tested working on hardware.
+>
+> I'm fine taking this into my tree, or it can go via another tree if more
+> expedient.
+>
+Hi Richard,
 
-Just to make sure I understand what you're looking for:
-
-When MCE is initialized, spawn a kthread for each CPU instead of the
-current timers. If CMCI is supported, we just leave this thread parked,
-and only process errors from the CMCI interrupt handler.
-
-When a CMCI storm happens, we disable CMCI interrupts and kick the
-kthread, which polls every HZ/100 until the storm has subsided, at which
-point it re-enables CMCI interrupts and parks itself.
-
-If CMCI isn't supported though, how is the polling done? You said the
-dynamic interval is desirable, wouldn't that need to be in the kthread?
-Having both the kthread and the timer around seems ugly, even if only
-one is used on a given machine.
+Your tree should be fine as long as you plan to push your changes to Linus
+during the current release cycle.
 
 Thanks,
-Calvin
+Guenter
+
