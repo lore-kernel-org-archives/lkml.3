@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977AbaLJNyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:54:49 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:55025 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756046AbaLJNyf (ORCPT
+	id S1756348AbaLJNye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:54:34 -0500
+Received: from andre.telenet-ops.be ([195.130.132.53]:33138 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999AbaLJNyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 08:54:35 -0500
+	Wed, 10 Dec 2014 08:54:33 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH trivial 3/3] netfilter: ebtables: s/stongly inspired on/strongly inspired by/
-Date: Wed, 10 Dec 2014 14:54:30 +0100
-Message-Id: <1418219670-18283-3-git-send-email-geert+renesas@glider.be>
+        Stephen Warren <swarren@nvidia.com>, Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH trivial 1/3] ARM: dt: GIC: Spelling s/specific/specifier/, s/flaggs/flags/
+Date: Wed, 10 Dec 2014 14:54:28 +0100
+Message-Id: <1418219670-18283-1-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418219670-18283-1-git-send-email-geert+renesas@glider.be>
-References: <1418219670-18283-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: David S. Miller <davem@davemloft.net>
+Cc: Stephen Warren <swarren@nvidia.com>
+Cc: Rob Herring <robh+dt@kernel.org>
 ---
- include/linux/netfilter_bridge/ebtables.h      | 2 +-
- include/uapi/linux/netfilter_bridge/ebtables.h | 2 +-
- net/bridge/netfilter/ebtables.c                | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ include/dt-bindings/interrupt-controller/arm-gic.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/netfilter_bridge/ebtables.h b/include/linux/netfilter_bridge/ebtables.h
-index 34e7a2b7f8677f9f..9ac6f263956b4ea2 100644
---- a/include/linux/netfilter_bridge/ebtables.h
-+++ b/include/linux/netfilter_bridge/ebtables.h
-@@ -6,7 +6,7 @@
-  *
-  *  ebtables.c,v 2.0, April, 2002
-  *
-- *  This code is stongly inspired on the iptables code which is
-+ *  This code is strongly inspired by the iptables code which is
-  *  Copyright (C) 1999 Paul `Rusty' Russell & Michael J. Neuling
-  */
- #ifndef __LINUX_BRIDGE_EFF_H
-diff --git a/include/uapi/linux/netfilter_bridge/ebtables.h b/include/uapi/linux/netfilter_bridge/ebtables.h
-index ba993360dbe908cf..ab46c805c455741f 100644
---- a/include/uapi/linux/netfilter_bridge/ebtables.h
-+++ b/include/uapi/linux/netfilter_bridge/ebtables.h
-@@ -6,7 +6,7 @@
-  *
-  *  ebtables.c,v 2.0, April, 2002
-  *
-- *  This code is stongly inspired on the iptables code which is
-+ *  This code is strongly inspired by the iptables code which is
-  *  Copyright (C) 1999 Paul `Rusty' Russell & Michael J. Neuling
-  */
+diff --git a/include/dt-bindings/interrupt-controller/arm-gic.h b/include/dt-bindings/interrupt-controller/arm-gic.h
+index 1ea1b702fec2c49f..d4110d5caa3efde4 100644
+--- a/include/dt-bindings/interrupt-controller/arm-gic.h
++++ b/include/dt-bindings/interrupt-controller/arm-gic.h
+@@ -7,14 +7,14 @@
  
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index d9a8c05d995d1446..54df89edcf204e25 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -6,7 +6,7 @@
-  *
-  *  ebtables.c,v 2.0, July, 2002
-  *
-- *  This code is stongly inspired on the iptables code which is
-+ *  This code is strongly inspired by the iptables code which is
-  *  Copyright (C) 1999 Paul `Rusty' Russell & Michael J. Neuling
-  *
-  *  This program is free software; you can redistribute it and/or
+ #include <dt-bindings/interrupt-controller/irq.h>
+ 
+-/* interrupt specific cell 0 */
++/* interrupt specifier cell 0 */
+ 
+ #define GIC_SPI 0
+ #define GIC_PPI 1
+ 
+ /*
+  * Interrupt specifier cell 2.
+- * The flaggs in irq.h are valid, plus those below.
++ * The flags in irq.h are valid, plus those below.
+  */
+ #define GIC_CPU_MASK_RAW(x) ((x) << 8)
+ #define GIC_CPU_MASK_SIMPLE(num) GIC_CPU_MASK_RAW((1 << (num)) - 1)
 -- 
 1.9.1
 
