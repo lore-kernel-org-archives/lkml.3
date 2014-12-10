@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202AbaLJPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:49:25 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:56612 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056AbaLJPtQ (ORCPT
+	id S932135AbaLJPtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:49:22 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:8784 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758049AbaLJPtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Dec 2014 10:49:16 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-e4-54886b7bbece
+X-AuditID: cbfec7f4-b7f126d000001e9a-d6-54886b79631f
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -29,191 +29,145 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         boris.brezillon@free-electrons.com
-Subject: [RFC 12/15] drm/exynos/dpi: use common of_graph functions
-Date: Wed, 10 Dec 2014 16:48:30 +0100
-Message-id: <1418226513-14105-13-git-send-email-a.hajda@samsung.com>
+Subject: [RFC 11/15] drm/exynos/dsi: convert to restrack API
+Date: Wed, 10 Dec 2014 16:48:29 +0100
+Message-id: <1418226513-14105-12-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
 References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xy7rV2R0hBhd+cVjcWneO1eLAi4Us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xy7qV2R0hBhNWyVncWneO1eLAi4Us
 	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
 	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
 	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
-	pKTmZJalFunbJXBlXOy/wlpwRa7iyM71zA2M7yW6GDk4JARMJFYc5+ti5AQyxSQu3FvP1sXI
-	xSEksJRR4uTcbUwQTh+TRFf7OUaQKjYBTYm/m2+ygdgiAjoS13u6mUGKmAU2sEusm74PLCEs
-	4CSx9l4/mM0ioCqx4vYSFhCbV8BFovPcPzaIdXISJ49NZgWxOYHif5/vBVsgJOAssWTbe9YJ
-	jLwLGBlWMYqmliYXFCel5xrqFSfmFpfmpesl5+duYoTExpcdjIuPWR1iFOBgVOLhNVdsDRFi
-	TSwrrsw9xCjBwawkwrswuSNEiDclsbIqtSg/vqg0J7X4ECMTB6dUA2NTxw6FHN1jLftZFl0w
-	2R7t8vrbBNUCpcSvE2YuPPn4/+asqdNv3zG+LyQZHdrZLFjCPv/NRuF5e1X+vs/XLrj1fFO9
-	yf1IoeqpbjrXAwScz9l2PVOz2G2sa6LfYnfBSunQgxW1lXY+jDdsDT49vHRn5on4h+V/u9fY
-	PttSuPPd3EtTPv0LOX5NiaU4I9FQi7moOBEA9p5gY2sCAAA=
+	pKTmZJalFunbJXBlzPowi6VgvWzFhW2n2RoYj0p0MXJySAiYSBw6d4oRwhaTuHBvPVsXIxeH
+	kMBSRolJZ9dAOX1MEi1Hb7OBVLEJaEr83XwTzBYR0JG43tPNDFLELLCBXWLd9H1gCWEBG4l9
+	Wz6AjWURUJV4v+gAK4jNK+Ai8eR9MzvEOjmJk8cmg8U5geJ/n+8FqxcScJZYsu096wRG3gWM
+	DKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQqLjyw7GxcesDjEKcDAq8fCaK7aGCLEmlhVX
+	5h5ilOBgVhLhXZjcESLEm5JYWZValB9fVJqTWnyIkYmDU6qB0S3x5iJLt3LRX1Pl/+XyxcU5
+	r9k476UoR9nz7TKWbz0+FX7fuimc/aat8Cy3p33aV9jEd99J+f++Z65BT2rqts/reHvOfVg6
+	Vfnl9V/90qx/PD7F3lH6YRorlRvObPf7UbW393elZtdJO0TTbkQ4ZjSerBCcr/pya5tMEqNI
+	sIf3j1uCiwwClFiKMxINtZiLihMBSFUEimwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch removes private of_graph functions and uses common ones.
+Convert exynos_dsi driver to use restrack API.
+As a result driver have following advantages:
+- correctly handles removal of resources,
+- do not need to defer probing, so as a result the whole drm system
+  initialization will not be postponed to late initcall, unless other
+  components delays it,
+- simplified initialization.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_dpi.c | 117 +++++++-------------------------
- 1 file changed, 24 insertions(+), 93 deletions(-)
+ drivers/gpu/drm/exynos/exynos_drm_dsi.c | 52 +++++++++++++--------------------
+ 1 file changed, 21 insertions(+), 31 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dpi.c b/drivers/gpu/drm/exynos/exynos_drm_dpi.c
-index 37678cf..91a29e1 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dpi.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dpi.c
-@@ -14,6 +14,7 @@
- #include <drm/drm_crtc_helper.h>
- #include <drm/drm_panel.h>
- 
-+#include <linux/of_graph.h>
+diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+index 8201d79..53ac467 100644
+--- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
++++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
+@@ -23,7 +23,7 @@
+ #include <linux/phy/phy.h>
  #include <linux/regulator/consumer.h>
+ #include <linux/component.h>
+-
++#include <linux/restrack.h>
+ #include <video/mipi_display.h>
+ #include <video/videomode.h>
  
- #include <video/of_videomode.h>
-@@ -21,6 +22,15 @@
- 
- #include "exynos_drm_drv.h"
- 
-+/* possible of_graph port nodes used by device */
-+enum {
-+	FIMD_PORT_IN0,
-+	FIMD_PORT_IN1,
-+	FIMD_PORT_IN2,
-+	FIMD_PORT_RGB,
-+	FIMD_PORT_WRB,
-+};
-+
- struct exynos_dpi {
- 	struct exynos_drm_display display;
- 	struct device *dev;
-@@ -171,102 +181,12 @@ static struct exynos_drm_display_ops exynos_dpi_display_ops = {
- 	.dpms = exynos_dpi_dpms
+@@ -1690,9 +1690,18 @@ static const struct component_ops exynos_dsi_component_ops = {
+ 	.unbind	= exynos_dsi_unbind,
  };
  
--/* of_* functions will be removed after merge of of_graph patches */
--static struct device_node *
--of_get_child_by_name_reg(struct device_node *parent, const char *name, u32 reg)
--{
--	struct device_node *np;
--
--	for_each_child_of_node(parent, np) {
--		u32 r;
--
--		if (!np->name || of_node_cmp(np->name, name))
--			continue;
--
--		if (of_property_read_u32(np, "reg", &r) < 0)
--			r = 0;
--
--		if (reg == r)
--			break;
--	}
--
--	return np;
--}
--
--static struct device_node *of_graph_get_port_by_reg(struct device_node *parent,
--						    u32 reg)
--{
--	struct device_node *ports, *port;
--
--	ports = of_get_child_by_name(parent, "ports");
--	if (ports)
--		parent = ports;
--
--	port = of_get_child_by_name_reg(parent, "port", reg);
--
--	of_node_put(ports);
--
--	return port;
--}
--
--static struct device_node *
--of_graph_get_endpoint_by_reg(struct device_node *port, u32 reg)
--{
--	return of_get_child_by_name_reg(port, "endpoint", reg);
--}
--
--static struct device_node *
--of_graph_get_remote_port_parent(const struct device_node *node)
--{
--	struct device_node *np;
--	unsigned int depth;
--
--	np = of_parse_phandle(node, "remote-endpoint", 0);
--
--	/* Walk 3 levels up only if there is 'ports' node. */
--	for (depth = 3; depth && np; depth--) {
--		np = of_get_next_parent(np);
--		if (depth == 2 && of_node_cmp(np->name, "ports"))
--			break;
--	}
--	return np;
--}
--
--enum {
--	FIMD_PORT_IN0,
--	FIMD_PORT_IN1,
--	FIMD_PORT_IN2,
--	FIMD_PORT_RGB,
--	FIMD_PORT_WRB,
--};
--
--static struct device_node *exynos_dpi_of_find_panel_node(struct device *dev)
--{
--	struct device_node *np, *ep;
--
--	np = of_graph_get_port_by_reg(dev->of_node, FIMD_PORT_RGB);
--	if (!np)
--		return NULL;
--
--	ep = of_graph_get_endpoint_by_reg(np, 0);
--	of_node_put(np);
--	if (!ep)
--		return NULL;
--
--	np = of_graph_get_remote_port_parent(ep);
--	of_node_put(ep);
--
--	return np;
--}
--
- static int exynos_dpi_parse_dt(struct exynos_dpi *ctx)
++void exynos_dsi_restrack_cb(struct device *dev, int ret)
++{
++	if (ret)
++		component_del(dev, &exynos_dsi_component_ops);
++	else
++		component_add(dev, &exynos_dsi_component_ops);
++}
++
+ static int exynos_dsi_probe(struct platform_device *pdev)
  {
- 	struct device *dev = ctx->dev;
- 	struct device_node *dn = dev->of_node;
- 	struct device_node *np;
+ 	struct device *dev = &pdev->dev;
++	struct restrack_ctx *rtrack;
+ 	struct resource *res;
+ 	struct exynos_dsi *dsi;
+ 	int ret;
+@@ -1728,26 +1737,6 @@ static int exynos_dsi_probe(struct platform_device *pdev)
  
--	ctx->panel_node = exynos_dpi_of_find_panel_node(dev);
+ 	dsi->supplies[0].supply = "vddcore";
+ 	dsi->supplies[1].supply = "vddio";
+-	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(dsi->supplies),
+-				      dsi->supplies);
+-	if (ret) {
+-		dev_info(dev, "failed to get regulators: %d\n", ret);
+-		return -EPROBE_DEFER;
+-	}
 -
- 	np = of_get_child_by_name(dn, "display-timings");
- 	if (np) {
- 		struct videomode *vm;
-@@ -289,10 +209,21 @@ static int exynos_dpi_parse_dt(struct exynos_dpi *ctx)
- 		return 0;
+-	dsi->pll_clk = devm_clk_get(dev, "pll_clk");
+-	if (IS_ERR(dsi->pll_clk)) {
+-		dev_info(dev, "failed to get dsi pll input clock\n");
+-		ret = PTR_ERR(dsi->pll_clk);
+-		goto err_del_component;
+-	}
+-
+-	dsi->bus_clk = devm_clk_get(dev, "bus_clk");
+-	if (IS_ERR(dsi->bus_clk)) {
+-		dev_info(dev, "failed to get dsi bus clock\n");
+-		ret = PTR_ERR(dsi->bus_clk);
+-		goto err_del_component;
+-	}
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	dsi->reg_base = devm_ioremap_resource(dev, res);
+@@ -1757,13 +1746,6 @@ static int exynos_dsi_probe(struct platform_device *pdev)
+ 		goto err_del_component;
  	}
  
--	if (!ctx->panel_node)
--		return -EINVAL;
-+	np = NULL;
-+	while ((np = of_graph_get_next_endpoint(dev->of_node, np))) {
-+		struct of_endpoint ep;
+-	dsi->phy = devm_phy_get(dev, "dsim");
+-	if (IS_ERR(dsi->phy)) {
+-		dev_info(dev, "failed to get dsim phy\n");
+-		ret = PTR_ERR(dsi->phy);
+-		goto err_del_component;
+-	}
+-
+ 	dsi->irq = platform_get_irq(pdev, 0);
+ 	if (dsi->irq < 0) {
+ 		dev_err(dev, "failed to request dsi irq resource\n");
+@@ -1782,11 +1764,20 @@ static int exynos_dsi_probe(struct platform_device *pdev)
  
--	return 0;
-+		of_graph_parse_endpoint(np, &ep);
-+		if (ep.port != FIMD_PORT_RGB)
-+			continue;
-+
-+		ctx->panel_node = of_graph_get_remote_port_parent(np);
-+		of_node_put(np);
-+
-+		return ctx->panel_node ? 0 : -EINVAL;
-+	}
-+
-+	return -EINVAL;
- }
+ 	platform_set_drvdata(pdev, &dsi->display);
  
- struct exynos_drm_display *exynos_dpi_probe(struct device *dev)
+-	ret = component_add(dev, &exynos_dsi_component_ops);
++	rtrack = devm_restrack_register(dsi->dev, exynos_dsi_restrack_cb,
++		regulator_bulk_restrack_desc(&dsi->supplies[0]),
++		regulator_bulk_restrack_desc(&dsi->supplies[1]),
++		clk_restrack_desc(&dsi->pll_clk, "pll_clk"),
++		clk_restrack_desc(&dsi->bus_clk, "bus_clk"),
++		phy_restrack_desc(&dsi->phy, "dsim"),
++	);
++
++	ret = PTR_ERR_OR_ZERO(rtrack);
++
+ 	if (ret)
+ 		goto err_del_component;
+ 
+-	return ret;
++	return 0;
+ 
+ err_del_component:
+ 	exynos_drm_component_del(dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
+@@ -1795,7 +1786,6 @@ err_del_component:
+ 
+ static int exynos_dsi_remove(struct platform_device *pdev)
+ {
+-	component_del(&pdev->dev, &exynos_dsi_component_ops);
+ 	exynos_drm_component_del(&pdev->dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
+ 
+ 	return 0;
 -- 
 1.9.1
 
