@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281AbaLJXGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:06:55 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:50611 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758226AbaLJXGw (ORCPT
+	id S1758261AbaLJXGx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:06:53 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:46562 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744AbaLJXGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:06:52 -0500
+	Wed, 10 Dec 2014 18:06:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141210225627.GA11754@devbig257.prn2.facebook.com>
-References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
- <862cbb2ab71a9f71d1123b5512605350a4b61846.1418006970.git.shli@fb.com>
- <CALCETrUU-vb34550mbE-yqoWYrzVNarVf++Logt0gmSTh_Cg2w@mail.gmail.com>
- <20141210215713.GA30230@devbig257.prn2.facebook.com> <CALCETrUi--fmZLBUB=tjmGt_D3y+HJ+MtJTRZ0=JUKFgAvxyuA@mail.gmail.com>
- <20141210225627.GA11754@devbig257.prn2.facebook.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 10 Dec 2014 15:06:30 -0800
-Message-ID: <CALCETrXpVUVY6paKJq0Uq8VeHG2A0E3qc4b_H+5ZT-QJApkaJw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] X86: Add a thread cpu time implementation to vDSO
-To: Shaohua Li <shli@fb.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <5488C478.9000209@canonical.com>
+References: <5488C478.9000209@canonical.com>
+Date: Wed, 10 Dec 2014 15:06:50 -0800
+Message-ID: <CAPK7rjejMdQ45sVS-ebnqmeYWz3vqaYVXxTdVwUzhByB+nbsLA@mail.gmail.com>
+Subject: Re: [v3.16][v3.17][v3.18][ Regression] scsi: handle flush errors properly
+From: Steven Haber <steven@qumulo.com>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: JBottomley@parallels.com,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 2:56 PM, Shaohua Li <shli@fb.com> wrote:
-> On Wed, Dec 10, 2014 at 02:13:23PM -0800, Andy Lutomirski wrote:
->> On Wed, Dec 10, 2014 at 1:57 PM, Shaohua Li <shli@fb.com> wrote:
->> > On Wed, Dec 10, 2014 at 11:10:52AM -0800, Andy Lutomirski wrote:
->> >> On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
->> >> > This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..). We
->> >> > use the following method to compute the thread cpu time:
->> >>
->> >> I like the idea, and I like making this type of profiling fast.  I
->> >> don't love the implementation because it's an information leak (maybe
->> >> we don't care) and it's ugly.
->> >>
->> >> The info leak could be fixed completely by having a per-process array
->> >> instead of a global array.  That's currently tricky without wasting
->> >> memory, but it could be created on demand if we wanted to do that,
->> >> once my vvar .fault patches go in (assuming they do -- I need to ping
->> >> the linux-mm people).
->> >
->> > those info leak really doesn't matter.
->>
->> Why not?
+Hey Joe,
+
+Here's some context:
+
+The SCSI flush command was being treated by a zero-byte write, which
+means that if an error was returned, you wouldn't catch it until a
+subsequent write (or flush). The way writes work is that all possible
+bytes are written, and if something bad happens, an error bubbles out
+on the next write attempt. This holds true even for a zero-byte write.
+This means that before this bug, to guarantee durability you had to
+flush twice (and verify both were error-free). I'm working on a
+storage appliance that relies on the fact that a single flush command
+guarantees a write made durably to a SCSI device. I'm sure many other
+storage products rely on this behavior, too. The patch James shipped
+fixes this bug by special-casing the flush error path. Before flush
+wouldn't return errors; now it does.
+
+I'm not sure why certain USB drives are failing in the flush path on
+unmount. Since the flush bug existed for such a long time, I suspect
+certain drivers coded around this behavior, and now that it is correct
+we are seeing new bugs exposed.
+
+Based on the simplicity and obviousness of our patch for the flush
+bug, it would really be ideal to diagnose this further rather than
+reverting.
+
+Steven Haber
+Qumulo, Inc.
+
+On Wed, Dec 10, 2014 at 2:08 PM, Joseph Salisbury
+<joseph.salisbury@canonical.com> wrote:
+> Hello James,
 >
-> Ofcourse I can't make sure completely, but how could this info be used
-> as attack?
-
-It may leak interesting timing info, even from cpus that are outside
-your affinity mask / cpuset.  I don't know how much anyone actually
-cares.
-
+> A kernel bug report was opened against Ubuntu [0].  After a kernel
+> bisect, it was found that reverting the following commit resolved this bug:
 >
->> > But we need the global array
->> > anyway. The context switch detection should be per-cpu data and should
->> > be able to access in remote cpus.
->>
->> Right, but the whole array could be per process instead of global.
->>
->> I'm not saying I'm sure that would be better, but I think it's worth
->> considering.
+> commit 89fb4cd1f717a871ef79fa7debbe840e3225cd54
+> Author: James Bottomley <JBottomley@Parallels.com>
+> Date:   Thu Jul 3 19:17:34 2014 +0200
 >
-> right, it's possible to be per process. As you said, this will waster a
-> lot of memory. and you can't even do on-demand, as the context switch
-> path will write the count to the per-process/per-thread vvar. Or you can
-> maintain the count in kernel and let the .fault copy the count to vvar
-> page (if the vvar page is absent). But this still wastes memory if
-> applications use the vdso. I'm wondering how you handle page fault in
-> context switch too if you don't pin the vdso pages.
+>     scsi: handle flush errors properly
 >
-
-You need to pin them, but at least you don't need to create them at
-all until they're needed the first time.
-
-The totally per-thread approach has all kinds of nice properties,
-including allowing the whole thing to work without a loop, at least on
-64-bit machines (if you detect that you had a context switch, just
-return the most recent sum_exec_runtime).
-
-Anyway, there's no need to achieve perfection here -- we can always
-reimplement this if whatever implementation happens first turns out to
-be problematic.
-
---Andy
-
+> The regression was introduced as of v3.16 and still exits in the 3.18
+> kernel.  It has also made it's way into the stable kernels.
+>
+> I was hoping to get your feedback, since you are the patch author.  Do
+> you think gathering any additional data will help diagnose this issue,
+> or would it be best to submit a revert request?
+>
+>
 > Thanks,
-> Shaohua
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+>
+> Joe
+>
+> [0] http://pad.lv/1366538
+>
