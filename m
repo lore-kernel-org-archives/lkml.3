@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbaLJRDU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:03:20 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:65219 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932247AbaLJRDS (ORCPT
+	id S932485AbaLJREK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:04:10 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:48878 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932247AbaLJREI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:03:18 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Pavel Machek <pavel@ucw.cz>, pali.rohar@gmail.com, sre@debian.org,
-        sre@ring0.de, kernel list <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        devicetree@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org
-Subject: Re: BCM2048 bluetooth connected over OMAP serial
-Date: Wed, 10 Dec 2014 18:02:42 +0100
-Message-ID: <11367725.nphhSzdtpK@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141210164333.GA3154@amd>
-References: <20141210164333.GA3154@amd>
+	Wed, 10 Dec 2014 12:04:08 -0500
+Message-ID: <54887CF7.70708@gmail.com>
+Date: Wed, 10 Dec 2014 09:03:51 -0800
+From: John Fastabend <john.fastabend@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:7ZJoSFV2ZFq8ODKPWmtIGcw6lSaKn0hYusekHbfTlVag89xfw3H
- y/DS4cCgA83UCbYxrLyvjNvHJci0i3oGLo3D6eWj7vPu/1YL7pSB9Q4TssxZOX4I45Z1lbx
- Lz/7oK0ebnCkjQNE83Y0Tcqy1crBMr2jQ2ATrk/8ZpDc+UTpDPYXwBd2R/czQK4yK2Ac85P
- R+OocaiG3/bB3y61sbYzg==
-X-UI-Out-Filterresults: notjunk:1;
+To: Jiri Pirko <jiri@resnulli.us>
+CC: "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion>
+In-Reply-To: <20141210165018.GG1863@nanopsycho.orion>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 December 2014 17:43:33 Pavel Machek wrote:
-> 
-> So, there's bluetooth chip that's connected to the SoC by UART and some
-> GPIOs. What would be right representation in the device tree?
-> Something like this?
-> 
->         bluetooth {
->                   compatible = "broadcom,bcm2048";
->                   uart = <&uart2>;
->                   reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
->                   host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
->                   bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
->                   chip-type = >;
->                   bt-sysclk = <2>;
->                   reset-gpio-shared = <0>;
->         };
-> 
-> Is there some way to prevent OMAP tty driver from binding to the
-> device and exporting the device to userspace?
+On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+>> From: Marco Varlese <marco.varlese@intel.com>
+>>
+>> Switch hardware offers a list of attributes that are configurable
+>> on a per port basis.
+>> This patch provides a mechanism to configure switch ports by adding
+>> an NDO for setting specific values to specific attributes.
+>> There will be a separate patch that extends iproute2 to call the
+>> new NDO.
+>
+>
+> What are these attributes? Can you give some examples. I'm asking
+> because there is a plan to pass generic attributes to switch ports
+> replacing current specific ndo_switch_port_stp_update. In this case,
+> bridge is setting that attribute.
+>
+> Is there need to set something directly from userspace or does it make
+> rather sense to use involved bridge/ovs/bond ? I think that both will be
+> needed.
 
-I think from the driver perspective, you want this to be a tty line
-discipline rather than a driver that attaches to the physical
-uart.
++1
 
-For the DT representation, I fear we haven't got a precedent. A uart
-phandle sounds reasonable, but there might be other ways to do it
-and we should consider if there are better alternatives. It could
-possibly be a child node of the uart, but that would require other
-infrastructure in the kernel because we don't currently create
-devices for those.
+I think for many attributes it would be best to have both. The in
+kernel callers and netlink userspace can use the same driver ndo_ops.
 
-	Arnd
+But then we don't _require_ any specific bridge/ovs/etc module. And we
+may have some attributes that are not specific to any existing software
+module. I'm guessing Marco has some examples of these.
+
+[...]
+
+
+-- 
+John Fastabend         Intel Corporation
