@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440AbaLJOUH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:20:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52046 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831AbaLJOUG (ORCPT
+	id S1757230AbaLJOV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:21:26 -0500
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:65095 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831AbaLJOVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:20:06 -0500
-Date: Wed, 10 Dec 2014 09:20:03 -0500
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anjana Sasindran <anjanasasindran123@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: rts5208: Removed the new typedefs
-Message-ID: <20141210142003.GA15524@kroah.com>
-References: <1418219656-2964-1-git-send-email-anjanasasindran123@gmail.com>
+	Wed, 10 Dec 2014 09:21:25 -0500
+Message-ID: <548856D7.2070706@mvista.com>
+Date: Wed, 10 Dec 2014 08:21:11 -0600
+From: Corey Minyard <cminyard@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418219656-2964-1-git-send-email-anjanasasindran123@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Rex <tony.rex@ericsson.com>,
+        Magnus Johansson E <magnus.e.johansson@ericsson.com>,
+        =?UTF-8?B?UGVyIEZvZ2Vsc3Ryw7Zt?= <per.fogelstrom@ericsson.com>,
+        Jeremy Kerr <jk@ozlabs.org>, Sanjeev <singhsan@codeaurora.org>,
+        Thomas Renninger <trenn@suse.de>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: Re: [GIT PULL] ipmi driver updates
+References: <54873864.3050606@mvista.com> <1418208784.9279.11.camel@ellerman.id.au>
+In-Reply-To: <1418208784.9279.11.camel@ellerman.id.au>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 07:24:16PM +0530, Anjana Sasindran wrote:
-> This patch fix the checkpatch.pl warning:
-> 
-> WARNING: do not add new typedefs
-> 
-> Signed-off-by: Anjana Sasindran <anjanasasindran123@gmail.com>
-> ---
->  drivers/staging/rts5208/rtsx_sys.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/rts5208/rtsx_sys.h b/drivers/staging/rts5208/rtsx_sys.h
-> index 0b6b4d4..f04d997 100644
-> --- a/drivers/staging/rts5208/rtsx_sys.h
-> +++ b/drivers/staging/rts5208/rtsx_sys.h
-> @@ -28,7 +28,7 @@
->  #include "rtsx_chip.h"
->  #include "rtsx_card.h"
->  
-> -typedef dma_addr_t ULONG_PTR;
-> +dma_addr_t ULONG_PTR;
->  
->  static inline void rtsx_exclusive_enter_ss(struct rtsx_chip *chip)
->  {
+On 12/10/2014 04:53 AM, Michael Ellerman wrote:
+> Hi Corey,
+>
+> On Tue, 2014-12-09 at 11:59 -0600, Corey Minyard wrote:
+>> Jeremy Kerr (2):
+>>       powerpc/powernv: Add OPAL IPMI interface
+>>       drivers/char/ipmi: Add powernv IPMI driver
+> I created a topic branch for that powerpc patch, but it looks like you didn't
+> merge it?
 
-Please learn how the C language works before attempting to contribute to
-the Linux kernel.  You obviously didn't even test build this code, which
-means you are trying to waste my time, a very rude thing to do to
-someone else, don't you think?
+No, I missed that.  I've never had to do any serious merging with other
+changes, so I've never had to do this before.  I can fix it if Linus
+wants to wait.  Thanks for the heads up.
 
-*plonk*
+-corey
+
+>
+>   https://git.kernel.org/cgit/linux/kernel/git/mpe/linux.git/log/?h=topic/opal-ipmi
+>
+> The merge conflict between your tree and mine is not all that pretty, though
+> Linus should be able to work it out. I haven't sent my pull request yet though,
+> so he'll probably get it when he merges my tree.
+>
+> The patch in your tree does look correct, so that's OK, but maybe next time we
+> can both merge the topic branch.
+>
+> cheers
+>
+>
+
