@@ -1,140 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933215AbaLJWaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 17:30:30 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55772 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932782AbaLJWa2 (ORCPT
+	id S933258AbaLJWcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 17:32:14 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:36946 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932724AbaLJWcN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 17:30:28 -0500
-Date: Thu, 11 Dec 2014 09:30:12 +1100
-From: Gavin Shan <gwshan@linux.vnet.ibm.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Gavin Shan <gwshan@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Marek =?iso-8859-1?Q?Kord=EDk?= <kordikmarek@gmail.com>,
-        Alexey Voronkov <zermond@gmail.com>,
-        Wei Yang <weiyang@linux.vnet.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PCI: Clear all bridge res MEM_64 if host bridge has non
- mem64
-Message-ID: <20141210223012.GA11234@shangw>
-Reply-To: Gavin Shan <gwshan@linux.vnet.ibm.com>
-References: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
+	Wed, 10 Dec 2014 17:32:13 -0500
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418160871-5605-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121022-0029-0000-0000-00000367F50A
+Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+Subject: Re: [PATCH v2 00/16] nfsd/sunrpc: add support for a workqueue-based nfsd
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
+Date: Wed, 10 Dec 2014 14:31:55 -0800
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Neil Brown <neilb@suse.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <AF4C9367-72BD-46F2-BAB2-5C583B01C3F6@oracle.com>
+References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
+To: Jeff Layton <jlayton@primarydata.com>
+X-Mailer: Apple Mail (2.1878.6)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 01:34:31PM -0800, Yinghai Lu wrote:
->So we could use bridge 64bit mem pref for children mem pref instead of
->forcing them into bridge mem.
->
->Could help Marek's system as his system is using _CRS, and all mem res is under
->4G.
->
->Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
->Reported-by: Marek Kordik <kordikmarek@gmail.com>
->Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
->Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->
->---
-> drivers/pci/host-bridge.c |    7 +++++++
-> drivers/pci/pci.h         |    1 +
-> drivers/pci/probe.c       |    9 +++++++++
-> drivers/pci/setup-bus.c   |    3 +++
-> include/linux/pci.h       |    1 +
-> 5 files changed, 21 insertions(+)
->
->Index: linux-2.6/drivers/pci/host-bridge.c
->===================================================================
->--- linux-2.6.orig/drivers/pci/host-bridge.c
->+++ linux-2.6/drivers/pci/host-bridge.c
->@@ -31,6 +31,13 @@ void pci_set_host_bridge_release(struct
-> 	bridge->release_data = release_data;
-> }
->
->+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus)
->+{
->+	struct pci_host_bridge *bridge = find_pci_host_bridge(bus);
->+
->+	return bridge->has_mem64_res;
->+}
->+
-> void pcibios_resource_to_bus(struct pci_bus *bus, struct pci_bus_region *region,
-> 			     struct resource *res)
-> {
->Index: linux-2.6/drivers/pci/pci.h
->===================================================================
->--- linux-2.6.orig/drivers/pci/pci.h
->+++ linux-2.6/drivers/pci/pci.h
->@@ -196,6 +196,7 @@ enum pci_bar_type {
-> 	pci_bar_mem64,		/* A 64-bit memory BAR */
-> };
->
->+bool pcibios_host_bridge_has_mem64_res(struct pci_bus *bus);
-> bool pci_bus_read_dev_vendor_id(struct pci_bus *bus, int devfn, u32 *pl,
-> 				int crs_timeout);
-> int pci_setup_device(struct pci_dev *dev);
->Index: linux-2.6/drivers/pci/probe.c
->===================================================================
->--- linux-2.6.orig/drivers/pci/probe.c
->+++ linux-2.6/drivers/pci/probe.c
->@@ -1980,6 +1980,15 @@ struct pci_bus *pci_create_root_bus(stru
-> 		dev_info(&b->dev, "root bus resource %pR%s\n", res, bus_addr);
-> 	}
->
->+	list_for_each_entry(window, &bridge->windows, list) {
->+		res = window->res;
->+		if (resource_type(res) == IORESOURCE_MEM ||
->+		    res->end > 0xffffffff) {
+Hi Jeff-
 
-Should we replace "||" with "&&" ?
+On Dec 10, 2014, at 11:07 AM, Jeff Layton <jlayton@primarydata.com> wrote:
 
-Thanks,
-Gavin
+> This is the second revision of the workqueue-based nfsd. Changes from
+> the RFC version I posted earlier:
+> 
+> v2:
+> - found and fixed problem causing the delays between work. It was a bug
+>  in the design of the new code. I was queueing the svc_xprt's work to
+>  do everything and that necessarily serialized that work. This version
+>  adds a work_struct to the svc_rqst as well, and that's where the
+>  bulk of the work.
+> 
+> - no longer tries to use the thread count as a max_active setting for
+>  the workqueue. The workqueue max_active settings are left to the
+>  default. This means that /proc/fs/nfsd/threads is basically a binary
+>  switch that's either zero (not running) or non-zero (running). The
+>  actual value has no meaning.
+> 
+> - the handling of the fs_struct has been reworked. It's now allocated
+>  as part of the struct svc_rqst. Each svc_rqst has its own fs_struct
+>  now.
+> 
+> - CONFIG_SUNRPC_SVC_WORKQUEUE has been removed. Since the code must
+>  be enabled at runtime anyway, we don't need a switch to disable this
+>  code at build time.
+> 
+> - the new tracepoints have been reworked.
+> 
+> This new code is still a little slower (2-3%) than the older, thread
+> based code in my testing, though my hope is that it may perform better
+> than the older code on a NUMA machine. I don't have one at the moment
+> to verify that, however.
+> 
+> For background, here's an excerpt from the original posting:
+> 
+> This patchset is a little skunkworks project that I've been poking at
+> for the last few weeks. Currently nfsd uses a dedicated thread pool to
+> handle RPCs, but that requires maintaining a rather large swath of
+> "fiddly" code to handle the threads and transports.
+> 
+> This patchset represents an alternative approach, which makes nfsd use
+> workqueues to do its bidding rather than a dedicated thread pool. When a
+> transport needs to do work, we simply queue it to the workqueue in
+> softirq context and let it service the transport.
+> 
+> Performance:
+> ------------
+> As far as numbers go, I ran a modified version of the fio
+> tiobench-example.fio test that just reduces the file size to 128M:
+> 
+> threads:
+> ----------------------------------------------------------------------
+> Run status group 0 (all jobs):
+>  WRITE: io=13740KB, aggrb=228KB/s, minb=57KB/s, maxb=57KB/s,
+> mint=60034msec, maxt=60049msec
+> 
+> Run status group 1 (all jobs):
+>  WRITE: io=14652KB, aggrb=244KB/s, minb=60KB/s, maxb=61KB/s,
+> mint=60002msec, maxt=60028msec
+> 
+> Run status group 2 (all jobs):
+>   READ: io=524288KB, aggrb=49639KB/s, minb=12409KB/s, maxb=12433KB/s,
+> mint=10542msec, maxt=10562msec
+> 
+> Run status group 3 (all jobs):
+>   READ: io=524288KB, aggrb=50670KB/s, minb=12667KB/s, maxb=12687KB/s,
+> mint=10331msec, maxt=10347msec
+> 
+> workqueue:
+> ----------------------------------------------------------------------
+> Run status group 0 (all jobs):
+>  WRITE: io=13632KB, aggrb=226KB/s, minb=56KB/s, maxb=56KB/s,
+> mint=60010msec, maxt=60061msec
+> 
+> Run status group 1 (all jobs):
+>  WRITE: io=14328KB, aggrb=238KB/s, minb=59KB/s, maxb=59KB/s,
+> mint=60023msec, maxt=60033msec
+> 
+> Run status group 2 (all jobs):
+>   READ: io=524288KB, aggrb=47779KB/s, minb=11944KB/s, maxb=11955KB/s,
+> mint=10963msec, maxt=10973msec
+> 
+> Run status group 3 (all jobs):
+>   READ: io=524288KB, aggrb=48379KB/s, minb=12094KB/s, maxb=12114KB/s,
+> mint=10819msec, maxt=10837msec
+> 
+> ...a small performance decrease using workqueues (about 5% in the worst
+> case). It varies a little between runs but the results over several runs
+> are fairly consistent in showing a small perf decrease.
+> 
+> In an attempt to ascertain where that comes from, I added some
+> tracepoints and wrote a perl script to scrape the results and figure out
+> where the latency comes from. The numbers here are from the ones that
+> produced the above results:
+> 
+> [jlayton@palma nfsd-wq]$ ./analyze.pl < threads.txt 
+> -------------------------------------------------------------
+> rpcs=272437
+> queue=3.79952429455322
+> queued=10.0558330900775
+> receive=10.6196625266701
+> process=2325.8173229043
+> total=2350.2923428156
+> 
+> [jlayton@palma nfsd-wq]$ ./analyze.pl < workqueue.txt 
+> -------------------------------------------------------------
+> rpcs=272329
+> queue=4.41979737859012
+> queued=8.124893049967
+> receive=11.3421082590608
+> process=2310.15945786277
+> total=2334.04625655039
+> 
+> Here's a legend, the numbers represent a delta between two
+> tracepoints for a particular xprt or rqst. I can provide the script if
+> it's helpful but it's definitely hacked together:
+> 
+> rpcs: total number of rpcs processed (just a count)
+> queue: time it took to queue the xprt.xi
+>       trace_svc_xprt_enqueued - trace_svc_xprt_enqueue (in usecs)
+> 
+> queued: time between being queued and going "active"
+>        trace_svc_xprt_active - trace_svc_xprt_enqueued (in usecs)
+> 
+> receive: time between going "active" and completing the receive
+>         trace_svc_xprt_received - trace_svc_xprt_active (in usecs)
+> 
+> process: time between completing the receive and finishing processing
+>         trace_svc_process - trace_svc_xprt_recevied (in usecs)
+> 
+> total: total time from enqueueing to finishing the processing
+>       trace_svc_process - trace_svc_xprt_enqueued (in usecs)
+> 
+> The interesting bit is that according to these numbers, the workqueue
+> RPCs ran more quickly on average (though most of that is in svc_process,
+> for which I have zero explanation). So, why are we getting slower
+> results?
+> 
+> One theory is that it's getting bitten by the fact that the workqueue
+> queueing/dequeueing code uses spinlocks that disable bottom halves.
+> Perhaps that adds up and causes more latency to softirq processing? I'm
+> not sure how best to nail that down...
+> 
+> It's probably worth it to start considering this for v3.20, but I'd like
+> to get some time on a larger scale test rig to see how it does first.
 
->+			bridge->has_mem64_res = true;
->+			break;
->+		}
->+	}
->+
-> 	down_write(&pci_bus_sem);
-> 	list_add_tail(&b->node, &pci_root_buses);
-> 	up_write(&pci_bus_sem);
->Index: linux-2.6/include/linux/pci.h
->===================================================================
->--- linux-2.6.orig/include/linux/pci.h
->+++ linux-2.6/include/linux/pci.h
->@@ -407,6 +407,7 @@ struct pci_host_bridge {
-> 	struct list_head windows;	/* pci_host_bridge_windows */
-> 	void (*release_fn)(struct pci_host_bridge *);
-> 	void *release_data;
->+	bool has_mem64_res;
-> };
->
-> #define	to_pci_host_bridge(n) container_of(n, struct pci_host_bridge, dev)
->Index: linux-2.6/drivers/pci/setup-bus.c
->===================================================================
->--- linux-2.6.orig/drivers/pci/setup-bus.c
->+++ linux-2.6/drivers/pci/setup-bus.c
->@@ -693,6 +693,9 @@ static void pci_bridge_check_ranges(stru
-> 		}
-> 	}
->
->+        if (!pcibios_host_bridge_has_mem64_res(bus))
->+                b_res[2].flags &= ~IORESOURCE_MEM_64;
->+
-> 	/* double check if bridge does support 64 bit pref */
-> 	if (b_res[2].flags & IORESOURCE_MEM_64) {
-> 		u32 mem_base_hi, tmp;
->
+I think there needs to be a guarantee that this does not break
+badly with NFS/RDMA, with xfs / btrfs / ext4, or with 40 and
+56GbE. (Yes, we are volunteering to help with some of that).
+
+How does it scale in number of individual transport sockets?
+
+Does the new scheduling model use more or less CPU per byte
+and per RPC?
+
+Also, running these performance tests with a CPU soaker running
+on the NFS server might be interesting. Something like a large
+software build. That could better expose issues with workqueue
+scheduling.
+
+That feels like more work than any of us can do before 3.20.
+
+
+> We'll also need Al's ACK on the fs_struct stuff.
+> 
+> Thoughts or comments are welcome.
+> 
+> Jeff Layton (16):
+>  sunrpc: add a new svc_serv_ops struct and move sv_shutdown into it
+>  sunrpc: move sv_function into sv_ops
+>  sunrpc: move sv_module parm into sv_ops
+>  sunrpc: turn enqueueing a svc_xprt into a svc_serv operation
+>  sunrpc: abstract out svc_set_num_threads to sv_ops
+>  sunrpc: move pool_mode definitions into svc.h
+>  sunrpc: factor svc_rqst allocation and freeing from sv_nrthreads
+>    refcounting
+>  sunrpc: set up workqueue function in svc_xprt
+>  sunrpc: set up svc_rqst work if it's defined
+>  sunrpc: add basic support for workqueue-based services
+>  nfsd: keep a reference to the fs_struct in svc_rqst
+>  nfsd: add support for workqueue based service processing
+>  sunrpc: keep a cache of svc_rqsts for each NUMA node
+>  sunrpc: add more tracepoints around svc_xprt handling
+>  sunrpc: print the svc_rqst pointer value in svc_process tracepoint
+>  sunrpc: add tracepoints around svc_sock handling
+> 
+> fs/fs_struct.c                  |  60 ++++++--
+> fs/lockd/svc.c                  |   7 +-
+> fs/nfs/callback.c               |   6 +-
+> fs/nfsd/nfssvc.c                | 100 +++++++++++--
+> include/linux/fs_struct.h       |   4 +
+> include/linux/sunrpc/svc.h      |  93 ++++++++++---
+> include/linux/sunrpc/svc_xprt.h |   3 +
+> include/linux/sunrpc/svcsock.h  |   1 +
+> include/trace/events/sunrpc.h   |  88 ++++++++++--
+> net/sunrpc/Makefile             |   2 +-
+> net/sunrpc/svc.c                | 141 +++++++++++--------
+> net/sunrpc/svc_wq.c             | 302 ++++++++++++++++++++++++++++++++++++++++
+> net/sunrpc/svc_xprt.c           |  68 ++++++++-
+> net/sunrpc/svcsock.c            |   6 +
+> 14 files changed, 758 insertions(+), 123 deletions(-)
+> create mode 100644 net/sunrpc/svc_wq.c
+> 
+> -- 
+> 2.1.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
 
