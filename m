@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310AbaLJMzS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:55:18 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:55286 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165AbaLJMzQ (ORCPT
+	id S1755171AbaLJM7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:59:20 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:42529 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597AbaLJM7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:55:16 -0500
-Date: Wed, 10 Dec 2014 14:55:10 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: herbert@gondor.apana.org.au
-Cc: davem@davemloft.net, asaf.vertz@tandemg.com, arnd@arndb.de,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] crypto: ux500: fix checkpatch errors
-Message-ID: <20141210125510.GA1904@ubuntu>
+	Wed, 10 Dec 2014 07:59:19 -0500
+Message-ID: <548843A0.6040906@gmail.com>
+Date: Wed, 10 Dec 2014 21:59:12 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: ejt@redhat.com
+CC: dm-devel@redhat.com, gregkh@linuxfoundation.org, snitzer@redhat.com,
+        agk@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
+References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com> <5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141210100033.GA21108@debian> <548827BD.3050803@gmail.com> <20141210123349.GC21108@debian>
+In-Reply-To: <20141210123349.GC21108@debian>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style error, code indent should use tabs where possible 
+Joe,
 
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
- drivers/crypto/ux500/cryp/cryp_core.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I appreciate your continuous work.
 
-diff --git a/drivers/crypto/ux500/cryp/cryp_core.c b/drivers/crypto/ux500/cryp/cryp_core.c
-index 92105f3..b189e1d 100644
---- a/drivers/crypto/ux500/cryp/cryp_core.c
-+++ b/drivers/crypto/ux500/cryp/cryp_core.c
-@@ -479,13 +479,13 @@ static void cryp_dma_setup_channel(struct cryp_device_data *device_data,
- 		.dst_addr = device_data->phybase + CRYP_DMA_TX_FIFO,
- 		.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
- 		.dst_maxburst = 4,
--        };
-+	};
- 	struct dma_slave_config cryp2mem = {
- 		.direction = DMA_DEV_TO_MEM,
- 		.src_addr = device_data->phybase + CRYP_DMA_RX_FIFO,
- 		.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES,
- 		.src_maxburst = 4,
--        };
-+	};
- 
- 	dma_cap_zero(device_data->dma.mask);
- 	dma_cap_set(DMA_SLAVE, device_data->dma.mask);
-@@ -1772,8 +1772,8 @@ static int ux500_cryp_resume(struct device *dev)
- static SIMPLE_DEV_PM_OPS(ux500_cryp_pm, ux500_cryp_suspend, ux500_cryp_resume);
- 
- static const struct of_device_id ux500_cryp_match[] = {
--        { .compatible = "stericsson,ux500-cryp" },
--        { },
-+	{ .compatible = "stericsson,ux500-cryp" },
-+	{ },
- };
- 
- static struct platform_driver cryp_driver = {
--- 
-1.7.0.4
+Is that read or write?
+The difference between Type 0 and 1 should only show up in write path.
+So is it write test?
+
+And what is the unit of each result?
+
+> So maybe it's just volume of IO that's causing the problem?  What's
+> the difference between Type 0 and Type 1?  In the code I notice you
+> have 'rambuf' structures, are you caching IO in memory?
+"rambuf" is a temporary space that every write data comes in.
+127*4KB data are once stored there and 4KB metadata section are added
+then it becomes a log and flushed to the cache device sequentially (512KB each).
+
+By the way,
+I think more clearer discussion can be done if tests are done on physical machines
+to isolate things relevant to VM. I will also add these tests to dmts later and
+run on my machine.
+But, it will be much better if we have good server with RAID-ed backing store
+and the newest SSD (How would it be if it's PCI-e SSD)... 
+
+- Akira
+
+On 12/10/14 9:33 PM, Joe Thornber wrote:
+> On Wed, Dec 10, 2014 at 08:00:13PM +0900, Akira Hayakawa wrote:
+>> Hi, Joe
+>>
+>> Thanks for continuous evaluation.
+> 
+> Some more details:
+> 
+> dd, with block size 512b
+> ------------------------
+> 
+> raw spindle      : 143
+> writeboost Type 0: 137
+> writeboost Type 1: 130
+> 
+> dd, with block size 4k
+> ----------------------
+> 
+> raw spindle      : 31
+> writeboost Type 0: 29
+> writeboost Type 1: 81
+> 
+> 
+> dd, with block size 64m
+> -----------------------
+> 
+> raw spindle      : 8.9
+> writeboost Type 0: 32
+> writeboost Type 1: 72
+> 
+> 
+> 
+> So maybe it's just volume of IO that's causing the problem?  What's
+> the difference between Type 0 and Type 1?  In the code I notice you
+> have 'rambuf' structures, are you caching IO in memory?
+> 
 
