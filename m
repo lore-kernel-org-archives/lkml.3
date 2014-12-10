@@ -1,133 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211AbaLJXBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:01:38 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:50822 "EHLO lekensteyn.nl"
+	id S1758216AbaLJXGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:06:33 -0500
+Received: from ozlabs.org ([103.22.144.67]:60146 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744AbaLJXBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:01:36 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: logitech-hidpp: prefix the name with Logitech
-Date: Thu, 11 Dec 2014 00:01:27 +0100
-Message-ID: <1511661.CjWHljXQbp@al>
-User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1418250070-28604-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com> <1418250070-28604-2-git-send-email-benjamin.tissoires@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: 0.0 (/)
+	id S1756081AbaLJXGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 18:06:31 -0500
+Message-ID: <1418252789.26146.0.camel@ellerman.id.au>
+Subject: Re: [PATCH] powerpc: secondary CPUs signal to master before setting
+ active and online (fixes kernel BUG at kernel/smpboot.c:134!)
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anton Blanchard <anton@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, yuyang.du@intel.com,
+        lkp@01.org, Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Daniel J Blueman <daniel@numascale.com>, subbaram@codeaurora.org,
+        Brian Norris <computersforpeace@gmail.com>,
+        Slava Pestov <sp@datera.io>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Date: Thu, 11 Dec 2014 10:06:29 +1100
+In-Reply-To: <CA+55aFyR5PzNkojvEej1NXnpEFOPOYfnxCcPDAjg1rE79tQv7A@mail.gmail.com>
+References: <1418009221-12719-1-git-send-email-anton@samba.org>
+	 <20141208083408.GA8023@gmail.com> <20141208211859.6e81ec81@kryten>
+	 <20141209105819.0e847b4b@kryten>
+	 <CA+55aFyR5PzNkojvEej1NXnpEFOPOYfnxCcPDAjg1rE79tQv7A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 December 2014 17:21:10 Benjamin Tissoires wrote:
-> Current names are reported as "K750", "M705", and it can be misleading
-> for the users when they look at their input device list.
+On Tue, 2014-12-09 at 12:54 -0800, Linus Torvalds wrote:
+> On Mon, Dec 8, 2014 at 3:58 PM, Anton Blanchard <anton@samba.org> wrote:
+> > Hi Ingo,
+> >
+> >> At that point I thought the previous task_cpu() was somewhat ingrained
+> >> in the scheduler and came up with the patch. If not, we could go on a
+> >> hunt to see what else needs fixing.
+> >
+> > I had another look. The scheduled does indeed make assumptions about the
+> > previous task_cpu, but we have a hammer to fix it up called
+> > select_fallback_rq.
+> >
+> > I annotated select_fallback_rq, and did hit a case where the CPU was
+> > not active. ppc64 patch below.
 > 
-> Prefixing the names with "Logitech " makes things better.
+> Anton, I'll assume I will get this through the usual powerpc pull requests?
 
-Doesn't this apply to all input devices? Like, every USB device can be
-queried for the manufacturer which could then by included by the input
-subsystem.
+Yeah I'll put it in my tree unless Anton objects.
 
-What about duplicate names? Can this patch cause a conflict with devices
-having the same name?
+cheers
 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> 
-> Hi Jiri,
-> 
-> I'd love to see this one in 3.19 (after a strong review, of course).
-> The idea came with the mouse DPI database that Peter is currently working on
-> (see http://who-t.blogspot.com.au/2014/12/building-a-dpi-database-for-mice.html).
-> 
-> I think, if you do not qualify the series for 3.19, we should drop it entirely.
-> 3.19 introduces the hidpp module and changes the labels. The DPI hwdb will check
-> on the label to match the actual mouse, so if this one does not get into 3.19,
-> we will end up in 3 entries for each Logitech device.
-> 
-> Cheers,
-> Benjamin
-> 
-> 
->  drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
-> 
-> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> index 3846305..8cf4352 100644
-> --- a/drivers/hid/hid-logitech-hidpp.c
-> +++ b/drivers/hid/hid-logitech-hidpp.c
-> @@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
->  		(report->rap.sub_id == 0x41);
->  }
->  
-> +/**
-> + * hidpp_prefix_name() prefixes the current given name with "Logitech ".
-> + */
-> +static void hidpp_prefix_name(char **name, int name_length)
-> +{
-> +#define PREFIX_SIZE 9 /* "Logitech " */
-> +
-> +	int new_length;
-> +	char *new_name;
-> +
-> +	if (name_length > PREFIX_SIZE &&
-> +	    strncmp(*name, "Logitech ", PREFIX_SIZE) == 0)
-
-I think you meant || here, not &&.
-
-> +		/* The prefix has is already in the name */
-> +		return;
-> +
-> +	new_length = name_length + PREFIX_SIZE;
-
-Stylistic note, but 'PREFIX_SIZE + name_length' would match the order of
-the string that gets prepended.
-
-Kind regards,
-Peter
-
-> +	new_name = kzalloc(new_length, GFP_KERNEL);
-> +	if (!new_name)
-> +		return;
-> +
-> +	snprintf(new_name, new_length, "Logitech %s", *name);
-> +
-> +	kfree(*name);
-> +
-> +	*name = new_name;
-> +}
-> +
->  /* -------------------------------------------------------------------------- */
->  /* HIDP++ 1.0 commands                                                        */
->  /* -------------------------------------------------------------------------- */
-> @@ -318,6 +345,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
->  		return NULL;
->  
->  	memcpy(name, &response.rap.params[2], len);
-> +
-> +	/* include the terminating '\0' */
-> +	hidpp_prefix_name(&name, len + 1);
-> +
->  	return name;
->  }
->  
-> @@ -489,6 +520,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
->  			feature_index, index, name + index,
->  			__name_length - index);
->  
-> +	/* include the terminating '\0' */
-> +	hidpp_prefix_name(&name, __name_length + 1);
-> +
->  	return name;
->  
->  out_err:
-> 
 
