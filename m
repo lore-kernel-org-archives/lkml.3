@@ -1,143 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070AbaLJQ2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:28:47 -0500
-Received: from mga09.intel.com ([134.134.136.24]:60687 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758008AbaLJQ2o convert rfc822-to-8bit (ORCPT
+	id S1758099AbaLJQ3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:29:37 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36482 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942AbaLJQ3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:28:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="621667818"
-From: "Varlese, Marco" <marco.varlese@intel.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "jiri@resnulli.us" <jiri@resnulli.us>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH net-next 1/1] net: Support for switch port configuration
-Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Thread-Index: AdAUhPtXGtfGamc6R3Ssf+89G79LDw==
-Date: Wed, 10 Dec 2014 16:23:40 +0000
-Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.180]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Dec 2014 11:29:36 -0500
+Date: Wed, 10 Dec 2014 08:29:24 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/12] rcu: use {cpu|node}mask pr_cont and seq output
+ functions
+Message-ID: <20141210162924.GU25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418226774-30215-1-git-send-email-tj@kernel.org>
+ <1418226774-30215-10-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418226774-30215-10-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121016-8236-0000-0000-000007A68B4A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Varlese <marco.varlese@intel.com>
+On Wed, Dec 10, 2014 at 10:52:51AM -0500, Tejun Heo wrote:
+> Convert the existing user of cpu{mask|list}_scnprintf() and
+> node{mask|list}_scnprintf() which use them just to printk or
+> seq_printf() the resulting buffer to use the following functions
+> instead respectively.
+> 
+> * For printk: cpu{mask|list}_pr_cont() and node{mask|list}_pr_cont().
+> 
+> * For seq_file: seq_cpumask[_list]() and seq_nodemask[_list]().
+> 
+> Because these conversions usually break up a single output function
+> call into multiple, the reduction is LOC isn't too big but it removes
+> unnecessary complexity and/or arbitrary limit on the length printed.
+> 
+> This patch is dependent on the previous patch ("bitmap, cpumask,
+> nodemask: implement pr_cont variants of formatting functions") which
+> is planned to go through -mm.  It'd be the easiest to route this
+> together.  If this should go through the subsystem tree, please wait
+> till the forementioned patch is merged to mainline.
 
-Switch hardware offers a list of attributes that are configurable
-on a per port basis.
-This patch provides a mechanism to configure switch ports by adding
-an NDO for setting specific values to specific attributes.
-There will be a separate patch that extends iproute2 to call the
-new NDO.
+It should be OK to send this via your tree.
 
-Signed-off-by: Marco Varlese <marco.varlese@intel.com>
----
- include/linux/netdevice.h    |  5 +++++
- include/uapi/linux/if_link.h |  1 +
- net/core/rtnetlink.c         | 33 +++++++++++++++++++++++++++++++++
- 3 files changed, 39 insertions(+)
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index c31f74d..4881c7b 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
-  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
-  *	Called to notify switch device port of bridge port STP
-  *	state change.
-+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
-+ *                                u32 attr, u64 value);
-+ *	Called to set specific switch ports attributes.
-  */
- struct net_device_ops {
- 	int			(*ndo_init)(struct net_device *dev);
-@@ -1185,6 +1188,8 @@ struct net_device_ops {
- 							    struct netdev_phys_item_id *psid);
- 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
- 							      u8 state);
-+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
-+							   u32 attr, u64 value);
- #endif
- };
- 
-diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-index f7d0d2d..b35c314 100644
---- a/include/uapi/linux/if_link.h
-+++ b/include/uapi/linux/if_link.h
-@@ -146,6 +146,7 @@ enum {
- 	IFLA_PHYS_PORT_ID,
- 	IFLA_CARRIER_CHANGES,
- 	IFLA_PHYS_SWITCH_ID,
-+	IFLA_SWITCH_PORT_CFG,
- 	__IFLA_MAX
- };
- 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index eaa057f..e1be9ca 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1389,6 +1389,25 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
- 	return 0;
- }
- 
-+#ifdef CONFIG_NET_SWITCHDEV
-+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
-+{
-+	int rem, err = -EINVAL;
-+	struct nlattr *v;
-+	const struct net_device_ops *ops = dev->netdev_ops;
-+
-+	nla_for_each_nested(v, attr, rem) {
-+		u32 op = nla_type(v);
-+		u64 value = nla_get_u64(v);
-+
-+		err = ops->ndo_switch_port_set_cfg(dev, op, value);
-+		if (err)
-+			break;
-+	}
-+	return err;
-+}
-+#endif
-+
- static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
- {
- 	int rem, err = -EINVAL;
-@@ -1740,6 +1759,20 @@ static int do_setlink(const struct sk_buff *skb,
- 			status |= DO_SETLINK_NOTIFY;
- 		}
- 	}
-+#ifdef CONFIG_NET_SWITCHDEV
-+	if (tb[IFLA_SWITCH_PORT_CFG]) {
-+		err = -EOPNOTSUPP;
-+		if (!ops->ndo_switch_port_set_cfg)
-+			goto errout;
-+		if (!ops->ndo_switch_parent_id_get)
-+			goto errout;
-+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-+		if (err < 0)
-+			goto errout;
-+
-+		status |= DO_SETLINK_NOTIFY;
-+	}
-+#endif
- 	err = 0;
- 
- errout:
--- 
-1.8.5.3
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+> ---
+>  kernel/rcu/tree_plugin.h | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
+> index 7a72858..a788a6f 100644
+> --- a/kernel/rcu/tree_plugin.h
+> +++ b/kernel/rcu/tree_plugin.h
+> @@ -53,7 +53,6 @@ DEFINE_PER_CPU(char, rcu_cpu_has_work);
+>  static cpumask_var_t rcu_nocb_mask; /* CPUs to have callbacks offloaded. */
+>  static bool have_rcu_nocb_mask;	    /* Was rcu_nocb_mask allocated? */
+>  static bool __read_mostly rcu_nocb_poll;    /* Offload kthread are to poll. */
+> -static char __initdata nocb_buf[NR_CPUS * 5];
+>  #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
+> 
+>  /*
+> @@ -2377,8 +2376,9 @@ void __init rcu_init_nohz(void)
+>  		cpumask_and(rcu_nocb_mask, cpu_possible_mask,
+>  			    rcu_nocb_mask);
+>  	}
+> -	cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
+> -	pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
+> +	pr_info("\tOffload RCU callbacks from CPUs: ");
+> +	cpulist_pr_cont(rcu_nocb_mask);
+> +	pr_cont(".\n");
+>  	if (rcu_nocb_poll)
+>  		pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
+> 
+> -- 
+> 2.1.0
+> 
 
