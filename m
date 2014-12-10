@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932804AbaLJSbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 13:31:09 -0500
-Received: from nm44-vm6.bullet.mail.gq1.yahoo.com ([67.195.87.29]:37287 "EHLO
-	nm44-vm6.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932479AbaLJSbH (ORCPT
+	id S932818AbaLJSb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 13:31:56 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:43829 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932479AbaLJSbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 13:31:07 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=yahoo.ca;
-	b=Ca88iMU4SvEgFF5N+1vBPFFiVELJWogtnyEVK6/lxpMcs4eJJCr/6CKzSzarbX9J7dSlHOc5IkCNgbjiM5P9UeNuAiq1BcctfDDvPY/gt7FLOXk4YY8ehLu2PNxKrByaEnERzq0Rbel2vCdbFtP5MoUbtJqJkjlms0T64ftwmOX69h5f8EiK+hMJzjR1iuwujsNFTZ5yMIi3POSNZPEDlU129quhzLVy5EBAhIWFyEDpfx12/2ztVEaJ3Pscl5dd89N9HcfylUaXLLR3yfU9KdzZN65fcerq8IqLrefB+1JIHQBu9DWBg7RION8MZQlTpB4eGJwz+GI1w1cQjxJ0Uw==;
-X-Yahoo-Newman-Id: 768424.35416.bm@smtp226.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-4
-X-YMail-OSG: BQIAeIsVM1kDVhzZWTBvhgMJd4PB1GDAxygVHqYIg8Pv4rk
- 3_nDJ_seAXRC.Bh2.RbM9i9Eu.78wjtnx1ZYzjdnOi5F0FHpwTy9L0RIKBCo
- hpusTz0P9iFb6GAiylASrqj8YtLRCDiWXSiodHXkdgrU3X0wUNAffM1nyXh8
- llAhlRCcxm5mvWpSS2wmq5A.PufOP9cpgShtREzrSq8IvaM80zA0kvlTT.NC
- ZBqRJkHGRLQNtBzTH87OmtHPLVXrqAFby7uhX07i6Vm7lnUasId9skGbcaWs
- HleO5xgZ2o5.ZUjp8pLTyB_y6G1TabED6WLefbDbQcOGN77_1lTIc.._BhlU
- obfIirPWOVH9CeftylIB3.Hw73A6TGCjap0Bfqm3achdoyoQOl7ys9eqHj9z
- rZ5Y9Q2ZCBHO2HTF58E0NZ4tafciZFkDfeX5C_Kz3p8aVsdX4zzcKTshCoSe
- OXmBGS2NNWd7nYGPZ9cDnWIsxkaHHQzTl8icowpyrG9REJ4rHOZHf1dYDsl9
- ub4_KkM4jrH9tcd.MufBEgAZ5.JmwmbZW_eRQraRNqUw70UqipELNF3DO4CS
- psfxX4trkvDXO53Un0uyytsQXI1W_99urO6g-
-X-Yahoo-SMTP: erUHay2swBAHy3fhG3khiNpFvMLWTM_N
-Message-ID: <5488905A.3060606@yahoo.ca>
-Date: Wed, 10 Dec 2014 13:26:34 -0500
-From: Denis Du <dudenis2000@yahoo.ca>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Wed, 10 Dec 2014 13:31:55 -0500
+Date: Wed, 10 Dec 2014 10:31:46 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH v5 1/3] hwmon: ina2xx: make shunt resistance configurable
+ at run-time
+Message-ID: <20141210183146.GA22847@roeck-us.net>
+References: <1418207937-11648-1-git-send-email-bgolaszewski@baylibre.com>
+ <1418207937-11648-2-git-send-email-bgolaszewski@baylibre.com>
+ <548856AF.8090805@roeck-us.net>
+ <CAMpxmJXp2NT+rie2d2+Z7hixKMyS+xcRNdKRNZaUSJD-aTUVVg@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, dudenis2000@yahoo.ca
-Subject: [PATCH] Fix the missing lock for the TTY ldisc buffer
-X-Forwarded-Message-Id: 
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMpxmJXp2NT+rie2d2+Z7hixKMyS+xcRNdKRNZaUSJD-aTUVVg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54889196.03AC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 10, 2014 at 05:46:43PM +0100, Bartosz Golaszewski wrote:
+> 2014-12-10 15:20 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> >> +       case INA2XX_CALIBRATION:
+> >> +               if (data->regs[reg] == 0)
+> >> +                       val = 0;
+> >> +               else
+> >> +                       val = data->config->calibration_factor
+> >> +                                               / data->regs[reg];
+> >> +               break;
+> >
+> >
+> > This doesn't really make sense. What you want to show is rshunt, not the
+> > above.
+> > I think it would be better to write a separate show function to display it.
+> 
+> Hi Guenter,
+> 
+> this is the only way to display values read from the chip. It also
+> tells the user what the actual programmed value is. In fact it was
+> your suggestion (https://lkml.org/lkml/2014/11/30/233) and I agree
+> that it's a better alternative. Are you sure you don't want it done
+> this way?
+> 
+I don't really want it at all ;-). Seems to me all those options are broken
+one way or another. The only real solution would be to re-instantiate the
+driver if the chip was removed and re-inserted, and to provide parameters
+either with platform data or with devicetree data.
 
-Hi, Guys:
-It was found that the 3.12 kernel tty layer will lose or corrupt data 
-when have a full-duplex communication, especially in high baud rate, for 
-example 230k for my OMAP5 uart. Eventually I found there is lock missing 
-between copy data to ldisc layer buffer and copy data from the same 
-buffer to user space. I believe this issue existed since 3.8 
-kernel(since this kernel , it start to remove most of the spin-locks) 
-and I didn't find any fix even through 3.17 kernel. This patch was 
-tested to be works great with no any data loss again on 3.12 kernel.
+On a side note, data->rshunt is not really needed anymore with your current
+code. The only reason for storing it in data is to use it in
+ina2xx_calibration_val(), but you could as well pass it in as parameter
+to that function. Even better would be to have a function such as
+ina2xx_calibrate() and let it handle the write to the calibration register.
+Also, I would suggest to move the above code into its own show function.
+It is probably not a good idea to have a single function for all those
+conversions in the first place, and converting from 'calibration' to
+rshunt goes a bit beyond the original intent to convert from one representation
+to the other.  
 
-This patch was built fro the latest kernel, but I cannot test 
-it.Somebody may give a test.
+That still doesn't really solve the structural problem of having to deal with
+an uninitialized chip which doesn't like to be uninitialized. But then on the
+other side I guess that is really a problem with your platform, not a driver
+problem.
 
-I did try to use the existed lock atomic_read_lock, but it doesn’t work.
-
-
-
-Signed-off-by: Hui Du <dudenis2000@yahoo.ca>
-
----
-  drivers/tty/n_tty.c |    9 ++++++++-
-  1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 2e900a9..6e5c6ae 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -125,6 +125,7 @@ struct n_tty_data {
-  
-  	struct mutex atomic_read_lock;
-  	struct mutex output_lock;
-+	struct mutex read_buf_lock;
-  };
-  
-  static inline size_t read_cnt(struct n_tty_data *ldata)
-@@ -1691,7 +1692,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
-  	int room, n, rcvd = 0;
-  
-  	down_read(&tty->termios_rwsem);
--
-+	mutex_lock(&ldata->read_buf_lock);
-  	while (1) {
-  		room = receive_room(tty);
-  		n = min(count, room);
-@@ -1710,6 +1711,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
-  
-  	tty->receive_room = room;
-  	n_tty_check_throttle(tty);
-+	mutex_unlock(&ldata->read_buf_lock);
-  	up_read(&tty->termios_rwsem);
-  
-  	return rcvd;
-@@ -1876,6 +1878,7 @@ static int n_tty_open(struct tty_struct *tty)
-  	ldata->overrun_time = jiffies;
-  	mutex_init(&ldata->atomic_read_lock);
-  	mutex_init(&ldata->output_lock);
-+	mutex_init(&ldata->read_buf_lock);
-  
-  	tty->disc_data = ldata;
-  	reset_buffer_flags(tty->disc_data);
-@@ -1939,6 +1942,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
-  	size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
-  
-  	retval = 0;
-+	mutex_lock(&ldata->read_buf_lock);
-  	n = min(read_cnt(ldata), N_TTY_BUF_SIZE - tail);
-  	n = min(*nr, n);
-  	if (n) {
-@@ -1954,6 +1958,7 @@ static int copy_from_read_buf(struct tty_struct *tty,
-  		*b += n;
-  		*nr -= n;
-  	}
-+	mutex_unlock(&ldata->read_buf_lock);
-  	return retval;
-  }
-  
-@@ -1992,6 +1997,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
-  	bool eof_push = 0;
-  
-  	/* N.B. avoid overrun if nr == 0 */
-+	mutex_lock(&ldata->read_buf_lock);
-  	n = min(*nr, read_cnt(ldata));
-  	if (!n)
-  		return 0;
-@@ -2052,6 +2058,7 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
-  			ldata->push = 0;
-  		tty_audit_push(tty);
-  	}
-+	mutex_unlock(&ldata->read_buf_lock);
-  	return eof_push ? -EAGAIN : 0;
-  }
-  
--- 
-1.7.10.4
-
-
-
+Guenter
