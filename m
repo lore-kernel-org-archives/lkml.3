@@ -1,93 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488AbaLJRSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:18:03 -0500
-Received: from mail-bn1bon0079.outbound.protection.outlook.com ([157.56.111.79]:7424
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932247AbaLJRSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:18:00 -0500
-Date: Wed, 10 Dec 2014 11:17:58 -0600
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@linuxheads99
-To: Michal Simek <michal.simek@xilinx.com>
-CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <rdunlap@infradead.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v4 3/6] ARM: socfpga: defconfig: enable fpga manager
-In-Reply-To: <cec3b3d65e864b39899f3cbf17a09dc2@BN1BFFO11FD035.protection.gbl>
-Message-ID: <alpine.DEB.2.02.1412101117060.25868@linuxheads99>
-References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com> <1418156090-23578-4-git-send-email-atull@opensource.altera.com> <cec3b3d65e864b39899f3cbf17a09dc2@BN1BFFO11FD035.protection.gbl>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932528AbaLJRTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:19:11 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:55674 "EHLO
+	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaLJRTK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 12:19:10 -0500
+X-TM-IMSS-Message-ID: <a41f4096000afc6e@nsa.gov>
+Message-ID: <5488804E.8040404@tycho.nsa.gov>
+Date: Wed, 10 Dec 2014 12:18:06 -0500
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BLUPR05CA0056.namprd05.prod.outlook.com (10.141.20.26) To
- DM2PR0301MB1246.namprd03.prod.outlook.com (25.160.219.23)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1246;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:DM2PR0301MB1246;
-X-Forefront-PRVS: 0421BF7135
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(164054003)(51914003)(24454002)(51704005)(377454003)(479174003)(199003)(83506001)(46406003)(33716001)(19580395003)(19580405001)(31966008)(87976001)(69596002)(97736003)(106356001)(66066001)(86152002)(92566001)(68736005)(21056001)(107046002)(40100003)(81156004)(105586002)(86362001)(122386002)(77156002)(62966003)(99396003)(110136001)(120916001)(46102003)(101416001)(4396001)(23726002)(76176999)(54356999)(64706001)(50986999)(53416004)(42186005)(50466002)(20776003)(47776003)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1246;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1246;
-X-OriginatorOrg: opensource.altera.com
+To: Krzysztof Opasiak <k.opasiak@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        casey@schaufler-ca.com
+CC: jlbec@evilplan.org, "'Andrzej Pietrasiewicz'" <andrzej.p@samsung.com>,
+        gregkh@linuxfoundation.org, "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Robert Baldyga'" <r.baldyga@samsung.com>,
+        Rafal Krypa <r.krypa@samsung.com>,
+        Tomasz Swierczek <t.swierczek@samsung.com>,
+        "'Karol Lewandowski'" <k.lewandowsk@samsung.com>,
+        "'Marek Szyprowski'" <m.szyprowski@samsung.com>,
+        "'Stanislaw Wadas'" <s.wadas@samsung.com>, kopasiak90@gmail.com,
+        =?ISO-8859-2?Q?=27=A3ukasz_Stelmach=27?= <l.stelmach@samsung.com>
+Subject: Re: VFS and LSM issues
+References: <022101d01309$09152b00$1b3f8100$%opasiak@samsung.com>
+In-Reply-To: <022101d01309$09152b00$1b3f8100$%opasiak@samsung.com>
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014, Michal Simek wrote:
+On 12/08/2014 12:04 PM, Krzysztof Opasiak wrote:
+> Dear All,
+> 
+> I'm Krzysztof Opasiak from SRPOL (Samsung). I'm working on USB support
+> in Tizen and mainline. In those works we use two Virtual File Systems
+> - ConfigFS and FunctionFS. Recently I have tried to use them with
+> SMACK and I ran into a few issues. Most of them looks to be a generic
+> problem with many FS and LSM. You can find description of those issues
+> and my research just below in 3 points. I'm not a VFS/LSM specialist so
+> your help is very welcome;)
+> 
+> 1) Issues with function FS
+> 
+> It's a VFS which allow to provide custom USB function as userspace
+> program. I know that may be quite new for you so let's define this as
+> a VFS which works as follow:
+> 
+> $ modprobe g_ffs
+> $ mkdir /tmp/mount_root
+> $ mount none -t functionfs /tmp/mount_root
+> $ ls /tmp/mount_root
+> ep0
+> 
+> # now we run our program which writes some data to ep0
+> #  and based on this kernel creates epX
+> # you can find one in tools/usb/ffs-test.c
+> 
+> $ ./my_program /tmp/mount_root &
+> $ ls /tmp/mount_root
+> ep0 ep1 ep2
+> 
+> Ok so now we would like to use this together with smack. Especially
+> with smackfsdef mount option. First two steps go as above and then:
+> 
+> $ mount none -t functionfs -o smackfsdef=my_label /tmp/mount_root
+> $ ls -Z /tmp/mount_root/
+>  _ ep0
+> 
+> Ops! Some bug here we requested to use my_label but we got _. When we
+> run our program, rest of epX will get desired label (my_label). I have
+> started to dig in kernel to find what happen and probably I found out
+> where is a problem. Let's look to mount_fs() code which is executed
+> during mount:
+> 
+> struct dentry *
+> mount_fs(struct file_system_type *type, int flags, const char *name,
+> void *data)
+> {
+> (...)
+> 	root = type->mount(type, flags, name, data);
+> (...)
+> 	error = security_sb_kern_mount(sb, flags, secdata);
+> (...)
+> }
+> 
+> So what is important here is the order of operations. First is
+> executed mount ops provided by selected file system. During this mount
+> procedure functionfs executes new_inode(sb) to allocate inode for ep0
+> which should appear directly after mount. After returning from mount
+> function we execute security_sb_kern_mount() where we *parse the mount
+> options* and sets the value for lsm specific structures for example we
+> store the label passed in smackfsdef.
+> 
+> The problem here is order of calls because first we call mount for
+> given fs where we create a file and after this we fill security
+> structures with security mount options. While creating file in mount
+> callback super block is filled only with default values for security
+> so ep0 has _ label. This looks like a generic issue for all VFS which
+> creates indoes before or in their mount procedure.
+> 
+> I'm not sure if we can simply move security_sb_kern_mount() above
+> mount for specific fs, do we?
 
-> Hi Alan,
-> 
-> On 12/09/2014 09:14 PM, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Enable FPGA manager for Altera socfpga.
-> > 
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > ---
-> >  arch/arm/configs/socfpga_defconfig |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/arm/configs/socfpga_defconfig b/arch/arm/configs/socfpga_defconfig
-> > index a2956c3..2740057 100644
-> > --- a/arch/arm/configs/socfpga_defconfig
-> > +++ b/arch/arm/configs/socfpga_defconfig
-> > @@ -86,6 +86,10 @@ CONFIG_USB_DWC2=y
-> >  CONFIG_USB_DWC2_HOST=y
-> >  CONFIG_MMC=y
-> >  CONFIG_MMC_DW=y
-> > +CONFIG_STAGING=y
-> > +CONFIG_FPGA=y
-> > +CONFIG_FPGA_MGR_SYSFS=y
-> > +CONFIG_FPGA_MGR_ALTERA=y
-> >  CONFIG_EXT2_FS=y
-> >  CONFIG_EXT2_FS_XATTR=y
-> >  CONFIG_EXT2_FS_POSIX_ACL=y
-> > 
-> 
-> This should the last patch in this series because you are changing Kconfig
-> in 5/6 and 6/6.
-> 
-> Thanks,
-> Michal
-> 
-
-OK, I'm fixing this in v5, also taking your other comments.  Thanks for 
-the review.
-
-Alan
+No.  Look at SELinux for an example. It puts the inode security
+structures into a list and then initializes them during
+security_sb_kern_mount(), both to handle labeling of inodes initialized
+before first policy load and to handle inodes created during ->mount().
+ In particular, look at the tail of sb_finish_set_opts() in
+security/selinux/hooks.c.  As SELinux has been handling this for a long
+time, I would call this a bug in Smack, not in the VFS LSM hooks.
 
