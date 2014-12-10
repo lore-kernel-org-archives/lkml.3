@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865AbaLJLAX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:00:23 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:59839 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755804AbaLJLAU (ORCPT
+	id S1755577AbaLJLBf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:01:35 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:55485 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753222AbaLJLBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:00:20 -0500
-Message-ID: <548827BD.3050803@gmail.com>
-Date: Wed, 10 Dec 2014 20:00:13 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 10 Dec 2014 06:01:33 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Eddie Huang <eddie.huang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Thomas Gleixner <tglx@linutronix.de>, yh.chen@mediatek.com
+Subject: Re: [PATCH 2/4] irqchip: mediatek: Add support for mt8173
+Date: Wed, 10 Dec 2014 12:00:38 +0100
+Message-ID: <2545975.QDuBFbG7BN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418208602-35584-3-git-send-email-eddie.huang@mediatek.com>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com> <1418208602-35584-3-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
-To: ejt@redhat.com
-CC: dm-devel@redhat.com, gregkh@linuxfoundation.org, snitzer@redhat.com,
-        agk@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH] staging: writeboost: Add dm-writeboost
-References: <5484498E.4000202@gmail.com> <20141207200834.GA2322@kroah.com>	<5484C0E9.3060707@gmail.com> <20141209151253.GA17660@debian> <20141210100033.GA21108@debian>
-In-Reply-To: <20141210100033.GA21108@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Q07EoDcINIQtgobyCjlkARjKwl3Fx2OUSfZX6BLkAdUXO9END3d
+ 4MZK7PNXdGQ07cEJmJfJqvN2wtj/sClaxE5SSCaQ+8qmsb9G2HbRu1s8OXOKxzjqCIg5Eyh
+ 1zG0Fk7Ny9c8gMYjGwDZ2NM4z6fplYOZ0V7UvSGbbz5Q1+mQ6C6ztxzsli2JO/m5hsFlQiV
+ coy18mIdSgnvlbxxOMe0A==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Joe
-
-Thanks for continuous evaluation.
-
-I think it's to soon to conclude splitting is the case.
-In general, the time order of memory operations and disk operations is much different.
-So, it's not likely that bio splitting, memory operation, is the case. Again, in general.
-But yes, I will add seq write/read performance tests to dmts to see what's really going on.
-
-By the way, what environment are you using for those tests?
-
-My past result of git-extract differ from yours. I think this is strange.
-(http://www.redhat.com/archives/dm-devel/2014-May/msg00052.html)
-
-WriteboostTestsBackingDevice
-  Elapsed 52.494120792: git_prepare
-  Elapsed 276.545543981: extract all versions
-  Finished in 331.363683334 seconds
-
-WriteboostTestsType0
-  Elapsed 46.966797484: git_prepare
-  Elapsed 215.305219932: extract all versions
-  Finished in 270.176494226 seconds.
-
-WriteboostTestsType1
-  Elapsed 83.344358679: git_prepare
-  Elapsed 236.562481129: extract all versions
-  Finished in 329.684926274 seconds.
-
-I conducted those experiments on physical machine with a HDD and a SSD.
-I will re-evaluate those tests with the current kernel on my machine and
-compare with this result.
-
-- Akira
-
-On 12/10/14 7:00 PM, Joe Thornber wrote:
-> On Tue, Dec 09, 2014 at 03:12:53PM +0000, Joe Thornber wrote:
->> Writeboost is significantly slower than the spindle alone for this
->> very simple test.  I do not understand what is causing the issue.
+On Wednesday 10 December 2014 18:50:00 Eddie Huang wrote:
+> From: Yingjoe Chen <yingjoe.chen@mediatek.com>
 > 
-> I started doing the code review and now understand what's going on,
-> sadly.
+> MT8173 intpol have 32 more irq pins, add support to it.
 > 
-> You are splitting all bios up into 4k blocks to simplify the metadata
-> layout, and mapping logic.  This murders performance.  File systems
-> and the block layer try really hard to submit the largest bio possible
-> for a reason.
-> 
-> A simple dd in large chunks across your cache reveals this:
-> 
-> raw spindle:        8.9s
-> writeboost type 0:  32.2s
-> writeboost type 1:  71.1s
-> 
-> dm-cache and dm-thin do also split io into blocks, but much larger,
-> user configurable blocks.  It's still a performance issue for us,
-> which is why I'm using range locking to move away from this bio
-> splitting (eg, recent cache discard patches).
-> 
-> One of the main advantages of a log based metadata layout is you can
-> cope nicely with arbitrarily sized bios.  Unlike dm-cache for
-> instance, which has to do a read from the origin if it wants to cache
-> a write that partially covers a block (or maintain a 'valid' bit for
-> each sector of every cached block).
-> 
-> The writeboost target as it stands will only benefit v. small, random
-> io.  It will seriously degrade performance of any other IO profile.
-> I'm NACKing this for upstream, and will not be spending any more time
-> on it at this point.
-> 
-> You've put a lot of effort into this so far, so I suggest you redesign
-> the log metadata, and drop the io splitting; you'll end up with
-> something far better.
-> 
-> Sorry,
-> 
-> - Joe
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
+> Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
 > 
 
+How about adding a property for the number of irq pins and leave the
+old compatible string in place? I don't think it would be good if
+we have to update this driver for each new SoC that uses this
+irqchip just to change one number.
+
+	Arnd
