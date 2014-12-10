@@ -1,119 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002AbaLJLuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:50:22 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51038 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914AbaLJLuS (ORCPT
+	id S1756073AbaLJLug (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:50:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37760 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755914AbaLJLua (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:50:18 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 2/3] i8k: Autodetect maximal fan speed and fan RPM multiplier
-Date: Wed, 10 Dec 2014 12:50:13 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412092123.22271@pali> <20141209224208.GA13149@roeck-us.net>
-In-Reply-To: <20141209224208.GA13149@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2363185.7CeRROO4si";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412101250.13891@pali>
+	Wed, 10 Dec 2014 06:50:30 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-24-54883384d19a
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, akpm@linux-foundation.org, kgene.kim@samsung.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        m.szyprowski@samsung.com, kyungmin.park@samsung.com,
+        l.czerwinski@samsung.com, s.nawrocki@samsung.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 4/6] serial: samsung: add dma reqest/release functions
+Date: Wed, 10 Dec 2014 12:49:25 +0100
+Message-id: <1418212167-28992-5-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+References: <1418212167-28992-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t9jQd0W444Qg/dTNC3mrF/DZtG8eD2b
+	xeffu1gtehdcZbM42/SG3eLXtElsFpd3zWGzOLO4l91i7ZG77BYPDu9ktzj8pp3VgdvjxIzf
+	LB77565h9+jbsorR48yCI+wenzfJBbBGcdmkpOZklqUW6dslcGUsnLiYreC/YsXPy53sDYxn
+	ZboYOTkkBEwkdnY1MUHYYhIX7q1n62Lk4hASmM4o0fPoGlhCSKCdSWLXH18Qm01AR2LL9wmM
+	ILaIgJzEk9t/mEEamAWmMklsuj4JrEFYwE2i7fUusCIWAVWJz0feMIPYvAKuEsuXbWWH2CYn
+	cfLYZFYQmxOoftWzFawQy1wl1t6ewTaBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxN
+	jODweya9g3FVg8UhRgEORiUe3oDL7SFCrIllxZW5hxglOJiVRHjfSHaECPGmJFZWpRblxxeV
+	5qQWH2KU5mBREudVsm8LERJITyxJzU5NLUgtgskycXBKNTCyy60IdueVWbROeafn6sj5jO4b
+	OR1Cf5V31oo/tv34TjOhY3X4xL9bkld/vqjBprB/p/ycXl1B9vcrlRb6vQ5iqbTl0V538tRj
+	tb7GdJ4jsZ0F7gr2FZzVDB1WJ9bzTNigdsvvz4r2p3pbj8ucT7pwvDu9US5Yc1pP2jqutxwW
+	cT6qBas1bimxFGckGmoxFxUnAgCb8EBhOwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2363185.7CeRROO4si
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Add functions requesting and releasing RX and TX DMA channels. This
+function are called only when "dmas" property in serial device-tree
+node is defined.
 
-On Tuesday 09 December 2014 23:42:08 Guenter Roeck wrote:
-> On Tue, Dec 09, 2014 at 09:23:22PM +0100, Pali Roh=C3=A1r wrote:
-> > On Tuesday 09 December 2014 21:20:23 Guenter Roeck wrote:
-> > > On Tue, Dec 09, 2014 at 09:07:00PM +0100, Pali Roh=C3=A1r wrote:
-> > > > This patch adds new function i8k_get_fan_nominal_rpm()
-> > > > for doing SMM call which will return nominal fan RPM
-> > > > for specified fan speed. It returns nominal RPM value
-> > > > at which fan operate when speed is set. It looks like
-> > > > RPM value is not accurate, but still provides very
-> > > > useful information.
-> > > >=20
-> > > > First it can be used to validate if certain fan speed
-> > > > could be accepted by SMM for setting fan speed and we
-> > > > can use this routine to detect maximal fan speed.
-> > > >=20
-> > > > Second it returns RPM value, so we can check if value
-> > > > looks correct with multiplier 30 or multiplier 1 (until
-> > > > now only these two multiplier was used). If RPM value
-> > > > with multiplier 30 is too high, then multiplier 1 is
-> > > > used.
-> > > >=20
-> > > > In case when SMM reports that new function is not
-> > > > supported we will fallback to old hardcoded values.
-> > > > Maximal fan speed would be 2 and RPM multiplier 30.
-> > > >=20
-> > > > Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> > > > ---
-> > > > I tested this patch only on my Dell Latitude E6440 and
-> > > > autodetection worked fine Before appying this patch it
-> > > > should be tested on some other dell machines too but if
-> > > > machine does not support i8k_get_fan_nominal_rpm()
-> > > > driver should fallback to old values. So patch should
-> > > > be without regressions.
-> > >=20
-> > > It looks like many of your error checks are unnecessary.
-> > > Why did you add those ?
-> > >=20
-> > > Please refrain from adding unnecessary code.
-> > >=20
-> > > Guenter
-> >=20
-> > Which error checks do you mean?
->=20
-> There are several you added. I noticed the ones around
-> 'index', which would only be hit on coding errors. At that
-> point I stopped looking further and did not verify which of
-> the other added error checks are unnecessary as well.
->=20
-> A quick additional check reveals that the fan variable range
-> check in i8k_get_fan_nominal_rpm is completely unnecessary -
-> if the range was wrong, the calling code would fail as well,
-> since you unconditionally write into an array indexed by the
-> very same variable. Given the simplicity of the calling code,
-> it can even be mathematically proven that the error condition
-> you are checking can never happen.
->=20
-> With that I really stopped looking further.
->=20
-> Guenter
->=20
+Based on previous work of Sylwester Nawrocki and Lukasz Czerwinski.
 
-Should I remove those access out-of-array checks?
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ drivers/tty/serial/samsung.c | 101 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 101 insertions(+)
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index 7196a3e..825c819 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -28,6 +28,9 @@
+ #define SUPPORT_SYSRQ
+ #endif
+ 
++#include <linux/dmaengine.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/ioport.h>
+ #include <linux/io.h>
+@@ -453,6 +456,93 @@ static void s3c24xx_serial_break_ctl(struct uart_port *port, int break_state)
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
++static int s3c24xx_serial_request_dma(struct s3c24xx_uart_port *p)
++{
++	struct s3c24xx_uart_dma	*dma = p->dma;
++	dma_cap_mask_t mask;
++	unsigned long flags;
++
++	/* Default slave configuration parameters */
++	dma->rx_conf.direction		= DMA_DEV_TO_MEM;
++	dma->rx_conf.src_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
++	dma->rx_conf.src_addr		= p->port.mapbase + S3C2410_URXH;
++	dma->rx_conf.src_maxburst	= 16;
++
++	dma->tx_conf.direction		= DMA_MEM_TO_DEV;
++	dma->tx_conf.dst_addr_width	= DMA_SLAVE_BUSWIDTH_1_BYTE;
++	dma->tx_conf.dst_addr		= p->port.mapbase + S3C2410_UTXH;
++	if (dma_get_cache_alignment() >= 16)
++		dma->tx_conf.dst_maxburst = 16;
++	else
++		dma->tx_conf.dst_maxburst = 1;
++
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_SLAVE, mask);
++
++	dma->rx_chan = dma_request_slave_channel_compat(mask, dma->fn,
++					dma->rx_param, p->port.dev, "rx");
++	if (!dma->rx_chan)
++		return -ENODEV;
++
++	dmaengine_slave_config(dma->rx_chan, &dma->rx_conf);
++
++	dma->tx_chan = dma_request_slave_channel_compat(mask, dma->fn,
++					dma->tx_param, p->port.dev, "tx");
++	if (!dma->tx_chan) {
++		dma_release_channel(dma->rx_chan);
++		return -ENODEV;
++	}
++
++	dmaengine_slave_config(dma->tx_chan, &dma->tx_conf);
++
++	/* RX buffer */
++	dma->rx_size = PAGE_SIZE;
++
++	dma->rx_buf = kmalloc(dma->rx_size, GFP_KERNEL);
++
++	if (!dma->rx_buf) {
++		dma_release_channel(dma->rx_chan);
++		dma_release_channel(dma->tx_chan);
++		return -ENOMEM;
++	}
++
++	dma->rx_addr = dma_map_single(dma->rx_chan->device->dev, dma->rx_buf,
++				dma->rx_size, DMA_FROM_DEVICE);
++
++	spin_lock_irqsave(&p->port.lock, flags);
++
++	/* TX buffer */
++	dma->tx_addr = dma_map_single(dma->tx_chan->device->dev,
++				p->port.state->xmit.buf,
++				UART_XMIT_SIZE, DMA_TO_DEVICE);
++
++	spin_unlock_irqrestore(&p->port.lock, flags);
++
++	return 0;
++}
++
++static void s3c24xx_serial_release_dma(struct s3c24xx_uart_port *p)
++{
++	struct s3c24xx_uart_dma	*dma = p->dma;
++
++	if (dma->rx_chan) {
++		dmaengine_terminate_all(dma->rx_chan);
++		dma_unmap_single(dma->rx_chan->device->dev, dma->rx_addr,
++				dma->rx_size, DMA_FROM_DEVICE);
++		kfree(dma->rx_buf);
++		dma_release_channel(dma->rx_chan);
++		dma->rx_chan = NULL;
++	}
++
++	if (dma->tx_chan) {
++		dmaengine_terminate_all(dma->tx_chan);
++		dma_unmap_single(dma->tx_chan->device->dev, dma->tx_addr,
++				UART_XMIT_SIZE, DMA_TO_DEVICE);
++		dma_release_channel(dma->tx_chan);
++		dma->tx_chan = NULL;
++	}
++}
++
+ static void s3c24xx_serial_shutdown(struct uart_port *port)
+ {
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
+@@ -478,6 +568,10 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
+ 		wr_regl(port, S3C64XX_UINTP, 0xf);
+ 		wr_regl(port, S3C64XX_UINTM, 0xf);
+ 	}
++
++	if (ourport->dma)
++		s3c24xx_serial_release_dma(ourport);
++
+ }
+ 
+ static int s3c24xx_serial_startup(struct uart_port *port)
+@@ -535,6 +629,13 @@ static int s3c64xx_serial_startup(struct uart_port *port)
+ 	    port, (unsigned long long)port->mapbase, port->membase);
+ 
+ 	wr_regl(port, S3C64XX_UINTM, 0xf);
++	if (ourport->dma) {
++		ret = s3c24xx_serial_request_dma(ourport);
++		if (ret < 0) {
++			dev_warn(port->dev, "DMA request failed\n");
++			return ret;
++		}
++	}
+ 
+ 	ret = request_irq(port->irq, s3c64xx_serial_handle_irq, IRQF_SHARED,
+ 			  s3c24xx_serial_portname(port), ourport);
+-- 
+1.9.1
 
---nextPart2363185.7CeRROO4si
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSIM3UACgkQi/DJPQPkQ1KsIQCfTfcYO6vM+J9ROTk5TYHYY9TB
-nnoAoI3aeXbBaTnRLd+1FBVGIuG1nogT
-=6lgN
------END PGP SIGNATURE-----
-
---nextPart2363185.7CeRROO4si--
