@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377AbaLJQ7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:59:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46559 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227AbaLJQ7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:59:15 -0500
-Message-ID: <54887BD9.7030903@redhat.com>
-Date: Wed, 10 Dec 2014 17:59:05 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "Tian, Kevin" <kevin.tian@intel.com>, Gerd Hoffmann <kraxel@redhat.com>,
-        "Song, Jike" <jike.song@intel.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "White, Michael L" <michael.l.white@intel.com>,
-        "Dong, Eddie" <eddie.dong@intel.com>,
-        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
-        "Li, Susie" <susie.li@intel.com>,
-        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Haron, Sandra" <sandra.haron@intel.com>
-Subject: Re: [Intel-gfx] [ANNOUNCE][RFC] KVMGT - the implementation of Intel
- GVT-g(full GPU virtualization) for KVM
-References: <547FC5DE.4010701@intel.com> <1417769421.11297.37.camel@nilsson.home.kraxel.org> <5481AD24.3000703@redhat.com> <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S932415AbaLJQ7k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:59:40 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:39159 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227AbaLJQ7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 11:59:38 -0500
+From: Guenter Roeck <linux@roeck-us.net>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: nios2-dev@lists.rocketboards.org, linux-kernel@vger.kernel.org,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH] nios2: add definition of ioremap_wc to io.h
+Date: Wed, 10 Dec 2014 08:59:27 -0800
+Message-Id: <1418230767-24597-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54887C05.0042,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix
 
+drivers/gpu/drm/drm_bufs.c: In function 'drm_addmap_core':
+drivers/gpu/drm/drm_bufs.c:213:5:
+			error: implicit declaration of function 'ioremap_wc'
 
-On 09/12/2014 03:49, Tian, Kevin wrote:
-> - Now we have XenGT/KVMGT separately maintained, and KVMGT lags
-> behind XenGT regarding to features and qualities. Likely you'll continue
-> see stale code (like Xen inst decoder) for some time. In the future we
-> plan to maintain a single kernel repo for both, so KVMGT can share
-> same quality as XenGT once KVM in-kernel dm framework is stable.
-> 
-> - Regarding to Qemu hacks, KVMGT really doesn't have any different 
-> requirements as what have been discussed for GPU pass-through, e.g. 
-> about ISA bridge. Our implementation is based on an old Qemu repo, 
-> and honestly speaking not cleanly developed, because we know we
-> can leverage from GPU pass-through support once it's in Qemu. At 
-> that time we'll leverage the same logic with minimal changes to 
-> hook KVMGT mgmt. APIs (e.g. create/destroy a vGPU instance). So
-> we can ignore this area for now. :-)
+seen when building nios2:allmodconfig.
 
-Could the virtual device model introduce new registers in order to avoid
-poking at the ISA bridge?  I'm not sure that you "can leverage from GPU
-pass-through support once it's in Qemu", since the Xen IGD passthrough
-support is being added to a separate machine that is specific to Xen IGD
-passthrough; no ISA bridge hacking will probably be allowed on the "-M
-pc" and "-M q35" machine types.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ arch/nios2/include/asm/io.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Paolo
+diff --git a/arch/nios2/include/asm/io.h b/arch/nios2/include/asm/io.h
+index 9102bfd..6e24d7c 100644
+--- a/arch/nios2/include/asm/io.h
++++ b/arch/nios2/include/asm/io.h
+@@ -45,6 +45,8 @@ static inline void iounmap(void __iomem *addr)
+ 	__iounmap(addr);
+ }
+ 
++#define ioremap_wc ioremap_nocache
++
+ /* Pages to physical address... */
+ #define page_to_phys(page)	virt_to_phys(page_to_virt(page))
+ #define page_to_bus(page)	page_to_virt(page)
+-- 
+1.9.1
+
