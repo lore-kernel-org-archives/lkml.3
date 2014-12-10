@@ -1,267 +1,768 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508AbaLJXff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:35:35 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:40367 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758395AbaLJXfI (ORCPT
+	id S1758544AbaLJXgC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:36:02 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:46648 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758532AbaLJXf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:35:08 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: tglx@linutronix.de, hpa@zytor.com, konrad.wilk@oracle.com,
-        david.vrabel@citrix.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, luto@amacapital.net, JBeulich@suse.com,
-        jgross@suse.com, bpoirier@suse.de, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>
-Subject: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be preempted
-Date: Wed, 10 Dec 2014 15:34:47 -0800
-Message-Id: <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com>
+	Wed, 10 Dec 2014 18:35:56 -0500
+Date: Wed, 10 Dec 2014 16:35:52 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Cc: catalin.marinas@arm.com, will.deacon@arm.com, lorenzo.pieralisi@arm.com,
+        wangyijing@huawei.com, arnd@arndb.de, hanjun.guo@linaro.org,
+        Liviu.Dudau@arm.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, rjw@rjwysocki.net, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH 2/6] x86, acpi, pci: Move arch-agnostic MMCFG code out of
+ arch/x86/ directory
+Message-ID: <20141210233552.GG6692@google.com>
+References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org>
+ <1416413091-13452-3-git-send-email-tomasz.nowicki@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1416413091-13452-3-git-send-email-tomasz.nowicki@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Wed, Nov 19, 2014 at 05:04:47PM +0100, Tomasz Nowicki wrote:
+> MMCFG table seems to be architecture independent and it makes sense
+> to share common code across all architectures. The ones that may need
+> architectural specific actions have default prototype (__weak).
 
-Xen has support for splitting heavy work work into a series
-of hypercalls, called multicalls, and preempting them through
-what Xen calls continuation [0]. Despite this though without
-CONFIG_PREEMPT preemption won't happen and while enabling
-CONFIG_RT_GROUP_SCHED can at times help its not enough to
-make a system usable. Such is the case for example when
-creating a > 50 GiB HVM guest, we can get softlockups [1] with:.
+We have kind of a stew of abbreviations here: MCFG, MMCFG, MMCONFIG.  In
+addition, the "MMCONFIG" term comes is used by ACPI but not by the PCI
+specs.  The PCIe spec uses "ECAM" (Enhanced Configuration Access Mechanism)
+instead.  If we're going to make this architecture-independent (which I
+think is a great idea), I sort of hate to expose it using terms that only
+mean something to ACPI folks.  
 
-kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
+So I want to moot the idea of replacing the "pci_mmcfg" and "pci_mmconfig"
+prefixes with something more generic, like "pci_ecam".  I'm a little bit
+conflicted about this, because it would mean a fair amount of churn, but on
+the other hand, I do think good names are a huge aid to understanding.
 
-The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
-(default 120 seconds), on the Xen side in this particular case
-this happens when the following Xen hypervisor code is used:
+I'm mostly concerned about the things exposed outside of x86.  Things that
+are x86-specific or ACPI-specific could be left alone, so maybe it wouldn't
+be a huge change.
 
-xc_domain_set_pod_target() -->
-  do_memory_op() -->
-    arch_memory_op() -->
-      p2m_pod_set_mem_target()
-	-- long delay (real or emulated) --
+I noticed you made some functions __weak; I'd like to see that change split
+into a separate patch, with this one being basically mechanical code
+movement with no functional change.  That way we can discuss the need for
+and merits of that approach separately.  A mmcfg->ecam rename (if we do
+that) should also be its own separate patch.
 
-This happens on arch_memory_op() on the XENMEM_set_pod_target memory
-op even though arch_memory_op() can handle continuation via
-hypercall_create_continuation() for example.
+Bjorn
 
-Machines over 50 GiB of memory are on high demand and hard to come
-by so to help replicate this sort of issue long delays on select
-hypercalls have been emulated in order to be able to test this on
-smaller machines [2].
-
-On one hand this issue can be considered as expected given that
-CONFIG_PREEMPT=n is used however we have forced voluntary preemption
-precedent practices in the kernel even for CONFIG_PREEMPT=n through
-the usage of cond_resched() sprinkled in many places. To address
-this issue with Xen hypercalls though we need to find a way to aid
-to the schedular in the middle of hypercalls. We are motivated to
-address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
-rather unresponsive for long periods of time; in the worst case, at least
-only currently by emulating long delays on select io disk bound
-hypercalls, this can lead to filesystem corruption if the delay happens
-for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
-
-We can address this problem by trying to check if we should schedule
-on the xen timer in the middle of a hypercall on the return from the
-timer interrupt. We want to be careful to not always force voluntary
-preemption though so to do this we only selectively enable preemption
-on very specific xen hypercalls.
-
-This enables hypercall preemption by selectively forcing checks for
-voluntary preempting only on ioctl initiated private hypercalls
-where we know some folks have run into reported issues [1].
-
-[0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
-[1] https://bugzilla.novell.com/show_bug.cgi?id=861093
-[2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
-
-Based on original work by: David Vrabel <david.vrabel@citrix.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Jan Beulich <JBeulich@suse.com>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/kernel/entry_32.S | 21 +++++++++++++++++++++
- arch/x86/kernel/entry_64.S | 17 +++++++++++++++++
- drivers/xen/Makefile       |  2 +-
- drivers/xen/preempt.c      | 17 +++++++++++++++++
- drivers/xen/privcmd.c      |  2 ++
- include/xen/xen-ops.h      | 26 ++++++++++++++++++++++++++
- 6 files changed, 84 insertions(+), 1 deletion(-)
- create mode 100644 drivers/xen/preempt.c
-
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 344b63f..40b5c0c 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -982,7 +982,28 @@ ENTRY(xen_hypervisor_callback)
- ENTRY(xen_do_upcall)
- 1:	mov %esp, %eax
- 	call xen_evtchn_do_upcall
-+#ifdef CONFIG_PREEMPT
- 	jmp  ret_from_intr
-+#else
-+	GET_THREAD_INFO(%ebp)
-+#ifdef CONFIG_VM86
-+	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
-+	movb PT_CS(%esp), %al
-+	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-+#else
-+	movl PT_CS(%esp), %eax
-+	andl $SEGMENT_RPL_MASK, %eax
-+#endif
-+	cmpl $USER_RPL, %eax
-+	jae resume_userspace		# returning to v8086 or userspace
-+	DISABLE_INTERRUPTS(CLBR_ANY)
-+	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	jz resume_kernel
-+	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	call cond_resched_irq
-+	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	jmp resume_kernel
-+#endif /* CONFIG_PREEMPT */
- 	CFI_ENDPROC
- ENDPROC(xen_hypervisor_callback)
- 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index c0226ab..0ccdd06 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1170,7 +1170,23 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
- 	popq %rsp
- 	CFI_DEF_CFA_REGISTER rsp
- 	decl PER_CPU_VAR(irq_count)
-+#ifdef CONFIG_PREEMPT
- 	jmp  error_exit
-+#else
-+	movl %ebx, %eax
-+	RESTORE_REST
-+	DISABLE_INTERRUPTS(CLBR_NONE)
-+	TRACE_IRQS_OFF
-+	GET_THREAD_INFO(%rcx)
-+	testl %eax, %eax
-+	je error_exit_user
-+	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	jz retint_kernel
-+	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	call cond_resched_irq
-+	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
-+	jmp retint_kernel
-+#endif /* CONFIG_PREEMPT */
- 	CFI_ENDPROC
- END(xen_do_hypervisor_callback)
- 
-@@ -1398,6 +1414,7 @@ ENTRY(error_exit)
- 	GET_THREAD_INFO(%rcx)
- 	testl %eax,%eax
- 	jne retint_kernel
-+error_exit_user:
- 	LOCKDEP_SYS_EXIT_IRQ
- 	movl TI_flags(%rcx),%edx
- 	movl $_TIF_WORK_MASK,%edi
-diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index 2140398..2ccd359 100644
---- a/drivers/xen/Makefile
-+++ b/drivers/xen/Makefile
-@@ -2,7 +2,7 @@ ifeq ($(filter y, $(CONFIG_ARM) $(CONFIG_ARM64)),)
- obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
- endif
- obj-$(CONFIG_X86)			+= fallback.o
--obj-y	+= grant-table.o features.o balloon.o manage.o
-+obj-y	+= grant-table.o features.o balloon.o manage.o preempt.o
- obj-y	+= events/
- obj-y	+= xenbus/
- 
-diff --git a/drivers/xen/preempt.c b/drivers/xen/preempt.c
-new file mode 100644
-index 0000000..b5a3e98
---- /dev/null
-+++ b/drivers/xen/preempt.c
-@@ -0,0 +1,17 @@
-+/*
-+ * Preemptible hypercalls
-+ *
-+ * Copyright (C) 2014 Citrix Systems R&D ltd.
-+ *
-+ * This source code is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License, or (at your option) any later version.
-+ */
-+
-+#include <xen/xen-ops.h>
-+
-+#ifndef CONFIG_PREEMPT
-+DEFINE_PER_CPU(bool, xen_in_preemptible_hcall);
-+EXPORT_SYMBOL_GPL(xen_in_preemptible_hcall);
-+#endif
-diff --git a/drivers/xen/privcmd.c b/drivers/xen/privcmd.c
-index 569a13b..59ac71c 100644
---- a/drivers/xen/privcmd.c
-+++ b/drivers/xen/privcmd.c
-@@ -56,10 +56,12 @@ static long privcmd_ioctl_hypercall(void __user *udata)
- 	if (copy_from_user(&hypercall, udata, sizeof(hypercall)))
- 		return -EFAULT;
- 
-+	xen_preemptible_hcall_begin();
- 	ret = privcmd_call(hypercall.op,
- 			   hypercall.arg[0], hypercall.arg[1],
- 			   hypercall.arg[2], hypercall.arg[3],
- 			   hypercall.arg[4]);
-+	xen_preemptible_hcall_end();
- 
- 	return ret;
- }
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 7491ee5..8333821 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -46,4 +46,30 @@ static inline efi_system_table_t __init *xen_efi_probe(void)
- }
- #endif
- 
-+#ifdef CONFIG_PREEMPT
-+
-+static inline void xen_preemptible_hcall_begin(void)
-+{
-+}
-+
-+static inline void xen_preemptible_hcall_end(void)
-+{
-+}
-+
-+#else
-+
-+DECLARE_PER_CPU(bool, xen_in_preemptible_hcall);
-+
-+static inline void xen_preemptible_hcall_begin(void)
-+{
-+	__this_cpu_write(xen_in_preemptible_hcall, true);
-+}
-+
-+static inline void xen_preemptible_hcall_end(void)
-+{
-+	__this_cpu_write(xen_in_preemptible_hcall, false);
-+}
-+
-+#endif /* CONFIG_PREEMPT */
-+
- #endif /* INCLUDE_XEN_OPS_H */
--- 
-2.1.1
-
+> Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+> Tested-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+>  arch/x86/include/asm/pci_x86.h |  29 -----
+>  arch/x86/pci/acpi.c            |   1 +
+>  arch/x86/pci/init.c            |   1 +
+>  arch/x86/pci/mmconfig-shared.c | 200 +---------------------------------
+>  arch/x86/pci/mmconfig_32.c     |   1 +
+>  arch/x86/pci/mmconfig_64.c     |   1 +
+>  drivers/acpi/Makefile          |   1 +
+>  drivers/acpi/bus.c             |   1 +
+>  drivers/acpi/mmconfig.c        | 242 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mmconfig.h       |  58 ++++++++++
+>  include/linux/pci.h            |   8 --
+>  11 files changed, 308 insertions(+), 235 deletions(-)
+>  create mode 100644 drivers/acpi/mmconfig.c
+>  create mode 100644 include/linux/mmconfig.h
+> 
+> diff --git a/arch/x86/include/asm/pci_x86.h b/arch/x86/include/asm/pci_x86.h
+> index fa1195d..caba141 100644
+> --- a/arch/x86/include/asm/pci_x86.h
+> +++ b/arch/x86/include/asm/pci_x86.h
+> @@ -121,35 +121,6 @@ extern int __init pcibios_init(void);
+>  extern int pci_legacy_init(void);
+>  extern void pcibios_fixup_irqs(void);
+>  
+> -/* pci-mmconfig.c */
+> -
+> -/* "PCI MMCONFIG %04x [bus %02x-%02x]" */
+> -#define PCI_MMCFG_RESOURCE_NAME_LEN (22 + 4 + 2 + 2)
+> -
+> -struct pci_mmcfg_region {
+> -	struct list_head list;
+> -	struct resource res;
+> -	u64 address;
+> -	char __iomem *virt;
+> -	u16 segment;
+> -	u8 start_bus;
+> -	u8 end_bus;
+> -	char name[PCI_MMCFG_RESOURCE_NAME_LEN];
+> -};
+> -
+> -extern int __init pci_mmcfg_arch_init(void);
+> -extern void __init pci_mmcfg_arch_free(void);
+> -extern int pci_mmcfg_arch_map(struct pci_mmcfg_region *cfg);
+> -extern void pci_mmcfg_arch_unmap(struct pci_mmcfg_region *cfg);
+> -extern int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+> -			       phys_addr_t addr);
+> -extern int pci_mmconfig_delete(u16 seg, u8 start, u8 end);
+> -extern struct pci_mmcfg_region *pci_mmconfig_lookup(int segment, int bus);
+> -
+> -extern struct list_head pci_mmcfg_list;
+> -
+> -#define PCI_MMCFG_BUS_OFFSET(bus)      ((bus) << 20)
+> -
+>  /*
+>   * AMD Fam10h CPUs are buggy, and cannot access MMIO config space
+>   * on their northbrige except through the * %eax register. As such, you MUST
+> diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> index cfd1b13..6d11131 100644
+> --- a/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -4,6 +4,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/dmi.h>
+>  #include <linux/slab.h>
+> +#include <linux/mmconfig.h>
+>  #include <asm/numa.h>
+>  #include <asm/pci_x86.h>
+>  
+> diff --git a/arch/x86/pci/init.c b/arch/x86/pci/init.c
+> index adb62aa..b4a55df 100644
+> --- a/arch/x86/pci/init.c
+> +++ b/arch/x86/pci/init.c
+> @@ -1,5 +1,6 @@
+>  #include <linux/pci.h>
+>  #include <linux/init.h>
+> +#include <linux/mmconfig.h>
+>  #include <asm/pci_x86.h>
+>  #include <asm/x86_init.h>
+>  
+> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+> index ac24e1c..b397544 100644
+> --- a/arch/x86/pci/mmconfig-shared.c
+> +++ b/arch/x86/pci/mmconfig-shared.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/mutex.h>
+>  #include <linux/rculist.h>
+> +#include <linux/mmconfig.h>
+>  #include <asm/e820.h>
+>  #include <asm/pci_x86.h>
+>  #include <asm/acpi.h>
+> @@ -27,103 +28,6 @@
+>  /* Indicate if the mmcfg resources have been placed into the resource table. */
+>  static bool pci_mmcfg_running_state;
+>  static bool pci_mmcfg_arch_init_failed;
+> -static DEFINE_MUTEX(pci_mmcfg_lock);
+> -
+> -LIST_HEAD(pci_mmcfg_list);
+> -
+> -static void __init pci_mmconfig_remove(struct pci_mmcfg_region *cfg)
+> -{
+> -	if (cfg->res.parent)
+> -		release_resource(&cfg->res);
+> -	list_del(&cfg->list);
+> -	kfree(cfg);
+> -}
+> -
+> -static void __init free_all_mmcfg(void)
+> -{
+> -	struct pci_mmcfg_region *cfg, *tmp;
+> -
+> -	pci_mmcfg_arch_free();
+> -	list_for_each_entry_safe(cfg, tmp, &pci_mmcfg_list, list)
+> -		pci_mmconfig_remove(cfg);
+> -}
+> -
+> -static void list_add_sorted(struct pci_mmcfg_region *new)
+> -{
+> -	struct pci_mmcfg_region *cfg;
+> -
+> -	/* keep list sorted by segment and starting bus number */
+> -	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list) {
+> -		if (cfg->segment > new->segment ||
+> -		    (cfg->segment == new->segment &&
+> -		     cfg->start_bus >= new->start_bus)) {
+> -			list_add_tail_rcu(&new->list, &cfg->list);
+> -			return;
+> -		}
+> -	}
+> -	list_add_tail_rcu(&new->list, &pci_mmcfg_list);
+> -}
+> -
+> -static struct pci_mmcfg_region *pci_mmconfig_alloc(int segment, int start,
+> -						   int end, u64 addr)
+> -{
+> -	struct pci_mmcfg_region *new;
+> -	struct resource *res;
+> -
+> -	if (addr == 0)
+> -		return NULL;
+> -
+> -	new = kzalloc(sizeof(*new), GFP_KERNEL);
+> -	if (!new)
+> -		return NULL;
+> -
+> -	new->address = addr;
+> -	new->segment = segment;
+> -	new->start_bus = start;
+> -	new->end_bus = end;
+> -
+> -	res = &new->res;
+> -	res->start = addr + PCI_MMCFG_BUS_OFFSET(start);
+> -	res->end = addr + PCI_MMCFG_BUS_OFFSET(end + 1) - 1;
+> -	res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> -	snprintf(new->name, PCI_MMCFG_RESOURCE_NAME_LEN,
+> -		 "PCI MMCONFIG %04x [bus %02x-%02x]", segment, start, end);
+> -	res->name = new->name;
+> -
+> -	return new;
+> -}
+> -
+> -static struct pci_mmcfg_region *__init pci_mmconfig_add(int segment, int start,
+> -							int end, u64 addr)
+> -{
+> -	struct pci_mmcfg_region *new;
+> -
+> -	new = pci_mmconfig_alloc(segment, start, end, addr);
+> -	if (new) {
+> -		mutex_lock(&pci_mmcfg_lock);
+> -		list_add_sorted(new);
+> -		mutex_unlock(&pci_mmcfg_lock);
+> -
+> -		pr_info(PREFIX
+> -		       "MMCONFIG for domain %04x [bus %02x-%02x] at %pR "
+> -		       "(base %#lx)\n",
+> -		       segment, start, end, &new->res, (unsigned long)addr);
+> -	}
+> -
+> -	return new;
+> -}
+> -
+> -struct pci_mmcfg_region *pci_mmconfig_lookup(int segment, int bus)
+> -{
+> -	struct pci_mmcfg_region *cfg;
+> -
+> -	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list)
+> -		if (cfg->segment == segment &&
+> -		    cfg->start_bus <= bus && bus <= cfg->end_bus)
+> -			return cfg;
+> -
+> -	return NULL;
+> -}
+>  
+>  static const char *__init pci_mmcfg_e7520(void)
+>  {
+> @@ -543,7 +447,7 @@ static void __init pci_mmcfg_reject_broken(int early)
+>  	}
+>  }
+>  
+> -static int __init acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+> +int __init acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+>  					struct acpi_mcfg_allocation *cfg)
+>  {
+>  	int year;
+> @@ -566,50 +470,6 @@ static int __init acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+>  	return -EINVAL;
+>  }
+>  
+> -static int __init pci_parse_mcfg(struct acpi_table_header *header)
+> -{
+> -	struct acpi_table_mcfg *mcfg;
+> -	struct acpi_mcfg_allocation *cfg_table, *cfg;
+> -	unsigned long i;
+> -	int entries;
+> -
+> -	if (!header)
+> -		return -EINVAL;
+> -
+> -	mcfg = (struct acpi_table_mcfg *)header;
+> -
+> -	/* how many config structures do we have */
+> -	free_all_mmcfg();
+> -	entries = 0;
+> -	i = header->length - sizeof(struct acpi_table_mcfg);
+> -	while (i >= sizeof(struct acpi_mcfg_allocation)) {
+> -		entries++;
+> -		i -= sizeof(struct acpi_mcfg_allocation);
+> -	}
+> -	if (entries == 0) {
+> -		pr_err(PREFIX "MMCONFIG has no entries\n");
+> -		return -ENODEV;
+> -	}
+> -
+> -	cfg_table = (struct acpi_mcfg_allocation *) &mcfg[1];
+> -	for (i = 0; i < entries; i++) {
+> -		cfg = &cfg_table[i];
+> -		if (acpi_mcfg_check_entry(mcfg, cfg)) {
+> -			free_all_mmcfg();
+> -			return -ENODEV;
+> -		}
+> -
+> -		if (pci_mmconfig_add(cfg->pci_segment, cfg->start_bus_number,
+> -				   cfg->end_bus_number, cfg->address) == NULL) {
+> -			pr_warn(PREFIX "no memory for MCFG entries\n");
+> -			free_all_mmcfg();
+> -			return -ENOMEM;
+> -		}
+> -	}
+> -
+> -	return 0;
+> -}
+> -
+>  static void __init __pci_mmcfg_init(int early)
+>  {
+>  	pci_mmcfg_reject_broken(early);
+> @@ -692,39 +552,6 @@ static int __init pci_mmcfg_late_insert_resources(void)
+>   */
+>  late_initcall(pci_mmcfg_late_insert_resources);
+>  
+> -static int __init pci_mmconfig_inject(struct pci_mmcfg_region *cfg)
+> -{
+> -	struct pci_mmcfg_region *cfg_conflict;
+> -	int err = 0;
+> -
+> -	mutex_lock(&pci_mmcfg_lock);
+> -	cfg_conflict = pci_mmconfig_lookup(cfg->segment, cfg->start_bus);
+> -	if (cfg_conflict) {
+> -		if (cfg_conflict->end_bus < cfg->end_bus)
+> -			pr_info(FW_INFO "MMCONFIG for "
+> -				"domain %04x [bus %02x-%02x] "
+> -				"only partially covers this bridge\n",
+> -				cfg_conflict->segment, cfg_conflict->start_bus,
+> -				cfg_conflict->end_bus);
+> -		err = -EEXIST;
+> -		goto out;
+> -	}
+> -
+> -	if (pci_mmcfg_arch_map(cfg)) {
+> -		pr_warn("fail to map MMCONFIG %pR.\n", &cfg->res);
+> -		err = -ENOMEM;
+> -		goto out;
+> -	} else {
+> -		list_add_sorted(cfg);
+> -		pr_info("MMCONFIG at %pR (base %#lx)\n",
+> -			&cfg->res, (unsigned long)cfg->address);
+> -
+> -	}
+> -out:
+> -	mutex_unlock(&pci_mmcfg_lock);
+> -	return err;
+> -}
+> -
+>  /* Add MMCFG information for host bridges */
+>  int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+>  			phys_addr_t addr)
+> @@ -773,26 +600,3 @@ error:
+>  	kfree(cfg);
+>  	return rc;
+>  }
+> -
+> -/* Delete MMCFG information for host bridges */
+> -int pci_mmconfig_delete(u16 seg, u8 start, u8 end)
+> -{
+> -	struct pci_mmcfg_region *cfg;
+> -
+> -	mutex_lock(&pci_mmcfg_lock);
+> -	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list)
+> -		if (cfg->segment == seg && cfg->start_bus == start &&
+> -		    cfg->end_bus == end) {
+> -			list_del_rcu(&cfg->list);
+> -			synchronize_rcu();
+> -			pci_mmcfg_arch_unmap(cfg);
+> -			if (cfg->res.parent)
+> -				release_resource(&cfg->res);
+> -			mutex_unlock(&pci_mmcfg_lock);
+> -			kfree(cfg);
+> -			return 0;
+> -		}
+> -	mutex_unlock(&pci_mmcfg_lock);
+> -
+> -	return -ENOENT;
+> -}
+> diff --git a/arch/x86/pci/mmconfig_32.c b/arch/x86/pci/mmconfig_32.c
+> index 43984bc..d774672 100644
+> --- a/arch/x86/pci/mmconfig_32.c
+> +++ b/arch/x86/pci/mmconfig_32.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/pci.h>
+>  #include <linux/init.h>
+>  #include <linux/rcupdate.h>
+> +#include <linux/mmconfig.h>
+>  #include <asm/e820.h>
+>  #include <asm/pci_x86.h>
+>  
+> diff --git a/arch/x86/pci/mmconfig_64.c b/arch/x86/pci/mmconfig_64.c
+> index bea5249..1209596 100644
+> --- a/arch/x86/pci/mmconfig_64.c
+> +++ b/arch/x86/pci/mmconfig_64.c
+> @@ -10,6 +10,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/bitmap.h>
+>  #include <linux/rcupdate.h>
+> +#include <linux/mmconfig.h>
+>  #include <asm/e820.h>
+>  #include <asm/pci_x86.h>
+>  
+> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> index c8a16e1..debacb5 100644
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -69,6 +69,7 @@ obj-$(CONFIG_ACPI_BUTTON)	+= button.o
+>  obj-$(CONFIG_ACPI_FAN)		+= fan.o
+>  obj-$(CONFIG_ACPI_VIDEO)	+= video.o
+>  obj-$(CONFIG_ACPI_PCI_SLOT)	+= pci_slot.o
+> +obj-$(CONFIG_PCI_MMCONFIG)	+= mmconfig.o
+>  obj-$(CONFIG_ACPI_PROCESSOR)	+= processor.o
+>  obj-y				+= container.o
+>  obj-$(CONFIG_ACPI_THERMAL)	+= thermal.o
+> diff --git a/drivers/acpi/bus.c b/drivers/acpi/bus.c
+> index c412fdb..6d5412ab 100644
+> --- a/drivers/acpi/bus.c
+> +++ b/drivers/acpi/bus.c
+> @@ -41,6 +41,7 @@
+>  #include <acpi/apei.h>
+>  #include <linux/dmi.h>
+>  #include <linux/suspend.h>
+> +#include <linux/mmconfig.h>
+>  
+>  #include "internal.h"
+>  
+> diff --git a/drivers/acpi/mmconfig.c b/drivers/acpi/mmconfig.c
+> new file mode 100644
+> index 0000000..d62dccda
+> --- /dev/null
+> +++ b/drivers/acpi/mmconfig.c
+> @@ -0,0 +1,242 @@
+> +/*
+> + * Arch agnostic low-level direct PCI config space access via MMCONFIG
+> + *
+> + * Per-architecture code takes care of the mappings, region validation and
+> + * accesses themselves.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/mutex.h>
+> +#include <linux/rculist.h>
+> +#include <linux/mmconfig.h>
+> +
+> +#define PREFIX "PCI: "
+> +
+> +static DEFINE_MUTEX(pci_mmcfg_lock);
+> +
+> +LIST_HEAD(pci_mmcfg_list);
+> +
+> +static void __init pci_mmconfig_remove(struct pci_mmcfg_region *cfg)
+> +{
+> +	if (cfg->res.parent)
+> +		release_resource(&cfg->res);
+> +	list_del(&cfg->list);
+> +	kfree(cfg);
+> +}
+> +
+> +void __init free_all_mmcfg(void)
+> +{
+> +	struct pci_mmcfg_region *cfg, *tmp;
+> +
+> +	pci_mmcfg_arch_free();
+> +	list_for_each_entry_safe(cfg, tmp, &pci_mmcfg_list, list)
+> +		pci_mmconfig_remove(cfg);
+> +}
+> +
+> +void list_add_sorted(struct pci_mmcfg_region *new)
+> +{
+> +	struct pci_mmcfg_region *cfg;
+> +
+> +	/* keep list sorted by segment and starting bus number */
+> +	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list) {
+> +		if (cfg->segment > new->segment ||
+> +		    (cfg->segment == new->segment &&
+> +		     cfg->start_bus >= new->start_bus)) {
+> +			list_add_tail_rcu(&new->list, &cfg->list);
+> +			return;
+> +		}
+> +	}
+> +	list_add_tail_rcu(&new->list, &pci_mmcfg_list);
+> +}
+> +
+> +struct pci_mmcfg_region *pci_mmconfig_alloc(int segment, int start,
+> +					    int end, u64 addr)
+> +{
+> +	struct pci_mmcfg_region *new;
+> +	struct resource *res;
+> +
+> +	if (addr == 0)
+> +		return NULL;
+> +
+> +	new = kzalloc(sizeof(*new), GFP_KERNEL);
+> +	if (!new)
+> +		return NULL;
+> +
+> +	new->address = addr;
+> +	new->segment = segment;
+> +	new->start_bus = start;
+> +	new->end_bus = end;
+> +
+> +	res = &new->res;
+> +	res->start = addr + PCI_MMCFG_BUS_OFFSET(start);
+> +	res->end = addr + PCI_MMCFG_BUS_OFFSET(end + 1) - 1;
+> +	res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+> +	snprintf(new->name, PCI_MMCFG_RESOURCE_NAME_LEN,
+> +		 "PCI MMCONFIG %04x [bus %02x-%02x]", segment, start, end);
+> +	res->name = new->name;
+> +
+> +	return new;
+> +}
+> +
+> +struct pci_mmcfg_region *pci_mmconfig_add(int segment, int start,
+> +					  int end, u64 addr)
+> +{
+> +	struct pci_mmcfg_region *new;
+> +
+> +	new = pci_mmconfig_alloc(segment, start, end, addr);
+> +	if (new) {
+> +		mutex_lock(&pci_mmcfg_lock);
+> +		list_add_sorted(new);
+> +		mutex_unlock(&pci_mmcfg_lock);
+> +
+> +		pr_info(PREFIX
+> +		       "MMCONFIG for domain %04x [bus %02x-%02x] at %pR "
+> +		       "(base %#lx)\n",
+> +		       segment, start, end, &new->res, (unsigned long)addr);
+> +	}
+> +
+> +	return new;
+> +}
+> +
+> +int __init pci_mmconfig_inject(struct pci_mmcfg_region *cfg)
+> +{
+> +	struct pci_mmcfg_region *cfg_conflict;
+> +	int err = 0;
+> +
+> +	mutex_lock(&pci_mmcfg_lock);
+> +	cfg_conflict = pci_mmconfig_lookup(cfg->segment, cfg->start_bus);
+> +	if (cfg_conflict) {
+> +		if (cfg_conflict->end_bus < cfg->end_bus)
+> +			pr_info(FW_INFO "MMCONFIG for "
+> +				"domain %04x [bus %02x-%02x] "
+> +				"only partially covers this bridge\n",
+> +				cfg_conflict->segment, cfg_conflict->start_bus,
+> +				cfg_conflict->end_bus);
+> +		err = -EEXIST;
+> +		goto out;
+> +	}
+> +
+> +	if (pci_mmcfg_arch_map(cfg)) {
+> +		pr_warn("fail to map MMCONFIG %pR.\n", &cfg->res);
+> +		err = -ENOMEM;
+> +		goto out;
+> +	} else {
+> +		list_add_sorted(cfg);
+> +		pr_info("MMCONFIG at %pR (base %#lx)\n",
+> +			&cfg->res, (unsigned long)cfg->address);
+> +
+> +	}
+> +out:
+> +	mutex_unlock(&pci_mmcfg_lock);
+> +	return err;
+> +}
+> +
+> +struct pci_mmcfg_region *pci_mmconfig_lookup(int segment, int bus)
+> +{
+> +	struct pci_mmcfg_region *cfg;
+> +
+> +	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list)
+> +		if (cfg->segment == segment &&
+> +		    cfg->start_bus <= bus && bus <= cfg->end_bus)
+> +			return cfg;
+> +
+> +	return NULL;
+> +}
+> +
+> +int __init __weak acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+> +					struct acpi_mcfg_allocation *cfg)
+> +{
+> +	return 0;
+> +}
+> +
+> +int __init pci_parse_mcfg(struct acpi_table_header *header)
+> +{
+> +	struct acpi_table_mcfg *mcfg;
+> +	struct acpi_mcfg_allocation *cfg_table, *cfg;
+> +	unsigned long i;
+> +	int entries;
+> +
+> +	if (!header)
+> +		return -EINVAL;
+> +
+> +	mcfg = (struct acpi_table_mcfg *)header;
+> +
+> +	/* how many config structures do we have */
+> +	free_all_mmcfg();
+> +	entries = 0;
+> +	i = header->length - sizeof(struct acpi_table_mcfg);
+> +	while (i >= sizeof(struct acpi_mcfg_allocation)) {
+> +		entries++;
+> +		i -= sizeof(struct acpi_mcfg_allocation);
+> +	}
+> +	if (entries == 0) {
+> +		pr_err(PREFIX "MMCONFIG has no entries\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	cfg_table = (struct acpi_mcfg_allocation *) &mcfg[1];
+> +	for (i = 0; i < entries; i++) {
+> +		cfg = &cfg_table[i];
+> +		if (acpi_mcfg_check_entry(mcfg, cfg)) {
+> +			free_all_mmcfg();
+> +			return -ENODEV;
+> +		}
+> +
+> +		if (pci_mmconfig_add(cfg->pci_segment, cfg->start_bus_number,
+> +				   cfg->end_bus_number, cfg->address) == NULL) {
+> +			pr_warn(PREFIX "no memory for MCFG entries\n");
+> +			free_all_mmcfg();
+> +			return -ENOMEM;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* Delete MMCFG information for host bridges */
+> +int pci_mmconfig_delete(u16 seg, u8 start, u8 end)
+> +{
+> +	struct pci_mmcfg_region *cfg;
+> +
+> +	mutex_lock(&pci_mmcfg_lock);
+> +	list_for_each_entry_rcu(cfg, &pci_mmcfg_list, list)
+> +		if (cfg->segment == seg && cfg->start_bus == start &&
+> +		    cfg->end_bus == end) {
+> +			list_del_rcu(&cfg->list);
+> +			synchronize_rcu();
+> +			pci_mmcfg_arch_unmap(cfg);
+> +			if (cfg->res.parent)
+> +				release_resource(&cfg->res);
+> +			mutex_unlock(&pci_mmcfg_lock);
+> +			kfree(cfg);
+> +			return 0;
+> +		}
+> +	mutex_unlock(&pci_mmcfg_lock);
+> +
+> +	return -ENOENT;
+> +}
+> +
+> +void __init __weak pci_mmcfg_early_init(void)
+> +{
+> +
+> +}
+> +
+> +void __init __weak pci_mmcfg_late_init(void)
+> +{
+> +	struct pci_mmcfg_region *cfg;
+> +
+> +	acpi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
+> +
+> +	if (list_empty(&pci_mmcfg_list))
+> +		return;
+> +
+> +	if (!pci_mmcfg_arch_init())
+> +		free_all_mmcfg();
+> +
+> +	list_for_each_entry(cfg, &pci_mmcfg_list, list)
+> +		insert_resource(&iomem_resource, &cfg->res);
+> +}
+> diff --git a/include/linux/mmconfig.h b/include/linux/mmconfig.h
+> new file mode 100644
+> index 0000000..6ccd1ee
+> --- /dev/null
+> +++ b/include/linux/mmconfig.h
+> @@ -0,0 +1,58 @@
+> +#ifndef __MMCONFIG_H
+> +#define __MMCONFIG_H
+> +#ifdef __KERNEL__
+> +
+> +#include <linux/types.h>
+> +#include <linux/acpi.h>
+> +
+> +#ifdef CONFIG_PCI_MMCONFIG
+> +/* "PCI MMCONFIG %04x [bus %02x-%02x]" */
+> +#define PCI_MMCFG_RESOURCE_NAME_LEN (22 + 4 + 2 + 2)
+> +
+> +struct pci_mmcfg_region {
+> +	struct list_head list;
+> +	struct resource res;
+> +	u64 address;
+> +	char __iomem *virt;
+> +	u16 segment;
+> +	u8 start_bus;
+> +	u8 end_bus;
+> +	char name[PCI_MMCFG_RESOURCE_NAME_LEN];
+> +};
+> +
+> +void pci_mmcfg_early_init(void);
+> +void pci_mmcfg_late_init(void);
+> +struct pci_mmcfg_region *pci_mmconfig_lookup(int segment, int bus);
+> +
+> +int pci_parse_mcfg(struct acpi_table_header *header);
+> +struct pci_mmcfg_region *pci_mmconfig_alloc(int segment, int start,
+> +						   int end, u64 addr);
+> +int pci_mmconfig_inject(struct pci_mmcfg_region *cfg);
+> +struct pci_mmcfg_region *pci_mmconfig_add(int segment, int start,
+> +						 int end, u64 addr);
+> +void list_add_sorted(struct pci_mmcfg_region *new);
+> +int acpi_mcfg_check_entry(struct acpi_table_mcfg *mcfg,
+> +			  struct acpi_mcfg_allocation *cfg);
+> +void free_all_mmcfg(void);
+> +int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+> +		       phys_addr_t addr);
+> +int pci_mmconfig_delete(u16 seg, u8 start, u8 end);
+> +
+> +/* Arch specific calls */
+> +int pci_mmcfg_arch_init(void);
+> +void pci_mmcfg_arch_free(void);
+> +int pci_mmcfg_arch_map(struct pci_mmcfg_region *cfg);
+> +void pci_mmcfg_arch_unmap(struct pci_mmcfg_region *cfg);
+> +
+> +extern struct list_head pci_mmcfg_list;
+> +
+> +#define PCI_MMCFG_BUS_OFFSET(bus)      ((bus) << 20)
+> +#else /* CONFIG_PCI_MMCONFIG */
+> +static inline void pci_mmcfg_late_init(void) { }
+> +static inline void pci_mmcfg_early_init(void) { }
+> +static inline void *pci_mmconfig_lookup(int segment, int bus)
+> +{ return NULL; }
+> +#endif /* CONFIG_PCI_MMCONFIG */
+> +
+> +#endif  /* __KERNEL__ */
+> +#endif  /* __MMCONFIG_H */
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 6afba72..0a8b82e 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -1658,14 +1658,6 @@ void pcibios_release_device(struct pci_dev *dev);
+>  extern struct dev_pm_ops pcibios_pm_ops;
+>  #endif
+>  
+> -#ifdef CONFIG_PCI_MMCONFIG
+> -void __init pci_mmcfg_early_init(void);
+> -void __init pci_mmcfg_late_init(void);
+> -#else
+> -static inline void pci_mmcfg_early_init(void) { }
+> -static inline void pci_mmcfg_late_init(void) { }
+> -#endif
+> -
+>  int pci_ext_cfg_avail(void);
+>  
+>  void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar);
+> -- 
+> 1.9.1
+> 
