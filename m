@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471AbaLJPxX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:53:23 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:61902 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427AbaLJPxS (ORCPT
+	id S932505AbaLJPx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:53:29 -0500
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:34037 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932467AbaLJPxZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:53:18 -0500
+	Wed, 10 Dec 2014 10:53:25 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>, x86@kernel.org,
-        Mike Travis <travis@sgi.com>
-Subject: [PATCH 06/12] x86: use {cpu|node}mask pr_cont and seq output functions
-Date: Wed, 10 Dec 2014 10:52:48 -0500
-Message-Id: <1418226774-30215-7-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 11/12] timer: use {cpu|node}mask pr_cont and seq output functions
+Date: Wed, 10 Dec 2014 10:52:53 -0500
+Message-Id: <1418226774-30215-12-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
 References: <1418226774-30215-1-git-send-email-tj@kernel.org>
@@ -34,10 +34,6 @@ Because these conversions usually break up a single output function
 call into multiple, the reduction is LOC isn't too big but it removes
 unnecessary complexity and/or arbitrary limit on the length printed.
 
-* uv_nmi_nr_cpus_pr() got overly smart and implemented "..."
-  abbreviation if the output stretched over the predefined 1024 byte
-  buffer.  Replaced with plain pr_cont.
-
 This patch is dependent on the previous patch ("bitmap, cpumask,
 nodemask: implement pr_cont variants of formatting functions") which
 is planned to go through -mm.  It'd be the easiest to route this
@@ -46,91 +42,41 @@ till the forementioned patch is merged to mainline.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: x86@kernel.org
-Cc: Mike Travis <travis@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/mm/numa.c            |  9 ++++-----
- arch/x86/platform/uv/uv_nmi.c | 27 +++++++++------------------
- 2 files changed, 13 insertions(+), 23 deletions(-)
+ kernel/time/tick-sched.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 1a88370..614a302 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -794,7 +794,6 @@ int early_cpu_to_node(int cpu)
- void debug_cpumask_set_cpu(int cpu, int node, bool enable)
- {
- 	struct cpumask *mask;
--	char buf[64];
- 
- 	if (node == NUMA_NO_NODE) {
- 		/* early_cpu_to_node() already emits a warning and trace */
-@@ -812,10 +811,10 @@ void debug_cpumask_set_cpu(int cpu, int node, bool enable)
- 	else
- 		cpumask_clear_cpu(cpu, mask);
- 
--	cpulist_scnprintf(buf, sizeof(buf), mask);
--	printk(KERN_DEBUG "%s cpu %d node %d: mask now %s\n",
--		enable ? "numa_add_cpu" : "numa_remove_cpu",
--		cpu, node, buf);
-+	printk(KERN_DEBUG "%s cpu %d node %d: mask now ",
-+	       enable ? "numa_add_cpu" : "numa_remove_cpu", cpu, node);
-+	cpulist_pr_cont(mask);
-+	pr_cont("\n");
- 	return;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 4d54b75..dd43dd9 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -326,13 +326,6 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+ 	return NOTIFY_OK;
  }
  
-diff --git a/arch/x86/platform/uv/uv_nmi.c b/arch/x86/platform/uv/uv_nmi.c
-index c6b146e..61ee9cf 100644
---- a/arch/x86/platform/uv/uv_nmi.c
-+++ b/arch/x86/platform/uv/uv_nmi.c
-@@ -273,20 +273,6 @@ static inline void uv_clear_nmi(int cpu)
- 	}
- }
- 
--/* Print non-responding cpus */
--static void uv_nmi_nr_cpus_pr(char *fmt)
--{
--	static char cpu_list[1024];
--	int len = sizeof(cpu_list);
--	int c = cpumask_weight(uv_nmi_cpu_mask);
--	int n = cpulist_scnprintf(cpu_list, len, uv_nmi_cpu_mask);
+-/*
+- * Worst case string length in chunks of CPU range seems 2 steps
+- * separations: 0,2,4,6,...
+- * This is NR_CPUS + sizeof('\0')
+- */
+-static char __initdata nohz_full_buf[NR_CPUS + 1];
 -
--	if (n >= len-1)
--		strcpy(&cpu_list[len - 6], "...\n");
--
--	printk(fmt, c, cpu_list);
--}
--
- /* Ping non-responding cpus attemping to force them into the NMI handler */
- static void uv_nmi_nr_cpus_ping(void)
+ static int tick_nohz_init_all(void)
  {
-@@ -371,16 +357,21 @@ static void uv_nmi_wait(int master)
- 			break;
+ 	int err = -1;
+@@ -393,8 +386,9 @@ void __init tick_nohz_init(void)
+ 		context_tracking_cpu_set(cpu);
  
- 		/* if not all made it in, send IPI NMI to them */
--		uv_nmi_nr_cpus_pr(KERN_ALERT
--			"UV: Sending NMI IPI to %d non-responding CPUs: %s\n");
-+		pr_alert("UV: Sending NMI IPI to %d non-responding CPUs: ",
-+			 cpumask_weight(uv_nmi_cpu_mask));
-+		cpulist_pr_cont(uv_nmi_cpu_mask);
-+		pr_cont("\n");
-+
- 		uv_nmi_nr_cpus_ping();
+ 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
+-	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), tick_nohz_full_mask);
+-	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
++	pr_info("NO_HZ: Full dynticks CPUs: ");
++	cpulist_pr_cont(tick_nohz_full_mask);
++	pr_cont(".\n");
+ }
+ #endif
  
- 		/* if all cpus are in, then done */
- 		if (!uv_nmi_wait_cpus(0))
- 			break;
- 
--		uv_nmi_nr_cpus_pr(KERN_ALERT
--			"UV: %d CPUs not in NMI loop: %s\n");
-+		pr_alert("UV: %d CPUs not in NMI loop: ",
-+			 cpumask_weight(uv_nmi_cpu_mask));
-+		cpulist_pr_cont(uv_nmi_cpu_mask);
-+		pr_cont("\n");
- 	} while (0);
- 
- 	pr_alert("UV: %d of %d CPUs in NMI\n",
 -- 
 2.1.0
 
