@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773AbaLJDz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 22:55:28 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:64900 "EHLO
+	id S1754826AbaLJD6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 22:58:33 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:60493 "EHLO
 	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654AbaLJDy6 (ORCPT
+	with ESMTP id S1754543AbaLJD6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 22:54:58 -0500
+	Tue, 9 Dec 2014 22:58:31 -0500
 X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52847357"
+   d="scan'208";a="52847515"
+Message-ID: <5487C4E3.6060403@broadcom.com>
+Date: Tue, 9 Dec 2014 19:58:27 -0800
 From: Ray Jui <rjui@broadcom.com>
-To: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Florian Fainelli <f.fainelli@gmail.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>,
+        "Matt Porter" <mporter@linaro.org>,
         Russell King <linux@arm.linux.org.uk>
 CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
-        "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH v3 3/3] ARM: dts: add I2C device nodes for Broadcom Cygnus
-Date: Tue, 9 Dec 2014 19:57:12 -0800
-Message-ID: <1418183832-24793-4-git-send-email-rjui@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418183832-24793-1-git-send-email-rjui@broadcom.com>
-References: <Ray Jui <rjui@broadcom.com>
- <1418183832-24793-1-git-send-email-rjui@broadcom.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 3/4] ARM: mach-bcm: Enable I2C support for iProc
+References: <Ray Jui <rjui@broadcom.com> <1418177893-22094-1-git-send-email-rjui@broadcom.com> <1418177893-22094-4-git-send-email-rjui@broadcom.com> <5487ADE5.4070705@gmail.com> <5487AEF0.5010404@broadcom.com> <5487BBE0.4000701@gmail.com>
+In-Reply-To: <5487BBE0.4000701@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C device nodes and its properties in bcm-cygnus.dtsi but keep
-them disabled there. Individual I2C devices can be enabled in board
-specific dts file when I2C slave devices are enabled in the future
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/boot/dts/bcm-cygnus.dtsi |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..f7d6c1d 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -70,6 +70,26 @@
- 		};
- 	};
- 
-+	i2c0: i2c@18008000 {
-+		compatible = "brcm,iproc-i2c";
-+		reg = <0x18008000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 85 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
-+	i2c1: i2c@1800b000 {
-+		compatible = "brcm,iproc-i2c";
-+		reg = <0x1800b000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 86 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
- 	uart0: serial@18020000 {
- 		compatible = "snps,dw-apb-uart";
- 		reg = <0x18020000 0x100>;
--- 
-1.7.9.5
+On 12/9/2014 7:20 PM, Florian Fainelli wrote:
+> On 09/12/14 18:24, Ray Jui wrote:
+>>
+>>
+>> On 12/9/2014 6:20 PM, Florian Fainelli wrote:
+>>> On 09/12/14 18:18, Ray Jui wrote:
+>>>> Enable I2C driver support for Broadcom iProc family of SoCs by
+>>>> selecting I2C_BCM_IPROC
+>>>>
+>>>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>>>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+>>>> ---
+>>>>    arch/arm/mach-bcm/Kconfig |    1 +
+>>>>    1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+>>>> index aaeec78..86ee90b 100644
+>>>> --- a/arch/arm/mach-bcm/Kconfig
+>>>> +++ b/arch/arm/mach-bcm/Kconfig
+>>>> @@ -19,6 +19,7 @@ config ARCH_BCM_IPROC
+>>>>        select ARCH_REQUIRE_GPIOLIB
+>>>>        select ARM_AMBA
+>>>>        select PINCTRL
+>>>> +    select I2C_BCM_IPROC
+>>>
+>>> One way to avoid having to modify mach-bcm/Kconfig would be to have your
+>>> i2c driver Kconfig do this:
+>>>
+>>> default ARCH_BCM_IPROC
+>>>
+>>> would that work?
+>>>
+>> Yes. So in which case it is better to select a driver from the
+>> architecture specific Kconfig?
+>
+> I suppose if your driver/subsystem is critical for system boot, like
+> powering a regulator or something that has a critical purpose, a select
+> is probably more appropriate here. If this is just exposing non-critical
+> devices, I would go with a depends on/default at the driver Kconfig level.
+>
+> This is just how I see things, others would definitively have a
+> different view.
+>
+Okay. Thanks. I default the driver to y in patchset v3 just like some 
+other I2C drivers in the same Kconfig. It already depends on 
+ARCH_BCM_IPROC so it makes sense to set the default to y, i.e., it will 
+be enabled by default for ARCH_BCM_IPROC platforms.
 
+>>
+>>>>        help
+>>>>          This enables support for systems based on Broadcom IPROC
+>>>> architected SoCs.
+>>>>          The IPROC complex contains one or more ARM CPUs along with
+>>>> common
+>>>>
+>>>
+>
