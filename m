@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539AbaLJPyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:54:22 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:41979 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932460AbaLJPxW (ORCPT
+	id S932563AbaLJPzK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:55:10 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:51084 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440AbaLJPxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:53:22 -0500
+	Wed, 10 Dec 2014 10:53:20 -0500
 From: Tejun Heo <tj@kernel.org>
 To: akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 09/12] rcu: use {cpu|node}mask pr_cont and seq output functions
-Date: Wed, 10 Dec 2014 10:52:51 -0500
-Message-Id: <1418226774-30215-10-git-send-email-tj@kernel.org>
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        linux-xtensa@linux-xtensa.org
+Subject: [PATCH 07/12] xtensa: use {cpu|node}mask pr_cont and seq output functions
+Date: Wed, 10 Dec 2014 10:52:49 -0500
+Message-Id: <1418226774-30215-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
 References: <1418226774-30215-1-git-send-email-tj@kernel.org>
@@ -42,35 +43,43 @@ till the forementioned patch is merged to mainline.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Chris Zankel <chris@zankel.net>
+Cc: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org
 ---
- kernel/rcu/tree_plugin.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/xtensa/kernel/setup.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 7a72858..a788a6f 100644
---- a/kernel/rcu/tree_plugin.h
-+++ b/kernel/rcu/tree_plugin.h
-@@ -53,7 +53,6 @@ DEFINE_PER_CPU(char, rcu_cpu_has_work);
- static cpumask_var_t rcu_nocb_mask; /* CPUs to have callbacks offloaded. */
- static bool have_rcu_nocb_mask;	    /* Was rcu_nocb_mask allocated? */
- static bool __read_mostly rcu_nocb_poll;    /* Offload kthread are to poll. */
--static char __initdata nocb_buf[NR_CPUS * 5];
- #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
- 
- /*
-@@ -2377,8 +2376,9 @@ void __init rcu_init_nohz(void)
- 		cpumask_and(rcu_nocb_mask, cpu_possible_mask,
- 			    rcu_nocb_mask);
- 	}
--	cpulist_scnprintf(nocb_buf, sizeof(nocb_buf), rcu_nocb_mask);
--	pr_info("\tOffload RCU callbacks from CPUs: %s.\n", nocb_buf);
-+	pr_info("\tOffload RCU callbacks from CPUs: ");
-+	cpulist_pr_cont(rcu_nocb_mask);
-+	pr_cont(".\n");
- 	if (rcu_nocb_poll)
- 		pr_info("\tPoll for callbacks from no-CBs CPUs.\n");
- 
+diff --git a/arch/xtensa/kernel/setup.c b/arch/xtensa/kernel/setup.c
+index 06370cc..441f505 100644
+--- a/arch/xtensa/kernel/setup.c
++++ b/arch/xtensa/kernel/setup.c
+@@ -574,12 +574,12 @@ void machine_power_off(void)
+ static int
+ c_show(struct seq_file *f, void *slot)
+ {
+-	char buf[NR_CPUS * 5];
+-
+-	cpulist_scnprintf(buf, sizeof(buf), cpu_online_mask);
+ 	/* high-level stuff */
+ 	seq_printf(f, "CPU count\t: %u\n"
+-		      "CPU list\t: %s\n"
++		      "CPU list\t: ",
++		      num_online_cpus());
++	seq_cpumask_list(f, cpu_online_mask);
++	seq_printf(f, "\n"
+ 		      "vendor_id\t: Tensilica\n"
+ 		      "model\t\t: Xtensa " XCHAL_HW_VERSION_NAME "\n"
+ 		      "core ID\t\t: " XCHAL_CORE_ID "\n"
+@@ -587,8 +587,6 @@ c_show(struct seq_file *f, void *slot)
+ 		      "byte order\t: %s\n"
+ 		      "cpu MHz\t\t: %lu.%02lu\n"
+ 		      "bogomips\t: %lu.%02lu\n",
+-		      num_online_cpus(),
+-		      buf,
+ 		      XCHAL_BUILD_UNIQUE_ID,
+ 		      XCHAL_HAVE_BE ?  "big" : "little",
+ 		      ccount_freq/1000000,
 -- 
 2.1.0
 
