@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaLJBqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:46:33 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:34077 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268AbaLJBqb (ORCPT
+	id S1754186AbaLJBqr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:46:47 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55395 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381AbaLJBqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:46:31 -0500
+	Tue, 9 Dec 2014 20:46:42 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
@@ -16,86 +16,84 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [RFC PATCH v3 0/7] btrfs: implement swap file support
-Date: Tue,  9 Dec 2014 17:45:41 -0800
-Message-Id: <cover.1418173063.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>, Mel Gorman <mgorman@suse.de>
+Subject: [RFC PATCH v3 3/7] swap: use direct I/O for SWP_FILE swap_readpage
+Date: Tue,  9 Dec 2014 17:45:44 -0800
+Message-Id: <9c1d4746d1e7e41114496be8912cb74e36d5df48.1418173063.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1418173063.git.osandov@osandov.com>
+References: <cover.1418173063.git.osandov@osandov.com>
+In-Reply-To: <cover.1418173063.git.osandov@osandov.com>
+References: <cover.1418173063.git.osandov@osandov.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, everyone,
+On Mon, Nov 17, 2014 at 07:48:17AM -0800, Christoph Hellwig wrote:
+> With the new iov_iter infrastructure that supprots direct I/O to kernel
+> pages please get rid of the ->readpage hack first.  I'm still utterly
+> disapoined that this crap ever got merged.
 
-This patch series, based on v3.18, implements support for swap files on BTRFS.
-Patches 1, 3, and 4 are for the VFS folks, patch 2 is for NFS, and the rest is
-all BTRFS.
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+ mm/page_io.c | 32 ++++++++++++++++++++++++++++----
+ 1 file changed, 28 insertions(+), 4 deletions(-)
 
-The standard swap file implementation uses bmap() to get a list of physical
-blocks to do I/O on. This doesn't work for BTRFS, which moves disk blocks around
-as part of normal operation (COW, defragmentation, etc.).
-
-Swap-over-NFS introduced an interface through which a filesystem can arbitrate
-swap I/O through address space operations:
-
-- swap_activate() is called by swapon() and informs the address space that the
-  given file is going to be used for swap, so it should take adequate measures
-  like reserving space on disk and pinning block lookup information in memory
-- swap_deactivate() is used to clean up on swapoff()
-- direct_IO() is used to page in and out (this no longer uses readpage as part
-  of this patch series)
-
-Patches 1-4 clean up the necessary infrastructure. There's more that can make
-this better (like resurrecting kernel AIO), but that can be done as a follow-up
-to the work here.
-
-Patches 5 and 6 lay the groundwork needed for using a swap file on BTRFS, and
-patch 7 implements the actual aops.
-
-Version 3 incorporates a bunch of David Sterba's feedback, both style and design
-issues. We now audit various ioctls to prevent them from interfering with swap
-file operation and handle extents which can't be nocow'd.
-
-After some discussion on the mailing list, I decided that for simplicity and
-reliability, it's best to simply disallow COW files and files with shared
-extents (like files with extents shared with a snapshot). From a user's
-perspective, this means that a snapshotted subvolume cannot be used for a swap
-file, but keeping the swap file in a separate subvolume that is never
-snapshotted seems entirely reasonable to me. An alternative suggestion was to
-allow swap files to be snapshotted and to do an implied COW on swap file
-activation, which I was ready to implement until I realized that we can't permit
-snapshotting a subvolume with an active swap file, so this creates a surprising
-inconsistency for users (in my opinion).
-
-As with before, this functionality is tenuously tested in a virtual machine with
-some artificial workloads, but it "works for me". I'm pretty happy with the
-results on my end, so please comment away.
-
-Thanks!
-
-Omar Sandoval (7):
-  direct-io: don't dirty ITER_BVEC pages on read
-  nfs: don't dirty ITER_BVEC pages read through direct I/O
-  swap: use direct I/O for SWP_FILE swap_readpage
-  vfs: update swap_{,de}activate documentation
-  btrfs: prevent ioctls from interfering with a swap file
-  btrfs: add EXTENT_FLAG_SWAPFILE
-  btrfs: enable swap file support
-
- Documentation/filesystems/Locking |   7 +-
- Documentation/filesystems/vfs.txt |   7 +-
- fs/btrfs/ctree.h                  |   3 +
- fs/btrfs/disk-io.c                |   1 +
- fs/btrfs/extent_io.c              |   1 +
- fs/btrfs/extent_map.h             |   1 +
- fs/btrfs/inode.c                  | 132 ++++++++++++++++++++++++++++++++++++++
- fs/btrfs/ioctl.c                  |  35 ++++++++--
- fs/direct-io.c                    |   8 ++-
- fs/nfs/direct.c                   |   5 +-
- include/trace/events/btrfs.h      |   3 +-
- mm/page_io.c                      |  32 +++++++--
- 12 files changed, 216 insertions(+), 19 deletions(-)
-
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 955db8b..10715e0 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -283,8 +283,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
+ 
+ 		set_page_writeback(page);
+ 		unlock_page(page);
+-		ret = mapping->a_ops->direct_IO(ITER_BVEC | WRITE,
+-						&kiocb, &from,
++		ret = mapping->a_ops->direct_IO(WRITE, &kiocb, &from,
+ 						kiocb.ki_pos);
+ 		if (ret == PAGE_SIZE) {
+ 			count_vm_event(PSWPOUT);
+@@ -348,12 +347,37 @@ int swap_readpage(struct page *page)
+ 	}
+ 
+ 	if (sis->flags & SWP_FILE) {
++		struct kiocb kiocb;
+ 		struct file *swap_file = sis->swap_file;
+ 		struct address_space *mapping = swap_file->f_mapping;
++		struct bio_vec bv = {
++			.bv_page = page,
++			.bv_len = PAGE_SIZE,
++			.bv_offset = 0,
++		};
++		struct iov_iter to = {
++			.type = ITER_BVEC | READ,
++			.count = PAGE_SIZE,
++			.iov_offset = 0,
++			.nr_segs = 1,
++		};
++		to.bvec = &bv;	/* older gcc versions are broken */
++
++		init_sync_kiocb(&kiocb, swap_file);
++		kiocb.ki_pos = page_file_offset(page);
++		kiocb.ki_nbytes = PAGE_SIZE;
+ 
+-		ret = mapping->a_ops->readpage(swap_file, page);
+-		if (!ret)
++		ret = mapping->a_ops->direct_IO(READ, &kiocb, &to,
++						kiocb.ki_pos);
++		if (ret == PAGE_SIZE) {
++			SetPageUptodate(page);
+ 			count_vm_event(PSWPIN);
++			ret = 0;
++		} else {
++			ClearPageUptodate(page);
++			SetPageError(page);
++		}
++		unlock_page(page);
+ 		return ret;
+ 	}
+ 
 -- 
 2.1.3
 
