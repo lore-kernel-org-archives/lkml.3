@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbaLJKq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:46:58 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:46113 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaLJKq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:46:56 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <854cb2f4d3aca213d1147d6e1e7b327a>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
-        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v5 0/5] Patches to add support for Rockchip usb PHYs.
-Date: Wed, 10 Dec 2014 18:46:06 +0800
-Message-Id: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
+	id S1755495AbaLJKsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:48:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38050 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753352AbaLJKsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:48:01 -0500
+Date: Wed, 10 Dec 2014 11:47:55 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Quota improvements and minor cleanups
+Message-ID: <20141210104755.GA25671@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  Hello Linus,
 
-Patches to add support for Rockchip usb phys.Add a new Rockchip
-usb phy driver and modify dwc2 controller driver to make dwc2
-platform devices support a generic PHY framework driver. This
-patch set has been tested on my rk3288-evb and power off the usb
-phys would reduce about 60mW power budget in total during sustem
-suspend.
+  could you please pull from
 
-Changes in v5:
-- Adjust entry order of example devicetree node in document.
-- reorder the phy dt node to a correct position.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-Changes in v4:
-- Get number of PHYs from device tree.
-- Model each PHY as subnode of the phy provider node.
-- Updata description for phy device tree subnode.
-- Add phy subnodes.
+  to get quota improvements and some minor cleanups. The main portion in
+the pull request are changes which move i_dquot array from struct inode
+into fs-private part of an inode which saves memory for filesystems which
+don't use VFS quotas.
 
-Changes in v3:
-- Use BIT macro instead of bit shift ops.
-- Rename the config entry to PHY_ROCKCHIP_USB.
-- Fix coding style: both branches of the if() which only one
-  branch of the conditional statement is a single statement
-  should have braces.
-- No need to test dwc2->phy for NULL before calling generic phy
-  APIs.
+Top of the tree is fdf2657bc81b. The full shortlog is:
 
-Yunzhi Li (5):
-  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
-  Documentation: bindings: add dt documentation for Rockchip usb     PHY
-  usb: dwc2: add generic PHY framework support for dwc2 usb controler
-    platform driver.
-  ARM: dts: rockchip: add rk3288 usb PHY
-  ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+Anton Blanchard (1):
+      quota: Add log level to printk
 
- .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  32 ++++
- arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
- arch/arm/boot/dts/rk3288.dtsi                      |  27 +++
- drivers/phy/Kconfig                                |   7 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-rockchip-usb.c                     | 211 +++++++++++++++++++++
- drivers/usb/dwc2/gadget.c                          |  33 ++--
- drivers/usb/dwc2/platform.c                        |  36 +++-
- 8 files changed, 328 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
- create mode 100644 drivers/phy/phy-rockchip-usb.c
+Jan Kara (12):
+      quota: Remove const from function declarations
+      quota: Allow each filesystem to specify which quota types it supports
+      gfs2: Set allowed quota types
+      xfs: Set allowed quota types
+      quota: Use function to provide i_dquot pointers
+      ext2: Convert to private i_dquot field
+      ext3: Convert to private i_dquot field
+      ext4: Convert to private i_dquot field
+      ocfs2: Convert to private i_dquot field
+      reiserfs: Convert to private i_dquot field
+      jfs: Convert to private i_dquot field
+      vfs: Remove i_dquot field from inode
+
+Markus Elfring (3):
+      jbd: Deletion of an unnecessary check before the function call "iput"
+      udf: Deletion of unnecessary checks before the function call "iput"
+      udf: One function call less in udf_fill_super() after error detection
+
+The diffstat is
+
+ fs/ext2/ext2.h           |  3 +++
+ fs/ext2/super.c          | 10 ++++++++
+ fs/ext3/ext3.h           |  4 ++++
+ fs/ext3/super.c          | 10 ++++++++
+ fs/ext4/ext4.h           |  4 ++++
+ fs/ext4/super.c          |  8 +++++++
+ fs/gfs2/ops_fstype.c     |  1 +
+ fs/inode.c               |  3 ---
+ fs/jbd/journal.c         |  3 +--
+ fs/jfs/jfs_incore.h      |  3 +++
+ fs/jfs/super.c           |  9 ++++++++
+ fs/ocfs2/inode.h         |  2 ++
+ fs/ocfs2/super.c         |  8 +++++++
+ fs/quota/dquot.c         | 59 ++++++++++++++++++++++++++----------------------
+ fs/quota/quota.c         | 13 +++++++++--
+ fs/reiserfs/reiserfs.h   |  4 ++++
+ fs/reiserfs/super.c      | 11 +++++++++
+ fs/udf/super.c           | 11 ++++-----
+ fs/xfs/xfs_super.c       |  1 +
+ include/linux/fs.h       |  5 ++--
+ include/linux/quota.h    |  5 ++++
+ include/linux/quotaops.h |  8 +++----
+ 22 files changed, 138 insertions(+), 47 deletions(-)
+
+							Thanks
+								Honza
 
 -- 
-2.0.0
-
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
