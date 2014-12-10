@@ -1,288 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188AbaLJVnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 16:43:03 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:49816 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932426AbaLJVnA (ORCPT
+	id S933208AbaLJVoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 16:44:54 -0500
+Received: from smtprelay0183.hostedemail.com ([216.40.44.183]:46728 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932426AbaLJVoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 16:43:00 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+gMloXQMB5Jim9ur3Buams
-Date: Wed, 10 Dec 2014 13:41:00 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 2/2] pstore-ram: Allow optional mapping with
- pgprot_noncached
-Message-ID: <20141210214100.GH30437@atomide.com>
-References: <1410546745-919-1-git-send-email-tony@atomide.com>
- <1410546745-919-2-git-send-email-tony@atomide.com>
- <20140912231514.GB12379@n2100.arm.linux.org.uk>
- <20140916205000.GA6672@atomide.com>
- <CAGXu5jLGQi+uA9oM7xRK98z2L81tLSfZE0S9eE7uUjxkCkeHDQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jLGQi+uA9oM7xRK98z2L81tLSfZE0S9eE7uUjxkCkeHDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 10 Dec 2014 16:44:54 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2551:2553:2561:2564:2682:2685:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3622:3865:3867:3868:3870:3872:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6261:8985:9025:9040:10004:10400:10848:11232:11658:11914:12043:12050:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: mice37_81c4f3329ad55
+X-Filterd-Recvd-Size: 1427
+Message-ID: <1418247890.18092.20.camel@perches.com>
+Subject: Re: [PATCH] drivers: cpuidle: Added a blank line after declarations
+From: Joe Perches <joe@perches.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Anjana Sasindran <anjanasasindran123@gmail.com>, daniel.lezcano@linaro.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 10 Dec 2014 13:44:50 -0800
+In-Reply-To: <354575085.t1Bv5Pht3m@vostro.rjw.lan>
+References: <1418233044-12059-1-git-send-email-anjanasasindran123@gmail.com>
+	 <354575085.t1Bv5Pht3m@vostro.rjw.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kees Cook <keescook@chromium.org> [141210 13:18]:
-> On Tue, Sep 16, 2014 at 1:50 PM, Tony Lindgren <tony@atomide.com> wrote:
-> > From: Tony Lindgren <tony@atomide.com>
-> > Date: Thu, 11 Sep 2014 15:02:37 -0700
-> > Subject: [PATCH] pstore-ram: Allow optional mapping with pgprot_noncached
-> >
-> > On some ARMs the memory can be mapped pgprot_noncached() and still
-> > be working for atomic operations. As pointed out by Colin Cross
-> > <ccross@android.com>, in some cases you do want to use
-> > pgprot_noncached() if the SoC supports it to see a debug printk
-> > just before a write hanging the system.
-> >
-> > On ARMs, the atomic operations on strongly ordered memory are
-> > implementation defined. So let's provide an optional kernel parameter
-> > for configuring pgprot_noncached(), and use pgprot_writecombine() by
-> > default.
-> >
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Rob Herring <robherring2@gmail.com>
-> > Cc: Randy Dunlap <rdunlap@infradead.org>
-> > Cc: Anton Vorontsov <anton@enomsg.org>
-> > Cc: Colin Cross <ccross@android.com>
-> > Cc: Kees Cook <keescook@chromium.org>
-> > Cc: Olof Johansson <olof@lixom.net>
-> > Cc: Tony Luck <tony.luck@intel.com>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
+On Wed, 2014-12-10 at 22:45 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, December 10, 2014 11:07:24 PM Anjana Sasindran wrote:
+> > This patch fix the checkpatch.pl warning:
+> > 
+> > WARNING: Missing blank line after declarations
 > 
-> Sorry this got missed! I think rmk's concerns were addressed in this
-> v2. Tony (Luck), can you take this into your tree?
-> 
-> Acked-by: Kees Cook <keescook@chromium.org>
+> Please send a patch to checkpatch.pl maintainers to make it not complain in
+> this case instead.  Thanks!
 
-I take your ack covers patch 1/2 also. The first patch in this
-series should be tagged cc stable when committing please.
+Direct any plaints to Andrew Morton and Greg KH instead.
+I don't care one way or another.
 
-Regards,
+https://lkml.org/lkml/2014/3/6/550
+https://lkml.org/lkml/2014/3/10/457
 
-Tony
- 
-> Thanks!
-> 
-> -Kees
-> 
-> >
-> > --- a/Documentation/ramoops.txt
-> > +++ b/Documentation/ramoops.txt
-> > @@ -14,11 +14,19 @@ survive after a restart.
-> >
-> >  1. Ramoops concepts
-> >
-> > -Ramoops uses a predefined memory area to store the dump. The start and size of
-> > -the memory area are set using two variables:
-> > +Ramoops uses a predefined memory area to store the dump. The start and size
-> > +and type of the memory area are set using three variables:
-> >    * "mem_address" for the start
-> >    * "mem_size" for the size. The memory size will be rounded down to a
-> >    power of two.
-> > +  * "mem_type" to specifiy if the memory type (default is pgprot_writecombine).
-> > +
-> > +Typically the default value of mem_type=0 should be used as that sets the pstore
-> > +mapping to pgprot_writecombine. Setting mem_type=1 attempts to use
-> > +pgprot_noncached, which only works on some platforms. This is because pstore
-> > +depends on atomic operations. At least on ARM, pgprot_noncached causes the
-> > +memory to be mapped strongly ordered, and atomic operations on strongly ordered
-> > +memory are implementation defined, and won't work on many ARMs such as omaps.
-> >
-> >  The memory area is divided into "record_size" chunks (also rounded down to
-> >  power of two) and each oops/panic writes a "record_size" chunk of
-> > @@ -55,6 +63,7 @@ Setting the ramoops parameters can be done in 2 different manners:
-> >  static struct ramoops_platform_data ramoops_data = {
-> >          .mem_size               = <...>,
-> >          .mem_address            = <...>,
-> > +        .mem_type               = <...>,
-> >          .record_size            = <...>,
-> >          .dump_oops              = <...>,
-> >          .ecc                    = <...>,
-> > --- a/fs/pstore/ram.c
-> > +++ b/fs/pstore/ram.c
-> > @@ -61,6 +61,11 @@ module_param(mem_size, ulong, 0400);
-> >  MODULE_PARM_DESC(mem_size,
-> >                 "size of reserved RAM used to store oops/panic logs");
-> >
-> > +static unsigned int mem_type;
-> > +module_param(mem_type, uint, 0600);
-> > +MODULE_PARM_DESC(mem_type,
-> > +               "set to 1 to try to use unbuffered memory (default 0)");
-> > +
-> >  static int dump_oops = 1;
-> >  module_param(dump_oops, int, 0600);
-> >  MODULE_PARM_DESC(dump_oops,
-> > @@ -79,6 +84,7 @@ struct ramoops_context {
-> >         struct persistent_ram_zone *fprz;
-> >         phys_addr_t phys_addr;
-> >         unsigned long size;
-> > +       unsigned int memtype;
-> >         size_t record_size;
-> >         size_t console_size;
-> >         size_t ftrace_size;
-> > @@ -358,7 +364,8 @@ static int ramoops_init_przs(struct device *dev, struct ramoops_context *cxt,
-> >                 size_t sz = cxt->record_size;
-> >
-> >                 cxt->przs[i] = persistent_ram_new(*paddr, sz, 0,
-> > -                                                 &cxt->ecc_info);
-> > +                                                 &cxt->ecc_info,
-> > +                                                 cxt->memtype);
-> >                 if (IS_ERR(cxt->przs[i])) {
-> >                         err = PTR_ERR(cxt->przs[i]);
-> >                         dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-> > @@ -388,7 +395,7 @@ static int ramoops_init_prz(struct device *dev, struct ramoops_context *cxt,
-> >                 return -ENOMEM;
-> >         }
-> >
-> > -       *prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info);
-> > +       *prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info, cxt->memtype);
-> >         if (IS_ERR(*prz)) {
-> >                 int err = PTR_ERR(*prz);
-> >
-> > @@ -435,6 +442,7 @@ static int ramoops_probe(struct platform_device *pdev)
-> >
-> >         cxt->size = pdata->mem_size;
-> >         cxt->phys_addr = pdata->mem_address;
-> > +       cxt->memtype = pdata->mem_type;
-> >         cxt->record_size = pdata->record_size;
-> >         cxt->console_size = pdata->console_size;
-> >         cxt->ftrace_size = pdata->ftrace_size;
-> > @@ -564,6 +572,7 @@ static void ramoops_register_dummy(void)
-> >
-> >         dummy_data->mem_size = mem_size;
-> >         dummy_data->mem_address = mem_address;
-> > +       dummy_data->mem_type = 0;
-> >         dummy_data->record_size = record_size;
-> >         dummy_data->console_size = ramoops_console_size;
-> >         dummy_data->ftrace_size = ramoops_ftrace_size;
-> > --- a/fs/pstore/ram_core.c
-> > +++ b/fs/pstore/ram_core.c
-> > @@ -380,7 +380,8 @@ void persistent_ram_zap(struct persistent_ram_zone *prz)
-> >         persistent_ram_update_header_ecc(prz);
-> >  }
-> >
-> > -static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-> > +static void *persistent_ram_vmap(phys_addr_t start, size_t size,
-> > +               unsigned int memtype)
-> >  {
-> >         struct page **pages;
-> >         phys_addr_t page_start;
-> > @@ -392,7 +393,10 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-> >         page_start = start - offset_in_page(start);
-> >         page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
-> >
-> > -       prot = pgprot_writecombine(PAGE_KERNEL);
-> > +       if (memtype)
-> > +               prot = pgprot_noncached(PAGE_KERNEL);
-> > +       else
-> > +               prot = pgprot_writecombine(PAGE_KERNEL);
-> >
-> >         pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
-> >         if (!pages) {
-> > @@ -411,8 +415,11 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-> >         return vaddr;
-> >  }
-> >
-> > -static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-> > +static void *persistent_ram_iomap(phys_addr_t start, size_t size,
-> > +               unsigned int memtype)
-> >  {
-> > +       void *va;
-> > +
-> >         if (!request_mem_region(start, size, "persistent_ram")) {
-> >                 pr_err("request mem region (0x%llx@0x%llx) failed\n",
-> >                         (unsigned long long)size, (unsigned long long)start);
-> > @@ -422,19 +429,24 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-> >         buffer_start_add = buffer_start_add_locked;
-> >         buffer_size_add = buffer_size_add_locked;
-> >
-> > -       return ioremap_wc(start, size);
-> > +       if (memtype)
-> > +               va = ioremap(start, size);
-> > +       else
-> > +               va = ioremap_wc(start, size);
-> > +
-> > +       return va;
-> >  }
-> >
-> >  static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
-> > -               struct persistent_ram_zone *prz)
-> > +               struct persistent_ram_zone *prz, int memtype)
-> >  {
-> >         prz->paddr = start;
-> >         prz->size = size;
-> >
-> >         if (pfn_valid(start >> PAGE_SHIFT))
-> > -               prz->vaddr = persistent_ram_vmap(start, size);
-> > +               prz->vaddr = persistent_ram_vmap(start, size, memtype);
-> >         else
-> > -               prz->vaddr = persistent_ram_iomap(start, size);
-> > +               prz->vaddr = persistent_ram_iomap(start, size, memtype);
-> >
-> >         if (!prz->vaddr) {
-> >                 pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
-> > @@ -500,7 +512,8 @@ void persistent_ram_free(struct persistent_ram_zone *prz)
-> >  }
-> >
-> >  struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
-> > -                       u32 sig, struct persistent_ram_ecc_info *ecc_info)
-> > +                       u32 sig, struct persistent_ram_ecc_info *ecc_info,
-> > +                       unsigned int memtype)
-> >  {
-> >         struct persistent_ram_zone *prz;
-> >         int ret = -ENOMEM;
-> > @@ -511,7 +524,7 @@ struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
-> >                 goto err;
-> >         }
-> >
-> > -       ret = persistent_ram_buffer_map(start, size, prz);
-> > +       ret = persistent_ram_buffer_map(start, size, prz, memtype);
-> >         if (ret)
-> >                 goto err;
-> >
-> > --- a/include/linux/pstore_ram.h
-> > +++ b/include/linux/pstore_ram.h
-> > @@ -53,7 +53,8 @@ struct persistent_ram_zone {
-> >  };
-> >
-> >  struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
-> > -                       u32 sig, struct persistent_ram_ecc_info *ecc_info);
-> > +                       u32 sig, struct persistent_ram_ecc_info *ecc_info,
-> > +                       unsigned int memtype);
-> >  void persistent_ram_free(struct persistent_ram_zone *prz);
-> >  void persistent_ram_zap(struct persistent_ram_zone *prz);
-> >
-> > @@ -76,6 +77,7 @@ ssize_t persistent_ram_ecc_string(struct persistent_ram_zone *prz,
-> >  struct ramoops_platform_data {
-> >         unsigned long   mem_size;
-> >         unsigned long   mem_address;
-> > +       unsigned int    mem_type;
-> >         unsigned long   record_size;
-> >         unsigned long   console_size;
-> >         unsigned long   ftrace_size;
-> 
-> 
-> 
-> -- 
-> Kees Cook
-> Chrome OS Security
+
