@@ -1,206 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758468AbaLJXwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 18:52:12 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:49926 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758444AbaLJXwK (ORCPT
+	id S1758509AbaLJXyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 18:54:16 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54826 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758333AbaLJXyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 18:52:10 -0500
+	Wed, 10 Dec 2014 18:54:14 -0500
+Date: Wed, 10 Dec 2014 23:53:47 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Alexandru Stan <amstan@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org, lgirdwood@gmail.com,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141210235347.GT11764@sirena.org.uk>
+References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
-References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com> <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 10 Dec 2014 15:51:48 -0800
-Message-ID: <CALCETrVAQ5JRoyL=V=fj+KxwUXfOTibKQkEDcvSqJzEi2sgshA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be preempted
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Beulich <JBeulich@suse.com>,
-        Juergen Gross <jgross@suse.com>, bpoirier@suse.de,
-        X86 ML <x86@kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, Borislav Petkov <bp@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="m02j6EnzJ5dgRysN"
+Content-Disposition: inline
+In-Reply-To: <1418245085-9754-1-git-send-email-dianders@chromium.org>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
+ certain voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 3:34 PM, Luis R. Rodriguez
-<mcgrof@do-not-panic.com> wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
->
-> Xen has support for splitting heavy work work into a series
-> of hypercalls, called multicalls, and preempting them through
-> what Xen calls continuation [0]. Despite this though without
-> CONFIG_PREEMPT preemption won't happen and while enabling
-> CONFIG_RT_GROUP_SCHED can at times help its not enough to
-> make a system usable. Such is the case for example when
-> creating a > 50 GiB HVM guest, we can get softlockups [1] with:.
->
-> kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
->
-> The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
-> (default 120 seconds), on the Xen side in this particular case
-> this happens when the following Xen hypervisor code is used:
->
-> xc_domain_set_pod_target() -->
->   do_memory_op() -->
->     arch_memory_op() -->
->       p2m_pod_set_mem_target()
->         -- long delay (real or emulated) --
->
-> This happens on arch_memory_op() on the XENMEM_set_pod_target memory
-> op even though arch_memory_op() can handle continuation via
-> hypercall_create_continuation() for example.
->
-> Machines over 50 GiB of memory are on high demand and hard to come
-> by so to help replicate this sort of issue long delays on select
-> hypercalls have been emulated in order to be able to test this on
-> smaller machines [2].
->
-> On one hand this issue can be considered as expected given that
-> CONFIG_PREEMPT=n is used however we have forced voluntary preemption
-> precedent practices in the kernel even for CONFIG_PREEMPT=n through
-> the usage of cond_resched() sprinkled in many places. To address
-> this issue with Xen hypercalls though we need to find a way to aid
-> to the schedular in the middle of hypercalls. We are motivated to
-> address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
-> rather unresponsive for long periods of time; in the worst case, at least
-> only currently by emulating long delays on select io disk bound
-> hypercalls, this can lead to filesystem corruption if the delay happens
-> for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
->
-> We can address this problem by trying to check if we should schedule
-> on the xen timer in the middle of a hypercall on the return from the
-> timer interrupt. We want to be careful to not always force voluntary
-> preemption though so to do this we only selectively enable preemption
-> on very specific xen hypercalls.
->
-> This enables hypercall preemption by selectively forcing checks for
-> voluntary preempting only on ioctl initiated private hypercalls
-> where we know some folks have run into reported issues [1].
->
-> [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
-> [1] https://bugzilla.novell.com/show_bug.cgi?id=861093
-> [2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
->
-> Based on original work by: David Vrabel <david.vrabel@citrix.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Jan Beulich <JBeulich@suse.com>
-> Cc: linux-kernel@vger.kernel.org
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-> ---
->  arch/x86/kernel/entry_32.S | 21 +++++++++++++++++++++
->  arch/x86/kernel/entry_64.S | 17 +++++++++++++++++
->  drivers/xen/Makefile       |  2 +-
->  drivers/xen/preempt.c      | 17 +++++++++++++++++
->  drivers/xen/privcmd.c      |  2 ++
->  include/xen/xen-ops.h      | 26 ++++++++++++++++++++++++++
->  6 files changed, 84 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/xen/preempt.c
->
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 344b63f..40b5c0c 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -982,7 +982,28 @@ ENTRY(xen_hypervisor_callback)
->  ENTRY(xen_do_upcall)
->  1:     mov %esp, %eax
->         call xen_evtchn_do_upcall
-> +#ifdef CONFIG_PREEMPT
->         jmp  ret_from_intr
-> +#else
-> +       GET_THREAD_INFO(%ebp)
-> +#ifdef CONFIG_VM86
-> +       movl PT_EFLAGS(%esp), %eax      # mix EFLAGS and CS
-> +       movb PT_CS(%esp), %al
-> +       andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-> +#else
-> +       movl PT_CS(%esp), %eax
-> +       andl $SEGMENT_RPL_MASK, %eax
-> +#endif
-> +       cmpl $USER_RPL, %eax
-> +       jae resume_userspace            # returning to v8086 or userspace
-> +       DISABLE_INTERRUPTS(CLBR_ANY)
-> +       cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-> +       jz resume_kernel
-> +       movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-> +       call cond_resched_irq
-> +       movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
-> +       jmp resume_kernel
-> +#endif /* CONFIG_PREEMPT */
->         CFI_ENDPROC
->  ENDPROC(xen_hypervisor_callback)
->
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index c0226ab..0ccdd06 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -1170,7 +1170,23 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
->         popq %rsp
->         CFI_DEF_CFA_REGISTER rsp
->         decl PER_CPU_VAR(irq_count)
-> +#ifdef CONFIG_PREEMPT
->         jmp  error_exit
-> +#else
-> +       movl %ebx, %eax
-> +       RESTORE_REST
-> +       DISABLE_INTERRUPTS(CLBR_NONE)
-> +       TRACE_IRQS_OFF
-> +       GET_THREAD_INFO(%rcx)
-> +       testl %eax, %eax
-> +       je error_exit_user
-> +       cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
-> +       jz retint_kernel
 
-I think I understand this part.
+--m02j6EnzJ5dgRysN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +       movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+On Wed, Dec 10, 2014 at 12:58:02PM -0800, Doug Anderson wrote:
+> There are some cases where you'd like to set a voltage for a regulator
+> and a range of voltages are OK, but you'd really like to get as close
+> as you can to a specific voltage if at all possible.
 
-Why?  Is the issue that, if preemptible hypercalls nest, you don't
-want to preempt again?
+This looks like regulator_set_voltage_tol(), why not use that?  The spec
+probably even has a number for the tolerance, or you can make one up.
 
-> +       call cond_resched_irq
+--m02j6EnzJ5dgRysN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-On !CONFIG_PREEMPT, there's no preempt_disable, right?  So how do you
-guarantee that you don't preempt something you shouldn't?  Is the idea
-that these events will only fire nested *directly* inside a
-preemptible hypercall?  Also, should you check that IRQs were on when
-the event fired?  (Are they on in pt_regs?)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-> +       movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
-> +       jmp retint_kernel
-> +#endif /* CONFIG_PREEMPT */
->         CFI_ENDPROC
+iQEcBAEBAgAGBQJUiN0KAAoJECTWi3JdVIfQ6kUH/RZuwsm3G6iSJLkEspFELg2o
+91372XWoj39DNiKunui6Voo6x4YCMoU5LIhRD9eUV0fcG8l48adiUjgxaly6hTn1
+uGPC84rqc2x2kua3UDnGGTP5VRIKbsf/bqz/+dLnlCQW5qSYGvp26Jn65YufWDlX
+krefWXorgbfYvwywLTC/PYCbjHW+R7iBPu/01pNNkf4wJdiAsaIcxzWe8T95mNyr
+jFNzsIoKMWhX0uiqt0OxvYFbijR1+r++1cFT2d+pTCn9Bt2wctKG+x+GPXR/sf+E
+3Fs7KfTVc9+Wi6W3ljSM8gKgZF0ksMMft1ZvPnYP1mtp7CTtZ0LyMNRB4FjsBG0=
+=3eTb
+-----END PGP SIGNATURE-----
 
-All that being said, this is IMO a bit gross.  You've added a bunch of
-asm that's kind of like a parallel error_exit, and the error entry and
-exit code is hairy enough that this scares me.  Can you do this mostly
-in C instead?  This would look a nicer if it could be:
-
-    call xen_evtchn_do_upcall
-    popq %rsp
-    CFI_DEF_CFA_REGISTER rsp
-    decl PER_CPU_VAR(irq_count)
-+  call xen_end_upcall
-    jmp error_exit
-
-Where xen_end_upcall would be witten in C, nokprobes and notrace (if
-needed) and would check pt_regs and whatever else and just call
-schedule if needed?
-
---Andy
+--m02j6EnzJ5dgRysN--
