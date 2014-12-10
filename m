@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974AbaLJTtG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:49:06 -0500
+	id S933044AbaLJTtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:49:21 -0500
 Received: from mga02.intel.com ([134.134.136.20]:33536 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932827AbaLJTtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:49:02 -0500
+	id S932982AbaLJTtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 14:49:15 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="621770535"
+   d="scan'208";a="621770565"
 From: Sudeep Dutt <sudeep.dutt@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
@@ -16,9 +16,9 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
         Dave Jiang <dave.jiang@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>
-Subject: [PATCH char-misc-next 02/13] misc: mic: SCIF ring buffer infrastructure
-Date: Wed, 10 Dec 2014 11:47:42 -0800
-Message-Id: <6a99cdd6459ca70802f0000c1904bfdb8f45b73b.1418237176.git.sudeep.dutt@intel.com>
+Subject: [PATCH char-misc-next 12/13] misc: mic: MIC card driver specific changes to enable SCIF
+Date: Wed, 10 Dec 2014 11:47:52 -0800
+Message-Id: <fcea09f02a8bb0db8bc217dd930b75d14690b862.1418237176.git.sudeep.dutt@intel.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <cover.1418237176.git.sudeep.dutt@intel.com>
 References: <cover.1418237176.git.sudeep.dutt@intel.com>
@@ -28,384 +28,372 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCIF ring buffer is a single producer, single consumer byte stream ring
-buffer optimized for avoiding reads across the PCIe bus. The ring buffer is
-used to implement a receive queue for SCIF driver messaging between nodes and
-for byte stream messaging between SCIF endpoints. Each SCIF node has a
-receive queue for every other SCIF node, and each connected endpoint has a
-receive queue for messages from its peer. This pair of receive queues is
-referred to as a SCIF queue pair.
+MIC card driver specific changes to enable SCIF. This patch implements
+the SCIF hardware bus operations and registers a SCIF device on the
+SCIF hardware bus.
 
 Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
+Signed-off-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 ---
- drivers/misc/mic/scif/scif_rb.h | 100 ++++++++++++++++
- drivers/misc/mic/scif/scif_rb.c | 248 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 348 insertions(+)
- create mode 100644 drivers/misc/mic/scif/scif_rb.h
- create mode 100644 drivers/misc/mic/scif/scif_rb.c
+ drivers/misc/mic/Kconfig           |   2 +-
+ drivers/misc/mic/card/mic_device.h |  11 +++-
+ drivers/misc/mic/card/mic_x100.h   |   1 +
+ drivers/misc/mic/card/mic_device.c | 132 ++++++++++++++++++++++++++++++++++++-
+ drivers/misc/mic/card/mic_x100.c   |  61 ++++++++++++++++-
+ 5 files changed, 201 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/misc/mic/scif/scif_rb.h b/drivers/misc/mic/scif/scif_rb.h
-new file mode 100644
-index 0000000..ba4bfce
---- /dev/null
-+++ b/drivers/misc/mic/scif/scif_rb.h
-@@ -0,0 +1,100 @@
-+/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * This file is provided under a dual BSD/GPLv2 license.  When using or
-+ * redistributing this file, you may do so under either license.
-+ *
-+ * GPL LICENSE SUMMARY
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * BSD LICENSE
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions
-+ * are met:
-+ *
-+ * * Redistributions of source code must retain the above copyright
-+ *   notice, this list of conditions and the following disclaimer.
-+ * * Redistributions in binary form must reproduce the above copyright
-+ *   notice, this list of conditions and the following disclaimer in
-+ *   the documentation and/or other materials provided with the
-+ *   distribution.
-+ * * Neither the name of Intel Corporation nor the names of its
-+ *   contributors may be used to endorse or promote products derived
-+ *   from this software without specific prior written permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ * Intel SCIF driver.
-+ */
-+#ifndef SCIF_RB_H
-+#define SCIF_RB_H
-+/*
-+ * This file describes a general purpose, byte based ring buffer. Writers to the
-+ * ring buffer need to synchronize using a lock. The same is true for readers,
-+ * although in practice, the ring buffer has a single reader. It is lockless
-+ * between producer and consumer so it can handle being used across the PCIe
-+ * bus. The ring buffer ensures that there are no reads across the PCIe bus for
-+ * performance reasons. Two of these are used to form a single bidirectional
-+ * queue-pair across PCIe.
-+ */
-+/*
-+ * struct scif_rb - SCIF Ring Buffer
-+ *
-+ * @rb_base: The base of the memory used for storing RB messages
-+ * @read_ptr: Pointer to the read offset
-+ * @write_ptr: Pointer to the write offset
-+ * @size: Size of the memory in rb_base
-+ * @current_read_offset: Cached read offset for performance
-+ * @current_write_offset: Cached write offset for performance
-+ */
-+struct scif_rb {
-+	void *rb_base;
-+	uint32_t *read_ptr;
-+	uint32_t *write_ptr;
-+	uint32_t size;
-+	uint32_t current_read_offset;
-+	uint32_t current_write_offset;
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index a2ea3ab..e9f2f56 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -56,7 +56,7 @@ comment "Intel MIC Card Driver"
+ 
+ config INTEL_MIC_CARD
+ 	tristate "Intel MIC Card Driver"
+-	depends on 64BIT && X86 && INTEL_MIC_BUS
++	depends on 64BIT && X86 && INTEL_MIC_BUS && SCIF_BUS
+ 	select VIRTIO
+ 	help
+ 	  This enables card driver support for the Intel Many Integrated
+diff --git a/drivers/misc/mic/card/mic_device.h b/drivers/misc/mic/card/mic_device.h
+index 844be8f..1dbf83c 100644
+--- a/drivers/misc/mic/card/mic_device.h
++++ b/drivers/misc/mic/card/mic_device.h
+@@ -29,9 +29,9 @@
+ 
+ #include <linux/workqueue.h>
+ #include <linux/io.h>
+-#include <linux/irqreturn.h>
+ #include <linux/interrupt.h>
+ #include <linux/mic_bus.h>
++#include "../bus/scif_bus.h"
+ 
+ /**
+  * struct mic_intr_info - Contains h/w specific interrupt sources info
+@@ -73,6 +73,9 @@ struct mic_device {
+  * @irq_info: The OS specific irq information
+  * @intr_info: H/W specific interrupt information.
+  * @dma_mbdev: dma device on the MIC virtual bus.
++ * @dma_ch - Array of DMA channels
++ * @num_dma_ch - Number of DMA channels available
++ * @scdev: SCIF device on the SCIF virtual bus.
+  */
+ struct mic_driver {
+ 	char name[20];
+@@ -84,6 +87,9 @@ struct mic_driver {
+ 	struct mic_irq_info irq_info;
+ 	struct mic_intr_info intr_info;
+ 	struct mbus_device *dma_mbdev;
++	struct dma_chan *dma_ch[MIC_MAX_DMA_CHAN];
++	int num_dma_ch;
++	struct scif_hw_dev *scdev;
+ };
+ 
+ /**
+@@ -122,10 +128,11 @@ void mic_driver_uninit(struct mic_driver *mdrv);
+ int mic_next_card_db(void);
+ struct mic_irq *
+ mic_request_card_irq(irq_handler_t handler, irq_handler_t thread_fn,
+-		     const char *name, void *data, int intr_src);
++		     const char *name, void *data, int db);
+ void mic_free_card_irq(struct mic_irq *cookie, void *data);
+ u32 mic_read_spad(struct mic_device *mdev, unsigned int idx);
+ void mic_send_intr(struct mic_device *mdev, int doorbell);
++void mic_send_p2p_intr(int doorbell, struct mic_mw *mw);
+ int mic_db_to_irq(struct mic_driver *mdrv, int db);
+ u32 mic_ack_interrupt(struct mic_device *mdev);
+ void mic_hw_intr_init(struct mic_driver *mdrv);
+diff --git a/drivers/misc/mic/card/mic_x100.h b/drivers/misc/mic/card/mic_x100.h
+index d66ea55..7e22249 100644
+--- a/drivers/misc/mic/card/mic_x100.h
++++ b/drivers/misc/mic/card/mic_x100.h
+@@ -35,6 +35,7 @@
+ #define MIC_X100_SBOX_SDBIC0 0x0000CC90
+ #define MIC_X100_SBOX_SDBIC0_DBREQ_BIT 0x80000000
+ #define MIC_X100_SBOX_RDMASR0	0x0000B180
++#define MIC_X100_SBOX_APICICR0 0x0000A9D0
+ 
+ #define MIC_X100_MAX_DOORBELL_IDX 8
+ 
+diff --git a/drivers/misc/mic/card/mic_device.c b/drivers/misc/mic/card/mic_device.c
+index 83819ee..6338908 100644
+--- a/drivers/misc/mic/card/mic_device.c
++++ b/drivers/misc/mic/card/mic_device.c
+@@ -28,6 +28,8 @@
+ #include <linux/pci.h>
+ #include <linux/interrupt.h>
+ #include <linux/reboot.h>
++#include <linux/dmaengine.h>
++#include <linux/kmod.h>
+ 
+ #include <linux/mic_common.h>
+ #include "../common/mic_dev.h"
+@@ -240,6 +242,111 @@ static void mic_uninit_irq(void)
+ 	kfree(mdrv->irq_info.irq_usage_count);
+ }
+ 
++static inline struct mic_driver *scdev_to_mdrv(struct scif_hw_dev *scdev)
++{
++	return dev_get_drvdata(scdev->dev.parent);
++}
++
++static struct mic_irq *
++___mic_request_irq(struct scif_hw_dev *scdev,
++		   irqreturn_t (*func)(int irq, void *data),
++				       const char *name, void *data,
++				       int db)
++{
++	return mic_request_card_irq(func, NULL, name, data, db);
++}
++
++static void
++___mic_free_irq(struct scif_hw_dev *scdev,
++		struct mic_irq *cookie, void *data)
++{
++	return mic_free_card_irq(cookie, data);
++}
++
++static void ___mic_ack_interrupt(struct scif_hw_dev *scdev, int num)
++{
++	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
++
++	mic_ack_interrupt(&mdrv->mdev);
++}
++
++static int ___mic_next_db(struct scif_hw_dev *scdev)
++{
++	return mic_next_card_db();
++}
++
++static void ___mic_send_intr(struct scif_hw_dev *scdev, int db)
++{
++	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
++
++	mic_send_intr(&mdrv->mdev, db);
++}
++
++static void ___mic_send_p2p_intr(struct scif_hw_dev *scdev, int db,
++				 struct mic_mw *mw)
++{
++	mic_send_p2p_intr(db, mw);
++}
++
++static void __iomem *
++___mic_ioremap(struct scif_hw_dev *scdev,
++	       phys_addr_t pa, size_t len)
++{
++	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
++
++	return mic_card_map(&mdrv->mdev, pa, len);
++}
++
++static void ___mic_iounmap(struct scif_hw_dev *scdev, void __iomem *va)
++{
++	struct mic_driver *mdrv = scdev_to_mdrv(scdev);
++
++	mic_card_unmap(&mdrv->mdev, va);
++}
++
++static struct scif_hw_ops scif_hw_ops = {
++	.request_irq = ___mic_request_irq,
++	.free_irq = ___mic_free_irq,
++	.ack_interrupt = ___mic_ack_interrupt,
++	.next_db = ___mic_next_db,
++	.send_intr = ___mic_send_intr,
++	.send_p2p_intr = ___mic_send_p2p_intr,
++	.ioremap = ___mic_ioremap,
++	.iounmap = ___mic_iounmap,
 +};
 +
-+/* methods used by both */
-+void scif_rb_init(struct scif_rb *rb, uint32_t *read_ptr, uint32_t *write_ptr,
-+		  void *rb_base, uint8_t size);
-+/* writer only methods */
-+/* write a new command, then scif_rb_commit() */
-+int scif_rb_write(struct scif_rb *rb, void *msg, uint32_t size);
-+/* after write(), then scif_rb_commit() */
-+void scif_rb_commit(struct scif_rb *rb);
-+/* query space available for writing to a RB. */
-+uint32_t scif_rb_space(struct scif_rb *rb);
++static int mic_request_dma_chans(struct mic_driver *mdrv)
++{
++	dma_cap_mask_t mask;
++	struct dma_chan *chan;
 +
-+/* reader only methods */
-+/* read a new message from the ring buffer of size bytes */
-+uint32_t scif_rb_get_next(struct scif_rb *rb, void *msg, uint32_t size);
-+/* update the read pointer so that the space can be reused */
-+void scif_rb_update_read_ptr(struct scif_rb *rb);
-+/* count the number of bytes that can be read */
-+uint32_t scif_rb_count(struct scif_rb *rb, uint32_t size);
-+#endif
-diff --git a/drivers/misc/mic/scif/scif_rb.c b/drivers/misc/mic/scif/scif_rb.c
-new file mode 100644
-index 0000000..b72da07
---- /dev/null
-+++ b/drivers/misc/mic/scif/scif_rb.c
-@@ -0,0 +1,248 @@
++	request_module("mic_x100_dma");
++	dma_cap_zero(mask);
++	dma_cap_set(DMA_MEMCPY, mask);
++
++	do {
++		chan = dma_request_channel(mask, NULL, NULL);
++		if (chan) {
++			mdrv->dma_ch[mdrv->num_dma_ch++] = chan;
++			if (mdrv->num_dma_ch >= MIC_MAX_DMA_CHAN)
++				break;
++		}
++	} while (chan);
++	dev_info(mdrv->dev, "DMA channels # %d\n", mdrv->num_dma_ch);
++	return mdrv->num_dma_ch;
++}
++
++static void mic_free_dma_chans(struct mic_driver *mdrv)
++{
++	int i = 0;
++
++	for (i = 0; i < mdrv->num_dma_ch; i++) {
++		dma_release_channel(mdrv->dma_ch[i]);
++		mdrv->dma_ch[i] = NULL;
++	}
++	mdrv->num_dma_ch = 0;
++}
++
+ /*
+  * mic_driver_init - MIC driver initialization tasks.
+  *
+@@ -248,6 +355,8 @@ static void mic_uninit_irq(void)
+ int __init mic_driver_init(struct mic_driver *mdrv)
+ {
+ 	int rc;
++	struct mic_bootparam __iomem *bootparam;
++	u8 node_id;
+ 
+ 	g_drv = mdrv;
+ 	/*
+@@ -268,13 +377,32 @@ int __init mic_driver_init(struct mic_driver *mdrv)
+ 	rc = mic_shutdown_init();
+ 	if (rc)
+ 		goto irq_uninit;
++	if (!mic_request_dma_chans(mdrv)) {
++		rc = -ENODEV;
++		goto shutdown_uninit;
++	}
+ 	rc = mic_devices_init(mdrv);
+ 	if (rc)
+-		goto shutdown_uninit;
++		goto dma_free;
++	bootparam = mdrv->dp;
++	node_id = ioread8(&bootparam->node_id);
++	mdrv->scdev = scif_register_device(mdrv->dev, MIC_SCIF_DEV,
++					   NULL, &scif_hw_ops,
++					   0, node_id, &mdrv->mdev.mmio, NULL,
++					   NULL, mdrv->dp, mdrv->dma_ch,
++					   mdrv->num_dma_ch);
++	if (IS_ERR(mdrv->scdev)) {
++		rc = PTR_ERR(mdrv->scdev);
++		goto device_uninit;
++	}
+ 	mic_create_card_debug_dir(mdrv);
+ 	atomic_notifier_chain_register(&panic_notifier_list, &mic_panic);
+ done:
+ 	return rc;
++device_uninit:
++	mic_devices_uninit(mdrv);
++dma_free:
++	mic_free_dma_chans(mdrv);
+ shutdown_uninit:
+ 	mic_shutdown_uninit();
+ irq_uninit:
+@@ -294,7 +422,9 @@ put:
+ void mic_driver_uninit(struct mic_driver *mdrv)
+ {
+ 	mic_delete_card_debug_dir(mdrv);
++	scif_unregister_device(mdrv->scdev);
+ 	mic_devices_uninit(mdrv);
++	mic_free_dma_chans(mdrv);
+ 	/*
+ 	 * Inform the host about the shutdown status i.e. poweroff/restart etc.
+ 	 * The module cannot be unloaded so the only code path to call
+diff --git a/drivers/misc/mic/card/mic_x100.c b/drivers/misc/mic/card/mic_x100.c
+index 9d57545..5ae1078 100644
+--- a/drivers/misc/mic/card/mic_x100.c
++++ b/drivers/misc/mic/card/mic_x100.c
+@@ -70,6 +70,41 @@ void mic_send_intr(struct mic_device *mdev, int doorbell)
+ 		       (MIC_X100_SBOX_SDBIC0 + (4 * doorbell)));
+ }
+ 
 +/*
-+ * Intel MIC Platform Software Stack (MPSS)
-+ *
-+ * Copyright(c) 2014 Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, version 2, as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-+ * General Public License for more details.
-+ *
-+ * Intel SCIF driver.
-+ *
++ * mic_x100_send_sbox_intr - Send an MIC_X100_SBOX interrupt to MIC.
 + */
-+#include <linux/circ_buf.h>
-+#include <linux/types.h>
-+#include <linux/io.h>
-+
-+#include "scif_rb.h"
-+
-+#define scif_rb_ring_cnt(head, tail, size) CIRC_CNT(head, tail, size)
-+#define scif_rb_ring_space(head, tail, size) CIRC_SPACE(head, tail, size)
-+
-+/**
-+ * scif_rb_init - Initializes the ring buffer
-+ * @rb: ring buffer
-+ * @read_ptr: A pointer to the read offset
-+ * @write_ptr: A pointer to the write offset
-+ * @rb_base: A pointer to the base of the ring buffer
-+ * @size: The size of the ring buffer in powers of two
-+ */
-+void scif_rb_init(struct scif_rb *rb, u32 *read_ptr, u32 *write_ptr,
-+		  void *rb_base, u8 size)
++static void mic_x100_send_sbox_intr(struct mic_mw *mw, int doorbell)
 +{
-+	rb->rb_base = rb_base;
-+	rb->size = (1 << size);
-+	rb->read_ptr = read_ptr;
-+	rb->write_ptr = write_ptr;
-+	rb->current_read_offset = *read_ptr;
-+	rb->current_write_offset = *write_ptr;
-+}
++	u64 apic_icr_offset = MIC_X100_SBOX_APICICR0 + doorbell * 8;
++	u32 apicicr_low = mic_mmio_read(mw, MIC_X100_SBOX_BASE_ADDRESS +
++					apic_icr_offset);
 +
-+/* Copies a message to the ring buffer -- handles the wrap around case */
-+static void memcpy_torb(struct scif_rb *rb, void *header,
-+			void *msg, u32 size)
-+{
-+	u32 size1, size2;
-+
-+	if (header + size >= rb->rb_base + rb->size) {
-+		/* Need to call two copies if it wraps around */
-+		size1 = (u32)(rb->rb_base + rb->size - header);
-+		size2 = size - size1;
-+		memcpy_toio((void __iomem __force *)header, msg, size1);
-+		memcpy_toio((void __iomem __force *)rb->rb_base,
-+			    msg + size1, size2);
-+	} else {
-+		memcpy_toio((void __iomem __force *)header, msg, size);
-+	}
-+}
-+
-+/* Copies a message from the ring buffer -- handles the wrap around case */
-+static void memcpy_fromrb(struct scif_rb *rb, void *header,
-+			  void *msg, u32 size)
-+{
-+	u32 size1, size2;
-+
-+	if (header + size >= rb->rb_base + rb->size) {
-+		/* Need to call two copies if it wraps around */
-+		size1 = (u32)(rb->rb_base + rb->size - header);
-+		size2 = size - size1;
-+		memcpy_fromio(msg, (void __iomem __force *)header, size1);
-+		memcpy_fromio(msg+size1,
-+			      (void __iomem __force *)rb->rb_base, size2);
-+	} else {
-+		memcpy_fromio(msg, (void __iomem __force *)header, size);
-+	}
-+}
-+
-+/**
-+ * scif_rb_space - Query space available for writing to the RB
-+ * @rb: ring buffer
-+ *
-+ * Return: size available for writing to RB in bytes.
-+ */
-+u32 scif_rb_space(struct scif_rb *rb)
-+{
-+	rb->current_read_offset = *rb->read_ptr;
++	/* for MIC we need to make sure we "hit" the send_icr bit (13) */
++	apicicr_low = (apicicr_low | (1 << 13));
 +	/*
-+	 * Update from the HW read pointer only once the peer has exposed the
-+	 * new empty slot. This barrier is paired with the memory barrier
-+	 * scif_rb_update_read_ptr()
-+	 */
-+	mb();
-+	return scif_rb_ring_space(rb->current_write_offset,
-+				  rb->current_read_offset, rb->size);
-+}
-+
-+/**
-+ * scif_rb_write - Write a message to the RB
-+ * @rb: ring buffer
-+ * @msg: buffer to send the message.  Must be at least size bytes long
-+ * @size: the size (in bytes) to be copied to the RB
-+ *
-+ * This API does not block if there isn't enough space in the RB.
-+ * Returns: 0 on success or -ENOMEM on failure
-+ */
-+int scif_rb_write(struct scif_rb *rb, void *msg, u32 size)
-+{
-+	void *header;
-+
-+	if (scif_rb_space(rb) < size)
-+		return -ENOMEM;
-+	header = rb->rb_base + rb->current_write_offset;
-+	memcpy_torb(rb, header, msg, size);
-+	/*
-+	 * Wait until scif_rb_commit(). Update the local ring
-+	 * buffer data, not the shared data until commit.
-+	 */
-+	rb->current_write_offset =
-+		(rb->current_write_offset + size) & (rb->size - 1);
-+	return 0;
-+}
-+
-+/**
-+ * scif_rb_commit - To submit the message to let the peer fetch it
-+ * @rb: ring buffer
-+ */
-+void scif_rb_commit(struct scif_rb *rb)
-+{
-+	/*
-+	 * We must ensure ordering between the all the data committed
-+	 * previously before we expose the new message to the peer by
-+	 * updating the write_ptr. This write barrier is paired with
-+	 * the read barrier in scif_rb_count(..)
++	 * Ensure that the interrupt is ordered w.r.t. previous stores
++	 * to main memory. Fence instructions are not implemented in X100
++	 * since execution is in order but a compiler barrier is still
++	 * required.
 +	 */
 +	wmb();
-+	ACCESS_ONCE(*rb->write_ptr) = rb->current_write_offset;
-+#ifdef CONFIG_INTEL_MIC_CARD
++	mic_mmio_write(mw, apicicr_low,
++		       MIC_X100_SBOX_BASE_ADDRESS + apic_icr_offset);
++}
++
++static void mic_x100_send_rdmasr_intr(struct mic_mw *mw, int doorbell)
++{
++	int rdmasr_offset = MIC_X100_SBOX_RDMASR0 + (doorbell << 2);
 +	/*
-+	 * X100 Si bug: For the case where a Core is performing an EXT_WR
-+	 * followed by a Doorbell Write, the Core must perform two EXT_WR to the
-+	 * same address with the same data before it does the Doorbell Write.
-+	 * This way, if ordering is violated for the Interrupt Message, it will
-+	 * fall just behind the first Posted associated with the first EXT_WR.
++	 * Ensure that the interrupt is ordered w.r.t. previous stores
++	 * to main memory. Fence instructions are not implemented in X100
++	 * since execution is in order but a compiler barrier is still
++	 * required.
 +	 */
-+	ACCESS_ONCE(*rb->write_ptr) = rb->current_write_offset;
-+#endif
++	wmb();
++	mic_mmio_write(mw, 0, MIC_X100_SBOX_BASE_ADDRESS + rdmasr_offset);
 +}
 +
-+/**
-+ * scif_rb_get - To get next message from the ring buffer
-+ * @rb: ring buffer
-+ * @size: Number of bytes to be read
-+ *
-+ * Return: NULL if no bytes to be read from the ring buffer, otherwise the
-+ *	pointer to the next byte
-+ */
-+static void *scif_rb_get(struct scif_rb *rb, u32 size)
+ /**
+  * mic_ack_interrupt - Device specific interrupt handling.
+  * @mdev: pointer to mic_device instance
+@@ -91,6 +126,18 @@ static inline int mic_get_rdmasr_irq(int index)
+ 	return  MIC_X100_RDMASR_IRQ_BASE + index;
+ }
+ 
++void mic_send_p2p_intr(int db, struct mic_mw *mw)
 +{
-+	void *header = NULL;
++	int rdmasr_index;
 +
-+	if (scif_rb_count(rb, size) >= size)
-+		header = rb->rb_base + rb->current_read_offset;
-+	return header;
-+}
-+
-+/*
-+ * scif_rb_get_next - Read from ring buffer.
-+ * @rb: ring buffer
-+ * @msg: buffer to hold the message.  Must be at least size bytes long
-+ * @size: Number of bytes to be read
-+ *
-+ * Return: number of bytes read if available bytes are >= size, otherwise
-+ * returns zero.
-+ */
-+u32 scif_rb_get_next(struct scif_rb *rb, void *msg, u32 size)
-+{
-+	void *header = NULL;
-+	int read_size = 0;
-+
-+	header = scif_rb_get(rb, size);
-+	if (header) {
-+		u32 next_cmd_offset =
-+			(rb->current_read_offset + size) & (rb->size - 1);
-+
-+		read_size = size;
-+		rb->current_read_offset = next_cmd_offset;
-+		memcpy_fromrb(rb, header, msg, size);
++	if (db < MIC_X100_NUM_SBOX_IRQ) {
++		mic_x100_send_sbox_intr(mw, db);
++	} else {
++		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ;
++		mic_x100_send_rdmasr_intr(mw, rdmasr_index);
 +	}
-+	return read_size;
 +}
 +
-+/**
-+ * scif_rb_update_read_ptr
-+ * @rb: ring buffer
-+ */
-+void scif_rb_update_read_ptr(struct scif_rb *rb)
-+{
-+	u32 new_offset;
+ /**
+  * mic_hw_intr_init - Initialize h/w specific interrupt
+  * information.
+@@ -113,11 +160,15 @@ void mic_hw_intr_init(struct mic_driver *mdrv)
+ int mic_db_to_irq(struct mic_driver *mdrv, int db)
+ {
+ 	int rdmasr_index;
 +
-+	new_offset = rb->current_read_offset;
 +	/*
-+	 * We must ensure ordering between the all the data committed or read
-+	 * previously before we expose the empty slot to the peer by updating
-+	 * the read_ptr. This barrier is paired with the read barrier in
-+	 * scif_rb_space(..)
++	 * The total number of doorbell interrupts on the card are 16. Indices
++	 * 0-8 falls in the SBOX category and 8-15 fall in the RDMASR category.
 +	 */
-+	mb();
-+	ACCESS_ONCE(*rb->read_ptr) = new_offset;
-+#ifdef CONFIG_INTEL_MIC_CARD
-+	/*
-+	 * X100 Si Bug: For the case where a Core is performing an EXT_WR
-+	 * followed by a Doorbell Write, the Core must perform two EXT_WR to the
-+	 * same address with the same data before it does the Doorbell Write.
-+	 * This way, if ordering is violated for the Interrupt Message, it will
-+	 * fall just behind the first Posted associated with the first EXT_WR.
-+	 */
-+	ACCESS_ONCE(*rb->read_ptr) = new_offset;
-+#endif
-+}
+ 	if (db < MIC_X100_NUM_SBOX_IRQ) {
+ 		return mic_get_sbox_irq(db);
+ 	} else {
+-		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ +
+-			MIC_X100_RDMASR_IRQ_BASE;
++		rdmasr_index = db - MIC_X100_NUM_SBOX_IRQ;
+ 		return mic_get_rdmasr_irq(rdmasr_index);
+ 	}
+ }
+@@ -243,10 +294,16 @@ static void mic_platform_shutdown(struct platform_device *pdev)
+ 	mic_remove(pdev);
+ }
+ 
++static u64 mic_dma_mask = DMA_BIT_MASK(64);
 +
-+/**
-+ * scif_rb_count
-+ * @rb: ring buffer
-+ * @size: Number of bytes expected to be read
-+ *
-+ * Return: number of bytes that can be read from the RB
-+ */
-+u32 scif_rb_count(struct scif_rb *rb, u32 size)
-+{
-+	if (scif_rb_ring_cnt(rb->current_write_offset,
-+			     rb->current_read_offset,
-+			     rb->size) < size) {
-+		rb->current_write_offset = *rb->write_ptr;
-+		/*
-+		 * Update from the HW write pointer if empty only once the peer
-+		 * has exposed the new message. This read barrier is paired
-+		 * with the write barrier in scif_rb_commit(..)
-+		 */
-+		smp_rmb();
-+	}
-+	return scif_rb_ring_cnt(rb->current_write_offset,
-+				rb->current_read_offset,
-+				rb->size);
-+}
+ static struct platform_device mic_platform_dev = {
+ 	.name = mic_driver_name,
+ 	.id   = 0,
+ 	.num_resources = 0,
++	.dev = {
++		.dma_mask = &mic_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(64),
++	},
+ };
+ 
+ static struct platform_driver __refdata mic_platform_driver = {
 -- 
 1.8.2.1
 
