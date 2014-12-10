@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaLJFSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 00:18:21 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:41079 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181AbaLJFSU (ORCPT
+	id S1751526AbaLJFav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 00:30:51 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42284 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045AbaLJFau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 00:18:20 -0500
-Message-ID: <5487D799.5060404@gmail.com>
-Date: Tue, 09 Dec 2014 22:18:17 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 10 Dec 2014 00:30:50 -0500
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>
-CC: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [BUG] perf mem: perf mem report fails in TUI mode
-References: <CABPqkBTLjQPymwDgNKdOshZimKQ0DGWaqm0gC8uFbwPK7vWrsA@mail.gmail.com>
-In-Reply-To: <CABPqkBTLjQPymwDgNKdOshZimKQ0DGWaqm0gC8uFbwPK7vWrsA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 10 Dec 2014 11:00:39 +0530
+Message-ID: <CA+iXiiOhPxvJKR5-9U_9Hd6mOnXJadBS+WRZhtv3yPw2r8KgJQ@mail.gmail.com>
+Subject: [Query] Spurious interrupts from clockevent device on X86 Ivybridge
+From: Santosh Shukla <santosh.shukla@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>, fweisbec@gmail.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        preeti@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
+        Kevin Hilman <khilman@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/9/14 9:15 PM, Stephane Eranian wrote:
-> Hi,
->
-> I was running a couple of tests with perf mem from tip.git and
-> found that perf mem -t load rep was failing only in TUI mode.
-> With --stdio, it works fine. I did a bit of investigation and found
-> out that the TUI mode is failing because some symbol (kernel)
-> is showing up with a huge (negative) size. I don't understand
-> the connection between the TUI vs. tty browser and symbols.
->
-> To reproduce:
->      $ perf mem -t load rec my_test_program
->      $ perf mem -t load rep
->      $ perf mem -t load rep --stdio
->
-> Debugging with TUI is a pain, so I stopped.
->
-> I have a patch to improve perf mem a bit but I'd like to get this problem
-> fixed first.
->
-> Maybe you have a idea of what's going on.
+Hi Guys,
 
-I usually avoid the TUI by not installing slang-devel.
+I have been chasing spurious clockevent interrupts (In HIGHRES mode) on my x86
+IvyBridge server and stuck on some blockers (mostly due to lack of knowledge)
+and need some help..
 
-But, trying out Linus' current tip (a0e4467726c - post 3.18) this seems 
-to work fine:
-     perf mem -t load rec ls
-     perf mem -t load rep
+What does spurious mean ?
+I take it as the case when a core is unnecessarily interrupted by the clockevent
+device while we didn't wanted it to.
 
-But kernel version for the box is 3.16.6-203.fc20.x86_64.
+I tried to catch them with the help of few new trace points in
+hrtimer_interrupt() when it didn't serviced any pending hrtimers..
 
-David
+The causes I could find:
+- Clockevent device's counter overflow: When we need to program a clockevt
+  device for times larger than it can handle, we program it for max time and
+  then reprogram again on expiration. Because of hardware counter limitations we
+  have to do it this way and this isn't really a spurious interrupt as we
+  programmed it that way.
+
+- Hardware timer firing before its expiration: Yes, its hard to digest but from
+  my tests it looks like this does happen. Will circulate another mail once I am
+  sure about it.
+
+- Difference between time returned by hrtimer_update_base() and clockevt
+  device's notion of time: Wanted to discuss this here..
+
+
+An example of what I am witnessing in my tests:
+
+clockevt device programmed to fire after 199 ms and it fires exactly after that
+time (Verified with ftrace time-diff and tsc diff [tsc: timestamp counter
+instructions for x86]).
+
+But when hrtimer_interrupt() tries to find the hrtimer for which the event
+occurred, it finds the value returned by hrtimer_update_base() being lesser than
+the softexpires of the timer for which the event was programmed. And the diff is
+approximately 1 us most of the times I see the spurious interrupt.
+
+<idle>-0     [010] d...    68.961171: clk_evt_program: delta:199933679
+expires=69071000000 /* programmed for 199 ms */
+<idle>-0     [010] d...    68.961171: lapic_next_deadline:
+cur_tsc:365799488705427 new_tsc:365799907536051 delta:199443 usec /*
+sets new_tsc */
+<idle>-0     [010] d.h.    69.161183: local_timer_entry: vector=239
+<idle>-0     [010] d.h.    69.161185: local_apic_timer_interrupt:
+cur_tsc:365799907547595 delta:199448 usec /* Interrupt arrived
+afterexactly 199 ms */
+<idle>-0     [010] d.h.    69.161187:
+hrtimer_interrupt:function=tick_sched_timer expires=69071000000
+softexpires=69071000000
+basenow:69070997234 /* But Softexpires > basenow ?? */
+<idle>-0     [010] d.h.    69.161188: clk_evt_program: delta:1000
+expires=69071000000 /* new expiry value (1 us) */
+<idle>-0     [010] d.h.    69.161189: lapic_next_deadline:
+cur_tsc:365799907556179 new_tsc:365799907558259 delta:0 usec /* sets
+new tsc value */
+<idle>-0     [010] d.h.    69.161189: local_timer_exit: vector=239
+
+Tested on: Ivybrdge V2, 12 core X86 server, though it occurs on ARM as well
+(but not that frequent).
+
+Regards,
+Santosh
