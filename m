@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703AbaLJP6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:58:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:5896 "EHLO mga09.intel.com"
+	id S932655AbaLJP6P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:58:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25936 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932634AbaLJP6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:58:16 -0500
+	id S932634AbaLJP6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 10:58:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="496704540"
+   d="scan'208";a="496704444"
 From: Irina Tirdea <irina.tirdea@intel.com>
 To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
@@ -16,82 +16,34 @@ Cc: linux-kernel@vger.kernel.org,
         Daniel Baluta <daniel.baluta@intel.com>,
         Peter Meerwald <pmeerw@pmeerw.net>,
         Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v2 4/4] iio: accel: kxcjk-1013: power off device if probe fails
-Date: Wed, 10 Dec 2014 18:23:54 +0200
-Message-Id: <1418228634-10505-5-git-send-email-irina.tirdea@intel.com>
+Subject: [PATCH v2 0/4] PM fixes for kxcjk-1013
+Date: Wed, 10 Dec 2014 18:23:50 +0200
+Message-Id: <1418228634-10505-1-git-send-email-irina.tirdea@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418228634-10505-1-git-send-email-irina.tirdea@intel.com>
-References: <1418228634-10505-1-git-send-email-irina.tirdea@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the device is initialized in probe, it is also powered on.
-If there is an error after the initialization, the device will
-remain powered on.
+This is a small set of power manangement fixes for kxcjk-1013 accel driver,
+mostly related to error handling.
 
-Power off the device in case probe fails after device initialization.
+Jonathan, you mentioned that you applied the first 2 patches from this series
+to the togreg branch, but I cannot find them there or on the testing branch.
+I have included them in v2, but they are identical to those in the first version.
 
-Signed-off-by: Irina Tirdea <irina.tirdea@intel.com>
-Suggested-by: Daniel Baluta <daniel.baluta@intel.com>
-Reviewed-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
----
- drivers/iio/accel/kxcjk-1013.c |   18 ++++++++++++------
- 1 file changed, 12 insertions(+), 6 deletions(-)
+Changes since v1:
+ - always set power state to off in case of i2c error (patch 3)
+ - patches 3 and 4 reviewed by Srinivas
 
-diff --git a/drivers/iio/accel/kxcjk-1013.c b/drivers/iio/accel/kxcjk-1013.c
-index 0dc6ccf..a5e7d30 100644
---- a/drivers/iio/accel/kxcjk-1013.c
-+++ b/drivers/iio/accel/kxcjk-1013.c
-@@ -1240,21 +1240,25 @@ static int kxcjk1013_probe(struct i2c_client *client,
- 						KXCJK1013_IRQ_NAME,
- 						indio_dev);
- 		if (ret)
--			return ret;
-+			goto err_poweroff;
- 
- 		data->dready_trig = devm_iio_trigger_alloc(&client->dev,
- 							   "%s-dev%d",
- 							   indio_dev->name,
- 							   indio_dev->id);
--		if (!data->dready_trig)
--			return -ENOMEM;
-+		if (!data->dready_trig) {
-+			ret = -ENOMEM;
-+			goto err_poweroff;
-+		}
- 
- 		data->motion_trig = devm_iio_trigger_alloc(&client->dev,
- 							  "%s-any-motion-dev%d",
- 							  indio_dev->name,
- 							  indio_dev->id);
--		if (!data->motion_trig)
--			return -ENOMEM;
-+		if (!data->motion_trig) {
-+			ret = -ENOMEM;
-+			goto err_poweroff;
-+		}
- 
- 		data->dready_trig->dev.parent = &client->dev;
- 		data->dready_trig->ops = &kxcjk1013_trigger_ops;
-@@ -1263,7 +1267,7 @@ static int kxcjk1013_probe(struct i2c_client *client,
- 		iio_trigger_get(indio_dev->trig);
- 		ret = iio_trigger_register(data->dready_trig);
- 		if (ret)
--			return ret;
-+			goto err_poweroff;
- 
- 		data->motion_trig->dev.parent = &client->dev;
- 		data->motion_trig->ops = &kxcjk1013_trigger_ops;
-@@ -1312,6 +1316,8 @@ err_trigger_unregister:
- 		iio_trigger_unregister(data->dready_trig);
- 	if (data->motion_trig)
- 		iio_trigger_unregister(data->motion_trig);
-+err_poweroff:
-+	kxcjk1013_set_mode(data, STANDBY);
- 
- 	return ret;
- }
+Irina Tirdea (4):
+  iio: accel: kxcjk-1013: always power on device in resume
+  iio: accel: kxcjk-1013: only set power state if CONFIG_PM is defined
+  iio: accel: kxcjk-1013: error handling when set mode fails
+  iio: accel: kxcjk-1013: power off device if probe fails
+
+ drivers/iio/accel/kxcjk-1013.c |   38 +++++++++++++++++++++++++++-----------
+ 1 file changed, 27 insertions(+), 11 deletions(-)
+
 -- 
 1.7.9.5
 
