@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524AbaLJMG7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 07:06:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49362 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaLJMG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 07:06:57 -0500
-Message-ID: <54883759.4090409@redhat.com>
-Date: Wed, 10 Dec 2014 13:06:49 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1753616AbaLJMLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 07:11:33 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:43618 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751892AbaLJMLc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 07:11:32 -0500
+Date: Wed, 10 Dec 2014 12:11:25 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Fabio Estevam <festevam@gmail.com>, sameo@linux.intel.com,
+        anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
+        johan@kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] mfd: da9052-core: Fix platform-device id collision
+Message-ID: <20141210121125.GC23481@x1>
+References: <1418175593-23474-1-git-send-email-festevam@gmail.com>
+ <20141210094649.GA23481@x1>
+ <20141210111925.GP11764@sirena.org.uk>
 MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: jan.kiszka@siemens.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: nVMX: Disable unrestricted mode if ept=0
-References: <jpg388s95zb.fsf@redhat.com>
-In-Reply-To: <jpg388s95zb.fsf@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141210111925.GP11764@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 10 Dec 2014, Mark Brown wrote:
 
-
-On 06/12/2014 16:02, Bandan Das wrote:
+> On Wed, Dec 10, 2014 at 09:46:50AM +0000, Lee Jones wrote:
+> > On Tue, 09 Dec 2014, Fabio Estevam wrote:
 > 
-> If L0 has disabled EPT, don't advertise unrestricted
-> mode at all since it depends on EPT to run real mode code.
+> > > Tested on a imx53-qsb board, where multiple DA9053 regulators can be 
+> > > successfully probed.
 > 
-> Signed-off-by: Bandan Das <bsd@redhat.com>
-> ---
->  arch/x86/kvm/vmx.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+> > Applied for v3.20, thanks.
 > 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 3e556c6..ed70394 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -2377,12 +2377,12 @@ static __init void nested_vmx_setup_ctls_msrs(void)
->  	nested_vmx_secondary_ctls_low = 0;
->  	nested_vmx_secondary_ctls_high &=
->  		SECONDARY_EXEC_VIRTUALIZE_APIC_ACCESSES |
-> -		SECONDARY_EXEC_UNRESTRICTED_GUEST |
->  		SECONDARY_EXEC_WBINVD_EXITING;
->  
->  	if (enable_ept) {
->  		/* nested EPT: emulate EPT also to L1 */
-> -		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT;
-> +		nested_vmx_secondary_ctls_high |= SECONDARY_EXEC_ENABLE_EPT |
-> +			SECONDARY_EXEC_UNRESTRICTED_GUEST;
->  		nested_vmx_ept_caps = VMX_EPT_PAGE_WALK_4_BIT |
->  			 VMX_EPTP_WB_BIT | VMX_EPT_2MB_PAGE_BIT |
->  			 VMX_EPT_INVEPT_BIT;
-> 
+> Fabio was saying that -next is broken which presumably means that v3.19
+> will be broken unless this gets sent as a fix.
 
-Thanks, applied with
+My train of thought was that the original configuration has not
+changed since 2011.  I guess other regulators have been recently
+introduced.  Very well, applied to -fixes.
 
-Fixes: 92fbc7b195b824e201d9f06f2b93105f72384d65
-Cc: stable@vger.kernel.org
-
-Paolo
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
