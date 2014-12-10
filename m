@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754AbaLJOYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:24:40 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:49365 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757610AbaLJOXp (ORCPT
+	id S1757621AbaLJOXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:23:44 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:39514 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757445AbaLJOXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:23:45 -0500
+	Wed, 10 Dec 2014 09:23:41 -0500
 From: David Hildenbrand <dahi@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
@@ -14,116 +14,423 @@ Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
         schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
         tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
         hughd@google.com, hocko@suse.cz
-Subject: [PATCH v2 3/5] mm, uaccess: trigger might_sleep() in might_fault() when pagefaults are disabled
-Date: Wed, 10 Dec 2014 15:23:32 +0100
-Message-Id: <1418221414-60110-4-git-send-email-dahi@linux.vnet.ibm.com>
+Subject: [PATCH v2 1/5] uaccess: add pagefault_count to thread_info
+Date: Wed, 10 Dec 2014 15:23:30 +0100
+Message-Id: <1418221414-60110-2-git-send-email-dahi@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.5.5
 In-Reply-To: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
 References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121014-0013-0000-0000-0000022A7160
+x-cbid: 14121014-0029-0000-0000-000002221B6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 662bbcb2747c ("mm, sched: Allow uaccess in atomic with
-pagefault_disable()") removed might_sleep() checks for all user access code
-(that uses might_fault()).
+This patch adds the pagefault_count to the thread_info of all
+architectures. It will be used to count the pagefault_disable() levels
+on a per-thread basis.
 
-The reason was to disable wrong "sleep in atomic" warnings in the following
-scenario:
-    pagefault_disable()
-    rc = copy_to_user(...)
-    pagefault_enable()
+We are not reusing the preempt_count as this is per cpu on x86 and we want to
+demangle pagefault_disable() from preemption in the future.
 
-Which is valid, as pagefault_disable() increments the preempt counter and
-therefore disables the pagefault handler. copy_to_user() will not sleep and return
-an invalid return code if a page is not available.
-
-However, as all might_sleep() checks are removed, CONFIG_DEBUG_ATOMIC_SLEEP
-would no longer detect the following scenario:
-    spin_lock(&lock);
-    rc = copy_to_user(...)
-    spin_unlock(&lock)
-
-If the kernel is compiled with preemption turned on, the preempt counter would
-be incremented and copy_to_user() would never sleep. However, with preemption
-turned off, the preempt counter will not be touched, we will therefore sleep in
-atomic context. We really want to enable CONFIG_DEBUG_ATOMIC_SLEEP checks for
-user access functions again, otherwise horrible deadlocks might be hard to debug.
-
-Root of all evil is that pagefault_disable() acted almost as preempt_disable(),
-depending on preemption being turned on/off.
-
-As we now have pagefault_disabled(), we can use it to distingusih whether user
-acces functions might sleep.
-
-Convert might_fault() into a makro that calls __might_fault(), to allow proper
-file + line messages in case of a might_sleep() warning. We can't move the code
-directly into kernel.h for now, as that results in ugly header recursions we
-can't avoid for now.
+The new counter is added directly below the preempt_count, except for archs
+relying on a manual calculation of asm offsets - to minimize the changes.
 
 Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 ---
- include/linux/kernel.h |  3 ++-
- mm/memory.c            | 18 ++++++------------
- 2 files changed, 8 insertions(+), 13 deletions(-)
+ arch/alpha/include/asm/thread_info.h      | 1 +
+ arch/arc/include/asm/thread_info.h        | 1 +
+ arch/arm/include/asm/thread_info.h        | 1 +
+ arch/arm64/include/asm/thread_info.h      | 1 +
+ arch/avr32/include/asm/thread_info.h      | 1 +
+ arch/blackfin/include/asm/thread_info.h   | 1 +
+ arch/c6x/include/asm/thread_info.h        | 1 +
+ arch/cris/include/asm/thread_info.h       | 1 +
+ arch/frv/include/asm/thread_info.h        | 1 +
+ arch/hexagon/include/asm/thread_info.h    | 1 +
+ arch/ia64/include/asm/thread_info.h       | 1 +
+ arch/m32r/include/asm/thread_info.h       | 1 +
+ arch/m68k/include/asm/thread_info.h       | 1 +
+ arch/metag/include/asm/thread_info.h      | 1 +
+ arch/microblaze/include/asm/thread_info.h | 1 +
+ arch/mips/include/asm/thread_info.h       | 1 +
+ arch/mn10300/include/asm/thread_info.h    | 1 +
+ arch/openrisc/include/asm/thread_info.h   | 1 +
+ arch/parisc/include/asm/thread_info.h     | 1 +
+ arch/powerpc/include/asm/thread_info.h    | 1 +
+ arch/s390/include/asm/thread_info.h       | 1 +
+ arch/score/include/asm/thread_info.h      | 1 +
+ arch/sh/include/asm/thread_info.h         | 1 +
+ arch/sparc/include/asm/thread_info_32.h   | 1 +
+ arch/sparc/include/asm/thread_info_64.h   | 1 +
+ arch/tile/include/asm/thread_info.h       | 1 +
+ arch/um/include/asm/thread_info.h         | 1 +
+ arch/unicore32/include/asm/thread_info.h  | 1 +
+ arch/x86/include/asm/thread_info.h        | 1 +
+ arch/xtensa/include/asm/thread_info.h     | 1 +
+ 30 files changed, 30 insertions(+)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 446d76a..7e65a55 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -232,7 +232,8 @@ static inline u32 reciprocal_scale(u32 val, u32 ep_ro)
+diff --git a/arch/alpha/include/asm/thread_info.h b/arch/alpha/include/asm/thread_info.h
+index 48bbea6..1830671 100644
+--- a/arch/alpha/include/asm/thread_info.h
++++ b/arch/alpha/include/asm/thread_info.h
+@@ -22,6 +22,7 @@ struct thread_info {
+ 	mm_segment_t		addr_limit;	/* thread address space */
+ 	unsigned		cpu;		/* current CPU */
+ 	int			preempt_count; /* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	unsigned int		status;		/* thread-synchronous flags */
  
- #if defined(CONFIG_MMU) && \
- 	(defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP))
--void might_fault(void);
-+#define might_fault() __might_fault(__FILE__, __LINE__)
-+void __might_fault(const char *file, int line);
- #else
- static inline void might_fault(void) { }
- #endif
-diff --git a/mm/memory.c b/mm/memory.c
-index 0b3f6c7..563720a 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3686,7 +3686,7 @@ void print_vma_addr(char *prefix, unsigned long ip)
- }
+ 	int bpt_nsaved;
+diff --git a/arch/arc/include/asm/thread_info.h b/arch/arc/include/asm/thread_info.h
+index 02bc5ec..2fde704 100644
+--- a/arch/arc/include/asm/thread_info.h
++++ b/arch/arc/include/asm/thread_info.h
+@@ -41,6 +41,7 @@
+ struct thread_info {
+ 	unsigned long flags;		/* low level flags */
+ 	int preempt_count;		/* 0 => preemptable, <0 => BUG */
++	int pagefault_count;		/* pagefault_disable() levels */
+ 	struct task_struct *task;	/* main task structure */
+ 	mm_segment_t addr_limit;	/* thread address space */
+ 	struct exec_domain *exec_domain;/* execution domain */
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index ce73ab6..bf47d2d 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -51,6 +51,7 @@ struct cpu_context_save {
+ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;	/* address limit */
+ 	struct task_struct	*task;		/* main task structure */
+ 	struct exec_domain	*exec_domain;	/* execution domain */
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 459bf8e..2469f15 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -50,6 +50,7 @@ struct thread_info {
+ 	struct exec_domain	*exec_domain;	/* execution domain */
+ 	struct restart_block	restart_block;
+ 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	int			cpu;		/* cpu */
+ };
  
- #if defined(CONFIG_PROVE_LOCKING) || defined(CONFIG_DEBUG_ATOMIC_SLEEP)
--void might_fault(void)
-+void __might_fault(const char *file, int line)
- {
+diff --git a/arch/avr32/include/asm/thread_info.h b/arch/avr32/include/asm/thread_info.h
+index a978f3f..0c1d6f7 100644
+--- a/arch/avr32/include/asm/thread_info.h
++++ b/arch/avr32/include/asm/thread_info.h
+@@ -25,6 +25,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	__u32			cpu;
+ 	__s32			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	__s32			pagefault_count;/* pagefault_disable() levels */
+ 	__u32			rar_saved;	/* return address... */
+ 	__u32			rsr_saved;	/* ...and status register
+ 						   saved by debug handler
+diff --git a/arch/blackfin/include/asm/thread_info.h b/arch/blackfin/include/asm/thread_info.h
+index 55f473b..3ba26aa 100644
+--- a/arch/blackfin/include/asm/thread_info.h
++++ b/arch/blackfin/include/asm/thread_info.h
+@@ -41,6 +41,7 @@ struct thread_info {
+ 	unsigned long flags;	/* low level flags */
+ 	int cpu;		/* cpu we're on */
+ 	int preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int pagefault_count;	/* pagefault_disable() levels */
+ 	mm_segment_t addr_limit;	/* address limit */
+ 	struct restart_block restart_block;
+ #ifndef CONFIG_SMP
+diff --git a/arch/c6x/include/asm/thread_info.h b/arch/c6x/include/asm/thread_info.h
+index d4e9ef8..6b2dcac 100644
+--- a/arch/c6x/include/asm/thread_info.h
++++ b/arch/c6x/include/asm/thread_info.h
+@@ -44,6 +44,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	int			cpu;		/* cpu we're on */
+ 	int			preempt_count;	/* 0 = preemptable, <0 = BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;	/* thread address space */
+ 	struct restart_block	restart_block;
+ };
+diff --git a/arch/cris/include/asm/thread_info.h b/arch/cris/include/asm/thread_info.h
+index 55dede1..3356902 100644
+--- a/arch/cris/include/asm/thread_info.h
++++ b/arch/cris/include/asm/thread_info.h
+@@ -32,6 +32,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	__u32			cpu;		/* current CPU */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	__u32			tls;		/* TLS for this thread */
+ 
+ 	mm_segment_t		addr_limit;	/* thread address space:
+diff --git a/arch/frv/include/asm/thread_info.h b/arch/frv/include/asm/thread_info.h
+index af29e17..79a97ee 100644
+--- a/arch/frv/include/asm/thread_info.h
++++ b/arch/frv/include/asm/thread_info.h
+@@ -36,6 +36,7 @@ struct thread_info {
+ 	unsigned long		status;		/* thread-synchronous flags */
+ 	__u32			cpu;		/* current CPU */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	mm_segment_t		addr_limit;	/* thread address space:
+ 						 * 0-0xBFFFFFFF for user-thead
+diff --git a/arch/hexagon/include/asm/thread_info.h b/arch/hexagon/include/asm/thread_info.h
+index a59dad3..d54042e 100644
+--- a/arch/hexagon/include/asm/thread_info.h
++++ b/arch/hexagon/include/asm/thread_info.h
+@@ -51,6 +51,7 @@ struct thread_info {
+ 	unsigned long		flags;          /* low level flags */
+ 	__u32                   cpu;            /* current cpu */
+ 	int                     preempt_count;  /* 0=>preemptible,<0=>BUG */
++	int                     pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t            addr_limit;     /* segmentation sux */
  	/*
- 	 * Some code (nfs/sunrpc) uses socket ops on kernel memory while
-@@ -3696,21 +3696,15 @@ void might_fault(void)
- 	 */
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return;
--
--	/*
--	 * it would be nicer only to annotate paths which are not under
--	 * pagefault_disable, however that requires a larger audit and
--	 * providing helpers like get_user_atomic.
--	 */
--	if (in_atomic())
-+	if (pagefault_disabled())
- 		return;
--
--	__might_sleep(__FILE__, __LINE__, 0);
--
-+	__might_sleep(file, line, 0);
-+#if defined(CONFIG_DEBUG_ATOMIC_SLEEP)
- 	if (current->mm)
- 		might_lock_read(&current->mm->mmap_sem);
-+#endif
- }
--EXPORT_SYMBOL(might_fault);
-+EXPORT_SYMBOL(__might_fault);
- #endif
+ 	 * used for syscalls somehow;
+diff --git a/arch/ia64/include/asm/thread_info.h b/arch/ia64/include/asm/thread_info.h
+index 5b17418..14f128c 100644
+--- a/arch/ia64/include/asm/thread_info.h
++++ b/arch/ia64/include/asm/thread_info.h
+@@ -27,6 +27,7 @@ struct thread_info {
+ 	__u32 status;			/* Thread synchronous flags */
+ 	mm_segment_t addr_limit;	/* user-level address space limit */
+ 	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
++	int pagefault_count;		/* pagefault_disable() levels */
+ 	struct restart_block restart_block;
+ #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	__u64 ac_stamp;
+diff --git a/arch/m32r/include/asm/thread_info.h b/arch/m32r/include/asm/thread_info.h
+index 0017170..bf14efb 100644
+--- a/arch/m32r/include/asm/thread_info.h
++++ b/arch/m32r/include/asm/thread_info.h
+@@ -35,6 +35,7 @@ struct thread_info {
+ 						   0-0xFFFFFFFF for kernel-thread
+ 						*/
+ 	struct restart_block    restart_block;
++	int			pagefault_count;/* pagefault_disable() levels */
  
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)
+ 	__u8			supervisor_stack[0];
+ };
+diff --git a/arch/m68k/include/asm/thread_info.h b/arch/m68k/include/asm/thread_info.h
+index 21a4784..5a6a203 100644
+--- a/arch/m68k/include/asm/thread_info.h
++++ b/arch/m68k/include/asm/thread_info.h
+@@ -29,6 +29,7 @@ struct thread_info {
+ 	struct exec_domain	*exec_domain;	/* execution domain */
+ 	mm_segment_t		addr_limit;	/* thread address space */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	__u32			cpu;		/* should always be 0 on m68k */
+ 	unsigned long		tp_value;	/* thread pointer */
+ 	struct restart_block    restart_block;
+diff --git a/arch/metag/include/asm/thread_info.h b/arch/metag/include/asm/thread_info.h
+index 4771133..91729f5 100644
+--- a/arch/metag/include/asm/thread_info.h
++++ b/arch/metag/include/asm/thread_info.h
+@@ -33,6 +33,7 @@ struct thread_info {
+ 	unsigned long status;	/* thread-synchronous flags */
+ 	u32 cpu;		/* current CPU */
+ 	int preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int pagefault_count;	/* pagefault_disable() levels */
+ 
+ 	mm_segment_t addr_limit;	/* thread address space */
+ 	struct restart_block restart_block;
+diff --git a/arch/microblaze/include/asm/thread_info.h b/arch/microblaze/include/asm/thread_info.h
+index 8c9d365..f905b02 100644
+--- a/arch/microblaze/include/asm/thread_info.h
++++ b/arch/microblaze/include/asm/thread_info.h
+@@ -70,6 +70,7 @@ struct thread_info {
+ 	unsigned long		status; /* thread-synchronous flags */
+ 	__u32			cpu; /* current CPU */
+ 	__s32			preempt_count; /* 0 => preemptable,< 0 => BUG*/
++	__s32			pagefault_count; /* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit; /* thread address space */
+ 	struct restart_block	restart_block;
+ 
+diff --git a/arch/mips/include/asm/thread_info.h b/arch/mips/include/asm/thread_info.h
+index 7de8658..f9f27ac 100644
+--- a/arch/mips/include/asm/thread_info.h
++++ b/arch/mips/include/asm/thread_info.h
+@@ -28,6 +28,7 @@ struct thread_info {
+ 	unsigned long		tp_value;	/* thread pointer */
+ 	__u32			cpu;		/* current CPU */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	mm_segment_t		addr_limit;	/*
+ 						 * thread address space limit:
+diff --git a/arch/mn10300/include/asm/thread_info.h b/arch/mn10300/include/asm/thread_info.h
+index bf280ea..f6c03a5 100644
+--- a/arch/mn10300/include/asm/thread_info.h
++++ b/arch/mn10300/include/asm/thread_info.h
+@@ -45,6 +45,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	__u32			cpu;		/* current CPU */
+ 	__s32			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	__s32			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	mm_segment_t		addr_limit;	/* thread address space:
+ 						   0-0xBFFFFFFF for user-thead
+diff --git a/arch/openrisc/include/asm/thread_info.h b/arch/openrisc/include/asm/thread_info.h
+index d797acc..bdabd6e 100644
+--- a/arch/openrisc/include/asm/thread_info.h
++++ b/arch/openrisc/include/asm/thread_info.h
+@@ -52,6 +52,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	__u32			cpu;		/* current CPU */
+ 	__s32			preempt_count; /* 0 => preemptable, <0 => BUG */
++	__s32			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	mm_segment_t		addr_limit; /* thread address space:
+ 					       0-0x7FFFFFFF for user-thead
+diff --git a/arch/parisc/include/asm/thread_info.h b/arch/parisc/include/asm/thread_info.h
+index a846118..e37b76b 100644
+--- a/arch/parisc/include/asm/thread_info.h
++++ b/arch/parisc/include/asm/thread_info.h
+@@ -14,6 +14,7 @@ struct thread_info {
+ 	mm_segment_t addr_limit;	/* user-level address space limit */
+ 	__u32 cpu;			/* current CPU */
+ 	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
++	int pagefault_count;		/* pagefault_disable() levels */
+ 	struct restart_block restart_block;
+ };
+ 
+diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
+index b034ecd..e8585fd 100644
+--- a/arch/powerpc/include/asm/thread_info.h
++++ b/arch/powerpc/include/asm/thread_info.h
+@@ -43,6 +43,7 @@ struct thread_info {
+ 	int		cpu;			/* cpu we're on */
+ 	int		preempt_count;		/* 0 => preemptable,
+ 						   <0 => BUG */
++	int		pagefault_count;	/* pagefault_disable() levels */
+ 	struct restart_block restart_block;
+ 	unsigned long	local_flags;		/* private flags for thread */
+ 
+diff --git a/arch/s390/include/asm/thread_info.h b/arch/s390/include/asm/thread_info.h
+index 4d62fd5..bbf0513f 100644
+--- a/arch/s390/include/asm/thread_info.h
++++ b/arch/s390/include/asm/thread_info.h
+@@ -39,6 +39,7 @@ struct thread_info {
+ 	unsigned long		sys_call_table;	/* System call table address */
+ 	unsigned int		cpu;		/* current CPU */
+ 	int			preempt_count;	/* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	struct restart_block	restart_block;
+ 	unsigned int		system_call;
+ 	__u64			user_timer;
+diff --git a/arch/score/include/asm/thread_info.h b/arch/score/include/asm/thread_info.h
+index 656b7ad..d7f748d 100644
+--- a/arch/score/include/asm/thread_info.h
++++ b/arch/score/include/asm/thread_info.h
+@@ -35,6 +35,7 @@ struct thread_info {
+ 
+ 	/* 0 => preemptable, < 0 => BUG */
+ 	int			preempt_count;
++	int			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	/*
+ 	 * thread address space:
+diff --git a/arch/sh/include/asm/thread_info.h b/arch/sh/include/asm/thread_info.h
+index ad27ffa..682a466 100644
+--- a/arch/sh/include/asm/thread_info.h
++++ b/arch/sh/include/asm/thread_info.h
+@@ -32,6 +32,7 @@ struct thread_info {
+ 	__u32			status;		/* thread synchronous flags */
+ 	__u32			cpu;
+ 	int			preempt_count; /* 0 => preemptable, <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;	/* thread address space */
+ 	struct restart_block	restart_block;
+ 	unsigned long		previous_sp;	/* sp of previous stack in case
+diff --git a/arch/sparc/include/asm/thread_info_32.h b/arch/sparc/include/asm/thread_info_32.h
+index 025c984..ff0b112 100644
+--- a/arch/sparc/include/asm/thread_info_32.h
++++ b/arch/sparc/include/asm/thread_info_32.h
+@@ -49,6 +49,7 @@ struct thread_info {
+ 	unsigned long		w_saved;
+ 
+ 	struct restart_block	restart_block;
++	int			pagefault_count;/* pagefault_disable() levels */
+ };
+ 
+ /*
+diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
+index 798f027..76a60ab 100644
+--- a/arch/sparc/include/asm/thread_info_64.h
++++ b/arch/sparc/include/asm/thread_info_64.h
+@@ -62,6 +62,7 @@ struct thread_info {
+ 
+ 	struct pt_regs		*kern_una_regs;
+ 	unsigned int		kern_una_insn;
++	int			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	unsigned long		fpregs[(7 * 256) / sizeof(unsigned long)]
+ 		__attribute__ ((aligned(64)));
+diff --git a/arch/tile/include/asm/thread_info.h b/arch/tile/include/asm/thread_info.h
+index 48e4fd0..57032b6 100644
+--- a/arch/tile/include/asm/thread_info.h
++++ b/arch/tile/include/asm/thread_info.h
+@@ -33,6 +33,7 @@ struct thread_info {
+ 	__u32			cpu;		/* current CPU */
+ 	int			preempt_count;	/* 0 => preemptable,
+ 						   <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 
+ 	mm_segment_t		addr_limit;	/* thread address space
+ 						   (KERNEL_DS or USER_DS) */
+diff --git a/arch/um/include/asm/thread_info.h b/arch/um/include/asm/thread_info.h
+index 1c5b2a8..90b193c 100644
+--- a/arch/um/include/asm/thread_info.h
++++ b/arch/um/include/asm/thread_info.h
+@@ -19,6 +19,7 @@ struct thread_info {
+ 	__u32			cpu;		/* current CPU */
+ 	int			preempt_count;  /* 0 => preemptable,
+ 						   <0 => BUG */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;	/* thread address space:
+ 					 	   0-0xBFFFFFFF for user
+ 						   0-0xFFFFFFFF for kernel */
+diff --git a/arch/unicore32/include/asm/thread_info.h b/arch/unicore32/include/asm/thread_info.h
+index af36d8e..1d50fb3 100644
+--- a/arch/unicore32/include/asm/thread_info.h
++++ b/arch/unicore32/include/asm/thread_info.h
+@@ -69,6 +69,7 @@ struct thread_info {
+ 	unsigned long		flags;		/* low level flags */
+ 	int			preempt_count;	/* 0 => preemptable */
+ 						/* <0 => bug */
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;	/* address limit */
+ 	struct task_struct	*task;		/* main task structure */
+ 	struct exec_domain	*exec_domain;	/* execution domain */
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 547e344..fa075ab 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -30,6 +30,7 @@ struct thread_info {
+ 	__u32			status;		/* thread synchronous flags */
+ 	__u32			cpu;		/* current CPU */
+ 	int			saved_preempt_count;
++	int			pagefault_count;/* pagefault_disable() levels */
+ 	mm_segment_t		addr_limit;
+ 	struct restart_block    restart_block;
+ 	void __user		*sysenter_return;
+diff --git a/arch/xtensa/include/asm/thread_info.h b/arch/xtensa/include/asm/thread_info.h
+index 470153e..a866129 100644
+--- a/arch/xtensa/include/asm/thread_info.h
++++ b/arch/xtensa/include/asm/thread_info.h
+@@ -53,6 +53,7 @@ struct thread_info {
+ 	mm_segment_t		addr_limit;	/* thread address space */
+ 	struct restart_block    restart_block;
+ 
++	__s32			pagefault_count;/* pagefault_disable() levels */
+ 	unsigned long		cpenable;
+ 
+ 	/* Allocate storage for extra user states and coprocessor states. */
 -- 
 1.8.5.5
 
