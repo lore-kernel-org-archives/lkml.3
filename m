@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345AbaLJH4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 02:56:36 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49428 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590AbaLJH4f (ORCPT
+	id S1757277AbaLJH5B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 02:57:01 -0500
+Received: from mx5-phx2.redhat.com ([209.132.183.37]:60360 "EHLO
+	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756555AbaLJH5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 02:56:35 -0500
-Date: Wed, 10 Dec 2014 08:56:20 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
-        paulmck@linux.vnet.ibm.com, peterz@infradead.org, bp@suse.de,
-        jkosina@suse.cz
-Subject: Re: [PATCH v3] CPU hotplug: active_writer not woken up in some
- cases - deadlock
-Message-ID: <20141210085620.0c102fd9@thinkpad-w530>
-In-Reply-To: <20141210001239.GA516@redhat.com>
-References: <1418127811-22629-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141210001239.GA516@redhat.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Wed, 10 Dec 2014 02:57:00 -0500
+Date: Wed, 10 Dec 2014 02:56:45 -0500 (EST)
+From: Pankaj Gupta <pagupta@redhat.com>
+To: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
+        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
+        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
+        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
+        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
+Message-ID: <575321203.11353864.1418198205135.JavaMail.zimbra@redhat.com>
+In-Reply-To: <5481602E.1030508@redhat.com>
+References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-3-git-send-email-pagupta@redhat.com> <20141203095210.GC9487@redhat.com> <1417661734.16500.0@smtp.corp.redhat.com> <20141204102013.GC17122@redhat.com> <5481602E.1030508@redhat.com>
+Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
+ tun.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121007-0009-0000-0000-00000251B19D
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
+Thread-Topic: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in tun.
+Thread-Index: nNCw7MQOtnOBg1VRMb8uXucH5Bd8LA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (sorry if this was already discussed, I ignored most of my emails
->  I got this week)
+
 > 
-> On 12/09, David Hildenbrand wrote:
+> On 12/04/2014 06:20 PM, Michael S. Tsirkin wrote:
+> > On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
+> >> > 
+> >> > 
+> >> > On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com>
+> >> > wrote:
+> >>> > >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
+> >>>> > >> Networking under kvm works best if we allocate a per-vCPU RX and TX
+> >>>> > >> queue in a virtual NIC. This requires a per-vCPU queue on the host
+> >>>> > >>side.
+> >>>> > >> It is now safe to increase the maximum number of queues.
+> >>>> > >> Preceding patche: 'net: allow large number of rx queues'
+> >>> > >
+> >>> > >s/patche/patch/
+> >>> > >
+> >>>> > >> made sure this won't cause failures due to high order memory
+> >>>> > >> allocations. Increase it to 256: this is the max number of vCPUs
+> >>>> > >> KVM supports.
+> >>>> > >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
+> >>>> > >> Reviewed-by: David Gibson <dgibson@redhat.com>
+> >>> > >
+> >>> > >Hmm it's kind of nasty that each tun device is now using x16 memory.
+> >>> > >Maybe we should look at using a flex array instead, and removing the
+> >>> > >limitation altogether (e.g. make it INT_MAX)?
+> >> > 
+> >> > But this only happens when IFF_MULTIQUEUE were used.
+> > I refer to this field:
+> >         struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
+> > if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
+> > apparently unconditionally.
 > >
-> > @@ -116,7 +118,13 @@ void put_online_cpus(void)
-> >  	if (cpu_hotplug.active_writer == current)
-> >  		return;
-> >  	if (!mutex_trylock(&cpu_hotplug.lock)) {
-> > +		/* inc before testing for active_writer to not lose wake ups */
-> >  		atomic_inc(&cpu_hotplug.puts_pending);
-> > +		spin_lock(&cpu_hotplug.awr_lock);
-> > +		/* we might be the last one */
-> > +		if (unlikely(cpu_hotplug.active_writer))
-> > +			wake_up_process(cpu_hotplug.active_writer);
-> > +		spin_unlock(&cpu_hotplug.awr_lock);
+> >
 > 
-> Not sure I understand. awr_lock can only ensure that active_writer
-> can't go away.
+> How about just allocate one tfile if IFF_MULTIQUEUE were disabled?
 
-This solution is not optimal but works without races ... I'll try to get
-something with wait queues running and/or even change the way refcount is
-accessed as suggested by you.
+Yes, we can also go with one tfile if for single queue. 
 
-And yes, awr_lock will only ensure that active_writer won't go away.
+As tfiles is array of 'tun_file' pointers with size 256. For multiqueue
+we would be using 256 queues. But for single queue if we have one tfile
+makes sense.
+
+Also, we are making sure to avoid memory failures with vzalloc.
 
 > 
-> Why active_writer should see .puts_pending != 0 if this is called
-> right after cpu_hotplug_begin() takes cpu_hotplug.lock but before
-> it sets TASK_UNINTERRUPTIBLE?
-
-get_online_cpus() increased the refcount.
-put_online_cpus() will increment puts_pending and trigger a wake up (if the
-lock is alread taken - might be by cpu_hotplug_begin() or by some other
-get_online_cpus()).
-
-So refcount == 1, puts_pending == 1
-
-cpu_hotplug_begin() gets the lock and sees refcount == 1 and puts_pending == 0
-or puts_pending == 1 (race with put_online_cpus()).
-
-If that answers your question :)
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> IOW,
-> 
-> >  void cpu_hotplug_begin(void)
-> >  {
-> > +	spin_lock(&cpu_hotplug.awr_lock);
-> >  	cpu_hotplug.active_writer = current;
-> > +	spin_unlock(&cpu_hotplug.awr_lock);
-> >  
-> >  	cpuhp_lock_acquire();
-> >  	for (;;) {
-> >  		mutex_lock(&cpu_hotplug.lock);
-> > +		__set_current_state(TASK_UNINTERRUPTIBLE);
-> 
-> don't we need set_current_state() here ?
-
-Hm, good question, this was only a move of existing code. But I thing the
-checked variant would be better.
-
-> 
-> Oleg.
-> 
-
-Thanks!
-
-David
-
