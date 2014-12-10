@@ -1,281 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758157AbaLJQbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 11:31:19 -0500
-Received: from resqmta-ch2-01v.sys.comcast.net ([69.252.207.33]:60051 "EHLO
-	resqmta-ch2-01v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753877AbaLJQaj (ORCPT
+	id S1758113AbaLJQai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 11:30:38 -0500
+Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:53547 "EHLO
+	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753877AbaLJQaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 11:30:39 -0500
-Message-Id: <20141210163033.970247616@linux.com>
-Date: Wed, 10 Dec 2014 10:30:22 -0600
+	Wed, 10 Dec 2014 11:30:35 -0500
+Message-Id: <20141210163017.092096069@linux.com>
+Date: Wed, 10 Dec 2014 10:30:17 -0600
 From: Christoph Lameter <cl@linux.com>
 To: akpm@linuxfoundation.org
 Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com,
         Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: [PATCH 5/7] slub: Use end_token instead of NULL to terminate freelists
-References: <20141210163017.092096069@linux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=slub_use_end_token_instead_of_null
+Subject: [PATCH 0/7] slub: Fastpath optimization (especially for RT) V1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ending a list with NULL means that the termination of a list is the same
-for all slab pages. The pointers of freelists otherwise always are
-pointing to the address space of the page. Make termination of a
-list possible by setting the lowest bit in the freelist address
-and use the start address of a page if no other address is available
-for list termination.
+We had to insert a preempt enable/disable in the fastpath a while ago. This
+was mainly due to a lot of state that is kept to be allocating from the per
+cpu freelist. In particular the page field is not covered by
+this_cpu_cmpxchg used in the fastpath to do the necessary atomic state
+change for fast path allocation and freeing.
 
-This will allow us to determine the page struct address from a
-freelist pointer in the future.
+This patch removes the need for the page field to describe the state of the
+per cpu list. The freelist pointer can be used to determine the page struct
+address if necessary.
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+However, currently this does not work for the termination value of a list
+which is NULL and the same for all slab pages. If we use a valid pointer
+into the page as well as set the last bit then all freelist pointers can
+always be used to determine the address of the page struct and we will not
+need the page field anymore in the per cpu are for a slab. Testing for the
+end of the list is a test if the first bit is set.
 
-Index: linux/mm/slub.c
-===================================================================
---- linux.orig/mm/slub.c	2014-12-09 12:29:47.219144051 -0600
-+++ linux/mm/slub.c	2014-12-09 12:29:47.219144051 -0600
-@@ -132,6 +132,16 @@ static inline bool kmem_cache_has_cpu_pa
- #endif
- }
- 
-+static bool is_end_token(const void *freelist)
-+{
-+	return ((unsigned long)freelist) & 1;
-+}
-+
-+static void *end_token(const void *address)
-+{
-+	return (void *)((unsigned long)address | 1);
-+}
-+
- /*
-  * Issues still to be resolved:
-  *
-@@ -234,7 +244,7 @@ static inline int check_valid_pointer(st
- 
- 	base = page->address;
- 	if (object < base || object >= base + page->objects * s->size ||
--		(object - base) % s->size) {
-+		((object - base) % s->size && !is_end_token(object))) {
- 		return 0;
- 	}
- 
-@@ -451,7 +461,7 @@ static void get_map(struct kmem_cache *s
- 	void *p;
- 	void *addr = page->address;
- 
--	for (p = page->freelist; p; p = get_freepointer(s, p))
-+	for (p = page->freelist; !is_end_token(p); p = get_freepointer(s, p))
- 		set_bit(slab_index(p, s, addr), map);
- }
- 
-@@ -829,7 +839,7 @@ static int check_object(struct kmem_cach
- 		 * of the free objects in this slab. May cause
- 		 * another error because the object count is now wrong.
- 		 */
--		set_freepointer(s, p, NULL);
-+		set_freepointer(s, p, end_token(page->address));
- 		return 0;
- 	}
- 	return 1;
-@@ -874,7 +884,7 @@ static int on_freelist(struct kmem_cache
- 	unsigned long max_objects;
- 
- 	fp = page->freelist;
--	while (fp && nr <= page->objects) {
-+	while (!is_end_token(fp) && nr <= page->objects) {
- 		if (fp == search)
- 			return 1;
- 		if (!check_valid_pointer(s, page, fp)) {
-@@ -1033,7 +1043,7 @@ bad:
- 		 */
- 		slab_fix(s, "Marking all objects used");
- 		page->inuse = page->objects;
--		page->freelist = NULL;
-+		page->freelist = end_token(page->address);
- 	}
- 	return 0;
- }
-@@ -1402,7 +1412,7 @@ static struct page *new_slab(struct kmem
- 		if (likely(idx < page->objects))
- 			set_freepointer(s, p, p + s->size);
- 		else
--			set_freepointer(s, p, NULL);
-+			set_freepointer(s, p, end_token(start));
- 	}
- 
- 	page->freelist = start;
-@@ -1546,12 +1556,11 @@ static inline void *acquire_slab(struct
- 	freelist = page->freelist;
- 	counters = page->counters;
- 	new.counters = counters;
-+	new.freelist = freelist;
- 	*objects = new.objects - new.inuse;
- 	if (mode) {
- 		new.inuse = page->objects;
--		new.freelist = NULL;
--	} else {
--		new.freelist = freelist;
-+		new.freelist = end_token(freelist);
- 	}
- 
- 	VM_BUG_ON(new.frozen);
-@@ -1787,7 +1796,7 @@ static void deactivate_slab(struct kmem_
- 	struct page new;
- 	struct page old;
- 
--	if (page->freelist) {
-+	if (!is_end_token(page->freelist)) {
- 		stat(s, DEACTIVATE_REMOTE_FREES);
- 		tail = DEACTIVATE_TO_TAIL;
- 	}
-@@ -1800,7 +1809,8 @@ static void deactivate_slab(struct kmem_
- 	 * There is no need to take the list->lock because the page
- 	 * is still frozen.
- 	 */
--	while (freelist && (nextfree = get_freepointer(s, freelist))) {
-+	if (freelist)
-+	    while (!is_end_token(freelist) && (nextfree = get_freepointer(s, freelist))) {
- 		void *prior;
- 		unsigned long counters;
- 
-@@ -1818,7 +1828,8 @@ static void deactivate_slab(struct kmem_
- 			"drain percpu freelist"));
- 
- 		freelist = nextfree;
--	}
-+	} else
-+		freelist = end_token(page->address);
- 
- 	/*
- 	 * Stage two: Ensure that the page is unfrozen while the
-@@ -1842,7 +1853,7 @@ redo:
- 
- 	/* Determine target state of the slab */
- 	new.counters = old.counters;
--	if (freelist) {
-+	if (!is_end_token(freelist)) {
- 		new.inuse--;
- 		set_freepointer(s, freelist, old.freelist);
- 		new.freelist = freelist;
-@@ -1853,7 +1864,7 @@ redo:
- 
- 	if (!new.inuse && n->nr_partial >= s->min_partial)
- 		m = M_FREE;
--	else if (new.freelist) {
-+	else if (!is_end_token(new.freelist)) {
- 		m = M_PARTIAL;
- 		if (!lock) {
- 			lock = 1;
-@@ -2180,7 +2191,7 @@ static inline void *new_slab_objects(str
- 
- 	freelist = get_partial(s, flags, node, c);
- 
--	if (freelist)
-+	if (freelist && !is_end_token(freelist))
- 		return freelist;
- 
- 	page = new_slab(s, flags, node);
-@@ -2194,7 +2205,7 @@ static inline void *new_slab_objects(str
- 		 * muck around with it freely without cmpxchg
- 		 */
- 		freelist = page->freelist;
--		page->freelist = NULL;
-+		page->freelist = end_token(freelist);
- 
- 		stat(s, ALLOC_SLAB);
- 		c->page = page;
-@@ -2217,11 +2228,11 @@ static inline bool pfmemalloc_match(stru
-  * Check the page->freelist of a page and either transfer the freelist to the
-  * per cpu freelist or deactivate the page.
-  *
-- * The page is still frozen if the return value is not NULL.
-+ * The page is still frozen if the return value is not end_token.
-  *
-- * If this function returns NULL then the page has been unfrozen.
-+ * If this function returns end_token then the page has been unfrozen.
-  *
-- * This function must be called with interrupt disabled.
-+ * This function must be called with interrupts disabled.
-  */
- static inline void *get_freelist(struct kmem_cache *s, struct page *page)
- {
-@@ -2237,11 +2248,11 @@ static inline void *get_freelist(struct
- 		VM_BUG_ON(!new.frozen);
- 
- 		new.inuse = page->objects;
--		new.frozen = freelist != NULL;
-+		new.frozen = !is_end_token(freelist);
- 
- 	} while (!__cmpxchg_double_slab(s, page,
- 		freelist, counters,
--		NULL, new.counters,
-+		end_token(freelist), new.counters,
- 		"get_freelist"));
- 
- 	return freelist;
-@@ -2307,12 +2318,17 @@ redo:
- 
- 	/* must check again c->freelist in case of cpu migration or IRQ */
- 	freelist = c->freelist;
--	if (freelist)
-+	if (freelist && !is_end_token(freelist))
- 		goto load_freelist;
- 
-+	/*
-+	 * There is no freelist or its exhausted. See if the page has any
-+	 * objects freed to it.
-+	 */
- 	freelist = get_freelist(s, page);
- 
--	if (!freelist) {
-+	if (is_end_token(freelist)) {
-+		/* page has been deactivated by get_freelist */
- 		c->page = NULL;
- 		stat(s, DEACTIVATE_BYPASS);
- 		goto new_slab;
-@@ -2343,7 +2359,7 @@ new_slab:
- 		page = c->page = c->partial;
- 		c->partial = page->next;
- 		stat(s, CPU_PARTIAL_ALLOC);
--		c->freelist = NULL;
-+		c->freelist = end_token(page->address);
- 		goto redo;
- 	}
- 
-@@ -2419,7 +2435,7 @@ redo:
- 
- 	object = c->freelist;
- 	page = c->page;
--	if (unlikely(!object || !node_match_ptr(object, node))) {
-+	if (unlikely(!object || is_end_token(object) ||!node_match_ptr(object, node))) {
- 		object = __slab_alloc(s, gfpflags, node, addr, c);
- 		stat(s, ALLOC_SLOWPATH);
- 	} else {
-@@ -2549,9 +2565,9 @@ static void __slab_free(struct kmem_cach
- 		new.counters = counters;
- 		was_frozen = new.frozen;
- 		new.inuse--;
--		if ((!new.inuse || !prior) && !was_frozen) {
-+		if ((!new.inuse || is_end_token(prior)) && !was_frozen) {
- 
--			if (kmem_cache_has_cpu_partial(s) && !prior) {
-+			if (kmem_cache_has_cpu_partial(s) && is_end_token(prior)) {
- 
- 				/*
- 				 * Slab was on no list before and will be
-@@ -2608,7 +2624,7 @@ static void __slab_free(struct kmem_cach
- 	 * Objects left in the slab. If it was not on the partial list before
- 	 * then add it.
- 	 */
--	if (!kmem_cache_has_cpu_partial(s) && unlikely(!prior)) {
-+	if (!kmem_cache_has_cpu_partial(s) && unlikely(is_end_token(prior))) {
- 		if (kmem_cache_debug(s))
- 			remove_full(s, n, page);
- 		add_partial(n, page, DEACTIVATE_TO_TAIL);
+So the first patch changes the termination pointer for freelists to do just
+that. The second removes the page field and then third can then remove the
+preempt enable/disable.
+
+Removing the ->page field reduces the cache footprint of the fastpath so hopefully overall
+allocator effectiveness will increase further. Also RT uses full preemption which means
+that currently pretty expensive code has to be inserted into the fastpath. This approach
+allows the removal of that code and a corresponding performance increase.
+
+For V1 a number of changes were made to avoid the overhead of virt_to_page
+and page_address from the RFC.
+
+Slab Benchmarks on a kernel with CONFIG_PREEMPT show an improvement of
+20%-50% of fastpath latency:
+
+Before:
+
+Single thread testing
+1. Kmalloc: Repeatedly allocate then free test
+10000 times kmalloc(8) -> 68 cycles kfree -> 107 cycles
+10000 times kmalloc(16) -> 69 cycles kfree -> 108 cycles
+10000 times kmalloc(32) -> 78 cycles kfree -> 112 cycles
+10000 times kmalloc(64) -> 97 cycles kfree -> 112 cycles
+10000 times kmalloc(128) -> 111 cycles kfree -> 119 cycles
+10000 times kmalloc(256) -> 114 cycles kfree -> 139 cycles
+10000 times kmalloc(512) -> 110 cycles kfree -> 142 cycles
+10000 times kmalloc(1024) -> 114 cycles kfree -> 156 cycles
+10000 times kmalloc(2048) -> 155 cycles kfree -> 174 cycles
+10000 times kmalloc(4096) -> 203 cycles kfree -> 209 cycles
+10000 times kmalloc(8192) -> 361 cycles kfree -> 265 cycles
+10000 times kmalloc(16384) -> 597 cycles kfree -> 286 cycles
+
+2. Kmalloc: alloc/free test
+10000 times kmalloc(8)/kfree -> 114 cycles
+10000 times kmalloc(16)/kfree -> 115 cycles
+10000 times kmalloc(32)/kfree -> 117 cycles
+10000 times kmalloc(64)/kfree -> 115 cycles
+10000 times kmalloc(128)/kfree -> 111 cycles
+10000 times kmalloc(256)/kfree -> 116 cycles
+10000 times kmalloc(512)/kfree -> 110 cycles
+10000 times kmalloc(1024)/kfree -> 114 cycles
+10000 times kmalloc(2048)/kfree -> 110 cycles
+10000 times kmalloc(4096)/kfree -> 107 cycles
+10000 times kmalloc(8192)/kfree -> 108 cycles
+10000 times kmalloc(16384)/kfree -> 706 cycles
+
+
+After:
+
+
+Single thread testing
+1. Kmalloc: Repeatedly allocate then free test
+10000 times kmalloc(8) -> 41 cycles kfree -> 81 cycles
+10000 times kmalloc(16) -> 47 cycles kfree -> 88 cycles
+10000 times kmalloc(32) -> 48 cycles kfree -> 93 cycles
+10000 times kmalloc(64) -> 58 cycles kfree -> 89 cycles
+10000 times kmalloc(128) -> 84 cycles kfree -> 104 cycles
+10000 times kmalloc(256) -> 92 cycles kfree -> 125 cycles
+10000 times kmalloc(512) -> 86 cycles kfree -> 129 cycles
+10000 times kmalloc(1024) -> 88 cycles kfree -> 125 cycles
+10000 times kmalloc(2048) -> 120 cycles kfree -> 159 cycles
+10000 times kmalloc(4096) -> 176 cycles kfree -> 183 cycles
+10000 times kmalloc(8192) -> 294 cycles kfree -> 233 cycles
+10000 times kmalloc(16384) -> 585 cycles kfree -> 291 cycles
+
+2. Kmalloc: alloc/free test
+10000 times kmalloc(8)/kfree -> 100 cycles
+10000 times kmalloc(16)/kfree -> 108 cycles
+10000 times kmalloc(32)/kfree -> 101 cycles
+10000 times kmalloc(64)/kfree -> 109 cycles
+10000 times kmalloc(128)/kfree -> 125 cycles
+10000 times kmalloc(256)/kfree -> 60 cycles
+10000 times kmalloc(512)/kfree -> 60 cycles
+10000 times kmalloc(1024)/kfree -> 67 cycles
+10000 times kmalloc(2048)/kfree -> 60 cycles
+10000 times kmalloc(4096)/kfree -> 65 cycles
+10000 times kmalloc(8192)/kfree -> 60 cycles
+10000 times kmalloc(16384)/kfree -> 686 cycles
 
