@@ -1,218 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583AbaLJP4Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:56:24 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:38250 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932113AbaLJP4V (ORCPT
+	id S932282AbaLJPxP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:53:15 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:39511 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758121AbaLJPxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:56:21 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH v4 2/4] gpio/xilinx: Convert the driver to platform device interface
-Date: Wed, 10 Dec 2014 16:56:17 +0100
-Message-Id: <1418226977-17128-1-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Wed, 10 Dec 2014 10:53:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        linux-mips@linux-mips.org
+Subject: [PATCH 03/12] mips: use {cpu|node}mask pr_cont and seq output functions
+Date: Wed, 10 Dec 2014 10:52:45 -0500
+Message-Id: <1418226774-30215-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418226774-30215-1-git-send-email-tj@kernel.org>
+References: <1418226774-30215-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way we do not need to transverse the device tree manually and we
-support hot plugged devices.
+Convert the existing user of cpu{mask|list}_scnprintf() and
+node{mask|list}_scnprintf() which use them just to printk or
+seq_printf() the resulting buffer to use the following functions
+instead respectively.
 
-Also Implement remove callback so the driver can be unloaded
+* For printk: cpu{mask|list}_pr_cont() and node{mask|list}_pr_cont().
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+* For seq_file: seq_cpumask[_list]() and seq_nodemask[_list]().
+
+Because these conversions usually break up a single output function
+call into multiple, the reduction is LOC isn't too big but it removes
+unnecessary complexity and/or arbitrary limit on the length printed.
+
+This patch is dependent on the previous patch ("bitmap, cpumask,
+nodemask: implement pr_cont variants of formatting functions") which
+is planned to go through -mm.  It'd be the easiest to route this
+together.  If this should go through the subsystem tree, please wait
+till the forementioned patch is merged to mainline.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mips@linux-mips.org
 ---
+ arch/mips/netlogic/common/smp.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-v4: Add missing module_exit
-
- drivers/gpio/gpio-xilinx.c | 83 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 66 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-index e668ec4..c7ed92b 100644
---- a/drivers/gpio/gpio-xilinx.c
-+++ b/drivers/gpio/gpio-xilinx.c
-@@ -44,12 +44,18 @@
-  * gpio_state: GPIO state shadow register
-  * gpio_dir: GPIO direction shadow register
-  * gpio_lock: Lock used for synchronization
-+ * inited: True if the port has been inited
-  */
- struct xgpio_instance {
- 	struct of_mm_gpio_chip mmchip;
- 	u32 gpio_state;
- 	u32 gpio_dir;
- 	spinlock_t gpio_lock;
-+	bool inited;
-+};
-+
-+struct xgpio {
-+	struct xgpio_instance port[2];
- };
+diff --git a/arch/mips/netlogic/common/smp.c b/arch/mips/netlogic/common/smp.c
+index 4fde7ac..e91592a 100644
+--- a/arch/mips/netlogic/common/smp.c
++++ b/arch/mips/netlogic/common/smp.c
+@@ -162,7 +162,6 @@ void __init nlm_smp_setup(void)
+ 	unsigned int boot_cpu;
+ 	int num_cpus, i, ncore, node;
+ 	volatile u32 *cpu_ready = nlm_get_boot_data(BOOT_CPU_READY);
+-	char buf[64];
  
- /**
-@@ -172,24 +178,56 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
- }
- 
- /**
-+ * xgpio_remove - Remove method for the GPIO device.
-+ * @pdev: pointer to the platform device
-+ *
-+ * This function remove gpiochips and frees all the allocated resources.
-+ */
-+static int xgpio_remove(struct platform_device *pdev)
-+{
-+	struct xgpio *xgpio = platform_get_drvdata(pdev);
-+	int i;
-+
-+	for (i = 0; i < 2; i++) {
-+		if (!xgpio->port[i].inited)
-+			continue;
-+		gpiochip_remove(&xgpio->port[i].mmchip.gc);
-+
-+		if (i == 1)
-+			xgpio->port[i].mmchip.regs -= XGPIO_CHANNEL_OFFSET;
-+
-+		iounmap(xgpio->port[i].mmchip.regs);
-+		kfree(xgpio->port[i].mmchip.gc.label);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  * xgpio_of_probe - Probe method for the GPIO device.
-- * @np: pointer to device tree node
-+ * @pdev: pointer to the platform device
-  *
-  * This function probes the GPIO device in the device tree. It initializes the
-  * driver data structure. It returns 0, if the driver is bound to the GPIO
-  * device, or a negative value if there is an error.
-  */
--static int xgpio_of_probe(struct device_node *np)
-+static int xgpio_probe(struct platform_device *pdev)
- {
-+	struct xgpio *xgpio;
- 	struct xgpio_instance *chip;
- 	int status = 0;
-+	struct device_node *np = pdev->dev.of_node;
- 	const u32 *tree_info;
- 	u32 ngpio;
- 
--	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
--	if (!chip)
-+	xgpio = devm_kzalloc(&pdev->dev, sizeof(*xgpio), GFP_KERNEL);
-+	if (!xgpio)
- 		return -ENOMEM;
- 
-+	platform_set_drvdata(pdev, xgpio);
-+
-+	chip = &xgpio->port[0];
-+
- 	/* Update GPIO state shadow register with default value */
- 	of_property_read_u32(np, "xlnx,dout-default", &chip->gpio_state);
- 
-@@ -209,6 +247,7 @@ static int xgpio_of_probe(struct device_node *np)
- 
- 	spin_lock_init(&chip->gpio_lock);
- 
-+	chip->mmchip.gc.dev = &pdev->dev;
- 	chip->mmchip.gc.direction_input = xgpio_dir_in;
- 	chip->mmchip.gc.direction_output = xgpio_dir_out;
- 	chip->mmchip.gc.get = xgpio_get;
-@@ -219,20 +258,18 @@ static int xgpio_of_probe(struct device_node *np)
- 	/* Call the OF gpio helper to setup and register the GPIO device */
- 	status = of_mm_gpiochip_add(np, &chip->mmchip);
- 	if (status) {
--		kfree(chip);
- 		pr_err("%s: error in probe function with status %d\n",
- 		       np->full_name, status);
- 		return status;
+ 	boot_cpu = hard_smp_processor_id();
+ 	cpumask_clear(&phys_cpu_present_mask);
+@@ -189,10 +188,12 @@ void __init nlm_smp_setup(void)
+ 		}
  	}
-+	chip->inited = true;
  
- 	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
- 							chip->mmchip.gc.base);
+-	cpumask_scnprintf(buf, ARRAY_SIZE(buf), &phys_cpu_present_mask);
+-	pr_info("Physical CPU mask: %s\n", buf);
+-	cpumask_scnprintf(buf, ARRAY_SIZE(buf), cpu_possible_mask);
+-	pr_info("Possible CPU mask: %s\n", buf);
++	pr_info("Physical CPU mask: ");
++	cpumask_pr_cont(&phys_cpu_present_mask);
++	pr_cont("\n");
++	pr_info("Possible CPU mask: ");
++	cpumask_pr_cont(cpu_possible_mask);
++	pr_cont("\n");
  
- 	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
- 	if (tree_info && be32_to_cpup(tree_info)) {
--		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
--		if (!chip)
--			return -ENOMEM;
-+		chip = &xgpio->port[1];
- 
- 		/* Update GPIO state shadow register with default value */
- 		of_property_read_u32(np, "xlnx,dout-default-2",
-@@ -254,6 +291,7 @@ static int xgpio_of_probe(struct device_node *np)
- 
- 		spin_lock_init(&chip->gpio_lock);
- 
-+		chip->mmchip.gc.dev = &pdev->dev;
- 		chip->mmchip.gc.direction_input = xgpio_dir_in;
- 		chip->mmchip.gc.direction_output = xgpio_dir_out;
- 		chip->mmchip.gc.get = xgpio_get;
-@@ -264,7 +302,7 @@ static int xgpio_of_probe(struct device_node *np)
- 		/* Call the OF gpio helper to setup and register the GPIO dev */
- 		status = of_mm_gpiochip_add(np, &chip->mmchip);
- 		if (status) {
--			kfree(chip);
-+			xgpio_remove(pdev);
- 			pr_err("%s: error in probe function with status %d\n",
- 			np->full_name, status);
- 			return status;
-@@ -272,6 +310,7 @@ static int xgpio_of_probe(struct device_node *np)
- 
- 		/* Add dual channel offset */
- 		chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
-+		chip->inited = true;
- 
- 		pr_info("XGpio: %s: dual channel registered, base is %d\n",
- 					np->full_name, chip->mmchip.gc.base);
-@@ -285,19 +324,29 @@ static const struct of_device_id xgpio_of_match[] = {
- 	{ /* end of list */ },
- };
- 
--static int __init xgpio_init(void)
--{
--	struct device_node *np;
-+MODULE_DEVICE_TABLE(of, xgpio_of_match);
- 
--	for_each_matching_node(np, xgpio_of_match)
--		xgpio_of_probe(np);
-+static struct platform_driver xgpio_plat_driver = {
-+	.probe		= xgpio_probe,
-+	.remove		= xgpio_remove,
-+	.driver		= {
-+			.name = "gpio-xilinx",
-+			.of_match_table	= xgpio_of_match,
-+	},
-+};
- 
--	return 0;
-+static int __init xgpio_init(void)
-+{
-+	return platform_driver_register(&xgpio_plat_driver);
- }
- 
--/* Make sure we get initialized before anyone else tries to use us */
- subsys_initcall(xgpio_init);
--/* No exit call at the moment as we cannot unregister of GPIO chips */
-+
-+static void __exit xgpio_exit(void)
-+{
-+	platform_driver_unregister(&xgpio_plat_driver);
-+}
-+module_exit(xgpio_exit);
- 
- MODULE_AUTHOR("Xilinx, Inc.");
- MODULE_DESCRIPTION("Xilinx GPIO driver");
+ 	/* check with the cores we have woken up */
+ 	for (ncore = 0, i = 0; i < NLM_NR_NODES; i++)
 -- 
-2.1.3
+2.1.0
 
