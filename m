@@ -1,770 +1,664 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829AbaLJKfJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:35:09 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:65018 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbaLJKfE (ORCPT
+	id S1754654AbaLJKhR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:37:17 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:51037 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbaLJKhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:35:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418071319-11779-3-git-send-email-rjui@broadcom.com>
-References: <rjui@broadcom.com> <1418071319-11779-1-git-send-email-rjui@broadcom.com>
- <1418071319-11779-3-git-send-email-rjui@broadcom.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 10 Dec 2014 19:34:43 +0900
-Message-ID: <CAAVeFuJ875fvEwPbnc-Eewsw4Rp7hLbv7nXWBb=OgvLwhQBVvQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/5] gpio: Cygnus: add GPIO driver
-To: Ray Jui <rjui@broadcom.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Arnd Bergmann <arnd@arndb.de>, Scott Branden <sbranden@broadcom.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 10 Dec 2014 05:37:13 -0500
+X-AuditID: cbfee68d-f79296d000004278-53-5488225665f5
+Message-id: <54882255.9060303@samsung.com>
+Date: Wed, 10 Dec 2014 19:37:09 +0900
+From: Beomho Seo <beomho.seo@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sameo@linux.intel.com, lee.jone@linaro.org,
+        lgirdwood@gmail.com, broonie@kernel.org, sre@kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, geunsik.lim@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, beomho.seo@samsung.com
+Subject: Re: [PATCH v8 1/4] mfd: rt5033: Add Richtek RT5033 driver core.
+References: <1418126634-4781-1-git-send-email-beomho.seo@samsung.com>
+ <1418126634-4781-2-git-send-email-beomho.seo@samsung.com>
+ <20141209140102.GZ3951@x1>
+In-reply-to: <20141209140102.GZ3951@x1>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsWyRsSkQDdMqSPEYEoLl8XpT9vYLaY+fMJm
+	cf3Lc1aLSU/eM1vMP3KO1WLiysnMFv1vFrJa/JnQymZx7tVKRotJ9yewWLzfc4bR4v7Xo4wW
+	3650MFlc3jWHzeJz7xFGi6XXLzJZTJi+lsWide8RdovT3awWp3eXWMyY/JLNQdRjzbw1jB6X
+	+3qZPHbOusvusXL5FzaPzSu0PDat6mTzuHNtD5vHvJOBHn1bVjF6fN4kF8AVxWWTkpqTWZZa
+	pG+XwJWxb94b5oIfsxkrljc/ZGpgXF3fxcjJISFgIrFn0TYWCFtM4sK99WxdjFwcQgJLGSUu
+	bfrDDlP0uuMDC0RiOqNE07VD7BDOa0aJro37wdp5BbQkNl3tAetgEVCVmPrrBSuIzSagKfF+
+	yhWwGlGBCIkPq76yQdQLSvyYfA8ozsEhIqAice6NOchMZoHbzBLzvn1jA4kLC3hILG5Sg9g1
+	j1FiQs9cdpA4p4C6xLGNFiAmM5A5ZUouyERmAXmJzWveMkPcfINDYtkDH4hrBCS+TT4EtklC
+	QFZi0wGoEkmJgytusExgFJuF5J5ZCENnIRm6gJF5FaNoakFyQXFSepGhXnFibnFpXrpecn7u
+	JkZgojj971nvDsbbB6wPMQpwMCrx8AZcbg8RYk0sK67MPcRoCnTERGYp0eR8YDrKK4k3NDYz
+	sjA1MTU2Mrc0UxLnVZT6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUairxdlO+8WDh0fS
+	Z0xYe+HlN9GL99/OPMua1HTUjGP6JLbExbL/Phvuup7xJGGp+N2UcI4m6Qx/z6wPs9TqRO9K
+	LcvQPLG5M31jtu65Net61TO3e1xbd3yO+gXp13c+cWws6dKbq/X01qSoP95ifLL7LtlYlSlK
+	TMx3flz881t28jSujxFuZ5RYijMSDbWYi4oTAdWwgWcPAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd1QpY4QgxmrLC1Of9rGbjH14RM2
+	i+tfnrNaTHryntli/pFzrBYTV05mtuh/s5DV4s+EVjaLc69WMlpMuj+BxeL9njOMFve/HmW0
+	+Halg8ni8q45bBafe48wWiy9fpHJYsL0tSwWrXuPsFuc7ma1OL27xGLG5JdsDqIea+atYfS4
+	3NfL5LFz1l12j5XLv7B5bF6h5bFpVSebx51re9g85p0M9OjbsorR4/MmuQCuqAZGm4zUxJTU
+	IoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zBygF5UUyhJzSoFCAYnF
+	xUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhDWMGfvmvWEu+DGbsWJ580OmBsbV9V2MnBwSAiYS
+	rzs+sEDYYhIX7q1n62Lk4hASmM4o0XTtEDuE85pRomvjfrAqXgEtiU1Xe9hBbBYBVYmpv16w
+	gthsApoS76dcAasRFYiQ+LDqKxtEvaDEj8n3gOIcHCICKhLn3piDzGQWuM0sMe/bNzaQuLCA
+	h8TiJjWIXfMYJSb0zGUHiXMKqEsc22gBYjIDmVOm5IJMZBaQl9i85i3zBEaBWUgWzEKomoWk
+	agEj8ypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4ET0THoH46oGi0OMAhyMSjy8AZfbQ4RY
+	E8uKK3MPMUpwMCuJ8L6R7AgR4k1JrKxKLcqPLyrNSS0+xGgK9P5EZinR5HxgkswriTc0NjEz
+	sjQyN7QwMjZXEudVsm8LERJITyxJzU5NLUgtgulj4uCUamBs2nTPonT6vSlT83LyeevTXH+m
+	F58/IB3McejmmWcp3t1fImc7P09eeV3s0ZSpdzKjzTe3qrl+Sf91TX6yvnMXx5qtHBKWG9IT
+	3K+vefZQJ275wT8XKqOfiB/6L79k9Wv+L+3b3ZxkXM6Kn7lvHsx1RFB/1q2XiTddz+/d39N0
+	iEHWNle7Yd0/JZbijERDLeai4kQAU2NnSFoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 5:41 AM, Ray Jui <rjui@broadcom.com> wrote:
-> This GPIO driver supports all 3 GPIO controllers in the Broadcom Cygnus
-> SoC. The 3 GPIO controllers are 1) the ASIU GPIO controller, 2) the
-> chipCommonG GPIO controller, and 3) the ALWAYS-ON GPIO controller
->
-> Signed-off-by: Ray Jui <rjui@broadcom.com>
-> Reviewed-by: Scott Branden <sbranden@broadcom.com>
-> ---
->  drivers/gpio/Kconfig           |   11 +
->  drivers/gpio/Makefile          |    1 +
->  drivers/gpio/gpio-bcm-cygnus.c |  705 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 717 insertions(+)
->  create mode 100644 drivers/gpio/gpio-bcm-cygnus.c
->
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 633ec21..3e3b0342 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -126,6 +126,17 @@ config GPIO_74XX_MMIO
->             8 bits:     74244 (Input), 74273 (Output)
->             16 bits:    741624 (Input), 7416374 (Output)
->
-> +config GPIO_BCM_CYGNUS
-> +       bool "Broadcom Cygnus GPIO support"
-> +       depends on ARCH_BCM_CYGNUS && OF_GPIO
-> +       help
-> +         Say yes here to turn on GPIO support for Broadcom Cygnus SoC
-> +
-> +         The Broadcom Cygnus SoC has 3 GPIO controllers including the ASIU
-> +         GPIO controller (ASIU), the chipCommonG GPIO controller (CCM), and
-> +         the always-ON GPIO controller (CRMU). All 3 GPIO controllers are
-> +         supported by this driver
-> +
->  config GPIO_CLPS711X
->         tristate "CLPS711X GPIO support"
->         depends on ARCH_CLPS711X || COMPILE_TEST
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 81755f1..31eb7e0 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -19,6 +19,7 @@ obj-$(CONFIG_GPIO_ADP5520)    += gpio-adp5520.o
->  obj-$(CONFIG_GPIO_ADP5588)     += gpio-adp5588.o
->  obj-$(CONFIG_GPIO_AMD8111)     += gpio-amd8111.o
->  obj-$(CONFIG_GPIO_ARIZONA)     += gpio-arizona.o
-> +obj-$(CONFIG_GPIO_BCM_CYGNUS)  += gpio-bcm-cygnus.o
->  obj-$(CONFIG_GPIO_BCM_KONA)    += gpio-bcm-kona.o
->  obj-$(CONFIG_GPIO_BT8XX)       += gpio-bt8xx.o
->  obj-$(CONFIG_GPIO_CLPS711X)    += gpio-clps711x.o
-> diff --git a/drivers/gpio/gpio-bcm-cygnus.c b/drivers/gpio/gpio-bcm-cygnus.c
-> new file mode 100644
-> index 0000000..4fd9b73
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-bcm-cygnus.c
-> @@ -0,0 +1,705 @@
-> +/*
-> + * Copyright (C) 2014 Broadcom Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License as
-> + * published by the Free Software Foundation version 2.
-> + *
-> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> + * kind, whether express or implied; without even the implied warranty
-> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/irq.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/gpio.h>
-> +#include <linux/ioport.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/irqchip/chained_irq.h>
-> +
-> +#define CYGNUS_GPIO_DATA_IN_OFFSET   0x00
-> +#define CYGNUS_GPIO_DATA_OUT_OFFSET  0x04
-> +#define CYGNUS_GPIO_OUT_EN_OFFSET    0x08
-> +#define CYGNUS_GPIO_IN_TYPE_OFFSET   0x0c
-> +#define CYGNUS_GPIO_INT_DE_OFFSET    0x10
-> +#define CYGNUS_GPIO_INT_EDGE_OFFSET  0x14
-> +#define CYGNUS_GPIO_INT_MSK_OFFSET   0x18
-> +#define CYGNUS_GPIO_INT_STAT_OFFSET  0x1c
-> +#define CYGNUS_GPIO_INT_MSTAT_OFFSET 0x20
-> +#define CYGNUS_GPIO_INT_CLR_OFFSET   0x24
-> +#define CYGNUS_GPIO_PAD_RES_OFFSET   0x34
-> +#define CYGNUS_GPIO_RES_EN_OFFSET    0x38
-> +
-> +/* drive strength control for ASIU GPIO */
-> +#define CYGNUS_GPIO_ASIU_DRV0_CTRL_OFFSET 0x58
-> +
-> +/* drive strength control for CCM GPIO */
-> +#define CYGNUS_GPIO_CCM_DRV0_CTRL_OFFSET  0x00
-> +
-> +#define GPIO_BANK_SIZE 0x200
-> +#define NGPIOS_PER_BANK 32
-> +#define GPIO_BIT(pin) ((pin) % NGPIOS_PER_BANK)
-> +#define GPIO_BANK(pin) ((pin) / NGPIOS_PER_BANK)
-> +
-> +#define GPIO_FLAG_BIT_MASK           0xffff
-> +#define GPIO_PULL_BIT_SHIFT          16
-> +#define GPIO_PULL_BIT_MASK           0x3
-> +
-> +#define GPIO_DRV_STRENGTH_BIT_SHIFT  20
-> +#define GPIO_DRV_STRENGTH_BITS       3
-> +#define GPIO_DRV_STRENGTH_BIT_MASK   ((1 << GPIO_DRV_STRENGTH_BITS) - 1)
-> +
-> +/*
-> + * For GPIO internal pull up/down registers
-> + */
-> +enum gpio_pull {
-> +       GPIO_PULL_NONE = 0,
-> +       GPIO_PULL_UP,
-> +       GPIO_PULL_DOWN,
-> +       GPIO_PULL_INVALID,
-> +};
-> +
-> +/*
-> + * GPIO drive strength
-> + */
-> +enum gpio_drv_strength {
-> +       GPIO_DRV_STRENGTH_2MA = 0,
-> +       GPIO_DRV_STRENGTH_4MA,
-> +       GPIO_DRV_STRENGTH_6MA,
-> +       GPIO_DRV_STRENGTH_8MA,
-> +       GPIO_DRV_STRENGTH_10MA,
-> +       GPIO_DRV_STRENGTH_12MA,
-> +       GPIO_DRV_STRENGTH_14MA,
-> +       GPIO_DRV_STRENGTH_16MA,
-> +       GPIO_DRV_STRENGTH_INVALID,
-> +};
-> +
-> +struct bcm_cygnus_gpio {
-> +       struct device *dev;
-> +       void __iomem *base;
-> +       void __iomem *io_ctrl;
-> +       spinlock_t lock;
-> +       struct gpio_chip gc;
-> +       unsigned num_banks;
-> +       int irq;
-> +       struct irq_domain *irq_domain;
-> +};
-> +
-> +static unsigned int gpio_base_index;
+On 12/09/2014 11:01 PM, Lee Jones wrote:
+> On Tue, 09 Dec 2014, Beomho Seo wrote:
+> 
+>> This patch adds a new driver for Richtek RT5033 driver.
+>> RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+>> flash LED current source, LDO and synchronous Buck converter. It is interfaced
+>> to host controller using I2C interface.
+>>
+>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>> Cc: Lee Jones <lee.jone@linaro.org>
+>> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+>> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>> Changes in v8
+>> - Add description of hardware.
+>> - Move structure.
+>>
+>> Changes in v7
+>> - Use small description.
+>> - Change some names for a variable.
+>> - Revise of_device_id struct style.
+>>
+>> Changes in v6
+>> - Fix white space issue in mfd cell struct.
+>>
+>> Changes in v5
+>> - Change possible built as a module.
+>> - Revise rt5033_dev mfd cell entry.
+>> - Fix incorrect typo.
+>> - Add module alias.
+>>
+>> Changes in v4
+>> - none.
+>>
+>> Changes in v3
+>> - Correct sentence errors.
+>> - Add author information the top of each drivers.
+>> - Remove unnecessary pre-initialise, struct member(rt5033->i2c) and blink.
+>> - Change some return check.
+>> - Use bool and of_match_ptr().
+>>
+>> Changes in v2
+>> - Remove volatile_reg callback. Because this driver not in use regmap cache.
+>> - Revmoe unnecessary subnode of_compatible.
+>> - Add define for set_high impedance mode of charger.
+>> ---
+>>  drivers/mfd/Kconfig                |   12 ++
+>>  drivers/mfd/Makefile               |    1 +
+>>  drivers/mfd/rt5033.c               |  142 ++++++++++++++++++++
+>>  include/linux/mfd/rt5033-private.h |  260 ++++++++++++++++++++++++++++++++++++
+>>  include/linux/mfd/rt5033.h         |   62 +++++++++
+>>  5 files changed, 477 insertions(+)
+>>  create mode 100644 drivers/mfd/rt5033.c
+>>  create mode 100644 include/linux/mfd/rt5033-private.h
+>>  create mode 100644 include/linux/mfd/rt5033.h
+> 
+> Much better.
+> 
+> For my own reference:
+> 
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> 
+> So what's the plan with this set?
+> 
 
-Nope. What happens if there are other GPIO controllers with
-conflicting base GPIOs? I guess this adds more weight to that
-"linux,gpio-base" property I mentioned in
-http://www.spinics.net/lists/arm-kernel/msg384847.html .
+This patch have been made on for-next-mfd branch of your git repository.
+So I hope this patch to be merged at your git repository.
+Another patch set(RT5033 regulator driver) have been merged on for-next branch of regulator git repository.
 
-The best solution would be for users of the GPIOs provided by this
-driver to not rely on GPIO numbers at all, and exclusively use the
-gpiod interface. Is that an option for you?
+https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/commit/?h=for-next&id=b1917578fd5d8efa67afa05a0d6d7e323f2802da
 
-> +
-> +static struct bcm_cygnus_gpio *to_bcm_cygnus_gpio(struct gpio_chip *gc)
-> +{
-> +       return container_of(gc, struct bcm_cygnus_gpio, gc);
-> +}
-> +
-> +static int bcm_cygnus_gpio_to_irq(struct gpio_chip *gc, unsigned offset)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +
-> +       return irq_find_mapping(cygnus_gpio->irq_domain, offset);
-> +}
-> +
-> +static unsigned int __gpio_reg_offset(struct bcm_cygnus_gpio *cygnus_gpio,
-> +               unsigned gpio)
-> +{
-> +       return GPIO_BANK(gpio) * GPIO_BANK_SIZE;
-> +}
+Other patches(about charger, fuelgague and devicetree doc) will be re-sent to each maintainers.
 
-The cygnus_gpio argument in this function is unused. The compiler is
-supposed to signal such issues. Have you looked at your compiler
-output?
+Thank you for response.
 
-> +
-> +static unsigned int __gpio_bitpos(struct bcm_cygnus_gpio *cygnus_gpio,
-> +               unsigned gpio)
-> +{
-> +       return GPIO_BIT(gpio);
-> +}
+>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>> index 2e6b731..9cd2af6 100644
+>> --- a/drivers/mfd/Kconfig
+>> +++ b/drivers/mfd/Kconfig
+>> @@ -623,6 +623,18 @@ config MFD_RTSX_PCI
+>>  	  types of memory cards, such as Memory Stick, Memory Stick Pro,
+>>  	  Secure Digital and MultiMediaCard.
+>>  
+>> +config MFD_RT5033
+>> +	tristate "Richtek RT5033 Power Management IC"
+>> +	depends on I2C=y
+>> +	select MFD_CORE
+>> +	select REGMAP_I2C
+>> +	help
+>> +	  This driver provides for the Richtek RT5033 Power Management IC,
+>> +	  which includes the I2C driver and the Core APIs. This driver provides
+>> +	  common support for accessing the device. The device supports multiple
+>> +	  sub-devices like charger, fuel gauge, flash LED, current source,
+>> +	  LDO and Buck.
+>> +
+>>  config MFD_RTSX_USB
+>>  	tristate "Realtek USB card reader"
+>>  	depends on USB
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 53467e2..4059c24 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -176,6 +176,7 @@ obj-$(CONFIG_MFD_IPAQ_MICRO)	+= ipaq-micro.o
+>>  obj-$(CONFIG_MFD_MENF21BMC)	+= menf21bmc.o
+>>  obj-$(CONFIG_MFD_HI6421_PMIC)	+= hi6421-pmic-core.o
+>>  obj-$(CONFIG_MFD_DLN2)		+= dln2.o
+>> +obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
+>>  
+>>  intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
+>>  obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+>> diff --git a/drivers/mfd/rt5033.c b/drivers/mfd/rt5033.c
+>> new file mode 100644
+>> index 0000000..db395a6
+>> --- /dev/null
+>> +++ b/drivers/mfd/rt5033.c
+>> @@ -0,0 +1,142 @@
+>> +/*
+>> + * MFD core driver for the Richtek RT5033.
+>> + *
+>> + * RT5033 comprises multiple sub-devices switcing charger, fuel gauge,
+>> + * flash LED, current source, LDO and BUCK regulators.
+>> + *
+>> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
+>> + * Author: Beomho Seo <beomho.seo@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published bythe Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/err.h>
+>> +#include <linux/module.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/of_device.h>
+>> +#include <linux/mfd/core.h>
+>> +#include <linux/mfd/rt5033.h>
+>> +#include <linux/mfd/rt5033-private.h>
+>> +
+>> +static const struct regmap_irq rt5033_irqs[] = {
+>> +	{ .mask = RT5033_PMIC_IRQ_BUCKOCP, },
+>> +	{ .mask = RT5033_PMIC_IRQ_BUCKLV, },
+>> +	{ .mask = RT5033_PMIC_IRQ_SAFELDOLV, },
+>> +	{ .mask = RT5033_PMIC_IRQ_LDOLV, },
+>> +	{ .mask = RT5033_PMIC_IRQ_OT, },
+>> +	{ .mask = RT5033_PMIC_IRQ_VDDA_UV, },
+>> +};
+>> +
+>> +static const struct regmap_irq_chip rt5033_irq_chip = {
+>> +	.name		= "rt5033",
+>> +	.status_base	= RT5033_REG_PMIC_IRQ_STAT,
+>> +	.mask_base	= RT5033_REG_PMIC_IRQ_CTRL,
+>> +	.mask_invert	= true,
+>> +	.num_regs	= 1,
+>> +	.irqs		= rt5033_irqs,
+>> +	.num_irqs	= ARRAY_SIZE(rt5033_irqs),
+>> +};
+>> +
+>> +static const struct mfd_cell rt5033_devs[] = {
+>> +	{ .name = "rt5033-regulator", },
+>> +	{
+>> +		.name = "rt5033-charger",
+>> +		.of_compatible = "richtek,rt5033-charger",
+>> +	}, {
+>> +		.name = "rt5033-battery",
+>> +		.of_compatible = "richtek,rt5033-battery",
+>> +	},
+>> +};
+>> +
+>> +static const struct regmap_config rt5033_regmap_config = {
+>> +	.reg_bits	= 8,
+>> +	.val_bits	= 8,
+>> +	.max_register	= RT5033_REG_END,
+>> +};
+>> +
+>> +static int rt5033_i2c_probe(struct i2c_client *i2c,
+>> +				const struct i2c_device_id *id)
+>> +{
+>> +	struct rt5033_dev *rt5033;
+>> +	unsigned int dev_id;
+>> +	int ret;
+>> +
+>> +	rt5033 = devm_kzalloc(&i2c->dev, sizeof(*rt5033), GFP_KERNEL);
+>> +	if (!rt5033)
+>> +		return -ENOMEM;
+>> +
+>> +	i2c_set_clientdata(i2c, rt5033);
+>> +	rt5033->dev = &i2c->dev;
+>> +	rt5033->irq = i2c->irq;
+>> +	rt5033->wakeup = true;
+>> +
+>> +	rt5033->regmap = devm_regmap_init_i2c(i2c, &rt5033_regmap_config);
+>> +	if (IS_ERR(rt5033->regmap)) {
+>> +		dev_err(&i2c->dev, "Failed to allocate register map.\n");
+>> +		return PTR_ERR(rt5033->regmap);
+>> +	}
+>> +
+>> +	ret = regmap_read(rt5033->regmap, RT5033_REG_DEVICE_ID, &dev_id);
+>> +	if (ret) {
+>> +		dev_err(&i2c->dev, "Device not found\n");
+>> +		return -ENODEV;
+>> +	}
+>> +	dev_info(&i2c->dev, "Device found Device ID: %04x\n", dev_id);
+>> +
+>> +	ret = regmap_add_irq_chip(rt5033->regmap, rt5033->irq,
+>> +			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>> +			0, &rt5033_irq_chip, &rt5033->irq_data);
+>> +	if (ret) {
+>> +		dev_err(&i2c->dev, "Failed to request IRQ %d: %d\n",
+>> +							rt5033->irq, ret);
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = mfd_add_devices(rt5033->dev, -1, rt5033_devs,
+>> +			ARRAY_SIZE(rt5033_devs), NULL, 0,
+>> +			regmap_irq_get_domain(rt5033->irq_data));
+>> +	if (ret < 0) {
+>> +		dev_err(&i2c->dev, "Failed to add RT5033 child devices.\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	device_init_wakeup(rt5033->dev, rt5033->wakeup);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int rt5033_i2c_remove(struct i2c_client *i2c)
+>> +{
+>> +	mfd_remove_devices(&i2c->dev);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct i2c_device_id rt5033_i2c_id[] = {
+>> +	{ "rt5033", },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(i2c, rt5033_i2c_id);
+>> +
+>> +static const struct of_device_id rt5033_dt_match[] = {
+>> +	{ .compatible = "richtek,rt5033", },
+>> +	{ }
+>> +};
+>> +
+>> +static struct i2c_driver rt5033_driver = {
+>> +	.driver = {
+>> +		.name = "rt5033",
+>> +		.of_match_table = of_match_ptr(rt5033_dt_match),
+>> +	},
+>> +	.probe = rt5033_i2c_probe,
+>> +	.remove = rt5033_i2c_remove,
+>> +	.id_table = rt5033_i2c_id,
+>> +};
+>> +module_i2c_driver(rt5033_driver);
+>> +
+>> +MODULE_ALIAS("i2c:rt5033");
+>> +MODULE_DESCRIPTION("Richtek RT5033 multi-function core driver");
+>> +MODULE_AUTHOR("Beomho Seo <beomho.seo@samsung.com>");
+>> +MODULE_LICENSE("GPL");
+>> diff --git a/include/linux/mfd/rt5033-private.h b/include/linux/mfd/rt5033-private.h
+>> new file mode 100644
+>> index 0000000..1b63fc2
+>> --- /dev/null
+>> +++ b/include/linux/mfd/rt5033-private.h
+>> @@ -0,0 +1,260 @@
+>> +/*
+>> + * MFD core driver for Richtek RT5033
+>> + *
+>> + * Copyright (C) 2014 Samsung Electronics, Co., Ltd.
+>> + * Author: Beomho Seo <beomho.seo@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published bythe Free Software Foundation.
+>> + */
+>> +
+>> +#ifndef __RT5033_PRIVATE_H__
+>> +#define __RT5033_PRIVATE_H__
+>> +
+>> +enum rt5033_reg {
+>> +	RT5033_REG_CHG_STAT		= 0x00,
+>> +	RT5033_REG_CHG_CTRL1		= 0x01,
+>> +	RT5033_REG_CHG_CTRL2		= 0x02,
+>> +	RT5033_REG_DEVICE_ID		= 0x03,
+>> +	RT5033_REG_CHG_CTRL3		= 0x04,
+>> +	RT5033_REG_CHG_CTRL4		= 0x05,
+>> +	RT5033_REG_CHG_CTRL5		= 0x06,
+>> +	RT5033_REG_RT_CTRL0		= 0x07,
+>> +	RT5033_REG_CHG_RESET		= 0x08,
+>> +	/* Reserved 0x09~0x18 */
+>> +	RT5033_REG_RT_CTRL1		= 0x19,
+>> +	/* Reserved 0x1A~0x20 */
+>> +	RT5033_REG_FLED_FUNCTION1	= 0x21,
+>> +	RT5033_REG_FLED_FUNCTION2	= 0x22,
+>> +	RT5033_REG_FLED_STROBE_CTRL1	= 0x23,
+>> +	RT5033_REG_FLED_STROBE_CTRL2	= 0x24,
+>> +	RT5033_REG_FLED_CTRL1		= 0x25,
+>> +	RT5033_REG_FLED_CTRL2		= 0x26,
+>> +	RT5033_REG_FLED_CTRL3		= 0x27,
+>> +	RT5033_REG_FLED_CTRL4		= 0x28,
+>> +	RT5033_REG_FLED_CTRL5		= 0x29,
+>> +	/* Reserved 0x2A~0x40 */
+>> +	RT5033_REG_CTRL			= 0x41,
+>> +	RT5033_REG_BUCK_CTRL		= 0x42,
+>> +	RT5033_REG_LDO_CTRL		= 0x43,
+>> +	/* Reserved 0x44~0x46 */
+>> +	RT5033_REG_MANUAL_RESET_CTRL	= 0x47,
+>> +	/* Reserved 0x48~0x5F */
+>> +	RT5033_REG_CHG_IRQ1		= 0x60,
+>> +	RT5033_REG_CHG_IRQ2		= 0x61,
+>> +	RT5033_REG_CHG_IRQ3		= 0x62,
+>> +	RT5033_REG_CHG_IRQ1_CTRL	= 0x63,
+>> +	RT5033_REG_CHG_IRQ2_CTRL	= 0x64,
+>> +	RT5033_REG_CHG_IRQ3_CTRL	= 0x65,
+>> +	RT5033_REG_LED_IRQ_STAT		= 0x66,
+>> +	RT5033_REG_LED_IRQ_CTRL		= 0x67,
+>> +	RT5033_REG_PMIC_IRQ_STAT	= 0x68,
+>> +	RT5033_REG_PMIC_IRQ_CTRL	= 0x69,
+>> +	RT5033_REG_SHDN_CTRL		= 0x6A,
+>> +	RT5033_REG_OFF_EVENT		= 0x6B,
+>> +
+>> +	RT5033_REG_END,
+>> +};
+>> +
+>> +/* RT5033 Charger state register */
+>> +#define RT5033_CHG_STAT_MASK		0x20
+>> +#define RT5033_CHG_STAT_DISCHARGING	0x00
+>> +#define RT5033_CHG_STAT_FULL		0x10
+>> +#define RT5033_CHG_STAT_CHARGING	0x20
+>> +#define RT5033_CHG_STAT_NOT_CHARGING	0x30
+>> +#define RT5033_CHG_STAT_TYPE_MASK	0x60
+>> +#define RT5033_CHG_STAT_TYPE_PRE	0x20
+>> +#define RT5033_CHG_STAT_TYPE_FAST	0x60
+>> +
+>> +/* RT5033 CHGCTRL1 register */
+>> +#define RT5033_CHGCTRL1_IAICR_MASK	0xe0
+>> +#define RT5033_CHGCTRL1_MODE_MASK	0x01
+>> +
+>> +/* RT5033 CHGCTRL2 register */
+>> +#define RT5033_CHGCTRL2_CV_MASK		0xfc
+>> +
+>> +/* RT5033 CHGCTRL3 register */
+>> +#define RT5033_CHGCTRL3_CFO_EN_MASK	0x40
+>> +#define RT5033_CHGCTRL3_TIMER_MASK	0x38
+>> +#define RT5033_CHGCTRL3_TIMER_EN_MASK	0x01
+>> +
+>> +/* RT5033 CHGCTRL4 register */
+>> +#define RT5033_CHGCTRL4_EOC_MASK	0x07
+>> +#define RT5033_CHGCTRL4_IPREC_MASK	0x18
+>> +
+>> +/* RT5033 CHGCTRL5 register */
+>> +#define RT5033_CHGCTRL5_VPREC_MASK	0x0f
+>> +#define RT5033_CHGCTRL5_ICHG_MASK	0xf0
+>> +#define RT5033_CHGCTRL5_ICHG_SHIFT	0x04
+>> +#define RT5033_CHG_MAX_CURRENT		0x0d
+>> +
+>> +/* RT5033 RT CTRL1 register */
+>> +#define RT5033_RT_CTRL1_UUG_MASK	0x02
+>> +#define RT5033_RT_HZ_MASK		0x01
+>> +
+>> +/* RT5033 control register */
+>> +#define RT5033_CTRL_FCCM_BUCK_MASK		0x00
+>> +#define RT5033_CTRL_BUCKOMS_MASK		0x01
+>> +#define RT5033_CTRL_LDOOMS_MASK			0x02
+>> +#define RT5033_CTRL_SLDOOMS_MASK		0x03
+>> +#define RT5033_CTRL_EN_BUCK_MASK		0x04
+>> +#define RT5033_CTRL_EN_LDO_MASK			0x05
+>> +#define RT5033_CTRL_EN_SAFE_LDO_MASK		0x06
+>> +#define RT5033_CTRL_LDO_SLEEP_MASK		0x07
+>> +
+>> +/* RT5033 BUCK control register */
+>> +#define RT5033_BUCK_CTRL_MASK			0x1f
+>> +
+>> +/* RT5033 LDO control register */
+>> +#define RT5033_LDO_CTRL_MASK			0x1f
+>> +
+>> +/* RT5033 charger property - model, manufacturer */
+>> +
+>> +#define RT5033_CHARGER_MODEL	"RT5033WSC Charger"
+>> +#define RT5033_MANUFACTURER	"Richtek Technology Corporation"
+>> +
+>> +/*
+>> + * RT5033 charger fast-charge current lmits (as in CHGCTRL1 register),
+>> + * AICR mode limits the input current for example,
+>> + * the AIRC 100 mode limits the input current to 100 mA.
+>> + */
+>> +#define RT5033_AICR_100_MODE			0x20
+>> +#define RT5033_AICR_500_MODE			0x40
+>> +#define RT5033_AICR_700_MODE			0x60
+>> +#define RT5033_AICR_900_MODE			0x80
+>> +#define RT5033_AICR_1500_MODE			0xc0
+>> +#define RT5033_AICR_2000_MODE			0xe0
+>> +#define RT5033_AICR_MODE_MASK			0xe0
+>> +
+>> +/* RT5033 use internal timer need to set time */
+>> +#define RT5033_FAST_CHARGE_TIMER4		0x00
+>> +#define RT5033_FAST_CHARGE_TIMER6		0x01
+>> +#define RT5033_FAST_CHARGE_TIMER8		0x02
+>> +#define RT5033_FAST_CHARGE_TIMER9		0x03
+>> +#define RT5033_FAST_CHARGE_TIMER12		0x04
+>> +#define RT5033_FAST_CHARGE_TIMER14		0x05
+>> +#define RT5033_FAST_CHARGE_TIMER16		0x06
+>> +
+>> +#define RT5033_INT_TIMER_ENABLE			0x01
+>> +
+>> +/* RT5033 charger termination enable mask */
+>> +#define RT5033_TE_ENABLE_MASK			0x08
+>> +
+>> +/*
+>> + * RT5033 charger opa mode. RT50300 have two opa mode charger mode
+>> + * and boost mode for OTG
+>> + */
+>> +
+>> +#define RT5033_CHARGER_MODE			0x00
+>> +#define RT5033_BOOST_MODE			0x01
+>> +
+>> +/* RT5033 charger termination enable */
+>> +#define RT5033_TE_ENABLE			0x08
+>> +
+>> +/* RT5033 charger CFO enable */
+>> +#define RT5033_CFO_ENABLE			0x40
+>> +
+>> +/* RT5033 charger constant charge voltage (as in CHGCTRL2 register), uV */
+>> +#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MIN	3650000U
+>> +#define RT5033_CHARGER_CONST_VOLTAGE_STEP_NUM   25000U
+>> +#define RT5033_CHARGER_CONST_VOLTAGE_LIMIT_MAX	4400000U
+>> +
+>> +/* RT5033 charger pre-charge current limits (as in CHGCTRL4 register), uA */
+>> +#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MIN	350000U
+>> +#define RT5033_CHARGER_PRE_CURRENT_STEP_NUM	100000U
+>> +#define RT5033_CHARGER_PRE_CURRENT_LIMIT_MAX	650000U
+>> +
+>> +/* RT5033 charger fast-charge current (as in CHGCTRL5 register), uA */
+>> +#define RT5033_CHARGER_FAST_CURRENT_MIN		700000U
+>> +#define RT5033_CHARGER_FAST_CURRENT_STEP_NUM	100000U
+>> +#define RT5033_CHARGER_FAST_CURRENT_MAX		2000000U
+>> +
+>> +/*
+>> + * RT5033 charger const-charge end of charger current (
+>> + * as in CHGCTRL4 register), uA
+>> + */
+>> +#define RT5033_CHARGER_EOC_MIN			150000U
+>> +#define RT5033_CHARGER_EOC_REF			300000U
+>> +#define RT5033_CHARGER_EOC_STEP_NUM1		50000U
+>> +#define RT5033_CHARGER_EOC_STEP_NUM2		100000U
+>> +#define RT5033_CHARGER_EOC_MAX			600000U
+>> +
+>> +/*
+>> + * RT5033 charger pre-charge threshold volt limits
+>> + * (as in CHGCTRL5 register), uV
+>> + */
+>> +
+>> +#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MIN	2300000U
+>> +#define RT5033_CHARGER_PRE_THRESHOLD_STEP_NUM	100000U
+>> +#define RT5033_CHARGER_PRE_THRESHOLD_LIMIT_MAX	3800000U
+>> +
+>> +/*
+>> + * RT5033 charger enable UUG, If UUG enable MOS auto control by H/W charger
+>> + * circuit.
+>> + */
+>> +#define RT5033_CHARGER_UUG_ENABLE		0x02
+>> +
+>> +/* RT5033 charger High impedance mode */
+>> +#define RT5033_CHARGER_HZ_DISABLE		0x00
+>> +#define RT5033_CHARGER_HZ_ENABLE		0x01
+>> +
+>> +/* RT5033 regulator BUCK output voltage uV */
+>> +#define RT5033_REGULATOR_BUCK_VOLTAGE_MIN		1000000U
+>> +#define RT5033_REGULATOR_BUCK_VOLTAGE_MAX		3000000U
+>> +#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP		100000U
+>> +#define RT5033_REGULATOR_BUCK_VOLTAGE_STEP_NUM		32
+>> +
+>> +/* RT5033 regulator LDO output voltage uV */
+>> +#define RT5033_REGULATOR_LDO_VOLTAGE_MIN		1200000U
+>> +#define RT5033_REGULATOR_LDO_VOLTAGE_MAX		3000000U
+>> +#define RT5033_REGULATOR_LDO_VOLTAGE_STEP		100000U
+>> +#define RT5033_REGULATOR_LDO_VOLTAGE_STEP_NUM		32
+>> +
+>> +/* RT5033 regulator SAFE LDO output voltage uV */
+>> +#define RT5033_REGULATOR_SAFE_LDO_VOLTAGE		4900000U
+>> +
+>> +enum rt5033_fuel_reg {
+>> +	RT5033_FUEL_REG_OCV_H		= 0x00,
+>> +	RT5033_FUEL_REG_OCV_L		= 0x01,
+>> +	RT5033_FUEL_REG_VBAT_H		= 0x02,
+>> +	RT5033_FUEL_REG_VBAT_L		= 0x03,
+>> +	RT5033_FUEL_REG_SOC_H		= 0x04,
+>> +	RT5033_FUEL_REG_SOC_L		= 0x05,
+>> +	RT5033_FUEL_REG_CTRL_H		= 0x06,
+>> +	RT5033_FUEL_REG_CTRL_L		= 0x07,
+>> +	RT5033_FUEL_REG_CRATE		= 0x08,
+>> +	RT5033_FUEL_REG_DEVICE_ID	= 0x09,
+>> +	RT5033_FUEL_REG_AVG_VOLT_H	= 0x0A,
+>> +	RT5033_FUEL_REG_AVG_VOLT_L	= 0x0B,
+>> +	RT5033_FUEL_REG_CONFIG_H	= 0x0C,
+>> +	RT5033_FUEL_REG_CONFIG_L	= 0x0D,
+>> +	/* Reserved 0x0E~0x0F */
+>> +	RT5033_FUEL_REG_IRQ_CTRL	= 0x10,
+>> +	RT5033_FUEL_REG_IRQ_FLAG	= 0x11,
+>> +	RT5033_FUEL_VMIN		= 0x12,
+>> +	RT5033_FUEL_SMIN		= 0x13,
+>> +	/* Reserved 0x14~0x1F */
+>> +	RT5033_FUEL_VGCOMP1		= 0x20,
+>> +	RT5033_FUEL_VGCOMP2		= 0x21,
+>> +	RT5033_FUEL_VGCOMP3		= 0x22,
+>> +	RT5033_FUEL_VGCOMP4		= 0x23,
+>> +	/* Reserved 0x24~0xFD */
+>> +	RT5033_FUEL_MFA_H		= 0xFE,
+>> +	RT5033_FUEL_MFA_L		= 0xFF,
+>> +
+>> +	RT5033_FUEL_REG_END,
+>> +};
+>> +
+>> +/* RT5033 fuel gauge battery present property */
+>> +#define RT5033_FUEL_BAT_PRESENT		0x02
+>> +
+>> +/* RT5033 PMIC interrupts */
+>> +#define RT5033_PMIC_IRQ_BUCKOCP		2
+>> +#define RT5033_PMIC_IRQ_BUCKLV		3
+>> +#define RT5033_PMIC_IRQ_SAFELDOLV	4
+>> +#define RT5033_PMIC_IRQ_LDOLV		5
+>> +#define RT5033_PMIC_IRQ_OT		6
+>> +#define RT5033_PMIC_IRQ_VDDA_UV		7
+>> +
+>> +#endif /* __RT5033_PRIVATE_H__ */
+>> diff --git a/include/linux/mfd/rt5033.h b/include/linux/mfd/rt5033.h
+>> new file mode 100644
+>> index 0000000..010cff4
+>> --- /dev/null
+>> +++ b/include/linux/mfd/rt5033.h
+>> @@ -0,0 +1,62 @@
+>> +/*
+>> + * MFD core driver for the RT5033
+>> + *
+>> + * Copyright (C) 2014 Samsung Electronics
+>> + * Author: Beomho Seo <beomho.seo@samsung.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published bythe Free Software Foundation.
+>> + */
+>> +
+>> +#ifndef __RT5033_H__
+>> +#define __RT5033_H__
+>> +
+>> +#include <linux/regulator/consumer.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/regmap.h>
+>> +#include <linux/power_supply.h>
+>> +
+>> +/* RT5033 regulator IDs */
+>> +enum rt5033_regulators {
+>> +	RT5033_BUCK = 0,
+>> +	RT5033_LDO,
+>> +	RT5033_SAFE_LDO,
+>> +
+>> +	RT5033_REGULATOR_NUM,
+>> +};
+>> +
+>> +struct rt5033_dev {
+>> +	struct device *dev;
+>> +
+>> +	struct regmap *regmap;
+>> +	struct regmap_irq_chip_data *irq_data;
+>> +	int irq;
+>> +	bool wakeup;
+>> +};
+>> +
+>> +struct rt5033_battery {
+>> +	struct i2c_client	*client;
+>> +	struct rt5033_dev	*rt5033;
+>> +	struct regmap		*regmap;
+>> +	struct power_supply	psy;
+>> +};
+>> +
+>> +/* RT5033 charger platform data */
+>> +struct rt5033_charger_data {
+>> +	unsigned int pre_uamp;
+>> +	unsigned int pre_uvolt;
+>> +	unsigned int const_uvolt;
+>> +	unsigned int eoc_uamp;
+>> +	unsigned int fast_uamp;
+>> +};
+>> +
+>> +struct rt5033_charger {
+>> +	struct device		*dev;
+>> +	struct rt5033_dev	*rt5033;
+>> +	struct power_supply	psy;
+>> +
+>> +	struct rt5033_charger_data	*chg;
+>> +};
+>> +
+>> +#endif /* __RT5033_H__ */
+> 
 
-Same here. Also they are so simple that macros would be more adequate
-here I believe:
-
-#define CYGNUS_GPIO_REG(pin, reg) (GPIO_BANK(pin) * GPIO_BANK_SIZE + reg)
-#define CYGNUS_GPIO_SHIFT(pin) (pin % NGPIOS_PER_BANK) /* and remove
-the GPIO_BIT macro */
-
-> +
-> +static void bcm_cygnus_gpio_irq_handler(unsigned int irq,
-> +               struct irq_desc *desc)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio;
-> +       struct irq_chip *chip = irq_desc_get_chip(desc);
-> +       int i, bit;
-> +
-> +       chained_irq_enter(chip, desc);
-> +
-> +       cygnus_gpio = irq_get_handler_data(irq);
-> +
-> +       /* go through the entire GPIO banks and handle all interrupts */
-> +       for (i = 0; i < cygnus_gpio->num_banks; i++) {
-> +               unsigned long val = readl(cygnus_gpio->base +
-> +                               (i * GPIO_BANK_SIZE) +
-> +                               CYGNUS_GPIO_INT_MSTAT_OFFSET);
-
-Can you add cygnus_readl() and cygnus_writel() functions to avoid
-explicitly doing this operation on cygnus_gpio->base every time? It
-would be clearer and less error-prone.
-
-> +
-> +               for_each_set_bit(bit, &val, NGPIOS_PER_BANK) {
-> +                       unsigned pin = NGPIOS_PER_BANK * i + bit;
-> +                       int child_irq =
-> +                               bcm_cygnus_gpio_to_irq(&cygnus_gpio->gc, pin);
-> +
-> +                       /*
-> +                        * Clear the interrupt before invoking the
-> +                        * handler, so we do not leave any window
-> +                        */
-> +                       writel(1 << bit,
-> +                               cygnus_gpio->base + (i * GPIO_BANK_SIZE) +
-> +                               CYGNUS_GPIO_INT_CLR_OFFSET);
-> +
-> +                       generic_handle_irq(child_irq);
-> +               }
-> +       }
-> +
-> +       chained_irq_exit(chip, desc);
-> +}
-> +
-> +static void bcm_cygnus_gpio_irq_ack(struct irq_data *d)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = irq_data_get_irq_chip_data(d);
-> +       unsigned gpio = d->hwirq;
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_INT_CLR_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       val = 1 << shift;
-
-val = BIT(shift);
-
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
-> +                       offset, shift);
-> +}
-> +
-> +static void bcm_cygnus_gpio_irq_mask(struct irq_data *d)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = irq_data_get_irq_chip_data(d);
-> +       unsigned gpio = d->hwirq;
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_INT_MSK_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-
-val &= ~BIT(shift);
-
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
-> +                       offset, shift);
-> +}
-> +
-> +static void bcm_cygnus_gpio_irq_unmask(struct irq_data *d)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = irq_data_get_irq_chip_data(d);
-> +       unsigned gpio = d->hwirq;
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_INT_MSK_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val |= 1 << shift;
-
-val |= BIT(shift);
-
-Same remark everywhere it applies in this file.
-
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
-> +                       offset, shift);
-> +}
-
-It seems like you can factorize bcm_cygnus_gpio_irq_mask() and
-bcm_cygnus_gpio_irq_unmask() into one function which prototype would
-be, say:
-
-static void bcm_cygnus_gpio_irq_set_mask(struct irq_data *d, int mask);
-
-which would set of clear the bit according to the value of mask. Then
-your two mask/unmask functions would just need to call this one,
-reducing the amount of redundant code.
-
-Also I noticed that this driver has lots of readl()/twiddle
-bit/writel() sequences. Maybe it would make sense to have a
-cygnus_set_bit(chip, reg, gpio, set) function to factorize this:
-
-void cygnus_set_bit(chip, reg, gpio, set)
-{
-    unsigned int offset = CYGNUS_GPIO_REG(gpio, reg);
-    unsigned int shift = CYGNUS_GPIO_SHIFT(gpio);
-    u32 val;
-
-    val = cygnus_readl(chip, offset);
-    if (set)
-        val |= BIT(shift);
-    else
-        val &= ~BIT(shift);
-    cygnus_writel(chip, offset, val);
-}
-
-> +
-> +static int bcm_cygnus_gpio_irq_set_type(struct irq_data *d, unsigned int type)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = irq_data_get_irq_chip_data(d);
-> +       unsigned gpio = d->hwirq;
-> +       unsigned int int_type, dual_edge, edge_lvl;
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       switch (type & IRQ_TYPE_SENSE_MASK) {
-> +       case IRQ_TYPE_EDGE_RISING:
-> +               int_type = 0;
-> +               dual_edge = 0;
-> +               edge_lvl = 1;
-> +               break;
-> +
-> +       case IRQ_TYPE_EDGE_FALLING:
-> +               int_type = 0;
-> +               dual_edge = 0;
-> +               edge_lvl = 0;
-> +               break;
-> +
-> +       case IRQ_TYPE_EDGE_BOTH:
-> +               int_type = 0;
-> +               dual_edge = 1;
-> +               edge_lvl = 0;
-> +               break;
-> +
-> +       case IRQ_TYPE_LEVEL_HIGH:
-> +               int_type = 1;
-> +               dual_edge = 0;
-> +               edge_lvl = 1;
-> +               break;
-> +
-> +       case IRQ_TYPE_LEVEL_LOW:
-> +               int_type = 1;
-> +               dual_edge = 0;
-> +               edge_lvl = 0;
-> +               break;
-> +
-> +       default:
-> +               dev_err(cygnus_gpio->dev, "invalid GPIO irq type 0x%x\n", type);
-> +               return -EINVAL;
-> +       }
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_IN_TYPE_OFFSET;
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-> +       val |= int_type << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_INT_DE_OFFSET;
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-> +       val |= dual_edge << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_INT_EDGE_OFFSET;
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-> +       val |= edge_lvl << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-
-With the functions/macros suggested above I think you could change the
-3 blocks above into something like:
-
-cygnus_set_bit(cygnus_gpio, CYGNUS_GPIO_IN_TYPE_OFFSET, gpio, int_type);
-cygnus_set_bit(cygnus_gpio, CYGNUS_GPIO_INT_DE_OFFSET, gpio, dual_edge);
-cygnus_set_bit(cygnus_gpio, CYGNUS_GPIO_INT_EDGE_OFFSET, gpio, edge_lvl);
-
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct irq_chip bcm_cygnus_gpio_irq_chip = {
-> +       .name = "bcm-cygnus-gpio",
-> +       .irq_ack = bcm_cygnus_gpio_irq_ack,
-> +       .irq_mask = bcm_cygnus_gpio_irq_mask,
-> +       .irq_unmask = bcm_cygnus_gpio_irq_unmask,
-> +       .irq_set_type = bcm_cygnus_gpio_irq_set_type,
-> +};
-> +
-> +static int bcm_cygnus_gpio_direction_input(struct gpio_chip *gc,
-> +               unsigned gpio)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_OUT_EN_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
-> +                       offset, shift);
-> +
-> +       return 0;
-> +}
-> +
-> +static int bcm_cygnus_gpio_direction_output(struct gpio_chip *gc,
-> +               unsigned gpio, int value)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_OUT_EN_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val |= 1 << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u\n", gpio,
-> +                       offset, shift);
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_DATA_OUT_OFFSET;
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       if (value)
-> +               val |= 1 << shift;
-> +       else
-> +               val &= ~(1 << shift);
-> +       writel(val, cygnus_gpio->base + offset);
-
-And here you would have:
-
-cygnus_set_bit(cygnus_gpio, CYGNUS_GPIO_OUT_EN_OFFSET, gpio, 1);
-cygnus_set_bit(cygnus_gpio, CYGNUS_GPIO_DATA_OUT_OFFSET, gpio, value);
-
-Many other sites in this file could be simplified this way.
-
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       dev_dbg(cygnus_gpio->dev,
-> +               "gpio:%u offset:0x%04x shift:%u val:0x%08x\n",
-> +               gpio, offset, shift, val);
-> +
-> +       return 0;
-> +}
-> +
-> +static void bcm_cygnus_gpio_set(struct gpio_chip *gc, unsigned gpio,
-> +               int value)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_DATA_OUT_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       if (value)
-> +               val |= 1 << shift;
-> +       else
-> +               val &= ~(1 << shift);
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +
-> +       dev_dbg(cygnus_gpio->dev,
-> +               "gpio:%u offset:0x%04x shift:%u val:0x%08x\n",
-> +               gpio, offset, shift, val);
-> +}
-> +
-> +static int bcm_cygnus_gpio_get(struct gpio_chip *gc, unsigned gpio)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +       unsigned int offset, shift;
-> +       u32 val;
-> +
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_DATA_IN_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val = (val >> shift) & 1;
-> +
-> +       dev_dbg(cygnus_gpio->dev, "gpio:%u offset:0x%04x shift:%u val:%u\n",
-> +                       gpio, offset, shift, val);
-> +
-> +       return val;
-> +}
-> +
-> +static struct lock_class_key gpio_lock_class;
-> +
-> +static int bcm_cygnus_gpio_irq_map(struct irq_domain *d, unsigned int irq,
-> +                                irq_hw_number_t hwirq)
-> +{
-> +       int ret;
-> +
-> +       ret = irq_set_chip_data(irq, d->host_data);
-> +       if (ret < 0)
-> +               return ret;
-> +       irq_set_lockdep_class(irq, &gpio_lock_class);
-> +       irq_set_chip_and_handler(irq, &bcm_cygnus_gpio_irq_chip,
-> +                       handle_simple_irq);
-> +       set_irq_flags(irq, IRQF_VALID);
-> +
-> +       return 0;
-> +}
-> +
-> +static void bcm_cygnus_gpio_irq_unmap(struct irq_domain *d, unsigned int irq)
-> +{
-> +       irq_set_chip_and_handler(irq, NULL, NULL);
-> +       irq_set_chip_data(irq, NULL);
-> +}
-> +
-> +static struct irq_domain_ops bcm_cygnus_irq_ops = {
-> +       .map = bcm_cygnus_gpio_irq_map,
-> +       .unmap = bcm_cygnus_gpio_irq_unmap,
-> +       .xlate = irq_domain_xlate_twocell,
-> +};
-> +
-> +#ifdef CONFIG_OF_GPIO
-> +static void bcm_cygnus_gpio_set_pull(struct bcm_cygnus_gpio *cygnus_gpio,
-> +               unsigned gpio, enum gpio_pull pull)
-> +{
-> +       unsigned int offset, shift;
-> +       u32 val, pullup;
-> +       unsigned long flags;
-> +
-> +       switch (pull) {
-> +       case GPIO_PULL_UP:
-> +               pullup = 1;
-> +               break;
-> +       case GPIO_PULL_DOWN:
-> +               pullup = 0;
-> +               break;
-> +       case GPIO_PULL_NONE:
-> +       case GPIO_PULL_INVALID:
-> +       default:
-> +               return;
-> +       }
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       /* set pull up/down */
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_PAD_RES_OFFSET;
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val &= ~(1 << shift);
-> +       if (pullup)
-> +               val |= 1 << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       /* enable pad */
-> +       offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +               CYGNUS_GPIO_RES_EN_OFFSET;
-> +       val = readl(cygnus_gpio->base + offset);
-> +       val |= 1 << shift;
-> +       writel(val, cygnus_gpio->base + offset);
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +}
-> +
-> +static void bcm_cygnus_gpio_set_strength(struct bcm_cygnus_gpio *cygnus_gpio,
-> +               unsigned gpio, enum gpio_drv_strength strength)
-> +{
-> +       struct device *dev = cygnus_gpio->dev;
-> +       void __iomem *base;
-> +       unsigned int i, offset, shift;
-> +       u32 val;
-> +       unsigned long flags;
-> +
-> +       /* some GPIO controllers do not support drive strength configuration */
-> +       if (of_find_property(dev->of_node, "no-drv-strength", NULL))
-> +               return;
-> +
-> +       if (cygnus_gpio->io_ctrl) {
-> +               base = cygnus_gpio->io_ctrl;
-> +               offset = CYGNUS_GPIO_CCM_DRV0_CTRL_OFFSET;
-> +       } else {
-> +               base = cygnus_gpio->base;
-> +               offset = __gpio_reg_offset(cygnus_gpio, gpio) +
-> +                       CYGNUS_GPIO_ASIU_DRV0_CTRL_OFFSET;
-> +       }
-> +
-> +       shift = __gpio_bitpos(cygnus_gpio, gpio);
-> +
-> +       spin_lock_irqsave(&cygnus_gpio->lock, flags);
-> +
-> +       for (i = 0; i < GPIO_DRV_STRENGTH_BITS; i++) {
-> +               val = readl(base + offset);
-> +               val &= ~(1 << shift);
-> +               val |= ((strength >> i) & 0x1) << shift;
-> +               writel(val, base + offset);
-> +               offset += 4;
-> +       }
-> +
-> +       spin_unlock_irqrestore(&cygnus_gpio->lock, flags);
-> +}
-> +
-> +static int bcm_cygnus_gpio_of_xlate(struct gpio_chip *gc,
-> +               const struct of_phandle_args *gpiospec, u32 *flags)
-> +{
-> +       struct bcm_cygnus_gpio *cygnus_gpio = to_bcm_cygnus_gpio(gc);
-> +       enum gpio_pull pull;
-> +       enum gpio_drv_strength strength;
-> +
-> +       if (gc->of_gpio_n_cells < 2)
-> +               return -EINVAL;
-> +
-> +       if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
-> +               return -EINVAL;
-> +
-> +       if (gpiospec->args[0] >= gc->ngpio)
-> +               return -EINVAL;
-> +
-> +       pull = (gpiospec->args[1] >> GPIO_PULL_BIT_SHIFT) & GPIO_PULL_BIT_MASK;
-> +       if (WARN_ON(pull >= GPIO_PULL_INVALID))
-> +               return -EINVAL;
-> +
-> +       strength = (gpiospec->args[1] >> GPIO_DRV_STRENGTH_BIT_SHIFT) &
-> +               GPIO_DRV_STRENGTH_BIT_MASK;
-> +
-> +       if (flags)
-> +               *flags = gpiospec->args[1] & GPIO_FLAG_BIT_MASK;
-> +
-> +       bcm_cygnus_gpio_set_pull(cygnus_gpio, gpiospec->args[0], pull);
-> +       bcm_cygnus_gpio_set_strength(cygnus_gpio, gpiospec->args[0], strength);
-> +
-> +       return gpiospec->args[0];
-> +}
-> +#endif
-> +
-> +static const struct of_device_id bcm_cygnus_gpio_of_match[] = {
-> +       { .compatible = "brcm,cygnus-gpio" },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(of, bcm_cygnus_gpio_of_match);
-> +
-> +static int bcm_cygnus_gpio_probe(struct platform_device *pdev)
-> +{
-> +       struct device *dev = &pdev->dev;
-> +       const struct of_device_id *match;
-> +       struct resource *res;
-> +       struct bcm_cygnus_gpio *cygnus_gpio;
-> +       struct gpio_chip *gc;
-> +       u32 i, ngpios;
-> +       int ret;
-> +
-> +       match = of_match_device(bcm_cygnus_gpio_of_match, dev);
-> +       if (!match) {
-> +               dev_err(&pdev->dev, "failed to find GPIO controller\n");
-> +               return -ENODEV;
-> +       }
-
-Do you still need that block of code? match is never used in this function.
-
-... well, I think you get the drill. Let's first start by factorizing
-as much code as can be to make this driver easier to read (I have a
-few leads, but I am sure there are other similar factorizations that
-can be made). Let's also get rid of this static gpio_base_index
-variable that effectively prevents any other GPIO driver from being
-used alongside with this one. If you really need to use global GPIO
-numbers, let's see if Linus agrees for that "linux,gpio-base" DT
-property that would certainly make many people happy.
+Best regards,
+Beomho Seo
