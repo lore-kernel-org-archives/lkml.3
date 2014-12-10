@@ -1,72 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaLJNcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 08:32:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:41291 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359AbaLJNca (ORCPT
+	id S1756170AbaLJNg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 08:36:26 -0500
+Received: from michel.telenet-ops.be ([195.130.137.88]:59514 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753866AbaLJNgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 08:32:30 -0500
-Date: Wed, 10 Dec 2014 14:32:28 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, b.zolnierkie@samsung.com,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH/RFC v8 02/14] Documentation: leds: Add description of LED
- Flash class extension
-Message-ID: <20141210133228.GB14748@amd>
-References: <547C539A.4010500@samsung.com>
- <20141201130437.GB24737@amd>
- <547C7420.4080801@samsung.com>
- <CAK5ve-KMNszyz6br_Q_dOhvk=_8ev6Uz-ZhPnYBn-ZvuohQpVA@mail.gmail.com>
- <20141206124310.GB3411@amd>
- <5485D7F8.10807@samsung.com>
- <20141208201855.GA16648@amd>
- <5486B8AE.5000408@samsung.com>
- <20141209155033.GB21422@amd>
- <548847DB.2090806@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548847DB.2090806@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 10 Dec 2014 08:36:22 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-gpio@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 1/2] gpio: pcf857x: Propagate wake-up setting to parent irq controller
+Date: Wed, 10 Dec 2014 14:36:14 +0100
+Message-Id: <1418218575-17694-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The pcf857x GPIO and interrupt controller uses dummy_irq_chip, which
+does not implement irq_chip.irq_set_wake() and does not set
+IRQCHIP_SKIP_SET_WAKE.
 
-> >>both sides: LED Flash class core and a LED Flash class driver.
-> >>In the former the sysfs attribute write permissions would have
-> >>to be decided in the runtime and in the latter caching mechanism
-> >
-> >Write attributes at runtime? Why? We can emulate sane and consistent
-> >behaviour for all the controllers: read gives you list of faults,
-> >write clears it. We can do it for all the controllers.
-> 
-> I don't like the idea of listing the faults in the form of strings.
-> I'd like to see the third opinion :)
+This causes two s2ram issues if wake-up is enabled for the pcf857x GPIO
+pins:
+  1. During resume from s2ram, the following warning is printed:
 
-Well, I see that you don't like to change existing code. But "I hacked
-it this way and I'm going to ask n-th opinion so that I don't have to
-touch it" is not a way to design interfaces.
+     WARNING: CPU: 0 PID: 1046 at kernel/irq/manage.c:537 irq_set_irq_wake+0x9c/0xf8()
+     Unbalanced IRQ 113 wake disable
 
-> >Only cost is few lines of code in the drivers where hardware clears
-> >faults at read.
-> 
-> As above - the third opinion would be appreciated.
+  2. Wake-up through the pcf857x GPIO pins may fail, as the parent
+     interrupt controller may be suspended.
 
-Just email Greg if he likes /sys files with sideffects on read.
+Migrate the pcf857x GPIO and interrupt controller from dummy_irq_chip to
+its own irq_chip. This irq chip implements irq_chip.irq_set_wake() to
+propagate its wake-up setting to the parent interrupt controller.
 
-Or just think. You never do grep in /sys?
+This fixes wake-up through gpio-keys on sh73a0/kzm9g, where the pcf857x
+interrupt is cascaded to irq-renesas-intc-irqpin, and the latter must
+not be suspended when wake-up is enabled.
 
-								Pavel
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/gpio/gpio-pcf857x.c | 33 ++++++++++++++++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index 236708ad0a5ba0ab..22dbecb004cf6c5b 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -218,14 +218,45 @@ static irqreturn_t pcf857x_irq(int irq, void *data)
+ 	return IRQ_HANDLED;
+ }
+ 
++/*
++ * NOP functions
++ */
++static void noop(struct irq_data *data) { }
++
++static unsigned int noop_ret(struct irq_data *data)
++{
++	return 0;
++}
++
++static int pcf857x_irq_set_wake(struct irq_data *data, unsigned int on)
++{
++	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
++
++	irq_set_irq_wake(gpio->client->irq, on);
++	return 0;
++}
++
++static struct irq_chip pcf857x_irq_chip = {
++	.name		= "pcf857x",
++	.irq_startup	= noop_ret,
++	.irq_shutdown	= noop,
++	.irq_enable	= noop,
++	.irq_disable	= noop,
++	.irq_ack	= noop,
++	.irq_mask	= noop,
++	.irq_unmask	= noop,
++	.irq_set_wake	= pcf857x_irq_set_wake,
++};
++
+ static int pcf857x_irq_domain_map(struct irq_domain *domain, unsigned int irq,
+ 				 irq_hw_number_t hw)
+ {
+ 	struct pcf857x *gpio = domain->host_data;
+ 
+ 	irq_set_chip_and_handler(irq,
+-				 &dummy_irq_chip,
++				 &pcf857x_irq_chip,
+ 				 handle_level_irq);
++	irq_set_chip_data(irq, gpio);
+ #ifdef CONFIG_ARM
+ 	set_irq_flags(irq, IRQF_VALID);
+ #else
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
