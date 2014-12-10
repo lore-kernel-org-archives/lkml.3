@@ -1,123 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaLJKuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:50:32 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:56937 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaLJKua (ORCPT
+	id S1755992AbaLJKvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:51:00 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:36375 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755542AbaLJKu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:50:30 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <ea25bce1893a21384e270631462edfd4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v5 4/5] ARM: dts: rockchip: add rk3288 usb PHY
-Date: Wed, 10 Dec 2014 18:46:10 +0800
-Message-Id: <1418208371-18851-5-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
-References: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
+	Wed, 10 Dec 2014 05:50:58 -0500
+Date: Wed, 10 Dec 2014 12:50:51 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        Andrzej Hajda <a.hajda@samsung.com>, Lee Jones <lee.jones@linaro.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH/RFC v9 06/19] DT: Add documentation for the mfd Maxim
+ max77693
+Message-ID: <20141210105051.GN15559@valkosipuli.retiisi.org.uk>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-7-git-send-email-j.anaszewski@samsung.com>
+ <20141204100706.GP14746@valkosipuli.retiisi.org.uk>
+ <54804840.4030202@samsung.com>
+ <54881A1F.2080607@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54881A1F.2080607@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a device_node for RK3288 SoC usb phy. It also
-defines the phy to be used by three usb controllers: usb_host0/1
-and usb_otg.
+Hi Jacek,
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+On Wed, Dec 10, 2014 at 11:02:07AM +0100, Jacek Anaszewski wrote:
+> Hi Sakari,
+> 
+> On 12/04/2014 12:40 PM, Jacek Anaszewski wrote:
+> 
+> >On 12/04/2014 11:07 AM, Sakari Ailus wrote:
+> >>Hi Jacek,
+> >>
+> >>On Wed, Dec 03, 2014 at 05:06:41PM +0100, Jacek Anaszewski wrote:
+> >>>This patch adds device tree binding documentation for
+> >>>the flash cell of the Maxim max77693 multifunctional device.
+> >>>
+> >>>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> >>>Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> >>>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>>Cc: Lee Jones <lee.jones@linaro.org>
+> >>>Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> >>>Cc: Bryan Wu <cooloney@gmail.com>
+> >>>Cc: Richard Purdie <rpurdie@rpsys.net>
+> >>>Cc: Rob Herring <robh+dt@kernel.org>
+> >>>Cc: Pawel Moll <pawel.moll@arm.com>
+> >>>Cc: Mark Rutland <mark.rutland@arm.com>
+> >>>Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> >>>Cc: Kumar Gala <galak@codeaurora.org>
+> >>>Cc: <devicetree@vger.kernel.org>
+> >>>---
+> >>>  Documentation/devicetree/bindings/mfd/max77693.txt |   89
+> >>>++++++++++++++++++++
+> >>>  1 file changed, 89 insertions(+)
+> >>>
+> >>>diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>>b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>>index 01e9f30..25a6e78 100644
+> >>>--- a/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>>+++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>>@@ -41,7 +41,66 @@ Optional properties:
+> >>>       To get more informations, please refer to documentaion.
+> >>>      [*] refer Documentation/devicetree/bindings/pwm/pwm.txt
+> >>>
+> >>>+- led : the LED submodule device node
+> >>>+
+> >>>+There are two led outputs available - fled1 and fled2. Each of them can
+> >>>+control a separate led or they can be connected together to double
+> >>>+the maximum current for a single connected led. One led is represented
+> >>>+by one child node.
+> >>>+
+> >>>+Required properties:
+> >>>+- compatible : Must be "maxim,max77693-led".
+> >>>+
+> >>>+Optional properties:
+> >>>+- maxim,fleds : Array of current outputs in order: fled1, fled2.
+> >>>+    Note: both current outputs can be connected to a single led
+> >>>+    Possible values:
+> >>>+        MAX77693_LED_FLED_UNUSED - the output is left disconnected,
+> >>>+        MAX77693_LED_FLED_USED - a diode is connected to the output.
+> >>
+> >>As you have a LED sub-nodes for each LED already, isn't this redundant?
+> >
+> >Well, it seems so :)
+> 
+> I agreed here recklessly. This property allows to describe the
 
----
+If this is reckless then we're doing very, very well. :-D
 
-Changes in v5:
-- reorder the phy dt node to a correct position.
+> situation when one LED is connected to both outputs. Single sub-node
+> can describe two type of designs: one LED connected to a single
+> output or one LED connected to both outputs. Therefore additional
+> property is needed to assess what is the actual case.
 
-Changes in v4:
-- Add phy subnodes.
+Which output do you say such LED is connected then?
 
-Changes in v3: None
+I wonder if the reg property could be made an array, so you could say the
+LED is connected to this and that output.
 
- arch/arm/boot/dts/rk3288.dtsi | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+The advantage would be that this still works even if you have three outputs.
 
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 874e66d..bd2a1e0 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -335,6 +335,8 @@
- 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST0>;
- 		clock-names = "usbhost";
-+		phys = <&usbphy 1>;
-+		phy-names = "usb";
- 		status = "disabled";
- 	};
- 
-@@ -347,6 +349,8 @@
- 		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST1>;
- 		clock-names = "otg";
-+		phys = <&usbphy 2>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
-@@ -357,6 +361,8 @@
- 		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_OTG0>;
- 		clock-names = "otg";
-+		phys = <&usbphy 0>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
-@@ -497,6 +503,27 @@
- 		interrupts = <GIC_PPI 9 0xf04>;
- 	};
- 
-+	usbphy: phy {
-+		compatible = "rockchip,rk3288-usb-phy";
-+		rockchip,grf = <&grf>;
-+		#phy-cells = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+
-+		usb-phy@0 {
-+			reg = <0>;
-+		};
-+
-+		usb-phy@1 {
-+			reg = <1>;
-+		};
-+
-+		usb-phy@2 {
-+			reg = <2>;
-+		};
-+	};
-+
- 	pinctrl: pinctrl {
- 		compatible = "rockchip,rk3288-pinctrl";
- 		rockchip,grf = <&grf>;
 -- 
-2.0.0
+Regards,
 
-
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
