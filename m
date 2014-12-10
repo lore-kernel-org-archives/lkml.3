@@ -1,165 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100AbaLJTLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:11:49 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:49898 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932893AbaLJTIT (ORCPT
+	id S933115AbaLJTLv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:11:51 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45208 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933002AbaLJTLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:08:19 -0500
-From: Jeff Layton <jlayton@primarydata.com>
-To: bfields@fieldses.org
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        NeilBrown <neilb@suse.de>
-Subject: [PATCH v2 07/16] sunrpc: factor svc_rqst allocation and freeing from sv_nrthreads refcounting
-Date: Wed, 10 Dec 2014 14:07:51 -0500
-Message-Id: <1418238480-18857-8-git-send-email-jlayton@primarydata.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
-References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
+	Wed, 10 Dec 2014 14:11:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141210185116.GA12098@devbig257.prn2.facebook.com>
+References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
+ <238c10795d7be218fea8d16ceb183e1e7450da0b.1418006970.git.shli@fb.com>
+ <CALCETrW3NZmWEffa+G+c40zcuPcBAzckfn47bLh8-L2G+SfV=g@mail.gmail.com> <20141210185116.GA12098@devbig257.prn2.facebook.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Dec 2014 11:11:27 -0800
+Message-ID: <CALCETrUTgpxB1D43tjtv9So6k4H0OXzLXGJateYZtZahGXd4Sw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] X86: add a generic API to let vdso code detect
+ context switch
+To: Shaohua Li <shli@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In later patches, we'll want to be able to allocate and free svc_rqst
-structures without monkeying with the serv->sv_nrthreads refcount.
+On Wed, Dec 10, 2014 at 10:51 AM, Shaohua Li <shli@fb.com> wrote:
+> On Wed, Dec 10, 2014 at 10:38:41AM -0800, Andy Lutomirski wrote:
+>> On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
+>> > vdso code can't disable preempt, so it can be preempted at any time.
+>> > This makes a challenge to implement specific features. This patch adds a
+>> > generic API to let vdso code detect context switch.
+>> >
+>> > With this patch, every cpu maintains a context switch count. The upper
+>> > bits of the count is the logical cpu id, so the count can't be identical
+>> > for any cpu. The low bits of the count will be increased for each
+>> > context switch. For a x86_64 cpu with 4096 cpus, the context switch will
+>> > be overflowed for 2^(64 - 12) context switch, which is a long time and can be
+>> > ignored. The change of the count in giving time can be used to detect if
+>> > context switch occurs.
+>>
+>> Why do you need those high bits?  I don't understand how you could
+>> possibly confuse one cpu's count with another's unless you fail to
+>> make sure that you're reading the same address both times.
+>>
+>> That being said, I don't like this patch.  I'm not sure I have a much
+>> better idea, though.  More thoughts in the 0/0 email to follow.
+> the vdso code doesn't disable preemption, so it can be migrated between
+> cpus at any time, the usage is:
+>
+> get_countext_switch_count (in cpu A)
+> do_something (in cpu B)
+> get_countext_switch_count (in cpu C)
+>
+> The cpu A, B, C could be completely different. We want to make sure
+> there is no preemption here and we use the context switch count to judge
+> this. If the high bits is ignored, the context switch count could be
+> identical even A != C, then our judgement using the switch count is
+> wrong.
 
-Factor those pieces out of their respective functions.
+Sure, but you could compare the cpu numbers, too.
 
-Signed-off-by: Jeff Layton <jlayton@primarydata.com>
----
- include/linux/sunrpc/svc.h |  3 +++
- net/sunrpc/svc.c           | 58 ++++++++++++++++++++++++++++++----------------
- 2 files changed, 41 insertions(+), 20 deletions(-)
+--Andy
 
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 28e5f5716a87..3d2113222dda 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -458,8 +458,11 @@ void svc_rpcb_cleanup(struct svc_serv *serv, struct net *net);
- int svc_bind(struct svc_serv *serv, struct net *net);
- struct svc_serv *svc_create(struct svc_program *, unsigned int,
- 			    struct svc_serv_ops *);
-+struct svc_rqst *svc_rqst_alloc(struct svc_serv *serv,
-+					struct svc_pool *pool, int node);
- struct svc_rqst *svc_prepare_thread(struct svc_serv *serv,
- 					struct svc_pool *pool, int node);
-+void		   svc_rqst_free(struct svc_rqst *);
- void		   svc_exit_thread(struct svc_rqst *);
- unsigned int	   svc_pool_map_get(void);
- void		   svc_pool_map_put(void);
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 04c083a53121..165fa1803a0a 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -583,40 +583,52 @@ svc_release_buffer(struct svc_rqst *rqstp)
- }
- 
- struct svc_rqst *
--svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
-+svc_rqst_alloc(struct svc_serv *serv, struct svc_pool *pool, int node)
- {
- 	struct svc_rqst	*rqstp;
- 
- 	rqstp = kzalloc_node(sizeof(*rqstp), GFP_KERNEL, node);
- 	if (!rqstp)
--		goto out_enomem;
-+		return rqstp;
- 
--	serv->sv_nrthreads++;
- 	__set_bit(RQ_BUSY, &rqstp->rq_flags);
- 	spin_lock_init(&rqstp->rq_lock);
- 	rqstp->rq_server = serv;
- 	rqstp->rq_pool = pool;
--	spin_lock_bh(&pool->sp_lock);
--	pool->sp_nrthreads++;
--	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
--	spin_unlock_bh(&pool->sp_lock);
- 
- 	rqstp->rq_argp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
- 	if (!rqstp->rq_argp)
--		goto out_thread;
-+		goto out_enomem;
- 
- 	rqstp->rq_resp = kmalloc_node(serv->sv_xdrsize, GFP_KERNEL, node);
- 	if (!rqstp->rq_resp)
--		goto out_thread;
-+		goto out_enomem;
- 
- 	if (!svc_init_buffer(rqstp, serv->sv_max_mesg, node))
--		goto out_thread;
-+		goto out_enomem;
- 
- 	return rqstp;
--out_thread:
--	svc_exit_thread(rqstp);
- out_enomem:
--	return ERR_PTR(-ENOMEM);
-+	svc_rqst_free(rqstp);
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(svc_rqst_alloc);
-+
-+struct svc_rqst *
-+svc_prepare_thread(struct svc_serv *serv, struct svc_pool *pool, int node)
-+{
-+	struct svc_rqst	*rqstp;
-+
-+	rqstp = svc_rqst_alloc(serv, pool, node);
-+	if (!rqstp)
-+		return ERR_PTR(-ENOMEM);
-+
-+	serv->sv_nrthreads++;
-+	spin_lock_bh(&pool->sp_lock);
-+	pool->sp_nrthreads++;
-+	list_add_rcu(&rqstp->rq_all, &pool->sp_all_threads);
-+	spin_unlock_bh(&pool->sp_lock);
-+	return rqstp;
- }
- EXPORT_SYMBOL_GPL(svc_prepare_thread);
- 
-@@ -747,19 +759,25 @@ svc_set_num_threads(struct svc_serv *serv, struct svc_pool *pool, int nrservs)
- EXPORT_SYMBOL_GPL(svc_set_num_threads);
- 
- /*
-- * Called from a server thread as it's exiting. Caller must hold the BKL or
-- * the "service mutex", whichever is appropriate for the service.
-+ * Called from a server thread as it's exiting. Caller must hold the service's
-+ * mutex.
-  */
- void
--svc_exit_thread(struct svc_rqst *rqstp)
-+svc_rqst_free(struct svc_rqst *rqstp)
- {
--	struct svc_serv	*serv = rqstp->rq_server;
--	struct svc_pool	*pool = rqstp->rq_pool;
--
- 	svc_release_buffer(rqstp);
- 	kfree(rqstp->rq_resp);
- 	kfree(rqstp->rq_argp);
- 	kfree(rqstp->rq_auth_data);
-+	kfree_rcu(rqstp, rq_rcu_head);
-+}
-+EXPORT_SYMBOL_GPL(svc_rqst_free);
-+
-+void
-+svc_exit_thread(struct svc_rqst *rqstp)
-+{
-+	struct svc_serv	*serv = rqstp->rq_server;
-+	struct svc_pool	*pool = rqstp->rq_pool;
- 
- 	spin_lock_bh(&pool->sp_lock);
- 	pool->sp_nrthreads--;
-@@ -767,7 +785,7 @@ svc_exit_thread(struct svc_rqst *rqstp)
- 		list_del_rcu(&rqstp->rq_all);
- 	spin_unlock_bh(&pool->sp_lock);
- 
--	kfree_rcu(rqstp, rq_rcu_head);
-+	svc_rqst_free(rqstp);
- 
- 	/* Release the server */
- 	if (serv)
+>
+> Thanks,
+> Shaohua
+
+
+
 -- 
-2.1.0
-
+Andy Lutomirski
+AMA Capital Management, LLC
