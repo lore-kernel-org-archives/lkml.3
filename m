@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536AbaLJRji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 12:39:38 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50049 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932261AbaLJRjg (ORCPT
+	id S932573AbaLJRmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 12:42:39 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:38955 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932261AbaLJRmi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 12:39:36 -0500
-Date: Wed, 10 Dec 2014 17:39:18 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: A H <andrzej.hajda@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        "moderated list:ARM/CLKDEV SUPPORT" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC 00/15] Resource tracking/allocation framework
-Message-ID: <20141210173918.GN11285@n2100.arm.linux.org.uk>
-References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
- <20141210161620.GM11285@n2100.arm.linux.org.uk>
- <CA+tnuKYSDZ0mtzQ_g1QjovJwG01OgPjSXuozEBXQsEZv_2o-=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+tnuKYSDZ0mtzQ_g1QjovJwG01OgPjSXuozEBXQsEZv_2o-=w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 10 Dec 2014 12:42:38 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: BCM2048 bluetooth connected over OMAP serial
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <CAL_Jsq+dy+5Fsg_oasP_hN3RuL1Wk7fOcQjyp+UdaJZyGa=uEg@mail.gmail.com>
+Date: Wed, 10 Dec 2014 18:42:33 +0100
+Cc: Pavel Machek <pavel@ucw.cz>,
+        =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5C56C73A-1D8E-4ACC-B1B7-3E8D49943A70@holtmann.org>
+References: <20141210164333.GA3154@amd> <CAL_Jsq+dy+5Fsg_oasP_hN3RuL1Wk7fOcQjyp+UdaJZyGa=uEg@mail.gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 06:23:49PM +0100, A H wrote:
-> 10 gru 2014 17:16 "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-> napisał(a):
-> >
-> > On Wed, Dec 10, 2014 at 04:48:18PM +0100, Andrzej Hajda wrote:
-> > > 3. There are drivers which can work without specific resource, but if
-> > >   the resource becomes available/unavailable it can do some additional
-> stuff.
-> > >   An example of such driver is DRM driver (more precisely
-> drm_connector) -
-> > >   it can start without attached drm_panel, but if the panel becomes
-> available it
-> > >   can react by generating HPD event and start using it.
-> >
-> > Bad example, and actually incorrect.  DRM connectors are referenced in
-> > userspace by an IDR number, which can be re-used in the case of a
-> > connector appearing, disappearing, and then a different connector
-> > re-appearing.
+Hi Rob,
+
+>> So, there's bluetooth chip that's connected to the SoC by UART and some
+>> GPIOs. What would be right representation in the device tree?
+>> Something like this?
+>> 
+>>        bluetooth {
+>>                  compatible = "broadcom,bcm2048";
+>>                  uart = <&uart2>;
+>>                  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
+>>                  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
+>>                  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
+>>                  chip-type = <3>;
+>>                  bt-sysclk = <2>;
+>>                  reset-gpio-shared = <0>;
+>>        };
+>> 
+>> Is there some way to prevent OMAP tty driver from binding to the
+>> device and exporting the device to userspace?
 > 
-> But it is not about reappearing of drm_connector, it is about reappearing
-> of drm_panel which is fortunately not a part of drm driver. Connector here
-> is only consumer of drm_panel which should have possibility to receive
-> notifications on panel (dis-)appearance.
+> Isn't the normal way for BT to work is the uart is exposed to
+> userspace and the BT stack is all in userspace? This is how other
+> Broadcom BT/WiFi combo parts work.
 
-Okay, so that's exactly like a panel being "hotplugged" to the connector,
-which should be fine.
+not on Linux actually. The Bluetooth core layer (including the HCI transport) are all in kernel space.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+However UART based Bluetooth chips are exposed as TTY and then the N_HCI line discipline is used to attach it to the kernel Bluetooth subsystem.
+
+Regards
+
+Marcel
+
