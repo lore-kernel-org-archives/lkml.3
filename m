@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301AbaLJBH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:07:27 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:51874 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752309AbaLJBH0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:07:26 -0500
+	id S1753097AbaLJBM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:12:59 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9756 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752221AbaLJBM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 20:12:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="496365080"
+Message-ID: <54879E08.7030108@intel.com>
+Date: Wed, 10 Dec 2014 02:12:40 +0100
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141209214737.GO11764@sirena.org.uk>
-References: <CAOMZO5DBL1G7H3RE43edi5ObGOzvF_2Oo+LHqiG7EFfoWjXxaA@mail.gmail.com>
-	<CAOMZO5B0WcR-=__QzCzD86oocuj--uhq+QYj3o1WU05JO-Qyfw@mail.gmail.com>
-	<20141209212708.GL11764@sirena.org.uk>
-	<CAOMZO5DYuUmc9m65Pssmy+Ak+A__WTLmXY2=+3jQ1ZKQcE5Pew@mail.gmail.com>
-	<20141209213728.GN11764@sirena.org.uk>
-	<CAOMZO5C+gwVocek-6mvReyTbf4ZKAs2xDRmsT+pLqAQf1vVSCg@mail.gmail.com>
-	<20141209214737.GO11764@sirena.org.uk>
-Date: Tue, 9 Dec 2014 23:07:25 -0200
-Message-ID: <CAOMZO5Dt-iBWurp9tCL=KROuRkGNpvD3oTvGjWL8RizrAp62wg@mail.gmail.com>
-Subject: Re: da9052-regulator fails to probe in linux-next
-From: Fabio Estevam <festevam@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Bryan Wu <cooloney@gmail.com>, Fabio Estevam <fabio.estevam@freescale.com>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] leds: leds-gpio: Fix the "default-state" property check
+References: <1418142714-29794-1-git-send-email-fabio.estevam@freescale.com> <CAK5ve-KHd86BxLhk=JC6vspgE7E_W3A3ArrjHsGp41_iuke7fA@mail.gmail.com>
+In-Reply-To: <CAK5ve-KHd86BxLhk=JC6vspgE7E_W3A3ArrjHsGp41_iuke7fA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 9, 2014 at 7:47 PM, Mark Brown <broonie@kernel.org> wrote:
-
-> My point is that I'm not seeing anything complaining about those devices
-> or the supplies they offer so nothing there indicates to me that there's
-> any kind of problem.
-
-Yes, you are right. Sorry for the confusion here.
-
->> [    0.052239] CPU identified as i.MX6Q, silicon rev 1.2
->> [    0.072014] vdd1p1: 800 <--> 1375 mV at 1100 mV
->> [    0.073027] vdd3p0: 2800 <--> 3150 mV at 3000 mV
->> [    0.073933] vdd2p5: 2000 <--> 2750 mV at 2400 mV
->> [    0.074888] vddarm: 725 <--> 1450 mV at 1150 mV
->> [    0.075935] vddpu: 725 <--> 1450 mV at 1150 mV
->> [    0.076897] vddsoc: 725 <--> 1450 mV at 1200 mV
+On 12/9/2014 8:13 PM, Bryan Wu wrote:
+> On Tue, Dec 9, 2014 at 8:31 AM, Fabio Estevam
+> <fabio.estevam@freescale.com> wrote:
+>> Commit a43f2cbbb009f9 ("leds: leds-gpio: Make use of device property API")
+>> caused a regression by reading the incorrect string for the "default-state"
+>> property.
+>>
+>> Fix the property string check to restore the original behaviour.
+>>
+>> Fixes: a43f2cbbb009 (leds: leds-gpio: Make use of device property API)
+> Thanks, please take my Ack
+> Acked-by: Bryan Wu <cooloney@gmail.com>
 >
-> Remember that these messages are now at debug level.
+> I think Rafael will take this fix with other patches through his tree.
 
-I was not aware of this change, thanks for letting me know.
+Yes, I will, thanks!
 
-Now I am back to the original da9052 regulator probe issue. If I do:
+And sorry for the breakage ...
 
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -554,7 +554,7 @@ int da9052_device_init(struct da9052 *da9052, u8 chip_id)
-                return ret;
-        }
+>
+>> Reported-by: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+>> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+>> ---
+>>   drivers/leds/leds-gpio.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
+>> index 8a8ba11..7ea1ea42 100644
+>> --- a/drivers/leds/leds-gpio.c
+>> +++ b/drivers/leds/leds-gpio.c
+>> @@ -203,7 +203,7 @@ static struct gpio_leds_priv *gpio_leds_create(struct platform_device *pdev)
+>>                  fwnode_property_read_string(child, "linux,default-trigger",
+>>                                              &led.default_trigger);
+>>
+>> -               if (!fwnode_property_read_string(child, "linux,default_state",
+>> +               if (!fwnode_property_read_string(child, "default-state",
+>>                                                   &state)) {
+>>                          if (!strcmp(state, "keep"))
+>>                                  led.default_state = LEDS_GPIO_DEFSTATE_KEEP;
+>> --
+>> 1.9.1
+>>
 
--       ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
-+       ret = mfd_add_devices(da9052->dev, 0, da9052_subdev_info,
-                              ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
-
-,then the da9052 regulator can probe succesfully:
-
-ls /sys/class/regulator/
-regulator.0   regulator.11  regulator.14  regulator.2   regulator.5
-regulator.8
-regulator.1   regulator.12  regulator.15  regulator.3   regulator.6
-regulator.9
-regulator.10  regulator.13  regulator.16  regulator.4   regulator.7
-
-,except for this one:
-
-[    0.157574] da9052-regulator da9052-regulator.14: invalid regulator
-ID specified
-[    0.157713] da9052-regulator: probe of da9052-regulator.14 failed
-with error -2
-
-Does anyone know why should I change the index of mfd_add_devices() ?
-
-Thanks
