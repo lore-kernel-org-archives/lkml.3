@@ -1,74 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757256AbaLJOX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:23:29 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:54887 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756786AbaLJOX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:23:27 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Jesper Dangaard Brouer'" <brouer@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Lameter <cl@linux.com>
-CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        Alexander Duyck <alexander.duyck@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: RE: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
-	(backed by alf_queue)
-Thread-Topic: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
-	(backed by alf_queue)
-Thread-Index: AQHQFIO0Ikj80L4t4UGcEvv4vfI+lpyI3+Ug
-Date: Wed, 10 Dec 2014 14:22:22 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0A193@AcuExch.aculab.com>
-References: <20141210033902.2114.68658.stgit@ahduyck-vm-fedora20>
- <20141210141332.31779.56391.stgit@dragon>
-In-Reply-To: <20141210141332.31779.56391.stgit@dragon>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757655AbaLJOXr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:23:47 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50194 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757448AbaLJOXm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 09:23:42 -0500
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, dahi@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com, mst@redhat.com,
+        tglx@linutronix.de, David.Laight@ACULAB.COM, peterz@infradead.org,
+        hughd@google.com, hocko@suse.cz
+Subject: [PATCH v2 0/5] Reenable might_sleep() checks for might_fault()
+Date: Wed, 10 Dec 2014 15:23:29 +0100
+Message-Id: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121014-0021-0000-0000-00000216B9C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBAENatn006541
 
-From: Jesper Dangaard Brouer
-> The network stack have some use-cases that puts some extreme demands
-> on the memory allocator.  One use-case, 10Gbit/s wirespeed at smallest
-> packet size[1], requires handling a packet every 67.2 ns (nanosec).
-> 
-> Micro benchmarking[2] the SLUB allocator (with skb size 256bytes
-> elements), show "fast-path" instant reuse only costs 19 ns, but a
-> closer to network usage pattern show the cost rise to 45 ns.
-> 
-> This patchset introduce a quick mempool (qmempool), which when used
-> in-front of the SKB (sk_buff) kmem_cache, saves 12 ns on "fast-path"
-> drop in iptables "raw" table, but more importantly saves 40 ns with
-> IP-forwarding, which were hitting the slower SLUB use-case.
-> 
-> 
-> One of the building blocks for achieving this speedup is a cmpxchg
-> based Lock-Free queue that supports bulking, named alf_queue for
-> Array-based Lock-Free queue.  By bulking elements (pointers) from the
-> queue, the cost of the cmpxchg (approx 8 ns) is amortized over several
-> elements.
+v1 -> v2:
+- moved pagefault_count to the end of thread_info for all archs that would have
+  required manually calculating asm-offsets - to keep changes minimal.
+- remove unlikely() from "mm, uaccess: trigger might_sleep() in" and keep
+  changes minimal (in_atomic() -> pagefault_disabled())
 
-It seems to me that these improvements could be added to the
-underlying allocator itself.
-Nesting allocators doesn't really seem right to me.
+----
 
-	David
+I recently discovered that might_fault() doesn't call might_sleep() anymore.
+Therefore bugs like:
+	spin_lock(&lock);
+	rc = copy_to_user(...);
+	spin_unlock(&lock);
+would not be detected with CONFIG_DEBUG_ATOMIC_SLEEP. The code was changed to
+disable false positives for code like:
+	pagefault_disable();
+	rc = copy_to_user(...);
+	pagefault_enable();
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Until now, pagefault_disable() and pagefault_enable() simply modified the
+preempt count, therefore telling the pagefault handler that the context is
+atomic and sleeping is disallowed.
+
+In order to reenable might_sleep() checks for the correct path, we need a way to
+detect whether we run in a pagefault_disable() context.
+
+This series therefore introduces a separate pagefault_count and uses it to count
+the levels of pagefault_disable() per thread. might_sleep() checks are
+reactivated for the !pagefault_disable() path.
+
+So this should now work:
+	spin_lock(&lock); /* also if left away */
+	pagefault_disable()
+	rc = copy_to_user(...);
+	pagefault_enable();
+	spin_unlock(&lock);
+And this should report a warning again:
+	spin_lock(&lock);
+	rc = copy_to_user(...);
+	spin_unlock(&lock);
+
+Please note that this series will not completely split the handling of
+pagefault_disable() and the preempt count. This will be done in another series.
+Purpose of this series is to reenable might_sleep() checks for might_fault(),
+avoiding to produce false positives.
+
+Cross compiled on powerpc, arm, sparc, sparc64, arm64, x86_64, i386, mips,
+alpha, ia64, xtensa, m68k, microblaze.
+
+Tested on s390.
+
+
+David Hildenbrand (5):
+  uaccess: add pagefault_count to thread_info
+  uaccess: count pagefault_disable() levels in pagefault_count
+  mm, uaccess: trigger might_sleep() in might_fault() when pagefaults
+    are disabled
+  uaccess: clarify that uaccess may only sleep if pagefaults are not
+    disabled
+  uaccess: CONFIG_DEBUG_PAGEFAULT_COUNT to debug pagefault_count
+
+ arch/alpha/include/asm/thread_info.h      |  1 +
+ arch/arc/include/asm/thread_info.h        |  1 +
+ arch/arm/include/asm/thread_info.h        |  1 +
+ arch/arm64/include/asm/thread_info.h      |  1 +
+ arch/avr32/include/asm/thread_info.h      |  1 +
+ arch/avr32/include/asm/uaccess.h          | 12 +++++---
+ arch/blackfin/include/asm/thread_info.h   |  1 +
+ arch/c6x/include/asm/thread_info.h        |  1 +
+ arch/cris/include/asm/thread_info.h       |  1 +
+ arch/frv/include/asm/thread_info.h        |  1 +
+ arch/hexagon/include/asm/thread_info.h    |  1 +
+ arch/hexagon/include/asm/uaccess.h        |  3 +-
+ arch/ia64/include/asm/thread_info.h       |  1 +
+ arch/m32r/include/asm/thread_info.h       |  1 +
+ arch/m32r/include/asm/uaccess.h           | 30 ++++++++++++------
+ arch/m68k/include/asm/thread_info.h       |  1 +
+ arch/metag/include/asm/thread_info.h      |  1 +
+ arch/microblaze/include/asm/thread_info.h |  1 +
+ arch/microblaze/include/asm/uaccess.h     |  6 ++--
+ arch/mips/include/asm/thread_info.h       |  1 +
+ arch/mips/include/asm/uaccess.h           | 45 ++++++++++++++++++---------
+ arch/mn10300/include/asm/thread_info.h    |  1 +
+ arch/openrisc/include/asm/thread_info.h   |  1 +
+ arch/parisc/include/asm/thread_info.h     |  1 +
+ arch/powerpc/include/asm/thread_info.h    |  1 +
+ arch/s390/include/asm/thread_info.h       |  1 +
+ arch/s390/include/asm/uaccess.h           | 15 ++++++---
+ arch/score/include/asm/thread_info.h      |  1 +
+ arch/score/include/asm/uaccess.h          | 15 ++++++---
+ arch/sh/include/asm/thread_info.h         |  1 +
+ arch/sparc/include/asm/thread_info_32.h   |  1 +
+ arch/sparc/include/asm/thread_info_64.h   |  1 +
+ arch/tile/include/asm/thread_info.h       |  1 +
+ arch/tile/include/asm/uaccess.h           | 21 ++++++++-----
+ arch/um/include/asm/thread_info.h         |  1 +
+ arch/unicore32/include/asm/thread_info.h  |  1 +
+ arch/x86/include/asm/thread_info.h        |  1 +
+ arch/x86/include/asm/uaccess.h            | 15 ++++++---
+ arch/x86/include/asm/uaccess_32.h         |  6 ++--
+ arch/x86/lib/usercopy_32.c                |  6 ++--
+ arch/xtensa/include/asm/thread_info.h     |  1 +
+ include/linux/kernel.h                    |  3 +-
+ include/linux/uaccess.h                   | 51 ++++++++++++++++++++++++++-----
+ lib/Kconfig.debug                         |  9 ++++++
+ lib/strnlen_user.c                        |  6 ++--
+ mm/maccess.c                              | 11 +++++++
+ mm/memory.c                               | 18 ++++-------
+ 47 files changed, 222 insertions(+), 80 deletions(-)
+
+-- 
+1.8.5.5
+
