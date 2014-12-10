@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223AbaLJAwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 19:52:39 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:55544 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149AbaLJAwe (ORCPT
+	id S1752978AbaLJAw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 19:52:29 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:24504 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752285AbaLJAw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 19:52:34 -0500
+	Tue, 9 Dec 2014 19:52:27 -0500
 X-IronPort-AV: E=Sophos;i="5.07,549,1413270000"; 
-   d="scan'208";a="52519160"
+   d="scan'208";a="52674657"
 From: Ray Jui <rjui@broadcom.com>
 To: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -22,60 +22,41 @@ CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
         "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH 4/4] ARM: dts: add I2C device nodes for Broadcom Cygnus
-Date: Tue, 9 Dec 2014 16:54:51 -0800
-Message-ID: <1418172891-19441-5-git-send-email-rjui@broadcom.com>
+Subject: [PATCH 0/4] Add I2C support to Broadcom iProc
+Date: Tue, 9 Dec 2014 16:54:47 -0800
+Message-ID: <1418172891-19441-1-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418172891-19441-1-git-send-email-rjui@broadcom.com>
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
 References: <Ray Jui <rjui@broadcom.com>
- <1418172891-19441-1-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C device nodes and its properties in bcm-cygnus.dtsi but keep
-them disabled there. Individual I2C devices can be enabled in board
-specific dts file when I2C slave devices are enabled in the future
+This patchset contains the initial I2C support for Broadcom iProc family of
+SoCs.
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/boot/dts/bcm-cygnus.dtsi |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+The iProc I2C controller has separate internal TX and RX FIFOs, each has a
+size of 64 bytes. The iProc I2C controller supports two bus speeds including
+standard mode (100 kHz) and fast mode (400 kHz)
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..f7d6c1d 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -70,6 +70,26 @@
- 		};
- 	};
- 
-+	i2c0: i2c@18008000 {
-+		compatible = "brcm,iproc-i2c";
-+		reg = <0x18008000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 85 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
-+	i2c1: i2c@1800b000 {
-+		compatible = "brcm,iproc-i2c";
-+		reg = <0x1800b000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 86 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
- 	uart0: serial@18020000 {
- 		compatible = "snps,dw-apb-uart";
- 		reg = <0x18020000 0x100>;
+Ray Jui (4):
+  i2c: iProc: define Broadcom iProc I2C binding
+  i2c: iproc: Add Broadcom iProc I2C Driver
+  ARM: mach-bcm: Enable I2C support for iProc
+  ARM: dts: add I2C device nodes for Broadcom Cygnus
+
+ .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37 ++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |   20 +
+ arch/arm/mach-bcm/Kconfig                          |    1 +
+ drivers/i2c/busses/Kconfig                         |    9 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-bcm-iproc.c                 |  503 ++++++++++++++++++++
+ 6 files changed, 571 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+ create mode 100644 drivers/i2c/busses/i2c-bcm-iproc.c
+
 -- 
 1.7.9.5
 
