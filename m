@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaLJPtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:49:22 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:8784 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758049AbaLJPtQ (ORCPT
+	id S932251AbaLJPto (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:49:44 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:58053 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932102AbaLJPtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:49:16 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-d6-54886b79631f
+	Wed, 10 Dec 2014 10:49:22 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-f9-54886b802b26
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -29,145 +29,125 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         boris.brezillon@free-electrons.com
-Subject: [RFC 11/15] drm/exynos/dsi: convert to restrack API
-Date: Wed, 10 Dec 2014 16:48:29 +0100
-Message-id: <1418226513-14105-12-git-send-email-a.hajda@samsung.com>
+Subject: [RFC 15/15] drm/panel/ld9040: convert to restrack API
+Date: Wed, 10 Dec 2014 16:48:33 +0100
+Message-id: <1418226513-14105-16-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
 References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xy7qV2R0hBhNWyVncWneO1eLAi4Us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7oN2R0hBiuXSlvcWneO1eLAi4Us
 	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
 	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
 	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
-	pKTmZJalFunbJXBlzPowi6VgvWzFhW2n2RoYj0p0MXJySAiYSBw6d4oRwhaTuHBvPVsXIxeH
-	kMBSRolJZ9dAOX1MEi1Hb7OBVLEJaEr83XwTzBYR0JG43tPNDFLELLCBXWLd9H1gCWEBG4l9
-	Wz6AjWURUJV4v+gAK4jNK+Ai8eR9MzvEOjmJk8cmg8U5geJ/n+8FqxcScJZYsu096wRG3gWM
-	DKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQqLjyw7GxcesDjEKcDAq8fCaK7aGCLEmlhVX
-	5h5ilOBgVhLhXZjcESLEm5JYWZValB9fVJqTWnyIkYmDU6qB0S3x5iJLt3LRX1Pl/+XyxcU5
-	r9k476UoR9nz7TKWbz0+FX7fuimc/aat8Cy3p33aV9jEd99J+f++Z65BT2rqts/reHvOfVg6
-	Vfnl9V/90qx/PD7F3lH6YRorlRvObPf7UbW393elZtdJO0TTbkQ4ZjSerBCcr/pya5tMEqNI
-	sIf3j1uCiwwClFiKMxINtZiLihMBSFUEimwCAAA=
+	pKTmZJalFunbJXBldJ3+zFTQL17xtCuhgXGScBcjB4eEgInE0rtAJieQKSZx4d56NhBbSGAp
+	o8S2jzJdjFxAdh+TxMutu9hBEmwCmhJ/N98EKxIR0JG43tPNDFLELLCBXWLd9H1gCWEBO4lZ
+	i/cxgtgsAqoSp76cB7N5BVwk2s5MYYfYJidx8thkVhCbEyj+9/leRojNzhJLtr1nncDIu4CR
+	YRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSFx82cG4+JjVIUYBDkYlHl5zxdYQIdbEsuLK
+	3EOMEhzMSiK8C5M7QoR4UxIrq1KL8uOLSnNSiw8xMnFwSjUwzp43UcH/YaOnA/s+kYNsn+4Z
+	L7YVDmmeoso0f3tHjcTu6+ylKv/cGq2PGxUsX3W2tepO40q24NfzA/bKlk4/Pz+Vq6pg/tY3
+	jZOrd3dldpx5N8cy+Pee5F1Lu6/ufyMnYOImmawnmaJxJ2LRNS++ud9m5B9PVXomujeQRbnu
+	wTquE938NgYpSizFGYmGWsxFxYkAnL/Vk2kCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert exynos_dsi driver to use restrack API.
+Convert ld9040 panel driver to use restrack API.
 As a result driver have following advantages:
 - correctly handles removal of resources,
-- do not need to defer probing, so as a result the whole drm system
-  initialization will not be postponed to late initcall, unless other
-  components delays it,
+- do not need to defer probing, so as a result the panel
+  becomes available as soon as possible, in case of deferred
+  probing it was late_initcall,
 - simplified initialization.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 52 +++++++++++++--------------------
- 1 file changed, 21 insertions(+), 31 deletions(-)
+ drivers/gpu/drm/panel/panel-ld9040.c | 41 ++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 8201d79..53ac467 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -23,7 +23,7 @@
- #include <linux/phy/phy.h>
+diff --git a/drivers/gpu/drm/panel/panel-ld9040.c b/drivers/gpu/drm/panel/panel-ld9040.c
+index 3337f30..619610e 100644
+--- a/drivers/gpu/drm/panel/panel-ld9040.c
++++ b/drivers/gpu/drm/panel/panel-ld9040.c
+@@ -17,6 +17,7 @@
+ #include <linux/gpio/consumer.h>
  #include <linux/regulator/consumer.h>
- #include <linux/component.h>
--
+ #include <linux/spi/spi.h>
 +#include <linux/restrack.h>
+ 
  #include <video/mipi_display.h>
- #include <video/videomode.h>
+ #include <video/of_videomode.h>
+@@ -310,9 +311,22 @@ static int ld9040_parse_dt(struct ld9040 *ctx)
+ 	return 0;
+ }
  
-@@ -1690,9 +1690,18 @@ static const struct component_ops exynos_dsi_component_ops = {
- 	.unbind	= exynos_dsi_unbind,
- };
- 
-+void exynos_dsi_restrack_cb(struct device *dev, int ret)
++void ld9040_restrack_cb(struct device *dev, int ret)
 +{
-+	if (ret)
-+		component_del(dev, &exynos_dsi_component_ops);
++	struct ld9040 *ctx = dev_get_drvdata(dev);
++
++	if (ret == 0)
++		drm_panel_add(&ctx->panel);
++	else if (ret == -EPROBE_DEFER)
++		drm_panel_remove(&ctx->panel);
 +	else
-+		component_add(dev, &exynos_dsi_component_ops);
++		dev_err(dev, "restrack error %d\n", ret);
 +}
 +
- static int exynos_dsi_probe(struct platform_device *pdev)
+ static int ld9040_probe(struct spi_device *spi)
  {
- 	struct device *dev = &pdev->dev;
+ 	struct device *dev = &spi->dev;
 +	struct restrack_ctx *rtrack;
- 	struct resource *res;
- 	struct exynos_dsi *dsi;
+ 	struct ld9040 *ctx;
  	int ret;
-@@ -1728,26 +1737,6 @@ static int exynos_dsi_probe(struct platform_device *pdev)
  
- 	dsi->supplies[0].supply = "vddcore";
- 	dsi->supplies[1].supply = "vddio";
--	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(dsi->supplies),
--				      dsi->supplies);
--	if (ret) {
--		dev_info(dev, "failed to get regulators: %d\n", ret);
--		return -EPROBE_DEFER;
--	}
+@@ -331,17 +345,6 @@ static int ld9040_probe(struct spi_device *spi)
+ 
+ 	ctx->supplies[0].supply = "vdd3";
+ 	ctx->supplies[1].supply = "vci";
+-	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(ctx->supplies),
+-				      ctx->supplies);
+-	if (ret < 0)
+-		return ret;
 -
--	dsi->pll_clk = devm_clk_get(dev, "pll_clk");
--	if (IS_ERR(dsi->pll_clk)) {
--		dev_info(dev, "failed to get dsi pll input clock\n");
--		ret = PTR_ERR(dsi->pll_clk);
--		goto err_del_component;
+-	ctx->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
+-	if (IS_ERR(ctx->reset_gpio)) {
+-		dev_err(dev, "cannot get reset-gpios %ld\n",
+-			PTR_ERR(ctx->reset_gpio));
+-		return PTR_ERR(ctx->reset_gpio);
 -	}
+ 
+ 	spi->bits_per_word = 9;
+ 	ret = spi_setup(spi);
+@@ -354,16 +357,13 @@ static int ld9040_probe(struct spi_device *spi)
+ 	ctx->panel.dev = dev;
+ 	ctx->panel.funcs = &ld9040_drm_funcs;
+ 
+-	return drm_panel_add(&ctx->panel);
+-}
 -
--	dsi->bus_clk = devm_clk_get(dev, "bus_clk");
--	if (IS_ERR(dsi->bus_clk)) {
--		dev_info(dev, "failed to get dsi bus clock\n");
--		ret = PTR_ERR(dsi->bus_clk);
--		goto err_del_component;
--	}
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	dsi->reg_base = devm_ioremap_resource(dev, res);
-@@ -1757,13 +1746,6 @@ static int exynos_dsi_probe(struct platform_device *pdev)
- 		goto err_del_component;
- 	}
- 
--	dsi->phy = devm_phy_get(dev, "dsim");
--	if (IS_ERR(dsi->phy)) {
--		dev_info(dev, "failed to get dsim phy\n");
--		ret = PTR_ERR(dsi->phy);
--		goto err_del_component;
--	}
+-static int ld9040_remove(struct spi_device *spi)
+-{
+-	struct ld9040 *ctx = spi_get_drvdata(spi);
 -
- 	dsi->irq = platform_get_irq(pdev, 0);
- 	if (dsi->irq < 0) {
- 		dev_err(dev, "failed to request dsi irq resource\n");
-@@ -1782,11 +1764,20 @@ static int exynos_dsi_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, &dsi->display);
- 
--	ret = component_add(dev, &exynos_dsi_component_ops);
-+	rtrack = devm_restrack_register(dsi->dev, exynos_dsi_restrack_cb,
-+		regulator_bulk_restrack_desc(&dsi->supplies[0]),
-+		regulator_bulk_restrack_desc(&dsi->supplies[1]),
-+		clk_restrack_desc(&dsi->pll_clk, "pll_clk"),
-+		clk_restrack_desc(&dsi->bus_clk, "bus_clk"),
-+		phy_restrack_desc(&dsi->phy, "dsim"),
+-	drm_panel_remove(&ctx->panel);
++	rtrack = devm_restrack_register(ctx->dev, ld9040_restrack_cb,
++		regulator_bulk_restrack_desc(&ctx->supplies[0]),
++		regulator_bulk_restrack_desc(&ctx->supplies[1]),
++		gpiod_restrack_desc(&ctx->reset_gpio, "reset", GPIOD_OUT_HIGH),
 +	);
-+
-+	ret = PTR_ERR_OR_ZERO(rtrack);
-+
- 	if (ret)
- 		goto err_del_component;
  
--	return ret;
-+	return 0;
+-	return 0;
++	return PTR_ERR_OR_ZERO(rtrack);
+ }
  
- err_del_component:
- 	exynos_drm_component_del(dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
-@@ -1795,7 +1786,6 @@ err_del_component:
+ static struct of_device_id ld9040_of_match[] = {
+@@ -374,7 +374,6 @@ MODULE_DEVICE_TABLE(of, ld9040_of_match);
  
- static int exynos_dsi_remove(struct platform_device *pdev)
- {
--	component_del(&pdev->dev, &exynos_dsi_component_ops);
- 	exynos_drm_component_del(&pdev->dev, EXYNOS_DEVICE_TYPE_CONNECTOR);
- 
- 	return 0;
+ static struct spi_driver ld9040_driver = {
+ 	.probe		= ld9040_probe,
+-	.remove		= ld9040_remove,
+ 	.driver = {
+ 		.name	= "ld9040",
+ 		.owner	= THIS_MODULE,
 -- 
 1.9.1
 
