@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152AbaLJByY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 20:54:24 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:36230 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061AbaLJBqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 20:46:38 -0500
-From: Omar Sandoval <osandov@osandov.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
-        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [RFC PATCH v3 1/7] direct-io: don't dirty ITER_BVEC pages on read
-Date: Tue,  9 Dec 2014 17:45:42 -0800
-Message-Id: <5db70228c7a288ffb8f87a3e4995cf7584e6a56c.1418173063.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <cover.1418173063.git.osandov@osandov.com>
-References: <cover.1418173063.git.osandov@osandov.com>
-In-Reply-To: <cover.1418173063.git.osandov@osandov.com>
-References: <cover.1418173063.git.osandov@osandov.com>
+	id S1756185AbaLJByb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 20:54:31 -0500
+Received: from imap.thunk.org ([74.207.234.97]:48426 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756141AbaLJByX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Dec 2014 20:54:23 -0500
+Date: Tue, 9 Dec 2014 20:54:21 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: George Spelvin <linux@horizon.com>
+Cc: tglx@linutronix.de, arnd@arndb.de, lftan@altera.com,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.horizon.com
+Subject: Re: [GIT PULL] arch/nios2 for v3.19
+Message-ID: <20141210015421.GB3370@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	George Spelvin <linux@horizon.com>, tglx@linutronix.de,
+	arnd@arndb.de, lftan@altera.com, linux-kernel@vger.kernel.org,
+	torvalds@linux-foundation.horizon.com
+References: <20141210010638.11895.qmail@ns.horizon.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210010638.11895.qmail@ns.horizon.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reads through the iov_iter infrastructure for kernel pages shouldn't be
-dirtied by the direct I/O code.
+On Tue, Dec 09, 2014 at 08:06:38PM -0500, George Spelvin wrote:
+> 
+> (Preserving the signed annotated tag object itself is another
+> intriguing possibility, but not only is it a huge format change
+> to create a way for a commit to point to a tag, but I also don't
+> see how to avoid tag name collision problems.)
 
-This is based on Dave Kleikamp's and Ming Lei's previously posted
-patches.
+Actually, git already preserves the signed annotated tag.  That's the
+only way git show --show-signature can verify the tag's gpg signature.
 
-Cc: Ming Lei <ming.lei@canonical.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
----
- fs/direct-io.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+You can see original signed annotated tag via a command like this:
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e181b6b..e542ce4 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -120,6 +120,7 @@ struct dio {
- 	spinlock_t bio_lock;		/* protects BIO fields below */
- 	int page_errors;		/* errno from get_user_pages() */
- 	int is_async;			/* is IO async ? */
-+	int should_dirty;		/* should we mark read pages dirty? */
- 	bool defer_completion;		/* defer AIO completion to workqueue? */
- 	int io_error;			/* IO error in completion path */
- 	unsigned long refcount;		/* direct_io_worker() and bios */
-@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
- 	dio->refcount++;
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
- 
--	if (dio->is_async && dio->rw == READ)
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty)
- 		bio_set_pages_dirty(bio);
- 
- 	if (sdio->submit_io)
-@@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (!uptodate)
- 		dio->io_error = -EIO;
- 
--	if (dio->is_async && dio->rw == READ) {
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
- 		bio_for_each_segment_all(bvec, bio, i) {
- 			struct page *page = bvec->bv_page;
- 
--			if (dio->rw == READ && !PageCompound(page))
-+			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
- 				set_page_dirty_lock(page);
- 			page_cache_release(page);
- 		}
-@@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 
- 	dio->inode = inode;
- 	dio->rw = rw;
-+	dio->should_dirty = !(iter->type & ITER_BVEC);
- 
- 	/*
- 	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
--- 
-2.1.3
+git cat-file -p 18b34d9a7a085ba8f9cafa6a0d002e2cbac87c1f
 
+						- Ted
