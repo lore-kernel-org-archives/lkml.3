@@ -1,226 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaLJAlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 19:41:25 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35290 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530AbaLJAlX (ORCPT
+	id S1752936AbaLJAln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 19:41:43 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:55779 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572AbaLJAll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 19:41:23 -0500
-Date: Tue, 9 Dec 2014 16:41:15 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        "supporter:S390" <linux390@de.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jens Freimann <jfrei@linux.vnet.ibm.com>,
-        "open list:S390" <linux-s390@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] srcu: Isolate srcu sections using CONFIG_SRCU
-Message-ID: <20141210004115.GN25340@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1418150903-15760-1-git-send-email-bobby.prani@gmail.com>
+	Tue, 9 Dec 2014 19:41:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418150903-15760-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121000-0021-0000-0000-000006D027E3
+In-Reply-To: <1418133106-5634-2-git-send-email-zyw@rock-chips.com>
+References: <1418133106-5634-1-git-send-email-zyw@rock-chips.com>
+	<1418133106-5634-2-git-send-email-zyw@rock-chips.com>
+Date: Tue, 9 Dec 2014 16:41:40 -0800
+X-Google-Sender-Auth: CcJ14xMniu_xxxsK5YIavZqtHVI
+Message-ID: <CAD=FV=UoQ2j01Yt_xAWVG+qP_b6jE7fPzX7SGoZUse0QyUdXQA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] regulator: rk808: add dvs support
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 01:48:21PM -0500, Pranith Kumar wrote:
-> Isolate the SRCU functions and data structures within CONFIG_SRCU so that there
-> is a compile time failure if srcu is used when not enabled. This was decided to
-> be better than waiting until link time for a failure to occur.
-> 
-> Also make including kvm_host.h conditional on CONFIG_KVM being enabled. This
-> prevents build failures as KVM is dependent on SRCU.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> CC: Josh Triplett <josh@joshtriplett.org>
-> CC: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Chris,
 
-Queued for testing (finally), replacing the earlier patch.  ;-)
+On Tue, Dec 9, 2014 at 5:51 AM, Chris Zhong <zyw@rock-chips.com> wrote:
+> +       /* dvsok pin would be pull down when dvs1/2 pin changed, and
+> +        * it would be pull up once the voltage regulate complete.
+> +        * No need to wait dvsok signal when voltage falling.
+> +        */
 
-							Thanx, Paul
+A tiny nit that I think standard multiline commenting style should
+make the above:
 
-> ---
->  arch/s390/kernel/asm-offsets.c |  7 ++++++-
->  include/linux/notifier.h       | 47 ++++++++++++++++++++++++------------------
->  include/linux/srcu.h           |  6 +++++-
->  3 files changed, 38 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/s390/kernel/asm-offsets.c b/arch/s390/kernel/asm-offsets.c
-> index ef279a1..2813a3c 100644
-> --- a/arch/s390/kernel/asm-offsets.c
-> +++ b/arch/s390/kernel/asm-offsets.c
-> @@ -7,12 +7,15 @@
->  #define ASM_OFFSETS_C
-> 
->  #include <linux/kbuild.h>
-> -#include <linux/kvm_host.h>
->  #include <linux/sched.h>
->  #include <asm/idle.h>
->  #include <asm/vdso.h>
->  #include <asm/pgtable.h>
-> 
-> +#if IS_ENABLED(CONFIG_KVM)
-> +#include <linux/kvm_host.h>
-> +#endif
-> +
->  /*
->   * Make sure that the compiler is new enough. We want a compiler that
->   * is known to work with the "Q" assembler constraint.
-> @@ -182,8 +185,10 @@ int main(void)
->  	DEFINE(__LC_PGM_TDB, offsetof(struct _lowcore, pgm_tdb));
->  	DEFINE(__THREAD_trap_tdb, offsetof(struct task_struct, thread.trap_tdb));
->  	DEFINE(__GMAP_ASCE, offsetof(struct gmap, asce));
-> +#if IS_ENABLED(CONFIG_KVM)
->  	DEFINE(__SIE_PROG0C, offsetof(struct kvm_s390_sie_block, prog0c));
->  	DEFINE(__SIE_PROG20, offsetof(struct kvm_s390_sie_block, prog20));
-> +#endif /* CONFIG_KVM */
->  #endif /* CONFIG_32BIT */
->  	return 0;
->  }
-> diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-> index d14a4c3..fe4f02a 100644
-> --- a/include/linux/notifier.h
-> +++ b/include/linux/notifier.h
-> @@ -47,6 +47,8 @@
->   * runtime initialization.
->   */
-> 
-> +struct notifier_block;
-> +
->  typedef	int (*notifier_fn_t)(struct notifier_block *nb,
->  			unsigned long action, void *data);
-> 
-> @@ -70,12 +72,6 @@ struct raw_notifier_head {
->  	struct notifier_block __rcu *head;
->  };
-> 
-> -struct srcu_notifier_head {
-> -	struct mutex mutex;
-> -	struct srcu_struct srcu;
-> -	struct notifier_block __rcu *head;
-> -};
-> -
->  #define ATOMIC_INIT_NOTIFIER_HEAD(name) do {	\
->  		spin_lock_init(&(name)->lock);	\
->  		(name)->head = NULL;		\
-> @@ -88,11 +84,6 @@ struct srcu_notifier_head {
->  		(name)->head = NULL;		\
->  	} while (0)
-> 
-> -/* srcu_notifier_heads must be initialized and cleaned up dynamically */
-> -extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-> -#define srcu_cleanup_notifier_head(name)	\
-> -		cleanup_srcu_struct(&(name)->srcu);
-> -
->  #define ATOMIC_NOTIFIER_INIT(name) {				\
->  		.lock = __SPIN_LOCK_UNLOCKED(name.lock),	\
->  		.head = NULL }
-> @@ -101,7 +92,6 @@ extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
->  		.head = NULL }
->  #define RAW_NOTIFIER_INIT(name)	{				\
->  		.head = NULL }
-> -/* srcu_notifier_heads cannot be initialized statically */
-> 
->  #define ATOMIC_NOTIFIER_HEAD(name)				\
->  	struct atomic_notifier_head name =			\
-> @@ -121,8 +111,6 @@ extern int blocking_notifier_chain_register(struct blocking_notifier_head *nh,
->  		struct notifier_block *nb);
->  extern int raw_notifier_chain_register(struct raw_notifier_head *nh,
->  		struct notifier_block *nb);
-> -extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-> -		struct notifier_block *nb);
-> 
->  extern int blocking_notifier_chain_cond_register(
->  		struct blocking_notifier_head *nh,
-> @@ -134,8 +122,6 @@ extern int blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
->  		struct notifier_block *nb);
->  extern int raw_notifier_chain_unregister(struct raw_notifier_head *nh,
->  		struct notifier_block *nb);
-> -extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-> -		struct notifier_block *nb);
-> 
->  extern int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
->  		unsigned long val, void *v);
-> @@ -149,10 +135,6 @@ extern int raw_notifier_call_chain(struct raw_notifier_head *nh,
->  		unsigned long val, void *v);
->  extern int __raw_notifier_call_chain(struct raw_notifier_head *nh,
->  	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> -extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> -		unsigned long val, void *v);
-> -extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> -	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> 
->  #define NOTIFY_DONE		0x0000		/* Don't care */
->  #define NOTIFY_OK		0x0001		/* Suits me */
-> @@ -211,5 +193,30 @@ static inline int notifier_to_errno(int ret)
-> 
->  extern struct blocking_notifier_head reboot_notifier_list;
-> 
-> +#ifdef CONFIG_SRCU
-> +
-> +struct srcu_notifier_head {
-> +	struct mutex mutex;
-> +	struct srcu_struct srcu;
-> +	struct notifier_block __rcu *head;
-> +};
-> +
-> +/* srcu_notifier_heads must be initialized and cleaned up dynamically
-> + * srcu_notifier_heads cannot be initialized statically
-> + */
-> +extern void srcu_init_notifier_head(struct srcu_notifier_head *nh);
-> +#define srcu_cleanup_notifier_head(name) cleanup_srcu_struct(&(name)->srcu)
-> +
-> +extern int srcu_notifier_chain_register(struct srcu_notifier_head *nh,
-> +		struct notifier_block *nb);
-> +extern int srcu_notifier_chain_unregister(struct srcu_notifier_head *nh,
-> +		struct notifier_block *nb);
-> +extern int srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> +		unsigned long val, void *v);
-> +extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
-> +	unsigned long val, void *v, int nr_to_call, int *nr_calls);
-> +
-> +#endif /* CONFIG_SRCU */
-> +
->  #endif /* __KERNEL__ */
->  #endif /* _LINUX_NOTIFIER_H */
-> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> index 9cfd962..ed9c389 100644
-> --- a/include/linux/srcu.h
-> +++ b/include/linux/srcu.h
-> @@ -26,6 +26,8 @@
->   *
->   */
-> 
-> +#ifdef CONFIG_SRCU
-> +
->  #ifndef _LINUX_SRCU_H
->  #define _LINUX_SRCU_H
-> 
-> @@ -249,4 +251,6 @@ static inline void smp_mb__after_srcu_read_unlock(void)
->  	/* __srcu_read_unlock has smp_mb() internally so nothing to do here. */
->  }
-> 
-> -#endif
-> +#endif /* _LINUX_SRCU_H */
-> +
-> +#endif /* CONFIG_SRCU */
-> -- 
-> 1.9.1
-> 
++       /*
++        * dvsok pin would be pull down when dvs1/2 pin changed, and
++        * it would be pull up once the voltage regulate complete.
++        * No need to wait dvsok signal when voltage falling.
++        */
 
+...but I'll leave it up to broonie@ if he cares...
+
+Given that I've privately reviewed an earlier version of this before
+you sent it up, it's not surprising that I have no other comments, so:
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+
+:)
+
+-Doug
