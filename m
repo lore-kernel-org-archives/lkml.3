@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaLJGzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 01:55:05 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:54238 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaLJGzD (ORCPT
+	id S1754244AbaLJGzm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 01:55:42 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:49270 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbaLJGzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 01:55:03 -0500
-Date: Wed, 10 Dec 2014 07:54:57 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, dave@sr71.net,
-        Rik van Riel <riel@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH V3 2/2] x86/mm: use min instead of min_t
-Message-ID: <20141210065457.GA20596@gmail.com>
-References: <5487AB3F.7050807@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5487AB3F.7050807@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 10 Dec 2014 01:55:40 -0500
+From: Shalin Mehta <shalinmehta85@gmail.com>
+X-Google-Original-From: Shalin Mehta < shalinmehta85@gmail.com>
+To: andreas.dilger@intel.com
+Cc: gregkh@linuxfoundation.org, bergwolf@gmail.com, gdonald@gmail.com,
+        peterz@infradead.org, tranmanphong@gmail.com, massa.nomura@gmail.com,
+        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, majordomo@vger.kernel.org,
+        Shalin Mehta <shalinmehta85@gmail.com>
+Subject: [PATCH] staging: lustre: Fix the warning messages about casting without __user macro
+Date: Tue,  9 Dec 2014 22:56:12 -0800
+Message-Id: <1418194573-1271-1-git-send-email-shalinmehta85@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Shalin Mehta <shalinmehta85@gmail.com>
 
-* Xishi Qiu <qiuxishi@huawei.com> wrote:
+This issue is showed up while compiling with sparse. The iov_base in struct iovec struct explicitly declares that the assigned value should be user space pointer with __user macro. Where as here, the __user macro isn't used while casting.
 
-> The type of "MAX_DMA_PFN" and "xXx_pfn" are both unsigned long now, so use
-> min() instead of min_t().
-> 
-> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->  arch/x86/kernel/e820.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-> index 49f8864..dd2f07a 100644
-> --- a/arch/x86/kernel/e820.c
-> +++ b/arch/x86/kernel/e820.c
-> @@ -1114,8 +1114,8 @@ void __init memblock_find_dma_reserve(void)
->  	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
->  	 */
->  	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
-> -		start_pfn = min_t(unsigned long, start_pfn, MAX_DMA_PFN);
-> -		end_pfn = min_t(unsigned long, end_pfn, MAX_DMA_PFN);
-> +		start_pfn = min(start_pfn, MAX_DMA_PFN);
-> +		end_pfn = min(end_pfn, MAX_DMA_PFN);
->  		nr_pages += end_pfn - start_pfn;
+Signed-off-by: Shalin Mehta <shalinmehta85@gmail.com>
+---
+ drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Yes, harmonizing the types is a much nicer solution, it allows 
-cleanups like this.
+diff --git a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+index d29f5f1..c40b7e0 100644
+--- a/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
++++ b/drivers/staging/lustre/lnet/klnds/socklnd/socklnd_cb.c
+@@ -131,7 +131,7 @@ ksocknal_send_iov (ksock_conn_t *conn, ksock_tx_t *tx)
+ 		LASSERT (tx->tx_niov > 0);
+ 
+ 		if (nob < (int) iov->iov_len) {
+-			iov->iov_base = (void *)((char *)iov->iov_base + nob);
++			iov->iov_base = (void __user *)((char __user *)iov->iov_base + nob);
+ 			iov->iov_len -= nob;
+ 			return rc;
+ 		}
+@@ -1052,7 +1052,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
+ 		case  KSOCK_PROTO_V3:
+ 			conn->ksnc_rx_state = SOCKNAL_RX_KSM_HEADER;
+ 			conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
+-			conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg;
++			conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg;
+ 
+ 			conn->ksnc_rx_nob_wanted = offsetof(ksock_msg_t, ksm_u);
+ 			conn->ksnc_rx_nob_left = offsetof(ksock_msg_t, ksm_u);
+@@ -1066,7 +1066,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
+ 			conn->ksnc_rx_nob_left = sizeof(lnet_hdr_t);
+ 
+ 			conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
+-			conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg.ksm_u.lnetmsg;
++			conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg.ksm_u.lnetmsg;
+ 			conn->ksnc_rx_iov[0].iov_len  = sizeof (lnet_hdr_t);
+ 			break;
+ 
+@@ -1093,7 +1093,7 @@ ksocknal_new_packet (ksock_conn_t *conn, int nob_to_skip)
+ 	do {
+ 		nob = MIN (nob_to_skip, sizeof (ksocknal_slop_buffer));
+ 
+-		conn->ksnc_rx_iov[niov].iov_base = ksocknal_slop_buffer;
++		conn->ksnc_rx_iov[niov].iov_base = (void __user *)ksocknal_slop_buffer;
+ 		conn->ksnc_rx_iov[niov].iov_len  = nob;
+ 		niov++;
+ 		skipped += nob;
+@@ -1218,7 +1218,7 @@ ksocknal_process_receive (ksock_conn_t *conn)
+ 		conn->ksnc_rx_nob_left = sizeof(ksock_lnet_msg_t);
+ 
+ 		conn->ksnc_rx_iov = (struct iovec *)&conn->ksnc_rx_iov_space;
+-		conn->ksnc_rx_iov[0].iov_base = (char *)&conn->ksnc_msg.ksm_u.lnetmsg;
++		conn->ksnc_rx_iov[0].iov_base = (char __user *)&conn->ksnc_msg.ksm_u.lnetmsg;
+ 		conn->ksnc_rx_iov[0].iov_len  = sizeof(ksock_lnet_msg_t);
+ 
+ 		conn->ksnc_rx_niov = 1;
+-- 
+1.9.1
 
-Thanks,
-
-	Ingo
