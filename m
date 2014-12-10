@@ -1,42 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbaLJJ75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:59:57 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38385 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357AbaLJJ7x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:59:53 -0500
-Date: Wed, 10 Dec 2014 10:59:49 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johan Hovold <johan@kernel.org>, Lee Jones <lee.jones@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] MFD for v3.19
-Message-ID: <20141210095949.GA17623@localhost>
-References: <20141208120058.GI3951@x1>
- <CA+55aFzHz-a3tAc9PWVs1h_50EYFi=NM10+KmwP=Rw_xqx1_oA@mail.gmail.com>
- <20141209100035.GH14346@localhost>
- <CA+55aFzSeGqDMMmf5qh17aKdCwjhZo0pbbub9QWpHWU3i4jwEw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzSeGqDMMmf5qh17aKdCwjhZo0pbbub9QWpHWU3i4jwEw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	id S1754657AbaLJKAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:00:13 -0500
+Received: from ozlabs.org ([103.22.144.67]:42382 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781AbaLJKAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:00:08 -0500
+Message-ID: <1418205606.9279.6.camel@ellerman.id.au>
+Subject: Re: [RFC PATCH 3/8] perf probe: Improve detection of file/function
+ name in the probe pattern
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        acme@kernel.org, ananth@in.ibm.com
+Date: Wed, 10 Dec 2014 21:00:06 +1100
+In-Reply-To: <de6c0cd8236de1cabc179e456514c2a399cbc7b5.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+References: <cover.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+	 <de6c0cd8236de1cabc179e456514c2a399cbc7b5.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 12:44:09PM -0800, Linus Torvalds wrote:
-> On Tue, Dec 9, 2014 at 2:00 AM, Johan Hovold <johan@kernel.org> wrote:
+On Tue, 2014-12-09 at 23:04 +0530, Naveen N. Rao wrote:
+> Currently, perf probe considers patterns including a '.' to be a file.
+> However, this causes problems on powerpc ABIv1 where all functions have
+> a leading '.':
+> 
+>   $ perf probe -F | grep schedule_timeout_interruptible
+>   .schedule_timeout_interruptible
+>   $ perf probe .schedule_timeout_interruptible
+>   Semantic error :File always requires line number or lazy pattern.
+>     Error: Command Parse Error.
+> 
+> Fix this by checking the probe pattern in more detail.
+> 
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
+>  tools/perf/util/probe-event.c | 23 ++++++++++++++++++++---
+>  1 file changed, 20 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index c150ca4..c7e01ef 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -999,6 +999,24 @@ static int parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
+>  		arg = tmp;
+>  	}
+>  
+> +	/*
+> +	 * Check arg is function or file name and copy it.
+> +	 *
+> +	 * We consider arg to be a file spec if and only if it satisfies
+> +	 * all of the below criteria::
+> +	 * - it does not include any of "+@%",
+> +	 * - it includes one of ":;", and
+> +	 * - it has a period '.' in the name.
 
-> So when you do "git log" with a pathname specifier, git obviously no
-> longer shows you all the history. In particular, it shows you the
-> relevant history for just that file. And by "relevant", it not only
-> skips commits that don't change the file, but it also does merge
-> simplification: if it hits a merge, and all changes to the file came
-> from one side of the merge, it will ignore the other side.
+I don't think we need to be this elaborate.
 
-Thanks for the explanation.
+AFAIK there are no source files in the kernel that start with '.'
 
-Johan
+So if the arg starts with '.' it must be a function?
+
+cheers
+
+
