@@ -1,140 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933061AbaLJUjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 15:39:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:33901 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756081AbaLJUjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 15:39:44 -0500
-X-ExtLoop1: 1
+	id S933122AbaLJUkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 15:40:42 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:25572 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932754AbaLJUkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 15:40:40 -0500
 X-IronPort-AV: E=Sophos;i="5.07,553,1413270000"; 
-   d="scan'208";a="651789929"
-Message-ID: <5488AF8D.5070702@linux.intel.com>
-Date: Wed, 10 Dec 2014 12:39:41 -0800
-From: Dave Hansen <dave.hansen@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+   d="scan'208";a="52757206"
+Message-ID: <5488AFC6.3000209@broadcom.com>
+Date: Wed, 10 Dec 2014 12:40:38 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [GIT pull] x86 mpx support for 3.19
-References: <alpine.DEB.2.11.1412091504490.16275@nanos>	<CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>	<5488A203.7000600@linux.intel.com> <CA+55aFwTpZ8U7vUvBE8xkX1_vfktyVDcCwchssMhhP44M8TzUg@mail.gmail.com>
-In-Reply-To: <CA+55aFwTpZ8U7vUvBE8xkX1_vfktyVDcCwchssMhhP44M8TzUg@mail.gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------030308050906030700000605"
+To: Hauke Mehrtens <hauke@hauke-m.de>, Florian Fainelli <f.fainelli@gmail.com>,
+        Scott Branden <sbranden@broadcom.com>
+CC: Arnd Bergmann <arnd@arndb.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rob Herring" <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
+References: <1418169871-19232-3-git-send-email-rjui@broadcom.com> <9707535.Y78sV0TgX4@wuerfel> <54887901.8070501@broadcom.com> <CAGVrzcbZ_f43Vf1mu2XErVi_Jehjggh2TREyrSs84ntSm98yvg@mail.gmail.com> <5488AC64.9010306@hauke-m.de>
+In-Reply-To: <5488AC64.9010306@hauke-m.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030308050906030700000605
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-
-On 12/10/2014 11:49 AM, Linus Torvalds wrote:
-> On Wed, Dec 10, 2014 at 11:41 AM, Dave Hansen
-> <dave.hansen@linux.intel.com> wrote:
->> But, this is the kind of option that we want to be *sure* is enabled
->> unless folks know exactly what they are doing, so we should probably
->> hide it behind CONFIG_EXPERT as well, just as SMEP is.
-> 
-> I disagree.
-> 
-> SMEP doesn't have any performance overhead, and SMEP is available in
-> processors available today. So SMEP doesn't even have a config option,
-> because there is no downside with having it on and enabled.
-
-I misspoke there.  I meant SMAP (I placed MPX below its config option).
-
-> MPX, in contrast, you don't even normally want to run at all as a
-> normal user because of the overheads. That's going to be true even
-> when it's available.
-
-The overhead of turning the MPX config option on really is tiny.  We
-have a few code touch points like around munmap(), but it should not be
-noticeable.
-
-One thing we are *not* doing under this config option is actually
-instrumenting kernel code or doing any protection of the kernel itself.
- This is only about supporting user applications that are doing MPX.
-This set contains no support for doing MPX _inside_ the kernel.
-
-We probably need to mention this explicitly in the config option.  I've
-added:
-
->           This option enables running applications which are
->           instrumented or otherwise use MPX.  It does not use MPX
->           itself inside the kernel or to protect the kernel
->           against bad memory references.
 
 
---------------030308050906030700000605
-Content-Type: text/x-patch;
- name="x86-mpx-real-config-option.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="x86-mpx-real-config-option.patch"
+On 12/10/2014 12:26 PM, Hauke Mehrtens wrote:
+> On 12/10/2014 07:46 PM, Florian Fainelli wrote:
+>> 2014-12-10 8:46 GMT-08:00 Scott Branden <sbranden@broadcom.com>:
+>>> On 14-12-10 03:31 AM, Arnd Bergmann wrote:
+>>>>
+>>>> On Tuesday 09 December 2014 16:04:29 Ray Jui wrote:
+>>>>>
+>>>>> Add initial version of the Broadcom iProc PCIe driver. This driver
+>>>>> has been tested on NSP and Cygnus and is expected to work on all iProc
+>>>>> family of SoCs that deploys the same PCIe host controller
+>>>>>
+>>>>> The driver also supports MSI
+>>>>>
+>>>>> Signed-off-by: Ray Jui <rjui@broadcom.com>
+>>>>> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+>>>>
+>>>>
+>>>> The driver looks suspiciously like the one that Hauke already submitted a
+>>>> while ago for bcm53xx. Please come up with a merged driver that works for
+>>>> both.
+>>>
+>>> Could you please be a little more specific.  What driver did "Hauke already
+>>> submitted"?  I do not see any driver in the kernel you are talking about.
+>>
+>> https://www.marc.info/?l=linux-pci&m=141547043110684&w=2
+>
+> Yes it also looks similar to me. Your code also contains the same
+> comments as the driver used on Northstar (BCM5301X).Your driver has
+> some more features, but I just have access to the consumer SoC Northstar
+> where the PCIe controller is only used to connect some Broadcom Wifi
+> chips to the SoC. I do not know If this controller does not have these
+> features or the driver I used as a reference does not implement them.
+>
+Right, I wrote this driver based on some old Broadcom internal PCIe 
+driver from a 3.6 kernel and might have copied some of the comments 
+(especially in the check link function). The 3.6 driver is probably what 
+you received?
 
+> When I find some time I will try this driver on a Northstar device. I
+> think your driver is more advanced then the one I send to the mailing list.
+>
+Please do that. I tested this driver on Cygnus and one of my colleagues 
+helped to test it on North Star Plus. We do expect the same driver to 
+work on NorthStar as well.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+> When you want to stay with pure device tree I will send a patch adding
+> additional support for registering to bcma.
+>
+What exactly is bcma? I guess I'll need to look into it in more details 
+myself.
 
-Give MPX a real config option.  The CPUs that support it
-(referenced here):
+> Does your SoC also have a third PCIe controller which shares the PHY
+> with the USB 3 controller?
+No. Cygnus has only two PCIe controllers, each has its own dedicated PHY.
 
-	https://software.intel.com/en-us/forums/topic/402393
+>
+> Why is this stuff in the iproc_pcie_check_link() function needed? I
+> think it is strange that the controller driver has to check if the
+> device is there and set the correct speed. When we do not check if the
+> card is there on BCM5301X the device stops working.
+>
+I need to check with our ASIC engineer on this. In theory we should be 
+able to support hot plug eventually, but maybe not in the initial 
+version of this driver.
 
-are not available publicly, so we need to make it somewhat
-easy to disable.
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/arch/x86/Kconfig |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
-
-diff -puN arch/x86/Kconfig~x86-mpx-real-config-option arch/x86/Kconfig
---- a/arch/x86/Kconfig~x86-mpx-real-config-option	2014-12-10 11:19:13.638835732 -0800
-+++ b/arch/x86/Kconfig	2014-12-10 12:30:53.762779608 -0800
-@@ -248,10 +248,6 @@ config HAVE_INTEL_TXT
- 	def_bool y
- 	depends on INTEL_IOMMU && ACPI
- 
--config X86_INTEL_MPX
--	def_bool y
--	depends on CPU_SUP_INTEL
--
- config X86_32_SMP
- 	def_bool y
- 	depends on X86_32 && SMP
-@@ -1575,6 +1571,27 @@ config X86_SMAP
- 
- 	  If unsure, say Y.
- 
-+config X86_INTEL_MPX
-+	prompt "Intel MPX (Memory Protection Extensions)" if EXPERT
-+	def_bool y
-+	depends on CPU_SUP_INTEL
-+	---help---
-+	  MPX provides hardware features that can be used in
-+	  conjunction with compiler-instrumented code to check
-+	  memory references.  It is designed to detect buffer
-+	  overflow or underflow bugs.
-+
-+	  This option enables running applications which are
-+	  instrumented or otherwise use MPX.  It does not use MPX
-+	  itself inside the kernel or to protect the kernel
-+	  against bad memory references.
-+
-+	  Enabling this option will make the kernel larger and
-+	  slightly increase the size of some kernel data
-+	  structures.
-+
-+	  If unsure, say Y.
-+
- config EFI
- 	bool "EFI runtime service support"
- 	depends on ACPI
-_
-
---------------030308050906030700000605--
+>>>> Are you sure that iProc isn't based on the BCMA bus infrastructure after
+>>>> all? Even the physical address of your PCI host falls into the address
+>>>> range that is used for the internal BCMA bus on the other chips!
+>>>
+>>> BCMA seems to be for MIPS architectures.  It seems to be quite specific to
+>>> those architectures using BCMA.  I see no use of it in bcm53xx code?
+>>
+>> BCMA lives in its own directory in drivers/bcma/ and is not specific
+>> to MIPS actually. Older BCM47xx/BCM53xx MIPS-based SoCs traditionally
+>> started with a discoverable Silicon Sonics Backplane (drivers/ssb) and
+>> progressively migrated to BCMA (drivers/bcma), both subsystems offer a
+>> very similar bus/device/driver abstraction and discovery mechanism.
+>
+> With mainline kernel 3.18 you can boot Linux on a BCM5301X SoC and bcma
+> will find all the cores.
+>
+> Hauke
+>
