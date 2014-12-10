@@ -1,188 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaLJJ16 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 04:27:58 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:48320 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751864AbaLJJ1z (ORCPT
+	id S1751621AbaLJJer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 04:34:47 -0500
+Received: from smtp-out-205.synserver.de ([212.40.185.205]:1068 "EHLO
+	smtp-out-188.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750880AbaLJJep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 04:27:55 -0500
-Message-ID: <54881218.6010107@monstr.eu>
-Date: Wed, 10 Dec 2014 10:27:52 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 10 Dec 2014 04:34:45 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 11107
+Message-ID: <548813AC.1080105@metafoo.de>
+Date: Wed, 10 Dec 2014 10:34:36 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze: Fix mmap for cache coherent memory
-References: <1417619248-20365-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1417619248-20365-1-git-send-email-lars@metafoo.de>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK"
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sound/soc/adi/axi-spdif.c: Support programmable master
+ clock
+References: <54806D4E.8040504@topic.nl> <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On 12/05/2014 01:37 PM, Mike Looijmans wrote:
+> If the master clock supports programmable rates, program it to generate
+> the desired frequency. Only apply constraints when the clock is fixed.
+> This allows proper clock generation for both 44100 and 48000 Hz based
+> sampling rates if the platform supports it.
+>
+> The clock frequency must be set before enabling it. Enabling the clock
+> was done in "startup", but that occurs before "hw_params" where the rate
+> is known. Enabling a programmable clock without first setting a valid
+> frequency may harm the system. Move the clock start to the hw_params
+> routine, and keep track of whether the clock has been started, because
+> shutdown may be called without having called hw_params first.
+> Starting the clock and enabling the SPDIF output AFTER programming the
+> dividers is a more logical order anyway.
+>
+> To detect if the source clock is fixed, the driver calls clk_round_rate
+> for two frequencies. If the results are equal, or if the call returns
+> an error, the driver assumes the clock is fixed.
+>
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 
-On 12/03/2014 04:07 PM, Lars-Peter Clausen wrote:
-> When running in non-cache coherent configuration the memory that was
-> allocated with dma_alloc_coherent() has a custom mapping and so there i=
-s no
-> 1-to-1 relationship between the kernel virtual address and the PFN. Thi=
-s
-> means that virt_to_pfn() will not work correctly for those addresses an=
-d the
-> default mmap implementation in the form of dma_common_mmap() will map s=
-ome
-> random, but not the requested, memory area.
->=20
-> Fix this by providing a custom mmap implementation that looks up the PF=
-N
-> from the page table rather than using virt_to_pfn.
->=20
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  arch/microblaze/include/asm/pgtable.h |  1 +
->  arch/microblaze/kernel/dma.c          | 26 ++++++++++++++++++++++++++
->  arch/microblaze/mm/consistent.c       | 23 ++++++++++++++++++-----
->  3 files changed, 45 insertions(+), 5 deletions(-)
->=20
-> diff --git a/arch/microblaze/include/asm/pgtable.h b/arch/microblaze/in=
-clude/asm/pgtable.h
-> index 95cef0b..df19d0c 100644
-> --- a/arch/microblaze/include/asm/pgtable.h
-> +++ b/arch/microblaze/include/asm/pgtable.h
-> @@ -565,6 +565,7 @@ void consistent_free(size_t size, void *vaddr);
->  void consistent_sync(void *vaddr, size_t size, int direction);
->  void consistent_sync_page(struct page *page, unsigned long offset,
->  	size_t size, int direction);
-> +unsigned long consistent_virt_to_pfn(void *vaddr);
-> =20
->  void setup_memory(void);
->  #endif /* __ASSEMBLY__ */
-> diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.=
-c
-> index 4633c36..4822367 100644
-> --- a/arch/microblaze/kernel/dma.c
-> +++ b/arch/microblaze/kernel/dma.c
-> @@ -154,9 +154,35 @@ dma_direct_sync_sg_for_device(struct device *dev,
->  			__dma_sync(sg->dma_address, sg->length, direction);
->  }
-> =20
-> +int dma_direct_mmap_coherent(struct device *dev, struct vm_area_struct=
- *vma,
-> +			     void *cpu_addr, dma_addr_t handle, size_t size,
-> +			     struct dma_attrs *attrs)
-> +{
-> +	unsigned long user_count =3D (vma->vm_end - vma->vm_start) >> PAGE_SH=
-IFT;
-> +	unsigned long count =3D PAGE_ALIGN(size) >> PAGE_SHIFT;
-> +	unsigned long off =3D vma->vm_pgoff;
-> +	unsigned long pfn;
+Hi,
+
+Sorry for the delay.
+
+[...]
+>
+> +	/* Try to set the master clock */
+> +	clk_set_rate(spdif->clk_ref, rate * 128);
 > +
-> +	if (!IS_ENABLED(CONFIG_MMU))
-> +		return -ENXIO;
+>   	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
+>   			rate * 64 * 2) - 1;
+>   	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
+> @@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
+>   	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+>   		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
+>
+> +	ret = clk_prepare_enable(spdif->clk_ref);
+
+I'm still not convinced this is the right place. I do see your point. But it 
+just feels wrong to enable the clock in hw_params. It's a bit of a dilemma. 
+the startup callback is to early, hw_params is the wrong place and we can't 
+put it in the trigger callback as the trigger callback can not sleep.
+
+But in any way hwparmas can be called multiple times, so you need to handle 
+the case where the clock is already enabled.
+
+> +	if (ret)
+> +		return ret;
+> +	spdif->clk_ref_running = true;
 > +
-> +	if (off >=3D count || user_count > (count - off))
-> +		return -ENXIO;
+> +	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+> +		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
+
+This should probably be moved to the trigger callback though.
+
 > +
-> +#ifdef NOT_COHERENT_CACHE
-> +	vma->vm_page_prot =3D pgprot_noncached(vma->vm_page_prot);
-> +	pfn =3D consistent_virt_to_pfn(cpu_addr);
-> +#else
-> +	pfn =3D virt_to_pfn(cpu_addr);
-> +#endif
-> +	return remap_pfn_range(vma, vma->vm_start, pfn + off,
-> +			       vma->vm_end - vma->vm_start, vma->vm_page_prot);
-> +}
-> +
->  struct dma_map_ops dma_direct_ops =3D {
->  	.alloc		=3D dma_direct_alloc_coherent,
->  	.free		=3D dma_direct_free_coherent,
-> +	.mmap		=3D dma_direct_mmap_coherent,
->  	.map_sg		=3D dma_direct_map_sg,
->  	.dma_supported	=3D dma_direct_dma_supported,
->  	.map_page	=3D dma_direct_map_page,
-> diff --git a/arch/microblaze/mm/consistent.c b/arch/microblaze/mm/consi=
-stent.c
-> index e10ad93..f358cd2 100644
-> --- a/arch/microblaze/mm/consistent.c
-> +++ b/arch/microblaze/mm/consistent.c
-> @@ -156,6 +156,23 @@ void *consistent_alloc(gfp_t gfp, size_t size, dma=
-_addr_t *dma_handle)
->  }
->  EXPORT_SYMBOL(consistent_alloc);
-> =20
-> +static pte_t *consistent_virt_to_pte(void *vaddr)
-> +{
-> +	unsigned long addr =3D (unsigned long)vaddr;
-> +
-> +	return pte_offset_kernel(pmd_offset(pgd_offset_k(addr), addr), addr);=
+>   	return 0;
+>   }
 
-> +}
-> +
-> +unsigned long consistent_virt_to_pfn(void *vaddr)
-> +{
-> +	pte_t *ptep =3D consistent_virt_to_pte(vaddr);
-> +
-> +	if (pte_none(*ptep) || !pte_present(*ptep))
-> +		return 0;
-> +
-> +	return pte_pfn(*ptep);
-> +}
-> +
->  /*
->   * free page(s) as defined by the above mapping.
->   */
-> @@ -181,13 +198,9 @@ void consistent_free(size_t size, void *vaddr)
->  	} while (size -=3D PAGE_SIZE);
->  #else
->  	do {
-> -		pte_t *ptep;
-> +		pte_t *ptep =3D consistent_virt_to_pte(vaddr);
->  		unsigned long pfn;
-> =20
-> -		ptep =3D pte_offset_kernel(pmd_offset(pgd_offset_k(
-> -						(unsigned int)vaddr),
-> -					(unsigned int)vaddr),
-> -				(unsigned int)vaddr);
->  		if (!pte_none(*ptep) && pte_present(*ptep)) {
->  			pfn =3D pte_pfn(*ptep);
->  			pte_clear(&init_mm, (unsigned int)vaddr, ptep);
->=20
-
-
-Applied.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlSIEhgACgkQykllyylKDCExNQCfZ86S73+4VrzLt9MHKMsFE7dG
-29MAoJO+M52ntscv4SmGNwQhbwuTqJfj
-=yXkZ
------END PGP SIGNATURE-----
-
---w9s3ARtESDWE7DO8qe5AEshHEe68WRtBK--
