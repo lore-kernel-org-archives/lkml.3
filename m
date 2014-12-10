@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277AbaLJH5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 02:57:01 -0500
-Received: from mx5-phx2.redhat.com ([209.132.183.37]:60360 "EHLO
-	mx5-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756555AbaLJH5A (ORCPT
+	id S1757391AbaLJIAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:00:42 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:63665 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753793AbaLJIAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 02:57:00 -0500
-Date: Wed, 10 Dec 2014 02:56:45 -0500 (EST)
-From: Pankaj Gupta <pagupta@redhat.com>
-To: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
-        dgibson@redhat.com, vfalico@gmail.com, edumazet@google.com,
-        vyasevic@redhat.com, hkchu@google.com, wuzhy@linux.vnet.ibm.com,
-        xemul@parallels.com, therbert@google.com, bhutchings@solarflare.com,
-        xii@google.com, stephen@networkplumber.org, jiri@resnulli.us,
-        sergei shtylyov <sergei.shtylyov@cogentembedded.com>
-Message-ID: <575321203.11353864.1418198205135.JavaMail.zimbra@redhat.com>
-In-Reply-To: <5481602E.1030508@redhat.com>
-References: <1417591177-7985-1-git-send-email-pagupta@redhat.com> <1417591177-7985-3-git-send-email-pagupta@redhat.com> <20141203095210.GC9487@redhat.com> <1417661734.16500.0@smtp.corp.redhat.com> <20141204102013.GC17122@redhat.com> <5481602E.1030508@redhat.com>
-Subject: Re: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in
- tun.
+	Wed, 10 Dec 2014 03:00:41 -0500
+Date: Wed, 10 Dec 2014 10:00:36 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: vinod.koul@intel.com
+Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] dma: imx-sdma: fix indentation
+Message-ID: <20141210080035.GA25812@ubuntu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF23 (Linux)/8.0.6_GA_5922)
-Thread-Topic: [PATCH v3 net-next 2/2 tuntap: Increase the number of queues in tun.
-Thread-Index: nNCw7MQOtnOBg1VRMb8uXucH5Bd8LA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fixed a coding style error, switch and case should be at the same indent
 
-> 
-> On 12/04/2014 06:20 PM, Michael S. Tsirkin wrote:
-> > On Thu, Dec 04, 2014 at 03:03:34AM +0008, Jason Wang wrote:
-> >> > 
-> >> > 
-> >> > On Wed, Dec 3, 2014 at 5:52 PM, Michael S. Tsirkin <mst@redhat.com>
-> >> > wrote:
-> >>> > >On Wed, Dec 03, 2014 at 12:49:37PM +0530, Pankaj Gupta wrote:
-> >>>> > >> Networking under kvm works best if we allocate a per-vCPU RX and TX
-> >>>> > >> queue in a virtual NIC. This requires a per-vCPU queue on the host
-> >>>> > >>side.
-> >>>> > >> It is now safe to increase the maximum number of queues.
-> >>>> > >> Preceding patche: 'net: allow large number of rx queues'
-> >>> > >
-> >>> > >s/patche/patch/
-> >>> > >
-> >>>> > >> made sure this won't cause failures due to high order memory
-> >>>> > >> allocations. Increase it to 256: this is the max number of vCPUs
-> >>>> > >> KVM supports.
-> >>>> > >> Signed-off-by: Pankaj Gupta <pagupta@redhat.com>
-> >>>> > >> Reviewed-by: David Gibson <dgibson@redhat.com>
-> >>> > >
-> >>> > >Hmm it's kind of nasty that each tun device is now using x16 memory.
-> >>> > >Maybe we should look at using a flex array instead, and removing the
-> >>> > >limitation altogether (e.g. make it INT_MAX)?
-> >> > 
-> >> > But this only happens when IFF_MULTIQUEUE were used.
-> > I refer to this field:
-> >         struct tun_file __rcu   *tfiles[MAX_TAP_QUEUES];
-> > if we make MAX_TAP_QUEUES 256, this will use 4K bytes,
-> > apparently unconditionally.
-> >
-> >
-> 
-> How about just allocate one tfile if IFF_MULTIQUEUE were disabled?
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+ drivers/dma/imx-sdma.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-Yes, we can also go with one tfile if for single queue. 
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 88afc48..8729877 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -1301,15 +1301,15 @@ static void sdma_load_firmware(const struct firmware *fw, void *context)
+ 	if (header->ram_code_start + header->ram_code_size > fw->size)
+ 		goto err_firmware;
+ 	switch (header->version_major) {
+-		case 1:
+-			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1;
+-			break;
+-		case 2:
+-			sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2;
+-			break;
+-		default:
+-			dev_err(sdma->dev, "unknown firmware version\n");
+-			goto err_firmware;
++	case 1:
++		sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V1;
++		break;
++	case 2:
++		sdma->script_number = SDMA_SCRIPT_ADDRS_ARRAY_SIZE_V2;
++		break;
++	default:
++		dev_err(sdma->dev, "unknown firmware version\n");
++		goto err_firmware;
+ 	}
+ 
+ 	addr = (void *)header + header->script_addrs_start;
+-- 
+1.7.0.4
 
-As tfiles is array of 'tun_file' pointers with size 256. For multiqueue
-we would be using 256 queues. But for single queue if we have one tfile
-makes sense.
-
-Also, we are making sure to avoid memory failures with vzalloc.
-
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
