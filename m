@@ -1,116 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758002AbaLJPfX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:35:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41976 "EHLO mx1.redhat.com"
+	id S1757990AbaLJPif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:38:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44205 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756341AbaLJPfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:35:22 -0500
-Date: Wed, 10 Dec 2014 09:34:48 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Petr Mladek <pmladek@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/6] livepatch v5: split init and free code that is done
- only for loaded modules
-Message-ID: <20141210153448.GC32670@treble.redhat.com>
-References: <1418148307-21434-1-git-send-email-pmladek@suse.cz>
- <1418148307-21434-6-git-send-email-pmladek@suse.cz>
- <20141209185141.GA3955@treble.redhat.com>
- <20141210103016.GC2454@pathway.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141210103016.GC2454@pathway.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+	id S1757146AbaLJPid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 10:38:33 -0500
+From: Takashi Iwai <tiwai@suse.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] blk-mq: Fix uninitialized kobject at CPU hotplugging
+Date: Wed, 10 Dec 2014 16:38:30 +0100
+Message-Id: <1418225910-22108-1-git-send-email-tiwai@suse.de>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 11:30:16AM +0100, Petr Mladek wrote:
-> On Tue 2014-12-09 12:51:41, Josh Poimboeuf wrote:
-> > On Tue, Dec 09, 2014 at 07:05:06PM +0100, Petr Mladek wrote:
-> > > This patch makes it clear what initialization and freeing steps need to be done
-> > > when an object (module) is being loaded or removed. It will help to maintain
-> > > the module coming and going handlers. Also it will remove duplicated
-> > > code from these handlers.
-> > > 
-> > > Signed-off-by: Petr Mladek <pmladek@suse.cz>
-> > > ---
-> > >  kernel/livepatch/core.c | 92 ++++++++++++++++++++++++++++++++-----------------
-> > >  1 file changed, 61 insertions(+), 31 deletions(-)
-> > > 
-> > > diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-> > > index 97a8d4a3d6d8..fe312b9ada78 100644
-> > > --- a/kernel/livepatch/core.c
-> > > +++ b/kernel/livepatch/core.c
-> > > @@ -590,6 +590,12 @@ static struct kobj_type klp_ktype_func = {
-> > >  	.sysfs_ops = &kobj_sysfs_ops,
-> > >  };
-> > >  
-> > > +/* Clean up when a patched object is unloaded */
-> > > +static void klp_free_func_loaded(struct klp_func *func)
-> > > +{
-> > > +	func->old_addr = 0;
-> > > +}
-> > > +
-> > >  /*
-> > >   * Free all functions' kobjects in the array up to some limit. When limit is
-> > >   * NULL, all kobjects are freed.
-> > > @@ -603,6 +609,17 @@ static void klp_free_funcs_limited(struct klp_object *obj,
-> > >  		kobject_put(&func->kobj);
-> > >  }
-> > >  
-> > > +/* Clean up when a patched object is unloaded */
-> > > +static void klp_free_object_loaded(struct klp_object *obj)
-> > > +{
-> > > +	struct klp_func *func;
-> > > +
-> > > +	obj->mod = NULL;
-> > > +
-> > > +	for (func = obj->funcs; func->old_name; func++)
-> > > +		klp_free_func_loaded(func);
-> > > +}
-> > > +
-> > >  /*
-> > >   * Free all objects' kobjects in the array up to some limit. When limit is
-> > >   * NULL, all kobjects are freed.
-> > > @@ -626,6 +643,12 @@ static void klp_free_patch(struct klp_patch *patch)
-> > >  	kobject_put(&patch->kobj);
-> > >  }
-> > >  
-> > > +/* parts of the initialization that is done only when the object is loaded */
-> > > +static int klp_init_func_loaded(struct klp_object *obj, struct klp_func *func)
-> > > +{
-> > > +	return klp_find_verify_func_addr(obj, func);
-> > > +}
-> > > +
-> > 
-> > Creating a new function here for one line of code, which is only called
-> > once, seems excessive, and makes the code harder to understand IMO.
-> 
-> I see your point. Well, note that the split code is code is called
-> twice from klp_init_object() and klp_module_coming(), so it helps
-> to remove the code duplicity.
-> 
-> Also it clearly separates the operations that are always done
-> and that are done only when the object is loaded.
-> 
-> If you suggest to call klp_find_verify_func_addr() directly
-> from klp_init_object_loaded(), I am fine with it. We could always
-> create it later if there are more operations needed for
-> struct func.
+When a CPU is hotplugged, the current blk-mq spews a warning like:
 
-Thanks, I'll merge the rest of this patch (except for the separate
-klp_init_func_loaded and klp_free_func_loaded).
+  kobject '(null)' (ffffe8ffffc8b5d8): tried to add an uninitialized object, something is seriously wrong.
+  CPU: 1 PID: 1386 Comm: systemd-udevd Not tainted 3.18.0-rc7-2.g088d59b-default #1
+  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_171129-lamiak 04/01/2014
+   0000000000000000 0000000000000002 ffffffff81605f07 ffffe8ffffc8b5d8
+   ffffffff8132c7a0 ffff88023341d370 0000000000000020 ffff8800bb05bd58
+   ffff8800bb05bd08 000000000000a0a0 000000003f441940 0000000000000007
+  Call Trace:
+   [<ffffffff81005306>] dump_trace+0x86/0x330
+   [<ffffffff81005644>] show_stack_log_lvl+0x94/0x170
+   [<ffffffff81006d21>] show_stack+0x21/0x50
+   [<ffffffff81605f07>] dump_stack+0x41/0x51
+   [<ffffffff8132c7a0>] kobject_add+0xa0/0xb0
+   [<ffffffff8130aee1>] blk_mq_register_hctx+0x91/0xb0
+   [<ffffffff8130b82e>] blk_mq_sysfs_register+0x3e/0x60
+   [<ffffffff81309298>] blk_mq_queue_reinit_notify+0xf8/0x190
+   [<ffffffff8107cfdc>] notifier_call_chain+0x4c/0x70
+   [<ffffffff8105fd23>] cpu_notify+0x23/0x50
+   [<ffffffff81060037>] _cpu_up+0x157/0x170
+   [<ffffffff810600d9>] cpu_up+0x89/0xb0
+   [<ffffffff815fa5b5>] cpu_subsys_online+0x35/0x80
+   [<ffffffff814323cd>] device_online+0x5d/0xa0
+   [<ffffffff81432485>] online_store+0x75/0x80
+   [<ffffffff81236a5a>] kernfs_fop_write+0xda/0x150
+   [<ffffffff811c5532>] vfs_write+0xb2/0x1f0
+   [<ffffffff811c5f42>] SyS_write+0x42/0xb0
+   [<ffffffff8160c4ed>] system_call_fastpath+0x16/0x1b
+   [<00007f0132fb24e0>] 0x7f0132fb24e0
 
-I should have v6 soon.
+This is indeed because of an uninitialized kobject for blk_mq_ctx.
+The blk_mq_ctx kobjects are initialized in blk_mq_sysfs_init(), but it
+goes loop over hctx_for_each_ctx(), i.e. it initializes only for
+online CPUs.  Thus, when a CPU is hotplugged, the ctx for the newly
+onlined CPU is registered without initialization.
 
+This patch fixes the issue by initializing the all ctx kobjects
+belonging to each queue.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=908794
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ block/blk-mq-sysfs.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+index 371d8800b48a..1630a20d5dcf 100644
+--- a/block/blk-mq-sysfs.c
++++ b/block/blk-mq-sysfs.c
+@@ -390,16 +390,15 @@ static void blk_mq_sysfs_init(struct request_queue *q)
+ {
+ 	struct blk_mq_hw_ctx *hctx;
+ 	struct blk_mq_ctx *ctx;
+-	int i, j;
++	int i;
+ 
+ 	kobject_init(&q->mq_kobj, &blk_mq_ktype);
+ 
+-	queue_for_each_hw_ctx(q, hctx, i) {
++	queue_for_each_hw_ctx(q, hctx, i)
+ 		kobject_init(&hctx->kobj, &blk_mq_hw_ktype);
+ 
+-		hctx_for_each_ctx(hctx, ctx, j)
+-			kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
+-	}
++	queue_for_each_ctx(q, ctx, i)
++		kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
+ }
+ 
+ /* see blk_register_queue() */
 -- 
-Josh
+2.2.0
+
