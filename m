@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381AbaLJKxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:53:13 -0500
-Received: from ozlabs.org ([103.22.144.67]:59007 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751568AbaLJKxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:53:12 -0500
-Message-ID: <1418208784.9279.11.camel@ellerman.id.au>
-Subject: Re: [GIT PULL] ipmi driver updates
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Corey Minyard <cminyard@mvista.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tony Rex <tony.rex@ericsson.com>,
-        Magnus Johansson E <magnus.e.johansson@ericsson.com>,
-        Per =?ISO-8859-1?Q?Fogelstr=F6m?= <per.fogelstrom@ericsson.com>,
-        Jeremy Kerr <jk@ozlabs.org>, Sanjeev <singhsan@codeaurora.org>,
-        Thomas Renninger <trenn@suse.de>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Date: Wed, 10 Dec 2014 21:53:04 +1100
-In-Reply-To: <54873864.3050606@mvista.com>
-References: <54873864.3050606@mvista.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755157AbaLJKzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:55:53 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:38392 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616AbaLJKzv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:55:51 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-b9-548826b45c23
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: vinod.koul@intel.com
+Cc: dan.j.williams@intel.com, lars@metafoo.de, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, m.szyprowski@samsung.com,
+        k.kozlowski@samsung.com, kyungmin.park@samsung.com,
+        l.czerwinski@samsung.com, padma.kvr@gmail.com,
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v3 0/2] dma: pl330: improve status checking
+Date: Wed, 10 Dec 2014 11:55:16 +0100
+Message-id: <1418208918-28127-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e+xoO4WtY4Qg99/JS2mT73AaLF66l9W
+	i9cvDC3ONr1ht/g1bRKbxZLJ81ktLu+aw2ax9shddov2ZXNYLR4c3slu8bJvP4sDt8fOWXfZ
+	PRbvecnkseTNIVaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyuhePY+9YDpnxeWrN1gbGE+x
+	dzFyckgImEhcWLOLCcIWk7hwbz1bFyMXh5DAdEaJh3OmgBUJCbQzSaz4LQtiswnoSGz5PoER
+	xBYRkJDY/qyPHaSBWWAik0T//ktA3RwcwgLWErM28oPUsAioSuyd+p8VxOYVcJU48n0+C8Qy
+	OYmTxyazTmDkXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOJSeSe9gXNVgcYhRgINR
+	iYc34HJ7iBBrYllxZe4hRgkOZiUR3jeSHSFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeZXs20KE
+	BNITS1KzU1MLUotgskwcnFINjAvmNizkPyrC6P5i3aegb/vt4r7wTbSUUlo0WXNCqfLCvHkO
+	BwyS0iecTLF2sFBK061fvaAt9cC0z0UTj1/bFuFh1qrH55vZz+69Y+kHDRbrzwW2BvMcWeYG
+	9z3Mv8JhILlG2KK1+5ZVYo9t+p2SA9NqD9qbLvNJrHM/+164cutlI8V3FlqvlViKMxINtZiL
+	ihMB2tg3BiECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Corey,
+Hi,
 
-On Tue, 2014-12-09 at 11:59 -0600, Corey Minyard wrote:
-> Jeremy Kerr (2):
->       powerpc/powernv: Add OPAL IPMI interface
->       drivers/char/ipmi: Add powernv IPMI driver
+This series allows to check DMA transfer residue (number of bytes left
+to send/receive) by modifying pl330_tx_status() function, when struct
+dma_tx_state is filled with needed data. It also introduces DMA_PAUSE
+feature, which allows to halt DMA transfer before termination and read
+residue without risk of data loss.
 
-I created a topic branch for that powerpc patch, but it looks like you didn't
-merge it?
+This features are needed for proper implementation of DMA transfers,
+particulary for serial drivers when transfer sizes are unknown and
+requests on DMA channels are terminated before transfer completion
+very ofter (it's becouse we terminate then in timeout interrupt to
+avoid latency which is usually undesirable).
 
-  https://git.kernel.org/cgit/linux/kernel/git/mpe/linux.git/log/?h=topic/opal-ipmi
+Best regards,
+Robert Baldyga
 
-The merge conflict between your tree and mine is not all that pretty, though
-Linus should be able to work it out. I haven't sent my pull request yet though,
-so he'll probably get it when he merges my tree.
+Changelog:
 
-The patch in your tree does look correct, so that's OK, but maybe next time we
-can both merge the topic branch.
+v3:
+- remove double pm_runtime_put()
 
-cheers
+v2: https://lkml.org/lkml/2014/12/5/94
+- add pm_runtime support
+- make it working for multi-segment transfers
+- some cleanups
 
+v1: https://lkml.org/lkml/2014/11/25/554
+
+Robert Baldyga (2):
+  dma: pl330: improve pl330_tx_status() function
+  dma: pl330: add DMA_PAUSE feature
+
+ drivers/dma/pl330.c | 87 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 85 insertions(+), 2 deletions(-)
+
+-- 
+1.9.1
 
