@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933001AbaLJTIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 14:08:34 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:58685 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945AbaLJTIa (ORCPT
+	id S933015AbaLJTIo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 14:08:44 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:58275 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932967AbaLJTId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 14:08:30 -0500
+	Wed, 10 Dec 2014 14:08:33 -0500
 From: Jeff Layton <jlayton@primarydata.com>
 To: bfields@fieldses.org
 Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
         Tejun Heo <tj@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
         NeilBrown <neilb@suse.de>
-Subject: [PATCH v2 14/16] sunrpc: add more tracepoints around svc_xprt handling
-Date: Wed, 10 Dec 2014 14:07:58 -0500
-Message-Id: <1418238480-18857-15-git-send-email-jlayton@primarydata.com>
+Subject: [PATCH v2 16/16] sunrpc: add tracepoints around svc_sock handling
+Date: Wed, 10 Dec 2014 14:08:00 -0500
+Message-Id: <1418238480-18857-17-git-send-email-jlayton@primarydata.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
 References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
@@ -22,164 +22,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turn the svc_xprt_dequeue and svc_xprt_do_enqueue tracepoints into a
-event classes, and use them to add events for svc_xprt_enqueued,
-svc_xprt_active, svc_xprt_received, and svc_xprt_enqueue.
-
 Signed-off-by: Jeff Layton <jlayton@primarydata.com>
 ---
- include/trace/events/sunrpc.h | 36 +++++++++++++++++++++++++++---------
- net/sunrpc/svc_wq.c           |  4 ++++
- net/sunrpc/svc_xprt.c         |  9 ++++++++-
- 3 files changed, 39 insertions(+), 10 deletions(-)
+ include/trace/events/sunrpc.h | 46 +++++++++++++++++++++++++++++++++++++++++++
+ net/sunrpc/svcsock.c          |  6 ++++++
+ 2 files changed, 52 insertions(+)
 
 diff --git a/include/trace/events/sunrpc.h b/include/trace/events/sunrpc.h
-index b9c1dc6c825a..41e09a1b962d 100644
+index 0d54473d9b37..8bcc38c3f974 100644
 --- a/include/trace/events/sunrpc.h
 +++ b/include/trace/events/sunrpc.h
-@@ -496,28 +496,40 @@ DEFINE_EVENT(svc_rqst_status, svc_send,
- 		{ (1UL << XPT_CACHE_AUTH),	"XPT_CACHE_AUTH"},	\
- 		{ (1UL << XPT_LOCAL),		"XPT_LOCAL"})
- 
--TRACE_EVENT(svc_xprt_do_enqueue,
--	TP_PROTO(struct svc_xprt *xprt, struct svc_rqst *rqst),
-+/* events associated with both a rqst and a xprt */
-+DECLARE_EVENT_CLASS(svc_xprt_rqst_event,
-+	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
- 
--	TP_ARGS(xprt, rqst),
-+	TP_ARGS(rqst, xprt),
- 
- 	TP_STRUCT__entry(
--		__field(struct svc_xprt *, xprt)
- 		__field(struct svc_rqst *, rqst)
-+		__field(struct svc_xprt *, xprt)
- 	),
- 
- 	TP_fast_assign(
--		__entry->xprt = xprt;
- 		__entry->rqst = rqst;
-+		__entry->xprt = xprt;
- 	),
- 
--	TP_printk("xprt=0x%p addr=%pIScp pid=%d flags=%s", __entry->xprt,
--		(struct sockaddr *)&__entry->xprt->xpt_remote,
--		__entry->rqst ? __entry->rqst->rq_task->pid : 0,
-+	TP_printk("rqst=0x%p xprt=0x%p addr=%pIScp flags=%s", __entry->rqst,
-+		__entry->xprt, (struct sockaddr *)&__entry->xprt->xpt_remote,
+@@ -9,6 +9,7 @@
+ #include <linux/sunrpc/svc.h>
+ #include <linux/sunrpc/xprtsock.h>
+ #include <linux/sunrpc/svc_xprt.h>
++#include <linux/sunrpc/svcsock.h>
+ #include <net/tcp_states.h>
+ #include <linux/net.h>
+ #include <linux/tracepoint.h>
+@@ -594,6 +595,51 @@ TRACE_EVENT(svc_handle_xprt,
+ 		(struct sockaddr *)&__entry->xprt->xpt_remote, __entry->len,
  		show_svc_xprt_flags(__entry->xprt->xpt_flags))
  );
- 
--TRACE_EVENT(svc_xprt_dequeue,
-+DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_enqueued,
-+	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
-+	TP_ARGS(rqst, xprt));
 +
-+DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_active,
-+	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
-+	TP_ARGS(rqst, xprt));
++DECLARE_EVENT_CLASS(svc_socket_event,
++	TP_PROTO(struct sock *sk),
 +
-+DEFINE_EVENT(svc_xprt_rqst_event, svc_xprt_received,
-+	TP_PROTO(struct svc_rqst *rqst, struct svc_xprt *xprt),
-+	TP_ARGS(rqst, xprt));
++	TP_ARGS(sk),
 +
-+DECLARE_EVENT_CLASS(svc_xprt_event,
- 	TP_PROTO(struct svc_xprt *xprt),
- 
- 	TP_ARGS(xprt),
-@@ -539,6 +551,12 @@ TRACE_EVENT(svc_xprt_dequeue,
- 		show_svc_xprt_flags(__entry->flags))
- );
- 
-+DEFINE_EVENT(svc_xprt_event, svc_xprt_enqueue,
-+	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++	TP_STRUCT__entry(
++		__field(struct sock *, sk)
++		__field(struct svc_sock *, svsk)
++		__field_struct(struct sockaddr_storage, ss)
++		__field(unsigned long, xpt_flags)
++	),
 +
-+DEFINE_EVENT(svc_xprt_event, svc_xprt_dequeue,
-+	TP_PROTO(struct svc_xprt *xprt), TP_ARGS(xprt));
++	TP_fast_assign(
++		__entry->sk = sk;
++		__entry->svsk = sk->sk_user_data;
++		if (__entry->svsk) {
++			struct svc_xprt *xprt = &__entry->svsk->sk_xprt;
 +
- TRACE_EVENT(svc_wake_up,
- 	TP_PROTO(int pid),
- 
-diff --git a/net/sunrpc/svc_wq.c b/net/sunrpc/svc_wq.c
-index 1ca26d51b8ec..779eb51e4bbb 100644
---- a/net/sunrpc/svc_wq.c
-+++ b/net/sunrpc/svc_wq.c
-@@ -257,6 +257,8 @@ svc_wq_enqueue_xprt(struct svc_xprt *xprt)
- 	struct svc_serv *serv = xprt->xpt_server;
- 	struct svc_rqst *rqstp;
- 
-+	trace_svc_xprt_enqueue(xprt);
++			memcpy(&__entry->ss, &xprt->xpt_remote,
++						sizeof(__entry->ss));
++			__entry->xpt_flags = xprt->xpt_flags;
++		} else {
++			memset(&__entry->ss, 0, sizeof(__entry->ss));
++			__entry->xpt_flags = 0;
++		}
++	),
 +
- 	if (!svc_xprt_has_something_to_do(xprt))
- 		return;
- 
-@@ -290,9 +292,11 @@ out:
- 	rqstp = find_svc_rqst(serv);
- 	if (!rqstp) {
- 		queue_work(serv->sv_wq, &xprt->xpt_work);
-+		trace_svc_xprt_enqueued(NULL, xprt);
- 		return;
- 	}
- 	rqstp->rq_xprt = xprt;
- 	queue_work(serv->sv_wq, &rqstp->rq_work);
-+	trace_svc_xprt_enqueued(rqstp, xprt);
- }
- EXPORT_SYMBOL_GPL(svc_wq_enqueue_xprt);
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 17398eb9f38f..c759f04c9ee9 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -242,6 +242,7 @@ void svc_add_new_perm_xprt(struct svc_serv *serv, struct svc_xprt *new)
- 	spin_lock_bh(&serv->sv_lock);
- 	list_add(&new->xpt_list, &serv->sv_permsocks);
- 	spin_unlock_bh(&serv->sv_lock);
-+	trace_svc_xprt_received(NULL, new);
- 	svc_xprt_received(new);
- }
- 
-@@ -329,6 +330,8 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
- 	int cpu;
- 	bool queued = false;
- 
-+	trace_svc_xprt_enqueue(xprt);
++	TP_printk("sk=0x%p peer=%pIScp sk_state=%s xpt_flags=%s", __entry->sk,
++		(struct sockaddr *)&__entry->ss,
++		rpc_show_sock_state(__entry->sk->sk_state),
++		show_svc_xprt_flags(__entry->xpt_flags))
++);
 +
- 	if (!svc_xprt_has_something_to_do(xprt))
- 		goto out;
- 
-@@ -402,7 +405,7 @@ redo_search:
- 	rqstp = NULL;
- 	put_cpu();
- out:
--	trace_svc_xprt_do_enqueue(xprt, rqstp);
-+	trace_svc_xprt_enqueued(rqstp, xprt);
- }
- EXPORT_SYMBOL_GPL(svc_xprt_do_enqueue);
- 
-@@ -738,6 +741,7 @@ static void svc_add_new_temp_xprt(struct svc_serv *serv, struct svc_xprt *newxpt
- 			  jiffies + svc_conn_age_period * HZ);
- 	}
- 	spin_unlock_bh(&serv->sv_lock);
-+	trace_svc_xprt_received(NULL, newxpt);
- 	svc_xprt_received(newxpt);
- }
- 
-@@ -746,6 +750,8 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
- 	struct svc_serv *serv = rqstp->rq_server;
- 	int len = 0;
- 
-+	trace_svc_xprt_active(rqstp, xprt);
++DEFINE_EVENT(svc_socket_event, svc_tcp_listen_data_ready,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
 +
- 	if (test_bit(XPT_CLOSE, &xprt->xpt_flags)) {
- 		dprintk("svc_recv: found XPT_CLOSE\n");
- 		svc_delete_xprt(xprt);
-@@ -780,6 +786,7 @@ static int svc_handle_xprt(struct svc_rqst *rqstp, struct svc_xprt *xprt)
- 		atomic_add(rqstp->rq_reserved, &xprt->xpt_reserved);
- 	}
- 	/* clear XPT_BUSY: */
-+	trace_svc_xprt_received(rqstp, xprt);
- 	svc_xprt_received(xprt);
- out:
- 	trace_svc_handle_xprt(xprt, len);
++DEFINE_EVENT(svc_socket_event, svc_tcp_state_change,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
++
++DEFINE_EVENT(svc_socket_event, svc_tcp_data_ready,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
++
++DEFINE_EVENT(svc_socket_event, svc_tcp_accept,
++	TP_PROTO(struct sock *sk), TP_ARGS(sk));
+ #endif /* _TRACE_SUNRPC_H */
+ 
+ #include <trace/define_trace.h>
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index cc331b6cf573..2334ebeda814 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -44,6 +44,7 @@
+ #include <asm/uaccess.h>
+ #include <asm/ioctls.h>
+ #include <trace/events/skb.h>
++#include <trace/events/sunrpc.h>
+ 
+ #include <linux/sunrpc/types.h>
+ #include <linux/sunrpc/clnt.h>
+@@ -765,6 +766,7 @@ static void svc_tcp_listen_data_ready(struct sock *sk)
+ 	struct svc_sock	*svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq;
+ 
++	trace_svc_tcp_listen_data_ready(sk);
+ 	dprintk("svc: socket %p TCP (listen) state change %d\n",
+ 		sk, sk->sk_state);
+ 
+@@ -799,6 +801,7 @@ static void svc_tcp_state_change(struct sock *sk)
+ 	struct svc_sock	*svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq = sk_sleep(sk);
+ 
++	trace_svc_tcp_state_change(sk);
+ 	dprintk("svc: socket %p TCP (connected) state change %d (svsk %p)\n",
+ 		sk, sk->sk_state, sk->sk_user_data);
+ 
+@@ -817,6 +820,7 @@ static void svc_tcp_data_ready(struct sock *sk)
+ 	struct svc_sock *svsk = (struct svc_sock *)sk->sk_user_data;
+ 	wait_queue_head_t *wq = sk_sleep(sk);
+ 
++	trace_svc_tcp_data_ready(sk);
+ 	dprintk("svc: socket %p TCP data ready (svsk %p)\n",
+ 		sk, sk->sk_user_data);
+ 	if (svsk) {
+@@ -842,6 +846,8 @@ static struct svc_xprt *svc_tcp_accept(struct svc_xprt *xprt)
+ 	int		err, slen;
+ 	RPC_IFDEBUG(char buf[RPC_MAX_ADDRBUFLEN]);
+ 
++	trace_svc_tcp_accept(svsk->sk_sk);
++
+ 	dprintk("svc: tcp_accept %p sock %p\n", svsk, sock);
+ 	if (!sock)
+ 		return NULL;
 -- 
 2.1.0
 
