@@ -1,181 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816AbaLJOZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:25:56 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48872 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756547AbaLJOZy (ORCPT
+	id S1757185AbaLJO1u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:27:50 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:50259 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755670AbaLJO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:25:54 -0500
+	Wed, 10 Dec 2014 09:27:49 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
+ board dts and Makefile
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Eddie Huang <eddie.huang@mediatek.com>
+CC: Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        <srv_heupstream@mediatek.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>, <yh.chen@mediatek.com>
+In-Reply-To: <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
+	 <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Dec 2014 22:27:42 +0800
+Message-ID: <1418221662.21309.13.camel@mtksdaap41>
 MIME-Version: 1.0
-In-Reply-To: <3c4acafb6be84bf0a27f11b16d0309c3@BL2FFO11FD025.protection.gbl>
-References: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
- <1418217710-11987-2-git-send-email-ricardo.ribalda@gmail.com> <3c4acafb6be84bf0a27f11b16d0309c3@BL2FFO11FD025.protection.gbl>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 10 Dec 2014 15:25:32 +0100
-Message-ID: <CAPybu_1pZXcx9hbHN7_An1CsokWuLbaMbjN7hnFZyW-QNcmn=Q@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] gpio/xilinx: Remove offset property
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michal
 
-Thanks for the review
+Hi,
 
-I wait for more comments and then I will resend the patchet with this
-fixed. I guess is fine to add your reviewed-by?
+On Wed, 2014-12-10 at 18:50 +0800, Eddie Huang wrote:
+<...>
+> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
+> new file mode 100644
+> index 0000000..adf26dd
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
+<...>
+> +	timer {
+> +		compatible = "arm,armv8-timer";
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <1 13 0x8>,
+> +			     <1 14 0x8>,
+> +			     <1 11 0x8>,
+> +			     <1 10 0x8>;
+> +		clock-frequency = <13000000>;
 
+I believe our firmware doesn't need this line. Please remove it.
 
-Thanks!
-
-On Wed, Dec 10, 2014 at 3:18 PM, Michal Simek <michal.simek@xilinx.com> wrote:
-> On 12/10/2014 02:21 PM, Ricardo Ribalda Delgado wrote:
->> Instead of calculating the register offset per call, pre-calculate it on
->> probe time.
->>
->> Acked-by: Alexandre Courbot <acourbot@nvidia.com>
->> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->> ---
->>
->> v2: Add Acked-by
->>
->>  drivers/gpio/gpio-xilinx.c | 33 +++++++++++----------------------
->>  1 file changed, 11 insertions(+), 22 deletions(-)
->>
->> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
->> index ba18b06..9483950 100644
->> --- a/drivers/gpio/gpio-xilinx.c
->> +++ b/drivers/gpio/gpio-xilinx.c
->> @@ -50,7 +50,6 @@ struct xgpio_instance {
->>       struct of_mm_gpio_chip mmchip;
->>       u32 gpio_state;
->>       u32 gpio_dir;
->> -     u32 offset;
->
-> when you remove offset property you should also remove offset from comment
-> above of this structure.
->
->>       spinlock_t gpio_lock;
->>  };
->>
->> @@ -65,12 +64,8 @@ struct xgpio_instance {
->>  static int xgpio_get(struct gpio_chip *gc, unsigned int gpio)
->>  {
->>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
->> -     struct xgpio_instance *chip =
->> -         container_of(mm_gc, struct xgpio_instance, mmchip);
->>
->> -     void __iomem *regs = mm_gc->regs + chip->offset;
->> -
->> -     return !!(xgpio_readreg(regs + XGPIO_DATA_OFFSET) & BIT(gpio));
->> +     return !!(xgpio_readreg(mm_gc->regs + XGPIO_DATA_OFFSET) & BIT(gpio));
->>  }
->>
->>  /**
->> @@ -88,7 +83,6 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
->>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
->>       struct xgpio_instance *chip =
->>           container_of(mm_gc, struct xgpio_instance, mmchip);
->> -     void __iomem *regs = mm_gc->regs;
->>
->>       spin_lock_irqsave(&chip->gpio_lock, flags);
->>
->> @@ -98,8 +92,7 @@ static void xgpio_set(struct gpio_chip *gc, unsigned int gpio, int val)
->>       else
->>               chip->gpio_state &= ~BIT(gpio);
->>
->> -     xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
->> -                                                      chip->gpio_state);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
->>
->>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
->>  }
->> @@ -119,13 +112,12 @@ static int xgpio_dir_in(struct gpio_chip *gc, unsigned int gpio)
->>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
->>       struct xgpio_instance *chip =
->>           container_of(mm_gc, struct xgpio_instance, mmchip);
->> -     void __iomem *regs = mm_gc->regs;
->>
->>       spin_lock_irqsave(&chip->gpio_lock, flags);
->>
->>       /* Set the GPIO bit in shadow register and set direction as input */
->>       chip->gpio_dir |= BIT(gpio);
->> -     xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
->>
->>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
->>
->> @@ -148,7 +140,6 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
->>       struct of_mm_gpio_chip *mm_gc = to_of_mm_gpio_chip(gc);
->>       struct xgpio_instance *chip =
->>           container_of(mm_gc, struct xgpio_instance, mmchip);
->> -     void __iomem *regs = mm_gc->regs;
->>
->>       spin_lock_irqsave(&chip->gpio_lock, flags);
->>
->> @@ -157,12 +148,11 @@ static int xgpio_dir_out(struct gpio_chip *gc, unsigned int gpio, int val)
->>               chip->gpio_state |= BIT(gpio);
->>       else
->>               chip->gpio_state &= ~BIT(gpio);
->> -     xgpio_writereg(regs + chip->offset + XGPIO_DATA_OFFSET,
->> -                    chip->gpio_state);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
->>
->>       /* Clear the GPIO bit in shadow register and set direction as output */
->>       chip->gpio_dir &= ~BIT(gpio);
->> -     xgpio_writereg(regs + chip->offset + XGPIO_TRI_OFFSET, chip->gpio_dir);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
->>
->>       spin_unlock_irqrestore(&chip->gpio_lock, flags);
->>
->> @@ -178,10 +168,8 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
->>       struct xgpio_instance *chip =
->>           container_of(mm_gc, struct xgpio_instance, mmchip);
->>
->> -     xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_DATA_OFFSET,
->> -                                                     chip->gpio_state);
->> -     xgpio_writereg(mm_gc->regs + chip->offset + XGPIO_TRI_OFFSET,
->> -                                                      chip->gpio_dir);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_DATA_OFFSET, chip->gpio_state);
->> +     xgpio_writereg(mm_gc->regs + XGPIO_TRI_OFFSET, chip->gpio_dir);
->>  }
->>
->>  /**
->> @@ -247,9 +235,6 @@ static int xgpio_of_probe(struct device_node *np)
->>               if (!chip)
->>                       return -ENOMEM;
->>
->> -             /* Add dual channel offset */
->> -             chip->offset = XGPIO_CHANNEL_OFFSET;
->> -
->>               /* Update GPIO state shadow register with default value */
->>               of_property_read_u32(np, "xlnx,dout-default-2",
->>                                    &chip->gpio_state);
->> @@ -285,6 +270,10 @@ static int xgpio_of_probe(struct device_node *np)
->>                       np->full_name, status);
->>                       return status;
->>               }
->> +
->> +             /* Add dual channel offset */
->> +             chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
->> +
->>               pr_info("XGpio: %s: dual channel registered, base is %d\n",
->>                                       np->full_name, chip->mmchip.gc.base);
->>       }
->>
->
-> Thanks,
-> Michal
+Joe.C
 
 
-
--- 
-Ricardo Ribalda
