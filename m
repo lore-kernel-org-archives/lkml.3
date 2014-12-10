@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580AbaLJOii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:38:38 -0500
-Received: from mail-bn1bon0092.outbound.protection.outlook.com ([157.56.111.92]:13976
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756452AbaLJOih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:38:37 -0500
-Date: Wed, 10 Dec 2014 15:38:18 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757401AbaLJOku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:40:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755993AbaLJOks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 09:40:48 -0500
+Date: Wed, 10 Dec 2014 15:40:19 +0100
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: brouer@redhat.com, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux.com>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        Alexander Duyck <alexander.duyck@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
+ (backed by alf_queue)
+Message-ID: <20141210154019.598da6d8@redhat.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CA0A193@AcuExch.aculab.com>
+References: <20141210033902.2114.68658.stgit@ahduyck-vm-fedora20>
+	<20141210141332.31779.56391.stgit@dragon>
+	<063D6719AE5E284EB5DD2968C1650D6D1CA0A193@AcuExch.aculab.com>
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?windows-1252?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/3] gpio/xilinx: Add support for X86 Arch
-References: <1418217710-11987-1-git-send-email-ricardo.ribalda@gmail.com>
- <1418217710-11987-4-git-send-email-ricardo.ribalda@gmail.com>
-In-Reply-To: <1418217710-11987-4-git-send-email-ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset="windows-1252"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21164.004
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <8dff12b43e18420b8f4413daf5964afc@BN1BFFO11FD034.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(377454003)(164054003)(479174003)(189002)(24454002)(199003)(87936001)(83506001)(107886001)(77096005)(120916001)(64706001)(99396003)(20776003)(77156002)(62966003)(31966008)(107046002)(47776003)(21056001)(92566001)(19580405001)(2201001)(65956001)(106466001)(6806004)(65806001)(4396001)(108616004)(104016003)(33646002)(23746002)(46102003)(54356999)(50986999)(76176999)(92726002)(19580395003)(50466002)(74316001)(86362001)(558084003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB058;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-Forefront-PRVS: 0421BF7135
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB058;
-X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 02:21 PM, Ricardo Ribalda Delgado wrote:
-> Core can be accessed via PCIe on X86 platform.
+On Wed, 10 Dec 2014 14:22:22 +0000
+David Laight <David.Laight@ACULAB.COM> wrote:
+
+> From: Jesper Dangaard Brouer
+> > The network stack have some use-cases that puts some extreme demands
+> > on the memory allocator.  One use-case, 10Gbit/s wirespeed at smallest
+> > packet size[1], requires handling a packet every 67.2 ns (nanosec).
+> > 
+> > Micro benchmarking[2] the SLUB allocator (with skb size 256bytes
+> > elements), show "fast-path" instant reuse only costs 19 ns, but a
+> > closer to network usage pattern show the cost rise to 45 ns.
+> > 
+> > This patchset introduce a quick mempool (qmempool), which when used
+> > in-front of the SKB (sk_buff) kmem_cache, saves 12 ns on "fast-path"
+> > drop in iptables "raw" table, but more importantly saves 40 ns with
+> > IP-forwarding, which were hitting the slower SLUB use-case.
+> > 
+> > 
+> > One of the building blocks for achieving this speedup is a cmpxchg
+> > based Lock-Free queue that supports bulking, named alf_queue for
+> > Array-based Lock-Free queue.  By bulking elements (pointers) from the
+> > queue, the cost of the cmpxchg (approx 8 ns) is amortized over several
+> > elements.
 > 
+> It seems to me that these improvements could be added to the
+> underlying allocator itself.
+> Nesting allocators doesn't really seem right to me.
 
-You should also describe also that you are changing that this driver
-can be used as module.
+Yes, I would very much like to see these ideas integrated into the
+underlying allocators (hence addressing the mm-list).
 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
+This patchset demonstrates that it is possible to do something faster
+than the existing SLUB allocator.  Which the network stack have a need
+for.
 
-Thanks,
-Michal
-
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
