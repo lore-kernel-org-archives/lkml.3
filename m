@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373AbaLJLDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 06:03:54 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:64424 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaLJLDx (ORCPT
+	id S1755706AbaLJLE4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 06:04:56 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:46989 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752466AbaLJLEy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 06:03:53 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Richard Weinberger <richard@nod.at>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Ley Foon Tan <lftan@altera.com>,
-        linux-kernel@vger.kernel.org, Daniel Walter <sahne@0x90.at>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>
-Subject: Re: [BUG] uml panics with "Segfault with no mm" in v3.19-rc
-Date: Wed, 10 Dec 2014 12:03:37 +0100
-Message-ID: <2739506.ACK9B2Kt4q@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <54882533.6080901@nod.at>
-References: <20141210104624.GB32280@tucsk.suse.de> <54882533.6080901@nod.at>
+	Wed, 10 Dec 2014 06:04:54 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'David Miller'" <davem@davemloft.net>,
+        "asolokha@kb.kras.ru" <asolokha@kb.kras.ru>
+CC: "claudiu.manoil@freescale.com" <claudiu.manoil@freescale.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] gianfar: handle map error in gfar_start_xmit()
+Thread-Topic: [PATCH 2/2] gianfar: handle map error in gfar_start_xmit()
+Thread-Index: AQHQE/BC0CRXvBjDxE22zxrmpES7Z5yIp7ww
+Date: Wed, 10 Dec 2014 11:03:51 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA09ED4@AcuExch.aculab.com>
+References: <1417775874-17775-1-git-send-email-asolokha@kb.kras.ru>
+	<1417775874-17775-3-git-send-email-asolokha@kb.kras.ru>
+ <20141209.153903.1672471330337681259.davem@davemloft.net>
+In-Reply-To: <20141209.153903.1672471330337681259.davem@davemloft.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:AfkwITXGMao/FR8aKmPGmKTFvK6kse282jwrXdvbGZ/3MsCE+Bo
- GhZCpO8Vh3Xo5m5eWUTz+OKrNLCsN1AIGYfnbDa5NAmTn5Go+HVqiPiL2puRF1EbyJf/XxF
- 6UpYfNavb7tCARo+nO/3GpOeWQ8eeZwv8LPEprdXv03WLeFh1Ws76iO1ZkjwvAyK//2MJ48
- tUAWViUodHL4DRSbtvPlw==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 December 2014 11:49:23 Richard Weinberger wrote:
-> Hi!
+From: David Miller
+> From: Arseny Solokha <asolokha@kb.kras.ru>
+> Date: Fri,  5 Dec 2014 17:37:54 +0700
 > 
-> Am 10.12.2014 um 11:46 schrieb Miklos Szeredi:
-> > The guilty commit is:
-> > 
-> >   00f634bc522d "asm-generic: add generic futex for !CONFIG_SMP"
+> > @@ -2296,6 +2296,12 @@ static int gfar_start_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  						   0,
+> >  						   frag_len,
+> >  						   DMA_TO_DEVICE);
+> > +			if (unlikely(dma_mapping_error(priv->dev, bufaddr))) {
+> > +				/* As DMA mapping failed, pretend the TX path
+> > +				 * is busy to retry later
+> > +				 */
+> > +				return NETDEV_TX_BUSY;
+> > +			}
 > 
-> Thanks a lot Miklos!
-> Your bisecting faster than I do.
+> You are not "busy", you are dropping the packet due to insufficient system
+> resources.
 > 
-> Let's dig into the issue!
-> 
+> Therefore the appropriate thing to do is to free the SKB, increment
+> the drop statistical counter, and return NETDEV_TX_OK.
 
-Did this happen on linux-next as well?
+Plausibly the error action could depend on the number of messages
+in the transmit ring.
 
-Does this happen only on non-SMP UML running on an SMP host, or also
-in other combinations?
+If the ring is empty you definitely want to drop the packet.
 
-	Arnd
+If mapping a ring full of packets takes more dma map space than
+the system has available you may want to be "busy" - otherwise you
+get systemic packet loss when transmitting large burst of data.
+
+This could be a problem if all the available dma mapping resources
+have been allocated to receive buffers.
+
+Do any common systems actually have limited dma space (apart from
+limited bounce buffers)?
+If people are only testing on systems with unlimited dma space (eg x86)
+then these paths will never be exercised unless an artificial limit
+is applied.
+
+	David
+
+
+
