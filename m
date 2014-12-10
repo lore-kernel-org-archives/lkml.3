@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115AbaLJACo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Dec 2014 19:02:44 -0500
+	id S1752860AbaLJAC0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Dec 2014 19:02:26 -0500
 Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:54653 "EHLO
 	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738AbaLJAC2 (ORCPT
+	with ESMTP id S1752738AbaLJACV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Dec 2014 19:02:28 -0500
+	Tue, 9 Dec 2014 19:02:21 -0500
 X-IronPort-AV: E=Sophos;i="5.07,548,1413270000"; 
-   d="scan'208";a="52671769"
+   d="scan'208";a="52671750"
 From: Ray Jui <rjui@broadcom.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
@@ -22,9 +22,9 @@ CC: Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
         "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH 4/4] ARM: dts: enable PCIe for Broadcom Cygnus
-Date: Tue, 9 Dec 2014 16:04:31 -0800
-Message-ID: <1418169871-19232-5-git-send-email-rjui@broadcom.com>
+Subject: [PATCH 1/4] pci: iProc: define Broadcom iProc PCIe binding
+Date: Tue, 9 Dec 2014 16:04:28 -0800
+Message-ID: <1418169871-19232-2-git-send-email-rjui@broadcom.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418169871-19232-1-git-send-email-rjui@broadcom.com>
 References: <Ray Jui <rjui@broadcom.com>
@@ -35,25 +35,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PCIe device nodes and its properties in bcm-cygnus.dtsi but keep it
-disabled there. Only enable it in bcm958300k.dts because PCIe interfaces
-are only populated on that board
+Document the PCIe device tree binding for Broadcom iProc family of SoCs
 
 Signed-off-by: Ray Jui <rjui@broadcom.com>
 Reviewed-by: Scott Branden <sbranden@broadcom.com>
 ---
- arch/arm/boot/dts/bcm-cygnus.dtsi |   43 +++++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/bcm958300k.dts  |    8 +++++++
- 2 files changed, 51 insertions(+)
+ .../devicetree/bindings/pci/brcm,iproc-pcie.txt    |   62 ++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt
 
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..669bb3b 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -70,6 +70,49 @@
- 		};
- 	};
- 
+diff --git a/Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt b/Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt
+new file mode 100644
+index 0000000..2467628
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt
+@@ -0,0 +1,62 @@
++* Broadcom iProc PCIe controller
++
++Required properties:
++- compatible: Must be "brcm,iproc-pcie"
++- reg: base address and length of the PCIe controller and the MDIO interface
++  that controls the PCIe PHY
++- interrupts: interrupt IDs
++- bus-range: PCI bus numbers covered
++- #address-cells: set to <3>
++- #size-cells: set to <2>
++- device_type: set to "pci"
++- ranges: ranges for the PCI memory and I/O regions
++- phy-addr: MDC/MDIO adddress of the PCIe PHY
++- have-msi-inten-reg: Required for legacy iProc PCIe controllers that need the
++  MSI interrupt enable register to be set explicitly
++
++The Broadcom iProc PCie driver adapts the multi-domain structure, i.e., each
++interface has its own domain and therefore has its own device node
++Example:
++
++SoC specific DT Entry:
++
 +	pcie0: pcie@18012000 {
 +		compatible = "brcm,iproc-pcie";
 +		reg = <0x18012000 0x1000>,
@@ -69,10 +87,9 @@ index 5126f9e..669bb3b 100644
 +		#address-cells = <3>;
 +		#size-cells = <2>;
 +		device_type = "pci";
-+		ranges = <0x81000000 0 0	  0x28000000 0 0x00010000
-+			  0x82000000 0 0x20000000 0x20000000 0 0x04000000>;
++		ranges = <0x81000000 0 0	  0x28000000 0 0x00010000   /* downstream I/O */
++			  0x82000000 0 0x20000000 0x20000000 0 0x04000000>; /* non-prefetchable memory */
 +		phy-addr = <5>;
-+		status = "disabled";
 +	};
 +
 +	pcie1: pcie@18013000 {
@@ -91,34 +108,10 @@ index 5126f9e..669bb3b 100644
 +		#address-cells = <3>;
 +		#size-cells = <2>;
 +		device_type = "pci";
-+		ranges = <0x81000000 0 0	  0x48000000 0 0x00010000
-+			  0x82000000 0 0x40000000 0x40000000 0 0x04000000>;
++		ranges = <0x81000000 0 0	  0x48000000 0 0x00010000   /* downstream I/O */
++			  0x82000000 0 0x40000000 0x40000000 0 0x04000000>; /* non-prefetchable memory */
 +		phy-addr = <6>;
-+		status = "disabled";
 +	};
-+
- 	uart0: serial@18020000 {
- 		compatible = "snps,dw-apb-uart";
- 		reg = <0x18020000 0x100>;
-diff --git a/arch/arm/boot/dts/bcm958300k.dts b/arch/arm/boot/dts/bcm958300k.dts
-index f1bb36f..c9eb856 100644
---- a/arch/arm/boot/dts/bcm958300k.dts
-+++ b/arch/arm/boot/dts/bcm958300k.dts
-@@ -47,6 +47,14 @@
- 		bootargs = "console=ttyS0,115200";
- 	};
- 
-+	pcie0: pcie@18012000 {
-+		status = "okay";
-+	};
-+
-+	pcie1: pcie@18013000 {
-+		status = "okay";
-+	};
-+
- 	uart3: serial@18023000 {
- 		status = "okay";
- 	};
 -- 
 1.7.9.5
 
