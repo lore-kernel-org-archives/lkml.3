@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311AbaLJKqc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 05:46:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54973 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977AbaLJKqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 05:46:30 -0500
-Date: Wed, 10 Dec 2014 11:46:28 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Young <dyoung@redhat.com>
-Cc: linux-efi <linux-efi@vger.kernel.org>, Laszlo Ersek <lersek@redhat.com>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Shorten efi regions output
-Message-ID: <20141210104627.GA17053@pd.tnic>
-References: <20141209095843.GA3990@pd.tnic>
- <20141210021741.GA3280@darkstar.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141210021741.GA3280@darkstar.nay.redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755593AbaLJKq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 05:46:58 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:46113 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751607AbaLJKq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 05:46:56 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <854cb2f4d3aca213d1147d6e1e7b327a>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
+Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
+        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v5 0/5] Patches to add support for Rockchip usb PHYs.
+Date: Wed, 10 Dec 2014 18:46:06 +0800
+Message-Id: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 10:17:41AM +0800, Dave Young wrote:
-> I have same feeling with you, it is too long for most of people.
->
-> Since the printk code are for EFI_DEBUG, they are around the #ifdef
-> so I would like to see a kernel param like efi_debug=on, so only
-> efi_debug is specified then these verbose messages are printed.
-> Without the param kernel can print some basic infomation about the
-> memory ranges.
->
-> In arm64 code there's already a uefi_debug param it can be moved to
-> general code so that there will be a goable switch.
 
-Hmm, makes sense to me. Maybe we should really hide those behind a
-debug switch, the question is whether asking the user to boot with
-"efi_debug=on" in order to see the regions is ok. And I think it is ok
-because we do that when debugging other stuff so I don't see anything
-different here.
+Patches to add support for Rockchip usb phys.Add a new Rockchip
+usb phy driver and modify dwc2 controller driver to make dwc2
+platform devices support a generic PHY framework driver. This
+patch set has been tested on my rk3288-evb and power off the usb
+phys would reduce about 60mW power budget in total during sustem
+suspend.
 
-And then when they're disabled by default, we don't really need to
-shorten them as they're pure debug output then.
+Changes in v5:
+- Adjust entry order of example devicetree node in document.
+- reorder the phy dt node to a correct position.
 
-Matt?
+Changes in v4:
+- Get number of PHYs from device tree.
+- Model each PHY as subnode of the phy provider node.
+- Updata description for phy device tree subnode.
+- Add phy subnodes.
+
+Changes in v3:
+- Use BIT macro instead of bit shift ops.
+- Rename the config entry to PHY_ROCKCHIP_USB.
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
+
+Yunzhi Li (5):
+  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
+  Documentation: bindings: add dt documentation for Rockchip usb     PHY
+  usb: dwc2: add generic PHY framework support for dwc2 usb controler
+    platform driver.
+  ARM: dts: rockchip: add rk3288 usb PHY
+  ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+
+ .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  32 ++++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
+ arch/arm/boot/dts/rk3288.dtsi                      |  27 +++
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-rockchip-usb.c                     | 211 +++++++++++++++++++++
+ drivers/usb/dwc2/gadget.c                          |  33 ++--
+ drivers/usb/dwc2/platform.c                        |  36 +++-
+ 8 files changed, 328 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+ create mode 100644 drivers/phy/phy-rockchip-usb.c
 
 -- 
-Regards/Gruss,
-    Boris.
+2.0.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
