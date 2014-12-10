@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932358AbaLJPvG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 10:51:06 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:56612 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758044AbaLJPtO (ORCPT
+	id S1758085AbaLJPv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 10:51:29 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61002 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758039AbaLJPtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 10:49:14 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-a3-54886b7807f9
+	Wed, 10 Dec 2014 10:49:12 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-99-54886b766e39
 From: Andrzej Hajda <a.hajda@samsung.com>
 To: linux-kernel@vger.kernel.org (open list)
 Cc: Andrzej Hajda <a.hajda@samsung.com>,
@@ -29,165 +29,186 @@ Cc: Andrzej Hajda <a.hajda@samsung.com>,
         linux-samsung-soc@vger.kernel.org (moderated list:ARM/S5P EXYNOS AR...),
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         boris.brezillon@free-electrons.com
-Subject: [RFC 10/15] drm/exynos/dsi: simplify hotplug code
-Date: Wed, 10 Dec 2014 16:48:28 +0100
-Message-id: <1418226513-14105-11-git-send-email-a.hajda@samsung.com>
+Subject: [RFC 09/15] phy: add restrack support
+Date: Wed, 10 Dec 2014 16:48:27 +0100
+Message-id: <1418226513-14105-10-git-send-email-a.hajda@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
 References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xy7oV2R0hBl1rRSxurTvHanHgxUIW
-	i6kPn7BZzD8C5F75+p7N4tyrRywWB/7sYLRoXryezWLS/QksFhee9rBZfLvSwWQx5c9yJotN
-	j6+xWmye/4fR4vKuOWwWM87vY7K4fZnXYu2Ru+wWTydcZLNo3XuE3eLnrnksDqIeLc09bB5P
-	Nl1k9Ng56y67x6ZVnWwed67tYfPYP3cNu8f97uNMHpuX1Hv0bVnF6HH8xnYmj8+b5AK4o7hs
-	UlJzMstSi/TtErgyjp2/zlpwU6nizjzVBsb/Ml2MHBwSAiYSk/dHdzFyApliEhfurWfrYuTi
-	EBJYyigxcWsjM0hCSKCPSWLpazCbTUBT4u/mm2wgtoiAjsT1nm5mkAZmgQ3sEuum7wNLCAtY
-	SbQu+8wOYrMIqEqs/v4OLM4r4CJx6eFDVohtchInj00GszmB4n+f72WEWOYssWTbe9YJjLwL
-	GBlWMYqmliYXFCel5xrpFSfmFpfmpesl5+duYoTExdcdjEuPWR1iFOBgVOLh3aHYFiLEmlhW
-	XJl7iFGCg1lJhHdhckeIEG9KYmVValF+fFFpTmrxIUYmDk6pBsaioqlH5Y4pr+kV7NweNklR
-	eP31kORfDGnvAgSeLo8+bmT0IdrP5WXp/tzE2ypSRytv1Cc1e06eJS7oKPPWWO9w2sfJd788
-	s90l1+vI/Xhj8F2VKDkBjz+LEpx/20Wel7Zcye11vIzjnGDBPaNZby+u3mzZmi/7fpNN69Lk
-	otAdSz8c6OQ/Kq7EUpyRaKjFXFScCAC3RtjxaQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xy7pl2R0hBvdOaVvcWneO1eLAi4Us
+	FlMfPmGzmH8EyL3y9T2bxblXj1gsDvzZwWjRvHg9m8Wk+xNYLC487WGz+Halg8liyp/lTBab
+	Hl9jtdg8/w+jxeVdc9gsZpzfx2Rx+zKvxdojd9ktnk64yGbRuvcIu8XPXfNYHEQ9Wpp72Dye
+	bLrI6LFz1l12j02rOtk87lzbw+axf+4ado/73ceZPDYvqffo27KK0eP4je1MHp83yQVwR3HZ
+	pKTmZJalFunbJXBlXJs4l7HgiGrF+2s32RoYr8t3MXJySAiYSKxp7WCHsMUkLtxbz9bFyMUh
+	JLCUUWLxjjksEE4fk8TF9+1MIFVsApoSfzffZAOxRQR0JK73dDODFDELbGCXWDd9H1CCg0NY
+	QE9i+TJHkBoWAVWJiVsusIDYvAIuEr33ZzJBbJOTOHlsMiuIzQkU//t8LyOILSTgLLFk23vW
+	CYy8CxgZVjGKppYmFxQnpeca6RUn5haX5qXrJefnbmKExMbXHYxLj1kdYhTgYFTi4d2h2BYi
+	xJpYVlyZe4hRgoNZSYR3YXJHiBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGlt3/nP7Xh/SzbhNj
+	8DKvKunk5GfjctzS6uC8PeBJem5Bdri5xdSzV3lrw4unpoSXWcXvePPNOkzv2mNu5z97eh1X
+	CfPIlQbzs5lnzY2fv26ScNiUKiFXy8MJbpOi879N/OR1T92+uGKpsVnPkY0LFr1ikbFblj31
+	vfaCqDxvn7x5prNXvVFiKc5INNRiLipOBAC4B2VYawIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos DSI driver uses DSI bus attach/detach callbacks to implement
-panel hotplug mechanism. The patch moves panel attachment code
-from .detect callback to DSI bus callbacks. It makes the code
-simpler and more straightforward.
-The patch removes also redundant and lock unprotected dpms_off call
-from unbind code.
+PHYs supports different methods of lookup.
+The patch adds restrack support only to DT based PHYs.
 
 Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 ---
- drivers/gpu/drm/exynos/exynos_drm_dsi.c | 61 ++++++++++++++++++++-------------
- 1 file changed, 38 insertions(+), 23 deletions(-)
+ drivers/phy/phy-core.c   | 90 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/phy/phy.h  |  3 ++
+ include/linux/restrack.h |  1 +
+ 3 files changed, 94 insertions(+)
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_dsi.c b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-index 05fe93d..8201d79 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_dsi.c
-@@ -271,7 +271,6 @@ struct exynos_dsi {
- 	struct exynos_drm_display display;
- 	struct mipi_dsi_host dsi_host;
- 	struct drm_connector connector;
--	struct device_node *panel_node;
- 	struct drm_panel *panel;
- 	struct device *dev;
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index ff5eec5..449ec4e 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -22,6 +22,7 @@
+ #include <linux/idr.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regulator/consumer.h>
++#include <linux/restrack.h>
  
-@@ -1154,10 +1153,11 @@ static int exynos_dsi_init(struct exynos_dsi *dsi)
+ static struct class *phy_class;
+ static DEFINE_MUTEX(phy_provider_mutex);
+@@ -754,6 +755,8 @@ struct phy_provider *__of_phy_provider_register(struct device *dev,
+ 	list_add_tail(&phy_provider->list, &phy_provider_list);
+ 	mutex_unlock(&phy_provider_mutex);
  
- static int exynos_dsi_register_te_irq(struct exynos_dsi *dsi)
- {
-+	struct device_node *panel_node = dsi->panel->dev->of_node;
- 	int ret;
- 	int te_gpio_irq;
- 
--	dsi->te_gpio = of_get_named_gpio(dsi->panel_node, "te-gpios", 0);
-+	dsi->te_gpio = of_get_named_gpio(panel_node, "te-gpios", 0);
- 	if (!gpio_is_valid(dsi->te_gpio)) {
- 		dev_err(dsi->dev, "no te-gpios specified\n");
- 		ret = dsi->te_gpio;
-@@ -1198,11 +1198,25 @@ static int exynos_dsi_host_attach(struct mipi_dsi_host *host,
- 				  struct mipi_dsi_device *device)
- {
- 	struct exynos_dsi *dsi = host_to_dsi(host);
-+	struct drm_device *drm_dev = dsi->connector.dev;
-+	bool changed = false;
- 
- 	dsi->lanes = device->lanes;
- 	dsi->format = device->format;
- 	dsi->mode_flags = device->mode_flags;
--	dsi->panel_node = device->dev.of_node;
++	restrack_up(RESTRACK_TYPE_PHY, dev->of_node, phy_provider);
 +
-+	mutex_lock(&drm_dev->mode_config.mutex);
-+
-+	dsi->panel = of_drm_find_panel(device->dev.of_node);
-+	if (dsi->panel) {
-+		drm_panel_attach(dsi->panel, &dsi->connector);
-+		if (drm_dev->mode_config.poll_enabled) {
-+			dsi->connector.status = connector_status_connected;
-+			changed = true;
-+		}
-+	}
-+
-+	mutex_unlock(&drm_dev->mode_config.mutex);
- 
- 	/*
- 	 * This is a temporary solution and should be made by more generic way.
-@@ -1217,8 +1231,8 @@ static int exynos_dsi_host_attach(struct mipi_dsi_host *host,
- 			return ret;
- 	}
- 
--	if (dsi->connector.dev)
--		drm_helper_hpd_irq_event(dsi->connector.dev);
-+	if (changed)
-+		drm_kms_helper_hotplug_event(drm_dev);
- 
- 	return 0;
+ 	return phy_provider;
  }
-@@ -1227,13 +1241,29 @@ static int exynos_dsi_host_detach(struct mipi_dsi_host *host,
- 				  struct mipi_dsi_device *device)
- {
- 	struct exynos_dsi *dsi = host_to_dsi(host);
-+	struct drm_device *drm_dev = dsi->connector.dev;
-+	struct exynos_drm_display *display = dev_get_drvdata(dsi->dev);
-+	bool changed = false;
+ EXPORT_SYMBOL_GPL(__of_phy_provider_register);
+@@ -804,6 +807,9 @@ void of_phy_provider_unregister(struct phy_provider *phy_provider)
+ 	if (IS_ERR(phy_provider))
+ 		return;
  
- 	exynos_dsi_unregister_te_irq(dsi);
- 
--	dsi->panel_node = NULL;
-+	mutex_lock(&drm_dev->mode_config.mutex);
++	restrack_down(RESTRACK_TYPE_PHY, phy_provider->dev->of_node,
++		      phy_provider);
 +
-+	display->ops->dpms(display, DRM_MODE_DPMS_OFF);
-+
-+	if (dsi->panel) {
-+		drm_panel_detach(dsi->panel);
-+		dsi->panel = NULL;
-+		if (drm_dev->mode_config.poll_enabled) {
-+			dsi->connector.status = connector_status_disconnected;
-+			changed = true;
-+		}
-+	}
-+
-+	mutex_unlock(&drm_dev->mode_config.mutex);
- 
--	if (dsi->connector.dev)
--		drm_helper_hpd_irq_event(dsi->connector.dev);
-+	if (changed)
-+		drm_kms_helper_hotplug_event(drm_dev);
- 
- 	return 0;
+ 	mutex_lock(&phy_provider_mutex);
+ 	list_del(&phy_provider->list);
+ 	kfree(phy_provider);
+@@ -828,6 +834,90 @@ void devm_of_phy_provider_unregister(struct device *dev,
  }
-@@ -1430,19 +1460,6 @@ exynos_dsi_detect(struct drm_connector *connector, bool force)
+ EXPORT_SYMBOL_GPL(devm_of_phy_provider_unregister);
+ 
++int of_get_phy_spec(struct device *dev, const char *name,
++		struct of_phandle_args *spec)
++{
++	struct device_node *np = dev->of_node;
++	int idx;
++
++	idx = of_property_match_string(np, "phy-names", name);
++
++	return of_parse_phandle_with_args(np, "phys", "#phy-cells", idx, spec);
++}
++
++struct phy_restrack_desc {
++	struct phy **ptr;
++	const char *name;
++	struct of_phandle_args spec;
++	struct restrack_desc desc;
++};
++
++static int phy_restrack_init(struct device *dev,
++		struct restrack_desc *desc)
++{
++	struct phy_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++	int ret;
++
++	ret = of_get_phy_spec(dev, rd->name, &rd->spec);
++	if (!ret)
++		desc->if_id = rd->spec.np;
++	return ret;
++}
++
++static void phy_restrack_destroy(struct device *dev,
++		struct restrack_desc *desc)
++{
++	struct phy_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++
++	of_node_put(desc->if_id);
++	kfree(rd);
++}
++
++static int phy_restrack_ifup(struct device *dev,
++		struct restrack_desc *desc, void *data)
++{
++	struct phy_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++	struct phy_provider *phy_provider = data;
++
++	*rd->ptr = phy_provider->of_xlate(phy_provider->dev, &rd->spec);
++	return PTR_ERR_OR_ZERO(*rd->ptr);
++}
++
++static void phy_restrack_ifdown(struct device *dev,
++		struct restrack_desc *desc, void *data)
++{
++	struct phy_restrack_desc *rd = restrack_desc_to_rd(rd, desc);
++
++	*rd->ptr = ERR_PTR(-EPROBE_DEFER);
++}
++
++static const struct restrack_ops phy_restrack_ops = {
++	.if_type = RESTRACK_TYPE_PHY,
++	.init = phy_restrack_init,
++	.destroy = phy_restrack_destroy,
++	.if_up = phy_restrack_ifup,
++	.if_down = phy_restrack_ifdown,
++};
++
++/**
++ * phy_restrack_desc - phy resource descriptor allocator
++ * @phy: pointer to variable which will be set to phy handle
++ * @name: name of phy
++ *
++ * The function creates resource description for phy, which shall be used
++ * by *restrack_register functions.
++ */
++struct restrack_desc *phy_restrack_desc(struct phy **phy, const char *name)
++{
++	struct phy_restrack_desc *rd;
++
++	RESTRACK_DESC_ALLOC(rd, phy_restrack_ops, phy, name);
++
++	return rd ? &rd->desc : ERR_PTR(-ENOMEM);
++}
++EXPORT_SYMBOL_GPL(phy_restrack_desc);
++
++
+ /**
+  * phy_release() - release the phy
+  * @dev: the dev member within phy
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 8cb6f81..14d176c 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -174,6 +174,9 @@ struct phy_provider *__devm_of_phy_provider_register(struct device *dev,
+ void of_phy_provider_unregister(struct phy_provider *phy_provider);
+ void devm_of_phy_provider_unregister(struct device *dev,
+ 	struct phy_provider *phy_provider);
++
++struct restrack_desc;
++struct restrack_desc *phy_restrack_desc(struct phy **phy, const char *name);
+ #else
+ static inline int phy_pm_runtime_get(struct phy *phy)
  {
- 	struct exynos_dsi *dsi = connector_to_dsi(connector);
+diff --git a/include/linux/restrack.h b/include/linux/restrack.h
+index 6707dce..411d791 100644
+--- a/include/linux/restrack.h
++++ b/include/linux/restrack.h
+@@ -7,6 +7,7 @@
+ #define RESTRACK_TYPE_REGULATOR 2
+ #define RESTRACK_TYPE_GPIO 3
+ #define RESTRACK_TYPE_CLOCK 4
++#define RESTRACK_TYPE_PHY 5
  
--	if (!dsi->panel) {
--		dsi->panel = of_drm_find_panel(dsi->panel_node);
--		if (dsi->panel)
--			drm_panel_attach(dsi->panel, &dsi->connector);
--	} else if (!dsi->panel_node) {
--		struct exynos_drm_display *display;
--
--		display = platform_get_drvdata(to_platform_device(dsi->dev));
--		exynos_dsi_dpms(display, DRM_MODE_DPMS_OFF);
--		drm_panel_detach(dsi->panel);
--		dsi->panel = NULL;
--	}
--
- 	if (dsi->panel)
- 		return connector_status_connected;
- 
-@@ -1665,8 +1682,6 @@ static void exynos_dsi_unbind(struct device *dev, struct device *master,
- 	struct exynos_drm_display *display = dev_get_drvdata(dev);
- 	struct exynos_dsi *dsi = display_to_dsi(display);
- 
--	exynos_dsi_dpms(display, DRM_MODE_DPMS_OFF);
--
- 	mipi_dsi_host_unregister(&dsi->dsi_host);
- }
- 
+ struct device;
+ struct restrack_ctx;
 -- 
 1.9.1
 
