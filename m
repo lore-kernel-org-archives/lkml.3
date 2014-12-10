@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757403AbaLJO3J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:29:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944AbaLJO3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:29:06 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v12 00/20] DAX: Page cache bypass for filesystems on memory storage
-References: <1414185652-28663-1-git-send-email-matthew.r.wilcox@intel.com>
-	<20141210140347.GA23252@infradead.org> <20141210141211.GD2220@wil.cx>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 10 Dec 2014 09:28:33 -0500
-In-Reply-To: <20141210141211.GD2220@wil.cx> (Matthew Wilcox's message of "Wed,
-	10 Dec 2014 09:12:11 -0500")
-Message-ID: <x49388ntw8e.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1757502AbaLJO3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:29:22 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58787 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757416AbaLJO3R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 09:29:17 -0500
+Message-ID: <548858B7.1020307@gmail.com>
+Date: Wed, 10 Dec 2014 17:29:11 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: platform-driver-x86@vger.kernel.org
+CC: linux-kernel <linux-kernel@vger.kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH v2] acpi: Add "acpi_osi=" for ASUS X200MA to enable brightness
+References: <54845180.4060206@gmail.com> <548465CA.8020905@gmail.com>
+In-Reply-To: <548465CA.8020905@gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox <willy@linux.intel.com> writes:
+This patch is only a temporary hack. This issue should be fixed by other ways.
+See https://bugzilla.kernel.org/show_bug.cgi?id=70241#c70
 
-> On Wed, Dec 10, 2014 at 06:03:47AM -0800, Christoph Hellwig wrote:
->> What is the status of this patch set?
+07.12.2014 17:35, Dmitry Tunin пишет:
+> Add "acpi_osi=" quirk for ASUS X200MA
+> More information can be found in UX302LA bugreport
+> https://bugzilla.kernel.org/show_bug.cgi?id=70241
 >
-> I have no outstanding bug reports against it.  Linus told me that he
-> wants to see it come through Andrew's tree.  I have an email two weeks
-> ago from Andrew saying that it's on his list.  I would love to see it
-> merged since it's almost a year old at this point.
-
-I'd also like to see this go in soon.
+> I reported it to launchpad too
+> https://bugs.launchpad.net/ubuntu/bug/1400068
+>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+> ---
+>   drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
+>   1 file changed, 20 insertions(+)
+>
+> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+> index 7556e7c..f78ed08 100644
+> --- a/drivers/acpi/blacklist.c
+> +++ b/drivers/acpi/blacklist.c
+> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
+>       acpi_osi_setup("!Windows 2012");
+>       return 0;
+>   }
+> +/*
+> + * Some ASUS models firmware declares 16 devices instead of 8
+> + * 'acpi_osi=' kernel parameter fixes it
+> + * Without this parameters brightness keys Fn+F5 and F6 do not work
+> + */
+> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
+> +{
+> +    printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+> +    acpi_osi_setup("");
+> +    return 0;
+> +}
+>
+>   static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>       {
+> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>                DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
+>           },
+>       },
+> +    /* Without this brightness keys do not work */
+> +    {
+> +    .callback = dmi_disable_osi_all,
+> +    .ident = "ASUSTeK COMPUTER INC. X200MA",
+> +    .matches = {
+> +             DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+> +             DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
+> +        },
+> +    },
+>       {}
+>   };
+>
