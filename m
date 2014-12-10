@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbaLJIet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 03:34:49 -0500
-Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:29280
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751284AbaLJIer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 03:34:47 -0500
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <p.zabel@pengutronix.de>,
-        <thierry.reding@gmail.com>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <linux@arm.linux.org.uk>,
-        <mturquette@linaro.org>, <airlied@linux.ie>
-Subject: [PATCH RFC 15/15] ARM: imx_v6_v7_defconfig: Add support for Himax HX8369A panel
-Date: Wed, 10 Dec 2014 16:37:28 +0800
-Message-ID: <1418200648-32656-16-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
-References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(77156002)(62966003)(47776003)(20776003)(99396003)(120916001)(84676001)(87936001)(36756003)(89996001)(64706001)(85426001)(68736005)(31966008)(77096005)(110136001)(21056001)(50986999)(104016003)(97736003)(106466001)(105606002)(92566001)(229853001)(2351001)(107046002)(19580405001)(6806004)(19580395003)(575784001)(46102003)(86362001)(76176999)(50226001)(4396001)(48376002)(50466002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0629;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(602002);SRVR:BY2PR0301MB0629;
-X-Forefront-PRVS: 0421BF7135
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0629;
-X-OriginatorOrg: freescale.com
+	id S1751861AbaLJIls (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 03:41:48 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:56589 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaLJIlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 03:41:46 -0500
+Date: Wed, 10 Dec 2014 09:41:39 +0100
+From: Cornelia Huck <cornelia.huck@de.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, dahi@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux390@de.ibm.com, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] virtio_ccw: rev 1 devices set VIRTIO_F_VERSION_1
+Message-ID: <20141210094139.7f2e2d01.cornelia.huck@de.ibm.com>
+In-Reply-To: <20141209194052.GA21095@redhat.com>
+References: <1418042769-25539-1-git-send-email-mst@redhat.com>
+	<1418042769-25539-5-git-send-email-mst@redhat.com>
+	<20141209120123.117ccfac.cornelia.huck@de.ibm.com>
+	<20141209122118.GF3993@redhat.com>
+	<20141209182319.20ce2dec.cornelia.huck@de.ibm.com>
+	<20141209194052.GA21095@redhat.com>
+Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
+ Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
+ Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
+ Registergericht: Amtsgericht Stuttgart, HRB 243294
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121008-0005-0000-0000-000002669B4F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for Himax HX8369A panel.
+On Tue, 9 Dec 2014 21:40:52 +0200
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
 
-The new imx_v6_v7_defconfig is generated in this way:
-* make ARCH=arm imx_v6_v7_defconfig
-* make ARCH=arm menuconfig and manually choose to build in
-  the Himax HX8369A panel driver
-* make ARCH=arm savedefconfig
-* cp defconfig arch/arm/configs/imx_v6_v7_defconfig
+> On Tue, Dec 09, 2014 at 06:23:19PM +0100, Cornelia Huck wrote:
+> > On Tue, 9 Dec 2014 14:21:18 +0200
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > On Tue, Dec 09, 2014 at 12:01:23PM +0100, Cornelia Huck wrote:
+> > > > On Mon, 8 Dec 2014 15:06:03 +0200
+> > > > "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> > 
+> > > > > diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> > > > > index 789275f..f9f87ba 100644
+> > > > > --- a/drivers/s390/kvm/virtio_ccw.c
+> > > > > +++ b/drivers/s390/kvm/virtio_ccw.c
+> > > > > @@ -758,6 +758,13 @@ static int virtio_ccw_finalize_features(struct virtio_device *vdev)
+> > > > >  	struct virtio_feature_desc *features;
+> > > > >  	struct ccw1 *ccw;
+> > 
+> > This needs
+> > 
+> > +	struct virtio_device *vdev = &vcdev->vdev;
+> > 
+> > to make it compile :)
+> 
+> In fact why does it?
+> vdev is a parameter.
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
- arch/arm/configs/imx_v6_v7_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/imx_v6_v7_defconfig b/arch/arm/configs/imx_v6_v7_defconfig
-index 3e0e589..01b2b89 100644
---- a/arch/arm/configs/imx_v6_v7_defconfig
-+++ b/arch/arm/configs/imx_v6_v7_defconfig
-@@ -192,6 +192,7 @@ CONFIG_SOC_CAMERA_OV2640=y
- CONFIG_IMX_IPUV3_CORE=y
- CONFIG_DRM=y
- CONFIG_DRM_PANEL_SIMPLE=y
-+CONFIG_DRM_PANEL_HX8369A=y
- CONFIG_DRM_IMX=y
- CONFIG_DRM_IMX_FB_HELPER=y
- CONFIG_DRM_IMX_PARALLEL_DISPLAY=y
--- 
-2.1.0
+Never mind, messed up tree on my side.
 
