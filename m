@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574AbaLJOWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 09:22:10 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49212 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757547AbaLJOWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 09:22:07 -0500
-Message-ID: <548856D9.7060401@roeck-us.net>
-Date: Wed, 10 Dec 2014 06:21:13 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1757256AbaLJOX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 09:23:29 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:54887 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756786AbaLJOX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 09:23:27 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Jesper Dangaard Brouer'" <brouer@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Lameter <cl@linux.com>
+CC: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
+        Alexander Duyck <alexander.duyck@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: RE: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
+	(backed by alf_queue)
+Thread-Topic: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
+	(backed by alf_queue)
+Thread-Index: AQHQFIO0Ikj80L4t4UGcEvv4vfI+lpyI3+Ug
+Date: Wed, 10 Dec 2014 14:22:22 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0A193@AcuExch.aculab.com>
+References: <20141210033902.2114.68658.stgit@ahduyck-vm-fedora20>
+ <20141210141332.31779.56391.stgit@dragon>
+In-Reply-To: <20141210141332.31779.56391.stgit@dragon>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH v5 3/3] hwmon: ina2xx: documentation update for new sysfs
- attributes
-References: <1418207937-11648-1-git-send-email-bgolaszewski@baylibre.com> <1418207937-11648-4-git-send-email-bgolaszewski@baylibre.com>
-In-Reply-To: <1418207937-11648-4-git-send-email-bgolaszewski@baylibre.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020208.5488570F.0014,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 9
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBAENatn006541
 
-On 12/10/2014 02:38 AM, Bartosz Golaszewski wrote:
-> Include the rshunt and avg sysfs attributes for ina2xx in the documentation.
->
-> Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-> ---
->   Documentation/hwmon/ina2xx | 10 +++++++---
->   1 file changed, 7 insertions(+), 3 deletions(-)
->
-> diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
-> index 4223c2d..c100c24 100644
-> --- a/Documentation/hwmon/ina2xx
-> +++ b/Documentation/hwmon/ina2xx
-> @@ -44,6 +44,10 @@ The INA226 monitors both a shunt voltage drop and bus supply voltage.
->   The INA230 is a high or low side current shunt and power monitor with an I2C
->   interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
->
-> -The shunt value in micro-ohms can be set via platform data or device tree.
-> -Please refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
-> -if the device tree is used.
-> +The shunt value in micro-ohms can be set via platform data or device tree in
-> +compile-time or via the shunt_resistor attribute in sysfs in run-time. Please
-> +refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings if
-> +the device tree is used.
-> +
-> +The averaging rate of INA226 and INA230 can be changed via the avg_rate sysfs
-> +attribute. The available rates are: 1, 4, 16, 64, 128, 256, 512 and 1024.
->
-Please merge the documentation updates into the actual patches as appropriate.
+From: Jesper Dangaard Brouer
+> The network stack have some use-cases that puts some extreme demands
+> on the memory allocator.  One use-case, 10Gbit/s wirespeed at smallest
+> packet size[1], requires handling a packet every 67.2 ns (nanosec).
+> 
+> Micro benchmarking[2] the SLUB allocator (with skb size 256bytes
+> elements), show "fast-path" instant reuse only costs 19 ns, but a
+> closer to network usage pattern show the cost rise to 45 ns.
+> 
+> This patchset introduce a quick mempool (qmempool), which when used
+> in-front of the SKB (sk_buff) kmem_cache, saves 12 ns on "fast-path"
+> drop in iptables "raw" table, but more importantly saves 40 ns with
+> IP-forwarding, which were hitting the slower SLUB use-case.
+> 
+> 
+> One of the building blocks for achieving this speedup is a cmpxchg
+> based Lock-Free queue that supports bulking, named alf_queue for
+> Array-based Lock-Free queue.  By bulking elements (pointers) from the
+> queue, the cost of the cmpxchg (approx 8 ns) is amortized over several
+> elements.
 
-Guenter
+It seems to me that these improvements could be added to the
+underlying allocator itself.
+Nesting allocators doesn't really seem right to me.
 
+	David
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
