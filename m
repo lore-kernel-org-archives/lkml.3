@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288AbaLKVGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:06:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41618 "EHLO mx2.suse.de"
+	id S964986AbaLKVHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:07:21 -0500
+Received: from ozlabs.org ([103.22.144.67]:39295 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933169AbaLKVGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:06:50 -0500
-Date: Thu, 11 Dec 2014 22:06:49 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        Juergen Gross <JGross@suse.com>, luto@amacapital.net,
-        david.vrabel@citrix.com, rostedt@goodmis.org,
-        masami.hiramatsu.pt@hitachi.com, peterz@infradead.org, x86@kernel.org,
-        tglx@linutronix.de, xen-devel@lists.xenproject.org,
-        konrad.wilk@oracle.com, mingo@redhat.com, Borislav Petkov <bp@suse.de>,
-        bpoirier@suse.de, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH v2 1/2] sched: add cond_resched_irq()
-Message-ID: <20141211210649.GR25677@wotan.suse.de>
-References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com> <1418254487-9988-2-git-send-email-mcgrof@do-not-panic.com> <5489AADA020000780004EFB9@suse.com>
+	id S933169AbaLKVHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:07:19 -0500
+Date: Fri, 12 Dec 2014 08:07:05 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ben@decadent.org.uk,
+        cornelia.huck@de.ibm.com, jasowang@redhat.com, pbonzini@redhat.com,
+        rusty@rustcorp.com.au, sergei.shtylyov@cogentembedded.com,
+        thuth@linux.vnet.ibm.com, David Miller <davem@davemloft.net>
+Subject: Re: [PULL] virtio: virtio 1.0 support, misc patches
+Message-ID: <20141212080705.50988d51@canb.auug.org.au>
+In-Reply-To: <20141211120248.GA8838@redhat.com>
+References: <20141211120248.GA8838@redhat.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5489AADA020000780004EFB9@suse.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/K9fC0KHvcIpbf2=o17AahMp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 06:31:54AM -0700, Jan Beulich wrote:
-> >>> On 11.12.14 at 00:34, <mcgrof@do-not-panic.com> wrote:
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -4239,6 +4239,16 @@ int __sched _cond_resched(void)
-> >  }
-> >  EXPORT_SYMBOL(_cond_resched);
-> >  
-> > +int __sched cond_resched_irq(void)
-> > +{
-> > +	if (should_resched()) {
-> > +		preempt_schedule_irq();
-> > +		return 1;
-> > +	}
-> > +	return 0;
-> > +}
-> > +EXPORT_SYMBOL_GPL(cond_resched_irq);
-> 
-> Do you really want to export to modules a symbol like this?
+--Sig_/K9fC0KHvcIpbf2=o17AahMp
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-You mean lets not, true and good point. Let's see if seems
-if we go with Andy's suggestion we may not need this anyway.
+Hi Michael,
 
-  Luis
+On Thu, 11 Dec 2014 14:02:48 +0200 "Michael S. Tsirkin" <mst@redhat.com> wr=
+ote:
+>
+> The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d7=
+1d:
+>=20
+>   Linux 3.18 (2014-12-07 14:21:05 -0800)
+
+hmmm ...
+
+> are available in the git repository at:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_li=
+nus
+>=20
+> for you to fetch changes up to 803cd18f7b5e6c7ad6bee9571ae8f4450190ab58:
+>=20
+>   virtio_ccw: finalize_features error handling (2014-12-09 16:32:41 +0200)
+>=20
+> Note: some net drivers are affected by these patches.
+> David said he's fine with merging these patches through
+> my tree.
+> Rusty's on vacation, he acked using my tree for these, too.
+
+So, either none of this has been in linux-next or you have just rebased
+it all on top of v3.18 ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/K9fC0KHvcIpbf2=o17AahMp
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUigeDAAoJEMDTa8Ir7ZwVFkYP+wVmpS11lWSvfW4+liWEEuQs
+sYmWmb2TrJ+A/7t7PgXihGm0mSC8XO4gHJnb/fgEeHgU5+WKE5EwAWiw94QukW//
+gCJma8DbVopAjpNya1XmOxILvfMCVC3wjyqD0n/jsBtys3BtarnD0G+cKTceVJ57
+4zwckdh6LKn7T077ygKOaiw7jLe94fy29hHHt9nKmAFiJxP5UvqOGQ9760H7R3/h
+Sfn4nkMkSU9Qq+EavQEaZSCPPOyzGbGwrC42esxnSfIt4DHAX7jkAvZA0YzjTaN0
+M1Dyis56ZUcu62GWACEv9RDmnAonsA3V4It2nUHQaq4zK3lUiLeKMJoJ0IOoF/P9
+WBMmtf6vhi4DTEOYjYxAqpoaM04F2+l9qEk1xBm+daj3tncLp2gOFXOS2aCP83Vj
+jjwkBlsdsdZqDx9MnnbpxBImGpO+EXAq5IFgiW1qvdPLh8r8U1CHnFX83fCTzURk
+ONbSgjxiZogLDNKkt15SdwQ7UKgVMwSk1y2Ve7bWTHPOfY3bW1faE37qjGAfmTsg
+3ypUrZuaH7K1SPu89Kia+0vh/FKFoIv7YAsLXG8D4xv380xgY8ZPyZBoyB3+p4Bd
+fLwQ/4qUmVT4dI3msvUNheB4HlD2/RS6hxR1ccBF2TIOPNY1xgLZc3JAW2ztmcZP
+bvfRfmRpwl8O9GPEqZjE
+=+iNT
+-----END PGP SIGNATURE-----
+
+--Sig_/K9fC0KHvcIpbf2=o17AahMp--
