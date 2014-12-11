@@ -1,168 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758995AbaLKVR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:17:29 -0500
-Received: from mail-bl2on0129.outbound.protection.outlook.com ([65.55.169.129]:25185
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758801AbaLKVR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:17:27 -0500
-Date: Thu, 11 Dec 2014 12:45:15 -0800
-From: Guenter Roeck <groeck@juniper.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Rajat Jain <rajatxjain@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>
-Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
- during removal
-Message-ID: <20141211204515.GA4472@svl-evodev-groeck.juniper.net>
-References: <546E7120.5080505@gmail.com>
- <20141211002630.GC22886@google.com>
- <20141211163831.GA2845@svl-evodev-groeck.juniper.net>
- <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
+	id S1759040AbaLKVRs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:17:48 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:51741 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759012AbaLKVRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:17:46 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benjamin.tissoires@redhat.com, jkosina@suse.cz
+Subject: Re: NULL pointer dereference in i2c-hid
+Date: Thu, 11 Dec 2014 22:17:43 +0100
+Message-ID: <9990741.QypFgP8pco@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <548A02BD.7030509@synaptics.com>
+References: <31518562.V5Oyo0POsI@xps13> <2187886.1Q1zbE8252@xps13> <548A02BD.7030509@synaptics.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [66.129.239.11]
-X-ClientProxiedBy: CY1PR09CA0039.namprd09.prod.outlook.com (25.160.223.49) To
- CO1PR05MB522.namprd05.prod.outlook.com (10.141.72.14)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB522;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:CO1PR05MB522;
-X-Forefront-PRVS: 0422860ED4
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6069001)(6009001)(189002)(24454002)(377454003)(164054003)(199003)(51704005)(97736003)(99396003)(122386002)(105586002)(66066001)(40100003)(110136001)(92566001)(68736005)(106356001)(107046002)(77096005)(120916001)(64706001)(42186005)(20776003)(83506001)(31966008)(19580405001)(4396001)(46406003)(93886004)(50986999)(21056001)(54356999)(101416001)(19580395003)(23726002)(46102003)(47776003)(77156002)(97756001)(87976001)(33656002)(86362001)(76506005)(62966003)(76176999)(50466002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR05MB522;H:localhost;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB522;
-X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 01:26:47PM -0700, Bjorn Helgaas wrote:
-> On Thu, Dec 11, 2014 at 9:38 AM, Guenter Roeck <groeck@juniper.net> wrote:
-> > On Wed, Dec 10, 2014 at 05:26:30PM -0700, Bjorn Helgaas wrote:
-> >> On Thu, Nov 20, 2014 at 02:54:24PM -0800, Rajat Jain wrote:
-> >> > While removing a card, we can't assume the presence to mean that the
-> >> > access to card is OK. That is because the cause of removal may be a
-> >> > link down event, and the card may still be physically present. Thus,
-> >> > instead of presence, use the link state to decide whether or not it is
-> >> > OK to access the card devices.
-> >> >
-> >> > Here are the problem symptoms:
-> >> > During the removal of a card due to link down, sometimes the following
-> >> > error is seen (because pciehp_unconfigure_device() reads 0xFF from
-> >> > bridge control register as the link is down, which cause it to assume
-> >> > that the VGA bit is set):
-> >> >
-> >> > pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-> >> > pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-> >> > pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
-> >> > pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
-> >> > pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
-> >> > pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
-> >> >
-> >> > Ofcourse, when the link comes back up, the device addition fails too:
-> >> >
-> >> > pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-> >> > pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-> >> > pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
-> >> > pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
-> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
-> >> > pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
-> >> > pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
-> >> >
-> >> > The problem is not seen with this patch applied. The device removal and
-> >> > insertion works as expected.
-> >> >
-> >> > Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> >> > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> >> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> >> > ---
-> >> > v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
-> >> >
-> >> >  drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
-> >> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> >> >
-> >> > diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-> >> > index 9e69403..911f85b 100644
-> >> > --- a/drivers/pci/hotplug/pciehp_pci.c
-> >> > +++ b/drivers/pci/hotplug/pciehp_pci.c
-> >> > @@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
-> >> >  {
-> >> >     int rc = 0;
-> >> >     u8 bctl = 0;
-> >> > -   u8 presence = 0;
-> >> > +   bool link_active = false;
-> >> >     struct pci_dev *dev, *temp;
-> >> >     struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
-> >> >     u16 command;
-> >> > @@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
-> >> >
-> >> >     ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
-> >> >              __func__, pci_domain_nr(parent), parent->number);
-> >> > -   pciehp_get_adapter_status(p_slot, &presence);
-> >> > +   link_active = pciehp_check_link_active(ctrl);
-> >> >
-> >> >     pci_lock_rescan_remove();
-> >> >
-> >> > @@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
-> >> >     list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
-> >> >                                      bus_list) {
-> >> >             pci_dev_get(dev);
-> >> > -           if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
-> >> > +           if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
-> >> >                     pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
-> >> >                     if (bctl & PCI_BRIDGE_CTL_VGA) {
-> >> >                             ctrl_err(ctrl,
+On Thursday 11 December 2014 12:46:53 Andrew Duggan wrote:
+> On 12/11/2014 11:40 AM, Gabriele Mazzotta wrote:
+> > On Thursday 11 December 2014 11:21:43 Andrew Duggan wrote:
+> >> On 12/11/2014 11:11 AM, Gabriele Mazzotta wrote:
+> >>> On Thursday 11 December 2014 10:40:05 Andrew Duggan wrote:
+> >>>> On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
+> >>>>> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
+> >>>>>> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
+> >>>>>>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
+> >>>>>>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
+> >>>>>>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
+> >>>>>>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+> >>>>>>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
+> >>>>>>>> pointer dereference.
+> >>>>>>> I'll look into this.
+> >>>>>>>
+> >>>>>>> I can reproduce this easily with i2c-hid + hid-multitouch following your
+> >>>>>>> directions.
+> >>>>>> Can you try the below patch?
+> >>>>>>
+> >>>>>> I think we shouldn't free buffers yet in ->stop() because we need the
+> >>>>>> command buffer sending power commands to the device. Also it seems that
+> >>>>>> ->start() re-allocates buffers anyway if maximum size increases.
+> >>>>>>
+> >>>>>> It shouldn't even leak memory as we release buffers at ->remove()
+> >>>>>> anyway.
+> >>>>>>
+> >>>>>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>> index 62cec01937ea..68a8c938feea 100644
+> >>>>>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
+> >>>>>>     
+> >>>>>>     static void i2c_hid_stop(struct hid_device *hid)
+> >>>>>>     {
+> >>>>>> -	struct i2c_client *client = hid->driver_data;
+> >>>>>> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
+> >>>>>> -
+> >>>>>>     	hid->claimed = 0;
+> >>>>>> -
+> >>>>>> -	i2c_hid_free_buffers(ihid);
+> >>>>>>     }
+> >>>>>>     
+> >>>>>>     static int i2c_hid_open(struct hid_device *hid)
+> >>>>> Yes, it works, thanks.
+> >>>>>
+> >>>>> This change seems to also prevent kernel ooops when I unload either
+> >>>>> i2c-hid or i2c-designware-platform while the touchpad is in use,
+> >>>>> thing that is likely to happen because of the other bug I reported.
+> >>>>>
+> >>>>> Speaking of it, does any of you have any suggestion on how to debug it?
+> >>>> I was able to reproduce the initial issue by unloading hid-rmi and
+> >>>> i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it
+> >>>> for me.
+> >>>>
+> >>>> For the original bug, you can modprobe i2c-hid debug=1 and we can see
+> >>>> what data the touchpad is reporting. That might help narrowing down if
+> >>>> it's noise which the touchpad thinks are fingers or if there is a
+> >>>> problem with the I2C lines causing spurious interrupts.
+> >>>>
+> >>>> Andrew
+> >>> I've already tried to do that and here what I got:
+> >>>
+> >>> When I release the finger, the last message is repeated 81 times.
+> >>> If the byte containing informations about the width of the finger
+> >>> becomes equal to either c0 or 0c at least once, the last message is
+> >>> repeated indefinitely and changes as soon as I start using the touchpad.
+> >>> The only way to stop it is to unload and reload i2c-hid.
+> >> The reports before log throttling kicks in would still be useful. For
+> >> instance c0 is outside of the range of finger width which we report so
+> >> something is wrong there. But, the touchpad should stop interrupting
+> >> once the finger is lifted. The fact that subsequent reads are reporting
+> >> the same data does sound like a problem with I2C getting confused and
+> >> continuously interrupting and reading the old finger data. I am also
+> >> curious about the value of the byte after the report id.
 > >>
-> >> Why do we even have this code to check for VGA devices?  I looked (briefly)
-> >> and couldn't find anything in the spec that prohibits removal of VGA
-> >> devices.
-> >>
-> > For my part I don't know. I only know that I had to integrate the patch into
-> > our images since I hit the problem repeatedly. Usually I wait with integrating
-> > Rajat's patches until you accept them, but this one was too disruptive.
+> >> Andrew
+> > If I'm not wrong c0 means that the width is 12 on y axis, while 0c means
+> > that the width is 12 on the x axis.
+> 
+> You are correct! I forgot width was 4 bits for X and Y in the same byte. 
+> That makes more sense.
+> 
 > >
-> > I would argue that while the patch may not be perfect, at least it improves
-> > the situation substantially.
+> > I have to correct myself. The important thing is that the byte is either
+> > cx or xc, where x is anything below c.
+> >
+> > Another correction. Sometimes unloading i2c-hid is not enough, I have to
+> > first disable the touchpad with xinput and then unload i2c-hid. If I
+> > don't do it, the messages starts reappearing as soon as I reload i2c-hid.
+> >
+> > I did several tests in the past months and I'm quite sure that the bug
+> > happens only past xc/cy.
 > 
-> I don't think removing the VGA checks is the way to fix the problem
-> you're seeing.  But I do want to investigate this code since we're in
-> the area.
-> 
-I agree. Removing the VGA check would attempt to fix something that
-isn't known to be broken, and might have undesirable side effects.
+> This maybe coincidental. It is not obvious to me why a certain width 
+> value would cause the symptoms described.
 
-> >> If we do need it (and it looks like most or all hotplug drivers copied it),
-> >> isn't there still a race?  Can't we have the following sequence?
-> >>
-> >>   - pciehp_check_link_active()                # returns true
-> >>   - Link goes down
-> >>   - pci_read_config_byte()            # fails because link is down
-> >>
-> > I would guess so. Question is how to address it. Read the configuration byte
-> > first, then check if the link is down ? Check if link is still up after reading
-> > the configuration byte ? Add a note that there may be a potential race condition
-> > and do nothing until it is actually seen ?
-> 
-> I think we should just read PCI_BRIDGE_CONTROL and look for a 0xff
-> value.  That's not a legal value for the register, so if we see it, it
-> should be pretty safe to assume the link is down or the device is not
-> present at all.
-> 
-Something like
-	if (bctl != 0xff && (bctl & PCI_BRIDGE_CTL_VGA)) {
-in addition to Rajat's changes ?
+Yes, I don't deny it. This is just a constant I found in my tests.
 
-I think it would be good to keep the change Rajat proposed, ie to check
-the link state instead of presence. Question then is if you'd want a new
-revision of Rajat's patch or another patch on top of it with the bctl
-related change.
+> >
+> > Here few lines right before the bug. The last line is repeated indefinitely:
+> >
+> > [ 1983.527097] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 61 0a 5f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.537211] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 63 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.547329] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 64 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.557486] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 66 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.567663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 68 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.577719] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6a 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.587852] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6b 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.598001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 6e 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.608215] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 61 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.618288] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 64 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.628493] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 67 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.638552] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 69 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.648663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 68 5b 6c 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.658789] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 6f 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.668923] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 61 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.678819] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 64 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.689230] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 66 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.699435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 69 5b 68 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.709502] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6a 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.719574] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6c 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.729713] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6e 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.739863] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 60 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.750001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 62 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.760150] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 64 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.770291] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 66 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.780445] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 68 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.790490] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 5a 0b 68 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.800667] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 4e 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.810691] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 31 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.820963] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 24 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.831071] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 17 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.841178] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 09 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.851325] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0b 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.861435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0d 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.871566] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6b 5b 0f 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.881735] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 01 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.891975] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 03 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.902073] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 05 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.912155] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 07 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.922224] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 09 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.932364] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0b 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.942480] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0d 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.952612] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6c 5b 0f 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.962774] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f1 0d 6d 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.972932] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f3 0d 6e 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.982872] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f6 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1983.993194] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6d 5a f9 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.003295] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a fc 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.013511] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a ff 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.023590] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f2 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.033747] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6e 5a f5 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.043850] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f8 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.053873] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fb 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.064077] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fe 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.074207] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f1 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.084425] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6f 5a f3 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.094533] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f6 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.104629] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f8 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.114742] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fa 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.124890] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fc 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.135006] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fe 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.145149] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a f0 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.155317] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a e2 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.165380] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d4 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.175532] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d6 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.185409] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d8 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.195761] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a db 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.205909] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a dd 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.216034] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d0 0e 76 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.226198] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d3 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.236301] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a d6 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.246520] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a cb 0f 79 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.256573] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 72 5a b1 0e 78 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.266697] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a a7 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.276823] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a 6d 0d 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.286921] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 73 59 96 0a 5a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.296888] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.306825] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> > [ 1984.316980] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> The last report which repeats indicates that no fingers are present. 
+> But, the click button is generating the interrupt and it is reporting 
+> that it is in the down position. Could the click button be getting stuck 
+> down? That would also explain why the data in the report is not 
+> changing. Could you be bumping the touchpad with your palm which is 
+> causing the click button to get stuck in the down position? That might 
+> also explain the large width value. Our max width is 15, so 12 would 
+> typically indicate a contact larger then a normal finger contact. That 
+> would explain the width of 12 showing up when this happens.
 
-Thanks,
-Guenter
+Yes, that's not a normal finger touch and the reported width seems
+quite accurate to me. There are no clicks involved, laying the side of
+my thumb gently on the top part of the clickpad (from where even voluntary
+clicks are hard to obtain) is enough to trigger the bug. If a click is
+reported, than something is really wrong.
+
+> Andrew
+
