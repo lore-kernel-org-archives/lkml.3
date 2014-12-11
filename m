@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759261AbaLKWhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:37:12 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63150 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759230AbaLKWhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:37:11 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [GIT PULL] fbdev fixes for 3.19
-Date: Thu, 11 Dec 2014 23:58:42 +0100
-Message-ID: <3272093.0A5V5UZ3cA@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CA+55aFyPauetupuqp0aexH2-2Z638jp-s_jyarvZW_sCSizzsg@mail.gmail.com>
-References: <54899F0E.4090309@ti.com> <CA+55aFyPauetupuqp0aexH2-2Z638jp-s_jyarvZW_sCSizzsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1759219AbaLKWkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:40:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758875AbaLKWkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:40:11 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Peter Wu <peter@lekensteyn.nl>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] HID: logitech-hidpp: prefix the name with Logitech
+Date: Thu, 11 Dec 2014 17:39:59 -0500
+Message-Id: <1418337599-10239-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, December 11, 2014 12:55:28 PM Linus Torvalds wrote:
-> On Thu, Dec 11, 2014 at 5:41 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
-> >
-> > Please pull fbdev changes for 3.19.
-> 
-> Ugh. I've pulled it, but I'm not a huge fan of commit 6d09dc6b74ca
-> ("of.h: Keep extern declaration of of_* variables when !CONFIG_OF").
-> 
-> I guess it works, but it ends up delaying any failures from compile
-> time to link time, and the linker error messages likely won't be
-> great.
-> 
-> So I'm cc'ing the OF people and Rafael (who worked on OF/ACPI
-> unification) to see if they have comments, preferences, or other ways
-> to solve this.
-> 
-> Quite frankly, to me it smells like non-OF builds should just have an
-> empty "for_each_child_of_node ()" define instead of playing games with
-> externs that then end up not existing, and depending on the compiler
-> DTRT.
-> 
-> Comments?
+Current names are reported as "K750", "M705", and it can be misleading
+for the users when they look at their input device list.
 
-"for_each_child_of_node ()" is not a problem here AFAICS, because in the
-example from the commit changelog the compiler would complain on the
-of_chosen instance in the "if ()" statement already anyway if I'm not mistaken.
+Prefixing the names with "Logitech " makes things better.
 
-It wants all of the code in the given block to make sense even if that
-block will be optimized away going forward.  That's not specific to CONFIG_OF
-too.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
 
-I stumbled over that a couple of times and I don't see a clean and simple way
-to work around it at the moment.  In the cases I dealt with it was sufficient
-to use static inlines that were defined to return NULL (or equivalent) when
-the symbol in question was not defined.
+Changes in v2:
+- renamed PREFIX_SIZE into PREFIX_LENGTH
+- changed "name_length + PREFIX_LENGTH;" into "PREFIX_LENGTH + name_length;"
+- rebased on Peter's last patch series
 
-Rafael
+ drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index 2f420c0..274dbb7 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
+ 		(report->rap.sub_id == 0x41);
+ }
+ 
++/**
++ * hidpp_prefix_name() prefixes the current given name with "Logitech ".
++ */
++static void hidpp_prefix_name(char **name, int name_length)
++{
++#define PREFIX_LENGTH 9 /* "Logitech " */
++
++	int new_length;
++	char *new_name;
++
++	if (name_length > PREFIX_LENGTH &&
++	    strncmp(*name, "Logitech ", PREFIX_LENGTH) == 0)
++		/* The prefix has is already in the name */
++		return;
++
++	new_length = PREFIX_LENGTH + name_length;
++	new_name = kzalloc(new_length, GFP_KERNEL);
++	if (!new_name)
++		return;
++
++	snprintf(new_name, new_length, "Logitech %s", *name);
++
++	kfree(*name);
++
++	*name = new_name;
++}
++
+ /* -------------------------------------------------------------------------- */
+ /* HIDP++ 1.0 commands                                                        */
+ /* -------------------------------------------------------------------------- */
+@@ -321,6 +348,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
+ 		return NULL;
+ 
+ 	memcpy(name, &response.rap.params[2], len);
++
++	/* include the terminating '\0' */
++	hidpp_prefix_name(&name, len + 1);
++
+ 	return name;
+ }
+ 
+@@ -498,6 +529,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
+ 		index += ret;
+ 	}
+ 
++	/* include the terminating '\0' */
++	hidpp_prefix_name(&name, __name_length + 1);
++
+ 	return name;
+ }
+ 
+-- 
+2.1.0
 
