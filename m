@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934479AbaLKKAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:00:55 -0500
-Received: from lucky1.263xmail.com ([211.157.147.133]:40045 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698AbaLKKAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:00:54 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <55629ff22c6f9f641757da409aaa9ae7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 4/5] ARM: dts: rockchip: add rk3288 usb PHY
-Date: Thu, 11 Dec 2014 17:55:21 +0800
-Message-Id: <1418291722-25448-5-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	id S934486AbaLKKC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:02:27 -0500
+Received: from lekensteyn.nl ([178.21.112.251]:51055 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932698AbaLKKCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 05:02:25 -0500
+From: Peter Wu <peter@lekensteyn.nl>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew de los Reyes <adlr@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: About "HID: logitech-hidpp: add support of the first Logitech Wireless Touchpad"
+Date: Thu, 11 Dec 2014 11:02:20 +0100
+Message-ID: <1659058.m7A8Z3l7lH@al>
+User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a device_node for RK3288 SoC usb phy. It also
-defines the phy to be used by three usb controllers: usb_host0/1
-and usb_otg.
+Hi Benjamin,
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+In commit 57ac86cf52e903d9e3e0f12b34c814cce6b65550 ("HID:
+logitech-hidpp: add support of the first Logitech Wireless Touchpad")
+which is in jikos/hid, you made this change to wtp_raw_event:
 
----
-
-Changes in v6: None
-Changes in v5:
-- reorder the phy dt node to a correct position.
-
-Changes in v4:
-- Add phy subnodes.
-
-Changes in v3: None
-
- arch/arm/boot/dts/rk3288.dtsi | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
-
-diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
-index 874e66d..bd2a1e0 100644
---- a/arch/arm/boot/dts/rk3288.dtsi
-+++ b/arch/arm/boot/dts/rk3288.dtsi
-@@ -335,6 +335,8 @@
- 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST0>;
- 		clock-names = "usbhost";
-+		phys = <&usbphy 1>;
-+		phy-names = "usb";
- 		status = "disabled";
- 	};
+        switch (data[0]) {
+        case 0x02:
+-               if (size < 21)
+-                       return 1;
+-               return wtp_mouse_raw_xy_event(hidpp, &data[7]);
++               if (hidpp->quirks & HIDPP_QUIRK_WTP_PHYSICAL_BUTTONS) {
++                       input_event(wd->input, EV_KEY, BTN_LEFT,
++                                       !!(data[1] & 0x01));
++                       input_event(wd->input, EV_KEY, BTN_RIGHT,
++                                       !!(data[1] & 0x02));
++                       input_sync(wd->input);
++               } else {
++                       if (size < 21)
++                               return 1;
++                       return wtp_mouse_raw_xy_event(hidpp, &data[7]);
++               }
+        case REPORT_ID_HIDPP_LONG:
+                if ((report->fap.feature_index != wd->mt_feature_index) ||
+                    (report->fap.funcindex_clientid != EVENT_TOUCHPAD_RAW_XY))
+                        return 1;
+                hidpp_touchpad_raw_xy_event(hidpp, data + 4, &raw);
  
-@@ -347,6 +349,8 @@
- 		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_USBHOST1>;
- 		clock-names = "otg";
-+		phys = <&usbphy 2>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
-@@ -357,6 +361,8 @@
- 		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
- 		clocks = <&cru HCLK_OTG0>;
- 		clock-names = "otg";
-+		phys = <&usbphy 0>;
-+		phy-names = "usb2-phy";
- 		status = "disabled";
- 	};
- 
-@@ -497,6 +503,27 @@
- 		interrupts = <GIC_PPI 9 0xf04>;
- 	};
- 
-+	usbphy: phy {
-+		compatible = "rockchip,rk3288-usb-phy";
-+		rockchip,grf = <&grf>;
-+		#phy-cells = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+
-+		usb-phy@0 {
-+			reg = <0>;
-+		};
-+
-+		usb-phy@1 {
-+			reg = <1>;
-+		};
-+
-+		usb-phy@2 {
-+			reg = <2>;
-+		};
-+	};
-+
- 	pinctrl: pinctrl {
- 		compatible = "rockchip,rk3288-pinctrl";
- 		rockchip,grf = <&grf>;
+                wtp_send_raw_xy_event(hidpp, &raw);
+                return 0;
+        }
+
+Report ID 2 is the mouse descriptor, so it seems correct in that it
+falls-through to the next case, but I wanted to check with you that this
+is indeed your intention. If so, could you explicitly mark it with a
+comment, /* fallthrough */ ?
 -- 
-2.0.0
-
+Kind regards,
+Peter
+https://lekensteyn.nl
 
