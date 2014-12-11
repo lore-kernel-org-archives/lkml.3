@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947AbaLKNns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 08:43:48 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:51787 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932802AbaLKNnp (ORCPT
+	id S933974AbaLKNpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 08:45:42 -0500
+Received: from lucky1.263xmail.com ([211.157.147.131]:58005 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932470AbaLKNpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 08:43:45 -0500
-Date: Thu, 11 Dec 2014 13:43:27 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "moderated list:ARM/CLKDEV SUPPORT" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
-        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        boris.brezillon@free-electrons.com
-Subject: Re: [RFC 04/15] regulator: add restrack support
-Message-ID: <20141211134327.GO11285@n2100.arm.linux.org.uk>
-References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
- <1418226513-14105-5-git-send-email-a.hajda@samsung.com>
- <20141210160720.GS11764@sirena.org.uk>
- <548976D2.7080005@samsung.com>
- <20141211125837.GV11764@sirena.org.uk>
+	Thu, 11 Dec 2014 08:45:41 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: kishon@ti.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <f2067214229180642dbe00119814951c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54899FE7.7050808@rock-chips.com>
+Date: Thu, 11 Dec 2014 21:45:11 +0800
+From: Yunzhi Li <lyz@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141211125837.GV11764@sirena.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Kishon Vijay Abraham I <kishon@ti.com>, heiko@sntech.de,
+        jwerner@chromium.org, dianders@chromium.org
+CC: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com> <1418291722-25448-2-git-send-email-lyz@rock-chips.com> <548971AF.1020506@ti.com>
+In-Reply-To: <548971AF.1020506@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 12:58:37PM +0000, Mark Brown wrote:
-> I'd expect someone reading the change in the regulator API to have at
-> least some idea how this fits in with the rest of the API and how to use
-> it, and probably more importantly I'd expect to be able to understand
-> why this is DT only.
+Hi Kishon:
 
-Yep.
+On 2014/12/11 18:27, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Thursday 11 December 2014 03:25 PM, Yunzhi Li wrote:
+>> +
+>> +static struct phy *rockchip_usb_phy_xlate(struct device *dev,
+>> +					struct of_phandle_args *args)
+>> +{
+>> +	struct rockchip_usb_phy_priv *priv = dev_get_drvdata(dev);
+>> +	unsigned int phy_id = args->args[0];
+>> +
+>> +	if (WARN_ON(phy_id < 0 || phy_id >= priv->nphys))
+>> +		return ERR_PTR(-ENODEV);
+>> +
+>> +	return priv->phys[phy_id].phy;
+> I didn't mean that. You can get rid of this entire xlate stuff if you use
+> something like below
+>
+> phy@xxx {
+> 	compatible = "";
+> 	phy1:usb_phy {
+> 	}
+> 	phy2:usb_phy {
+> 	};
+> };
+>
+>
+> usb@xx {
+> 	compatible = "";
+> 	phys = <&phy1>; //doesn't need xlate
+> 	/* this needs xlate
+> 	   phys = <&phy 1>;
+> 	*/
+> 	phy-names = "phy";
+> };
 
-This is a repetitive problem, and I fully agree with your concern about
-stuff which is supposed to be arch-independent being designed with only
-DT in mind.
+Thank you so much for your suggestion, but still have a question:
+I have to add the #phy-cells property in each phy sub-node, otherwise 
+devm_get_phy() will fail and I get log info like
+"/usb@ff500000: could not get #phy-cells for /phy/usbp-phy1". So can the 
+#phy-cells property defines in patent node
+also valid for it's child nodes like #address-cells ?
 
-New core kernel features should *not* be designed with only DT in mind -
-DT is not the only firmware description language which the kernel
-supports.  Folk need to understand that if they design a new arch
-independent kernel feature where the sole use case is with DT, that new
-feature is probably going to get rejected, especially when it's
-something as generic as resource tracking.
+---
+Yunzhi Li @ rockchip
 
-The world is not DT only.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
