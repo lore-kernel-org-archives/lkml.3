@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662AbaLKCXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 21:23:40 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:61740 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933541AbaLKCXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 21:23:39 -0500
-X-AuditID: cbfee68d-f79296d000004278-26-5489002974c1
-Message-id: <54890028.1080105@samsung.com>
-Date: Thu, 11 Dec 2014 11:23:36 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: weiyj_lk@163.com
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] extcon: Remove duplicated include from extcon-class.c
-References: <1418087319-14416-1-git-send-email-weiyj_lk@163.com>
-In-reply-to: <1418087319-14416-1-git-send-email-weiyj_lk@163.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42JZI2JSpKvJ0BlisHivuMXlXXPYLG43rmCz
-	aPv3g8li57pOdgcWj8UrprB69G1Zxeix9N5RRo/Pm+QCWKK4bFJSczLLUov07RK4Mua/7mYu
-	6GaruHjuIGMD42+WLkZODgkBE4kb8/8yQ9hiEhfurWcDsYUEljJKPL8pBlNzt+8DUJwLKD6d
-	UWLxsi8sEM5rRok575oZuxg5OHgFtCQOHrcCaWARUJWYPfcp2CA2oPD+FzfAbFGBMImV06+A
-	LeYVEJT4MfkeC0iriICIRPeTSJAws0CFxLqGaewgtrBAgMSJF8tYIO5xkNg3dwPQnewcnAKO
-	Egv1IKp1JPa3TmODsOUlNq95ywxymITAOnaJTUcOs0NcIyDxbfIhsE0SArISmw5AfSspcXDF
-	DZYJjGKzkNwzC8nYWUjGLmBkXsUomlqQXFCclF5kqFecmFtcmpeul5yfu4kRGEen/z3r3cF4
-	+4D1IUYBDkYlHt6Ay+0hQqyJZcWVuYcYTYGumMgsJZqcD4zWvJJ4Q2MzIwtTE1NjI3NLMyVx
-	XkWpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGK9xHm2/Xbbl08k+UaZpyo9V/qYYT3G1
-	PNN+asOHfeWq6bNS2X/WWnuUKWfnhlv1Kr7PYi0v1w4s+3fr0oR8HQXrt56vd9287R2ecv/S
-	1QMGE21mC5pmztxp7/xl57u0Dd35DO5v1556ZsFeaNV+PdtdfGmjmpDT8SjuhUeOKSY+WfDY
-	b7XaESWW4oxEQy3mouJEAGaoXRyeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9jQV1Nhs4Qg5lrBC0u75rDZnG7cQWb
-	Rdu/H0wWO9d1sjuweCxeMYXVo2/LKkaPpfeOMnp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZdu
-	q+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RTSaEsMacUKBSQWFyspG+HaUJoiJuu
-	BUxjhK5vSBBcj5EBGkhYw5gx/3U3c0E3W8XFcwcZGxh/s3QxcnJICJhI3O37wAZhi0lcuLce
-	yObiEBKYziixeNkXFgjnNaPEnHfNjF2MHBy8AloSB49bgTSwCKhKzJ77FKyZDSi8/8UNMFtU
-	IExi5fQrYAt4BQQlfky+xwLSKiIgItH9JBIkzCxQIbGuYRo7iC0sECBx4sUysHIhAQeJfXM3
-	MHcxsnNwCjhKLNSDqNaR2N86jQ3ClpfYvOYt8wRGgVlI5s9CUjYLSdkCRuZVjKKpBckFxUnp
-	uYZ6xYm5xaV56XrJ+bmbGMFx+kxqB+PKBotDjAIcjEo8vAGX20OEWBPLiitzDzFKcDArifAm
-	3egIEeJNSaysSi3Kjy8qzUktPsRoCvT+RGYp0eR8YArJK4k3NDYxM7I0Mje0MDI2VxLnVbJv
-	CxESSE8sSc1OTS1ILYLpY+LglGpgLG+4WZwlkPdBaJvioRsii07zfGioklRnXWZkveHJevFd
-	5sdFr+5tXRxyKY3xPaNr3fTmAqYGzo0/Hh6xurv+c8UN3c58f4FtsQp3o+8HqsdJfxT6bBL8
-	lvXeHM/NP9KilfWDA8ITWZS7Y4/v2yCVtjK52IMhXfb1T6sjgX3dB9y65D7McFiuxFKckWio
-	xVxUnAgAUdgd4+kCAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S933549AbaLKCaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 21:30:18 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60494 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933251AbaLKCaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 21:30:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="497004294"
+Message-ID: <548901A8.6020805@linux.intel.com>
+Date: Wed, 10 Dec 2014 18:30:00 -0800
+From: Dave Hansen <dave.hansen@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org
+Subject: Re: [GIT pull] x86 mpx support for 3.19
+References: <alpine.DEB.2.11.1412091504490.16275@nanos> <877fxzexuz.fsf@x220.int.ebiederm.org>
+In-Reply-To: <877fxzexuz.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wei,
+On 12/10/2014 06:14 PM, Eric W. Biederman wrote:
+> Thomas Gleixner <tglx@linutronix.de> writes:
+>> please pull the latest x86-mpx-for-linus git tree from:
+>>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mpx-for-linus
+>>
+>> This enables support for x86 MPX:
+>>
+>>   MPX is a new debug feature for bound checking in user space. It
+>>   requires kernel support to handle the bound tables and decode the
+>>   bound violating instruction in the trap handler.
+> 
+> I some really dumb questions.
+> 
+> Given that mpx is both architecture and cpu specific why use prctl?
+> I would think arch_prctl would be a much more appropriate place to
+> expose this logic.
 
-On 12/09/2014 10:08 AM, weiyj_lk@163.com wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/extcon/extcon-class.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 043dcd9..8319f25 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -32,7 +32,6 @@
->  #include <linux/of.h>
->  #include <linux/slab.h>
->  #include <linux/sysfs.h>
-> -#include <linux/of.h>
->  
->  /*
->   * extcon_cable_name suggests the standard cable names for commonly used
-> 
-> 
+I actually never considered arch_prctl().  It doesn't seem a bad fit for
+any reason, just that I never thought of it and no one suggested it up
+to this point.
 
-I'll apply it on extcon-next branch.
+Is there any *real* advantage to arch_prctl()?  We have some gcc code
+that's going to be using these prctls and if we need to change the
+interface, we've got to get that code changed too... fast.
 
-Thanks,
-Chanwoo Choi
+> Why don't you have a call to let an application query to see if mpx
+> management is enabled?  I am trying to imagine how checkpoint/restart is
+> going to be supported for mpx applications.  If I can't even query if
+> mpx is enabled I don't have a clue how we could save this state and
+> duplicate it in another process on another machine.
+
+You probably need to actually save off the contents of mm->bd_addr
+itself.  I guess you can do it along with all the other internals of the
+mm that get saved off currently.
