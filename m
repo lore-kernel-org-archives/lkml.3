@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933418AbaLKAZF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:25:05 -0500
-Received: from mail-oi0-f46.google.com ([209.85.218.46]:35887 "EHLO
-	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933125AbaLKAZD (ORCPT
+	id S933439AbaLKAZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:25:12 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:47507 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933125AbaLKAZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:25:03 -0500
+	Wed, 10 Dec 2014 19:25:08 -0500
 MIME-Version: 1.0
-X-Originating-IP: [50.161.55.123]
-Date: Wed, 10 Dec 2014 16:25:02 -0800
-Message-ID: <CAMVG2su302Nvtp+fnaOjtLadJFtpPmVXiN5YfQ0JpT920YohuA@mail.gmail.com>
-Subject: [PATCH, 3.18] sleeping function called from invalid context
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>,
+In-Reply-To: <CA+8MBb+iw3KJz5EgX-DLBHGWANUSVFP2bQe2_U4kqCfM-wzH8Q@mail.gmail.com>
+References: <20141124205441.GW5050@linux.vnet.ibm.com> <CALCETrXBofV3oxDwK4MiSvFQcX3yxX_sL_KY63EZ8DgS8LnJSg@mail.gmail.com>
+ <20141124213501.GX5050@linux.vnet.ibm.com> <20141124223407.GB8512@linux.vnet.ibm.com>
+ <CALCETrUA+z5z6bnOw63-EUiFD4WQtBXm1TE2DSRj3uG+d_k-bQ@mail.gmail.com>
+ <20141124225754.GY5050@linux.vnet.ibm.com> <20141124233101.GA2819@linux.vnet.ibm.com>
+ <CALCETrV37kqC658AzBHZ5z_vH2b_1T821q5EfbMcS9Ecpj8EEw@mail.gmail.com>
+ <20141124235058.GZ5050@linux.vnet.ibm.com> <CALCETrUFwyBYFWZi4JC1-HftmUumLr+bB1kh8EW6LViN+G+j+g@mail.gmail.com>
+ <20141125185803.GC3938@pd.tnic> <CA+8MBb+iw3KJz5EgX-DLBHGWANUSVFP2bQe2_U4kqCfM-wzH8Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Dec 2014 16:24:46 -0800
+Message-ID: <CALCETrWFBEvL4CSD+cZ0inMcvv09rLJi4Wpf4gLz5fvsGcV-wQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] x86, traps: Track entry into and exit from IST context
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        X86 ML <x86@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andy Lutomirski <luto@amacapital.net>
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.18, I was seeing a significant number of allocation warnings
-from load_elf_binary call paths [1].
+On Wed, Dec 10, 2014 at 4:22 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> On Tue, Nov 25, 2014 at 10:58 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Mon, Nov 24, 2014 at 03:52:10PM -0800, Andy Lutomirski wrote:
+>>> Dunno. Tony and Borislav -- when do you want the IST stack switching
+>>> stuff?
+>>
+>> I'd leave that up to Tony and his testbench. I mean, we can hammer on
+>> it as much as we can and it can pass all testing locally but the real
+>> fun starts once it hits upstream and for that it doesn't matter which
+>> release... IMHO.
+>
+> So what was the net result of all the mode/RCU discussions?
+>
+> Do I need some extra magic incantations in the final version
+> of do_machine_check() beyond what was in this patch:
+>
+>   https://lkml.kernel.org/r/546d169211835aded@agluck-desk.sc.intel.com
+>
+> to make everything happy?
+>
 
-Allocating FPU state atomically [2] does prevent potentially sleeping
-while atomic, but probably isn't the correct fix. Anyone familiar with
-this area?
+I think you need ist_begin_non_atomic() before local_irq_enable() and
+ist_end_non_atomic() after local_irq_disable().  Otherwise it should
+be good.
 
--- [1]
+--Andy
 
-BUG: sleeping function called from invalid context at mm/slub.c:1240
-in_atomic(): 1, irqs_disabled(): 0, pid: 29016, name: dmesg
-INFO: lockdep is turned off.
-Preemption disabled at:[<ffffffff8114625f>] handle_mm_fault+0x5ff/0x8a0
+> -Tony
 
-CPU: 122 PID: 29016 Comm: dmesg Tainted: G        W      3.18.0-test #6
-Hardware name: Supermicro AS -1042G-LTF/H8QGL, BIOS DS3.5a     11/13/2014
- ffffffff8203b81b ffff886fdf62f888 ffffffff81b942e8 0000000000000007
- 0000000000000000 ffff886fdf62f8b8 ffffffff8109ac4c 0000000000000000
- 0000000000000010 ffff8807df84bc00 00000000000000d0 ffff886fdf62f908
-Call Trace:
- [<ffffffff81b942e8>] dump_stack+0x4f/0x7c
- [<ffffffff8109ac4c>] __might_sleep+0x164/0x250
- [<ffffffff8116372b>] kmem_cache_alloc+0xeb/0x138
- [<ffffffff8100e0e1>] init_fpu+0x71/0xb0
- [<ffffffff81003966>] math_state_restore+0xce/0x208
- [<ffffffff8100437b>] do_device_not_available+0x2b/0x60
- [<ffffffff81ba70f5>] device_not_available+0x15/0x20
- [<ffffffff81487102>] ? copy_page+0x12/0x33
- [<ffffffff8109edb9>] ? get_parent_ip+0x11/0x58
- [<ffffffff8109ee55>] ? preempt_count_add+0x55/0xb0
- [<ffffffff811437a1>] ? do_cow_fault+0xe9/0x258
- [<ffffffff8114625f>] handle_mm_fault+0x5ff/0x8a0
- [<ffffffff81032218>] ? __do_page_fault+0xc8/0x498
- [<ffffffff811481b9>] ? vma_gap_callbacks_rotate+0x19/0x20
- [<ffffffff8103227d>] __do_page_fault+0x12d/0x498
- [<ffffffff810b682e>] ? up_write+0x1e/0x48
- [<ffffffff81148d18>] ? vma_link+0x80/0xc0
- [<ffffffff81149cb2>] ? vma_set_page_prot+0x3a/0x60
- [<ffffffff8114ae6e>] ? mmap_region+0x1be/0x5e0
- [<ffffffff8103262e>] do_page_fault+0x1e/0x70
- [<ffffffff81ba737f>] page_fault+0x1f/0x30
- [<ffffffff81487f3e>] ? __clear_user+0x2e/0x50
- [<ffffffff81487f22>] ? __clear_user+0x12/0x50
- [<ffffffff81487f8a>] clear_user+0x2a/0x30
- [<ffffffff811ca1e1>] padzero+0x21/0x30
- [<ffffffff811cc41f>] load_elf_binary+0x8cf/0xdd0
- [<ffffffff8117d18f>] search_binary_handler+0x7f/0x1f8
- [<ffffffff8117ec06>] do_execve_common.isra.34+0x616/0x790
- [<ffffffff8117eb62>] ? do_execve_common.isra.34+0x572/0x790
- [<ffffffff8117ed93>] do_execve+0x13/0x18
- [<ffffffff8117f070>] SyS_execve+0x20/0x30
- [<ffffffff81ba6159>] stub_execve+0x69/0xa0
 
--- [2]
 
-diff --git a/arch/x86/include/asm/fpu-internal.h
-b/arch/x86/include/asm/fpu-internal.h
-index e97622f..57029ad 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -574,7 +574,7 @@ static inline int fpu_alloc(struct fpu *fpu)
- {
-        if (fpu_allocated(fpu))
-                return 0;
--       fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_KERNEL);
-+       fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_ATOMIC);
-        if (!fpu->state)
-                return -ENOMEM;
-        WARN_ON((unsigned long)fpu->state & 15);
 -- 
-Daniel J Blueman
+Andy Lutomirski
+AMA Capital Management, LLC
