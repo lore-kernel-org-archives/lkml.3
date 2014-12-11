@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934305AbaLKR2h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:28:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59022 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932581AbaLKR2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:28:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,558,1413270000"; 
-   d="scan'208";a="646166712"
-From: Ross Zwisler <ross.zwisler@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: [PATCH] sizes: Add 64 bit constants to sizes.h
-Date: Thu, 11 Dec 2014 10:21:16 -0700
-Message-Id: <1418318476-11866-1-git-send-email-ross.zwisler@linux.intel.com>
-X-Mailer: git-send-email 1.9.3
+	id S934377AbaLKR3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:29:11 -0500
+Received: from mail-bn1bon0070.outbound.protection.outlook.com ([157.56.111.70]:36384
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932480AbaLKR3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 12:29:09 -0500
+Date: Thu, 11 Dec 2014 09:28:59 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Harini Katakam <harinikatakamlinux@gmail.com>
+CC: Harini Katakam <harini.katakam@xilinx.com>,
+        "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vishnu Motghare <vishnum@xilinx.com>
+Subject: Re: [PATCH v4 2/2] i2c: cadence: Check for errata condition
+ involving master receive
+References: <1418211884-5329-1-git-send-email-harinik@xilinx.com>
+ <1418211884-5329-3-git-send-email-harinik@xilinx.com>
+ <6b2bd13bcd934b0fb09712e8950348e6@BN1AFFO11FD005.protection.gbl>
+ <CAFcVECJDfJaEALDxfZg5-+tsD02mVT43s7PX4RLs349Kx9Jaeg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFcVECJDfJaEALDxfZg5-+tsD02mVT43s7PX4RLs349Kx9Jaeg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21170.000
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <61a2ff3fb6764fa388436dbbe20a8d70@BY2FFO11FD001.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(24454002)(377424004)(51704005)(199003)(377454003)(76176999)(86362001)(92726002)(551934003)(104016003)(77156002)(54356999)(62966003)(92566001)(99396003)(120916001)(50986999)(110136001)(107046002)(87936001)(106466001)(85202003)(53416004)(46102003)(20776003)(64706001)(23676002)(6806004)(31966008)(1411001)(4396001)(19580405001)(93886004)(85182001)(108616004)(83506001)(74316001)(19580395003)(21056001)(47776003)(50466002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB040;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB040;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB040;
+X-Forefront-PRVS: 0422860ED4
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB040;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 64 bit ULL constants to include/linux/sizes.h.  These
-sizes range from SZ_4G (4 gibibyte) through SZ_8E (8 exbibyte).
+On Thu, 2014-12-11 at 12:46PM +0530, Harini Katakam wrote:
+> Hi Soren,
+> 
+> On Wed, Dec 10, 2014 at 11:15 PM, Sören Brinkmann
+> <soren.brinkmann@xilinx.com> wrote:
+> > On Wed, 2014-12-10 at 05:14PM +0530, Harini Katakam wrote:
+> >> Cadence I2C controller has the following bugs:
+> >> - completion indication is not given to the driver at the end of
+> >> a read/receive transfer with HOLD bit set.
+> >> - Invalid read transaction are generated on the bus when HW timeout
+> >> condition occurs with HOLD bit set.
+> >>
+> >> As a result of the above, if a set of messages to be transferred with
+> >> repeated start includes any transfer following a read transfer,
+> >> completion is never indicated and timeout occurs.
+> >> Hence a check is implemented to return -EOPNOTSUPP for such sequences.
+> >>
+> >> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> >> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
+> >> ---
+> >>
+> >> v4:
+> >> Use single dev_warn and make message grep-able.
+> >>
+> >> v3:
+> >> Add warning in case of unsupported transfer.
+> >>
+> >> v2:
+> >> Dont defeteature repeated start. Just check for unsupported conditions in the
+> >> driver and return error.
+> >>
+> >> ---
+> >>  drivers/i2c/busses/i2c-cadence.c |   14 ++++++++++++++
+> >>  1 file changed, 14 insertions(+)
+> >>
+> >> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
+> >> index 5f5d4fa..f9269a6 100644
+> >> --- a/drivers/i2c/busses/i2c-cadence.c
+> >> +++ b/drivers/i2c/busses/i2c-cadence.c
+> >> @@ -541,6 +541,20 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+> >>        * processed with a repeated start.
+> >>        */
+> >>       if (num > 1) {
+> >> +             /*
+> >> +              * This controller does not give completion interrupt after a
+> >> +              * master receive transfer if HOLD bit is set (repeated start),
+> >> +              * resulting in SW timeout. Hence, if a receive transfer is
+> >> +              * followed by any other transfer, an error is returned
+> >> +              * indicating that this sequence is not supported.
+> >> +              */
+> >> +             for (count = 0; count < num-1; count++) {
+> >> +                     if (msgs[count].flags & I2C_M_RD)
+> >> +                             dev_warn(adap->dev.parent, "No support for "
+> >> +                                      "repeated start when receive is "
+> >> +                                      "followed by a transfer\n");
+> >
+> > Still not grepable. There must be no line breaks in the string!
+> 
+> This message will be printed in one single line.
+> Do you want this string to be grepable in the driver? Why is that necessary?
 
-Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
----
- include/linux/sizes.h | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+It's about grepping the sources.
+I pointed you to the paragraph in the Codingstyle rules, please read
+it.
 
-diff --git a/include/linux/sizes.h b/include/linux/sizes.h
-index ce3e815..06ab35b 100644
---- a/include/linux/sizes.h
-+++ b/include/linux/sizes.h
-@@ -43,5 +43,40 @@
- 
- #define SZ_1G				0x40000000
- #define SZ_2G				0x80000000
-+#define SZ_4G				0x0000000100000000ULL
-+#define SZ_8G				0x0000000200000000ULL
-+#define SZ_16G				0x0000000400000000ULL
-+#define SZ_32G				0x0000000800000000ULL
-+#define SZ_64G				0x0000001000000000ULL
-+#define SZ_128G				0x0000002000000000ULL
-+#define SZ_256G				0x0000004000000000ULL
-+#define SZ_512G				0x0000008000000000ULL
-+
-+#define SZ_1T				0x0000010000000000ULL
-+#define SZ_2T				0x0000020000000000ULL
-+#define SZ_4T				0x0000040000000000ULL
-+#define SZ_8T				0x0000080000000000ULL
-+#define SZ_16T				0x0000100000000000ULL
-+#define SZ_32T				0x0000200000000000ULL
-+#define SZ_64T				0x0000400000000000ULL
-+#define SZ_128T				0x0000800000000000ULL
-+#define SZ_256T				0x0001000000000000ULL
-+#define SZ_512T				0x0002000000000000ULL
-+
-+#define SZ_1P				0x0004000000000000ULL
-+#define SZ_2P				0x0008000000000000ULL
-+#define SZ_4P				0x0010000000000000ULL
-+#define SZ_8P				0x0020000000000000ULL
-+#define SZ_16P				0x0040000000000000ULL
-+#define SZ_32P				0x0080000000000000ULL
-+#define SZ_64P				0x0100000000000000ULL
-+#define SZ_128P				0x0200000000000000ULL
-+#define SZ_256P				0x0400000000000000ULL
-+#define SZ_512P				0x0800000000000000ULL
-+
-+#define SZ_1E				0x1000000000000000ULL
-+#define SZ_2E				0x2000000000000000ULL
-+#define SZ_4E				0x4000000000000000ULL
-+#define SZ_8E				0x8000000000000000ULL
- 
- #endif /* __LINUX_SIZES_H__ */
--- 
-1.9.3
-
+	Sören
