@@ -1,263 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806AbaLKGDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:03:24 -0500
-Received: from regular1.263xmail.com ([211.150.99.140]:58018 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722AbaLKGDW (ORCPT
+	id S1758835AbaLKGF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:05:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38775 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755578AbaLKGF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:03:22 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: addy.ke@rock-chips.com
-X-FST-TO: wsa@the-dreams.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: addy.ke@rock-chips.com
-X-UNIQUE-TAG: <4cbde894c650af11be5bb5f918d362a7>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Addy Ke <addy.ke@rock-chips.com>
-To: wsa@the-dreams.de, max.schwarz@online.de, heiko@sntech.de, olof@lixom.net,
-        dianders@chromium.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        u.kleine-koenig@pengutronix.de
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, cf@rock-chips.com,
-        xjq@rock-chips.com, huangtao@rock-chips.com, zyw@rock-chips.com,
-        yzq@rock-chips.com, hj@rock-chips.com, kever.yang@rock-chips.com,
-        hl@rock-chips.com, caesar.wang@rock-chips.com, zhengsq@rock-chips.com,
-        Addy Ke <addy.ke@rock-chips.com>
-Subject: [PATCH v4] i2c: rk3x: fix bug that cause measured high_ns doesn't meet I2C specification
-Date: Thu, 11 Dec 2014 14:00:49 +0800
-Message-Id: <1418277650-25215-1-git-send-email-addy.ke@rock-chips.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
-References: <1418007589-3688-1-git-send-email-addy.ke@rock-chips.com>
+	Thu, 11 Dec 2014 01:05:56 -0500
+Message-ID: <5489338C.1030109@ti.com>
+Date: Thu, 11 Dec 2014 11:32:52 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+MIME-Version: 1.0
+To: Yunzhi Li <lyz@rock-chips.com>, <heiko@sntech.de>, <jwerner@chromium.org>,
+        <dianders@chromium.org>
+CC: <olof@lixom.net>, <huangtao@rock-chips.com>, <zyw@rock-chips.com>,
+        <cf@rock-chips.com>, <linux-rockchip@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v5 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+References: <1418208371-18851-1-git-send-email-lyz@rock-chips.com> <1418208371-18851-2-git-send-email-lyz@rock-chips.com>
+In-Reply-To: <1418208371-18851-2-git-send-email-lyz@rock-chips.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of clock cycles to be written into the CLKDIV register
-that determines the I2C clk high phase includes the rise time.
-So to meet the timing requirements defined in the I2C specification
-which defines the minimal time SCL has to be high, the rise time
-has to taken into account. The same applies to the low phase with
-falling time.
+Hi,
 
-In my test on RK3288-Pink2 board, which is not an upstream board yet,
-if external pull-up resistor is 4.7K, rise_ns is about 700ns.
-So the measured high_ns is about 3900ns, which is less than 4000ns
-(the minimum high_ns in I2C specification for Standard-mode).
+On Wednesday 10 December 2014 04:16 PM, Yunzhi Li wrote:
+> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
+> currently this driver can support RK3288. The RK3288 SoC have
+> three independent USB PHY IPs which are all configured through a
+> set of registers located in the GRF (general register files)
+> module.
+> 
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+> 
+> ---
+> 
+> Changes in v5: None
+> Changes in v4:
+> - Get number of PHYs from device tree.
+> - Model each PHY as subnode of the phy provider node.
+> 
+> Changes in v3:
+> - Use BIT macro instead of bit shift ops.
+> - Rename the config entry to PHY_ROCKCHIP_USB.
+> 
+>  drivers/phy/Kconfig            |   7 ++
+>  drivers/phy/Makefile           |   1 +
+>  drivers/phy/phy-rockchip-usb.c | 211 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 219 insertions(+)
+>  create mode 100644 drivers/phy/phy-rockchip-usb.c
+> 
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index ccad880..8a39d2a 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
+>  	depends on OF
+>  	select GENERIC_PHY
+>  
+> +config PHY_ROCKCHIP_USB2
+> +	tristate "Rockchip USB2 PHY Driver"
+> +	depends on ARCH_ROCKCHIP && OF
+> +	select GENERIC_PHY
+> +	help
+> +	  Enable this to support the Rockchip USB 2.0 PHY.
+> +
+>  config PHY_ST_SPEAR1310_MIPHY
+>  	tristate "ST SPEAR1310-MIPHY driver"
+>  	select GENERIC_PHY
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index aa74f96..8a13f72 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
+>  phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
+>  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
+>  obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
+> +obj-$(CONFIG_PHY_ROCKCHIP_USB2) += phy-rockchip-usb.o
+>  obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
+>  obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
+>  obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
+> diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
+> new file mode 100644
+> index 0000000..0317c21
+> --- /dev/null
+> +++ b/drivers/phy/phy-rockchip-usb.c
+> @@ -0,0 +1,211 @@
+> +/*
+> + * Rockchip usb PHY driver
+> + *
+> + * Copyright (C) 2014 Yunzhi Li <lyz@rock-chips.com>
+> + * Copyright (C) 2014 ROCKCHIP, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/reset.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/syscon.h>
+> +
+> +#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
+> +
+> +/*
+> + * The higher 16-bit of this register is used for write protection
+> + * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
+> + */
+> +#define SIDDQ_MSK		BIT(13 + 16)
 
-To fix this bug, min_low_ns should include fall time and min_high_ns
-should include rise time too.
+I think here the "MSK" is misleading. it should be something that refers write
+protection?
 
-This patch merged the patch that Doug submitted to chromium project,
-which can get the rise and fall times for signals from the device tree.
-This allows us to more accurately calculate timings. see:
-https://chromium-review.googlesource.com/#/c/232774/
+> +#define SIDDQ_ON		BIT(13)
+> +#define SIDDQ_OFF		(0 << 13)
+> +
+> +struct rockchip_usb_phy {
+> +	struct regmap	*reg_base;
+> +	unsigned int	reg_offset;
+> +	struct clk	*clk;
+> +	struct phy	*phy;
+> +	unsigned	index;
+> +};
+> +
+> +struct rockchip_usb_phy_priv {
+> +	struct rockchip_usb_phy	*phys;
+> +	unsigned		nphys;
+> +};
+> +
+> +static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
+> +					   bool siddq)
+> +{
+> +	return regmap_write(phy->reg_base, phy->reg_offset,
+> +			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
 
-Signed-off-by: Addy Ke <addy.ke@rock-chips.com>
----
-Changes in v2:
-- merged the patch that Doug submitted to chromium project
-Changes in v3:
-- merged the patch that Doug submitted to chromium to projectchange bindins
-  see: https://chromium-review.googlesource.com/#/c/232774/
-Changes in v4:
-- Fix some typos pointed out by Uwe
-- adjust "i2c" capitalization to "I2C"
+Shouldn't we actually reset the bit for power off?
+> +}
+> +
+> +static int rockchip_usb_phy_power_off(struct phy *_phy)
+> +{
+> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
+> +	int ret = 0;
+> +
+> +	/* Power down usb phy analog blocks by set siddq 1 */
+> +	ret = rockchip_usb_phy_power(phy, 1);
+> +	if (ret)
+> +		return ret;
+> +
+> +	clk_disable_unprepare(phy->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static int rockchip_usb_phy_power_on(struct phy *_phy)
+> +{
+> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
+> +	int ret = 0;
+> +
+> +	ret = clk_prepare_enable(phy->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Power up usb phy analog blocks by set siddq 0 */
+> +	ret = rockchip_usb_phy_power(phy, 0);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+> +static struct phy *rockchip_usb_phy_xlate(struct device *dev,
+> +					struct of_phandle_args *args)
+> +{
+> +	struct rockchip_usb_phy_priv *priv = dev_get_drvdata(dev);
+> +	int i;
+> +
+> +	if (WARN_ON(args->args[0] >= priv->nphys))
+> +		return ERR_PTR(-ENODEV);
+> +
+> +	for (i = 0; i < priv->nphys; i++) {
+> +		if (priv->phys[i].index == args->args[0])
+> +			break;
 
- Documentation/devicetree/bindings/i2c/i2c-rk3x.txt | 11 ++++
- drivers/i2c/busses/i2c-rk3x.c                      | 76 +++++++++++++++-------
- 2 files changed, 62 insertions(+), 25 deletions(-)
+using the type of PHY instead of index might look better.
+However this shouldn't be needed at all if the phandle refers to the sub-node
+of the phy provider.
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-index dde6c22..1885bd8 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
-@@ -21,6 +21,14 @@ Required on RK3066, RK3188 :
- Optional properties :
- 
-  - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
-+ - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
-+	(t(r) in I2C specification). If not specified this is assumed to be
-+	the maximum the specification allows(1000 ns for Standard-mode,
-+	300 ns for Fast-mode) which might cause slightly slower communication.
-+ - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
-+	(t(f) in the I2C specification). If not specified this is assumed to
-+	be the maximum the specification allows (300 ns) which might cause
-+	slightly slowercommunication.
- 
- Example:
- 
-@@ -39,4 +47,7 @@ i2c0: i2c@2002d000 {
- 
- 	clock-names = "i2c";
- 	clocks = <&cru PCLK_I2C0>;
-+
-+	i2c-scl-rising-time-ns = <800>;
-+	i2c-scl-falling-time-ns = <100>;
- };
-diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
-index 0ee5802..f8eb77e 100644
---- a/drivers/i2c/busses/i2c-rk3x.c
-+++ b/drivers/i2c/busses/i2c-rk3x.c
-@@ -102,6 +102,8 @@ struct rk3x_i2c {
- 
- 	/* Settings */
- 	unsigned int scl_frequency;
-+	unsigned int rise_ns;
-+	unsigned int fall_ns;
- 
- 	/* Synchronization & notification */
- 	spinlock_t lock;
-@@ -435,6 +437,8 @@ out:
-  *
-  * @clk_rate: I2C input clock rate
-  * @scl_rate: Desired SCL rate
-+ * @rise_ns: How many ns it takes for signals to rise.
-+ * @fall_ns: How many ns it takes for signals to fall.
-  * @div_low: Divider output for low
-  * @div_high: Divider output for high
-  *
-@@ -443,11 +447,14 @@ out:
-  * too high, we silently use the highest possible rate.
-  */
- static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
-+			      unsigned long rise_ns, unsigned long fall_ns,
- 			      unsigned long *div_low, unsigned long *div_high)
- {
-+	unsigned long spec_min_low_ns, spec_min_high_ns;
-+	unsigned long spec_max_data_hold_ns;
-+	unsigned long spec_data_hold_buffer_ns;
-+
- 	unsigned long min_low_ns, min_high_ns;
--	unsigned long max_data_hold_ns;
--	unsigned long data_hold_buffer_ns;
- 	unsigned long max_low_ns, min_total_ns;
- 
- 	unsigned long clk_rate_khz, scl_rate_khz;
-@@ -469,29 +476,33 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
- 		scl_rate = 1000;
- 
- 	/*
--	 * min_low_ns:  The minimum number of ns we need to hold low
--	 *		to meet i2c spec
--	 * min_high_ns: The minimum number of ns we need to hold high
--	 *		to meet i2c spec
--	 * max_low_ns:  The maximum number of ns we can hold low
--	 *		to meet i2c spec
-+	 * min_low_ns:  The minimum number of ns we need to hold low to
-+	 *		meet I2C specification, should include fall time.
-+	 * min_high_ns: The minimum number of ns we need to hold high to
-+	 *		meet I2C specification, should include rise time.
-+	 * max_low_ns:  The maximum number of ns we can hold low to meet
-+	 *		I2C specification.
- 	 *
--	 * Note: max_low_ns should be (max data hold time * 2 - buffer)
-+	 * Note: max_low_ns should be (maximum data hold time * 2 - buffer)
- 	 *	 This is because the i2c host on Rockchip holds the data line
- 	 *	 for half the low time.
- 	 */
- 	if (scl_rate <= 100000) {
--		min_low_ns = 4700;
--		min_high_ns = 4000;
--		max_data_hold_ns = 3450;
--		data_hold_buffer_ns = 50;
-+		/* Standard-mode */
-+		spec_min_low_ns = 4700;
-+		spec_min_high_ns = 4000;
-+		spec_max_data_hold_ns = 3450;
-+		spec_data_hold_buffer_ns = 50;
- 	} else {
--		min_low_ns = 1300;
--		min_high_ns = 600;
--		max_data_hold_ns = 900;
--		data_hold_buffer_ns = 50;
-+		/* Fast-mode */
-+		spec_min_low_ns = 1300;
-+		spec_min_high_ns = 600;
-+		spec_max_data_hold_ns = 900;
-+		spec_data_hold_buffer_ns = 50;
- 	}
--	max_low_ns = max_data_hold_ns * 2 - data_hold_buffer_ns;
-+	min_low_ns = spec_min_low_ns + fall_ns;
-+	min_high_ns = spec_min_high_ns + rise_ns;
-+	max_low_ns = spec_max_data_hold_ns * 2 - spec_data_hold_buffer_ns;
- 	min_total_ns = min_low_ns + min_high_ns;
- 
- 	/* Adjust to avoid overflow */
-@@ -510,8 +521,8 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
- 	min_div_for_hold = (min_low_div + min_high_div);
- 
- 	/*
--	 * This is the maximum divider so we don't go over the max.
--	 * We don't round up here (we round down) since this is a max.
-+	 * This is the maximum divider so we don't go over the maximum.
-+	 * We don't round up here (we round down) since this is a maximum.
- 	 */
- 	max_low_div = clk_rate_khz * max_low_ns / (8 * 1000000);
- 
-@@ -544,7 +555,7 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
- 		ideal_low_div = DIV_ROUND_UP(clk_rate_khz * min_low_ns,
- 					     scl_rate_khz * 8 * min_total_ns);
- 
--		/* Don't allow it to go over the max */
-+		/* Don't allow it to go over the maximum */
- 		if (ideal_low_div > max_low_div)
- 			ideal_low_div = max_low_div;
- 
-@@ -588,8 +599,8 @@ static void rk3x_i2c_adapt_div(struct rk3x_i2c *i2c, unsigned long clk_rate)
- 	u64 t_low_ns, t_high_ns;
- 	int ret;
- 
--	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, &div_low,
--				 &div_high);
-+	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->rise_ns,
-+				 i2c->fall_ns, &div_low, &div_high);
- 
- 	WARN_ONCE(ret != 0, "Could not reach SCL freq %u", i2c->scl_frequency);
- 
-@@ -633,9 +644,9 @@ static int rk3x_i2c_clk_notifier_cb(struct notifier_block *nb, unsigned long
- 	switch (event) {
- 	case PRE_RATE_CHANGE:
- 		if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
--				      &div_low, &div_high) != 0) {
-+				       i2c->rise_ns, i2c->fall_ns, &div_low,
-+				       &div_high) != 0)
- 			return NOTIFY_STOP;
--		}
- 
- 		/* scale up */
- 		if (ndata->new_rate > ndata->old_rate)
-@@ -859,6 +870,21 @@ static int rk3x_i2c_probe(struct platform_device *pdev)
- 		i2c->scl_frequency = DEFAULT_SCL_RATE;
- 	}
- 
-+	/*
-+	 * Read rise and fall ns.
-+	 * If not, there use the default maximum from specification.
-+	 */
-+	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
-+				 &i2c->rise_ns)) {
-+		if (i2c->scl_frequency <= 100000)
-+			i2c->rise_ns = 1000;
-+		else
-+			i2c->rise_ns = 300;
-+	}
-+	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
-+				 &i2c->fall_ns))
-+		i2c->fall_ns = 300;
-+
- 	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
- 	i2c->adap.owner = THIS_MODULE;
- 	i2c->adap.algo = &rk3x_i2c_algorithm;
--- 
-1.8.3.2
-
-
+Thanks
+Kishon
