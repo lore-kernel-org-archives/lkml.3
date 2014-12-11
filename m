@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758484AbaLKBnJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:43:09 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:59001 "EHLO smtp.mei.co.jp"
+	id S933551AbaLKBnb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:43:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:34288 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758270AbaLKBnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:43:06 -0500
-Date: Thu, 11 Dec 2014 10:41:33 +0900
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Subject: Re: [PATCH] kbuild: remove old information in headers_install.txt document
-Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
-In-Reply-To: <1417789428.11111.31.camel@opteya.com>
-References: <1417494533-24461-1-git-send-email-yamada.m@jp.panasonic.com> <1417789428.11111.31.camel@opteya.com>
-X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20141211104133.A483.AA925319@jp.panasonic.com>
+	id S1758558AbaLKBna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 20:43:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,554,1413270000"; 
+   d="scan'208";a="651952528"
+Date: Thu, 11 Dec 2014 09:43:24 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Alan Tull <atull@opensource.altera.com>
+Cc: kbuild-all@01.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [socfpga-nex:for_next-fpgamgr-without-overlays-v4.3 8/9]
+ drivers/staging/fpga/socfpga.c:655:25: sparse: symbol 'socfpga_fpga_ops' was
+ not declared. Should it be static?
+Message-ID: <201412110903.GCuPHwdi%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.64.06 [ja]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yann,
+tree:   git://git.rocketboards.org/linux-socfpga-next for_next-fpgamgr-without-overlays-v4.3
+head:   7920447fc75922e9a72db640cddf890d75a30e0d
+commit: 99aa2d008ce7a2a925368bfddd53ae83d307fb38 [8/9] staging: fpga manager: add driver for socfpga fpga manager
+reproduce:
+  # apt-get install sparse
+  git checkout 99aa2d008ce7a2a925368bfddd53ae83d307fb38
+  make ARCH=x86_64 allmodconfig
+  make C=1 CF=-D__CHECK_ENDIAN__
 
 
+sparse warnings: (new ones prefixed by >>)
 
+>> drivers/staging/fpga/socfpga.c:655:25: sparse: symbol 'socfpga_fpga_ops' was not declared. Should it be static?
 
+Please review and possibly fold the followup patch.
 
-
-On Fri, 05 Dec 2014 15:23:48 +0100
-Yann Droneaud <ydroneaud@opteya.com> wrote:
-
-> Hi,
-> 
-> Le mardi 02 decembre 2014 a 13:28 +0900, Masahiro Yamada a ecrit :
-> > The arch header directories "include/asm-*" were moved long before.
-> > 
-> > Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-> > ---
-> > 
-> >  Documentation/kbuild/headers_install.txt | 5 +----
-> >  1 file changed, 1 insertion(+), 4 deletions(-)
-> > 
-> > diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
-> > index 951eb9f..0d8fe5e 100644
-> > --- a/Documentation/kbuild/headers_install.txt
-> > +++ b/Documentation/kbuild/headers_install.txt
-> > @@ -28,10 +28,7 @@ optional arguments:
-> >  
-> >  ARCH indicates which architecture to produce headers for, and defaults to the
-> >  current architecture.  The linux/asm directory of the exported kernel headers
-> > -is platform-specific, to see a complete list of supported architectures use
-> > -the command:
-> > -
-> > -  ls -d include/asm-* | sed 's/.*-//'
-> > +is platform-specific.
-> >  
-> >  INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
-> >  "./usr/include".
-> 
-> Back in september, I've already sent a patch[1] to address this,
-> following a discussion with Sam Ravnborg[2]. See the mail thread[3].
-> 
-> Regards.
-> 
-> [1] http://lkml.kernel.org/r/b5181cf7604baa454c11f7aa92d07dd05349ce46.1410712841.git.ydroneaud@opteya.com
-> [2] http://lkml.kernel.org/r/20140713212608.GB16496@ravnborg.org
-> [3] http://lkml.kernel.org/g/cover.1410712841.git.ydroneaud@opteya.com
-> 
-
-Sorry, I missed your patch.
-
-You are the first, so I agree yours should go in.
-
-
-
-Best Regards
-Masahiro Yamada
-
+---
+0-DAY kernel test infrastructure                Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
