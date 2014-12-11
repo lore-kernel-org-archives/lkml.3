@@ -1,246 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934068AbaLKItV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 03:49:21 -0500
-Received: from mail-by2on0090.outbound.protection.outlook.com ([207.46.100.90]:27936
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S934155AbaLKI4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 03:56:44 -0500
+Received: from mail-bn1bon0065.outbound.protection.outlook.com ([157.56.111.65]:13604
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932535AbaLKItU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 03:49:20 -0500
-Date: Thu, 11 Dec 2014 09:48:58 +0100
+	id S932634AbaLKI4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 03:56:42 -0500
+Date: Thu, 11 Dec 2014 09:56:18 +0100
 From: Michal Simek <michal.simek@xilinx.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?windows-1252?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 2/4] gpio/xilinx: Convert the driver to platform device
- interface
-References: <1418226977-17128-1-git-send-email-ricardo.ribalda@gmail.com>
-In-Reply-To: <1418226977-17128-1-git-send-email-ricardo.ribalda@gmail.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
+        atull <atull@opensource.altera.com>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
+        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v4 2/6] arm: dts: socfpga: add altera fpga manager
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+ <1418156090-23578-3-git-send-email-atull@opensource.altera.com>
+ <20141210150109.GA23358@pengutronix.de>
+ <alpine.DEB.2.02.1412101123530.25868@linuxheads99>
+ <20141210174945.GC23358@pengutronix.de>
+In-Reply-To: <20141210174945.GC23358@pengutronix.de>
 Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
 X-RCIS-Action: ALLOW
 X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21168.002
 X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <60895095224b455db7100701f2c7d186@BY2FFO11FD004.protection.gbl>
+Message-ID: <d9903a1dee0343c083dc7ec04a70ff99@BN1BFFO11FD015.protection.gbl>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=pass (sender IP is 62.221.5.235)
  smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(164054003)(24454002)(51704005)(377454003)(189002)(52044002)(479174003)(83506001)(50466002)(74316001)(64126003)(120916001)(106466001)(19580405001)(6806004)(87936001)(86362001)(77156002)(99396003)(62966003)(107046002)(46102003)(108616004)(21056001)(65806001)(92566001)(23746002)(31966008)(104016003)(50986999)(77096005)(19580395003)(54356999)(20776003)(65956001)(76176999)(2201001)(92726002)(107886001)(64706001)(4396001)(47776003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB032;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(479174003)(377454003)(24454002)(164054003)(51704005)(199003)(120916001)(106466001)(46102003)(21056001)(93886004)(86362001)(99396003)(77096005)(92726002)(23746002)(31966008)(33646002)(107046002)(6806004)(50466002)(74316001)(20776003)(19580405001)(19580395003)(64706001)(65806001)(47776003)(65956001)(83506001)(108616004)(64126003)(104016003)(4396001)(76176999)(92566001)(54356999)(50986999)(77156002)(62966003)(87936001)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB024;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB032;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB024;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB032;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB024;
 X-Forefront-PRVS: 0422860ED4
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB032;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB024;
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 04:56 PM, Ricardo Ribalda Delgado wrote:
-> This way we do not need to transverse the device tree manually and we
-> support hot plugged devices.
+On 12/10/2014 06:49 PM, Steffen Trumtrar wrote:
+> On Wed, Dec 10, 2014 at 11:25:59AM -0600, atull wrote:
+>> On Wed, 10 Dec 2014, Steffen Trumtrar wrote:
+>>
+>>> Hi!
+>>>
+>>> On Tue, Dec 09, 2014 at 02:14:46PM -0600, atull@opensource.altera.com wrote:
+>>>> From: Alan Tull <atull@opensource.altera.com>
+>>>>
+>>>> Add Altera FGPA manager to device tree.
+>>>>
+>>>> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+>>>> ---
+>>>>  arch/arm/boot/dts/socfpga.dtsi |   10 ++++++++++
+>>>>  1 file changed, 10 insertions(+)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>>>> index 4472fd9..bab98b6 100644
+>>>> --- a/arch/arm/boot/dts/socfpga.dtsi
+>>>> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>>>> @@ -751,5 +751,15 @@
+>>>>  			compatible = "altr,sys-mgr", "syscon";
+>>>>  			reg = <0xffd08000 0x4000>;
+>>>>  		};
+>>>> +
+>>>> +		hps_0_fpgamgr: fpgamgr@0xff706000 {
+>>>> +			compatible = "altr,fpga-mgr", "simple-bus";
+>>>> +			reg = <0xFF706000 0x1000
+>>>> +			       0xFFB90000 0x1000>;
+>>>> +			interrupts = <0 175 4>;
+>>>> +			#address-cells = <1>;
+>>>> +			#size-cells = <1>;
+>>>> +			ranges;
+>>>> +		};
+>>>
+>>> The fpgamgr is NOT a bus. You don't need ranges and/or simple-bus.
+>>>
+>>> Regards,
+>>> Steffen
+>>
+>> Actually, I am going to be using this when I add the DT notification 
+>> stuff.  That stuff is waiting for DT overlays to show up in the main
+>> tree.
+>>
+>> So the choice it to either change this file now, once, or do the minimal 
+>> changes and have to change it again later.
+>>
 > 
-> Also Implement remove callback so the driver can be unloaded
+> Yes, that is what I thought. And still, devices can NOT show up
+> at the fpgamgr. They show up on the various bridges.
 > 
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-> ---
+> And as far as I understand the DT overlay stuff, you specify in
+> the overlay what the parent node will be.
+> For i2c this is one of the i2c-hosts, for spi one of the spi-hosts
+> and for IP cores in a bitstream one of the bridges.
 > 
-> v4: Add missing module_exit
-> 
->  drivers/gpio/gpio-xilinx.c | 83 ++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 66 insertions(+), 17 deletions(-)
-> 
-> diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-> index e668ec4..c7ed92b 100644
-> --- a/drivers/gpio/gpio-xilinx.c
-> +++ b/drivers/gpio/gpio-xilinx.c
-> @@ -44,12 +44,18 @@
->   * gpio_state: GPIO state shadow register
->   * gpio_dir: GPIO direction shadow register
->   * gpio_lock: Lock used for synchronization
-> + * inited: True if the port has been inited
->   */
->  struct xgpio_instance {
->  	struct of_mm_gpio_chip mmchip;
->  	u32 gpio_state;
->  	u32 gpio_dir;
->  	spinlock_t gpio_lock;
-> +	bool inited;
-> +};
-> +
-> +struct xgpio {
-> +	struct xgpio_instance port[2];
->  };
->  
->  /**
-> @@ -172,24 +178,56 @@ static void xgpio_save_regs(struct of_mm_gpio_chip *mm_gc)
->  }
->  
->  /**
-> + * xgpio_remove - Remove method for the GPIO device.
-> + * @pdev: pointer to the platform device
-> + *
-> + * This function remove gpiochips and frees all the allocated resources.
-> + */
-> +static int xgpio_remove(struct platform_device *pdev)
-> +{
-> +	struct xgpio *xgpio = platform_get_drvdata(pdev);
-> +	int i;
-> +
-> +	for (i = 0; i < 2; i++) {
-> +		if (!xgpio->port[i].inited)
-> +			continue;
-> +		gpiochip_remove(&xgpio->port[i].mmchip.gc);
-> +
-> +		if (i == 1)
-> +			xgpio->port[i].mmchip.regs -= XGPIO_CHANNEL_OFFSET;
-> +
-> +		iounmap(xgpio->port[i].mmchip.regs);
-> +		kfree(xgpio->port[i].mmchip.gc.label);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
->   * xgpio_of_probe - Probe method for the GPIO device.
-> - * @np: pointer to device tree node
-> + * @pdev: pointer to the platform device
->   *
->   * This function probes the GPIO device in the device tree. It initializes the
->   * driver data structure. It returns 0, if the driver is bound to the GPIO
->   * device, or a negative value if there is an error.
->   */
-> -static int xgpio_of_probe(struct device_node *np)
-> +static int xgpio_probe(struct platform_device *pdev)
->  {
-> +	struct xgpio *xgpio;
->  	struct xgpio_instance *chip;
->  	int status = 0;
-> +	struct device_node *np = pdev->dev.of_node;
->  	const u32 *tree_info;
->  	u32 ngpio;
->  
-> -	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> -	if (!chip)
-> +	xgpio = devm_kzalloc(&pdev->dev, sizeof(*xgpio), GFP_KERNEL);
-> +	if (!xgpio)
->  		return -ENOMEM;
->  
-> +	platform_set_drvdata(pdev, xgpio);
-> +
-> +	chip = &xgpio->port[0];
-> +
->  	/* Update GPIO state shadow register with default value */
->  	of_property_read_u32(np, "xlnx,dout-default", &chip->gpio_state);
->  
-> @@ -209,6 +247,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  	spin_lock_init(&chip->gpio_lock);
->  
-> +	chip->mmchip.gc.dev = &pdev->dev;
->  	chip->mmchip.gc.direction_input = xgpio_dir_in;
->  	chip->mmchip.gc.direction_output = xgpio_dir_out;
->  	chip->mmchip.gc.get = xgpio_get;
-> @@ -219,20 +258,18 @@ static int xgpio_of_probe(struct device_node *np)
->  	/* Call the OF gpio helper to setup and register the GPIO device */
->  	status = of_mm_gpiochip_add(np, &chip->mmchip);
->  	if (status) {
-> -		kfree(chip);
->  		pr_err("%s: error in probe function with status %d\n",
->  		       np->full_name, status);
->  		return status;
->  	}
-> +	chip->inited = true;
->  
->  	pr_info("XGpio: %s: registered, base is %d\n", np->full_name,
->  							chip->mmchip.gc.base);
->  
->  	tree_info = of_get_property(np, "xlnx,is-dual", NULL);
->  	if (tree_info && be32_to_cpup(tree_info)) {
-> -		chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-> -		if (!chip)
-> -			return -ENOMEM;
-> +		chip = &xgpio->port[1];
->  
->  		/* Update GPIO state shadow register with default value */
->  		of_property_read_u32(np, "xlnx,dout-default-2",
-> @@ -254,6 +291,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  		spin_lock_init(&chip->gpio_lock);
->  
-> +		chip->mmchip.gc.dev = &pdev->dev;
->  		chip->mmchip.gc.direction_input = xgpio_dir_in;
->  		chip->mmchip.gc.direction_output = xgpio_dir_out;
->  		chip->mmchip.gc.get = xgpio_get;
-> @@ -264,7 +302,7 @@ static int xgpio_of_probe(struct device_node *np)
->  		/* Call the OF gpio helper to setup and register the GPIO dev */
->  		status = of_mm_gpiochip_add(np, &chip->mmchip);
->  		if (status) {
-> -			kfree(chip);
-> +			xgpio_remove(pdev);
->  			pr_err("%s: error in probe function with status %d\n",
->  			np->full_name, status);
->  			return status;
-> @@ -272,6 +310,7 @@ static int xgpio_of_probe(struct device_node *np)
->  
->  		/* Add dual channel offset */
->  		chip->mmchip.regs += XGPIO_CHANNEL_OFFSET;
-> +		chip->inited = true;
->  
->  		pr_info("XGpio: %s: dual channel registered, base is %d\n",
->  					np->full_name, chip->mmchip.gc.base);
-> @@ -285,19 +324,29 @@ static const struct of_device_id xgpio_of_match[] = {
->  	{ /* end of list */ },
->  };
->  
-> -static int __init xgpio_init(void)
-> -{
-> -	struct device_node *np;
-> +MODULE_DEVICE_TABLE(of, xgpio_of_match);
->  
-> -	for_each_matching_node(np, xgpio_of_match)
-> -		xgpio_of_probe(np);
-> +static struct platform_driver xgpio_plat_driver = {
-> +	.probe		= xgpio_probe,
-> +	.remove		= xgpio_remove,
-> +	.driver		= {
-> +			.name = "gpio-xilinx",
-> +			.of_match_table	= xgpio_of_match,
-> +	},
-> +};
->  
-> -	return 0;
-> +static int __init xgpio_init(void)
-> +{
-> +	return platform_driver_register(&xgpio_plat_driver);
->  }
->  
-> -/* Make sure we get initialized before anyone else tries to use us */
->  subsys_initcall(xgpio_init);
-> -/* No exit call at the moment as we cannot unregister of GPIO chips */
-> +
-> +static void __exit xgpio_exit(void)
-> +{
-> +	platform_driver_unregister(&xgpio_plat_driver);
-> +}
-> +module_exit(xgpio_exit);
->  
->  MODULE_AUTHOR("Xilinx, Inc.");
->  MODULE_DESCRIPTION("Xilinx GPIO driver");
-> 
+> The fpgamgr is, from my understanding, only responsible for writing
+> the bitstream to the FPGA; nothing more.
 
-Feel free to add my acked-by line to all these patches.
-
-We have IRQ support in xilinx tree but I also know that this driver
-should be changed a little bit but these patches are at least good step
-on that way.
++1 on this.
+I think you can easily decide later where DT overlays will be added.
 
 Thanks,
 Michal
