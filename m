@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758463AbaLKBhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:37:09 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:15197 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758097AbaLKBhG (ORCPT
+	id S933445AbaLKBi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:38:26 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:63422 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758301AbaLKBiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:37:06 -0500
-X-IronPort-AV: E=Sophos;i="5.07,554,1413270000"; 
-   d="scan'208";a="52626137"
-Message-ID: <5488F53F.5060805@broadcom.com>
-Date: Wed, 10 Dec 2014 17:37:03 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 10 Dec 2014 20:38:25 -0500
+Message-ID: <5488F58B.6050903@redhat.com>
+Date: Thu, 11 Dec 2014 02:38:19 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Lucas Stach <l.stach@pengutronix.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/4] pci: iProc: define Broadcom iProc PCIe binding
-References: <Ray Jui <rjui@broadcom.com>	 <1418169871-19232-1-git-send-email-rjui@broadcom.com>	 <1418169871-19232-2-git-send-email-rjui@broadcom.com> <1418207427.7616.5.camel@pengutronix.de>
-In-Reply-To: <1418207427.7616.5.camel@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Newsgroups: gmane.comp.freedesktop.xorg.drivers.intel,gmane.comp.emulators.kvm.devel,gmane.linux.kernel
+To: "Tian, Kevin" <kevin.tian@intel.com>, Gerd Hoffmann <kraxel@redhat.com>,
+        "Song, Jike" <jike.song@intel.com>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "White, Michael L" <michael.l.white@intel.com>,
+        "Dong, Eddie" <eddie.dong@intel.com>,
+        "intel-gfx@lists.freedesktop.org" <intel-gfx@lists.freedesktop.org>,
+        "Li, Susie" <susie.li@intel.com>,
+        "Cowperthwaite, David J" <david.j.cowperthwaite@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Haron, Sandra" <sandra.haron@intel.com>
+Subject: Re: [ANNOUNCE][RFC] KVMGT - the implementation of Intel GVT-g(full
+ GPU virtualization) for KVM
+References: <547FC5DE.4010701@intel.com> <1417769421.11297.37.camel@nilsson.home.kraxel.org> <5481AD24.3000703@redhat.com> <AADFC41AFE54684AB9EE6CBC0274A5D12611365D@SHSMSX101.ccr.corp.intel.com> <54887BD9.7030903@redhat.com> <AADFC41AFE54684AB9EE6CBC0274A5D126116679@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <AADFC41AFE54684AB9EE6CBC0274A5D126116679@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,28 +35,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 12/10/2014 2:30 AM, Lucas Stach wrote:
->> +Example:
->> +
->> +SoC specific DT Entry:
->> +
->> +	pcie0: pcie@18012000 {
->> +		compatible = "brcm,iproc-pcie";
->> +		reg = <0x18012000 0x1000>,
->> +			<0x18002000 0x1000>;
->> +		interrupts = <GIC_SPI 96 IRQ_TYPE_NONE>,
->> +			     <GIC_SPI 97 IRQ_TYPE_NONE>,
->> +			     <GIC_SPI 98 IRQ_TYPE_NONE>,
->> +			     <GIC_SPI 99 IRQ_TYPE_NONE>,
->> +			     <GIC_SPI 100 IRQ_TYPE_NONE>,
->> +			     <GIC_SPI 101 IRQ_TYPE_NONE>;
->
-> This is missing the interrupt-map and interrupt-map-mask for the legacy
-> INTx interrupts. If you add this you don't need to have a special map
-> function in your driver, but can just use the standard
-> of_irq_parse_and_map_pci() function.
->
-> Regards,
-> Lucas
->
-Thanks for pointing this out. I will look into this and try it out.
+On 11/12/2014 01:33, Tian, Kevin wrote:
+> My point is that KVMGT doesn't introduce new requirements as what's
+> required in IGD passthrough case, because all the hacks you see now
+> is to satisfy guest graphics driver's expectation. I haven't follow up the
+> KVM IGD passthrough progress, but if it doesn't require ISA bridge hacking
+> the same trick can be adopted by KVMGT too.
+
+Right now it did require ISA bridge hacking.
+
+> You may know Allen is
+> working on driver changes to avoid causing those hacks in Qemu side.
+> That effort will benefit us too.
+
+That's good to know, thanks!
+
+Paolo
