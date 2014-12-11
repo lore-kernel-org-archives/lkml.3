@@ -1,175 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934314AbaLKJvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:51:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:39120 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802AbaLKJvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:51:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
-   d="scan'208";a="652132755"
-From: "Tan, Raymond" <raymond.tan@intel.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Alvin" <alvin.chen@intel.com>,
-        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Subject: RE: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-Thread-Topic: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark
- X1000 I2C-GPIO MFD Driver
-Thread-Index: AQHP/bXYZmohCNFV50aM73389PLXvZxmJsYAgAm1agCAAUJJgIAAAHWAgBkz3GA=
-Date: Thu, 11 Dec 2014 09:50:43 +0000
-Message-ID: <F0CA9E243F4F424B836EAC30E41BF4CF5C7B8859@PGSMSX104.gar.corp.intel.com>
-References: <1415713349-16065-1-git-send-email-raymond.tan@intel.com>
- <1415713349-16065-2-git-send-email-raymond.tan@intel.com>
- <20141118172156.GF13959@x1>
- <F0CA9E243F4F424B836EAC30E41BF4CF5C7989F2@PGSMSX104.gar.corp.intel.com>
- <20141125165105.GP4241@x1> <20141125165243.GQ4241@x1>
-In-Reply-To: <20141125165243.GQ4241@x1>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.206]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S934362AbaLKJ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:56:25 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:47419 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932600AbaLKJ4W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 04:56:22 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <da0b6ccbb7840c7b9ec55e7a725776bc>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
+Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
+        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v6 0/5] Patches to add support for Rockchip usb PHYs.
+Date: Thu, 11 Dec 2014 17:55:17 +0800
+Message-Id: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBB9pHwh011531
 
-Hi Mike and Lee Jones,
 
-I've updated the patch (v3) with the input from previous reviews, hope this will help to facilitate a better review. I've kept the clk portion relatively unchanged except removing the usage of global variables, instead I've put them in a struct and set as drvdata for later use during the removal of the driver for unregistering the clk and clk_lookup.
+Patches to add support for Rockchip usb phys.Add a new Rockchip
+usb phy driver and modify dwc2 controller driver to make dwc2
+platform devices support a generic PHY framework driver. This
+patch set has been tested on my rk3288-evb and power off the usb
+phys would reduce about 60mW power budget in total during sustem
+suspend.
 
-Warm Regards, 
+Changes in v6:
+- Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
+- Use phandle args to find a phy struct directly.
 
-Â Raymond Tan
-Software Engineer
-Malaysia IT Flex Services
-INET: 8-253-0075
-Flex Website: http://flexservices.intel.com 
+Changes in v5:
+- Adjust entry order of example devicetree node in document.
+- reorder the phy dt node to a correct position.
 
-> -----Original Message-----
-> From: Lee Jones [mailto:lee.jones@linaro.org]
-> Sent: Wednesday, November 26, 2014 12:53 AM
-> To: Tan, Raymond; mturquette@linaro.org
-> Cc: Samuel Ortiz; linux-kernel@vger.kernel.org; Chen, Alvin; Shevchenko,
-> Andriy
-> Subject: Re: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark
-> X1000 I2C-GPIO MFD Driver
-> 
-> Crap!  Forgot to Cc Mike.
-> 
-> Fingers faster than brain.
-> 
-> > Mike,
-> >
-> > Something for you down below.
-> >
-> > > > > In Quark X1000, there's a single PCI device that provides both
-> > > > > an I2C controller and a GPIO controller. This MFD driver will
-> > > > > split the 2 devices for their respective drivers.
-> > > > >
-> > > > > This patch is based on Josef Ahmad's initial work for Quark enabling.
-> > > > >
-> > > > > Reviewed-by: Andy Shevchenko
-> <andriy.shevchenko@linux.intel.com>
-> > > > > Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> > > > > Signed-off-by: Raymond Tan <raymond.tan@intel.com>
-> > > > > ---
-> > > > >  drivers/mfd/Kconfig                |   11 ++
-> > > > >  drivers/mfd/Makefile               |    1 +
-> > > > >  drivers/mfd/intel_quark_i2c_gpio.c |  298
-> > > > > ++++++++++++++++++++++++++++++++++++
-> > > > >  3 files changed, 310 insertions(+)  create mode 100644
-> > > > > drivers/mfd/intel_quark_i2c_gpio.c
-> >
-> > [...]
-> >
-> > > > > +	depends on COMMON_CLK
-> > > >
-> > > > I don't think you should depend on this.  Just use the API and
-> > > > fail if it doesn't find the clock you're after.
-> > >
-> > > This was added to make sure the clk initialization and other clk related
-> calls will work with the MFD.
-> >
-> > [...]
-> >
-> > > > > +struct clk *intel_quark_i2c_clk; struct clk_lookup
-> > > > > +*intel_quark_i2c_clk_lookups;
-> > > >
-> > > > Why do these need to be global?
-> > >
-> > > I was trying to keep these as runtime allocated variables, and cleaned up
-> with removal of the driver / upon error handling.
-> >
-> > They still can be.  But they need to be in a struct somewhere and not
-> > global.
-> >
-> > [...]
-> >
-> > > > > +static int intel_quark_register_i2c_clk(struct pci_dev *pdev) {
-> > > > > +	intel_quark_i2c_clk_lookups = devm_kcalloc(
-> > > > > +
-> > > > > +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
-> > > > > +		sizeof(*intel_quark_i2c_clk_lookups), GFP_KERNEL);
-> > > > > +
-> > > > > +	if (!intel_quark_i2c_clk_lookups)
-> > > > > +		return -ENOMEM;
-> > > > > +
-> > > > > +	intel_quark_i2c_clk_lookups[0].dev_id =
-> > > > > +INTEL_QUARK_I2C_CONTROLLER_CLK;
-> > > > > +
-> > > > > +	intel_quark_i2c_clk = clk_register_fixed_rate(
-> > > > > +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK,
-> NULL,
-> > > > > +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
-> > > > > +
-> > > > > +	return clk_register_clkdevs(intel_quark_i2c_clk,
-> > > > > +		intel_quark_i2c_clk_lookups,
-> INTEL_QUARK_I2C_NCLK);
-> > > >
-> > > > We don't normally register clks from MFD.  Normally they are
-> > > > registered in drivers/clk and fetched when a device requires them.
-> > > > Why is this different?
-> > >
-> > > This is a static clk and on this platform, there's no clk hardware
-> > > to have the clk driver to initialize this and add into the global
-> > > struct for use later by i2c controller. The hardware on the platform
-> > > itself is same, and the current driver (i2c_designware_platform)
-> > > requires the clk for its operation. Due to this, I decided to have
-> > > the clk initialize in the MFD before the device being added, which
-> > > later will trigger the probe on the i2c controller driver.
-> >
-> > Mike,
-> >
-> > Can I get your input on this please?
-> >
-> > [...]
-> >
-> > > > > +	pdata = intel_quark_get_i2c_mode(pdev);
-> > > > > +	if (IS_ERR(pdata))
-> > > > > +		return PTR_ERR(pdata);
-> > > >
-> > > > Bring this functionality into here?
-> > >
-> > > Were you referring the contents of intel_quark_get_i2c_mode(), and
-> avoid the additional function call instead?
-> >
-> > Right.  Please rid intel_quark_get_i2c_mode().
-> >
-> > [...]
-> >
-> 
-> --
-> Lee Jones
-> Linaro STMicroelectronics Landing Team Lead Linaro.org â”‚ Open source
-> software for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Changes in v4:
+- Get number of PHYs from device tree.
+- Model each PHY as subnode of the phy provider node.
+- Updata description for phy device tree subnode.
+- Add phy subnodes.
+
+Changes in v3:
+- Use BIT macro instead of bit shift ops.
+- Rename the config entry to PHY_ROCKCHIP_USB.
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
+
+Yunzhi Li (5):
+  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
+  Documentation: bindings: add dt documentation for Rockchip usb PHY
+  usb: dwc2: add generic PHY framework support for dwc2 usb controler
+    platform driver.
+  ARM: dts: rockchip: add rk3288 usb PHY
+  ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+
+ .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  32 ++++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
+ arch/arm/boot/dts/rk3288.dtsi                      |  27 +++
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-rockchip-usb.c                     | 198 +++++++++++++++++++++
+ drivers/usb/dwc2/gadget.c                          |  33 ++--
+ drivers/usb/dwc2/platform.c                        |  36 +++-
+ 8 files changed, 315 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+ create mode 100644 drivers/phy/phy-rockchip-usb.c
+
+-- 
+2.0.0
+
+
