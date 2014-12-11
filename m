@@ -1,563 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965071AbaLKVNR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:13:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43373 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933301AbaLKVNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:13:15 -0500
-Date: Thu, 11 Dec 2014 18:12:54 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Tuan Bui <tuan.d.bui@hp.com>
-Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
-        paulus@samba.org, artagnon@gmail.com, jolsa@redhat.com,
-        dvhart@linux.intel.com, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
-        mingo@kernel.org
-Subject: Re: [PATCH  v3] Perf Bench: Locking Microbenchmark
-Message-ID: <20141211211254.GC9845@kernel.org>
-References: <1418165693.6540.5.camel@u64>
+	id S1758995AbaLKVR3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:17:29 -0500
+Received: from mail-bl2on0129.outbound.protection.outlook.com ([65.55.169.129]:25185
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758801AbaLKVR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:17:27 -0500
+Date: Thu, 11 Dec 2014 12:45:15 -0800
+From: Guenter Roeck <groeck@juniper.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Rajat Jain <rajatxjain@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>
+Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
+ during removal
+Message-ID: <20141211204515.GA4472@svl-evodev-groeck.juniper.net>
+References: <546E7120.5080505@gmail.com>
+ <20141211002630.GC22886@google.com>
+ <20141211163831.GA2845@svl-evodev-groeck.juniper.net>
+ <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1418165693.6540.5.camel@u64>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [66.129.239.11]
+X-ClientProxiedBy: CY1PR09CA0039.namprd09.prod.outlook.com (25.160.223.49) To
+ CO1PR05MB522.namprd05.prod.outlook.com (10.141.72.14)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB522;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:CO1PR05MB522;
+X-Forefront-PRVS: 0422860ED4
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6069001)(6009001)(189002)(24454002)(377454003)(164054003)(199003)(51704005)(97736003)(99396003)(122386002)(105586002)(66066001)(40100003)(110136001)(92566001)(68736005)(106356001)(107046002)(77096005)(120916001)(64706001)(42186005)(20776003)(83506001)(31966008)(19580405001)(4396001)(46406003)(93886004)(50986999)(21056001)(54356999)(101416001)(19580395003)(23726002)(46102003)(47776003)(77156002)(97756001)(87976001)(33656002)(86362001)(76506005)(62966003)(76176999)(50466002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR05MB522;H:localhost;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB522;
+X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 09, 2014 at 02:54:53PM -0800, Tuan Bui escreveu:
-> Subject: [PATCH] Perf Bench: Locking Microbenchmark
+On Thu, Dec 11, 2014 at 01:26:47PM -0700, Bjorn Helgaas wrote:
+> On Thu, Dec 11, 2014 at 9:38 AM, Guenter Roeck <groeck@juniper.net> wrote:
+> > On Wed, Dec 10, 2014 at 05:26:30PM -0700, Bjorn Helgaas wrote:
+> >> On Thu, Nov 20, 2014 at 02:54:24PM -0800, Rajat Jain wrote:
+> >> > While removing a card, we can't assume the presence to mean that the
+> >> > access to card is OK. That is because the cause of removal may be a
+> >> > link down event, and the card may still be physically present. Thus,
+> >> > instead of presence, use the link state to decide whether or not it is
+> >> > OK to access the card devices.
+> >> >
+> >> > Here are the problem symptoms:
+> >> > During the removal of a card due to link down, sometimes the following
+> >> > error is seen (because pciehp_unconfigure_device() reads 0xFF from
+> >> > bridge control register as the link is down, which cause it to assume
+> >> > that the VGA bit is set):
+> >> >
+> >> > pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+> >> > pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+> >> > pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
+> >> > pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
+> >> > pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
+> >> > pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
+> >> >
+> >> > Ofcourse, when the link comes back up, the device addition fails too:
+> >> >
+> >> > pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
+> >> > pciehp 0000:21:05.0:pcie24: Data Link Layer State change
+> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+> >> > pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
+> >> > pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
+> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
+> >> > pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
+> >> > pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
+> >> > pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
+> >> >
+> >> > The problem is not seen with this patch applied. The device removal and
+> >> > insertion works as expected.
+> >> >
+> >> > Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+> >> > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+> >> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> >> > ---
+> >> > v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
+> >> >
+> >> >  drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
+> >> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> >> >
+> >> > diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+> >> > index 9e69403..911f85b 100644
+> >> > --- a/drivers/pci/hotplug/pciehp_pci.c
+> >> > +++ b/drivers/pci/hotplug/pciehp_pci.c
+> >> > @@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+> >> >  {
+> >> >     int rc = 0;
+> >> >     u8 bctl = 0;
+> >> > -   u8 presence = 0;
+> >> > +   bool link_active = false;
+> >> >     struct pci_dev *dev, *temp;
+> >> >     struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
+> >> >     u16 command;
+> >> > @@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+> >> >
+> >> >     ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
+> >> >              __func__, pci_domain_nr(parent), parent->number);
+> >> > -   pciehp_get_adapter_status(p_slot, &presence);
+> >> > +   link_active = pciehp_check_link_active(ctrl);
+> >> >
+> >> >     pci_lock_rescan_remove();
+> >> >
+> >> > @@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+> >> >     list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
+> >> >                                      bus_list) {
+> >> >             pci_dev_get(dev);
+> >> > -           if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
+> >> > +           if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
+> >> >                     pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
+> >> >                     if (bctl & PCI_BRIDGE_CTL_VGA) {
+> >> >                             ctrl_err(ctrl,
+> >>
+> >> Why do we even have this code to check for VGA devices?  I looked (briefly)
+> >> and couldn't find anything in the spec that prohibits removal of VGA
+> >> devices.
+> >>
+> > For my part I don't know. I only know that I had to integrate the patch into
+> > our images since I hit the problem repeatedly. Usually I wait with integrating
+> > Rajat's patches until you accept them, but this one was too disruptive.
+> >
+> > I would argue that while the patch may not be perfect, at least it improves
+> > the situation substantially.
 > 
-> In response to this thread https://lkml.org/lkml/2014/2/11/93, this is
-> a micro benchmark that stresses locking contention in the kernel with
-> creat(2) system call by spawning multiple processes to spam this system
-> call.  This workload generate similar results and contentions in AIM7
-> fserver workload but can generate outputs within seconds.
+> I don't think removing the VGA checks is the way to fix the problem
+> you're seeing.  But I do want to investigate this code since we're in
+> the area.
 > 
-> With the creat system call the contention vary on what locks are used
-> in the particular file system. I have ran this benchmark only on ext4
-> and xfs file system.
-> 
-> Running the creat workload on ext4 show contention in the mutex lock
-> that is used by ext4_orphan_add() and ext4_orphan_del() to add or delete
-> an inode from the list of inodes. At the same time running the creat
-> workload on xfs show contention in the spinlock that is used by
-> xsf_log_commit_cil() to commit a transaction to the Committed Item List.
-> 
-> Here is a comparison of this benchmark with AIM7 running fserver workload
-> at 500-1000 users along with a perf trace running on ext4 file system.
-> 
-> Test machine is a 8-sockets 80 cores Westmere system HT-off on v3.17-rc6.
-> 
-> 	AIM7		AIM7		perf-bench	perf-bench
-> Users	Jobs/min	Jobs/min/child	Ops/sec		Ops/sec/child
-> 500	119668.25	239.34		104249		208
-> 600	126074.90	210.12		106136		176
-> 700	128662.42	183.80		106175		151
-> 800	119822.05	149.78		106290		132
-> 900	106150.25	117.94		105230		116
-> 1000	104681.29	104.68		106489		106
-> 
-> Perf report for AIM7 fserver:
-> 14.51%	reaim  		[kernel.kallsyms]	[k] osq_lock
-> 4.98%	reaim  		reaim			[.] add_long
-> 4.98%	reaim  		reaim			[.] add_int
-> 4.31%	reaim  		[kernel.kallsyms]	[k] mutex_spin_on_owner
-> ...
-> 
-> Perf report of perf bench locking vfs
-> 22.37%	locking-creat  [kernel.kallsyms]	[k] osq_lock
-> 5.77%	locking-creat  [kernel.kallsyms]	[k] mutex_spin_on_owner
-> 5.31%	locking-creat  [kernel.kallsyms]	[k] _raw_spin_lock
-> 5.15%	locking-creat  [jbd2]			[k] jbd2_journal_put_journal_head
-> ...
-> 
-> Example:
-> 
-> [root@u64 ~]# perf bench
-> Usage:
->         perf bench [<common options>] <collection> <benchmark> [<options>]
-> 
->         # List of all available benchmark collections:
-> 
->          sched: Scheduler and IPC benchmarks
->            mem: Memory access benchmarks
->           numa: NUMA scheduling and MM benchmarks
->          futex: Futex stressing benchmarks
->        locking: Kernel locking benchmarks
->            all: All benchmarks
-> 
-> [root@u64 ~]# perf bench locking
-> 
->         # List of available benchmarks for collection 'locking':
-> 
->            vfs: Benchmark vfs using creat(2)
->            all: Run all benchmarks in this suite
-> 
-> [root@u64 ~]# perf bench locking vfs
-> # Running 'locking/vfs' benchmark:
-> 
->    100 processes: throughput = 342506 average opts/sec all processes
->    100 processes: throughput = 3425 average opts/sec per process
-> 
->    200 processes: throughput = 341309 average opts/sec all processes
->    200 processes: throughput = 1706 average opts/sec per process
->    ...
-> 
-> Changes since v2:
-> - Added code to clean up tmp files when user issue sigint.
-> - Added a tmp directory that hold all tmp files generated by benchmark.
-> - Edited changelog to include example output per Arnaldo's request.
-> 
-> Changes since v1:
-> - Added -j options to specified jobs per processes.
-> - Change name of microbenchmark from creat to vfs.
-> - Change all instances of threads to proccess.
-> 
-> Signed-off-by: Tuan Bui <tuan.d.bui@hp.com>
-> ---
->  tools/perf/Documentation/perf-bench.txt |   8 +
->  tools/perf/Makefile.perf                |   1 +
->  tools/perf/bench/bench.h                |   1 +
->  tools/perf/bench/locking.c              | 336 ++++++++++++++++++++++++++++++++
->  tools/perf/builtin-bench.c              |   8 +
->  5 files changed, 354 insertions(+)
->  create mode 100644 tools/perf/bench/locking.c
-> 
-> diff --git a/tools/perf/Documentation/perf-bench.txt b/tools/perf/Documentation/perf-bench.txt
-> index f6480cb..5c0c8e7 100644
-> --- a/tools/perf/Documentation/perf-bench.txt
-> +++ b/tools/perf/Documentation/perf-bench.txt
-> @@ -58,6 +58,9 @@ SUBSYSTEM
->  'futex'::
->  	Futex stressing benchmarks.
->  
-> +'locking'::
-> +        Locking stressing benchmarks that produce similar result as AIM7 fserver.
-> +
->  'all'::
->  	All benchmark subsystems.
->  
-> @@ -213,6 +216,11 @@ Suite for evaluating wake calls.
->  *requeue*::
->  Suite for evaluating requeue calls.
->  
-> +SUITES FOR 'locking'
-> +~~~~~~~~~~~~~~~~~~
-> +*vfs*::
-> +Suite for evaluating vfs locking contention through creat(2).
-> +
->  SEE ALSO
->  --------
->  linkperf:perf[1]
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index 262916f..c8bee04 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -443,6 +443,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
->  BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
->  BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
->  BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
-> +BUILTIN_OBJS += $(OUTPUT)bench/locking.o
->  
->  BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
->  BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
-> diff --git a/tools/perf/bench/bench.h b/tools/perf/bench/bench.h
-> index 3c4dd44..19468c5 100644
-> --- a/tools/perf/bench/bench.h
-> +++ b/tools/perf/bench/bench.h
-> @@ -34,6 +34,7 @@ extern int bench_mem_memset(int argc, const char **argv, const char *prefix);
->  extern int bench_futex_hash(int argc, const char **argv, const char *prefix);
->  extern int bench_futex_wake(int argc, const char **argv, const char *prefix);
->  extern int bench_futex_requeue(int argc, const char **argv, const char *prefix);
-> +extern int bench_locking_vfs(int argc, const char **argv, const char *prefix);
->  
->  #define BENCH_FORMAT_DEFAULT_STR	"default"
->  #define BENCH_FORMAT_DEFAULT		0
-> diff --git a/tools/perf/bench/locking.c b/tools/perf/bench/locking.c
-> new file mode 100644
-> index 0000000..70222bb
-> --- /dev/null
-> +++ b/tools/perf/bench/locking.c
-> @@ -0,0 +1,336 @@
-> +/*
-> + * locking.c
-> + *
-> + * Simple micro benchmark that stress kernel locking contention with
-> + * creat(2) system call by spawning multiple processes to call
-> + * this system call.
-> + *
-> + * Results output are average operations/sec for all processes and
-> + * average operations/sec per process.
-> + *
-> + * Tuan Bui <tuan.d.bui@hp.com>
-> + */
-> +
-> +#include "../perf.h"
-> +#include "../util/util.h"
-> +#include "../util/stat.h"
-> +#include "../util/parse-options.h"
-> +#include "../util/header.h"
-> +#include "bench.h"
-> +
-> +#include <err.h>
-> +#include <stdlib.h>
-> +#include <sys/time.h>
-> +#include <unistd.h>
-> +#include <sys/resource.h>
-> +#include <linux/futex.h>
-> +#include <sys/mman.h>
-> +#include <sys/syscall.h>
-> +#include <sys/types.h>
-> +#include <signal.h>
-> +#include <dirent.h>
-> +
-> +#define NOTSET -1
-> +struct worker {
-> +	pid_t pid;
-> +	unsigned int order_id;
-> +	char str[50];
-> +};
-> +
-> +struct timeval start, end, total;
-> +static unsigned int start_nr = 100;
-> +static unsigned int end_nr = 1100;
-> +static unsigned int increment_by = 100;
-> +static int bench_dur = NOTSET;
-> +static int num_jobs = NOTSET;
-> +static bool run_jobs;
-> +static int n_pro;
-> +
-> +/* Shared variables between fork processes*/
-> +unsigned int *finished, *setup;
-> +unsigned long long *shared_workers;
-> +char *tmp_dir;
+I agree. Removing the VGA check would attempt to fix something that
+isn't known to be broken, and might have undesirable side effects.
 
-Are you sure these variables aren't static?
-
-> +pid_t *p_id;
-> +/* all processes will block on the same futex */
-> +u_int32_t *futex;
-> +
-> +static const struct option options[] = {
-> +	OPT_UINTEGER('s', "start", &start_nr, "Number of processes to start"),
-> +	OPT_UINTEGER('e', "end", &end_nr, "Number of processes to end"),
-> +	OPT_UINTEGER('i', "increment", &increment_by, "Numbers of processes to increment)"),
-> +	OPT_INTEGER('r', "runtime", &bench_dur, "Specify benchmark runtime in seconds"),
-> +	OPT_INTEGER('j', "jobs", &num_jobs, "Specify number of jobs per process"),
-> +	OPT_END()
-> +};
-> +
-> +static const char * const bench_locking_vfs_usage[] = {
-> +	"perf bench locking vfs <options>",
-> +	NULL
-> +};
-> +
-> +/* Clean up if SIGINT is raised */
-> +static void sigint_handler(int sig __maybe_unused,
-> +			siginfo_t *info __maybe_unused,
-> +			void *uc __maybe_unused)
-> +{
-> +	DIR *dir;
-> +	struct dirent *file;
-> +	char fp[50];
-> +	int i;
-> +
-> +	/* If child process exit*/
-> +	if (getpid() != *p_id)
-> +		exit(0);
-> +	/* if parent process wait for all child processes to exit and then clean up */
-> +	else {
-> +		/* Wait for all child processes exit before cleaning up the dir */
-> +		for (i = 0; i < n_pro; i++)
-> +			wait(NULL);
-> +
-> +		dir = opendir(tmp_dir);
-> +		if (dir == NULL)
-> +			err(EXIT_FAILURE, "opendir");
-> +		while ((file = readdir(dir))) {
-> +			sprintf(fp, "%s/%s", tmp_dir, file->d_name);
-> +			unlink(fp);
-> +		}
-> +		if ((rmdir(tmp_dir)) < 0)
-> +			err(EXIT_FAILURE, "rmdir");
-> +		exit(0);
-> +	}
-> +}
-> +
-> +/* Running bench vfs workload */
-> +static void *run_bench_vfs(struct worker *workers)
-> +{
-> +	int fd;
-> +	unsigned long long nr_ops = 0;
-> +	int jobs = num_jobs;
-> +
-> +	sprintf(workers->str, "%s/%d-XXXXXX", tmp_dir, getpid());
-
-
-Please use snprintf, checking for overflows on the target string
-
-> +	if ((mkstemp(workers->str)) < 0)
-> +		err(EXIT_FAILURE, "mkstemp");
-> +
-> +	/* Signal to parent process and wait till all processes/ are ready run */
-> +	setup[workers->order_id] = 1;
-> +	syscall(SYS_futex, futex, FUTEX_WAIT, 0, NULL, NULL, 0);
-> +
-> +	/* Start of the benchmark keep looping till parent process signal completion */
-> +	while ((run_jobs ? (jobs > 0) : (!*finished))) {
-> +		fd = creat(workers->str, S_IRWXU);
-> +		if (fd < 0)
-> +			err(EXIT_FAILURE, "creat");
-> +		nr_ops++;
-> +		if (run_jobs)
-> +			jobs--;
-> +		close(fd);
-> +	}
-> +
-> +	if ((unlink(workers->str)) < 0)
-> +		err(EXIT_FAILURE, "unlink");
-> +	shared_workers[workers->order_id] = nr_ops;
-> +	setup[workers->order_id] = 0;
-> +	exit(0);
-> +}
-> +
-> +/* Setting shared variable finished and shared_workers */
-> +static void setup_shared(void)
-> +{
-> +	unsigned int *finished_tmp, *setup_tmp;
-> +	unsigned long long *shared_workers_tmp;
-> +	u_int32_t *futex_tmp;
-> +
-> +
-> +	/* finished shared var is use to signal start and end of benchmark */
-> +	finished_tmp = (void *)mmap(0, sizeof(unsigned int), PROT_READ|PROT_WRITE,
-> +			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-
-Why do you use these void * casts before mmap alreayd returns void *?
-
-> +	if (finished_tmp == (void *) -1)
-
-Please use MAP_FAILED instead of its equivalent (void *) -1.
-
-> +		err(EXIT_FAILURE, "mmap finished");
-> +	finished = finished_tmp;
-> +
-> +	/* shared_workers is an array of ops perform by each process */
-> +	shared_workers_tmp = (void *)mmap(0, sizeof(unsigned long long)*end_nr,
-> +			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> +	if (shared_workers_tmp == (void *) -1)
-> +		err(EXIT_FAILURE, "mmap shared_workers");
-> +	shared_workers = shared_workers_tmp;
-> +
-> +	/* setup is use for each processes to signal that it is done
-> +	 * setting up for the benchmark and is ready to run */
-> +	setup_tmp = (void *)mmap(0, sizeof(unsigned int)*end_nr,
-> +			PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> +	if (setup_tmp == (void *) -1)
-> +		err(EXIT_FAILURE, "mmap setup");
-> +	setup = setup_tmp;
-> +
-> +	/* Processes will sleep on this futex until all other processes
-> +	 * are done setting up and are ready to run */
-> +	futex_tmp = (void *)mmap(0, sizeof(u_int32_t), PROT_READ|PROT_WRITE,
-> +			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> +	if (futex_tmp == (void *) -1)
-> +		err(EXIT_FAILURE, "mmap futex");
-> +	futex = futex_tmp;
-> +	(*futex) = 0;
-> +
-> +	/* Setting a tmp dir for all processes to write to */
-> +	tmp_dir = (void *)mmap(0, sizeof(char) * 255, PROT_READ|PROT_WRITE,
-> +			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> +	if (tmp_dir == (void *) -1)
-> +		err(EXIT_FAILURE, "mmap finished");
-> +
-> +	/* Setting up parent id to handle sigint */
-> +	p_id = (void *)mmap(0, sizeof(pid_t), PROT_READ|PROT_WRITE,
-> +			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> +	if (p_id == (void *) -1)
-> +		err(EXIT_FAILURE, "mmap p_id");
-> +	*p_id = getpid();
-> +
-> +	/* Creating tmp dir for all process to write to */
-> +	sprintf(tmp_dir, "%d-XXXXXX", *p_id);
-> +	if ((mkdtemp(tmp_dir)) == NULL)
-> +		err(EXIT_FAILURE, "mkdtemp");
-> +}
-> +
-> +/* Freeing shared variables */
-> +static void free_resources(void)
-> +{
-> +	if ((rmdir(tmp_dir)) == -1)
-> +		err(EXIT_FAILURE, "rmdir");
-> +
-> +	if ((munmap(finished, sizeof(unsigned int)) == -1))
-> +		err(EXIT_FAILURE, "munmap finished");
-> +
-> +	if ((munmap(shared_workers, sizeof(unsigned long long) * end_nr) == -1))
-> +		err(EXIT_FAILURE, "munmap shared_workers");
-> +
-> +	if ((munmap(setup, sizeof(unsigned int) * end_nr) == -1))
-> +		err(EXIT_FAILURE, "munmap setup");
-> +
-> +	if ((munmap(futex, sizeof(u_int32_t))) == -1)
-> +		err(EXIT_FAILURE, "munmap futex");
-> +
-> +	if ((munmap(tmp_dir, sizeof(char) * 50) == -1))
-> +		err(EXIT_FAILURE, "munmap tmp_dir");
-> +
-> +	if ((munmap(p_id, sizeof(pid_t)) == -1))
-> +		err(EXIT_FAILURE, "munmap p_id");
-> +}
-> +
-> +/* Start to spawn workers and wait till all workers have been
-> + * created before starting workload */
-> +static void spawn_workers(void *(*bench_ptr) (struct worker *))
-> +{
-> +	pid_t child;
-> +	unsigned int i, j, k;
-> +	struct worker workers;
-> +	unsigned long long total_ops;
-> +	unsigned int total_workers;
-> +
-> +	setup_shared();
-> +
-> +	/* This loop through all the run each is increment by increment_by */
-> +	for (i = start_nr; i <= end_nr; i += increment_by) {
-> +
-> +		for (j = 0; j < i; j++) {
-> +			if (!fork())
-> +				break;
-> +		}
-> +
-> +		child = getpid();
-> +		/* Initialize child worker struct and run benchmark */
-> +		if (child != *p_id) {
-> +			workers.order_id = j;
-> +			workers.pid = child;
-> +			bench_ptr(&workers);
-> +		}
-> +		/* Parent to sleep during the duration of benchmark */
-> +		else{
-> +			n_pro = i;
-> +			/* Make sure all child process are created and setup
-> +			 * before starting benchmark for bench_dur durations */
-> +			do {
-> +				total_workers = 0;
-> +				for (k = 0; k < i; k++)
-> +					total_workers = total_workers + setup[k];
-> +			} while (total_workers != i);
-> +
-> +			/* Wake up all sleeping process to run the benchmark */
-> +			(*futex) = 1;
-> +			syscall(SYS_futex, futex, FUTEX_WAKE, i, NULL, NULL, 0);
-> +
-> +			/* If run time parameters is set */
-> +			if (!run_jobs) {
-> +				/* All proccesses are ready signal them to run */
-> +				gettimeofday(&start, NULL);
-> +				sleep(bench_dur);
-> +				(*finished) = 1;
-> +				gettimeofday(&end, NULL);
-> +				timersub(&end, &start, &total);
-> +
-> +				for (k = 0; k < i; k++)
-> +					wait(NULL);
-> +			}
-> +			/* If jobs per proccesses is set */
-> +			else {
-> +				/* All proccesses are ready signal them to run */
-> +				gettimeofday(&start, NULL);
-> +				/* Wait for all process to terminate before getting outputs */
-> +				for (k = 0; k < i; k++)
-> +					wait(NULL);
-> +				gettimeofday(&end, NULL);
-> +				timersub(&end, &start, &total);
-> +			}
-> +
-> +			/* Sum up all the ops by each process and report */
-> +			total_ops = 0;
-> +			for (k = 0; k < i; k++)
-> +				total_ops = total_ops + shared_workers[k];
-> +
-> +			printf("\n%6d processes: throughput = %llu average opts/sec all processes\n",
-> +				i, (total_ops / (!total.tv_sec ? 1 : total.tv_sec)));
-> +
-> +			printf("%6d processes: throughput = %llu average opts/sec per process\n",
-> +				i, ((total_ops/(!total.tv_sec ? 1 : total.tv_sec))/(!i ? 1 : i)));
-> +
-> +			/* Reset back to 0 for next run */
-> +			(*finished) = 0;
-> +			(*futex) = 0;
-> +		}
-> +	}
-> +	free_resources();
-> +}
-> +
-> +int bench_locking_vfs(int argc, const char **argv,
-> +			const char *prefix __maybe_unused)
-> +{
-> +	struct sigaction sa;
-> +
-> +	sigfillset(&sa.sa_mask);
-> +	sa.sa_sigaction = sigint_handler;
-> +	sa.sa_flags = SA_SIGINFO;
-> +	sigaction(SIGINT, &sa, NULL);
-> +
-> +	argc = parse_options(argc, argv, options, bench_locking_vfs_usage, 0);
-> +
-> +	/* If errors parsing options */
-> +	if (argc || ((bench_dur != NOTSET) && (num_jobs != NOTSET))) {
-> +		usage_with_options(bench_locking_vfs_usage, options);
-> +		exit(EXIT_FAILURE);
-> +	}
-> +	/* If both run time and job per process is set */
-> +	if (argc || ((bench_dur != NOTSET) && (num_jobs != NOTSET))) {
-> +		fprintf(stderr, "\n runtime and jobs options can not both be specified\n");
-> +		usage_with_options(bench_locking_vfs_usage, options);
-> +		exit(EXIT_FAILURE);
-> +	}
-> +
-> +	/* If both run time and jobs options is not set default to run time only*/
-> +	if ((bench_dur == NOTSET) && (num_jobs == NOTSET))
-> +		bench_dur = 5;
-> +
-> +	if (num_jobs != NOTSET)
-> +		run_jobs = true;
-> +
-> +	spawn_workers(run_bench_vfs);
-> +	return 0;
-> +}
-> diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
-> index b9a56fa..fdfb089 100644
-> --- a/tools/perf/builtin-bench.c
-> +++ b/tools/perf/builtin-bench.c
-> @@ -63,6 +63,13 @@ static struct bench futex_benchmarks[] = {
->  	{ NULL,		NULL,						NULL			}
->  };
->  
-> +static struct bench locking_benchmarks[] = {
-> +	{ "vfs",	"Benchmark vfs using creat(2)",			bench_locking_vfs	},
-> +	{ "all",        "Run all benchmarks in this suite",		NULL			},
-> +	{ NULL,		NULL,						NULL			}
-> +};
-> +
-> +
->  struct collection {
->  	const char	*name;
->  	const char	*summary;
-> @@ -76,6 +83,7 @@ static struct collection collections[] = {
->  	{ "numa",	"NUMA scheduling and MM benchmarks",		numa_benchmarks		},
->  #endif
->  	{"futex",       "Futex stressing benchmarks",                   futex_benchmarks        },
-> +	{"locking",     "Kernel locking benchmarks",                    locking_benchmarks      },
->  	{ "all",	"All benchmarks",				NULL			},
->  	{ NULL,		NULL,						NULL			}
->  };
-> -- 
-> 1.9.1
+> >> If we do need it (and it looks like most or all hotplug drivers copied it),
+> >> isn't there still a race?  Can't we have the following sequence?
+> >>
+> >>   - pciehp_check_link_active()                # returns true
+> >>   - Link goes down
+> >>   - pci_read_config_byte()            # fails because link is down
+> >>
+> > I would guess so. Question is how to address it. Read the configuration byte
+> > first, then check if the link is down ? Check if link is still up after reading
+> > the configuration byte ? Add a note that there may be a potential race condition
+> > and do nothing until it is actually seen ?
 > 
+> I think we should just read PCI_BRIDGE_CONTROL and look for a 0xff
+> value.  That's not a legal value for the register, so if we see it, it
+> should be pretty safe to assume the link is down or the device is not
+> present at all.
 > 
+Something like
+	if (bctl != 0xff && (bctl & PCI_BRIDGE_CTL_VGA)) {
+in addition to Rajat's changes ?
+
+I think it would be good to keep the change Rajat proposed, ie to check
+the link state instead of presence. Question then is if you'd want a new
+revision of Rajat's patch or another patch on top of it with the bctl
+related change.
+
+Thanks,
+Guenter
