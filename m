@@ -1,130 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934257AbaLKP4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:56:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62349 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933240AbaLKP4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:56:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,558,1413270000"; 
-   d="scan'208";a="646116068"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1 2/4] mfd: intel/lpc/sch: move driver to dedicated folder
-Date: Thu, 11 Dec 2014 17:53:54 +0200
-Message-Id: <1418313236-10764-3-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S934281AbaLKQAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 11:00:31 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:29013 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934262AbaLKQA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 11:00:29 -0500
+From: Josef Bacik <jbacik@fb.com>
+To: <bmaurer@fb.com>, <rkroll@fb.com>, <kernel-team@fb.com>,
+        <mingo@redhat.com>, <peterz@infradead.org>,
+        <linux-kernel@vger.kernel.org>, <umgwanakikbuti@gmail.com>
+Subject: [PATCH] sched/fair: change where we report sched stats V2
+Date: Thu, 11 Dec 2014 10:59:55 -0500
+Message-ID: <1418313595-14286-1-git-send-email-jbacik@fb.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-11_03:2014-12-11,2014-12-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=121.849647738959
+ compositescore=0.182402046397986 urlsuspect_oldscore=0.182402046397986
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.182402046397986 spamscore=0
+ recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412110158
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the lpc_sch.c module to the dedicated folder.
+The schedule stats currently spit out once the entity is being queued, which
+means if we have stack traces enabled we will get the stack trace of the waker,
+not of the task being woken.  This makes the backtrace completely useless when
+trying to track down latency spikes, as we want to know why we were put to sleep
+for as long as we were.
 
-There is no functional change.
+This patch moves the trace_sched_stat* calls to after the task has been put back
+on the CPU so that the backtrace we get is the one that put us to sleep.  Mike
+Galbraith suggested that I leave the actual stat collection stuff where it is so
+that we don't add the scheduler latency to the sleep stats, so I've added 3 new
+fields in the scheduler stats to keep track of the last sleep time so that if
+any of these are set we know to trigger the trace points.  Thanks,
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 ---
- drivers/mfd/Kconfig                        | 8 --------
- drivers/mfd/Makefile                       | 1 -
- drivers/mfd/intel/Kconfig                  | 2 ++
- drivers/mfd/intel/Makefile                 | 1 +
- drivers/mfd/intel/lpc/Kconfig              | 7 +++++++
- drivers/mfd/intel/lpc/Makefile             | 1 +
- drivers/mfd/{lpc_sch.c => intel/lpc/sch.c} | 2 +-
- 7 files changed, 12 insertions(+), 10 deletions(-)
- create mode 100644 drivers/mfd/intel/lpc/Kconfig
- create mode 100644 drivers/mfd/intel/lpc/Makefile
- rename drivers/mfd/{lpc_sch.c => intel/lpc/sch.c} (99%)
+V1->V2: left the stat collection the way it was and just moved the
+trace_sched_stat* calls to after we are put back on the CPU.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 729e9cd..e78450f 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -281,14 +281,6 @@ config LPC_ICH
- 	  other drivers to control these functions, currently GPIO and
- 	  watchdog.
+ include/linux/sched.h |  3 +++
+ kernel/sched/core.c   | 14 ++++----------
+ kernel/sched/fair.c   | 33 ++++++++++++++++++++++++++++-----
+ kernel/sched/sched.h  |  1 +
+ 4 files changed, 36 insertions(+), 15 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 5e344bb..f647a09 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1091,13 +1091,16 @@ struct sched_statistics {
+ 	u64			wait_sum;
+ 	u64			iowait_count;
+ 	u64			iowait_sum;
++	u64			last_iowait_time;
  
--config LPC_SCH
--	tristate "Intel SCH LPC"
--	depends on PCI
--	select MFD_CORE
--	help
--	  LPC bridge function of the Intel SCH provides support for
--	  System Management Bus and General Purpose I/O.
+ 	u64			sleep_start;
+ 	u64			sleep_max;
++	u64			last_sleep_time;
+ 	s64			sum_sleep_runtime;
+ 
+ 	u64			block_start;
+ 	u64			block_max;
++	u64			last_block_time;
+ 	u64			exec_max;
+ 	u64			slice_max;
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 89e7283..e763709 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2277,11 +2277,12 @@ static void finish_task_switch(struct rq *rq, struct task_struct *prev)
+ 	tick_nohz_task_switch(current);
+ }
+ 
+-#ifdef CONFIG_SMP
 -
- config INTEL_SOC_PMIC
- 	bool "Support for Intel Atom SoC PMIC"
- 	depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 11e1945e..fa2fa72 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -138,7 +138,6 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
- obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
- obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
- obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
--obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
- obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
- obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
- obj-$(CONFIG_MFD_JANZ_CMODIO)	+= janz-cmodio.o
-diff --git a/drivers/mfd/intel/Kconfig b/drivers/mfd/intel/Kconfig
-index 9e376b0..5d2341f 100644
---- a/drivers/mfd/intel/Kconfig
-+++ b/drivers/mfd/intel/Kconfig
-@@ -3,3 +3,5 @@
- #
+ /* rq->lock is NOT held, but preemption is disabled */
+ static inline void post_schedule(struct rq *rq)
+ {
++	if (rq->curr->sched_class->post_schedule_stats)
++		rq->curr->sched_class->post_schedule_stats(rq);
++#ifdef CONFIG_SMP
+ 	if (rq->post_schedule) {
+ 		unsigned long flags;
  
- source "drivers/mfd/intel/mid/Kconfig"
+@@ -2292,15 +2293,8 @@ static inline void post_schedule(struct rq *rq)
+ 
+ 		rq->post_schedule = 0;
+ 	}
+-}
+-
+-#else
+-
+-static inline void post_schedule(struct rq *rq)
+-{
+-}
+-
+ #endif
++}
+ 
+ /**
+  * schedule_tail - first thing a freshly forked thread must call.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index ef2b104..3038524 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2702,6 +2702,29 @@ static inline int idle_balance(struct rq *rq)
+ 
+ #endif /* CONFIG_SMP */
+ 
++static void task_emit_stats(struct rq *rq)
++{
++#ifdef CONFIG_SCHEDSTATS
++	struct task_struct *tsk = rq->curr;
++	struct sched_entity *se = &tsk->se;
 +
-+source "drivers/mfd/intel/lpc/Kconfig"
-diff --git a/drivers/mfd/intel/Makefile b/drivers/mfd/intel/Makefile
-index 8d6b43b..8264a26 100644
---- a/drivers/mfd/intel/Makefile
-+++ b/drivers/mfd/intel/Makefile
-@@ -3,3 +3,4 @@
- #
++	if (se->statistics.last_sleep_time) {
++		trace_sched_stat_sleep(tsk, se->statistics.last_sleep_time);
++		se->statistics.last_sleep_time = 0;
++	}
++
++	if (se->statistics.last_iowait_time) {
++		trace_sched_stat_iowait(tsk, se->statistics.last_iowait_time);
++		se->statistics.last_iowait_time = 0;
++	}
++
++	if (se->statistics.last_block_time) {
++		trace_sched_stat_blocked(tsk, se->statistics.last_block_time);
++		se->statistics.last_block_time = 0;
++	}
++#endif
++}
++
+ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+ #ifdef CONFIG_SCHEDSTATS
+@@ -2721,11 +2744,10 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
  
- obj-y	+= mid/
-+obj-y	+= lpc/
-diff --git a/drivers/mfd/intel/lpc/Kconfig b/drivers/mfd/intel/lpc/Kconfig
-new file mode 100644
-index 0000000..f131f96
---- /dev/null
-+++ b/drivers/mfd/intel/lpc/Kconfig
-@@ -0,0 +1,7 @@
-+config LPC_SCH
-+	tristate "Intel SCH LPC"
-+	depends on PCI
-+	select MFD_CORE
-+	help
-+	  LPC bridge function of the Intel SCH provides support for
-+	  System Management Bus and General Purpose I/O.
-diff --git a/drivers/mfd/intel/lpc/Makefile b/drivers/mfd/intel/lpc/Makefile
-new file mode 100644
-index 0000000..7503137
---- /dev/null
-+++ b/drivers/mfd/intel/lpc/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_LPC_SCH)		+= sch.o
-diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/intel/lpc/sch.c
-similarity index 99%
-rename from drivers/mfd/lpc_sch.c
-rename to drivers/mfd/intel/lpc/sch.c
-index 5c38df3..1829959 100644
---- a/drivers/mfd/lpc_sch.c
-+++ b/drivers/mfd/intel/lpc/sch.c
-@@ -1,5 +1,5 @@
- /*
-- *  lpc_sch.c - LPC interface for Intel Poulsbo SCH
-+ *  sch.c - LPC interface for Intel Poulsbo SCH
-  *
-  *  LPC bridge function of the Intel SCH contains many other
-  *  functional units, such as Interrupt controllers, Timers,
+ 		se->statistics.sleep_start = 0;
+ 		se->statistics.sum_sleep_runtime += delta;
++		se->statistics.last_sleep_time = delta;
+ 
+-		if (tsk) {
++		if (tsk)
+ 			account_scheduler_latency(tsk, delta >> 10, 1);
+-			trace_sched_stat_sleep(tsk, delta);
+-		}
+ 	}
+ 	if (se->statistics.block_start) {
+ 		u64 delta = rq_clock(rq_of(cfs_rq)) - se->statistics.block_start;
+@@ -2737,16 +2759,16 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 			se->statistics.block_max = delta;
+ 
+ 		se->statistics.block_start = 0;
++		se->statistics.last_block_time = delta;
+ 		se->statistics.sum_sleep_runtime += delta;
+ 
+ 		if (tsk) {
+ 			if (tsk->in_iowait) {
+ 				se->statistics.iowait_sum += delta;
+ 				se->statistics.iowait_count++;
+-				trace_sched_stat_iowait(tsk, delta);
++				se->statistics.last_iowait_time = delta;
+ 			}
+ 
+-			trace_sched_stat_blocked(tsk, delta);
+ 
+ 			/*
+ 			 * Blocking time is in units of nanosecs, so shift by
+@@ -7966,6 +7988,7 @@ const struct sched_class fair_sched_class = {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	.task_move_group	= task_move_group_fair,
+ #endif
++	.post_schedule_stats	= task_emit_stats,
+ };
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 2df8ef0..7c0e977 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1140,6 +1140,7 @@ struct sched_class {
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	void (*task_move_group) (struct task_struct *p, int on_rq);
+ #endif
++	void (*post_schedule_stats) (struct rq *this_rq);
+ };
+ 
+ static inline void put_prev_task(struct rq *rq, struct task_struct *prev)
 -- 
-2.1.3
+1.9.3
 
