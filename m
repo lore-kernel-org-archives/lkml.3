@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965534AbaLKV1m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:27:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44564 "EHLO mail.kernel.org"
+	id S965487AbaLKV1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:27:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44467 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965517AbaLKV1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:27:38 -0500
+	id S965130AbaLKV1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:27:25 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 17/18] perf evlist: Introduce strerror_mmap method
-Date: Thu, 11 Dec 2014 18:26:05 -0300
-Message-Id: <1418333166-15429-18-git-send-email-acme@kernel.org>
+Subject: [PATCH 14/18] tools lib fs: Adopt filename__read_int from tools/perf/
+Date: Thu, 11 Dec 2014 18:26:02 -0300
+Message-Id: <1418333166-15429-15-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -28,8 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To pretty print hints about perf_evlist__mmap errors. Will be used in
-'trace' in the next patch.
+Will be useful for new helpers to read sysctl values.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -42,66 +41,101 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 23 +++++++++++++++++++++++
- tools/perf/util/evlist.h |  1 +
- 2 files changed, 24 insertions(+)
+ tools/lib/api/fs/fs.c  | 21 +++++++++++++++++++++
+ tools/lib/api/fs/fs.h  |  2 ++
+ tools/perf/util/util.c | 17 -----------------
+ tools/perf/util/util.h |  1 -
+ 4 files changed, 23 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index cfbe2b99b9aa..bb5dfc5d1e75 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -8,6 +8,7 @@
-  */
- #include "util.h"
- #include <api/fs/debugfs.h>
-+#include <api/fs/fs.h>
- #include <poll.h>
- #include "cpumap.h"
- #include "thread_map.h"
-@@ -1483,6 +1484,28 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
- 	return 0;
- }
+diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+index c1b49c36a951..b8d0df8878d1 100644
+--- a/tools/lib/api/fs/fs.c
++++ b/tools/lib/api/fs/fs.c
+@@ -7,6 +7,10 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <sys/vfs.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <unistd.h>
  
-+int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size)
-+{
-+	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
-+	int value;
+ #include "debugfs.h"
+ #include "fs.h"
+@@ -163,3 +167,20 @@ const char *name##__mountpoint(void)	\
+ 
+ FS__MOUNTPOINT(sysfs,  FS__SYSFS);
+ FS__MOUNTPOINT(procfs, FS__PROCFS);
 +
-+	switch (err) {
-+	case EPERM:
-+		sysctl__read_int("kernel/perf_event_mlock_kb", &value);
-+		scnprintf(buf, size, "Error:\t%s.\n"
-+				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
-+				     "Hint:\tTried using %zd kB.\n"
-+				     "Hint:\tTry using a bigger -m/--mmap-pages value.",
-+				     emsg, value, evlist->mmap_len / 1024);
-+		break;
-+	default:
-+		scnprintf(buf, size, "%s", emsg);
-+		break;
++int filename__read_int(const char *filename, int *value)
++{
++	char line[64];
++	int fd = open(filename, O_RDONLY), err = -1;
++
++	if (fd < 0)
++		return -1;
++
++	if (read(fd, line, sizeof(line)) > 0) {
++		*value = atoi(line);
++		err = 0;
 +	}
 +
-+	return 0;
++	close(fd);
++	return err;
 +}
+diff --git a/tools/lib/api/fs/fs.h b/tools/lib/api/fs/fs.h
+index cb7049551f33..4d0aef6e7163 100644
+--- a/tools/lib/api/fs/fs.h
++++ b/tools/lib/api/fs/fs.h
+@@ -11,4 +11,6 @@
+ 
+ const char *sysfs__mountpoint(void);
+ const char *procfs__mountpoint(void);
 +
- void perf_evlist__to_front(struct perf_evlist *evlist,
- 			   struct perf_evsel *move_evsel)
- {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 649b0c597283..0ba93f67ab94 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -185,6 +185,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
++int filename__read_int(const char *filename, int *value);
+ #endif /* __API_FS__ */
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index d5eab3f3323f..41125e5b011e 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -442,23 +442,6 @@ unsigned long parse_tag_value(const char *str, struct parse_tag *tags)
+ 	return (unsigned long) -1;
+ }
  
- int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
- int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
-+int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size);
- 
- static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+-int filename__read_int(const char *filename, int *value)
+-{
+-	char line[64];
+-	int fd = open(filename, O_RDONLY), err = -1;
+-
+-	if (fd < 0)
+-		return -1;
+-
+-	if (read(fd, line, sizeof(line)) > 0) {
+-		*value = atoi(line);
+-		err = 0;
+-	}
+-
+-	close(fd);
+-	return err;
+-}
+-
+ int filename__read_str(const char *filename, char **buf, size_t *sizep)
  {
+ 	size_t size = 0, alloc_size = 0;
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index abc445ee4f60..008b361b1758 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -343,7 +343,6 @@ char *get_srcline(struct dso *dso, unsigned long addr, struct symbol *sym,
+ 		  bool show_sym);
+ void free_srcline(char *srcline);
+ 
+-int filename__read_int(const char *filename, int *value);
+ int filename__read_str(const char *filename, char **buf, size_t *sizep);
+ int perf_event_paranoid(void);
+ 
 -- 
 1.9.3
 
