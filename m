@@ -1,166 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759005AbaLKUnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 15:43:13 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:43536 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758434AbaLKUnL (ORCPT
+	id S1759034AbaLKUoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 15:44:20 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55427 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752783AbaLKUoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 15:43:11 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Thu, 11 Dec 2014 15:43:08 -0500
-To: R Sricharan <r.sricharan@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM: OMAP5/DRA7: Fix counter frequency drift for AM572x errata
- i856
-Message-ID: <20141211204308.GU24110@csclub.uwaterloo.ca>
-References: <20141211204116.GT24110@csclub.uwaterloo.ca>
+	Thu, 11 Dec 2014 15:44:18 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Kristen Carlson Accardi <kristen@linux.intel.com>,
+        Ethan Zhao <ethan.zhao@oracle.com>
+Cc: dirk.j.brandewie@intel.com, linda.knippers@hp.com, viresh.kumar@linaro.org,
+        corbet@lwn.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ethan.kernel@gmail.com
+Subject: Re: [PATCH 2/2 V9] intel_pstate: add kernel parameter to force loading.
+Date: Thu, 11 Dec 2014 22:05:53 +0100
+Message-ID: <2949247.5egUrLMaeB@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20141210122849.17d258d8@kcaccard-desk.amr.corp.intel.com>
+References: <1418089399-9310-1-git-send-email-ethan.zhao@oracle.com> <20141210122849.17d258d8@kcaccard-desk.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141211204116.GT24110@csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 03:41:16PM -0500, Lennart Sorensen wrote:
-> Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
-> crystal is not enabled at power up.  Instead the CPU falls back to using
-> an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
-> 20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
-> but can also be 19.2 or 27MHz which result in much larger drift.
+On Wednesday, December 10, 2014 12:28:49 PM Kristen Carlson Accardi wrote:
+> On Tue, 9 Dec 2014 10:43:19 +0900
+> Ethan Zhao <ethan.zhao@oracle.com> wrote:
 > 
-> Since this is used to drive the master counter at 32.768KHz * 375 /
-> 2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
-> seconds per day, and more than the 500ppm NTP is able to tolerate.
+> > To force loading on Oracle Sun X86 servers, provide one kernel command line
+> > parameter
+> > 
+> >   intel_pstate = force
+> > 
+> > For those who be aware of the risk of no power capping capabily working and
+> > try to get better performance with this driver.
+> > 
+> > Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> > Tested-by: Alexey Kodanev <alexey.kodanev@oracle.com>
+> > Reviewed-by: Linda Knippers <linda.knippers@hp.com>
 > 
-> Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
-> is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
-> by known that the real counter frequency can be determined and used.
-> The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 375 / 1220.
-> This is unfortunately not integer math so the actual arch_timer_freq
-> needs to be precalculated.
-> 
-> Also the SYSCLK1 frequencies that have never been used by an omap
-> evaluation board were all missing a 0.
-> 
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index 4f61148..2e81511 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -513,11 +513,11 @@ static void __init realtime_counter_init(void)
->  	rate = clk_get_rate(sys_clk);
->  	/* Numerator/denumerator values refer TRM Realtime Counter section */
->  	switch (rate) {
-> -	case 1200000:
-> +	case 12000000:
->  		num = 64;
->  		den = 125;
->  		break;
-> -	case 1300000:
-> +	case 13000000:
->  		num = 768;
->  		den = 1625;
->  		break;
-> @@ -529,11 +529,11 @@ static void __init realtime_counter_init(void)
->  		num = 192;
->  		den = 625;
->  		break;
-> -	case 2600000:
-> +	case 26000000:
->  		num = 384;
->  		den = 1625;
->  		break;
-> -	case 2700000:
-> +	case 27000000:
->  		num = 256;
->  		den = 1125;
->  		break;
-> @@ -557,6 +557,73 @@ static void __init realtime_counter_init(void)
->  	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
->  
->  	arch_timer_freq = (rate / den) * num;
-> +
-> +	if (soc_is_dra7xx()) {
-> +		#define CTRL_CORE_BOOTSTRAP 0x4A0026C4
-> +		#define SPEEDSELECT_MASK 0x00000300
-> +		void __iomem *corebase;
-> +		corebase = ioremap(CTRL_CORE_BOOTSTRAP, SZ_4);
-> +		if (!corebase)
-> +			pr_err("%s: ioremap failed\n", __func__);
-> +		else {
-> +			reg = readl_relaxed(corebase) & SPEEDSELECT_MASK;
-> +			iounmap(corebase);
-> +			/*
-> +			 * Errata i856 says the 32.768KHz crystal does
-> +			 * not start at power on, so the CPU falls back in
-> +			 * an emulated 32KHz clock instead.  This causes
-> +			 * the master counter frequency to not be what it
-> +			 * was expected to be.	This affects at least
-> +			 * the AM572x 1.0 and 1.1 revisions.
-> +			 * Of course any board built without a populated
-> +			 * 32.768KHz crystal would also need this fix
-> +			 * even if the CPU is fixed later.
-> +			 *
-> +			 * If the two speedselect bits are not 0, then the
-> +			 * 32.768KHz clock driving the course counter that
-> +			 * corrects the fine counter every time it ticks is
-> +			 * actually rate/610 rather than 32.768KHz and we
-> +			 * should compensate to avoid the 570ppm (At 20MHz,
-> +			 * much worse at other rates) too fast system time.
-> +			 *
-> +			 * Precalculate the arch_timer_freq, since
-> +			 * rate/610 isn't integer math and accuracy is
-> +			 * desirable here.
-> +			 */
-> +			if (reg) {
-> +				switch (rate) {
-> +				case 19200000:
-> +					num = 375;
-> +					den = 1220;
-> +					arch_timer_freq = 5901639;
-> +					break;
-> +				case 27000000:
-> +					num = 375;
-> +					den = 1220;
-> +					arch_timer_freq = 8299180;
-> +					break;
-> +				case 20000000:
-> +				default:
-> +					num = 375;
-> +					den = 1220;
-> +					arch_timer_freq = 6147541;
-> +					break;
-> +				}
-> +				reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
-> +						NUMERATOR_DENUMERATOR_MASK;
-> +				reg |= num;
-> +				writel_relaxed(reg, base + INCREMENTER_NUMERATOR_OFFSET);
-> +
-> +				reg = readl_relaxed(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
-> +						NUMERATOR_DENUMERATOR_MASK;
-> +				reg |= den;
-> +				writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
-> +
-> +				printk(KERN_WARNING "DRA7xx CP15 compensated for sloppy internal 32KHz clock.\n");
-> +			}
-> +		}
-> +	}
-> +
->  	set_cntfreq();
->  
->  	iounmap(base);
+> Acked-by: Kristen Carlson Accardi <kristen@linux.intel.com>
 
-I am perfectly willing to split this into two patches it prefered (one
-for the counter frequency fix and one for the rate typos).
+Patch applied, but I had to rebase it on top of the HWP changes from Dirk.
 
-Other cleanups needed would be great too, since I am still not too
-pleased with how this looks.
+Please check my linux-next branch for the result and let me know if there's
+anything wrong with it.
 
-With this fix however many boards have run ntp with drift less than 3ppm,
-so it works very well.
+> > ---
+> >  v2: change to hardware vendor specific naming parameter.
+> >  v4: refine code and doc.
+> >  v5&v6: fix a typo in doc.
+> >  v7: change enum PCC to PPC.
+> >  v8: change the name of kernel command line parameter to generic one.
+> >  v9: refine doc
+> > 
+> >  Documentation/kernel-parameters.txt | 5 +++++
+> >  drivers/cpufreq/intel_pstate.c      | 6 +++++-
+> >  2 files changed, 10 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 479f332..7d0983e 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -1446,6 +1446,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  		       disable
+> >  		         Do not enable intel_pstate as the default
+> >  		         scaling driver for the supported processors
+> > +		       force
+> > +			 Enable intel_pstate on systems that prohibit it by default
+> > +			 in favor of acpi-cpufreq. Forcing the intel_pstate driver
+> > +			 instead of acpi-cpufreq may disable platform features, such
+> > +			 as thermal controls and power capping, that rely on ACPI
+> > +			 P-States information being indicated to OSPM and therefore
+> > +			 should be used with caution. This option does not work with
+> > +			 processors that aren't supported by the intel_pstate driver
+> > +			 or on platforms that use pcc-cpufreq instead of acpi-cpufreq.
+> >  
+> >  	intremap=	[X86-64, Intel-IOMMU]
+> >  			on	enable Interrupt Remapping (default)
+> > diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> > index 1bb62ca..2654e13 100644
+> > --- a/drivers/cpufreq/intel_pstate.c
+> > +++ b/drivers/cpufreq/intel_pstate.c
+> > @@ -866,6 +866,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+> >  };
+> >  
+> >  static int __initdata no_load;
+> > +static unsigned int  force_load;
+> >  
+> >  static int intel_pstate_msrs_not_valid(void)
+> >  {
+> > @@ -1003,7 +1004,8 @@ static bool intel_pstate_platform_pwr_mgmt_exists(void)
+> >  			case PSS:
+> >  				return intel_pstate_no_acpi_pss();
+> >  			case PPC:
+> > -				return intel_pstate_has_acpi_ppc();
+> > +				return intel_pstate_has_acpi_ppc() &&
+> > +					(!force_load);
+> >  			}
+> >  	}
+> >  
+> > @@ -1078,6 +1080,8 @@ static int __init intel_pstate_setup(char *str)
+> >  
+> >  	if (!strcmp(str, "disable"))
+> >  		no_load = 1;
+> > +	if (!strcmp(str, "force"))
+> > +		force_load = 1;
+> >  	return 0;
+> >  }
+> >  early_param("intel_pstate", intel_pstate_setup);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Len Sorensen
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
