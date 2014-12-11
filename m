@@ -1,101 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757815AbaLKM7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:59:36 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55593 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaLKM7d (ORCPT
+	id S1757870AbaLKNC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 08:02:57 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:54514 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaLKNCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:59:33 -0500
-Date: Thu, 11 Dec 2014 12:58:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: open list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "moderated list:ARM/CLKDEV SUPPORT" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
-        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        boris.brezillon@free-electrons.com
-Message-ID: <20141211125837.GV11764@sirena.org.uk>
-References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
- <1418226513-14105-5-git-send-email-a.hajda@samsung.com>
- <20141210160720.GS11764@sirena.org.uk>
- <548976D2.7080005@samsung.com>
+	Thu, 11 Dec 2014 08:02:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5FNPeqk0egs0iuvD"
-Content-Disposition: inline
-In-Reply-To: <548976D2.7080005@samsung.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 04/15] regulator: add restrack support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1418302026.1992.18.camel@mtksdaap41>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
+	<1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+	<1418221662.21309.13.camel@mtksdaap41>
+	<CABuKBe+U22ogGBToftgaSJw6fcJmciGfa9scAkyP3g5OJSaAOA@mail.gmail.com>
+	<1418302026.1992.18.camel@mtksdaap41>
+Date: Thu, 11 Dec 2014 14:02:53 +0100
+Message-ID: <CABuKBeLOcr_CViztHidiXFUzjJ6keJgRrLiEr997Qr34THqicQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
+ board dts and Makefile
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        =?UTF-8?B?WUggQ2hlbiAo6Zmz5pix6LGqKQ==?= <yh.chen@mediatek.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eddie,
 
---5FNPeqk0egs0iuvD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+2014-12-11 13:47 GMT+01:00 Eddie Huang <eddie.huang@mediatek.com>:
+> On Wed, 2014-12-10 at 15:50 +0100, Matthias Brugger wrote:
+>> 2014-12-10 15:27 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
+>> >
+>> > Hi,
+>> >
+>> > On Wed, 2014-12-10 at 18:50 +0800, Eddie Huang wrote:
+>> > <...>
+>> >> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
+>> >> new file mode 100644
+>> >> index 0000000..adf26dd
+>> >> --- /dev/null
+>> >> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
+>> > <...>
+>> >> +     timer {
+>> >> +             compatible = "arm,armv8-timer";
+>> >> +             interrupt-parent = <&gic>;
+>> >> +             interrupts = <1 13 0x8>,
+>> >> +                          <1 14 0x8>,
+>> >> +                          <1 11 0x8>,
+>> >> +                          <1 10 0x8>;
+>> >> +             clock-frequency = <13000000>;
+>> >
+>> > I believe our firmware doesn't need this line. Please remove it.
+>>
+>> The point here would be to know if you need to enable a special timer
+>> from the mtk-timer block to get the arch timer working.
+>> In any case, you will need some sort of timer. This dts does not
+>> describe the mtk-timer (may in the mt8173 it does not exist) but
+>> defines the clocks clk26m and clk32k. So if you don't use the
+>> mtk-timer, please remove the clocks as there isn't a block using them.
+>>
+>
+> MT8173 has two timer set: CPUGPT and APBGPT, and use CPUGPT to enable
+> arch_timer. Previous series only have APBGPT. MT8173 still need enable
+> CPUGPT to get arch timer working, we put this in loader, and transparent
+> to kernel. So I will remove clk26m and clk32k in next version.
 
-On Thu, Dec 11, 2014 at 11:49:54AM +0100, Andrzej Hajda wrote:
-> On 12/10/2014 05:07 PM, Mark Brown wrote:
-> > On Wed, Dec 10, 2014 at 04:48:22PM +0100, Andrzej Hajda wrote:
+Ok, so if this is done in the bootloader, there shouldn't be a problem
+then. Perfect.
 
-> >> Regulators supports various methods of lookup.
-> >> The patch adds restrack support only to DT based regulators.
+Just one more comment on the dts nodes. Can you use the makros defined
+for the interrupt type
+e.g "GIC_PPI 14 IRQ_TYPE_LEVEL_LOW" instead of "1 14 0x8". This makes
+the dts easier to read.
 
-> > Why, what does this mean and how might one use it?  I've not looked at
-> > the code since I don't know what it's supposed to accomplish...
+Thanks,
+Matthias
 
-> Looking at this patch makes no sense without looking at cover letter
-> or at the patch adding restrack framework. In short adding restrack support
-> to regulators will allow to:
+>
 
-I did look at the cover letter and glance at the first couple of patches
-but I still can't tell what this is really intended to do.  There's a
-lot of implementation detail but not a lot of high level overview so
-it's not very clear to me how exactly this solves problems or how it is
-different to the component framework, it sounds very similar.
 
-I'd expect someone reading the change in the regulator API to have at
-least some idea how this fits in with the rest of the API and how to use
-it, and probably more importantly I'd expect to be able to understand
-why this is DT only.
 
---5FNPeqk0egs0iuvD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUiZT9AAoJECTWi3JdVIfQt+cH/0dvoIx1Mg0GgnLlbSrzaC/+
-e9DXQHbh/ynUlqjM60wKCz/xo0mD/glSQQbZaCkpADoBWObnLDnydaGEg8w9fGub
-bN2gDtOcelvibN4ID1nZshRFHWFa1ubdGksf8v2nqvX7cvmdVcw0XLKIjiVlp4aI
-UVhr3RIqZEn4cCmw4FfrAxrxXMJfm9ehl5mecBKRuUlVGWFgw49AEG2GjKnnt2fM
-KogSkZdKOQpaWRQpst+wGnDnOUpYooe3ojfxBIxv6aZyCndXtUMO4Lr+55yhp5n7
-v+j0yRBmUmOPckm+MYU2/Ops09ROpD/FlShbb3jf+HxgLdy6W/kK45N11oadLu4=
-=wRH4
------END PGP SIGNATURE-----
-
---5FNPeqk0egs0iuvD--
+-- 
+motzblog.wordpress.com
