@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758599AbaLKTWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 14:22:25 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:55718 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756097AbaLKTWX (ORCPT
+	id S1758712AbaLKTWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 14:22:35 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:42333 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758694AbaLKTWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 14:22:23 -0500
-Date: Thu, 11 Dec 2014 14:22:20 -0500 (EST)
-Message-Id: <20141211.142220.610076934853342634.davem@davemloft.net>
-To: jim.epost@gmail.com
-Cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, f.fainelli@gmail.com,
-        netdev@vger.kernel.org
-Subject: Re: randconfig build error with next-20141210, in
- drivers/net/ethernet/broadcom/genet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+r1ZhjxtK8BtF16Mr9jXjqvFVV7KAAFjWqfVFUibNreZwZxTw@mail.gmail.com>
-References: <CA+r1ZhjxtK8BtF16Mr9jXjqvFVV7KAAFjWqfVFUibNreZwZxTw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 11 Dec 2014 11:22:22 -0800 (PST)
+	Thu, 11 Dec 2014 14:22:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1418295760-19639-1-git-send-email-addy.ke@rock-chips.com>
+References: <1418277650-25215-1-git-send-email-addy.ke@rock-chips.com>
+	<1418295760-19639-1-git-send-email-addy.ke@rock-chips.com>
+Date: Thu, 11 Dec 2014 11:22:31 -0800
+X-Google-Sender-Auth: 2CQGv_nVZgNwoEjKBWniCRe5UaM
+Message-ID: <CAD=FV=UCQMRLx2KHzT28iY6uCHGQ0MouWKEeVyv2AF_qNCrT=Q@mail.gmail.com>
+Subject: Re: [PATCH v5] i2c: rk3x: fix bug that cause measured high_ns doesn't
+ meet I2C specification
+From: Doug Anderson <dianders@chromium.org>
+To: Addy Ke <addy.ke@rock-chips.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
+        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
+        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
+        Shunqian Zheng <zhengsq@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jim Davis <jim.epost@gmail.com>
-Date: Wed, 10 Dec 2014 09:10:45 -0700
+Hi,
 
-> Building with the attached random configuration file,
-> 
-> ERROR: "fixed_phy_register"
-> [drivers/net/ethernet/broadcom/genet/genet.ko] undefined!
+On Thu, Dec 11, 2014 at 3:02 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
+>   - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
+> + - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
+> +       (t(r) in I2C specification). If not specified this is assumed to be
+> +       the maximum the specification allows(1000 ns for Standard-mode,
+> +       300 ns for Fast-mode) which might cause slightly slower communication.
+> + - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
+> +       (t(f) in the I2C specification). If not specified this is assumed to
+> +       be the maximum the specification allows (300 ns) which might cause
+> +       slightly slowercommunication.
 
-Florian, I don't understand why FIXED_PHY is only selected in Kconfig
-if the driver is statically built into the kernel.
+nit: you forgot a space between "slower" and "communication".
 
-That makes no sense at all, you should need that module regardless of
-how the driver itself is enabled.
+...this is the type of thing I think Wolfram can fixup when applying,
+so I'd suggest against respinning unless something else is needed.
 
-Can't we just remove the "XXX=y" in all of those silly:
+Overall I continue to be happy with this patch.
 
-	select FIXED_PHY if XXX=y
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
 
-expressions?
+You'll notice that I posted a patch atop it at
+<https://patchwork.kernel.org/patch/5477201/>.
 
-There are three such cases right now:
-
-drivers/net/dsa/Kconfig:	select FIXED_PHY if NET_DSA_BCM_SF2=y
-drivers/net/ethernet/broadcom/Kconfig:	select FIXED_PHY if BCMGENET=y
-drivers/net/ethernet/broadcom/Kconfig:	select FIXED_PHY if SYSTEMPORT=y
+-Doug
