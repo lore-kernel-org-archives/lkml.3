@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208AbaLKSmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:42:01 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:42985 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966AbaLKSl7 (ORCPT
+	id S1756567AbaLKSqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:46:15 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:63840 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbaLKSqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:41:59 -0500
+	Thu, 11 Dec 2014 13:46:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <2128690.c90ERDd9ZP@xps13>
-References: <31518562.V5Oyo0POsI@xps13>
-	<20141211085801.GR1300@lahna.fi.intel.com>
-	<20141211140307.GE1300@lahna.fi.intel.com>
-	<2128690.c90ERDd9ZP@xps13>
-Date: Thu, 11 Dec 2014 13:41:57 -0500
-Message-ID: <CAN+gG=Fa5dPtfMSsU2MpqQJ6PWMTjN2izOfx2-ee-Shq21Hutw@mail.gmail.com>
-Subject: Re: NULL pointer dereference in i2c-hid
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Andrew Duggan <aduggan@synaptics.com>, Jiri Kosina <jkosina@suse.cz>
+In-Reply-To: <1418291722-25448-3-git-send-email-lyz@rock-chips.com>
+References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	<1418291722-25448-3-git-send-email-lyz@rock-chips.com>
+Date: Thu, 11 Dec 2014 10:46:12 -0800
+X-Google-Sender-Auth: QpbuQOycqDUm9lHQ8MrWIhtGenU
+Message-ID: <CAD=FV=URDM5yH-t6kRvq=70v3OM=a7z6TesBrzqGZ9m-oxf+qg@mail.gmail.com>
+Subject: Re: [PATCH v6 2/5] Documentation: bindings: add dt documentation for
+ Rockchip usb PHY
+From: Doug Anderson <dianders@chromium.org>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
+        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 1:16 PM, Gabriele Mazzotta
-<gabriele.mzt@gmail.com> wrote:
-> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
->> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
->> > On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
->> > > my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
->> > > i2c-hid and hid-rmi can be loaded and unloaded independelty from each
->> > > other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
->> > > if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
->> > > pointer dereference.
->> >
->> > I'll look into this.
->> >
->> > I can reproduce this easily with i2c-hid + hid-multitouch following your
->> > directions.
->>
->> Can you try the below patch?
->>
->> I think we shouldn't free buffers yet in ->stop() because we need the
->> command buffer sending power commands to the device. Also it seems that
->> ->start() re-allocates buffers anyway if maximum size increases.
->>
->> It shouldn't even leak memory as we release buffers at ->remove()
->> anyway.
->>
->> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> index 62cec01937ea..68a8c938feea 100644
->> --- a/drivers/hid/i2c-hid/i2c-hid.c
->> +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
->>
->>  static void i2c_hid_stop(struct hid_device *hid)
->>  {
->> -     struct i2c_client *client = hid->driver_data;
->> -     struct i2c_hid *ihid = i2c_get_clientdata(client);
->> -
->>       hid->claimed = 0;
->> -
->> -     i2c_hid_free_buffers(ihid);
->>  }
->>
->>  static int i2c_hid_open(struct hid_device *hid)
+Yunzhi,
 
-Mika,
+On Thu, Dec 11, 2014 at 1:55 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+> This patch adds a binding that describes the Rockchip usb PHYs
+> found on Rockchip SoCs usb interface.
 
-you can add my Rev-by when submitting this patch to the mailing list.
+Technically the bindings patch is supposed to come before the driver.
+So this should be patch #1 and the driver patch #2.
 
 
->
-> Yes, it works, thanks.
->
-> This change seems to also prevent kernel ooops when I unload either
-> i2c-hid or i2c-designware-platform while the touchpad is in use,
-> thing that is likely to happen because of the other bug I reported.
->
-> Speaking of it, does any of you have any suggestion on how to debug it?
+> +Required properties:
+> + - compatible: rockchip,rk3288-usb-phy
+> + - rockchip,grf : phandle to the syscon managing the "general
+> +   register files"
+> + - #phy-cells: should be 1
+> + - #address-cells: should be 1
+> + - #size-cells: should be 0
+> +
+> +Sub-nodes:
+> +Each PHY should be represented as a sub-node.
+> +
+> +Sub-nodes
+> +required properties:
+> +- reg: the PHY number
+> +               "0" - PHY connect to OTG controller
+> +               "1" - PHY connect to HOST0 controller
+> +               "2" - PHY connect to HOST1 controller
 
-Hehe, I coincidentally just replied to your bug with one patch to try
-(that was proposed by the intel folks back in May[1]).
-The powertop problem is IMO really worrying because the purpose of
-i2c_hid was to reduce power consumption :)
+You don't have any sub nodes and are using the phy-cells.  Seems like
+you should get rid of this?  ...or I guess switch to using sub nodes
+and set "phy-cells" to 0?
 
-Anyway, thanks for the quick test.
+> +
+> +Optional Properties:
+> +- clocks : phandle + clock specifier for the phy clocks
 
-Cheers,
-Benjamin
+As per earlier, you should get rid of clocks.  If you really want a
+clock here and it's optional:
 
-[1] https://patchwork.kernel.org/patch/4133771/
+* Back in the driver it shouldn't be a "warn".  You don't warn when
+optional things are missing.
+
+* You really should specify a clock name.  Right now this will pick
+the first clock, which makes it hard to later add clocks.
