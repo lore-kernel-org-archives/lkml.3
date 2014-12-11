@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758784AbaLKTz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 14:55:57 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:45616 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756420AbaLKTz4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 14:55:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141211170934.GZ11764@sirena.org.uk>
-References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
-	<20141210235347.GT11764@sirena.org.uk>
-	<CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
-	<20141211123106.GU11764@sirena.org.uk>
-	<CAD=FV=U4RFYx9NXOACrXJZK2bKkosyYnmTZRHkXuaSz-FS9kNQ@mail.gmail.com>
-	<20141211170934.GZ11764@sirena.org.uk>
-Date: Thu, 11 Dec 2014 11:55:55 -0800
-X-Google-Sender-Auth: yMgWylFZFIJr2Au8rp9mRtImd8o
-Message-ID: <CAD=FV=WBAuF0+BVMG9rp53Zt851Ou0kZ6xgTe9mjmgxyugWteg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
- certain voltage
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alexandru Stan <amstan@chromium.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
+	id S1758868AbaLKT5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 14:57:04 -0500
+Received: from mail-bn1on0146.outbound.protection.outlook.com ([157.56.110.146]:14509
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758765AbaLKT5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 14:57:03 -0500
+Date: Thu, 11 Dec 2014 11:56:50 -0800
+From: Guenter Roeck <groeck@juniper.net>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Dely Sy <dely.l.sy@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: Special handling of display/VGA devices in hotplug drivers
+Message-ID: <20141211195650.GA4295@svl-evodev-groeck.juniper.net>
+References: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
+ <20141211181136.GA11367@kroah.com>
+ <20141211113243.3f21551e@jbarnes-t420>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20141211113243.3f21551e@jbarnes-t420>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [66.129.239.11]
+X-ClientProxiedBy: BY1PR10CA0010.namprd10.prod.outlook.com (25.160.197.20) To
+ CO1PR05MB521.namprd05.prod.outlook.com (10.141.72.13)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB521;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:CO1PR05MB521;
+X-Forefront-PRVS: 0422860ED4
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(6069001)(189002)(51704005)(24454002)(199003)(83506001)(92566001)(87976001)(19580395003)(21056001)(42186005)(19580405001)(107046002)(76506005)(33656002)(106356001)(110136001)(101416001)(86362001)(77156002)(62966003)(4396001)(122386002)(46406003)(97736003)(40100003)(47776003)(20776003)(64706001)(120916001)(99396003)(15975445007)(50986999)(54356999)(77096005)(97756001)(31966008)(50466002)(46102003)(76176999)(23726002)(66066001)(105586002)(68736005);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR05MB521;H:localhost;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB521;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR05MB538;
+X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Thu, Dec 11, 2014 at 11:32:43AM -0800, Jesse Barnes wrote:
+> On Thu, 11 Dec 2014 13:11:36 -0500
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+> 
+> > On Thu, Dec 11, 2014 at 10:34:30AM -0700, Bjorn Helgaas wrote:
+> > > It looks like you added the initial pciehp driver [1], which
+> > > includes the following code in pciehp_disable_slot():
+> > > 
+> > > + if (class_code == PCI_BASE_CLASS_DISPLAY) {
+> > > + /* Display/Video adapter (not supported) */
+> > > + rc = REMOVE_NOT_SUPPORTED;
+> > > 
+> > > + /* If it's a bridge, check the VGA Enable bit */
+> > > + if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
+> > > + rc = pci_bus_read_config_byte (pci_bus, devfn,
+> > > PCI_BRIDGE_CONTROL, &BCR);
+> > > + if (rc)
+> > > + return rc;
+> > > +
+> > > + /* If the VGA Enable bit is set, remove isn't supported */
+> > > + if (BCR & PCI_BRIDGE_CTL_VGA) {
+> > > + rc = REMOVE_NOT_SUPPORTED;
+> > > 
+> > > I'm trying to figure out why VGA devices are handled specially.  I
+> > > can't find anything in the PCI specs that mentions this.  Most of
+> > > the other PCI hotplug drivers have similar code.  Do you remember
+> > > anything about this?
+> > 
+> > The PCI spec said that you were not allowed to hotplug VGA drivers.
+> > The big issue is that POST usually needs to run on those things, and
+> > there is no way to POST a PCI hotplugged device.
+> > 
+> > Does the spec not say that anymore?  I haven't looked in years at
+> > it...
+> > 
+> > Do you want to hot-add a VGA device?  Are these lines causing a
+> > problem with something?
+> 
+> Yeah, the legacy I/O regions get routed through the bridge with the VGA
+> bit set, and most legacy code probably can't handle that (whether POST,
+> VBIOS, or VGA drivers).
+> 
+> There is some code for moving the VGA routing around, so that might be
+> an option if you wanted to remove such a bridge.  You'd have to find a
+> VGA device under another bridge, and enable routing to that first, then
+> you could do the remove.
+> 
 
-On Thu, Dec 11, 2014 at 9:09 AM, Mark Brown <broonie@kernel.org> wrote:
->> OK, I'll give a shot at taking my code and using it as a new
->> implementation for regulator_set_voltage_tol().  In the SD card code
->> I'll pick some reasonable tolerances--they won't be exactly what the
->> spec says, but they ought to be good enough.  If Ulf comes back and
->> yells at me then we can revisit adding a new API.
->
-> OK, thanks.  Even if a new interface does get added the implementation
-> needs to be shared with that for setting by tolerance, they're doing the
-> same thing.
+The problem at hand though is that the current code may mis-detect a device as
+VGA device after it was removed. In that case, reading a configuration register
+returns 0xff, meaning the VGA bit is set, and the kernel refuses to remove it.
 
-Yup, exactly.  I'll admit wasn't originally aware of the tolerance API
-and my first thought after your email was to reimplement it atop my
-patch.  ...but just having tolerance right now also seems sane.
+See [1] for a description of the problem and its impact.
 
-
-> Please also bear in mind the need to handle shared supplies in your
-> implementation.
-
-I'm being dense, can you give more details?  Do you want me to grab
-the mutex or do something smarter like track the voltage / tolerance
-requested by multiple clients and resolve them, or ...?
-
-I didn't grab any mutex because I thought all of the attributes I was
-looking at were unchanging.  If they're not then
-regulator_is_supported_voltage() probably has a bug since I'm reading
-roughly the same attributes that it is.  ...and in fact the flow of my
-code is also amost the same as regulator_is_supported_voltage()...
-
--Doug
+Guenter
+---
+[1] https://lkml.org/lkml/2014/11/20/714
