@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683AbaLKSLk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:11:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44690 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaLKSLi (ORCPT
+	id S1754441AbaLKSQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:16:32 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:40103 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaLKSQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:11:38 -0500
-Date: Thu, 11 Dec 2014 13:11:36 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dely Sy <dely.l.sy@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Special handling of display/VGA devices in hotplug drivers
-Message-ID: <20141211181136.GA11367@kroah.com>
-References: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
+	Thu, 11 Dec 2014 13:16:31 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benjamin.tissoires@redhat.com, aduggan@synaptics.com, jkosina@suse.cz
+Subject: Re: NULL pointer dereference in i2c-hid
+Date: Thu, 11 Dec 2014 19:16:28 +0100
+Message-ID: <2128690.c90ERDd9ZP@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <20141211140307.GE1300@lahna.fi.intel.com>
+References: <31518562.V5Oyo0POsI@xps13> <20141211085801.GR1300@lahna.fi.intel.com> <20141211140307.GE1300@lahna.fi.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 10:34:30AM -0700, Bjorn Helgaas wrote:
-> It looks like you added the initial pciehp driver [1], which includes
-> the following code in pciehp_disable_slot():
+On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
+> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
+> > On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
+> > > my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
+> > > i2c-hid and hid-rmi can be loaded and unloaded independelty from each
+> > > other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+> > > if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
+> > > pointer dereference.
+> > 
+> > I'll look into this.
+> > 
+> > I can reproduce this easily with i2c-hid + hid-multitouch following your
+> > directions.
 > 
-> + if (class_code == PCI_BASE_CLASS_DISPLAY) {
-> + /* Display/Video adapter (not supported) */
-> + rc = REMOVE_NOT_SUPPORTED;
+> Can you try the below patch? 
 > 
-> + /* If it's a bridge, check the VGA Enable bit */
-> + if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
-> + rc = pci_bus_read_config_byte (pci_bus, devfn, PCI_BRIDGE_CONTROL, &BCR);
-> + if (rc)
-> + return rc;
-> +
-> + /* If the VGA Enable bit is set, remove isn't supported */
-> + if (BCR & PCI_BRIDGE_CTL_VGA) {
-> + rc = REMOVE_NOT_SUPPORTED;
+> I think we shouldn't free buffers yet in ->stop() because we need the
+> command buffer sending power commands to the device. Also it seems that
+> ->start() re-allocates buffers anyway if maximum size increases.
 > 
-> I'm trying to figure out why VGA devices are handled specially.  I
-> can't find anything in the PCI specs that mentions this.  Most of the
-> other PCI hotplug drivers have similar code.  Do you remember anything
-> about this?
+> It shouldn't even leak memory as we release buffers at ->remove()
+> anyway.
+> 
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index 62cec01937ea..68a8c938feea 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
+>  
+>  static void i2c_hid_stop(struct hid_device *hid)
+>  {
+> -	struct i2c_client *client = hid->driver_data;
+> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
+> -
+>  	hid->claimed = 0;
+> -
+> -	i2c_hid_free_buffers(ihid);
+>  }
+>  
+>  static int i2c_hid_open(struct hid_device *hid)
 
-The PCI spec said that you were not allowed to hotplug VGA drivers.  The
-big issue is that POST usually needs to run on those things, and there
-is no way to POST a PCI hotplugged device.
+Yes, it works, thanks.
 
-Does the spec not say that anymore?  I haven't looked in years at it...
+This change seems to also prevent kernel ooops when I unload either
+i2c-hid or i2c-designware-platform while the touchpad is in use,
+thing that is likely to happen because of the other bug I reported.
 
-Do you want to hot-add a VGA device?  Are these lines causing a problem
-with something?
-
-thanks,
-
-greg k-h
+Speaking of it, does any of you have any suggestion on how to debug it?
