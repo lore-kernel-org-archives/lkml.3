@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634AbaLKRsp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:48:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50609 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757507AbaLKRso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:48:44 -0500
-Date: Thu, 11 Dec 2014 18:15:19 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 3/8] perf data: Add perf data to CTF conversion support
-Message-ID: <20141211171519.GC26788@krava.redhat.com>
-References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
- <1418310749-22267-4-git-send-email-jolsa@kernel.org>
- <5489CF1C.5090606@gmail.com>
+	id S1758545AbaLKRwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:52:41 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48416 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758230AbaLKRwk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 12:52:40 -0500
+Date: Thu, 11 Dec 2014 17:52:25 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: "msalter@redhat.com" <msalter@redhat.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "yingjoe.chen@mediatek.com" <yingjoe.chen@mediatek.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: arm64 hitting BUG in arch_timer.h
+Message-ID: <20141211175224.GL31456@e104818-lin.cambridge.arm.com>
+References: <1418245000.23374.26.camel@t520.localdomain>
+ <CAPz6YkXcerUiLc3dQG0URSuioiLsAwcTLkDTivD4JU9YQsdR+Q@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5489CF1C.5090606@gmail.com>
+In-Reply-To: <CAPz6YkXcerUiLc3dQG0URSuioiLsAwcTLkDTivD4JU9YQsdR+Q@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 10:06:36AM -0700, David Ahern wrote:
-> On 12/11/14 8:12 AM, Jiri Olsa wrote:
-> >To convert perf.data into CTF run:
-> >   $ perf data convert --to-ctf=./ctf-data/
+On Wed, Dec 10, 2014 at 10:43:54PM +0000, Sonny Rao wrote:
+> On Wed, Dec 10, 2014 at 12:56 PM, Mark Salter <msalter@redhat.com> wrote:
+> > Using Linus' tree from this morning, I am hitting:
+> >
+> >    [    0.000000] BUG: failure at ./arch/arm64/include/asm/arch_timer.h:112/arch_counter_get_cntpct!
+> >
+> > This is triggered by commit 0b46b8a718 ("clocksource: arch_timer: Fix
+> > code to use physical timers when requested") which addresses an armv7
+> > problem. Arm64 wants to always use a virtual timer. I used this to avoid
+> > the BUG and get a booting kernel:
+> >
+> > diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch
+> > index 71846f9..4d8a01e 100644
+> > --- a/drivers/clocksource/arm_arch_timer.c
+> > +++ b/drivers/clocksource/arm_arch_timer.c
+> > @@ -468,7 +468,7 @@ static void __init arch_counter_register(unsigned type)
+> >
+> >         /* Register the CP15 based counter if we have one */
+> >         if (type & ARCH_CP15_TIMER) {
+> > -               if (arch_timer_use_virtual)
+> > +               if (IS_ENABLED(CONFIG_ARM64) || arch_timer_use_virtual)
+> >                         arch_timer_read_counter = arch_counter_get_cntvct;
+> >                 else
+> >                         arch_timer_read_counter = arch_counter_get_cntpct;
+> >
+> >
 > 
-> 
-> Are you expecting to need a --from-ctf? if not should that just be --ctf?
-> 
+> Yes Catalin has prepared a similar patch:
+> https://patchwork.kernel.org/patch/5468031/
 
-I guess the motivation (unintentional) was more to have the 'sentence' like command ;-)
+Indeed. Daniel will be pushing it upstream.
 
-  perf data convert --to-ctf ..
-
-IMO it's more descriptive then:
-
-  perf data convert --ctf
-
-jirka
+-- 
+Catalin
