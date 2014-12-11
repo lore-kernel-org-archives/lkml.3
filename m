@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaLKSlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:41:31 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:45931 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750737AbaLKSla (ORCPT
+	id S1755361AbaLKSlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:41:42 -0500
+Received: from mail-vc0-f179.google.com ([209.85.220.179]:64282 "EHLO
+	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238AbaLKSlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:41:30 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Thu, 11 Dec 2014 11:05:51 -0800
-Message-ID: <5489E505.3050903@synaptics.com>
-Date: Thu, 11 Dec 2014 10:40:05 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 11 Dec 2014 13:41:39 -0500
 MIME-Version: 1.0
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <benjamin.tissoires@redhat.com>, <jkosina@suse.cz>
-Subject: Re: NULL pointer dereference in i2c-hid
-References: <31518562.V5Oyo0POsI@xps13> <20141211085801.GR1300@lahna.fi.intel.com> <20141211140307.GE1300@lahna.fi.intel.com> <2128690.c90ERDd9ZP@xps13>
-In-Reply-To: <2128690.c90ERDd9ZP@xps13>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.4.10.98]
-X-Brightmail-Tracker: AAAAAQAAAWE=
+In-Reply-To: <548971AF.1020506@ti.com>
+References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	<1418291722-25448-2-git-send-email-lyz@rock-chips.com>
+	<548971AF.1020506@ti.com>
+Date: Thu, 11 Dec 2014 10:41:38 -0800
+X-Google-Sender-Auth: d4Evyquh2MrJgIEBcpCJYYe8hRo
+Message-ID: <CAD=FV=XTYmzxvteNip2gtuDSSEWph-vY=BOPejHa1Z5KS2Kf6Q@mail.gmail.com>
+Subject: Re: [PATCH v6 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+From: Doug Anderson <dianders@chromium.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Yunzhi Li <lyz@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
+        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
-> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
->> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
->>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
->>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
->>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
->>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
->>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
->>>> pointer dereference.
->>> I'll look into this.
->>>
->>> I can reproduce this easily with i2c-hid + hid-multitouch following your
->>> directions.
->> Can you try the below patch?
->>
->> I think we shouldn't free buffers yet in ->stop() because we need the
->> command buffer sending power commands to the device. Also it seems that
->> ->start() re-allocates buffers anyway if maximum size increases.
->>
->> It shouldn't even leak memory as we release buffers at ->remove()
->> anyway.
->>
->> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> index 62cec01937ea..68a8c938feea 100644
->> --- a/drivers/hid/i2c-hid/i2c-hid.c
->> +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
->>   
->>   static void i2c_hid_stop(struct hid_device *hid)
->>   {
->> -	struct i2c_client *client = hid->driver_data;
->> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
->> -
->>   	hid->claimed = 0;
->> -
->> -	i2c_hid_free_buffers(ihid);
->>   }
->>   
->>   static int i2c_hid_open(struct hid_device *hid)
-> Yes, it works, thanks.
->
-> This change seems to also prevent kernel ooops when I unload either
-> i2c-hid or i2c-designware-platform while the touchpad is in use,
-> thing that is likely to happen because of the other bug I reported.
->
-> Speaking of it, does any of you have any suggestion on how to debug it?
-I was able to reproduce the initial issue by unloading hid-rmi and 
-i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it 
-for me.
+Kishon,
 
-For the original bug, you can modprobe i2c-hid debug=1 and we can see 
-what data the touchpad is reporting. That might help narrowing down if 
-it's noise which the touchpad thinks are fingers or if there is a 
-problem with the I2C lines causing spurious interrupts.
+On Thu, Dec 11, 2014 at 2:27 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> I didn't mean that. You can get rid of this entire xlate stuff if you use
+> something like below
+>
+> phy@xxx {
+>         compatible = "";
+>         phy1:usb_phy {
+>         }
+>         phy2:usb_phy {
+>         };
+> };
+>
+>
+> usb@xx {
+>         compatible = "";
+>         phys = <&phy1>; //doesn't need xlate
+>         /* this needs xlate
+>            phys = <&phy 1>;
+>         */
+>         phy-names = "phy";
+> };
 
-Andrew
+Is the syntax you proposed really better?  Are you saying that you
+advocate never using "#phy-cells" other than 0 for new bindings?  Is
+that your own personal preference, or is there a discussion somewhere
+where everyone agreed on this?
+
+My vote is that since "phy-cells" exists and is part of the generic
+phy bindings that it's meant to be used whenever you have a single PHY
+driver that controls multiple PHYs.
+
+
+-Doug
