@@ -1,83 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497AbaLKR5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:57:07 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:49534 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991AbaLKR5F (ORCPT
+	id S964918AbaLKSC4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:02:56 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55238 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934104AbaLKSCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:57:05 -0500
+	Thu, 11 Dec 2014 13:02:54 -0500
+Date: Thu, 11 Dec 2014 18:02:46 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>
+Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
+ board dts and Makefile
+Message-ID: <20141211180245.GE28150@leverpostej>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
+ <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
-In-Reply-To: <5489AB40.2010609@linux.intel.com>
-References: <20141205084147.313026156@linutronix.de>
-	<tip-e9220e591375af6d02604c261999df570fba744f@git.kernel.org>
-	<CAE9FiQU=Q8paxTJpqN8GFGYeq6u-E=VBtyQSVzVNYnJGEybtqw@mail.gmail.com>
-	<5489AB40.2010609@linux.intel.com>
-Date: Thu, 11 Dec 2014 09:57:04 -0800
-X-Google-Sender-Auth: uL8MlSkiA08MiuegLHmMpOgR7r4
-Message-ID: <CAE9FiQVPGfcXOFx448ABV4zGcq70nvE4pEE4PzaWZMNj+9rHtA@mail.gmail.com>
-Subject: Re: [tip:x86/apic] iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
-From: Yinghai Lu <yinghai@kernel.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 6:33 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
-> On 2014/12/11 15:35, Yinghai Lu wrote:
->> On Fri, Dec 5, 2014 at 3:26 PM, tip-bot for Thomas Gleixner
->> <tipbot@zytor.com> wrote:
->>> Commit-ID:  e9220e591375af6d02604c261999df570fba744f
->>> Gitweb:     http://git.kernel.org/tip/e9220e591375af6d02604c261999df570fba744f
->>> Author:     Thomas Gleixner <tglx@linutronix.de>
->>> AuthorDate: Fri, 5 Dec 2014 08:48:32 +0000
->>> Committer:  Thomas Gleixner <tglx@linutronix.de>
->>> CommitDate: Sat, 6 Dec 2014 00:19:25 +0100
->>>
->>> iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
->>>
->>> The whole iommu setup for irq remapping is a convoluted mess. The
->>> iommu detect function gets called from mem_init() and the prepare
->>> callback gets called from enable_IR_x2apic() for unknown reasons.
->>
->> Got
->>
-> Hi Yinghai,
->         From following log messages, it seems that the AHCI controllers
-> allocates 16 MSI/MSI-X interrupt, and triggers NULL pointer reference
-> when enabling interrupts for AHCI.
->         It doesn't trigger panic with this code path (allocate/enable
-> MSI/MSI-X interrupts with IR enabled) on my test system. So could you
-> please help to get more info with the attached test patch?
+Hi,
 
-[  113.486917] calling  ahci_pci_driver_init+0x0/0x1b @ 1
-[  113.487299] ahci 0000:00:1f.2: version 3.0
-[  113.507317] ahci 0000:00:1f.2: SSS flag set, parallel bus scan disabled
-[  113.507713] ahci 0000:00:1f.2: AHCI 0001.0200 32 slots 6 ports 3
-Gbps 0x3f impl SATA mode
-[  113.527019] ahci 0000:00:1f.2: flags: 64bit ncq sntf stag pm led
-clo pio slum part ccc ems sxs
-[  113.583977] iommu: chip_data ffff881022b97740, iommu
-ffff88103d80ae00, index 32, subindex 0, ir_table ffff88103d802af0,
-table_base ffff881026c00000, queue ffff88102770c000
-[  113.597261] iommu: chip_data ffff881022b97780, iommu
-(null), index 0, subindex 0, ir_table           (null), table_base
-      (null), queue           (null)
-[  113.617124] BUG: unable to handle kernel NULL pointer dereference
-at 0000000000000118
-[  113.636983] IP: [<ffffffff81eacca0>] modify_irte+0x40/0xd0
-[  113.637253] PGD 0
-[  113.656978] Oops: 0000 [#1] SMP
-[  113.657133] Modules linked in:
-[  113.657322] CPU: 0 PID: 2531 Comm: kworker/0:1 Tainted: G        W
-[  113.696953] Workqueue: events work_for_cpu_fn
-[  113.697189] task: ffff881025535240 ti: ffff881025528000 task.ti:
-ffff881025528000
-[  113.716965] RIP: 0010:[<ffffffff81eacca0>]  [<ffffffff81eacca0>]
-modify_irte+0x40/0xd0
+On Wed, Dec 10, 2014 at 10:50:01AM +0000, Eddie Huang wrote:
+> Add device tree support for MT8173 SoC and evalutaion board based on it.
+> 
+> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+> ---
+>  arch/arm64/boot/dts/Makefile       |   1 +
+>  arch/arm64/boot/dts/mt8173-evb.dts |  31 +++++++
+>  arch/arm64/boot/dts/mt8173.dtsi    | 164 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 196 insertions(+)
+>  create mode 100644 arch/arm64/boot/dts/mt8173-evb.dts
+>  create mode 100644 arch/arm64/boot/dts/mt8173.dtsi
+> 
+> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> index f8001a6..db7661e 100644
+> --- a/arch/arm64/boot/dts/Makefile
+> +++ b/arch/arm64/boot/dts/Makefile
+> @@ -1,3 +1,4 @@
+> +dtb-$(CONFIG_ARCH_MEDIATEK) += mt8173-evb.dtb
+>  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
+> new file mode 100644
+> index 0000000..adf26dd
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
+> @@ -0,0 +1,31 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Eddie Huang <eddie.huang@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/dts-v1/;
+> +#include "mt8173.dtsi"
+> +
+> +/ {
+> +	model = "mediatek,mt8173-evb";
+> +
+> +	aliases {
+> +		serial0 = &uart0;
+> +		serial1 = &uart1;
+> +		serial2 = &uart2;
+> +		serial3 = &uart3;
+
+Do any of these support earlycon?
+
+> +	};
+> +
+> +	memory {
+
+Nit: should be memory@40000000 (and you'll need to add device_type =
+"memory").
+
+> +		reg = <0 0x40000000 0 0x40000000>;
+> +	};
+> +};
+> diff --git a/arch/arm64/boot/dts/mt8173.dtsi b/arch/arm64/boot/dts/mt8173.dtsi
+> new file mode 100644
+> index 0000000..1286801
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/mt8173.dtsi
+> @@ -0,0 +1,164 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Eddie Huang <eddie.huang@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include "skeleton.dtsi"
+> +
+> +/ {
+> +	compatible = "mediatek,mt8173";
+> +	interrupt-parent = <&sysirq>;
+> +	#address-cells = <2>;
+> +	#size-cells = <2>;
+> +
+> +	cpu-map {
+
+This should live under /cpus, as documented in
+Documentation/devicetree/bindings/arm/topology.txt.
+
+> +		cluster0 {
+> +			core0 {
+> +				cpu = <&cpu0>;
+> +			};
+> +			core1 {
+> +				cpu = <&cpu1>;
+> +			};
+> +		};
+> +
+> +		cluster1 {
+> +			core0 {
+> +				cpu = <&cpu2>;
+> +			};
+> +			core1 {
+> +				cpu = <&cpu3>;
+> +			};
+> +		};
+> +	};
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu0: cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a53";
+> +			reg = <0x000>;
+> +			enable-method = "psci";
+> +		};
+> +
+> +		cpu1: cpu@1 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a53";
+> +			reg = <0x001>;
+> +			enable-method = "psci";
+> +		};
+> +
+> +		cpu2: cpu@2 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a57";
+> +			reg = <0x100>;
+> +			enable-method = "psci";
+> +		};
+> +
+> +		cpu3: cpu@3 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a57";
+> +			reg = <0x101>;
+> +			enable-method = "psci";
+> +		};
+> +	};
+> +
+> +	psci {
+> +		compatible = "arm,psci-0.2";
+> +		method = "smc";
+> +	};
+
+What are you using as your PSCI 0.2 implementation?
+
+Is it fully compliant? (e.g. are the reset and power off functions
+implemented, may CPU0 be hotplugged)?
+
+Given only portions of the GIC seem to be described below, what
+exception level is your kernel entered at? Per the spec it should be
+EL2, but given the brokenness below with the GIC I'm suspicious.
+
+> +
+> +	clocks {
+
+Please remove the clock container node. It serves no purpose whatsoever.
+
+Just put these clocks directly under the root.
+
+> +		clk26m: clk26m {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <26000000>;
+> +		};
+> +
+> +		clk32k: clk32k {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <32000>;
+> +		};
+> +
+> +		uart_clk: dummy26m {
+> +			compatible = "fixed-clock";
+> +			clock-frequency = <26000000>;
+> +			#clock-cells = <0>;
+> +		};
+> +	};
+> +
+> +	timer {
+> +		compatible = "arm,armv8-timer";
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <1 13 0x8>,
+> +			     <1 14 0x8>,
+> +			     <1 11 0x8>,
+> +			     <1 10 0x8>;
+
+Shouldn't these have a non-zero cpu mask?
+
+> +		clock-frequency = <13000000>;
+
+Your firmware should be programming CNTFREQ_EL0, so you shouldn't need
+this (PSCI 0.2 requires CNTFREQ_EL0 to be programmed correctly on all
+CPUs).
+
+> +	};
+> +
+> +	soc {
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		compatible = "simple-bus";
+> +		ranges;
+> +
+> +		sysirq: intpol-controller@10200620 {
+> +			compatible = "mediatek,mt8173-sysirq", "mediatek,mt6577-sysirq";
+> +			interrupt-controller;
+> +			#interrupt-cells = <3>;
+> +			interrupt-parent = <&gic>;
+> +			reg = <0 0x10200620 0 0x20>;
+> +		};
+> +
+> +		gic: interrupt-controller@10220000 {
+> +			compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
+
+Surely this should be "arm,gic-400"?
+
+> +			#interrupt-cells = <3>;
+> +			interrupt-parent = <&gic>;
+> +			interrupt-controller;
+> +			reg = <0 0x10221000 0 0x1000>,
+> +			      <0 0x10222000 0 0x1000>,
+> +			      <0 0x10200620 0 0x1000>;
+
+You're missing GICV here, and that GICH address is fundamentally wrong
+(it _must_ be page aligned). 
+
+The CPU interface (and virtual CPU interface) should be 0x2000 long.
+
+The GIC maintenance interrupt also seems to be missing.
+
+Thanks,
+Mark.
