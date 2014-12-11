@@ -1,97 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638AbaLKCh7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 21:37:59 -0500
-Received: from mga03.intel.com ([134.134.136.65]:56414 "EHLO mga03.intel.com"
+	id S933588AbaLKCrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 21:47:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41662 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932937AbaLKCh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 21:37:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,555,1413270000"; 
-   d="scan'208";a="621949921"
-Message-ID: <1418265472.12435.68.camel@rzhang1-toshiba>
-Subject: Re: [PATCH v5] Thermal: introduce INT3406 thermal driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Aaron Lu <aaron.lu@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Dec 2014 10:37:52 +0800
-In-Reply-To: <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com>
-References: <54868CF6.6020505@intel.com>
-	 <CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com>
-	 <20141211010226.GA26253@aaronlu.sh.intel.com>
-	 <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933176AbaLKCrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 21:47:51 -0500
+Message-ID: <5488FD32.9040100@redhat.com>
+Date: Wed, 10 Dec 2014 21:10:58 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Daniel J Blueman <daniel@quora.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH, 3.18] sleeping function called from invalid context
+References: <CAMVG2su302Nvtp+fnaOjtLadJFtpPmVXiN5YfQ0JpT920YohuA@mail.gmail.com> <CALCETrXZpQyKbVkBMwqFq2wH908-V+WCuvtaTc1O9VNZFHrBUQ@mail.gmail.com> <CAMVG2svoTbm3k3W5POpLsJnpXBPpZRYVr+wmAQrWVGVtiQ=LRA@mail.gmail.com> <5488EA01.6020600@redhat.com> <CALCETrVGH0VbGDWEx-D=gU7o3keM6PgGfYLixADH-sgNxhxJDA@mail.gmail.com> <5488F432.5010405@redhat.com> <CALCETrV5jH6GJb=WVqMe7M1=JFPOWKm5r3QRkmF0jBy4joCyYA@mail.gmail.com>
+In-Reply-To: <CALCETrV5jH6GJb=WVqMe7M1=JFPOWKm5r3QRkmF0jBy4joCyYA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 18:15 -0800, Olof Johansson wrote:
-> On Wed, Dec 10, 2014 at 5:02 PM, Aaron Lu <aaron.lu@intel.com> wrote:
-> > On Wed, Dec 10, 2014 at 11:53:25AM -0800, Olof Johansson wrote:
-> >> Hi,
-> >>
-> >> [+daniel vetter]
-> >>
-> >> On Mon, Dec 8, 2014 at 9:47 PM, Aaron Lu <aaron.lu@intel.com> wrote:
-> >> > INT3406 ACPI device object resembles an ACPI video output device, but its
-> >> > _BCM is said to be deprecated and should not be used. So we will make
-> >> > use of the raw interface to do the actual cooling. Due to this, the
-> >> > backlight core has some modifications. Also, to re-use some of the ACPI
-> >> > video module's code, one function has been exported.
-> >> >
-> >> > Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> >> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> >> > ---
-> >> > v5:
-> >> > Add the missing file drivers/thermal/int340x_thermal/Kconfig
-> >> > Remove the assignment of .owner field from the device_driver structure
-> >>
-> >>
-> >> Did this patch show up in -next for the first time last night, or did
-> >> some other change break this?
-> >>
-> >> It causes a panic in i915 when booting Minnowboard Max for me.
-> >
-> > Sorry for the trouble, I'm looking at this now.
-> > Is there anything special about the Minnowboard Max? I'll try to
-> > reproduce the issue here locally with a typical Intel desktop.
-> 
-> Another good question is why the code showed up in -next today. Code
-> going in for 3.19 is supposed to have been baking there already, and
-> it's too early to stage anything for 3.20.
-> 
-> Zhang?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-well, my Linux machine happened to be broken when I was in travel in Oct
-and Nov, so that I got the 3.19 material prepared a little late.
-Thus I just took some fixes and driver specific patches and plan to push
-my pull request next week.
-For this one, it had been pushed to linux-next for 3.18, but was dropped
-because of some Kconfig problem. So I thought it was safe to include
-this one for 3.19.
-sorry for bring the trouble here.
-
-Now my intention is to see if we can have this problem fixed by this
-Fri. If not, I will drop it for 3.19. is it okay for you?
-
-thanks,
-rui
+On 12/10/2014 08:53 PM, Andy Lutomirski wrote:
+> On Wed, Dec 10, 2014 at 5:32 PM, Rik van Riel <riel@redhat.com>
+> wrote:
+>> -----BEGIN PGP SIGNED MESSAGE----- Hash: SHA1
+>> 
+>> On 12/10/2014 07:51 PM, Andy Lutomirski wrote:
+>>> On Wed, Dec 10, 2014 at 4:49 PM, Rik van Riel
+>>> <riel@redhat.com> wrote: On 12/10/2014 07:46 PM, Daniel J
+>>> Blueman wrote:
+>>>>>> Gah. I had some non-temporal copy changes in the wrong
+>>>>>> tree. I'll check with a definitely clean tree and follow
+>>>>>> up if it still occurs.
+>>> 
+>>> The exception handlers should definitely allow sleeping, so I 
+>>> suspect those changes may be related.
+>>> 
+>>>> It would be really, really nice if we could arrange for 
+>>>> kernel_fpu_begin to be unconditionally usable in anything
+>>>> except NMI context.  The crypto code would be much less
+>>>> scary, we could make non-temporal copies safe, etc.  Can we
+>>>> have ponies, too?
+>> 
+>> Isn't it already?
+>> 
+>> I see nothing in __kernel_fpu_begin that looks like it would ever
+>> need to sleep.
+>> 
 > 
-> > Is it the next/master branch?
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> It never needs to sleep, but it does need somewhere to save the 
+> previous state.  See irq_fpu_usable.
 > 
-> Yes. But I've confirmed that it happens with Zhang's next branch too
-> without the rest of linux-next.
+> FWIW, I don't understand what the comments above 
+> interrupted_kernel_fpu_idle are talking about.  The issue that I 
+> understand is:
 > 
+> kernel_fpu_begin()
 > 
-> -Olof
+> irq: kernel_fpu_begin() use xstate kernel_fpu_end()
+> 
+> we're screwed now :(
+> 
+> kernel_fpu_end()
+> 
+> IOW we need somewhere to put the state from the thing we
+> interrupted.
 
+Good point. An interruptible kernel_fpu_begin needs to provide a
+place to put the state. Alternatively, the one that runs from irq
+context could provide the place to store the current context, with
+a kernel_fpu_begin_irq() function...
 
+> This gets extra fun if some thread does something that takes a
+> page fault that uses fpu that gets interrupted, etc.  Fortunately,
+> I think that can't happen -- kernel_fpu_begin disables preemption.
+> So I think we have a maximum of one active FPU context per thread
+> plus some number per cpu.  Maybe we could have a percpu array of
+> ten or twenty xstates to handle all possible nesting.
+> 
+> Also, can we just delete the non-eager code some day?
+
+The XSAVEOPT and XRSTOR optimizations do not work across VMENTER
+and VMEXIT, so with the eager code we end up always loading and
+saving 384 bytes of state at every context switch, even for tasks
+that never once touched the FPU.
+
+That is 6 cache lines worth of unused stuff for each task
+involved in the context switch. Somehow I am not convinced that
+is a good idea...
+
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBAgAGBQJUiP0yAAoJEM553pKExN6DD24H/jCcahi8z3LP6JEL4tpJUMpv
+NIYuAdzdIbns4ycijSqYJSVGxZJEx2c7w8QSrRgTslx6zPfP2Q0MYZQ9J++CJbgQ
+FZZcbnor6OL/KQtJWnPNSTN0ElBehWo+nZqK4SIbBoAwqJDQpBqo1Me9alxGoZ3P
+SixN4NAwfDMP3nz0wNGuxV/Hr3/T1Hz5tDYS4226z5yhz84Sd4ODzAuu9NDGANHg
+5g08uocMz6lpMlxO2m+bSElDxh6V0J6bqedgxzZbjVZM3zYk+txFw1TwmMSJoHT3
+/rUzwfwGmA/8WDNWgSEscUZILJiEZgrGAtWVyJed0IZTg+A7MSqP9y57OXrDD60=
+=YmP/
+-----END PGP SIGNATURE-----
