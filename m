@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967AbaLKStK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:49:10 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:37122 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757726AbaLKStI (ORCPT
+	id S1758272AbaLKSuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:50:11 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45898 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758024AbaLKSuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:49:08 -0500
+	Thu, 11 Dec 2014 13:50:09 -0500
+Date: Thu, 11 Dec 2014 18:03:04 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Vinod Koul <vinod.koul@intel.com>, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Antoine =?iso-8859-1?Q?T=E9nart?= <antoine@free-electrons.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v5 00/61] dmaengine: Implement generic slave capabilities
+ retrieval
+Message-ID: <20141211170304.GG8739@lukather>
+References: <1416231775-31252-1-git-send-email-maxime.ripard@free-electrons.com>
+ <20141208061746.GD16827@intel.com>
+ <20141208141807.GC8739@lukather>
+ <20141208162843.GP16827@intel.com>
+ <20141208183853.GG8739@lukather>
+ <54861D04.8000102@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=URDM5yH-t6kRvq=70v3OM=a7z6TesBrzqGZ9m-oxf+qg@mail.gmail.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-	<1418291722-25448-3-git-send-email-lyz@rock-chips.com>
-	<CAD=FV=URDM5yH-t6kRvq=70v3OM=a7z6TesBrzqGZ9m-oxf+qg@mail.gmail.com>
-Date: Thu, 11 Dec 2014 10:49:07 -0800
-X-Google-Sender-Auth: 9P7-ZUSQiWCwjsKbusfndCyuqEo
-Message-ID: <CAD=FV=WonOfOOd1a+JAOz__hSn8dRqHJ=zh7ppeCNf_jgqhBww@mail.gmail.com>
-Subject: Re: [PATCH v6 2/5] Documentation: bindings: add dt documentation for
- Rockchip usb PHY
-From: Doug Anderson <dianders@chromium.org>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
-        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wJeYCwfJgfFvSPOo"
+Content-Disposition: inline
+In-Reply-To: <54861D04.8000102@metafoo.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Thu, Dec 11, 2014 at 10:46 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Yunzhi,
->
-> On Thu, Dec 11, 2014 at 1:55 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
->> This patch adds a binding that describes the Rockchip usb PHYs
->> found on Rockchip SoCs usb interface.
->
-> Technically the bindings patch is supposed to come before the driver.
-> So this should be patch #1 and the driver patch #2.
->
->
->> +Required properties:
->> + - compatible: rockchip,rk3288-usb-phy
->> + - rockchip,grf : phandle to the syscon managing the "general
->> +   register files"
->> + - #phy-cells: should be 1
->> + - #address-cells: should be 1
->> + - #size-cells: should be 0
->> +
->> +Sub-nodes:
->> +Each PHY should be represented as a sub-node.
->> +
->> +Sub-nodes
->> +required properties:
->> +- reg: the PHY number
->> +               "0" - PHY connect to OTG controller
->> +               "1" - PHY connect to HOST0 controller
->> +               "2" - PHY connect to HOST1 controller
->
-> You don't have any sub nodes and are using the phy-cells.  Seems like
-> you should get rid of this?  ...or I guess switch to using sub nodes
-> and set "phy-cells" to 0?
+--wJeYCwfJgfFvSPOo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh.  You actually have them in the ".dtsi" patch, but not here in the
-example.  Hrm.  I don't know enough about phys in general to say
-whether they're needed (I will learn if someone else on this thread
-doesn't just know), but if they are required then they ought to be in
-the example...
+On Mon, Dec 08, 2014 at 10:49:56PM +0100, Lars-Peter Clausen wrote:
+> On 12/08/2014 07:38 PM, Maxime Ripard wrote:
+> [...]
+> >>And lastly noone blamed you for being late, if things were rosy they
+> >>would have been merged over the weekend and been in today's next,
+> >>but...
+> >
+> >I totally understand your point. And I actually am a bit uncomfortable
+> >merging this so late too, and I'd actually prefer to have it merged
+> >for 3.20. But this is a huge patchset, and I'd really like to avoid
+> >rebasing it forever.
+>=20
+> We don't have to pull in the whole series at once. I think everybody agre=
+es
+> that the approach is the right one, so the first couple of patches that w=
+ork
+> on the framework should be good to go in. Same goes for the drivers that
+> have been acked and tested.
+
+I'm a bit skeptical that it is the right approach. These patches have
+been here for monthes, and even you failed to ack and test these
+patches on the drivers you wrote. As a matter of fact, only Laurent,
+Linus, Ludovic and Stephen looked at their respective changes. After 3
+monthes and 6 versions.
+
+At some point, cleanups have to come in.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--wJeYCwfJgfFvSPOo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUic5IAAoJEBx+YmzsjxAgyPUP/17yO5gF8Jj3tF6GfaNzDOSr
+QIhSZWyAgb++85rSC4X0YyR898gwAY/kq6p8+NT1mX65GO9eIchgHRx7pSH3jdCE
+5x3VymIO5ti7OVgO4oyvW7xGkpxJcLjiStnd+1KubTvMSq9MEoBsGM0l1XP7BitF
+kbh4/m5eP/2bHIjREpq1Os3jfWt+qR6p7qKBJZzxCPCJLJm18vbrUswWMUKJGdC2
+CMfYGeBlo6Db00rKQd1BOYlL1wqT1BzlBKFXJa7lTCb/4KQIs/Lhj+bLgVnvSBvx
+bb0B6PRI8UPaK/3QCv9jdK+Ie6wCvVsEidrYGEsW5zD/ftloQ0eJ8r6sXMlYF09Q
+ofYFgIKwZ+H03WZT0BCDpzwDQIYH/kW+ixsSnOy61JyIjbZwCpCKCWcYsI0BKL5q
+a7InucD3aQYPDPuPhH+yrMUOiLu6frsZmI7DlqphjXy6+Qws0px7h35c6OY0tzvF
+lp495pfpxD9dpS1d44QFe7AoAqMCOPQ0GtBYOJ8a5ieMP4cCg5A0Tm/YCkFdtT9f
+v+FMj8gqeqhpu1oDI6Ek2O/m45xhknNIRx82fov8og2PhDfPWcbtrQNjLHQ6oKaM
+irj+BnltHahrELQ8W0cs+/nQEltZRW+JmgqaYIZDa++xaM9a9Cm3Cn7g2Z5yMDJP
+zOyOaxxMKvxZ+/BFx2yL
+=mg8x
+-----END PGP SIGNATURE-----
+
+--wJeYCwfJgfFvSPOo--
