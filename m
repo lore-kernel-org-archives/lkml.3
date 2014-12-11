@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860AbaLKGhe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:37:34 -0500
-Received: from smtprelay0238.hostedemail.com ([216.40.44.238]:54971 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756158AbaLKGhc (ORCPT
+	id S933847AbaLKGiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:38:17 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:52126 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933824AbaLKGiP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:37:32 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2551:2553:2559:2562:2828:2897:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:3872:4184:4321:5007:6261:6691:6742:9036:10004:10226:10400:10848:11232:11658:11914:12043:12050:12296:12517:12519:12740:13069:13311:13357:13972:21060:21080:21088,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: jeans36_7b8eed3904501
-X-Filterd-Recvd-Size: 2383
-Message-ID: <1418279847.18092.32.camel@perches.com>
-Subject: Re: [PATCH v5 1/5] phy: add a driver for the Rockchip SoC internal
- USB2.0 PHY
-From: Joe Perches <joe@perches.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Yunzhi Li <lyz@rock-chips.com>, heiko@sntech.de, jwerner@chromium.org,
-        dianders@chromium.org, olof@lixom.net, huangtao@rock-chips.com,
-        zyw@rock-chips.com, cf@rock-chips.com,
-        linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Date: Wed, 10 Dec 2014 22:37:27 -0800
-In-Reply-To: <54893963.7060304@ti.com>
-References: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
-	 <1418208371-18851-2-git-send-email-lyz@rock-chips.com>
-	 <5489338C.1030109@ti.com> <1418278322.18092.30.camel@perches.com>
-	 <54893963.7060304@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Dec 2014 01:38:15 -0500
+Date: Thu, 11 Dec 2014 07:38:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] tracing/sched: Check preempt_count() for current when
+ reading task->state
+Message-ID: <20141211063811.GD5059@gmail.com>
+References: <20141210174428.3cb7542a@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141210174428.3cb7542a@gandalf.local.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 11:57 +0530, Kishon Vijay Abraham I wrote:
-> Hi,
-> 
-> On Thursday 11 December 2014 11:42 AM, Joe Perches wrote:
-> > On Thu, 2014-12-11 at 11:32 +0530, Kishon Vijay Abraham I wrote:
-> >> On Wednesday 10 December 2014 04:16 PM, Yunzhi Li wrote:
-> >>> diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
-> > []
-> >>> +/*
-> >>> + * The higher 16-bit of this register is used for write protection
-> >>> + * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
-> >>> + */
-> >>> +#define SIDDQ_MSK		BIT(13 + 16)
-> > 
-> > huh?
-> > 
-> > This #define looks _very_ odd.
-> > 
-> > Is this supposed to be a single bit 29 or
-> > some range?
-> 
-> From what I understood, the most significant 16 bits are write locks to the
-> least significant 16 bits.
-> 
-> So If I have to write something on bit 0, I have to set bit 16.
-> If I have to write something on bit 1, I have to set bit 17.
-> If I have to write something on bit 2, I have to set bit 18.
-> and so on.
 
-To me it'd look better to use another << rather than a plus
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
+> 
+> When recording the state of a task for the sched_switch tracepoint a check of
+> task_preempt_count() is performed to see if PREEMPT_ACTIVE is set. This is
+> because, technically, a task being preempted is really in the TASK_RUNNING
+> state, and that is what should be recorded when tracing a sched_switch,
+> even if the task put itself into another state (it hasn't scheduled out
+> in that state yet).
+> 
+> But with the change to use per_cpu preempt counts, the
+> task_thread_info(p)->preempt_count is no longer used, and instead
+> task_preempt_count(p) is used.
+> 
+> The problem is that this does not use the current preempt count but a
+> stale one from a previous sched_switch. The task_preempt_count(p) uses
+> saved_preempt_count and not preempt_count(). But for tracing
+> sched_switch, if p is current, we really want preempt_count().
+> 
+> I hit this bug when I was tracing sleep and the call from do_nanosleep()
+> scheduled out in the "RUNNING" state.
+> 
+>            sleep-4290  [000] 537272.259992: sched_switch:         sleep:4290 [120] R ==> swapper/0:0 [120]
+>            sleep-4290  [000] 537272.260015: kernel_stack:         <stack trace>
+> => __schedule (ffffffff8150864a)
+> => schedule (ffffffff815089f8)
+> => do_nanosleep (ffffffff8150b76c)
+> => hrtimer_nanosleep (ffffffff8108d66b)
+> => SyS_nanosleep (ffffffff8108d750)
+> => return_to_handler (ffffffff8150e8e5)
+> => tracesys_phase2 (ffffffff8150c844)
+> 
+> After a bit of hair pulling, I found that the state was really
+> TASK_INTERRUPTIBLE, but the saved_preempt_count had an old PREEMPT_ACTIVE
+> set and caused the sched_switch tracepoint to show it as RUNNING.
+> 
+> Cc: stable@vger.kernel.org # 3.13+
+> Fixes: 01028747559a "sched: Create more preempt_count accessors"
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/trace/events/sched.h | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+> index 0a68d5ae584e..13fbadcc172b 100644
+> --- a/include/trace/events/sched.h
+> +++ b/include/trace/events/sched.h
+> @@ -97,10 +97,14 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
+>  	long state = p->state;
+>  
+>  #ifdef CONFIG_PREEMPT
+> +	unsigned long pc;
+> +
+> +	pc = (p == current) ? preempt_count() : task_preempt_count(p);
+> +
+>  	/*
+>  	 * For all intents and purposes a preempted task is a running task.
+>  	 */
+> -	if (task_preempt_count(p) & PREEMPT_ACTIVE)
+> +	if (pc & PREEMPT_ACTIVE)
+>  		state = TASK_RUNNING | TASK_STATE_MAX;
 
+I really don't like the overhead around here.
+
+Thanks,
+
+	Ingo
