@@ -1,139 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934582AbaLKXSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:18:42 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:52373 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934114AbaLKXSk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:18:40 -0500
-Message-ID: <548A264D.8070103@hurleysoftware.com>
-Date: Thu, 11 Dec 2014 18:18:37 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S965470AbaLKXYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:24:35 -0500
+Received: from ozlabs.org ([103.22.144.67]:32809 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756322AbaLKXYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 18:24:33 -0500
+Date: Fri, 12 Dec 2014 10:24:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ben@decadent.org.uk,
+        cornelia.huck@de.ibm.com, jasowang@redhat.com, pbonzini@redhat.com,
+        rusty@rustcorp.com.au, sergei.shtylyov@cogentembedded.com,
+        thuth@linux.vnet.ibm.com, David Miller <davem@davemloft.net>
+Subject: Re: [PULL] virtio: virtio 1.0 support, misc patches
+Message-ID: <20141212102426.187891e9@canb.auug.org.au>
+In-Reply-To: <20141211220157.GA22618@redhat.com>
+References: <20141211120248.GA8838@redhat.com>
+	<20141212080705.50988d51@canb.auug.org.au>
+	<20141211220157.GA22618@redhat.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>
-CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-References: <20141211214801.4127.93914.stgit@notabene.brown> <20141211215943.4127.24792.stgit@notabene.brown>
-In-Reply-To: <20141211215943.4127.24792.stgit@notabene.brown>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/eFK=miiM5Yby3J+6.8OqxSZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 04:59 PM, NeilBrown wrote:
-> A "tty slave" is a device connected via UART.
-> It may need a driver to, for example, power the device on
-> when the tty is opened, and power it off when the tty
-> is released.
-> 
-> A "tty slave" is a platform device which is declared as a
-> child of the uart in device-tree:
-> 
-> &uart1 {
-> 	bluetooth {
-> 		compatible = "tty,regulator";
-> 		vdd-supply = <&vaux4>;
-> 	};
-> };
-> 
-> runtime power management is used to power-up the device
-> on tty_open() and  power-down on tty_release().
+--Sig_/eFK=miiM5Yby3J+6.8OqxSZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I have a couple of issues with this:
-1) why does a child device imply power management and a platform
-   device? iow, what happens when someone else wants to have a
-   child device that does something different?
-2) why is this tied to the tty core and not the serial core
-   if this is only for UART?
+Hi Michael,
 
-Regards,
-Peter Hurley
+On Fri, 12 Dec 2014 00:01:57 +0200 "Michael S. Tsirkin" <mst@redhat.com> wr=
+ote:
+>
+> It was on linux next for a while, then I wanted to tweak the commit log
+> for some messages a bit.
+> So since I rewrote the history anyway, I went ahead and rebased it
+> on v3.18, after this rebase it's been in linux-next for several days.
 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->  .../devicetree/bindings/serial/of-serial.txt       |    4 ++++
->  drivers/tty/tty_io.c                               |   22 ++++++++++++++++++++
->  2 files changed, 26 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
-> index 8c4fd0332028..b59501ee2f21 100644
-> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
-> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-> @@ -39,6 +39,10 @@ Optional properties:
->    driver is allowed to detect support for the capability even without this
->    property.
->  
-> +Optional child node:
-> +- a platform device listed as a child node will be probed and
-> +  powered-on whenever the tty is in use (open).
-> +
->  Example:
->  
->  	uart@80230000 {
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 0508a1d8e4cd..7acdc6f093f4 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -95,6 +95,8 @@
->  #include <linux/seq_file.h>
->  #include <linux/serial.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/of_platform.h>
->  
->  #include <linux/uaccess.h>
->  
-> @@ -1683,6 +1685,17 @@ static int tty_release_checks(struct tty_struct *tty, struct tty_struct *o_tty,
->  	return 0;
->  }
->  
-> +static int open_child(struct device *dev, void *data)
-> +{
-> +	pm_runtime_get_sync(dev);
-> +	return 0;
-> +}
-> +static int release_child(struct device *dev, void *data)
-> +{
-> +	pm_runtime_put_autosuspend(dev);
-> +	return 0;
-> +}
-> +
->  /**
->   *	tty_release		-	vfs callback for close
->   *	@inode: inode of tty
-> @@ -1712,6 +1725,8 @@ int tty_release(struct inode *inode, struct file *filp)
->  	long	timeout = 0;
->  	int	once = 1;
->  
-> +	if (tty->dev)
-> +		device_for_each_child(tty->dev, NULL, release_child);
->  	if (tty_paranoia_check(tty, inode, __func__))
->  		return 0;
->  
-> @@ -2118,6 +2133,8 @@ retry_open:
->  		__proc_set_tty(current, tty);
->  	spin_unlock_irq(&current->sighand->siglock);
->  	tty_unlock(tty);
-> +	if (tty->dev)
-> +		device_for_each_child(tty->dev, NULL, open_child);
->  	mutex_unlock(&tty_mutex);
->  	return 0;
->  err_unlock:
-> @@ -3207,6 +3224,11 @@ struct device *tty_register_device_attr(struct tty_driver *driver,
->  	retval = device_register(dev);
->  	if (retval)
->  		goto error;
-> +	if (device && device->of_node)
-> +		/* Children are platform devices and will be
-> +		 * runtime_pm managed by this tty.
-> +		 */
-> +		of_platform_populate(device->of_node, NULL, NULL, dev);
->  
->  	return dev;
+Maybe you think you pushed it into a linux-next included branch (or
+maybe you think I am fetching a branch that I am not), but when I look
+at those commits in my tree (as I fetch Linus' tree into mine) none of
+them precede any of the next-* tags ...
 
+I am not doubting that these patches have been published and reviewed
+and tested, all I am saying is that they have not been in linux-next
+as those commits.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/eFK=miiM5Yby3J+6.8OqxSZ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUiieuAAoJEMDTa8Ir7ZwVQhoP/1V96HlYTLRMzvYvV9d0aDUg
+vvs8fmlbrbozr4VTTg72fBWwDIvVpEzi+y+JLlXRAm7d0T8/wngpw6dGSObghIvT
+xzCLobJVl7qyfg5iy4wbkJQeTpf57NHXWvEgvH7PiofQwxUaEhlp+optDa66abk4
+uE8kBLqHYQukP+zw29LYCABs8J/tAocJV88YMDcB4OeCqNv+LHxCQ940HVqMUvSl
+XGH5k2BN+I+Ccg/WihleNXoa3yfoEtv9W2TiF/06jq4+Ef+zA6nc+ZFgcgFZh3gb
+Mbb3DrhJdBNWXx3956KCWPBdxRPKlOs8j5Lu2kA6Hbpi7y5BnyGY7195NEcfpibW
+Y6C7ZVMntIGWvx93DB6V6+Hwu1pVpXF1Ksk7lexE4tDPa8LKgjIylpJO4Czd+4pd
+3WzfvsdjkHW4+NhJTFonomwJsEe7LkfLz545gylWDZv5KrNl6en2BFypGW4uxln2
+rnT/6/S0ZFGu3F1P5T9G5Rwlh0PsT3f4s4YCNE2NIq/Q6aTQmvRou1YJp1A6hN4O
+6OZw0OC/2tNrFmoO6vJ8L5F34udl2T1rN2rMFQHXW06wOyzi6AutZAR0JkM6SrZf
+3qIX5qPjH2pK/b6ipZt4xwgZcoVUUKnGAEElMLXjSOiaAnW3MqhMZLufhlrqT/Gu
+hy+fdx9lx9QJLVrYwgsM
+=nKIE
+-----END PGP SIGNATURE-----
+
+--Sig_/eFK=miiM5Yby3J+6.8OqxSZ--
