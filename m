@@ -1,111 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933473AbaLKAjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:39:04 -0500
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:34492 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933226AbaLKAjC (ORCPT
+	id S933330AbaLKArA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:47:00 -0500
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:60480 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932621AbaLKAq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:39:02 -0500
-Message-ID: <5488E7A2.1050400@amacapital.net>
-Date: Wed, 10 Dec 2014 16:38:58 -0800
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 10 Dec 2014 19:46:58 -0500
 MIME-Version: 1.0
-To: Vince Weaver <vince@deater.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: Linux 3.18 released
-References: <CA+55aFwK3XtS32iJna-2uXZUfZQNUGC0Z4FmEFHK4JXB_kyojA@mail.gmail.com> <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
-In-Reply-To: <alpine.DEB.2.10.1412081331580.28373@pianoman.cluster.toy>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [50.161.55.123]
+In-Reply-To: <CALCETrXZpQyKbVkBMwqFq2wH908-V+WCuvtaTc1O9VNZFHrBUQ@mail.gmail.com>
+References: <CAMVG2su302Nvtp+fnaOjtLadJFtpPmVXiN5YfQ0JpT920YohuA@mail.gmail.com>
+	<CALCETrXZpQyKbVkBMwqFq2wH908-V+WCuvtaTc1O9VNZFHrBUQ@mail.gmail.com>
+Date: Wed, 10 Dec 2014 16:46:58 -0800
+Message-ID: <CAMVG2svoTbm3k3W5POpLsJnpXBPpZRYVr+wmAQrWVGVtiQ=LRA@mail.gmail.com>
+Subject: Re: [PATCH, 3.18] sleeping function called from invalid context
+From: Daniel J Blueman <daniel@quora.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 10:39 AM, Vince Weaver wrote:
-> On Sun, 7 Dec 2014, Linus Torvalds wrote:
-> 
->> I'd love to say that we've figured out the problem that plagues 3.17
->> for a couple of people, but we haven't. At the same time, there's
->> absolutely no point in having everybody else twiddling their thumbs
->> when a couple of people are actively trying to bisect an older issue,
->> so holding up the release just didn't make sense. Especially since
->> that would just have then held things up entirely over the holiday
->> break.
+Gah. I had some non-temporal copy changes in the wrong tree. I'll
+check with a definitely clean tree and follow up if it still occurs.
+
+On 10 December 2014 at 16:37, Andy Lutomirski <luto@amacapital.net> wrote:
+> Adding Rik, who is probably the most recent person to have looked at
+> the disaster fondly known as "FPU".
+>
+> On Wed, Dec 10, 2014 at 4:25 PM, Daniel J Blueman <daniel@quora.org> wrote:
+>> With 3.18, I was seeing a significant number of allocation warnings
+>> from load_elf_binary call paths [1].
 >>
->> So the merge window for 3.19 is open, and DaveJ will hopefully get his
->> bisection done (or at least narrow things down sufficiently that we
->> have that "Ahaa" moment) over the next week. But in solidarity with
->> Dave (and to make my life easier too ;) let's try to avoid introducing
->> any _new_ nasty issues, ok?
-> 
-> It's probably unrelated to DaveJ's issue, but my perf_event fuzzer still 
-> quickly locks the kernel pretty solid on 3.18.
-> 
-> Just 5 minutes of testing managed to trip over the following issue that 
-> dates back to at least 3.15-rc7
+>> Allocating FPU state atomically [2] does prevent potentially sleeping
+>> while atomic, but probably isn't the correct fix. Anyone familiar with
+>> this area?
+>>
+>> -- [1]
+>>
+>> BUG: sleeping function called from invalid context at mm/slub.c:1240
+>> in_atomic(): 1, irqs_disabled(): 0, pid: 29016, name: dmesg
+>> INFO: lockdep is turned off.
+>> Preemption disabled at:[<ffffffff8114625f>] handle_mm_fault+0x5ff/0x8a0
+>>
+>> CPU: 122 PID: 29016 Comm: dmesg Tainted: G        W      3.18.0-test #6
+>> Hardware name: Supermicro AS -1042G-LTF/H8QGL, BIOS DS3.5a     11/13/2014
+>>  ffffffff8203b81b ffff886fdf62f888 ffffffff81b942e8 0000000000000007
+>>  0000000000000000 ffff886fdf62f8b8 ffffffff8109ac4c 0000000000000000
+>>  0000000000000010 ffff8807df84bc00 00000000000000d0 ffff886fdf62f908
+>> Call Trace:
+>>  [<ffffffff81b942e8>] dump_stack+0x4f/0x7c
+>>  [<ffffffff8109ac4c>] __might_sleep+0x164/0x250
+>>  [<ffffffff8116372b>] kmem_cache_alloc+0xeb/0x138
+>>  [<ffffffff8100e0e1>] init_fpu+0x71/0xb0
+>>  [<ffffffff81003966>] math_state_restore+0xce/0x208
+>>  [<ffffffff8100437b>] do_device_not_available+0x2b/0x60
+>>  [<ffffffff81ba70f5>] device_not_available+0x15/0x20
+>>  [<ffffffff81487102>] ? copy_page+0x12/0x33
+>
+> wtf?  I don't see any fpu state being accessed in copy_page.
+>
+> Can you disassemble "[<ffffffff81487102>] ? copy_page+0x12/0x33"?
+>
+> --Andy
+>
+>>  [<ffffffff8109edb9>] ? get_parent_ip+0x11/0x58
+>>  [<ffffffff8109ee55>] ? preempt_count_add+0x55/0xb0
+>>  [<ffffffff811437a1>] ? do_cow_fault+0xe9/0x258
+>>  [<ffffffff8114625f>] handle_mm_fault+0x5ff/0x8a0
+>>  [<ffffffff81032218>] ? __do_page_fault+0xc8/0x498
+>>  [<ffffffff811481b9>] ? vma_gap_callbacks_rotate+0x19/0x20
+>>  [<ffffffff8103227d>] __do_page_fault+0x12d/0x498
+>>  [<ffffffff810b682e>] ? up_write+0x1e/0x48
+>>  [<ffffffff81148d18>] ? vma_link+0x80/0xc0
+>>  [<ffffffff81149cb2>] ? vma_set_page_prot+0x3a/0x60
+>>  [<ffffffff8114ae6e>] ? mmap_region+0x1be/0x5e0
+>>  [<ffffffff8103262e>] do_page_fault+0x1e/0x70
+>>  [<ffffffff81ba737f>] page_fault+0x1f/0x30
+>>  [<ffffffff81487f3e>] ? __clear_user+0x2e/0x50
+>>  [<ffffffff81487f22>] ? __clear_user+0x12/0x50
+>>  [<ffffffff81487f8a>] clear_user+0x2a/0x30
+>>  [<ffffffff811ca1e1>] padzero+0x21/0x30
+>>  [<ffffffff811cc41f>] load_elf_binary+0x8cf/0xdd0
+>>  [<ffffffff8117d18f>] search_binary_handler+0x7f/0x1f8
+>>  [<ffffffff8117ec06>] do_execve_common.isra.34+0x616/0x790
+>>  [<ffffffff8117eb62>] ? do_execve_common.isra.34+0x572/0x790
+>>  [<ffffffff8117ed93>] do_execve+0x13/0x18
+>>  [<ffffffff8117f070>] SyS_execve+0x20/0x30
+>>  [<ffffffff81ba6159>] stub_execve+0x69/0xa0
+>>
+>> -- [2]
+>>
+>> diff --git a/arch/x86/include/asm/fpu-internal.h
+>> b/arch/x86/include/asm/fpu-internal.h
+>> index e97622f..57029ad 100644
+>> --- a/arch/x86/include/asm/fpu-internal.h
+>> +++ b/arch/x86/include/asm/fpu-internal.h
+>> @@ -574,7 +574,7 @@ static inline int fpu_alloc(struct fpu *fpu)
+>>  {
+>>         if (fpu_allocated(fpu))
+>>                 return 0;
+>> -       fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_KERNEL);
+>> +       fpu->state = kmem_cache_alloc(task_xstate_cachep, GFP_ATOMIC);
+>>         if (!fpu->state)
+>>                 return -ENOMEM;
+>>         WARN_ON((unsigned long)fpu->state & 15);
+>> --
+>> Daniel J Blueman
+>
+>
+>
+> --
+> Andy Lutomirski
+> AMA Capital Management, LLC
 
-Out of curiosity, can you see if this:
 
-https://git.kernel.org/cgit/linux/kernel/git/luto/linux.git/commit/?h=x86/paranoid-and-more&id=38e49874d0ab18276f753f5784420b091f4be6eb
 
-makes the problem much worse?  (Don't take the whole series there --
-just cherry-pick the one patch.)
-
---Andy
-
-> 
-> My notes say last time I tracked down the issue as so:
-> 
->   What happens is in kernel/core/events.c  find_get_context()
->   somehow perf_lock_task_context() returns NULL 
->   due to !atomic_inc_not_zero(&ctx->refcount)
->   but task->perf_event_ctxp[ctxn] still has a valid value.
-> 
-> There are multiple perf related issues like this that are hard to track 
-> down.  They are borderline heisenbugs that are possibly race conditions, 
-> so bisecting doesn't work and even things like enablibg ftrace will make 
-> the issue go away (or crash ftrace itself).
-> 
-> This particular manifestation of the bug (or bugs) wedges things but I can 
-> use alt-sysrq from the serial console to see where it is stuck (see 
-> below; the CPU is stuck in a loop).
-> 
-> 
-> [ 2225.916004]  [<ffffffff810e61e9>] ? get_page_from_freelist+0x55/0x781
-> [ 2225.916004]  [<ffffffff810e6a7c>] __alloc_pages_nodemask+0x167/0x6dc
-> [ 2225.916004]  [<ffffffff8101a4a3>] ? intel_pmu_enable_all+0x28/0xa4
-> [ 2225.916004]  [<ffffffff8111f0b3>] kmem_getpages+0x58/0xec
-> [ 2225.916004]  [<ffffffff81120278>] cache_grow+0xad/0x1d8
-> [ 2225.916004]  [<ffffffff81120021>] ____cache_alloc+0x237/0x2ce
-> [ 2225.916004]  [<ffffffff811216b9>] __kmalloc+0x8f/0xf2
-> [ 2225.916004]  [<ffffffff810dc35d>] ? T.1336+0xe/0x10
-> [ 2225.916004]  [<ffffffff810dc35d>] T.1336+0xe/0x10
-> [ 2225.916004]  [<ffffffff810dc8ca>] alloc_perf_context+0x20/0x51
-> [ 2225.916004]  [<ffffffff810dca33>] find_get_context+0x138/0x1c7
-> [ 2225.916004]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-> [ 2225.916004]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-> [ 2225.916004]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
-> 
-> [ 2256.708004]  [<ffffffff810d7e36>] ? put_ctx+0x40/0x61
-> [ 2256.708004]  [<ffffffff810dcaa4>] find_get_context+0x1a9/0x1c7
-> [ 2256.708004]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-> [ 2256.708004]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-> [ 2256.708004]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
-> 
-> [ 2303.796003]  [<ffffffff810fa6cb>] ? kmalloc_slab+0x7f/0x8d
-> [ 2303.796003]  [<ffffffff81121653>] __kmalloc+0x29/0xf2
-> [ 2303.796003]  [<ffffffff810dc35d>] ? T.1336+0xe/0x10
-> [ 2303.796003]  [<ffffffff810dc35d>] T.1336+0xe/0x10
-> [ 2303.796003]  [<ffffffff810dc8ca>] alloc_perf_context+0x20/0x51
-> [ 2303.796003]  [<ffffffff810dca33>] find_get_context+0x138/0x1c7
-> [ 2303.796003]  [<ffffffff810dd029>] SYSC_perf_event_open+0x48b/0x870
-> [ 2303.796003]  [<ffffffff810dd41c>] SyS_perf_event_open+0xe/0x10
-> [ 2303.796003]  [<ffffffff81560016>] system_call_fastpath+0x16/0x1b
-> 
-> Vince
-> 
-
+-- 
+Daniel J Blueman
