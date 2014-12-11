@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758477AbaLKABK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:01:10 -0500
-Received: from smtprelay0130.hostedemail.com ([216.40.44.130]:35127 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758328AbaLKABJ (ORCPT
+	id S1758535AbaLKACH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:02:07 -0500
+Received: from mail-bn1on0142.outbound.protection.outlook.com ([157.56.110.142]:35148
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758397AbaLKACF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:01:09 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:421:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3873:3874:4321:5007:6261:7875:10004:10400:10848:11232:11657:11658:11914:12043:12517:12519:12660:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: match03_998a9386633e
-X-Filterd-Recvd-Size: 1711
-Message-ID: <1418256064.18092.26.camel@perches.com>
-Subject: Re: [PATCH v4 1/2] staging: media: lirc: lirc_zilog.c: fix quoted
- strings split across lines
-From: Joe Perches <joe@perches.com>
-To: Luis de Bethencourt <luis@debethencourt.com>
-Cc: m.chehab@samsung.com, jarod@wilsonet.com, gregkh@linuxfoundation.org,
-        mahfouz.saif.elyazal@gmail.com, gulsah.1004@gmail.com,
-        tuomas.tynkkynen@iki.fi, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 10 Dec 2014 16:01:04 -0800
-In-Reply-To: <20141210235741.GA10195@biggie>
-References: <20141210223339.GA9397@biggie>
-	 <1418254749.18092.24.camel@perches.com> <20141210235741.GA10195@biggie>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Dec 2014 19:02:05 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH V2 1/1] Drivers: hv: vmbus: Fix a bug in
+ vmbus_establish_gpadl()
+Thread-Topic: [PATCH V2 1/1] Drivers: hv: vmbus: Fix a bug in
+ vmbus_establish_gpadl()
+Thread-Index: AQHQFK4vlFEBm0maWECurtZG+5JIRZyJW/GAgAAl6LA=
+Date: Thu, 11 Dec 2014 00:02:03 +0000
+Message-ID: <BY2PR0301MB071185816BAE50CFB235315CA0630@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1418243359-6887-1-git-send-email-kys@microsoft.com>
+ <20141210214545.GA2699@hudson.localdomain>
+In-Reply-To: <20141210214545.GA2699@hudson.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e0:ee43::2]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0712;
+x-forefront-prvs: 0422860ED4
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(51704005)(13464003)(199003)(189002)(24454002)(86612001)(77156002)(62966003)(107046002)(99396003)(122556002)(19580395003)(50986999)(46102003)(54356999)(19580405001)(40100003)(97736003)(120916001)(105586002)(76576001)(106116001)(106356001)(99286002)(64706001)(20776003)(33656002)(54606007)(86362001)(92566001)(21056001)(110136001)(87936001)(1411001)(2656002)(68736005)(101416001)(76176999)(54206007)(4396001)(31966008)(74316001)(102836002)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0712;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 23:57 +0000, Luis de Bethencourt wrote:
-> On Wed, Dec 10, 2014 at 03:39:09PM -0800, Joe Perches wrote:
-> > On Wed, 2014-12-10 at 22:33 +0000, Luis de Bethencourt wrote:
-> > > diff --git a/drivers/staging/media/lirc/lirc_zilog.c b/drivers/staging/media/lirc/lirc_zilog.c
-[]
-> > > +		dev_err(tx->ir->l.dev,
-> > > +			"unsupported code set file version (%u, expected 1) -- please upgrade to a newer driver",
-> > > +			version);
-> > 
-> > Unrelated but this one should have a '\n' termination
-> > at the end of the format.
-> I can add that change, no problem. As part of this patch or a third one?
-
-Up to you.
 
 
+> -----Original Message-----
+> From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
+> Sent: Wednesday, December 10, 2014 1:46 PM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH V2 1/1] Drivers: hv: vmbus: Fix a bug in
+> vmbus_establish_gpadl()
+> 
+> K. Y. Srinivasan,
+> 
+> On Wed, Dec 10, 2014 at 12:29:19PM -0800, K. Y. Srinivasan wrote:
+> > Fix a bug in vmbus_establish_gpadl(). I would like to thank Michael
+> > Brown <mcb30@ipxe.org> for seeing this bug.
+> > In this version, I have added the Reported-by tag.
+> 
+> The log message should be more specific.  "Fix a bug" is too vague.
+> Why is this patch necessary? What bug does it fix?  What changes did you
+> make?
+> 
+> Saying you have "added the Reported-by tag" is not helpful in a log message.
+> Although you can add notes for the patch reviewer under '---'.
+
+Thank you; I will fix up the log and resend.
+
+K. Y
