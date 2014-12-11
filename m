@@ -1,93 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965260AbaLKWH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:07:58 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:41140 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934334AbaLKWHz (ORCPT
+	id S934483AbaLKWKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:10:23 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53448 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932909AbaLKWKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:07:55 -0500
+	Thu, 11 Dec 2014 17:10:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141211113243.3f21551e@jbarnes-t420>
-References: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
- <20141211181136.GA11367@kroah.com> <20141211113243.3f21551e@jbarnes-t420>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Dec 2014 15:07:34 -0700
-Message-ID: <CAErSpo4V8tYE+yHvQ+Se=tQHWAKafk89SmVTjeCVRzbA-VtQbg@mail.gmail.com>
-Subject: Re: Special handling of display/VGA devices in hotplug drivers
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dely Sy <dely.l.sy@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>,
-        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Praveen Kalamegham <praveen@nextio.com>
+In-Reply-To: <20141210225036.GA5585@earth.universe>
+References: <20141210164333.GA3154@amd>
+	<11367725.nphhSzdtpK@wuerfel>
+	<20141210184203.GA28150@leverpostej>
+	<20141210205622.GA25286@amd>
+	<20141210225036.GA5585@earth.universe>
+Date: Thu, 11 Dec 2014 23:10:17 +0100
+Message-ID: <CAAfyv35D1bn5uzWU298Wz6xRXb58-5i6Mgz6WogLh3_PK4p1pg@mail.gmail.com>
+Subject: Re: BCM2048 bluetooth connected over OMAP serial
+From: Belisko Marek <marek.belisko@gmail.com>
+To: "sre@debian.org" <sre@kernel.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "ivo.g.dimitrov.75@gmail.com" <ivo.g.dimitrov.75@gmail.com>,
+        Pawel Moll <Pawel.Moll@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        "khilman@kernel.org" <khilman@kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "aaro.koskinen@iki.fi" <aaro.koskinen@iki.fi>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pali.rohar@gmail.com" <pali.rohar@gmail.com>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Praveen]
+Neil Brown send series which implement what was suggested in previous posts:
+https://lkml.org/lkml/2014/12/11/454
 
-On Thu, Dec 11, 2014 at 12:32 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Thu, 11 Dec 2014 13:11:36 -0500
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
+On Wed, Dec 10, 2014 at 11:50 PM, sre@debian.org <sre@kernel.org> wrote:
+> Hi,
 >
->> On Thu, Dec 11, 2014 at 10:34:30AM -0700, Bjorn Helgaas wrote:
->> > It looks like you added the initial pciehp driver [1], which
->> > includes the following code in pciehp_disable_slot():
+> On Wed, Dec 10, 2014 at 09:56:22PM +0100, Pavel Machek wrote:
+>> On Wed 2014-12-10 18:42:03, Mark Rutland wrote:
+>> > On Wed, Dec 10, 2014 at 05:02:42PM +0000, Arnd Bergmann wrote:
+>> > > On Wednesday 10 December 2014 17:43:33 Pavel Machek wrote:
+>> > > >
+>> > > > So, there's bluetooth chip that's connected to the SoC by UART and some
+>> > > > GPIOs. What would be right representation in the device tree?
+>> > > > Something like this?
+>> > > >
+>> > > >         bluetooth {
+>> > > >                   compatible = "broadcom,bcm2048";
+>> > > >                   uart = <&uart2>;
+>> > > >                   reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
+>> > > >                   host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
+>> > > >                   bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
+>> > > >                   chip-type = >;
+>> > > >                   bt-sysclk = <2>;
+>> > > >                   reset-gpio-shared = <0>;
+>> > > >         };
+>> > > >
+>> > > > Is there some way to prevent OMAP tty driver from binding to the
+>> > > > device and exporting the device to userspace?
+>> > >
+>> > > I think from the driver perspective, you want this to be a tty line
+>> > > discipline rather than a driver that attaches to the physical
+>> > > uart.
+>> > >
+>> > > For the DT representation, I fear we haven't got a precedent. A uart
+>> > > phandle sounds reasonable, but there might be other ways to do it
+>> > > and we should consider if there are better alternatives. It could
+>> > > possibly be a child node of the uart, but that would require other
+>> > > infrastructure in the kernel because we don't currently create
+>> > > devices for those.
 >> >
->> > + if (class_code == PCI_BASE_CLASS_DISPLAY) {
->> > + /* Display/Video adapter (not supported) */
->> > + rc = REMOVE_NOT_SUPPORTED;
->> >
->> > + /* If it's a bridge, check the VGA Enable bit */
->> > + if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
->> > + rc = pci_bus_read_config_byte (pci_bus, devfn,
->> > PCI_BRIDGE_CONTROL, &BCR);
->> > + if (rc)
->> > + return rc;
->> > +
->> > + /* If the VGA Enable bit is set, remove isn't supported */
->> > + if (BCR & PCI_BRIDGE_CTL_VGA) {
->> > + rc = REMOVE_NOT_SUPPORTED;
->> >
->> > I'm trying to figure out why VGA devices are handled specially.  I
->> > can't find anything in the PCI specs that mentions this.  Most of
->> > the other PCI hotplug drivers have similar code.  Do you remember
->> > anything about this?
+>> > I think the child node is the way to go; that would match what we do for
+>> > I2C and SPI. We might need new infrastructure, but I don't think we
+>> > should treat this differently simlpy because we don't have that yet.
 >>
->> The PCI spec said that you were not allowed to hotplug VGA drivers.
->> The big issue is that POST usually needs to run on those things, and
->> there is no way to POST a PCI hotplugged device.
-
-I don't think this is a problem any more, is it?  I think X can
-execute option ROMs, and if we assign the guest to a VM, the guest
-BIOS can also do it.
-
-> Yeah, the legacy I/O regions get routed through the bridge with the VGA
-> bit set, and most legacy code probably can't handle that (whether POST,
-> VBIOS, or VGA drivers).
+>> Well, uart in this case looks more like a GPIO than an I2C (no
+>> addressing, just few wires). And we do phandle for GPIOs.
 >
-> There is some code for moving the VGA routing around, so that might be
-> an option if you wanted to remove such a bridge.  You'd have to find a
-> VGA device under another bridge, and enable routing to that first, then
-> you could do the remove.
+> Right and the devices use I2C for full communication and GPIOs as
+> helpers. I guess UART counts as full communication and not as helper.
+>
+> phandle vs child node is not a matter of adressing and btw where is
+> the difference between "5th gpio on 1st gpio controller" and "5th
+> address on 1st i2c controller"?
+>
+>> Actually, the chip also has PCM, analog audio, and "pc compatible?"
+>> connections, plus some connection to WIFI. So we may need more
+>> phandles there....
+>
+> This is much harder to solve. I think we don't have a DT binding for
+> a device, which uses two communication interfaces as the bcm2048
+> (uart & i2c). OTOH we may just add a slave device for the fm-radio
+> part like this:
+>
+> uart {
+>     bcm2048 {
+>         stuff;
+>     };
+> };
+>
+> i2c {
+>     bcm2048-radio {
+>         master = <&bcm2048>;
+>     };
+> };
+>
+> -- Sebastian
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
 
-The legacy code thing does seem like an issue.  Since ac81860ea073, we
-don't actually fail when removing a VGA device; we only fail when
-removing a bridge with VGA routing enabled.  Maybe that should be
-tweaked so we fail when removing either a bridge or a VGA device to
-which the legacy ranges are currently routed.  Then we could still
-remove secondary VGA devices like the computational GPUs that
-motivated ac81860ea073.
+BR,
 
-Failing in pciehp_unconfigure_device() makes sense if the user pressed
-the attention button to request removal.  But if the bridge was
-surprise-removed, e.g., user pulled out an ExpressCard, the bridge is
-already gone, and failing just means we can't clean things up, so
-we're going to leave drivers bound to the bridge and downstream
-devices.
+marek
 
-Bjorn
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
+
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
