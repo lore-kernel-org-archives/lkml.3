@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaLKK0L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:26:11 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:52045 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLKK0J (ORCPT
+	id S933691AbaLKK0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:26:30 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:62387 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417AbaLKK00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:26:09 -0500
+	Thu, 11 Dec 2014 05:26:26 -0500
+Date: Thu, 11 Dec 2014 11:26:22 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Vince Weaver <vince@deater.net>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCHSET/RFC 0/2] perf: Fix issues reported by perf fuzzer
+Message-ID: <20141211102622.GA7997@gmail.com>
+References: <1418243031-20367-1-git-send-email-jolsa@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20141210183146.GA22847@roeck-us.net>
-References: <1418207937-11648-1-git-send-email-bgolaszewski@baylibre.com>
-	<1418207937-11648-2-git-send-email-bgolaszewski@baylibre.com>
-	<548856AF.8090805@roeck-us.net>
-	<CAMpxmJXp2NT+rie2d2+Z7hixKMyS+xcRNdKRNZaUSJD-aTUVVg@mail.gmail.com>
-	<20141210183146.GA22847@roeck-us.net>
-Date: Thu, 11 Dec 2014 11:26:07 +0100
-Message-ID: <CAMpxmJXVPbp+XJQ9oVpAB3ejRx7Czb0KTC0HtfL9zed4Z_rOQA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/3] hwmon: ina2xx: make shunt resistance configurable
- at run-time
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418243031-20367-1-git-send-email-jolsa@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-10 19:31 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> I don't really want it at all ;-). Seems to me all those options are broken
-> one way or another. The only real solution would be to re-instantiate the
-> driver if the chip was removed and re-inserted, and to provide parameters
-> either with platform data or with devicetree data.
 
-I see your point, but as Benoit mentioned in one of the previous
-messages, in case of our platform it would be impossible to have an
-exhaustive list of possible shunt values.
+* Jiri Olsa <jolsa@kernel.org> wrote:
 
-> On a side note, data->rshunt is not really needed anymore with your current
-> code. The only reason for storing it in data is to use it in
-> ina2xx_calibration_val(), but you could as well pass it in as parameter
-> to that function. Even better would be to have a function such as
-> ina2xx_calibrate() and let it handle the write to the calibration register.
-> Also, I would suggest to move the above code into its own show function.
-> It is probably not a good idea to have a single function for all those
-> conversions in the first place, and converting from 'calibration' to
-> rshunt goes a bit beyond the original intent to convert from one representation
-> to the other.
+> hi,
+> Vince reported several issues with perf code hit by perf fuzzer,
+> in here:
+>   http://marc.info/?l=linux-kernel&m=141806390822670&w=2
+> 
+> I run the fuzzer, but wasn't able to hit issues reported
+> by Vince. But.. I was lucky enough to hit other 2 issues
+> described in following patches ;-)
+> 
+> As I dont follow the uncore code much, it is sort of RFC
+> patchset. However I'm running the fuzzer now for several
+> hours and can't hit any other issue.
 
-I agree about having separate functions for this parameter and about
-not needing data->rshunt in my current code, but we still aren't clear
-about whether to read the value from the register or to store it in
-memory.
+The changes are looking good to me so I've applied them to 
+tip:perf/urgent to give them more testing.
 
-> That still doesn't really solve the structural problem of having to deal with
-> an uninitialized chip which doesn't like to be uninitialized. But then on the
-> other side I guess that is really a problem with your platform, not a driver
-> problem.
+If they break anything in the uncore code's expectations the 
+uncore people should chime in. In any case, stability comes 
+first.
 
-This might be a stupid idea, but what about reading the calibration
-register first in ina2xx_update_device() and, in case it's value is 0
-(POR value according to the datasheet), reinitializing the chip?
+Thanks,
 
-Bart
+	Ingo
