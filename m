@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933952AbaLKPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:13:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40346 "EHLO mx1.redhat.com"
+	id S964825AbaLKPNe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:13:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40395 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932662AbaLKPNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:13:22 -0500
+	id S932662AbaLKPNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 10:13:31 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,22 +16,69 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/8] perf tools: Add new perf data command
-Date: Thu, 11 Dec 2014 16:12:23 +0100
-Message-Id: <1418310749-22267-3-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 3/8] perf data: Add perf data to CTF conversion support
+Date: Thu, 11 Dec 2014 16:12:24 +0100
+Message-Id: <1418310749-22267-4-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
 References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding new 'perf data' command to provide operations over
-data files.
+Adding 'perf data convert' to convert perf data file into
+different format. This patch adds support for CTF format
+conversion.
 
-The 'perf data convert' sub command is coming in following
-patch, but there's possibility for other useful commands
-like 'perf data ls' (to display perf data file in directory
-in ls style).
+To convert perf.data into CTF run:
+  $ perf data convert --to-ctf=./ctf-data/
+  [ perf data convert: Converted 'perf.data' into CTF data './ctf-data/' ]
+  [ perf data convert: Converted and wrote 11.268 MB (100230 samples) ]
+
+The command will create CTF metadata out of perf.data file
+(or one specified via -i option) and then convert all sample
+events into single CTF stream.
+
+Each sample_type bit is translated into separated CTF event
+field apart from following exceptions:
+
+  PERF_SAMPLE_RAW          - added in next patch
+  PERF_SAMPLE_READ         - TODO
+  PERF_SAMPLE_CALLCHAIN    - TODO
+  PERF_SAMPLE_BRANCH_STACK - TODO
+  PERF_SAMPLE_REGS_USER    - TODO
+  PERF_SAMPLE_STACK_USER   - TODO
+
+  $ perf --debug=data-convert=2 data convert ...
+
+The converted CTF data could be analyzed by CTF tools, like
+babletrace or tracecompass [1].
+
+  $ babeltrace ./ctf-data/
+  [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+  [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
+  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
+  [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
+  [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
+  [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
+  [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
+  [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
+
+The following members to the ctf-environment were decided
+to be added to distinguish and specify perf CTF data:
+  - domain
+    It says "kernel" because it contains a kernel trace (not to be
+    confused with a user space like lttng-ust does)
+  - tracer_name
+    It says perf. This can be used to distinguish between lttng and
+    perf CTF based trace.
+  - version
+    The kernel version from stream. In addition to release, this is
+    what it looks like on a Debian kernel:
+      release = "3.14-1-amd64";
+      version = "3.14.0";
+
+[1] http://projects.eclipse.org/projects/tools.tracecompass
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -46,166 +93,815 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Documentation/perf-data.txt | 15 +++++++
- tools/perf/Makefile.perf               |  1 +
- tools/perf/builtin-data.c              | 75 ++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h                   |  1 +
- tools/perf/command-list.txt            |  1 +
- tools/perf/perf.c                      |  1 +
- 6 files changed, 94 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-data.txt
- create mode 100644 tools/perf/builtin-data.c
+ tools/perf/Documentation/perf-data.txt |  25 ++
+ tools/perf/Documentation/perf.txt      |   7 +-
+ tools/perf/Makefile.perf               |   4 +
+ tools/perf/builtin-data.c              |  44 +++
+ tools/perf/util/data-convert-bt.c      | 612 +++++++++++++++++++++++++++++++++
+ tools/perf/util/data-convert-bt.h      |   8 +
+ tools/perf/util/debug.c                |   2 +
+ tools/perf/util/debug.h                |   1 +
+ 8 files changed, 702 insertions(+), 1 deletion(-)
+ create mode 100644 tools/perf/util/data-convert-bt.c
+ create mode 100644 tools/perf/util/data-convert-bt.h
 
 diff --git a/tools/perf/Documentation/perf-data.txt b/tools/perf/Documentation/perf-data.txt
-new file mode 100644
-index 000000000000..b8c83947715c
---- /dev/null
+index b8c83947715c..be8fa1a0a97e 100644
+--- a/tools/perf/Documentation/perf-data.txt
 +++ b/tools/perf/Documentation/perf-data.txt
-@@ -0,0 +1,15 @@
-+perf-data(1)
-+==============
+@@ -13,3 +13,28 @@ SYNOPSIS
+ DESCRIPTION
+ -----------
+ Data file related processing.
 +
-+NAME
-+----
-+perf-data - Data file related processing
-+
-+SYNOPSIS
++COMMANDS
 +--------
-+[verse]
-+'perf data' [<common options>] <command> [<options>]",
++convert::
++	Converts perf data file into another format (only CTF [1] format is support by now).
++	It's possible to set data-convert debug variable to get debug messages from conversion,
++	like:
++	  perf --debug data-convert data convert ...
 +
-+DESCRIPTION
-+-----------
-+Data file related processing.
++OPTIONS for 'convert'
++---------------------
++--to-ctf::
++	Triggers the CTF conversion, specify the path of CTF data directory.
++
++-i::
++	Specify input perf data file path.
++
++-v::
++--verbose::
++        Be more verbose (show counter open errors, etc).
++
++SEE ALSO
++--------
++linkperf:perf[1]
++[1] Common Trace Format - http://www.efficios.com/ctf
+diff --git a/tools/perf/Documentation/perf.txt b/tools/perf/Documentation/perf.txt
+index 1e8e400b4493..2b131776363e 100644
+--- a/tools/perf/Documentation/perf.txt
++++ b/tools/perf/Documentation/perf.txt
+@@ -13,11 +13,16 @@ SYNOPSIS
+ OPTIONS
+ -------
+ --debug::
+-	Setup debug variable (just verbose for now) in value
++	Setup debug variable (see list below) in value
+ 	range (0, 10). Use like:
+ 	  --debug verbose   # sets verbose = 1
+ 	  --debug verbose=2 # sets verbose = 2
+ 
++	List of debug variables allowed to set:
++	  verbose          - general debug messages
++	  ordered-events   - ordered events object debug messages
++	  data-convert     - data convert command debug messages
++
+ --buildid-dir::
+ 	Setup buildid cache directory. It has higher priority than
+ 	buildid.dir config file option.
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index a6a2ec5ebf0e..da851f8a879d 100644
+index da851f8a879d..94743892388c 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -484,6 +484,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
- BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
- BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
- BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
-+BUILTIN_OBJS += $(OUTPUT)builtin-data.o
+@@ -402,6 +402,10 @@ LIB_OBJS += $(OUTPUT)util/tsc.o
+ LIB_OBJS += $(OUTPUT)util/cloexec.o
+ LIB_OBJS += $(OUTPUT)util/thread-stack.o
  
- PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
- 
++ifndef NO_LIBBABELTRACE
++LIB_OBJS += $(OUTPUT)util/data-convert-bt.o
++endif
++
+ LIB_OBJS += $(OUTPUT)ui/setup.o
+ LIB_OBJS += $(OUTPUT)ui/helpline.o
+ LIB_OBJS += $(OUTPUT)ui/progress.o
 diff --git a/tools/perf/builtin-data.c b/tools/perf/builtin-data.c
-new file mode 100644
-index 000000000000..1eee97d020fa
---- /dev/null
+index 1eee97d020fa..9705ba7e4c16 100644
+--- a/tools/perf/builtin-data.c
 +++ b/tools/perf/builtin-data.c
-@@ -0,0 +1,75 @@
-+#include <linux/compiler.h>
-+#include "builtin.h"
-+#include "perf.h"
-+#include "debug.h"
-+#include "parse-options.h"
-+
-+typedef int (*data_cmd_fn_t)(int argc, const char **argv, const char *prefix);
-+
-+struct data_cmd {
-+	const char	*name;
-+	const char	*summary;
-+	data_cmd_fn_t	fn;
-+};
-+
-+static struct data_cmd data_cmds[];
-+
-+#define for_each_cmd(cmd) \
-+	for (cmd = data_cmds; cmd && cmd->name; cmd++)
-+
-+static const struct option data_options[] = {
-+	OPT_END()
-+};
-+
-+static const char * const data_usage[] = {
-+	"perf data [<common options>] <command> [<options>]",
+@@ -3,6 +3,7 @@
+ #include "perf.h"
+ #include "debug.h"
+ #include "parse-options.h"
++#include "data-convert-bt.h"
+ 
+ typedef int (*data_cmd_fn_t)(int argc, const char **argv, const char *prefix);
+ 
+@@ -41,7 +42,50 @@ static void print_usage(void)
+ 	printf("\n");
+ }
+ 
++static const char * const data_convert_usage[] = {
++	"perf data convert [<options>]",
 +	NULL
 +};
 +
-+static void print_usage(void)
++static int cmd_data_convert(int argc, const char **argv,
++			    const char *prefix __maybe_unused)
 +{
-+	struct data_cmd *cmd;
++	const char *to_ctf     = NULL;
++	const struct option options[] = {
++		OPT_INCR('v', "verbose", &verbose, "be more verbose"),
++		OPT_STRING('i', "input", &input_name, "file", "input file name"),
++#ifdef HAVE_LIBBABELTRACE_SUPPORT
++		OPT_STRING(0, "to-ctf", &to_ctf, NULL, "Convert to CTF format"),
++#endif
++		OPT_END()
++	};
 +
-+	printf("Usage:\n");
-+	printf("\t%s\n\n", data_usage[0]);
-+	printf("\tAvailable commands:\n");
-+
-+	for_each_cmd(cmd) {
-+		printf("\t %s\t- %s\n", cmd->name, cmd->summary);
-+	}
-+
-+	printf("\n");
-+}
-+
-+static struct data_cmd data_cmds[] = {
-+	{ NULL },
-+};
-+
-+int cmd_data(int argc, const char **argv, const char *prefix)
-+{
-+	struct data_cmd *cmd;
-+	const char *cmdstr;
-+
-+	/* No command specified. */
-+	if (argc < 2)
-+		goto usage;
-+
-+	argc = parse_options(argc, argv, data_options, data_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (argc < 1)
-+		goto usage;
-+
-+	cmdstr = argv[0];
-+
-+	for_each_cmd(cmd) {
-+		if (strcmp(cmd->name, cmdstr))
-+			continue;
-+
-+		return cmd->fn(argc, argv, prefix);
-+	}
-+
-+	pr_err("Unknown command: %s\n", cmdstr);
-+usage:
-+	print_usage();
++#ifndef HAVE_LIBBABELTRACE_SUPPORT
++	pr_err("No conversion support compiled in.\n");
 +	return -1;
++#endif
++
++	argc = parse_options(argc, argv, options,
++			     data_convert_usage, 0);
++	if (argc) {
++		usage_with_options(data_convert_usage, options);
++		return -1;
++	}
++
++	if (to_ctf) {
++#ifdef HAVE_LIBBABELTRACE_SUPPORT
++		return bt_convert__perf2ctf(input_name, to_ctf);
++#else
++		pr_err("The libbabeltrace support is not compiled in.\n");
++		return -1;
++#endif
++	}
++
++	return 0;
 +}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b210d62907e4..3688ad29085f 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -37,6 +37,7 @@ extern int cmd_test(int argc, const char **argv, const char *prefix);
- extern int cmd_trace(int argc, const char **argv, const char *prefix);
- extern int cmd_inject(int argc, const char **argv, const char *prefix);
- extern int cmd_mem(int argc, const char **argv, const char *prefix);
-+extern int cmd_data(int argc, const char **argv, const char *prefix);
- 
- extern int find_scripts(char **scripts_array, char **scripts_path_array);
- #endif
-diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
-index 0906fc401c52..00fcaf8a5b8d 100644
---- a/tools/perf/command-list.txt
-+++ b/tools/perf/command-list.txt
-@@ -7,6 +7,7 @@ perf-archive			mainporcelain common
- perf-bench			mainporcelain common
- perf-buildid-cache		mainporcelain common
- perf-buildid-list		mainporcelain common
-+perf-data			mainporcelain common
- perf-diff			mainporcelain common
- perf-evlist			mainporcelain common
- perf-inject			mainporcelain common
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 3700a7faca6c..f3c66b81c6be 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -62,6 +62,7 @@ static struct cmd_struct commands[] = {
- #endif
- 	{ "inject",	cmd_inject,	0 },
- 	{ "mem",	cmd_mem,	0 },
-+	{ "data",	cmd_data,	0 },
++
+ static struct data_cmd data_cmds[] = {
++	{ "convert", "converts data file between formats", cmd_data_convert },
+ 	{ NULL },
  };
  
- struct pager_config {
+diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
+new file mode 100644
+index 000000000000..ff4826c1745f
+--- /dev/null
++++ b/tools/perf/util/data-convert-bt.c
+@@ -0,0 +1,612 @@
++/*
++ * CTF writing support via babeltrace.
++ *
++ * Copyright (C) 2014, Jiri Olsa <jolsa@redhat.com>
++ * Copyright (C) 2014, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
++ *
++ * Released under the GPL v2. (and only v2, not any later version)
++ */
++
++#include <linux/compiler.h>
++#include <babeltrace/ctf-writer/writer.h>
++#include <babeltrace/ctf-writer/clock.h>
++#include <babeltrace/ctf-writer/stream.h>
++#include <babeltrace/ctf-writer/event.h>
++#include <babeltrace/ctf-writer/event-types.h>
++#include <babeltrace/ctf-writer/event-fields.h>
++#include <babeltrace/ctf/events.h>
++#include <traceevent/event-parse.h>
++#include "asm/bug.h"
++#include "data-convert-bt.h"
++#include "session.h"
++#include "util.h"
++#include "debug.h"
++#include "tool.h"
++#include "evlist.h"
++#include "evsel.h"
++#include "machine.h"
++
++#define pr_N(n, fmt, ...) \
++	eprintf(n, debug_data_convert, fmt, ##__VA_ARGS__)
++
++#define pr(fmt, ...)  pr_N(1, pr_fmt(fmt), ##__VA_ARGS__)
++#define pr2(fmt, ...) pr_N(2, pr_fmt(fmt), ##__VA_ARGS__)
++
++#define pr_time2(t, fmt, ...) pr_time_N(2, debug_data_convert, t, pr_fmt(fmt), ##__VA_ARGS__)
++
++struct evsel_priv {
++	struct bt_ctf_event_class *event_class;
++};
++
++struct ctf_writer {
++	/* writer primitives */
++	struct bt_ctf_writer		*writer;
++	struct bt_ctf_stream		*stream;
++	struct bt_ctf_stream_class	*stream_class;
++	struct bt_ctf_clock		*clock;
++
++	/* data types */
++	union {
++		struct {
++			struct bt_ctf_field_type	*s64;
++			struct bt_ctf_field_type	*u64;
++			struct bt_ctf_field_type	*s32;
++			struct bt_ctf_field_type	*u32;
++			struct bt_ctf_field_type	*string;
++			struct bt_ctf_field_type	*u64_hex;
++		};
++		struct bt_ctf_field_type *array[6];
++	} data;
++};
++
++struct convert {
++	struct perf_tool	tool;
++	struct ctf_writer	writer;
++
++	u64			events_size;
++	u64			events_count;
++};
++
++static int value_set(struct bt_ctf_field_type *type,
++		     struct bt_ctf_event *event,
++		     const char *name, u64 val)
++{
++	struct bt_ctf_field *field;
++	bool sign = bt_ctf_field_type_integer_get_signed(type);
++	int ret;
++
++	field = bt_ctf_field_create(type);
++	if (!field) {
++		pr_err("failed to create a field %s\n", name);
++		return -1;
++	}
++
++	if (sign) {
++		ret = bt_ctf_field_signed_integer_set_value(field, val);
++		if (ret) {
++			pr_err("failed to set field value %s\n", name);
++			goto err;
++		}
++	} else {
++		ret = bt_ctf_field_unsigned_integer_set_value(field, val);
++		if (ret) {
++			pr_err("failed to set field value %s\n", name);
++			goto err;
++		}
++	}
++
++	ret = bt_ctf_event_set_payload(event, name, field);
++	if (ret) {
++		pr_err("failed to set payload %s\n", name);
++		goto err;
++	}
++
++	pr2("  SET [%s = %" PRIu64 "]\n", name, val);
++
++err:
++	bt_ctf_field_put(field);
++	return ret;
++}
++
++#define __FUNC_VALUE_SET(_name, _val_type)				\
++static __maybe_unused int value_set_##_name(struct ctf_writer *cw,	\
++			     struct bt_ctf_event *event,		\
++			     const char *name,				\
++			     _val_type val)				\
++{									\
++	struct bt_ctf_field_type *type = cw->data._name;		\
++	return value_set(type, event, name, (u64) val);			\
++}
++
++#define FUNC_VALUE_SET(_name) __FUNC_VALUE_SET(_name, _name)
++
++FUNC_VALUE_SET(s32)
++FUNC_VALUE_SET(u32)
++FUNC_VALUE_SET(s64)
++FUNC_VALUE_SET(u64)
++__FUNC_VALUE_SET(u64_hex, u64)
++
++static int add_generic_values(struct ctf_writer *cw,
++			      struct bt_ctf_event *event,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample)
++{
++	u64 type = evsel->attr.sample_type;
++	int ret;
++
++	/*
++	 * missing:
++	 *   PERF_SAMPLE_TIME         - not needed as we have it in
++	 *                              ctf event header
++	 *   PERF_SAMPLE_READ         - TODO
++	 *   PERF_SAMPLE_CALLCHAIN    - TODO
++	 *   PERF_SAMPLE_RAW          - tracepoint fields are handled separately
++	 *   PERF_SAMPLE_BRANCH_STACK - TODO
++	 *   PERF_SAMPLE_REGS_USER    - TODO
++	 *   PERF_SAMPLE_STACK_USER   - TODO
++	 */
++
++	if (type & PERF_SAMPLE_IP) {
++		ret = value_set_u64_hex(cw, event, "ip", sample->ip);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_TID) {
++		ret = value_set_s32(cw, event, "tid", sample->tid);
++		if (ret)
++			return -1;
++
++		ret = value_set_s32(cw, event, "pid", sample->pid);
++		if (ret)
++			return -1;
++	}
++
++	if ((type & PERF_SAMPLE_ID) ||
++	    (type & PERF_SAMPLE_IDENTIFIER)) {
++		ret = value_set_u64(cw, event, "id", sample->id);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_STREAM_ID) {
++		ret = value_set_u64(cw, event, "stream_id", sample->stream_id);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_CPU) {
++		ret = value_set_u32(cw, event, "cpu", sample->cpu);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_PERIOD) {
++		ret = value_set_u64(cw, event, "period", sample->period);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_WEIGHT) {
++		ret = value_set_u64(cw, event, "weight", sample->weight);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_DATA_SRC) {
++		ret = value_set_u64(cw, event, "data_src", sample->data_src);
++		if (ret)
++			return -1;
++	}
++
++	if (type & PERF_SAMPLE_TRANSACTION) {
++		ret = value_set_u64(cw, event, "transaction", sample->transaction);
++		if (ret)
++			return -1;
++	}
++
++	return 0;
++}
++
++static int process_sample_event(struct perf_tool *tool,
++				union perf_event *_event __maybe_unused,
++				struct perf_sample *sample,
++				struct perf_evsel *evsel,
++				struct machine *machine __maybe_unused)
++{
++	struct convert *c = container_of(tool, struct convert, tool);
++	struct evsel_priv *priv = evsel->priv;
++	struct ctf_writer *cw = &c->writer;
++	struct bt_ctf_event_class *event_class;
++	struct bt_ctf_event *event;
++	int ret;
++
++	if (WARN_ONCE(!priv, "Failed to setup all events.\n"))
++		return 0;
++
++	event_class = priv->event_class;
++
++	/* update stats */
++	c->events_count++;
++	c->events_size += _event->header.size;
++
++	pr_time2(sample->time, "sample %" PRIu64 "\n", c->events_count);
++
++	event = bt_ctf_event_create(event_class);
++	if (!event) {
++		pr_err("Failed to create an CTF event\n");
++		return -1;
++	}
++
++	bt_ctf_clock_set_time(cw->clock, sample->time);
++
++	ret = add_generic_values(cw, event, evsel, sample);
++	if (ret)
++		return -1;
++
++	bt_ctf_stream_append_event(cw->stream, event);
++	bt_ctf_event_put(event);
++	return 0;
++}
++
++static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
++			     struct bt_ctf_event_class *event_class)
++{
++	u64 type = evsel->attr.sample_type;
++
++	/*
++	 * missing:
++	 *   PERF_SAMPLE_TIME         - not needed as we have it in
++	 *                              ctf event header
++	 *   PERF_SAMPLE_READ         - TODO
++	 *   PERF_SAMPLE_CALLCHAIN    - TODO
++	 *   PERF_SAMPLE_RAW          - tracepoint fields are handled separately
++	 *   PERF_SAMPLE_BRANCH_STACK - TODO
++	 *   PERF_SAMPLE_REGS_USER    - TODO
++	 *   PERF_SAMPLE_STACK_USER   - TODO
++	 */
++
++#define ADD_FIELD(cl, t, n)						\
++	do {								\
++		pr2("  field '%s'\n", n);				\
++		if (bt_ctf_event_class_add_field(cl, t, n)) {		\
++			pr_err("Failed to add field '%s;\n", n);	\
++			return -1;					\
++		}							\
++	} while (0)
++
++	if (type & PERF_SAMPLE_IP)
++		ADD_FIELD(event_class, cw->data.u64_hex, "ip");
++
++	if (type & PERF_SAMPLE_TID) {
++		ADD_FIELD(event_class, cw->data.s32, "tid");
++		ADD_FIELD(event_class, cw->data.s32, "pid");
++	}
++
++	if ((type & PERF_SAMPLE_ID) ||
++	    (type & PERF_SAMPLE_IDENTIFIER))
++		ADD_FIELD(event_class, cw->data.u64, "id");
++
++	if (type & PERF_SAMPLE_STREAM_ID)
++		ADD_FIELD(event_class, cw->data.u64, "stream_id");
++
++	if (type & PERF_SAMPLE_CPU)
++		ADD_FIELD(event_class, cw->data.u32, "cpu");
++
++	if (type & PERF_SAMPLE_PERIOD)
++		ADD_FIELD(event_class, cw->data.u64, "period");
++
++	if (type & PERF_SAMPLE_WEIGHT)
++		ADD_FIELD(event_class, cw->data.u64, "weight");
++
++	if (type & PERF_SAMPLE_DATA_SRC)
++		ADD_FIELD(event_class, cw->data.u64, "data_src");
++
++	if (type & PERF_SAMPLE_TRANSACTION)
++		ADD_FIELD(event_class, cw->data.u64, "transaction");
++
++#undef ADD_FIELD
++	return 0;
++}
++
++static int add_event(struct ctf_writer *cw, struct perf_evsel *evsel)
++{
++	struct bt_ctf_event_class *event_class;
++	struct evsel_priv *priv;
++	const char *name = perf_evsel__name(evsel);
++	int ret;
++
++	pr("Adding event '%s' (type %d)\n", name, evsel->attr.type);
++
++	event_class = bt_ctf_event_class_create(name);
++	if (!event_class)
++		return -1;
++
++	ret = add_generic_types(cw, evsel, event_class);
++	if (ret)
++		goto err;
++
++	ret = bt_ctf_stream_class_add_event_class(cw->stream_class, event_class);
++	if (ret) {
++		pr("Failed to add event class into stream.\n");
++		goto err;
++	}
++
++	priv = malloc(sizeof(*priv));
++	if (!priv)
++		goto err;
++
++	priv->event_class = event_class;
++	evsel->priv       = priv;
++	return 0;
++
++err:
++	bt_ctf_event_class_put(event_class);
++	pr_err("Failed to add event '%s'.\n", name);
++	return -1;
++}
++
++static int setup_events(struct ctf_writer *cw, struct perf_session *session)
++{
++	struct perf_evlist *evlist = session->evlist;
++	struct perf_evsel *evsel;
++	int ret;
++
++	evlist__for_each(evlist, evsel) {
++		ret = add_event(cw, evsel);
++		if (ret)
++			return ret;
++	}
++	return 0;
++}
++
++static int ctf_writer__setup_env(struct ctf_writer *cw,
++				 struct perf_session *session)
++{
++	struct perf_header *header = &session->header;
++	struct bt_ctf_writer *writer = cw->writer;
++
++#define ADD(__n, __v)							\
++do {									\
++	if (bt_ctf_writer_add_environment_field(writer, __n, __v))	\
++		return -1;						\
++} while (0)
++
++	ADD("host",    header->env.hostname);
++	ADD("sysname", "Linux");
++	ADD("release", header->env.os_release);
++	ADD("version", header->env.version);
++	ADD("machine", header->env.arch);
++	ADD("domain", "kernel");
++	ADD("tracer_name", "perf");
++
++#undef ADD
++	return 0;
++}
++
++static int ctf_writer__setup_clock(struct ctf_writer *cw)
++{
++	struct bt_ctf_clock *clock = cw->clock;
++
++	bt_ctf_clock_set_description(clock, "perf clock");
++
++#define SET(__n, __v)				\
++do {						\
++	if (bt_ctf_clock_set_##__n(clock, __v))	\
++		return -1;			\
++} while (0)
++
++	SET(frequency,   1000000000);
++	SET(offset_s,    0);
++	SET(offset,      0);
++	SET(precision,   10);
++	SET(is_absolute, 0);
++
++#undef SET
++	return 0;
++}
++
++static struct bt_ctf_field_type *create_int_type(int size, bool sign, bool hex)
++{
++	struct bt_ctf_field_type *type;
++
++	type = bt_ctf_field_type_integer_create(size);
++	if (!type)
++		return NULL;
++
++	if (sign &&
++	    bt_ctf_field_type_integer_set_signed(type, 1))
++		goto err;
++
++	if (hex &&
++	    bt_ctf_field_type_integer_set_base(type, BT_CTF_INTEGER_BASE_HEXADECIMAL))
++		goto err;
++
++	pr2("Created type: INTEGER %d-bit %ssigned %s\n",
++	    size, sign ? "un" : "", hex ? "hex" : "");
++	return type;
++
++err:
++	bt_ctf_field_type_put(type);
++	return NULL;
++}
++
++static void ctf_writer__cleanup_data(struct ctf_writer *cw)
++{
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(cw->data.array); i++)
++		bt_ctf_field_type_put(cw->data.array[i]);
++}
++
++static int ctf_writer__init_data(struct ctf_writer *cw)
++{
++#define CREATE_INT_TYPE(type, size, sign, hex)		\
++do {							\
++	(type) = create_int_type(size, sign, hex);	\
++	if (!(type))					\
++		goto err;				\
++} while (0)
++
++	CREATE_INT_TYPE(cw->data.s64, 64, true,  false);
++	CREATE_INT_TYPE(cw->data.u64, 64, false, false);
++	CREATE_INT_TYPE(cw->data.s32, 32, true,  false);
++	CREATE_INT_TYPE(cw->data.u32, 32, false, false);
++	CREATE_INT_TYPE(cw->data.u64_hex, 64, false, true);
++
++	cw->data.string  = bt_ctf_field_type_string_create();
++	if (cw->data.string)
++		return 0;
++
++err:
++	ctf_writer__cleanup_data(cw);
++	pr_err("Failed to create data types.\n");
++	return -1;
++}
++
++static void ctf_writer__cleanup(struct ctf_writer *cw)
++{
++	ctf_writer__cleanup_data(cw);
++
++	bt_ctf_clock_put(cw->clock);
++	bt_ctf_stream_put(cw->stream);
++	bt_ctf_stream_class_put(cw->stream_class);
++	bt_ctf_writer_put(cw->writer);
++
++	/* and NULL all the pointers */
++	memset(cw, 0, sizeof(*cw));
++}
++
++static int ctf_writer__init(struct ctf_writer *cw, const char *path)
++{
++	struct bt_ctf_writer		*writer;
++	struct bt_ctf_stream_class	*stream_class;
++	struct bt_ctf_stream		*stream;
++	struct bt_ctf_clock		*clock;
++
++	/* CTF writer */
++	writer = bt_ctf_writer_create(path);
++	if (!writer)
++		goto err;
++
++	cw->writer = writer;
++
++	/* CTF clock */
++	clock = bt_ctf_clock_create("perf_clock");
++	if (!clock) {
++		pr("Failed to create CTF clock.\n");
++		goto err_cleanup;
++	}
++
++	cw->clock = clock;
++
++	if (ctf_writer__setup_clock(cw)) {
++		pr("Failed to setup CTF clock.\n");
++		goto err_cleanup;
++	}
++
++	/* CTF stream class */
++	stream_class = bt_ctf_stream_class_create("perf_stream");
++	if (!stream_class) {
++		pr("Failed to create CTF stream class.\n");
++		goto err_cleanup;
++	}
++
++	cw->stream_class = stream_class;
++
++	/* CTF clock stream setup */
++	if (bt_ctf_stream_class_set_clock(stream_class, clock)) {
++		pr("Failed to assign CTF clock to stream class.\n");
++		goto err_cleanup;
++	}
++
++	if (ctf_writer__init_data(cw))
++		goto err_cleanup;
++
++	/* CTF stream instance */
++	stream = bt_ctf_writer_create_stream(writer, stream_class);
++	if (!stream) {
++		pr("Failed to create CTF stream.\n");
++		goto err_cleanup;
++	}
++
++	cw->stream = stream;
++
++	/* CTF clock writer setup */
++	if (bt_ctf_writer_add_clock(writer, clock)) {
++		pr("Failed to assign CTF clock to writer.\n");
++		goto err_cleanup;
++	}
++
++	return 0;
++
++err_cleanup:
++	ctf_writer__cleanup(cw);
++err:
++	pr_err("Failed to setup CTF writer.\n");
++	return -1;
++}
++
++int bt_convert__perf2ctf(const char *input, const char *path)
++{
++	struct perf_session *session;
++	struct perf_data_file file = {
++		.path = input,
++		.mode = PERF_DATA_MODE_READ,
++	};
++	struct convert c = {
++		.tool = {
++			.sample          = process_sample_event,
++			.mmap            = perf_event__process_mmap,
++			.mmap2           = perf_event__process_mmap2,
++			.comm            = perf_event__process_comm,
++			.exit            = perf_event__process_exit,
++			.fork            = perf_event__process_fork,
++			.lost            = perf_event__process_lost,
++			.tracing_data    = perf_event__process_tracing_data,
++			.build_id        = perf_event__process_build_id,
++			.ordered_events  = true,
++			.ordering_requires_timestamps = true,
++		},
++	};
++	struct ctf_writer *cw = &c.writer;
++	int err = -1;
++
++	/* CTF writer */
++	if (ctf_writer__init(cw, path))
++		return -1;
++
++	/* perf.data session */
++	session = perf_session__new(&file, 0, NULL);
++	if (!session)
++		goto free_writer;
++
++	/* CTF writer env/clock setup  */
++	if (ctf_writer__setup_env(cw, session))
++		goto free_session;
++
++	/* CTF events setup */
++	if (setup_events(cw, session))
++		goto free_session;
++
++	err = perf_session__process_events(session, &c.tool);
++	if (!err)
++		err = bt_ctf_stream_flush(cw->stream);
++
++	fprintf(stderr,
++		"[ perf data convert: Converted '%s' into CTF data '%s' ]\n",
++		file.path, path);
++
++	fprintf(stderr,
++		"[ perf data convert: Converted and wrote %.3f MB (%" PRIu64 " samples) ]\n",
++		(double) c.events_size / 1024.0 / 1024.0,
++		c.events_count);
++
++	/* its all good */
++free_session:
++	perf_session__delete(session);
++
++free_writer:
++	ctf_writer__cleanup(cw);
++	return err;
++}
+diff --git a/tools/perf/util/data-convert-bt.h b/tools/perf/util/data-convert-bt.h
+new file mode 100644
+index 000000000000..dda30c5d0792
+--- /dev/null
++++ b/tools/perf/util/data-convert-bt.h
+@@ -0,0 +1,8 @@
++#ifndef __DATA_CONVERT_BT_H
++#define __DATA_CONVERT_BT_H
++#ifdef HAVE_LIBBABELTRACE_SUPPORT
++
++int bt_convert__perf2ctf(const char *input_name, const char *to_ctf);
++
++#endif /* HAVE_LIBBABELTRACE_SUPPORT */
++#endif /* __DATA_CONVERT_BT_H */
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index ad60b2f20258..2da5581ec74d 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -20,6 +20,7 @@ int verbose;
+ bool dump_trace = false, quiet = false;
+ int debug_ordered_events;
+ static int redirect_to_stderr;
++int debug_data_convert;
+ 
+ static int _eprintf(int level, int var, const char *fmt, va_list args)
+ {
+@@ -147,6 +148,7 @@ static struct debug_variable {
+ 	{ .name = "verbose",		.ptr = &verbose },
+ 	{ .name = "ordered-events",	.ptr = &debug_ordered_events},
+ 	{ .name = "stderr",		.ptr = &redirect_to_stderr},
++	{ .name = "data-convert",	.ptr = &debug_data_convert },
+ 	{ .name = NULL, }
+ };
+ 
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index be264d6f3b30..caac2fdc6105 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -12,6 +12,7 @@
+ extern int verbose;
+ extern bool quiet, dump_trace;
+ extern int debug_ordered_events;
++extern int debug_data_convert;
+ 
+ #ifndef pr_fmt
+ #define pr_fmt(fmt) fmt
 -- 
 1.9.3
 
