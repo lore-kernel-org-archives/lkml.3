@@ -1,164 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518AbaLKBa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:30:28 -0500
-Received: from mail-by2on0114.outbound.protection.outlook.com ([207.46.100.114]:20448
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758449AbaLKBaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:30:24 -0500
-From: Scott Wood <scottwood@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>
-CC: <linux-kernel@vger.kernel.org>, Scott Wood <scottwood@freescale.com>
-Subject: [PATCH] memory/fsl-corenet-cf: Add t1040 support
-Date: Wed, 10 Dec 2014 18:56:22 -0600
-Message-ID: <1418259382-21697-1-git-send-email-scottwood@freescale.com>
-X-Mailer: git-send-email 2.1.0
+	id S933427AbaLKBcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:32:41 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:46963 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758270AbaLKBcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 20:32:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.88.168.50]
-X-ClientProxiedBy: BN1PR08CA0042.namprd08.prod.outlook.com (10.242.217.170) To
- BY2PR0301MB0725.namprd03.prod.outlook.com (25.160.63.155)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0725;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0725;
-X-Forefront-PRVS: 0422860ED4
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(21056001)(107046002)(50226001)(87976001)(50466002)(106356001)(110136001)(77156002)(48376002)(62966003)(2351001)(229853001)(46102003)(4396001)(33646002)(68736005)(101416001)(19580395003)(230783001)(86362001)(50986999)(19580405001)(42186005)(40100003)(66066001)(64706001)(122386002)(47776003)(20776003)(99396003)(97736003)(120916001)(89996001)(31966008)(36756003)(105586002)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0725;H:snotra.am.freescale.net;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0725;
-X-OriginatorOrg: freescale.com
+In-Reply-To: <5488ECC8.8070802@synaptics.com>
+References: <1416874819-9914-1-git-send-email-aduggan@synaptics.com>
+	<54863F7A.30609@synaptics.com>
+	<CAN+gG=Epx3m0=mg-xfKJveZBvo5ySe5cpFJgRbo79DvKgCFa4A@mail.gmail.com>
+	<5488ECC8.8070802@synaptics.com>
+Date: Wed, 10 Dec 2014 20:32:38 -0500
+Message-ID: <CAN+gG=GEnF940DQZztu66MSLj5DTZwcFWoOA9eh7g5baOmLXDw@mail.gmail.com>
+Subject: Re: [PATCH] HID: rmi: Add support for the touchpad in the Razer Blade
+ 14 laptop
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-T1040 has a different version of corenet-cf, despite being incorrectly
-labelled with a fsl,corenet2-cf compatible.  The t1040 version of
-corenet-cf has a version register that can be read to distinguish.  The
-t4240/b4860 version officially does not, but testing shows that it does
-and has a different value, so use that.  If somehow this ends up not
-being reliable and we treat a t4240/b4860 as a t1040 (the reverse
-should not happen, as t1040's version register is official), currently
-the worst that should happen is writing to reserved bits to enable
-events that don't exist.
+On Wed, Dec 10, 2014 at 8:00 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
+> Hi Benjamin,
+>
+> Thanks for reviewing my patch. Comments and questions below.
+>
+> On 12/10/2014 12:51 PM, Benjamin Tissoires wrote:
+>>
+>> On Mon, Dec 8, 2014 at 7:16 PM, Andrew Duggan <aduggan@synaptics.com>
+>> wrote:
+>>>
+>>> On 11/24/2014 04:20 PM, Andrew Duggan wrote:
+>>>>
+>>>> The Razer Blade 14 has a Synaptic's TouchPad on one of the interfaces of
+>>>> a composite USB device. This patch allows the hid-rmi driver to bind
+>>>> to that interface. It also adds support for the external click buttons
+>>>> on the Razer's touchpad. External buttons are reported using generic
+>>>> mouse reports instead of through the F30 like it is on ClickPads.
+>>>>
+>>>> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
+>>>> ---
+>>>> This patch depends on the "HID: rmi: Scan the report descriptor to
+>>>> determine if the device is
+>>>> suitable for the hid-rmi driver" I submitted earlier today to correctly
+>>>> bind to the touchpad HID
+>>>> device in the composite USB device.
+>>>
+>>> Any comments on this patch?
+>>
+>> Again, sorry for the lag on this series. I think now that I re-read
+>> this one I understood why I did not put too many efforts to properly
+>> review the series. This one is a little bit worrisome IMO.
+>>
+>
+> I wasn't sure about this patch either. But, after waiting a while and not
+> coming with with anything better I figured I would post it to at least get
+> some feedback.
 
-The changes to the t1040 version of corenet-cf that this driver cares
-about are the addition of two new error events.  There are also changes
-to the format of cecar2, which is printed, but not interpreted, by this
-driver.
+That's the right spirit :)
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
----
- drivers/memory/fsl-corenet-cf.c | 36 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 34 insertions(+), 2 deletions(-)
+>
+>
+>>> Thanks,
+>>> Andrew
+>>>
+>>>>    drivers/hid/hid-core.c |  4 +++-
+>>>>    drivers/hid/hid-ids.h  |  3 +++
+>>>>    drivers/hid/hid-rmi.c  | 15 ++++++++++++++-
+>>>>    3 files changed, 20 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+>>>> index ba9dc59..d69ea16 100644
+>>>> --- a/drivers/hid/hid-core.c
+>>>> +++ b/drivers/hid/hid-core.c
+>>>> @@ -792,7 +792,9 @@ static int hid_scan_report(struct hid_device *hid)
+>>>>          /*
+>>>>          * Vendor specific handlings
+>>>>          */
+>>>> -       if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
+>>>> +       if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS
+>>>> +           || (hid->vendor == USB_VENDOR_ID_RAZER
+>>>> +           && hid->product == USB_DEVICE_ID_RAZER_BLADE_14)) &&
+>>
+>> I don't like this. We already have a blacklist, an ignore list, and
+>> there, we will have a new blacklist...
+>>
+>> I understood why you put this here, the current have_special_driver
+>> list will not fit 100%. Still, I find it not good.
+>>
+>> It works, but I think we should still head for an entry in
+>> have_special_driver, and a specific behavior in hid-rmi which would
+>> rely on hid-input to handle the keyboard/mouse buttons and the rest.
+>
+>
+> Are you suggesting that we have hid-rmi bind to all of the hid devices on
+> this USB device and then have hid-rmi decide what reports it should process
+> and let the remaining events continue to hid-input? I guess once hid-rmi
+> loads it could look at the hid report ids and determine if it is one of our
+> devices and if it should put the device into rmi mode. If not simply act as
+> a pass through.
 
-diff --git a/drivers/memory/fsl-corenet-cf.c b/drivers/memory/fsl-corenet-cf.c
-index c9443fc..94c952e 100644
---- a/drivers/memory/fsl-corenet-cf.c
-+++ b/drivers/memory/fsl-corenet-cf.c
-@@ -27,18 +27,29 @@ enum ccf_version {
- struct ccf_info {
- 	enum ccf_version version;
- 	int err_reg_offs;
-+	bool has_brr;
- };
- 
- static const struct ccf_info ccf1_info = {
- 	.version = CCF1,
- 	.err_reg_offs = 0xa00,
-+	.has_brr = false,
- };
- 
- static const struct ccf_info ccf2_info = {
- 	.version = CCF2,
- 	.err_reg_offs = 0xe40,
-+	.has_brr = true,
- };
- 
-+/*
-+ * This register is present but not documented, with different values for
-+ * IP_ID, on other chips with fsl,corenet2-cf such as t4240 and b4860.
-+ */
-+#define CCF_BRR			0xbf8
-+#define CCF_BRR_IPID		0xffff0000
-+#define CCF_BRR_IPID_T1040	0x09310000
-+
- static const struct of_device_id ccf_matches[] = {
- 	{
- 		.compatible = "fsl,corenet1-cf",
-@@ -66,6 +77,8 @@ struct ccf_err_regs {
- /* LAE/CV also valid for errdis and errinten */
- #define ERRDET_LAE		(1 << 0)  /* Local Access Error */
- #define ERRDET_CV		(1 << 1)  /* Coherency Violation */
-+#define ERRDET_UTID		(1 << 2)  /* Unavailable Target ID (t1040) */
-+#define ERRDET_MCST		(1 << 3)  /* Multicast Stash (t1040) */
- #define ERRDET_CTYPE_SHIFT	26	  /* Capture Type (ccf2 only) */
- #define ERRDET_CTYPE_MASK	(0x1f << ERRDET_CTYPE_SHIFT)
- #define ERRDET_CAP		(1 << 31) /* Capture Valid (ccf2 only) */
-@@ -84,6 +97,7 @@ struct ccf_private {
- 	struct device *dev;
- 	void __iomem *regs;
- 	struct ccf_err_regs __iomem *err_regs;
-+	bool t1040;
- };
- 
- static irqreturn_t ccf_irq(int irq, void *dev_id)
-@@ -142,6 +156,12 @@ static irqreturn_t ccf_irq(int irq, void *dev_id)
- 	if (errdet & ERRDET_CV)
- 		dev_crit(ccf->dev, "Coherency Violation\n");
- 
-+	if (errdet & ERRDET_UTID)
-+		dev_crit(ccf->dev, "Unavailable Target ID\n");
-+
-+	if (errdet & ERRDET_MCST)
-+		dev_crit(ccf->dev, "Multicast Stash\n");
-+
- 	if (cap_valid) {
- 		dev_crit(ccf->dev, "address 0x%09llx, src id 0x%x\n",
- 			 addr, src_id);
-@@ -157,6 +177,7 @@ static int ccf_probe(struct platform_device *pdev)
- 	struct ccf_private *ccf;
- 	struct resource *r;
- 	const struct of_device_id *match;
-+	u32 errinten;
- 	int ret, irq;
- 
- 	match = of_match_device(ccf_matches, &pdev->dev);
-@@ -183,6 +204,13 @@ static int ccf_probe(struct platform_device *pdev)
- 	ccf->info = match->data;
- 	ccf->err_regs = ccf->regs + ccf->info->err_reg_offs;
- 
-+	if (ccf->info->has_brr) {
-+		u32 brr = ioread32be(ccf->regs + CCF_BRR);
-+
-+		if ((brr & CCF_BRR_IPID) == CCF_BRR_IPID_T1040)
-+			ccf->t1040 = true;
-+	}
-+
- 	dev_set_drvdata(&pdev->dev, ccf);
- 
- 	irq = platform_get_irq(pdev, 0);
-@@ -197,15 +225,19 @@ static int ccf_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	errinten = ERRDET_LAE | ERRDET_CV;
-+	if (ccf->t1040)
-+		errinten |= ERRDET_UTID | ERRDET_MCST;
-+
- 	switch (ccf->info->version) {
- 	case CCF1:
- 		/* On CCF1 this register enables rather than disables. */
--		iowrite32be(ERRDET_LAE | ERRDET_CV, &ccf->err_regs->errdis);
-+		iowrite32be(errinten, &ccf->err_regs->errdis);
- 		break;
- 
- 	case CCF2:
- 		iowrite32be(0, &ccf->err_regs->errdis);
--		iowrite32be(ERRDET_LAE | ERRDET_CV, &ccf->err_regs->errinten);
-+		iowrite32be(errinten, &ccf->err_regs->errinten);
- 		break;
- 	}
- 
--- 
-2.1.0
+Yeah, that's basically what I am saying. Add the device in
+hid_have_special_driver, add it to the list of supported devices by
+hid-rmi, and add a quirk saying that it should be pass through for all
+but the rmi report ID.
 
+>
+>
+>>>>              (hid->group == HID_GROUP_GENERIC)) {
+>>>>                  if ((parser->scan_flags &
+>>>> HID_SCAN_FLAG_VENDOR_SPECIFIC)
+>>>>                      && (parser->scan_flags &
+>>>> HID_SCAN_FLAG_GENDESK_POINTER))
+>>>> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+>>>> index 25cd674..c677aad 100644
+>>>> --- a/drivers/hid/hid-ids.h
+>>>> +++ b/drivers/hid/hid-ids.h
+>>>> @@ -751,6 +751,9 @@
+>>>>    #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001               0x3001
+>>>>    #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008               0x3008
+>>>>    +#define USB_VENDOR_ID_RAZER          0x1532
+>>>> +#define USB_DEVICE_ID_RAZER_BLADE_14   0x011D
+>>>> +
+>>>>    #define USB_VENDOR_ID_REALTEK         0x0bda
+>>>>    #define USB_DEVICE_ID_REALTEK_READER  0x0152
+>>>>    diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
+>>>> index 3cccff7..1f131df 100644
+>>>> --- a/drivers/hid/hid-rmi.c
+>>>> +++ b/drivers/hid/hid-rmi.c
+>>>> @@ -453,7 +453,15 @@ static int rmi_raw_event(struct hid_device *hdev,
+>>>>          case RMI_ATTN_REPORT_ID:
+>>>>                  return rmi_input_event(hdev, data, size);
+>>>>          case RMI_MOUSE_REPORT_ID:
+>>>> -               rmi_schedule_reset(hdev);
+>>>> +               /*
+>>>> +                * touchpads with physical mouse buttons will report
+>>>> those
+>>>> +                * buttons in mouse reports even in RMI mode. Only reset
+>>>> +                * the device if we see reports which contain X or Y
+>>>> data.
+>>>> +                */
+>>>> +               if (data[2] != 0 || data[3] != 0)
+>>
+>> this seems a little bit magical. There may not be an other solution,
+>> but I would prefer that we look at alternatives before using this
+>> magical numbers (will the touchpad always use the same report
+>> descriptor on the mouse interface?)
+>
+>
+> I did just look at the reports and see where X and Y where reported. Since
+> mouse mode is really only there for compatibility when no custom driver is
+> present I think it is unlikely that it will change in the future. However,
+> there is no guarantee that it won't change. I will see if I can come up with
+> is less of a hack. Maybe, I can use the event callback instead of raw_event.
+
+I would prefer an event callback (if it is not too much trouble).
+
+>
+>
+>>>> +                       rmi_schedule_reset(hdev);
+>>>> +               else
+>>>> +                       return 1;
+>>>>                  break;
+>>>>          }
+>>>>    @@ -871,6 +879,11 @@ static int rmi_input_mapping(struct hid_device
+>>>> *hdev,
+>>>>                  struct hid_input *hi, struct hid_field *field,
+>>>>                  struct hid_usage *usage, unsigned long **bit, int *max)
+>>>>    {
+>>>> +       if (field->application == HID_GD_POINTER
+>>>> +               && (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
+>>>> +               /* Pass mouse button reports to generic code for
+>>>> processing */
+>>>> +               return 0;
+>>>> +
+>>>>          /* we want to make HID ignore the advertised HID collection */
+>>>>          return -1;
+>>>>    }
+>>>
+>>>
+>> Cheers,
+>> Benjamin
+>
+>
+> Andrew
+
+Cheers,
+Benjamin
