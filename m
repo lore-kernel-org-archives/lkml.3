@@ -1,86 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900AbaLKMbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:31:42 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55551 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418AbaLKMbk (ORCPT
+	id S932428AbaLKMjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:39:22 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:31690 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559AbaLKMjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:31:40 -0500
-Date: Thu, 11 Dec 2014 12:31:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Alexandru Stan <amstan@chromium.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lgirdwood@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20141211123106.GU11764@sirena.org.uk>
-References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
- <20141210235347.GT11764@sirena.org.uk>
- <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Qq74T9cNcLNVv1KL"
-Content-Disposition: inline
-In-Reply-To: <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
- certain voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 11 Dec 2014 07:39:19 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-bc-54899074cabc
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
+Subject: [PATCH] regulator: s2mps11: Fix dwmmc failure on Gear 2
+Date: Thu, 11 Dec 2014 13:39:11 +0100
+Message-id: <1418301551-31678-1-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMJMWRmVeSWpSXmKPExsVy+t/xq7olEzpDDGa+ULKY+vAJm8XrF4YW
+	3650MFlc3jWHzeLiii9MFgs2PmJ0YPPYOesuu8emVZ1sHn1bVjF6fN4kF8ASxWWTkpqTWZZa
+	pG+XwJUxac0RtoIGtYpnh84yNTD+le9i5OSQEDCRmD3jLTOELSZx4d56ti5GLg4hgaWMEtt+
+	3GOFcPqYJNY+bGYCqWITMJbYvHwJWJWIQA+jxMutn8HamQU8Jd79fcjexcjBISzgIHH4niFI
+	mEVAVeLO151gJbwC7hK7Vx1lg9gmJ3Hy2GTWCYzcCxgZVjGKppYmFxQnpeca6hUn5haX5qXr
+	JefnbmKEBMSXHYyLj1kdYhTgYFTi4RWI7QwRYk0sK67MPcQowcGsJMJrFQEU4k1JrKxKLcqP
+	LyrNSS0+xMjEwSnVwKjNua58y75sM6/HX72e5s8LtNRRfZMU9s7YQ15iZ3bt+cm6WqZ77Nee
+	vcGfb8SVIC75brt9VOXBrj05HmwLG9jidZz/WvE5VT28k7z8Q6jByzeJEwXy/h5OUr2lUpRd
+	afKicu25faY/at60J7+5cav8wemQj2d31/z89Mut8KS6yBefyE8OpkosxRmJhlrMRcWJADWX
+	AcXmAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Invalid buck4 configuration in S2MPS14 regulators caused boot failure on
+Gear 2 (dwmmc_exynos):
 
---Qq74T9cNcLNVv1KL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+[    3.569137] EXT4-fs (mmcblk0p15): mounted filesystem with ordered data mode. Opts: (null)
+[    3.571716] VFS: Mounted root (ext4 filesystem) readonly on device 179:15.
+[    3.580836] devtmpfs: mounted
+[    3.582033] Freeing unused kernel memory: 284K (c05b4000 - c05fb000)
+[    3.629842] mmcblk0: error -110 sending status command, retrying
+[    3.630244] mmcblk0: error -110 sending status command, retrying
+[    3.636292] mmcblk0: error -110 sending status command, aborting
+[    3.642279] end_request: I/O error, dev mmcblk0, sector 7302680
+[    3.648128] end_request: I/O error, dev mmcblk0, sector 7302688
+[    3.654025] end_request: I/O error, dev mmcblk0, sector 7302696
+[    3.659927] end_request: I/O error, dev mmcblk0, sector 7302704
+[    3.665829] end_request: I/O error, dev mmcblk0, sector 7302712
+[    3.671731] end_request: I/O error, dev mmcblk0, sector 7302720
+[    3.677635] end_request: I/O error, dev mmcblk0, sector 7302728
+[    3.683536] end_request: I/O error, dev mmcblk0, sector 7302736
+[    3.689438] end_request: I/O error, dev mmcblk0, sector 7302744
+[    3.695339] end_request: I/O error, dev mmcblk0, sector 7302752
+[    3.701445] mmcblk0: error -110 sending status command, retrying
+[    3.707262] mmcblk0: error -110 sending status command, retrying
+[    3.713248] mmcblk0: error -110 sending status command, aborting
+[    3.727704] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000007
+[    3.727704]
+[    3.731205] CPU: 0 PID: 1 Comm: init Not tainted 3.17.0-rc1-00003-g5a867cf28893 #1183
+[    3.739042] [<c0013b04>] (unwind_backtrace) from [<c0010dcc>] (show_stack+0x10/0x14)
+[    3.746750] [<c0010dcc>] (show_stack) from [<c0414aa0>] (dump_stack+0x70/0xbc)
+[    3.753952] [<c0414aa0>] (dump_stack) from [<c04122d4>] (panic+0x90/0x1fc)
+[    3.760810] [<c04122d4>] (panic) from [<c0022f68>] (do_exit+0x834/0x8b0)
+[    3.767492] [<c0022f68>] (do_exit) from [<c00230d0>] (do_group_exit+0x3c/0xb0)
+[    3.774698] [<c00230d0>] (do_group_exit) from [<c002b734>] (get_signal+0x1dc/0x57c)
+[    3.782333] [<c002b734>] (get_signal) from [<c0411d70>] (do_signal+0x84/0x3a4)
+[    3.789537] [<c0411d70>] (do_signal) from [<c001093c>] (do_work_pending+0x84/0xc4)
+[    3.797089] [<c001093c>] (do_work_pending) from [<c000e660>] (work_pending+0xc/0x20)
+[    3.804812] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000007
 
-On Wed, Dec 10, 2014 at 05:08:37PM -0800, Alexandru Stan wrote:
-> The spec is from 1.7V to 1.95V, with 1.8V being ideal. It's not that
-> symmetric. But let's say that 0.1V is fine for tolerance(so 1.7-1.9V)
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 5a867cf28893 ("regulator: s2mps11: Optimize the regulator description macro")
+Cc: <stable@vger.kernel.org>
+---
+ drivers/regulator/s2mps11.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-Don't top post so people reading your message have some context to give
-them some idea what you are talking about.
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index c1444c3d84c2..9051ce6629d3 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -570,7 +570,7 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.enable_mask	= S2MPS14_ENABLE_MASK		\
+ }
+ 
+-#define regulator_desc_s2mps14_buck(num, min, step) {		\
++#define regulator_desc_s2mps14_buck(num, min, step, min_sel) {	\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS14_BUCK##num,			\
+ 	.ops		= &s2mps14_reg_ops,			\
+@@ -579,7 +579,7 @@ static struct regulator_ops s2mps14_reg_ops = {
+ 	.min_uV		= min,					\
+ 	.uV_step	= step,					\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+-	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
++	.linear_min_sel = min_sel,				\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+ 	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
+ 	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
+@@ -613,11 +613,16 @@ static const struct regulator_desc s2mps14_regulators[] = {
+ 	regulator_desc_s2mps14_ldo(23, MIN_800_MV, STEP_25_MV),
+ 	regulator_desc_s2mps14_ldo(24, MIN_1800_MV, STEP_25_MV),
+ 	regulator_desc_s2mps14_ldo(25, MIN_1800_MV, STEP_25_MV),
+-	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV),
+-	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV,
++			S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV,
++			S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV,
++			S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV,
++			S2MPS14_BUCK4_START_SEL),
++	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV,
++			S2MPS14_BUCK1235_START_SEL),
+ };
+ 
+ static int s2mps14_pmic_enable_ext_control(struct s2mps11_info *s2mps11,
+-- 
+1.9.1
 
-> Imagine a board has a 1V-1.79 V regulator, we tell it to
-> regulator_set_voltage_tol(1800000,100000). It will try the 1.8V-1.9V
-> range, when it sees that it can't it'll fallback to 1.7V - 1.9V, and
-> it will just be lazy and pick the lowest of the range again:
-> 1.7V(causing voltage drop issues because we're exactly at the minimum
-> of the spec). The correct voltage would be 1.79V
-
-This is just an implementation detail, everything you're saying here
-applies equally to any user specifying by tolerance rather than range.
-If the reason for doing this is to fix that problem then a new API isn't
-the way to go about it.
-
---Qq74T9cNcLNVv1KL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUiY6JAAoJECTWi3JdVIfQUT0H/iHhxGYO5AHqDtfLAmRRTBc1
-85bQzms2XHjw5DK/xUyegaXxplbUg7mhpBE22dIckpj1GVGfmtrKXAtVeJ3viQNh
-swLi6sg7oYGvdJJtnemskwL5OcbDvi6TTFXnqg/2Rz5APU83lFKf1HN8dtGB1xh+
-OCGa++kho+q0SAih4JejLYx7TQKF6p4ErIqIFRIRUtJEpJYgwqJUQNtr+PoLMlu2
-CcPs0QsEg4P1S4aHUEdJ/59EFwxEEQtZLeCcPvYABwPWAGGCwPr27YoCd0gEV5pt
-FE2VI0LKiKlbEjc3WTlsjct11YL47/kNbrPpvJkGKaSF/B4PEByYJgrj85zI6a4=
-=z2Se
------END PGP SIGNATURE-----
-
---Qq74T9cNcLNVv1KL--
