@@ -1,89 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964814AbaLKGKm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:10:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:44236 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964797AbaLKGKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:10:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="427648900"
-Message-ID: <5489355E.8080905@intel.com>
-Date: Thu, 11 Dec 2014 14:10:38 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>, Olof Johansson <olof@lixom.net>
-CC: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5] Thermal: introduce INT3406 thermal driver
-References: <54868CF6.6020505@intel.com>	 <CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com>	 <20141211010226.GA26253@aaronlu.sh.intel.com>	 <CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com> <1418265472.12435.68.camel@rzhang1-toshiba> <548934D0.8000502@intel.com>
-In-Reply-To: <548934D0.8000502@intel.com>
-Content-Type: text/plain; charset=utf-8
+	id S1758856AbaLKGMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:12:09 -0500
+Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:55442 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754122AbaLKGMH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 01:12:07 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2551:2553:2559:2562:2828:2897:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3871:4321:5007:6261:6691:6742:10004:10226:10400:10848:11232:11658:11914:12043:12050:12296:12517:12519:12740:13069:13311:13357:13972:21060:21080:21088,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: watch53_2f35daa27f142
+X-Filterd-Recvd-Size: 1736
+Message-ID: <1418278322.18092.30.camel@perches.com>
+Subject: Re: [PATCH v5 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+From: Joe Perches <joe@perches.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Yunzhi Li <lyz@rock-chips.com>, heiko@sntech.de, jwerner@chromium.org,
+        dianders@chromium.org, olof@lixom.net, huangtao@rock-chips.com,
+        zyw@rock-chips.com, cf@rock-chips.com,
+        linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Date: Wed, 10 Dec 2014 22:12:02 -0800
+In-Reply-To: <5489338C.1030109@ti.com>
+References: <1418208371-18851-1-git-send-email-lyz@rock-chips.com>
+	 <1418208371-18851-2-git-send-email-lyz@rock-chips.com>
+	 <5489338C.1030109@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 02:08 PM, Aaron Lu wrote:
-> On 12/11/2014 10:37 AM, Zhang Rui wrote:
->> On Wed, 2014-12-10 at 18:15 -0800, Olof Johansson wrote:
->>> On Wed, Dec 10, 2014 at 5:02 PM, Aaron Lu <aaron.lu@intel.com> wrote:
->>>> On Wed, Dec 10, 2014 at 11:53:25AM -0800, Olof Johansson wrote:
->>>>> Hi,
->>>>>
->>>>> [+daniel vetter]
->>>>>
->>>>> On Mon, Dec 8, 2014 at 9:47 PM, Aaron Lu <aaron.lu@intel.com> wrote:
->>>>>> INT3406 ACPI device object resembles an ACPI video output device, but its
->>>>>> _BCM is said to be deprecated and should not be used. So we will make
->>>>>> use of the raw interface to do the actual cooling. Due to this, the
->>>>>> backlight core has some modifications. Also, to re-use some of the ACPI
->>>>>> video module's code, one function has been exported.
->>>>>>
->>>>>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
->>>>>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->>>>>> ---
->>>>>> v5:
->>>>>> Add the missing file drivers/thermal/int340x_thermal/Kconfig
->>>>>> Remove the assignment of .owner field from the device_driver structure
->>>>>
->>>>>
->>>>> Did this patch show up in -next for the first time last night, or did
->>>>> some other change break this?
->>>>>
->>>>> It causes a panic in i915 when booting Minnowboard Max for me.
->>>>
->>>> Sorry for the trouble, I'm looking at this now.
->>>> Is there anything special about the Minnowboard Max? I'll try to
->>>> reproduce the issue here locally with a typical Intel desktop.
->>>
->>> Another good question is why the code showed up in -next today. Code
->>> going in for 3.19 is supposed to have been baking there already, and
->>> it's too early to stage anything for 3.20.
->>>
->>> Zhang?
->>
->> well, my Linux machine happened to be broken when I was in travel in Oct
->> and Nov, so that I got the 3.19 material prepared a little late.
->> Thus I just took some fixes and driver specific patches and plan to push
->> my pull request next week.
->> For this one, it had been pushed to linux-next for 3.18, but was dropped
->> because of some Kconfig problem. So I thought it was safe to include
->> this one for 3.19.
->> sorry for bring the trouble here.
-> 
-> It's my bad. In the meantime, I think I have found the problem:
-> If the system has a video output device that does not provide a correct
-> _BCL, the error path from the newly added code doesn't properly set the
-> error return value and that caused problem. The fix is simple:
+On Thu, 2014-12-11 at 11:32 +0530, Kishon Vijay Abraham I wrote:
+> On Wednesday 10 December 2014 04:16 PM, Yunzhi Li wrote:
+> > diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
+[]
+> > +/*
+> > + * The higher 16-bit of this register is used for write protection
+> > + * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
+> > + */
+> > +#define SIDDQ_MSK		BIT(13 + 16)
 
-BTW, this is verified with a laptop that would expose the same call
-trace as posted by Olof with the original commit.
+huh?
 
-Thanks,
-Aaron
+This #define looks _very_ odd.
+
+Is this supposed to be a single bit 29 or
+some range?
+
+
