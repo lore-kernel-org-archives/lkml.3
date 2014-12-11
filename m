@@ -1,53 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758580AbaLKACt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:02:49 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51744
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	id S1758413AbaLKAGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:06:33 -0500
+Received: from lekensteyn.nl ([178.21.112.251]:53652 "EHLO lekensteyn.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758394AbaLKACs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:02:48 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, mcb30@ipxe.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V3 1/1] Drivers: hv: vmbus: Fix a bug in vmbus_establish_gpadl()
-Date: Wed, 10 Dec 2014 17:13:00 -0800
-Message-Id: <1418260380-8774-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1758156AbaLKAGc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 19:06:32 -0500
+From: Peter Wu <peter@lekensteyn.nl>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: logitech-hidpp: do not return the name length
+Date: Thu, 11 Dec 2014 01:06:17 +0100
+Message-ID: <1906623.oO6IMXUbli@al>
+User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <20141210230152.GC4861@mail.corp.redhat.com>
+References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com> <4561294.qneDZ51mgu@al> <20141210230152.GC4861@mail.corp.redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correctly compute the local (gpadl) handle. 
-I would like to thank Michael Brown <mcb30@ipxe.org> for seeing this bug.
+On Wednesday 10 December 2014 18:01:52 Benjamin Tissoires wrote:
+> On Dec 10 2014 or thereabouts, Peter Wu wrote:
+> > On Wednesday 10 December 2014 17:21:09 Benjamin Tissoires wrote:
+> > > We do not make any use of the actual name length get through
+> > > hidpp_get_device_name().
+> > > 
+> > > We can drop the extra code and simplify the API a bit.
+> > > 
+> > > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > >
+> > > ---
+> > >  drivers/hid/hid-logitech-hidpp.c | 10 +++-------
+> > >  1 file changed, 3 insertions(+), 7 deletions(-)
+> > > 
+> > > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> > > index 1a6395d..3846305 100644
+> > > --- a/drivers/hid/hid-logitech-hidpp.c
+> > > +++ b/drivers/hid/hid-logitech-hidpp.c
+> > > @@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
+> > >  	return count;
+> > >  }
+> > >  
+> > > -static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > > +static char *hidpp_get_device_name(struct hidpp_device *hidpp)
+> > >  {
+> > >  	u8 feature_type;
+> > >  	u8 feature_index;
+> > > @@ -484,7 +484,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > >  	if (!name)
+> > >  		goto out_err;
+> > >  
+> > > -	*name_length = __name_length + 1;
+> > >  	while (index < __name_length)
+> > >  		index += hidpp_devicenametype_get_device_name(hidpp,
+> > >  			feature_index, index, name + index,
+> > 
+> > hidpp_devicenametype_get_device_name can return a non-positive value if
+> > the USB device is unplugged at the wrong time, or if a malicious device
+> > is attached (and 0 is returned). An infinite loop is the result.
+> 
+> Oh, yes, you are definitively right.
+> 
+> > 
+> > Can you apply this change in the patch or should I send you a separate
+> > one?
+> 
+> Feel free to send your patch directly to the list.
+> 
+> > 
+> > 	while (index < __name_length) {
+> > 		ret = hidpp_devicenametype_get_device_name(hidpp,
+> > 			feature_index, index, name + index,
+> > 			__name_length - index);
+> > 		if (ret <= 0) {
+> > 			kfree(name);
+> > 			return NULL;
+> > 		}
+> > 		index += ret;
+> > 	}
+> > 
+> > > @@ -493,7 +492,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > >  	return name;
+> > >  
+> > >  out_err:
+> > > -	*name_length = 0;
+> > >  	return NULL;
+> > 
+> > What about dropping the label out_err here and returning NULL in the
+> > previous places?
+> 
+> Yep, good idea. You can either send a patch for that if you want to take
+> credits, or I can send a v2. It's up to you.
+> 
+> Cheers,
+> Benjamin
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reported-by: Michael Brown <mcb30@ipxe.org>
----
-Changes in V2: Added the Reported-by tag.
-Changes in V3: Cleaned up the commit log.
+I found another place where a boundary check is missing, but will treat
+that in a separate patch. If you send a v2 with the return NULL fixed
+up, I'll base my patch (to add a retval check) on yours.
 
- drivers/hv/channel.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Kind regards,
+Peter
 
-diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-index 433f72a..c76ffbe 100644
---- a/drivers/hv/channel.c
-+++ b/drivers/hv/channel.c
-@@ -366,8 +366,8 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
- 	unsigned long flags;
- 	int ret = 0;
- 
--	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
--	atomic_inc(&vmbus_connection.next_gpadl_handle);
-+	next_gpadl_handle =
-+		(atomic_inc_return(&vmbus_connection.next_gpadl_handle) - 1);
- 
- 	ret = create_gpadl_header(kbuffer, size, &msginfo, &msgcount);
- 	if (ret)
--- 
-1.7.4.1
+> > 
+> > >  }
+> > >  
+> > > @@ -989,7 +987,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+> > >  {
+> > >  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
+> > >  	char *name;
+> > > -	u8 name_length;
+> > >  
+> > >  	if (use_unifying)
+> > >  		/*
+> > > @@ -999,7 +996,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+> > >  		 */
+> > >  		name = hidpp_get_unifying_name(hidpp);
+> > >  	else
+> > > -		name = hidpp_get_device_name(hidpp, &name_length);
+> > > +		name = hidpp_get_device_name(hidpp);
+> > >  
+> > >  	if (!name)
+> > >  		hid_err(hdev, "unable to retrieve the name of the device");
+> > > @@ -1053,7 +1050,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+> > >  	bool connected = atomic_read(&hidpp->connected);
+> > >  	struct input_dev *input;
+> > >  	char *name, *devm_name;
+> > > -	u8 name_length;
+> > >  
+> > >  	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
+> > >  		wtp_connect(hdev, connected);
+> > > @@ -1080,7 +1076,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+> > >  		return;
+> > >  	}
+> > >  
+> > > -	name = hidpp_get_device_name(hidpp, &name_length);
+> > > +	name = hidpp_get_device_name(hidpp);
+> > >  	if (!name) {
+> > >  		hid_err(hdev, "unable to retrieve the name of the device");
+> > >  	} else {
+> > > 
 
