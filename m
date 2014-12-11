@@ -1,188 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953AbaLKPUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:20:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
+	id S964991AbaLKPWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:22:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44338 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933040AbaLKPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:20:31 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>, Jiri Olsa <jolsa@kernel.org>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 4/8] perf data: Add a 'perf' prefix to the generic fields
-Date: Thu, 11 Dec 2014 16:12:25 +0100
-Message-Id: <1418310749-22267-5-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
-References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+	id S933874AbaLKPWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 10:22:40 -0500
+Date: Thu, 11 Dec 2014 10:22:25 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] HID: logitech-hidpp: do not return the name length
+Message-ID: <20141211152225.GC29747@mail.corp.redhat.com>
+References: <1418302280-14794-1-git-send-email-peter@lekensteyn.nl>
+ <1418302280-14794-2-git-send-email-peter@lekensteyn.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1418302280-14794-2-git-send-email-peter@lekensteyn.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+On Dec 11 2014 or thereabouts, Peter Wu wrote:
+> We do not make any use of the actual name length get through
+> hidpp_get_device_name(). Original patch by Benjamin Tissoires, this
+> patch also replaces a (now) unnecessary goto by return NULL.
+> 
+> Signed-off-by: Peter Wu <peter@lekensteyn.nl>
+> ---
 
-Some of the tracers bring their own id or pid fields and we can end up
-having two of them. This patch adds a "perf_" prefix to the 'generic'
-fields so we avoid a clash of the member names.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-The change is visible in the babeltrace output:
+Thanks for the v2 Peter.
 
-Before:
-  $ babeltrace ./ctf-data/
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
-  ...
+Cheers,
+Benjamin
 
-Now:
-  $ babeltrace ./ctf-data/
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 114 }
-  ...
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeremie Galarneau <jgalar@efficios.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- tools/perf/util/data-convert-bt.c | 42 ++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
-
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index ff4826c1745f..e372e03ff480 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -147,60 +147,62 @@ static int add_generic_values(struct ctf_writer *cw,
- 	 */
- 
- 	if (type & PERF_SAMPLE_IP) {
--		ret = value_set_u64_hex(cw, event, "ip", sample->ip);
-+		ret = value_set_u64_hex(cw, event, "perf_ip", sample->ip);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_TID) {
--		ret = value_set_s32(cw, event, "tid", sample->tid);
-+		ret = value_set_s32(cw, event, "perf_tid", sample->tid);
- 		if (ret)
- 			return -1;
- 
--		ret = value_set_s32(cw, event, "pid", sample->pid);
-+		ret = value_set_s32(cw, event, "perf_pid", sample->pid);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if ((type & PERF_SAMPLE_ID) ||
- 	    (type & PERF_SAMPLE_IDENTIFIER)) {
--		ret = value_set_u64(cw, event, "id", sample->id);
-+		ret = value_set_u64(cw, event, "perf_id", sample->id);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_STREAM_ID) {
--		ret = value_set_u64(cw, event, "stream_id", sample->stream_id);
-+		ret = value_set_u64(cw, event, "perf_stream_id", sample->stream_id);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_CPU) {
--		ret = value_set_u32(cw, event, "cpu", sample->cpu);
-+		ret = value_set_u32(cw, event, "perf_cpu", sample->cpu);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_PERIOD) {
--		ret = value_set_u64(cw, event, "period", sample->period);
-+		ret = value_set_u64(cw, event, "perf_period", sample->period);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_WEIGHT) {
--		ret = value_set_u64(cw, event, "weight", sample->weight);
-+		ret = value_set_u64(cw, event, "perf_weight", sample->weight);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_DATA_SRC) {
--		ret = value_set_u64(cw, event, "data_src", sample->data_src);
-+		ret = value_set_u64(cw, event, "perf_data_src",
-+				sample->data_src);
- 		if (ret)
- 			return -1;
- 	}
- 
- 	if (type & PERF_SAMPLE_TRANSACTION) {
--		ret = value_set_u64(cw, event, "transaction", sample->transaction);
-+		ret = value_set_u64(cw, event, "perf_transaction",
-+				sample->transaction);
- 		if (ret)
- 			return -1;
- 	}
-@@ -276,34 +278,34 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
- 	} while (0)
- 
- 	if (type & PERF_SAMPLE_IP)
--		ADD_FIELD(event_class, cw->data.u64_hex, "ip");
-+		ADD_FIELD(event_class, cw->data.u64_hex, "perf_ip");
- 
- 	if (type & PERF_SAMPLE_TID) {
--		ADD_FIELD(event_class, cw->data.s32, "tid");
--		ADD_FIELD(event_class, cw->data.s32, "pid");
-+		ADD_FIELD(event_class, cw->data.s32, "perf_tid");
-+		ADD_FIELD(event_class, cw->data.s32, "perf_pid");
- 	}
- 
- 	if ((type & PERF_SAMPLE_ID) ||
- 	    (type & PERF_SAMPLE_IDENTIFIER))
--		ADD_FIELD(event_class, cw->data.u64, "id");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_id");
- 
- 	if (type & PERF_SAMPLE_STREAM_ID)
--		ADD_FIELD(event_class, cw->data.u64, "stream_id");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_stream_id");
- 
- 	if (type & PERF_SAMPLE_CPU)
--		ADD_FIELD(event_class, cw->data.u32, "cpu");
-+		ADD_FIELD(event_class, cw->data.u32, "perf_cpu");
- 
- 	if (type & PERF_SAMPLE_PERIOD)
--		ADD_FIELD(event_class, cw->data.u64, "period");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_period");
- 
- 	if (type & PERF_SAMPLE_WEIGHT)
--		ADD_FIELD(event_class, cw->data.u64, "weight");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_weight");
- 
- 	if (type & PERF_SAMPLE_DATA_SRC)
--		ADD_FIELD(event_class, cw->data.u64, "data_src");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_data_src");
- 
- 	if (type & PERF_SAMPLE_TRANSACTION)
--		ADD_FIELD(event_class, cw->data.u64, "transaction");
-+		ADD_FIELD(event_class, cw->data.u64, "perf_transaction");
- 
- #undef ADD_FIELD
- 	return 0;
--- 
-1.9.3
-
+>  drivers/hid/hid-logitech-hidpp.c | 19 ++++++-------------
+>  1 file changed, 6 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> index 1a6395d..5066df8 100644
+> --- a/drivers/hid/hid-logitech-hidpp.c
+> +++ b/drivers/hid/hid-logitech-hidpp.c
+> @@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
+>  	return count;
+>  }
+>  
+> -static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> +static char *hidpp_get_device_name(struct hidpp_device *hidpp)
+>  {
+>  	u8 feature_type;
+>  	u8 feature_index;
+> @@ -473,28 +473,23 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+>  	ret = hidpp_root_get_feature(hidpp, HIDPP_PAGE_GET_DEVICE_NAME_TYPE,
+>  		&feature_index, &feature_type);
+>  	if (ret)
+> -		goto out_err;
+> +		return NULL;
+>  
+>  	ret = hidpp_devicenametype_get_count(hidpp, feature_index,
+>  		&__name_length);
+>  	if (ret)
+> -		goto out_err;
+> +		return NULL;
+>  
+>  	name = kzalloc(__name_length + 1, GFP_KERNEL);
+>  	if (!name)
+> -		goto out_err;
+> +		return NULL;
+>  
+> -	*name_length = __name_length + 1;
+>  	while (index < __name_length)
+>  		index += hidpp_devicenametype_get_device_name(hidpp,
+>  			feature_index, index, name + index,
+>  			__name_length - index);
+>  
+>  	return name;
+> -
+> -out_err:
+> -	*name_length = 0;
+> -	return NULL;
+>  }
+>  
+>  /* -------------------------------------------------------------------------- */
+> @@ -989,7 +984,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+>  {
+>  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
+>  	char *name;
+> -	u8 name_length;
+>  
+>  	if (use_unifying)
+>  		/*
+> @@ -999,7 +993,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+>  		 */
+>  		name = hidpp_get_unifying_name(hidpp);
+>  	else
+> -		name = hidpp_get_device_name(hidpp, &name_length);
+> +		name = hidpp_get_device_name(hidpp);
+>  
+>  	if (!name)
+>  		hid_err(hdev, "unable to retrieve the name of the device");
+> @@ -1053,7 +1047,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+>  	bool connected = atomic_read(&hidpp->connected);
+>  	struct input_dev *input;
+>  	char *name, *devm_name;
+> -	u8 name_length;
+>  
+>  	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
+>  		wtp_connect(hdev, connected);
+> @@ -1080,7 +1073,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+>  		return;
+>  	}
+>  
+> -	name = hidpp_get_device_name(hidpp, &name_length);
+> +	name = hidpp_get_device_name(hidpp);
+>  	if (!name) {
+>  		hid_err(hdev, "unable to retrieve the name of the device");
+>  	} else {
+> -- 
+> 2.1.3
+> 
