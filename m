@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699AbaLKM0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:26:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56136 "EHLO
+	id S933390AbaLKM1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:27:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56158 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932159AbaLKM0q (ORCPT
+	with ESMTP id S1752984AbaLKM1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:26:46 -0500
-Date: Thu, 11 Dec 2014 04:26:28 -0800
-From: tip-bot for Xishi Qiu <tipbot@zytor.com>
-Message-ID: <tip-29258cf49eb794f00989fc47da8700759a42778b@git.kernel.org>
-Cc: mingo@kernel.org, riel@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org, dave@sr71.net,
-        tglx@linutronix.de, qiuxishi@huawei.com, linux-mm@kvack.org
-Reply-To: mingo@kernel.org, riel@redhat.com, hpa@zytor.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org, dave@sr71.net,
-        tglx@linutronix.de, linux-mm@kvack.org, qiuxishi@huawei.com
-In-Reply-To: <5487AB3F.7050807@huawei.com>
-References: <5487AB3F.7050807@huawei.com>
+	Thu, 11 Dec 2014 07:27:13 -0500
+Date: Thu, 11 Dec 2014 04:26:44 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-f647d7c155f069c1a068030255c300663516420e@git.kernel.org>
+Cc: luto@amacapital.net, andi@firstfloor.org, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, torvalds@linux-foundation.org, hpa@zytor.com,
+        mingo@kernel.org, stable@vger.kernel.org
+Reply-To: tglx@linutronix.de, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        stable@vger.kernel.org, luto@amacapital.net, andi@firstfloor.org
+In-Reply-To: <509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net>
+References: <509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm: Use min() instead of min_t()
-  in the e820 printout code
-Git-Commit-ID: 29258cf49eb794f00989fc47da8700759a42778b
+Subject: [tip:x86/urgent] x86_64, switch_to():
+  Load TLS descriptors before switching DS and ES
+Git-Commit-ID: f647d7c155f069c1a068030255c300663516420e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,41 +34,313 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29258cf49eb794f00989fc47da8700759a42778b
-Gitweb:     http://git.kernel.org/tip/29258cf49eb794f00989fc47da8700759a42778b
-Author:     Xishi Qiu <qiuxishi@huawei.com>
-AuthorDate: Wed, 10 Dec 2014 10:09:03 +0800
+Commit-ID:  f647d7c155f069c1a068030255c300663516420e
+Gitweb:     http://git.kernel.org/tip/f647d7c155f069c1a068030255c300663516420e
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Mon, 8 Dec 2014 13:55:20 -0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 11 Dec 2014 11:35:02 +0100
+CommitDate: Thu, 11 Dec 2014 11:40:08 +0100
 
-x86/mm: Use min() instead of min_t() in the e820 printout code
+x86_64, switch_to(): Load TLS descriptors before switching DS and ES
 
-The type of "MAX_DMA_PFN" and "xXx_pfn" are both unsigned long
-now, so use min() instead of min_t().
+Otherwise, if buggy user code points DS or ES into the TLS
+array, they would be corrupted after a context switch.
 
-Suggested-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Linux MM <linux-mm@kvack.org>
-Cc: <dave@sr71.net>
-Cc: Rik van Riel <riel@redhat.com>
-Link: http://lkml.kernel.org/r/5487AB3F.7050807@huawei.com
+This also significantly improves the comments and documents some
+gotchas in the code.
+
+Before this patch, the both tests below failed.  With this
+patch, the es test passes, although the gsbase test still fails.
+
+ ----- begin es test -----
+
+/*
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned short GDT3(int idx)
+{
+	return (idx << 3) | 3;
+}
+
+static int create_tls(int idx, unsigned int base)
+{
+	struct user_desc desc = {
+		.entry_number    = idx,
+		.base_addr       = base,
+		.limit           = 0xfffff,
+		.seg_32bit       = 1,
+		.contents        = 0, /* Data, grow-up */
+		.read_exec_only  = 0,
+		.limit_in_pages  = 1,
+		.seg_not_present = 0,
+		.useable         = 0,
+	};
+
+	if (syscall(SYS_set_thread_area, &desc) != 0)
+		err(1, "set_thread_area");
+
+	return desc.entry_number;
+}
+
+int main()
+{
+	int idx = create_tls(-1, 0);
+	printf("Allocated GDT index %d\n", idx);
+
+	unsigned short orig_es;
+	asm volatile ("mov %%es,%0" : "=rm" (orig_es));
+
+	int errors = 0;
+	int total = 1000;
+	for (int i = 0; i < total; i++) {
+		asm volatile ("mov %0,%%es" : : "rm" (GDT3(idx)));
+		usleep(100);
+
+		unsigned short es;
+		asm volatile ("mov %%es,%0" : "=rm" (es));
+		asm volatile ("mov %0,%%es" : : "rm" (orig_es));
+		if (es != GDT3(idx)) {
+			if (errors == 0)
+				printf("[FAIL]\tES changed from 0x%hx to 0x%hx\n",
+				       GDT3(idx), es);
+			errors++;
+		}
+	}
+
+	if (errors) {
+		printf("[FAIL]\tES was corrupted %d/%d times\n", errors, total);
+		return 1;
+	} else {
+		printf("[OK]\tES was preserved\n");
+		return 0;
+	}
+}
+
+ ----- end es test -----
+
+ ----- begin gsbase test -----
+
+/*
+ * gsbase.c, a gsbase test
+ * Copyright (c) 2014 Andy Lutomirski
+ * GPL v2
+ */
+
+static unsigned char *testptr, *testptr2;
+
+static unsigned char read_gs_testvals(void)
+{
+	unsigned char ret;
+	asm volatile ("movb %%gs:%1, %0" : "=r" (ret) : "m" (*testptr));
+	return ret;
+}
+
+int main()
+{
+	int errors = 0;
+
+	testptr = mmap((void *)0x200000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr == MAP_FAILED)
+		err(1, "mmap");
+
+	testptr2 = mmap((void *)0x300000000UL, 1, PROT_READ | PROT_WRITE,
+		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
+	if (testptr2 == MAP_FAILED)
+		err(1, "mmap");
+
+	*testptr = 0;
+	*testptr2 = 1;
+
+	if (syscall(SYS_arch_prctl, ARCH_SET_GS,
+		    (unsigned long)testptr2 - (unsigned long)testptr) != 0)
+		err(1, "ARCH_SET_GS");
+
+	usleep(100);
+
+	if (read_gs_testvals() == 1) {
+		printf("[OK]\tARCH_SET_GS worked\n");
+	} else {
+		printf("[FAIL]\tARCH_SET_GS failed\n");
+		errors++;
+	}
+
+	asm volatile ("mov %0,%%gs" : : "r" (0));
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tWriting 0 to gs worked\n");
+	} else {
+		printf("[FAIL]\tWriting 0 to gs failed\n");
+		errors++;
+	}
+
+	usleep(100);
+
+	if (read_gs_testvals() == 0) {
+		printf("[OK]\tgsbase is still zero\n");
+	} else {
+		printf("[FAIL]\tgsbase was corrupted\n");
+		errors++;
+	}
+
+	return errors == 0 ? 0 : 1;
+}
+
+ ----- end gsbase test -----
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: <stable@vger.kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/e820.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/process_64.c | 101 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 73 insertions(+), 28 deletions(-)
 
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 49f8864..dd2f07a 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1114,8 +1114,8 @@ void __init memblock_find_dma_reserve(void)
- 	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
- 	 */
- 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
--		start_pfn = min_t(unsigned long, start_pfn, MAX_DMA_PFN);
--		end_pfn = min_t(unsigned long, end_pfn, MAX_DMA_PFN);
-+		start_pfn = min(start_pfn, MAX_DMA_PFN);
-+		end_pfn = min(end_pfn, MAX_DMA_PFN);
- 		nr_pages += end_pfn - start_pfn;
- 	}
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 3ed4a68..5a2c029 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -283,24 +283,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
  
+ 	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
+ 
+-	/*
+-	 * Reload esp0, LDT and the page table pointer:
+-	 */
++	/* Reload esp0 and ss1. */
+ 	load_sp0(tss, next);
+ 
+-	/*
+-	 * Switch DS and ES.
+-	 * This won't pick up thread selector changes, but I guess that is ok.
+-	 */
+-	savesegment(es, prev->es);
+-	if (unlikely(next->es | prev->es))
+-		loadsegment(es, next->es);
+-
+-	savesegment(ds, prev->ds);
+-	if (unlikely(next->ds | prev->ds))
+-		loadsegment(ds, next->ds);
+-
+-
+ 	/* We must save %fs and %gs before load_TLS() because
+ 	 * %fs and %gs may be cleared by load_TLS().
+ 	 *
+@@ -309,41 +294,101 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	savesegment(fs, fsindex);
+ 	savesegment(gs, gsindex);
+ 
++	/*
++	 * Load TLS before restoring any segments so that segment loads
++	 * reference the correct GDT entries.
++	 */
+ 	load_TLS(next, cpu);
+ 
+ 	/*
+-	 * Leave lazy mode, flushing any hypercalls made here.
+-	 * This must be done before restoring TLS segments so
+-	 * the GDT and LDT are properly updated, and must be
+-	 * done before math_state_restore, so the TS bit is up
+-	 * to date.
++	 * Leave lazy mode, flushing any hypercalls made here.  This
++	 * must be done after loading TLS entries in the GDT but before
++	 * loading segments that might reference them, and and it must
++	 * be done before math_state_restore, so the TS bit is up to
++	 * date.
+ 	 */
+ 	arch_end_context_switch(next_p);
+ 
++	/* Switch DS and ES.
++	 *
++	 * Reading them only returns the selectors, but writing them (if
++	 * nonzero) loads the full descriptor from the GDT or LDT.  The
++	 * LDT for next is loaded in switch_mm, and the GDT is loaded
++	 * above.
++	 *
++	 * We therefore need to write new values to the segment
++	 * registers on every context switch unless both the new and old
++	 * values are zero.
++	 *
++	 * Note that we don't need to do anything for CS and SS, as
++	 * those are saved and restored as part of pt_regs.
++	 */
++	savesegment(es, prev->es);
++	if (unlikely(next->es | prev->es))
++		loadsegment(es, next->es);
++
++	savesegment(ds, prev->ds);
++	if (unlikely(next->ds | prev->ds))
++		loadsegment(ds, next->ds);
++
+ 	/*
+ 	 * Switch FS and GS.
+ 	 *
+-	 * Segment register != 0 always requires a reload.  Also
+-	 * reload when it has changed.  When prev process used 64bit
+-	 * base always reload to avoid an information leak.
++	 * These are even more complicated than FS and GS: they have
++	 * 64-bit bases are that controlled by arch_prctl.  Those bases
++	 * only differ from the values in the GDT or LDT if the selector
++	 * is 0.
++	 *
++	 * Loading the segment register resets the hidden base part of
++	 * the register to 0 or the value from the GDT / LDT.  If the
++	 * next base address zero, writing 0 to the segment register is
++	 * much faster than using wrmsr to explicitly zero the base.
++	 *
++	 * The thread_struct.fs and thread_struct.gs values are 0
++	 * if the fs and gs bases respectively are not overridden
++	 * from the values implied by fsindex and gsindex.  They
++	 * are nonzero, and store the nonzero base addresses, if
++	 * the bases are overridden.
++	 *
++	 * (fs != 0 && fsindex != 0) || (gs != 0 && gsindex != 0) should
++	 * be impossible.
++	 *
++	 * Therefore we need to reload the segment registers if either
++	 * the old or new selector is nonzero, and we need to override
++	 * the base address if next thread expects it to be overridden.
++	 *
++	 * This code is unnecessarily slow in the case where the old and
++	 * new indexes are zero and the new base is nonzero -- it will
++	 * unnecessarily write 0 to the selector before writing the new
++	 * base address.
++	 *
++	 * Note: This all depends on arch_prctl being the only way that
++	 * user code can override the segment base.  Once wrfsbase and
++	 * wrgsbase are enabled, most of this code will need to change.
+ 	 */
+ 	if (unlikely(fsindex | next->fsindex | prev->fs)) {
+ 		loadsegment(fs, next->fsindex);
++
+ 		/*
+-		 * Check if the user used a selector != 0; if yes
+-		 *  clear 64bit base, since overloaded base is always
+-		 *  mapped to the Null selector
++		 * If user code wrote a nonzero value to FS, then it also
++		 * cleared the overridden base address.
++		 *
++		 * XXX: if user code wrote 0 to FS and cleared the base
++		 * address itself, we won't notice and we'll incorrectly
++		 * restore the prior base address next time we reschdule
++		 * the process.
+ 		 */
+ 		if (fsindex)
+ 			prev->fs = 0;
+ 	}
+-	/* when next process has a 64bit base use it */
+ 	if (next->fs)
+ 		wrmsrl(MSR_FS_BASE, next->fs);
+ 	prev->fsindex = fsindex;
+ 
+ 	if (unlikely(gsindex | next->gsindex | prev->gs)) {
+ 		load_gs_index(next->gsindex);
++
++		/* This works (and fails) the same way as fsindex above. */
+ 		if (gsindex)
+ 			prev->gs = 0;
+ 	}
