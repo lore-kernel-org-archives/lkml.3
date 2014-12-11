@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933940AbaLKOD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:03:28 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35304 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802AbaLKOD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:03:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,557,1413270000"; 
-   d="scan'208";a="636133849"
-Date: Thu, 11 Dec 2014 16:03:07 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benjamin.tissoires@redhat.com, aduggan@synaptics.com, jkosina@suse.cz
-Subject: Re: NULL pointer dereference in i2c-hid
-Message-ID: <20141211140307.GE1300@lahna.fi.intel.com>
-References: <31518562.V5Oyo0POsI@xps13>
- <20141211085801.GR1300@lahna.fi.intel.com>
+	id S934013AbaLKOE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:04:27 -0500
+Received: from mail.smart-weblications.de ([188.65.144.61]:38172 "EHLO
+	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932802AbaLKOEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 09:04:25 -0500
+Message-ID: <5489A465.6090305@smart-weblications.de>
+Date: Thu, 11 Dec 2014 15:04:21 +0100
+From: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+Reply-To: f.wiessner@smart-weblications.de
+Organization: Smart Weblications GmbH
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141211085801.GR1300@lahna.fi.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Julian Anastasov <ja@ssi.bg>
+CC: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
+Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
+References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de> <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg> <54858948.2060007@smart-weblications.de> <alpine.LFD.2.11.1412082234350.2401@ja.home.ssi.bg> <5486CD9D.4060107@smart-weblications.de> <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
+In-Reply-To: <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
-> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
-> > my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
-> > i2c-hid and hid-rmi can be loaded and unloaded independelty from each
-> > other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
-> > if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
-> > pointer dereference.
-> 
-> I'll look into this.
-> 
-> I can reproduce this easily with i2c-hid + hid-multitouch following your
-> directions.
+Hi,
 
-Can you try the below patch? 
+Am 10.12.2014 22:41, schrieb Julian Anastasov:>
+> 	Hello,
+>
+> On Tue, 9 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
+>
+>> I rebuild everything with the two provided patches and still get:
+>>
+>> [  512.475449] BUG: unable to handle kernel NULL pointer dereference at
+>> 0000000000000014
+>> [  512.481277] IP: [<ffffffffa013d470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
+>
+> 	Same place, hm...
+>
+>> [  512.485323] CPU: 4 PID: 28142 Comm: vsftpd Not tainted 3.12.33 #5
+>
+> 	Above "#5" is same as previous oops. It means kernel
+> is not updated. Or you updated only the IPVS modules after
+> applying the both patches?
 
-I think we shouldn't free buffers yet in ->stop() because we need the
-command buffer sending power commands to the device. Also it seems that
-->start() re-allocates buffers anyway if maximum size increases.
+I did it with make-kpkg --initrd linux_image which only rebuilt the modules,
+correct. I can retry with make clean before building the package
 
-It shouldn't even leak memory as we release buffers at ->remove()
-anyway.
+>
+> 	You can also try without FTP tests to see if there
+> are oopses in xfrm, so that we can close this topic and then
+> to continue for the FTP problem on IPVS lists without
+> bothering non-IPVS people.
+>
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 62cec01937ea..68a8c938feea 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
- 
- static void i2c_hid_stop(struct hid_device *hid)
- {
--	struct i2c_client *client = hid->driver_data;
--	struct i2c_hid *ihid = i2c_get_clientdata(client);
--
- 	hid->claimed = 0;
--
--	i2c_hid_free_buffers(ihid);
- }
- 
- static int i2c_hid_open(struct hid_device *hid)
+yeah, it seems that the xfrm issue is away.
+
+
+-- 
+
+Mit freundlichen Grüßen,
+
+Florian Wiessner
+
+Smart Weblications GmbH
+Martinsberger Str. 1
+D-95119 Naila
+
+fon.: +49 9282 9638 200
+fax.: +49 9282 9638 205
+24/7: +49 900 144 000 00 - 0,99 EUR/Min*
+http://www.smart-weblications.de
+
+--
+Sitz der Gesellschaft: Naila
+Geschäftsführer: Florian Wiessner
+HRB-Nr.: HRB 3840 Amtsgericht Hof
+*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
