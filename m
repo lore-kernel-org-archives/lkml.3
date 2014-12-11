@@ -1,268 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965446AbaLKVob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:44:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42137 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934383AbaLKVo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:44:28 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Fri, 12 Dec 2014 08:43:08 +1100
-Subject: [PATCH 2/3] mmc: omap_hsmmc: use slot-gpio library for gpio support.
-Cc: GTA04 owners <gta04-owner@goldelico.com>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Message-ID: <20141211214308.3753.25865.stgit@notabene.brown>
-In-Reply-To: <20141211214023.3753.10652.stgit@notabene.brown>
-References: <20141211214023.3753.10652.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S965705AbaLKVog (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:44:36 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54797 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934420AbaLKVoa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:44:30 -0500
+Date: Thu, 11 Dec 2014 22:44:26 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Trivial patch monkey <trivial@kernel.org>
+Subject: [PATCH] trivial fixes for omap-serial
+Message-ID: <20141211214118.GA2285@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the common code removes some code duplication, and
-makes it easier to switch to using mmc_of_parse() which
-will remove more duplication.
 
-As hsmmc has a slightly different interrupt service routine
-for card-detect, enhance slot-gpio to allow an alternate
-routine to be provided.
+Trivial fixes for omap-serial.
+    
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- drivers/mmc/core/slot-gpio.c  |   24 ++++++++++++++-
- drivers/mmc/host/omap_hsmmc.c |   67 +++++++++--------------------------------
- include/linux/mmc/slot-gpio.h |    2 +
- 3 files changed, 39 insertions(+), 54 deletions(-)
-
-diff --git a/drivers/mmc/core/slot-gpio.c b/drivers/mmc/core/slot-gpio.c
-index 69bbf2adb329..f56323f5a996 100644
---- a/drivers/mmc/core/slot-gpio.c
-+++ b/drivers/mmc/core/slot-gpio.c
-@@ -23,6 +23,7 @@ struct mmc_gpio {
- 	struct gpio_desc *cd_gpio;
- 	bool override_ro_active_level;
- 	bool override_cd_active_level;
-+	irqreturn_t (*cd_gpio_isr)(int irq, void *dev_id);
- 	char *ro_label;
- 	char cd_label[0];
- };
-@@ -156,8 +157,10 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
- 		irq = -EINVAL;
+index 18c30ca..f43ed2c 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -63,7 +63,7 @@
+ #define UART_ERRATA_i202_MDR1_ACCESS	BIT(0)
+ #define UART_ERRATA_i291_DMA_FORCEIDLE	BIT(1)
  
- 	if (irq >= 0) {
-+		if (ctx->cd_gpio_isr == NULL)
-+			ctx->cd_gpio_isr = mmc_gpio_cd_irqt;
- 		ret = devm_request_threaded_irq(&host->class_dev, irq,
--			NULL, mmc_gpio_cd_irqt,
-+			NULL, ctx->cd_gpio_isr,
- 			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
- 			ctx->cd_label, host);
- 		if (ret < 0)
-@@ -171,6 +174,25 @@ void mmc_gpiod_request_cd_irq(struct mmc_host *host)
- }
- EXPORT_SYMBOL(mmc_gpiod_request_cd_irq);
+-#define DEFAULT_CLK_SPEED 48000000 /* 48Mhz*/
++#define DEFAULT_CLK_SPEED 48000000 /* 48Mhz */
  
-+/* Register an alternate interrupt service routine for
-+ * the card-detect GPIO.
-+ */
-+int mmc_gpio_request_cd_isr(struct mmc_host *host,
-+			    irqreturn_t (*isr)(int irq, void *dev_id))
-+{
-+	struct mmc_gpio *ctx;
-+	int ret;
-+
-+	ret = mmc_gpio_alloc(host);
-+	if (ret < 0)
-+		return ret;
-+	ctx = host->slot.handler_priv;
-+	if (ctx->cd_gpio_isr)
-+		return -EBUSY;
-+	ctx->cd_gpio_isr = isr;
-+	return 0;
-+}
-+
- /**
-  * mmc_gpio_request_cd - request a gpio for card-detection
-  * @host: mmc host
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 537cba8f1de1..32514b648e3c 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -36,6 +36,7 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/core.h>
- #include <linux/mmc/mmc.h>
-+#include <linux/mmc/slot-gpio.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/gpio.h>
-@@ -251,28 +252,22 @@ static void omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host);
- static int omap_hsmmc_card_detect(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
+ /* SCR register bitmasks */
+ #define OMAP_UART_SCR_RX_TRIG_GRANU1_MASK		(1 << 7)
+@@ -93,7 +93,7 @@
+ /* WER = 0x7F
+  * Enable module level wakeup in WER reg
+  */
+-#define OMAP_UART_WER_MOD_WKUP	0X7F
++#define OMAP_UART_WER_MOD_WKUP	0x7F
  
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- static int omap_hsmmc_get_wp(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes write protect signal is active-high */
--	return gpio_get_value_cansleep(mmc->gpio_wp);
-+	return mmc_gpio_get_ro(host->mmc);
- }
- 
- static int omap_hsmmc_get_cover_state(struct device *dev)
- {
- 	struct omap_hsmmc_host *host = dev_get_drvdata(dev);
--	struct omap_hsmmc_platform_data *mmc = host->pdata;
- 
--	/* NOTE: assumes card detect signal is active-low */
--	return !gpio_get_value_cansleep(mmc->switch_pin);
-+	return mmc_gpio_get_cd(host->mmc);
- }
- 
- #ifdef CONFIG_REGULATOR
-@@ -439,7 +434,10 @@ static inline int omap_hsmmc_have_reg(void)
- 
- #endif
- 
--static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
-+static irqreturn_t omap_hsmmc_detect(int irq, void *dev_id);
-+
-+static int omap_hsmmc_gpio_init(struct mmc_host *mmc,
-+				struct omap_hsmmc_host *host,
- 				struct omap_hsmmc_platform_data *pdata)
- {
- 	int ret;
-@@ -452,46 +450,26 @@ static int omap_hsmmc_gpio_init(struct omap_hsmmc_host *host,
- 			host->card_detect = omap_hsmmc_card_detect;
- 		host->card_detect_irq =
- 				gpio_to_irq(pdata->switch_pin);
--		ret = gpio_request(pdata->switch_pin, "mmc_cd");
-+		ret = mmc_gpio_request_cd_isr(mmc, omap_hsmmc_detect);
- 		if (ret)
- 			return ret;
--		ret = gpio_direction_input(pdata->switch_pin);
-+		ret = mmc_gpio_request_cd(mmc, pdata->switch_pin, 0);
- 		if (ret)
--			goto err_free_sp;
-+			return ret;
- 	} else {
- 		pdata->switch_pin = -EINVAL;
- 	}
- 
- 	if (gpio_is_valid(pdata->gpio_wp)) {
- 		host->get_ro = omap_hsmmc_get_wp;
--		ret = gpio_request(pdata->gpio_wp, "mmc_wp");
--		if (ret)
--			goto err_free_cd;
--		ret = gpio_direction_input(pdata->gpio_wp);
-+		ret = mmc_gpio_request_ro(mmc, pdata->gpio_wp);
- 		if (ret)
--			goto err_free_wp;
-+			return ret;
- 	} else {
- 		pdata->gpio_wp = -EINVAL;
- 	}
- 
- 	return 0;
--
--err_free_wp:
--	gpio_free(pdata->gpio_wp);
--err_free_cd:
--	if (gpio_is_valid(pdata->switch_pin))
--err_free_sp:
--		gpio_free(pdata->switch_pin);
--	return ret;
--}
--
--static void omap_hsmmc_gpio_free(struct omap_hsmmc_host *host,
--				 struct omap_hsmmc_platform_data *pdata)
--{
--	if (gpio_is_valid(pdata->gpio_wp))
--		gpio_free(pdata->gpio_wp);
--	if (gpio_is_valid(pdata->switch_pin))
--		gpio_free(pdata->switch_pin);
- }
- 
- /*
-@@ -2066,7 +2044,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	host->next_data.cookie = 1;
- 	host->pbias_enabled = 0;
- 
--	ret = omap_hsmmc_gpio_init(host, pdata);
-+	ret = omap_hsmmc_gpio_init(mmc, host, pdata);
- 	if (ret)
- 		goto err_gpio;
- 
-@@ -2197,20 +2175,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- 	mmc->ocr_avail = mmc_pdata(host)->ocr_mask;
- 
--	/* Request IRQ for card detect */
--	if (host->card_detect_irq) {
--		ret = devm_request_threaded_irq(&pdev->dev,
--						host->card_detect_irq,
--						NULL, omap_hsmmc_detect,
--					   IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
--					   mmc_hostname(mmc), host);
--		if (ret) {
--			dev_err(mmc_dev(host->mmc),
--				"Unable to grab MMC CD IRQ\n");
--			goto err_irq_cd;
--		}
--	}
--
- 	omap_hsmmc_disable_irq(host);
- 
+ /* Enable XON/XOFF flow control on output */
+ #define OMAP_UART_SW_TX		0x08
+@@ -114,7 +114,7 @@ struct uart_omap_dma {
+ 	dma_addr_t		tx_buf_dma_phys;
+ 	unsigned int		uart_base;
  	/*
-@@ -2249,7 +2213,6 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 
- err_slot_name:
- 	mmc_remove_host(mmc);
--err_irq_cd:
- 	if (host->use_reg)
- 		omap_hsmmc_reg_put(host);
- err_irq:
-@@ -2262,7 +2225,6 @@ err_irq:
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- err1:
--	omap_hsmmc_gpio_free(host, pdata);
- err_gpio:
- 	mmc_free_host(mmc);
- err:
-@@ -2288,7 +2250,6 @@ static int omap_hsmmc_remove(struct platform_device *pdev)
- 	if (host->dbclk)
- 		clk_disable_unprepare(host->dbclk);
- 
--	omap_hsmmc_gpio_free(host, host->pdata);
- 	mmc_free_host(host->mmc);
- 
- 	return 0;
-diff --git a/include/linux/mmc/slot-gpio.h b/include/linux/mmc/slot-gpio.h
-index e56fa24c9322..9e55db60deb0 100644
---- a/include/linux/mmc/slot-gpio.h
-+++ b/include/linux/mmc/slot-gpio.h
-@@ -28,6 +28,8 @@ int mmc_gpiod_request_cd(struct mmc_host *host, const char *con_id,
- int mmc_gpiod_request_ro(struct mmc_host *host, const char *con_id,
- 			 unsigned int idx, bool override_active_level,
- 			 unsigned int debounce, bool *gpio_invert);
-+int mmc_gpio_request_cd_isr(struct mmc_host *host,
-+			    irqreturn_t (*isr)(int irq, void *dev_id));
- void mmc_gpiod_free_cd(struct mmc_host *host);
- void mmc_gpiod_request_cd_irq(struct mmc_host *host);
- 
+-	 * Buffer for rx dma.It is not required for tx because the buffer
++	 * Buffer for rx dma. It is not required for tx because the buffer
+ 	 * comes from port structure.
+ 	 */
+ 	unsigned char		*rx_buf;
+@@ -151,7 +151,7 @@ struct uart_omap_port {
+ 	int			use_dma;
+ 	/*
+ 	 * Some bits in registers are cleared on a read, so they must
+-	 * be saved whenever the register is read but the bits will not
++	 * be saved whenever the register is read, but the bits will not
+ 	 * be immediately processed.
+ 	 */
+ 	unsigned int		lsr_break_flag;
 
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
