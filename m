@@ -1,107 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932737AbaLKJfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:35:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:56872 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932272AbaLKJfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:35:19 -0500
-Date: Thu, 11 Dec 2014 10:35:15 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: rcu_sched stall detected, but no state dump
-In-Reply-To: <20141210162823.GT25340@linux.vnet.ibm.com>
-Message-ID: <alpine.LNX.2.00.1412111024010.17929@pobox.suse.cz>
-References: <alpine.LNX.2.00.1412101334380.22639@pobox.suse.cz> <20141210162823.GT25340@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933131AbaLKJjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:39:52 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:33352 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932762AbaLKJjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 04:39:48 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: David Howells <dhowells@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: [PATCH] lib: Remove strnicmp
+Date: Thu, 11 Dec 2014 10:39:32 +0100
+Message-Id: <1418290772-5578-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014, Paul E. McKenney wrote:
+Now that all in-tree users of strnicmp have been converted to
+strncasecmp, the wrapper can be removed.
 
-> On Wed, Dec 10, 2014 at 01:52:02PM +0100, Miroslav Benes wrote:
-> > 
-> > Hi,
-> > 
-> > today I came across RCU stall which was correctly detected, but there is 
-> > no state dump. This is a bit suspicious, I think. 
-> > 
-> > This is the output in serial console:
-> > 
-> > [  105.727003] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  105.727003]  (detected by 0, t=21002 jiffies, g=3269, c=3268, q=138)
-> > [  105.727003] INFO: Stall ended before state dump start
-> > [  168.732006] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  168.732006]  (detected by 0, t=84007 jiffies, g=3269, c=3268, q=270)
-> > [  168.732006] INFO: Stall ended before state dump start
-> > [  231.737003] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  231.737003]  (detected by 0, t=147012 jiffies, g=3269, c=3268, q=388)
-> > [  231.737003] INFO: Stall ended before state dump start
-> > [  294.742003] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  294.742003]  (detected by 0, t=210017 jiffies, g=3269, c=3268, q=539)
-> > [  294.742003] INFO: Stall ended before state dump start
-> > [  357.747003] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  357.747003]  (detected by 0, t=273022 jiffies, g=3269, c=3268, q=693)
-> > [  357.747003] INFO: Stall ended before state dump start
-> > [  420.752003] INFO: rcu_sched detected stalls on CPUs/tasks:
-> > [  420.752003]  (detected by 0, t=336027 jiffies, g=3269, c=3268, q=806)
-> > [  420.752003] INFO: Stall ended before state dump start
-> > ...
-> > 
-> > It can be reproduced by trivial code attached to this mail (infinite 
-> > loop in kernel thread created in kernel module). I have CONFIG_PREEMPT=n. 
-> > The kernel thread is scheduled on the same CPU which causes soft lockup 
-> > (reliably detected when lockup detector is on). There is certainly RCU 
-> > stall, but I would expect a state dump. Is this an expected behaviour? 
-> > Maybe I overlooked some config option, don't know.
-> 
-> Definitely not expected behavior!  Unless you have only one CPU, but in
-> that case you should be running tiny RCU, not tree RCU.
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
 
-So indeed I messed up my configs somehow and run the code on uniprocessor 
-with SMP=y and tree RCU. With more processors RCU stall is detected and 
-correct state is dumped. On uniprocessor with SMP=n and tiny RCU 
-softlockup is detected, but no RCU stall in the log (is this correct?). So 
-I'm really sorry for the noise.
+Notes:
+    For 3.20.
+    
+    The "#undef __HAVE_ARCH_STRNICMP" in arch/s390/include/asm/string.h is
+    a no-op, so removing it should be ok. I'm less certain about the
+    change in arch/frv/, so please speak up if it should stay. (The patch
+    hunk doesn't show it, but it is in a !__KERNEL__ section, so doesn't
+    affect kernel builds.)
 
-Anyway I still think that running SMP kernel with tree RCU on 
-uniprocessor is possible option (albeit suboptimal and maybe improbable). 
-Should I proceed with your patch below and bisection or am I mistaken 
-completely and we can leave it because there is no problem?
+ arch/frv/include/asm/string.h  | 1 -
+ arch/s390/include/asm/string.h | 1 -
+ include/linux/string.h         | 3 ---
+ lib/string.c                   | 8 --------
+ 4 files changed, 13 deletions(-)
 
-Thanks,
-Miroslav
+diff --git a/arch/frv/include/asm/string.h b/arch/frv/include/asm/string.h
+index 5ed310f64b7e..1f6c35990439 100644
+--- a/arch/frv/include/asm/string.h
++++ b/arch/frv/include/asm/string.h
+@@ -33,7 +33,6 @@ extern void *memcpy(void *, const void *, __kernel_size_t);
+ #define __HAVE_ARCH_STRNCAT 1
+ #define __HAVE_ARCH_STRCMP 1
+ #define __HAVE_ARCH_STRNCMP 1
+-#define __HAVE_ARCH_STRNICMP 1
+ #define __HAVE_ARCH_STRCHR 1
+ #define __HAVE_ARCH_STRRCHR 1
+ #define __HAVE_ARCH_STRSTR 1
+diff --git a/arch/s390/include/asm/string.h b/arch/s390/include/asm/string.h
+index 7e2dcd7c57ef..8662f5c8e17f 100644
+--- a/arch/s390/include/asm/string.h
++++ b/arch/s390/include/asm/string.h
+@@ -44,7 +44,6 @@ extern char *strstr(const char *, const char *);
+ #undef __HAVE_ARCH_STRCHR
+ #undef __HAVE_ARCH_STRNCHR
+ #undef __HAVE_ARCH_STRNCMP
+-#undef __HAVE_ARCH_STRNICMP
+ #undef __HAVE_ARCH_STRPBRK
+ #undef __HAVE_ARCH_STRSEP
+ #undef __HAVE_ARCH_STRSPN
+diff --git a/include/linux/string.h b/include/linux/string.h
+index 2e22a2e58f3a..b9bc9a5d9e21 100644
+--- a/include/linux/string.h
++++ b/include/linux/string.h
+@@ -40,9 +40,6 @@ extern int strcmp(const char *,const char *);
+ #ifndef __HAVE_ARCH_STRNCMP
+ extern int strncmp(const char *,const char *,__kernel_size_t);
+ #endif
+-#ifndef __HAVE_ARCH_STRNICMP
+-#define strnicmp strncasecmp
+-#endif
+ #ifndef __HAVE_ARCH_STRCASECMP
+ extern int strcasecmp(const char *s1, const char *s2);
+ #endif
+diff --git a/lib/string.c b/lib/string.c
+index 10063300b830..3206d0178296 100644
+--- a/lib/string.c
++++ b/lib/string.c
+@@ -58,14 +58,6 @@ int strncasecmp(const char *s1, const char *s2, size_t len)
+ }
+ EXPORT_SYMBOL(strncasecmp);
+ #endif
+-#ifndef __HAVE_ARCH_STRNICMP
+-#undef strnicmp
+-int strnicmp(const char *s1, const char *s2, size_t len)
+-{
+-	return strncasecmp(s1, s2, len);
+-}
+-EXPORT_SYMBOL(strnicmp);
+-#endif
+ 
+ #ifndef __HAVE_ARCH_STRCASECMP
+ int strcasecmp(const char *s1, const char *s2)
+-- 
+2.1.3
 
-> > I tested 3.18 and also next-20141210. If it is improper behaviour I could 
-> > try to find a good kernel release and bisect it.
-> 
-> Please!  Could you also please try the (untested) diagnostic patch below
-> on either 3.18 or -next?  It should print messages covering all your
-> CPUs, and the CPU that your kernel module's kthread is running on should
-> show up as a one bit in the corresponding "mask" printout.
-> 
-> Could you also please check what CPU the rcu_sched kthread is running on?
-> One possibility is that this kthread is for some reason pinned on the
-> same CPU that is running your kthread.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 884e0ff020f1..d4018c025ac6 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -1129,6 +1129,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
->  	print_cpu_stall_info_begin();
->  	rcu_for_each_leaf_node(rsp, rnp) {
->  		raw_spin_lock_irqsave(&rnp->lock, flags);
-> +		pr_err("[ CPUs %d-%d mask %#lx ]\n", rnp->grplo, rnp->grphi, rnp->qsmask);
->  		ndetected += rcu_print_task_stall(rnp);
->  		if (rnp->qsmask != 0) {
->  			for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
-> 
