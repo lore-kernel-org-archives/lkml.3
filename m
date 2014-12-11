@@ -1,86 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597AbaLKByX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:54:23 -0500
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:50033 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933565AbaLKByT convert rfc822-to-8bit (ORCPT
+	id S933523AbaLKB4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:56:55 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:52460 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932948AbaLKB4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:54:19 -0500
-From: "Elliott, Robert (Server Storage)" <Elliott@hp.com>
-To: Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "jejb@kernel.org" <jejb@kernel.org>,
-        "hch@infradead.org" <hch@infradead.org>
-CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "JBottomley@Parallels.com" <JBottomley@Parallels.com>,
-        "Sathya.Prakash@avagotech.com" <Sathya.Prakash@avagotech.com>,
-        "Nagalakshmi.Nandigama@avagotech.com" 
-	<Nagalakshmi.Nandigama@avagotech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 09/22] [SCSI] mpt2sas, mpt3sas: Added a support to set
- cpu affinity for each MSIX vector enabled by the HBA
-Thread-Topic: [PATCH 09/22] [SCSI] mpt2sas, mpt3sas: Added a support to set
- cpu affinity for each MSIX vector enabled by the HBA
-Thread-Index: AQHQE6oQmXPP1IV5ykebP2va30Knq5yJoRyQ
-Date: Thu, 11 Dec 2014 01:53:02 +0000
-Message-ID: <94D0CD8314A33A4D9D801C0FE68B402959408BB5@G4W3202.americas.hpqcorp.net>
-References: <1418127401-10090-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-In-Reply-To: <1418127401-10090-1-git-send-email-Sreekanth.Reddy@avagotech.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.37]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Dec 2014 20:56:53 -0500
+Message-ID: <5488F9D1.9060109@windriver.com>
+Date: Thu, 11 Dec 2014 09:56:33 +0800
+From: Ying Xue <ying.xue@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: <paulmck@linux.vnet.ibm.com>
+CC: <davem@davemloft.net>, <eric.dumazet@gmail.com>, <jon.maloy@ericsson.com>,
+        <erik.hugne@ericsson.com>, <netdev@vger.kernel.org>,
+        <kbuild-all@01.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next RESEND 2/2] ipv6: fix sparse warning
+References: <1418201167-9591-1-git-send-email-ying.xue@windriver.com> <1418201167-9591-3-git-send-email-ying.xue@windriver.com> <20141210160406.GS25340@linux.vnet.ibm.com>
+In-Reply-To: <20141210160406.GS25340@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.163.180]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-
-> owner@vger.kernel.org] On Behalf Of Sreekanth Reddy
-> Sent: Tuesday, 09 December, 2014 6:17 AM
-> To: martin.petersen@oracle.com; jejb@kernel.org; hch@infradead.org
-...
-> Change_set:
-> 1. Added affinity_hint varable of type cpumask_var_t in adapter_reply_queue
->    structure. And allocated a memory for this varable by calling
-> zalloc_cpumask_var.
-> 2. Call the API irq_set_affinity_hint for each MSIx vector to affiniate it
->    with calculated cpus at driver inilization time.
-> 3. While freeing the MSIX vector, call this same API to release the cpu
-> affinity mask
->    for each MSIx vector by providing the NULL value in cpumask argument.
-> 4. then call the free_cpumask_var API to free the memory allocated in step 2.
+On 12/11/2014 12:04 AM, Paul E. McKenney wrote:
+> On Wed, Dec 10, 2014 at 04:46:07PM +0800, Ying Xue wrote:
+>> This fixes the following spare warning when using
+>>
+>> make C=1 CF=-D__CHECK_ENDIAN__ net/ipv6/addrconf.o
+>> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+>> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+>> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+>> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+>>
+>> To silence above spare complaint, an RCU annotation should be added
+>> to "next" pointer of hlist_node structure through hlist_next_rcu()
+>> macro when iterating over a hlist with
+>> hlist_for_each_entry_continue_rcu_bh().
+>>
+>> By the way, this commit also resolves the same error appearing in
+>> hlist_for_each_entry_continue_rcu().
+>>
+>> Signed-off-by: Ying Xue <ying.xue@windriver.com>
 > 
-...
+> If you pull the rculist.h changes from the first patch into this one,
+> I will queue it up through -rcu.
+> 
 
-> diff --git a/drivers/scsi/mpt3sas/mpt3sas_base.c
-> b/drivers/scsi/mpt3sas/mpt3sas_base.c
-> index 1560115..f0f8ba0 100644
-> --- a/drivers/scsi/mpt3sas/mpt3sas_base.c
-> +++ b/drivers/scsi/mpt3sas/mpt3sas_base.c
-...
-> @@ -1609,6 +1611,10 @@ _base_request_irq(struct MPT3SAS_ADAPTER *ioc, u8
-> index, u32 vector)
->  	reply_q->ioc = ioc;
->  	reply_q->msix_index = index;
->  	reply_q->vector = vector;
-> +
-> +	if (!zalloc_cpumask_var(&reply_q->affinity_hint, GFP_KERNEL))
-> +		return -ENOMEM;
+Please just queue this patch into your RCU tree. Some changes of the
+first patch currently only exists in net-next tree, so it cannot be
+merged into RCU tree now. Therefore, please temporarily ignore it. In
+next 3.19 development cycle, I will resubmit it to you.
 
-I think this will create the problem Alex Thorlton just reported
-with lpfc on a system with a huge number (6144) of CPUs.
+Thanks,
+Ying
 
-See this thread:
-	[BUG] kzalloc overflow in lpfc driver on 6k core system
-
----
-Rob Elliott    HP Server Storage
-
-
+> 							Thanx, Paul
+> 
+>> ---
+>>  include/linux/rculist.h |   16 ++++++++--------
+>>  1 file changed, 8 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+>> index 866d9c9..32bd4ad 100644
+>> --- a/include/linux/rculist.h
+>> +++ b/include/linux/rculist.h
+>> @@ -524,11 +524,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+>>   * @member:	the name of the hlist_node within the struct.
+>>   */
+>>  #define hlist_for_each_entry_continue_rcu(pos, member)			\
+>> -	for (pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+>> -			typeof(*(pos)), member);			\
+>> +	for (pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
+>> +			&(pos)->member)), typeof(*(pos)), member);	\
+>>  	     pos;							\
+>> -	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+>> -			typeof(*(pos)), member))
+>> +	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(	\
+>> +			&(pos)->member)), typeof(*(pos)), member))
+>>
+>>  /**
+>>   * hlist_for_each_entry_continue_rcu_bh - iterate over a hlist continuing after current point
+>> @@ -536,11 +536,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+>>   * @member:	the name of the hlist_node within the struct.
+>>   */
+>>  #define hlist_for_each_entry_continue_rcu_bh(pos, member)		\
+>> -	for (pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+>> -			typeof(*(pos)), member);			\
+>> +	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(  \
+>> +			&(pos)->member)), typeof(*(pos)), member);	\
+>>  	     pos;							\
+>> -	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+>> -			typeof(*(pos)), member))
+>> +	     pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(	\
+>> +			&(pos)->member)), typeof(*(pos)), member))
+>>
+>>  /**
+>>   * hlist_for_each_entry_from_rcu - iterate over a hlist continuing from current point
+>> -- 
+>> 1.7.9.5
+>>
+> 
+> 
+> 
 
