@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933522AbaLKWlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:41:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:49728 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758902AbaLKWlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:41:11 -0500
-Date: Thu, 11 Dec 2014 23:41:04 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-Message-ID: <20141211224104.GA11666@earth.universe>
-References: <20141211214801.4127.93914.stgit@notabene.brown>
- <20141211215943.4127.24792.stgit@notabene.brown>
+	id S964804AbaLKWmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:42:17 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:62973 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933541AbaLKWmQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:42:16 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
-Content-Disposition: inline
-In-Reply-To: <20141211215943.4127.24792.stgit@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141211220229.GR18807@outflux.net>
+References: <20141211224501.2292cdee@pc> <20141211220229.GR18807@outflux.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 11 Dec 2014 14:41:54 -0800
+Message-ID: <CALCETrUVApaHd3tjekXFK4jZbJKj+aKW=xqYPjgTkPrCixM1Xw@mail.gmail.com>
+Subject: Re: VDSO randomization not very random
+To: Kees Cook <keescook@chromium.org>
+Cc: =?UTF-8?Q?Hanno_B=C3=B6ck?= <hanno@hboeck.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "security@kernel.org" <security@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 11, 2014 at 2:02 PM, Kees Cook <keescook@chromium.org> wrote:
+> Hi Hanno,
+>
+> On Thu, Dec 11, 2014 at 10:45:01PM +0100, Hanno Böck wrote:
+>> Hello,
+>>
+>> I already reported this into your bugzilla, however Greg KH told me it
+>> might be a better idea to post it here:
+>>
+>> With current Linux kernels it seems the address randomization for
+>> loading the vdso library is not that random and can easily be
+>> bruteforced.
+>>
+>> This can easily be demonstrated. Get libvdso address from one
+>> executable:
+>> $ ldd /usr/bin/less|grep vdso
+>>       linux-vdso.so.1 (0x00007fff73bfe000)
+>>
+>> Now run ldd mutliple times and check if the same address appears:
+>> c=0; while (true); do let c=c+1; ldd /usr/bin/less|grep
+>> 0x00007fff73bfe000; [ "$?" == 0 ] && echo $c; done
+>>
+>> It usually takes only a few seconds and around 1000-2000 tries until
+>> the loading address is repeated (note that results may vary, it seems
+>> the randomization is biased, some values repeat more often than others).
+>>
+>> This information is mostly from this blog entry:
+>> http://v0ids3curity.blogspot.in/2014/12/return-to-vdso-using-elf-auxiliary.html
+>> And here's a thread on oss-security discussing the issue:
+>> http://www.openwall.com/lists/oss-security/2014/12/09/10
+>>
+>> The latest version of paxtest added a check for this that guesses the
+>> randomness of vdso:
+>> https://grsecurity.net/~spender/paxtest-0.9.13.tar.gz $ ./randvdso
+>> VDSO randomisation test                  : 11 quality bits (guessed)
+>>
+>> Bugzilla entry:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=89591
+>
+> I'm hoping this will get addressed as part of the discussion around
+> the "ASLRv3" patches. PIE (as well as VDSO) randomization has been a
+> per-arch implementation, and it would be best to unify this in a common
+> high-entropy solution.
+>
+> I think the problem with VDSO right now is that it is randomized in
+> relationship to the stack, rather than being randomized on its own.
+>
 
---qDbXVdCdHGoSgWSk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+As far as I'm concerned, the vdso can go wherever the kernel wants to
+put it, so long as it doesn't conflict with any real-world non-PIE
+binaries.
 
-Hi,
+--Andy
 
-On Fri, Dec 12, 2014 at 08:59:44AM +1100, NeilBrown wrote:
-> A "tty slave" is a device connected via UART.
-> It may need a driver to, for example, power the device on
-> when the tty is opened, and power it off when the tty
-> is released.
->=20
-> A "tty slave" is a platform device which is declared as a
-> child of the uart in device-tree:
->=20
-> &uart1 {
-> 	bluetooth {
-> 		compatible =3D "tty,regulator";
-> 		vdd-supply =3D <&vaux4>;
-> 	};
-> };
->=20
-> runtime power management is used to power-up the device
-> on tty_open() and  power-down on tty_release().
->=20
-> Signed-off-by: NeilBrown <neilb@suse.de>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
-FWIW:
 
-Acked-By: Sebastian Reichel <sre@kernel.org>
 
--- Sebastian
-
---qDbXVdCdHGoSgWSk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUih19AAoJENju1/PIO/qa5oEP/RY34vy8VJRE3Fez7FB9zX+k
-GhEmT+Mzn0XHfsYWclVNCAj/1roznRwpw+Gw1QmAW8Z26h/ab9CrIjQpu0idSEMA
-rhRJSL+a/+TwfdQYc7wPFCqlcCia+zXzrgTJLteWkoN+f8N3YyFILQpZtun9UKb2
-J2tkcLu9lU/B2tl8FJ1Oi5yYD4RpZ9oFqiMA/AQM6WbGcmKFK04SY+Pv82fhCtm9
-asTHv/Ao95jUIwZsnp4rUumIwxP83+yhJT9JnF1ttLj/OPTcxJOGyQDTKLoqgoVI
-7aIZ3Tmx4P/idy95fd60P4bkCa6jgKEjlxgKYe4QCnb2UiiHfWyVQoHxVm5pgM0d
-hGdtwF2JXvJ3Hom8mDMw3w3yQ2QoYOg7sq9/dpMSZqX1zym0waJmiVFzz26PWY+c
-Y6SZQCzwtEfY9Ncs96ZYqlZMnetCkCPbkjwVDfTigJpGLGKIuL7SIL0gyU2asO82
-7XP2y7+Q+/VjGQmle74K0lG3lmnZ5Bk6k84vuXCSxPJxf1+os2/59394RtCWBkTf
-omiRExXkGtKDtFqGvnfTSM9BUd3HvwP011ra3R81+nzaQIMQDGtosleHqPHuKZ06
-PEQ/KJRHAHY3nI2PYKZNDoWIvxkGnZeXw/8cfHES8arA/BEVhnzkyeW7V+uJYXCh
-aTI3/pxM7Wt55xIRf3iK
-=t1+L
------END PGP SIGNATURE-----
-
---qDbXVdCdHGoSgWSk--
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
