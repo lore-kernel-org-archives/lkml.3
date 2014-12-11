@@ -1,103 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935AbaLKNUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 08:20:34 -0500
-Received: from mga11.intel.com ([192.55.52.93]:61163 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754611AbaLKNUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 08:20:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="427773629"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: akpm@linux-foundation.org
-Cc: cl@linux.com, jmarchan@redhat.com, aneesh.kumar@linux.vnet.ibm.com,
-        dave.hansen@intel.com, aarcange@redhat.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: [PATCH] mm: add fields for compound destructor and order into struct page
-Date: Thu, 11 Dec 2014 15:20:27 +0200
-Message-Id: <1418304027-154173-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S933292AbaLKNUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 08:20:54 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:34783 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611AbaLKNUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 08:20:52 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-f0-54899a32cf85
+Message-id: <1418304046.29711.2.camel@AMDC1943>
+Subject: Re: [PATCH] regulator: s2mps11: Fix dwmmc failure on Gear 2
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Thu, 11 Dec 2014 14:20:46 +0100
+In-reply-to: <20141211131305.GW11764@sirena.org.uk>
+References: <1418301551-31678-1-git-send-email-k.kozlowski@samsung.com>
+ <20141211131305.GW11764@sirena.org.uk>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.10.4-0ubuntu2
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHLMWRmVeSWpSXmKPExsVy+t/xq7pGszpDDJ48Z7OY+vAJm8W3Kx1M
+	Fpd3zWGzuLjiC5PFgo2PGB1YPXbOusvusWlVJ5tH35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVw
+	ZZyZ+I294CFnxb9Z4Q2M99m7GDk5JARMJI4/3cIIYYtJXLi3nq2LkYtDSGApo8TXFTOZIJzP
+	jBLPl30B6+AV0Jc4u+s7M4gtLOAiMWvnXjCbTcBYYvPyJWwgtoiAssTV73tZQJqZBZoZJXoO
+	/ARLsAioSpxvvg3WwAnU0Hj0ENhQIYECiT+9H8HOYBZQl5g0bxFQDQfQScoSjf1uEHsFJX5M
+	vscCUSIvsXnNW+YJjAKzkHTMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh
+	Yfx1B+PSY1aHGAU4GJV4eDPiO0OEWBPLiitzDzFKcDArifBaRQCFeFMSK6tSi/Lji0pzUosP
+	MTJxcEo1MK5vcNj3c4uHSIrU7t45B/dffTfDcf/0n8vVfv/35xMQPN7CvnnTKWHerhRfa9GJ
+	/pwMH5ZPk5SpOs5TuIaPsdZwHfNfsxyt9wHOB5Qa+SzDxYs+PbhSeTRqZ+KSwOIlihyTrqvu
+	rfj95s6COWEVp3vC951Mnbz/QyzHhQO6gmW+R1dLFEwQU1FiKc5INNRiLipOBADIWhjnQQIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use lru.next/lru.prev plus cast to access or set
-destructor and order of compound page.
+On czw, 2014-12-11 at 13:13 +0000, Mark Brown wrote:
+> On Thu, Dec 11, 2014 at 01:39:11PM +0100, Krzysztof Kozlowski wrote:
+> > Invalid buck4 configuration in S2MPS14 regulators caused boot failure on
+> > Gear 2 (dwmmc_exynos):
+> 
+> What is invalid about the configuration and how is this change intended
+> to fix it?
 
-Let's replace it with explicit fields in struct page.
+Wrong number was used for buck4 linear_min_sel. It should be
+S2MPS14_BUCK4_START_SEL (0x40) instead of S2MPS14_BUCK1235_START_SEL
+(0x20).
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
----
- include/linux/mm.h       | 9 ++++-----
- include/linux/mm_types.h | 8 ++++++++
- 2 files changed, 12 insertions(+), 5 deletions(-)
+Issue is fixed by using proper number.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 5bfd9b9756fa..a8de6fe11d0a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -525,29 +525,28 @@ int split_free_page(struct page *page);
-  * prototype for that function and accessor functions.
-  * These are _only_ valid on the head of a PG_compound page.
-  */
--typedef void compound_page_dtor(struct page *);
- 
- static inline void set_compound_page_dtor(struct page *page,
- 						compound_page_dtor *dtor)
- {
--	page[1].lru.next = (void *)dtor;
-+	page[1].compound_dtor = dtor;
- }
- 
- static inline compound_page_dtor *get_compound_page_dtor(struct page *page)
- {
--	return (compound_page_dtor *)page[1].lru.next;
-+	return page[1].compound_dtor;
- }
- 
- static inline int compound_order(struct page *page)
- {
- 	if (!PageHead(page))
- 		return 0;
--	return (unsigned long)page[1].lru.prev;
-+	return page[1].compound_order;
- }
- 
- static inline void set_compound_order(struct page *page, unsigned long order)
- {
--	page[1].lru.prev = (void *)order;
-+	page[1].compound_order = order;
- }
- 
- #ifdef CONFIG_MMU
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 03945eef1350..cbc71f32a53c 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -28,6 +28,8 @@ struct mem_cgroup;
- 		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
- #define ALLOC_SPLIT_PTLOCKS	(SPINLOCK_SIZE > BITS_PER_LONG/8)
- 
-+typedef void compound_page_dtor(struct page *);
-+
- /*
-  * Each physical page in the system has a struct page associated with
-  * it to keep track of whatever it is we are using the page for at the
-@@ -131,6 +133,12 @@ struct page {
- 		struct rcu_head rcu_head;	/* Used by SLAB
- 						 * when destroying via RCU
- 						 */
-+		/* First tail page of compound page */
-+		struct {
-+			compound_page_dtor *compound_dtor;
-+			unsigned long compound_order;
-+		};
-+
- #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && USE_SPLIT_PMD_PTLOCKS
- 		pgtable_t pmd_huge_pte; /* protected by page->ptl */
- #endif
--- 
-2.1.3
+I'll resend the patch with extended description.
+
+> 
+> > [    3.569137] EXT4-fs (mmcblk0p15): mounted filesystem with ordered data mode. Opts: (null)
+> > [    3.571716] VFS: Mounted root (ext4 filesystem) readonly on device 179:15.
+> > [    3.580836] devtmpfs: mounted
+> > [    3.582033] Freeing unused kernel memory: 284K (c05b4000 - c05fb000)
+> > [    3.629842] mmcblk0: error -110 sending status command, retrying
+> > [    3.630244] mmcblk0: error -110 sending status command, retrying
+> 
+> Please don't include large log sections in commit messages, edit them
+> down to any relevant information.  They get very large and obscure the
+> relevant content in the messages.
+
+I'll trim it.
+
+Best regards,
+Krzysztof
+
+
 
