@@ -1,92 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758727AbaLKFcL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 00:32:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54732 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222AbaLKFcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 00:32:10 -0500
-Message-ID: <54892C58.5070707@suse.com>
-Date: Thu, 11 Dec 2014 06:32:08 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com
-Subject: Re: [Xen-devel] [PATCH] xen: switch to post-init routines in xen
- mmu.c earlier
-References: <1418226963-24873-1-git-send-email-jgross@suse.com> <54888BC6.7030601@citrix.com>
-In-Reply-To: <54888BC6.7030601@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758739AbaLKFia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 00:38:30 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60003 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751222AbaLKFi2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 00:38:28 -0500
+From: Shrikrishna Khare <skhare@vmware.com>
+To: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Shrikrishna Khare <skhare@vmware.com>, Ramya Bolla <bollar@vmware.com>
+Subject: [PATCH] Driver: Vmxnet3: Make Rx ring 2 size configurable
+Date: Wed, 10 Dec 2014 21:37:42 -0800
+Message-Id: <1418276262-4728-1-git-send-email-skhare@vmware.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 07:07 PM, David Vrabel wrote:
-> On 10/12/14 15:56, Juergen Gross wrote:
->> With the virtual mapped linear p2m list the post-init mmu operations
->> must be used for setting up the p2m mappings, as in case of
->> CONFIG_FLATMEM the init routines may trigger BUGs.
->>
->> Reported-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> Signed-off-by: Juergen Gross <jgross@suse.com>
->> ---
->>   arch/x86/xen/mmu.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->> index 6ab6150..a1a429a 100644
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -1225,6 +1225,7 @@ static void __init xen_pagetable_p2m_setup(void)
->>   static void __init xen_pagetable_init(void)
->>   {
->>   	paging_init();
->> +	xen_post_allocator_init();
->>
->>   	xen_pagetable_p2m_setup();
->>
->
-> This feels very chicken-and-egg to me:  To setup the P2M we need to use
-> the MMU ops that use the P2M...
->
-> Please explain very clearly why this is all safe.
+Rx ring 2 size can be configured by adjusting rx-jumbo parameter
+of ethtool -G.
 
-Okay. paging_init() sets up all infrastructure needed to switch to the
-post-init mmu ops done by xen_post_allocator_init(). With the virtual
-mapped linear p2m list we need some mmu ops during setup of this list,
-so we have to switch to the correct mmu ops as soon as possible.
+Signed-off-by: Ramya Bolla <bollar@vmware.com>
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
+---
+ drivers/net/vmxnet3/vmxnet3_defs.h    |  1 +
+ drivers/net/vmxnet3/vmxnet3_drv.c     |  6 +++++-
+ drivers/net/vmxnet3/vmxnet3_ethtool.c | 27 ++++++++++++++++++++-------
+ drivers/net/vmxnet3/vmxnet3_int.h     |  6 ++++--
+ 4 files changed, 30 insertions(+), 10 deletions(-)
 
-The p2m list is usable from the beginning, just expansion requires to
-have established the new linear mapping. So the call of
-xen_remap_memory() had to be introduced, but this is not due to the
-mmu ops requiring this.
-
-Summing it up: calling xen_post_allocator_init() not directly after
-paging_init() was conceptually wrong in the beginning, it just didn't
-matter up to now as no functions used between the two calls needed
-some critical mmu ops (e.g. alloc_pte). This has changed now, so I
-corrected it.
-
-Juergen
-
->
->> @@ -1236,7 +1237,6 @@ static void __init xen_pagetable_init(void)
->>   		xen_remap_memory();
->>
->>   	xen_setup_shared_info();
->> -	xen_post_allocator_init();
->>   }
->>   static void xen_write_cr2(unsigned long cr2)
->>   {
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+diff --git a/drivers/net/vmxnet3/vmxnet3_defs.h b/drivers/net/vmxnet3/vmxnet3_defs.h
+index 4d84912..25b6fa4 100644
+--- a/drivers/net/vmxnet3/vmxnet3_defs.h
++++ b/drivers/net/vmxnet3/vmxnet3_defs.h
+@@ -342,6 +342,7 @@ union Vmxnet3_GenericDesc {
+ #define VMXNET3_TX_RING_MAX_SIZE   4096
+ #define VMXNET3_TC_RING_MAX_SIZE   4096
+ #define VMXNET3_RX_RING_MAX_SIZE   4096
++#define VMXNET3_RX_RING2_MAX_SIZE  2048
+ #define VMXNET3_RC_RING_MAX_SIZE   8192
+ 
+ /* a list of reasons for queue stop */
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index afd2953..7af1f5c 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2505,6 +2505,9 @@ vmxnet3_adjust_rx_ring_size(struct vmxnet3_adapter *adapter)
+ 	ring0_size = min_t(u32, ring0_size, VMXNET3_RX_RING_MAX_SIZE /
+ 			   sz * sz);
+ 	ring1_size = adapter->rx_queue[0].rx_ring[1].size;
++	ring1_size = (ring1_size + sz - 1) / sz * sz;
++	ring1_size = min_t(u32, ring1_size, VMXNET3_RX_RING2_MAX_SIZE /
++			   sz * sz);
+ 	comp_size = ring0_size + ring1_size;
+ 
+ 	for (i = 0; i < adapter->num_rx_queues; i++) {
+@@ -2585,7 +2588,7 @@ vmxnet3_open(struct net_device *netdev)
+ 
+ 	err = vmxnet3_create_queues(adapter, adapter->tx_ring_size,
+ 				    adapter->rx_ring_size,
+-				    VMXNET3_DEF_RX_RING_SIZE);
++				    adapter->rx_ring2_size);
+ 	if (err)
+ 		goto queue_err;
+ 
+@@ -2964,6 +2967,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 
+ 	adapter->tx_ring_size = VMXNET3_DEF_TX_RING_SIZE;
+ 	adapter->rx_ring_size = VMXNET3_DEF_RX_RING_SIZE;
++	adapter->rx_ring2_size = VMXNET3_DEF_RX_RING2_SIZE;
+ 
+ 	spin_lock_init(&adapter->cmd_lock);
+ 	adapter->adapter_pa = dma_map_single(&adapter->pdev->dev, adapter,
+diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+index b725fd9..70fb410 100644
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -447,12 +447,12 @@ vmxnet3_get_ringparam(struct net_device *netdev,
+ 	param->rx_max_pending = VMXNET3_RX_RING_MAX_SIZE;
+ 	param->tx_max_pending = VMXNET3_TX_RING_MAX_SIZE;
+ 	param->rx_mini_max_pending = 0;
+-	param->rx_jumbo_max_pending = 0;
++	param->rx_jumbo_max_pending = VMXNET3_RX_RING2_MAX_SIZE;
+ 
+ 	param->rx_pending = adapter->rx_ring_size;
+ 	param->tx_pending = adapter->tx_ring_size;
+ 	param->rx_mini_pending = 0;
+-	param->rx_jumbo_pending = 0;
++	param->rx_jumbo_pending = adapter->rx_ring2_size;
+ }
+ 
+ 
+@@ -461,7 +461,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 		      struct ethtool_ringparam *param)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	u32 new_tx_ring_size, new_rx_ring_size;
++	u32 new_tx_ring_size, new_rx_ring_size, new_rx_ring2_size;
+ 	u32 sz;
+ 	int err = 0;
+ 
+@@ -473,6 +473,10 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 						VMXNET3_RX_RING_MAX_SIZE)
+ 		return -EINVAL;
+ 
++	if (param->rx_jumbo_pending == 0 ||
++	    param->rx_jumbo_pending > VMXNET3_RX_RING2_MAX_SIZE)
++		return -EINVAL;
++
+ 	/* if adapter not yet initialized, do nothing */
+ 	if (adapter->rx_buf_per_pkt == 0) {
+ 		netdev_err(netdev, "adapter not completely initialized, "
+@@ -500,8 +504,15 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 							   sz) != 0)
+ 		return -EINVAL;
+ 
+-	if (new_tx_ring_size == adapter->tx_queue[0].tx_ring.size &&
+-	    new_rx_ring_size == adapter->rx_queue[0].rx_ring[0].size) {
++	/* ring2 has to be a multiple of VMXNET3_RING_SIZE_ALIGN */
++	new_rx_ring2_size = (param->rx_jumbo_pending + VMXNET3_RING_SIZE_MASK) &
++				~VMXNET3_RING_SIZE_MASK;
++	new_rx_ring2_size = min_t(u32, new_rx_ring2_size,
++				  VMXNET3_RX_RING2_MAX_SIZE);
++
++	if (new_tx_ring_size == adapter->tx_ring_size &&
++	    new_rx_ring_size == adapter->rx_ring_size &&
++	    new_rx_ring2_size == adapter->rx_ring2_size) {
+ 		return 0;
+ 	}
+ 
+@@ -522,7 +533,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 		vmxnet3_rq_destroy_all(adapter);
+ 
+ 		err = vmxnet3_create_queues(adapter, new_tx_ring_size,
+-			new_rx_ring_size, VMXNET3_DEF_RX_RING_SIZE);
++			new_rx_ring_size, new_rx_ring2_size);
+ 
+ 		if (err) {
+ 			/* failed, most likely because of OOM, try default
+@@ -530,11 +541,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 			netdev_err(netdev, "failed to apply new sizes, "
+ 				   "try the default ones\n");
+ 			new_rx_ring_size = VMXNET3_DEF_RX_RING_SIZE;
++			new_rx_ring2_size = VMXNET3_DEF_RX_RING2_SIZE;
+ 			new_tx_ring_size = VMXNET3_DEF_TX_RING_SIZE;
+ 			err = vmxnet3_create_queues(adapter,
+ 						    new_tx_ring_size,
+ 						    new_rx_ring_size,
+-						    VMXNET3_DEF_RX_RING_SIZE);
++						    new_rx_ring2_size);
+ 			if (err) {
+ 				netdev_err(netdev, "failed to create queues "
+ 					   "with default sizes. Closing it\n");
+@@ -549,6 +561,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
+ 	}
+ 	adapter->tx_ring_size = new_tx_ring_size;
+ 	adapter->rx_ring_size = new_rx_ring_size;
++	adapter->rx_ring2_size = new_rx_ring2_size;
+ 
+ out:
+ 	clear_bit(VMXNET3_STATE_BIT_RESETTING, &adapter->state);
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index 5f0199f..048f020 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -69,10 +69,10 @@
+ /*
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.2.1.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.3.1.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01020100
++#define VMXNET3_DRIVER_VERSION_NUM      0x01030100
+ 
+ #if defined(CONFIG_PCI_MSI)
+ 	/* RSS only makes sense if MSI-X is supported. */
+@@ -352,6 +352,7 @@ struct vmxnet3_adapter {
+ 	/* Ring sizes */
+ 	u32 tx_ring_size;
+ 	u32 rx_ring_size;
++	u32 rx_ring2_size;
+ 
+ 	struct work_struct work;
+ 
+@@ -384,6 +385,7 @@ struct vmxnet3_adapter {
+ /* must be a multiple of VMXNET3_RING_SIZE_ALIGN */
+ #define VMXNET3_DEF_TX_RING_SIZE    512
+ #define VMXNET3_DEF_RX_RING_SIZE    256
++#define VMXNET3_DEF_RX_RING2_SIZE   128
+ 
+ #define VMXNET3_MAX_ETH_HDR_SIZE    22
+ #define VMXNET3_MAX_SKB_BUF_SIZE    (3*1024)
+-- 
+2.1.0
 
