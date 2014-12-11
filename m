@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934476AbaLKR4f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:56:35 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:38724 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991AbaLKR4e (ORCPT
+	id S934497AbaLKR5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:57:07 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:49534 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932991AbaLKR5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:56:34 -0500
+	Thu, 11 Dec 2014 12:57:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418130803-27443-1-git-send-email-weiyj_lk@163.com>
-References: <1418130803-27443-1-git-send-email-weiyj_lk@163.com>
-Date: Thu, 11 Dec 2014 10:56:33 -0700
-Message-ID: <CANLsYkyq-4pY9NEsL2dNgNv+FdEPxJ49c8GA_XPUuqpfFhZoag@mail.gmail.com>
-Subject: Re: [PATCH -next] coresight-tpiu: use module_amba_driver to simplify
- the code
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: weiyj_lk@163.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <5489AB40.2010609@linux.intel.com>
+References: <20141205084147.313026156@linutronix.de>
+	<tip-e9220e591375af6d02604c261999df570fba744f@git.kernel.org>
+	<CAE9FiQU=Q8paxTJpqN8GFGYeq6u-E=VBtyQSVzVNYnJGEybtqw@mail.gmail.com>
+	<5489AB40.2010609@linux.intel.com>
+Date: Thu, 11 Dec 2014 09:57:04 -0800
+X-Google-Sender-Auth: uL8MlSkiA08MiuegLHmMpOgR7r4
+Message-ID: <CAE9FiQVPGfcXOFx448ABV4zGcq70nvE4pEE4PzaWZMNj+9rHtA@mail.gmail.com>
+Subject: Re: [tip:x86/apic] iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 December 2014 at 06:13,  <weiyj_lk@163.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> module_amba_driver() makes the code simpler by eliminating
-> boilerplate code.
->
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/coresight/coresight-tpiu.c | 12 +-----------
->  1 file changed, 1 insertion(+), 11 deletions(-)
->
-> diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
-> index ae10108..3b33af2 100644
-> --- a/drivers/coresight/coresight-tpiu.c
-> +++ b/drivers/coresight/coresight-tpiu.c
-> @@ -201,17 +201,7 @@ static struct amba_driver tpiu_driver = {
->         .id_table       = tpiu_ids,
->  };
->
-> -static int __init tpiu_init(void)
-> -{
-> -       return amba_driver_register(&tpiu_driver);
-> -}
-> -module_init(tpiu_init);
-> -
-> -static void __exit tpiu_exit(void)
-> -{
-> -       amba_driver_unregister(&tpiu_driver);
-> -}
-> -module_exit(tpiu_exit);
-> +module_amba_driver(tpiu_driver);
+On Thu, Dec 11, 2014 at 6:33 AM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+> On 2014/12/11 15:35, Yinghai Lu wrote:
+>> On Fri, Dec 5, 2014 at 3:26 PM, tip-bot for Thomas Gleixner
+>> <tipbot@zytor.com> wrote:
+>>> Commit-ID:  e9220e591375af6d02604c261999df570fba744f
+>>> Gitweb:     http://git.kernel.org/tip/e9220e591375af6d02604c261999df570fba744f
+>>> Author:     Thomas Gleixner <tglx@linutronix.de>
+>>> AuthorDate: Fri, 5 Dec 2014 08:48:32 +0000
+>>> Committer:  Thomas Gleixner <tglx@linutronix.de>
+>>> CommitDate: Sat, 6 Dec 2014 00:19:25 +0100
+>>>
+>>> iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+>>>
+>>> The whole iommu setup for irq remapping is a convoluted mess. The
+>>> iommu detect function gets called from mem_init() and the prepare
+>>> callback gets called from enable_IR_x2apic() for unknown reasons.
+>>
+>> Got
+>>
+> Hi Yinghai,
+>         From following log messages, it seems that the AHCI controllers
+> allocates 16 MSI/MSI-X interrupt, and triggers NULL pointer reference
+> when enabling interrupts for AHCI.
+>         It doesn't trigger panic with this code path (allocate/enable
+> MSI/MSI-X interrupts with IR enabled) on my test system. So could you
+> please help to get more info with the attached test patch?
 
-This looks good - please merge your 4 patches in the same one.
-
->
->  MODULE_LICENSE("GPL v2");
->  MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
->
+[  113.486917] calling  ahci_pci_driver_init+0x0/0x1b @ 1
+[  113.487299] ahci 0000:00:1f.2: version 3.0
+[  113.507317] ahci 0000:00:1f.2: SSS flag set, parallel bus scan disabled
+[  113.507713] ahci 0000:00:1f.2: AHCI 0001.0200 32 slots 6 ports 3
+Gbps 0x3f impl SATA mode
+[  113.527019] ahci 0000:00:1f.2: flags: 64bit ncq sntf stag pm led
+clo pio slum part ccc ems sxs
+[  113.583977] iommu: chip_data ffff881022b97740, iommu
+ffff88103d80ae00, index 32, subindex 0, ir_table ffff88103d802af0,
+table_base ffff881026c00000, queue ffff88102770c000
+[  113.597261] iommu: chip_data ffff881022b97780, iommu
+(null), index 0, subindex 0, ir_table           (null), table_base
+      (null), queue           (null)
+[  113.617124] BUG: unable to handle kernel NULL pointer dereference
+at 0000000000000118
+[  113.636983] IP: [<ffffffff81eacca0>] modify_irte+0x40/0xd0
+[  113.637253] PGD 0
+[  113.656978] Oops: 0000 [#1] SMP
+[  113.657133] Modules linked in:
+[  113.657322] CPU: 0 PID: 2531 Comm: kworker/0:1 Tainted: G        W
+[  113.696953] Workqueue: events work_for_cpu_fn
+[  113.697189] task: ffff881025535240 ti: ffff881025528000 task.ti:
+ffff881025528000
+[  113.716965] RIP: 0010:[<ffffffff81eacca0>]  [<ffffffff81eacca0>]
+modify_irte+0x40/0xd0
