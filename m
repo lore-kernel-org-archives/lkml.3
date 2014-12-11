@@ -1,141 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017AbaLKN4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 08:56:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33019 "EHLO mx1.redhat.com"
+	id S933940AbaLKOD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:03:28 -0500
+Received: from mga11.intel.com ([192.55.52.93]:35304 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802AbaLKN4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 08:56:43 -0500
-Message-ID: <5489A284.6030702@redhat.com>
-Date: Thu, 11 Dec 2014 14:56:20 +0100
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S932802AbaLKOD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 09:03:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,557,1413270000"; 
+   d="scan'208";a="636133849"
+Date: Thu, 11 Dec 2014 16:03:07 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benjamin.tissoires@redhat.com, aduggan@synaptics.com, jkosina@suse.cz
+Subject: Re: NULL pointer dereference in i2c-hid
+Message-ID: <20141211140307.GE1300@lahna.fi.intel.com>
+References: <31518562.V5Oyo0POsI@xps13>
+ <20141211085801.GR1300@lahna.fi.intel.com>
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        akpm@linux-foundation.org
-CC: cl@linux.com, aneesh.kumar@linux.vnet.ibm.com, dave.hansen@intel.com,
-        aarcange@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: add fields for compound destructor and order into
- struct page
-References: <1418304027-154173-1-git-send-email-kirill.shutemov@linux.intel.com>
-In-Reply-To: <1418304027-154173-1-git-send-email-kirill.shutemov@linux.intel.com>
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="iwN5tiefGvVJUGPTtOTn1Q5kPM45bQjlB"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141211085801.GR1300@lahna.fi.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---iwN5tiefGvVJUGPTtOTn1Q5kPM45bQjlB
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
+> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
+> > my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
+> > i2c-hid and hid-rmi can be loaded and unloaded independelty from each
+> > other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+> > if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
+> > pointer dereference.
+> 
+> I'll look into this.
+> 
+> I can reproduce this easily with i2c-hid + hid-multitouch following your
+> directions.
 
-On 12/11/2014 02:20 PM, Kirill A. Shutemov wrote:
-> Currently, we use lru.next/lru.prev plus cast to access or set
-> destructor and order of compound page.
->=20
-> Let's replace it with explicit fields in struct page.
+Can you try the below patch? 
 
-Thanks! That made everything much clearer: the complexity of page struct
-should not be swept under the carpet.
+I think we shouldn't free buffers yet in ->stop() because we need the
+command buffer sending power commands to the device. Also it seems that
+->start() re-allocates buffers anyway if maximum size increases.
 
->=20
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+It shouldn't even leak memory as we release buffers at ->remove()
+anyway.
 
-Acked-by: Jerome Marchand <jmarchan@redhat.com>
-
-> ---
->  include/linux/mm.h       | 9 ++++-----
->  include/linux/mm_types.h | 8 ++++++++
->  2 files changed, 12 insertions(+), 5 deletions(-)
->=20
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 5bfd9b9756fa..a8de6fe11d0a 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -525,29 +525,28 @@ int split_free_page(struct page *page);
->   * prototype for that function and accessor functions.
->   * These are _only_ valid on the head of a PG_compound page.
->   */
-> -typedef void compound_page_dtor(struct page *);
-> =20
->  static inline void set_compound_page_dtor(struct page *page,
->  						compound_page_dtor *dtor)
->  {
-> -	page[1].lru.next =3D (void *)dtor;
-> +	page[1].compound_dtor =3D dtor;
->  }
-> =20
->  static inline compound_page_dtor *get_compound_page_dtor(struct page *=
-page)
->  {
-> -	return (compound_page_dtor *)page[1].lru.next;
-> +	return page[1].compound_dtor;
->  }
-> =20
->  static inline int compound_order(struct page *page)
->  {
->  	if (!PageHead(page))
->  		return 0;
-> -	return (unsigned long)page[1].lru.prev;
-> +	return page[1].compound_order;
->  }
-> =20
->  static inline void set_compound_order(struct page *page, unsigned long=
- order)
->  {
-> -	page[1].lru.prev =3D (void *)order;
-> +	page[1].compound_order =3D order;
->  }
-> =20
->  #ifdef CONFIG_MMU
-> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-> index 03945eef1350..cbc71f32a53c 100644
-> --- a/include/linux/mm_types.h
-> +++ b/include/linux/mm_types.h
-> @@ -28,6 +28,8 @@ struct mem_cgroup;
->  		IS_ENABLED(CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK))
->  #define ALLOC_SPLIT_PTLOCKS	(SPINLOCK_SIZE > BITS_PER_LONG/8)
-> =20
-> +typedef void compound_page_dtor(struct page *);
-> +
->  /*
->   * Each physical page in the system has a struct page associated with
->   * it to keep track of whatever it is we are using the page for at the=
-
-> @@ -131,6 +133,12 @@ struct page {
->  		struct rcu_head rcu_head;	/* Used by SLAB
->  						 * when destroying via RCU
->  						 */
-> +		/* First tail page of compound page */
-> +		struct {
-> +			compound_page_dtor *compound_dtor;
-> +			unsigned long compound_order;
-> +		};
-> +
->  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) && USE_SPLIT_PMD_PTLOCKS
->  		pgtable_t pmd_huge_pte; /* protected by page->ptl */
->  #endif
->=20
-
-
-
---iwN5tiefGvVJUGPTtOTn1Q5kPM45bQjlB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQEcBAEBAgAGBQJUiaKEAAoJEHTzHJCtsuoCs9YH/RVB8pVXvqIjyuPqAfHiwJ2n
-t169lG/kRZNszJwsT86L5QhmAFtGWW7WS+GU+STSVZOXB5rqYZLselsCa/pQVWlb
-GAq1AXm2X0NPj9ioRZK+kPxu64+PUT0005qOuyFFkhLxd5JkNWdSQ/rANE7JYdqr
-jh32u+53svlLogwZ5CnE2eliQdXcrRCAE7xFN3asMz2N1zLhc7oTxeO7IkhCkg1O
-mcIJx+0O8nw8uPf45QeqzZhHRXkSfDqHPzH6kkomakp2YgIdO4XmPrPCDFN/hvFE
-oN+rVPraZPouPb7Z1tbn+C7Cd/ykb/Qfs78AmLU0Ag9ZGsrxx+1r5QXrZqlakdE=
-=+mLO
------END PGP SIGNATURE-----
-
---iwN5tiefGvVJUGPTtOTn1Q5kPM45bQjlB--
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 62cec01937ea..68a8c938feea 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
+ 
+ static void i2c_hid_stop(struct hid_device *hid)
+ {
+-	struct i2c_client *client = hid->driver_data;
+-	struct i2c_hid *ihid = i2c_get_clientdata(client);
+-
+ 	hid->claimed = 0;
+-
+-	i2c_hid_free_buffers(ihid);
+ }
+ 
+ static int i2c_hid_open(struct hid_device *hid)
