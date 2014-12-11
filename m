@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830AbaLKGZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:25:16 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45534 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708AbaLKGZN (ORCPT
+	id S964841AbaLKG3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:29:33 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:43505 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751985AbaLKG3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:25:13 -0500
-Date: Thu, 11 Dec 2014 07:25:08 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL, v2] x86/microcode tree changes for v3.19
-Message-ID: <20141211062508.GB5059@gmail.com>
-References: <20141209132745.GA31656@gmail.com>
- <20141210124254.GA25436@gmail.com>
- <CA+55aFwiu2D=hKNvCvn-LL+TpYn9RS-N7+E8w7p+xLNdWSk8sA@mail.gmail.com>
+	Thu, 11 Dec 2014 01:29:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwiu2D=hKNvCvn-LL+TpYn9RS-N7+E8w7p+xLNdWSk8sA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1415787893-21857-1-git-send-email-gautam.vivek@samsung.com>
+References: <1415787893-21857-1-git-send-email-gautam.vivek@samsung.com>
+Date: Thu, 11 Dec 2014 11:59:31 +0530
+Message-ID: <CAFp+6iGrv8rhGf7QkOi=2Ad+ZFPMpVn84hjNa9TiNWHFcWKLeg@mail.gmail.com>
+Subject: Re: [PATCH] phy: phy-samsung-usb2: Don't use same name for driver
+ name and global structure
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Kamil Debski <k.debski@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 12, 2014 at 3:54 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+> Using the same driver name for platform driver and a globally defined,
+> structure used throughout the file, looks a bit unpleasing.
+> So changing the driver name from "samsung_usb2_phy_driver" to
+> "samsung_usb2_phy"
+>
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Kamil Debski <k.debski@samsung.com>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> ---
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+Although just a trivial change, does it look valid ?
 
-> On Wed, Dec 10, 2014 at 4:42 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > Please pull the latest x86-microcode-for-linus git tree from:
-> >
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-microcode-for-linus
-> 
-> Hmm. There's a conflict with commit 02ecc41abcea ("x86, 
-> microcode: Limit the microcode reloading to 64-bit for now"), 
+>  drivers/phy/phy-samsung-usb2.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-samsung-usb2.c
+> index 908949d..2934fb7 100644
+> --- a/drivers/phy/phy-samsung-usb2.c
+> +++ b/drivers/phy/phy-samsung-usb2.c
+> @@ -226,7 +226,7 @@ static int samsung_usb2_phy_probe(struct platform_device *pdev)
+>         return 0;
+>  }
+>
+> -static struct platform_driver samsung_usb2_phy_driver = {
+> +static struct platform_driver samsung_usb2_phy = {
+>         .probe  = samsung_usb2_phy_probe,
+>         .driver = {
+>                 .of_match_table = samsung_usb2_phy_of_match,
+> @@ -234,7 +234,7 @@ static struct platform_driver samsung_usb2_phy_driver = {
+>         }
+>  };
+>
+> -module_platform_driver(samsung_usb2_phy_driver);
+> +module_platform_driver(samsung_usb2_phy);
+>  MODULE_DESCRIPTION("Samsung S5P/EXYNOS SoC USB PHY driver");
+>  MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
+>  MODULE_LICENSE("GPL v2");
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Sorry, should have mentioned that explicitly, but forgot about 
-it.
 
-> but I'm going to assume that the issue is fixed now, and that 
-> commit fbae4ba8c4a3 ("x86, microcode: Reload microcode on 
-> resume") that causes the conflict also handles the 32-bit case 
-> correctly. So my merge is going to just remove the X86_64 test, 
-> effectively undoing that first commit, ratehr than keep it 
-> around.
-> 
-> If it turns out that the 64-bit limitation needs to be still in 
-> place, holler. We can re-do the ugly 64-bit limit thing if 
-> required.
 
-Hm, so in my own conflict resolution I kept that check, last I 
-heard Boris was still seeing weirdnesses (read: crashes) on 
-32-bit and I'm not sure even the full series fixes it all.
-
-In any case, would be nice to double check this and reinstate the 
-limitation explicitly if it's still needed, or apply a fix. 
-Boris?
-
-Thanks,
-
-	Ingo
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
