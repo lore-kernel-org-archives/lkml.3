@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965042AbaLKV0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:26:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44157 "EHLO mail.kernel.org"
+	id S965202AbaLKV0p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:26:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44188 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964929AbaLKV0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:26:34 -0500
+	id S965045AbaLKV0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:26:42 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin.vincent@axis.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Tom Huynh <tom.huynh@freescale.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
+        Kim Phillips <kim.phillips@freescale.com>,
+        Matt Mullins <mmullins@mmlx.us>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rabin Vincent <rabinv@axis.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 02/18] perf bench: Merge memset into memcpy
-Date: Thu, 11 Dec 2014 18:25:50 -0300
-Message-Id: <1418333166-15429-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 04/18] perf hists browser: Change print format from %lu to %PRIu64
+Date: Thu, 11 Dec 2014 18:25:52 -0300
+Message-Id: <1418333166-15429-5-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -23,465 +25,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@axis.com>
+From: Tom Huynh <tom.huynh@freescale.com>
 
-The memset benchmark is largely copy-pasted from the memcpy benchmark.
-Merge the two now that memcpy is made more generic.
+The nr_events variable in tools/perf/ui/browsers/hists.c is of type u64,
+so the print format (%lu) causes 'perf report' to show 0 event count
+when running with 32-bit userspace without redirection.
 
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
+This patch fixes that problem by printing nr_events as PRIu64.
+
+Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
 Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Kim Phillips <kim.phillips@freescale.com>
+Cc: Matt Mullins <mmullins@mmlx.us>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rabin Vincent <rabinv@axis.com>
-Link: http://lkml.kernel.org/r/1417535441-3965-2-git-send-email-rabin.vincent@axis.com
+Link: http://lkml.kernel.org/r/1417541842-9747-1-git-send-email-tom.huynh@freescale.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile.perf      |   1 -
- tools/perf/bench/mem-memcpy.c |  90 +++++++++++++
- tools/perf/bench/mem-memset.c | 304 ------------------------------------------
- 3 files changed, 90 insertions(+), 305 deletions(-)
- delete mode 100644 tools/perf/bench/mem-memset.c
+ tools/perf/ui/browsers/hists.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 478efa9b2364..763e68fb5767 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -458,7 +458,6 @@ BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy-x86-64-asm.o
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memset-x86-64-asm.o
- endif
- BUILTIN_OBJS += $(OUTPUT)bench/mem-memcpy.o
--BUILTIN_OBJS += $(OUTPUT)bench/mem-memset.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 4a4493a7a1f8..e18be70c8a47 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -13,6 +13,7 @@
- #include "../util/cloexec.h"
- #include "bench.h"
- #include "mem-memcpy-arch.h"
-+#include "mem-memset-arch.h"
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 502daff76ceb..e6bb04b5b09b 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -1252,7 +1252,7 @@ static int hists__browser_title(struct hists *hists,
  
- #include <stdio.h>
- #include <stdlib.h>
-@@ -48,12 +49,14 @@ static const struct option options[] = {
- };
+ 	nr_samples = convert_unit(nr_samples, &unit);
+ 	printed = scnprintf(bf, size,
+-			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
++			   "Samples: %lu%c of event '%s', Event count (approx.): %" PRIu64,
+ 			   nr_samples, unit, ev_name, nr_events);
  
- typedef void *(*memcpy_t)(void *, const void *, size_t);
-+typedef void *(*memset_t)(void *, int, size_t);
  
- struct routine {
- 	const char *name;
- 	const char *desc;
- 	union {
- 		memcpy_t memcpy;
-+		memset_t memset;
- 	} fn;
- };
- 
-@@ -336,3 +339,90 @@ int bench_mem_memcpy(int argc, const char **argv,
- 
- 	return bench_mem_common(argc, argv, prefix, &info);
- }
-+
-+static void memset_alloc_mem(void **dst, size_t length)
-+{
-+	*dst = zalloc(length);
-+	if (!*dst)
-+		die("memory allocation failed - maybe length is too large?\n");
-+}
-+
-+static u64 do_memset_cycle(const struct routine *r, size_t len, bool prefault)
-+{
-+	u64 cycle_start = 0ULL, cycle_end = 0ULL;
-+	memset_t fn = r->fn.memset;
-+	void *dst = NULL;
-+	int i;
-+
-+	memset_alloc_mem(&dst, len);
-+
-+	if (prefault)
-+		fn(dst, -1, len);
-+
-+	cycle_start = get_cycle();
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, i, len);
-+	cycle_end = get_cycle();
-+
-+	free(dst);
-+	return cycle_end - cycle_start;
-+}
-+
-+static double do_memset_gettimeofday(const struct routine *r, size_t len,
-+				     bool prefault)
-+{
-+	struct timeval tv_start, tv_end, tv_diff;
-+	memset_t fn = r->fn.memset;
-+	void *dst = NULL;
-+	int i;
-+
-+	memset_alloc_mem(&dst, len);
-+
-+	if (prefault)
-+		fn(dst, -1, len);
-+
-+	BUG_ON(gettimeofday(&tv_start, NULL));
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, i, len);
-+	BUG_ON(gettimeofday(&tv_end, NULL));
-+
-+	timersub(&tv_end, &tv_start, &tv_diff);
-+
-+	free(dst);
-+	return (double)((double)len / timeval2double(&tv_diff));
-+}
-+
-+static const char * const bench_mem_memset_usage[] = {
-+	"perf bench mem memset <options>",
-+	NULL
-+};
-+
-+static const struct routine memset_routines[] = {
-+	{ .name ="default",
-+	  .desc = "Default memset() provided by glibc",
-+	  .fn.memset = memset },
-+#ifdef HAVE_ARCH_X86_64_SUPPORT
-+
-+#define MEMSET_FN(_fn, _name, _desc) { .name = _name, .desc = _desc, .fn.memset = _fn },
-+#include "mem-memset-x86-64-asm-def.h"
-+#undef MEMSET_FN
-+
-+#endif
-+
-+	{ .name = NULL,
-+	  .desc = NULL,
-+	  .fn.memset = NULL   }
-+};
-+
-+int bench_mem_memset(int argc, const char **argv,
-+		     const char *prefix __maybe_unused)
-+{
-+	struct bench_mem_info info = {
-+		.routines = memset_routines,
-+		.do_cycle = do_memset_cycle,
-+		.do_gettimeofday = do_memset_gettimeofday,
-+		.usage = bench_mem_memset_usage,
-+	};
-+
-+	return bench_mem_common(argc, argv, prefix, &info);
-+}
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-deleted file mode 100644
-index 75fc3e65fb2a..000000000000
---- a/tools/perf/bench/mem-memset.c
-+++ /dev/null
-@@ -1,304 +0,0 @@
--/*
-- * mem-memset.c
-- *
-- * memset: Simple memory set in various ways
-- *
-- * Trivial clone of mem-memcpy.c.
-- */
--
--#include "../perf.h"
--#include "../util/util.h"
--#include "../util/parse-options.h"
--#include "../util/header.h"
--#include "../util/cloexec.h"
--#include "bench.h"
--#include "mem-memset-arch.h"
--
--#include <stdio.h>
--#include <stdlib.h>
--#include <string.h>
--#include <sys/time.h>
--#include <errno.h>
--
--#define K 1024
--
--static const char	*length_str	= "1MB";
--static const char	*routine	= "default";
--static int		iterations	= 1;
--static bool		use_cycle;
--static int		cycle_fd;
--static bool		only_prefault;
--static bool		no_prefault;
--
--static const struct option options[] = {
--	OPT_STRING('l', "length", &length_str, "1MB",
--		    "Specify length of memory to set. "
--		    "Available units: B, KB, MB, GB and TB (upper and lower)"),
--	OPT_STRING('r', "routine", &routine, "default",
--		    "Specify routine to set"),
--	OPT_INTEGER('i', "iterations", &iterations,
--		    "repeat memset() invocation this number of times"),
--	OPT_BOOLEAN('c', "cycle", &use_cycle,
--		    "Use cycles event instead of gettimeofday() for measuring"),
--	OPT_BOOLEAN('o', "only-prefault", &only_prefault,
--		    "Show only the result with page faults before memset()"),
--	OPT_BOOLEAN('n', "no-prefault", &no_prefault,
--		    "Show only the result without page faults before memset()"),
--	OPT_END()
--};
--
--typedef void *(*memset_t)(void *, int, size_t);
--
--struct routine {
--	const char *name;
--	const char *desc;
--	memset_t fn;
--};
--
--static const struct routine routines[] = {
--	{ "default",
--	  "Default memset() provided by glibc",
--	  memset },
--#ifdef HAVE_ARCH_X86_64_SUPPORT
--
--#define MEMSET_FN(fn, name, desc) { name, desc, fn },
--#include "mem-memset-x86-64-asm-def.h"
--#undef MEMSET_FN
--
--#endif
--
--	{ NULL,
--	  NULL,
--	  NULL   }
--};
--
--static const char * const bench_mem_memset_usage[] = {
--	"perf bench mem memset <options>",
--	NULL
--};
--
--static struct perf_event_attr cycle_attr = {
--	.type		= PERF_TYPE_HARDWARE,
--	.config		= PERF_COUNT_HW_CPU_CYCLES
--};
--
--static void init_cycle(void)
--{
--	cycle_fd = sys_perf_event_open(&cycle_attr, getpid(), -1, -1,
--				       perf_event_open_cloexec_flag());
--
--	if (cycle_fd < 0 && errno == ENOSYS)
--		die("No CONFIG_PERF_EVENTS=y kernel support configured?\n");
--	else
--		BUG_ON(cycle_fd < 0);
--}
--
--static u64 get_cycle(void)
--{
--	int ret;
--	u64 clk;
--
--	ret = read(cycle_fd, &clk, sizeof(u64));
--	BUG_ON(ret != sizeof(u64));
--
--	return clk;
--}
--
--static double timeval2double(struct timeval *ts)
--{
--	return (double)ts->tv_sec +
--		(double)ts->tv_usec / (double)1000000;
--}
--
--static void alloc_mem(void **dst, size_t length)
--{
--	*dst = zalloc(length);
--	if (!*dst)
--		die("memory allocation failed - maybe length is too large?\n");
--}
--
--static u64 do_memset_cycle(memset_t fn, size_t len, bool prefault)
--{
--	u64 cycle_start = 0ULL, cycle_end = 0ULL;
--	void *dst = NULL;
--	int i;
--
--	alloc_mem(&dst, len);
--
--	if (prefault)
--		fn(dst, -1, len);
--
--	cycle_start = get_cycle();
--	for (i = 0; i < iterations; ++i)
--		fn(dst, i, len);
--	cycle_end = get_cycle();
--
--	free(dst);
--	return cycle_end - cycle_start;
--}
--
--static double do_memset_gettimeofday(memset_t fn, size_t len, bool prefault)
--{
--	struct timeval tv_start, tv_end, tv_diff;
--	void *dst = NULL;
--	int i;
--
--	alloc_mem(&dst, len);
--
--	if (prefault)
--		fn(dst, -1, len);
--
--	BUG_ON(gettimeofday(&tv_start, NULL));
--	for (i = 0; i < iterations; ++i)
--		fn(dst, i, len);
--	BUG_ON(gettimeofday(&tv_end, NULL));
--
--	timersub(&tv_end, &tv_start, &tv_diff);
--
--	free(dst);
--	return (double)((double)len / timeval2double(&tv_diff));
--}
--
--#define pf (no_prefault ? 0 : 1)
--
--#define print_bps(x) do {					\
--		if (x < K)					\
--			printf(" %14lf B/Sec", x);		\
--		else if (x < K * K)				\
--			printf(" %14lfd KB/Sec", x / K);	\
--		else if (x < K * K * K)				\
--			printf(" %14lf MB/Sec", x / K / K);	\
--		else						\
--			printf(" %14lf GB/Sec", x / K / K / K); \
--	} while (0)
--
--int bench_mem_memset(int argc, const char **argv,
--		     const char *prefix __maybe_unused)
--{
--	int i;
--	size_t len;
--	double result_bps[2];
--	u64 result_cycle[2];
--
--	argc = parse_options(argc, argv, options,
--			     bench_mem_memset_usage, 0);
--
--	if (no_prefault && only_prefault) {
--		fprintf(stderr, "Invalid options: -o and -n are mutually exclusive\n");
--		return 1;
--	}
--
--	if (use_cycle)
--		init_cycle();
--
--	len = (size_t)perf_atoll((char *)length_str);
--
--	result_cycle[0] = result_cycle[1] = 0ULL;
--	result_bps[0] = result_bps[1] = 0.0;
--
--	if ((s64)len <= 0) {
--		fprintf(stderr, "Invalid length:%s\n", length_str);
--		return 1;
--	}
--
--	/* same to without specifying either of prefault and no-prefault */
--	if (only_prefault && no_prefault)
--		only_prefault = no_prefault = false;
--
--	for (i = 0; routines[i].name; i++) {
--		if (!strcmp(routines[i].name, routine))
--			break;
--	}
--	if (!routines[i].name) {
--		printf("Unknown routine:%s\n", routine);
--		printf("Available routines...\n");
--		for (i = 0; routines[i].name; i++) {
--			printf("\t%s ... %s\n",
--			       routines[i].name, routines[i].desc);
--		}
--		return 1;
--	}
--
--	if (bench_format == BENCH_FORMAT_DEFAULT)
--		printf("# Copying %s Bytes ...\n\n", length_str);
--
--	if (!only_prefault && !no_prefault) {
--		/* show both of results */
--		if (use_cycle) {
--			result_cycle[0] =
--				do_memset_cycle(routines[i].fn, len, false);
--			result_cycle[1] =
--				do_memset_cycle(routines[i].fn, len, true);
--		} else {
--			result_bps[0] =
--				do_memset_gettimeofday(routines[i].fn,
--						len, false);
--			result_bps[1] =
--				do_memset_gettimeofday(routines[i].fn,
--						len, true);
--		}
--	} else {
--		if (use_cycle) {
--			result_cycle[pf] =
--				do_memset_cycle(routines[i].fn,
--						len, only_prefault);
--		} else {
--			result_bps[pf] =
--				do_memset_gettimeofday(routines[i].fn,
--						len, only_prefault);
--		}
--	}
--
--	switch (bench_format) {
--	case BENCH_FORMAT_DEFAULT:
--		if (!only_prefault && !no_prefault) {
--			if (use_cycle) {
--				printf(" %14lf Cycle/Byte\n",
--					(double)result_cycle[0]
--					/ (double)len);
--				printf(" %14lf Cycle/Byte (with prefault)\n ",
--					(double)result_cycle[1]
--					/ (double)len);
--			} else {
--				print_bps(result_bps[0]);
--				printf("\n");
--				print_bps(result_bps[1]);
--				printf(" (with prefault)\n");
--			}
--		} else {
--			if (use_cycle) {
--				printf(" %14lf Cycle/Byte",
--					(double)result_cycle[pf]
--					/ (double)len);
--			} else
--				print_bps(result_bps[pf]);
--
--			printf("%s\n", only_prefault ? " (with prefault)" : "");
--		}
--		break;
--	case BENCH_FORMAT_SIMPLE:
--		if (!only_prefault && !no_prefault) {
--			if (use_cycle) {
--				printf("%lf %lf\n",
--					(double)result_cycle[0] / (double)len,
--					(double)result_cycle[1] / (double)len);
--			} else {
--				printf("%lf %lf\n",
--					result_bps[0], result_bps[1]);
--			}
--		} else {
--			if (use_cycle) {
--				printf("%lf\n", (double)result_cycle[pf]
--					/ (double)len);
--			} else
--				printf("%lf\n", result_bps[pf]);
--		}
--		break;
--	default:
--		/* reaching this means there's some disaster: */
--		die("unknown format: %d\n", bench_format);
--		break;
--	}
--
--	return 0;
--}
 -- 
 1.9.3
 
