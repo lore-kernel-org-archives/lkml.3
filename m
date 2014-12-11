@@ -1,189 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934451AbaLKJ7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:59:41 -0500
-Received: from lucky1.263xmail.com ([211.157.147.131]:51460 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932698AbaLKJ7j (ORCPT
+	id S934472AbaLKJ7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:59:52 -0500
+Received: from mga02.intel.com ([134.134.136.20]:44056 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932698AbaLKJ7q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:59:39 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <577eeca208cd1f28c079421263198243>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, Paul Zimmerman <paulz@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v6 3/5] usb: dwc2: add generic PHY framework support for dwc2 usb controler platform driver.
-Date: Thu, 11 Dec 2014 17:55:20 +0800
-Message-Id: <1418291722-25448-4-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	Thu, 11 Dec 2014 04:59:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
+   d="scan'208";a="652136162"
+From: "Varlese, Marco" <marco.varlese@intel.com>
+To: John Fastabend <john.fastabend@gmail.com>, Jiri Pirko <jiri@resnulli.us>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Index: AdAUhPtXGtfGamc6R3Ssf+89G79LDwAFGVwAAAB5JYAAIzgFYA==
+Date: Thu, 11 Dec 2014 09:59:42 +0000
+Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com>
+In-Reply-To: <54887CF7.70708@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.181]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get PHY parameters from devicetree and power off usb PHY during
-system suspend.
+> -----Original Message-----
+> From: John Fastabend [mailto:john.fastabend@gmail.com]
+> Sent: Wednesday, December 10, 2014 5:04 PM
+> To: Jiri Pirko
+> Cc: Varlese, Marco; netdev@vger.kernel.org;
+> stephen@networkplumber.org; Fastabend, John R;
+> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+> configuration
+> 
+> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+> > Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+> >> From: Marco Varlese <marco.varlese@intel.com>
+> >>
+> >> Switch hardware offers a list of attributes that are configurable on
+> >> a per port basis.
+> >> This patch provides a mechanism to configure switch ports by adding
+> >> an NDO for setting specific values to specific attributes.
+> >> There will be a separate patch that extends iproute2 to call the new
+> >> NDO.
+> >
+> >
+> > What are these attributes? Can you give some examples. I'm asking
+> > because there is a plan to pass generic attributes to switch ports
+> > replacing current specific ndo_switch_port_stp_update. In this case,
+> > bridge is setting that attribute.
+> >
+> > Is there need to set something directly from userspace or does it make
+> > rather sense to use involved bridge/ovs/bond ? I think that both will
+> > be needed.
+> 
+> +1
+> 
+> I think for many attributes it would be best to have both. The in kernel callers
+> and netlink userspace can use the same driver ndo_ops.
+> 
+> But then we don't _require_ any specific bridge/ovs/etc module. And we
+> may have some attributes that are not specific to any existing software
+> module. I'm guessing Marco has some examples of these.
+> 
+> [...]
+> 
+> 
+> --
+> John Fastabend         Intel Corporation
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
+We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
 
----
+An example of attributes are:
+* enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
+* internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
+* flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
 
-Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-- Fix coding style: both branches of the if() which only one
-  branch of the conditional statement is a single statement
-  should have braces.
-- No need to test dwc2->phy for NULL before calling generic phy
-  APIs.
+Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
 
- drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
- drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 46 insertions(+), 23 deletions(-)
+One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 200168e..2601c61 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- {
- 	struct device *dev = hsotg->dev;
- 	struct s3c_hsotg_plat *plat = dev->platform_data;
--	struct phy *phy;
--	struct usb_phy *uphy;
- 	struct s3c_hsotg_ep *eps;
- 	int epnum;
- 	int ret;
-@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- 	hsotg->phyif = GUSBCFG_PHYIF16;
- 
- 	/*
--	 * Attempt to find a generic PHY, then look for an old style
--	 * USB PHY, finally fall back to pdata
-+	 * If platform probe couldn't find a generic PHY or an old style
-+	 * USB PHY, fall back to pdata
- 	 */
--	phy = devm_phy_get(dev, "usb2-phy");
--	if (IS_ERR(phy)) {
--		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--		if (IS_ERR(uphy)) {
--			/* Fallback for pdata */
--			plat = dev_get_platdata(dev);
--			if (!plat) {
--				dev_err(dev,
--				"no platform data or transceiver defined\n");
--				return -EPROBE_DEFER;
--			}
--			hsotg->plat = plat;
--		} else
--			hsotg->uphy = uphy;
--	} else {
--		hsotg->phy = phy;
-+	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-+		plat = dev_get_platdata(dev);
-+		if (!plat) {
-+			dev_err(dev,
-+			"no platform data or transceiver defined\n");
-+			return -EPROBE_DEFER;
-+		}
-+		hsotg->plat = plat;
-+	} else if (hsotg->phy) {
- 		/*
- 		 * If using the generic PHY framework, check if the PHY bus
- 		 * width is 8-bit and set the phyif appropriately.
- 		 */
--		if (phy_get_bus_width(phy) == 8)
-+		if (phy_get_bus_width(hsotg->phy) == 8)
- 			hsotg->phyif = GUSBCFG_PHYIF8;
- 	}
- 
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 6a795aa..ae095f0 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	struct dwc2_core_params defparams;
- 	struct dwc2_hsotg *hsotg;
- 	struct resource *res;
-+	struct phy *phy;
-+	struct usb_phy *uphy;
- 	int retval;
- 	int irq;
- 
-@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 
- 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
- 
-+	/*
-+	 * Attempt to find a generic PHY, then look for an old style
-+	 * USB PHY
-+	 */
-+	phy = devm_phy_get(&dev->dev, "usb2-phy");
-+	if (IS_ERR(phy)) {
-+		hsotg->phy = NULL;
-+		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(uphy))
-+			hsotg->uphy = NULL;
-+		else
-+			hsotg->uphy = uphy;
-+	} else {
-+		hsotg->phy = phy;
-+		phy_power_on(hsotg->phy);
-+		phy_init(hsotg->phy);
-+	}
-+
- 	spin_lock_init(&hsotg->lock);
- 	mutex_init(&hsotg->init_mutex);
- 	retval = dwc2_gadget_init(hsotg, irq);
-@@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
- 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
--	if (dwc2_is_device_mode(dwc2))
-+	if (dwc2_is_device_mode(dwc2)) {
- 		ret = s3c_hsotg_suspend(dwc2);
-+	} else {
-+		if (dwc2->lx_state == DWC2_L0)
-+			return 0;
-+		phy_exit(dwc2->phy);
-+		phy_power_off(dwc2->phy);
-+
-+	}
- 	return ret;
- }
- 
-@@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
- 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
--	if (dwc2_is_device_mode(dwc2))
-+	if (dwc2_is_device_mode(dwc2)) {
- 		ret = s3c_hsotg_resume(dwc2);
-+	} else {
-+		phy_power_on(dwc2->phy);
-+		phy_init(dwc2->phy);
-+
-+	}
- 	return ret;
- }
- 
--- 
-2.0.0
+I hope this clarifies some points.
+
+-----------------------------------------------------------
+Marco Varlese		-	Intel Corporation
+-----------------------------------------------------------
 
 
