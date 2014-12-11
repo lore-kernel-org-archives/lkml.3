@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757787AbaLKHiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 02:38:24 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:55464 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753061AbaLKHiW (ORCPT
+	id S964904AbaLKHmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 02:42:45 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:40998 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188AbaLKHmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 02:38:22 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>
-CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <wenyou.yang@atmel.com>
-Subject: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override NAND_Tree which improperly strapp-in during the reset period.
-Date: Thu, 11 Dec 2014 15:31:09 +0800
-Message-ID: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 11 Dec 2014 02:42:44 -0500
+Date: Thu, 11 Dec 2014 08:42:37 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Joerg Roedel <joro@8bytes.org>, Tony Luck <tony.luck@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/apic] x86, PCI, ACPI: Kill private function
+ resource_to_addr() in arch/x86/pci/acpi.c
+Message-ID: <20141211074237.GA4231@localhost.localdomain>
+References: <1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com>
+ <tip-e22ce93870deae0e9a54e1539f0088538f187780@git.kernel.org>
+ <CAE9FiQWaL1Qu1eP-fQV784ucy+r-65AZ95VyiUrefn0dNtfLDw@mail.gmail.com>
+ <alpine.DEB.2.11.1412101820510.13233@nanos>
+ <CAE9FiQW95VoJ35+KXOfV8eqFjSnhgkAqUmFWOKyKMwOAR_x7Kg@mail.gmail.com>
+ <20141211003507.GI17053@pd.tnic>
+ <CAE9FiQXBJABuH08GyE7qC2yRpU-mm8KVU5DA16uyq7Et4DctsQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQXBJABuH08GyE7qC2yRpU-mm8KVU5DA16uyq7Et4DctsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Appearance: On some SAMA5D4EK boards, after power up, the Eth1 doesn't work.
+On Wed, Dec 10, 2014 at 05:57:12PM -0800, Yinghai Lu wrote:
+> Tried with mutt or thunderbird etc, all kept on downloading ....
 
-Reason: The PIOE2 pin is connected to the NAND_Tree# of KSZ8081,
-But it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
+Mutt with gmail via imap works just fine for me.
 
-Add phy_fixup() to disable NAND_Tree by overriding the Operation
-Mode Strap Override register(i.e. Register 16h) to clear the NAND_Tree bit.
+  set folder="imaps://imap.gmail.com:993"
+  set imap_user="luser@gmail.com"
+  set imap_pass="SuperSecret"
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/mach-at91/board-dt-sama5.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+You don't have to set imap_pass if you prefer an interactive prompt.
 
-diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
-index 8fb9ef5..97f7367 100644
---- a/arch/arm/mach-at91/board-dt-sama5.c
-+++ b/arch/arm/mach-at91/board-dt-sama5.c
-@@ -17,6 +17,7 @@
- #include <linux/of_platform.h>
- #include <linux/phy.h>
- #include <linux/clk-provider.h>
-+#include <linux/phy.h>
- 
- #include <asm/setup.h>
- #include <asm/irq.h>
-@@ -26,8 +27,25 @@
- 
- #include "generic.h"
- 
-+static int ksz8081_phy_fixup(struct phy_device *phy)
-+{
-+	int value;
-+
-+	value = phy_read(phy, 0x16);
-+	value &= ~0x20;
-+	phy_write(phy, 0x16, value);
-+
-+	return 0;
-+}
-+
- static void __init sama5_dt_device_init(void)
- {
-+	if (of_machine_is_compatible("atmel,sama5d4ek") &&
-+	   IS_ENABLED(CONFIG_PHYLIB)) {
-+		phy_register_fixup_for_id("fc028000.etherne:00",
-+						ksz8081_phy_fixup);
-+	}
-+
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
- 
--- 
-1.7.9.5
-
+Thanks,
+Richard
