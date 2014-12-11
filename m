@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759232AbaLKW2P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:28:15 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:49766 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758176AbaLKW2N (ORCPT
+	id S1759237AbaLKWa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:30:58 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:51493 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758838AbaLKWa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:28:13 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, cornelia.huck@de.ibm.com,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH RFC 3/5] pci: add pci_iomap_range
-Date: Thu, 11 Dec 2014 23:27:54 +0100
-Message-ID: <11102634.nzYXXfUH5X@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418326570-9541-4-git-send-email-mst@redhat.com>
-References: <1418326570-9541-1-git-send-email-mst@redhat.com> <1418326570-9541-4-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:OKDZXsjHPZhx8KiTbGcKhthbCOim6KOPJSOc7w2eCn6qEIwREFt
- wMgM7/MuJ+gClDCLWhCNtt3uJC19ny4jS6zeGL98lIOtO0m5lhYCjkf0oWzv5juQXrPTLBc
- LjT9EDI9AHkYmYFcJg/mJWG6gNFsQHfUOwn2iuBqYqwDwFgOuawWNLHHF8cbKb64lI6wFsc
- /KY7RgKHvwlfMJvIAmcGw==
-X-UI-Out-Filterresults: notjunk:1;
+	Thu, 11 Dec 2014 17:30:57 -0500
+From: Feng Kan <fkan@apm.com>
+To: patches@apm.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, msalter@redhat.com, tj@kernel.org,
+        hdegoede@redhat.com
+Cc: Feng Kan <fkan@apm.com>
+Subject: [PATCH] sata: xgene: add ACPI support for APM X-Gene SATA ports
+Date: Thu, 11 Dec 2014 14:31:10 -0800
+Message-Id: <1418337070-17644-1-git-send-email-fkan@apm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 December 2014 21:37:34 Michael S. Tsirkin wrote:
->         if (flags & IORESOURCE_MEM) {
-> -               if (flags & IORESOURCE_CACHEABLE)
-> +               if (!force_nocache && (flags & IORESOURCE_CACHEABLE))
->                         return ioremap(start, len);
->                 return ioremap_nocache(start, len);
->         }
-> 
+This adds ACPI support for the APM X-Gene SATA ports. When the system
+boots using ACPI table, the SATA ports are able to configure using the
+values supplied by the ACPI table rather than the DTS.
 
-ioremap is the same as ioremap_nocache, so this doesn't really make any
-sense. IORESOURCE_CACHEABLE is practically only set for ROM bars, which
-we rarely map.
+Signed-off-by: Feng Kan <fkan@apm.com>
+---
+ drivers/ata/ahci_xgene.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-	Arnd
+diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+index d0c851a..4951392 100644
+--- a/drivers/ata/ahci_xgene.c
++++ b/drivers/ata/ahci_xgene.c
+@@ -22,6 +22,7 @@
+  * NOTE: PM support is not currently available.
+  *
+  */
++#include <linux/acpi.h>
+ #include <linux/module.h>
+ #include <linux/platform_device.h>
+ #include <linux/ahci_platform.h>
+@@ -521,6 +522,14 @@ disable_resources:
+ 	return rc;
+ }
+ 
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id xgene_ahci_acpi_match[] = {
++	{ "APMC0D0D", },
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, xgene_ahci_acpi_match);
++#endif
++
+ static const struct of_device_id xgene_ahci_of_match[] = {
+ 	{.compatible = "apm,xgene-ahci"},
+ 	{},
+@@ -534,6 +543,7 @@ static struct platform_driver xgene_ahci_driver = {
+ 		.name = "xgene-ahci",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = xgene_ahci_of_match,
++		.acpi_match_table = ACPI_PTR(xgene_ahci_acpi_match),
+ 	},
+ };
+ 
+-- 
+1.9.1
+
