@@ -1,222 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965019AbaLKPPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:15:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45042 "EHLO mx1.redhat.com"
+	id S964901AbaLKPTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:19:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47928 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933007AbaLKPNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:13:22 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
-Date: Thu, 11 Dec 2014 16:12:22 +0100
-Message-Id: <1418310749-22267-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
-References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+	id S964785AbaLKPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 10:19:45 -0500
+Date: Thu, 11 Dec 2014 10:19:33 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew de los Reyes <adlr@chromium.org>, Jiri Kosina <jkosina@suse.cz>
+Subject: Re: About "HID: logitech-hidpp: add support of the first Logitech
+ Wireless Touchpad"
+Message-ID: <20141211151933.GB29747@mail.corp.redhat.com>
+References: <1659058.m7A8Z3l7lH@al>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1659058.m7A8Z3l7lH@al>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding feature check for babeltrace library [1], which will be
-used for perf data file CTF [2] conversion in following patches.
+Hi Peter,
 
-The babeltrace library is now automatically detected as standard
-feature. It's possible to specify LIBBABELTRACE_DIR make variable
-to specify location of installed libbabeltrace, like:
+On Dec 11 2014 or thereabouts, Peter Wu wrote:
+> Hi Benjamin,
+> 
+> In commit 57ac86cf52e903d9e3e0f12b34c814cce6b65550 ("HID:
+> logitech-hidpp: add support of the first Logitech Wireless Touchpad")
+> which is in jikos/hid, you made this change to wtp_raw_event:
+> 
+>         switch (data[0]) {
+>         case 0x02:
+> -               if (size < 21)
+> -                       return 1;
+> -               return wtp_mouse_raw_xy_event(hidpp, &data[7]);
+> +               if (hidpp->quirks & HIDPP_QUIRK_WTP_PHYSICAL_BUTTONS) {
+> +                       input_event(wd->input, EV_KEY, BTN_LEFT,
+> +                                       !!(data[1] & 0x01));
+> +                       input_event(wd->input, EV_KEY, BTN_RIGHT,
+> +                                       !!(data[1] & 0x02));
+> +                       input_sync(wd->input);
+> +               } else {
+> +                       if (size < 21)
+> +                               return 1;
+> +                       return wtp_mouse_raw_xy_event(hidpp, &data[7]);
+> +               }
+>         case REPORT_ID_HIDPP_LONG:
+>                 if ((report->fap.feature_index != wd->mt_feature_index) ||
+>                     (report->fap.funcindex_clientid != EVENT_TOUCHPAD_RAW_XY))
+>                         return 1;
+>                 hidpp_touchpad_raw_xy_event(hidpp, data + 4, &raw);
+>  
+>                 wtp_send_raw_xy_event(hidpp, &raw);
+>                 return 0;
+>         }
+> 
+> Report ID 2 is the mouse descriptor, so it seems correct in that it
+> falls-through to the next case, but I wanted to check with you that this
+> is indeed your intention. If so, could you explicitly mark it with a
+> comment, /* fallthrough */ ?
 
-  $ make LIBBABELTRACE_DIR=/opt/libbabeltrace/
-    BUILD:   Doing 'make -j4' parallel build
+Yep, it is indeed a bug. I see what happened:
+The old code contained a return at the end of the case, and I completely
+forget to prevent the fall through with a break. Gosh, I should have
+been more careful. Thanks for spotting that!
 
-  Auto-detecting system features:
-  ...                         dwarf: [ on  ]
-  ...                         glibc: [ on  ]
-  ...                          gtk2: [ on  ]
-  ...                      libaudit: [ on  ]
-  ...                        libbfd: [ on  ]
-  ...                        libelf: [ on  ]
-  ...                       libnuma: [ on  ]
-  ...                       libperl: [ on  ]
-  ...                     libpython: [ on  ]
-  ...                      libslang: [ on  ]
-  ...                     libunwind: [ on  ]
-  ...                 libbabeltrace: [ on  ]
-  ...            libdw-dwarf-unwind: [ on  ]
-  ...                          zlib: [ on  ]
-  ...     DWARF post unwind library: libunwind
+Cheers,
+Benjamin
 
-[1] babeltrace - http://www.efficios.com/babeltrace
-[2] Common Trace Format - http://www.efficios.com/ctf
-
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeremie Galarneau <jgalar@efficios.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/Makefile.perf                           |  4 +++-
- tools/perf/config/Makefile                         | 24 ++++++++++++++++++++++
- tools/perf/config/feature-checks/Makefile          |  8 ++++++--
- tools/perf/config/feature-checks/test-all.c        |  5 +++++
- .../config/feature-checks/test-libbabeltrace.c     |  8 ++++++++
- 5 files changed, 46 insertions(+), 3 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
-
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 763e68fb5767..a6a2ec5ebf0e 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -68,7 +68,9 @@ include config/utilities.mak
- # for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
- #
- # Define NO_ZLIB if you do not want to support compressed kernel modules
--
-+#
-+# Define NO_LIBBABELTRACE if you do not want libbabeltrace support
-+# for CTF data format.
- 
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5d4b039fe1ed..c06e7c96459b 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -84,6 +84,17 @@ ifndef NO_LIBELF
-   FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
- endif
- 
-+ifndef NO_LIBBABELTRACE
-+  # for linking with debug library, run like:
-+  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libbabeltrace/
-+  ifdef LIBBABELTRACE_DIR
-+    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
-+    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
-+  endif
-+  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
-+endif
-+
- # include ARCH specific config
- -include $(src-perf)/arch/$(ARCH)/Makefile
- 
-@@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =			\
- 	stackprotector-all		\
- 	timerfd				\
- 	libdw-dwarf-unwind		\
-+	libbabeltrace			\
- 	zlib
- 
- LIB_FEATURE_TESTS =			\
-@@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =			\
- 	libslang			\
- 	libunwind			\
- 	libdw-dwarf-unwind		\
-+	libbabeltrace			\
- 	zlib
- 
- VF_FEATURE_TESTS =			\
-@@ -661,6 +674,17 @@ else
-   NO_PERF_READ_VDSOX32 := 1
- endif
- 
-+ifndef NO_LIBBABELTRACE
-+  ifeq ($(feature-libbabeltrace), 0)
-+    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-ctf-dev);
-+    NO_LIBBABELTRACE := 1
-+  else
-+    CFLAGS += -DHAVE_LIBBABELTRACE_SUPPORT $(LIBBABELTRACE_CFLAGS)
-+    LDFLAGS += $(LIBBABELTRACE_LDFLAGS)
-+    EXTLIBS += -lbabeltrace-ctf
-+  endif
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 53f19b5dbc37..9d7536e39efd 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -28,6 +28,7 @@ FILES=					\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
- 	test-libdw-dwarf-unwind.bin	\
-+	test-libbabeltrace.bin		\
- 	test-compile-32.bin		\
- 	test-compile-x32.bin		\
- 	test-zlib.bin
-@@ -42,7 +43,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
- ###############################
- 
- test-all.bin:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz -lbabeltrace
- 
- test-hello.bin:
- 	$(BUILD)
-@@ -129,7 +130,10 @@ test-timerfd.bin:
- 	$(BUILD)
- 
- test-libdw-dwarf-unwind.bin:
--	$(BUILD)
-+	$(BUILD) # -ldw provided by $(FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind)
-+
-+test-libbabeltrace.bin:
-+	$(BUILD) # -lbabeltrace provided by $(FEATURE_CHECK_LDFLAGS-libbabeltrace)
- 
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 652e0098eba6..d63f5f2be9e3 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -97,6 +97,10 @@
- # include "test-zlib.c"
- #undef main
- 
-+#define main main_test_libbabeltrace
-+# include "test-libbabeltrace.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -121,6 +125,7 @@ int main(int argc, char *argv[])
- 	main_test_libdw_dwarf_unwind();
- 	main_test_sync_compare_and_swap(argc, argv);
- 	main_test_zlib();
-+	main_test_libbabeltrace();
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libbabeltrace.c b/tools/perf/config/feature-checks/test-libbabeltrace.c
-new file mode 100644
-index 000000000000..3b7dd68a4d52
---- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libbabeltrace.c
-@@ -0,0 +1,8 @@
-+
-+#include <babeltrace/ctf-writer/writer.h>
-+
-+int main(void)
-+{
-+	bt_ctf_stream_class_get_packet_context_type((void *) 0);
-+	return 0;
-+}
--- 
-1.9.3
-
+> -- 
+> Kind regards,
+> Peter
+> https://lekensteyn.nl
+> 
