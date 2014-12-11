@@ -1,306 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964950AbaLKV0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:26:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44133 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932891AbaLKV0a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:26:30 -0500
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin.vincent@axis.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rabin Vincent <rabinv@axis.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 01/18] perf bench: Prepare memcpy for merge
-Date: Thu, 11 Dec 2014 18:25:49 -0300
-Message-Id: <1418333166-15429-2-git-send-email-acme@kernel.org>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
-References: <1418333166-15429-1-git-send-email-acme@kernel.org>
+	id S965249AbaLKVkA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:40:00 -0500
+Received: from mail-by2on0140.outbound.protection.outlook.com ([207.46.100.140]:64832
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934082AbaLKVj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:39:58 -0500
+X-Greylist: delayed 2417 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Dec 2014 16:39:57 EST
+Date: Thu, 11 Dec 2014 13:39:50 -0800
+From: Guenter Roeck <groeck@juniper.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Rajat Jain <rajatxjain@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>
+Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
+ during removal
+Message-ID: <20141211213950.GA22334@svl-evodev-groeck.juniper.net>
+References: <546E7120.5080505@gmail.com>
+ <20141211002630.GC22886@google.com>
+ <20141211163831.GA2845@svl-evodev-groeck.juniper.net>
+ <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
+ <20141211204515.GA4472@svl-evodev-groeck.juniper.net>
+ <CAErSpo4WAbb=n+cNARRgKWPhbn6LZqwL-htB_Uv2OWB9BwTXpw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4WAbb=n+cNARRgKWPhbn6LZqwL-htB_Uv2OWB9BwTXpw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [66.129.239.11]
+X-ClientProxiedBy: CO2PR04CA042.namprd04.prod.outlook.com (10.141.240.170) To
+ BN1PR05MB520.namprd05.prod.outlook.com (10.141.65.151)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB520;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BN1PR05MB520;
+X-Forefront-PRVS: 0422860ED4
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(6069001)(199003)(51704005)(24454002)(57704003)(377454003)(189002)(86362001)(46102003)(105586002)(50466002)(92566001)(19580395003)(46406003)(120916001)(99396003)(122386002)(83506001)(40100003)(20776003)(97756001)(76176999)(54356999)(47776003)(50986999)(66066001)(87976001)(42186005)(33656002)(19580405001)(64706001)(21056001)(4396001)(93886004)(31966008)(106356001)(76506005)(97736003)(101416001)(107046002)(23726002)(68736005)(110136001)(77096005)(77156002)(62966003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR05MB520;H:localhost;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR05MB520;
+X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@axis.com>
+On Thu, Dec 11, 2014 at 02:00:06PM -0700, Bjorn Helgaas wrote:
+> On Thu, Dec 11, 2014 at 1:45 PM, Guenter Roeck <groeck@juniper.net> wrote:
+> > On Thu, Dec 11, 2014 at 01:26:47PM -0700, Bjorn Helgaas wrote:
+> >> On Thu, Dec 11, 2014 at 9:38 AM, Guenter Roeck <groeck@juniper.net> wrote:
+> >> > On Wed, Dec 10, 2014 at 05:26:30PM -0700, Bjorn Helgaas wrote:
+> >> >> On Thu, Nov 20, 2014 at 02:54:24PM -0800, Rajat Jain wrote:
+> 
+> >> >> If we do need it (and it looks like most or all hotplug drivers copied it),
+> >> >> isn't there still a race?  Can't we have the following sequence?
+> >> >>
+> >> >>   - pciehp_check_link_active()                # returns true
+> >> >>   - Link goes down
+> >> >>   - pci_read_config_byte()            # fails because link is down
+> >> >>
+> >> > I would guess so. Question is how to address it. Read the configuration byte
+> >> > first, then check if the link is down ? Check if link is still up after reading
+> >> > the configuration byte ? Add a note that there may be a potential race condition
+> >> > and do nothing until it is actually seen ?
+> >>
+> >> I think we should just read PCI_BRIDGE_CONTROL and look for a 0xff
+> >> value.  That's not a legal value for the register, so if we see it, it
+> >> should be pretty safe to assume the link is down or the device is not
+> >> present at all.
+> >>
+> > Something like
+> >         if (bctl != 0xff && (bctl & PCI_BRIDGE_CTL_VGA)) {
+> > in addition to Rajat's changes ?
+> >
+> > I think it would be good to keep the change Rajat proposed, ie to check
+> > the link state instead of presence. Question then is if you'd want a new
+> > revision of Rajat's patch or another patch on top of it with the bctl
+> > related change.
+> 
+> Why do we need the link state or the presence check?  It seems like
+> those are sort of a 90% solution, and doing them provides the illusion
+> of value but without real value.  If we think that checking for 0xff
+> is a 100% solution, we should rely on that and not bother with
+> anything else.
+> 
+Interesting thought. Let me play with that.
 
-The memset benchmark is largely copy-pasted from the memcpy benchmark.
-Prepare the memcpy file for merge with memset by extracting out a
-generic function.
-
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rabin Vincent <rabinv@axis.com>
-Link: http://lkml.kernel.org/r/1417535441-3965-1-git-send-email-rabin.vincent@axis.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/bench/mem-memcpy.c | 182 ++++++++++++++++++++++++------------------
- 1 file changed, 104 insertions(+), 78 deletions(-)
-
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 2465141b554b..4a4493a7a1f8 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -52,16 +52,18 @@ typedef void *(*memcpy_t)(void *, const void *, size_t);
- struct routine {
- 	const char *name;
- 	const char *desc;
--	memcpy_t fn;
-+	union {
-+		memcpy_t memcpy;
-+	} fn;
- };
- 
--struct routine routines[] = {
--	{ "default",
--	  "Default memcpy() provided by glibc",
--	  memcpy },
-+struct routine memcpy_routines[] = {
-+	{ .name = "default",
-+	  .desc = "Default memcpy() provided by glibc",
-+	  .fn.memcpy = memcpy },
- #ifdef HAVE_ARCH_X86_64_SUPPORT
- 
--#define MEMCPY_FN(fn, name, desc) { name, desc, fn },
-+#define MEMCPY_FN(_fn, _name, _desc) {.name = _name, .desc = _desc, .fn.memcpy = _fn},
- #include "mem-memcpy-x86-64-asm-def.h"
- #undef MEMCPY_FN
- 
-@@ -69,7 +71,7 @@ struct routine routines[] = {
- 
- 	{ NULL,
- 	  NULL,
--	  NULL   }
-+	  {NULL}   }
- };
- 
- static const char * const bench_mem_memcpy_usage[] = {
-@@ -110,63 +112,6 @@ static double timeval2double(struct timeval *ts)
- 		(double)ts->tv_usec / (double)1000000;
- }
- 
--static void alloc_mem(void **dst, void **src, size_t length)
--{
--	*dst = zalloc(length);
--	if (!*dst)
--		die("memory allocation failed - maybe length is too large?\n");
--
--	*src = zalloc(length);
--	if (!*src)
--		die("memory allocation failed - maybe length is too large?\n");
--	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
--	memset(*src, 0, length);
--}
--
--static u64 do_memcpy_cycle(memcpy_t fn, size_t len, bool prefault)
--{
--	u64 cycle_start = 0ULL, cycle_end = 0ULL;
--	void *src = NULL, *dst = NULL;
--	int i;
--
--	alloc_mem(&src, &dst, len);
--
--	if (prefault)
--		fn(dst, src, len);
--
--	cycle_start = get_cycle();
--	for (i = 0; i < iterations; ++i)
--		fn(dst, src, len);
--	cycle_end = get_cycle();
--
--	free(src);
--	free(dst);
--	return cycle_end - cycle_start;
--}
--
--static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
--{
--	struct timeval tv_start, tv_end, tv_diff;
--	void *src = NULL, *dst = NULL;
--	int i;
--
--	alloc_mem(&src, &dst, len);
--
--	if (prefault)
--		fn(dst, src, len);
--
--	BUG_ON(gettimeofday(&tv_start, NULL));
--	for (i = 0; i < iterations; ++i)
--		fn(dst, src, len);
--	BUG_ON(gettimeofday(&tv_end, NULL));
--
--	timersub(&tv_end, &tv_start, &tv_diff);
--
--	free(src);
--	free(dst);
--	return (double)((double)len / timeval2double(&tv_diff));
--}
--
- #define pf (no_prefault ? 0 : 1)
- 
- #define print_bps(x) do {					\
-@@ -180,8 +125,16 @@ static double do_memcpy_gettimeofday(memcpy_t fn, size_t len, bool prefault)
- 			printf(" %14lf GB/Sec", x / K / K / K); \
- 	} while (0)
- 
--int bench_mem_memcpy(int argc, const char **argv,
--		     const char *prefix __maybe_unused)
-+struct bench_mem_info {
-+	const struct routine *routines;
-+	u64 (*do_cycle)(const struct routine *r, size_t len, bool prefault);
-+	double (*do_gettimeofday)(const struct routine *r, size_t len, bool prefault);
-+	const char *const *usage;
-+};
-+
-+static int bench_mem_common(int argc, const char **argv,
-+		     const char *prefix __maybe_unused,
-+		     struct bench_mem_info *info)
- {
- 	int i;
- 	size_t len;
-@@ -189,7 +142,7 @@ int bench_mem_memcpy(int argc, const char **argv,
- 	u64 result_cycle[2];
- 
- 	argc = parse_options(argc, argv, options,
--			     bench_mem_memcpy_usage, 0);
-+			     info->usage, 0);
- 
- 	if (no_prefault && only_prefault) {
- 		fprintf(stderr, "Invalid options: -o and -n are mutually exclusive\n");
-@@ -213,16 +166,16 @@ int bench_mem_memcpy(int argc, const char **argv,
- 	if (only_prefault && no_prefault)
- 		only_prefault = no_prefault = false;
- 
--	for (i = 0; routines[i].name; i++) {
--		if (!strcmp(routines[i].name, routine))
-+	for (i = 0; info->routines[i].name; i++) {
-+		if (!strcmp(info->routines[i].name, routine))
- 			break;
- 	}
--	if (!routines[i].name) {
-+	if (!info->routines[i].name) {
- 		printf("Unknown routine:%s\n", routine);
- 		printf("Available routines...\n");
--		for (i = 0; routines[i].name; i++) {
-+		for (i = 0; info->routines[i].name; i++) {
- 			printf("\t%s ... %s\n",
--			       routines[i].name, routines[i].desc);
-+			       info->routines[i].name, info->routines[i].desc);
- 		}
- 		return 1;
- 	}
-@@ -234,25 +187,25 @@ int bench_mem_memcpy(int argc, const char **argv,
- 		/* show both of results */
- 		if (use_cycle) {
- 			result_cycle[0] =
--				do_memcpy_cycle(routines[i].fn, len, false);
-+				info->do_cycle(&info->routines[i], len, false);
- 			result_cycle[1] =
--				do_memcpy_cycle(routines[i].fn, len, true);
-+				info->do_cycle(&info->routines[i], len, true);
- 		} else {
- 			result_bps[0] =
--				do_memcpy_gettimeofday(routines[i].fn,
-+				info->do_gettimeofday(&info->routines[i],
- 						len, false);
- 			result_bps[1] =
--				do_memcpy_gettimeofday(routines[i].fn,
-+				info->do_gettimeofday(&info->routines[i],
- 						len, true);
- 		}
- 	} else {
- 		if (use_cycle) {
- 			result_cycle[pf] =
--				do_memcpy_cycle(routines[i].fn,
-+				info->do_cycle(&info->routines[i],
- 						len, only_prefault);
- 		} else {
- 			result_bps[pf] =
--				do_memcpy_gettimeofday(routines[i].fn,
-+				info->do_gettimeofday(&info->routines[i],
- 						len, only_prefault);
- 		}
- 	}
-@@ -310,3 +263,76 @@ int bench_mem_memcpy(int argc, const char **argv,
- 
- 	return 0;
- }
-+
-+static void memcpy_alloc_mem(void **dst, void **src, size_t length)
-+{
-+	*dst = zalloc(length);
-+	if (!*dst)
-+		die("memory allocation failed - maybe length is too large?\n");
-+
-+	*src = zalloc(length);
-+	if (!*src)
-+		die("memory allocation failed - maybe length is too large?\n");
-+	/* Make sure to always replace the zero pages even if MMAP_THRESH is crossed */
-+	memset(*src, 0, length);
-+}
-+
-+static u64 do_memcpy_cycle(const struct routine *r, size_t len, bool prefault)
-+{
-+	u64 cycle_start = 0ULL, cycle_end = 0ULL;
-+	void *src = NULL, *dst = NULL;
-+	memcpy_t fn = r->fn.memcpy;
-+	int i;
-+
-+	memcpy_alloc_mem(&src, &dst, len);
-+
-+	if (prefault)
-+		fn(dst, src, len);
-+
-+	cycle_start = get_cycle();
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, src, len);
-+	cycle_end = get_cycle();
-+
-+	free(src);
-+	free(dst);
-+	return cycle_end - cycle_start;
-+}
-+
-+static double do_memcpy_gettimeofday(const struct routine *r, size_t len,
-+				     bool prefault)
-+{
-+	struct timeval tv_start, tv_end, tv_diff;
-+	memcpy_t fn = r->fn.memcpy;
-+	void *src = NULL, *dst = NULL;
-+	int i;
-+
-+	memcpy_alloc_mem(&src, &dst, len);
-+
-+	if (prefault)
-+		fn(dst, src, len);
-+
-+	BUG_ON(gettimeofday(&tv_start, NULL));
-+	for (i = 0; i < iterations; ++i)
-+		fn(dst, src, len);
-+	BUG_ON(gettimeofday(&tv_end, NULL));
-+
-+	timersub(&tv_end, &tv_start, &tv_diff);
-+
-+	free(src);
-+	free(dst);
-+	return (double)((double)len / timeval2double(&tv_diff));
-+}
-+
-+int bench_mem_memcpy(int argc, const char **argv,
-+		     const char *prefix __maybe_unused)
-+{
-+	struct bench_mem_info info = {
-+		.routines = memcpy_routines,
-+		.do_cycle = do_memcpy_cycle,
-+		.do_gettimeofday = do_memcpy_gettimeofday,
-+		.usage = bench_mem_memcpy_usage,
-+	};
-+
-+	return bench_mem_common(argc, argv, prefix, &info);
-+}
--- 
-1.9.3
-
+Guenter
