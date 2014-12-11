@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804AbaLKLRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 06:17:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59080 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756740AbaLKLRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 06:17:37 -0500
-Date: Thu, 11 Dec 2014 12:17:33 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] livepatch v5: avoid race when checking for state of
- the patch
-Message-ID: <20141211111733.GA16567@dhcp128.suse.cz>
-References: <1418148307-21434-1-git-send-email-pmladek@suse.cz>
- <1418148307-21434-2-git-send-email-pmladek@suse.cz>
- <20141209183249.GA25239@treble.redhat.com>
- <20141210101147.GB2454@pathway.suse.cz>
- <20141210152506.GA32670@treble.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210152506.GA32670@treble.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932643AbaLKLSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 06:18:52 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:46487 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200AbaLKLSu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 06:18:50 -0500
+Content-Type: text/plain; charset=US-ASCII
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: default enable sparse __CHECK_ENDIAN__ (was: Re: [PATCH v7 2/3] net: Add Keystone NetCP ethernet driver)
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1418267099.18092.28.camel@perches.com>
+Date: Thu, 11 Dec 2014 12:18:44 +0100
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>, Michal Marek <mmarek@suse.cz>,
+        m-karicheri2@ti.com, Network Development <netdev@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        kernel list <linux-kernel@vger.kernel.org>, devicetree@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, grant.likely@linaro.org,
+        linux-sparse@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <479338B3-A0C0-4443-9C44-E03421F0679C@holtmann.org>
+References: <1417556503-22290-3-git-send-email-m-karicheri2@ti.com> <20141209.131053.2026868499542642866.davem@davemloft.net> <5488BB96.9070609@ti.com> <20141210.204110.618599360537141819.davem@davemloft.net> <1418267099.18092.28.camel@perches.com>
+To: Joe Perches <joe@perches.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2014-12-10 09:25:06, Josh Poimboeuf wrote:
-> On Wed, Dec 10, 2014 at 11:11:47AM +0100, Petr Mladek wrote:
-> > On Tue 2014-12-09 12:32:49, Josh Poimboeuf wrote:
-> > > On Tue, Dec 09, 2014 at 07:05:02PM +0100, Petr Mladek wrote:
-> > > > klp_patch_enable() and klp_patch_disable() should check the current state
-> > > > of the patch under the klp_lock. Otherwise, it might detect that the operation
-> > > > is valid but the situation might change before it takes the lock.
-> > > 
-> > > Hi Petr,
-> > > 
-> > > Thanks for the patches.
-> > > 
-> > > I don't think this patch is necessary.  klp_is_enabled() doesn't check
-> > > the state of the patch.  It checks the initialization state of the core
-> > > module (klp_root_kobj), which can only be set in klp_init().  It's not
-> > > protected by the lock, so I don't see the point of this patch.
-> > 
-> > Ah, I have misread the name and expected that it checked whether
-> > the patch was enabled or disabled. The original code is OK then.
-> > 
-> > Well, Jiri Kosina pointed out that the check did not make much sense.
-> > klp_is_enabled() could not be called if the livepatch module is not
-> > loaded. And the later check for klp_patch_is_registered() is enough
-> > to check whether the klp_enable_patch()/klp_disable_patch() calls
-> > are allowed or not.
+Hi Joe,
+
+>>> Are you referring to the static code analyser sparse that is invoked
+>>> through?
+>> You have to explicitly enable endian checking, it's not on by
+>> default.
 > 
-> But livepatch isn't a module, it's part of the kernel.
+> There don't seem to be thousands of warnings anymore.
+> 
+> Maybe it's time to default enable it when using C=?
+> 
+> from: Documentation/sparse.txt:
+> 
+> The optional make variable CF can be used to pass arguments to sparse.  The
+> build system passes -Wbitwise to sparse automatically.  To perform endianness
+> checks, you may define __CHECK_ENDIAN__:
+> 
+>        make C=2 CF="-D__CHECK_ENDIAN__"
+> 
+> These checks are disabled by default as they generate a host of warnings.
 
-Ah, I remembered that module_init(klp_init) and created a wrong mental link ;-)
+actually a few subsystems use this in their Makefile:
 
-> Even if the init
-> function returns an error, that doesn't prevent any of the other
-> exported functions from getting called.
+	subdir-ccflags-y += -D__CHECK_ENDIAN__
 
-Well, it still will be covered by that later klp_patch_is_registered()
-check. But I am find with leaving it as is.
+We could start with that to enable endian checks by default in various places.
 
-Best Regards,
-Petr
+Regards
+
+Marcel
+
