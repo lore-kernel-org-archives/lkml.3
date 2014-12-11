@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965131AbaLKV0l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:26:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44174 "EHLO mail.kernel.org"
+	id S965386AbaLKV0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:26:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44206 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965045AbaLKV0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:26:38 -0500
+	id S965045AbaLKV0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:26:46 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin.vincent@axis.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Rabin Vincent <rabin@rab.in>,
-        Rabin Vincent <rabinv@axis.com>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 03/18] perf bench: Fix memcpy/memset output
-Date: Thu, 11 Dec 2014 18:25:51 -0300
-Message-Id: <1418333166-15429-4-git-send-email-acme@kernel.org>
+Subject: [PATCH 05/18] perf tools: Use single strcmp call instead of two
+Date: Thu, 11 Dec 2014 18:25:53 -0300
+Message-Id: <1418333166-15429-6-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -23,123 +27,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@axis.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-The memcpy and memset benchmarks return bogus results when iterations >
-0 because the iterations value is not taken into account when
-calculating the final result:
+There's no need to use 2 strcmp calls, one is enough.
 
- $ perf bench mem memset --only-prefault --length 1GB --iterations 1
- # Running 'mem/memset' benchmark:
- # Copying 1GB Bytes ...
-
-       20.798669 GB/Sec (with prefault)
- $ perf bench mem memset --only-prefault --length 1GB --iterations 10
- # Running 'mem/memset' benchmark:
- # Copying 1GB Bytes ...
-
-        2.086576 GB/Sec (with prefault)
- $ perf bench mem memset --only-prefault --length 1GB --iterations 100
- # Running 'mem/memset' benchmark:
- # Copying 1GB Bytes ...
-
-      212.840917 MB/Sec (with prefault)
-
-Fix this.
-
-Signed-off-by: Rabin Vincent <rabin.vincent@axis.com>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rabin Vincent <rabin@rab.in>
-Cc: Rabin Vincent <rabinv@axis.com>
-Link: http://lkml.kernel.org/r/1417535441-3965-3-git-send-email-rabin.vincent@axis.com
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1417460789-13874-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/mem-memcpy.c | 18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ tools/perf/util/config.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index e18be70c8a47..6c14afe8c1b1 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -141,6 +141,7 @@ static int bench_mem_common(int argc, const char **argv,
- {
- 	int i;
- 	size_t len;
-+	double totallen;
- 	double result_bps[2];
- 	u64 result_cycle[2];
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 57ff826f150b..c802236b2bfe 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -522,7 +522,7 @@ static int buildid_dir_command_config(const char *var, const char *value,
+ 	const char *v;
  
-@@ -156,6 +157,7 @@ static int bench_mem_common(int argc, const char **argv,
- 		init_cycle();
- 
- 	len = (size_t)perf_atoll((char *)length_str);
-+	totallen = (double)len * iterations;
- 
- 	result_cycle[0] = result_cycle[1] = 0ULL;
- 	result_bps[0] = result_bps[1] = 0.0;
-@@ -219,10 +221,10 @@ static int bench_mem_common(int argc, const char **argv,
- 			if (use_cycle) {
- 				printf(" %14lf Cycle/Byte\n",
- 					(double)result_cycle[0]
--					/ (double)len);
-+					/ totallen);
- 				printf(" %14lf Cycle/Byte (with prefault)\n",
- 					(double)result_cycle[1]
--					/ (double)len);
-+					/ totallen);
- 			} else {
- 				print_bps(result_bps[0]);
- 				printf("\n");
-@@ -233,7 +235,7 @@ static int bench_mem_common(int argc, const char **argv,
- 			if (use_cycle) {
- 				printf(" %14lf Cycle/Byte",
- 					(double)result_cycle[pf]
--					/ (double)len);
-+					/ totallen);
- 			} else
- 				print_bps(result_bps[pf]);
- 
-@@ -244,8 +246,8 @@ static int bench_mem_common(int argc, const char **argv,
- 		if (!only_prefault && !no_prefault) {
- 			if (use_cycle) {
- 				printf("%lf %lf\n",
--					(double)result_cycle[0] / (double)len,
--					(double)result_cycle[1] / (double)len);
-+					(double)result_cycle[0] / totallen,
-+					(double)result_cycle[1] / totallen);
- 			} else {
- 				printf("%lf %lf\n",
- 					result_bps[0], result_bps[1]);
-@@ -253,7 +255,7 @@ static int bench_mem_common(int argc, const char **argv,
- 		} else {
- 			if (use_cycle) {
- 				printf("%lf\n", (double)result_cycle[pf]
--					/ (double)len);
-+					/ totallen);
- 			} else
- 				printf("%lf\n", result_bps[pf]);
- 		}
-@@ -324,7 +326,7 @@ static double do_memcpy_gettimeofday(const struct routine *r, size_t len,
- 
- 	free(src);
- 	free(dst);
--	return (double)((double)len / timeval2double(&tv_diff));
-+	return (double)(((double)len * iterations) / timeval2double(&tv_diff));
- }
- 
- int bench_mem_memcpy(int argc, const char **argv,
-@@ -389,7 +391,7 @@ static double do_memset_gettimeofday(const struct routine *r, size_t len,
- 	timersub(&tv_end, &tv_start, &tv_diff);
- 
- 	free(dst);
--	return (double)((double)len / timeval2double(&tv_diff));
-+	return (double)(((double)len * iterations) / timeval2double(&tv_diff));
- }
- 
- static const char * const bench_mem_memset_usage[] = {
+ 	/* same dir for all commands */
+-	if (!prefixcmp(var, "buildid.") && !strcmp(var + 8, "dir")) {
++	if (!strcmp(var, "buildid.dir")) {
+ 		v = perf_config_dirname(var, value);
+ 		if (!v)
+ 			return -1;
 -- 
 1.9.3
 
