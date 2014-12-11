@@ -1,547 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049AbaLKOZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:25:46 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:45822 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754498AbaLKOZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:25:44 -0500
-Date: Thu, 11 Dec 2014 16:16:48 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
-        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Subject: Re: [PATCH/RFC v9 08/19] leds: Add driver for AAT1290 current
- regulator
-Message-ID: <20141211141648.GR15559@valkosipuli.retiisi.org.uk>
-References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
- <1417622814-10845-9-git-send-email-j.anaszewski@samsung.com>
+	id S932997AbaLKOdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:33:46 -0500
+Received: from mga03.intel.com ([134.134.136.65]:39016 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaLKOdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 09:33:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,558,1413270000"; 
+   d="scan'208,223";a="652257058"
+Message-ID: <5489AB40.2010609@linux.intel.com>
+Date: Thu, 11 Dec 2014 22:33:36 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417622814-10845-9-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>, Joerg Roedel <joro@8bytes.org>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [tip:x86/apic] iommu/vt-d: Move iommu preparatory allocations
+ to irq_remap_ops.prepare
+References: <20141205084147.313026156@linutronix.de>	<tip-e9220e591375af6d02604c261999df570fba744f@git.kernel.org> <CAE9FiQU=Q8paxTJpqN8GFGYeq6u-E=VBtyQSVzVNYnJGEybtqw@mail.gmail.com>
+In-Reply-To: <CAE9FiQU=Q8paxTJpqN8GFGYeq6u-E=VBtyQSVzVNYnJGEybtqw@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------090302060305040407060500"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+This is a multi-part message in MIME format.
+--------------090302060305040407060500
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 
-On Wed, Dec 03, 2014 at 05:06:43PM +0100, Jacek Anaszewski wrote:
-> This patch adds a driver for the 1.5A Step-Up Current Regulator
-> for Flash LEDs. The device is programmed through a Skyworks proprietary
-> AS2Cwire serial digital interface.
+On 2014/12/11 15:35, Yinghai Lu wrote:
+> On Fri, Dec 5, 2014 at 3:26 PM, tip-bot for Thomas Gleixner
+> <tipbot@zytor.com> wrote:
+>> Commit-ID:  e9220e591375af6d02604c261999df570fba744f
+>> Gitweb:     http://git.kernel.org/tip/e9220e591375af6d02604c261999df570fba744f
+>> Author:     Thomas Gleixner <tglx@linutronix.de>
+>> AuthorDate: Fri, 5 Dec 2014 08:48:32 +0000
+>> Committer:  Thomas Gleixner <tglx@linutronix.de>
+>> CommitDate: Sat, 6 Dec 2014 00:19:25 +0100
+>>
+>> iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+>>
+>> The whole iommu setup for irq remapping is a convoluted mess. The
+>> iommu detect function gets called from mem_init() and the prepare
+>> callback gets called from enable_IR_x2apic() for unknown reasons.
 > 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> ---
->  drivers/leds/Kconfig        |    7 +
->  drivers/leds/Makefile       |    1 +
->  drivers/leds/leds-aat1290.c |  413 +++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 421 insertions(+)
->  create mode 100644 drivers/leds/leds-aat1290.c
+> Got
 > 
-> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-> index 2e66d55..ec4b78c 100644
-> --- a/drivers/leds/Kconfig
-> +++ b/drivers/leds/Kconfig
-> @@ -39,6 +39,13 @@ config LEDS_88PM860X
->  	  This option enables support for on-chip LED drivers found on Marvell
->  	  Semiconductor 88PM8606 PMIC.
->  
-> +config LEDS_AAT1290
-> +	tristate "LED support for the AAT1290"
-> +	depends on LEDS_CLASS_FLASH
-> +	depends on OF
-> +	help
-> +	 This option enables support for the LEDs on the AAT1290.
-> +
->  config LEDS_LM3530
->  	tristate "LCD Backlight driver for LM3530"
->  	depends on LEDS_CLASS
-> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-> index 57ca62b..b802251 100644
-> --- a/drivers/leds/Makefile
-> +++ b/drivers/leds/Makefile
-> @@ -7,6 +7,7 @@ obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
->  
->  # LED Platform Drivers
->  obj-$(CONFIG_LEDS_88PM860X)		+= leds-88pm860x.o
-> +obj-$(CONFIG_LEDS_AAT1290)		+= leds-aat1290.o
->  obj-$(CONFIG_LEDS_BD2802)		+= leds-bd2802.o
->  obj-$(CONFIG_LEDS_LOCOMO)		+= leds-locomo.o
->  obj-$(CONFIG_LEDS_LM3530)		+= leds-lm3530.o
-> diff --git a/drivers/leds/leds-aat1290.c b/drivers/leds/leds-aat1290.c
-> new file mode 100644
-> index 0000000..15d969b
-> --- /dev/null
-> +++ b/drivers/leds/leds-aat1290.c
-> @@ -0,0 +1,413 @@
-> +/*
-> + *	LED Flash class driver for the AAT1290
-> + *	1.5A Step-Up Current Regulator for Flash LEDs
-> + *
-> + *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
-> + *	Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/delay.h>
-> +#include <linux/slab.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +#include <linux/led-class-flash.h>
-> +#include <linux/leds.h>
-> +#include <linux/mutex.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/of.h>
-> +#include <linux/workqueue.h>
+Hi Yinghai,
+	From following log messages, it seems that the AHCI controllers
+allocates 16 MSI/MSI-X interrupt, and triggers NULL pointer reference
+when enabling interrupts for AHCI.
+	It doesn't trigger panic with this code path (allocate/enable
+MSI/MSI-X interrupts with IR enabled) on my test system. So could you
+please help to get more info with the attached test patch?
+Thanks!
+Gerry
 
-Alphabetic order, please.
+> [  134.510969] calling  ahci_pci_driver_init+0x0/0x1b @ 1
+> [  134.511387] ahci 0000:00:1f.2: version 3.0
+> [  134.530941]   alloc irq_desc for 91 on node 0
+> [  134.531168]   alloc irq_desc for 92 on node 0
+> [  134.550728]   alloc irq_desc for 93 on node 0
+> [  134.550995]   alloc irq_desc for 94 on node 0
+> [  134.551199]   alloc irq_desc for 95 on node 0
+> [  134.570871]   alloc irq_desc for 96 on node 0
+> [  134.571090]   alloc irq_desc for 97 on node 0
+> [  134.571303]   alloc irq_desc for 98 on node 0
+> [  134.590974]   alloc irq_desc for 99 on node 0
+> [  134.591205]   alloc irq_desc for 100 on node 0
+> [  134.610882]   alloc irq_desc for 101 on node 0
+> [  134.611136]   alloc irq_desc for 102 on node 0
+> [  134.611364]   alloc irq_desc for 103 on node 0
+> [  134.630992]   alloc irq_desc for 104 on node 0
+> [  134.631232]   alloc irq_desc for 105 on node 0
+> [  134.650885]   alloc irq_desc for 106 on node 0
+> [  134.651246] ahci 0000:00:1f.2: SSS flag set, parallel bus scan disabled
+> [  134.670926] ahci 0000:00:1f.2: AHCI 0001.0200 32 slots 6 ports 3
+> Gbps 0x3f impl SATA mode
+> [  134.671349] ahci 0000:00:1f.2: flags: 64bit ncq sntf stag pm led
+> clo pio slum part ccc ems sxs
+> [  134.691158] ahci 0000:00:1f.2: with iommu 3 : domain 10
+> [  134.751560] BUG: unable to handle kernel NULL pointer dereference
+> at 0000000000000118
+> [  134.751997] IP: [<ffffffff81eafe50>] modify_irte+0x40/0xd0
+> [  134.770893] PGD 0
+> [  134.771011] Oops: 0000 [#1] SMP
+> [  134.771195] Modules linked in:
+> [  134.771344] CPU: 0 PID: 2169 Comm: kworker/0:1 Tainted: G        W
+> [  134.811557] Workqueue: events work_for_cpu_fn
+> [  134.830823] task: ffff881024725240 ti: ffff8810252f8000 task.ti:
+> ffff8810252f8000
+> [  134.831176] RIP: 0010:[<ffffffff81eafe50>]  [<ffffffff81eafe50>]
+> modify_irte+0x40/0xd0
+> [  134.851029] RSP: 0000:ffff8810252fba18  EFLAGS: 00010096
+> [  134.851276] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000be00bd
+> [  134.871322] RDX: 0000000000000000 RSI: ffffffff81eafe3f RDI: 0000000000000046
+> [  134.891061] RBP: ffff8810252fba48 R08: 0000000000000001 R09: 0000000000000001
+> [  134.891393] R10: ffff881024725240 R11: 0000000000000292 R12: 0000000000000000
+> [  134.911249] R13: 0000000000000096 R14: ffff881022b181d0 R15: ffff880079268260
+> [  134.930824] FS:  0000000000000000(0000) GS:ffff88103de00000(0000)
+> knlGS:0000000000000000
+> [  134.931202] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  134.950966] CR2: 0000000000000118 CR3: 0000000002c1a000 CR4: 00000000000007f0
+> [  134.970775] Stack:
+> [  134.970883]  ffff8810252fba88 0000000000000046 ffff881022f6c660
+> ffff881026d00000
+> [  134.971253]  000000000000005c ffff880079268200 ffff8810252fba58
+> ffffffff81eaff26
+> [  134.991066]  ffff8810252fba78 ffffffff81106761 ffff880079268200
+> ffff88103d889400
+> [  135.010908] Call Trace:
+> [  135.011038]  [<ffffffff81eaff26>] intel_irq_remapping_activate+0x16/0x20
+> [  135.030800]  [<ffffffff81106761>] irq_domain_activate_irq+0x41/0x50
+> [  135.031103]  [<ffffffff8110674b>] irq_domain_activate_irq+0x2b/0x50
+> [  135.050857]  [<ffffffff81103f19>] irq_startup+0x29/0x70
+> [  135.051091]  [<ffffffff81102857>] __setup_irq+0x327/0x590
+> [  135.070849]  [<ffffffff81a3d820>] ? ahci_bad_pmp_check_ready+0x70/0x70
+> [  135.071143]  [<ffffffff81102c42>] request_threaded_irq+0xf2/0x150
+> [  135.090972]  [<ffffffff81a3d820>] ? ahci_bad_pmp_check_ready+0x70/0x70
+> [  135.091295]  [<ffffffff81a3ff90>] ? ahci_host_activate+0x180/0x180
+> [  135.111014]  [<ffffffff8110495f>] devm_request_threaded_irq+0x5f/0xb0
+> [  135.130804]  [<ffffffff81a3feb3>] ahci_host_activate+0xa3/0x180
+> [  135.131097]  [<ffffffff81a3d391>] ahci_init_one+0x9d1/0xac0
+> [  135.150841]  [<ffffffff8157d735>] local_pci_probe+0x45/0xa0
+> [  135.151127]  [<ffffffff810b8868>] work_for_cpu_fn+0x18/0x30
+> [  135.170843]  [<ffffffff810bbd24>] process_one_work+0x254/0x470
+> [  135.171103]  [<ffffffff810bbc89>] ? process_one_work+0x1b9/0x470
+> [  135.190846]  [<ffffffff810bce1b>] worker_thread+0x31b/0x4e0
+> [  135.191115]  [<ffffffff810ea3bd>] ? trace_hardirqs_on+0xd/0x10
+> [  135.210920]  [<ffffffff810bcb00>] ? pool_mayday_timeout+0x170/0x170
+> [  135.211215]  [<ffffffff810c1ff1>] kthread+0x101/0x110
+> [  135.230902]  [<ffffffff810ea3bd>] ? trace_hardirqs_on+0xd/0x10
+> [  135.231157]  [<ffffffff810c1ef0>] ? kthread_stop+0x100/0x100
+> [  135.250930]  [<ffffffff82015e6c>] ret_from_fork+0x7c/0xb0
+> [  135.251178]  [<ffffffff810c1ef0>] ? kthread_stop+0x100/0x100
+> [  135.270969] Code: ec 10 48 85 ff 0f 84 90 00 00 00 48 c7 c7 80 34
+> e0 82 49 89 f6 e8 21 54 16 00 0f b7 53 08 49 89 c5 0f b7 43 0a 4c 8b
+> 23 8d 1c 02 <49> 8b 84 24 18 01 00 00 48 63 fb 48 c1 e7 04 48 03 38 49
+> 8b 06
+> [  135.291699] RIP  [<ffffffff81eafe50>] modify_irte+0x40/0xd0
+> [  135.311051]  RSP <ffff8810252fba18>
+> [  135.311215] CR2: 0000000000000118
+> [  135.330856] ---[ end trace fee039719f1667df ]---
+> [  135.333024] BUG: unable to handle kernel paging request at ffffffffffffff98
+> [  135.350911] IP: [<ffffffff810c2530>] kthread_data+0x10/0x20
+> [  135.351230] PGD 2c1b067 PUD 2c1d067 PMD 0
+> [  135.351443] Oops: 0000 [#2] SMP
+> [  135.370998] Modules linked in:
+> [  135.371168] CPU: 0 PID: 2169 Comm: kworker/0:1 Tainted: G      D W
+> [  135.412423] task: ffff881024725240 ti: ffff8810252f8000 task.ti:
+> ffff8810252f8000
+> [  135.412798] RIP: 0010:[<ffffffff810c2530>]  [<ffffffff810c2530>]
+> kthread_data+0x10/0x20
+> [  135.431159] RSP: 0000:ffff8810252fb538  EFLAGS: 00010096
+> [  135.450891] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 000000000000000f
+> [  135.451218] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff881024725240
+> [  135.471044] RBP: ffff8810252fb538 R08: ffff8810247252d0 R09: 0000000000000001
+> [  135.490873] R10: ffff881024725240 R11: 000000000000001a R12: ffff88103dfd2c40
+> [  135.491237] R13: 0000000000000000 R14: 0000000000000000 R15: ffff881024725240
+> [  135.511046] FS:  0000000000000000(0000) GS:ffff88103de00000(0000)
+> knlGS:0000000000000000
+> [  135.530882] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [  135.531160] CR2: 0000000000000028 CR3: 0000000002c1a000 CR4: 00000000000007f0
+> [  135.550979] Stack:
+> [  135.551074]  ffff8810252fb558 ffffffff810bd065 ffff8810252fb558
+> ffff881024725240
+> [  135.570927]  ffff8810252fb678 ffffffff8200fc0b ffff881025ffec00
+> 0000000000009000
+> [  135.571302]  ffff881024725240 ffff8810252fbfd8 ffff88103dfd3a40
+> ffff881024725240
+> [  135.591114] Call Trace:
+> [  135.591231]  [<ffffffff810bd065>] wq_worker_sleeping+0x15/0xb0
+> [  135.610996]  [<ffffffff8200fc0b>] __schedule+0x18b/0xa70
+> [  135.611237]  [<ffffffff810ea3bd>] ? trace_hardirqs_on+0xd/0x10
+> [  135.630988]  [<ffffffff810a634a>] ? do_exit+0x88a/0x9f0
+> [  135.631222]  [<ffffffff810a634a>] ? do_exit+0x88a/0x9f0
+> [  135.650932]  [<ffffffff82010555>] schedule+0x65/0x70
+> [  135.651186]  [<ffffffff810a6415>] do_exit+0x955/0x9f0
+> [  135.670899]  [<ffffffff81054a08>] oops_end+0xb8/0xd0
+> [  135.671136]  [<ffffffff81ffa88a>] no_context+0x309/0x352
+> [  135.671373]  [<ffffffff81ffaa98>] __bad_area_nosemaphore+0x1c5/0x1e4
+> [  135.691185]  [<ffffffff81ffaaca>] bad_area_nosemaphore+0x13/0x15
+> [  135.710934]  [<ffffffff81093f26>] __do_page_fault+0x266/0x590
+> [  135.711292]  [<ffffffff810c8d20>] ? task_rq_lock+0x50/0xb0
+> [  135.730941]  [<ffffffff810c8d20>] ? task_rq_lock+0x50/0xb0
+> [  135.731200]  [<ffffffff820150f2>] ? _raw_spin_lock+0x62/0x70
+> [  135.750949]  [<ffffffff810c8d20>] ? task_rq_lock+0x50/0xb0
+> [  135.751195]  [<ffffffff810ea166>] ? trace_hardirqs_on_caller+0x16/0x260
+> [  135.770989]  [<ffffffff810e7c6f>] ? trace_hardirqs_off_caller+0x1f/0x160
+> [  135.771309]  [<ffffffff81094296>] do_page_fault+0x46/0x80
+> [  135.791081]  [<ffffffff82017c72>] page_fault+0x22/0x30
+> [  135.791310]  [<ffffffff81eafe3f>] ? modify_irte+0x2f/0xd0
+> [  135.811037]  [<ffffffff81eafe50>] ? modify_irte+0x40/0xd0
+> [  135.811315]  [<ffffffff81eafe3f>] ? modify_irte+0x2f/0xd0
+> [  135.831150]  [<ffffffff81eaff26>] intel_irq_remapping_activate+0x16/0x20
+> [  135.831461]  [<ffffffff81106761>] irq_domain_activate_irq+0x41/0x50
+> [  135.851716]  [<ffffffff8110674b>] irq_domain_activate_irq+0x2b/0x50
+> [  135.852020]  [<ffffffff81103f19>] irq_startup+0x29/0x70
+> [  135.871401]  [<ffffffff81102857>] __setup_irq+0x327/0x590
+> [  135.871653]  [<ffffffff81a3d820>] ? ahci_bad_pmp_check_ready+0x70/0x70
+> [  135.891334]  [<ffffffff81102c42>] request_threaded_irq+0xf2/0x150
+> [  135.911099]  [<ffffffff81a3d820>] ? ahci_bad_pmp_check_ready+0x70/0x70
+> [  135.911416]  [<ffffffff81a3ff90>] ? ahci_host_activate+0x180/0x180
+> [  135.931274]  [<ffffffff8110495f>] devm_request_threaded_irq+0x5f/0xb0
+> [  135.931568]  [<ffffffff81a3feb3>] ahci_host_activate+0xa3/0x180
+> [  135.951093]  [<ffffffff81a3d391>] ahci_init_one+0x9d1/0xac0
+> [  135.951375]  [<ffffffff8157d735>] local_pci_probe+0x45/0xa0
+> [  135.971111]  [<ffffffff810b8868>] work_for_cpu_fn+0x18/0x30
+> [  135.971366]  [<ffffffff810bbd24>] process_one_work+0x254/0x470
+> [  135.991196]  [<ffffffff810bbc89>] ? process_one_work+0x1b9/0x470
+> [  135.991477]  [<ffffffff810bce1b>] worker_thread+0x31b/0x4e0
+> [  136.011132]  [<ffffffff810ea3bd>] ? trace_hardirqs_on+0xd/0x10
+> [  136.011393]  [<ffffffff810bcb00>] ? pool_mayday_timeout+0x170/0x170
+> [  136.031187]  [<ffffffff810c1ff1>] kthread+0x101/0x110
+> [  136.031420]  [<ffffffff810ea3bd>] ? trace_hardirqs_on+0xd/0x10
+> [  136.051244]  [<ffffffff810c1ef0>] ? kthread_stop+0x100/0x100
+> [  136.051494]  [<ffffffff82015e6c>] ret_from_fork+0x7c/0xb0
+> [  136.071210]  [<ffffffff810c1ef0>] ? kthread_stop+0x100/0x100
+> [  136.071495] Code: 00 48 89 e5 5d 48 8b 40 88 48 c1 e8 02 83 e0 01
+> c3 66 2e 0f 1f 84 00 00 00 00 00 66 66 66 66 90 48 8b 87 b8 08 00 00
+> 55 48 89 e5 <48> 8b 40 98 5d c3 66 2e 0f 1f 84 00 00 00 00 00 66 66 66
+> 66 90
+> [  136.111619] RIP  [<ffffffff810c2530>] kthread_data+0x10/0x20
+> [  136.131069]  RSP <ffff8810252fb538>
+> [  136.131253] CR2: ffffffffffffff98
+> [  136.131406] ---[ end trace fee039719f1667e0 ]---
+> [  136.151131] Fixing recursive fault but reboot is needed!
+> 
+> It is in tip/apic
+> 
+> Thanks
+> 
+> Yinghai
+> 
 
-> +
-> +#define AAT1290_MOVIE_MODE_CURRENT_ADDR	17
-> +#define AAT1290_FLASH_SAFETY_TIMER_ADDR	18
-> +#define AAT1290_MOVIE_MODE_CONFIG_ADDR	19
-> +#define AAT1290_MM_CURRENT_RATIO_ADDR	20
-> +#define AAT1290_LATCH_TIME_US		500
-> +#define AAT1290_EN_SET_TICK_TIME_US	1
-> +#define AAT1290_MOVIE_MODE_OFF		1
-> +#define AAT1290_MOVIE_MODE_ON		3
-> +#define AAT1290_MAX_MM_CURR_PERCENT_0	16
-> +#define AAT1290_MAX_MM_CURR_PERCENT_100 1
-> +#define AAT1290_FLASH_TM_NUM_LEVELS	16
+--------------090302060305040407060500
+Content-Type: text/x-patch;
+ name="0001-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="0001-.patch"
 
-It'd be nice to arrange register bit definitions next to the register
-address they're related to. That makes this a lot more readable. Timeouts
-separately as well.
+>From 9588cf7c376237ee0c2708c4e648328f433257d5 Mon Sep 17 00:00:00 2001
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Date: Thu, 11 Dec 2014 22:25:40 +0800
+Subject: [PATCH]
 
-Please also align the values on the right to the same column. I think they
-mostly are, but at least AAT1290_MAX_MM_CURR_PERCENT_100 uses space instead
-of a tab.
 
-> +#define AAT1290_MM_TO_FL_1_92	1
-> +#define AAT1290_MM_TO_FL_3_7	2
-> +#define AAT1290_MM_TO_FL_5_5	3
-> +#define AAT1290_MM_TO_FL_7_3	4
-> +#define AAT1290_MM_TO_FL_9	5
-> +#define AAT1290_MM_TO_FL_10_7	6
-> +#define AAT1290_MM_TO_FL_12_4	7
-> +#define AAT1290_MM_TO_FL_14	8
-> +#define AAT1290_MM_TO_FL_15_9	9
-> +#define AAT1290_MM_TO_FL_17_5	10
-> +#define AAT1290_MM_TO_FL_19_1	11
-> +#define AAT1290_MM_TO_FL_20_8	12
-> +#define AAT1290_MM_TO_FL_22_4	13
-> +#define AAT1290_MM_TO_FL_24	14
-> +#define AAT1290_MM_TO_FL_25_6	15
-> +#define AAT1290_MM_TO_FL_OFF	16
-> +
-> +struct aat1290_led_settings {
-> +	struct led_flash_setting torch_brightness;
-> +	struct led_flash_setting flash_brightness;
-> +	struct led_flash_setting flash_timeout;
-> +};
-> +
-> +struct aat1290_led {
-> +	struct platform_device *pdev;
-> +	struct mutex lock;
-> +
-> +	struct led_classdev_flash ldev;
-> +
-> +	int flen_gpio;
-> +	int en_set_gpio;
-> +
-> +	u32 max_flash_tm;
-> +	bool movie_mode;
-> +
-> +	char *label;
-> +	unsigned int torch_brightness;
-> +	unsigned int flash_timeout;
-> +	struct work_struct work_brightness_set;
-> +};
-> +
-> +static struct aat1290_led *ldev_to_led(struct led_classdev_flash *ldev)
-> +{
-> +	return container_of(ldev, struct aat1290_led, ldev);
-> +}
-> +
-> +static void aat1290_as2cwire_write(struct aat1290_led *led, int addr, int value)
-> +{
-> +	int i;
-> +
-> +	gpio_set_value(led->flen_gpio, 0);
-> +	gpio_set_value(led->en_set_gpio, 0);
-> +
-> +	udelay(10);
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel_irq_remapping.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Could you use a #define for this as you are using for the rest?
-
-> +
-> +	/* write address */
-> +	for (i = 0; i < addr; ++i) {
-> +		udelay(AAT1290_EN_SET_TICK_TIME_US);
-> +		gpio_set_value(led->en_set_gpio, 0);
-> +		udelay(AAT1290_EN_SET_TICK_TIME_US);
-> +		gpio_set_value(led->en_set_gpio, 1);
-> +	}
-
-This is a very interesting approach to bus implementation. It's a bit like
-pulse dial on POTS. :-)
-
-> +
-> +	udelay(AAT1290_LATCH_TIME_US);
-
-How precise does this need to be? Could you use usleep_range() instead?
-
-> +
-> +	/* write data */
-> +	for (i = 0; i < value; ++i) {
-> +		udelay(AAT1290_EN_SET_TICK_TIME_US);
-> +		gpio_set_value(led->en_set_gpio, 0);
-> +		udelay(AAT1290_EN_SET_TICK_TIME_US);
-> +		gpio_set_value(led->en_set_gpio, 1);
-> +	}
-> +
-> +	udelay(AAT1290_LATCH_TIME_US);
-> +}
-> +
-> +static void aat1290_set_flash_safety_timer(struct aat1290_led *led,
-> +					unsigned int micro_sec)
-> +{
-> +	struct led_classdev_flash *flash = &led->ldev;
-> +	struct led_flash_setting *flash_tm = &flash->timeout;
-> +	int flash_tm_reg = AAT1290_FLASH_TM_NUM_LEVELS -
-> +				(micro_sec / flash_tm->step) + 1;
-> +
-> +	aat1290_as2cwire_write(led, AAT1290_FLASH_SAFETY_TIMER_ADDR,
-> +							flash_tm_reg);
-> +}
-> +
-> +static void aat1290_brightness_set(struct aat1290_led *led,
-> +					enum led_brightness brightness)
-> +{
-> +	mutex_lock(&led->lock);
-> +
-> +	if (brightness == 0) {
-> +		gpio_set_value(led->flen_gpio, 0);
-> +		gpio_set_value(led->en_set_gpio, 0);
-> +		goto unlock;
-> +	}
-> +
-> +	if (!led->movie_mode) {
-> +		aat1290_as2cwire_write(led, AAT1290_MM_CURRENT_RATIO_ADDR,
-> +					AAT1290_MM_TO_FL_1_92);
-> +		led->movie_mode = true;
-> +	}
-> +
-> +	aat1290_as2cwire_write(led, AAT1290_MOVIE_MODE_CURRENT_ADDR,
-> +				AAT1290_MAX_MM_CURR_PERCENT_0 - brightness);
-> +	aat1290_as2cwire_write(led, AAT1290_MOVIE_MODE_CONFIG_ADDR,
-> +				AAT1290_MOVIE_MODE_ON);
-> +unlock:
-> +	mutex_unlock(&led->lock);
-> +}
-> +
-> +/* LED subsystem callbacks */
-> +
-> +static void aat1290_brightness_set_work(struct work_struct *work)
-> +{
-> +	struct aat1290_led *led =
-> +		container_of(work, struct aat1290_led, work_brightness_set);
-> +
-> +	aat1290_brightness_set(led, led->torch_brightness);
-> +}
-> +
-> +static void aat1290_led_brightness_set(struct led_classdev *led_cdev,
-> +					enum led_brightness brightness)
-> +{
-> +	struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
-> +	struct aat1290_led *led = ldev_to_led(flash);
-> +
-> +	led->torch_brightness = brightness;
-> +	schedule_work(&led->work_brightness_set);
-
-Where is the asynchronous brightness setting used? Don't flash class devices
-use always the synchronous variant?
-
-> +}
-> +
-> +static int aat1290_led_brightness_set_sync(struct led_classdev *led_cdev,
-> +					enum led_brightness brightness)
-> +{
-> +	struct led_classdev_flash *flash = lcdev_to_flash(led_cdev);
-> +	struct aat1290_led *led = ldev_to_led(flash);
-> +
-> +	aat1290_brightness_set(led, brightness);
-> +
-> +	return 0;
-> +}
-> +
-> +static int aat1290_led_flash_strobe_set(struct led_classdev_flash *flash,
-> +					 bool state)
-> +
-> +{
-> +	struct aat1290_led *led = ldev_to_led(flash);
-> +	struct led_classdev *led_cdev = &flash->led_cdev;
-> +	struct led_flash_setting *timeout = &flash->timeout;
-> +
-> +	mutex_lock(&led->lock);
-> +
-> +	if (state == 0) {
-> +		gpio_set_value(led->flen_gpio, 0);
-> +		gpio_set_value(led->en_set_gpio, 0);
-> +		goto unlock;
-> +	}
-> +
-> +	aat1290_set_flash_safety_timer(led, timeout->val);
-> +
-> +	/*
-> +	 * To reenter movie mode after a flash event the part
-> +	 * must be cycled off and back on to reset the movie
-> +	 * mode and reprogrammed via the AS2Cwire. Therefore
-> +	 * the brightness value needs to be updated here to
-> +	 * reflect the actual state.
-> +	 */
-> +	led_cdev->brightness = 0;
-> +	led->movie_mode = false;
-> +
-> +	gpio_set_value(led->flen_gpio, 1);
-> +
-> +unlock:
-> +	mutex_unlock(&led->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static int aat1290_led_flash_timeout_set(struct led_classdev_flash *flash,
-> +						u32 timeout)
-> +{
-> +	/*
-> +	 * Don't do anything - flash timeout is cached in the led-class-flash
-> +	 * core and will be applied in the strobe_set op, as writing the
-> +	 * safety timer register spuriously turns the torch mode on.
-> +	 */
-> +
-> +	return 0;
-> +}
-> +
-> +static int aat1290_led_parse_dt(struct aat1290_led *led,
-> +				struct device *dev)
-> +{
-> +	int ret;
-> +	char *pname = "label";
-
-You could use two const static variables for this, or a define. No need to
-assign the variable in the middle.
-
-I have to admit I've usually just written the string in verbatim where I
-need it. :-)
-
-> +
-> +	ret = of_property_read_string(dev->of_node, pname,
-> +				(const char **) &led->label);
-> +	if (ret < 0) {
-> +		dev_err(dev, "Error reading %s Device Tree property (%d)\n",
-> +			pname, ret);
-> +		return ret;
-> +	}
-> +
-> +	pname = "flash-timeout-microsec";
-> +
-> +	ret = of_property_read_u32(dev->of_node, pname, &led->max_flash_tm);
-> +	if (ret) {
-> +		dev_err(dev, "Error reading %s Device Tree property (%d)\n",
-> +			pname, ret);
-> +		return ret;
-> +	}
-> +
-> +	return ret;
-
-You always return ret whether here or above.
-
-> +}
-> +
-> +static void aat1290_init_flash_settings(struct aat1290_led *led,
-> +					 struct aat1290_led_settings *s)
-> +{
-> +	struct led_flash_setting *setting;
-> +
-> +	/* Init flash intensity setting */
-> +	setting = &s->torch_brightness;
-> +	/*
-> +	 * Torch current is adjustable in logarithmic fashion and thus
-> +	 * it is not possible to define fixed step in microamperes.
-> +	 * Instead led brightness levels are used to make possible
-> +	 * setting all the supported levels from V4L2 Flash sub-device.
-> +	 */
-> +	setting->min = 1;
-> +	setting->max = AAT1290_MAX_MM_CURR_PERCENT_0 -
-> +		       AAT1290_MAX_MM_CURR_PERCENT_100;
-> +	setting->step = 1;
-> +	setting->val = setting->max;
-> +
-> +	/* Init flash timeout setting */
-> +	setting = &s->flash_timeout;
-> +	setting->min = led->max_flash_tm / AAT1290_FLASH_TM_NUM_LEVELS;
-> +	setting->max = setting->min * AAT1290_FLASH_TM_NUM_LEVELS;
-> +	setting->step = setting->min;
-> +	setting->val = setting->max;
-> +}
-> +
-> +static const struct led_flash_ops flash_ops = {
-> +	.strobe_set = aat1290_led_flash_strobe_set,
-> +	.timeout_set = aat1290_led_flash_timeout_set,
-> +};
-> +
-> +static int aat1290_led_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct device_node *dev_node = pdev->dev.of_node;
-> +	struct aat1290_led *led;
-> +	struct led_classdev *led_cdev;
-> +	struct led_classdev_flash *flash;
-> +	struct aat1290_led_settings settings;
-> +	int flen_gpio, enset_gpio, ret;
-> +
-> +	led = devm_kzalloc(dev, sizeof(*led), GFP_KERNEL);
-> +	if (!led)
-> +		return -ENOMEM;
-> +
-> +	led->pdev = pdev;
-> +	platform_set_drvdata(pdev, led);
-> +
-> +	if (!dev_node)
-> +		return -ENXIO;
-> +
-> +	flen_gpio = of_get_gpio(dev_node, 0);
-> +	if (gpio_is_valid(flen_gpio)) {
-> +		ret = gpio_request_one(flen_gpio, GPIOF_DIR_OUT,
-> +						"aat1290_flen");
-> +		if (ret < 0) {
-> +			dev_err(dev,
-> +				"failed to request GPIO %d, error %d\n",
-> +							flen_gpio, ret);
-> +			goto error_gpio_flen;
-> +		}
-> +	}
-> +	led->flen_gpio = flen_gpio;
-> +
-> +	enset_gpio = of_get_gpio(dev_node, 1);
-> +	if (gpio_is_valid(enset_gpio)) {
-> +		ret = gpio_request_one(enset_gpio, GPIOF_DIR_OUT,
-
-Could you use devm_gpio_request_one()?
-
-> +						"aat1290_en_set");
-> +		if (ret < 0) {
-> +			dev_err(dev,
-> +				"failed to request GPIO %d, error %d\n",
-> +							enset_gpio, ret);
-> +			goto error_gpio_en_set;
-> +		}
-> +	}
-> +	led->en_set_gpio = enset_gpio;
-> +
-> +	ret = aat1290_led_parse_dt(led, &pdev->dev);
-> +	if (ret < 0)
-> +		goto error_gpio_en_set;
-> +
-> +	mutex_init(&led->lock);
-
-By moving mutex_init() up, you can avoid calling mutex_destroy() on an
-uninitialised mutex in error paths.
-
-> +
-> +	flash = &led->ldev;
-> +
-> +	/* Init flash settings */
-> +	aat1290_init_flash_settings(led, &settings);
-> +
-> +	flash->timeout = settings.flash_timeout;
-> +
-> +	/* Init led class */
-> +	led_cdev = &flash->led_cdev;
-> +	led_cdev->name = led->label;
-> +	led_cdev->brightness_set = aat1290_led_brightness_set;
-> +	led_cdev->brightness_set_sync = aat1290_led_brightness_set_sync;
-> +	led_cdev->max_brightness = settings.torch_brightness.max;
-> +	led_cdev->flags |= LED_DEV_CAP_FLASH;
-> +
-> +	INIT_WORK(&led->work_brightness_set, aat1290_brightness_set_work);
-> +
-> +	flash->ops = &flash_ops;
-> +
-> +	/* Register in the LED subsystem. */
-> +	ret = led_classdev_flash_register(&pdev->dev, flash);
-> +	if (ret < 0)
-> +		goto error_gpio_en_set;
-> +
-> +	return 0;
-> +
-> +error_gpio_en_set:
-> +	if (gpio_is_valid(enset_gpio))
-> +		gpio_free(enset_gpio);
-> +error_gpio_flen:
-> +	if (gpio_is_valid(flen_gpio))
-> +		gpio_free(flen_gpio);
-> +	mutex_destroy(&led->lock);
-> +
-> +	return ret;
-> +}
-> +
-> +static int aat1290_led_remove(struct platform_device *pdev)
-> +{
-> +	struct aat1290_led *led = platform_get_drvdata(pdev);
-> +
-> +	led_classdev_flash_unregister(&led->ldev);
-> +	cancel_work_sync(&led->work_brightness_set);
-> +
-> +	if (gpio_is_valid(led->en_set_gpio))
-> +		gpio_free(led->en_set_gpio);
-> +	if (gpio_is_valid(led->flen_gpio))
-> +		gpio_free(led->flen_gpio);
-> +
-> +	mutex_destroy(&led->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id aat1290_led_dt_match[] = {
-> +	{.compatible = "skyworks,aat1290"},
-> +	{},
-> +};
-> +
-> +static struct platform_driver aat1290_led_driver = {
-> +	.probe		= aat1290_led_probe,
-> +	.remove		= aat1290_led_remove,
-> +	.driver		= {
-> +		.name	= "aat1290-led",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = aat1290_led_dt_match,
-> +	},
-> +};
-> +
-> +module_platform_driver(aat1290_led_driver);
-> +
-> +MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
-> +MODULE_DESCRIPTION("Skyworks Current Regulator for Flash LEDs");
-> +MODULE_LICENSE("GPL");
-
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index ff35b0336d2b..8503cd467484 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -1207,6 +1207,19 @@ static void intel_irq_remapping_activate(struct irq_domain *domain,
+ {
+ 	struct intel_ir_data *data = irq_data->chip_data;
+ 
++	if (irq_data->irq >= 91 && irq_data->irq <= 106) {
++		struct irq_2_iommu *irq_iommu;
++		struct intel_iommu *iommu;
++
++		irq_iommu = &data->irq_2_iommu;
++		iommu = irq_iommu->iommu;
++		pr_warn("iommu: chip_data %p, iommu %p, index %d, subindex %d, ir_table %p, table_base %p, queue %p\n",
++			data, iommu, irq_iommu->irte_index, irq_iommu->sub_handle,
++			iommu ? iommu->ir_table : NULL,
++			iommu && iommu->ir_table ? iommu->ir_table->base : NULL,
++			iommu && iommu->qi ? iommu->qi->desc : NULL);
++	}
++
+ 	modify_irte(&data->irq_2_iommu, &data->irte_entry);
+ }
+ 
 -- 
-Kind regards,
+1.7.10.4
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+
+--------------090302060305040407060500--
