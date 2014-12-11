@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934510AbaLKXL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:11:29 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:39099 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934114AbaLKXL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:11:27 -0500
-Date: Thu, 11 Dec 2014 23:11:00 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: NeilBrown <neilb@suse.de>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        NeilBrown <neil@brown.name>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] TTY/slave: add driver for w2sg0004 GPS
-Message-ID: <20141211231100.05782a30@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141211215944.4127.57146.stgit@notabene.brown>
-References: <20141211214801.4127.93914.stgit@notabene.brown>
-	<20141211215944.4127.57146.stgit@notabene.brown>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S965880AbaLKXOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:14:30 -0500
+Received: from mail-by2on0099.outbound.protection.outlook.com ([207.46.100.99]:5279
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934114AbaLKXO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 18:14:28 -0500
+Date: Thu, 11 Dec 2014 17:14:24 -0600
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@linuxheads99
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
+        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
+        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
+        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v4 6/6] staging: fpga manager: add driver for altera
+ socfpga manager
+In-Reply-To: <20141210150548.GB23358@pengutronix.de>
+Message-ID: <alpine.DEB.2.02.1412111710470.11739@linuxheads99>
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com> <1418156090-23578-7-git-send-email-atull@opensource.altera.com> <20141210150548.GB23358@pengutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BLUPR05CA0062.namprd05.prod.outlook.com (10.141.20.32) To
+ DM2PR0301MB1247.namprd03.prod.outlook.com (25.160.219.24)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1247;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:DM2PR0301MB1247;
+X-Forefront-PRVS: 0422860ED4
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(51704005)(24454002)(189002)(54356999)(76176999)(31966008)(50986999)(46406003)(120916001)(99396003)(42186005)(92566001)(87976001)(106356001)(83506001)(23726002)(105586002)(4396001)(86152002)(53416004)(69596002)(66066001)(107046002)(122386002)(81156004)(50466002)(47776003)(64706001)(20776003)(86362001)(110136001)(46102003)(68736005)(33716001)(97736003)(21056001)(62966003)(40100003)(77156002)(101416001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR0301MB1247;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1247;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +w2sg0004 UART-attached GPS receiver
-> +
+On Wed, 10 Dec 2014, Steffen Trumtrar wrote:
 
-I'm wondering why it's tied to the w2sg0004
+> > +static inline void altera_fpga_reg_set_bitsl(struct altera_fpga_priv *priv,
+> > +					     u32 offset, u32 bits)
+> > +{
+> > +	u32 val;
+> > +
+> > +	val = altera_fpga_reg_readl(priv, offset);
+> > +	val |= bits;
+> > +	altera_fpga_reg_writel(priv, offset, val);
+> > +}
+> > +
+> > +static inline void altera_fpga_reg_clr_bitsl(struct altera_fpga_priv *priv,
+> > +					     u32 offset, u32 bits)
+> > +{
+> > +	u32 val;
+> > +
+> > +	val = altera_fpga_reg_readl(priv, offset);
+> > +	val &= ~bits;
+> > +	altera_fpga_reg_writel(priv, offset, val);
+> > +}
+> > +
+> 
+> Why do you need these? Can't you just use regmap_mmio?
 
+I would like to do that as an improvement as time allows, not now.
 
-> +struct w2sg_data {
-> +	int		gpio;
-> +	int		irq;	/* irq line from RX pin when pinctrl
-> +				 * set to 'idle' */
-> +	struct regulator *reg;
-> +
-> +	unsigned long	last_toggle;	/* jiffies when last toggle completed. */
-> +	unsigned long	backoff;	/* jiffies since last_toggle when
-> +					 * we try again
-> +					 */
-> +	enum {Idle, Down, Up} state;	/* state-machine state. */
-> +	bool		requested, is_on;
-> +	bool		suspended;
-> +	bool		reg_enabled;
-> +
-> +	struct delayed_work work;
-> +	spinlock_t	lock;
-> +	struct device	*dev;
-> +
-> +	struct rfkill	*rfkill;
+> > +	ret = request_irq(priv->irq, altera_fpga_isr, 0, "altera-fpga-mgr",
+> > +			  priv);
+> > +	if (ret < 0)
+> > +		goto err_dispose_irq;
+> 
+> devm_request_irq
 
-So its
-- a regulator (optional)
-- an irq (optional)
-- a gpio  (could be optional)
-- an optional rfkill
-- a pulse time (10ms fixed)
-- a backoff time (1 second fixed)
-
-
-It looks identical to half a dozen other widgets that are found in
-Android phones. Would it perhaps be better to make the tiny tweaks to
-make it generic
-
-- make the timers configurable
-- make the pulse time or high/low selectable for on/off
-- make the gpio optional
-
-and just have one driver with the right DT for all similar devices?
-
-Am I missing some w2sg004 specific bits here ?
-
-
-I think the general model is right, and there will be other slaves that
-don't fit the pattern but I do think this one could be generalised.
+Will do, thanks.
 
 Alan
-
