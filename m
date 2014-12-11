@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933390AbaLKM1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:27:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56158 "EHLO
+	id S933726AbaLKM1d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:27:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56169 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984AbaLKM1N (ORCPT
+	with ESMTP id S1752984AbaLKM1a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:27:13 -0500
-Date: Thu, 11 Dec 2014 04:26:44 -0800
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-f647d7c155f069c1a068030255c300663516420e@git.kernel.org>
-Cc: luto@amacapital.net, andi@firstfloor.org, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, torvalds@linux-foundation.org, hpa@zytor.com,
-        mingo@kernel.org, stable@vger.kernel.org
-Reply-To: tglx@linutronix.de, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        stable@vger.kernel.org, luto@amacapital.net, andi@firstfloor.org
-In-Reply-To: <509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net>
-References: <509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net>
+	Thu, 11 Dec 2014 07:27:30 -0500
+Date: Thu, 11 Dec 2014 04:27:16 -0800
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-be9d1738b17f066b9d2f9e63eb6e2abda997fa1b@git.kernel.org>
+Cc: torvalds@linux-foundation.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, luto@amacapital.net,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: tglx@linutronix.de, bp@suse.de, luto@amacapital.net, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org,
+        torvalds@linux-foundation.org
+In-Reply-To: <1418127959-29902-1-git-send-email-bp@alien8.de>
+References: <1418127959-29902-1-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86_64, switch_to():
-  Load TLS descriptors before switching DS and ES
-Git-Commit-ID: f647d7c155f069c1a068030255c300663516420e
+Subject: [tip:x86/urgent] x86/asm: Unify segment selector defines
+Git-Commit-ID: be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,313 +33,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f647d7c155f069c1a068030255c300663516420e
-Gitweb:     http://git.kernel.org/tip/f647d7c155f069c1a068030255c300663516420e
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Mon, 8 Dec 2014 13:55:20 -0800
+Commit-ID:  be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
+Gitweb:     http://git.kernel.org/tip/be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Tue, 9 Dec 2014 13:25:59 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 11 Dec 2014 11:40:08 +0100
+CommitDate: Thu, 11 Dec 2014 11:45:03 +0100
 
-x86_64, switch_to(): Load TLS descriptors before switching DS and ES
+x86/asm: Unify segment selector defines
 
-Otherwise, if buggy user code points DS or ES into the TLS
-array, they would be corrupted after a context switch.
+Those are identical on 32- and 64-bit, unify them. No functional
+change.
 
-This also significantly improves the comments and documents some
-gotchas in the code.
-
-Before this patch, the both tests below failed.  With this
-patch, the es test passes, although the gsbase test still fails.
-
- ----- begin es test -----
-
-/*
- * Copyright (c) 2014 Andy Lutomirski
- * GPL v2
- */
-
-static unsigned short GDT3(int idx)
-{
-	return (idx << 3) | 3;
-}
-
-static int create_tls(int idx, unsigned int base)
-{
-	struct user_desc desc = {
-		.entry_number    = idx,
-		.base_addr       = base,
-		.limit           = 0xfffff,
-		.seg_32bit       = 1,
-		.contents        = 0, /* Data, grow-up */
-		.read_exec_only  = 0,
-		.limit_in_pages  = 1,
-		.seg_not_present = 0,
-		.useable         = 0,
-	};
-
-	if (syscall(SYS_set_thread_area, &desc) != 0)
-		err(1, "set_thread_area");
-
-	return desc.entry_number;
-}
-
-int main()
-{
-	int idx = create_tls(-1, 0);
-	printf("Allocated GDT index %d\n", idx);
-
-	unsigned short orig_es;
-	asm volatile ("mov %%es,%0" : "=rm" (orig_es));
-
-	int errors = 0;
-	int total = 1000;
-	for (int i = 0; i < total; i++) {
-		asm volatile ("mov %0,%%es" : : "rm" (GDT3(idx)));
-		usleep(100);
-
-		unsigned short es;
-		asm volatile ("mov %%es,%0" : "=rm" (es));
-		asm volatile ("mov %0,%%es" : : "rm" (orig_es));
-		if (es != GDT3(idx)) {
-			if (errors == 0)
-				printf("[FAIL]\tES changed from 0x%hx to 0x%hx\n",
-				       GDT3(idx), es);
-			errors++;
-		}
-	}
-
-	if (errors) {
-		printf("[FAIL]\tES was corrupted %d/%d times\n", errors, total);
-		return 1;
-	} else {
-		printf("[OK]\tES was preserved\n");
-		return 0;
-	}
-}
-
- ----- end es test -----
-
- ----- begin gsbase test -----
-
-/*
- * gsbase.c, a gsbase test
- * Copyright (c) 2014 Andy Lutomirski
- * GPL v2
- */
-
-static unsigned char *testptr, *testptr2;
-
-static unsigned char read_gs_testvals(void)
-{
-	unsigned char ret;
-	asm volatile ("movb %%gs:%1, %0" : "=r" (ret) : "m" (*testptr));
-	return ret;
-}
-
-int main()
-{
-	int errors = 0;
-
-	testptr = mmap((void *)0x200000000UL, 1, PROT_READ | PROT_WRITE,
-		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-	if (testptr == MAP_FAILED)
-		err(1, "mmap");
-
-	testptr2 = mmap((void *)0x300000000UL, 1, PROT_READ | PROT_WRITE,
-		       MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-	if (testptr2 == MAP_FAILED)
-		err(1, "mmap");
-
-	*testptr = 0;
-	*testptr2 = 1;
-
-	if (syscall(SYS_arch_prctl, ARCH_SET_GS,
-		    (unsigned long)testptr2 - (unsigned long)testptr) != 0)
-		err(1, "ARCH_SET_GS");
-
-	usleep(100);
-
-	if (read_gs_testvals() == 1) {
-		printf("[OK]\tARCH_SET_GS worked\n");
-	} else {
-		printf("[FAIL]\tARCH_SET_GS failed\n");
-		errors++;
-	}
-
-	asm volatile ("mov %0,%%gs" : : "r" (0));
-
-	if (read_gs_testvals() == 0) {
-		printf("[OK]\tWriting 0 to gs worked\n");
-	} else {
-		printf("[FAIL]\tWriting 0 to gs failed\n");
-		errors++;
-	}
-
-	usleep(100);
-
-	if (read_gs_testvals() == 0) {
-		printf("[OK]\tgsbase is still zero\n");
-	} else {
-		printf("[FAIL]\tgsbase was corrupted\n");
-		errors++;
-	}
-
-	return errors == 0 ? 0 : 1;
-}
-
- ----- end gsbase test -----
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: <stable@vger.kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: Andy Lutomirski <luto@amacapital.net>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/509d27c9fec78217691c3dad91cec87e1006b34a.1418075657.git.luto@amacapital.net
+Link: http://lkml.kernel.org/r/1418127959-29902-1-git-send-email-bp@alien8.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/process_64.c | 101 +++++++++++++++++++++++++++++++------------
- 1 file changed, 73 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/segment.h | 30 +++++++++---------------------
+ 1 file changed, 9 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 3ed4a68..5a2c029 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -283,24 +283,9 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
+index 6f1c3a8..db257a5 100644
+--- a/arch/x86/include/asm/segment.h
++++ b/arch/x86/include/asm/segment.h
+@@ -23,6 +23,15 @@
+ #define GDT_ENTRY_BOOT_TSS	(GDT_ENTRY_BOOT_CS + 2)
+ #define __BOOT_TSS		(GDT_ENTRY_BOOT_TSS * 8)
  
- 	fpu = switch_fpu_prepare(prev_p, next_p, cpu);
++#define SEGMENT_RPL_MASK	0x3 /*
++				     * Bottom two bits of selector give the ring
++				     * privilege level
++				     */
++#define SEGMENT_TI_MASK		0x4 /* Bit 2 is table indicator (LDT/GDT) */
++#define USER_RPL		0x3 /* User mode is privilege level 3 */
++#define SEGMENT_LDT		0x4 /* LDT segment has TI set... */
++#define SEGMENT_GDT		0x0 /* ... GDT has it cleared */
++
+ #ifdef CONFIG_X86_32
+ /*
+  * The layout of the per-CPU GDT under Linux:
+@@ -125,16 +134,6 @@
+ #define PNP_TS1    (GDT_ENTRY_PNPBIOS_TS1 * 8)	/* transfer data segment */
+ #define PNP_TS2    (GDT_ENTRY_PNPBIOS_TS2 * 8)	/* another data segment */
  
--	/*
--	 * Reload esp0, LDT and the page table pointer:
--	 */
-+	/* Reload esp0 and ss1. */
- 	load_sp0(tss, next);
- 
--	/*
--	 * Switch DS and ES.
--	 * This won't pick up thread selector changes, but I guess that is ok.
--	 */
--	savesegment(es, prev->es);
--	if (unlikely(next->es | prev->es))
--		loadsegment(es, next->es);
+-/* Bottom two bits of selector give the ring privilege level */
+-#define SEGMENT_RPL_MASK	0x3
+-/* Bit 2 is table indicator (LDT/GDT) */
+-#define SEGMENT_TI_MASK		0x4
 -
--	savesegment(ds, prev->ds);
--	if (unlikely(next->ds | prev->ds))
--		loadsegment(ds, next->ds);
+-/* User mode is privilege level 3 */
+-#define USER_RPL		0x3
+-/* LDT segment has TI set, GDT has it cleared */
+-#define SEGMENT_LDT		0x4
+-#define SEGMENT_GDT		0x0
+ 
+ /*
+  * Matching rules for certain types of segments.
+@@ -192,17 +191,6 @@
+ #define get_kernel_rpl()  0
+ #endif
+ 
+-/* User mode is privilege level 3 */
+-#define USER_RPL		0x3
+-/* LDT segment has TI set, GDT has it cleared */
+-#define SEGMENT_LDT		0x4
+-#define SEGMENT_GDT		0x0
 -
+-/* Bottom two bits of selector give the ring privilege level */
+-#define SEGMENT_RPL_MASK	0x3
+-/* Bit 2 is table indicator (LDT/GDT) */
+-#define SEGMENT_TI_MASK		0x4
 -
- 	/* We must save %fs and %gs before load_TLS() because
- 	 * %fs and %gs may be cleared by load_TLS().
- 	 *
-@@ -309,41 +294,101 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	savesegment(fs, fsindex);
- 	savesegment(gs, gsindex);
- 
-+	/*
-+	 * Load TLS before restoring any segments so that segment loads
-+	 * reference the correct GDT entries.
-+	 */
- 	load_TLS(next, cpu);
- 
- 	/*
--	 * Leave lazy mode, flushing any hypercalls made here.
--	 * This must be done before restoring TLS segments so
--	 * the GDT and LDT are properly updated, and must be
--	 * done before math_state_restore, so the TS bit is up
--	 * to date.
-+	 * Leave lazy mode, flushing any hypercalls made here.  This
-+	 * must be done after loading TLS entries in the GDT but before
-+	 * loading segments that might reference them, and and it must
-+	 * be done before math_state_restore, so the TS bit is up to
-+	 * date.
- 	 */
- 	arch_end_context_switch(next_p);
- 
-+	/* Switch DS and ES.
-+	 *
-+	 * Reading them only returns the selectors, but writing them (if
-+	 * nonzero) loads the full descriptor from the GDT or LDT.  The
-+	 * LDT for next is loaded in switch_mm, and the GDT is loaded
-+	 * above.
-+	 *
-+	 * We therefore need to write new values to the segment
-+	 * registers on every context switch unless both the new and old
-+	 * values are zero.
-+	 *
-+	 * Note that we don't need to do anything for CS and SS, as
-+	 * those are saved and restored as part of pt_regs.
-+	 */
-+	savesegment(es, prev->es);
-+	if (unlikely(next->es | prev->es))
-+		loadsegment(es, next->es);
-+
-+	savesegment(ds, prev->ds);
-+	if (unlikely(next->ds | prev->ds))
-+		loadsegment(ds, next->ds);
-+
- 	/*
- 	 * Switch FS and GS.
- 	 *
--	 * Segment register != 0 always requires a reload.  Also
--	 * reload when it has changed.  When prev process used 64bit
--	 * base always reload to avoid an information leak.
-+	 * These are even more complicated than FS and GS: they have
-+	 * 64-bit bases are that controlled by arch_prctl.  Those bases
-+	 * only differ from the values in the GDT or LDT if the selector
-+	 * is 0.
-+	 *
-+	 * Loading the segment register resets the hidden base part of
-+	 * the register to 0 or the value from the GDT / LDT.  If the
-+	 * next base address zero, writing 0 to the segment register is
-+	 * much faster than using wrmsr to explicitly zero the base.
-+	 *
-+	 * The thread_struct.fs and thread_struct.gs values are 0
-+	 * if the fs and gs bases respectively are not overridden
-+	 * from the values implied by fsindex and gsindex.  They
-+	 * are nonzero, and store the nonzero base addresses, if
-+	 * the bases are overridden.
-+	 *
-+	 * (fs != 0 && fsindex != 0) || (gs != 0 && gsindex != 0) should
-+	 * be impossible.
-+	 *
-+	 * Therefore we need to reload the segment registers if either
-+	 * the old or new selector is nonzero, and we need to override
-+	 * the base address if next thread expects it to be overridden.
-+	 *
-+	 * This code is unnecessarily slow in the case where the old and
-+	 * new indexes are zero and the new base is nonzero -- it will
-+	 * unnecessarily write 0 to the selector before writing the new
-+	 * base address.
-+	 *
-+	 * Note: This all depends on arch_prctl being the only way that
-+	 * user code can override the segment base.  Once wrfsbase and
-+	 * wrgsbase are enabled, most of this code will need to change.
- 	 */
- 	if (unlikely(fsindex | next->fsindex | prev->fs)) {
- 		loadsegment(fs, next->fsindex);
-+
- 		/*
--		 * Check if the user used a selector != 0; if yes
--		 *  clear 64bit base, since overloaded base is always
--		 *  mapped to the Null selector
-+		 * If user code wrote a nonzero value to FS, then it also
-+		 * cleared the overridden base address.
-+		 *
-+		 * XXX: if user code wrote 0 to FS and cleared the base
-+		 * address itself, we won't notice and we'll incorrectly
-+		 * restore the prior base address next time we reschdule
-+		 * the process.
- 		 */
- 		if (fsindex)
- 			prev->fs = 0;
- 	}
--	/* when next process has a 64bit base use it */
- 	if (next->fs)
- 		wrmsrl(MSR_FS_BASE, next->fs);
- 	prev->fsindex = fsindex;
- 
- 	if (unlikely(gsindex | next->gsindex | prev->gs)) {
- 		load_gs_index(next->gsindex);
-+
-+		/* This works (and fails) the same way as fsindex above. */
- 		if (gsindex)
- 			prev->gs = 0;
- 	}
+ #define IDT_ENTRIES 256
+ #define NUM_EXCEPTION_VECTORS 32
+ /* Bitmask of exception vectors which push an error code on the stack */
