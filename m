@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219AbaLKWkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:40:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758875AbaLKWkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:40:11 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Peter Wu <peter@lekensteyn.nl>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] HID: logitech-hidpp: prefix the name with Logitech
-Date: Thu, 11 Dec 2014 17:39:59 -0500
-Message-Id: <1418337599-10239-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1759280AbaLKWkk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:40:40 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60326 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759220AbaLKWkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:40:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <548A1C61.9060905@mvista.com>
+References: <54873864.3050606@mvista.com>
+	<CA+55aFwYTY1gzRF26cZi2nMm6vDPfEBiSfZmXEUtWa39YjcSRg@mail.gmail.com>
+	<548A1C61.9060905@mvista.com>
+Date: Thu, 11 Dec 2014 14:40:38 -0800
+X-Google-Sender-Auth: hchHSnazFP5l_5StVg21ELJtE4I
+Message-ID: <CA+55aFwtWcWjqm05DN5xpemmNtCEkgjx0v_uWsy4c0LWP2FNeA@mail.gmail.com>
+Subject: Re: [GIT PULL] ipmi driver updates
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Corey Minyard <cminyard@mvista.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Tony Rex <tony.rex@ericsson.com>,
+        Magnus Johansson E <magnus.e.johansson@ericsson.com>,
+        =?UTF-8?Q?Per_Fogelstr=C3=B6m?= <per.fogelstrom@ericsson.com>,
+        Jeremy Kerr <jk@ozlabs.org>, Michael Ellerman <mpe@ellerman.id.au>,
+        Sanjeev <singhsan@codeaurora.org>, Thomas Renninger <trenn@suse.de>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current names are reported as "K750", "M705", and it can be misleading
-for the users when they look at their input device list.
+On Thu, Dec 11, 2014 at 2:36 PM, Corey Minyard <cminyard@mvista.com> wrote:
+>
+>   git://git.code.sf.net/p/openipmi/linux-ipmi openipmi-linux-ipmi for-linus
 
-Prefixing the names with "Logitech " makes things better.
+So I see a "for-linus" tag now, but what's that "openipmi-linux-ipmi"
+thing in there?
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+Also, just in general, please use the normal "git pull-request"
+script, which should make these kinds of things clear and error out if
+the tag isn't found (at least in current versions of git).
 
-Changes in v2:
-- renamed PREFIX_SIZE into PREFIX_LENGTH
-- changed "name_length + PREFIX_LENGTH;" into "PREFIX_LENGTH + name_length;"
-- rebased on Peter's last patch series
+> Also, there was nothing in SubmittingPatches that I could find about
+> signing the tags for pull requests.  I can try to write something to add
+> there, if you like.  Though someone with more experience might be a
+> better candidate.
 
- drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+Hmm. You might want to google around too, because this has come up
+before, so there might be explanations lying around on the mailing
+lists that just haven't been made into documentation.
 
-diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index 2f420c0..274dbb7 100644
---- a/drivers/hid/hid-logitech-hidpp.c
-+++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
- 		(report->rap.sub_id == 0x41);
- }
- 
-+/**
-+ * hidpp_prefix_name() prefixes the current given name with "Logitech ".
-+ */
-+static void hidpp_prefix_name(char **name, int name_length)
-+{
-+#define PREFIX_LENGTH 9 /* "Logitech " */
-+
-+	int new_length;
-+	char *new_name;
-+
-+	if (name_length > PREFIX_LENGTH &&
-+	    strncmp(*name, "Logitech ", PREFIX_LENGTH) == 0)
-+		/* The prefix has is already in the name */
-+		return;
-+
-+	new_length = PREFIX_LENGTH + name_length;
-+	new_name = kzalloc(new_length, GFP_KERNEL);
-+	if (!new_name)
-+		return;
-+
-+	snprintf(new_name, new_length, "Logitech %s", *name);
-+
-+	kfree(*name);
-+
-+	*name = new_name;
-+}
-+
- /* -------------------------------------------------------------------------- */
- /* HIDP++ 1.0 commands                                                        */
- /* -------------------------------------------------------------------------- */
-@@ -321,6 +348,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
- 		return NULL;
- 
- 	memcpy(name, &response.rap.params[2], len);
-+
-+	/* include the terminating '\0' */
-+	hidpp_prefix_name(&name, len + 1);
-+
- 	return name;
- }
- 
-@@ -498,6 +529,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
- 		index += ret;
- 	}
- 
-+	/* include the terminating '\0' */
-+	hidpp_prefix_name(&name, __name_length + 1);
-+
- 	return name;
- }
- 
--- 
-2.1.0
-
+                      Linus
