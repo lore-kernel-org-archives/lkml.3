@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174AbaLKWgo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:36:44 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:47212 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758933AbaLKWgm (ORCPT
+	id S1759261AbaLKWhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:37:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:63150 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759230AbaLKWhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:36:42 -0500
+	Thu, 11 Dec 2014 17:37:11 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [GIT PULL] fbdev fixes for 3.19
+Date: Thu, 11 Dec 2014 23:58:42 +0100
+Message-ID: <3272093.0A5V5UZ3cA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CA+55aFyPauetupuqp0aexH2-2Z638jp-s_jyarvZW_sCSizzsg@mail.gmail.com>
+References: <54899F0E.4090309@ti.com> <CA+55aFyPauetupuqp0aexH2-2Z638jp-s_jyarvZW_sCSizzsg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <548A122C.8000906@oracle.com>
-References: <20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-	<1417806247.4845.1@mail.thefacebook.com>
-	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
-	<20141211145408.GB16800@redhat.com>
-	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-	<548A122C.8000906@oracle.com>
-Date: Thu, 11 Dec 2014 14:36:41 -0800
-X-Google-Sender-Auth: sKh6GUzDphjG1YKvsLI78IeqmEc
-Message-ID: <CA+55aFw68nC+5s=iX2R4SLsgG3nBvURmDXYvX5pFJgHBnQoHMA@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 1:52 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> Is it possible that Dave and myself were seeing the same problem after
-> all?
+On Thursday, December 11, 2014 12:55:28 PM Linus Torvalds wrote:
+> On Thu, Dec 11, 2014 at 5:41 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> >
+> > Please pull fbdev changes for 3.19.
+> 
+> Ugh. I've pulled it, but I'm not a huge fan of commit 6d09dc6b74ca
+> ("of.h: Keep extern declaration of of_* variables when !CONFIG_OF").
+> 
+> I guess it works, but it ends up delaying any failures from compile
+> time to link time, and the linker error messages likely won't be
+> great.
+> 
+> So I'm cc'ing the OF people and Rafael (who worked on OF/ACPI
+> unification) to see if they have comments, preferences, or other ways
+> to solve this.
+> 
+> Quite frankly, to me it smells like non-OF builds should just have an
+> empty "for_each_child_of_node ()" define instead of playing games with
+> externs that then end up not existing, and depending on the compiler
+> DTRT.
+> 
+> Comments?
 
-Could be. You do have commonalities, even if the actual symptoms then
-differ. And while it looked different when you could trigger it with
-3.16 but DaveJ couldn't, that's up in the air now that I doubt that
-3.16 really is ok for DaveJ after all..
+"for_each_child_of_node ()" is not a problem here AFAICS, because in the
+example from the commit changelog the compiler would complain on the
+of_chosen instance in the "if ()" statement already anyway if I'm not mistaken.
 
-And you might have a better luck bisecting it, since you seem to be
-able to trigger your RCU lockup much more quickly (and apparently
-reliably? Correct?)
+It wants all of the code in the given block to make sense even if that
+block will be optimized away going forward.  That's not specific to CONFIG_OF
+too.
 
-                     Linus
+I stumbled over that a couple of times and I don't see a clean and simple way
+to work around it at the moment.  In the cases I dealt with it was sufficient
+to use static inlines that were defined to return NULL (or equivalent) when
+the symbol in question was not defined.
+
+Rafael
+
