@@ -1,149 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967666AbaLKXEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:04:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965920AbaLKXEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:04:46 -0500
-Subject: [net-next PATCH v7 resubmit 3/4] r8169: Use dma_rmb() and dma_wmb()
- for DescOwn checks
-From: Alexander Duyck <alexander.h.duyck@redhat.com>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
-Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        linux-arch@vger.kernel.org, mikey@neuling.org, linux@arm.linux.org.uk,
-        donald.c.skidmore@intel.com, matthew.vick@intel.com,
-        geert@linux-m68k.org, jeffrey.t.kirsher@intel.com,
-        romieu@fr.zoreil.com, paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com,
-        arnd@arndb.de, will.deacon@arm.com, michael@ellerman.id.au,
-        tony.luck@intel.com, torvalds@linux-foundation.org, oleg@redhat.com,
-        schwidefsky@de.ibm.com, fweisbec@gmail.com
-Date: Thu, 11 Dec 2014 15:02:17 -0800
-Message-ID: <20141211230217.25464.5870.stgit@ahduyck-server>
-In-Reply-To: <20141211225250.25464.30291.stgit@ahduyck-server>
-References: <20141211225250.25464.30291.stgit@ahduyck-server>
-User-Agent: StGit/0.17.1-dirty
+	id S967681AbaLKXFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:05:12 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45196 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965920AbaLKXFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 18:05:06 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AkEtAAYiilR5LCj0/2dsb2JhbABZgwZSWII1sGwMAQEEBgWSMIElhEsEAoEVFwEBAQEBfYRNHCMYJDQFJQM0iCvYIgELIBiFaIklTYMdgRMFhR2MIIUwgQ2CXYdChggihAAqMIEEgT8BAQE
+Date: Fri, 12 Dec 2014 10:04:09 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: [GIT PULL] xfs: updates for 3.19-rc1
+Message-ID: <20141211230409.GD9756@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The r8169 use a pair of wmb() calls when setting up the descriptor rings.
-The first is to synchronize the descriptor data with the descriptor status,
-and the second is to synchronize the descriptor status with the use of the
-MMIO doorbell to notify the device that descriptors are ready.  This can
-come at a heavy price on some systems, and is not really necessary on
-systems such as x86 as a simple barrier() would suffice to order store/store
-accesses.  As such we can replace the first memory barrier with
-dma_wmb() to reduce the cost for these accesses.
+Hi Linus,
 
-In addition the r8169 uses a rmb() to prevent compiler optimization in the
-cleanup paths, however by moving the barrier down a few lines and replacing
-it with a dma_rmb() we should be able to use it to guarantee
-descriptor accesses do not occur until the device has updated the DescOwn
-bit from its end.
+Can you please pull the current XFS updates from the tree below?
+There's relatively little change in this update; it is mainly bug
+fixes, cleanups and more of the on-going libxfs restructuring
+and on-disk format header consolidation work.
 
-One last change I made is to move the update of cur_tx in the xmit path to
-after the wmb.  This way we can guarantee the device and all CPUs should
-see the DescOwn update before they see the cur_tx value update.
+-Dave.
 
-Cc: Realtek linux nic maintainers <nic_swsd@realtek.com>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
----
- drivers/net/ethernet/realtek/r8169.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+The following changes since commit 002758992693ae63c04122603ea9261a0a58d728:
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 3dad7e8..088136b 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6605,6 +6605,9 @@ static inline void rtl8169_mark_to_asic(struct RxDesc *desc, u32 rx_buf_sz)
- {
- 	u32 eor = le32_to_cpu(desc->opts1) & RingEnd;
- 
-+	/* Force memory writes to complete before releasing descriptor */
-+	dma_wmb();
-+
- 	desc->opts1 = cpu_to_le32(DescOwn | eor | rx_buf_sz);
- }
- 
-@@ -6612,7 +6615,6 @@ static inline void rtl8169_map_to_asic(struct RxDesc *desc, dma_addr_t mapping,
- 				       u32 rx_buf_sz)
- {
- 	desc->addr = cpu_to_le64(mapping);
--	wmb();
- 	rtl8169_mark_to_asic(desc, rx_buf_sz);
- }
- 
-@@ -7073,16 +7075,18 @@ static netdev_tx_t rtl8169_start_xmit(struct sk_buff *skb,
- 
- 	skb_tx_timestamp(skb);
- 
--	wmb();
-+	/* Force memory writes to complete before releasing descriptor */
-+	dma_wmb();
- 
- 	/* Anti gcc 2.95.3 bugware (sic) */
- 	status = opts[0] | len | (RingEnd * !((entry + 1) % NUM_TX_DESC));
- 	txd->opts1 = cpu_to_le32(status);
- 
--	tp->cur_tx += frags + 1;
--
-+	/* Force all memory writes to complete before notifying device */
- 	wmb();
- 
-+	tp->cur_tx += frags + 1;
-+
- 	RTL_W8(TxPoll, NPQ);
- 
- 	mmiowb();
-@@ -7181,11 +7185,16 @@ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
- 		struct ring_info *tx_skb = tp->tx_skb + entry;
- 		u32 status;
- 
--		rmb();
- 		status = le32_to_cpu(tp->TxDescArray[entry].opts1);
- 		if (status & DescOwn)
- 			break;
- 
-+		/* This barrier is needed to keep us from reading
-+		 * any other fields out of the Tx descriptor until
-+		 * we know the status of DescOwn
-+		 */
-+		dma_rmb();
-+
- 		rtl8169_unmap_tx_skb(&tp->pci_dev->dev, tx_skb,
- 				     tp->TxDescArray + entry);
- 		if (status & LastFrag) {
-@@ -7280,11 +7289,16 @@ static int rtl_rx(struct net_device *dev, struct rtl8169_private *tp, u32 budget
- 		struct RxDesc *desc = tp->RxDescArray + entry;
- 		u32 status;
- 
--		rmb();
- 		status = le32_to_cpu(desc->opts1) & tp->opts1_mask;
--
- 		if (status & DescOwn)
- 			break;
-+
-+		/* This barrier is needed to keep us from reading
-+		 * any other fields out of the Rx descriptor until
-+		 * we know the status of DescOwn
-+		 */
-+		dma_rmb();
-+
- 		if (unlikely(status & RxRES)) {
- 			netif_info(tp, rx_err, dev, "Rx ERROR. status = %08x\n",
- 				   status);
-@@ -7346,7 +7360,6 @@ process_pkt:
- 		}
- release_descriptor:
- 		desc->opts2 = 0;
--		wmb();
- 		rtl8169_mark_to_asic(desc, rx_buf_sz);
- 	}
- 
+  xfs: track bulkstat progress by agino (2014-11-07 08:33:52 +1100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs.git tags/xfs-for-linus-3.19-rc1
+
+for you to fetch changes up to 6044e4386cd51dece882ea42352cdaaab0f24cad:
+
+  Merge branch 'xfs-misc-fixes-for-3.19-2' into for-next (2014-12-04 09:46:17 +1100)
+
+----------------------------------------------------------------
+
+xfs: update for 3.19-rc1
+
+This update contains:
+o more on-disk format header consolidation
+o move some structures shared with userspace to libxfs
+o new per-mount workqueue to fix for deadlocks between nested loop
+  mounted filesystems
+o various bug fixes for ENOSPC, stats, quota off and preallocation
+o a bunch of compiler warning fixes for set-but-unused variables
+o various code cleanups
+
+----------------------------------------------------------------
+Brian Foster (5):
+      xfs: replace global xfslogd wq with per-mount wq
+      xfs: replace on-stack xfs_trans_res with pointer in xfs_create()
+      xfs: fix error handling in xfs_qm_log_quotaoff()
+      xfs: allow lazy sb counter sync during filesystem freeze sequence
+      xfs: split metadata and log buffer completion to separate workqueues
+
+Christoph Hellwig (5):
+      xfs: merge xfs_dinode.h into xfs_format.h
+      xfs: move acl structures to xfs_format.h
+      xfs: merge xfs_ag.h into xfs_format.h
+      xfs: move most of xfs_sb.h to xfs_format.h
+      xfs: merge xfs_inum.h into xfs_format.h
+
+Dave Chinner (13):
+      Merge branch 'xfs-misc-fixes-for-3.19-1' into for-next
+      Merge branch 'xfs-consolidate-format-defs' into for-next
+      Merge branch 'xfs-coccinelle-cleanups' into for-next
+      Merge branch 'xfs-coccinelle-cleanups' into xfs-misc-fixes-for-3.19-2
+      xfs: fix premature enospc on inode allocation
+      xfs: cleanup xfs_bmse_shift_one goto mess
+      xfs: cleanup xfs_bmse_merge returns
+      xfs: active inodes stat is broken
+      xfs: lobotomise xfs_trans_read_buf_map()
+      xfs: move ftype conversion functions to libxfs
+      xfs: move type conversion functions to xfs_dir.h
+      xfs: fix set-but-unused warnings
+      Merge branch 'xfs-misc-fixes-for-3.19-2' into for-next
+
+Eric Sandeen (1):
+      xfs: catch invalid negative blknos in _xfs_buf_find()
+
+Markus Elfring (1):
+      xfs: remove unnecessary null checks
+
+Peter Watkins (1):
+      xfs: overflow in xfs_iomap_eof_align_last_fsb
+
+kbuild test robot (3):
+      libxfs: fix simple_return.cocci warnings
+      xfs: fix simple_return.cocci warning in xfs_file_readdir
+      xfs: fix simple_return.cocci warning in xfs_bmse_shift_one
+
+ fs/xfs/libxfs/xfs_ag.h             |  281 ---------
+ fs/xfs/libxfs/xfs_alloc.c          |    1 -
+ fs/xfs/libxfs/xfs_alloc.h          |    3 +
+ fs/xfs/libxfs/xfs_alloc_btree.c    |    1 -
+ fs/xfs/libxfs/xfs_attr.c           |    3 -
+ fs/xfs/libxfs/xfs_attr_leaf.c      |    2 -
+ fs/xfs/libxfs/xfs_attr_remote.c    |    2 -
+ fs/xfs/libxfs/xfs_bmap.c           |   77 +--
+ fs/xfs/libxfs/xfs_bmap_btree.c     |    3 -
+ fs/xfs/libxfs/xfs_btree.c          |    2 -
+ fs/xfs/libxfs/xfs_da_btree.c       |    6 -
+ fs/xfs/libxfs/xfs_da_format.c      |    2 -
+ fs/xfs/libxfs/xfs_dinode.h         |  243 --------
+ fs/xfs/libxfs/xfs_dir2.c           |   20 +-
+ fs/xfs/libxfs/xfs_dir2.h           |  140 +++++
+ fs/xfs/libxfs/xfs_dir2_block.c     |   11 -
+ fs/xfs/libxfs/xfs_dir2_data.c      |    2 -
+ fs/xfs/libxfs/xfs_dir2_leaf.c      |   12 -
+ fs/xfs/libxfs/xfs_dir2_node.c      |   14 -
+ fs/xfs/libxfs/xfs_dir2_priv.h      |  140 -----
+ fs/xfs/libxfs/xfs_dir2_sf.c        |   13 -
+ fs/xfs/libxfs/xfs_dquot_buf.c      |    2 -
+ fs/xfs/libxfs/xfs_format.h         | 1107 ++++++++++++++++++++++++++++++++++++
+ fs/xfs/libxfs/xfs_ialloc.c         |   43 +-
+ fs/xfs/libxfs/xfs_ialloc.h         |    4 +
+ fs/xfs/libxfs/xfs_ialloc_btree.c   |    2 -
+ fs/xfs/libxfs/xfs_inode_buf.c      |    3 -
+ fs/xfs/libxfs/xfs_inode_fork.c     |    4 -
+ fs/xfs/libxfs/xfs_inum.h           |   60 --
+ fs/xfs/libxfs/xfs_log_format.h     |    2 +-
+ fs/xfs/libxfs/xfs_log_rlimit.c     |    2 -
+ fs/xfs/libxfs/xfs_rtbitmap.c       |    3 -
+ fs/xfs/libxfs/xfs_sb.c             |    2 -
+ fs/xfs/libxfs/xfs_sb.h             |  584 -------------------
+ fs/xfs/libxfs/xfs_symlink_remote.c |    2 -
+ fs/xfs/libxfs/xfs_trans_resv.c     |    2 -
+ fs/xfs/xfs_acl.c                   |    2 -
+ fs/xfs/xfs_acl.h                   |   36 --
+ fs/xfs/xfs_aops.c                  |    3 -
+ fs/xfs/xfs_attr_inactive.c         |    3 -
+ fs/xfs/xfs_attr_list.c             |    3 -
+ fs/xfs/xfs_bmap_util.c             |    3 -
+ fs/xfs/xfs_buf.c                   |   27 +-
+ fs/xfs/xfs_buf.h                   |    3 +-
+ fs/xfs/xfs_buf_item.c              |    2 +-
+ fs/xfs/xfs_dir2_readdir.c          |   21 +-
+ fs/xfs/xfs_discard.c               |    1 -
+ fs/xfs/xfs_dquot.c                 |    2 -
+ fs/xfs/xfs_dquot_item.c            |    2 -
+ fs/xfs/xfs_error.c                 |    2 -
+ fs/xfs/xfs_export.c                |    3 +-
+ fs/xfs/xfs_extent_busy.c           |    1 -
+ fs/xfs/xfs_extfree_item.c          |    3 +-
+ fs/xfs/xfs_file.c                  |    9 +-
+ fs/xfs/xfs_filestream.c            |    3 -
+ fs/xfs/xfs_fsops.c                 |    2 -
+ fs/xfs/xfs_icache.c                |    4 +-
+ fs/xfs/xfs_icache.h                |    8 +
+ fs/xfs/xfs_icreate_item.c          |    3 +-
+ fs/xfs/xfs_inode.c                 |   29 +-
+ fs/xfs/xfs_inode.h                 |    2 -
+ fs/xfs/xfs_inode_item.c            |    3 -
+ fs/xfs/xfs_ioctl.c                 |    3 -
+ fs/xfs/xfs_ioctl32.c               |    2 -
+ fs/xfs/xfs_iomap.c                 |   18 +-
+ fs/xfs/xfs_iops.c                  |    5 +-
+ fs/xfs/xfs_itable.c                |    6 -
+ fs/xfs/xfs_linux.h                 |    6 +
+ fs/xfs/xfs_log.c                   |    8 +-
+ fs/xfs/xfs_log_cil.c               |    3 +-
+ fs/xfs/xfs_log_recover.c           |    4 +-
+ fs/xfs/xfs_message.c               |    3 +-
+ fs/xfs/xfs_mount.c                 |   33 +-
+ fs/xfs/xfs_mount.h                 |    8 +-
+ fs/xfs/xfs_qm.c                    |   14 +-
+ fs/xfs/xfs_qm_bhv.c                |    2 -
+ fs/xfs/xfs_qm_syscalls.c           |   27 +-
+ fs/xfs/xfs_quotaops.c              |    2 -
+ fs/xfs/xfs_rtalloc.c               |    3 -
+ fs/xfs/xfs_super.c                 |   19 +-
+ fs/xfs/xfs_symlink.c               |    3 -
+ fs/xfs/xfs_trace.c                 |    2 -
+ fs/xfs/xfs_trans.c                 |    2 -
+ fs/xfs/xfs_trans_ail.c             |    3 +-
+ fs/xfs/xfs_trans_buf.c             |  137 ++---
+ fs/xfs/xfs_trans_dquot.c           |    2 -
+ fs/xfs/xfs_trans_extfree.c         |    3 +-
+ fs/xfs/xfs_trans_inode.c           |    2 -
+ fs/xfs/xfs_xattr.c                 |    2 -
+ 89 files changed, 1467 insertions(+), 1835 deletions(-)
+ delete mode 100644 fs/xfs/libxfs/xfs_ag.h
+ delete mode 100644 fs/xfs/libxfs/xfs_dinode.h
+ delete mode 100644 fs/xfs/libxfs/xfs_inum.h
+-- 
+Dave Chinner
+david@fromorbit.com
