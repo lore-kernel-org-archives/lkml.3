@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758712AbaLKTWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 14:22:35 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:42333 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758694AbaLKTWc (ORCPT
+	id S932587AbaLKTXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 14:23:12 -0500
+Received: from us-mx2.synaptics.com ([192.147.44.131]:16331 "EHLO
+	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758723AbaLKTXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 14:22:32 -0500
+	Thu, 11 Dec 2014 14:23:10 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Thu, 11 Dec 2014 11:47:29 -0800
+Message-ID: <5489EEC7.1010709@synaptics.com>
+Date: Thu, 11 Dec 2014 11:21:43 -0800
+From: Andrew Duggan <aduggan@synaptics.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1418295760-19639-1-git-send-email-addy.ke@rock-chips.com>
-References: <1418277650-25215-1-git-send-email-addy.ke@rock-chips.com>
-	<1418295760-19639-1-git-send-email-addy.ke@rock-chips.com>
-Date: Thu, 11 Dec 2014 11:22:31 -0800
-X-Google-Sender-Auth: 2CQGv_nVZgNwoEjKBWniCRe5UaM
-Message-ID: <CAD=FV=UCQMRLx2KHzT28iY6uCHGQ0MouWKEeVyv2AF_qNCrT=Q@mail.gmail.com>
-Subject: Re: [PATCH v5] i2c: rk3x: fix bug that cause measured high_ns doesn't
- meet I2C specification
-From: Doug Anderson <dianders@chromium.org>
-To: Addy Ke <addy.ke@rock-chips.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Eddie Cai <cf@rock-chips.com>, Jianqun Xu <xjq@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        =?UTF-8?B?5aea5pm65oOF?= <yzq@rock-chips.com>,
-        Han Jiang <hj@rock-chips.com>, Kever Yang <kever.yang@rock-chips.com>,
-        Lin Huang <hl@rock-chips.com>, caesar <caesar.wang@rock-chips.com>,
-        Shunqian Zheng <zhengsq@rock-chips.com>
-Content-Type: text/plain; charset=UTF-8
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <benjamin.tissoires@redhat.com>, <jkosina@suse.cz>
+Subject: Re: NULL pointer dereference in i2c-hid
+References: <31518562.V5Oyo0POsI@xps13> <2128690.c90ERDd9ZP@xps13> <5489E505.3050903@synaptics.com> <2171175.gv8IA3dxxN@xps13>
+In-Reply-To: <2171175.gv8IA3dxxN@xps13>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.4.10.98]
+X-Brightmail-Tracker: AAAAAQAAAWE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/11/2014 11:11 AM, Gabriele Mazzotta wrote:
+> On Thursday 11 December 2014 10:40:05 Andrew Duggan wrote:
+>> On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
+>>> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
+>>>> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
+>>>>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
+>>>>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
+>>>>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
+>>>>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+>>>>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
+>>>>>> pointer dereference.
+>>>>> I'll look into this.
+>>>>>
+>>>>> I can reproduce this easily with i2c-hid + hid-multitouch following your
+>>>>> directions.
+>>>> Can you try the below patch?
+>>>>
+>>>> I think we shouldn't free buffers yet in ->stop() because we need the
+>>>> command buffer sending power commands to the device. Also it seems that
+>>>> ->start() re-allocates buffers anyway if maximum size increases.
+>>>>
+>>>> It shouldn't even leak memory as we release buffers at ->remove()
+>>>> anyway.
+>>>>
+>>>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+>>>> index 62cec01937ea..68a8c938feea 100644
+>>>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+>>>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+>>>> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
+>>>>    
+>>>>    static void i2c_hid_stop(struct hid_device *hid)
+>>>>    {
+>>>> -	struct i2c_client *client = hid->driver_data;
+>>>> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
+>>>> -
+>>>>    	hid->claimed = 0;
+>>>> -
+>>>> -	i2c_hid_free_buffers(ihid);
+>>>>    }
+>>>>    
+>>>>    static int i2c_hid_open(struct hid_device *hid)
+>>> Yes, it works, thanks.
+>>>
+>>> This change seems to also prevent kernel ooops when I unload either
+>>> i2c-hid or i2c-designware-platform while the touchpad is in use,
+>>> thing that is likely to happen because of the other bug I reported.
+>>>
+>>> Speaking of it, does any of you have any suggestion on how to debug it?
+>> I was able to reproduce the initial issue by unloading hid-rmi and
+>> i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it
+>> for me.
+>>
+>> For the original bug, you can modprobe i2c-hid debug=1 and we can see
+>> what data the touchpad is reporting. That might help narrowing down if
+>> it's noise which the touchpad thinks are fingers or if there is a
+>> problem with the I2C lines causing spurious interrupts.
+>>
+>> Andrew
+> I've already tried to do that and here what I got:
+>
+> When I release the finger, the last message is repeated 81 times.
+> If the byte containing informations about the width of the finger
+> becomes equal to either c0 or 0c at least once, the last message is
+> repeated indefinitely and changes as soon as I start using the touchpad.
+> The only way to stop it is to unload and reload i2c-hid.
+The reports before log throttling kicks in would still be useful. For 
+instance c0 is outside of the range of finger width which we report so 
+something is wrong there. But, the touchpad should stop interrupting 
+once the finger is lifted. The fact that subsequent reads are reporting 
+the same data does sound like a problem with I2C getting confused and 
+continuously interrupting and reading the old finger data. I am also 
+curious about the value of the byte after the report id.
 
-On Thu, Dec 11, 2014 at 3:02 AM, Addy Ke <addy.ke@rock-chips.com> wrote:
->   - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
-> + - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
-> +       (t(r) in I2C specification). If not specified this is assumed to be
-> +       the maximum the specification allows(1000 ns for Standard-mode,
-> +       300 ns for Fast-mode) which might cause slightly slower communication.
-> + - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
-> +       (t(f) in the I2C specification). If not specified this is assumed to
-> +       be the maximum the specification allows (300 ns) which might cause
-> +       slightly slowercommunication.
-
-nit: you forgot a space between "slower" and "communication".
-
-...this is the type of thing I think Wolfram can fixup when applying,
-so I'd suggest against respinning unless something else is needed.
-
-Overall I continue to be happy with this patch.
-
-Reviewed-by: Doug Anderson <dianders@chromium.org>
-Tested-by: Doug Anderson <dianders@chromium.org>
-
-You'll notice that I posted a patch atop it at
-<https://patchwork.kernel.org/patch/5477201/>.
-
--Doug
+Andrew
