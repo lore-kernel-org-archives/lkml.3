@@ -1,113 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934130AbaLKPvk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:51:40 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:39324 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946AbaLKPvi (ORCPT
+	id S934144AbaLKPw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:52:58 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:46332 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932946AbaLKPw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:51:38 -0500
+	Thu, 11 Dec 2014 10:52:56 -0500
+Date: Thu, 11 Dec 2014 17:52:22 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, pavel@ucw.cz, cooloney@gmail.com,
+        rpurdie@rpsys.net, s.nawrocki@samsung.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
+Subject: Re: [PATCH/RFC v9 08/19] leds: Add driver for AAT1290 current
+ regulator
+Message-ID: <20141211155222.GU15559@valkosipuli.retiisi.org.uk>
+References: <1417622814-10845-1-git-send-email-j.anaszewski@samsung.com>
+ <1417622814-10845-9-git-send-email-j.anaszewski@samsung.com>
+ <20141211141648.GR15559@valkosipuli.retiisi.org.uk>
+ <5489B995.7080209@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <7h8uiemce7.fsf@deeprootsystems.com>
-References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
-	<1418286387-9663-3-git-send-email-tfiga@chromium.org>
-	<CAPDyKFoBRxFh+BzHTakij6=NvLm0C-S8eX8+p2odpSwtdTrvoA@mail.gmail.com>
-	<CAAFQd5CA374MF-_w=3zqsZctwTcBHz9J_0Ygg4fD_wjg8kLATg@mail.gmail.com>
-	<7h8uiemce7.fsf@deeprootsystems.com>
-Date: Thu, 11 Dec 2014 16:51:37 +0100
-Message-ID: <CAPDyKFo6zH4__Odm+RiJCbvXquAQqaLyCAiXrSN6s3KfQhok=A@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Tomasz Figa <tfiga@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Heiko Stuebner <heiko@sntech.de>, Joerg Roedel <joro@8bytes.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5489B995.7080209@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 December 2014 at 16:31, Kevin Hilman <khilman@kernel.org> wrote:
-> [+ Laurent Pinchart]
->
-> Tomasz Figa <tfiga@chromium.org> writes:
->
->> On Thu, Dec 11, 2014 at 8:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
->
-> [...]
->
->>>> @@ -988,11 +1107,28 @@ static int rk_iommu_probe(struct platform_device *pdev)
->>>>                 return -ENXIO;
->>>>         }
->>>>
->>>> +       pm_runtime_no_callbacks(dev);
->>>> +       pm_runtime_enable(dev);
->>>> +
->>>> +       /* Synchronize state of the domain with driver data. */
->>>> +       pm_runtime_get_sync(dev);
->>>> +       iommu->is_powered = true;
->>>
->>> Doesn't the runtime PM status reflect the value of "is_powered", thus
->>> why do you need to have a copy of it? Could it perpahps be that you
->>> try to cope with the case when CONFIG_PM is unset?
->>>
->>
->> It's worth noting that this driver fully relies on status of other
->> devices in the power domain the IOMMU is in and does not enforce the
->> status on its own. So in general, as far as my understanding of PM
->> runtime subsystem, the status of the IOMMU device will be always
->> suspended, because nobody will call pm_runtime_get() on it (except the
->> get and put pair in probe). So is_powered is here to track status of
->> the domain, not the device. Feel free to suggest a better way, though.
->
-> I still don't like these notifiers.  I think they add ways to bypass
-> having proper runtime PM implemented for devices/subsystems.
+Hi Jacek,
 
-I do agree, but I haven't found another good solution to the problem.
+On Thu, Dec 11, 2014 at 04:34:45PM +0100, Jacek Anaszewski wrote:
+> >>+
+> >>+	/* write address */
+> >>+	for (i = 0; i < addr; ++i) {
+> >>+		udelay(AAT1290_EN_SET_TICK_TIME_US);
+> >>+		gpio_set_value(led->en_set_gpio, 0);
+> >>+		udelay(AAT1290_EN_SET_TICK_TIME_US);
+> >>+		gpio_set_value(led->en_set_gpio, 1);
+> >>+	}
+> >
+> >This is a very interesting approach to bus implementation. It's a bit like
+> >pulse dial on POTS. :-)
+> >
+> >>+
+> >>+	udelay(AAT1290_LATCH_TIME_US);
+> >
+> >How precise does this need to be? Could you use usleep_range() instead?
+> 
+> This is minimal required time, so usleep_range could be used here,
+> which would however make the delay of setting the torch brightness
+> even more unstable.
 
->
-> From a high-level, the IOMMU is just another device inside the PM
-> domain, so ideally it should be doing it's own _get() and _put() calls
-> so the PM domain code would just do the right thing without the need for
-> notifiers.
+True as well. Half a ms isn't that long but then again torch typically isn't
+time critical either. I'd use usleep_range(), up to you.
 
-As I understand it, the IOMMU (or for other similar cases) shouldn't
-be doing any get() and put() at all because there are no IO API to
-serve request from.
+-- 
+Regards,
 
-In principle we could consider these kind devices as "parent" devices
-to those other devices that needs them. Then runtime PM core would
-take care of things for us, right!?
-
-Now, I am not so sure using the "parent" approach is actually viable,
-since it will likely have other complications, but I haven't
-thoroughly thought it though yet.
-
->
-> No knowing a lot about the IOMMU API, I'm guessing the reason you're not
-> doing that is because the IOMMU API currently doesn't have an easy way
-> to keep track of *active* users so it's not obvious where to put those
-> _get and _put calls.  If that doesn't exist, perhaps a simple
-> iommu_get() and iommu_put() API needs to be introduced (which inside the
-> IOMMU core would just do runtime PM calls) so that users of the IOMMU
-> could inform the subsystem that the IOMMU is needed and it should not be
-> powered off.
->
-> I Cc'd Laurent because I know he's thought about this before from the
-> IOMMU side, and not sure if he came up with a solution.
-
-Cool, let's see then.
-
-Kind regards
-Uffe
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
