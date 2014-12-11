@@ -1,91 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933466AbaLKBEA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:04:00 -0500
-Received: from [141.84.69.5] ([141.84.69.5]:41251 "EHLO mail.stusta.mhn.de"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933176AbaLKBDr convert rfc822-to-8bit (ORCPT
+	id S933483AbaLKBEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:04:54 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:45111 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933176AbaLKBEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:03:47 -0500
-X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Dec 2014 20:03:46 EST
-From: Markus Kaindl <markus.kaindl@stustanet.de>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: netdev@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: BUG: kernel panic nf_ct_del_from_dying_or_unconfirmed_list
-Date: Thu, 11 Dec 2014 01:55:09 +0100
-Message-ID: <1855695.mhsXPet1XK@lhotse>
-Organization: StuStaNet e. V.
-User-Agent: KMail/4.14.3 (Linux/3.17.5-gentoo; KDE/4.14.3; x86_64; ; )
+	Wed, 10 Dec 2014 20:04:52 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20141211005509.GN25677@wotan.suse.de>
+References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com>
+ <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
+ <CALCETrVAQ5JRoyL=V=fj+KxwUXfOTibKQkEDcvSqJzEi2sgshA@mail.gmail.com> <20141211005509.GN25677@wotan.suse.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 10 Dec 2014 17:04:30 -0800
+Message-ID: <CALCETrVNhPvKENkcKu9dbfrBTfFxrknEq96Go8jCy6nOqURxjw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be preempted
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jan Beulich <JBeulich@suse.com>,
+        Juergen Gross <jgross@suse.com>, bpoirier@suse.de,
+        X86 ML <x86@kernel.org>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Dec 10, 2014 at 4:55 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> On Wed, Dec 10, 2014 at 03:51:48PM -0800, Andy Lutomirski wrote:
+>> On Wed, Dec 10, 2014 at 3:34 PM, Luis R. Rodriguez
+>> <mcgrof@do-not-panic.com> wrote:
+>> > From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> >
+>> > Xen has support for splitting heavy work work into a series
+>> > of hypercalls, called multicalls, and preempting them through
+>> > what Xen calls continuation [0]. Despite this though without
+>> > CONFIG_PREEMPT preemption won't happen and while enabling
+>> > CONFIG_RT_GROUP_SCHED can at times help its not enough to
+>> > make a system usable. Such is the case for example when
+>> > creating a > 50 GiB HVM guest, we can get softlockups [1] with:.
+>> >
+>> > kernel: [  802.084335] BUG: soft lockup - CPU#1 stuck for 22s! [xend:31351]
+>> >
+>> > The softlock up triggers on the TASK_UNINTERRUPTIBLE hanger check
+>> > (default 120 seconds), on the Xen side in this particular case
+>> > this happens when the following Xen hypervisor code is used:
+>> >
+>> > xc_domain_set_pod_target() -->
+>> >   do_memory_op() -->
+>> >     arch_memory_op() -->
+>> >       p2m_pod_set_mem_target()
+>> >         -- long delay (real or emulated) --
+>> >
+>> > This happens on arch_memory_op() on the XENMEM_set_pod_target memory
+>> > op even though arch_memory_op() can handle continuation via
+>> > hypercall_create_continuation() for example.
+>> >
+>> > Machines over 50 GiB of memory are on high demand and hard to come
+>> > by so to help replicate this sort of issue long delays on select
+>> > hypercalls have been emulated in order to be able to test this on
+>> > smaller machines [2].
+>> >
+>> > On one hand this issue can be considered as expected given that
+>> > CONFIG_PREEMPT=n is used however we have forced voluntary preemption
+>> > precedent practices in the kernel even for CONFIG_PREEMPT=n through
+>> > the usage of cond_resched() sprinkled in many places. To address
+>> > this issue with Xen hypercalls though we need to find a way to aid
+>> > to the schedular in the middle of hypercalls. We are motivated to
+>> > address this issue on CONFIG_PREEMPT=n as otherwise the system becomes
+>> > rather unresponsive for long periods of time; in the worst case, at least
+>> > only currently by emulating long delays on select io disk bound
+>> > hypercalls, this can lead to filesystem corruption if the delay happens
+>> > for example on SCHEDOP_remote_shutdown (when we call 'xl <domain> shutdown').
+>> >
+>> > We can address this problem by trying to check if we should schedule
+>> > on the xen timer in the middle of a hypercall on the return from the
+>> > timer interrupt. We want to be careful to not always force voluntary
+>> > preemption though so to do this we only selectively enable preemption
+>> > on very specific xen hypercalls.
+>> >
+>> > This enables hypercall preemption by selectively forcing checks for
+>> > voluntary preempting only on ioctl initiated private hypercalls
+>> > where we know some folks have run into reported issues [1].
+>> >
+>> > [0] http://xenbits.xen.org/gitweb/?p=xen.git;a=commitdiff;h=42217cbc5b3e84b8c145d8cfb62dd5de0134b9e8;hp=3a0b9c57d5c9e82c55dd967c84dd06cb43c49ee9
+>> > [1] https://bugzilla.novell.com/show_bug.cgi?id=861093
+>> > [2] http://ftp.suse.com/pub/people/mcgrof/xen/emulate-long-xen-hypercalls.patch
+>> >
+>> > Based on original work by: David Vrabel <david.vrabel@citrix.com>
+>> > Cc: Borislav Petkov <bp@suse.de>
+>> > Cc: David Vrabel <david.vrabel@citrix.com>
+>> > Cc: Thomas Gleixner <tglx@linutronix.de>
+>> > Cc: Ingo Molnar <mingo@redhat.com>
+>> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+>> > Cc: x86@kernel.org
+>> > Cc: Andy Lutomirski <luto@amacapital.net>
+>> > Cc: Steven Rostedt <rostedt@goodmis.org>
+>> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> > Cc: Jan Beulich <JBeulich@suse.com>
+>> > Cc: linux-kernel@vger.kernel.org
+>> > Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+>> > ---
+>> >  arch/x86/kernel/entry_32.S | 21 +++++++++++++++++++++
+>> >  arch/x86/kernel/entry_64.S | 17 +++++++++++++++++
+>> >  drivers/xen/Makefile       |  2 +-
+>> >  drivers/xen/preempt.c      | 17 +++++++++++++++++
+>> >  drivers/xen/privcmd.c      |  2 ++
+>> >  include/xen/xen-ops.h      | 26 ++++++++++++++++++++++++++
+>> >  6 files changed, 84 insertions(+), 1 deletion(-)
+>> >  create mode 100644 drivers/xen/preempt.c
+>> >
+>> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+>> > index 344b63f..40b5c0c 100644
+>> > --- a/arch/x86/kernel/entry_32.S
+>> > +++ b/arch/x86/kernel/entry_32.S
+>> > @@ -982,7 +982,28 @@ ENTRY(xen_hypervisor_callback)
+>> >  ENTRY(xen_do_upcall)
+>> >  1:     mov %esp, %eax
+>> >         call xen_evtchn_do_upcall
+>> > +#ifdef CONFIG_PREEMPT
+>> >         jmp  ret_from_intr
+>> > +#else
+>> > +       GET_THREAD_INFO(%ebp)
+>> > +#ifdef CONFIG_VM86
+>> > +       movl PT_EFLAGS(%esp), %eax      # mix EFLAGS and CS
+>> > +       movb PT_CS(%esp), %al
+>> > +       andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
+>> > +#else
+>> > +       movl PT_CS(%esp), %eax
+>> > +       andl $SEGMENT_RPL_MASK, %eax
+>> > +#endif
+>> > +       cmpl $USER_RPL, %eax
+>> > +       jae resume_userspace            # returning to v8086 or userspace
+>> > +       DISABLE_INTERRUPTS(CLBR_ANY)
+>> > +       cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+>> > +       jz resume_kernel
+>> > +       movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+>> > +       call cond_resched_irq
+>> > +       movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+>> > +       jmp resume_kernel
+>> > +#endif /* CONFIG_PREEMPT */
+>> >         CFI_ENDPROC
+>> >  ENDPROC(xen_hypervisor_callback)
+>> >
+>> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+>> > index c0226ab..0ccdd06 100644
+>> > --- a/arch/x86/kernel/entry_64.S
+>> > +++ b/arch/x86/kernel/entry_64.S
+>> > @@ -1170,7 +1170,23 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+>> >         popq %rsp
+>> >         CFI_DEF_CFA_REGISTER rsp
+>> >         decl PER_CPU_VAR(irq_count)
+>> > +#ifdef CONFIG_PREEMPT
+>> >         jmp  error_exit
+>> > +#else
+>> > +       movl %ebx, %eax
+>> > +       RESTORE_REST
+>> > +       DISABLE_INTERRUPTS(CLBR_NONE)
+>> > +       TRACE_IRQS_OFF
+>> > +       GET_THREAD_INFO(%rcx)
+>> > +       testl %eax, %eax
+>> > +       je error_exit_user
+>> > +       cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+>> > +       jz retint_kernel
+>>
+>> I think I understand this part.
+>>
+>> > +       movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+>>
+>> Why?  Is the issue that, if preemptible hypercalls nest, you don't
+>> want to preempt again?
+>
+>
+> So this callback on the xen timer, without the CPU variable
+> we would not be able to selectively preempt specific hypercalls
+> and we'd a no-preempt kernel fully preemptive.
+>
+> I asked the same question, see:
+>
+> https://lkml.org/lkml/2014/12/3/756
+>
+>>
+>> > +       call cond_resched_irq
+>>
+>> On !CONFIG_PREEMPT, there's no preempt_disable, right?  So how do you
+>> guarantee that you don't preempt something you shouldn't?
+>
+> Not sure I follow, but in essence this is no different then the use
+> of cond_resched() on !CONFIG_PREEMPT, the only thing here is we are
+> in interrupt context. If this is about abuse of making !CONFIG_PREEMPT
+> voluntarily preemptive at select points then I had similar concerns
+> and David pointed out to me the wide use of cond_resched() on the
+> kernel.
+>
+>> Is the idea
+>> that these events will only fire nested *directly* inside a
+>> preemptible hypercall?
+>
+> Yeah its the timer interrupt that would trigger the above.
+>
+>> Also, should you check that IRQs were on when
+>> the event fired?  (Are they on in pt_regs?)
+>
+> Right before this xen_evtchn_do_upcall() is issued, which
+> saves pt_regs and then restores them.
+>
+>> > +       movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+>> > +       jmp retint_kernel
+>> > +#endif /* CONFIG_PREEMPT */
+>> >         CFI_ENDPROC
+>>
+>> All that being said, this is IMO a bit gross.
+>
+> That was my first reaction hence my original attempt to try to get away from
+> this. I've learned David also tried to not go down this route too before,
+> more on this below.
+>
+>>  You've added a bunch of
+>> asm that's kind of like a parallel error_exit,
+>
+> yeah.. I first tried to macro'tize this but it looked hairy, if we
+> wanted to do that... (although the name probably ain't best)
+>
+> 32-bit:
+> .macro test_from_kernel kernel_ret:req
+>         GET_THREAD_INFO(%ebp)
+> #ifdef CONFIG_VM86
+>         movl PT_EFLAGS(%esp), %eax      # mix EFLAGS and CS
+>         movb PT_CS(%esp), %al
+>         andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
+> #else
+>         /*
+>          * We can be coming here from child spawned by kernel_thread().
+>          */
+>         movl PT_CS(%esp), %eax
+>         andl $SEGMENT_RPL_MASK, %eax
+> #endif
+>         cmpl $USER_RPL, %eax
+>         jb \kernel_ret
+> .endm
+>
+> 64-bit:
+>         .macro test_from_kernel kernel_ret:req
+>         movl %ebx,%eax
+>         RESTORE_REST
+>         DISABLE_INTERRUPTS(CLBR_NONE)
+>         TRACE_IRQS_OFF
+>         GET_THREAD_INFO(%rcx)
+>         testl %eax,%eax
+>         jne \kernel_ret
+>         .endm
+>
+>> and the error entry and
+>> exit code is hairy enough that this scares me.
+>
+> yeah...
+>
+>>  Can you do this mostly in C instead?  This would look a nicer if it could be:
+>>
+>>     call xen_evtchn_do_upcall
+>>     popq %rsp
+>>     CFI_DEF_CFA_REGISTER rsp
+>>     decl PER_CPU_VAR(irq_count)
+>> +  call xen_end_upcall
+>>     jmp error_exit
+>
+> It seems David tried this originally eons ago:
+>
+> http://lists.xen.org/archives/html/xen-devel/2014-02/msg01101.html
+>
+> and the strategy was shifted based on Jan's feedback that we could
+> not sched as we're on the IRQ stack. David evolved the strategy
+> to asm and to use preempt_schedule_irq(), this new iteratin just
+> revisits the same old but tries to generalize scheduling on IRQ
+> context on very special circumstances.
 
-shortly after changing from wireless to wired network connection, both using 
-IPv4 and Isatap, I experienced the following kernel panic. I was doing a 
-speedtest on the wired connection when the panic occured.
+Indeed.  But look more closely at my proposed one-line asm patch:
+we're not on the irq stack.
 
-I tried to reproduce it, but I was not able to.
+Also, to make this more obviously safe wrt preempting at the wrong
+time, would it be possible to check regs->ip and make sure it's
+pointing exactly where you expect before scheduling?  (You'd need one
+more line of asm to get pt_regs in xen_end_upcall.)
 
-[...] (could not get more scroll back...)
-[13139.648381] ffff880174d149e0 ffff88000cb8b828 ffff8800a73b7858 ffffffff81864dbe
-[13139.648429] ffff88000cb8b828 ffff8800a?3b?B?0 ffffffffB1825e85 ffff88000cb8b828
-[13139.648472] Call Trace:
-[13139.648490] [<ffffffff81869885>] destroy_conntrack+0x55/0xc0
-[13139.648521] [<ffffffff81864dbe>] nf_conntrack_destroy+0x1e/0x30
-[13139.648555] [<ffffffff81825e85>] skb_release_head_state+0xa5/0xf0
-[13139.648590] [<ffffffff8182682d>] skb_release_all+0xd/0x30
-[13139.648620] [<ffffffff818268a2>] kfree_skb+0x32/0xa0
-[13139.648649] [<ffffffff81884630>] ? ip_fragment+0x8d0/0x8d0
-[13139.848681] [<ffffffff81864fd8>] nf_hook_slow+0x108/0x120
-[13139.648712] [<ffffffff81884630>] ? ip_fragment+0x8d0/0x8d0
-[13139.648745] [<ffffffffB18861e5>] ip_output+0x75/0x90
-[13139.648775] [<ffffffff8188592b>] ip_local_out_sk+0x2b/0x30
-[13139.648807] [<ffffffff818c71ab>] iptunnel_xmit+0xfb/0x120
-[13139.648839] [<ffffffff8192548e>] sit_tunnel_xmit+0x3de/0x700
-[13139.648870] [<ffffffff8112563e>] ? internal_add_timer+0x5e/0x80
-[13139.648902] [<ffffffff81838c1?>] dev_hard_start_xmit+0x337/0x660
-[13139.648933] [<ffffffff81839253>] __dev_queue_xmit+0x313/0x510
-[13139.648965] [<ffffffff8183945b>] dev_queue_xmit+0xb/0x10
-[13139.648995] [<ffffffff8184022c>] neigh_direct_output+0xc/0x10
-[13139.649028] [<ffffffff818eb609>] ip6_finish_output2+0x159/0x490
-[13139.649062] [<ffffffff818ee7f0>] ? ip6_fragment+0xa90/0xa90
-[13139.649094] [<ffffffff818ee877>] ip6_finish_output+0x87/0xc0
-[13139.649125] [<ffffffff818ee920>] ip6_output+0x70/0xb0
-[13139.649154] [<ffffffff818ebd2a>] ip6_xmit+0x3ea/0x4d0
-[13139.649184] [<ffffffff819195ba>] inet6_csk_xmit+0x6a/0xb0
-[13139.649216] [<ffffffff8189cfc0>] tcp_transmit_skb+0x490/0x920
-[13139.649249] [<ffffffff8189eba2>] tcp_connect+0x7d2/0x8f0
-[13139.649280] [<£fffffff8191209a>] tcp_v6_connect+0x32a/0x620
-[13139.649313] [<ffffffff8181d8ca>] ? sock_destroy_inode+0x2a/0x30
-[13139.650532] [<ffffffff818b85c5>] __inet_stream_connect+0x95/0x310
-[13139.651647] [<ffffffff810f323d>] ? get_parent_ip+0xd/0x50
-[13139.652770] [<ffffffff810f32cd>] ? preempt_count_add+0x4d/0xa0
-[13139.653904] [<ffffffff810d2b3e>] ? __local_bh_enable_ip+0x3e/0xa0
-[13139.651985] [<ffffffff818b8873>] inet_stream_connect+0x33/0x50
-[13139.656001] [<ffffffff8181ea57>] SYSC_connect+0xc7/0x100
-[13139.656801] [<ffffffff81468a43>] ? __this_cpu_preempt_check+0x13/0x20
-[13139.657584] [<ffffffff81011012>] ? syscall_trace_enter+0x232/0x260
-[13139.658371] [<ffffffff8181f919>] SyS_connect+0x9/0x10
-[13139.659154] [<ffffffff81a1608b>] tracesys+0xdd/0xe2
-[13139.659923] Code: 98 e0 07 00 00 0f b7 47 06 48 03 1c c5 20 84 0d 82 48 89 
-df e8 84 ce 1d 00 49 8b 44 24 10 48 85 c0 74 2d 49 8b 54 24 08 f6 c2 01 <48> 
-89 10 75 04 48 89 42 08 48 b8 00 02 20 00 00 00 ad de 48 89
-[13139.661710] RIP [<ffffffff81868b5e>] 
-nf_ct_del_from_dying_or_unconfirmed_list+0x3e/0x70
-[13139.662579] RSP (ffff8800a?3b?810>
-[13139.669137] Kernel panic — not syncing: Fatal exception in interrupt
-[13139.670262] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 
-0xffffffff80000000-0xffffffff9fffffff)
-[13139.671137] drm_kms_helper: panic occurred, switching back to text console
+--Andy, the stack switching maestro extraordinaire :)
+
+>
+>> Where xen_end_upcall would be witten in C, nokprobes and notrace (if
+>> needed) and would check pt_regs and whatever else and just call
+>> schedule if needed?
+>
+> If there's a way to do it it'd be great. I am not sure if we can though.
+>
+>   Luis
 
 
-Any guesses?
 
-Thanks,
-Markus
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
