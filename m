@@ -1,129 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758489AbaLKRld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:41:33 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:58045 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLKRlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:41:32 -0500
-Message-ID: <5489D739.9010303@cumulusnetworks.com>
-Date: Thu, 11 Dec 2014 09:41:13 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S933138AbaLKRqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:46:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932412AbaLKRqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 12:46:02 -0500
+Date: Thu, 11 Dec 2014 19:01:34 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: cornelia.huck@de.ibm.com, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.or,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH 2/3] virtio_config: fix virtio_cread_bytes
+Message-ID: <1418317279-13915-3-git-send-email-mst@redhat.com>
+References: <1418317279-13915-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Jiri Pirko <jiri@resnulli.us>
-CC: "Varlese, Marco" <marco.varlese@intel.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan> <5489C85A.5020400@cumulusnetworks.com> <20141211165627.GF1912@nanopsycho.orion>
-In-Reply-To: <20141211165627.GF1912@nanopsycho.orion>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418317279-13915-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/14, 8:56 AM, Jiri Pirko wrote:
-> Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
->> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
->>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
->>>>> -----Original Message-----
->>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
->>>>> Sent: Wednesday, December 10, 2014 5:04 PM
->>>>> To: Jiri Pirko
->>>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
->>>>> stephen@networkplumber.org; Fastabend, John R;
->>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
->>>>> kernel@vger.kernel.org
->>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->>>>> configuration
->>>>>
->>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
->>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
->>>>>>> From: Marco Varlese <marco.varlese@intel.com>
->>>>>>>
->>>>>>> Switch hardware offers a list of attributes that are configurable on
->>>>>>> a per port basis.
->>>>>>> This patch provides a mechanism to configure switch ports by adding
->>>>>>> an NDO for setting specific values to specific attributes.
->>>>>>> There will be a separate patch that extends iproute2 to call the new
->>>>>>> NDO.
->>>>>> What are these attributes? Can you give some examples. I'm asking
->>>>>> because there is a plan to pass generic attributes to switch ports
->>>>>> replacing current specific ndo_switch_port_stp_update. In this case,
->>>>>> bridge is setting that attribute.
->>>>>>
->>>>>> Is there need to set something directly from userspace or does it make
->>>>>> rather sense to use involved bridge/ovs/bond ? I think that both will
->>>>>> be needed.
->>>>> +1
->>>>>
->>>>> I think for many attributes it would be best to have both. The in kernel callers
->>>>> and netlink userspace can use the same driver ndo_ops.
->>>>>
->>>>> But then we don't _require_ any specific bridge/ovs/etc module. And we
->>>>> may have some attributes that are not specific to any existing software
->>>>> module. I'm guessing Marco has some examples of these.
->>>>>
->>>>> [...]
->>>>>
->>>>>
->>>>> --
->>>>> John Fastabend         Intel Corporation
->>>> We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
->>>>
->>>> An example of attributes are:
->>>> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
->>>> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
->>>> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
->>>>
->>>> Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
->>>>
->>>> One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
->>>>
->>>> I hope this clarifies some points.
->>> It does. Makes sense. We need to expose this attr set/get for both
->>> in-kernel and userspace use cases.
->>>
->>> Please adjust you patch for this. Also, as a second patch, it would be
->>> great if you can convert ndo_switch_port_stp_update to this new ndo.
->> Why are we exposing generic switch attribute get/set from userspace ?. We
->> already have specific attributes for learning/flooding which can be extended
->> further.
-> Yes, but that is for PF_BRIDGE and bridge specific attributes. There
-> might be another generic attrs, no?
-I cant think of any. And plus, the whole point of switchdev l2 offloads 
-was to map these to existing
-bridge attributes. And we already have a match for some of the 
-attributes that marco wants.
+virtio_cread_bytes is implemented incorrectly in case length happens to
+be 2,4 or 8 bytes: transports and devices will assume it's an integer
+value that has to be converted to LE format.
 
-If there is a need for such attributes, i don't see why it is needed for 
-switch devices only.
-It is needed for any hw (nics etc). And, a precedence to this is to do 
-it via ethtool.
+Let's just do multiple 1-byte reads: this also makes life easier
+for transports who only need to implement 1,2,4 and 8 byte reads.
 
-Having said that, am sure we will find a need for this in the future. 
-And having a netlink attribute always helps.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/virtio_config.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Today, it seems like these can be mapped to existing attributes that are 
-settable via ndo_bridge_setlink/getlink.
-
->
->> And for in kernel api....i had a sample patch in my RFC series (Which i was
->> going to resubmit, until it was decided that we will use existing api around
->> ndo_bridge_setlink/ndo_bridge_getlink):
->> http://www.spinics.net/lists/netdev/msg305473.html
-> Yes, this might become handy for other generic non-bridge attrs.
->
->> Thanks,
->> Roopa
->>
->>
->>
+diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
+index 7979f85..a61cd37 100644
+--- a/include/linux/virtio_config.h
++++ b/include/linux/virtio_config.h
+@@ -305,7 +305,10 @@ static inline void virtio_cread_bytes(struct virtio_device *vdev,
+ 				      unsigned int offset,
+ 				      void *buf, size_t len)
+ {
+-	vdev->config->get(vdev, offset, buf, len);
++	int i;
++
++	for (i = 0; i < len; i++)
++		vdev->config->get(vdev, offset + i, buf + i, 1);
+ }
+ 
+ static inline void virtio_cwrite8(struct virtio_device *vdev,
+-- 
+MST
 
