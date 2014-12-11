@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933465AbaLKUcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 15:32:17 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:56400 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758481AbaLKUcP (ORCPT
+	id S933669AbaLKUeQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 15:34:16 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38668 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932577AbaLKUeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 15:32:15 -0500
-Date: Thu, 11 Dec 2014 15:32:04 -0500 (EST)
-Message-Id: <20141211.153204.228153607927530694.davem@davemloft.net>
-To: alexander.duyck@gmail.com
-Cc: alexander.h.duyck@redhat.com, linux-arch@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
-        benh@kernel.crashing.org, heiko.carstens@de.ibm.com, mingo@kernel.org,
-        mikey@neuling.org, linux@arm.linux.org.uk, donald.c.skidmore@intel.com,
-        matthew.vick@intel.com, geert@linux-m68k.org,
-        jeffrey.t.kirsher@intel.com, romieu@fr.zoreil.com,
-        paulmck@linux.vnet.ibm.com, nic_swsd@realtek.com, will.deacon@arm.com,
-        michael@ellerman.id.au, tony.luck@intel.com,
-        torvalds@linux-foundation.org, oleg@redhat.com, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com
-Subject: Re: [PATCH v7 0/4] arch: Add lightweight memory barriers for
- coherent memory access
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <54892B87.3020909@gmail.com>
-References: <20141125203310.8240.27370.stgit@ahduyck-server>
-	<54892B87.3020909@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 11 Dec 2014 12:32:12 -0800 (PST)
+	Thu, 11 Dec 2014 15:34:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <547C42FF.5010700@ti.com>
+References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
+	<20141124115116.GA14997@linutronix.de>
+	<547C3A95.30605@ti.com>
+	<547C3C19.5090501@linutronix.de>
+	<547C42FF.5010700@ti.com>
+Date: Thu, 11 Dec 2014 22:34:10 +0200
+Message-ID: <CAH=tA9FO5MCzE274thc-NugCNte6WdyC-Rxc6yfnuR=+6_qMbA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
+From: Nicolae Rosia <nicolae.rosia@gmail.com>
+To: Vignesh R <vigneshr@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        richardcochran@gmail.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Brad Griffis <bgriffis@ti.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Duyck <alexander.duyck@gmail.com>
-Date: Wed, 10 Dec 2014 21:28:39 -0800
+Hello,
 
-> It occurs to me that I never got a sign off from any of the maintainers
-> on getting this pulled in.
-> 
-> Since the merge window is open I was wondering which tree I should make
-> sure these patches apply to and who will be the one to pull them in?
-> Since I was modifying network drivers should I resubmit them for netdev,
-> or should I submit them for asm-generic or some other tree?
+Any updates on this series? I don't see it applied in [1] or [2].
 
-I have no problem taking this via my tree, but I want to see agreement
-from other interested parties.
+[1] https://github.com/RobertCNelson/ti-linux-kernel/commits/ti-linux-3.14.y/drivers/input/touchscreen/ti_am335x_tsc.c
+[2] https://github.com/RobertCNelson/ti-linux-kernel/commits/ti-linux-3.14.y-exp/drivers/input/touchscreen/ti_am335x_tsc.c
+
+Regards,
+Nicolae Rosia
+
+On Mon, Dec 1, 2014 at 12:29 PM, Vignesh R <vigneshr@ti.com> wrote:
+>
+> Hi,
+>
+> On Monday 01 December 2014 03:29 PM, Sebastian Andrzej Siewior wrote:
+>> On 12/01/2014 10:53 AM, Vignesh R wrote:
+>>> Hi Sebastian,
+>>
+>> Hi Vignesh,
+>>
+>>> I fixed the issue that was triggering the WARN_ON(). I think it would be
+>>> better if you tested these patches, before I posted them on the
+>>> mainline. I don't want to clutter the list with too main versions. Here
+>>> is the link to the tree with latest changes:
+>>
+>> awesome, thank you.
+>>
+>>>
+>>> git clone -b tsc-devel git://git.ti.com/kernel/tsc-adc.git
+>>> (tsc-devel branch)
+>>
+>> I will and let you know.
+>>
+>>> Please test the above tree and let me know the results.
+>>> I will post new version(v5) if there are no issues wrt IIO and TSC
+>>> working at the same time.
+>>
+>> Cool. Were you able to get in touch with someone who has a 5-wire touch?
+>
+> I have asked Jeff Lance to verify 5-wire touch.
+>
+> Regards
+> Vignesh
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
