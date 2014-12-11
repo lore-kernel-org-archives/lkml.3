@@ -1,68 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208AbaLKVAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:00:30 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:60033 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848AbaLKVA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:00:27 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141211204515.GA4472@svl-evodev-groeck.juniper.net>
-References: <546E7120.5080505@gmail.com> <20141211002630.GC22886@google.com>
- <20141211163831.GA2845@svl-evodev-groeck.juniper.net> <CAErSpo62wQ6g74wNYYumgbAVJ3Mneu_dmWOhLBE6NWqQTXsvVQ@mail.gmail.com>
- <20141211204515.GA4472@svl-evodev-groeck.juniper.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Dec 2014 14:00:06 -0700
-Message-ID: <CAErSpo4WAbb=n+cNARRgKWPhbn6LZqwL-htB_Uv2OWB9BwTXpw@mail.gmail.com>
-Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
- during removal
-To: Guenter Roeck <groeck@juniper.net>
-Cc: Rajat Jain <rajatxjain@gmail.com>,
+	id S965393AbaLKVAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:00:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56316 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933815AbaLKVA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:00:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="427925581"
+From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+To: Alexander Duyck <alexander.duyck@gmail.com>,
+        Alexander Duyck <alexander.h.duyck@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>
-Content-Type: text/plain; charset=UTF-8
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "davem@davemloft.net" <davem@davemloft.net>
+CC: "mathieu.desnoyers@polymtl.ca" <mathieu.desnoyers@polymtl.ca>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "heiko.carstens@de.ibm.com" <heiko.carstens@de.ibm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "mikey@neuling.org" <mikey@neuling.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "romieu@fr.zoreil.com" <romieu@fr.zoreil.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "nic_swsd@realtek.com" <nic_swsd@realtek.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "michael@ellerman.id.au" <michael@ellerman.id.au>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>
+Subject: RE: [PATCH v7 0/4] arch: Add lightweight memory barriers for
+ coherent memory access
+Thread-Topic: [PATCH v7 0/4] arch: Add lightweight memory barriers for
+ coherent memory access
+Thread-Index: AQHQCO94+YoxgM3MuUmIMl02B1xe45yKeuCAgAB9k9A=
+Date: Thu, 11 Dec 2014 21:00:02 +0000
+Message-ID: <F6FB0E698C9B3143BDF729DF222866469126E75A@ORSMSX110.amr.corp.intel.com>
+References: <20141125203310.8240.27370.stgit@ahduyck-server>
+ <54892B87.3020909@gmail.com>
+In-Reply-To: <54892B87.3020909@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBBL0nd2014361
 
-On Thu, Dec 11, 2014 at 1:45 PM, Guenter Roeck <groeck@juniper.net> wrote:
-> On Thu, Dec 11, 2014 at 01:26:47PM -0700, Bjorn Helgaas wrote:
->> On Thu, Dec 11, 2014 at 9:38 AM, Guenter Roeck <groeck@juniper.net> wrote:
->> > On Wed, Dec 10, 2014 at 05:26:30PM -0700, Bjorn Helgaas wrote:
->> >> On Thu, Nov 20, 2014 at 02:54:24PM -0800, Rajat Jain wrote:
+> -----Original Message-----
+> From: Alexander Duyck [mailto:alexander.duyck@gmail.com]
+> Sent: Wednesday, December 10, 2014 9:29 PM
+> To: Alexander Duyck; linux-arch@vger.kernel.org; netdev@vger.kernel.org;
+> linux-kernel@vger.kernel.org; arnd@arndb.de; davem@davemloft.net
+> Cc: mathieu.desnoyers@polymtl.ca; peterz@infradead.org;
+> benh@kernel.crashing.org; heiko.carstens@de.ibm.com; mingo@kernel.org;
+> mikey@neuling.org; linux@arm.linux.org.uk; Skidmore, Donald C; Vick,
+> Matthew; geert@linux-m68k.org; Kirsher, Jeffrey T; romieu@fr.zoreil.com;
+> paulmck@linux.vnet.ibm.com; nic_swsd@realtek.com;
+> will.deacon@arm.com; michael@ellerman.id.au; Luck, Tony; torvalds@linux-
+> foundation.org; oleg@redhat.com; schwidefsky@de.ibm.com;
+> fweisbec@gmail.com
+> Subject: Re: [PATCH v7 0/4] arch: Add lightweight memory barriers for
+> coherent memory access
+> 
+> On 11/25/2014 12:35 PM, Alexander Duyck wrote:
+> > These patches introduce two new primitives for synchronizing cache
+> > coherent memory writes and reads.  These two new primitives are:
+> >
+> > 	dma_rmb()
+> > 	dma_wmb()
+> >
+> > The first patch cleans up some unnecessary overhead related to the
+> > definition of read_barrier_depends, smp_read_barrier_depends, and
+> > comments related to the barrier.
+> >
+> > The second patch adds the primitives for the applicable architectures
+> > and asm-generic.
+> >
+> > The third patch adds the barriers to r8169 which turns out to be a
+> > good example of where the new barriers might be useful as they have
+> > full
+> > rmb()/wmb() barriers ordering accesses to the descriptors and the
+> > DescOwn bit.
+> >
+> > The fourth patch adds support for coherent_rmb() to the Intel fm10k,
+> > igb, and ixgbe drivers.  Testing with the ixgbe driver has shown a
+> > processing time reduction of at least 7ns per 64B frame on a Core i7-4930K.
+> >
+> > This patch series is essentially the v7 for:
+> > v4-6:	Add lightweight memory barriers for coherent memory access
+> > v3:	Add lightweight memory barriers fast_rmb() and fast_wmb()
+> > v2:	Introduce load_acquire() and store_release()
+> > v1:	Introduce read_acquire()
+> >
+> > The key changes in this patch series versus the earlier patches are:
+> > v7:
+> > 	- Dropped test/debug patch that was accidentally slipped in
+> > v6:
+> > 	- Replaced "memory based device I/O" with "consistent memory" in
+> > 	  docs
+> > 	- Added reference to DMA-API.txt to explain consistent memory
+> > v5:
+> > 	- Renamed barriers dma_rmb and dma_wmb
+> > 	- Undid smp_wmb changes in x86 and PowerPC
+> > 	- Defined smp_rmb as __lwsync for SMP case on PowerPC
+> > v4:
+> > 	- Renamed barriers coherent_rmb and coherent_wmb
+> > 	- Added smp_lwsync for use in
+> smp_load_acquire/smp_store_release
+> > v3:
+> > 	- Moved away from acquire()/store() and instead focused on barriers
+> > 	- Added cleanup of read_barrier_depends
+> > 	- Added change in r8169 to fix cur_tx/DescOwn ordering
+> > 	- Simplified changes to just replacing/moving barriers in r8169
+> > 	- Added update to documentation with code example
+> > v2:
+> > 	- Renamed read_acquire() to be consistent with smp_load_acquire()
+> > 	- Changed barrier used to be consistent with smp_load_acquire()
+> > 	- Updated PowerPC code to use __lwsync based on IBM article
+> > 	- Added store_release() as this is a viable use case for drivers
+> > 	- Added r8169 patch which is able to fully use primitives
+> > 	- Added fm10k/igb/ixgbe patch which is able to test performance
+> >
+> > ---
+> >
+> > Alexander Duyck (4):
+> >       arch: Cleanup read_barrier_depends() and comments
+> >       arch: Add lightweight memory barriers dma_rmb() and dma_wmb()
+> >       r8169: Use dma_rmb() and dma_wmb() for DescOwn checks
+> >       fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
+> >
+> >
+> >  Documentation/memory-barriers.txt             |   42 +++++++++++++++
+> >  arch/alpha/include/asm/barrier.h              |   51 ++++++++++++++++++
+> >  arch/arm/include/asm/barrier.h                |    4 +
+> >  arch/arm64/include/asm/barrier.h              |    3 +
+> >  arch/blackfin/include/asm/barrier.h           |   51 ++++++++++++++++++
+> >  arch/ia64/include/asm/barrier.h               |   25 ++++-----
+> >  arch/metag/include/asm/barrier.h              |   19 ++++---
+> >  arch/mips/include/asm/barrier.h               |   61 ++--------------------
+> >  arch/powerpc/include/asm/barrier.h            |   19 ++++---
+> >  arch/s390/include/asm/barrier.h               |    7 ++-
+> >  arch/sparc/include/asm/barrier_64.h           |    7 ++-
+> >  arch/x86/include/asm/barrier.h                |   70 ++++---------------------
+> >  arch/x86/um/asm/barrier.h                     |   20 ++++---
+> >  drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +-
+> >  drivers/net/ethernet/intel/igb/igb_main.c     |    6 +-
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 +--
+> >  drivers/net/ethernet/realtek/r8169.c          |   29 ++++++++--
+> >  include/asm-generic/barrier.h                 |    8 +++
+> >  18 files changed, 258 insertions(+), 179 deletions(-)
+> >
+> > --
+> 
+> It occurs to me that I never got a sign off from any of the maintainers on
+> getting this pulled in.
+> 
+> Since the merge window is open I was wondering which tree I should make
+> sure these patches apply to and who will be the one to pull them in?
+> Since I was modifying network drivers should I resubmit them for netdev, or
+> should I submit them for asm-generic or some other tree?
+> 
+> - Alex
 
->> >> If we do need it (and it looks like most or all hotplug drivers copied it),
->> >> isn't there still a race?  Can't we have the following sequence?
->> >>
->> >>   - pciehp_check_link_active()                # returns true
->> >>   - Link goes down
->> >>   - pci_read_config_byte()            # fails because link is down
->> >>
->> > I would guess so. Question is how to address it. Read the configuration byte
->> > first, then check if the link is down ? Check if link is still up after reading
->> > the configuration byte ? Add a note that there may be a potential race condition
->> > and do nothing until it is actually seen ?
->>
->> I think we should just read PCI_BRIDGE_CONTROL and look for a 0xff
->> value.  That's not a legal value for the register, so if we see it, it
->> should be pretty safe to assume the link is down or the device is not
->> present at all.
->>
-> Something like
->         if (bctl != 0xff && (bctl & PCI_BRIDGE_CTL_VGA)) {
-> in addition to Rajat's changes ?
->
-> I think it would be good to keep the change Rajat proposed, ie to check
-> the link state instead of presence. Question then is if you'd want a new
-> revision of Rajat's patch or another patch on top of it with the bctl
-> related change.
+For at least ixgbe, it looks good to me.
 
-Why do we need the link state or the presence check?  It seems like
-those are sort of a 90% solution, and doing them provides the illusion
-of value but without real value.  If we think that checking for 0xff
-is a 100% solution, we should rely on that and not bother with
-anything else.
+Acked-by: Don Skidmore <donald.c.skidmore@intel.com>
 
-Bjorn
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
