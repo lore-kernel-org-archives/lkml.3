@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967585AbaLKXDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:03:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55939 "EHLO mx1.redhat.com"
+	id S967599AbaLKXDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:03:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966088AbaLKXDT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:03:19 -0500
-Subject: [net-next PATCH v7 resubmit 0/4] arch: Add lightweight memory
- barriers for coherent memory access
+	id S934114AbaLKXDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 18:03:42 -0500
+Subject: [net-next PATCH v7 resubmit 4/4] fm10k/igb/ixgbe: Use dma_rmb on Rx
+ descriptor reads
 From: Alexander Duyck <alexander.h.duyck@redhat.com>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
 Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
@@ -19,10 +19,10 @@ Cc: mathieu.desnoyers@polymtl.ca, peterz@infradead.org,
         arnd@arndb.de, will.deacon@arm.com, michael@ellerman.id.au,
         tony.luck@intel.com, torvalds@linux-foundation.org, oleg@redhat.com,
         schwidefsky@de.ibm.com, fweisbec@gmail.com
-Date: Thu, 11 Dec 2014 15:01:43 -0800
-Message-ID: <20141211225250.25464.30291.stgit@ahduyck-server>
-In-Reply-To: <20141125203310.8240.27370.stgit@ahduyck-server>
-References: <20141125203310.8240.27370.stgit@ahduyck-server>
+Date: Thu, 11 Dec 2014 15:02:28 -0800
+Message-ID: <20141211230227.25464.647.stgit@ahduyck-server>
+In-Reply-To: <20141211225250.25464.30291.stgit@ahduyck-server>
+References: <20141211225250.25464.30291.stgit@ahduyck-server>
 User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -31,92 +31,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches introduce two new primitives for synchronizing cache coherent
-memory writes and reads.  These two new primitives are:
+This change makes it so that dma_rmb is used when reading the Rx
+descriptor.  The advantage of dma_rmb is that it allows for a much
+lower cost barrier on x86, powerpc, arm, and arm64 architectures than a
+traditional memory barrier when dealing with reads that only have to
+synchronize to coherent memory.
 
-	dma_rmb()
-	dma_wmb()
+In addition I have updated the code so that it just checks to see if any
+bits have been set instead of just the DD bit since the DD bit will always
+be set as a part of a descriptor write-back so we just need to check for a
+non-zero value being present at that memory location rather than just
+checking for any specific bit.  This allows the code itself to appear much
+cleaner and allows the compiler more room to optimize.
 
-The first patch cleans up some unnecessary overhead related to the
-definition of read_barrier_depends, smp_read_barrier_depends, and comments
-related to the barrier.
-
-The second patch adds the primitives for the applicable architectures and
-asm-generic.
-
-The third patch adds the barriers to r8169 which turns out to be a good
-example of where the new barriers might be useful as they have full
-rmb()/wmb() barriers ordering accesses to the descriptors and the DescOwn
-bit.
-
-The fourth patch adds support for coherent_rmb() to the Intel fm10k, igb,
-and ixgbe drivers.  Testing with the ixgbe driver has shown a processing
-time reduction of at least 7ns per 64B frame on a Core i7-4930K.
-
-This patch series is essentially the v7 for:
-v4-7:	Add lightweight memory barriers for coherent memory access
-v3:	Add lightweight memory barriers fast_rmb() and fast_wmb()
-v2:	Introduce load_acquire() and store_release()
-v1:	Introduce read_acquire()
-
-The key changes in this patch series versus the earlier patches are:
-v7 resubmit:
-	- Added Acked-by: Ben Herrenschmidt from v5 to dma_rmb/wmb patch
-	- No code changes from previous set, still applies cleanly and builds.
-v7:
-	- Dropped test/debug patch that was accidentally slipped in
-v6:
-	- Replaced "memory based device I/O" with "consistent memory" in
-	  docs
-	- Added reference to DMA-API.txt to explain consistent memory
-v5:
-	- Renamed barriers dma_rmb and dma_wmb
-	- Undid smp_wmb changes in x86 and PowerPC
-	- Defined smp_rmb as __lwsync for SMP case on PowerPC
-v4:
-	- Renamed barriers coherent_rmb and coherent_wmb
-	- Added smp_lwsync for use in smp_load_acquire/smp_store_release
-v3:
-	- Moved away from acquire()/store() and instead focused on barriers
-	- Added cleanup of read_barrier_depends
-	- Added change in r8169 to fix cur_tx/DescOwn ordering
-	- Simplified changes to just replacing/moving barriers in r8169
-	- Added update to documentation with code example
-v2:
-	- Renamed read_acquire() to be consistent with smp_load_acquire()
-	- Changed barrier used to be consistent with smp_load_acquire()
-	- Updated PowerPC code to use __lwsync based on IBM article
-	- Added store_release() as this is a viable use case for drivers
-	- Added r8169 patch which is able to fully use primitives
-	- Added fm10k/igb/ixgbe patch which is able to test performance
-
+Cc: Matthew Vick <matthew.vick@intel.com>
+Cc: Don Skidmore <donald.c.skidmore@intel.com>
+Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Alexander Duyck <alexander.h.duyck@redhat.com>
 ---
+ drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +++---
+ drivers/net/ethernet/intel/igb/igb_main.c     |    6 +++---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 ++++-----
+ 3 files changed, 10 insertions(+), 11 deletions(-)
 
-Alexander Duyck (4):
-      arch: Cleanup read_barrier_depends() and comments
-      arch: Add lightweight memory barriers dma_rmb() and dma_wmb()
-      r8169: Use dma_rmb() and dma_wmb() for DescOwn checks
-      fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
+diff --git a/drivers/net/ethernet/intel/fm10k/fm10k_main.c b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+index ee1ecb1..eb088b1 100644
+--- a/drivers/net/ethernet/intel/fm10k/fm10k_main.c
++++ b/drivers/net/ethernet/intel/fm10k/fm10k_main.c
+@@ -615,14 +615,14 @@ static bool fm10k_clean_rx_irq(struct fm10k_q_vector *q_vector,
+ 
+ 		rx_desc = FM10K_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!fm10k_test_staterr(rx_desc, FM10K_RXD_STATUS_DD))
++		if (!rx_desc->d.staterr)
+ 			break;
+ 
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STATUS_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = fm10k_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 485d2c6..44f1174 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -6912,14 +6912,14 @@ static bool igb_clean_rx_irq(struct igb_q_vector *q_vector, const int budget)
+ 
+ 		rx_desc = IGB_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!igb_test_staterr(rx_desc, E1000_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+ 		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = igb_fetch_rx_buffer(rx_ring, rx_desc, skb);
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 798b055..2ed2c7d 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -2009,15 +2009,14 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 
+ 		rx_desc = IXGBE_RX_DESC(rx_ring, rx_ring->next_to_clean);
+ 
+-		if (!ixgbe_test_staterr(rx_desc, IXGBE_RXD_STAT_DD))
++		if (!rx_desc->wb.upper.status_error)
+ 			break;
+ 
+-		/*
+-		 * This memory barrier is needed to keep us from reading
++		/* This memory barrier is needed to keep us from reading
+ 		 * any other fields out of the rx_desc until we know the
+-		 * RXD_STAT_DD bit is set
++		 * descriptor has been written back
+ 		 */
+-		rmb();
++		dma_rmb();
+ 
+ 		/* retrieve a buffer from the ring */
+ 		skb = ixgbe_fetch_rx_buffer(rx_ring, rx_desc);
 
-
- Documentation/memory-barriers.txt             |   42 +++++++++++++++
- arch/alpha/include/asm/barrier.h              |   51 ++++++++++++++++++
- arch/arm/include/asm/barrier.h                |    4 +
- arch/arm64/include/asm/barrier.h              |    3 +
- arch/blackfin/include/asm/barrier.h           |   51 ++++++++++++++++++
- arch/ia64/include/asm/barrier.h               |   25 ++++-----
- arch/metag/include/asm/barrier.h              |   19 ++++---
- arch/mips/include/asm/barrier.h               |   61 ++--------------------
- arch/powerpc/include/asm/barrier.h            |   19 ++++---
- arch/s390/include/asm/barrier.h               |    7 ++-
- arch/sparc/include/asm/barrier_64.h           |    7 ++-
- arch/x86/include/asm/barrier.h                |   70 ++++---------------------
- arch/x86/um/asm/barrier.h                     |   20 ++++---
- drivers/net/ethernet/intel/fm10k/fm10k_main.c |    6 +-
- drivers/net/ethernet/intel/igb/igb_main.c     |    6 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |    9 +--
- drivers/net/ethernet/realtek/r8169.c          |   29 ++++++++--
- include/asm-generic/barrier.h                 |    8 +++
- 18 files changed, 258 insertions(+), 179 deletions(-)
-
---
