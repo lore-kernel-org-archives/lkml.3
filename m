@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757988AbaLKOzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:55:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59508 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781AbaLKOy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:54:58 -0500
-Date: Thu, 11 Dec 2014 09:54:08 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141211145408.GB16800@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20141201230339.GA20487@ret.masoncoding.com>
- <1417529606.3924.26.camel@maggy.simpson.net>
- <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
- <1417540493.21136.3@mail.thefacebook.com>
- <20141203184111.GA32005@redhat.com>
- <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
- <20141205171501.GA1320@redhat.com>
- <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
- <1417806247.4845.1@mail.thefacebook.com>
- <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+	id S1758206AbaLKO4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:56:46 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:39853 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753098AbaLKO4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 09:56:44 -0500
+Message-ID: <5489B07E.9000200@fb.com>
+Date: Thu, 11 Dec 2014 09:55:58 -0500
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+CC: <bmaurer@fb.com>, <rkroll@fb.com>, <kernel-team@fb.com>,
+        <mingo@redhat.com>, <peterz@infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] sched/fair: change where we report sched stats
+References: <1418149315-30173-1-git-send-email-jbacik@fb.com>	 <1418192604.5312.28.camel@marge.simpson.net> <5488BFC5.3080001@fb.com> <1418268856.5263.46.camel@marge.simpson.net>
+In-Reply-To: <1418268856.5263.46.camel@marge.simpson.net>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-11_03:2014-12-11,2014-12-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=142.157825103555
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412110149
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 05, 2014 at 11:29:05AM -0800, Linus Torvalds wrote:
+On 12/10/2014 10:34 PM, Mike Galbraith wrote:
+> On Wed, 2014-12-10 at 16:48 -0500, Josef Bacik wrote:
+>> On 12/10/2014 01:23 AM, Mike Galbraith wrote:
+>>> On Tue, 2014-12-09 at 13:21 -0500, Josef Bacik wrote:
+>>>
+>>>> This patch moves stat stuff to after the schedule, right as we are waking up,
+>>>
+>>> But sleep/block ends when the task is awakened/enqueued, not when it
+>>> gets the CPU.  You're adding scheduling latency, breaking accounting.
+>>>
+>>
+>> Yes I'm aware of that.  I don't care if the delay time is slightly
+>> higher than normal, I care about knowing exactly why we were sleeping to
+>> begin with.  I suppose I could leave the accounting part where it is and
+>> then just fire the tracepoint when it's put on the CPU so we get the
+>> best of both worlds, but honestly I don't feel like adding the extra
+>> scheduling latency into the accounting is that big of a deal.  Thanks,
+>
+> I think sleep/iowait should remain what they are, sleep/iowait end at
+> wakeup.  I don't think waker trace is useless either for that matter.
+> Who/when ends a sleep period is just as much a part of the picture as
+> what triggered that sleep.  Waker scheduling latency, thumb twiddling
+> etc. extend sleep.
+>
 
- > So it must be some very particular corruption. I still vote for "let's
- > see if Dave can narrow it down with bisection".
+Ok I'll re-roll with the stats themselves not changed.  We can get the 
+waker other ways, but if we're wanting to see how long we were asleep we 
+are probably going to want to know why.
 
-I vote for "plane ticket to drinking island".
+> Shrug, maintainer call.  I don't recall ever having any difficulty
+> determining why a task went to sleep, so don't get it.
+>
 
-So I've been continuing the bisect, leaving the 'good' cases running for
-as long as a day and a half, and it's taking me down a path of staging
-commits again (which is crap, as I don't even have that enabled).
+How did you do it?  I had one latency spike in a 90 minute test that 
+runs across 30 boxes that could have been caused by anything, so if 
+there is a way I could have easily found that without moving these 
+tracepoints around I'd love to hear it.  Thanks,
 
-git bisect start
-git bisect bad 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9
-git bisect good 19583ca584d6f574384e17fe7613dfaeadcdc4a6
-git bisect bad ae045e2455429c418a418a3376301a9e5753a0a8
-git bisect bad 53ee983378ff23e8f3ff95ecf99dea7c6c221900
-git bisect good 2042088cd67d0064d18c52c13c69af2499907bb1
-git bisect good 98959948a7ba33cf8c708626e0d2a1456397e1c6
-git bisect bad 6f929b4e5a022c3ca806c1675ccb833c42086853
-
-
-So either one of those 'good's actually wasn't, or I'm just cursed.
-
-I'm going to lose access to this machine next week, so unless I see
-this on different hardware in the new year, I'm running out of options.
-
-(on the bright side, having people stare at various suspect code
- throughout this thread does some to have yielded some good from all of
- this).
-
-	Dave
+Josef
