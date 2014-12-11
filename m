@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965491AbaLKVmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:42:06 -0500
-Received: from mga03.intel.com ([134.134.136.65]:63891 "EHLO mga03.intel.com"
+	id S965189AbaLKVoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:44:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42125 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933570AbaLKVmD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:42:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,559,1413270000"; 
-   d="scan'208";a="622432787"
-Date: Thu, 11 Dec 2014 13:42:02 -0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKP <lkp@01.org>, linux-kernel@vger.kernel.org
-Subject: Re: [ftrace/fgraph/x86] BUG: unable to handle kernel paging request
- at 3d00c17d
-Message-ID: <20141211214202.GA23344@wfg-t540p.sh.intel.com>
-References: <20141210231732.GA24163@wfg-t540p.sh.intel.com>
- <20141210230913.0bcbb124@gandalf.local.home>
+	id S933369AbaLKVoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:44:12 -0500
+From: NeilBrown <neilb@suse.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Date: Fri, 12 Dec 2014 08:43:08 +1100
+Subject: [PATCH v2 0/3] mmc: omap_hsmmc: make more use of mmc library
+ functionality
+Cc: GTA04 owners <gta04-owner@goldelico.com>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Message-ID: <20141211214023.3753.10652.stgit@notabene.brown>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210230913.0bcbb124@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+This is resend, rebased on
+  git://git.linaro.org/people/ulf.hansson/mmc.git  next
 
-On Wed, Dec 10, 2014 at 11:09:13PM -0500, Steven Rostedt wrote:
-> On Wed, 10 Dec 2014 15:17:32 -0800
-> Fengguang Wu <fengguang.wu@intel.com> wrote:
-> 
-> > Hi Steven,
-> > 
-> > 0day kernel testing robot got the below dmesg and the first bad commit is
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git master
-> > commit 6a06bdbf7f9c669743f58084991ba280f2925586
-> > Author:     Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-> > AuthorDate: Mon Nov 24 21:00:34 2014 -0500
-> > Commit:     Steven Rostedt <rostedt@goodmis.org>
-> > CommitDate: Mon Dec 1 14:08:58 2014 -0500
-> > 
-> >     ftrace/fgraph/x86: Have prepare_ftrace_return() take ip as first parameter
-> >     
-> >     The function graph helper function prepare_ftrace_return() which does the work
-> >     to hijack the parent pointer has that parent pointer as its first parameter.
-> >     Instead, if we make it the second parameter and have ip as the first parameter
-> >     (self_addr), then it can use the %rdi from save_mcount_regs that loads it
-> >     already.
-> >     
-> >     Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1411262304010.3961@nanos
-> >     
-> >     Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-> >     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Crap! Yeah, I was wondering how this could be the bug, but then I
-> realized this was i386 not x86_64 and I never updated the i386 call to
-> prepare_ftrace_return().
-> 
-> Does this patch fix it?
+and so should apply to 3.19-rc1.
 
-Yes, it fixed the issue.
+omap_hsmmc currently duplicates some work that can be done for
+it by common code, and consequently does not benefit from extra
+functionality in that common code.
 
-Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+In particular, mmc_of_parse and the slot-gpio library are not used.
+
+This set of patches allows omap_hsmmc to use that common
+functionality, and benefit from any extra devicetree parsing
+that it performs.
+
+The one awkward part of this change is that omap_hsmmc has an
+interrupt handler for 'card detect' which does more than the
+common code.
+I see three options:
+ 1 - move that functionality into common code
+ 2 - discard that functionality
+ 3 - allow the common code to be configured to use a device-specific
+     card detect interrupt.
+
+This series implements '3'.  I suspect a mix of '1' and '2' would
+be a better choice but I know none of the history or justification
+for those differences.
+
+My preference would be for this series to be applied (if there are
+no other issues) and if there are opinions about effecting '1' or '2',
+they can be done with subsequent patches.
 
 Thanks,
-Fengguang
+NeilBrown
 
-> 
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index b553ed89e5f5..df3e608d409b 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -1192,10 +1192,10 @@ ENTRY(ftrace_graph_caller)
->  	pushl %eax
->  	pushl %ecx
->  	pushl %edx
-> -	movl 0xc(%esp), %edx
-> -	lea 0x4(%ebp), %eax
-> +	movl 0xc(%esp), %eax
-> +	lea 0x4(%ebp), %edx
->  	movl (%ebp), %ecx
-> -	subl $MCOUNT_INSN_SIZE, %edx
-> +	subl $MCOUNT_INSN_SIZE, %eax
->  	call prepare_ftrace_return
->  	popl %edx
->  	popl %ecx
+
+---
+
+NeilBrown (3):
+      mmc: omap_hsmmc: remove prepare/complete system suspend support.
+      mmc: omap_hsmmc: use slot-gpio library for gpio support.
+      mmc: omap_hsmmc: use mmc_of_parse to parse common mmc configuration.
+
+
+ drivers/mmc/core/slot-gpio.c           |   24 +++++
+ drivers/mmc/host/omap_hsmmc.c          |  150 +++++---------------------------
+ include/linux/mmc/slot-gpio.h          |    2 
+ include/linux/platform_data/mmc-omap.h |    4 -
+ 4 files changed, 47 insertions(+), 133 deletions(-)
+
+--
+Signature
+
