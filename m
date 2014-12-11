@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933793AbaLKLBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 06:01:24 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:46164 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933770AbaLKLBW (ORCPT
+	id S1757732AbaLKLEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 06:04:49 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:59641 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179AbaLKLEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 06:01:22 -0500
-Date: Thu, 11 Dec 2014 12:01:15 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: "Varlese, Marco" <marco.varlese@intel.com>
-Cc: John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Message-ID: <20141211110115.GA1979@nanopsycho.lan>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
- <20141210165018.GG1863@nanopsycho.orion>
- <54887CF7.70708@gmail.com>
- <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+	Thu, 11 Dec 2014 06:04:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+In-Reply-To: <548973B7.3050107@samsung.com>
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
+ <1418286387-9663-2-git-send-email-tfiga@chromium.org> <548973B7.3050107@samsung.com>
+From: Tomasz Figa <tfiga@chromium.org>
+Date: Thu, 11 Dec 2014 20:04:25 +0900
+Message-ID: <CAAFQd5DrzYRCF3tW7cg=rZ3wB1G2kQtWbCx+Pby9obNTewsFdg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] pm: Add PM domain notifications
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Heiko Stuebner <heiko@sntech.de>, Joerg Roedel <joro@8bytes.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
->> -----Original Message-----
->> From: John Fastabend [mailto:john.fastabend@gmail.com]
->> Sent: Wednesday, December 10, 2014 5:04 PM
->> To: Jiri Pirko
->> Cc: Varlese, Marco; netdev@vger.kernel.org;
->> stephen@networkplumber.org; Fastabend, John R;
->> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
->> kernel@vger.kernel.org
->> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->> configuration
->> 
->> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
->> > Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
->> >> From: Marco Varlese <marco.varlese@intel.com>
->> >>
->> >> Switch hardware offers a list of attributes that are configurable on
->> >> a per port basis.
->> >> This patch provides a mechanism to configure switch ports by adding
->> >> an NDO for setting specific values to specific attributes.
->> >> There will be a separate patch that extends iproute2 to call the new
->> >> NDO.
->> >
->> >
->> > What are these attributes? Can you give some examples. I'm asking
->> > because there is a plan to pass generic attributes to switch ports
->> > replacing current specific ndo_switch_port_stp_update. In this case,
->> > bridge is setting that attribute.
->> >
->> > Is there need to set something directly from userspace or does it make
->> > rather sense to use involved bridge/ovs/bond ? I think that both will
->> > be needed.
->> 
->> +1
->> 
->> I think for many attributes it would be best to have both. The in kernel callers
->> and netlink userspace can use the same driver ndo_ops.
->> 
->> But then we don't _require_ any specific bridge/ovs/etc module. And we
->> may have some attributes that are not specific to any existing software
->> module. I'm guessing Marco has some examples of these.
->> 
->> [...]
->> 
->> 
->> --
->> John Fastabend         Intel Corporation
->
->We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
->
->An example of attributes are:
->* enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
->* internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
->* flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
->
->Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
->
->One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
->
->I hope this clarifies some points.
+Hi Sylwester,
 
-It does. Makes sense. We need to expose this attr set/get for both
-in-kernel and userspace use cases.
-
-Please adjust you patch for this. Also, as a second patch, it would be
-great if you can convert ndo_switch_port_stp_update to this new ndo.
-
-Thanks.
-
-
+On Thu, Dec 11, 2014 at 7:36 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
 >
->-----------------------------------------------------------
->Marco Varlese		-	Intel Corporation
->-----------------------------------------------------------
+> Hi Tomasz,
 >
+> On 11/12/14 09:26, Tomasz Figa wrote:
+> > From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> >
+> > This patch adds notifiers to the runtime PM/genpd subsystem. It is now
+> > possible to register a notifier, which will be called before and after
+> > the generic power domain subsystem calls the power domain's power_on
+> > and power_off callbacks.
+> >
+> > Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > [tfiga@chromium.org: rebased]
+> > Signed-off-by: Tomasz Figa <tfiga@chromium.org>
 >
+> Not sure if you've noticed it, I posted an updated version of this patch
+> recently [1]. The notifiers list is moved to struct generic_pm_domain
+> there and it also allows to register a notifier for selected power domain
+> by name.
+[snip]
+> [1] http://www.spinics.net/lists/linux-samsung-soc/msg38549.html
+
+Ah, haven't noticed, sorry. The API using devices looks the same, so I
+guess we can simply have patch 2/2 of this series applied on top of
+your patch.
+
+By the way, look-up by name (presumably hardcoded somewhere?) sounds a
+bit strange to me. What was the reason for it to be added?
+
+Best regards,
+Tomasz
