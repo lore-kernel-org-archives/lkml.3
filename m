@@ -1,37 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965076AbaLKQHD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 11:07:03 -0500
-Received: from smtprelay0048.hostedemail.com ([216.40.44.48]:51992 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750758AbaLKQHC (ORCPT
+	id S965093AbaLKQI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 11:08:29 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:58347 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932733AbaLKQI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 11:07:02 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1536:1559:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3622:3866:3868:4321:5007:6119:6261:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: cow27_2d3a5558be51
-X-Filterd-Recvd-Size: 1098
-Message-ID: <1418314017.18092.35.camel@perches.com>
-Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Thu, 11 Dec 2014 08:06:57 -0800
-In-Reply-To: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Dec 2014 11:08:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <5465E337.6020808@xs4all.nl>
+References: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+	<5465E337.6020808@xs4all.nl>
+Date: Thu, 11 Dec 2014 18:08:26 +0200
+Message-ID: <CAM_ZknUu5xgp7gZoQJ_5XaX6CBRqYVxNJsZzsgBKGFcnUqKAJw@mail.gmail.com>
+Subject: Re: [PATCH] solo6x10: just pass frame motion flag from hardware, drop
+ additional handling as complicated and unstable
+From: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-kernel@vger.kernel.org, Linux Media <linux-media@vger.kernel.org>,
+        m.chehab@samsung.com, "hans.verkuil" <hans.verkuil@cisco.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 17:53 +0200, Andy Shevchenko wrote:
-> This patchset creates a new folder under drivers/mfd and moves there Intel
-> related drivers.
+On Fri, Nov 14, 2014 at 1:10 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+> Hi Andrew,
+>
+> FYI: I need to test this myself and understand it better, so it will take some
+> time before I get to this. It is in my TODO list, so it won't be forgotten.
+>
+> Regards,
+>
+>         Hans
+>
+> On 11/05/2014 09:11 PM, Andrey Utkin wrote:
+>> Dropping code (introduced in 316d9e84a72069e04e483de0d5934c1d75f6a44c)
+>> which intends to make raising of motion events more "smooth"(?).
+>>
+>> It made motion event never appear in my installation.
+>> That code is complicated, so I couldn't figure out quickly how to fix
+>> it, so dropping it seems better to me.
+>>
+>> Another justification is that anyway application would implement
+>> "motion signal stabilization" if required, it is not necessarily kernel
+>> driver's job.
+>>
+>> Signed-off-by: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+>> ---
+>>  drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 30 +-------------------------
+>>  drivers/media/pci/solo6x10/solo6x10.h          |  2 --
+>>  2 files changed, 1 insertion(+), 31 deletions(-)
+>>
+>> diff --git a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+>> index 30e09d9..866f7b3 100644
+>> --- a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+>> +++ b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+>> @@ -239,8 +239,6 @@ static int solo_enc_on(struct solo_enc_dev *solo_enc)
+>>       if (solo_enc->bw_weight > solo_dev->enc_bw_remain)
+>>               return -EBUSY;
+>>       solo_enc->sequence = 0;
+>> -     solo_enc->motion_last_state = false;
+>> -     solo_enc->frames_since_last_motion = 0;
+>>       solo_dev->enc_bw_remain -= solo_enc->bw_weight;
+>>
+>>       if (solo_enc->type == SOLO_ENC_TYPE_EXT)
+>> @@ -555,36 +553,12 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>>       }
+>>
+>>       if (!ret) {
+>> -             bool send_event = false;
+>> -
+>>               vb->v4l2_buf.sequence = solo_enc->sequence++;
+>>               vb->v4l2_buf.timestamp.tv_sec = vop_sec(vh);
+>>               vb->v4l2_buf.timestamp.tv_usec = vop_usec(vh);
+>>
+>>               /* Check for motion flags */
+>> -             if (solo_is_motion_on(solo_enc)) {
+>> -                     /* It takes a few frames for the hardware to detect
+>> -                      * motion. Once it does it clears the motion detection
+>> -                      * register and it takes again a few frames before
+>> -                      * motion is seen. This means in practice that when the
+>> -                      * motion field is 1, it will go back to 0 for the next
+>> -                      * frame. This leads to motion detection event being
+>> -                      * sent all the time, which is not what we want.
+>> -                      * Instead wait a few frames before deciding that the
+>> -                      * motion has halted. After some experimentation it
+>> -                      * turns out that waiting for 5 frames works well.
+>> -                      */
+>> -                     if (enc_buf->motion == 0 &&
+>> -                         solo_enc->motion_last_state &&
+>> -                         solo_enc->frames_since_last_motion++ > 5)
+>> -                             send_event = true;
+>> -                     else if (enc_buf->motion) {
+>> -                             solo_enc->frames_since_last_motion = 0;
+>> -                             send_event = !solo_enc->motion_last_state;
+>> -                     }
+>> -             }
+>> -
+>> -             if (send_event) {
+>> +             if (solo_is_motion_on(solo_enc) && enc_buf->motion) {
+>>                       struct v4l2_event ev = {
+>>                               .type = V4L2_EVENT_MOTION_DET,
+>>                               .u.motion_det = {
+>> @@ -594,8 +568,6 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>>                               },
+>>                       };
+>>
+>> -                     solo_enc->motion_last_state = enc_buf->motion;
+>> -                     solo_enc->frames_since_last_motion = 0;
+>>                       v4l2_event_queue(solo_enc->vfd, &ev);
+>>               }
+>>       }
+>> diff --git a/drivers/media/pci/solo6x10/solo6x10.h b/drivers/media/pci/solo6x10/solo6x10.h
+>> index 72017b7..dc503fd 100644
+>> --- a/drivers/media/pci/solo6x10/solo6x10.h
+>> +++ b/drivers/media/pci/solo6x10/solo6x10.h
+>> @@ -159,8 +159,6 @@ struct solo_enc_dev {
+>>       u16                     motion_thresh;
+>>       bool                    motion_global;
+>>       bool                    motion_enabled;
+>> -     bool                    motion_last_state;
+>> -     u8                      frames_since_last_motion;
+>>       u16                     width;
+>>       u16                     height;
+>>
+>>
+>
 
-Missing update of MAINTAINERS?
+Hi Hans, how is it proceeding with the subject of this patch?
 
-
+-- 
+Bluecherry developer.
