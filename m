@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503AbaLKBdy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:33:54 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:50589 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933440AbaLKBdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:33:53 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>,
-        Venkat Raghavulu <venkat.raghavulu@intel.com>
-Subject: [PATCH] ACPI / PM: Do not disable wakeup GPEs that have not been enabled
-Date: Thu, 11 Dec 2014 02:55:26 +0100
-Message-ID: <1890951.o2PAmqguxi@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+	id S933539AbaLKBeF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:34:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933440AbaLKBeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 20:34:03 -0500
+Date: Wed, 10 Dec 2014 20:33:50 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: logitech-hidpp: do not return the name length
+Message-ID: <20141211013350.GE4861@mail.corp.redhat.com>
+References: <1418250070-28604-1-git-send-email-benjamin.tissoires@redhat.com>
+ <4561294.qneDZ51mgu@al>
+ <20141210230152.GC4861@mail.corp.redhat.com>
+ <1906623.oO6IMXUbli@al>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1906623.oO6IMXUbli@al>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Dec 11 2014 or thereabouts, Peter Wu wrote:
+> On Wednesday 10 December 2014 18:01:52 Benjamin Tissoires wrote:
+> > On Dec 10 2014 or thereabouts, Peter Wu wrote:
+> > > On Wednesday 10 December 2014 17:21:09 Benjamin Tissoires wrote:
+> > > > We do not make any use of the actual name length get through
+> > > > hidpp_get_device_name().
+> > > > 
+> > > > We can drop the extra code and simplify the API a bit.
+> > > > 
+> > > > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > > >
+> > > > ---
+> > > >  drivers/hid/hid-logitech-hidpp.c | 10 +++-------
+> > > >  1 file changed, 3 insertions(+), 7 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> > > > index 1a6395d..3846305 100644
+> > > > --- a/drivers/hid/hid-logitech-hidpp.c
+> > > > +++ b/drivers/hid/hid-logitech-hidpp.c
+> > > > @@ -461,7 +461,7 @@ static int hidpp_devicenametype_get_device_name(struct hidpp_device *hidpp,
+> > > >  	return count;
+> > > >  }
+> > > >  
+> > > > -static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > > > +static char *hidpp_get_device_name(struct hidpp_device *hidpp)
+> > > >  {
+> > > >  	u8 feature_type;
+> > > >  	u8 feature_index;
+> > > > @@ -484,7 +484,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > > >  	if (!name)
+> > > >  		goto out_err;
+> > > >  
+> > > > -	*name_length = __name_length + 1;
+> > > >  	while (index < __name_length)
+> > > >  		index += hidpp_devicenametype_get_device_name(hidpp,
+> > > >  			feature_index, index, name + index,
+> > > 
+> > > hidpp_devicenametype_get_device_name can return a non-positive value if
+> > > the USB device is unplugged at the wrong time, or if a malicious device
+> > > is attached (and 0 is returned). An infinite loop is the result.
+> > 
+> > Oh, yes, you are definitively right.
+> > 
+> > > 
+> > > Can you apply this change in the patch or should I send you a separate
+> > > one?
+> > 
+> > Feel free to send your patch directly to the list.
+> > 
+> > > 
+> > > 	while (index < __name_length) {
+> > > 		ret = hidpp_devicenametype_get_device_name(hidpp,
+> > > 			feature_index, index, name + index,
+> > > 			__name_length - index);
+> > > 		if (ret <= 0) {
+> > > 			kfree(name);
+> > > 			return NULL;
+> > > 		}
+> > > 		index += ret;
+> > > 	}
+> > > 
+> > > > @@ -493,7 +492,6 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp, u8 *name_length)
+> > > >  	return name;
+> > > >  
+> > > >  out_err:
+> > > > -	*name_length = 0;
+> > > >  	return NULL;
+> > > 
+> > > What about dropping the label out_err here and returning NULL in the
+> > > previous places?
+> > 
+> > Yep, good idea. You can either send a patch for that if you want to take
+> > credits, or I can send a v2. It's up to you.
+> > 
+> > Cheers,
+> > Benjamin
+> 
+> I found another place where a boundary check is missing, but will treat
+> that in a separate patch. If you send a v2 with the return NULL fixed
+> up, I'll base my patch (to add a retval check) on yours.
 
-In some cases acpi_device_wakeup() may be called to ensure wakeup
-power to be off for a given device even though that device's wakeup
-GPE has not been enabled so far.  It calls acpi_disable_gpe() on a
-GPE that's not enabled and this causes ACPICA to return the AE_LIMIT
-status code from that call which then is reported as an error by the
-ACPICA's debug facilities (if enabled).  This may lead to a fair
-amount of confusion, so introduce a new ACPI device wakeup flag
-to store the wakeup GPE status and avoid disabling wakeup GPEs
-that have not been enabled.
+OK. I am not sure I will be able to make it today or tomorrow. Feel free
+to send the fixes right now if you can manage to send them now.
 
-Reported-and-tested-by: Venkat Raghavulu <venkat.raghavulu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |   12 ++++++++++--
- include/acpi/acpi_bus.h  |    1 +
- 2 files changed, 11 insertions(+), 2 deletions(-)
+Cheers,
+Benjamin
 
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -313,6 +313,7 @@ struct acpi_device_wakeup_flags {
- 	u8 valid:1;		/* Can successfully enable wakeup? */
- 	u8 run_wake:1;		/* Run-Wake GPE devices */
- 	u8 notifier_present:1;  /* Wake-up notify handler has been installed */
-+	u8 enabled:1;		/* Enabled for wakeup */
- };
- 
- struct acpi_device_wakeup_context {
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -680,13 +680,21 @@ static int acpi_device_wakeup(struct acp
- 		if (error)
- 			return error;
- 
-+		if (adev->wakeup.flags.enabled)
-+			return 0;
-+
- 		res = acpi_enable_gpe(wakeup->gpe_device, wakeup->gpe_number);
--		if (ACPI_FAILURE(res)) {
-+		if (ACPI_SUCCESS(res)) {
-+			adev->wakeup.flags.enabled = 1;
-+		} else {
- 			acpi_disable_wakeup_device_power(adev);
- 			return -EIO;
- 		}
- 	} else {
--		acpi_disable_gpe(wakeup->gpe_device, wakeup->gpe_number);
-+		if (adev->wakeup.flags.enabled) {
-+			acpi_disable_gpe(wakeup->gpe_device, wakeup->gpe_number);
-+			adev->wakeup.flags.enabled = 0;
-+		}
- 		acpi_disable_wakeup_device_power(adev);
- 	}
- 	return 0;
-
+> 
+> Kind regards,
+> Peter
+> 
+> > > 
+> > > >  }
+> > > >  
+> > > > @@ -989,7 +987,6 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+> > > >  {
+> > > >  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
+> > > >  	char *name;
+> > > > -	u8 name_length;
+> > > >  
+> > > >  	if (use_unifying)
+> > > >  		/*
+> > > > @@ -999,7 +996,7 @@ static void hidpp_overwrite_name(struct hid_device *hdev, bool use_unifying)
+> > > >  		 */
+> > > >  		name = hidpp_get_unifying_name(hidpp);
+> > > >  	else
+> > > > -		name = hidpp_get_device_name(hidpp, &name_length);
+> > > > +		name = hidpp_get_device_name(hidpp);
+> > > >  
+> > > >  	if (!name)
+> > > >  		hid_err(hdev, "unable to retrieve the name of the device");
+> > > > @@ -1053,7 +1050,6 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+> > > >  	bool connected = atomic_read(&hidpp->connected);
+> > > >  	struct input_dev *input;
+> > > >  	char *name, *devm_name;
+> > > > -	u8 name_length;
+> > > >  
+> > > >  	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
+> > > >  		wtp_connect(hdev, connected);
+> > > > @@ -1080,7 +1076,7 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+> > > >  		return;
+> > > >  	}
+> > > >  
+> > > > -	name = hidpp_get_device_name(hidpp, &name_length);
+> > > > +	name = hidpp_get_device_name(hidpp);
+> > > >  	if (!name) {
+> > > >  		hid_err(hdev, "unable to retrieve the name of the device");
+> > > >  	} else {
+> > > > 
+> 
