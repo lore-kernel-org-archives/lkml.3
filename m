@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965408AbaLKWBj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:01:39 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:19275 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965310AbaLKWBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:01:38 -0500
-Message-ID: <548A141B.4000608@oracle.com>
-Date: Thu, 11 Dec 2014 17:00:59 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S934298AbaLKWCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:02:37 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:45116 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933939AbaLKWCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:02:36 -0500
+Date: Thu, 11 Dec 2014 14:02:29 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Hanno =?iso-8859-1?Q?B=F6ck?= <hanno@hboeck.de>
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: VDSO randomization not very random
+Message-ID: <20141211220229.GR18807@outflux.net>
+References: <20141211224501.2292cdee@pc>
 MIME-Version: 1.0
-To: Chris Mason <clm@fb.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141201230339.GA20487@ret.masoncoding.com>	<1417529606.3924.26.camel@maggy.simpson.net>	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>	<1417540493.21136.3@mail.thefacebook.com>	<20141203184111.GA32005@redhat.com>	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>	<20141205171501.GA1320@redhat.com>	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>	<1417806247.4845.1@mail.thefacebook.com>	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>	<20141211145408.GB16800@redhat.com>	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>	<548A122C.8000906@oracle.com> <1418335052.4845.17@mail.thefacebook.com>
-In-Reply-To: <1418335052.4845.17@mail.thefacebook.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141211224501.2292cdee@pc>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 04:57 PM, Chris Mason wrote:
-> On Thu, Dec 11, 2014 at 4:52 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->> On 12/11/2014 04:49 PM, Linus Torvalds wrote:
->>>  On Thu, Dec 11, 2014 at 6:54 AM, Dave Jones <davej@redhat.com> wrote:
->>>>  >
->>>>  > So either one of those 'good's actually wasn't, or I'm just cursed.
->>>  Even if there was a good that wasn't, that last "bad"  (6f929b4e5a02)
->>>  is already sufficient just on its own to say that likely v3.16 already
->>>  had the problem.
->>>
->>>  Just do
->>>
->>>     gitk v3.16..6f929b4e5a02
->>>
->>>  and cry.
->>>
->>>  (or "git diff --stat -M v3.16...6f929b4e5a02" to see what that commit
->>>  brought in from the common ancestor).
->>>
->>>  So I'd call that bisect a failure, and your "v3.16 is fine" is
->>>  actually suspect after all. Which *might* mean that it's some hardware
->>>  issue after all. Or there are multiple different problems, and while
->>>  v3.16 was fine, the problem was introduced earlier (in the common
->>>  ancestor of that staging tree), then fixed for 3.16, and then
->>>  re-introduced later again.
->>
->> Is it possible that Dave and myself were seeing the same problem after
->> all?
->>
->> I'll go bisect it even further back...
+Hi Hanno,
+
+On Thu, Dec 11, 2014 at 10:45:01PM +0100, Hanno Böck wrote:
+> Hello,
 > 
-> For both of you, I'm curious how long 3.18 lasts if you turn off the serial console (and netconsole) completely.
+> I already reported this into your bugzilla, however Greg KH told me it
+> might be a better idea to post it here:
+> 
+> With current Linux kernels it seems the address randomization for
+> loading the vdso library is not that random and can easily be
+> bruteforced.
+> 
+> This can easily be demonstrated. Get libvdso address from one
+> executable:
+> $ ldd /usr/bin/less|grep vdso
+> 	linux-vdso.so.1 (0x00007fff73bfe000)
+> 
+> Now run ldd mutliple times and check if the same address appears:
+> c=0; while (true); do let c=c+1; ldd /usr/bin/less|grep
+> 0x00007fff73bfe000; [ "$?" == 0 ] && echo $c; done
+> 
+> It usually takes only a few seconds and around 1000-2000 tries until
+> the loading address is repeated (note that results may vary, it seems
+> the randomization is biased, some values repeat more often than others).
+> 
+> This information is mostly from this blog entry:
+> http://v0ids3curity.blogspot.in/2014/12/return-to-vdso-using-elf-auxiliary.html
+> And here's a thread on oss-security discussing the issue:
+> http://www.openwall.com/lists/oss-security/2014/12/09/10
+> 
+> The latest version of paxtest added a check for this that guesses the
+> randomness of vdso:
+> https://grsecurity.net/~spender/paxtest-0.9.13.tar.gz $ ./randvdso 
+> VDSO randomisation test                  : 11 quality bits (guessed)
+> 
+> Bugzilla entry:
+> https://bugzilla.kernel.org/show_bug.cgi?id=89591
 
-I didn't try turning it off, but I tried switching debug level to critical
-which meant that nothing was going out. I still saw the same hang...
+I'm hoping this will get addressed as part of the discussion around
+the "ASLRv3" patches. PIE (as well as VDSO) randomization has been a
+per-arch implementation, and it would be best to unify this in a common
+high-entropy solution.
 
+I think the problem with VDSO right now is that it is randomized in
+relationship to the stack, rather than being randomized on its own.
 
-Thanks,
-Sasha
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
