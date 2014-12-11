@@ -1,226 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040AbaLKVRs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:17:48 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:51741 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759012AbaLKVRq (ORCPT
+	id S1759083AbaLKVTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:19:06 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:50156 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758875AbaLKVTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:17:46 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Andrew Duggan <aduggan@synaptics.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benjamin.tissoires@redhat.com, jkosina@suse.cz
-Subject: Re: NULL pointer dereference in i2c-hid
-Date: Thu, 11 Dec 2014 22:17:43 +0100
-Message-ID: <9990741.QypFgP8pco@xps13>
-User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
-In-Reply-To: <548A02BD.7030509@synaptics.com>
-References: <31518562.V5Oyo0POsI@xps13> <2187886.1Q1zbE8252@xps13> <548A02BD.7030509@synaptics.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Thu, 11 Dec 2014 16:19:04 -0500
+From: Julijonas Kikutis <julijonas.kikutis@gmail.com>
+To: corentin.chary@gmail.com
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Julijonas Kikutis <julijonas.kikutis@gmail.com>
+Subject: [PATCH] samsung-laptop: enable better lid handling
+Date: Thu, 11 Dec 2014 21:18:35 +0000
+Message-Id: <1418332715-10547-1-git-send-email-julijonas.kikutis@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 December 2014 12:46:53 Andrew Duggan wrote:
-> On 12/11/2014 11:40 AM, Gabriele Mazzotta wrote:
-> > On Thursday 11 December 2014 11:21:43 Andrew Duggan wrote:
-> >> On 12/11/2014 11:11 AM, Gabriele Mazzotta wrote:
-> >>> On Thursday 11 December 2014 10:40:05 Andrew Duggan wrote:
-> >>>> On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
-> >>>>> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
-> >>>>>> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
-> >>>>>>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
-> >>>>>>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
-> >>>>>>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
-> >>>>>>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
-> >>>>>>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
-> >>>>>>>> pointer dereference.
-> >>>>>>> I'll look into this.
-> >>>>>>>
-> >>>>>>> I can reproduce this easily with i2c-hid + hid-multitouch following your
-> >>>>>>> directions.
-> >>>>>> Can you try the below patch?
-> >>>>>>
-> >>>>>> I think we shouldn't free buffers yet in ->stop() because we need the
-> >>>>>> command buffer sending power commands to the device. Also it seems that
-> >>>>>> ->start() re-allocates buffers anyway if maximum size increases.
-> >>>>>>
-> >>>>>> It shouldn't even leak memory as we release buffers at ->remove()
-> >>>>>> anyway.
-> >>>>>>
-> >>>>>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>> index 62cec01937ea..68a8c938feea 100644
-> >>>>>> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> >>>>>> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
-> >>>>>>     
-> >>>>>>     static void i2c_hid_stop(struct hid_device *hid)
-> >>>>>>     {
-> >>>>>> -	struct i2c_client *client = hid->driver_data;
-> >>>>>> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
-> >>>>>> -
-> >>>>>>     	hid->claimed = 0;
-> >>>>>> -
-> >>>>>> -	i2c_hid_free_buffers(ihid);
-> >>>>>>     }
-> >>>>>>     
-> >>>>>>     static int i2c_hid_open(struct hid_device *hid)
-> >>>>> Yes, it works, thanks.
-> >>>>>
-> >>>>> This change seems to also prevent kernel ooops when I unload either
-> >>>>> i2c-hid or i2c-designware-platform while the touchpad is in use,
-> >>>>> thing that is likely to happen because of the other bug I reported.
-> >>>>>
-> >>>>> Speaking of it, does any of you have any suggestion on how to debug it?
-> >>>> I was able to reproduce the initial issue by unloading hid-rmi and
-> >>>> i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it
-> >>>> for me.
-> >>>>
-> >>>> For the original bug, you can modprobe i2c-hid debug=1 and we can see
-> >>>> what data the touchpad is reporting. That might help narrowing down if
-> >>>> it's noise which the touchpad thinks are fingers or if there is a
-> >>>> problem with the I2C lines causing spurious interrupts.
-> >>>>
-> >>>> Andrew
-> >>> I've already tried to do that and here what I got:
-> >>>
-> >>> When I release the finger, the last message is repeated 81 times.
-> >>> If the byte containing informations about the width of the finger
-> >>> becomes equal to either c0 or 0c at least once, the last message is
-> >>> repeated indefinitely and changes as soon as I start using the touchpad.
-> >>> The only way to stop it is to unload and reload i2c-hid.
-> >> The reports before log throttling kicks in would still be useful. For
-> >> instance c0 is outside of the range of finger width which we report so
-> >> something is wrong there. But, the touchpad should stop interrupting
-> >> once the finger is lifted. The fact that subsequent reads are reporting
-> >> the same data does sound like a problem with I2C getting confused and
-> >> continuously interrupting and reading the old finger data. I am also
-> >> curious about the value of the byte after the report id.
-> >>
-> >> Andrew
-> > If I'm not wrong c0 means that the width is 12 on y axis, while 0c means
-> > that the width is 12 on the x axis.
-> 
-> You are correct! I forgot width was 4 bits for X and Y in the same byte. 
-> That makes more sense.
-> 
-> >
-> > I have to correct myself. The important thing is that the byte is either
-> > cx or xc, where x is anything below c.
-> >
-> > Another correction. Sometimes unloading i2c-hid is not enough, I have to
-> > first disable the touchpad with xinput and then unload i2c-hid. If I
-> > don't do it, the messages starts reappearing as soon as I reload i2c-hid.
-> >
-> > I did several tests in the past months and I'm quite sure that the bug
-> > happens only past xc/cy.
-> 
-> This maybe coincidental. It is not obvious to me why a certain width 
-> value would cause the symptoms described.
+Some Samsung laptops with SABI3 delay the sleep for 10 seconds after
+the lid is closed and do not wake up from sleep after the lid is opened.
+A SABI command is needed to enable the better behavior.
 
-Yes, I don't deny it. This is just a constant I found in my tests.
+Command = 0x6e, d0 = 0x81 enables this behavior. Returns d0 = 0x01.
+Command = 0x6e, d0 = 0x80 disables this behavior. Returns d0 = 0x00.
 
-> >
-> > Here few lines right before the bug. The last line is repeated indefinitely:
-> >
-> > [ 1983.527097] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 61 0a 5f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.537211] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 63 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.547329] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 64 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.557486] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 66 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.567663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 68 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.577719] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6a 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.587852] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6b 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.598001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 6e 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.608215] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 61 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.618288] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 64 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.628493] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 67 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.638552] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 69 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.648663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 68 5b 6c 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.658789] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 6f 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.668923] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 61 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.678819] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 64 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.689230] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 66 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.699435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 69 5b 68 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.709502] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6a 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.719574] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6c 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.729713] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6e 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.739863] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 60 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.750001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 62 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.760150] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 64 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.770291] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 66 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.780445] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 68 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.790490] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 5a 0b 68 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.800667] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 4e 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.810691] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 31 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.820963] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 24 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.831071] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 17 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.841178] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 09 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.851325] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0b 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.861435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0d 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.871566] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6b 5b 0f 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.881735] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 01 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.891975] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 03 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.902073] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 05 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.912155] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 07 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.922224] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 09 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.932364] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0b 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.942480] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0d 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.952612] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6c 5b 0f 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.962774] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f1 0d 6d 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.972932] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f3 0d 6e 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.982872] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f6 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1983.993194] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6d 5a f9 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.003295] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a fc 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.013511] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a ff 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.023590] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f2 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.033747] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6e 5a f5 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.043850] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f8 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.053873] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fb 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.064077] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fe 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.074207] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f1 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.084425] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6f 5a f3 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.094533] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f6 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.104629] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f8 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.114742] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fa 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.124890] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fc 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.135006] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fe 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.145149] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a f0 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.155317] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a e2 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.165380] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d4 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.175532] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d6 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.185409] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d8 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.195761] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a db 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.205909] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a dd 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.216034] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d0 0e 76 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.226198] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d3 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.236301] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a d6 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.246520] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a cb 0f 79 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.256573] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 72 5a b1 0e 78 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.266697] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a a7 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.276823] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a 6d 0d 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.286921] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 73 59 96 0a 5a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.296888] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.306825] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> > [ 1984.316980] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
-> The last report which repeats indicates that no fingers are present. 
-> But, the click button is generating the interrupt and it is reporting 
-> that it is in the down position. Could the click button be getting stuck 
-> down? That would also explain why the data in the report is not 
-> changing. Could you be bumping the touchpad with your palm which is 
-> causing the click button to get stuck in the down position? That might 
-> also explain the large width value. Our max width is 15, so 12 would 
-> typically indicate a contact larger then a normal finger contact. That 
-> would explain the width of 12 showing up when this happens.
+Command = 0x6d and any d0 queries the state. This returns:
+d0 = 0x00000*01, d1 = 0x00, d2 = 0x00, d3 = 0x0* when it is enabled.
+d0 = 0x00000*00, d1 = 0x00, d2 = 0x00, d3 = 0x0* when it is disabled.
+Where * is 0 - laptop has never slept or hibernated after switch on,
+           1 - laptop has hibernated just before,
+           2 - laptop has slept just before.
 
-Yes, that's not a normal finger touch and the reported width seems
-quite accurate to me. There are no clicks involved, laying the side of
-my thumb gently on the top part of the clickpad (from where even voluntary
-clicks are hard to obtain) is enough to trigger the bug. If a click is
-reported, than something is really wrong.
+Patch addresses bug https://bugzilla.kernel.org/show_bug.cgi?id=75901.
+It adds a sysfs attribute lid_handling with description and also an
+addition to the quirks structure to enable the mode by default.
 
-> Andrew
+However, a user with another laptop in the bug report says that "power
+button has to be pressed twice to wake the machine" in this mode.
+Therefore, it is enabled by default only for the single laptop that I
+have tested.
+
+This mode is also needed in UEFI, but there samsung-laptop is
+unfortunately disabled.
+
+Signed-off-by: Julijonas Kikutis <julijonas.kikutis@gmail.com>
+---
+ .../ABI/testing/sysfs-driver-samsung-laptop        |   8 ++
+ drivers/platform/x86/samsung-laptop.c              | 121 ++++++++++++++++++++-
+ 2 files changed, 128 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-samsung-laptop b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+index 678819a..63c1ad0 100644
+--- a/Documentation/ABI/testing/sysfs-driver-samsung-laptop
++++ b/Documentation/ABI/testing/sysfs-driver-samsung-laptop
+@@ -35,3 +35,11 @@ Contact:	Corentin Chary <corentin.chary@gmail.com>
+ Description:	Use your USB ports to charge devices, even
+ 		when your laptop is powered off.
+ 		1 means enabled, 0 means disabled.
++
++What:		/sys/devices/platform/samsung/lid_handling
++Date:		December 11, 2014
++KernelVersion:	3.19
++Contact:	Julijonas Kikutis <julijonas.kikutis@gmail.com>
++Description:	Some Samsung laptops handle lid closing quicker and
++		only handle lid opening with this mode enabled.
++		1 means enabled, 0 means disabled.
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index ff765d8..6518930 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -124,6 +124,10 @@ struct sabi_commands {
+ 	u16 get_wireless_status;
+ 	u16 set_wireless_status;
+ 
++	/* 0x80 is off, 0x81 is on */
++	u16 get_lid_handling;
++	u16 set_lid_handling;
++
+ 	/* 0x81 to read, (0x82 | level << 8) to set, 0xaabb to enable */
+ 	u16 kbd_backlight;
+ 
+@@ -194,6 +198,9 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_wireless_status = 0xFFFF,
+ 			.set_wireless_status = 0xFFFF,
+ 
++			.get_lid_handling = 0xFFFF,
++			.set_lid_handling = 0xFFFF,
++
+ 			.kbd_backlight = 0xFFFF,
+ 
+ 			.set_linux = 0x0a,
+@@ -254,6 +261,9 @@ static const struct sabi_config sabi_configs[] = {
+ 			.get_wireless_status = 0x69,
+ 			.set_wireless_status = 0x6a,
+ 
++			.get_lid_handling = 0x6d,
++			.set_lid_handling = 0x6e,
++
+ 			.kbd_backlight = 0x78,
+ 
+ 			.set_linux = 0xff,
+@@ -353,6 +363,7 @@ struct samsung_quirks {
+ 	bool broken_acpi_video;
+ 	bool four_kbd_backlight_levels;
+ 	bool enable_kbd_backlight;
++	bool lid_handling;
+ };
+ 
+ static struct samsung_quirks samsung_unknown = {};
+@@ -366,6 +377,10 @@ static struct samsung_quirks samsung_np740u3e = {
+ 	.enable_kbd_backlight = true,
+ };
+ 
++static struct samsung_quirks samsung_lid_handling = {
++	.lid_handling = true,
++};
++
+ static bool force;
+ module_param(force, bool, 0);
+ MODULE_PARM_DESC(force,
+@@ -830,10 +845,76 @@ static ssize_t set_usb_charge(struct device *dev,
+ static DEVICE_ATTR(usb_charge, S_IWUSR | S_IRUGO,
+ 		   get_usb_charge, set_usb_charge);
+ 
++static int read_lid_handling(struct samsung_laptop *samsung)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++	int retval;
++
++	if (commands->get_lid_handling == 0xFFFF)
++		return -ENODEV;
++
++	memset(&data, 0, sizeof(data));
++	retval = sabi_command(samsung, commands->get_lid_handling,
++			      &data, &data);
++
++	if (retval)
++		return retval;
++
++	return data.data[0] & 0x1;
++}
++
++static int write_lid_handling(struct samsung_laptop *samsung,
++			      int enabled)
++{
++	const struct sabi_commands *commands = &samsung->config->commands;
++	struct sabi_data data;
++
++	memset(&data, 0, sizeof(data));
++	data.data[0] = 0x80 | enabled;
++	return sabi_command(samsung, commands->set_lid_handling,
++			    &data, NULL);
++}
++
++static ssize_t get_lid_handling(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct samsung_laptop *samsung = dev_get_drvdata(dev);
++	int ret;
++
++	ret = read_lid_handling(samsung);
++	if (ret < 0)
++		return ret;
++
++	return sprintf(buf, "%d\n", ret);
++}
++
++static ssize_t set_lid_handling(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct samsung_laptop *samsung = dev_get_drvdata(dev);
++	int ret, value;
++
++	if (!count || sscanf(buf, "%i", &value) != 1)
++		return -EINVAL;
++
++	ret = write_lid_handling(samsung, !!value);
++	if (ret < 0)
++		return ret;
++
++	return count;
++}
++
++static DEVICE_ATTR(lid_handling, S_IWUSR | S_IRUGO,
++		   get_lid_handling, set_lid_handling);
++
+ static struct attribute *platform_attributes[] = {
+ 	&dev_attr_performance_level.attr,
+ 	&dev_attr_battery_life_extender.attr,
+ 	&dev_attr_usb_charge.attr,
++	&dev_attr_lid_handling.attr,
+ 	NULL
+ };
+ 
+@@ -956,6 +1037,22 @@ static int __init samsung_rfkill_init(struct samsung_laptop *samsung)
+ 	return 0;
+ }
+ 
++static void samsung_lid_handling_exit(struct samsung_laptop *samsung)
++{
++	if (samsung->quirks->lid_handling)
++		write_lid_handling(samsung, 0);
++}
++
++static int __init samsung_lid_handling_init(struct samsung_laptop *samsung)
++{
++	int retval = 0;
++
++	if (samsung->quirks->lid_handling)
++		retval = write_lid_handling(samsung, 1);
++
++	return retval;
++}
++
+ static int kbd_backlight_enable(struct samsung_laptop *samsung)
+ {
+ 	const struct sabi_commands *commands = &samsung->config->commands;
+@@ -1111,7 +1208,7 @@ static int __init samsung_backlight_init(struct samsung_laptop *samsung)
+ }
+ 
+ static umode_t samsung_sysfs_is_visible(struct kobject *kobj,
+-				       struct attribute *attr, int idx)
++					struct attribute *attr, int idx)
+ {
+ 	struct device *dev = container_of(kobj, struct device, kobj);
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -1124,6 +1221,8 @@ static umode_t samsung_sysfs_is_visible(struct kobject *kobj,
+ 		ok = !!(read_battery_life_extender(samsung) >= 0);
+ 	if (attr == &dev_attr_usb_charge.attr)
+ 		ok = !!(read_usb_charge(samsung) >= 0);
++	if (attr == &dev_attr_lid_handling.attr)
++		ok = !!(read_lid_handling(samsung) >= 0);
+ 
+ 	return ok ? attr->mode : 0;
+ }
+@@ -1436,6 +1535,10 @@ static int samsung_pm_notification(struct notifier_block *nb,
+ 	    samsung->quirks->enable_kbd_backlight)
+ 		kbd_backlight_enable(samsung);
+ 
++	if (val == PM_POST_HIBERNATION &&
++	    samsung->quirks->lid_handling)
++		write_lid_handling(samsung, 1);
++
+ 	return 0;
+ }
+ 
+@@ -1578,6 +1681,15 @@ static struct dmi_system_id __initdata samsung_dmi_table[] = {
+ 		},
+ 	 .driver_data = &samsung_np740u3e,
+ 	},
++	{
++	 .callback = samsung_dmi_matched,
++	 .ident = "300V3Z/300V4Z/300V5Z",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "300V3Z/300V4Z/300V5Z"),
++		},
++	 .driver_data = &samsung_lid_handling,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(dmi, samsung_dmi_table);
+@@ -1648,6 +1760,10 @@ static int __init samsung_init(void)
+ 	if (ret)
+ 		goto error_leds;
+ 
++	ret = samsung_lid_handling_init(samsung);
++	if (ret)
++		goto error_lid_handling;
++
+ 	ret = samsung_debugfs_init(samsung);
+ 	if (ret)
+ 		goto error_debugfs;
+@@ -1659,6 +1775,8 @@ static int __init samsung_init(void)
+ 	return ret;
+ 
+ error_debugfs:
++	samsung_lid_handling_exit(samsung);
++error_lid_handling:
+ 	samsung_leds_exit(samsung);
+ error_leds:
+ 	samsung_rfkill_exit(samsung);
+@@ -1683,6 +1801,7 @@ static void __exit samsung_exit(void)
+ 	unregister_pm_notifier(&samsung->pm_nb);
+ 
+ 	samsung_debugfs_exit(samsung);
++	samsung_lid_handling_exit(samsung);
+ 	samsung_leds_exit(samsung);
+ 	samsung_rfkill_exit(samsung);
+ 	samsung_backlight_exit(samsung);
+-- 
+2.1.3
 
