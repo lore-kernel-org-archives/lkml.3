@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933847AbaLKGiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:38:17 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:52126 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933824AbaLKGiP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:38:15 -0500
-Date: Thu, 11 Dec 2014 07:38:11 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] tracing/sched: Check preempt_count() for current when
- reading task->state
-Message-ID: <20141211063811.GD5059@gmail.com>
-References: <20141210174428.3cb7542a@gandalf.local.home>
+	id S933865AbaLKGoU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:44:20 -0500
+Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:49510 "EHLO
+	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933824AbaLKGoS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 01:44:18 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.899
+X-Spam-Languages: en
+Message-ID: <54893D3D.8050100@topic.nl>
+Date: Thu, 11 Dec 2014 07:44:13 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210174428.3cb7542a@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] sound/soc/adi/axi-spdif.c: Support programmable master
+ clock
+References: <54806D4E.8040504@topic.nl> <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl> <548813AC.1080105@metafoo.de>
+In-Reply-To: <548813AC.1080105@metafoo.de>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.80.45]
+X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
+X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+﻿On 12/10/2014 10:34 AM, Lars-Peter Clausen wrote:
+> On 12/05/2014 01:37 PM, Mike Looijmans wrote:
+>> If the master clock supports programmable rates, program it to generate
+>> the desired frequency. Only apply constraints when the clock is fixed.
+>> This allows proper clock generation for both 44100 and 48000 Hz based
+>> sampling rates if the platform supports it.
+>>
+>> The clock frequency must be set before enabling it. Enabling the clock
+>> was done in "startup", but that occurs before "hw_params" where the rate
+>> is known. Enabling a programmable clock without first setting a valid
+>> frequency may harm the system. Move the clock start to the hw_params
+>> routine, and keep track of whether the clock has been started, because
+>> shutdown may be called without having called hw_params first.
+>> Starting the clock and enabling the SPDIF output AFTER programming the
+>> dividers is a more logical order anyway.
+>>
+>> To detect if the source clock is fixed, the driver calls clk_round_rate
+>> for two frequencies. If the results are equal, or if the call returns
+>> an error, the driver assumes the clock is fixed.
+>>
+>> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
+>
+> Hi,
+>
+> Sorry for the delay.
+>
+> [...]
+>>
+>> +    /* Try to set the master clock */
+>> +    clk_set_rate(spdif->clk_ref, rate * 128);
+>> +
+>>       clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
+>>               rate * 64 * 2) - 1;
+>>       clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
+>> @@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream
+>> *substream,
+>>       regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+>>           AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
+>>
+>> +    ret = clk_prepare_enable(spdif->clk_ref);
+>
+> I'm still not convinced this is the right place. I do see your point. But it
+> just feels wrong to enable the clock in hw_params. It's a bit of a dilemma.
+> the startup callback is to early, hw_params is the wrong place and we can't
+> put it in the trigger callback as the trigger callback can not sleep.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+The clock interface suggests that we should do the clk_prepare in hw_params 
+and the clk_enable in trigger then, since clk_prepare may sleep but clk_enable 
+cannot. Which would complicate the clock state housekeeping because I'd have 
+to keep track of prepare and enable states separately.
 
-> 
-> When recording the state of a task for the sched_switch tracepoint a check of
-> task_preempt_count() is performed to see if PREEMPT_ACTIVE is set. This is
-> because, technically, a task being preempted is really in the TASK_RUNNING
-> state, and that is what should be recorded when tracing a sched_switch,
-> even if the task put itself into another state (it hasn't scheduled out
-> in that state yet).
-> 
-> But with the change to use per_cpu preempt counts, the
-> task_thread_info(p)->preempt_count is no longer used, and instead
-> task_preempt_count(p) is used.
-> 
-> The problem is that this does not use the current preempt count but a
-> stale one from a previous sched_switch. The task_preempt_count(p) uses
-> saved_preempt_count and not preempt_count(). But for tracing
-> sched_switch, if p is current, we really want preempt_count().
-> 
-> I hit this bug when I was tracing sleep and the call from do_nanosleep()
-> scheduled out in the "RUNNING" state.
-> 
->            sleep-4290  [000] 537272.259992: sched_switch:         sleep:4290 [120] R ==> swapper/0:0 [120]
->            sleep-4290  [000] 537272.260015: kernel_stack:         <stack trace>
-> => __schedule (ffffffff8150864a)
-> => schedule (ffffffff815089f8)
-> => do_nanosleep (ffffffff8150b76c)
-> => hrtimer_nanosleep (ffffffff8108d66b)
-> => SyS_nanosleep (ffffffff8108d750)
-> => return_to_handler (ffffffff8150e8e5)
-> => tracesys_phase2 (ffffffff8150c844)
-> 
-> After a bit of hair pulling, I found that the state was really
-> TASK_INTERRUPTIBLE, but the saved_preempt_count had an old PREEMPT_ACTIVE
-> set and caused the sched_switch tracepoint to show it as RUNNING.
-> 
-> Cc: stable@vger.kernel.org # 3.13+
-> Fixes: 01028747559a "sched: Create more preempt_count accessors"
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/trace/events/sched.h | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> index 0a68d5ae584e..13fbadcc172b 100644
-> --- a/include/trace/events/sched.h
-> +++ b/include/trace/events/sched.h
-> @@ -97,10 +97,14 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
->  	long state = p->state;
->  
->  #ifdef CONFIG_PREEMPT
-> +	unsigned long pc;
-> +
-> +	pc = (p == current) ? preempt_count() : task_preempt_count(p);
-> +
->  	/*
->  	 * For all intents and purposes a preempted task is a running task.
->  	 */
-> -	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-> +	if (pc & PREEMPT_ACTIVE)
->  		state = TASK_RUNNING | TASK_STATE_MAX;
+(Imagine the housekeeping on a board that could have two codecs running on one 
+DAI using the clock generated by a third codec... I never even bothered to 
+submit that...)
 
-I really don't like the overhead around here.
+> But in any way hwparmas can be called multiple times, so you need to handle
+> the case where the clock is already enabled.
 
-Thanks,
+A simple "if (spdif->clk_ref_running)" check would fix that. I wasn't aware of 
+that though, I thought there'd be a shutdown before another hw_params.
 
-	Ingo
+>> +    if (ret)
+>> +        return ret;
+>> +    spdif->clk_ref_running = true;
+>> +
+>> +    regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
+>> +        AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
+>
+> This should probably be moved to the trigger callback though.
+
+
+I'll create a v3.
+
+
+
+
+Met vriendelijke groet / kind regards,
+
+Mike Looijmans
+System Expert
+
+
+TOPIC Embedded Systems
+Eindhovenseweg 32-C, NL-5683 KH Best
+Postbus 440, NL-5680 AK Best
+Telefoon: (+31) (0) 499 33 69 79
+Telefax:  (+31) (0) 499 33 69 70
+E-mail: mike.looijmans@topic.nl
+Website: www.topic.nl
+
+Please consider the environment before printing this e-mail
+
+Topic zoekt gedreven (embedded) software specialisten!
+http://topic.nl/vacatures/topic-zoekt-software-engineers/
+
