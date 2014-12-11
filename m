@@ -1,66 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965428AbaLKWCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:02:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43059 "EHLO mx1.redhat.com"
+	id S965303AbaLKWDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:03:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34218 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933939AbaLKWCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:02:39 -0500
-Date: Fri, 12 Dec 2014 00:01:57 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ben@decadent.org.uk,
-        cornelia.huck@de.ibm.com, jasowang@redhat.com, pbonzini@redhat.com,
-        rusty@rustcorp.com.au, sergei.shtylyov@cogentembedded.com,
-        thuth@linux.vnet.ibm.com, David Miller <davem@davemloft.net>
-Subject: Re: [PULL] virtio: virtio 1.0 support, misc patches
-Message-ID: <20141211220157.GA22618@redhat.com>
-References: <20141211120248.GA8838@redhat.com>
- <20141212080705.50988d51@canb.auug.org.au>
+	id S933939AbaLKWD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:03:29 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: [patch] blk-mq: fix plugging in blk_sq_make_request
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 11 Dec 2014 17:02:49 -0500
+Message-ID: <x49k31xc0ae.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141212080705.50988d51@canb.auug.org.au>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 08:07:05AM +1100, Stephen Rothwell wrote:
-> Hi Michael,
-> 
-> On Thu, 11 Dec 2014 14:02:48 +0200 "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> >
-> > The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
-> > 
-> >   Linux 3.18 (2014-12-07 14:21:05 -0800)
-> 
-> hmmm ...
-> 
-> > are available in the git repository at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
-> > 
-> > for you to fetch changes up to 803cd18f7b5e6c7ad6bee9571ae8f4450190ab58:
-> > 
-> >   virtio_ccw: finalize_features error handling (2014-12-09 16:32:41 +0200)
-> > 
-> > Note: some net drivers are affected by these patches.
-> > David said he's fine with merging these patches through
-> > my tree.
-> > Rusty's on vacation, he acked using my tree for these, too.
-> 
-> So, either none of this has been in linux-next or you have just rebased
-> it all on top of v3.18 ...
+Hi,
 
-It was on linux next for a while, then I wanted to tweak the commit log
-for some messages a bit.
-So since I rewrote the history anyway, I went ahead and rebased it
-on v3.18, after this rebase it's been in linux-next for several days.
+The following appears in blk_sq_make_request:
 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+	/*
+	 * If we have multiple hardware queues, just go directly to
+	 * one of those for sync IO.
+	 */
 
+We clearly don't have multiple hardware queues, here!  This comment was
+introduced with this commit 07068d5b8e (blk-mq: split make request
+handler for multi and single queue):
 
+    We want slightly different behavior from them:
+    
+    - On single queue devices, we currently use the per-process plug
+      for deferred IO and for merging.
+    
+    - On multi queue devices, we don't use the per-process plug, but
+      we want to go straight to hardware for SYNC IO.
+
+The old code had this:
+
+        use_plug = !is_flush_fua && ((q->nr_hw_queues == 1) || !is_sync);
+
+and that was converted to:
+
+	use_plug = !is_flush_fua && !is_sync;
+
+which is not equivalent.  For the single queue case, that second half of
+the && expression is always true.  So, what I think was actually inteded
+follows (and this more closely matches what is done in blk_queue_bio).
+
+I haven't done any performance testing of this yet.  I'd really just
+like to see if I've got the intent right first.  Jens?
+
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 1d016fc..1cd90c0 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -1208,16 +1208,11 @@ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
+ {
+ 	const int is_sync = rw_is_sync(bio->bi_rw);
+ 	const int is_flush_fua = bio->bi_rw & (REQ_FLUSH | REQ_FUA);
+-	unsigned int use_plug, request_count = 0;
++	struct blk_plug *plug;
++	unsigned int request_count = 0;
+ 	struct blk_map_ctx data;
+ 	struct request *rq;
+ 
+-	/*
+-	 * If we have multiple hardware queues, just go directly to
+-	 * one of those for sync IO.
+-	 */
+-	use_plug = !is_flush_fua && !is_sync;
+-
+ 	blk_queue_bounce(q, &bio);
+ 
+ 	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio)) {
+@@ -1225,7 +1220,7 @@ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
+ 		return;
+ 	}
+ 
+-	if (use_plug && !blk_queue_nomerges(q) &&
++	if (!blk_queue_nomerges(q) &&
+ 	    blk_attempt_plug_merge(q, bio, &request_count))
+ 		return;
+ 
+@@ -1244,21 +1239,18 @@ static void blk_sq_make_request(struct request_queue *q, struct bio *bio)
+ 	 * utilize that to temporarily store requests until the task is
+ 	 * either done or scheduled away.
+ 	 */
+-	if (use_plug) {
+-		struct blk_plug *plug = current->plug;
+-
+-		if (plug) {
+-			blk_mq_bio_to_request(rq, bio);
+-			if (list_empty(&plug->mq_list))
+-				trace_block_plug(q);
+-			else if (request_count >= BLK_MAX_REQUEST_COUNT) {
+-				blk_flush_plug_list(plug, false);
+-				trace_block_plug(q);
+-			}
+-			list_add_tail(&rq->queuelist, &plug->mq_list);
+-			blk_mq_put_ctx(data.ctx);
+-			return;
++	plug = current->plug;
++	if (plug) {
++		blk_mq_bio_to_request(rq, bio);
++		if (list_empty(&plug->mq_list))
++			trace_block_plug(q);
++		else if (request_count >= BLK_MAX_REQUEST_COUNT) {
++			blk_flush_plug_list(plug, false);
++			trace_block_plug(q);
+ 		}
++		list_add_tail(&rq->queuelist, &plug->mq_list);
++		blk_mq_put_ctx(data.ctx);
++		return;
+ 	}
+ 
+ 	if (!blk_mq_merge_queue_io(data.hctx, data.ctx, rq, bio)) {
