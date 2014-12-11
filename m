@@ -1,108 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965165AbaLKQiX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 11:38:23 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:37955 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934351AbaLKQiV (ORCPT
+	id S1757887AbaLKQll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 11:41:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55687 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753789AbaLKQlj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 11:38:21 -0500
-Message-ID: <5489C85A.5020400@cumulusnetworks.com>
-Date: Thu, 11 Dec 2014 08:37:46 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 11 Dec 2014 11:41:39 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <548172DE.9090007@samsung.com>
+References: <548172DE.9090007@samsung.com> <20141126141709.3944.66589.stgit@warthog.procyon.org.uk> <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
+To: Dmitry Kasatkin <d.kasatkin@samsung.com>
+Cc: dhowells@redhat.com, rusty@rustcorp.com.au, mmarek@suse.cz,
+        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
+Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7 signature to a module [ver #2]
 MIME-Version: 1.0
-To: Jiri Pirko <jiri@resnulli.us>
-CC: "Varlese, Marco" <marco.varlese@intel.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan>
-In-Reply-To: <20141211110115.GA1979@nanopsycho.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <10248.1418316079.1@warthog.procyon.org.uk>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Dec 2014 16:41:19 +0000
+Message-ID: <10249.1418316079@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/14, 3:01 AM, Jiri Pirko wrote:
-> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
->>> -----Original Message-----
->>> From: John Fastabend [mailto:john.fastabend@gmail.com]
->>> Sent: Wednesday, December 10, 2014 5:04 PM
->>> To: Jiri Pirko
->>> Cc: Varlese, Marco; netdev@vger.kernel.org;
->>> stephen@networkplumber.org; Fastabend, John R;
->>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
->>> kernel@vger.kernel.org
->>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->>> configuration
->>>
->>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
->>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
->>>>> From: Marco Varlese <marco.varlese@intel.com>
->>>>>
->>>>> Switch hardware offers a list of attributes that are configurable on
->>>>> a per port basis.
->>>>> This patch provides a mechanism to configure switch ports by adding
->>>>> an NDO for setting specific values to specific attributes.
->>>>> There will be a separate patch that extends iproute2 to call the new
->>>>> NDO.
->>>>
->>>> What are these attributes? Can you give some examples. I'm asking
->>>> because there is a plan to pass generic attributes to switch ports
->>>> replacing current specific ndo_switch_port_stp_update. In this case,
->>>> bridge is setting that attribute.
->>>>
->>>> Is there need to set something directly from userspace or does it make
->>>> rather sense to use involved bridge/ovs/bond ? I think that both will
->>>> be needed.
->>> +1
->>>
->>> I think for many attributes it would be best to have both. The in kernel callers
->>> and netlink userspace can use the same driver ndo_ops.
->>>
->>> But then we don't _require_ any specific bridge/ovs/etc module. And we
->>> may have some attributes that are not specific to any existing software
->>> module. I'm guessing Marco has some examples of these.
->>>
->>> [...]
->>>
->>>
->>> --
->>> John Fastabend         Intel Corporation
->> We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
->>
->> An example of attributes are:
->> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
->> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
->> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
->>
->> Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
->>
->> One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
->>
->> I hope this clarifies some points.
-> It does. Makes sense. We need to expose this attr set/get for both
-> in-kernel and userspace use cases.
->
-> Please adjust you patch for this. Also, as a second patch, it would be
-> great if you can convert ndo_switch_port_stp_update to this new ndo.
+Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
 
-Why are we exposing generic switch attribute get/set from userspace ?. 
-We already have specific attributes for learning/flooding which can be 
-extended further.
-And for in kernel api....i had a sample patch in my RFC series (Which i 
-was going to resubmit, until it was decided that we will use existing 
-api around ndo_bridge_setlink/ndo_bridge_getlink):
-http://www.spinics.net/lists/netdev/msg305473.html
+> sign-file.c produce lots of annoying noise.
 
-Thanks,
-Roopa
+Compiling it manually with -Wformat-security found those problems you listed
+and add -W found yet another problem.  Differential patch attached.  I've
+folded it into the patch that adds sign-file.c.
 
-
-
+David
+---
+diff --git a/scripts/sign-file.c b/scripts/sign-file.c
+index 3f9bedbd185f..7941f499ddba 100755
+--- a/scripts/sign-file.c
++++ b/scripts/sign-file.c
+@@ -62,12 +62,12 @@ static void display_openssl_errors(int l)
+ }
+ 
+ 
+-#define ERR(cond, ...)				  \
++#define ERR(cond, fmt, ...)			  \
+ 	do {					  \
+ 		bool __cond = (cond);		  \
+ 		display_openssl_errors(__LINE__); \
+ 		if (__cond) {			  \
+-			err(1, ## __VA_ARGS__);	  \
++			err(1, fmt, ## __VA_ARGS__);	\
+ 		}				  \
+ 	} while(0)
+ 
+@@ -133,7 +133,7 @@ int main(int argc, char **argv)
+ 	 * across as we read it.
+ 	 */
+ 	bd = BIO_new_file(dest_name, "wb");
+-	ERR(!bd, dest_name);
++	ERR(!bd, "%s", dest_name);
+ 
+ 	/* Digest the module data. */
+ 	OpenSSL_add_all_digests();
+@@ -149,7 +149,7 @@ int main(int argc, char **argv)
+ 			   PKCS7_NOCERTS | PKCS7_PARTIAL | PKCS7_BINARY | PKCS7_DETACHED | PKCS7_STREAM);
+ 	ERR(!pkcs7, "PKCS7_sign");
+ 
+-	ERR(PKCS7_sign_add_signer(pkcs7, x509, private_key, digest_algo, PKCS7_NOCERTS | PKCS7_BINARY) < 0,
++	ERR(!PKCS7_sign_add_signer(pkcs7, x509, private_key, digest_algo, PKCS7_NOCERTS | PKCS7_BINARY),
+ 	    "PKCS7_sign_add_signer");
+ 	ERR(PKCS7_final(pkcs7, bm, PKCS7_NOCERTS | PKCS7_BINARY) < 0,
+ 	    "PKCS7_final");
+@@ -159,31 +159,31 @@ int main(int argc, char **argv)
+ 
+ 		ERR(asprintf(&pkcs7_name, "%s.pkcs7", module_name) < 0, "asprintf");
+ 		b = BIO_new_file(pkcs7_name, "wb");
+-		ERR(!b, pkcs7_name);
+-		ERR(i2d_PKCS7_bio_stream(b, pkcs7, NULL, 0) < 0, pkcs7_name);
++		ERR(!b, "%s", pkcs7_name);
++		ERR(i2d_PKCS7_bio_stream(b, pkcs7, NULL, 0) < 0, "%s", pkcs7_name);
+ 		BIO_free(b);
+ 	}
+ 
+ 	/* Append the marker and the PKCS#7 message to the destination file */
+-	ERR(BIO_reset(bm) < 0, module_name);
++	ERR(BIO_reset(bm) < 0, "%s", module_name);
+ 	while ((n = BIO_read(bm, buf, sizeof(buf))),
+ 	       n > 0) {
+-		ERR(BIO_write(bd, buf, n) < 0, dest_name);
++		ERR(BIO_write(bd, buf, n) < 0, "%s", dest_name);
+ 	}
+-	ERR(n < 0, module_name);
++	ERR(n < 0, "%s", module_name);
+ 	module_size = BIO_number_written(bd);
+ 
+-	ERR(i2d_PKCS7_bio_stream(bd, pkcs7, NULL, 0) < 0, dest_name);
++	ERR(i2d_PKCS7_bio_stream(bd, pkcs7, NULL, 0) < 0, "%s", dest_name);
+ 	pkcs7_size = BIO_number_written(bd) - module_size;
+ 	sig_info.sig_len = htonl(pkcs7_size);
+-	ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, dest_name);
+-	ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, dest_name);
++	ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, "%s", dest_name);
++	ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, "%s", dest_name);
+ 
+-	ERR(BIO_free(bd) < 0, dest_name);
++	ERR(BIO_free(bd) < 0, "%s", dest_name);
+ 
+ 	/* Finally, if we're signing in place, replace the original. */
+ 	if (replace_orig)
+-		ERR(rename(dest_name, module_name) < 0, dest_name);
++		ERR(rename(dest_name, module_name) < 0, "%s", dest_name);
+ 
+ 	return 0;
+ }
