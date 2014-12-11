@@ -1,85 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757223AbaLKMrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:47:14 -0500
-Received: from mailgw01.mediatek.com ([210.61.82.183]:46532 "EHLO
-	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750702AbaLKMrM (ORCPT
+	id S932599AbaLKMr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:47:27 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:40140 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757338AbaLKMr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:47:12 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
- board dts and Makefile
-From: Eddie Huang <eddie.huang@mediatek.com>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-CC: Yingjoe Chen <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        srv_heupstream <srv_heupstream@mediatek.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
-        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        YH Chen =?UTF-8?Q?=28=E9=99=B3=E6=98=B1=E8=B1=AA=29?= 
-	<yh.chen@mediatek.com>
-In-Reply-To: <CABuKBe+U22ogGBToftgaSJw6fcJmciGfa9scAkyP3g5OJSaAOA@mail.gmail.com>
-References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
-	 <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
-	 <1418221662.21309.13.camel@mtksdaap41>
-	 <CABuKBe+U22ogGBToftgaSJw6fcJmciGfa9scAkyP3g5OJSaAOA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Dec 2014 20:47:06 +0800
-Message-ID: <1418302026.1992.18.camel@mtksdaap41>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
+	Thu, 11 Dec 2014 07:47:26 -0500
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Ganesh Mahendran <opensource.ganesh@gmail.com>
+Subject: [PATCH] fs/debugfs: add get/set for atomic_long types
+Date: Thu, 11 Dec 2014 20:47:10 +0800
+Message-Id: <1418302030-11428-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-10 at 15:50 +0100, Matthias Brugger wrote:
-> 2014-12-10 15:27 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
-> >
-> > Hi,
-> >
-> > On Wed, 2014-12-10 at 18:50 +0800, Eddie Huang wrote:
-> > <...>
-> >> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
-> >> new file mode 100644
-> >> index 0000000..adf26dd
-> >> --- /dev/null
-> >> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
-> > <...>
-> >> +     timer {
-> >> +             compatible = "arm,armv8-timer";
-> >> +             interrupt-parent = <&gic>;
-> >> +             interrupts = <1 13 0x8>,
-> >> +                          <1 14 0x8>,
-> >> +                          <1 11 0x8>,
-> >> +                          <1 10 0x8>;
-> >> +             clock-frequency = <13000000>;
-> >
-> > I believe our firmware doesn't need this line. Please remove it.
-> 
-> The point here would be to know if you need to enable a special timer
-> from the mtk-timer block to get the arch timer working.
-> In any case, you will need some sort of timer. This dts does not
-> describe the mtk-timer (may in the mt8173 it does not exist) but
-> defines the clocks clk26m and clk32k. So if you don't use the
-> mtk-timer, please remove the clocks as there isn't a block using them.
-> 
+debugfs currently can not create attributes that set/get
+atomic_long_t values.
 
-MT8173 has two timer set: CPUGPT and APBGPT, and use CPUGPT to enable
-arch_timer. Previous series only have APBGPT. MT8173 still need enable
-CPUGPT to get arch timer working, we put this in loader, and transparent
-to kernel. So I will remove clk26m and clk32k in next version.
+This patch adds support for this through a new
+debugfs_create_atomic_long_t() function.
 
+Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+---
+ fs/debugfs/file.c       |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |    2 ++
+ 2 files changed, 47 insertions(+)
+
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index 76c08c2..65a1b53 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -446,6 +446,51 @@ struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
++static int debugfs_atomic_long_t_set(void *data, u64 val)
++{
++	atomic_long_set((atomic_long_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_long_t_get(void *data, u64 *val)
++{
++	*val = atomic_long_read((atomic_long_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_long_t, debugfs_atomic_long_t_get,
++			debugfs_atomic_long_t_set, "%lld\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_long_t_ro, debugfs_atomic_long_t_get,
++			NULL, "%lld\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_long_t_wo, NULL, debugfs_atomic_long_t_set,
++			"%lld\n");
++
++/**
++ * debugfs_create_atomic_long_t - create a debugfs file that is used to read and
++ * write an atomic_long_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
++ */
++struct dentry *debugfs_create_atomic_long_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_long_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_long_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_long_t_wo);
++
++	return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_long_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_long_t);
++
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+ {
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 4d0b4d1..b759231 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -81,6 +81,8 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
+ struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, atomic_t *value);
++struct dentry *debugfs_create_atomic_long_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_long_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
+-- 
+1.7.9.5
 
