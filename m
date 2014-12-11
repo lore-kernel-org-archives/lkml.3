@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726AbaLKM1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:27:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56169 "EHLO
+	id S932952AbaLKM1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:27:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56159 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984AbaLKM1a (ORCPT
+	with ESMTP id S1754611AbaLKM1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:27:30 -0500
-Date: Thu, 11 Dec 2014 04:27:16 -0800
+	Thu, 11 Dec 2014 07:27:14 -0500
+Date: Thu, 11 Dec 2014 04:27:01 -0800
 From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-be9d1738b17f066b9d2f9e63eb6e2abda997fa1b@git.kernel.org>
-Cc: torvalds@linux-foundation.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, luto@amacapital.net,
-        tglx@linutronix.de, bp@suse.de
-Reply-To: tglx@linutronix.de, bp@suse.de, luto@amacapital.net, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org,
-        torvalds@linux-foundation.org
-In-Reply-To: <1418127959-29902-1-git-send-email-bp@alien8.de>
-References: <1418127959-29902-1-git-send-email-bp@alien8.de>
+Message-ID: <tip-5de2b61a63f0982641eb00b9a6a9650f23487eaa@git.kernel.org>
+Cc: bp@suse.de, mingo@kernel.org, matz@suse.de, mmarek@suse.cz,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        hpa@zytor.com, tglx@linutronix.de
+Reply-To: torvalds@linux-foundation.org, mmarek@suse.cz,
+        linux-kernel@vger.kernel.org, bp@suse.de, matz@suse.de,
+        mingo@kernel.org, tglx@linutronix.de, hpa@zytor.com
+In-Reply-To: <1418139917-12722-1-git-send-email-bp@alien8.de>
+References: <1418139917-12722-1-git-send-email-bp@alien8.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/asm: Unify segment selector defines
-Git-Commit-ID: be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
+Subject: [tip:x86/urgent] x86/asm: Guard against building the 32/
+ 64-bit versions of the asm-offsets*.c file directly
+Git-Commit-ID: 5de2b61a63f0982641eb00b9a6a9650f23487eaa
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,79 +34,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
-Gitweb:     http://git.kernel.org/tip/be9d1738b17f066b9d2f9e63eb6e2abda997fa1b
+Commit-ID:  5de2b61a63f0982641eb00b9a6a9650f23487eaa
+Gitweb:     http://git.kernel.org/tip/5de2b61a63f0982641eb00b9a6a9650f23487eaa
 Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Tue, 9 Dec 2014 13:25:59 +0100
+AuthorDate: Tue, 9 Dec 2014 16:45:17 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 11 Dec 2014 11:45:03 +0100
+CommitDate: Thu, 11 Dec 2014 11:43:56 +0100
 
-x86/asm: Unify segment selector defines
+x86/asm: Guard against building the 32/64-bit versions of the asm-offsets*.c file directly
 
-Those are identical on 32- and 64-bit, unify them. No functional
-change.
+Sometimes it is helpful to build a kernel compilation unit
+directly, i.e.:
 
+  make .../<filename>.i
+
+in order to look at compiler output.
+
+Since asm-offsets_{32,64}.c are included by asm-offsets.c and
+building them directly doesn't evaluate the macros used (thus
+making the preprocessor output not very useful), error out when
+an attempt is made to build them. Issue a hint for the user to
+build asm-offsets.c instead.
+
+Suggested-by: Michael Matz <matz@suse.de>
 Signed-off-by: Borislav Petkov <bp@suse.de>
-Cc: Andy Lutomirski <luto@amacapital.net>
+Cc: Michal Marek <mmarek@suse.cz>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418127959-29902-1-git-send-email-bp@alien8.de
+Link: http://lkml.kernel.org/r/1418139917-12722-1-git-send-email-bp@alien8.de
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/segment.h | 30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+ arch/x86/kernel/asm-offsets_32.c | 4 ++++
+ arch/x86/kernel/asm-offsets_64.c | 4 ++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/arch/x86/include/asm/segment.h b/arch/x86/include/asm/segment.h
-index 6f1c3a8..db257a5 100644
---- a/arch/x86/include/asm/segment.h
-+++ b/arch/x86/include/asm/segment.h
-@@ -23,6 +23,15 @@
- #define GDT_ENTRY_BOOT_TSS	(GDT_ENTRY_BOOT_CS + 2)
- #define __BOOT_TSS		(GDT_ENTRY_BOOT_TSS * 8)
- 
-+#define SEGMENT_RPL_MASK	0x3 /*
-+				     * Bottom two bits of selector give the ring
-+				     * privilege level
-+				     */
-+#define SEGMENT_TI_MASK		0x4 /* Bit 2 is table indicator (LDT/GDT) */
-+#define USER_RPL		0x3 /* User mode is privilege level 3 */
-+#define SEGMENT_LDT		0x4 /* LDT segment has TI set... */
-+#define SEGMENT_GDT		0x0 /* ... GDT has it cleared */
+diff --git a/arch/x86/kernel/asm-offsets_32.c b/arch/x86/kernel/asm-offsets_32.c
+index d67c4be..3b3b9d3 100644
+--- a/arch/x86/kernel/asm-offsets_32.c
++++ b/arch/x86/kernel/asm-offsets_32.c
+@@ -1,3 +1,7 @@
++#ifndef __LINUX_KBUILD_H
++# error "Please do not build this file directly, build asm-offsets.c instead"
++#endif
 +
- #ifdef CONFIG_X86_32
- /*
-  * The layout of the per-CPU GDT under Linux:
-@@ -125,16 +134,6 @@
- #define PNP_TS1    (GDT_ENTRY_PNPBIOS_TS1 * 8)	/* transfer data segment */
- #define PNP_TS2    (GDT_ENTRY_PNPBIOS_TS2 * 8)	/* another data segment */
+ #include <asm/ucontext.h>
  
--/* Bottom two bits of selector give the ring privilege level */
--#define SEGMENT_RPL_MASK	0x3
--/* Bit 2 is table indicator (LDT/GDT) */
--#define SEGMENT_TI_MASK		0x4
--
--/* User mode is privilege level 3 */
--#define USER_RPL		0x3
--/* LDT segment has TI set, GDT has it cleared */
--#define SEGMENT_LDT		0x4
--#define SEGMENT_GDT		0x0
+ #include <linux/lguest.h>
+diff --git a/arch/x86/kernel/asm-offsets_64.c b/arch/x86/kernel/asm-offsets_64.c
+index e7c798b..4c0c596 100644
+--- a/arch/x86/kernel/asm-offsets_64.c
++++ b/arch/x86/kernel/asm-offsets_64.c
+@@ -1,3 +1,7 @@
++#ifndef __LINUX_KBUILD_H
++# error "Please do not build this file directly, build asm-offsets.c instead"
++#endif
++
+ #include <asm/ia32.h>
  
- /*
-  * Matching rules for certain types of segments.
-@@ -192,17 +191,6 @@
- #define get_kernel_rpl()  0
- #endif
- 
--/* User mode is privilege level 3 */
--#define USER_RPL		0x3
--/* LDT segment has TI set, GDT has it cleared */
--#define SEGMENT_LDT		0x4
--#define SEGMENT_GDT		0x0
--
--/* Bottom two bits of selector give the ring privilege level */
--#define SEGMENT_RPL_MASK	0x3
--/* Bit 2 is table indicator (LDT/GDT) */
--#define SEGMENT_TI_MASK		0x4
--
- #define IDT_ENTRIES 256
- #define NUM_EXCEPTION_VECTORS 32
- /* Bitmask of exception vectors which push an error code on the stack */
+ #define __SYSCALL_64(nr, sym, compat) [nr] = 1,
