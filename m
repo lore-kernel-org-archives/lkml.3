@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758534AbaLKAHA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:07:00 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:38316 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758299AbaLKAG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:06:58 -0500
-Date: Wed, 10 Dec 2014 17:06:54 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: Scott Murray <scott@spiteful.org>, linux-pci@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH 1/1] PCI: hotplug: Deletion of an unnecessary check
- before the function call "pci_dev_put"
-Message-ID: <20141211000654.GB22886@google.com>
-References: <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <546E1B21.2070206@users.sourceforge.net>
+	id S1758589AbaLKAH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:07:29 -0500
+Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:54496
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758309AbaLKAH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 19:07:27 -0500
+Message-ID: <1418256437.5581.51.camel@freescale.com>
+Subject: Re: [PATCH 2/4] powerpc32: properly clear page table when 0 is not
+ a good default PTE value
+From: Scott Wood <scottwood@freescale.com>
+To: Christophe Leroy <christophe.leroy@c-s.fr>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Date: Wed, 10 Dec 2014 18:07:17 -0600
+In-Reply-To: <20141210180037.C46001A5D62@localhost.localdomain>
+References: <20141210180037.C46001A5D62@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546E1B21.2070206@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: BN1PR02CA0052.namprd02.prod.outlook.com (10.141.56.52) To
+ BN1PR0301MB0723.namprd03.prod.outlook.com (25.160.78.142)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
+X-Forefront-PRVS: 0422860ED4
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(377424004)(189002)(199003)(105586002)(97736003)(106356001)(107046002)(62966003)(77156002)(110136001)(4396001)(46102003)(50466002)(36756003)(50226001)(68736005)(40100003)(122386002)(21056001)(23676002)(101416001)(33646002)(103116003)(31966008)(99396003)(87976001)(47776003)(120916001)(50986999)(20776003)(42186005)(76176999)(86362001)(89996001)(64706001)(92566001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR0301MB0723;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR0301MB0723;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 05:47:29PM +0100, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Thu, 20 Nov 2014 17:42:23 +0100
-> 
-> The pci_dev_put() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+On Wed, 2014-12-10 at 19:00 +0100, Christophe Leroy wrote:
+> Some HW invert some PTE bits. In some case, __pte(0) is not 0 so the PTEs shall
+> be properly set prior to being used.
 
-Applied to next-pci/misc for v3.19, thanks.  This branch will be rebased
-when v3.19-rc1 is released.
+__pte(0) is always zero.  If that changes in a future patch, that patch
+is not doing the right thing.  The __pte()/pte_val() accesors should not
+do anything beyond boxing/unboxing the value in a struct.  The right
+place for special 8xx handling of the inverted bit is in pte_mkwrite()
+and such.
 
-Bjorn
+I don't see any other architecture using __pte()/pte_val() this way.
 
-> ---
->  drivers/pci/hotplug/cpci_hotplug_core.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/cpci_hotplug_core.c b/drivers/pci/hotplug/cpci_hotplug_core.c
-> index e09cf78..82c969b 100644
-> --- a/drivers/pci/hotplug/cpci_hotplug_core.c
-> +++ b/drivers/pci/hotplug/cpci_hotplug_core.c
-> @@ -211,8 +211,7 @@ static void release_slot(struct hotplug_slot *hotplug_slot)
->  
->  	kfree(slot->hotplug_slot->info);
->  	kfree(slot->hotplug_slot);
-> -	if (slot->dev)
-> -		pci_dev_put(slot->dev);
-> +	pci_dev_put(slot->dev);
->  	kfree(slot);
->  }
->  
-> -- 
-> 2.1.3
-> 
+-Scott
+
+
