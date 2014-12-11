@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547AbaLKSsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:48:51 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:33258 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbaLKSsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:48:50 -0500
-Message-ID: <5489E6D0.8020002@zytor.com>
-Date: Thu, 11 Dec 2014 10:47:44 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1757967AbaLKStK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:49:10 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37122 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757726AbaLKStI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 13:49:08 -0500
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@suse.com>
-CC: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, konrad.wilk@oracle.com,
-        david.vrabel@citrix.com, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, luto@amacapital.net, JBeulich@suse.com,
-        jgross@suse.com, bpoirier@suse.de, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be preempted
-References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com> <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com> <5488E552.8050207@zytor.com> <20141211010344.GO25677@wotan.suse.de>
-In-Reply-To: <20141211010344.GO25677@wotan.suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAD=FV=URDM5yH-t6kRvq=70v3OM=a7z6TesBrzqGZ9m-oxf+qg@mail.gmail.com>
+References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	<1418291722-25448-3-git-send-email-lyz@rock-chips.com>
+	<CAD=FV=URDM5yH-t6kRvq=70v3OM=a7z6TesBrzqGZ9m-oxf+qg@mail.gmail.com>
+Date: Thu, 11 Dec 2014 10:49:07 -0800
+X-Google-Sender-Auth: 9P7-ZUSQiWCwjsKbusfndCyuqEo
+Message-ID: <CAD=FV=WonOfOOd1a+JAOz__hSn8dRqHJ=zh7ppeCNf_jgqhBww@mail.gmail.com>
+Subject: Re: [PATCH v6 2/5] Documentation: bindings: add dt documentation for
+ Rockchip usb PHY
+From: Doug Anderson <dianders@chromium.org>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
+        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
+        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 05:03 PM, Luis R. Rodriguez wrote:
-> 
-> This is an issue onloy for for non*-preemptive kernels.
-> 
-> Some of Xen's hypercalls can take a long time and unfortunately for
-> *non*-preemptive kernels this can be quite a bit of an issue.
-> We've handled situations like this with cond_resched() before which will
-> push even *non*-preemptive kernels to behave as voluntarily preemptive,
-> I was not aware to what extent this was done and precedents set but
-> its pretety widespread now... this then just addresses once particular
-> case where this is also an issuefor but now in IRQ context.
-> 
-> I agree its a hack but so are all the other cond_reshed() calls then.
-> I don't think its a good idea to be spreading use of something like
-> this everywhere but after careful review and trying toa void this
-> exact code for a while I have not been able to find any other reasonable
-> alternative.
-> 
+Hi,
 
-This sounds like a patch that is completely unrelated to the rest of the
-patch.
+On Thu, Dec 11, 2014 at 10:46 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Yunzhi,
+>
+> On Thu, Dec 11, 2014 at 1:55 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+>> This patch adds a binding that describes the Rockchip usb PHYs
+>> found on Rockchip SoCs usb interface.
+>
+> Technically the bindings patch is supposed to come before the driver.
+> So this should be patch #1 and the driver patch #2.
+>
+>
+>> +Required properties:
+>> + - compatible: rockchip,rk3288-usb-phy
+>> + - rockchip,grf : phandle to the syscon managing the "general
+>> +   register files"
+>> + - #phy-cells: should be 1
+>> + - #address-cells: should be 1
+>> + - #size-cells: should be 0
+>> +
+>> +Sub-nodes:
+>> +Each PHY should be represented as a sub-node.
+>> +
+>> +Sub-nodes
+>> +required properties:
+>> +- reg: the PHY number
+>> +               "0" - PHY connect to OTG controller
+>> +               "1" - PHY connect to HOST0 controller
+>> +               "2" - PHY connect to HOST1 controller
+>
+> You don't have any sub nodes and are using the phy-cells.  Seems like
+> you should get rid of this?  ...or I guess switch to using sub nodes
+> and set "phy-cells" to 0?
 
-	-hpa
-
-
+Oh.  You actually have them in the ".dtsi" patch, but not here in the
+example.  Hrm.  I don't know enough about phys in general to say
+whether they're needed (I will learn if someone else on this thread
+doesn't just know), but if they are required then they ought to be in
+the example...
