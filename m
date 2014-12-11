@@ -1,144 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933802AbaLKPNY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:13:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40729 "EHLO mx1.redhat.com"
+	id S965019AbaLKPPA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:15:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45042 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932200AbaLKPNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933007AbaLKPNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Dec 2014 10:13:22 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         David Ahern <dsahern@gmail.com>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>, Jiri Olsa <jolsa@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCHv2 0/8] perf tools: Add perf data CTF conversion
-Date: Thu, 11 Dec 2014 16:12:21 +0100
-Message-Id: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
+Date: Thu, 11 Dec 2014 16:12:22 +0100
+Message-Id: <1418310749-22267-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi,
-this is follow up on original RFC patchset:
-  http://marc.info/?t=140732735600004&r=1&w=2
+Adding feature check for babeltrace library [1], which will be
+used for perf data file CTF [2] conversion in following patches.
 
-Basically we are adding 'perf data convert' command to
-allow conversion of perf data file into CTF [1] data.
+The babeltrace library is now automatically detected as standard
+feature. It's possible to specify LIBBABELTRACE_DIR make variable
+to specify location of installed libbabeltrace, like:
 
-v2 changes:
-  - addressed comments from Namhyung
-  - rebased to latest acme's perf/core
+  $ make LIBBABELTRACE_DIR=/opt/libbabeltrace/
+    BUILD:   Doing 'make -j4' parallel build
 
-Changes from RFC:
-  - able to generate CTF data, that are possible to be displayed under
-    tracecompas GUI [3], please check several screenshots in here [4]
-  - storing CTF data streams per cpu
-  - several cleanups
+  Auto-detecting system features:
+  ...                         dwarf: [ on  ]
+  ...                         glibc: [ on  ]
+  ...                          gtk2: [ on  ]
+  ...                      libaudit: [ on  ]
+  ...                        libbfd: [ on  ]
+  ...                        libelf: [ on  ]
+  ...                       libnuma: [ on  ]
+  ...                       libperl: [ on  ]
+  ...                     libpython: [ on  ]
+  ...                      libslang: [ on  ]
+  ...                     libunwind: [ on  ]
+  ...                 libbabeltrace: [ on  ]
+  ...            libdw-dwarf-unwind: [ on  ]
+  ...                          zlib: [ on  ]
+  ...     DWARF post unwind library: libunwind
 
-Examples:
-- Catch default perf data (cycles event):
-  $ perf record ls
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
-
-- To display converted CTF data run [2]:
-  $ babeltrace ./ctf-data/
-  [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
-  [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
-  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
-  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
-  [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
-  [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
-  [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
-  [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
-  [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
-
-- To get some nice output in tracecompas GUI [3], please capture sched:*
-  and syscall tracepoints like:
-  # perf record -e 'sched:*,raw_syscalls:*' -a
-  ^C[ perf record: Woken up 0 times to write data ]
-  [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 samples) ]
-
-- To convert perf data file run:
-  # perf data convert --to-ctf=./ctf 
-  [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
-  [ perf data convert: Converted and wrote 408.421 MB (3964792 samples) ]
-
-- To display converted CTF data run [2]:
-  # babeltrace ./ctf-data/
-  [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, perf_id = 462554, perf_period = 1, common_type = 265, ...
-  [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, perf_id = 462562, perf_period = 1, common_type = 263, ...
-  [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
-  [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 5326, perf_id = 462562, perf_period = 1, common_type  ...
-  [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
-  [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
-  [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
-
-- Or run tracecompass and open the CTF data ;-)
-
-Changes are also reachable in here:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-  perf/core_ctf_convert
-
-thanks,
-jirka
-
-[1] Common Trace Format - http://www.efficios.com/ctf
-[2] babeltrace - http://www.efficios.com/babeltrace
-[3] Trace compass - http://projects.eclipse.org/projects/tools.tracecompass
-[4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
-
+[1] babeltrace - http://www.efficios.com/babeltrace
+[2] Common Trace Format - http://www.efficios.com/ctf
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
-Cc: Dominique Toupin <dominique.toupin@ericsson.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jeremie Galarneau <jgalar@efficios.com>
 Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
-Jiri Olsa (5):
-      perf tools: Add feature check for libbabeltrace
-      perf tools: Add new perf data command
-      perf data: Add perf data to CTF conversion support
-      perf data: Enable stream flush within processing
-      perf data: Add support for setting ordered_events queue size
-
-Sebastian Andrzej Siewior (3):
-      perf data: Add a 'perf' prefix to the generic fields
-      perf data: Add tracepoint events fields CTF conversion support
-      perf data: Switch to multiple cpu stream files
-
- tools/perf/Documentation/perf-data.txt                |   40 ++
- tools/perf/Documentation/perf.txt                     |    7 +-
- tools/perf/Makefile.perf                              |    9 +-
- tools/perf/builtin-data.c                             |  119 ++++++
- tools/perf/builtin.h                                  |    1 +
- tools/perf/command-list.txt                           |    1 +
- tools/perf/config/Makefile                            |   24 ++
- tools/perf/config/feature-checks/Makefile             |    8 +-
- tools/perf/config/feature-checks/test-all.c           |    5 +
- tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
- tools/perf/perf.c                                     |    1 +
- tools/perf/util/data-convert-bt.c                     | 1057 +++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/data-convert-bt.h                     |    8 +
- tools/perf/util/debug.c                               |    2 +
- tools/perf/util/debug.h                               |    1 +
- 15 files changed, 1287 insertions(+), 4 deletions(-)
- create mode 100644 tools/perf/Documentation/perf-data.txt
- create mode 100644 tools/perf/builtin-data.c
+ tools/perf/Makefile.perf                           |  4 +++-
+ tools/perf/config/Makefile                         | 24 ++++++++++++++++++++++
+ tools/perf/config/feature-checks/Makefile          |  8 ++++++--
+ tools/perf/config/feature-checks/test-all.c        |  5 +++++
+ .../config/feature-checks/test-libbabeltrace.c     |  8 ++++++++
+ 5 files changed, 46 insertions(+), 3 deletions(-)
  create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
- create mode 100644 tools/perf/util/data-convert-bt.c
- create mode 100644 tools/perf/util/data-convert-bt.h
+
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 763e68fb5767..a6a2ec5ebf0e 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -68,7 +68,9 @@ include config/utilities.mak
+ # for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
+ #
+ # Define NO_ZLIB if you do not want to support compressed kernel modules
+-
++#
++# Define NO_LIBBABELTRACE if you do not want libbabeltrace support
++# for CTF data format.
+ 
+ ifeq ($(srctree),)
+ srctree := $(patsubst %/,%,$(dir $(shell pwd)))
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5d4b039fe1ed..c06e7c96459b 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -84,6 +84,17 @@ ifndef NO_LIBELF
+   FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
+ endif
+ 
++ifndef NO_LIBBABELTRACE
++  # for linking with debug library, run like:
++  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libbabeltrace/
++  ifdef LIBBABELTRACE_DIR
++    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
++    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
++  endif
++  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
++  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
++endif
++
+ # include ARCH specific config
+ -include $(src-perf)/arch/$(ARCH)/Makefile
+ 
+@@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =			\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libdw-dwarf-unwind		\
++	libbabeltrace			\
+ 	zlib
+ 
+ LIB_FEATURE_TESTS =			\
+@@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =			\
+ 	libslang			\
+ 	libunwind			\
+ 	libdw-dwarf-unwind		\
++	libbabeltrace			\
+ 	zlib
+ 
+ VF_FEATURE_TESTS =			\
+@@ -661,6 +674,17 @@ else
+   NO_PERF_READ_VDSOX32 := 1
+ endif
+ 
++ifndef NO_LIBBABELTRACE
++  ifeq ($(feature-libbabeltrace), 0)
++    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-ctf-dev);
++    NO_LIBBABELTRACE := 1
++  else
++    CFLAGS += -DHAVE_LIBBABELTRACE_SUPPORT $(LIBBABELTRACE_CFLAGS)
++    LDFLAGS += $(LIBBABELTRACE_LDFLAGS)
++    EXTLIBS += -lbabeltrace-ctf
++  endif
++endif
++
+ # Among the variables below, these:
+ #   perfexecdir
+ #   template_dir
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 53f19b5dbc37..9d7536e39efd 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -28,6 +28,7 @@ FILES=					\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin	\
++	test-libbabeltrace.bin		\
+ 	test-compile-32.bin		\
+ 	test-compile-x32.bin		\
+ 	test-zlib.bin
+@@ -42,7 +43,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
+ ###############################
+ 
+ test-all.bin:
+-	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz
++	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz -lbabeltrace
+ 
+ test-hello.bin:
+ 	$(BUILD)
+@@ -129,7 +130,10 @@ test-timerfd.bin:
+ 	$(BUILD)
+ 
+ test-libdw-dwarf-unwind.bin:
+-	$(BUILD)
++	$(BUILD) # -ldw provided by $(FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind)
++
++test-libbabeltrace.bin:
++	$(BUILD) # -lbabeltrace provided by $(FEATURE_CHECK_LDFLAGS-libbabeltrace)
+ 
+ test-sync-compare-and-swap.bin:
+ 	$(BUILD) -Werror
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index 652e0098eba6..d63f5f2be9e3 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -97,6 +97,10 @@
+ # include "test-zlib.c"
+ #undef main
+ 
++#define main main_test_libbabeltrace
++# include "test-libbabeltrace.c"
++#undef main
++
+ int main(int argc, char *argv[])
+ {
+ 	main_test_libpython();
+@@ -121,6 +125,7 @@ int main(int argc, char *argv[])
+ 	main_test_libdw_dwarf_unwind();
+ 	main_test_sync_compare_and_swap(argc, argv);
+ 	main_test_zlib();
++	main_test_libbabeltrace();
+ 
+ 	return 0;
+ }
+diff --git a/tools/perf/config/feature-checks/test-libbabeltrace.c b/tools/perf/config/feature-checks/test-libbabeltrace.c
+new file mode 100644
+index 000000000000..3b7dd68a4d52
+--- /dev/null
++++ b/tools/perf/config/feature-checks/test-libbabeltrace.c
+@@ -0,0 +1,8 @@
++
++#include <babeltrace/ctf-writer/writer.h>
++
++int main(void)
++{
++	bt_ctf_stream_class_get_packet_context_type((void *) 0);
++	return 0;
++}
+-- 
+1.9.3
+
