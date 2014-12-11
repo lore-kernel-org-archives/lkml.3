@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696AbaLKDCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 22:02:20 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:25395 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933176AbaLKDCT (ORCPT
+	id S933706AbaLKDFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 22:05:06 -0500
+Received: from smtprelay0076.hostedemail.com ([216.40.44.76]:47128 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933176AbaLKDFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 22:02:19 -0500
-Message-ID: <5489091C.7030405@huawei.com>
-Date: Thu, 11 Dec 2014 11:01:48 +0800
-From: "Yun Wu (Abel)" <wuyun.wu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20120327 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Marc Zyngier <marc.zyngier@arm.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        "Yijing Wang" <wangyijing@huawei.com>
-Subject: Re: [patch 08/16] genirq: Introduce callback irq_chip.irq_write_msi_msg
-References: <20141112133941.647950773@linutronix.de> <20141112134120.474411359@linutronix.de> <546B10DF.7020807@huawei.com> <alpine.DEB.2.11.1411181103360.3909@nanos> <546B4A91.6080004@huawei.com> <546B4D0D.9050601@linux.intel.com> <546B4F18.5060705@huawei.com> <alpine.DEB.2.11.1411181518310.3909@nanos> <546B5904.6020200@huawei.com> <8761ece85x.fsf@approximate.cambridge.arm.com> <546C1148.4080102@huawei.com> <alpine.DEB.2.11.1411191209400.3909@nanos> <54880E5C.1040007@huawei.com> <alpine.DEB.2.11.1412101102420.13233@nanos>
-In-Reply-To: <alpine.DEB.2.11.1412101102420.13233@nanos>
+	Wed, 10 Dec 2014 22:05:04 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:3873:3874:4250:4321:4605:5007:6261:7576:7903:10004:10400:10471:10848:11026:11232:11658:11914:12048:12517:12519:12679:12740:13019:13069:13161:13229:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boat55_ea752d9aca4c
+X-Filterd-Recvd-Size: 2030
+Message-ID: <1418267099.18092.28.camel@perches.com>
+Subject: default enable sparse __CHECK_ENDIAN__ (was: Re: [PATCH v7 2/3]
+ net: Add Keystone NetCP ethernet driver)
+From: Joe Perches <joe@perches.com>
+To: David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christopher Li <sparse@chrisli.org>, Michal Marek <mmarek@suse.cz>
+Cc: m-karicheri2@ti.com, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        grant.likely@linaro.org, linux-sparse@vger.kernel.org
+Date: Wed, 10 Dec 2014 19:04:59 -0800
+In-Reply-To: <20141210.204110.618599360537141819.davem@davemloft.net>
+References: <1417556503-22290-3-git-send-email-m-karicheri2@ti.com>
+	 <20141209.131053.2026868499542642866.davem@davemloft.net>
+	 <5488BB96.9070609@ti.com>
+	 <20141210.204110.618599360537141819.davem@davemloft.net>
 Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.136]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.54890928.02BC,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7cda737b64402dc602e20b1989e253f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/10 18:25, Thomas Gleixner wrote:
+On Wed, 2014-12-10 at 20:41 -0500, David Miller wrote:
+> From: Murali Karicheri <m-karicheri2@ti.com>
+> > Are you referring to the static code analyser sparse that is invoked
+> > through?
+> You have to explicitly enable endian checking, it's not on by
+> default.
 
-> On Wed, 10 Dec 2014, Yun Wu (Abel) wrote:
->> On 2014/11/19 19:11, Thomas Gleixner wrote:
->> I spent last two weeks implementing and testing my original idea about making
->> the sub domains generic, based on stacked domain feature. Now it comes real,
->> please see the attached patch.
-> 
-> Can you please send patches inline? Attached is a pain to reply to.
+There don't seem to be thousands of warnings anymore.
 
-Sure, why not.
+Maybe it's time to default enable it when using C=?
 
->  
->> With this patch applied, I think things will get easier.
-> 
-> I don't see what gets easier. It's just another infrastructure which
-> is painfully similar to MSI.
+from: Documentation/sparse.txt:
 
-Then please help me feel that pain when I post inline patches, thanks. :)
+The optional make variable CF can be used to pass arguments to sparse.  The
+build system passes -Wbitwise to sparse automatically.  To perform endianness
+checks, you may define __CHECK_ENDIAN__:
 
-> 
->> This patch (also with several other patches) is tested on Hisilicon ARM64 SoC,
->> with non PCI devices capable of message based interrupts. The PCI part is not
->> tested because it needs large refactoring work to do. So yes, the testing work
->> is not sufficient, but I think the patch is enough to present what I really
->> wanted to express. :)
-> 
-> Not really.
-> 
-> If you provide proper patches which make use of it and most important
-> a proper refactoring of the PCI/MSI side then we can discuss that, but
-> for now it's just handwaving.
-> 
+        make C=2 CF="-D__CHECK_ENDIAN__"
 
-OK, I will start a new thread when I finished PCI/MSI refactoring work.
+These checks are disabled by default as they generate a host of warnings.
 
-Thanks,
-	Abel
+
 
