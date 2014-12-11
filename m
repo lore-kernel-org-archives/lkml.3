@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934069AbaLKI0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 03:26:51 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:42591 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934053AbaLKI0p (ORCPT
+	id S934084AbaLKI1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 03:27:07 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:56559 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056AbaLKI0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 03:26:45 -0500
+	Thu, 11 Dec 2014 03:26:49 -0500
 From: Tomasz Figa <tfiga@chromium.org>
 To: linux-rockchip@lists.infradead.org
 Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -19,9 +19,9 @@ Cc: linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Geert Uytterhoeven <geert+renesas@glider.be>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Daniel Kurtz <djkurtz@chromium.org>, Tomasz Figa <tfiga@chromium.org>
-Subject: [RFC PATCH 1/2] pm: Add PM domain notifications
-Date: Thu, 11 Dec 2014 17:26:26 +0900
-Message-Id: <1418286387-9663-2-git-send-email-tfiga@chromium.org>
+Subject: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
+Date: Thu, 11 Dec 2014 17:26:27 +0900
+Message-Id: <1418286387-9663-3-git-send-email-tfiga@chromium.org>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
 References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
@@ -29,190 +29,402 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+This patch modifies the rockchip-iommu driver to consider state of
+the power domain the IOMMU is located in. When the power domain
+is powered off, the IOMMU cannot be accessed and register programming
+must be deferred until the power domain becomes enabled.
 
-This patch adds notifiers to the runtime PM/genpd subsystem. It is now
-possible to register a notifier, which will be called before and after
-the generic power domain subsystem calls the power domain's power_on
-and power_off callbacks.
+The solution implemented in this patch uses power domain notifications
+to perform necessary IOMMU initialization. Race with runtime PM core
+is avoided by protecting code accessing the hardware, including startup
+and shutdown functions, with a spinlock with a check for power state
+inside.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-[tfiga@chromium.org: rebased]
 Signed-off-by: Tomasz Figa <tfiga@chromium.org>
 ---
- Documentation/power/notifiers.txt | 14 +++++++++++
- drivers/base/power/domain.c       | 50 +++++++++++++++++++++++++++++++++++++++
- include/linux/pm_domain.h         | 20 ++++++++++++++++
- 3 files changed, 84 insertions(+)
+ drivers/iommu/rockchip-iommu.c | 208 ++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 172 insertions(+), 36 deletions(-)
 
-diff --git a/Documentation/power/notifiers.txt b/Documentation/power/notifiers.txt
-index a81fa25..62303f6 100644
---- a/Documentation/power/notifiers.txt
-+++ b/Documentation/power/notifiers.txt
-@@ -53,3 +53,17 @@ NULL).  To register and/or unregister a suspend notifier use the functions
- register_pm_notifier() and unregister_pm_notifier(), respectively, defined in
- include/linux/suspend.h .  If you don't need to unregister the notifier, you can
- also use the pm_notifier() macro defined in include/linux/suspend.h .
+diff --git a/drivers/iommu/rockchip-iommu.c b/drivers/iommu/rockchip-iommu.c
+index b2023af..9120655 100644
+--- a/drivers/iommu/rockchip-iommu.c
++++ b/drivers/iommu/rockchip-iommu.c
+@@ -20,6 +20,8 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_domain.h>
++#include <linux/pm_runtime.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ 
+@@ -88,6 +90,9 @@ struct rk_iommu {
+ 	int irq;
+ 	struct list_head node; /* entry in rk_iommu_domain.iommus */
+ 	struct iommu_domain *domain; /* domain to which iommu is attached */
++	struct notifier_block genpd_nb;
++	spinlock_t hw_lock; /* lock for register access */
++	bool is_powered; /* power domain is on and register clock is enabled */
+ };
+ 
+ static inline void rk_table_flush(u32 *va, unsigned int count)
+@@ -283,6 +288,9 @@ static void rk_iommu_zap_lines(struct rk_iommu *iommu, dma_addr_t iova,
+ 			       size_t size)
+ {
+ 	dma_addr_t iova_end = iova + size;
 +
-+Power Domain notifiers
-+----------------------
++	assert_spin_locked(&iommu->hw_lock);
 +
-+The power domain notifiers allow subsystems or drivers to register for power
-+domain on/off notifications, should they need to perform any actions right
-+before or right after the power domain on/off.  The device must be already
-+added to a power domain before its subsystem or driver registers the notifier.
-+Following events are supported:
+ 	/*
+ 	 * TODO(djkurtz): Figure out when it is more efficient to shootdown the
+ 	 * entire iotlb rather than iterate over individual iovas.
+@@ -293,11 +301,15 @@ static void rk_iommu_zap_lines(struct rk_iommu *iommu, dma_addr_t iova,
+ 
+ static bool rk_iommu_is_stall_active(struct rk_iommu *iommu)
+ {
++	assert_spin_locked(&iommu->hw_lock);
 +
-+PM_GENPD_POWER_ON_PREPARE	The power domain is about to turn on.
-+PM_GENPD_POST_POWER_ON		The power domain has just turned on.
-+PM_GENPD_POWER_OFF_PREPARE	The power domain is about to turn off.
-+PM_GENPD_POST_POWER_OFF		The power domain has just turned off.
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index 6a103a3..0d6f84e 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -68,6 +68,45 @@ static struct generic_pm_domain *pm_genpd_lookup_name(const char *domain_name)
- 	return genpd;
+ 	return rk_iommu_read(iommu, RK_MMU_STATUS) & RK_MMU_STATUS_STALL_ACTIVE;
  }
  
-+int pm_genpd_register_notifier(struct device *dev, struct notifier_block *nb)
-+{
-+	struct pm_domain_data *pdd;
-+	int ret = -EINVAL;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.subsys_data) {
-+		pdd = dev->power.subsys_data->domain_data;
-+		ret = blocking_notifier_chain_register(&pdd->notify_chain_head,
-+						       nb);
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(pm_genpd_register_notifier);
-+
-+void pm_genpd_unregister_notifier(struct device *dev, struct notifier_block *nb)
-+{
-+	struct pm_domain_data *pdd;
-+
-+	spin_lock_irq(&dev->power.lock);
-+	if (dev->power.subsys_data) {
-+		pdd = dev->power.subsys_data->domain_data;
-+		blocking_notifier_chain_unregister(&pdd->notify_chain_head, nb);
-+	}
-+	spin_unlock_irq(&dev->power.lock);
-+}
-+EXPORT_SYMBOL_GPL(pm_genpd_unregister_notifier);
-+
-+static void pm_genpd_notifier_call(unsigned long event,
-+				   struct generic_pm_domain *genpd)
-+{
-+	struct pm_domain_data *pdd;
-+
-+	list_for_each_entry(pdd, &genpd->dev_list, list_node)
-+		blocking_notifier_call_chain(&pdd->notify_chain_head,
-+					     event, pdd->dev);
-+}
-+
- struct generic_pm_domain *dev_to_genpd(struct device *dev)
+ static bool rk_iommu_is_paging_enabled(struct rk_iommu *iommu)
  {
- 	if (IS_ERR_OR_NULL(dev->pm_domain))
-@@ -161,12 +200,17 @@ static int genpd_power_on(struct generic_pm_domain *genpd)
- 	if (!genpd->power_on)
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	return rk_iommu_read(iommu, RK_MMU_STATUS) &
+ 			     RK_MMU_STATUS_PAGING_ENABLED;
+ }
+@@ -306,6 +318,8 @@ static int rk_iommu_enable_stall(struct rk_iommu *iommu)
+ {
+ 	int ret;
+ 
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	if (rk_iommu_is_stall_active(iommu))
  		return 0;
  
-+	pm_genpd_notifier_call(PM_GENPD_POWER_ON_PREPARE, genpd);
+@@ -327,6 +341,8 @@ static int rk_iommu_disable_stall(struct rk_iommu *iommu)
+ {
+ 	int ret;
+ 
++	assert_spin_locked(&iommu->hw_lock);
 +
- 	time_start = ktime_get();
- 	ret = genpd->power_on(genpd);
+ 	if (!rk_iommu_is_stall_active(iommu))
+ 		return 0;
+ 
+@@ -344,6 +360,8 @@ static int rk_iommu_enable_paging(struct rk_iommu *iommu)
+ {
+ 	int ret;
+ 
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	if (rk_iommu_is_paging_enabled(iommu))
+ 		return 0;
+ 
+@@ -361,6 +379,8 @@ static int rk_iommu_disable_paging(struct rk_iommu *iommu)
+ {
+ 	int ret;
+ 
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	if (!rk_iommu_is_paging_enabled(iommu))
+ 		return 0;
+ 
+@@ -379,6 +399,8 @@ static int rk_iommu_force_reset(struct rk_iommu *iommu)
+ 	int ret;
+ 	u32 dte_addr;
+ 
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	/*
+ 	 * Check if register DTE_ADDR is working by writing DTE_ADDR_DUMMY
+ 	 * and verifying that upper 5 nybbles are read back.
+@@ -401,6 +423,50 @@ static int rk_iommu_force_reset(struct rk_iommu *iommu)
+ 	return ret;
+ }
+ 
++static int rk_iommu_startup(struct rk_iommu *iommu)
++{
++	struct iommu_domain *domain = iommu->domain;
++	struct rk_iommu_domain *rk_domain;
++	phys_addr_t dte_addr;
++	int ret;
++
++	assert_spin_locked(&iommu->hw_lock);
++
++	ret = rk_iommu_enable_stall(iommu);
++	if (ret)
++		return ret;
++
++	ret = rk_iommu_force_reset(iommu);
++	if (ret)
++		return ret;
++
++	rk_domain = domain->priv;
++	dte_addr = virt_to_phys(rk_domain->dt);
++	rk_iommu_write(iommu, RK_MMU_DTE_ADDR, dte_addr);
++	rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
++	rk_iommu_write(iommu, RK_MMU_INT_MASK, RK_MMU_IRQ_MASK);
++
++	ret = rk_iommu_enable_paging(iommu);
++	if (ret)
++		return ret;
++
++	rk_iommu_disable_stall(iommu);
++
++	return ret;
++}
++
++static void rk_iommu_shutdown(struct rk_iommu *iommu)
++{
++	assert_spin_locked(&iommu->hw_lock);
++
++	/* Ignore error while disabling, just keep going */
++	rk_iommu_enable_stall(iommu);
++	rk_iommu_disable_paging(iommu);
++	rk_iommu_write(iommu, RK_MMU_INT_MASK, 0);
++	rk_iommu_write(iommu, RK_MMU_DTE_ADDR, 0);
++	rk_iommu_disable_stall(iommu);
++}
++
+ static void log_iova(struct rk_iommu *iommu, dma_addr_t iova)
+ {
+ 	u32 dte_index, pte_index, page_offset;
+@@ -414,6 +480,8 @@ static void log_iova(struct rk_iommu *iommu, dma_addr_t iova)
+ 	phys_addr_t page_addr_phys = 0;
+ 	u32 page_flags = 0;
+ 
++	assert_spin_locked(&iommu->hw_lock);
++
+ 	dte_index = rk_iova_dte_index(iova);
+ 	pte_index = rk_iova_pte_index(iova);
+ 	page_offset = rk_iova_page_offset(iova);
+@@ -450,13 +518,22 @@ print_it:
+ static irqreturn_t rk_iommu_irq(int irq, void *dev_id)
+ {
+ 	struct rk_iommu *iommu = dev_id;
++	irqreturn_t ret = IRQ_HANDLED;
++	unsigned long flags;
+ 	u32 status;
+ 	u32 int_status;
+ 	dma_addr_t iova;
+ 
++	spin_lock_irqsave(&iommu->hw_lock, flags);
++
++	if (!iommu->is_powered)
++		goto done;
++
+ 	int_status = rk_iommu_read(iommu, RK_MMU_INT_STATUS);
+-	if (int_status == 0)
+-		return IRQ_NONE;
++	if (int_status == 0) {
++		ret = IRQ_NONE;
++		goto done;
++	}
+ 
+ 	iova = rk_iommu_read(iommu, RK_MMU_PAGE_FAULT_ADDR);
+ 
+@@ -497,7 +574,10 @@ static irqreturn_t rk_iommu_irq(int irq, void *dev_id)
+ 
+ 	rk_iommu_write(iommu, RK_MMU_INT_CLEAR, int_status);
+ 
+-	return IRQ_HANDLED;
++done:
++	spin_unlock_irqrestore(&iommu->hw_lock, flags);
++
++	return ret;
+ }
+ 
+ static phys_addr_t rk_iommu_iova_to_phys(struct iommu_domain *domain,
+@@ -537,9 +617,15 @@ static void rk_iommu_zap_iova(struct rk_iommu_domain *rk_domain,
+ 	/* shootdown these iova from all iommus using this domain */
+ 	spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+ 	list_for_each(pos, &rk_domain->iommus) {
+-		struct rk_iommu *iommu;
+-		iommu = list_entry(pos, struct rk_iommu, node);
+-		rk_iommu_zap_lines(iommu, iova, size);
++		struct rk_iommu *iommu = list_entry(pos, struct rk_iommu, node);
++
++		spin_lock(&iommu->hw_lock);
++
++		/* Only zap TLBs of IOMMUs that are powered on. */
++		if (iommu->is_powered)
++			rk_iommu_zap_lines(iommu, iova, size);
++
++		spin_unlock(&iommu->hw_lock);
+ 	}
+ 	spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
+ }
+@@ -729,7 +815,6 @@ static int rk_iommu_attach_device(struct iommu_domain *domain,
+ 	struct rk_iommu_domain *rk_domain = domain->priv;
+ 	unsigned long flags;
+ 	int ret;
+-	phys_addr_t dte_addr;
+ 
+ 	/*
+ 	 * Allow 'virtual devices' (e.g., drm) to attach to domain.
+@@ -739,37 +824,22 @@ static int rk_iommu_attach_device(struct iommu_domain *domain,
+ 	if (!iommu)
+ 		return 0;
+ 
+-	ret = rk_iommu_enable_stall(iommu);
+-	if (ret)
+-		return ret;
+-
+-	ret = rk_iommu_force_reset(iommu);
+-	if (ret)
+-		return ret;
+-
+-	iommu->domain = domain;
+-
+ 	ret = devm_request_irq(dev, iommu->irq, rk_iommu_irq,
+ 			       IRQF_SHARED, dev_name(dev), iommu);
  	if (ret)
  		return ret;
  
- 	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-+
-+	pm_genpd_notifier_call(PM_GENPD_POST_POWER_ON, genpd);
-+
- 	if (elapsed_ns <= genpd->power_on_latency_ns)
- 		return ret;
+-	dte_addr = virt_to_phys(rk_domain->dt);
+-	rk_iommu_write(iommu, RK_MMU_DTE_ADDR, dte_addr);
+-	rk_iommu_command(iommu, RK_MMU_CMD_ZAP_CACHE);
+-	rk_iommu_write(iommu, RK_MMU_INT_MASK, RK_MMU_IRQ_MASK);
+-
+-	ret = rk_iommu_enable_paging(iommu);
+-	if (ret)
+-		return ret;
+-
+ 	spin_lock_irqsave(&rk_domain->iommus_lock, flags);
+ 	list_add_tail(&iommu->node, &rk_domain->iommus);
+ 	spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
  
-@@ -188,12 +232,17 @@ static int genpd_power_off(struct generic_pm_domain *genpd)
- 	if (!genpd->power_off)
- 		return 0;
+-	dev_info(dev, "Attached to iommu domain\n");
++	spin_lock_irqsave(&iommu->hw_lock, flags);
++	iommu->domain = domain;
++	if (iommu->is_powered)
++		rk_iommu_startup(iommu);
++	spin_unlock_irqrestore(&iommu->hw_lock, flags);
  
-+	pm_genpd_notifier_call(PM_GENPD_POWER_OFF_PREPARE, genpd);
-+
- 	time_start = ktime_get();
- 	ret = genpd->power_off(genpd);
- 	if (ret == -EBUSY)
- 		return ret;
+-	rk_iommu_disable_stall(iommu);
++	dev_info(dev, "Attached to iommu domain\n");
  
- 	elapsed_ns = ktime_to_ns(ktime_sub(ktime_get(), time_start));
-+
-+	pm_genpd_notifier_call(PM_GENPD_POST_POWER_OFF, genpd);
-+
- 	if (elapsed_ns <= genpd->power_off_latency_ns)
- 		return ret;
+ 	return 0;
+ }
+@@ -790,17 +860,14 @@ static void rk_iommu_detach_device(struct iommu_domain *domain,
+ 	list_del_init(&iommu->node);
+ 	spin_unlock_irqrestore(&rk_domain->iommus_lock, flags);
  
-@@ -1466,6 +1515,7 @@ int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
- 		genpd->attach_dev(genpd, dev);
+-	/* Ignore error while disabling, just keep going */
+-	rk_iommu_enable_stall(iommu);
+-	rk_iommu_disable_paging(iommu);
+-	rk_iommu_write(iommu, RK_MMU_INT_MASK, 0);
+-	rk_iommu_write(iommu, RK_MMU_DTE_ADDR, 0);
+-	rk_iommu_disable_stall(iommu);
++	spin_lock_irqsave(&iommu->hw_lock, flags);
++	if (iommu->is_powered)
++		rk_iommu_shutdown(iommu);
++	iommu->domain = NULL;
++	spin_unlock_irqrestore(&iommu->hw_lock, flags);
  
- 	mutex_lock(&gpd_data->lock);
-+	BLOCKING_INIT_NOTIFIER_HEAD(&gpd_data->base.notify_chain_head);
- 	gpd_data->base.dev = dev;
- 	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
- 	gpd_data->need_restore = -1;
-diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
-index 6cd20d5..356a145 100644
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -20,6 +20,12 @@
- /* Defines used for the flags field in the struct generic_pm_domain */
- #define GENPD_FLAG_PM_CLK	(1U << 0) /* PM domain uses PM clk */
+ 	devm_free_irq(dev, iommu->irq, iommu);
  
-+/* PM domain state transition notifications */
-+#define PM_GENPD_POWER_ON_PREPARE	0x01
-+#define PM_GENPD_POST_POWER_ON		0x02
-+#define PM_GENPD_POWER_OFF_PREPARE	0x03
-+#define PM_GENPD_POST_POWER_OFF		0x04
-+
- enum gpd_status {
- 	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
- 	GPD_STATE_WAIT_MASTER,	/* PM domain's master is being waited for */
-@@ -107,6 +113,7 @@ struct gpd_timing_data {
- struct pm_domain_data {
- 	struct list_head list_node;
- 	struct device *dev;
-+	struct blocking_notifier_head notify_chain_head;
+-	iommu->domain = NULL;
+-
+ 	dev_info(dev, "Detached from iommu domain\n");
+ }
+ 
+@@ -964,6 +1031,57 @@ static const struct iommu_ops rk_iommu_ops = {
+ 	.pgsize_bitmap = RK_IOMMU_PGSIZE_BITMAP,
  };
  
- struct generic_pm_domain_data {
-@@ -159,6 +166,11 @@ extern int pm_genpd_name_poweron(const char *domain_name);
- extern void pm_genpd_poweroff_unused(void);
- 
- extern struct dev_power_governor simple_qos_governor;
-+extern int pm_genpd_register_notifier(struct device *dev,
-+				      struct notifier_block *nb);
-+extern void pm_genpd_unregister_notifier(struct device *dev,
-+					struct notifier_block *nb);
-+
- extern struct dev_power_governor pm_domain_always_on_gov;
- #else
- 
-@@ -232,6 +244,14 @@ static inline int pm_genpd_name_poweron(const char *domain_name)
- 	return -ENOSYS;
- }
- static inline void pm_genpd_poweroff_unused(void) {}
-+static inline int pm_genpd_register_notifier(struct device *dev,
-+					struct notifier_block *nb)
++static int rk_iommu_power_on(struct rk_iommu *iommu)
 +{
-+	return -ENOSYS;
-+}
-+static inline void pm_genpd_unregister_notifier(struct device *dev,
-+					 struct notifier_block *nb) {}
++	unsigned long flags;
++	int ret;
 +
- #define simple_qos_governor NULL
- #define pm_domain_always_on_gov NULL
- #endif
++	spin_lock_irqsave(&iommu->hw_lock, flags);
++
++	iommu->is_powered = true;
++	if (iommu->domain)
++		ret = rk_iommu_startup(iommu);
++
++	spin_unlock_irqrestore(&iommu->hw_lock, flags);
++
++	return ret;
++}
++
++static void rk_iommu_power_off(struct rk_iommu *iommu)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&iommu->hw_lock, flags);
++
++	if (iommu->domain)
++		rk_iommu_shutdown(iommu);
++	iommu->is_powered = false;
++
++	spin_unlock_irqrestore(&iommu->hw_lock, flags);
++}
++
++static int rk_iommu_genpd_notify(struct notifier_block *nb,
++				 unsigned long action, void *data)
++{
++	struct rk_iommu *iommu = container_of(nb, struct rk_iommu, genpd_nb);
++	int ret = 0;
++
++	switch (action) {
++	case PM_GENPD_POST_POWER_ON:
++		ret = rk_iommu_power_on(iommu);
++		break;
++
++	case PM_GENPD_POWER_OFF_PREPARE:
++		rk_iommu_power_off(iommu);
++		break;
++
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return notifier_from_errno(ret);
++}
++
+ static int rk_iommu_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -976,6 +1094,7 @@ static int rk_iommu_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, iommu);
+ 	iommu->dev = dev;
++	spin_lock_init(&iommu->hw_lock);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	iommu->base = devm_ioremap_resource(&pdev->dev, res);
+@@ -988,11 +1107,28 @@ static int rk_iommu_probe(struct platform_device *pdev)
+ 		return -ENXIO;
+ 	}
+ 
++	pm_runtime_no_callbacks(dev);
++	pm_runtime_enable(dev);
++
++	/* Synchronize state of the domain with driver data. */
++	pm_runtime_get_sync(dev);
++	iommu->is_powered = true;
++
++	iommu->genpd_nb.notifier_call = rk_iommu_genpd_notify;
++	pm_genpd_register_notifier(dev, &iommu->genpd_nb);
++
++	pm_runtime_put(dev);
++
+ 	return 0;
+ }
+ 
+ static int rk_iommu_remove(struct platform_device *pdev)
+ {
++	struct rk_iommu *iommu = platform_get_drvdata(pdev);
++
++	pm_genpd_unregister_notifier(iommu->dev, &iommu->genpd_nb);
++	pm_runtime_disable(&pdev->dev);
++
+ 	return 0;
+ }
+ 
 -- 
 2.2.0.rc0.207.ga3a616c
 
