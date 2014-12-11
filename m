@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911AbaLKLhR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 06:37:17 -0500
-Received: from smtprelay0134.hostedemail.com ([216.40.44.134]:58516 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932200AbaLKLhP (ORCPT
+	id S933925AbaLKLlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 06:41:15 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44338 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242AbaLKLlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 06:37:15 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6261:7875:9040:10004:10400:10848:10967:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12555:12663:12740:13069:13071:13255:13311:13357:13870:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: key03_795305752e208
-X-Filterd-Recvd-Size: 2598
-Date: Thu, 11 Dec 2014 06:37:12 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] tracing/sched: Check preempt_count() for current when
- reading task->state
-Message-ID: <20141211063712.5cf4d240@gandalf.local.home>
-In-Reply-To: <20141211063811.GD5059@gmail.com>
-References: <20141210174428.3cb7542a@gandalf.local.home>
-	<20141211063811.GD5059@gmail.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 11 Dec 2014 06:41:13 -0500
+Message-ID: <1418298046.3188.10.camel@pengutronix.de>
+Subject: Re: [PATCH 2/2] misc: sram: switch to ioremap_wc from ioremap
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Abhilash Kesavan <a.kesavan@samsung.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "nicoleotsuka@gmail.com" <nicoleotsuka@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "padma.v@samsung.com" <padma.v@samsung.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "shawn.guo@freescale.com" <shawn.guo@freescale.com>,
+        "bcousson@baylibre.com" <bcousson@baylibre.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "kgene@kernel.org" <kgene@kernel.org>,
+        "kesavan.abhilash@gmail.com" <kesavan.abhilash@gmail.com>,
+        Pawel Moll <Pawel.Moll@arm.com>
+Date: Thu, 11 Dec 2014 12:40:46 +0100
+In-Reply-To: <20141211103919.GA6067@arm.com>
+References: <1418266726-12004-1-git-send-email-a.kesavan@samsung.com>
+	 <1418266726-12004-2-git-send-email-a.kesavan@samsung.com>
+	 <1418292513.3188.4.camel@pengutronix.de> <20141211103919.GA6067@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Dec 2014 07:38:11 +0100
-Ingo Molnar <mingo@kernel.org> wrote:
+Hi Will,
 
-> > Cc: stable@vger.kernel.org # 3.13+
-> > Fixes: 01028747559a "sched: Create more preempt_count accessors"
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  include/trace/events/sched.h | 6 +++++-
-> >  1 file changed, 5 insertions(+), 1 deletion(-)
+Am Donnerstag, den 11.12.2014, 10:39 +0000 schrieb Will Deacon:
+> On Thu, Dec 11, 2014 at 10:08:33AM +0000, Philipp Zabel wrote:
+> > Hi Abhilash,
 > > 
-> > diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> > index 0a68d5ae584e..13fbadcc172b 100644
-> > --- a/include/trace/events/sched.h
-> > +++ b/include/trace/events/sched.h
-> > @@ -97,10 +97,14 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
-> >  	long state = p->state;
-> >  
-> >  #ifdef CONFIG_PREEMPT
-> > +	unsigned long pc;
-> > +
-> > +	pc = (p == current) ? preempt_count() : task_preempt_count(p);
-> > +
-> >  	/*
-> >  	 * For all intents and purposes a preempted task is a running task.
-> >  	 */
-> > -	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-> > +	if (pc & PREEMPT_ACTIVE)
-> >  		state = TASK_RUNNING | TASK_STATE_MAX;
+> > Am Donnerstag, den 11.12.2014, 08:28 +0530 schrieb Abhilash Kesavan:
+> > > Currently, the SRAM allocator returns device memory via ioremap.
+> > > This causes issues on ARM64 when the internal SoC SRAM allocated by
+> > > the generic sram driver is used for audio playback. The destination
+> > > buffer address (which is ioremapped SRAM) is not 64-bit aligned for
+> > > certain streams (e.g. 44.1k sampling rate). In such cases we get
+> > > unhandled alignment faults. Use ioremap_wc in place of ioremap which
+> > > gives us normal non-cacheable memory instead of device memory.
+> > 
+> > Could this break the omap_bus_sync() implementation in
+> > arch/arm/mach-omap2/omap4-common.c?
+> > 
+> >     void omap_bus_sync(void)
+> >     {
+> >             if (dram_sync && sram_sync) {
+> >                     writel_relaxed(readl_relaxed(dram_sync), dram_sync);
+> >                     writel_relaxed(readl_relaxed(sram_sync), sram_sync);
+> >                     isb();
+> >             }
+> >     }
+> > 
+> > It is used in wmb() and omap_do_wfi() to drain interconnect write
+> > buffers on omap4/5. If sram_sync is mapped with write-combining, could
+> > the last write to sram_sync stay stuck in the write-combining buffer
+> > until after the function returns?
 > 
-> I really don't like the overhead around here.
+> I think you have that issue anyway, since you can get an early write
+> response even if you use ioremap. Does the write to sram_sync have
+> side-effects that we need to wait for?
 
-Hi Ingo!
+[Added Tony Lindgren and Santosh Shilimkar to Cc:]
+I don't know.
 
-What overhead are you worried about? Note, this is in the schedule
-tracepoint and does not affect the scheduler itself (as long as the
-tracepoint is not enabled).
+regards
+Philipp
 
-I'm also thinking that as long as "prev" is always guaranteed to be
-"current" we can remove the check and just use preempt_count() always.
-But I'm worried that we can't guaranteed that.
-
-What other ideas do you have? Because wrong data is worse than the
-overhead of the above code. If Thomas taught me anything, it's that!
-
--- Steve
