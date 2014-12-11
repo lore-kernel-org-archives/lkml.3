@@ -1,93 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934350AbaLKJpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:45:00 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:8993 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934317AbaLKJof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:44:35 -0500
+	id S934314AbaLKJvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:51:06 -0500
+Received: from mga02.intel.com ([134.134.136.20]:39120 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932802AbaLKJvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 04:51:04 -0500
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
-   d="scan'208";a="52646053"
-Message-ID: <5489677E.3000607@broadcom.com>
-Date: Thu, 11 Dec 2014 10:44:30 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Florian Fainelli <f.fainelli@gmail.com>
-CC: Scott Branden <sbranden@broadcom.com>, Arnd Bergmann <arnd@arndb.de>,
-        Ray Jui <rjui@broadcom.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rob Herring" <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, <linux-pci@vger.kernel.org>,
+   d="scan'208";a="652132755"
+From: "Tan, Raymond" <raymond.tan@intel.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "mturquette@linaro.org" <mturquette@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
-References: <1418169871-19232-3-git-send-email-rjui@broadcom.com> <9707535.Y78sV0TgX4@wuerfel> <54887901.8070501@broadcom.com> <CAGVrzcbZ_f43Vf1mu2XErVi_Jehjggh2TREyrSs84ntSm98yvg@mail.gmail.com>
-In-Reply-To: <CAGVrzcbZ_f43Vf1mu2XErVi_Jehjggh2TREyrSs84ntSm98yvg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "Chen, Alvin" <alvin.chen@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+Subject: RE: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
+ I2C-GPIO MFD Driver
+Thread-Topic: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark
+ X1000 I2C-GPIO MFD Driver
+Thread-Index: AQHP/bXYZmohCNFV50aM73389PLXvZxmJsYAgAm1agCAAUJJgIAAAHWAgBkz3GA=
+Date: Thu, 11 Dec 2014 09:50:43 +0000
+Message-ID: <F0CA9E243F4F424B836EAC30E41BF4CF5C7B8859@PGSMSX104.gar.corp.intel.com>
+References: <1415713349-16065-1-git-send-email-raymond.tan@intel.com>
+ <1415713349-16065-2-git-send-email-raymond.tan@intel.com>
+ <20141118172156.GF13959@x1>
+ <F0CA9E243F4F424B836EAC30E41BF4CF5C7989F2@PGSMSX104.gar.corp.intel.com>
+ <20141125165105.GP4241@x1> <20141125165243.GQ4241@x1>
+In-Reply-To: <20141125165243.GQ4241@x1>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.206]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBB9pHwh011531
 
-+ Rafal
+Hi Mike and Lee Jones,
 
-On 12/10/14 19:46, Florian Fainelli wrote:
-> 2014-12-10 8:46 GMT-08:00 Scott Branden<sbranden@broadcom.com>:
->> On 14-12-10 03:31 AM, Arnd Bergmann wrote:
->>>
->>> On Tuesday 09 December 2014 16:04:29 Ray Jui wrote:
->>>>
->>>> Add initial version of the Broadcom iProc PCIe driver. This driver
->>>> has been tested on NSP and Cygnus and is expected to work on all iProc
->>>> family of SoCs that deploys the same PCIe host controller
->>>>
->>>> The driver also supports MSI
->>>>
->>>> Signed-off-by: Ray Jui<rjui@broadcom.com>
->>>> Reviewed-by: Scott Branden<sbranden@broadcom.com>
->>>
->>>
->>> The driver looks suspiciously like the one that Hauke already submitted a
->>> while ago for bcm53xx. Please come up with a merged driver that works for
->>> both.
->>
->> Could you please be a little more specific.  What driver did "Hauke already
->> submitted"?  I do not see any driver in the kernel you are talking about.
->
-> https://www.marc.info/?l=linux-pci&m=141547043110684&w=2
->
->>>
->>>
->>> Are you sure that iProc isn't based on the BCMA bus infrastructure after
->>> all? Even the physical address of your PCI host falls into the address
->>> range that is used for the internal BCMA bus on the other chips!
->>
->> BCMA seems to be for MIPS architectures.  It seems to be quite specific to
->> those architectures using BCMA.  I see no use of it in bcm53xx code?
->
-> BCMA lives in its own directory in drivers/bcma/ and is not specific
-> to MIPS actually. Older BCM47xx/BCM53xx MIPS-based SoCs traditionally
-> started with a discoverable Silicon Sonics Backplane (drivers/ssb) and
-> progressively migrated to BCMA (drivers/bcma), both subsystems offer a
-> very similar bus/device/driver abstraction and discovery mechanism.
+I've updated the patch (v3) with the input from previous reviews, hope this will help to facilitate a better review. I've kept the clk portion relatively unchanged except removing the usage of global variables, instead I've put them in a struct and set as drvdata for later use during the removal of the driver for unregistering the clk and clk_lookup.
 
-BCMA core is the bus driver for discoverable ARM AXI interconnect. Apart 
-from that it also provides drivers for some cores. For the chips to be 
-discoverable it needs additional IP logic. If that is not used in the 
-iProc family devices, it can not use the BCMA-based PCIe controller 
-driver that Hauke submitted unless BCMA would provide an API to provide 
-the chips' core information statically either per core or a full list.
+Warm Regards, 
 
-Regards,
-Arend
+Â Raymond Tan
+Software Engineer
+Malaysia IT Flex Services
+INET: 8-253-0075
+Flex Website: http://flexservices.intel.com 
+
+> -----Original Message-----
+> From: Lee Jones [mailto:lee.jones@linaro.org]
+> Sent: Wednesday, November 26, 2014 12:53 AM
+> To: Tan, Raymond; mturquette@linaro.org
+> Cc: Samuel Ortiz; linux-kernel@vger.kernel.org; Chen, Alvin; Shevchenko,
+> Andriy
+> Subject: Re: [PATCH v2 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark
+> X1000 I2C-GPIO MFD Driver
+> 
+> Crap!  Forgot to Cc Mike.
+> 
+> Fingers faster than brain.
+> 
+> > Mike,
+> >
+> > Something for you down below.
+> >
+> > > > > In Quark X1000, there's a single PCI device that provides both
+> > > > > an I2C controller and a GPIO controller. This MFD driver will
+> > > > > split the 2 devices for their respective drivers.
+> > > > >
+> > > > > This patch is based on Josef Ahmad's initial work for Quark enabling.
+> > > > >
+> > > > > Reviewed-by: Andy Shevchenko
+> <andriy.shevchenko@linux.intel.com>
+> > > > > Signed-off-by: Weike Chen <alvin.chen@intel.com>
+> > > > > Signed-off-by: Raymond Tan <raymond.tan@intel.com>
+> > > > > ---
+> > > > >  drivers/mfd/Kconfig                |   11 ++
+> > > > >  drivers/mfd/Makefile               |    1 +
+> > > > >  drivers/mfd/intel_quark_i2c_gpio.c |  298
+> > > > > ++++++++++++++++++++++++++++++++++++
+> > > > >  3 files changed, 310 insertions(+)  create mode 100644
+> > > > > drivers/mfd/intel_quark_i2c_gpio.c
+> >
+> > [...]
+> >
+> > > > > +	depends on COMMON_CLK
+> > > >
+> > > > I don't think you should depend on this.  Just use the API and
+> > > > fail if it doesn't find the clock you're after.
+> > >
+> > > This was added to make sure the clk initialization and other clk related
+> calls will work with the MFD.
+> >
+> > [...]
+> >
+> > > > > +struct clk *intel_quark_i2c_clk; struct clk_lookup
+> > > > > +*intel_quark_i2c_clk_lookups;
+> > > >
+> > > > Why do these need to be global?
+> > >
+> > > I was trying to keep these as runtime allocated variables, and cleaned up
+> with removal of the driver / upon error handling.
+> >
+> > They still can be.  But they need to be in a struct somewhere and not
+> > global.
+> >
+> > [...]
+> >
+> > > > > +static int intel_quark_register_i2c_clk(struct pci_dev *pdev) {
+> > > > > +	intel_quark_i2c_clk_lookups = devm_kcalloc(
+> > > > > +
+> > > > > +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
+> > > > > +		sizeof(*intel_quark_i2c_clk_lookups), GFP_KERNEL);
+> > > > > +
+> > > > > +	if (!intel_quark_i2c_clk_lookups)
+> > > > > +		return -ENOMEM;
+> > > > > +
+> > > > > +	intel_quark_i2c_clk_lookups[0].dev_id =
+> > > > > +INTEL_QUARK_I2C_CONTROLLER_CLK;
+> > > > > +
+> > > > > +	intel_quark_i2c_clk = clk_register_fixed_rate(
+> > > > > +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK,
+> NULL,
+> > > > > +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
+> > > > > +
+> > > > > +	return clk_register_clkdevs(intel_quark_i2c_clk,
+> > > > > +		intel_quark_i2c_clk_lookups,
+> INTEL_QUARK_I2C_NCLK);
+> > > >
+> > > > We don't normally register clks from MFD.  Normally they are
+> > > > registered in drivers/clk and fetched when a device requires them.
+> > > > Why is this different?
+> > >
+> > > This is a static clk and on this platform, there's no clk hardware
+> > > to have the clk driver to initialize this and add into the global
+> > > struct for use later by i2c controller. The hardware on the platform
+> > > itself is same, and the current driver (i2c_designware_platform)
+> > > requires the clk for its operation. Due to this, I decided to have
+> > > the clk initialize in the MFD before the device being added, which
+> > > later will trigger the probe on the i2c controller driver.
+> >
+> > Mike,
+> >
+> > Can I get your input on this please?
+> >
+> > [...]
+> >
+> > > > > +	pdata = intel_quark_get_i2c_mode(pdev);
+> > > > > +	if (IS_ERR(pdata))
+> > > > > +		return PTR_ERR(pdata);
+> > > >
+> > > > Bring this functionality into here?
+> > >
+> > > Were you referring the contents of intel_quark_get_i2c_mode(), and
+> avoid the additional function call instead?
+> >
+> > Right.  Please rid intel_quark_get_i2c_mode().
+> >
+> > [...]
+> >
+> 
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead Linaro.org â”‚ Open source
+> software for ARM SoCs Follow Linaro: Facebook | Twitter | Blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
