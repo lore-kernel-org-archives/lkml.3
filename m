@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965705AbaLKVog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:44:36 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:54797 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934420AbaLKVoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:44:30 -0500
-Date: Thu, 11 Dec 2014 22:44:26 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Trivial patch monkey <trivial@kernel.org>
-Subject: [PATCH] trivial fixes for omap-serial
-Message-ID: <20141211214118.GA2285@amd>
+	id S934493AbaLKVou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:44:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42147 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964968AbaLKVof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:44:35 -0500
+From: NeilBrown <neilb@suse.de>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+Date: Fri, 12 Dec 2014 08:43:08 +1100
+Subject: [PATCH 3/3] mmc: omap_hsmmc: use mmc_of_parse to parse common mmc
+ configuration.
+Cc: GTA04 owners <gta04-owner@goldelico.com>, linux-omap@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>
+Message-ID: <20141211214308.3753.15675.stgit@notabene.brown>
+In-Reply-To: <20141211214023.3753.10652.stgit@notabene.brown>
+References: <20141211214023.3753.10652.stgit@notabene.brown>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This ensures that all standard options are available to hsmmc,
+In particular, I need cap-power-off-card.
 
-Trivial fixes for omap-serial.
-    
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ drivers/mmc/host/omap_hsmmc.c |   33 ++++++++-------------------------
+ 1 file changed, 8 insertions(+), 25 deletions(-)
 
-index 18c30ca..f43ed2c 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -63,7 +63,7 @@
- #define UART_ERRATA_i202_MDR1_ACCESS	BIT(0)
- #define UART_ERRATA_i291_DMA_FORCEIDLE	BIT(1)
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index 32514b648e3c..1bfacc59e3bf 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -1931,13 +1931,6 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
+ {
+ 	struct omap_hsmmc_platform_data *pdata;
+ 	struct device_node *np = dev->of_node;
+-	u32 bus_width, max_freq;
+-	int cd_gpio, wp_gpio;
+-
+-	cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
+-	wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
+-	if (cd_gpio == -EPROBE_DEFER || wp_gpio == -EPROBE_DEFER)
+-		return ERR_PTR(-EPROBE_DEFER);
  
--#define DEFAULT_CLK_SPEED 48000000 /* 48Mhz*/
-+#define DEFAULT_CLK_SPEED 48000000 /* 48Mhz */
+ 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata)
+@@ -1946,34 +1939,20 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
+ 	if (of_find_property(np, "ti,dual-volt", NULL))
+ 		pdata->controller_flags |= OMAP_HSMMC_SUPPORTS_DUAL_VOLT;
  
- /* SCR register bitmasks */
- #define OMAP_UART_SCR_RX_TRIG_GRANU1_MASK		(1 << 7)
-@@ -93,7 +93,7 @@
- /* WER = 0x7F
-  * Enable module level wakeup in WER reg
-  */
--#define OMAP_UART_WER_MOD_WKUP	0X7F
-+#define OMAP_UART_WER_MOD_WKUP	0x7F
+-	pdata->switch_pin = cd_gpio;
+-	pdata->gpio_wp = wp_gpio;
++	pdata->switch_pin = -EINVAL;
++	pdata->gpio_wp = -EINVAL;
  
- /* Enable XON/XOFF flow control on output */
- #define OMAP_UART_SW_TX		0x08
-@@ -114,7 +114,7 @@ struct uart_omap_dma {
- 	dma_addr_t		tx_buf_dma_phys;
- 	unsigned int		uart_base;
- 	/*
--	 * Buffer for rx dma.It is not required for tx because the buffer
-+	 * Buffer for rx dma. It is not required for tx because the buffer
- 	 * comes from port structure.
- 	 */
- 	unsigned char		*rx_buf;
-@@ -151,7 +151,7 @@ struct uart_omap_port {
- 	int			use_dma;
- 	/*
- 	 * Some bits in registers are cleared on a read, so they must
--	 * be saved whenever the register is read but the bits will not
-+	 * be saved whenever the register is read, but the bits will not
- 	 * be immediately processed.
- 	 */
- 	unsigned int		lsr_break_flag;
+ 	if (of_find_property(np, "ti,non-removable", NULL)) {
+ 		pdata->nonremovable = true;
+ 		pdata->no_regulator_off_init = true;
+ 	}
+-	of_property_read_u32(np, "bus-width", &bus_width);
+-	if (bus_width == 4)
+-		pdata->caps |= MMC_CAP_4_BIT_DATA;
+-	else if (bus_width == 8)
+-		pdata->caps |= MMC_CAP_8_BIT_DATA;
+ 
+ 	if (of_find_property(np, "ti,needs-special-reset", NULL))
+ 		pdata->features |= HSMMC_HAS_UPDATED_RESET;
+ 
+-	if (!of_property_read_u32(np, "max-frequency", &max_freq))
+-		pdata->max_freq = max_freq;
+-
+ 	if (of_find_property(np, "ti,needs-special-hs-handling", NULL))
+ 		pdata->features |= HSMMC_HAS_HSPE_SUPPORT;
+ 
+-	if (of_find_property(np, "keep-power-in-suspend", NULL))
+-		pdata->pm_caps |= MMC_PM_KEEP_POWER;
+-
+-	if (of_find_property(np, "enable-sdio-wakeup", NULL))
+-		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
+-
+ 	return pdata;
+ }
+ #else
+@@ -2031,6 +2010,10 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
++	ret = mmc_of_parse(mmc);
++	if (ret)
++		goto err1;
++
+ 	host		= mmc_priv(mmc);
+ 	host->mmc	= mmc;
+ 	host->pdata	= pdata;
+@@ -2059,7 +2042,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 
+ 	if (pdata->max_freq > 0)
+ 		mmc->f_max = pdata->max_freq;
+-	else
++	else if (mmc->f_max == 0)
+ 		mmc->f_max = OMAP_MMC_MAX_CLOCK;
+ 
+ 	spin_lock_init(&host->irq_lock);
+@@ -2113,7 +2096,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
+ 	if (mmc_pdata(host)->nonremovable)
+ 		mmc->caps |= MMC_CAP_NONREMOVABLE;
+ 
+-	mmc->pm_caps = mmc_pdata(host)->pm_caps;
++	mmc->pm_caps |= mmc_pdata(host)->pm_caps;
+ 
+ 	omap_hsmmc_conf_bus_power(host);
+ 
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
