@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758458AbaLKRXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:23:43 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:54249 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854AbaLKRXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:23:41 -0500
-Date: Thu, 11 Dec 2014 18:23:34 +0100
-From: Cornelia Huck <cornelia.huck@de.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 1/3] virtio: set VIRTIO_CONFIG_S_FEATURES_OK on restore
-Message-ID: <20141211182334.2ac1897b.cornelia.huck@de.ibm.com>
-In-Reply-To: <1418317279-13915-2-git-send-email-mst@redhat.com>
-References: <1418317279-13915-1-git-send-email-mst@redhat.com>
-	<1418317279-13915-2-git-send-email-mst@redhat.com>
-Organization: IBM Deutschland Research & Development GmbH Vorsitzende des
- Aufsichtsrats: Martina Koederitz =?UTF-8?B?R2VzY2jDpGZ0c2bDvGhydW5nOg==?=
- Dirk Wittkopp Sitz der Gesellschaft: =?UTF-8?B?QsO2Ymxpbmdlbg==?=
- Registergericht: Amtsgericht Stuttgart, HRB 243294
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121117-0041-0000-0000-00000272AB38
+	id S934305AbaLKR2h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:28:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59022 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932581AbaLKR2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 12:28:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,558,1413270000"; 
+   d="scan'208";a="646166712"
+From: Ross Zwisler <ross.zwisler@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: [PATCH] sizes: Add 64 bit constants to sizes.h
+Date: Thu, 11 Dec 2014 10:21:16 -0700
+Message-Id: <1418318476-11866-1-git-send-email-ross.zwisler@linux.intel.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Dec 2014 19:01:31 +0200
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+This patch adds 64 bit ULL constants to include/linux/sizes.h.  These
+sizes range from SZ_4G (4 gibibyte) through SZ_8E (8 exbibyte).
 
-> virtio 1.0 devices require that drivers set VIRTIO_CONFIG_S_FEATURES_OK
-> after finalizing features.
-> virtio core missed doing this on restore, fix it up.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/virtio/virtio.c | 37 +++++++++++++++++++++++--------------
->  1 file changed, 23 insertions(+), 14 deletions(-)
+Signed-off-by: Ross Zwisler <ross.zwisler@linux.intel.com>
+---
+ include/linux/sizes.h | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-Reviewed-by: Cornelia Huck <cornelia.huck@de.ibm.com>
+diff --git a/include/linux/sizes.h b/include/linux/sizes.h
+index ce3e815..06ab35b 100644
+--- a/include/linux/sizes.h
++++ b/include/linux/sizes.h
+@@ -43,5 +43,40 @@
+ 
+ #define SZ_1G				0x40000000
+ #define SZ_2G				0x80000000
++#define SZ_4G				0x0000000100000000ULL
++#define SZ_8G				0x0000000200000000ULL
++#define SZ_16G				0x0000000400000000ULL
++#define SZ_32G				0x0000000800000000ULL
++#define SZ_64G				0x0000001000000000ULL
++#define SZ_128G				0x0000002000000000ULL
++#define SZ_256G				0x0000004000000000ULL
++#define SZ_512G				0x0000008000000000ULL
++
++#define SZ_1T				0x0000010000000000ULL
++#define SZ_2T				0x0000020000000000ULL
++#define SZ_4T				0x0000040000000000ULL
++#define SZ_8T				0x0000080000000000ULL
++#define SZ_16T				0x0000100000000000ULL
++#define SZ_32T				0x0000200000000000ULL
++#define SZ_64T				0x0000400000000000ULL
++#define SZ_128T				0x0000800000000000ULL
++#define SZ_256T				0x0001000000000000ULL
++#define SZ_512T				0x0002000000000000ULL
++
++#define SZ_1P				0x0004000000000000ULL
++#define SZ_2P				0x0008000000000000ULL
++#define SZ_4P				0x0010000000000000ULL
++#define SZ_8P				0x0020000000000000ULL
++#define SZ_16P				0x0040000000000000ULL
++#define SZ_32P				0x0080000000000000ULL
++#define SZ_64P				0x0100000000000000ULL
++#define SZ_128P				0x0200000000000000ULL
++#define SZ_256P				0x0400000000000000ULL
++#define SZ_512P				0x0800000000000000ULL
++
++#define SZ_1E				0x1000000000000000ULL
++#define SZ_2E				0x2000000000000000ULL
++#define SZ_4E				0x4000000000000000ULL
++#define SZ_8E				0x8000000000000000ULL
+ 
+ #endif /* __LINUX_SIZES_H__ */
+-- 
+1.9.3
 
