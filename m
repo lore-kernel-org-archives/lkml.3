@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaLKKfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:35:21 -0500
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:35535 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaLKKfT (ORCPT
+	id S1755841AbaLKKhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:37:47 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:33799 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaLKKhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:35:19 -0500
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Dec 2014 05:35:17 EST
-Message-ID: <5489713F.9050408@tremplin-utc.net>
-Date: Thu, 11 Dec 2014 11:26:07 +0100
-From: =?windows-1252?Q?=C9ric_Piel?= <eric.piel@tremplin-utc.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>, Darren Hart <dvhart@infradead.org>
-CC: Dominique Leuenberger <dimstar@opensuse.org>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hp_accel: Add support for HP ZBook 15
-References: <1415908657-26477-1-git-send-email-tiwai@suse.de>
-In-Reply-To: <1415908657-26477-1-git-send-email-tiwai@suse.de>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Dec 2014 05:37:45 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-16-548973cbea33
+Message-id: <548973B7.3050107@samsung.com>
+Date: Thu, 11 Dec 2014 11:36:39 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Tomasz Figa <tfiga@chromium.org>
+Cc: linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Heiko Stuebner <heiko@sntech.de>, Joerg Roedel <joro@8bytes.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [RFC PATCH 1/2] pm: Add PM domain notifications
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
+ <1418286387-9663-2-git-send-email-tfiga@chromium.org>
+In-reply-to: <1418286387-9663-2-git-send-email-tfiga@chromium.org>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsVy+t/xK7qniztDDL6f1rBonDGf1WLu7EmM
+	Fv8fvWa1WLDf2qJz9gZ2i6+HVzBazJqyl8li0+NrrBaXd81hs/jce4TR4tOD/8wWd08dZbM4
+	c/oSq8Xn1n9sFsfXhjvwezw5OI/JY3bDRRaPiWd1PRbvecnkcefaHjaPzUvqPSbfWM7oseVq
+	O4vH9mvzmD1WrP7O7vF5k1wAdxSXTUpqTmZZapG+XQJXRs/WhYwFR9gqGvYuYWlg3MLaxcjJ
+	ISFgIrHv6TUoW0ziwr31bCC2kMBSRokHa/i6GLmA7E+MEo2TNjKDJHgFtCRufu1lAbFZBFQl
+	vt66BWazCRhK9B7tYwSxRQUiJE7e3cMOUS8o8WPyPbAaEQEVid8nZ7CBDGUW+MkscfDgbbAi
+	YQEbiZ4vPSwQmyslOs9NB7M5BZwkDhz8DnQdB1CDnsT9i1ogYWYBeYnNa94yT2AUmIVkxSyE
+	qllIqhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECImzLzsYFx+zOsQowMGoxMMrENsZ
+	IsSaWFZcmXuIUYKDWUmE1yoCKMSbklhZlVqUH19UmpNafIiRiYNTqoHRYMHVz0ldh9acl5nv
+	ymZWZhi/RuACX3qqk84z7dZUw/xdK7niTJVeuRzyXury/v28epGlTzb0a7J6pr/fHOPAKC0Y
+	sDrhh/1L1faLEw7aZ3+7Ee27b983ju1szmpNntJf3xlzW39wE5UP3J3jXPnTv/ZS9Q/763uj
+	1c6J283vaQy98EVp0kwlluKMREMt5qLiRABdf5JOkQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-11-14 20:57, Takashi Iwai wrote:
-> From: Dominique Leuenberger <dimstar@opensuse.org>
->
-> HP ZBook 15 laptop needs a non-standard mapping (x_inverted).
->
-> BugLink: http://bugzilla.opensuse.org/show_bug.cgi?id=905329
-> Signed-off-by: Dominique Leuenberger <dimstar@opensuse.org>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Sorry, it got a be delayed... but it looks completely fine :-)
+Hi Tomasz,
 
-Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
+On 11/12/14 09:26, Tomasz Figa wrote:
+> From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> 
+> This patch adds notifiers to the runtime PM/genpd subsystem. It is now
+> possible to register a notifier, which will be called before and after
+> the generic power domain subsystem calls the power domain's power_on
+> and power_off callbacks.
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> [tfiga@chromium.org: rebased]
+> Signed-off-by: Tomasz Figa <tfiga@chromium.org>
 
-Darren, would you wind picking up this patch via your tree?
+Not sure if you've noticed it, I posted an updated version of this patch
+recently [1]. The notifiers list is moved to struct generic_pm_domain
+there and it also allows to register a notifier for selected power domain
+by name.
 
-Cheers,
-Éric
+-- 
+Regards,
+Sylwester
 
-
-> ---
->   drivers/platform/x86/hp_accel.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/platform/x86/hp_accel.c b/drivers/platform/x86/hp_accel.c
-> index 13e14ec1d3d7..b268f4e48471 100644
-> --- a/drivers/platform/x86/hp_accel.c
-> +++ b/drivers/platform/x86/hp_accel.c
-> @@ -237,6 +237,7 @@ static const struct dmi_system_id lis3lv02d_dmi_ids[] = {
->   	AXIS_DMI_MATCH("HPB64xx", "HP ProBook 64", xy_swap),
->   	AXIS_DMI_MATCH("HPB64xx", "HP EliteBook 84", xy_swap),
->   	AXIS_DMI_MATCH("HPB65xx", "HP ProBook 65", x_inverted),
-> +	AXIS_DMI_MATCH("HPZBook15", "HP ZBook 15", x_inverted),
->   	{ NULL, }
->   /* Laptop models without axis info (yet):
->    * "NC6910" "HP Compaq 6910"
->
-
+[1] http://www.spinics.net/lists/linux-samsung-soc/msg38549.html
