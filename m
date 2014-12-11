@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaLKMb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:31:28 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:49198 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaLKMb1 (ORCPT
+	id S1756900AbaLKMbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:31:42 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55551 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418AbaLKMbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:31:27 -0500
-Date: Thu, 11 Dec 2014 13:31:21 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] tracing/sched: Check preempt_count() for current when
- reading task->state
-Message-ID: <20141211123121.GB18538@gmail.com>
-References: <20141210174428.3cb7542a@gandalf.local.home>
- <20141211063811.GD5059@gmail.com>
- <20141211063712.5cf4d240@gandalf.local.home>
+	Thu, 11 Dec 2014 07:31:40 -0500
+Date: Thu, 11 Dec 2014 12:31:06 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Alexandru Stan <amstan@chromium.org>
+Cc: Doug Anderson <dianders@chromium.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lgirdwood@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20141211123106.GU11764@sirena.org.uk>
+References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
+ <20141210235347.GT11764@sirena.org.uk>
+ <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qq74T9cNcLNVv1KL"
 Content-Disposition: inline
-In-Reply-To: <20141211063712.5cf4d240@gandalf.local.home>
+In-Reply-To: <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
+X-Cookie: I don't get no respect.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
+ certain voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+--Qq74T9cNcLNVv1KL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> On Thu, 11 Dec 2014 07:38:11 +0100
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > > Cc: stable@vger.kernel.org # 3.13+
-> > > Fixes: 01028747559a "sched: Create more preempt_count accessors"
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > ---
-> > >  include/trace/events/sched.h | 6 +++++-
-> > >  1 file changed, 5 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-> > > index 0a68d5ae584e..13fbadcc172b 100644
-> > > --- a/include/trace/events/sched.h
-> > > +++ b/include/trace/events/sched.h
-> > > @@ -97,10 +97,14 @@ static inline long __trace_sched_switch_state(struct task_struct *p)
-> > >  	long state = p->state;
-> > >  
-> > >  #ifdef CONFIG_PREEMPT
-> > > +	unsigned long pc;
-> > > +
-> > > +	pc = (p == current) ? preempt_count() : task_preempt_count(p);
-> > > +
-> > >  	/*
-> > >  	 * For all intents and purposes a preempted task is a running task.
-> > >  	 */
-> > > -	if (task_preempt_count(p) & PREEMPT_ACTIVE)
-> > > +	if (pc & PREEMPT_ACTIVE)
-> > >  		state = TASK_RUNNING | TASK_STATE_MAX;
-> > 
-> > I really don't like the overhead around here.
-> 
-> Hi Ingo!
-> 
-> What overhead are you worried about? Note, this is in the 
-> schedule tracepoint and does not affect the scheduler itself 
-> (as long as the tracepoint is not enabled).
+On Wed, Dec 10, 2014 at 05:08:37PM -0800, Alexandru Stan wrote:
+> The spec is from 1.7V to 1.95V, with 1.8V being ideal. It's not that
+> symmetric. But let's say that 0.1V is fine for tolerance(so 1.7-1.9V)
 
-Scheduler tracepoints are pretty popular, so I'm worried about 
-their complexity when they are activated.
+Don't top post so people reading your message have some context to give
+them some idea what you are talking about.
 
-> I'm also thinking that as long as "prev" is always guaranteed 
-> to be "current" we can remove the check and just use 
-> preempt_count() always. But I'm worried that we can't 
-> guaranteed that.
+> Imagine a board has a 1V-1.79 V regulator, we tell it to
+> regulator_set_voltage_tol(1800000,100000). It will try the 1.8V-1.9V
+> range, when it sees that it can't it'll fallback to 1.7V - 1.9V, and
+> it will just be lazy and pick the lowest of the range again:
+> 1.7V(causing voltage drop issues because we're exactly at the minimum
+> of the spec). The correct voltage would be 1.79V
 
-You could add a WARN_ON_ONCE() or so to double check that 
-assumption?
+This is just an implementation detail, everything you're saying here
+applies equally to any user specifying by tolerance rather than range.
+If the reason for doing this is to fix that problem then a new API isn't
+the way to go about it.
 
-> What other ideas do you have? Because wrong data is worse than 
-> the overhead of the above code. If Thomas taught me anything, 
-> it's that!
+--Qq74T9cNcLNVv1KL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-My idea is to have simpler, yet correct code. And ponies!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Thanks,
+iQEcBAEBAgAGBQJUiY6JAAoJECTWi3JdVIfQUT0H/iHhxGYO5AHqDtfLAmRRTBc1
+85bQzms2XHjw5DK/xUyegaXxplbUg7mhpBE22dIckpj1GVGfmtrKXAtVeJ3viQNh
+swLi6sg7oYGvdJJtnemskwL5OcbDvi6TTFXnqg/2Rz5APU83lFKf1HN8dtGB1xh+
+OCGa++kho+q0SAih4JejLYx7TQKF6p4ErIqIFRIRUtJEpJYgwqJUQNtr+PoLMlu2
+CcPs0QsEg4P1S4aHUEdJ/59EFwxEEQtZLeCcPvYABwPWAGGCwPr27YoCd0gEV5pt
+FE2VI0LKiKlbEjc3WTlsjct11YL47/kNbrPpvJkGKaSF/B4PEByYJgrj85zI6a4=
+=z2Se
+-----END PGP SIGNATURE-----
 
-	Ingo
+--Qq74T9cNcLNVv1KL--
