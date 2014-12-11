@@ -1,103 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203AbaLKW0e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:26:34 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:33189 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759182AbaLKW0c convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:26:32 -0500
-Content-Type: text/plain; charset="utf-8"
+	id S1759214AbaLKW1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:27:05 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18627 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757975AbaLKW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:27:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,560,1413270000"; 
+   d="scan'208";a="652519433"
+Date: Thu, 11 Dec 2014 14:27:02 -0800
+From: Andi Kleen <ak@linux.intel.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org
+Subject: Re: [PATCH 03/10] perf, tools: Use al.addr to set up call chain
+Message-ID: <20141211222702.GN10824@tassilo.jf.intel.com>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <1415844328-4884-4-git-send-email-andi@firstfloor.org>
+ <20141113191633.GE3612@kernel.org>
+ <20141211214623.GD26788@krava.redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Raymond Tan <raymond.tan@intel.com>, "Lee Jones" <lee.jones@linaro.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
-Cc: linux-kernel@vger.kernel.org, "Alvin Chen" <alvin.chen@intel.com>,
-        "Andriy Shevchenko" <andriy.shevchenko@intel.com>,
-        "Raymond Tan" <raymond.tan@intel.com>
-References: <1418290710-5871-1-git-send-email-raymond.tan@intel.com>
- <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
-Message-ID: <20141211222627.20398.48669@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000 I2C-GPIO
- MFD Driver
-Date: Thu, 11 Dec 2014 14:26:27 -0800
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141211214623.GD26788@krava.redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Raymond Tan (2014-12-11 01:38:30)
-> In Quark X1000, there's a single PCI device that provides both
-> an I2C controller and a GPIO controller. This MFD driver will
-> split the 2 devices for their respective drivers.
+> this patch also changed the output of callchain entries
+> with 'map' but with no symbol, like in following diff:
+
+Was unintentional. Patch looks good. thanks.
+
+-Andi
 > 
-> This patch is based on Josef Ahmad's initial work for Quark enabling.
-> 
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> Signed-off-by: Raymond Tan <raymond.tan@intel.com>
 > ---
->  drivers/mfd/Kconfig                |   12 ++
->  drivers/mfd/Makefile               |    1 +
->  drivers/mfd/intel_quark_i2c_gpio.c |  279 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 292 insertions(+)
->  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
-
-<snip>
-
-> +static int intel_quark_register_i2c_clk(struct intel_quark_mfd *quark_mfd)
-> +{
-> +       struct pci_dev *pdev = quark_mfd->pdev;
-> +       struct clk_lookup *i2c_clk_lookup;
-> +       struct clk *i2c_clk;
-> +       int retval;
+>                   ---get_next_seq
+>                      |
+> -                    |--70.16%-- 0x40e1cf
+> +                    |--70.16%-- 0xe1cf
+>                      |          0x841f0f
+>                      |
+> -                    |--25.83%-- 0x40e153
+> +                    |--25.83%-- 0xe153
+>                      |          0x841f0f
+>                      |
+> -                     --4.00%-- 0x40e27f
+> +                     --4.00%-- 0xe27f
+> --
+> 
+> I'm guessing this change was unintentional..? in case we have a map
+> but no symbol seeing full address is more clear than relative at
+> least for binary, not sure about DSOs..
+> 
+> thoughts?
+> 
+> thanks,
+> jirka
+> 
+> 
+> ---
+> diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+> index 64b377e591e4..a4fb25fb26f5 100644
+> --- a/tools/perf/util/callchain.c
+> +++ b/tools/perf/util/callchain.c
+> @@ -816,22 +816,30 @@ out:
+>  char *callchain_list__sym_name(struct callchain_list *cl,
+>  			       char *bf, size_t bfsize, bool show_dso)
+>  {
+> +	struct map *map = cl->ms.map;
+>  	int printed;
+>  
+>  	if (cl->ms.sym) {
+>  		if (callchain_param.key == CCKEY_ADDRESS &&
+> -		    cl->ms.map && !cl->srcline)
+> -			cl->srcline = get_srcline(cl->ms.map->dso,
+> -						  map__rip_2objdump(cl->ms.map,
+> -								    cl->ip),
+> +		    map && !cl->srcline) {
+> +			cl->srcline = get_srcline(map->dso,
+> +						  map__rip_2objdump(map, cl->ip),
+>  						  cl->ms.sym, false);
+> +		}
+>  		if (cl->srcline)
+>  			printed = scnprintf(bf, bfsize, "%s %s",
+>  					cl->ms.sym->name, cl->srcline);
+>  		else
+>  			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+> -	} else
+> -		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
+> +	} else {
+> +		/*
+> +		 * The cl->ip value is unbased ip (applied map->map_ip).
+> +		 * Display the unmap ip in case we have no symbol.
+> +		 */
+> +		u64 addr = map ? map->unmap_ip(map, cl->ip) : cl->ip;
 > +
-> +       i2c_clk_lookup = devm_kcalloc(
-> +               &pdev->dev, INTEL_QUARK_I2C_NCLK,
-> +               sizeof(*i2c_clk_lookup), GFP_KERNEL);
-> +
-> +       if (!i2c_clk_lookup)
-> +               return -ENOMEM;
-> +
-> +       i2c_clk_lookup[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
-> +
-> +       i2c_clk = clk_register_fixed_rate(
-> +               &pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
-> +               CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
-> +
-> +       quark_mfd->i2c_clk_lookup = i2c_clk_lookup;
-> +       quark_mfd->i2c_clk = i2c_clk;
-> +
-> +       retval = clk_register_clkdevs(i2c_clk, i2c_clk_lookup,
-> +                                     INTEL_QUARK_I2C_NCLK);
+> +		printed = scnprintf(bf, bfsize, "%#" PRIx64, addr);
+> +	}
+>  
+>  	if (show_dso)
+>  		scnprintf(bf + printed, bfsize - printed, " %s",
+> 
 
-Lee asked about this in V2, so I'll follow up here in V3. It is OK for a
-driver to use the clock provider api to register clocks with the clk
-framework if that device truly is the provider of that clock signal. A
-good example can be found here:
-
-drivers/media/platform/omap3isp/isp.c
-
-The OMAP3 ISP receives a clock signal as a input. Within the image
-signal processor IP block it also has some basic clock controls of it's
-own which it feeds to downstream IP blocks. As such it is both a clock
-consumer and a provider and this is a common pattern amongst SoC
-designs.
-
-So my question for this driver is if i2c_clk is provided by whatever
-the hell this mfd device is supposed to be, or if it's just a convenient
-place to call the code?
-
-Another concern is that fact that this is a fixed clock. For
-architectures that use device tree to desribe board topology (ARM, MIPS,
-PPC) it is common to simply put the fixed-rate clocks there and not
-directly into the drive code. This prevents having to hack a lot of
-conditionals into your driver when rev 2.0 of your hardware comes out
-with a faster fixed rate clock, but you still need to support 1.0
-hardware users at the slower rate. I don't know if x86 has a similar way
-of describing board topology but it might something to look into.
-
-Regards,
-Mike
+-- 
+ak@linux.intel.com -- Speaking for myself only
