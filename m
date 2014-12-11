@@ -1,111 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933744AbaLKK7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:59:12 -0500
-Received: from imap.thunk.org ([74.207.234.97]:50863 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196AbaLKK7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:59:10 -0500
-Date: Thu, 11 Dec 2014 05:59:05 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [GIT PULL] ext4 changes for 3.19
-Message-ID: <20141211105905.GA15768@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+	id S933768AbaLKLA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 06:00:58 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:58774 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932196AbaLKLA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 06:00:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <016101d0152f$52197270$f64c5750$%debski@samsung.com>
+References: <1415787893-21857-1-git-send-email-gautam.vivek@samsung.com>
+	<CAFp+6iGrv8rhGf7QkOi=2Ad+ZFPMpVn84hjNa9TiNWHFcWKLeg@mail.gmail.com>
+	<016101d0152f$52197270$f64c5750$%debski@samsung.com>
+Date: Thu, 11 Dec 2014 16:30:54 +0530
+Message-ID: <CAFp+6iFa+hqQGD7BuAMOkb7i-kbJaV-OBuBf5RWNNadiuZORYg@mail.gmail.com>
+Subject: Re: [PATCH] phy: phy-samsung-usb2: Don't use same name for driver
+ name and global structure
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kamil Debski <k.debski@samsung.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+On Thu, Dec 11, 2014 at 4:13 PM, Kamil Debski <k.debski@samsung.com> wrote:
+> Hi,
+>
+>> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com]
+>> Sent: Thursday, December 11, 2014 7:30 AM
+>> To: Kishon Vijay Abraham I; Kamil Debski
+>> Cc: linux-kernel@vger.kernel.org; Linux USB Mailing List; Vivek Gautam
+>> Subject: Re: [PATCH] phy: phy-samsung-usb2: Don't use same name for
+>> driver name and global structure
+>>
+>> On Wed, Nov 12, 2014 at 3:54 PM, Vivek Gautam <gautam.vivek@samsung.com>
+>> wrote:
+>> > Using the same driver name for platform driver and a globally defined,
+>> > structure used throughout the file, looks a bit unpleasing.
+>> > So changing the driver name from "samsung_usb2_phy_driver" to
+>> > "samsung_usb2_phy"
+>> >
+>> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> > Cc: Kamil Debski <k.debski@samsung.com>
+>> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
+>> > ---
+>>
+>> Although just a trivial change, does it look valid ?
+>
+> I can agree that the naming of this variable is a bit unfortunate.
+> Changing name of samsung_usb2_phy_driver to samsung_usb2_phy is, as
+> you said, a minor change and does not change how the driver works.
+true.
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
+>
+> Acked-by: Kamil Debski <k.debski@samsung.com>
 
-are available in the git repository at:
+Thanks
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+>
+> Best wishes,
+> --
+> Kamil Debski
+> Samsung R&D Institute Poland
+>
+>>
+>> >  drivers/phy/phy-samsung-usb2.c |    4 ++--
+>> >  1 file changed, 2 insertions(+), 2 deletions(-)
+>> >
+>> > diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
+>> samsung-usb2.c
+>> > index 908949d..2934fb7 100644
+>> > --- a/drivers/phy/phy-samsung-usb2.c
+>> > +++ b/drivers/phy/phy-samsung-usb2.c
+>> > @@ -226,7 +226,7 @@ static int samsung_usb2_phy_probe(struct
+>> platform_device *pdev)
+>> >         return 0;
+>> >  }
+>> >
+>> > -static struct platform_driver samsung_usb2_phy_driver = {
+>> > +static struct platform_driver samsung_usb2_phy = {
+>> >         .probe  = samsung_usb2_phy_probe,
+>> >         .driver = {
+>> >                 .of_match_table = samsung_usb2_phy_of_match,
+>> > @@ -234,7 +234,7 @@ static struct platform_driver
+>> samsung_usb2_phy_driver = {
+>> >         }
+>> >  };
+>> >
+>> > -module_platform_driver(samsung_usb2_phy_driver);
+>> > +module_platform_driver(samsung_usb2_phy);
+>> >  MODULE_DESCRIPTION("Samsung S5P/EXYNOS SoC USB PHY driver");
+>> >  MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
+>> >  MODULE_LICENSE("GPL v2");
+>> > --
+>> > 1.7.10.4
+>> >
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-
+>> kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> Best Regards
+>> Vivek Gautam
+>> Samsung R&D Institute, Bangalore
+>> India
+>
 
-for you to fetch changes up to 50db71abc529c48b21f4c3034d3cff27cfb25795:
 
-  ext4: ext4_da_convert_inline_data_to_extent drop locked page after error (2014-12-05 21:37:15 -0500)
 
-----------------------------------------------------------------
-Lots of bugs fixes, including Zheng and Jan's extent status shrinker
-fixes, which should improve CPU utilization and potential soft lockups
-under heavy memory pressure, and Eric Whitney's bigalloc fixes.
-
-----------------------------------------------------------------
-Al Viro (1):
-      ext4: kill ext4_kvfree()
-
-Darrick J. Wong (1):
-      ext4: create nojournal_checksum mount option
-
-Dmitry Monakhov (6):
-      ext4: move_extent improve bh vanishing success factor
-      ext4: cleanup GFP flags inside resize path
-      ext4: prevent fsreentrance deadlock for inline_data
-      ext4: ext4_inline_data_fiemap should respect callers argument
-      ext4: fix suboptimal seek_{data,hole} extents traversial
-      ext4: ext4_da_convert_inline_data_to_extent drop locked page after error
-
-Eric Sandeen (1):
-      ext4: don't count external journal blocks as overhead
-
-Eric Whitney (4):
-      ext4: fix partial cluster initialization
-      ext4: fix end of leaf partial cluster handling
-      ext4: miscellaneous partial cluster cleanups
-      ext4: fix end of region partial cluster handling
-
-Jan Kara (7):
-      ext4: fix block reservation for bigalloc filesystems
-      ext4: move handling of list of shrinkable inodes into extent status code
-      ext4: limit number of scanned extents in status tree shrinker
-      ext4: cleanup flag definitions for extent status tree
-      ext4: introduce aging to extent status tree
-      ext4: remove never taken branch from ext4_ext_shift_path_extents()
-      ext4: forbid journal_async_commit in data=ordered mode
-
-Markus Elfring (1):
-      ext4: Remove an unnecessary check for NULL before iput()
-
-Namjae Jeon (1):
-      ext4: remove unneeded code in ext4_unlink
-
-Theodore Ts'o (1):
-      jbd2: remove unnecessary NULL check before iput()
-
-Wang Shilong (1):
-      ext4: update comments regarding ext4_delete_inode()
-
-Zheng Liu (2):
-      ext4: cache extent hole in extent status tree for ext4_da_map_blocks()
-      ext4: change LRU to round-robin in extent status tree shrinker
-
- fs/ext4/ext4.h              |  41 ++-----
- fs/ext4/extents.c           | 223 +++++++++++++++++++------------------
- fs/ext4/extents_status.c    | 321 ++++++++++++++++++++++++++++--------------------------
- fs/ext4/extents_status.h    |  82 ++++++++------
- fs/ext4/file.c              | 220 ++++++++++++++++++-------------------
- fs/ext4/inline.c            |  35 ++++--
- fs/ext4/inode.c             |  37 ++-----
- fs/ext4/ioctl.c             |   2 -
- fs/ext4/mballoc.c           |  15 ++-
- fs/ext4/migrate.c           |   2 +-
- fs/ext4/move_extent.c       |   8 +-
- fs/ext4/namei.c             |   1 -
- fs/ext4/resize.c            |   6 +-
- fs/ext4/super.c             |  51 +++++----
- fs/jbd2/journal.c           |   3 +-
- include/trace/events/ext4.h |  17 +--
- 16 files changed, 533 insertions(+), 531 deletions(-)
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
