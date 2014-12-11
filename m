@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965550AbaLKV1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:27:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44608 "EHLO mail.kernel.org"
+	id S965534AbaLKV1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:27:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44564 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965517AbaLKV1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:27:43 -0500
+	id S965517AbaLKV1i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:27:38 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 18/18] perf trace: Provide a better explanation when mmap fails
-Date: Thu, 11 Dec 2014 18:26:06 -0300
-Message-Id: <1418333166-15429-19-git-send-email-acme@kernel.org>
+Subject: [PATCH 17/18] perf evlist: Introduce strerror_mmap method
+Date: Thu, 11 Dec 2014 18:26:05 -0300
+Message-Id: <1418333166-15429-18-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -28,22 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-If we ask for a mmap lenght than the max configured via the relevant
-sysctl, provide a better warning, instead of just expanding the EPERM
-returned:
-
-[acme@ssdandy ~]$ trace -m 256 -e nanosleep sleep 2
-Error:	Operation not permitted.
-Hint:	Check /proc/sys/kernel/perf_event_mlock_kb (516 kB) setting.
-Hint:	Tried using 1028 kB.
-Hint:	Try using a bigger -m/--mmap-pages value.
-
-[acme@ssdandy ~]$ trace -m 128 -e nanosleep sleep 2
-  2001.280 (2000.403 ms): nanosleep(rqtp: 0x7fff89a8a7f0) = 0
-[acme@ssdandy ~]$
-
-An upcoming patch will autotune the request for non-root users when -m
-is not used.
+To pretty print hints about perf_evlist__mmap errors. Will be used in
+'trace' in the next patch.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -56,49 +42,66 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-cdvxfz2gycetbkopm9sna1qp@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-trace.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/util/evlist.c | 23 +++++++++++++++++++++++
+ tools/perf/util/evlist.h |  1 +
+ 2 files changed, 24 insertions(+)
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 83a4835c8118..327541e43c7f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2045,7 +2045,6 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 	unsigned long before;
- 	const bool forks = argc > 0;
- 	bool draining = false;
--	char sbuf[STRERR_BUFSIZE];
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index cfbe2b99b9aa..bb5dfc5d1e75 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -8,6 +8,7 @@
+  */
+ #include "util.h"
+ #include <api/fs/debugfs.h>
++#include <api/fs/fs.h>
+ #include <poll.h>
+ #include "cpumap.h"
+ #include "thread_map.h"
+@@ -1483,6 +1484,28 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 	return 0;
+ }
  
- 	trace->live = true;
- 
-@@ -2106,11 +2105,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
- 		goto out_error_open;
- 
- 	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
--	if (err < 0) {
--		fprintf(trace->output, "Couldn't mmap the events: %s\n",
--			strerror_r(errno, sbuf, sizeof(sbuf)));
--		goto out_delete_evlist;
--	}
-+	if (err < 0)
-+		goto out_error_mmap;
- 
- 	perf_evlist__enable(evlist);
- 
-@@ -2210,6 +2206,10 @@ out_error_tp:
- 	perf_evlist__strerror_tp(evlist, errno, errbuf, sizeof(errbuf));
- 	goto out_error;
- 
-+out_error_mmap:
-+	perf_evlist__strerror_mmap(evlist, errno, errbuf, sizeof(errbuf));
-+	goto out_error;
++int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size)
++{
++	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
++	int value;
 +
- out_error_open:
- 	perf_evlist__strerror_open(evlist, errno, errbuf, sizeof(errbuf));
++	switch (err) {
++	case EPERM:
++		sysctl__read_int("kernel/perf_event_mlock_kb", &value);
++		scnprintf(buf, size, "Error:\t%s.\n"
++				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
++				     "Hint:\tTried using %zd kB.\n"
++				     "Hint:\tTry using a bigger -m/--mmap-pages value.",
++				     emsg, value, evlist->mmap_len / 1024);
++		break;
++	default:
++		scnprintf(buf, size, "%s", emsg);
++		break;
++	}
++
++	return 0;
++}
++
+ void perf_evlist__to_front(struct perf_evlist *evlist,
+ 			   struct perf_evsel *move_evsel)
+ {
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649b0c597283..0ba93f67ab94 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -185,6 +185,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
  
+ int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
++int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ 
+ static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+ {
 -- 
 1.9.3
 
