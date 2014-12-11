@@ -1,128 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886AbaLKRh3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:37:29 -0500
-Received: from mail-yk0-f169.google.com ([209.85.160.169]:33467 "EHLO
-	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLKRh1 (ORCPT
+	id S1758489AbaLKRld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:41:33 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:58045 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaLKRlc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:37:27 -0500
+	Thu, 11 Dec 2014 12:41:32 -0500
+Message-ID: <5489D739.9010303@cumulusnetworks.com>
+Date: Thu, 11 Dec 2014 09:41:13 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20141211153118.GF29747@mail.corp.redhat.com>
-References: <1418302280-14794-1-git-send-email-peter@lekensteyn.nl>
- <1418302280-14794-5-git-send-email-peter@lekensteyn.nl> <20141211153118.GF29747@mail.corp.redhat.com>
-From: Andrew de los Reyes <andrew-vger@gizmolabs.org>
-Date: Thu, 11 Dec 2014 09:37:06 -0800
-X-Google-Sender-Auth: pESyyIezvOvN8L2sDrB_56vmL9M
-Message-ID: <CAG_cf+fx8Xk4t7fsGkb6bkFEPCXQg6rcAOk7arUD34B8QRShgQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] HID: logitech-hidpp: disable io in probe error path
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Peter Wu <peter@lekensteyn.nl>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Andrew de los Reyes <adlr@chromium.org>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Linux Input <linux-input@vger.kernel.org>,
+To: Jiri Pirko <jiri@resnulli.us>
+CC: "Varlese, Marco" <marco.varlese@intel.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan> <5489C85A.5020400@cumulusnetworks.com> <20141211165627.GF1912@nanopsycho.orion>
+In-Reply-To: <20141211165627.GF1912@nanopsycho.orion>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu Dec 11 2014 at 7:31:43 AM Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
->
-> On Dec 11 2014 or thereabouts, Peter Wu wrote:
-> > Balance a hid_device_io_start() call with hid_device_io_stop() in the
-> > error path. This avoids processing of HID reports when the probe fails
-> > which possibly leads to invalid memory access in hid_device_probe() as
-> > report_enum->report_id_hash might already be freed via
-> > hid_close_report().
->
-> Well spotted too!
->
-> >
-> > hid_set_drvdata() is called before wtp_allocate, be consistent and clear
-> > drvdata too on the error path of wtp_allocate.
->
-> This is not strictly speaking required. We will have a dangling value in
-> hdev->private_data, but this should be overwritten before the next use.
->
-> Anyway, it makes sense to clean up after a failure, so the patch is
-> Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
->
-> Cheers,
-> Benjamin
->
-> >
-> > Signed-off-by: Peter Wu <peter@lekensteyn.nl>
-> > ---
-> > Hi Andrew,
-> >
-> > There are few users of hid_device_io_start/stop, this is the first one
-> > to get start/stop out of sync. Should the comment of
-> > hid_device_io_start() be updated to ensure that hid_device_io_stop()
-> > gets called before probe() returns? Or should the hid-core be changed to
-> > handle this out-of-sync issue:
+On 12/11/14, 8:56 AM, Jiri Pirko wrote:
+> Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
+>> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
+>>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
+>>>>> -----Original Message-----
+>>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
+>>>>> Sent: Wednesday, December 10, 2014 5:04 PM
+>>>>> To: Jiri Pirko
+>>>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
+>>>>> stephen@networkplumber.org; Fastabend, John R;
+>>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+>>>>> kernel@vger.kernel.org
+>>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+>>>>> configuration
+>>>>>
+>>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+>>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+>>>>>>> From: Marco Varlese <marco.varlese@intel.com>
+>>>>>>>
+>>>>>>> Switch hardware offers a list of attributes that are configurable on
+>>>>>>> a per port basis.
+>>>>>>> This patch provides a mechanism to configure switch ports by adding
+>>>>>>> an NDO for setting specific values to specific attributes.
+>>>>>>> There will be a separate patch that extends iproute2 to call the new
+>>>>>>> NDO.
+>>>>>> What are these attributes? Can you give some examples. I'm asking
+>>>>>> because there is a plan to pass generic attributes to switch ports
+>>>>>> replacing current specific ndo_switch_port_stp_update. In this case,
+>>>>>> bridge is setting that attribute.
+>>>>>>
+>>>>>> Is there need to set something directly from userspace or does it make
+>>>>>> rather sense to use involved bridge/ovs/bond ? I think that both will
+>>>>>> be needed.
+>>>>> +1
+>>>>>
+>>>>> I think for many attributes it would be best to have both. The in kernel callers
+>>>>> and netlink userspace can use the same driver ndo_ops.
+>>>>>
+>>>>> But then we don't _require_ any specific bridge/ovs/etc module. And we
+>>>>> may have some attributes that are not specific to any existing software
+>>>>> module. I'm guessing Marco has some examples of these.
+>>>>>
+>>>>> [...]
+>>>>>
+>>>>>
+>>>>> --
+>>>>> John Fastabend         Intel Corporation
+>>>> We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
+>>>>
+>>>> An example of attributes are:
+>>>> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
+>>>> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
+>>>> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
+>>>>
+>>>> Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
+>>>>
+>>>> One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
+>>>>
+>>>> I hope this clarifies some points.
+>>> It does. Makes sense. We need to expose this attr set/get for both
+>>> in-kernel and userspace use cases.
+>>>
+>>> Please adjust you patch for this. Also, as a second patch, it would be
+>>> great if you can convert ndo_switch_port_stp_update to this new ndo.
+>> Why are we exposing generic switch attribute get/set from userspace ?. We
+>> already have specific attributes for learning/flooding which can be extended
+>> further.
+> Yes, but that is for PF_BRIDGE and bridge specific attributes. There
+> might be another generic attrs, no?
+I cant think of any. And plus, the whole point of switchdev l2 offloads 
+was to map these to existing
+bridge attributes. And we already have a match for some of the 
+attributes that marco wants.
 
-I do not have a strong opinion on this, and will defer to others. The
-reason I needed to communicate during probe() was to have the driver
-probe the actual device for details. In this use case, I would be okay
-to disable IO at the end of probe() and have it become reenabled via
-the normal (default) methods.
+If there is a need for such attributes, i don't see why it is needed for 
+switch devices only.
+It is needed for any hw (nics etc). And, a precedence to this is to do 
+it via ethtool.
 
--andrew
+Having said that, am sure we will find a need for this in the future. 
+And having a netlink attribute always helps.
 
-> >
-> >               if (ret) {
-> >                       if (hdev->io_started))
-> >                               down(&hdev->driver_input_lock);
-> >                       hid_close_report(hdev);
-> >                       hdev->driver = NULL;
-> >               }
-> >
-> > Is my observation correct or not that HID reports can arrive during
-> > hid_close_report() when io_started == true?
-> >
-> > Kind regards,
-> > Peter
-> > ---
-> >  drivers/hid/hid-logitech-hidpp.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> > index 4292cc3..2f420c0 100644
-> > --- a/drivers/hid/hid-logitech-hidpp.c
-> > +++ b/drivers/hid/hid-logitech-hidpp.c
-> > @@ -1121,7 +1121,7 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
-> >       if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
-> >               ret = wtp_allocate(hdev, id);
-> >               if (ret)
-> > -                     return ret;
-> > +                     goto wtp_allocate_fail;
-> >       }
-> >
-> >       INIT_WORK(&hidpp->work, delayed_work_cb);
-> > @@ -1141,6 +1141,7 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
-> >       if (id->group != HID_GROUP_LOGITECH_DJ_DEVICE) {
-> >               if (!connected) {
-> >                       hid_err(hdev, "Device not connected");
-> > +                     hid_device_io_stop(hdev);
-> >                       goto hid_parse_fail;
-> >               }
-> >
-> > @@ -1186,6 +1187,7 @@ hid_hw_start_fail:
-> >  hid_parse_fail:
-> >       cancel_work_sync(&hidpp->work);
-> >       mutex_destroy(&hidpp->send_mutex);
-> > +wtp_allocate_fail:
-> >       hid_set_drvdata(hdev, NULL);
-> >       return ret;
-> >  }
-> > --
-> > 2.1.3
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Today, it seems like these can be mapped to existing attributes that are 
+settable via ndo_bridge_setlink/getlink.
+
+>
+>> And for in kernel api....i had a sample patch in my RFC series (Which i was
+>> going to resubmit, until it was decided that we will use existing api around
+>> ndo_bridge_setlink/ndo_bridge_getlink):
+>> http://www.spinics.net/lists/netdev/msg305473.html
+> Yes, this might become handy for other generic non-bridge attrs.
+>
+>> Thanks,
+>> Roopa
+>>
+>>
+>>
+
