@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966021AbaLKVdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:33:37 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:51285 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965499AbaLKVde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:33:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141211.153204.228153607927530694.davem@davemloft.net>
-References: <20141125203310.8240.27370.stgit@ahduyck-server>
-	<54892B87.3020909@gmail.com>
-	<20141211.153204.228153607927530694.davem@davemloft.net>
-Date: Thu, 11 Dec 2014 13:33:32 -0800
-X-Google-Sender-Auth: CzAcmi6ncm1Z4szJRpr5UT5zpz0
-Message-ID: <CA+55aFxE-zT9De8A-nwqtPiVn2ON19go76ui6buYskOU3L3a7g@mail.gmail.com>
-Subject: Re: [PATCH v7 0/4] arch: Add lightweight memory barriers for coherent
- memory access
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: Alexander Duyck <alexander.duyck@gmail.com>,
-        Alexander Duyck <alexander.h.duyck@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Michael Neuling <mikey@neuling.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        donald.c.skidmore@intel.com, matthew.vick@intel.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>, nic_swsd@realtek.com,
-        Will Deacon <will.deacon@arm.com>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Tony Luck <tony.luck@intel.com>, Oleg Nesterov <oleg@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S965812AbaLKVfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:35:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44334 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965427AbaLKV1F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:27:05 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Kan Liang <kan.liang@intel.com>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/18] perf callchain: Fixup parameter handling error message
+Date: Thu, 11 Dec 2014 18:25:57 -0300
+Message-Id: <1418333166-15429-10-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
+References: <1418333166-15429-1-git-send-email-acme@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 12:32 PM, David Miller <davem@davemloft.net> wrote:
->
-> I have no problem taking this via my tree, but I want to see agreement
-> from other interested parties.
+From: Kan Liang <kan.liang@intel.com>
 
-Since the early users are network drivers, and since it's otherwise
-cross-architecture and not clear under any other maintainership, that
-sounds good to me.
+Fix up parse_callchain_record_opt error message for 'fp', in the past using '-g
+fp' was a valid alternative to '--call-graph fp', which is not the case since:
 
-The arch parts were, I think, largely uncontroversial once naming and
-a couple of small arch details were fixed up, so I don't think there's
-any problem there.
+  commit 09b0fd45ff63413df94cbd832a765076b201edbb
+  Author: Jiri Olsa <jolsa@redhat.com>
+  Date:   Sat Oct 26 16:25:33 2013 +0200
 
-                      Linus
+  perf record: Split -g and --call-graph
+
+I.e. -g means "use the configured unwind data collection method" which has as
+default 'fp', while --call-graph requires passing the method to use.
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1417532814-26208-2-git-send-email-kan.liang@intel.com
+[ split this from a larger patch related to LBR based unwinding ]
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/callchain.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index cf524a35cc84..64b377e591e4 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -77,7 +77,7 @@ int parse_callchain_record_opt(const char *arg)
+ 				ret = 0;
+ 			} else
+ 				pr_err("callchain: No more arguments "
+-				       "needed for -g fp\n");
++				       "needed for --call-graph fp\n");
+ 			break;
+ 
+ #ifdef HAVE_DWARF_UNWIND_SUPPORT
+-- 
+1.9.3
+
