@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349AbaLKMYG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:24:06 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:46586 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751514AbaLKMYD convert rfc822-to-8bit (ORCPT
+	id S1756774AbaLKM0G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:26:06 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:34817 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750843AbaLKM0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:24:03 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, "kishon@ti.com" <kishon@ti.com>,
-        "k.debski@samsung.com" <k.debski@samsung.com>,
-        "kgene@kernel.org" <kgene@kernel.org>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>
-Subject: RE: [PATCH 0/4] phy: samsung-usb2: Add support for Vbus regulator
-Thread-Topic: [PATCH 0/4] phy: samsung-usb2: Add support for Vbus regulator
-Thread-Index: AQHQFTtby0z0s1gFjkODdkIEdARUfJyKTsTg
-Date: Thu, 11 Dec 2014 12:22:56 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0B0EB@AcuExch.aculab.com>
-References: <1418299367-2412-1-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1418299367-2412-1-git-send-email-gautam.vivek@samsung.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Dec 2014 07:26:04 -0500
+Date: Thu, 11 Dec 2014 13:25:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, v2] x86/microcode tree changes for v3.19
+Message-ID: <20141211122558.GA18538@gmail.com>
+References: <20141209132745.GA31656@gmail.com>
+ <20141210124254.GA25436@gmail.com>
+ <CA+55aFwiu2D=hKNvCvn-LL+TpYn9RS-N7+E8w7p+xLNdWSk8sA@mail.gmail.com>
+ <20141211062508.GB5059@gmail.com>
+ <20141211091238.GA31140@pd.tnic>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141211091238.GA31140@pd.tnic>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Gautam
-> This has been on my to-do list for sometime.
-> Until now the host controller (specifically ehci-exynos) is responsible
-> for enabling VBUS supply. This opens up one more issue which is, when
-> only ohci-exynos is enabled and ehci-exynosis disabled then VBUS was
-> never enabled (since ohci did not have the code to enabled the VBUS supply).
+
+* Borislav Petkov <bp@alien8.de> wrote:
+
+> On Thu, Dec 11, 2014 at 07:25:08AM +0100, Ingo Molnar wrote:
+> > > Hmm. There's a conflict with commit 02ecc41abcea ("x86, 
+> > > microcode: Limit the microcode reloading to 64-bit for now"), 
+> > 
+> > Sorry, should have mentioned that explicitly, but forgot about 
+> > it.
+> > 
+> > > but I'm going to assume that the issue is fixed now, and that 
+> > > commit fbae4ba8c4a3 ("x86, microcode: Reload microcode on 
+> > > resume") that causes the conflict also handles the 32-bit case 
+> > > correctly. So my merge is going to just remove the X86_64 test, 
+> > > effectively undoing that first commit, ratehr than keep it 
+> > > around.
 > 
-> Rather it should be wise to move the VBUS related stuff to phy driver and
-> let phy take care of enabling it.
-> 
-> This patch series adds that VBUS regulator to phy-samsung-usb2 driver,
-> adds necessary binding information as well as vbus-supply properties
-> to phy nodes on exynos5250 systems.
-...
+> Yes, this is the intended outcome.
 
-Does this go anyway to allowing devices to be powered from a micro-usb
-connector while acting as a USB host (USB OTG).
-ie when you want VBUS disabled even though it would normally
-need to be enabled.
+Ok, great!
 
-	David
+Thanks,
 
-
-
+	Ingo
