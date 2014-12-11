@@ -1,127 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073AbaLKME3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:04:29 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:59801 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980AbaLKME1 (ORCPT
+	id S1752905AbaLKMKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:10:32 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:22790 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702AbaLKMKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:04:27 -0500
-Message-ID: <54898841.3060108@cantab.net>
-Date: Thu, 11 Dec 2014 12:04:17 +0000
-From: David Vrabel <dvrabel@cantab.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: xen-devel <xen-devel@lists.xenproject.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <Boris.Ostrovsky@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] xen: features and fixes for 3.19-rc0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Dec 2014 07:10:30 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-b6-548989b30cd2
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, devicetree@vger.kernel.org
+Cc: robh+dt@kernel.org, kishon@ti.com, k.debski@samsung.com, kgene@kernel.org,
+        jg1.han@samsung.com, Vivek Gautam <gautam.vivek@samsung.com>
+Subject: [PATCH 0/4] phy: samsung-usb2: Add support for Vbus regulator
+Date: Thu, 11 Dec 2014 17:32:43 +0530
+Message-id: <1418299367-2412-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 2.2.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsWyRsSkSndzZ2eIwdEZOhbzj5xjtWi7cpDd
+	4vLCS6wWP15fYLPof/ya2eLC0x42i8u75rBZzDi/j8li0bJWZovWvUfYHbg8Nq3qZPPo27KK
+	0eP4je1MHp83yQWwRHHZpKTmZJalFunbJXBl/HhqWDCNp6L/+D7WBsb9nF2MHBwSAiYSCzYZ
+	dzFyApliEhfurWfrYuTiEBJYyiixoXkFM0TCROLA6QPMEIlFjBJtD7pZIZwJTBLt/ReYQKrY
+	BHQlmt7uYgSxRQRqJKbcusIOUsQs0Mso8e/DOVaQhLCAm8Surd/AGlgEVCX6Gq+BxXkF3CV+
+	rDnODrFOTmLLrUdgzRIC3ewSLXsnsUE0CEh8m3yIBeJuWYlNB6DOk5Q4uOIGywRGwQWMDKsY
+	RVMLkguKk9KLTPWKE3OLS/PS9ZLzczcxAkP59L9nE3cw3j9gfYhRgINRiYc3I74zRIg1say4
+	MvcQoynQhonMUqLJ+cCIySuJNzQ2M7IwNTE1NjK3NFMS59WR/hksJJCeWJKanZpakFoUX1Sa
+	k1p8iJGJg1OqgVHv5POJnw4vmKjqr/p4bcQs4wlBi77xLZM8KlH9PaKjh41LKWenSM8l2YLn
+	Kge0u7ZXXpaMqOpbJju1fc2evqy71ZpHnY22nU/J8zwY6Z9drfk/48VtOf515Wbhj5f7Z+1M
+	XseyN7k3VeZcSvqFW9+nrZrG7HnTLHXezIDrIr4L0yIjTKcvy1ViKc5INNRiLipOBADIQHx7
+	YAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsVy+t9jAd3NnZ0hBnOfqVjMP3KO1aLtykF2
+	i8sLL7Fa/Hh9gc2i//FrZosLT3vYLC7vmsNmMeP8PiaLRctamS1a9x5hd+Dy2LSqk82jb8sq
+	Ro/jN7YzeXzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtq
+	q+TiE6DrlpkDdJGSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePHU8OC
+	aTwV/cf3sTYw7ufsYuTkkBAwkThw+gAzhC0mceHeerYuRi4OIYFFjBJtD7pZIZwJTBLt/ReY
+	QKrYBHQlmt7uYgSxRQRqJKbcusIOUsQs0Mso8e/DOVaQhLCAm8Surd/AGlgEVCX6Gq+BxXkF
+	3CV+rDnODrFOTmLLrUfsExi5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjpVn0jsY
+	VzVYHGIU4GBU4uHNiO8MEWJNLCuuzD3EKMHBrCTCaxUBFOJNSaysSi3Kjy8qzUktPsRoCrR9
+	IrOUaHI+MI7zSuINjU3MTY1NLU0sTMwslcR5lezbQoQE0hNLUrNTUwtSi2D6mDg4pRoY80wj
+	8jb2TOu/ctOA06pPNmdK9h7HZ/vXxV7w7Anndjm9MU/g9l4Nh4/x6trFT9nX1T7X8OWUuym8
+	TGUy38q36jtW9+kcqPW3EYrW5LeyYY1y2jq7mcVgS+blb5KKHw5wXTxzznvLt2TJFGGz3WrT
+	c/2+ND3+9GbzTh+z9T1LEpf32U+TTn+rxFKckWioxVxUnAgArQ2/qasCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+This has been on my to-do list for sometime.
+Until now the host controller (specifically ehci-exynos) is responsible
+for enabling VBUS supply. This opens up one more issue which is, when
+only ohci-exynos is enabled and ehci-exynosis disabled then VBUS was
+never enabled (since ohci did not have the code to enabled the VBUS supply).
 
-Linus,
+Rather it should be wise to move the VBUS related stuff to phy driver and
+let phy take care of enabling it.
 
-Please git pull the following tag:
+This patch series adds that VBUS regulator to phy-samsung-usb2 driver,
+adds necessary binding information as well as vbus-supply properties
+to phy nodes on exynos5250 systems.
+Also we have removed the samsung,vbus-gpio property from usb2 (ehci) node
+on exynos5250 systems.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.19-rc0-tag
+**[The older code in ehci-exynos for vbus setting is left intact to keep
+supporting older dt bindings].
 
-xen: features and fixes for 3.19-rc0
+Vivek Gautam (4):
+  Doc/devicetree: bindings: Update bindings information for USB3.0 DRD
+    PHY
+  phy: samsung-usb2: Add facility for VBUS supply
+  arm: dts: exynos5250: Use regulator for USB 2.0 VBUS supply
+  arm: dts: exynos5250: Remove vbus gpio property from usb 2.0 host
 
-- - Fully support non-coherent devices on ARM by introducing the
-  mechanisms to request the hypervisor to perform the required cache
-  maintainance operations.
+ .../devicetree/bindings/phy/samsung-phy.txt        |   12 ++++++++
+ arch/arm/boot/dts/exynos5250-smdk5250.dts          |   22 ++++++++++++--
+ arch/arm/boot/dts/exynos5250-snow.dts              |   22 ++++++++++++--
+ drivers/phy/phy-samsung-usb2.c                     |   30 ++++++++++++++++++++
+ drivers/phy/phy-samsung-usb2.h                     |    1 +
+ 5 files changed, 83 insertions(+), 4 deletions(-)
 
-- - A number of pciback bug fixes and cleanups.  Notably a deadlock fix
-  if a PCI device was manually uunbound and a fix for incorrectly
-  restoring state after a function reset.
+-- 
+1.7.10.4
 
-- - In x86 PVHVM guests, use the APIC for interrupts if this has been
-  virtualized by the hardware.  This reduces the number of interrupt-
-  related VM exits on such hardware.
-
-Thanks.
-
-David
-
- arch/arm/include/asm/device.h              |    1 +
- arch/arm/include/asm/dma-mapping.h         |    7 +
- arch/arm/include/asm/xen/page-coherent.h   |   66 +++++++--
- arch/arm/include/asm/xen/page.h            |    4 +
- arch/arm/xen/Makefile                      |    2 +-
- arch/arm/xen/enlighten.c                   |    5 -
- arch/arm/xen/mm.c                          |  121 +++++++++++++++++
- arch/arm/xen/mm32.c                        |  202 ----------------------------
- arch/arm64/include/asm/device.h            |    1 +
- arch/arm64/include/asm/dma-mapping.h       |    7 +
- arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
- arch/x86/include/asm/xen/cpuid.h           |   91 +++++++++++++
- arch/x86/include/asm/xen/page-coherent.h   |    4 +-
- arch/x86/include/asm/xen/page.h            |    7 +
- arch/x86/pci/xen.c                         |   31 ++++-
- drivers/pci/pci.c                          |    5 +-
- drivers/xen/swiotlb-xen.c                  |   19 +--
- drivers/xen/xen-pciback/passthrough.c      |   14 +-
- drivers/xen/xen-pciback/pci_stub.c         |  112 ++++++++++++---
- drivers/xen/xen-pciback/pciback.h          |    7 +-
- drivers/xen/xen-pciback/vpci.c             |   14 +-
- drivers/xen/xen-pciback/xenbus.c           |    4 +-
- include/linux/device.h                     |    5 +
- include/linux/pci.h                        |    2 +
- include/xen/interface/features.h           |    3 -
- include/xen/interface/grant_table.h        |   19 +++
- 26 files changed, 488 insertions(+), 309 deletions(-)
-
-Boris Ostrovsky (2):
-      xen/pci: Defer initialization of MSI ops on HVM guests
-      xen/pci: Use APIC directly when APIC virtualization hardware is available
-
-David Vrabel (1):
-      Revert "swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single"
-
-Jan Beulich (1):
-      xen-pciback: drop SR-IOV VFs when PF driver unloads
-
-Konrad Rzeszutek Wilk (7):
-      xen/pciback: Don't deadlock when unbinding.
-      driver core: Provide an wrapper around the mutex to do lockdep warnings
-      xen/pciback: Include the domain id if removing the device whilst still in use
-      xen/pciback: Print out the domain owning the device.
-      xen/pciback: Remove tons of dereferences
-      PCI: Expose pci_load_saved_state for public consumption.
-      xen/pciback: Restore configuration space when detaching from a guest.
-
-Stefano Stabellini (15):
-      xen/arm: remove handling of XENFEAT_grant_map_identity
-      xen/arm: remove outer_*_range call
-      xen/arm: if(pfn_valid(pfn)) call native dma_ops
-      arm64: introduce is_device_dma_coherent
-      arm: introduce is_device_dma_coherent
-      xen/arm: use is_device_dma_coherent
-      xen: add a dma_addr_t dev_addr argument to xen_dma_map_page
-      xen/arm: use hypercall to flush caches in map_page
-      xen/arm/arm64: merge xen/mm32.c into xen/mm.c
-      xen/arm/arm64: introduce xen_arch_need_swiotlb
-      xen/arm: introduce GNTTABOP_cache_flush
-      swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
-      swiotlb-xen: remove BUG_ON in xen_bus_to_phys
-      swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
-      swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJUiYhAAAoJEFxbo/MsZsTRJTkIAIi9zrj7029PkxggyEAZHvVO
-0XGwMGwXei6n8ofQFkFYEc5/3Df9JW7v05uqy2Y4bu+ifMvDa1C6R4tk5ol4bM4E
-sgs96yMiOSRwrVD9SgE73bW84i/Xa87LCpBoCi7417j1h+6e9oQ2l4+XiWTySSne
-N8/m/1QuD+6argsf2LN/a1XG1V9OInm8k9oGMM1prDwWN7JsZeaLyY3LSFXb6s2S
-o6KQmUiAa66WALCFkeatocq5+PZ5PXMndweo064Zyjfuj2pYdxeGkqmWQrA1IeY4
-wp2YP+XFrU36MPXD88VR9do9ovlxFCJG6tO0IWYcW8tiY+y4Rw2b+4C/oe4lm9U=
-=zcCQ
------END PGP SIGNATURE-----
