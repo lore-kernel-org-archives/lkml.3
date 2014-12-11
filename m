@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525AbaLKBlb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:41:31 -0500
-Received: from smtp.mei.co.jp ([133.183.100.20]:58216 "EHLO smtp.mei.co.jp"
+	id S1758484AbaLKBnJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:43:09 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:59001 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932937AbaLKBl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:41:29 -0500
-Date: Thu, 11 Dec 2014 10:41:19 +0900
+	id S1758270AbaLKBnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 20:43:06 -0500
+Date: Thu, 11 Dec 2014 10:41:33 +0900
 From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH] kbuild: fix scripts/headers.sh to see the correct Kbuild path
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1418075913.2058.71.camel@x220>
-References: <1417589535-15867-1-git-send-email-yamada.m@jp.panasonic.com> <1418075913.2058.71.camel@x220>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Subject: Re: [PATCH] kbuild: remove old information in headers_install.txt document
+Cc: linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Jonathan Corbet <corbet@lwn.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
+In-Reply-To: <1417789428.11111.31.camel@opteya.com>
+References: <1417494533-24461-1-git-send-email-yamada.m@jp.panasonic.com> <1417789428.11111.31.camel@opteya.com>
 X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
-Message-Id: <20141211104119.A482.AA925319@jp.panasonic.com>
+Message-Id: <20141211104133.A483.AA925319@jp.panasonic.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
@@ -23,63 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Hi Yann,
 
 
-On Mon, 08 Dec 2014 22:58:33 +0100
-Paul Bolle <pebolle@tiscali.nl> wrote:
 
-> Masahiro,
+
+
+
+On Fri, 05 Dec 2014 15:23:48 +0100
+Yann Droneaud <ydroneaud@opteya.com> wrote:
+
+> Hi,
 > 
-> On Wed, 2014-12-03 at 15:52 +0900, Masahiro Yamada wrote:
-> > The exported headers were moved to "uapi" directories.
-> > We should check the existence of arch/*/include/uapi/asm/Kbuild.
+> Le mardi 02 decembre 2014 a 13:28 +0900, Masahiro Yamada a ecrit :
+> > The arch header directories "include/asm-*" were moved long before.
 > > 
 > > Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
 > > ---
+> > 
+> >  Documentation/kbuild/headers_install.txt | 5 +----
+> >  1 file changed, 1 insertion(+), 4 deletions(-)
+> > 
+> > diff --git a/Documentation/kbuild/headers_install.txt b/Documentation/kbuild/headers_install.txt
+> > index 951eb9f..0d8fe5e 100644
+> > --- a/Documentation/kbuild/headers_install.txt
+> > +++ b/Documentation/kbuild/headers_install.txt
+> > @@ -28,10 +28,7 @@ optional arguments:
+> >  
+> >  ARCH indicates which architecture to produce headers for, and defaults to the
+> >  current architecture.  The linux/asm directory of the exported kernel headers
+> > -is platform-specific, to see a complete list of supported architectures use
+> > -the command:
+> > -
+> > -  ls -d include/asm-* | sed 's/.*-//'
+> > +is platform-specific.
+> >  
+> >  INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
+> >  "./usr/include".
 > 
-> Does this patch fix any problems? If so, which?
+> Back in september, I've already sent a patch[1] to address this,
+> following a discussion with Sam Ravnborg[2]. See the mail thread[3].
+> 
+> Regards.
+> 
+> [1] http://lkml.kernel.org/r/b5181cf7604baa454c11f7aa92d07dd05349ce46.1410712841.git.ydroneaud@opteya.com
+> [2] http://lkml.kernel.org/r/20140713212608.GB16496@ravnborg.org
+> [3] http://lkml.kernel.org/g/cover.1410712841.git.ydroneaud@opteya.com
+> 
 
+Sorry, I missed your patch.
 
-I am fixing a wrong code.
-
-Actually, the "um" architecture does not support headers install.
-
- arch/um/include/asm/Kbuild exists
- arch/um/include/uapi/asm/Kbuild does not exist
-
-Checking arch/*/include/asm/Kbuild does not work.
-
-
-Moreover, the top Makefile is checking  arch/*/include/uapi/asm/Kbuild
-
-
-headers_install: __headers
-        $(if $(wildcard $(srctree)/arch/$(hdr-arch)/include/uapi/asm/Kbuild),, \
-          $(error Headers not exportable for the $(SRCARCH) architecture))
-
-
-
-
-
-> And why did no one
-> notice these problems before? Perhaps the commit explanation could
-> mention that.
-
-
-You will notice the code below:
-
-for arch in ${archs}; do
-        case ${arch} in
-        um)        # no userspace export
-                ;;
-
-
-"um" has already been omitted and it never reaches do_command().
-That is why nobody has noticed this issue.
-
-Uh, OK, we do not need double-checking.
-
+You are the first, so I agree yours should go in.
 
 
 
