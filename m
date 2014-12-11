@@ -1,124 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933768AbaLKLA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 06:00:58 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:58774 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196AbaLKLA4 (ORCPT
+	id S933793AbaLKLBY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 06:01:24 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:46164 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933770AbaLKLBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 06:00:56 -0500
+	Thu, 11 Dec 2014 06:01:22 -0500
+Date: Thu, 11 Dec 2014 12:01:15 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: John Fastabend <john.fastabend@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141211110115.GA1979@nanopsycho.lan>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion>
+ <54887CF7.70708@gmail.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <016101d0152f$52197270$f64c5750$%debski@samsung.com>
-References: <1415787893-21857-1-git-send-email-gautam.vivek@samsung.com>
-	<CAFp+6iGrv8rhGf7QkOi=2Ad+ZFPMpVn84hjNa9TiNWHFcWKLeg@mail.gmail.com>
-	<016101d0152f$52197270$f64c5750$%debski@samsung.com>
-Date: Thu, 11 Dec 2014 16:30:54 +0530
-Message-ID: <CAFp+6iFa+hqQGD7BuAMOkb7i-kbJaV-OBuBf5RWNNadiuZORYg@mail.gmail.com>
-Subject: Re: [PATCH] phy: phy-samsung-usb2: Don't use same name for driver
- name and global structure
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Kamil Debski <k.debski@samsung.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 4:13 PM, Kamil Debski <k.debski@samsung.com> wrote:
-> Hi,
->
->> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com]
->> Sent: Thursday, December 11, 2014 7:30 AM
->> To: Kishon Vijay Abraham I; Kamil Debski
->> Cc: linux-kernel@vger.kernel.org; Linux USB Mailing List; Vivek Gautam
->> Subject: Re: [PATCH] phy: phy-samsung-usb2: Don't use same name for
->> driver name and global structure
->>
->> On Wed, Nov 12, 2014 at 3:54 PM, Vivek Gautam <gautam.vivek@samsung.com>
->> wrote:
->> > Using the same driver name for platform driver and a globally defined,
->> > structure used throughout the file, looks a bit unpleasing.
->> > So changing the driver name from "samsung_usb2_phy_driver" to
->> > "samsung_usb2_phy"
+Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
+>> -----Original Message-----
+>> From: John Fastabend [mailto:john.fastabend@gmail.com]
+>> Sent: Wednesday, December 10, 2014 5:04 PM
+>> To: Jiri Pirko
+>> Cc: Varlese, Marco; netdev@vger.kernel.org;
+>> stephen@networkplumber.org; Fastabend, John R;
+>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+>> configuration
+>> 
+>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+>> > Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+>> >> From: Marco Varlese <marco.varlese@intel.com>
+>> >>
+>> >> Switch hardware offers a list of attributes that are configurable on
+>> >> a per port basis.
+>> >> This patch provides a mechanism to configure switch ports by adding
+>> >> an NDO for setting specific values to specific attributes.
+>> >> There will be a separate patch that extends iproute2 to call the new
+>> >> NDO.
 >> >
->> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> > Cc: Kamil Debski <k.debski@samsung.com>
->> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
->> > ---
->>
->> Although just a trivial change, does it look valid ?
->
-> I can agree that the naming of this variable is a bit unfortunate.
-> Changing name of samsung_usb2_phy_driver to samsung_usb2_phy is, as
-> you said, a minor change and does not change how the driver works.
-true.
-
->
-> Acked-by: Kamil Debski <k.debski@samsung.com>
-
-Thanks
-
->
-> Best wishes,
-> --
-> Kamil Debski
-> Samsung R&D Institute Poland
->
->>
->> >  drivers/phy/phy-samsung-usb2.c |    4 ++--
->> >  1 file changed, 2 insertions(+), 2 deletions(-)
 >> >
->> > diff --git a/drivers/phy/phy-samsung-usb2.c b/drivers/phy/phy-
->> samsung-usb2.c
->> > index 908949d..2934fb7 100644
->> > --- a/drivers/phy/phy-samsung-usb2.c
->> > +++ b/drivers/phy/phy-samsung-usb2.c
->> > @@ -226,7 +226,7 @@ static int samsung_usb2_phy_probe(struct
->> platform_device *pdev)
->> >         return 0;
->> >  }
+>> > What are these attributes? Can you give some examples. I'm asking
+>> > because there is a plan to pass generic attributes to switch ports
+>> > replacing current specific ndo_switch_port_stp_update. In this case,
+>> > bridge is setting that attribute.
 >> >
->> > -static struct platform_driver samsung_usb2_phy_driver = {
->> > +static struct platform_driver samsung_usb2_phy = {
->> >         .probe  = samsung_usb2_phy_probe,
->> >         .driver = {
->> >                 .of_match_table = samsung_usb2_phy_of_match,
->> > @@ -234,7 +234,7 @@ static struct platform_driver
->> samsung_usb2_phy_driver = {
->> >         }
->> >  };
->> >
->> > -module_platform_driver(samsung_usb2_phy_driver);
->> > +module_platform_driver(samsung_usb2_phy);
->> >  MODULE_DESCRIPTION("Samsung S5P/EXYNOS SoC USB PHY driver");
->> >  MODULE_AUTHOR("Kamil Debski <k.debski@samsung.com>");
->> >  MODULE_LICENSE("GPL v2");
->> > --
->> > 1.7.10.4
->> >
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-
->> kernel" in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>
+>> > Is there need to set something directly from userspace or does it make
+>> > rather sense to use involved bridge/ovs/bond ? I think that both will
+>> > be needed.
+>> 
+>> +1
+>> 
+>> I think for many attributes it would be best to have both. The in kernel callers
+>> and netlink userspace can use the same driver ndo_ops.
+>> 
+>> But then we don't _require_ any specific bridge/ovs/etc module. And we
+>> may have some attributes that are not specific to any existing software
+>> module. I'm guessing Marco has some examples of these.
+>> 
+>> [...]
+>> 
+>> 
 >> --
->> Best Regards
->> Vivek Gautam
->> Samsung R&D Institute, Bangalore
->> India
+>> John Fastabend         Intel Corporation
 >
+>We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
+>
+>An example of attributes are:
+>* enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
+>* internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
+>* flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
+>
+>Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
+>
+>One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
+>
+>I hope this clarifies some points.
+
+It does. Makes sense. We need to expose this attr set/get for both
+in-kernel and userspace use cases.
+
+Please adjust you patch for this. Also, as a second patch, it would be
+great if you can convert ndo_switch_port_stp_update to this new ndo.
+
+Thanks.
 
 
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+>
+>-----------------------------------------------------------
+>Marco Varlese		-	Intel Corporation
+>-----------------------------------------------------------
+>
+>
