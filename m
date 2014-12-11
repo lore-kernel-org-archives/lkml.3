@@ -1,135 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934455AbaLKRzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 12:55:54 -0500
-Received: from mga02.intel.com ([134.134.136.20]:57105 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932991AbaLKRzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 12:55:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,558,1413270000"; 
-   d="scan'208";a="622318310"
-Message-ID: <5489DA9B.4010900@intel.com>
-Date: Thu, 11 Dec 2014 09:55:39 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S934476AbaLKR4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 12:56:35 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:38724 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932991AbaLKR4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 12:56:34 -0500
 MIME-Version: 1.0
-To: Roopa Prabhu <roopa@cumulusnetworks.com>, Jiri Pirko <jiri@resnulli.us>
-CC: "Varlese, Marco" <marco.varlese@intel.com>,
-        John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+In-Reply-To: <1418130803-27443-1-git-send-email-weiyj_lk@163.com>
+References: <1418130803-27443-1-git-send-email-weiyj_lk@163.com>
+Date: Thu, 11 Dec 2014 10:56:33 -0700
+Message-ID: <CANLsYkyq-4pY9NEsL2dNgNv+FdEPxJ49c8GA_XPUuqpfFhZoag@mail.gmail.com>
+Subject: Re: [PATCH -next] coresight-tpiu: use module_amba_driver to simplify
+ the code
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: weiyj_lk@163.com
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan> <5489C85A.5020400@cumulusnetworks.com> <20141211165627.GF1912@nanopsycho.orion> <5489D739.9010303@cumulusnetworks.com>
-In-Reply-To: <5489D739.9010303@cumulusnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 09:41 AM, Roopa Prabhu wrote:
-> On 12/11/14, 8:56 AM, Jiri Pirko wrote:
->> Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
->>> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
->>>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
->>>>>> -----Original Message-----
->>>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
->>>>>> Sent: Wednesday, December 10, 2014 5:04 PM
->>>>>> To: Jiri Pirko
->>>>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
->>>>>> stephen@networkplumber.org; Fastabend, John R;
->>>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
->>>>>> kernel@vger.kernel.org
->>>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->>>>>> configuration
->>>>>>
->>>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
->>>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
->>>>>>>> From: Marco Varlese <marco.varlese@intel.com>
->>>>>>>>
->>>>>>>> Switch hardware offers a list of attributes that are configurable on
->>>>>>>> a per port basis.
->>>>>>>> This patch provides a mechanism to configure switch ports by adding
->>>>>>>> an NDO for setting specific values to specific attributes.
->>>>>>>> There will be a separate patch that extends iproute2 to call the new
->>>>>>>> NDO.
->>>>>>> What are these attributes? Can you give some examples. I'm asking
->>>>>>> because there is a plan to pass generic attributes to switch ports
->>>>>>> replacing current specific ndo_switch_port_stp_update. In this case,
->>>>>>> bridge is setting that attribute.
->>>>>>>
->>>>>>> Is there need to set something directly from userspace or does it make
->>>>>>> rather sense to use involved bridge/ovs/bond ? I think that both will
->>>>>>> be needed.
->>>>>> +1
->>>>>>
->>>>>> I think for many attributes it would be best to have both. The in kernel callers
->>>>>> and netlink userspace can use the same driver ndo_ops.
->>>>>>
->>>>>> But then we don't _require_ any specific bridge/ovs/etc module. And we
->>>>>> may have some attributes that are not specific to any existing software
->>>>>> module. I'm guessing Marco has some examples of these.
->>>>>>
->>>>>> [...]
->>>>>>
->>>>>>
->>>>>> -- 
->>>>>> John Fastabend         Intel Corporation
->>>>> We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
->>>>>
->>>>> An example of attributes are:
->>>>> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
->>>>> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
->>>>> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
->>>>>
->>>>> Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
->>>>>
->>>>> One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
->>>>>
->>>>> I hope this clarifies some points.
->>>> It does. Makes sense. We need to expose this attr set/get for both
->>>> in-kernel and userspace use cases.
->>>>
->>>> Please adjust you patch for this. Also, as a second patch, it would be
->>>> great if you can convert ndo_switch_port_stp_update to this new ndo.
->>> Why are we exposing generic switch attribute get/set from userspace ?. We
->>> already have specific attributes for learning/flooding which can be extended
->>> further.
->> Yes, but that is for PF_BRIDGE and bridge specific attributes. There
->> might be another generic attrs, no?
-> I cant think of any. And plus, the whole point of switchdev l2 offloads was to map these to existing
-> bridge attributes. And we already have a match for some of the attributes that marco wants.
-> 
-> If there is a need for such attributes, i don't see why it is needed for switch devices only.
-> It is needed for any hw (nics etc). And, a precedence to this is to do it via ethtool.
+On 9 December 2014 at 06:13,  <weiyj_lk@163.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> module_amba_driver() makes the code simpler by eliminating
+> boilerplate code.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  drivers/coresight/coresight-tpiu.c | 12 +-----------
+>  1 file changed, 1 insertion(+), 11 deletions(-)
+>
+> diff --git a/drivers/coresight/coresight-tpiu.c b/drivers/coresight/coresight-tpiu.c
+> index ae10108..3b33af2 100644
+> --- a/drivers/coresight/coresight-tpiu.c
+> +++ b/drivers/coresight/coresight-tpiu.c
+> @@ -201,17 +201,7 @@ static struct amba_driver tpiu_driver = {
+>         .id_table       = tpiu_ids,
+>  };
+>
+> -static int __init tpiu_init(void)
+> -{
+> -       return amba_driver_register(&tpiu_driver);
+> -}
+> -module_init(tpiu_init);
+> -
+> -static void __exit tpiu_exit(void)
+> -{
+> -       amba_driver_unregister(&tpiu_driver);
+> -}
+> -module_exit(tpiu_exit);
+> +module_amba_driver(tpiu_driver);
 
-I would prefer to _not_ add more attributes to ethtool. 'ethtool' is in general
-harder to work with then netlink for all but the most static attributes.
+This looks good - please merge your 4 patches in the same one.
 
-> 
-> Having said that, am sure we will find a need for this in the future. And having a netlink attribute always helps.
-> 
-> Today, it seems like these can be mapped to existing attributes that are settable via ndo_bridge_setlink/getlink.
-
-Absolutely I view this as an RFC patch noting we may/will need some extensions
-in the future. .We can evaluate the attributes on a case by case basis as they
-come in. And if they all fit in setlink/getlink that is great. 
-
-> 
->>
->>> And for in kernel api....i had a sample patch in my RFC series (Which i was
->>> going to resubmit, until it was decided that we will use existing api around
->>> ndo_bridge_setlink/ndo_bridge_getlink):
->>> http://www.spinics.net/lists/netdev/msg305473.html
->> Yes, this might become handy for other generic non-bridge attrs.
->>
->>> Thanks,
->>> Roopa
->>>
->>>
->>>
-> 
-
+>
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_DESCRIPTION("CoreSight Trace Port Interface Unit driver");
+>
