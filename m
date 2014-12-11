@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965623AbaLKXqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:46:52 -0500
-Received: from doortje.mesa.nl ([83.161.67.157]:38004 "EHLO mesa.nl"
+	id S965767AbaLKXt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:49:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58876 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933361AbaLKXqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:46:50 -0500
-X-Greylist: delayed 2496 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Dec 2014 18:46:50 EST
-Date: Fri, 12 Dec 2014 00:04:53 +0100
-From: "Marcel J.E. Mol" <marcel@mesa.nl>
-To: Djalal Harouni <tixxdz@opendz.org>
-Cc: akpm@linux-foundation.org, adobriyan@gmail.com, ebiederm@xmission.com,
-        oleg@redhat.com, luto@amacapital.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Make /proc/<pid>/io world readable
-Message-ID: <20141211230453.GB30907@joshua.mesa.nl>
-References: <20141211162228.GA10717@rim.emol.mesa.nl> <20141211192911.GA3080@dztty>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S965300AbaLKXty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 18:49:54 -0500
+Date: Fri, 12 Dec 2014 01:49:36 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, cornelia.huck@de.ibm.com,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH RFC 3/5] pci: add pci_iomap_range
+Message-ID: <20141211234936.GB9439@redhat.com>
+References: <1418326570-9541-1-git-send-email-mst@redhat.com>
+ <1418326570-9541-4-git-send-email-mst@redhat.com>
+ <11102634.nzYXXfUH5X@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141211192911.GA3080@dztty>
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <11102634.nzYXXfUH5X@wuerfel>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 08:29:11PM +0100, Djalal Harouni wrote:
-> Hi,
-> 
-> On Thu, Dec 11, 2014 at 05:22:28PM +0100, Marcel Mol wrote:
-> > /proc/<pid>/io is only readable by the pid owner, while files
-> > like stat, statm and status are world readable.
-> > I see no reason why io statistics should be hidden.
-> > This patch makes io also world readable so process io counts
-> > can be analysed without root permissions.
-> As Andy noted this should be the other way around! so unless you have
-> a real usecase, this will revert previous patch by Vasiliy that closed
-> some info leaks...
-> https://lkml.org/lkml/2011/7/27/459
-> 
-> Thanks!
-
-Hi Djalal, thanks for pointing this out. I did look for info like this,
-but did not look that far back. I can see the issues Vasiliy points out.
-
-I do not have a real important usecase, but it is just convenience.
-On my home (personal) workstation I trust noone is looking for my
-password length in ssh or ftp, but I sometimes do like to see what
-process is keeping my disk busy. And I want to limit switching to
-root...
-
-So I guess I'm more interested in the read_byte, write_bytes and
-cancelled_write_bytes fields (Per physical disk or filesystem
-preferably.)
-Would that give away any sensitive information? 
-If not maybe a separate /proc/PID/dio can be created to show only
-these fields.
-
-Thanks.
--Marcel
-
-> 
-> > Signed-off-by: Marcel Mol <marcel@mesa.nl>
-> > ---
-> >  fs/proc/base.c | 4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > index 772efa4..7bd8dbe 100644
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -2563,7 +2563,7 @@ static const struct pid_entry tgid_base_stuff[] = {
-> >  	REG("coredump_filter", S_IRUGO|S_IWUSR, proc_coredump_filter_operations),
-> >  #endif
-> >  #ifdef CONFIG_TASK_IO_ACCOUNTING
-> > -	ONE("io",	S_IRUSR, proc_tgid_io_accounting),
-> > +	ONE("io",	S_IRUGO, proc_tgid_io_accounting),
-> >  #endif
-> >  #ifdef CONFIG_HARDWALL
-> >  	ONE("hardwall",   S_IRUGO, proc_pid_hardwall),
-> > @@ -2904,7 +2904,7 @@ static const struct pid_entry tid_base_stuff[] = {
-> >  	REG("make-it-fail", S_IRUGO|S_IWUSR, proc_fault_inject_operations),
-> >  #endif
-> >  #ifdef CONFIG_TASK_IO_ACCOUNTING
-> > -	ONE("io",	S_IRUSR, proc_tid_io_accounting),
-> > +	ONE("io",	S_IRUGO, proc_tid_io_accounting),
-> >  #endif
-> >  #ifdef CONFIG_HARDWALL
-> >  	ONE("hardwall",   S_IRUGO, proc_pid_hardwall),
-> > -- 
-> > 1.9.3
-> > 
+On Thu, Dec 11, 2014 at 11:27:54PM +0100, Arnd Bergmann wrote:
+> On Thursday 11 December 2014 21:37:34 Michael S. Tsirkin wrote:
+> >         if (flags & IORESOURCE_MEM) {
+> > -               if (flags & IORESOURCE_CACHEABLE)
+> > +               if (!force_nocache && (flags & IORESOURCE_CACHEABLE))
+> >                         return ioremap(start, len);
+> >                 return ioremap_nocache(start, len);
+> >         }
 > > 
 > 
-> -- 
-> Djalal Harouni
-> http://opendz.org
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ioremap is the same as ioremap_nocache, so this doesn't really make any
+> sense. IORESOURCE_CACHEABLE is practically only set for ROM bars, which
+> we rarely map.
+> 
+> 	Arnd
+
+Hmm I think you are right.
+It's an old patch - I think at one point in time we did set it when we
+now set IORESOURCE_PREFETCH.
+I'll drop this parameter.
 
 -- 
-     ======--------         Marcel J.E. Mol                MESA Consulting B.V.
-    =======---------        ph. +31-(0)6-54724868          P.O. Box 112
-    =======---------        marcel@mesa.nl                 2630 AC  Nootdorp
-__==== www.mesa.nl ---____U_n_i_x______I_n_t_e_r_n_e_t____ The Netherlands ____
- They couldn't think of a number,           Linux user 1148  --  counter.li.org
-    so they gave me a name!  -- Rupert Hine  --  www.ruperthine.com
+MST
