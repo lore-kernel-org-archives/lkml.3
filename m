@@ -1,183 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942AbaLKHoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 02:44:14 -0500
-Received: from atl4mhob04.myregisteredsite.com ([209.17.115.42]:55434 "EHLO
-	atl4mhob04.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754188AbaLKHoN (ORCPT
+	id S933959AbaLKHos (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 02:44:48 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:42788 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188AbaLKHoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 02:44:13 -0500
-X-TCPREMOTEIP: 88.159.208.100
-X-Authenticated-UID: mike@milosoftware.com
-From: Mike Looijmans <mike.looijmans@topic.nl>
-To: lars@metafoo.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Mike Looijmans <mike.looijmans@topic.nl>
-Subject: [PATCH v3] sound/soc/adi/axi-spdif.c: Support programmable master clock
-Date: Thu, 11 Dec 2014 08:44:07 +0100
-Message-Id: <1418283847-25673-1-git-send-email-mike.looijmans@topic.nl>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <54893D3D.8050100@topic.nl>
-References: <54893D3D.8050100@topic.nl>
+	Thu, 11 Dec 2014 02:44:46 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: kishon@ti.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <93f9a720a78e0a9d35a1db86b0a77434>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <54894B52.3060105@rock-chips.com>
+Date: Thu, 11 Dec 2014 15:44:18 +0800
+From: Yunzhi Li <lyz@rock-chips.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>, heiko@sntech.de,
+        jwerner@chromium.org, dianders@chromium.org
+CC: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v5 1/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+References: <1418208371-18851-1-git-send-email-lyz@rock-chips.com> <1418208371-18851-2-git-send-email-lyz@rock-chips.com> <5489338C.1030109@ti.com>
+In-Reply-To: <5489338C.1030109@ti.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the master clock supports programmable rates, program it to generate
-the desired frequency. Only apply constraints when the clock is fixed.
-This allows proper clock generation for both 44100 and 48000 Hz based
-sampling rates if the platform supports it.
+Hi Kishon:
 
-The clock frequency must be set before enabling it. Enabling the clock
-was done in "startup", but that occurs before "hw_params" where the rate
-is known. Enabling a programmable clock without first setting a valid
-frequency may harm the system. Move the clock start to the hw_params
-routine, and keep track of whether the clock has been started, because
-shutdown may be called without having called hw_params first, and
-hw_params may be called multiple times.
-Starting the clock and enabling the SPDIF output AFTER programming the
-dividers is a more logical order anyway.
+On 2014/12/11 14:02, Kishon Vijay Abraham I wrote:
+> Hi,
+>
+> On Wednesday 10 December 2014 04:16 PM, Yunzhi Li wrote:
+>> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
+>> currently this driver can support RK3288. The RK3288 SoC have
+>> three independent USB PHY IPs which are all configured through a
+>> set of registers located in the GRF (general register files)
+>> module.
+>>
+>> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+>>
+>> +
+>> +#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
+>> +
+>> +/*
+>> + * The higher 16-bit of this register is used for write protection
+>> + * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
+>> + */
+>> +#define SIDDQ_MSK		BIT(13 + 16)
+> I think here the "MSK" is misleading. it should be something that refers write
+> protection?
+So, #define SIDDQ_WRITE_ENA  BIT(29) , could be ok ?
+>> +#define SIDDQ_ON		BIT(13)
+>> +#define SIDDQ_OFF		(0 << 13)
+>> +
+>> +struct rockchip_usb_phy {
+>> +	struct regmap	*reg_base;
+>> +	unsigned int	reg_offset;
+>> +	struct clk	*clk;
+>> +	struct phy	*phy;
+>> +	unsigned	index;
+>> +};
+>> +
+>> +struct rockchip_usb_phy_priv {
+>> +	struct rockchip_usb_phy	*phys;
+>> +	unsigned		nphys;
+>> +};
+>> +
+>> +static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
+>> +					   bool siddq)
+>> +{
+>> +	return regmap_write(phy->reg_base, phy->reg_offset,
+>> +			    SIDDQ_MSK | (siddq ? SIDDQ_ON : SIDDQ_OFF));
+> Shouldn't we actually reset the bit for power off?
+Sorry, which bit you refer to here  and why should it be reset? could 
+you give more infomation.
 
-To detect if the source clock is fixed, the driver calls clk_round_rate
-for two frequencies. If the results are equal, or if the call returns
-an error, the driver assumes the clock is fixed.
-
-Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 ---
-v3: Only enable clock once in hw_params which may be called multiple times.
-
- sound/soc/adi/axi-spdif.c |   62 +++++++++++++++++++++++++++++----------------
- 1 file changed, 40 insertions(+), 22 deletions(-)
-
-diff --git a/sound/soc/adi/axi-spdif.c b/sound/soc/adi/axi-spdif.c
-index 198e3a4..d8a98a9 100644
---- a/sound/soc/adi/axi-spdif.c
-+++ b/sound/soc/adi/axi-spdif.c
-@@ -4,7 +4,6 @@
-  *
-  * Licensed under the GPL-2.
-  */
--
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -44,6 +43,8 @@ struct axi_spdif {
- 
- 	struct snd_ratnum ratnum;
- 	struct snd_pcm_hw_constraint_ratnums rate_constraints;
-+
-+	bool clk_ref_running;
- };
- 
- static int axi_spdif_trigger(struct snd_pcm_substream *substream, int cmd,
-@@ -79,6 +80,7 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
- 	unsigned int rate = params_rate(params);
- 	unsigned int clkdiv, stat;
-+	int ret;
- 
- 	switch (params_rate(params)) {
- 	case 32000:
-@@ -95,6 +97,9 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 		break;
- 	}
- 
-+	/* Try to set the master clock */
-+	clk_set_rate(spdif->clk_ref, rate * 128);
-+
- 	clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
- 			rate * 64 * 2) - 1;
- 	clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
-@@ -103,6 +108,16 @@ static int axi_spdif_hw_params(struct snd_pcm_substream *substream,
- 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
- 		AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
- 
-+	if (!spdif->clk_ref_running) {
-+		ret = clk_prepare_enable(spdif->clk_ref);
-+		if (ret)
-+			return ret;
-+		spdif->clk_ref_running = true;
-+	}
-+
-+	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
-+		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
-+
- 	return 0;
- }
- 
-@@ -121,18 +136,13 @@ static int axi_spdif_startup(struct snd_pcm_substream *substream,
- 	struct axi_spdif *spdif = snd_soc_dai_get_drvdata(dai);
- 	int ret;
- 
--	ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
--			   SNDRV_PCM_HW_PARAM_RATE,
--			   &spdif->rate_constraints);
--	if (ret)
--		return ret;
--
--	ret = clk_prepare_enable(spdif->clk_ref);
--	if (ret)
--		return ret;
--
--	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
--		AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
-+	if (spdif->rate_constraints.nrats) {
-+		ret = snd_pcm_hw_constraint_ratnums(substream->runtime, 0,
-+				SNDRV_PCM_HW_PARAM_RATE,
-+				&spdif->rate_constraints);
-+		if (ret)
-+			return ret;
-+	}
- 
- 	return 0;
- }
-@@ -145,7 +155,10 @@ static void axi_spdif_shutdown(struct snd_pcm_substream *substream,
- 	regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
- 		AXI_SPDIF_CTRL_TXEN, 0);
- 
--	clk_disable_unprepare(spdif->clk_ref);
-+	if (spdif->clk_ref_running) {
-+		clk_disable_unprepare(spdif->clk_ref);
-+		spdif->clk_ref_running = false;
-+	}
- }
- 
- static const struct snd_soc_dai_ops axi_spdif_dai_ops = {
-@@ -183,6 +196,7 @@ static int axi_spdif_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	void __iomem *base;
- 	int ret;
-+	long rate;
- 
- 	spdif = devm_kzalloc(&pdev->dev, sizeof(*spdif), GFP_KERNEL);
- 	if (!spdif)
-@@ -216,14 +230,18 @@ static int axi_spdif_probe(struct platform_device *pdev)
- 	spdif->dma_data.addr_width = 4;
- 	spdif->dma_data.maxburst = 1;
- 
--	spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
--	spdif->ratnum.den_step = 1;
--	spdif->ratnum.den_min = 1;
--	spdif->ratnum.den_max = 64;
--
--	spdif->rate_constraints.rats = &spdif->ratnum;
--	spdif->rate_constraints.nrats = 1;
--
-+	/* Determine if the clock rate is fixed. If it cannot change frequency,
-+	 * it returns an error or it will simply return its fixed value. */
-+	rate = clk_round_rate(spdif->clk_ref, 128 * 44100);
-+	if (rate < 0 || rate != clk_round_rate(spdif->clk_ref, 128 * 48000)) {
-+		spdif->ratnum.num = clk_get_rate(spdif->clk_ref) / 128;
-+		spdif->ratnum.den_step = 1;
-+		spdif->ratnum.den_min = 1;
-+		spdif->ratnum.den_max = 64;
-+
-+		spdif->rate_constraints.rats = &spdif->ratnum;
-+		spdif->rate_constraints.nrats = 1;
-+	}
- 	ret = devm_snd_soc_register_component(&pdev->dev, &axi_spdif_component,
- 					 &axi_spdif_dai, 1);
- 	if (ret)
--- 
-1.7.9.5
+Yunzhi Li @ rockchip
 
