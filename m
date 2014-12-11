@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252AbaLKMnM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:43:12 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33658 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLKMnK (ORCPT
+	id S1757223AbaLKMrO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:47:14 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:46532 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750702AbaLKMrM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:43:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFoBRxFh+BzHTakij6=NvLm0C-S8eX8+p2odpSwtdTrvoA@mail.gmail.com>
-References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
- <1418286387-9663-3-git-send-email-tfiga@chromium.org> <CAPDyKFoBRxFh+BzHTakij6=NvLm0C-S8eX8+p2odpSwtdTrvoA@mail.gmail.com>
-From: Tomasz Figa <tfiga@chromium.org>
-Date: Thu, 11 Dec 2014 21:42:47 +0900
-Message-ID: <CAAFQd5CA374MF-_w=3zqsZctwTcBHz9J_0Ygg4fD_wjg8kLATg@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+	Thu, 11 Dec 2014 07:47:12 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
+ board dts and Makefile
+From: Eddie Huang <eddie.huang@mediatek.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: Yingjoe Chen <yingjoe.chen@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Heiko Stuebner <heiko@sntech.de>, Joerg Roedel <joro@8bytes.org>,
-        Kevin Hilman <khilman@linaro.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Daniel Kurtz <djkurtz@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        Sascha Hauer <kernel@pengutronix.de>,
+        YH Chen =?UTF-8?Q?=28=E9=99=B3=E6=98=B1=E8=B1=AA=29?= 
+	<yh.chen@mediatek.com>
+In-Reply-To: <CABuKBe+U22ogGBToftgaSJw6fcJmciGfa9scAkyP3g5OJSaAOA@mail.gmail.com>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
+	 <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+	 <1418221662.21309.13.camel@mtksdaap41>
+	 <CABuKBe+U22ogGBToftgaSJw6fcJmciGfa9scAkyP3g5OJSaAOA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Dec 2014 20:47:06 +0800
+Message-ID: <1418302026.1992.18.camel@mtksdaap41>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ulf,
+On Wed, 2014-12-10 at 15:50 +0100, Matthias Brugger wrote:
+> 2014-12-10 15:27 GMT+01:00 Yingjoe Chen <yingjoe.chen@mediatek.com>:
+> >
+> > Hi,
+> >
+> > On Wed, 2014-12-10 at 18:50 +0800, Eddie Huang wrote:
+> > <...>
+> >> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
+> >> new file mode 100644
+> >> index 0000000..adf26dd
+> >> --- /dev/null
+> >> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
+> > <...>
+> >> +     timer {
+> >> +             compatible = "arm,armv8-timer";
+> >> +             interrupt-parent = <&gic>;
+> >> +             interrupts = <1 13 0x8>,
+> >> +                          <1 14 0x8>,
+> >> +                          <1 11 0x8>,
+> >> +                          <1 10 0x8>;
+> >> +             clock-frequency = <13000000>;
+> >
+> > I believe our firmware doesn't need this line. Please remove it.
+> 
+> The point here would be to know if you need to enable a special timer
+> from the mtk-timer block to get the arch timer working.
+> In any case, you will need some sort of timer. This dts does not
+> describe the mtk-timer (may in the mt8173 it does not exist) but
+> defines the clocks clk26m and clk32k. So if you don't use the
+> mtk-timer, please remove the clocks as there isn't a block using them.
+> 
 
-On Thu, Dec 11, 2014 at 8:58 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 11 December 2014 at 09:26, Tomasz Figa <tfiga@chromium.org> wrote:
->> This patch modifies the rockchip-iommu driver to consider state of
->> the power domain the IOMMU is located in. When the power domain
->> is powered off, the IOMMU cannot be accessed and register programming
->> must be deferred until the power domain becomes enabled.
+MT8173 has two timer set: CPUGPT and APBGPT, and use CPUGPT to enable
+arch_timer. Previous series only have APBGPT. MT8173 still need enable
+CPUGPT to get arch timer working, we put this in loader, and transparent
+to kernel. So I will remove clk26m and clk32k in next version.
 
-[snip]
 
->> @@ -988,11 +1107,28 @@ static int rk_iommu_probe(struct platform_device *pdev)
->>                 return -ENXIO;
->>         }
->>
->> +       pm_runtime_no_callbacks(dev);
->> +       pm_runtime_enable(dev);
->> +
->> +       /* Synchronize state of the domain with driver data. */
->> +       pm_runtime_get_sync(dev);
->> +       iommu->is_powered = true;
->
-> Doesn't the runtime PM status reflect the value of "is_powered", thus
-> why do you need to have a copy of it? Could it perpahps be that you
-> try to cope with the case when CONFIG_PM is unset?
->
-
-It's worth noting that this driver fully relies on status of other
-devices in the power domain the IOMMU is in and does not enforce the
-status on its own. So in general, as far as my understanding of PM
-runtime subsystem, the status of the IOMMU device will be always
-suspended, because nobody will call pm_runtime_get() on it (except the
-get and put pair in probe). So is_powered is here to track status of
-the domain, not the device. Feel free to suggest a better way, though.
-
-Best regards,
-Tomasz
