@@ -1,127 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933865AbaLKGoU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 01:44:20 -0500
-Received: from smtp102.mer-nm.internl.net ([217.149.192.138]:49510 "EHLO
-	smtp102.mer-nm.internl.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933824AbaLKGoS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 01:44:18 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.899
-X-Spam-Languages: en
-Message-ID: <54893D3D.8050100@topic.nl>
-Date: Thu, 11 Dec 2014 07:44:13 +0100
-From: Mike Looijmans <mike.looijmans@topic.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S933881AbaLKGpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 01:45:15 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:34209 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933824AbaLKGpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 01:45:14 -0500
+Date: Thu, 11 Dec 2014 07:45:09 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Tuan Bui <tuan.d.bui@hp.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
+        paulus@samba.org, acme@kernel.org, artagnon@gmail.com,
+        jolsa@redhat.com, dvhart@linux.intel.com,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org
+Subject: Re: [PATCH  v3] Perf Bench: Locking Microbenchmark
+Message-ID: <20141211064509.GE5059@gmail.com>
+References: <1418165693.6540.5.camel@u64>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] sound/soc/adi/axi-spdif.c: Support programmable master
- clock
-References: <54806D4E.8040504@topic.nl> <1417783029-22492-1-git-send-email-mike.looijmans@topic.nl> <548813AC.1080105@metafoo.de>
-In-Reply-To: <548813AC.1080105@metafoo.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [192.168.80.45]
-X-EXCLAIMER-MD-CONFIG: 9833cda7-5b21-4d34-9a38-8d025ddc3664
-X-EXCLAIMER-MD-BIFURCATION-INSTANCE: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418165693.6540.5.camel@u64>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-﻿On 12/10/2014 10:34 AM, Lars-Peter Clausen wrote:
-> On 12/05/2014 01:37 PM, Mike Looijmans wrote:
->> If the master clock supports programmable rates, program it to generate
->> the desired frequency. Only apply constraints when the clock is fixed.
->> This allows proper clock generation for both 44100 and 48000 Hz based
->> sampling rates if the platform supports it.
->>
->> The clock frequency must be set before enabling it. Enabling the clock
->> was done in "startup", but that occurs before "hw_params" where the rate
->> is known. Enabling a programmable clock without first setting a valid
->> frequency may harm the system. Move the clock start to the hw_params
->> routine, and keep track of whether the clock has been started, because
->> shutdown may be called without having called hw_params first.
->> Starting the clock and enabling the SPDIF output AFTER programming the
->> dividers is a more logical order anyway.
->>
->> To detect if the source clock is fixed, the driver calls clk_round_rate
->> for two frequencies. If the results are equal, or if the call returns
->> an error, the driver assumes the clock is fixed.
->>
->> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
->
-> Hi,
->
-> Sorry for the delay.
->
-> [...]
->>
->> +    /* Try to set the master clock */
->> +    clk_set_rate(spdif->clk_ref, rate * 128);
->> +
->>       clkdiv = DIV_ROUND_CLOSEST(clk_get_rate(spdif->clk_ref),
->>               rate * 64 * 2) - 1;
->>       clkdiv <<= AXI_SPDIF_CTRL_CLKDIV_OFFSET;
->> @@ -103,6 +108,14 @@ static int axi_spdif_hw_params(struct snd_pcm_substream
->> *substream,
->>       regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
->>           AXI_SPDIF_CTRL_CLKDIV_MASK, clkdiv);
->>
->> +    ret = clk_prepare_enable(spdif->clk_ref);
->
-> I'm still not convinced this is the right place. I do see your point. But it
-> just feels wrong to enable the clock in hw_params. It's a bit of a dilemma.
-> the startup callback is to early, hw_params is the wrong place and we can't
-> put it in the trigger callback as the trigger callback can not sleep.
 
-The clock interface suggests that we should do the clk_prepare in hw_params 
-and the clk_enable in trigger then, since clk_prepare may sleep but clk_enable 
-cannot. Which would complicate the clock state housekeeping because I'd have 
-to keep track of prepare and enable states separately.
+* Tuan Bui <tuan.d.bui@hp.com> wrote:
 
-(Imagine the housekeeping on a board that could have two codecs running on one 
-DAI using the clock generated by a third codec... I never even bothered to 
-submit that...)
+> Subject: [PATCH] Perf Bench: Locking Microbenchmark
 
-> But in any way hwparmas can be called multiple times, so you need to handle
-> the case where the clock is already enabled.
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-A simple "if (spdif->clk_ref_running)" check would fix that. I wasn't aware of 
-that though, I thought there'd be a shutdown before another hw_params.
+Thanks,
 
->> +    if (ret)
->> +        return ret;
->> +    spdif->clk_ref_running = true;
->> +
->> +    regmap_update_bits(spdif->regmap, AXI_SPDIF_REG_CTRL,
->> +        AXI_SPDIF_CTRL_TXEN, AXI_SPDIF_CTRL_TXEN);
->
-> This should probably be moved to the trigger callback though.
-
-
-I'll create a v3.
-
-
-
-
-Met vriendelijke groet / kind regards,
-
-Mike Looijmans
-System Expert
-
-
-TOPIC Embedded Systems
-Eindhovenseweg 32-C, NL-5683 KH Best
-Postbus 440, NL-5680 AK Best
-Telefoon: (+31) (0) 499 33 69 79
-Telefax:  (+31) (0) 499 33 69 70
-E-mail: mike.looijmans@topic.nl
-Website: www.topic.nl
-
-Please consider the environment before printing this e-mail
-
-Topic zoekt gedreven (embedded) software specialisten!
-http://topic.nl/vacatures/topic-zoekt-software-engineers/
-
+	Ingo
