@@ -1,199 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967681AbaLKXFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 18:05:12 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45196 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965920AbaLKXFG (ORCPT
+	id S966684AbaLKXIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 18:08:24 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:38204 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965250AbaLKXIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 18:05:06 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkEtAAYiilR5LCj0/2dsb2JhbABZgwZSWII1sGwMAQEEBgWSMIElhEsEAoEVFwEBAQEBfYRNHCMYJDQFJQM0iCvYIgELIBiFaIklTYMdgRMFhR2MIIUwgQ2CXYdChggihAAqMIEEgT8BAQE
-Date: Fri, 12 Dec 2014 10:04:09 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: [GIT PULL] xfs: updates for 3.19-rc1
-Message-ID: <20141211230409.GD9756@dastard>
+	Thu, 11 Dec 2014 18:08:21 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Subject: Re: Compiled tridentfb hangs but distribution kernel works fine
+Date: Fri, 12 Dec 2014 00:07:44 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201412092233.17030.linux@rainbow-software.org> <1418195704.5312.31.camel@marge.simpson.net>
+In-Reply-To: <1418195704.5312.31.camel@marge.simpson.net>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <201412120007.45242.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wednesday 10 December 2014 08:15:04 Mike Galbraith wrote:
+> On Tue, 2014-12-09 at 22:33 +0100, Ondrej Zary wrote:
+> > Hello,
+> > I'm doing some work on tridentfb driver but encountered a weird problem.
+> >
+> > When I compile custom kernel with tridentfb, it hangs with Blade3D card
+> > (ID 0x9880) in blade_image_blit(). The screen is blank with some
+> > artifacts and machine does not respond to ping or keyboard. However, it
+> > can be rebooted by Alt+SysRq+B. It works fine with other cards (3DImage
+> > 9750 and CyberBlade XP) with no blit implementation. Commenting out
+> > contents of blade_image_blit() function makes the hang go away (nothing
+> > useful on the screen, of course).
+> >
+> > The weird thing is that the Blade3D card works fine when I load Debian
+> > kernels! Debian 3.16-0.bpo.3-686-pae works fine but when I compile 3.16
+> > kernel, it hangs.
+> >
+> > Any ideas?
+>
+> I'd start by looking for what Debian changed in source and/or config.
 
-Can you please pull the current XFS updates from the tree below?
-There's relatively little change in this update; it is mainly bug
-fixes, cleanups and more of the on-going libxfs restructuring
-and on-disk format header consolidation work.
+Seems that the problem appears only of CONFIG_CC_OPTIMIZE_FOR_SIZE is enabled. 
+Really weird.
 
--Dave.
-
-The following changes since commit 002758992693ae63c04122603ea9261a0a58d728:
-
-  xfs: track bulkstat progress by agino (2014-11-07 08:33:52 +1100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/linux-xfs.git tags/xfs-for-linus-3.19-rc1
-
-for you to fetch changes up to 6044e4386cd51dece882ea42352cdaaab0f24cad:
-
-  Merge branch 'xfs-misc-fixes-for-3.19-2' into for-next (2014-12-04 09:46:17 +1100)
-
-----------------------------------------------------------------
-
-xfs: update for 3.19-rc1
-
-This update contains:
-o more on-disk format header consolidation
-o move some structures shared with userspace to libxfs
-o new per-mount workqueue to fix for deadlocks between nested loop
-  mounted filesystems
-o various bug fixes for ENOSPC, stats, quota off and preallocation
-o a bunch of compiler warning fixes for set-but-unused variables
-o various code cleanups
-
-----------------------------------------------------------------
-Brian Foster (5):
-      xfs: replace global xfslogd wq with per-mount wq
-      xfs: replace on-stack xfs_trans_res with pointer in xfs_create()
-      xfs: fix error handling in xfs_qm_log_quotaoff()
-      xfs: allow lazy sb counter sync during filesystem freeze sequence
-      xfs: split metadata and log buffer completion to separate workqueues
-
-Christoph Hellwig (5):
-      xfs: merge xfs_dinode.h into xfs_format.h
-      xfs: move acl structures to xfs_format.h
-      xfs: merge xfs_ag.h into xfs_format.h
-      xfs: move most of xfs_sb.h to xfs_format.h
-      xfs: merge xfs_inum.h into xfs_format.h
-
-Dave Chinner (13):
-      Merge branch 'xfs-misc-fixes-for-3.19-1' into for-next
-      Merge branch 'xfs-consolidate-format-defs' into for-next
-      Merge branch 'xfs-coccinelle-cleanups' into for-next
-      Merge branch 'xfs-coccinelle-cleanups' into xfs-misc-fixes-for-3.19-2
-      xfs: fix premature enospc on inode allocation
-      xfs: cleanup xfs_bmse_shift_one goto mess
-      xfs: cleanup xfs_bmse_merge returns
-      xfs: active inodes stat is broken
-      xfs: lobotomise xfs_trans_read_buf_map()
-      xfs: move ftype conversion functions to libxfs
-      xfs: move type conversion functions to xfs_dir.h
-      xfs: fix set-but-unused warnings
-      Merge branch 'xfs-misc-fixes-for-3.19-2' into for-next
-
-Eric Sandeen (1):
-      xfs: catch invalid negative blknos in _xfs_buf_find()
-
-Markus Elfring (1):
-      xfs: remove unnecessary null checks
-
-Peter Watkins (1):
-      xfs: overflow in xfs_iomap_eof_align_last_fsb
-
-kbuild test robot (3):
-      libxfs: fix simple_return.cocci warnings
-      xfs: fix simple_return.cocci warning in xfs_file_readdir
-      xfs: fix simple_return.cocci warning in xfs_bmse_shift_one
-
- fs/xfs/libxfs/xfs_ag.h             |  281 ---------
- fs/xfs/libxfs/xfs_alloc.c          |    1 -
- fs/xfs/libxfs/xfs_alloc.h          |    3 +
- fs/xfs/libxfs/xfs_alloc_btree.c    |    1 -
- fs/xfs/libxfs/xfs_attr.c           |    3 -
- fs/xfs/libxfs/xfs_attr_leaf.c      |    2 -
- fs/xfs/libxfs/xfs_attr_remote.c    |    2 -
- fs/xfs/libxfs/xfs_bmap.c           |   77 +--
- fs/xfs/libxfs/xfs_bmap_btree.c     |    3 -
- fs/xfs/libxfs/xfs_btree.c          |    2 -
- fs/xfs/libxfs/xfs_da_btree.c       |    6 -
- fs/xfs/libxfs/xfs_da_format.c      |    2 -
- fs/xfs/libxfs/xfs_dinode.h         |  243 --------
- fs/xfs/libxfs/xfs_dir2.c           |   20 +-
- fs/xfs/libxfs/xfs_dir2.h           |  140 +++++
- fs/xfs/libxfs/xfs_dir2_block.c     |   11 -
- fs/xfs/libxfs/xfs_dir2_data.c      |    2 -
- fs/xfs/libxfs/xfs_dir2_leaf.c      |   12 -
- fs/xfs/libxfs/xfs_dir2_node.c      |   14 -
- fs/xfs/libxfs/xfs_dir2_priv.h      |  140 -----
- fs/xfs/libxfs/xfs_dir2_sf.c        |   13 -
- fs/xfs/libxfs/xfs_dquot_buf.c      |    2 -
- fs/xfs/libxfs/xfs_format.h         | 1107 ++++++++++++++++++++++++++++++++++++
- fs/xfs/libxfs/xfs_ialloc.c         |   43 +-
- fs/xfs/libxfs/xfs_ialloc.h         |    4 +
- fs/xfs/libxfs/xfs_ialloc_btree.c   |    2 -
- fs/xfs/libxfs/xfs_inode_buf.c      |    3 -
- fs/xfs/libxfs/xfs_inode_fork.c     |    4 -
- fs/xfs/libxfs/xfs_inum.h           |   60 --
- fs/xfs/libxfs/xfs_log_format.h     |    2 +-
- fs/xfs/libxfs/xfs_log_rlimit.c     |    2 -
- fs/xfs/libxfs/xfs_rtbitmap.c       |    3 -
- fs/xfs/libxfs/xfs_sb.c             |    2 -
- fs/xfs/libxfs/xfs_sb.h             |  584 -------------------
- fs/xfs/libxfs/xfs_symlink_remote.c |    2 -
- fs/xfs/libxfs/xfs_trans_resv.c     |    2 -
- fs/xfs/xfs_acl.c                   |    2 -
- fs/xfs/xfs_acl.h                   |   36 --
- fs/xfs/xfs_aops.c                  |    3 -
- fs/xfs/xfs_attr_inactive.c         |    3 -
- fs/xfs/xfs_attr_list.c             |    3 -
- fs/xfs/xfs_bmap_util.c             |    3 -
- fs/xfs/xfs_buf.c                   |   27 +-
- fs/xfs/xfs_buf.h                   |    3 +-
- fs/xfs/xfs_buf_item.c              |    2 +-
- fs/xfs/xfs_dir2_readdir.c          |   21 +-
- fs/xfs/xfs_discard.c               |    1 -
- fs/xfs/xfs_dquot.c                 |    2 -
- fs/xfs/xfs_dquot_item.c            |    2 -
- fs/xfs/xfs_error.c                 |    2 -
- fs/xfs/xfs_export.c                |    3 +-
- fs/xfs/xfs_extent_busy.c           |    1 -
- fs/xfs/xfs_extfree_item.c          |    3 +-
- fs/xfs/xfs_file.c                  |    9 +-
- fs/xfs/xfs_filestream.c            |    3 -
- fs/xfs/xfs_fsops.c                 |    2 -
- fs/xfs/xfs_icache.c                |    4 +-
- fs/xfs/xfs_icache.h                |    8 +
- fs/xfs/xfs_icreate_item.c          |    3 +-
- fs/xfs/xfs_inode.c                 |   29 +-
- fs/xfs/xfs_inode.h                 |    2 -
- fs/xfs/xfs_inode_item.c            |    3 -
- fs/xfs/xfs_ioctl.c                 |    3 -
- fs/xfs/xfs_ioctl32.c               |    2 -
- fs/xfs/xfs_iomap.c                 |   18 +-
- fs/xfs/xfs_iops.c                  |    5 +-
- fs/xfs/xfs_itable.c                |    6 -
- fs/xfs/xfs_linux.h                 |    6 +
- fs/xfs/xfs_log.c                   |    8 +-
- fs/xfs/xfs_log_cil.c               |    3 +-
- fs/xfs/xfs_log_recover.c           |    4 +-
- fs/xfs/xfs_message.c               |    3 +-
- fs/xfs/xfs_mount.c                 |   33 +-
- fs/xfs/xfs_mount.h                 |    8 +-
- fs/xfs/xfs_qm.c                    |   14 +-
- fs/xfs/xfs_qm_bhv.c                |    2 -
- fs/xfs/xfs_qm_syscalls.c           |   27 +-
- fs/xfs/xfs_quotaops.c              |    2 -
- fs/xfs/xfs_rtalloc.c               |    3 -
- fs/xfs/xfs_super.c                 |   19 +-
- fs/xfs/xfs_symlink.c               |    3 -
- fs/xfs/xfs_trace.c                 |    2 -
- fs/xfs/xfs_trans.c                 |    2 -
- fs/xfs/xfs_trans_ail.c             |    3 +-
- fs/xfs/xfs_trans_buf.c             |  137 ++---
- fs/xfs/xfs_trans_dquot.c           |    2 -
- fs/xfs/xfs_trans_extfree.c         |    3 +-
- fs/xfs/xfs_trans_inode.c           |    2 -
- fs/xfs/xfs_xattr.c                 |    2 -
- 89 files changed, 1467 insertions(+), 1835 deletions(-)
- delete mode 100644 fs/xfs/libxfs/xfs_ag.h
- delete mode 100644 fs/xfs/libxfs/xfs_dinode.h
- delete mode 100644 fs/xfs/libxfs/xfs_inum.h
 -- 
-Dave Chinner
-david@fromorbit.com
+Ondrej Zary
