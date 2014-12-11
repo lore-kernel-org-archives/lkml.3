@@ -1,40 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934212AbaLKJAP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:00:15 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5742 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932227AbaLKJAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:00:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
-   d="scan'208";a="645942002"
-Date: Thu, 11 Dec 2014 10:58:01 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        benjamin.tissoires@redhat.com, aduggan@synaptics.com, jkosina@suse.cz
-Subject: Re: NULL pointer dereference in i2c-hid
-Message-ID: <20141211085801.GR1300@lahna.fi.intel.com>
-References: <31518562.V5Oyo0POsI@xps13>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <31518562.V5Oyo0POsI@xps13>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S934228AbaLKJAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:00:23 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:49944 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934214AbaLKJAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 04:00:20 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Subject: [PATCH] kconfig: Use macros which are already defined
+Date: Thu, 11 Dec 2014 10:00:08 +0100
+Message-Id: <fa1a28d64cb484535e355f364b49f5ab42b98f46.1418288403.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-19329-1418288408-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
-> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
-> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
-> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
-> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
-> pointer dereference.
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-I'll look into this.
+--=_mimegpg-monstr-desktop-19329-1418288408-0001
 
-I can reproduce this easily with i2c-hid + hid-multitouch following your
-directions.
+It is better to use macros which are already available
+because then there is just one location which needs to be change.
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+
+FYI: Fengguang's testing system doesn't show any build error.
+---
+ include/linux/kconfig.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/kconfig.h b/include/linux/kconfig.h
+index be342b94c640..71acdf650e2e 100644
+--- a/include/linux/kconfig.h
++++ b/include/linux/kconfig.h
+@@ -28,7 +28,7 @@
+  *
+  */
+ #define IS_ENABLED(option) \
+-	(config_enabled(option) || config_enabled(option##_MODULE))
++	(IS_BUILTIN(option) || IS_MODULE(option))
+
+ /*
+  * IS_BUILTIN(CONFIG_FOO) evaluates to 1 if CONFIG_FOO is set to 'y', 0
+--
+1.8.2.3
+
+
+--=_mimegpg-monstr-desktop-19329-1418288408-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlSJXRgACgkQykllyylKDCFR0gCcCD29wrEF/udFgBlKsuta/oQm
+6l0AnAyzt5u+x3J0n1ZSTmR3RVyLBDrc
+=UKHk
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-19329-1418288408-0001--
