@@ -1,84 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934013AbaLKOE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:04:27 -0500
-Received: from mail.smart-weblications.de ([188.65.144.61]:38172 "EHLO
-	mail.smart-weblications.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932802AbaLKOEZ (ORCPT
+	id S964869AbaLKOFb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:05:31 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50068 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934026AbaLKOF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:04:25 -0500
-Message-ID: <5489A465.6090305@smart-weblications.de>
-Date: Thu, 11 Dec 2014 15:04:21 +0100
-From: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-Reply-To: f.wiessner@smart-weblications.de
-Organization: Smart Weblications GmbH
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Julian Anastasov <ja@ssi.bg>
-CC: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de> <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg> <54858948.2060007@smart-weblications.de> <alpine.LFD.2.11.1412082234350.2401@ja.home.ssi.bg> <5486CD9D.4060107@smart-weblications.de> <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
-In-Reply-To: <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Dec 2014 09:05:26 -0500
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+        torvalds@linux-foundation.org, George Spelvin <linux@horizon.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH 1/8] kernel: Provide READ_ONCE and ASSIGN_ONCE
+Date: Thu, 11 Dec 2014 15:05:04 +0100
+Message-Id: <1418306712-17245-2-git-send-email-borntraeger@de.ibm.com>
+X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
+References: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121114-0021-0000-0000-0000021A74E1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ACCESS_ONCE does not work reliably on non-scalar types. For
+example gcc 4.6 and 4.7 might remove the volatile tag for such
+accesses during the SRA (scalar replacement of aggregates) step
+https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 
-Am 10.12.2014 22:41, schrieb Julian Anastasov:>
-> 	Hello,
->
-> On Tue, 9 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
->
->> I rebuild everything with the two provided patches and still get:
->>
->> [  512.475449] BUG: unable to handle kernel NULL pointer dereference at
->> 0000000000000014
->> [  512.481277] IP: [<ffffffffa013d470>] nf_ct_seqadj_set+0x60/0x90 [nf_conntrack]
->
-> 	Same place, hm...
->
->> [  512.485323] CPU: 4 PID: 28142 Comm: vsftpd Not tainted 3.12.33 #5
->
-> 	Above "#5" is same as previous oops. It means kernel
-> is not updated. Or you updated only the IPVS modules after
-> applying the both patches?
+Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
+scalar types as suggested by Linus Torvalds. Accesses larger than
+the machines word size cannot be guaranteed to be atomic. These
+macros will use memcpy and emit a build warning.
 
-I did it with make-kpkg --initrd linux_image which only rebuilt the modules,
-correct. I can retry with make clean before building the package
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+---
+ include/linux/compiler.h | 70 ++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/Makefile             |  2 +-
+ lib/access.c             |  8 ++++++
+ 3 files changed, 79 insertions(+), 1 deletion(-)
+ create mode 100644 lib/access.c
 
->
-> 	You can also try without FTP tests to see if there
-> are oopses in xfrm, so that we can close this topic and then
-> to continue for the FTP problem on IPVS lists without
-> bothering non-IPVS people.
->
-
-yeah, it seems that the xfrm issue is away.
-
-
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index d5ad7b1..1437f02 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -186,6 +186,76 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
+ #endif
+ 
++#include <uapi/linux/types.h>
++
++void data_access_exceeds_word_size(void)
++#ifdef __compiletime_warning
++__compiletime_warning("data access exceeds word size and won't be atomic")
++#endif
++;
++
++static __always_inline void __read_once_size(volatile void *p, void *res, int size)
++{
++	switch (size) {
++	case 1: *(__u8 *)res = *(volatile __u8 *)p; break;
++	case 2: *(__u16 *)res = *(volatile __u16 *)p; break;
++	case 4: *(__u32 *)res = *(volatile __u32 *)p; break;
++#ifdef CONFIG_64BIT
++	case 8: *(__u64 *)res = *(volatile __u64 *)p; break;
++#endif
++	default:
++		barrier();
++		__builtin_memcpy((void *)res, (const void *)p, size);
++		data_access_exceeds_word_size();
++		barrier();
++	}
++}
++
++static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
++{
++	switch (size) {
++	case 1: *(volatile __u8 *)p = *(__u8 *)res; break;
++	case 2: *(volatile __u16 *)p = *(__u16 *)res; break;
++	case 4: *(volatile __u32 *)p = *(__u32 *)res; break;
++#ifdef CONFIG_64BIT
++	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
++#endif
++	default:
++		barrier();
++		__builtin_memcpy((void *)p, (const void *)res, size);
++		data_access_exceeds_word_size();
++		barrier();
++	}
++}
++
++/*
++ * Prevent the compiler from merging or refetching reads or writes. The
++ * compiler is also forbidden from reordering successive instances of
++ * READ_ONCE, ASSIGN_ONCE and ACCESS_ONCE (see below), but only when the
++ * compiler is aware of some particular ordering.  One way to make the
++ * compiler aware of ordering is to put the two invocations of READ_ONCE,
++ * ASSIGN_ONCE or ACCESS_ONCE() in different C statements.
++ *
++ * In contrast to ACCESS_ONCE these two macros will also work on aggregate
++ * data types like structs or unions. If the size of the accessed data
++ * type exceeds the word size of the machine (e.g., 32 bits or 64 bits)
++ * READ_ONCE() and ASSIGN_ONCE()  will fall back to memcpy and print a
++ * compile-time warning.
++ *
++ * Their two major use cases are: (1) Mediating communication between
++ * process-level code and irq/NMI handlers, all running on the same CPU,
++ * and (2) Ensuring that the compiler does not  fold, spindle, or otherwise
++ * mutilate accesses that either do not require ordering or that interact
++ * with an explicit memory barrier or atomic instruction that provides the
++ * required ordering.
++ */
++
++#define READ_ONCE(x) \
++	({ typeof(x) __val; __read_once_size(&x, &__val, sizeof(__val)); __val; })
++
++#define ASSIGN_ONCE(val, x) \
++	({ typeof(x) __val; __val = val; __assign_once_size(&x, &__val, sizeof(__val)); __val; })
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __ASSEMBLY__ */
+diff --git a/lib/Makefile b/lib/Makefile
+index 7512dc9..264e2d8 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -7,7 +7,7 @@ ORIG_CFLAGS := $(KBUILD_CFLAGS)
+ KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
+ endif
+ 
+-lib-y := ctype.o string.o vsprintf.o cmdline.o \
++lib-y := access.o ctype.o string.o vsprintf.o cmdline.o \
+ 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
+ 	 idr.o int_sqrt.o extable.o \
+ 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
+diff --git a/lib/access.c b/lib/access.c
+new file mode 100644
+index 0000000..d56307e
+--- /dev/null
++++ b/lib/access.c
+@@ -0,0 +1,8 @@
++#include <linux/compiler.h>
++#include <linux/export.h>
++
++void data_access_exceeds_word_size(void)
++{
++}
++EXPORT_SYMBOL(data_access_exceeds_word_size);
++
 -- 
+1.9.3
 
-Mit freundlichen Grüßen,
-
-Florian Wiessner
-
-Smart Weblications GmbH
-Martinsberger Str. 1
-D-95119 Naila
-
-fon.: +49 9282 9638 200
-fax.: +49 9282 9638 205
-24/7: +49 900 144 000 00 - 0,99 EUR/Min*
-http://www.smart-weblications.de
-
---
-Sitz der Gesellschaft: Naila
-Geschäftsführer: Florian Wiessner
-HRB-Nr.: HRB 3840 Amtsgericht Hof
-*aus dem dt. Festnetz, ggf. abweichende Preise aus dem Mobilfunknetz
