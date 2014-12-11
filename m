@@ -1,307 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965106AbaLKWNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:13:13 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:57943 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758751AbaLKWNK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:13:10 -0500
-Date: Thu, 11 Dec 2014 23:13:07 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<ivo.g.dimitrov.75@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: __hci_cmd_sync() not suitable for nokia h4p
-Message-ID: <20141211221306.GA2905@amd>
-References: <20141209190210.GA15641@amd>
- <304050AD-DB11-4A2B-A1F7-8B1BBB5F04F0@holtmann.org>
- <20141209201328.GA18003@amd>
- <7EFD3C33-E503-4FB6-BCCF-52836080ABD6@holtmann.org>
- <20141210131519.GA14748@amd>
- <EE1A4B9D-30D5-4BD9-9A43-532619494A0C@holtmann.org>
+	id S965168AbaLKWPU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:15:20 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:51164 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754440AbaLKWPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:15:17 -0500
+Date: Thu, 11 Dec 2014 14:11:58 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Hector Marco <hecmargi@upv.es>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        David Daney <ddaney.cavm@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Arun Chandran <achandran@mvista.com>,
+        Hanno =?iso-8859-1?Q?B=F6ck?= <hanno@hboeck.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Oleg Nesterov <oleg@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+Message-ID: <20141211221158.GS18807@outflux.net>
+References: <5489E6D2.2060200@upv.es>
+ <5489FAAD.7000606@upv.es>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <EE1A4B9D-30D5-4BD9-9A43-532619494A0C@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5489FAAD.7000606@upv.es>
+Organization: Outflux
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi,
 
-> > h4p changes uart speed again after load of the firmware, but I guess
-> > that's ok.
-
->  if you can do it the other way around it would result in a faster
-> init. Depending on how many patches are actually required to be
-> loaded.
-
-IIRC driver does two speed changes, so it looks to me like someone
-already tried that (and it did not work).
-
-> >> What needs to be done is the bring up of the device including the proper UART settings and speed and then just run the firmware downloads. All firmware files on the Nokia devices where just HCI commands with vendor specific details. Some from CSR, some from Broadcom and some from TI. You can actually decode them if you really want to. Shouldn't be that hard.
-> >> 
-> > 
-> > Speed changes at the end of firmware load, but I guess that's detail?
-> > Anyway, patch would look like this.
+On Thu, Dec 11, 2014 at 09:12:29PM +0100, Hector Marco wrote:
 > 
-> You should really look into providing hdev->setup() callback. That is normally the callback where you want to load the firmware.
+> Hello,
 > 
+> The following is an ASLR PIE implementation summary in order to help to
+> decide whether it is better to fix x86*, arm*, and MIPS without adding
+> randomize_va_space = 3 or move the PowerPC and the s390 to
+> randomize_va_space = 3.
 
-I can provide setup() callback and load firmware from there.
+If we can fix x86, arm, and MIPS without introducing randomize_va_space=3,
+I would prefer it.
 
-I have created provisional device tree binding, and the driver still
-works.
+> Before any randomization, commit: f057eac (April 2005) the code in
+> fs/binfmt_elf.c was:
+> 
+>  } else if (loc->elf_ex.e_type == ET_DYN) {
+>          /* Try and get dynamic programs out of the way of the
+>           * default mmap base, as well as whatever program they
+>           * might try to exec.  This is because the brk will
+>           * follow the loader, and is not movable.  */
+>          load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+>  }
+> 
+> It seems that they tried to get out dynamic programs of the way
+> of the default mmap base. I am not sure why.
+> 
+> The first architecture to implement PIE support was x86. To achieve
+> this, the code introduced by the commit 60bfba7 (Jul 2007) was:
+> 
+>   } else if (loc->elf_ex.e_type == ET_DYN) {
+>           /* Try and get dynamic programs out of the way of the
+>            * default mmap base, as well as whatever program they
+>            * might try to exec.  This is because the brk will
+>            * follow the loader, and is not movable.  */
+> +#ifdef CONFIG_X86
+> +           load_bias = 0;
+> +#else
+>            load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+> +#endif
+>             }
+> 
+> After that, he code was removed (4 days later commit: d4e3cc3) and
+> reintroduced (commit: cc503c1) Jan 2008. From this commit, the x86*
+> are vulnerable to offset2lib attack.
+> 
+> Note that they (x86*) used "load_bias = 0;" which cause that PIE
+> executable be loaded at mmap base.
+> 
+> Around one year later, in Feb 2009, PowerPC provided support for PIE
+> executables but not following the X86* approach. PowerPC redefined
+> the ELF_ET_DYN_BASE. The change was:
+> 
+> -#define ELF_ET_DYN_BASE (0x20000000)
+> +#define ELF_ET_DYN_BASE (randomize_et_dyn(0x20000000))
+> 
+> The function "randomize_et_dyn" add a random value to the 0x20000000
+> which is not vulnerable to the offset2lib weakness. Note that in this
+> point two different ways of PIE implementation are coexisting.
+> 
+> 
+> Later, in Aug 2008, ARM started to support PIE (commit: e4eab08):
+> 
+> -#if defined(CONFIG_X86)
+> +#if defined(CONFIG_X86) || defined(CONFIG_ARM)
+>            load_bias = 0;
+> #else
+>            load_bias = ELF_PAGESTART(ELF_ET_DYN_BASE - vaddr);
+> #endif
+>  }
+> 
+> 
+> They only add "|| defined(CONFIG_ARM)". They followed the x86* PIE
+> support approach which consist on load the PIE executables
+> in the mmap base area.
+> 
+> 
+> After that, in Jan 2011, s390 started to support PIE (commit: d2c9dfc).
+> They decided to follow the "PowerPC PIE support approach" by redefining:
+> 
+> -#define ELF_ET_DYN_BASE         (STACK_TOP / 3 * 2)
+> +#define ELF_ET_DYN_BASE         (randomize_et_dyn(STACK_TOP / 3 * 2))
+> 
+> 
+> Later, in Nov 2012, the commit e39f560 changed:
+> 
+> -#if defined(CONFIG_X86) || defined(CONFIG_ARM)
+> +#ifdef CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE
+> 
+> I think that this was made to avoid a long defined because they must
+> have thought that more architectures will be added in the future.
+> Join this change the x86*, ARM and MIPS architectures set to "y" this
+> value in their respective Kconfig files.
+> 
+> The same day of the previous commit, MIPS started to support PIE
+> executables by setting "y" to the ARCH_BINFMT_ELF_RANDOMIZE_PIE in their
+> Kconfig. The commit is e26d196. Again MIPS followed the x86* and ARM
+> approaches.
+> 
+> 
+> Finally, in Nov 2014, following this approach ARM64 moved from "PowerPC"
+> approach to x86 one. The commit is 9298040.
+> 
+> -#define ELF_ET_DYN_BASE	(randomize_et_dyn(2 * TASK_SIZE_64 / 3))
+> +#define ELF_ET_DYN_BASE	(2 * TASK_SIZE_64 / 3)
+> 
+> And set to "y" the "ARCH_BINFMT_ELF_RANDOMIZE_PIE" which cause to load
+> the PIE application in the mmap base area.
+> 
+> 
+> I don't know if exists any reason to put the PIE executable in the mmap
+> base address or not, but this was the first and most adopted approach.
+> 
+> Now, by knowing the presence of the offset2lib weakness obviously is
+> better to use a different memory area.
+> 
+> >From my point of view, to use a "define name" which is a random value
+> depending on the architecture does not help much to read the code. I
+> think is better to implement the PIE support by adding a new value to
+> the mm_struct which is filled very early in the function
+> "arch_pick_mmap_layout" which sets up the VM layout. This file is
+> architecture dependent and the function says:
+> 
+> /*
+>  * This function, called very early during the creation of a new
+>  * process VM image, sets up which VM layout function to use:
+>  */
+> void arch_pick_mmap_layout(struct mm_struct *mm)
+> 
+> 
+> In this point the GAP stack is reserved and the mmap_base value is
+> calculated. I think this is the correct place to calculate where the PIE
+> executable will be loaded rather than rely on a "define" which obscure
+> the actual behavior (at first glance does not seem a random value).
+> Maybe this was the reason why most architectures followed the x86*
+> approach to support PIE. But now, with the offset2lib weakness this
+> approach need to be changed. From my point of view, moving to "PowerPC"
+> approach is not the best solution. I've taken a look to PaX code and
+> they implement a similar solution that I have been proposed.
+> 
+> Anyway, if you are still thinking that the best approach is the
+> "PowerPC" one, then I could change the patch to fix the x86*, ARM* and
+> MIPS following this approach.
 
-Some time ago you mentioned that with the "big" issues fixed, you'd be
-willing to take it into the tree. What way forward do you see? Would
-it make sense to re-enable the driver in staging, so that "big"
-changes could be applied, followed by renames?
+Yeah, I think we should get rid of ARCH_BINFMT_ELF_RANDOMIZE_PIE and just
+fix this to do independent executable base randomization.
 
-Thanks,
-								Pavel
+While we're at it, can we fix VDSO randomization as well? :)
 
-diff --git a/arch/arm/boot/dts/omap3-n900.dts b/arch/arm/boot/dts/omap3-n900.dts
-index 9e0e5a2..201f21b 100644
---- a/arch/arm/boot/dts/omap3-n900.dts
-+++ b/arch/arm/boot/dts/omap3-n900.dts
-@@ -790,9 +776,21 @@
- };
- 
- &uart2 {
-+        compatible = "brcm,uart,bcm2048";
- 	interrupts-extended = <&intc 73 &omap3_pmx_core OMAP3_UART2_RX>;
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&uart2_pins>;
-+	device {
-+		  compatible = "brcm,bcm2048";
-+		  uart = <&uart2>;
-+		  reset-gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>; /* want 91 */
-+		  host-wakeup-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* want 101 */
-+		  bluetooth-wakeup-gpios = <&gpio2 5 GPIO_ACTIVE_HIGH>; /* want 37 */
-+		  chip-type = <3>;
-+		  bt-sysclk = <2>;
-+		  clocks = <&uart2_fck>, <&uart2_ick>;
-+		  clock-names = "fck", "ick";
-+	};
- };
- 
- &uart3 {
-diff --git a/drivers/staging/nokia_h4p/nokia_core.c b/drivers/staging/nokia_h4p/nokia_core.c
-index 5cdb86a..ac61cfd 100644
---- a/drivers/staging/nokia_h4p/nokia_core.c
-+++ b/drivers/staging/nokia_h4p/nokia_core.c
-@@ -37,6 +37,8 @@
- #include <linux/clk.h>
- #include <linux/interrupt.h>
- #include <linux/gpio.h>
-+#include <linux/of_gpio.h>
-+#include <linux/of_irq.h>
- #include <linux/timer.h>
- #include <linux/kthread.h>
- #include <linux/io.h>
-@@ -1112,12 +1114,75 @@ free:
- 	return -ENODEV;
- }
- 
-+static int hci_h4p_probe_pdata(struct platform_device *pdev, struct hci_h4p_info *info,
-+			       struct hci_h4p_platform_data *bt_plat_data)
-+{
-+	info->chip_type = bt_plat_data->chip_type;
-+	info->bt_wakeup_gpio = bt_plat_data->bt_wakeup_gpio;
-+	info->host_wakeup_gpio = bt_plat_data->host_wakeup_gpio;
-+	info->reset_gpio = bt_plat_data->reset_gpio;
-+	info->reset_gpio_shared = bt_plat_data->reset_gpio_shared;
-+	info->bt_sysclk = bt_plat_data->bt_sysclk;
-+
-+	info->irq = bt_plat_data->uart_irq;
-+	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base,
-+					SZ_2K);
-+	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
-+	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
-+	return 0;
-+}
-+
-+static int hci_h4p_probe_dt(struct platform_device *pdev, struct hci_h4p_info *info)
-+{
-+	struct device_node *node;
-+	struct device_node *uart = pdev->dev.of_node;
-+	u32 val;
-+	struct resource *mem;	
-+
-+	node = of_get_child_by_name(uart, "device");
-+
-+	if (!node)
-+		return -ENODATA;
-+
-+	if (of_property_read_u32(node, "chip-type", &val)) return -EINVAL;
-+	info->chip_type = val;
-+	
-+	if (of_property_read_u32(node, "bt-sysclk", &val)) return -EINVAL;
-+	info->bt_sysclk = val;
-+
-+	info->reset_gpio       = of_get_named_gpio(node, "reset-gpios", 0);
-+	info->host_wakeup_gpio = of_get_named_gpio(node, "host-wakeup-gpios", 0);
-+	info->bt_wakeup_gpio   = of_get_named_gpio(node, "bluetooth-wakeup-gpios", 0);	
-+	//uart = of_parse_phandle(node, "uart", 0);
-+	if (!uart) {
-+		dev_err(&pdev->dev, "UART link not provided\n");
-+		return -EINVAL;
-+	}
-+
-+	info->irq = irq_of_parse_and_map(uart, 0);
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	info->uart_base = devm_ioremap_resource(&pdev->dev, mem);
-+
-+	info->uart_iclk = of_clk_get_by_name(node, "ick");
-+	info->uart_fclk = of_clk_get_by_name(node, "fck");	
-+
-+	printk("DT: have neccessary data\n");
-+	return 0;
-+}
-+			  
-+
- static int hci_h4p_probe(struct platform_device *pdev)
- {
--	struct hci_h4p_platform_data *bt_plat_data;
-+
- 	struct hci_h4p_info *info;
- 	int err;
- 
-+	printk("HCI h4p probe\n");
-+	if (pdev->dev.of_node) {
-+		printk("Have platform data.\n");
-+	}
-+
- 	dev_info(&pdev->dev, "Registering HCI H4P device\n");
- 	info = devm_kzalloc(&pdev->dev, sizeof(struct hci_h4p_info),
- 			GFP_KERNEL);
-@@ -1131,40 +1196,36 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 	spin_lock_init(&info->clocks_lock);
- 	skb_queue_head_init(&info->txq);
- 
--	if (pdev->dev.platform_data == NULL) {
-+	if (pdev->dev.platform_data) {
-+		err = hci_h4p_probe_pdata(pdev, info, pdev->dev.platform_data);
-+	} else {
-+		err = hci_h4p_probe_dt(pdev, info);
-+	}
-+	if (err) {
- 		dev_err(&pdev->dev, "Could not get Bluetooth config data\n");
- 		return -ENODATA;
- 	}
- 
--	bt_plat_data = pdev->dev.platform_data;
--	info->chip_type = bt_plat_data->chip_type;
--	info->bt_wakeup_gpio = bt_plat_data->bt_wakeup_gpio;
--	info->host_wakeup_gpio = bt_plat_data->host_wakeup_gpio;
--	info->reset_gpio = bt_plat_data->reset_gpio;
--	info->reset_gpio_shared = bt_plat_data->reset_gpio_shared;
--	info->bt_sysclk = bt_plat_data->bt_sysclk;
--
--	BT_DBG("RESET gpio: %d", info->reset_gpio);
--	BT_DBG("BTWU gpio: %d", info->bt_wakeup_gpio);
--	BT_DBG("HOSTWU gpio: %d", info->host_wakeup_gpio);
--	BT_DBG("sysclk: %d", info->bt_sysclk);
-+	printk("base/irq gpio: %lx/%d/%d\n",
-+	       info->uart_base, info->irq);
-+	printk("RESET/BTWU/HOSTWU gpio: %d/%d/%d\n",
-+	       info->reset_gpio, info->bt_wakeup_gpio, info->host_wakeup_gpio);
-+	printk("chip type, sysclk: %d/%d\n", info->chip_type, info->bt_sysclk);
-+	printk("clock i/f: %lx/%lx\n", info->uart_iclk, info->uart_fclk);	
- 
- 	init_completion(&info->test_completion);
- 	complete_all(&info->test_completion);
- 
--	if (!info->reset_gpio_shared) {
--		err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
--					    GPIOF_OUT_INIT_LOW, "bt_reset");
--		if (err < 0) {
--			dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
--				info->reset_gpio);
--			return err;
--		}
-+	err = devm_gpio_request_one(&pdev->dev, info->reset_gpio,
-+				    GPIOF_OUT_INIT_LOW, "bt_reset");
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "Cannot get GPIO line %d\n",
-+			info->reset_gpio);
-+		return err;
- 	}
- 
- 	err = devm_gpio_request_one(&pdev->dev, info->bt_wakeup_gpio,
- 				    GPIOF_OUT_INIT_LOW, "bt_wakeup");
--
- 	if (err < 0) {
- 		dev_err(info->dev, "Cannot get GPIO line 0x%d",
- 			info->bt_wakeup_gpio);
-@@ -1179,12 +1240,6 @@ static int hci_h4p_probe(struct platform_device *pdev)
- 		return err;
- 	}
- 
--	info->irq = bt_plat_data->uart_irq;
--	info->uart_base = devm_ioremap(&pdev->dev, bt_plat_data->uart_base,
--					SZ_2K);
--	info->uart_iclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_iclk);
--	info->uart_fclk = devm_clk_get(&pdev->dev, bt_plat_data->uart_fclk);
--
- 	err = devm_request_irq(&pdev->dev, info->irq, hci_h4p_interrupt,
- 				IRQF_DISABLED, "hci_h4p", info);
- 	if (err < 0) {
-@@ -1246,12 +1301,38 @@ static int hci_h4p_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#if 0
-+struct hci_h4p_platform_data bt_plat_data = {
-+	.chip_type              = 3,
-+	.bt_sysclk              = 2,
-+	.bt_wakeup_gpio         = RX51_HCI_H4P_BTWU_GPIO,
-+	.host_wakeup_gpio       = RX51_HCI_H4P_HOSTWU_GPIO,
-+	.reset_gpio             = RX51_HCI_H4P_RESET_GPIO,
-+	.reset_gpio_shared      = 0,
-+	//      .uart_irq               = 73 + OMAP_INTC_START,
-+	/* It seems to be 223 in hci_h4p case */
-+	.uart_irq               = 223,
-+	.uart_base              = OMAP3_UART2_BASE,
-+	.uart_iclk              = "uart2_ick",
-+	.uart_fclk              = "uart2_fck",
-+	.set_pm_limits          = rx51_bt_set_pm_limits,
-+};
-+#endif
-+
-+static const struct of_device_id hci_h4p_of_match[] = {
-+	{ .compatible = "brcm,uart,bcm2048" },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, hci_h4p_of_match);
-+
- 
- static struct platform_driver hci_h4p_driver = {
- 	.probe		= hci_h4p_probe,
- 	.remove		= hci_h4p_remove,
- 	.driver		= {
--		.name	= "hci_h4p",
-+		.name	= "disabled" "hci_h4p",
-+		.owner  = THIS_MODULE,
-+		.of_match_table = of_match_ptr(hci_h4p_of_match),
- 	},
- };
- 
+-Kees
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Kees Cook
+Chrome OS Security
