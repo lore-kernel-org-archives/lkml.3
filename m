@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaLKMT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:19:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:4453 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750764AbaLKMTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:19:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,557,1413270000"; 
-   d="scan'208";a="622146536"
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-To: alsa-devel@alsa-project.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] sound: oss: Remove dead sound card number definitions part #2
-Date: Thu, 11 Dec 2014 14:19:13 +0200
-Message-Id: <1418300353-13243-4-git-send-email-jarkko.nikula@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418300353-13243-1-git-send-email-jarkko.nikula@linux.intel.com>
-References: <1418300353-13243-1-git-send-email-jarkko.nikula@linux.intel.com>
+	id S1754349AbaLKMYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:24:06 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:46586 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751514AbaLKMYD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 07:24:03 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+CC: "robh+dt@kernel.org" <robh+dt@kernel.org>, "kishon@ti.com" <kishon@ti.com>,
+        "k.debski@samsung.com" <k.debski@samsung.com>,
+        "kgene@kernel.org" <kgene@kernel.org>,
+        "jg1.han@samsung.com" <jg1.han@samsung.com>
+Subject: RE: [PATCH 0/4] phy: samsung-usb2: Add support for Vbus regulator
+Thread-Topic: [PATCH 0/4] phy: samsung-usb2: Add support for Vbus regulator
+Thread-Index: AQHQFTtby0z0s1gFjkODdkIEdARUfJyKTsTg
+Date: Thu, 11 Dec 2014 12:22:56 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0B0EB@AcuExch.aculab.com>
+References: <1418299367-2412-1-git-send-email-gautam.vivek@samsung.com>
+In-Reply-To: <1418299367-2412-1-git-send-email-gautam.vivek@samsung.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-None of these is used in kernel tree.
+From: Vivek Gautam
+> This has been on my to-do list for sometime.
+> Until now the host controller (specifically ehci-exynos) is responsible
+> for enabling VBUS supply. This opens up one more issue which is, when
+> only ohci-exynos is enabled and ehci-exynosis disabled then VBUS was
+> never enabled (since ohci did not have the code to enabled the VBUS supply).
+> 
+> Rather it should be wise to move the VBUS related stuff to phy driver and
+> let phy take care of enabling it.
+> 
+> This patch series adds that VBUS regulator to phy-samsung-usb2 driver,
+> adds necessary binding information as well as vbus-supply properties
+> to phy nodes on exynos5250 systems.
+...
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Cc: linux-api@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
-RFC, I don't know can these be used in user-space?
----
- include/uapi/linux/soundcard.h | 22 ----------------------
- 1 file changed, 22 deletions(-)
+Does this go anyway to allowing devices to be powered from a micro-usb
+connector while acting as a USB host (USB OTG).
+ie when you want VBUS disabled even though it would normally
+need to be enabled.
 
-diff --git a/include/uapi/linux/soundcard.h b/include/uapi/linux/soundcard.h
-index f3b21f989872..d2256bf4bdd8 100644
---- a/include/uapi/linux/soundcard.h
-+++ b/include/uapi/linux/soundcard.h
-@@ -48,32 +48,10 @@
-  *	Supported card ID numbers (Should be somewhere else?)
-  */
- 
--#define SNDCARD_ADLIB		1
- #define SNDCARD_SB		2
- #define SNDCARD_PAS		3
--#define SNDCARD_GUS		4
- #define SNDCARD_MPU401		5
--#define SNDCARD_SB16		6
--#define SNDCARD_SB16MIDI	7
- #define SNDCARD_UART6850	8
--#define SNDCARD_GUS16		9
--#define SNDCARD_MSS		10
--#define SNDCARD_PSS     	11
--#define SNDCARD_SSCAPE		12
--#define SNDCARD_PSS_MPU     	13
--#define SNDCARD_PSS_MSS     	14
--#define SNDCARD_SSCAPE_MSS	15
--#define SNDCARD_TRXPRO		16
--#define SNDCARD_TRXPRO_SB	17
--#define SNDCARD_TRXPRO_MPU	18
--#define SNDCARD_MAD16		19
--#define SNDCARD_MAD16_MPU	20
--#define SNDCARD_CS4232		21
--#define SNDCARD_CS4232_MPU	22
--#define SNDCARD_MAUI		23
--#define SNDCARD_PSEUDO_MSS	24
--#define SNDCARD_GUSPNP		25
--#define SNDCARD_UART401		26
- /* Sound card numbers 27 to N are reserved. Don't add more numbers here. */
- 
- /***********************************
--- 
-2.1.3
+	David
+
+
 
