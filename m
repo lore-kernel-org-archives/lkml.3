@@ -1,166 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329AbaLKBCc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:02:32 -0500
-Received: from us-mx2.synaptics.com ([192.147.44.131]:9829 "EHLO
-	us-mx1.synaptics.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755357AbaLKBCa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:02:30 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Wed, 10 Dec 2014 17:26:37 -0800
-Message-ID: <5488ECC8.8070802@synaptics.com>
-Date: Wed, 10 Dec 2014 17:00:56 -0800
-From: Andrew Duggan <aduggan@synaptics.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S933405AbaLKBDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:03:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53326 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933183AbaLKBDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 20:03:46 -0500
+Date: Thu, 11 Dec 2014 02:03:44 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, mingo@redhat.com,
+        peterz@infradead.org, tglx@linutronix.de, konrad.wilk@oracle.com,
+        david.vrabel@citrix.com, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, luto@amacapital.net, JBeulich@suse.com,
+        jgross@suse.com, bpoirier@suse.de, x86@kernel.org,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be
+	preempted
+Message-ID: <20141211010344.GO25677@wotan.suse.de>
+References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com> <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com> <5488E552.8050207@zytor.com>
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH] HID: rmi: Add support for the touchpad in the Razer Blade
- 14 laptop
-References: <1416874819-9914-1-git-send-email-aduggan@synaptics.com>	<54863F7A.30609@synaptics.com> <CAN+gG=Epx3m0=mg-xfKJveZBvo5ySe5cpFJgRbo79DvKgCFa4A@mail.gmail.com>
-In-Reply-To: <CAN+gG=Epx3m0=mg-xfKJveZBvo5ySe5cpFJgRbo79DvKgCFa4A@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.4.10.98]
-X-Brightmail-Tracker: AAAAAQAAAWE=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5488E552.8050207@zytor.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On Wed, Dec 10, 2014 at 04:29:06PM -0800, H. Peter Anvin wrote:
+> On 12/10/2014 03:34 PM, Luis R. Rodriguez wrote:
+> > diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> > index 344b63f..40b5c0c 100644
+> > --- a/arch/x86/kernel/entry_32.S
+> > +++ b/arch/x86/kernel/entry_32.S
+> > @@ -982,7 +982,28 @@ ENTRY(xen_hypervisor_callback)
+> >  ENTRY(xen_do_upcall)
+> >  1:	mov %esp, %eax
+> >  	call xen_evtchn_do_upcall
+> > +#ifdef CONFIG_PREEMPT
+> >  	jmp  ret_from_intr
+> > +#else
+> > +	GET_THREAD_INFO(%ebp)
+> > +#ifdef CONFIG_VM86
+> > +	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+> > +	movb PT_CS(%esp), %al
+> > +	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
+> > +#else
+> > +	movl PT_CS(%esp), %eax
+> > +	andl $SEGMENT_RPL_MASK, %eax
+> > +#endif
+> > +	cmpl $USER_RPL, %eax
+> > +	jae resume_userspace		# returning to v8086 or userspace
+> > +	DISABLE_INTERRUPTS(CLBR_ANY)
+> > +	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	jz resume_kernel
+> > +	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	call cond_resched_irq
+> > +	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	jmp resume_kernel
+> > +#endif /* CONFIG_PREEMPT */
+> >  	CFI_ENDPROC
+> >  ENDPROC(xen_hypervisor_callback)
+> >  
+> > diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> > index c0226ab..0ccdd06 100644
+> > --- a/arch/x86/kernel/entry_64.S
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -1170,7 +1170,23 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+> >  	popq %rsp
+> >  	CFI_DEF_CFA_REGISTER rsp
+> >  	decl PER_CPU_VAR(irq_count)
+> > +#ifdef CONFIG_PREEMPT
+> >  	jmp  error_exit
+> > +#else
+> > +	movl %ebx, %eax
+> > +	RESTORE_REST
+> > +	DISABLE_INTERRUPTS(CLBR_NONE)
+> > +	TRACE_IRQS_OFF
+> > +	GET_THREAD_INFO(%rcx)
+> > +	testl %eax, %eax
+> > +	je error_exit_user
+> > +	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	jz retint_kernel
+> > +	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	call cond_resched_irq
+> > +	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+> > +	jmp retint_kernel
+> > +#endif /* CONFIG_PREEMPT */
+> >  	CFI_ENDPROC
+> >  END(xen_do_hypervisor_callback)
+> >  
+> > @@ -1398,6 +1414,7 @@ ENTRY(error_exit)
+> >  	GET_THREAD_INFO(%rcx)
+> >  	testl %eax,%eax
+> >  	jne retint_kernel
+> > +error_exit_user:
+> >  	LOCKDEP_SYS_EXIT_IRQ
+> >  	movl TI_flags(%rcx),%edx
+> >  	movl $_TIF_WORK_MASK,%edi
+> 
+> You're adding a bunch of code for the *non*-preemptive case here... why?
 
-Thanks for reviewing my patch. Comments and questions below.
+This is an issue onloy for for non*-preemptive kernels.
 
-On 12/10/2014 12:51 PM, Benjamin Tissoires wrote:
-> On Mon, Dec 8, 2014 at 7:16 PM, Andrew Duggan <aduggan@synaptics.com> wrote:
->> On 11/24/2014 04:20 PM, Andrew Duggan wrote:
->>> The Razer Blade 14 has a Synaptic's TouchPad on one of the interfaces of
->>> a composite USB device. This patch allows the hid-rmi driver to bind
->>> to that interface. It also adds support for the external click buttons
->>> on the Razer's touchpad. External buttons are reported using generic
->>> mouse reports instead of through the F30 like it is on ClickPads.
->>>
->>> Signed-off-by: Andrew Duggan <aduggan@synaptics.com>
->>> ---
->>> This patch depends on the "HID: rmi: Scan the report descriptor to
->>> determine if the device is
->>> suitable for the hid-rmi driver" I submitted earlier today to correctly
->>> bind to the touchpad HID
->>> device in the composite USB device.
->> Any comments on this patch?
-> Again, sorry for the lag on this series. I think now that I re-read
-> this one I understood why I did not put too many efforts to properly
-> review the series. This one is a little bit worrisome IMO.
->
+Some of Xen's hypercalls can take a long time and unfortunately for
+*non*-preemptive kernels this can be quite a bit of an issue.
+We've handled situations like this with cond_resched() before which will
+push even *non*-preemptive kernels to behave as voluntarily preemptive,
+I was not aware to what extent this was done and precedents set but
+its pretety widespread now... this then just addresses once particular
+case where this is also an issuefor but now in IRQ context.
 
-I wasn't sure about this patch either. But, after waiting a while and 
-not coming with with anything better I figured I would post it to at 
-least get some feedback.
+I agree its a hack but so are all the other cond_reshed() calls then.
+I don't think its a good idea to be spreading use of something like
+this everywhere but after careful review and trying toa void this
+exact code for a while I have not been able to find any other reasonable
+alternative.
 
->> Thanks,
->> Andrew
->>
->>>    drivers/hid/hid-core.c |  4 +++-
->>>    drivers/hid/hid-ids.h  |  3 +++
->>>    drivers/hid/hid-rmi.c  | 15 ++++++++++++++-
->>>    3 files changed, 20 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
->>> index ba9dc59..d69ea16 100644
->>> --- a/drivers/hid/hid-core.c
->>> +++ b/drivers/hid/hid-core.c
->>> @@ -792,7 +792,9 @@ static int hid_scan_report(struct hid_device *hid)
->>>          /*
->>>          * Vendor specific handlings
->>>          */
->>> -       if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS) &&
->>> +       if ((hid->vendor == USB_VENDOR_ID_SYNAPTICS
->>> +           || (hid->vendor == USB_VENDOR_ID_RAZER
->>> +           && hid->product == USB_DEVICE_ID_RAZER_BLADE_14)) &&
-> I don't like this. We already have a blacklist, an ignore list, and
-> there, we will have a new blacklist...
->
-> I understood why you put this here, the current have_special_driver
-> list will not fit 100%. Still, I find it not good.
->
-> It works, but I think we should still head for an entry in
-> have_special_driver, and a specific behavior in hid-rmi which would
-> rely on hid-input to handle the keyboard/mouse buttons and the rest.
-
-Are you suggesting that we have hid-rmi bind to all of the hid devices 
-on this USB device and then have hid-rmi decide what reports it should 
-process and let the remaining events continue to hid-input? I guess once 
-hid-rmi loads it could look at the hid report ids and determine if it is 
-one of our devices and if it should put the device into rmi mode. If not 
-simply act as a pass through.
-
->>>              (hid->group == HID_GROUP_GENERIC)) {
->>>                  if ((parser->scan_flags & HID_SCAN_FLAG_VENDOR_SPECIFIC)
->>>                      && (parser->scan_flags &
->>> HID_SCAN_FLAG_GENDESK_POINTER))
->>> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
->>> index 25cd674..c677aad 100644
->>> --- a/drivers/hid/hid-ids.h
->>> +++ b/drivers/hid/hid-ids.h
->>> @@ -751,6 +751,9 @@
->>>    #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3001               0x3001
->>>    #define USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH_3008               0x3008
->>>    +#define USB_VENDOR_ID_RAZER          0x1532
->>> +#define USB_DEVICE_ID_RAZER_BLADE_14   0x011D
->>> +
->>>    #define USB_VENDOR_ID_REALTEK         0x0bda
->>>    #define USB_DEVICE_ID_REALTEK_READER  0x0152
->>>    diff --git a/drivers/hid/hid-rmi.c b/drivers/hid/hid-rmi.c
->>> index 3cccff7..1f131df 100644
->>> --- a/drivers/hid/hid-rmi.c
->>> +++ b/drivers/hid/hid-rmi.c
->>> @@ -453,7 +453,15 @@ static int rmi_raw_event(struct hid_device *hdev,
->>>          case RMI_ATTN_REPORT_ID:
->>>                  return rmi_input_event(hdev, data, size);
->>>          case RMI_MOUSE_REPORT_ID:
->>> -               rmi_schedule_reset(hdev);
->>> +               /*
->>> +                * touchpads with physical mouse buttons will report those
->>> +                * buttons in mouse reports even in RMI mode. Only reset
->>> +                * the device if we see reports which contain X or Y data.
->>> +                */
->>> +               if (data[2] != 0 || data[3] != 0)
-> this seems a little bit magical. There may not be an other solution,
-> but I would prefer that we look at alternatives before using this
-> magical numbers (will the touchpad always use the same report
-> descriptor on the mouse interface?)
-
-I did just look at the reports and see where X and Y where reported. 
-Since mouse mode is really only there for compatibility when no custom 
-driver is present I think it is unlikely that it will change in the 
-future. However, there is no guarantee that it won't change. I will see 
-if I can come up with is less of a hack. Maybe, I can use the event 
-callback instead of raw_event.
-
->>> +                       rmi_schedule_reset(hdev);
->>> +               else
->>> +                       return 1;
->>>                  break;
->>>          }
->>>    @@ -871,6 +879,11 @@ static int rmi_input_mapping(struct hid_device
->>> *hdev,
->>>                  struct hid_input *hi, struct hid_field *field,
->>>                  struct hid_usage *usage, unsigned long **bit, int *max)
->>>    {
->>> +       if (field->application == HID_GD_POINTER
->>> +               && (usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON)
->>> +               /* Pass mouse button reports to generic code for
->>> processing */
->>> +               return 0;
->>> +
->>>          /* we want to make HID ignore the advertised HID collection */
->>>          return -1;
->>>    }
->>
-> Cheers,
-> Benjamin
-
-Andrew
+  Luis
