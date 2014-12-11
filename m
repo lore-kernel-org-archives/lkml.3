@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933532AbaLKCFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 21:05:50 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:11872 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932937AbaLKCFt (ORCPT
+	id S933558AbaLKCKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 21:10:23 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:37578 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932937AbaLKCKW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 21:05:49 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44841932"
-Message-ID: <5488F84A.8090303@cn.fujitsu.com>
-Date: Thu, 11 Dec 2014 09:50:02 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Wed, 10 Dec 2014 21:10:22 -0500
+Date: Wed, 10 Dec 2014 18:10:19 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, mcb30@ipxe.org
+Subject: Re: [PATCH V3 1/1] Drivers: hv: vmbus: Fix a bug in
+ vmbus_establish_gpadl()
+Message-ID: <20141211021019.GA5648@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	"K. Y. Srinivasan" <kys@microsoft.com>, gregkh@linuxfoundation.org,
+	linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+	olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com,
+	mcb30@ipxe.org
+References: <1418260380-8774-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joe@perches.com>
-Subject: Re: [PATCH v2] net: introduce helper macro for_each_cmsghdr
-References: <20141210.134804.1383875260695429574.davem@davemloft.net> <20141210.144430.1749715282635917425.davem@davemloft.net> <5488EDF7.7070001@cn.fujitsu.com> <20141210.204703.1525194278635097457.davem@davemloft.net>
-In-Reply-To: <20141210.204703.1525194278635097457.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.100]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418260380-8774-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-On 12/11/2014 09:47 AM, David Miller wrote:
+K. Y. Srinivasan,
 
-> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Date: Thu, 11 Dec 2014 09:05:59 +0800
+On Wed, Dec 10, 2014 at 05:13:00PM -0800, K. Y. Srinivasan wrote:
+> Correctly compute the local (gpadl) handle. 
+
+This description is still too sparse for me.  How was it computed before
+and why was this incorrect?  Pretend like you are trying to explain your
+patch to someone who has no idea what you did.
+
+> I would like to thank Michael Brown <mcb30@ipxe.org> for seeing this bug.
 > 
->> IMO, the user-land programs need to be build with the matched
->> headers separately.
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Reported-by: Michael Brown <mcb30@ipxe.org>
+> ---
+> Changes in V2: Added the Reported-by tag.
+> Changes in V3: Cleaned up the commit log.
 > 
-> You absolutely cannot provide this new interface to userland and
-> expect programs to be able to just use it, it's non-standard and does
-> not exist in older headers.
-
-Got it, sorry for my mistake, and thanks for your correction.
-
+>  drivers/hv/channel.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> I do not want this new interface available to userland programs.
-> They can just open-code the list traversal just like every program
-> in history has had to do since BSD UNIX.
+> diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+> index 433f72a..c76ffbe 100644
+> --- a/drivers/hv/channel.c
+> +++ b/drivers/hv/channel.c
+> @@ -366,8 +366,8 @@ int vmbus_establish_gpadl(struct vmbus_channel *channel, void *kbuffer,
+>  	unsigned long flags;
+>  	int ret = 0;
+>  
+> -	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
+> -	atomic_inc(&vmbus_connection.next_gpadl_handle);
+> +	next_gpadl_handle =
+> +		(atomic_inc_return(&vmbus_connection.next_gpadl_handle) - 1);
+>  
+Tell me if I understand this correctly.
 
-Agree. Let's leave the user-land ones as they are.
-I'll send a new version (without changing user-land ones) soon.
+Before it read the handle and incremented it.
 
-Best regards,
-Gu
+  y = x + 1
 
-> .
+Now it reads the handle, increments it, then decrements it.
+
+  y = (x + 1) - 1 = x
+
+>  	ret = create_gpadl_header(kbuffer, size, &msginfo, &msgcount);
+>  	if (ret)
+> -- 
+> 1.7.4.1
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-
+-- 
+- Jeremiah Mahler
