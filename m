@@ -1,61 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965144AbaLKQhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 11:37:35 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:41144 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934351AbaLKQhd (ORCPT
+	id S965165AbaLKQiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 11:38:23 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:37955 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934351AbaLKQiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 11:37:33 -0500
+	Thu, 11 Dec 2014 11:38:21 -0500
+Message-ID: <5489C85A.5020400@cumulusnetworks.com>
+Date: Thu, 11 Dec 2014 08:37:46 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQW95VoJ35+KXOfV8eqFjSnhgkAqUmFWOKyKMwOAR_x7Kg@mail.gmail.com>
-References: <1414387308-27148-5-git-send-email-jiang.liu@linux.intel.com>
- <tip-e22ce93870deae0e9a54e1539f0088538f187780@git.kernel.org>
- <CAE9FiQWaL1Qu1eP-fQV784ucy+r-65AZ95VyiUrefn0dNtfLDw@mail.gmail.com>
- <alpine.DEB.2.11.1412101820510.13233@nanos> <CAE9FiQW95VoJ35+KXOfV8eqFjSnhgkAqUmFWOKyKMwOAR_x7Kg@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Dec 2014 09:37:12 -0700
-Message-ID: <CAErSpo6D=-jyeuLowr+8tU0ncGdGUp7XRR7Ocofk8dQcx5X9Mw@mail.gmail.com>
-Subject: Re: [tip:x86/apic] x86, PCI, ACPI: Kill private function
- resource_to_addr() in arch/x86/pci/acpi.c
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Borislav Petkov <bp@alien8.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        Tony Luck <tony.luck@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Pirko <jiri@resnulli.us>
+CC: "Varlese, Marco" <marco.varlese@intel.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan>
+In-Reply-To: <20141211110115.GA1979@nanopsycho.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 5:31 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Dec 10, 2014 at 12:15 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> On Tue, 9 Dec 2014, Yinghai Lu wrote:
+On 12/11/14, 3:01 AM, Jiri Pirko wrote:
+> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
+>>> -----Original Message-----
+>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
+>>> Sent: Wednesday, December 10, 2014 5:04 PM
+>>> To: Jiri Pirko
+>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
+>>> stephen@networkplumber.org; Fastabend, John R;
+>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+>>> kernel@vger.kernel.org
+>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+>>> configuration
+>>>
+>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
+>>>>> From: Marco Varlese <marco.varlese@intel.com>
+>>>>>
+>>>>> Switch hardware offers a list of attributes that are configurable on
+>>>>> a per port basis.
+>>>>> This patch provides a mechanism to configure switch ports by adding
+>>>>> an NDO for setting specific values to specific attributes.
+>>>>> There will be a separate patch that extends iproute2 to call the new
+>>>>> NDO.
+>>>>
+>>>> What are these attributes? Can you give some examples. I'm asking
+>>>> because there is a plan to pass generic attributes to switch ports
+>>>> replacing current specific ndo_switch_port_stp_update. In this case,
+>>>> bridge is setting that attribute.
+>>>>
+>>>> Is there need to set something directly from userspace or does it make
+>>>> rather sense to use involved bridge/ovs/bond ? I think that both will
+>>>> be needed.
+>>> +1
+>>>
+>>> I think for many attributes it would be best to have both. The in kernel callers
+>>> and netlink userspace can use the same driver ndo_ops.
+>>>
+>>> But then we don't _require_ any specific bridge/ovs/etc module. And we
+>>> may have some attributes that are not specific to any existing software
+>>> module. I'm guessing Marco has some examples of these.
+>>>
+>>> [...]
+>>>
+>>>
+>>> --
+>>> John Fastabend         Intel Corporation
+>> We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
 >>
->> Can you please
->> ...
->> 2) Send patches inline. It's a pain to review and reply and I can't
->>    use my normal tooling.
+>> An example of attributes are:
+>> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
+>> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
+>> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
+>>
+>> Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
+>>
+>> One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
+>>
+>> I hope this clarifies some points.
+> It does. Makes sense. We need to expose this attr set/get for both
+> in-kernel and userspace use cases.
+>
+> Please adjust you patch for this. Also, as a second patch, it would be
+> great if you can convert ndo_switch_port_stp_update to this new ndo.
 
-I agree, it is noticeably more hassle for me to deal with patches sent
-as attachments.  I can do it, but I tend to avoid it because it's a
-nuisance.
+Why are we exposing generic switch attribute get/set from userspace ?. 
+We already have specific attributes for learning/flooding which can be 
+extended further.
+And for in kernel api....i had a sample patch in my RFC series (Which i 
+was going to resubmit, until it was decided that we will use existing 
+api around ndo_bridge_setlink/ndo_bridge_getlink):
+http://www.spinics.net/lists/netdev/msg305473.html
 
-> I can not, as gmail does not allow that.
+Thanks,
+Roopa
 
-I agree, gmail is a pain in the neck in this regard.  I personally use
-mutt with imap to my gmail account to send patches and to review and
-apply patches.  It isn't perfect, and it is a bit of a hassle, but it
-can be done.
 
-Bjorn
+
