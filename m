@@ -1,156 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964869AbaLKOFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:05:31 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50068 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934026AbaLKOF0 (ORCPT
+	id S964897AbaLKOFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:05:38 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:53498 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934028AbaLKOFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:05:26 -0500
+	Thu, 11 Dec 2014 09:05:32 -0500
 From: Christian Borntraeger <borntraeger@de.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, paulmck@linux.vnet.ibm.com,
         torvalds@linux-foundation.org, George Spelvin <linux@horizon.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH 1/8] kernel: Provide READ_ONCE and ASSIGN_ONCE
-Date: Thu, 11 Dec 2014 15:05:04 +0100
-Message-Id: <1418306712-17245-2-git-send-email-borntraeger@de.ibm.com>
+        Christian Borntraeger <borntraeger@de.ibm.com>, linux-mm@kvack.org
+Subject: [PATCHv5 0/8]  ACCESS_ONCE and non-scalar accesses
+Date: Thu, 11 Dec 2014 15:05:03 +0100
+Message-Id: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
 X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
-References: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121114-0021-0000-0000-0000021A74E1
+x-cbid: 14121114-0013-0000-0000-0000022E3DB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+As discussed on LKML http://marc.info/?i=54611D86.4040306%40de.ibm.com
+ACCESS_ONCE might fail with specific compilers for non-scalar accesses.
 
-Let's provide READ_ONCE/ASSIGN_ONCE that will do all accesses via
-scalar types as suggested by Linus Torvalds. Accesses larger than
-the machines word size cannot be guaranteed to be atomic. These
-macros will use memcpy and emit a build warning.
+Here is a set of patches to tackle that problem.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- include/linux/compiler.h | 70 ++++++++++++++++++++++++++++++++++++++++++++++++
- lib/Makefile             |  2 +-
- lib/access.c             |  8 ++++++
- 3 files changed, 79 insertions(+), 1 deletion(-)
+The first patch introduce READ_ONCE and ASSIGN_ONCE. If the data structure
+is larger than the machine word size memcpy is used and a warning is emitted.
+The next patches fix up all in-tree users of ACCESS_ONCE on non-scalar types.
+
+Due to all the trouble when dealing with linux-next, I will defer the patch
+that forces ACCESS_ONCE to work only on scalar types after rc1 to give it
+a full spin in linux-next.
+
+If nobody complains I will ask Linus to pull this for 3.19 next week.
+The tree can be found at 
+
+git://git.kernel.org/pub/scm/linux/kernel/git/borntraeger/linux.git linux-next
+
+Changelog:
+v4->v5:
+1. READ_ONCE/ASSIGN_ONCE use x instead of p
+2. linux/types.h --> uapi/linux/types.h u??-->__u?? to avoid header
+   inclusion fun and compile errors
+3. Actually provide data_access_exceeds_word_size.
+4. also move handle_pte_fault to a barrier as there is ppc44x which has
+   64bit ptes and 32bit word size. Some sanity check from a VM person
+   would be good.
+
+Cc: linux-mm@kvack.org
+
+Christian Borntraeger (8):
+  kernel: Provide READ_ONCE and ASSIGN_ONCE
+  mm: replace ACCESS_ONCE with READ_ONCE or barriers
+  x86/spinlock: Replace ACCESS_ONCE with READ_ONCE
+  x86/gup: Replace ACCESS_ONCE with READ_ONCE
+  mips/gup: Replace ACCESS_ONCE with READ_ONCE
+  arm64/spinlock: Replace ACCESS_ONCE READ_ONCE
+  arm/spinlock: Replace ACCESS_ONCE with READ_ONCE
+  s390/kvm: REPLACE barrier fixup with READ_ONCE
+
+ arch/arm/include/asm/spinlock.h   |  4 +--
+ arch/arm64/include/asm/spinlock.h |  4 +--
+ arch/mips/mm/gup.c                |  2 +-
+ arch/s390/kvm/gaccess.c           | 18 ++++------
+ arch/x86/include/asm/spinlock.h   |  8 ++---
+ arch/x86/mm/gup.c                 |  2 +-
+ include/linux/compiler.h          | 70 +++++++++++++++++++++++++++++++++++++++
+ lib/Makefile                      |  2 +-
+ lib/access.c                      |  8 +++++
+ mm/gup.c                          |  2 +-
+ mm/memory.c                       | 11 +++++-
+ mm/rmap.c                         |  3 +-
+ 12 files changed, 108 insertions(+), 26 deletions(-)
  create mode 100644 lib/access.c
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index d5ad7b1..1437f02 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -186,6 +186,76 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
- # define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __LINE__)
- #endif
- 
-+#include <uapi/linux/types.h>
-+
-+void data_access_exceeds_word_size(void)
-+#ifdef __compiletime_warning
-+__compiletime_warning("data access exceeds word size and won't be atomic")
-+#endif
-+;
-+
-+static __always_inline void __read_once_size(volatile void *p, void *res, int size)
-+{
-+	switch (size) {
-+	case 1: *(__u8 *)res = *(volatile __u8 *)p; break;
-+	case 2: *(__u16 *)res = *(volatile __u16 *)p; break;
-+	case 4: *(__u32 *)res = *(volatile __u32 *)p; break;
-+#ifdef CONFIG_64BIT
-+	case 8: *(__u64 *)res = *(volatile __u64 *)p; break;
-+#endif
-+	default:
-+		barrier();
-+		__builtin_memcpy((void *)res, (const void *)p, size);
-+		data_access_exceeds_word_size();
-+		barrier();
-+	}
-+}
-+
-+static __always_inline void __assign_once_size(volatile void *p, void *res, int size)
-+{
-+	switch (size) {
-+	case 1: *(volatile __u8 *)p = *(__u8 *)res; break;
-+	case 2: *(volatile __u16 *)p = *(__u16 *)res; break;
-+	case 4: *(volatile __u32 *)p = *(__u32 *)res; break;
-+#ifdef CONFIG_64BIT
-+	case 8: *(volatile __u64 *)p = *(__u64 *)res; break;
-+#endif
-+	default:
-+		barrier();
-+		__builtin_memcpy((void *)p, (const void *)res, size);
-+		data_access_exceeds_word_size();
-+		barrier();
-+	}
-+}
-+
-+/*
-+ * Prevent the compiler from merging or refetching reads or writes. The
-+ * compiler is also forbidden from reordering successive instances of
-+ * READ_ONCE, ASSIGN_ONCE and ACCESS_ONCE (see below), but only when the
-+ * compiler is aware of some particular ordering.  One way to make the
-+ * compiler aware of ordering is to put the two invocations of READ_ONCE,
-+ * ASSIGN_ONCE or ACCESS_ONCE() in different C statements.
-+ *
-+ * In contrast to ACCESS_ONCE these two macros will also work on aggregate
-+ * data types like structs or unions. If the size of the accessed data
-+ * type exceeds the word size of the machine (e.g., 32 bits or 64 bits)
-+ * READ_ONCE() and ASSIGN_ONCE()  will fall back to memcpy and print a
-+ * compile-time warning.
-+ *
-+ * Their two major use cases are: (1) Mediating communication between
-+ * process-level code and irq/NMI handlers, all running on the same CPU,
-+ * and (2) Ensuring that the compiler does not  fold, spindle, or otherwise
-+ * mutilate accesses that either do not require ordering or that interact
-+ * with an explicit memory barrier or atomic instruction that provides the
-+ * required ordering.
-+ */
-+
-+#define READ_ONCE(x) \
-+	({ typeof(x) __val; __read_once_size(&x, &__val, sizeof(__val)); __val; })
-+
-+#define ASSIGN_ONCE(val, x) \
-+	({ typeof(x) __val; __val = val; __assign_once_size(&x, &__val, sizeof(__val)); __val; })
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __ASSEMBLY__ */
-diff --git a/lib/Makefile b/lib/Makefile
-index 7512dc9..264e2d8 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -7,7 +7,7 @@ ORIG_CFLAGS := $(KBUILD_CFLAGS)
- KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
- endif
- 
--lib-y := ctype.o string.o vsprintf.o cmdline.o \
-+lib-y := access.o ctype.o string.o vsprintf.o cmdline.o \
- 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
- 	 idr.o int_sqrt.o extable.o \
- 	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
-diff --git a/lib/access.c b/lib/access.c
-new file mode 100644
-index 0000000..d56307e
---- /dev/null
-+++ b/lib/access.c
-@@ -0,0 +1,8 @@
-+#include <linux/compiler.h>
-+#include <linux/export.h>
-+
-+void data_access_exceeds_word_size(void)
-+{
-+}
-+EXPORT_SYMBOL(data_access_exceeds_word_size);
-+
 -- 
 1.9.3
 
