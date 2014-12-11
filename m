@@ -1,78 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901AbaLKPTr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 10:19:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47928 "EHLO mx1.redhat.com"
+	id S964953AbaLKPUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 10:20:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42184 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964785AbaLKPTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 10:19:45 -0500
-Date: Thu, 11 Dec 2014 10:19:33 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Peter Wu <peter@lekensteyn.nl>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew de los Reyes <adlr@chromium.org>, Jiri Kosina <jkosina@suse.cz>
-Subject: Re: About "HID: logitech-hidpp: add support of the first Logitech
- Wireless Touchpad"
-Message-ID: <20141211151933.GB29747@mail.corp.redhat.com>
-References: <1659058.m7A8Z3l7lH@al>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1659058.m7A8Z3l7lH@al>
+	id S933040AbaLKPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 10:20:31 -0500
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>, Jiri Olsa <jolsa@kernel.org>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 4/8] perf data: Add a 'perf' prefix to the generic fields
+Date: Thu, 11 Dec 2014 16:12:25 +0100
+Message-Id: <1418310749-22267-5-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
+References: <1418310749-22267-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-On Dec 11 2014 or thereabouts, Peter Wu wrote:
-> Hi Benjamin,
-> 
-> In commit 57ac86cf52e903d9e3e0f12b34c814cce6b65550 ("HID:
-> logitech-hidpp: add support of the first Logitech Wireless Touchpad")
-> which is in jikos/hid, you made this change to wtp_raw_event:
-> 
->         switch (data[0]) {
->         case 0x02:
-> -               if (size < 21)
-> -                       return 1;
-> -               return wtp_mouse_raw_xy_event(hidpp, &data[7]);
-> +               if (hidpp->quirks & HIDPP_QUIRK_WTP_PHYSICAL_BUTTONS) {
-> +                       input_event(wd->input, EV_KEY, BTN_LEFT,
-> +                                       !!(data[1] & 0x01));
-> +                       input_event(wd->input, EV_KEY, BTN_RIGHT,
-> +                                       !!(data[1] & 0x02));
-> +                       input_sync(wd->input);
-> +               } else {
-> +                       if (size < 21)
-> +                               return 1;
-> +                       return wtp_mouse_raw_xy_event(hidpp, &data[7]);
-> +               }
->         case REPORT_ID_HIDPP_LONG:
->                 if ((report->fap.feature_index != wd->mt_feature_index) ||
->                     (report->fap.funcindex_clientid != EVENT_TOUCHPAD_RAW_XY))
->                         return 1;
->                 hidpp_touchpad_raw_xy_event(hidpp, data + 4, &raw);
->  
->                 wtp_send_raw_xy_event(hidpp, &raw);
->                 return 0;
->         }
-> 
-> Report ID 2 is the mouse descriptor, so it seems correct in that it
-> falls-through to the next case, but I wanted to check with you that this
-> is indeed your intention. If so, could you explicitly mark it with a
-> comment, /* fallthrough */ ?
+Some of the tracers bring their own id or pid fields and we can end up
+having two of them. This patch adds a "perf_" prefix to the 'generic'
+fields so we avoid a clash of the member names.
 
-Yep, it is indeed a bug. I see what happened:
-The old code contained a return at the end of the case, and I completely
-forget to prevent the fall through with a break. Gosh, I should have
-been more careful. Thanks for spotting that!
+The change is visible in the babeltrace output:
 
-Cheers,
-Benjamin
+Before:
+  $ babeltrace ./ctf-data/
+  [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
+  [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
+  ...
 
-> -- 
-> Kind regards,
-> Peter
-> https://lekensteyn.nl
-> 
+Now:
+  $ babeltrace ./ctf-data/
+  [03:19:13.962131936] (+0.000001935) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 8 }
+  [03:19:13.962133732] (+0.000001796) cycles: { }, { perf_ip = 0xFFFFFFFF8105443A, perf_tid = 20714, perf_pid = 20714, perf_period = 114 }
+  ...
+
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jeremie Galarneau <jgalar@efficios.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ tools/perf/util/data-convert-bt.c | 42 ++++++++++++++++++++-------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
+
+diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
+index ff4826c1745f..e372e03ff480 100644
+--- a/tools/perf/util/data-convert-bt.c
++++ b/tools/perf/util/data-convert-bt.c
+@@ -147,60 +147,62 @@ static int add_generic_values(struct ctf_writer *cw,
+ 	 */
+ 
+ 	if (type & PERF_SAMPLE_IP) {
+-		ret = value_set_u64_hex(cw, event, "ip", sample->ip);
++		ret = value_set_u64_hex(cw, event, "perf_ip", sample->ip);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_TID) {
+-		ret = value_set_s32(cw, event, "tid", sample->tid);
++		ret = value_set_s32(cw, event, "perf_tid", sample->tid);
+ 		if (ret)
+ 			return -1;
+ 
+-		ret = value_set_s32(cw, event, "pid", sample->pid);
++		ret = value_set_s32(cw, event, "perf_pid", sample->pid);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if ((type & PERF_SAMPLE_ID) ||
+ 	    (type & PERF_SAMPLE_IDENTIFIER)) {
+-		ret = value_set_u64(cw, event, "id", sample->id);
++		ret = value_set_u64(cw, event, "perf_id", sample->id);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_STREAM_ID) {
+-		ret = value_set_u64(cw, event, "stream_id", sample->stream_id);
++		ret = value_set_u64(cw, event, "perf_stream_id", sample->stream_id);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CPU) {
+-		ret = value_set_u32(cw, event, "cpu", sample->cpu);
++		ret = value_set_u32(cw, event, "perf_cpu", sample->cpu);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_PERIOD) {
+-		ret = value_set_u64(cw, event, "period", sample->period);
++		ret = value_set_u64(cw, event, "perf_period", sample->period);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_WEIGHT) {
+-		ret = value_set_u64(cw, event, "weight", sample->weight);
++		ret = value_set_u64(cw, event, "perf_weight", sample->weight);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_DATA_SRC) {
+-		ret = value_set_u64(cw, event, "data_src", sample->data_src);
++		ret = value_set_u64(cw, event, "perf_data_src",
++				sample->data_src);
+ 		if (ret)
+ 			return -1;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_TRANSACTION) {
+-		ret = value_set_u64(cw, event, "transaction", sample->transaction);
++		ret = value_set_u64(cw, event, "perf_transaction",
++				sample->transaction);
+ 		if (ret)
+ 			return -1;
+ 	}
+@@ -276,34 +278,34 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
+ 	} while (0)
+ 
+ 	if (type & PERF_SAMPLE_IP)
+-		ADD_FIELD(event_class, cw->data.u64_hex, "ip");
++		ADD_FIELD(event_class, cw->data.u64_hex, "perf_ip");
+ 
+ 	if (type & PERF_SAMPLE_TID) {
+-		ADD_FIELD(event_class, cw->data.s32, "tid");
+-		ADD_FIELD(event_class, cw->data.s32, "pid");
++		ADD_FIELD(event_class, cw->data.s32, "perf_tid");
++		ADD_FIELD(event_class, cw->data.s32, "perf_pid");
+ 	}
+ 
+ 	if ((type & PERF_SAMPLE_ID) ||
+ 	    (type & PERF_SAMPLE_IDENTIFIER))
+-		ADD_FIELD(event_class, cw->data.u64, "id");
++		ADD_FIELD(event_class, cw->data.u64, "perf_id");
+ 
+ 	if (type & PERF_SAMPLE_STREAM_ID)
+-		ADD_FIELD(event_class, cw->data.u64, "stream_id");
++		ADD_FIELD(event_class, cw->data.u64, "perf_stream_id");
+ 
+ 	if (type & PERF_SAMPLE_CPU)
+-		ADD_FIELD(event_class, cw->data.u32, "cpu");
++		ADD_FIELD(event_class, cw->data.u32, "perf_cpu");
+ 
+ 	if (type & PERF_SAMPLE_PERIOD)
+-		ADD_FIELD(event_class, cw->data.u64, "period");
++		ADD_FIELD(event_class, cw->data.u64, "perf_period");
+ 
+ 	if (type & PERF_SAMPLE_WEIGHT)
+-		ADD_FIELD(event_class, cw->data.u64, "weight");
++		ADD_FIELD(event_class, cw->data.u64, "perf_weight");
+ 
+ 	if (type & PERF_SAMPLE_DATA_SRC)
+-		ADD_FIELD(event_class, cw->data.u64, "data_src");
++		ADD_FIELD(event_class, cw->data.u64, "perf_data_src");
+ 
+ 	if (type & PERF_SAMPLE_TRANSACTION)
+-		ADD_FIELD(event_class, cw->data.u64, "transaction");
++		ADD_FIELD(event_class, cw->data.u64, "perf_transaction");
+ 
+ #undef ADD_FIELD
+ 	return 0;
+-- 
+1.9.3
+
