@@ -1,140 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314AbaLKMDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:03:44 -0500
-Received: from mga09.intel.com ([134.134.136.24]:6883 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932159AbaLKMDm convert rfc822-to-8bit (ORCPT
+	id S1757073AbaLKME3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:04:29 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59801 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980AbaLKME1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:03:42 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,557,1413270000"; 
-   d="scan'208";a="652183839"
-From: "Varlese, Marco" <marco.varlese@intel.com>
-To: Jiri Pirko <jiri@resnulli.us>
-CC: John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Thread-Index: AdAUhPtXGtfGamc6R3Ssf+89G79LDwAFGVwAAAB5JYAAIzgFYAACaLCAAAIO5jA=
-Date: Thu, 11 Dec 2014 12:02:36 +0000
-Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AC3E77@IRSMSX108.ger.corp.intel.com>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
- <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com>
- <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
- <20141211110115.GA1979@nanopsycho.lan>
-In-Reply-To: <20141211110115.GA1979@nanopsycho.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.182]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Dec 2014 07:04:27 -0500
+Message-ID: <54898841.3060108@cantab.net>
+Date: Thu, 11 Dec 2014 12:04:17 +0000
+From: David Vrabel <dvrabel@cantab.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: xen-devel <xen-devel@lists.xenproject.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <Boris.Ostrovsky@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] xen: features and fixes for 3.19-rc0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Jiri Pirko [mailto:jiri@resnulli.us]
-> Sent: Thursday, December 11, 2014 11:01 AM
-> To: Varlese, Marco
-> Cc: John Fastabend; netdev@vger.kernel.org;
-> stephen@networkplumber.org; Fastabend, John R;
-> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
-> configuration
-> 
-> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
-> >> -----Original Message-----
-> >> From: John Fastabend [mailto:john.fastabend@gmail.com]
-> >> Sent: Wednesday, December 10, 2014 5:04 PM
-> >> To: Jiri Pirko
-> >> Cc: Varlese, Marco; netdev@vger.kernel.org;
-> >> stephen@networkplumber.org; Fastabend, John R;
-> >> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
-> >> kernel@vger.kernel.org
-> >> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
-> >> configuration
-> >>
-> >> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
-> >> > Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
-> >> >> From: Marco Varlese <marco.varlese@intel.com>
-> >> >>
-> >> >> Switch hardware offers a list of attributes that are configurable
-> >> >> on a per port basis.
-> >> >> This patch provides a mechanism to configure switch ports by
-> >> >> adding an NDO for setting specific values to specific attributes.
-> >> >> There will be a separate patch that extends iproute2 to call the
-> >> >> new NDO.
-> >> >
-> >> >
-> >> > What are these attributes? Can you give some examples. I'm asking
-> >> > because there is a plan to pass generic attributes to switch ports
-> >> > replacing current specific ndo_switch_port_stp_update. In this
-> >> > case, bridge is setting that attribute.
-> >> >
-> >> > Is there need to set something directly from userspace or does it
-> >> > make rather sense to use involved bridge/ovs/bond ? I think that
-> >> > both will be needed.
-> >>
-> >> +1
-> >>
-> >> I think for many attributes it would be best to have both. The in
-> >> kernel callers and netlink userspace can use the same driver ndo_ops.
-> >>
-> >> But then we don't _require_ any specific bridge/ovs/etc module. And
-> >> we may have some attributes that are not specific to any existing
-> >> software module. I'm guessing Marco has some examples of these.
-> >>
-> >> [...]
-> >>
-> >>
-> >> --
-> >> John Fastabend         Intel Corporation
-> >
-> >We do have a need to configure the attributes directly from user-space and
-> I have identified the tool to do that in iproute2.
-> >
-> >An example of attributes are:
-> >* enabling/disabling of learning of source addresses on a given port
-> >(you can imagine the attribute called LEARNING for example);
-> >* internal loopback control (i.e. LOOPBACK) which will control how the
-> >flow of traffic behaves from the switch fabric towards an egress port;
-> >* flooding for broadcast/multicast/unicast type of packets (i.e.
-> >BFLOODING, MFLOODING, UFLOODING);
-> >
-> >Some attributes would be of the type enabled/disabled while other will
-> allow specific values to allow the user to configure different behaviours of
-> that feature on that particular port on that platform.
-> >
-> >One thing to mention - as John stated as well - there might be some
-> attributes that are not specific to any software module but rather have to do
-> with the actual hardware/platform to configure.
-> >
-> >I hope this clarifies some points.
-> 
-> It does. Makes sense. We need to expose this attr set/get for both in-kernel
-> and userspace use cases.
-> 
-> Please adjust you patch for this. Also, as a second patch, it would be great if
-> you can convert ndo_switch_port_stp_update to this new ndo.
-> 
-> Thanks.
-> 
-> 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I was thinking of leaving the get side of things implemented via sysfs rather than implementing an NDO for it. Would this not be appropriate?
+Linus,
 
-- - -
-Marco Varlese
+Please git pull the following tag:
 
+ git://git.kernel.org/pub/scm/linux/kernel/git/xen/tip.git stable/for-linus-3.19-rc0-tag
+
+xen: features and fixes for 3.19-rc0
+
+- - Fully support non-coherent devices on ARM by introducing the
+  mechanisms to request the hypervisor to perform the required cache
+  maintainance operations.
+
+- - A number of pciback bug fixes and cleanups.  Notably a deadlock fix
+  if a PCI device was manually uunbound and a fix for incorrectly
+  restoring state after a function reset.
+
+- - In x86 PVHVM guests, use the APIC for interrupts if this has been
+  virtualized by the hardware.  This reduces the number of interrupt-
+  related VM exits on such hardware.
+
+Thanks.
+
+David
+
+ arch/arm/include/asm/device.h              |    1 +
+ arch/arm/include/asm/dma-mapping.h         |    7 +
+ arch/arm/include/asm/xen/page-coherent.h   |   66 +++++++--
+ arch/arm/include/asm/xen/page.h            |    4 +
+ arch/arm/xen/Makefile                      |    2 +-
+ arch/arm/xen/enlighten.c                   |    5 -
+ arch/arm/xen/mm.c                          |  121 +++++++++++++++++
+ arch/arm/xen/mm32.c                        |  202 ----------------------------
+ arch/arm64/include/asm/device.h            |    1 +
+ arch/arm64/include/asm/dma-mapping.h       |    7 +
+ arch/arm64/include/asm/xen/page-coherent.h |   44 +-----
+ arch/x86/include/asm/xen/cpuid.h           |   91 +++++++++++++
+ arch/x86/include/asm/xen/page-coherent.h   |    4 +-
+ arch/x86/include/asm/xen/page.h            |    7 +
+ arch/x86/pci/xen.c                         |   31 ++++-
+ drivers/pci/pci.c                          |    5 +-
+ drivers/xen/swiotlb-xen.c                  |   19 +--
+ drivers/xen/xen-pciback/passthrough.c      |   14 +-
+ drivers/xen/xen-pciback/pci_stub.c         |  112 ++++++++++++---
+ drivers/xen/xen-pciback/pciback.h          |    7 +-
+ drivers/xen/xen-pciback/vpci.c             |   14 +-
+ drivers/xen/xen-pciback/xenbus.c           |    4 +-
+ include/linux/device.h                     |    5 +
+ include/linux/pci.h                        |    2 +
+ include/xen/interface/features.h           |    3 -
+ include/xen/interface/grant_table.h        |   19 +++
+ 26 files changed, 488 insertions(+), 309 deletions(-)
+
+Boris Ostrovsky (2):
+      xen/pci: Defer initialization of MSI ops on HVM guests
+      xen/pci: Use APIC directly when APIC virtualization hardware is available
+
+David Vrabel (1):
+      Revert "swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single"
+
+Jan Beulich (1):
+      xen-pciback: drop SR-IOV VFs when PF driver unloads
+
+Konrad Rzeszutek Wilk (7):
+      xen/pciback: Don't deadlock when unbinding.
+      driver core: Provide an wrapper around the mutex to do lockdep warnings
+      xen/pciback: Include the domain id if removing the device whilst still in use
+      xen/pciback: Print out the domain owning the device.
+      xen/pciback: Remove tons of dereferences
+      PCI: Expose pci_load_saved_state for public consumption.
+      xen/pciback: Restore configuration space when detaching from a guest.
+
+Stefano Stabellini (15):
+      xen/arm: remove handling of XENFEAT_grant_map_identity
+      xen/arm: remove outer_*_range call
+      xen/arm: if(pfn_valid(pfn)) call native dma_ops
+      arm64: introduce is_device_dma_coherent
+      arm: introduce is_device_dma_coherent
+      xen/arm: use is_device_dma_coherent
+      xen: add a dma_addr_t dev_addr argument to xen_dma_map_page
+      xen/arm: use hypercall to flush caches in map_page
+      xen/arm/arm64: merge xen/mm32.c into xen/mm.c
+      xen/arm/arm64: introduce xen_arch_need_swiotlb
+      xen/arm: introduce GNTTABOP_cache_flush
+      swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
+      swiotlb-xen: remove BUG_ON in xen_bus_to_phys
+      swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
+      swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAEBAgAGBQJUiYhAAAoJEFxbo/MsZsTRJTkIAIi9zrj7029PkxggyEAZHvVO
+0XGwMGwXei6n8ofQFkFYEc5/3Df9JW7v05uqy2Y4bu+ifMvDa1C6R4tk5ol4bM4E
+sgs96yMiOSRwrVD9SgE73bW84i/Xa87LCpBoCi7417j1h+6e9oQ2l4+XiWTySSne
+N8/m/1QuD+6argsf2LN/a1XG1V9OInm8k9oGMM1prDwWN7JsZeaLyY3LSFXb6s2S
+o6KQmUiAa66WALCFkeatocq5+PZ5PXMndweo064Zyjfuj2pYdxeGkqmWQrA1IeY4
+wp2YP+XFrU36MPXD88VR9do9ovlxFCJG6tO0IWYcW8tiY+y4Rw2b+4C/oe4lm9U=
+=zcCQ
+-----END PGP SIGNATURE-----
