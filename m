@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758504AbaLKEPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 23:15:08 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:35516 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751AbaLKEPG (ORCPT
+	id S1758572AbaLKEPw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 23:15:52 -0500
+Received: from mail-qg0-f73.google.com ([209.85.192.73]:34166 "EHLO
+	mail-qg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931AbaLKEPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 23:15:06 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Fengguang Wu <fengguang.wu@intel.com>, Dave Jones <davej@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] net: sock: fix access via invalid file descriptor
-Date: Wed, 10 Dec 2014 20:14:55 -0800
-Message-Id: <1418271295-5829-1-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Dec 2014 23:15:50 -0500
+From: Ben Zhang <benzh@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Bard Liao <bardliao@realtek.com>, Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        Albert Chen <albertchen@realtek.com>, linux-kernel@vger.kernel.org,
+        Ben Zhang <benzh@chromium.org>
+Subject: [PATCH 1/3] ASoC: rt5677: add REGMAP_I2C and REGMAP_IRQ dependency
+Date: Wed, 10 Dec 2014 20:15:25 -0800
+Message-Id: <1418271327-14710-1-git-send-email-benzh@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-0day robot reported the following crash:
-[   21.233581] BUG: unable to handle kernel NULL pointer dereference at 0000000000000007
-[   21.234709] IP: [<ffffffff8156ebda>] sk_attach_bpf+0x39/0xc2
+The codec driver uses regmap to do i2c read/write.
+The codec driver started to use REGMAP_IRQ since:
 
-It's due to bpf_prog_get() returning ERR_PTR.
-Check it properly.
+5e3363ad1b7b2e1f197a3f56b01e21cb155ad454
+ASoC: rt5677: add GPIO IRQ support
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Fixes: 89aa075832b0 ("net: sock: allow eBPF programs to be attached to sockets")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Signed-off-by: Ben Zhang <benzh@chromium.org>
 ---
-Silly mistake. I was sure I've checked this error path. Apparently not :(
+ sound/soc/codecs/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
- net/core/filter.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/core/filter.c b/net/core/filter.c
-index 8cc3c03078b3..ec9baea10c16 100644
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@ -1103,8 +1103,8 @@ int sk_attach_bpf(u32 ufd, struct sock *sk)
- 		return -EPERM;
+diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+index 6f21a76..60f9425 100644
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -503,6 +503,8 @@ config SND_SOC_RT5670
  
- 	prog = bpf_prog_get(ufd);
--	if (!prog)
--		return -EINVAL;
-+	if (IS_ERR(prog))
-+		return PTR_ERR(prog);
+ config SND_SOC_RT5677
+ 	tristate
++	select REGMAP_I2C
++	select REGMAP_IRQ
  
- 	if (prog->aux->prog_type != BPF_PROG_TYPE_SOCKET_FILTER) {
- 		/* valid fd, but invalid program type */
+ config SND_SOC_RT5677_SPI
+ 	tristate
 -- 
-1.7.9.5
+2.2.0.rc0.207.ga3a616c
 
