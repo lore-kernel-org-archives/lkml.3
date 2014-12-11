@@ -1,114 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476AbaLKKT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:19:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750762AbaLKKTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:19:55 -0500
-Date: Thu, 11 Dec 2014 11:18:59 +0100
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-api@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Alexander Duyck <alexander.duyck@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>, brouer@redhat.com
-Subject: Re: [RFC PATCH 0/3] Faster than SLAB caching of SKBs with qmempool
- (backed by alf_queue)
-Message-ID: <20141211111859.21e23e90@redhat.com>
-In-Reply-To: <alpine.DEB.2.11.1412101339480.22982@gentwo.org>
-References: <20141210033902.2114.68658.stgit@ahduyck-vm-fedora20>
-	<20141210141332.31779.56391.stgit@dragon>
-	<alpine.DEB.2.11.1412101339480.22982@gentwo.org>
+	id S1757295AbaLKKV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:21:56 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:49766 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaLKKVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 05:21:53 -0500
+Date: Thu, 11 Dec 2014 11:21:49 +0100
+From: Dongsu Park <dongsu.park@profitbricks.com>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: Block layer projects that I haven't had time for
+Message-ID: <20141211102149.GB2409@gmail.com>
+References: <20141124041629.GA17907@kmo-pixel>
+ <20141204110027.GA28552@gmail.com>
+ <20141206030205.GA22669@kmo-pixel>
+ <20141208114813.GA2724@gmail.com>
+ <20141210224921.GB31102@daterainc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141210224921.GB31102@daterainc.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014 13:51:32 -0600 (CST)
-Christoph Lameter <cl@linux.com> wrote:
+Hi Kent,
 
-> On Wed, 10 Dec 2014, Jesper Dangaard Brouer wrote:
+On 10.12.2014 14:49, Kent Overstreet wrote:
+> On Mon, Dec 08, 2014 at 12:48:13PM +0100, Dongsu Park wrote:
+> > Thanks for the reply.
+> > 
+> > On 05.12.2014 19:02, Kent Overstreet wrote:
+> > > On Thu, Dec 04, 2014 at 12:00:27PM +0100, Dongsu Park wrote:
+> > > > Playing a little with your block_stuff tree based on 3.15, however,
+> > > > I think there still seems to be a couple of issues.
+> > > > First of all, it doesn't work with virtio-blk. A testing Qemu VM panics
+> > > > at the very early stage of booting. This issue should be addressed as
+> > > > the first step, so that other parts can be tested.
+> > > 
+> > > Really? I was testing with virtio-blk, that's odd..
+> > 
+> > The culprit seems to be the plugging commit.
+> > Before that change, it works well also with virtio-blk.
+> > Though that's not the only issue...
 > 
-> > One of the building blocks for achieving this speedup is a cmpxchg
-> > based Lock-Free queue that supports bulking, named alf_queue for
-> > Array-based Lock-Free queue.  By bulking elements (pointers) from the
-> > queue, the cost of the cmpxchg (approx 8 ns) is amortized over several
-> > elements.
+> Ohh - the plugging stuff was definitely broken and very preliminary. I'm
+> surprised that code even compiled (or did it?)
+
+No, it didn't. But it was just one of dozens of compile errors.
+It's no big deal. After all someone has to get it compiled when rebasing
+a patchset on top of a new kernel. :-)
+
+> > > > Moreover, I've already tried to rebase these patches on top of current
+> > > > mainline, 3.18-rc7. It's now compilable, but it seems to introduce
+> > > > more bugs about direct-IO. I didn't manage to find out the reason.
+> > > > I'd need to also look at the previous review comments in [1], [2].
+> > > > 
+> > > > Don't you have other trees based on top of 3.17 or higher?
+> > > > If not, can I create my own tree based on 3.18-rc7 to publish?
+> > > 
+> > > Yeah, I'd post what you have now and I'll try and take a look.
+> > 
+> > I've created a git tree to include what I have right now.
+> > Please see <https://github.com/dongsupark/linux>.
+> > 
+> > To be able to handle different issues one by one,
+> > I got the entire tree separated out into 4 branches based on 3.18.
+> > 
+> > * block-generic-req-for-next : the most stable branch you can test with.
+> >   With this branch, you can test most of block drivers as well as file
+> >   systems with less critical bugs. Though it's not 100% perfect yet,
+> >   e.g. btrfs doesn't seem to work quite well. Thus more tests are needed.
+> > 
+> > * block-mpage-bvecs-for-next : block-generic-req-for-next + multipage bvecs.
+> >   This branch shows a critical issue that writing blocks to ext4 rootfs
+> >   causes the whole system to crash. Need-to-investigate.
+> >   
+> > * block-plug-for-next: block-mpage-bvecs-for-next + plugging.
+> >   This branch has an additional bug with virtio-blk, that the kernel
+> >   panics at the very early stage of booting. Need-to-investigate.
+> > 
+> > * block-dio-rewrite-for-next: block-plug-for-next + dio-rewriting.
+> >   This branch has more issues w.r.t. direct-io. For example, dio_init()
+> >   causes the kernel to panic at the early stage of booting.
+> > 
+> > All branches are compilable. But it's still somehow half-way complete.
+> > Commit messages should be properly written too, so that they can be posted
+> > to mailing lists.
 > 
-> This is a bit of an issue since the design of the SLUB allocator is such
-> that you should pick up an object, apply some processing and then take the
-> next one. The fetching of an object warms up the first cacheline and this
-> is tied into the way free objects are linked in SLUB.
+> Cool!
 > 
-> So a bulk fetch from SLUB will not that effective and cause the touching
-> of many cachelines if we are dealing with just a few objects. If we are
-> looking at whole slab pages with all objects then SLUB can be effective
-> since we do not have to build up the linked pointer structure in each
-> page. SLAB has a different architecture there and a bulk fetch there is
-> possible without touching objects even for small sets since the freelist
-> management is separate from the objects.
+> I'll take a look. I think the multipage bvec stuff still had a fair amount of
+> work to do, and getting the dio rewrite finished will be _hard_ (I was close to
+> having it working at one point, but xfstests was finding some subtle issues).
 > 
-> If you do this bulking then you will later access cache cold objects?
-> Doesnt that negate the benefit that you gain? Or are these objects written
-> to by hardware and therefore by necessity cache cold?
+> It'll be pretty awesome if we can get even some of this stuff in.
 
-Cache warmup is a concern, but perhaps it's the callers responsibility
-to prefetch for their use-case.  For qmempool I do have patches that
-prefetch elems when going from the sharedq to the localq (per CPU), but
-I didn't see much gain, and I could prove my point (of being faster than
-slab) without it.  And I would use/need the slab bulk interface to add
-elems to sharedq which I consider semi-cache cold.
+Thanks. I actually want to tidy up the 1st branch, block-generic-req-for-next,
+moving several commits about bio_for_each_page() to block-mpage-bvecs-for-next.
+Then I'd be able to make the 1st branch with ca. 14 patches, so they could be
+posted to mailing lists a little easily. Though I still couldn't get it
+done due to some code dependencies. I'll try it again in the next days.
 
-
-> We could provide a faster bulk alloc/free function.
-> 
-> 	int kmem_cache_alloc_array(struct kmem_cache *s, gfp_t flags,
-> 		size_t objects, void **array)
-
-I like it :-)
-
-> and this could be optimized by each slab allocator to provide fast
-> population of objects in that array. We then assume that the number of
-> objects is in the hundreds or so right?
-
-I'm already seeing a benefit with 16 packets alloc/free "bulking".
-
-On RX we have a "budget" of 64 packets/descriptors (taken from the NIC
-RX ring) that need SKBs.
-
-On TX packets are put into the TX ring, and later at TX completion the
-TX ring is cleaned up, as many as 256 (as e.g. in the ixgbe driver).
-
-Scientific articles on userspace networking (like netmap) report that
-they need at least 8 packet bulking to see wirespeed 10G at 64 bytes.
-
-
-> The corresponding free function
-> 
-> 	void kmem_cache_free_array(struct kmem_cache *s,
-> 		size_t objects, void **array)
-> 
-> 
-> I think the queue management of the array can be improved by using a
-> similar technique as used the SLUB allocator using the cmpxchg_local.
-> cmpxchg_local is much faster than a full cmpxchg and we are operating on
-> per cpu structures anyways. So the overhead could still be reduced.
-
-I think you missed that the per cpu localq is already not using cmpxchg
-(it is a SPSC queue).  The sharedq (MPMC queue) does need and use the
-locked cmpxchg.
-
--- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+Dongsu
