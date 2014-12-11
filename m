@@ -1,305 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411AbaLKJ52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:57:28 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:53038 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933221AbaLKJ5Y (ORCPT
+	id S934426AbaLKJ5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 04:57:41 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:63188 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933221AbaLKJ5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:57:24 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <5edd0680ea2c8812c60f8c8dfd301cc5>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCH v6 1/5] phy: add a driver for the Rockchip SoC internal USB2.0 PHY
-Date: Thu, 11 Dec 2014 17:55:18 +0800
-Message-Id: <1418291722-25448-2-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
-In-Reply-To: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+	Thu, 11 Dec 2014 04:57:35 -0500
+Message-ID: <54896A48.8090009@huawei.com>
+Date: Thu, 11 Dec 2014 17:56:24 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+CC: <masami.hiramatsu.pt@hitachi.com>, <lizefan@huawei.com>,
+        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3] ARM: kprobes: Add test cases for stack consuming instructions
+References: <1418047765-53197-1-git-send-email-wangnan0@huawei.com>		 <1418047765-53197-6-git-send-email-wangnan0@huawei.com>		 <1418143407.3641.47.camel@linaro.org>	 <1418145071.3641.60.camel@linaro.org> <54880309.3010100@huawei.com> <1418214862.3661.17.camel@linaro.org> <5488483D.1080900@huawei.com>
+In-Reply-To: <5488483D.1080900@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
-currently this driver can support RK3288. The RK3288 SoC have
-three independent USB PHY IPs which are all configured through a
-set of registers located in the GRF (general register files)
-module.
+On 2014/12/10 21:18, Wang Nan wrote:
+> On 2014/12/10 20:34, Jon Medhurst (Tixy) wrote:
+>> On Wed, 2014-12-10 at 16:23 +0800, Wang Nan wrote:
+>>> Hi Tixy,
+>>>
+>>> I experienced another FAIL during test:
+>>>
+>>> [11567.220477] Miscellaneous instructions
+>>> [11567.265397] ---------------------------------------------------------
+>>> [11567.342626] mrs	r0, cpsr	@ e10f0000
+>>> [11568.612656] FAIL: registers differ
+>>> [11568.653414] FAIL: Test mrs	r0, cpsr
+>>> [11568.695210] FAIL: Scenario 5
+>>> [11568.729709] initial_regs:
+>>> [11568.761083] r0  21522152 | r1  21522052 | r2  21522352 | r3  21522252
+>>> [11568.838301] r4  21522552 | r5  21522452 | r6  21522752 | r7  21522652
+>>> [11568.915526] r8  21522952 | r9  21522852 | r10 21522b52 | r11 21522a52
+>>> [11568.992748] r12 21522d52 | sp  ed343cf0 | lr  21522f52 | pc  bf11f590
+>>> [11569.069969] cpsr 58050013
+>>> [11569.101336] expected_regs:
+>>> [11569.133750] r0  58050013 | r1  21522052 | r2  21522352 | r3  21522252
+>>> [11569.210975] r4  21522552 | r5  21522452 | r6  21522752 | r7  21522652
+>>> [11569.288197] r8  21522952 | r9  21522852 | r10 21522b52 | r11 21522a52
+>>> [11569.365417] r12 21522d52 | sp  ed343cf0 | lr  21522f52 | pc  bf11f594
+>>> [11569.442634] cpsr 58050013
+>>> [11569.474010] result_regs:
+>>> [11569.504337] r0  58050113 | r1  21522052 | r2  21522352 | r3  21522252     <--- see R0 in this line
+>>> [11569.581556] r4  21522552 | r5  21522452 | r6  21522752 | r7  21522652
+>>> [11569.658776] r8  21522952 | r9  21522852 | r10 21522b52 | r11 21522a52
+>>> [11569.736000] r12 21522d52 | sp  ed343cf0 | lr  21522f52 | pc  bf11f594
+>>> [11569.813222] cpsr 58050013
+>>> [11569.844593] mrspl	r7, cpsr	@ 510f7000
+>>> [11571.842652] mrs	r14, cpsr	@ e10fe000
+>>>
+>>> The failure is raise when testing in "mrs r0, cpsr". The added bit is PSR_A_BIT, which
+>>> should be ignored.
+>>>
+>>> So looks like this is also a problem in your test framework. If you don't have
+>>> enough time, you can give me some hints to deal with it.
+>>
+>> The problem is that the A bit can change randomly when interrupts or
+>> reschedules happen (I'm not sure it should, and it may be a bug). For
+>> the purposes of this test code, we can't disable interrupts and
+>> scheduling around all the iterations of a test case, because inserting
+>> and removing probes requires them to be enabled. So we need a method of
+>> ignoring bits in cpsr, how about the following patch...
+>>
+>> ----------------------------------------------------------------------------
+>>
+>> From: Jon Medhurst <tixy@linaro.org>
+>> Subject: [PATCH] ARM: kprobes: Fix unreliable MRS instruction tests
+>>
+>> For the instruction 'mrs Rn, cpsr' the resulting value of Rn can vary due to
+>> external factors we can't control. So get the test code to mask out these
+>> indeterminate bits.
+>>
+>> Signed-off-by: Jon Medhurst <tixy@linaro.org>
+>> ---
+>>  arch/arm/probes/kprobes/test-arm.c   |  6 +++---
+>>  arch/arm/probes/kprobes/test-core.c  | 19 ++++++++++---------
+>>  arch/arm/probes/kprobes/test-core.h  | 33 ++++++++++++++++++++++++++++-----
+>>  arch/arm/probes/kprobes/test-thumb.c |  4 ++--
+>>  4 files changed, 43 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/arch/arm/probes/kprobes/test-arm.c b/arch/arm/probes/kprobes/test-arm.c
+>> index 9b3b1b4..e72b07e 100644
+>> --- a/arch/arm/probes/kprobes/test-arm.c
+>> +++ b/arch/arm/probes/kprobes/test-arm.c
+>> @@ -204,9 +204,9 @@ void kprobe_arm_test_cases(void)
+>>  #endif
+>>  	TEST_GROUP("Miscellaneous instructions")
+>>  
+>> -	TEST("mrs	r0, cpsr")
+>> -	TEST("mrspl	r7, cpsr")
+>> -	TEST("mrs	r14, cpsr")
+>> +	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
+>> +	TEST_RMASKED("mrspl	r",7,~PSR_IGNORE_BITS,", cpsr")
+>> +	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
+>>  	TEST_UNSUPPORTED(__inst_arm(0xe10ff000) "	@ mrs r15, cpsr")
+>>  	TEST_UNSUPPORTED("mrs	r0, spsr")
+>>  	TEST_UNSUPPORTED("mrs	lr, spsr")
+>> diff --git a/arch/arm/probes/kprobes/test-core.c b/arch/arm/probes/kprobes/test-core.c
+>> index 7c5ddd5..e495127 100644
+>> --- a/arch/arm/probes/kprobes/test-core.c
+>> +++ b/arch/arm/probes/kprobes/test-core.c
+>> @@ -1056,15 +1056,6 @@ static int test_case_run_count;
+>>  static bool test_case_is_thumb;
+>>  static int test_instance;
+>>  
+>> -/*
+>> - * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
+>> - * can change randomly as the kernel doesn't take care to preserve or initialise
+>> - * this across context switches. Also, with Security Extentions, the flag may
+>> - * not be under control of the kernel; for this reason we ignore the state of
+>> - * the FIQ disable flag CPSR.F as well.
+>> - */
+>> -#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
+>> -
+>>  static unsigned long test_check_cc(int cc, unsigned long cpsr)
+>>  {
+>>  	int ret = arm_check_condition(cc << 28, cpsr);
+>> @@ -1271,11 +1262,21 @@ test_case_pre_handler(struct kprobe *p, struct pt_regs *regs)
+>>  static int __kprobes
+>>  test_after_pre_handler(struct kprobe *p, struct pt_regs *regs)
+>>  {
+>> +	struct test_arg *args;
+>> +
+>>  	if (container_of(p, struct test_probe, kprobe)->hit == test_instance)
+>>  		return 0; /* Already run for this test instance */
+>>  
+>>  	result_regs = *regs;
+>> +
+>> +	/* Mask out results which are indeterminate */
+>>  	result_regs.ARM_cpsr &= ~PSR_IGNORE_BITS;
+>> +	for (args = current_args; args[0].type != ARG_TYPE_END; ++args)
+>> +		if (args[0].type == ARG_TYPE_REG_MASKED) {
+>> +			struct test_arg_regptr *arg =
+>> +				(struct test_arg_regptr *)args;
+>> +			result_regs.uregs[arg->reg] &= arg->val;
+>> +		}
+>>  
+>>  	/* Undo any changes done to SP by the test case */
+>>  	regs->ARM_sp = (unsigned long)current_stack;
+>> diff --git a/arch/arm/probes/kprobes/test-core.h b/arch/arm/probes/kprobes/test-core.h
+>> index 9991754..32f7aa7 100644
+>> --- a/arch/arm/probes/kprobes/test-core.h
+>> +++ b/arch/arm/probes/kprobes/test-core.h
+>> @@ -45,10 +45,11 @@ extern int kprobe_test_cc_position;
+>>   *
+>>   */
+>>  
+>> -#define	ARG_TYPE_END	0
+>> -#define	ARG_TYPE_REG	1
+>> -#define	ARG_TYPE_PTR	2
+>> -#define	ARG_TYPE_MEM	3
+>> +#define	ARG_TYPE_END		0
+>> +#define	ARG_TYPE_REG		1
+>> +#define	ARG_TYPE_PTR		2
+>> +#define	ARG_TYPE_MEM		3
+>> +#define	ARG_TYPE_REG_MASKED	4
+>>  
+>>  #define ARG_FLAG_UNSUPPORTED	0x01
+>>  #define ARG_FLAG_SUPPORTED	0x02
+>> @@ -61,7 +62,7 @@ struct test_arg {
+>>  };
+>>  
+>>  struct test_arg_regptr {
+>> -	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR */
+>> +	u8	type;		/* ARG_TYPE_REG or ARG_TYPE_PTR or ARG_TYPE_REG_MASKED */
+>>  	u8	reg;
+>>  	u8	_padding[2];
+>>  	u32	val;
+>> @@ -138,6 +139,12 @@ struct test_arg_end {
+>>  	".short	0					\n\t"	\
+>>  	".word	"#val"					\n\t"
+>>  
+>> +#define	TEST_ARG_REG_MASKED(reg, val)				\
+>> +	".byte	"__stringify(ARG_TYPE_REG_MASKED)"	\n\t"	\
+>> +	".byte	"#reg"					\n\t"	\
+>> +	".short	0					\n\t"	\
+>> +	".word	"#val"					\n\t"
+>> +
+>>  #define	TEST_ARG_END(flags)					\
+>>  	".byte	"__stringify(ARG_TYPE_END)"		\n\t"	\
+>>  	".byte	"TEST_ISA flags"			\n\t"	\
+>> @@ -395,6 +402,22 @@ struct test_arg_end {
+>>  	"	"codex"			\n\t"					\
+>>  	TESTCASE_END
+>>  
+>> +#define TEST_RMASKED(code1, reg, mask, code2)		\
+>> +	TESTCASE_START(code1 #reg code2)		\
+>> +	TEST_ARG_REG_MASKED(reg, mask)			\
+>> +	TEST_ARG_END("")				\
+>> +	TEST_INSTRUCTION(code1 #reg code2)		\
+>> +	TESTCASE_END
+>> +
+>> +/*
+>> + * We ignore the state of the imprecise abort disable flag (CPSR.A) because this
+>> + * can change randomly as the kernel doesn't take care to preserve or initialise
+>> + * this across context switches. Also, with Security Extensions, the flag may
+>> + * not be under control of the kernel; for this reason we ignore the state of
+>> + * the FIQ disable flag CPSR.F as well.
+>> + */
+>> +#define PSR_IGNORE_BITS (PSR_A_BIT | PSR_F_BIT)
+>> +
+>>  
+>>  /*
+>>   * Macros for defining space directives spread over multiple lines.
+>> diff --git a/arch/arm/probes/kprobes/test-thumb.c b/arch/arm/probes/kprobes/test-thumb.c
+>> index e8cf193..b683b45 100644
+>> --- a/arch/arm/probes/kprobes/test-thumb.c
+>> +++ b/arch/arm/probes/kprobes/test-thumb.c
+>> @@ -778,8 +778,8 @@ CONDITION_INSTRUCTIONS(22,
+>>  
+>>  	TEST_UNSUPPORTED("subs	pc, lr, #4")
+>>  
+>> -	TEST("mrs	r0, cpsr")
+>> -	TEST("mrs	r14, cpsr")
+>> +	TEST_RMASKED("mrs	r",0,~PSR_IGNORE_BITS,", cpsr")
+>> +	TEST_RMASKED("mrs	r",14,~PSR_IGNORE_BITS,", cpsr")
+>>  	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8d00) "	@ mrs	sp, spsr")
+>>  	TEST_UNSUPPORTED(__inst_thumb32(0xf3ef8f00) "	@ mrs	pc, spsr")
+>>  	TEST_UNSUPPORTED("mrs	r0, spsr")
+>>
+> 
+> Well, I'm just working on a patch which introducing a TEST_INTOFF and disable interrupts
+> for "MRS" testcase. Do you think it is inappropriate? I'll use your patch test for a night
+> in my hardware, and will let you know the result tomorrow.
+> 
+> Thank you!
+> 
 
-Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+Hi Tixy,
 
----
+I'd like to let you know that I have tested your v3 patch in an ARM cortex A15 board
+for 8 hours and nothing bad happened. I'll post a v16 patch series to merge your patch.
 
-Changes in v6:
-- Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
-- Use phandle args to find a phy struct directly.
+Thank you!
 
-Changes in v5: None
-Changes in v4:
-- Get number of PHYs from device tree.
-- Model each PHY as subnode of the phy provider node.
-
-Changes in v3:
-- Use BIT macro instead of bit shift ops.
-- Rename the config entry to PHY_ROCKCHIP_USB.
-
- drivers/phy/Kconfig            |   7 ++
- drivers/phy/Makefile           |   1 +
- drivers/phy/phy-rockchip-usb.c | 198 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 206 insertions(+)
- create mode 100644 drivers/phy/phy-rockchip-usb.c
-
-diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-index ccad880..b24500a 100644
---- a/drivers/phy/Kconfig
-+++ b/drivers/phy/Kconfig
-@@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
- 	depends on OF
- 	select GENERIC_PHY
- 
-+config PHY_ROCKCHIP_USB
-+	tristate "Rockchip USB2 PHY Driver"
-+	depends on ARCH_ROCKCHIP && OF
-+	select GENERIC_PHY
-+	help
-+	  Enable this to support the Rockchip USB 2.0 PHY.
-+
- config PHY_ST_SPEAR1310_MIPHY
- 	tristate "ST SPEAR1310-MIPHY driver"
- 	select GENERIC_PHY
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index aa74f96..48bf5a1 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
- obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
- obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
-+obj-$(CONFIG_PHY_ROCKCHIP_USB) += phy-rockchip-usb.o
- obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
- obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
- obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
-diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
-new file mode 100644
-index 0000000..dad5194
---- /dev/null
-+++ b/drivers/phy/phy-rockchip-usb.c
-@@ -0,0 +1,198 @@
-+/*
-+ * Rockchip usb PHY driver
-+ *
-+ * Copyright (C) 2014 Yunzhi Li <lyz@rock-chips.com>
-+ * Copyright (C) 2014 ROCKCHIP, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/phy/phy.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/reset.h>
-+#include <linux/regmap.h>
-+#include <linux/mfd/syscon.h>
-+
-+#define ROCKCHIP_RK3288_UOC(n)	(0x320 + n * 0x14)
-+
-+/*
-+ * The higher 16-bit of this register is used for write protection
-+ * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
-+ */
-+#define SIDDQ_WRITE_ENA	BIT(29)
-+#define SIDDQ_ON		BIT(13)
-+#define SIDDQ_OFF		(0 << 13)
-+
-+struct rockchip_usb_phy {
-+	struct regmap	*reg_base;
-+	unsigned int	reg_offset;
-+	struct clk	*clk;
-+	struct phy	*phy;
-+};
-+
-+struct rockchip_usb_phy_priv {
-+	struct rockchip_usb_phy	*phys;
-+	unsigned		nphys;
-+};
-+
-+static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
-+					   bool siddq)
-+{
-+	return regmap_write(phy->reg_base, phy->reg_offset,
-+			    SIDDQ_WRITE_ENA | (siddq ? SIDDQ_ON : SIDDQ_OFF));
-+}
-+
-+static int rockchip_usb_phy_power_off(struct phy *_phy)
-+{
-+	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-+	int ret = 0;
-+
-+	/* Power down usb phy analog blocks by set siddq 1 */
-+	ret = rockchip_usb_phy_power(phy, 1);
-+	if (ret)
-+		return ret;
-+
-+	clk_disable_unprepare(phy->clk);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int rockchip_usb_phy_power_on(struct phy *_phy)
-+{
-+	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-+	int ret = 0;
-+
-+	ret = clk_prepare_enable(phy->clk);
-+	if (ret)
-+		return ret;
-+
-+	/* Power up usb phy analog blocks by set siddq 0 */
-+	ret = rockchip_usb_phy_power(phy, 0);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static struct phy *rockchip_usb_phy_xlate(struct device *dev,
-+					struct of_phandle_args *args)
-+{
-+	struct rockchip_usb_phy_priv *priv = dev_get_drvdata(dev);
-+	unsigned int phy_id = args->args[0];
-+
-+	if (WARN_ON(phy_id < 0 || phy_id >= priv->nphys))
-+		return ERR_PTR(-ENODEV);
-+
-+	return priv->phys[phy_id].phy;
-+}
-+
-+static struct phy_ops ops = {
-+	.power_on	= rockchip_usb_phy_power_on,
-+	.power_off	= rockchip_usb_phy_power_off,
-+	.owner		= THIS_MODULE,
-+};
-+
-+static int rockchip_usb_phy_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct rockchip_usb_phy *rk_phy;
-+	struct rockchip_usb_phy_priv *priv;
-+	struct phy_provider *phy_provider;
-+	struct device_node *child;
-+	struct regmap *grf;
-+	unsigned int phy_id;
-+
-+	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
-+	if (IS_ERR(grf)) {
-+		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
-+		return PTR_ERR(grf);
-+	}
-+
-+	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-+	if (!priv)
-+		return -ENOMEM;
-+
-+	/* Get number of phys from device tree */
-+	priv->nphys = of_get_child_count(dev->of_node);
-+	if (priv->nphys == 0)
-+		return -ENODEV;
-+
-+	priv->phys = devm_kzalloc(dev, priv->nphys * sizeof(*priv->phys),
-+				  GFP_KERNEL);
-+	if (!priv->phys)
-+		return -ENOMEM;
-+
-+	for_each_available_child_of_node(dev->of_node, child) {
-+		if (of_property_read_u32(child, "reg", &phy_id)) {
-+			dev_err(dev, "missing reg property in node %s\n",
-+				child->name);
-+			return -EINVAL;
-+		}
-+
-+		if (phy_id < 0 || phy_id >= priv->nphys) {
-+			dev_err(dev, "invalid phy id\n");
-+			return -EINVAL;
-+		}
-+		rk_phy = &priv->phys[phy_id];
-+		rk_phy->reg_offset = ROCKCHIP_RK3288_UOC(phy_id);
-+		rk_phy->reg_base = grf;
-+
-+		rk_phy->clk = of_clk_get(child, 0);
-+		if (IS_ERR(rk_phy->clk)) {
-+			dev_warn(dev, "failed to get clock\n");
-+			rk_phy->clk = NULL;
-+		}
-+
-+		rk_phy->phy = devm_phy_create(dev, NULL, &ops);
-+		if (IS_ERR(rk_phy->phy)) {
-+			dev_err(dev, "failed to create PHY %d\n", phy_id);
-+			return PTR_ERR(rk_phy->phy);
-+		}
-+		phy_set_drvdata(rk_phy->phy, rk_phy);
-+	}
-+
-+	platform_set_drvdata(pdev, priv);
-+
-+	phy_provider = devm_of_phy_provider_register(dev,
-+						     rockchip_usb_phy_xlate);
-+	return PTR_ERR_OR_ZERO(phy_provider);
-+}
-+
-+static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
-+	{ .compatible = "rockchip,rk3288-usb-phy" },
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(of, rockchip_usb_phy_dt_ids);
-+
-+static struct platform_driver rockchip_usb_driver = {
-+	.probe		= rockchip_usb_phy_probe,
-+	.driver		= {
-+		.name	= "rockchip-usb-phy",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = rockchip_usb_phy_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(rockchip_usb_driver);
-+
-+MODULE_AUTHOR("Yunzhi Li <lyz@rock-chips.com>");
-+MODULE_DESCRIPTION("Rockchip USB 2.0 PHY driver");
-+MODULE_LICENSE("GPL v2");
--- 
-2.0.0
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
 
