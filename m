@@ -1,201 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739AbaLKFia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 00:38:30 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:60003 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751222AbaLKFi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 00:38:28 -0500
-From: Shrikrishna Khare <skhare@vmware.com>
-To: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Shrikrishna Khare <skhare@vmware.com>, Ramya Bolla <bollar@vmware.com>
-Subject: [PATCH] Driver: Vmxnet3: Make Rx ring 2 size configurable
-Date: Wed, 10 Dec 2014 21:37:42 -0800
-Message-Id: <1418276262-4728-1-git-send-email-skhare@vmware.com>
-X-Mailer: git-send-email 2.1.0
+	id S1758746AbaLKFpt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 00:45:49 -0500
+Received: from mail-bl2on0104.outbound.protection.outlook.com ([65.55.169.104]:53885
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751222AbaLKFpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 00:45:47 -0500
+Message-ID: <54893088.4000203@freescale.com>
+Date: Thu, 11 Dec 2014 13:50:00 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: <devicetree@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>, <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH RFC 04/15] drm/dsi: Do not add DSI devices for the child
+ nodes with input-port property
+References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+ <1418200648-32656-5-git-send-email-Ying.Liu@freescale.com>
+ <20141210122105.GC23558@ulmo.nvidia.com> <548906FD.5070009@freescale.com>
+In-Reply-To: <548906FD.5070009@freescale.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(189002)(377454003)(479174003)(51704005)(24454002)(52604005)(199003)(15975445007)(69596002)(65806001)(65956001)(68736005)(77096005)(87936001)(1720100001)(99396003)(117636001)(23676002)(83506001)(77156002)(120916001)(107046002)(62966003)(6806004)(81156004)(106466001)(19580405001)(54356999)(19580395003)(59896002)(64706001)(84676001)(93886004)(104016003)(76176999)(87266999)(47776003)(86362001)(92566001)(105606002)(97736003)(21056001)(46102003)(110136001)(65816999)(4396001)(50986999)(20776003)(50466002)(36756003)(64126003)(31966008)(217873001)(62816006);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0638;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:DM2PR0301MB0638;
+X-Forefront-PRVS: 0422860ED4
+Authentication-Results: spf=fail (sender IP is 192.88.158.2)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0638;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rx ring 2 size can be configured by adjusting rx-jumbo parameter
-of ethtool -G.
+Hi Thierry,
 
-Signed-off-by: Ramya Bolla <bollar@vmware.com>
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-Signed-off-by: Shrikrishna Khare <skhare@vmware.com>
----
- drivers/net/vmxnet3/vmxnet3_defs.h    |  1 +
- drivers/net/vmxnet3/vmxnet3_drv.c     |  6 +++++-
- drivers/net/vmxnet3/vmxnet3_ethtool.c | 27 ++++++++++++++++++++-------
- drivers/net/vmxnet3/vmxnet3_int.h     |  6 ++++--
- 4 files changed, 30 insertions(+), 10 deletions(-)
+On 12/11/2014 10:52 AM, Liu Ying wrote:
+> Hi Thierry,
+>
+> On 12/10/2014 08:21 PM, Thierry Reding wrote:
+>> On Wed, Dec 10, 2014 at 04:37:17PM +0800, Liu Ying wrote:
+>>> The MIPI DSI bus driver would try to add a DSI device for a host's every
+>>> child node which contains the reg property.  Unfortunately, the existing
+>>> i.MX6Q/SDL MIPI DSI host device tree node's child nodes contain the reg
+>>
+>> There aren't any existing nodes for the DSI host on i.MX. This patch
+>> series adds support for them.
+>
+> There are existing nodes for the DSI host node. Please find them in
+> arch/arm/boot/dts/imx6qdl.dtsi and arch/arm/boot/dts/imx6q.dts. The DSI
+> host node contains two child nodes for i.MX6DL and another two for
+> i.MX6Q.  Each child node has a reg property embedded.
+>
+>>
+>>> property, but the child nodes are ports pointing to dedicated CRTCs.
+>>> So, this patch phases out the child nodes with input-port property
+>>> before
+>>> adding DSI devices for them and updates the MIPI DSI bus OF binding
+>>> documentation.
+>>>
+>>> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
+>>> ---
+>>>   Documentation/devicetree/bindings/mipi/dsi/mipi-dsi-bus.txt | 4 ++++
+>>>   drivers/gpu/drm/drm_mipi_dsi.c                              | 5 +++--
+>>>   2 files changed, 7 insertions(+), 2 deletions(-)
+>>
+>> Sorry, but NAK. There's no need for this special-case. I'll go into more
+>> detail in response to patch 09/15.
+>
+> Thanks for reviewing the patches.
+>
+> Any idea how to handle the special case?  The existing child nodes for
+> the DSI host node do have the reg properties embedded.
+>
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_defs.h b/drivers/net/vmxnet3/vmxnet3_defs.h
-index 4d84912..25b6fa4 100644
---- a/drivers/net/vmxnet3/vmxnet3_defs.h
-+++ b/drivers/net/vmxnet3/vmxnet3_defs.h
-@@ -342,6 +342,7 @@ union Vmxnet3_GenericDesc {
- #define VMXNET3_TX_RING_MAX_SIZE   4096
- #define VMXNET3_TC_RING_MAX_SIZE   4096
- #define VMXNET3_RX_RING_MAX_SIZE   4096
-+#define VMXNET3_RX_RING2_MAX_SIZE  2048
- #define VMXNET3_RC_RING_MAX_SIZE   8192
- 
- /* a list of reasons for queue stop */
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index afd2953..7af1f5c 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2505,6 +2505,9 @@ vmxnet3_adjust_rx_ring_size(struct vmxnet3_adapter *adapter)
- 	ring0_size = min_t(u32, ring0_size, VMXNET3_RX_RING_MAX_SIZE /
- 			   sz * sz);
- 	ring1_size = adapter->rx_queue[0].rx_ring[1].size;
-+	ring1_size = (ring1_size + sz - 1) / sz * sz;
-+	ring1_size = min_t(u32, ring1_size, VMXNET3_RX_RING2_MAX_SIZE /
-+			   sz * sz);
- 	comp_size = ring0_size + ring1_size;
- 
- 	for (i = 0; i < adapter->num_rx_queues; i++) {
-@@ -2585,7 +2588,7 @@ vmxnet3_open(struct net_device *netdev)
- 
- 	err = vmxnet3_create_queues(adapter, adapter->tx_ring_size,
- 				    adapter->rx_ring_size,
--				    VMXNET3_DEF_RX_RING_SIZE);
-+				    adapter->rx_ring2_size);
- 	if (err)
- 		goto queue_err;
- 
-@@ -2964,6 +2967,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
- 
- 	adapter->tx_ring_size = VMXNET3_DEF_TX_RING_SIZE;
- 	adapter->rx_ring_size = VMXNET3_DEF_RX_RING_SIZE;
-+	adapter->rx_ring2_size = VMXNET3_DEF_RX_RING2_SIZE;
- 
- 	spin_lock_init(&adapter->cmd_lock);
- 	adapter->adapter_pa = dma_map_single(&adapter->pdev->dev, adapter,
-diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-index b725fd9..70fb410 100644
---- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
-+++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
-@@ -447,12 +447,12 @@ vmxnet3_get_ringparam(struct net_device *netdev,
- 	param->rx_max_pending = VMXNET3_RX_RING_MAX_SIZE;
- 	param->tx_max_pending = VMXNET3_TX_RING_MAX_SIZE;
- 	param->rx_mini_max_pending = 0;
--	param->rx_jumbo_max_pending = 0;
-+	param->rx_jumbo_max_pending = VMXNET3_RX_RING2_MAX_SIZE;
- 
- 	param->rx_pending = adapter->rx_ring_size;
- 	param->tx_pending = adapter->tx_ring_size;
- 	param->rx_mini_pending = 0;
--	param->rx_jumbo_pending = 0;
-+	param->rx_jumbo_pending = adapter->rx_ring2_size;
- }
- 
- 
-@@ -461,7 +461,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 		      struct ethtool_ringparam *param)
- {
- 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
--	u32 new_tx_ring_size, new_rx_ring_size;
-+	u32 new_tx_ring_size, new_rx_ring_size, new_rx_ring2_size;
- 	u32 sz;
- 	int err = 0;
- 
-@@ -473,6 +473,10 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 						VMXNET3_RX_RING_MAX_SIZE)
- 		return -EINVAL;
- 
-+	if (param->rx_jumbo_pending == 0 ||
-+	    param->rx_jumbo_pending > VMXNET3_RX_RING2_MAX_SIZE)
-+		return -EINVAL;
-+
- 	/* if adapter not yet initialized, do nothing */
- 	if (adapter->rx_buf_per_pkt == 0) {
- 		netdev_err(netdev, "adapter not completely initialized, "
-@@ -500,8 +504,15 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 							   sz) != 0)
- 		return -EINVAL;
- 
--	if (new_tx_ring_size == adapter->tx_queue[0].tx_ring.size &&
--	    new_rx_ring_size == adapter->rx_queue[0].rx_ring[0].size) {
-+	/* ring2 has to be a multiple of VMXNET3_RING_SIZE_ALIGN */
-+	new_rx_ring2_size = (param->rx_jumbo_pending + VMXNET3_RING_SIZE_MASK) &
-+				~VMXNET3_RING_SIZE_MASK;
-+	new_rx_ring2_size = min_t(u32, new_rx_ring2_size,
-+				  VMXNET3_RX_RING2_MAX_SIZE);
-+
-+	if (new_tx_ring_size == adapter->tx_ring_size &&
-+	    new_rx_ring_size == adapter->rx_ring_size &&
-+	    new_rx_ring2_size == adapter->rx_ring2_size) {
- 		return 0;
- 	}
- 
-@@ -522,7 +533,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 		vmxnet3_rq_destroy_all(adapter);
- 
- 		err = vmxnet3_create_queues(adapter, new_tx_ring_size,
--			new_rx_ring_size, VMXNET3_DEF_RX_RING_SIZE);
-+			new_rx_ring_size, new_rx_ring2_size);
- 
- 		if (err) {
- 			/* failed, most likely because of OOM, try default
-@@ -530,11 +541,12 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 			netdev_err(netdev, "failed to apply new sizes, "
- 				   "try the default ones\n");
- 			new_rx_ring_size = VMXNET3_DEF_RX_RING_SIZE;
-+			new_rx_ring2_size = VMXNET3_DEF_RX_RING2_SIZE;
- 			new_tx_ring_size = VMXNET3_DEF_TX_RING_SIZE;
- 			err = vmxnet3_create_queues(adapter,
- 						    new_tx_ring_size,
- 						    new_rx_ring_size,
--						    VMXNET3_DEF_RX_RING_SIZE);
-+						    new_rx_ring2_size);
- 			if (err) {
- 				netdev_err(netdev, "failed to create queues "
- 					   "with default sizes. Closing it\n");
-@@ -549,6 +561,7 @@ vmxnet3_set_ringparam(struct net_device *netdev,
- 	}
- 	adapter->tx_ring_size = new_tx_ring_size;
- 	adapter->rx_ring_size = new_rx_ring_size;
-+	adapter->rx_ring2_size = new_rx_ring2_size;
- 
- out:
- 	clear_bit(VMXNET3_STATE_BIT_RESETTING, &adapter->state);
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 5f0199f..048f020 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -69,10 +69,10 @@
- /*
-  * Version numbers
-  */
--#define VMXNET3_DRIVER_VERSION_STRING   "1.2.1.0-k"
-+#define VMXNET3_DRIVER_VERSION_STRING   "1.3.1.0-k"
- 
- /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
--#define VMXNET3_DRIVER_VERSION_NUM      0x01020100
-+#define VMXNET3_DRIVER_VERSION_NUM      0x01030100
- 
- #if defined(CONFIG_PCI_MSI)
- 	/* RSS only makes sense if MSI-X is supported. */
-@@ -352,6 +352,7 @@ struct vmxnet3_adapter {
- 	/* Ring sizes */
- 	u32 tx_ring_size;
- 	u32 rx_ring_size;
-+	u32 rx_ring2_size;
- 
- 	struct work_struct work;
- 
-@@ -384,6 +385,7 @@ struct vmxnet3_adapter {
- /* must be a multiple of VMXNET3_RING_SIZE_ALIGN */
- #define VMXNET3_DEF_TX_RING_SIZE    512
- #define VMXNET3_DEF_RX_RING_SIZE    256
-+#define VMXNET3_DEF_RX_RING2_SIZE   128
- 
- #define VMXNET3_MAX_ETH_HDR_SIZE    22
- #define VMXNET3_MAX_SKB_BUF_SIZE    (3*1024)
--- 
-2.1.0
+I see your suggestions on this topic in the comments for patch 09/15.
+I will try to move the existing child nodes into a parent port node.
 
+Liu Ying
+
+>
+>>
+>> Thierry
+>>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
