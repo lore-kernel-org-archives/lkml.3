@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965202AbaLKV0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:26:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44188 "EHLO mail.kernel.org"
+	id S965405AbaLKV0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:26:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44224 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965045AbaLKV0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:26:42 -0500
+	id S934352AbaLKV0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:26:50 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tom Huynh <tom.huynh@freescale.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@kernel.org>,
-        Kim Phillips <kim.phillips@freescale.com>,
-        Matt Mullins <mmullins@mmlx.us>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/18] perf hists browser: Change print format from %lu to %PRIu64
-Date: Thu, 11 Dec 2014 18:25:52 -0300
-Message-Id: <1418333166-15429-5-git-send-email-acme@kernel.org>
+Subject: [PATCH 06/18] perf buildid-cache: Remove extra debugdir variables
+Date: Thu, 11 Dec 2014 18:25:54 -0300
+Message-Id: <1418333166-15429-7-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -25,41 +27,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Huynh <tom.huynh@freescale.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-The nr_events variable in tools/perf/ui/browsers/hists.c is of type u64,
-so the print format (%lu) causes 'perf report' to show 0 event count
-when running with 32-bit userspace without redirection.
+There's no need to copy over the buildid_dir into separate variable with
+no change.
 
-This patch fixes that problem by printing nr_events as PRIu64.
+This is leftover from commit:
+  45de34bbe3e1 perf buildid: add perfconfig option to specify buildid cache dir
 
-Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Kim Phillips <kim.phillips@freescale.com>
-Cc: Matt Mullins <mmullins@mmlx.us>
+that added global buildid_dir variable that holds cache directory, but
+did not cleanup the debugdir copies.
+
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1417541842-9747-1-git-send-email-tom.huynh@freescale.com
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1417460789-13874-3-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/builtin-buildid-cache.c | 11 ++++-------
+ tools/perf/util/build-id.c         |  9 +++------
+ 2 files changed, 7 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 502daff76ceb..e6bb04b5b09b 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1252,7 +1252,7 @@ static int hists__browser_title(struct hists *hists,
+diff --git a/tools/perf/builtin-buildid-cache.c b/tools/perf/builtin-buildid-cache.c
+index 70385756da63..29f24c071bc6 100644
+--- a/tools/perf/builtin-buildid-cache.c
++++ b/tools/perf/builtin-buildid-cache.c
+@@ -285,7 +285,6 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 	struct str_node *pos;
+ 	int ret = 0;
+ 	bool force = false;
+-	char debugdir[PATH_MAX];
+ 	char const *add_name_list_str = NULL,
+ 		   *remove_name_list_str = NULL,
+ 		   *missing_filename = NULL,
+@@ -335,13 +334,11 @@ int cmd_buildid_cache(int argc, const char **argv,
  
- 	nr_samples = convert_unit(nr_samples, &unit);
- 	printed = scnprintf(bf, size,
--			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-+			   "Samples: %lu%c of event '%s', Event count (approx.): %" PRIu64,
- 			   nr_samples, unit, ev_name, nr_events);
+ 	setup_pager();
  
+-	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
+-
+ 	if (add_name_list_str) {
+ 		list = strlist__new(true, add_name_list_str);
+ 		if (list) {
+ 			strlist__for_each(pos, list)
+-				if (build_id_cache__add_file(pos->s, debugdir)) {
++				if (build_id_cache__add_file(pos->s, buildid_dir)) {
+ 					if (errno == EEXIST) {
+ 						pr_debug("%s already in the cache\n",
+ 							 pos->s);
+@@ -359,7 +356,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 		list = strlist__new(true, remove_name_list_str);
+ 		if (list) {
+ 			strlist__for_each(pos, list)
+-				if (build_id_cache__remove_file(pos->s, debugdir)) {
++				if (build_id_cache__remove_file(pos->s, buildid_dir)) {
+ 					if (errno == ENOENT) {
+ 						pr_debug("%s wasn't in the cache\n",
+ 							 pos->s);
+@@ -380,7 +377,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 		list = strlist__new(true, update_name_list_str);
+ 		if (list) {
+ 			strlist__for_each(pos, list)
+-				if (build_id_cache__update_file(pos->s, debugdir)) {
++				if (build_id_cache__update_file(pos->s, buildid_dir)) {
+ 					if (errno == ENOENT) {
+ 						pr_debug("%s wasn't in the cache\n",
+ 							 pos->s);
+@@ -395,7 +392,7 @@ int cmd_buildid_cache(int argc, const char **argv,
+ 	}
  
+ 	if (kcore_filename &&
+-	    build_id_cache__add_kcore(kcore_filename, debugdir, force))
++	    build_id_cache__add_kcore(kcore_filename, buildid_dir, force))
+ 		pr_warning("Couldn't add %s\n", kcore_filename);
+ 
+ out:
+diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
+index e8d79e5bfaf7..0c72680a977f 100644
+--- a/tools/perf/util/build-id.c
++++ b/tools/perf/util/build-id.c
+@@ -410,21 +410,18 @@ int perf_session__cache_build_ids(struct perf_session *session)
+ {
+ 	struct rb_node *nd;
+ 	int ret;
+-	char debugdir[PATH_MAX];
+ 
+ 	if (no_buildid_cache)
+ 		return 0;
+ 
+-	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
+-
+-	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
++	if (mkdir(buildid_dir, 0755) != 0 && errno != EEXIST)
+ 		return -1;
+ 
+-	ret = machine__cache_build_ids(&session->machines.host, debugdir);
++	ret = machine__cache_build_ids(&session->machines.host, buildid_dir);
+ 
+ 	for (nd = rb_first(&session->machines.guests); nd; nd = rb_next(nd)) {
+ 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
+-		ret |= machine__cache_build_ids(pos, debugdir);
++		ret |= machine__cache_build_ids(pos, buildid_dir);
+ 	}
+ 	return ret ? -1 : 0;
+ }
 -- 
 1.9.3
 
