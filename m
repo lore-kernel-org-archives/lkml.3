@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965280AbaLKWAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:00:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42395 "EHLO mx2.suse.de"
+	id S965318AbaLKWAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:00:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42398 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670AbaLKWAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:00:41 -0500
+	id S1751670AbaLKWAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:00:48 -0500
 From: NeilBrown <neilb@suse.de>
 To: Grant Likely <grant.likely@linaro.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>
 Date: Fri, 12 Dec 2014 08:59:44 +1100
-Subject: [PATCH 1/3] TTY: add support for "tty slave" devices.
+Subject: [PATCH 2/3] TTY: add slave driver to power-on device via a
+ regulator.
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20141211215943.4127.24792.stgit@notabene.brown>
+Message-ID: <20141211215944.4127.4186.stgit@notabene.brown>
 In-Reply-To: <20141211214801.4127.93914.stgit@notabene.brown>
 References: <20141211214801.4127.93914.stgit@notabene.brown>
 User-Agent: StGit/0.17.1-dirty
@@ -24,105 +25,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A "tty slave" is a device connected via UART.
-It may need a driver to, for example, power the device on
-when the tty is opened, and power it off when the tty
-is released.
-
-A "tty slave" is a platform device which is declared as a
-child of the uart in device-tree:
-
-&uart1 {
-	bluetooth {
-		compatible = "tty,regulator";
-		vdd-supply = <&vaux4>;
-	};
-};
-
-runtime power management is used to power-up the device
-on tty_open() and  power-down on tty_release().
+The regulator is identified in devicetree as 'vdd-supply'
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- .../devicetree/bindings/serial/of-serial.txt       |    4 ++++
- drivers/tty/tty_io.c                               |   22 ++++++++++++++++++++
- 2 files changed, 26 insertions(+)
+ .../devicetree/bindings/serial/slave-reg.txt       |   18 ++++
+ drivers/tty/Kconfig                                |    2 
+ drivers/tty/Makefile                               |    1 
+ drivers/tty/slaves/Kconfig                         |   12 ++
+ drivers/tty/slaves/Makefile                        |    2 
+ drivers/tty/slaves/tty-reg.c                       |  102 ++++++++++++++++++++
+ 6 files changed, 137 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/slave-reg.txt
+ create mode 100644 drivers/tty/slaves/Kconfig
+ create mode 100644 drivers/tty/slaves/Makefile
+ create mode 100644 drivers/tty/slaves/tty-reg.c
 
-diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
-index 8c4fd0332028..b59501ee2f21 100644
---- a/Documentation/devicetree/bindings/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-@@ -39,6 +39,10 @@ Optional properties:
-   driver is allowed to detect support for the capability even without this
-   property.
- 
-+Optional child node:
-+- a platform device listed as a child node will be probed and
-+  powered-on whenever the tty is in use (open).
+diff --git a/Documentation/devicetree/bindings/serial/slave-reg.txt b/Documentation/devicetree/bindings/serial/slave-reg.txt
+new file mode 100644
+index 000000000000..7896bce8dfe4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/slave-reg.txt
+@@ -0,0 +1,18 @@
++Regulator powered UART-attached device
 +
- Example:
++Required properties:
++- compatible: "tty,regulator"
++- vdd-supply: regulator to power the device
++
++
++This is listed as a child node of a UART.  When the
++UART is opened, the device is powered.
++
++Example:
++
++&uart1 {
++	bluetooth {
++		compatible = "tty,regulator";
++		vdd-supply = <&vaux4>;
++	};
++};
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index b24aa010f68c..ea3383c71701 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -419,4 +419,6 @@ config DA_CONSOLE
+ 	help
+ 	  This enables a console on a Dash channel.
  
- 	uart@80230000 {
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 0508a1d8e4cd..7acdc6f093f4 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -95,6 +95,8 @@
- #include <linux/seq_file.h>
- #include <linux/serial.h>
- #include <linux/ratelimit.h>
++source drivers/tty/slaves/Kconfig
++
+ endif # TTY
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+index 58ad1c05b7f8..45957d671e33 100644
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_R3964)		+= n_r3964.o
+ obj-y				+= vt/
+ obj-$(CONFIG_HVC_DRIVER)	+= hvc/
+ obj-y				+= serial/
++obj-$(CONFIG_TTY_SLAVE)		+= slaves/
+ 
+ # tty drivers
+ obj-$(CONFIG_AMIGA_BUILTIN_SERIAL) += amiserial.o
+diff --git a/drivers/tty/slaves/Kconfig b/drivers/tty/slaves/Kconfig
+new file mode 100644
+index 000000000000..2dd1acf80f8c
+--- /dev/null
++++ b/drivers/tty/slaves/Kconfig
+@@ -0,0 +1,12 @@
++menuconfig TTY_SLAVE
++	bool "TTY slave devices"
++	help
++	 Devices which attach via a uart, but need extra
++	 driver support for power management etc.
++
++if TTY_SLAVE
++
++config TTY_SLAVE_REGULATOR
++	tristate "TTY slave device powered by regulator"
++
++endif
+diff --git a/drivers/tty/slaves/Makefile b/drivers/tty/slaves/Makefile
+new file mode 100644
+index 000000000000..e636bf49f1cc
+--- /dev/null
++++ b/drivers/tty/slaves/Makefile
+@@ -0,0 +1,2 @@
++
++obj-$(CONFIG_TTY_SLAVE_REGULATOR) += tty-reg.o
+diff --git a/drivers/tty/slaves/tty-reg.c b/drivers/tty/slaves/tty-reg.c
+new file mode 100644
+index 000000000000..613f8b10967c
+--- /dev/null
++++ b/drivers/tty/slaves/tty-reg.c
+@@ -0,0 +1,102 @@
++/*
++ * tty-reg:
++ *   Support for any device which needs a regulator turned on
++ *   when a tty is opened.
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/regulator/consumer.h>
++#include <linux/platform_device.h>
 +#include <linux/pm_runtime.h>
-+#include <linux/of_platform.h>
- 
- #include <linux/uaccess.h>
- 
-@@ -1683,6 +1685,17 @@ static int tty_release_checks(struct tty_struct *tty, struct tty_struct *o_tty,
- 	return 0;
- }
- 
-+static int open_child(struct device *dev, void *data)
++#include <linux/tty.h>
++
++struct tty_reg_data {
++	struct regulator *reg;
++	bool	reg_enabled;
++};
++
++static int tty_reg_runtime_resume(struct device *slave)
 +{
-+	pm_runtime_get_sync(dev);
-+	return 0;
-+}
-+static int release_child(struct device *dev, void *data)
-+{
-+	pm_runtime_put_autosuspend(dev);
++	struct tty_reg_data *data = dev_get_drvdata(slave);
++	if (!data->reg_enabled &&
++	    regulator_enable(data->reg) == 0) {
++		dev_dbg(slave, "power on\n");
++		data->reg_enabled = true;
++	}
 +	return 0;
 +}
 +
- /**
-  *	tty_release		-	vfs callback for close
-  *	@inode: inode of tty
-@@ -1712,6 +1725,8 @@ int tty_release(struct inode *inode, struct file *filp)
- 	long	timeout = 0;
- 	int	once = 1;
- 
-+	if (tty->dev)
-+		device_for_each_child(tty->dev, NULL, release_child);
- 	if (tty_paranoia_check(tty, inode, __func__))
- 		return 0;
- 
-@@ -2118,6 +2133,8 @@ retry_open:
- 		__proc_set_tty(current, tty);
- 	spin_unlock_irq(&current->sighand->siglock);
- 	tty_unlock(tty);
-+	if (tty->dev)
-+		device_for_each_child(tty->dev, NULL, open_child);
- 	mutex_unlock(&tty_mutex);
- 	return 0;
- err_unlock:
-@@ -3207,6 +3224,11 @@ struct device *tty_register_device_attr(struct tty_driver *driver,
- 	retval = device_register(dev);
- 	if (retval)
- 		goto error;
-+	if (device && device->of_node)
-+		/* Children are platform devices and will be
-+		 * runtime_pm managed by this tty.
-+		 */
-+		of_platform_populate(device->of_node, NULL, NULL, dev);
- 
- 	return dev;
- 
++static int tty_reg_runtime_suspend(struct device *slave)
++{
++	struct tty_reg_data *data = dev_get_drvdata(slave);
++
++	if (data->reg_enabled &&
++	    regulator_disable(data->reg) == 0) {
++		dev_dbg(slave, "power off\n");
++		data->reg_enabled = false;
++	}
++	return 0;
++}
++
++static int tty_reg_probe(struct platform_device *pdev)
++{
++	struct tty_reg_data *data;
++	struct regulator *reg;
++	int err;
++
++	err = -ENODEV;
++	if (pdev->dev.parent == NULL)
++		goto out;
++	reg = devm_regulator_get(&pdev->dev, "vdd");
++	err = PTR_ERR(reg);
++	if (IS_ERR(reg))
++		goto out;
++
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
++	err = -ENOMEM;
++	if (!data)
++		goto out;
++	data->reg = reg;
++	data->reg_enabled = false;
++	pm_runtime_enable(&pdev->dev);
++	platform_set_drvdata(pdev, data);
++	err = 0;
++out:
++	return err;
++}
++
++static struct of_device_id tty_reg_dt_ids[] = {
++	{ .compatible = "tty,regulator", },
++	{}
++};
++
++static const struct dev_pm_ops tty_reg_pm_ops = {
++	SET_RUNTIME_PM_OPS(tty_reg_runtime_suspend,
++			   tty_reg_runtime_resume, NULL)
++};
++
++static struct platform_driver tty_reg_driver = {
++	.driver.name	= "tty-regulator",
++	.driver.owner	= THIS_MODULE,
++	.driver.of_match_table = tty_reg_dt_ids,
++	.driver.pm	= &tty_reg_pm_ops,
++	.probe		= tty_reg_probe,
++};
++
++static int __init tty_reg_init(void)
++{
++	return platform_driver_register(&tty_reg_driver);
++}
++module_init(tty_reg_init);
++
++static void __exit tty_reg_exit(void)
++{
++	platform_driver_unregister(&tty_reg_driver);
++}
++module_exit(tty_reg_exit);
++
++MODULE_AUTHOR("NeilBrown <neilb@suse.de>");
++MODULE_DESCRIPTION("Serial port device which requires a regulator when open.");
++MODULE_LICENSE("GPL v2");
 
 
