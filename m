@@ -1,121 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934493AbaLKVou (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:44:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42147 "EHLO mx2.suse.de"
+	id S934520AbaLKVqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:46:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38550 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964968AbaLKVof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:44:35 -0500
-From: NeilBrown <neilb@suse.de>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-Date: Fri, 12 Dec 2014 08:43:08 +1100
-Subject: [PATCH 3/3] mmc: omap_hsmmc: use mmc_of_parse to parse common mmc
- configuration.
-Cc: GTA04 owners <gta04-owner@goldelico.com>, linux-omap@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>
-Message-ID: <20141211214308.3753.15675.stgit@notabene.brown>
-In-Reply-To: <20141211214023.3753.10652.stgit@notabene.brown>
-References: <20141211214023.3753.10652.stgit@notabene.brown>
-User-Agent: StGit/0.17.1-dirty
+	id S933134AbaLKVqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:46:44 -0500
+Date: Thu, 11 Dec 2014 22:46:23 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 03/10] perf, tools: Use al.addr to set up call chain
+Message-ID: <20141211214623.GD26788@krava.redhat.com>
+References: <1415844328-4884-1-git-send-email-andi@firstfloor.org>
+ <1415844328-4884-4-git-send-email-andi@firstfloor.org>
+ <20141113191633.GE3612@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141113191633.GE3612@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ensures that all standard options are available to hsmmc,
-In particular, I need cap-power-off-card.
+On Thu, Nov 13, 2014 at 04:16:33PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Nov 12, 2014 at 06:05:21PM -0800, Andi Kleen escreveu:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > Use the relative address, this makes get_srcline work correctly
+> > in the end.
+> 
+> Applied.
+>  
+> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  tools/perf/util/machine.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> > index 2e16d69..066e963 100644
+> > --- a/tools/perf/util/machine.c
+> > +++ b/tools/perf/util/machine.c
+> > @@ -1411,7 +1411,7 @@ static int add_callchain_ip(struct thread *thread,
+> >  		}
+> >  	}
+> >  
+> > -	return callchain_cursor_append(&callchain_cursor, ip, al.map, al.sym);
+> > +	return callchain_cursor_append(&callchain_cursor, al.addr, al.map, al.sym);
+> >  }
+> >  
+> >  struct branch_info *sample__resolve_bstack(struct perf_sample *sample,
+> > -- 
+> > 1.9.3
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+hi,
+this patch also changed the output of callchain entries
+with 'map' but with no symbol, like in following diff:
+
 ---
- drivers/mmc/host/omap_hsmmc.c |   33 ++++++++-------------------------
- 1 file changed, 8 insertions(+), 25 deletions(-)
+                  ---get_next_seq
+                     |
+-                    |--70.16%-- 0x40e1cf
++                    |--70.16%-- 0xe1cf
+                     |          0x841f0f
+                     |
+-                    |--25.83%-- 0x40e153
++                    |--25.83%-- 0xe153
+                     |          0x841f0f
+                     |
+-                     --4.00%-- 0x40e27f
++                     --4.00%-- 0xe27f
+--
 
-diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
-index 32514b648e3c..1bfacc59e3bf 100644
---- a/drivers/mmc/host/omap_hsmmc.c
-+++ b/drivers/mmc/host/omap_hsmmc.c
-@@ -1931,13 +1931,6 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
+I'm guessing this change was unintentional..? in case we have a map
+but no symbol seeing full address is more clear than relative at
+least for binary, not sure about DSOs..
+
+thoughts?
+
+thanks,
+jirka
+
+
+---
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 64b377e591e4..a4fb25fb26f5 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -816,22 +816,30 @@ out:
+ char *callchain_list__sym_name(struct callchain_list *cl,
+ 			       char *bf, size_t bfsize, bool show_dso)
  {
- 	struct omap_hsmmc_platform_data *pdata;
- 	struct device_node *np = dev->of_node;
--	u32 bus_width, max_freq;
--	int cd_gpio, wp_gpio;
--
--	cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
--	wp_gpio = of_get_named_gpio(np, "wp-gpios", 0);
--	if (cd_gpio == -EPROBE_DEFER || wp_gpio == -EPROBE_DEFER)
--		return ERR_PTR(-EPROBE_DEFER);
++	struct map *map = cl->ms.map;
+ 	int printed;
  
- 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
-@@ -1946,34 +1939,20 @@ static struct omap_hsmmc_platform_data *of_get_hsmmc_pdata(struct device *dev)
- 	if (of_find_property(np, "ti,dual-volt", NULL))
- 		pdata->controller_flags |= OMAP_HSMMC_SUPPORTS_DUAL_VOLT;
- 
--	pdata->switch_pin = cd_gpio;
--	pdata->gpio_wp = wp_gpio;
-+	pdata->switch_pin = -EINVAL;
-+	pdata->gpio_wp = -EINVAL;
- 
- 	if (of_find_property(np, "ti,non-removable", NULL)) {
- 		pdata->nonremovable = true;
- 		pdata->no_regulator_off_init = true;
- 	}
--	of_property_read_u32(np, "bus-width", &bus_width);
--	if (bus_width == 4)
--		pdata->caps |= MMC_CAP_4_BIT_DATA;
--	else if (bus_width == 8)
--		pdata->caps |= MMC_CAP_8_BIT_DATA;
- 
- 	if (of_find_property(np, "ti,needs-special-reset", NULL))
- 		pdata->features |= HSMMC_HAS_UPDATED_RESET;
- 
--	if (!of_property_read_u32(np, "max-frequency", &max_freq))
--		pdata->max_freq = max_freq;
--
- 	if (of_find_property(np, "ti,needs-special-hs-handling", NULL))
- 		pdata->features |= HSMMC_HAS_HSPE_SUPPORT;
- 
--	if (of_find_property(np, "keep-power-in-suspend", NULL))
--		pdata->pm_caps |= MMC_PM_KEEP_POWER;
--
--	if (of_find_property(np, "enable-sdio-wakeup", NULL))
--		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
--
- 	return pdata;
- }
- #else
-@@ -2031,6 +2010,10 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 		goto err;
- 	}
- 
-+	ret = mmc_of_parse(mmc);
-+	if (ret)
-+		goto err1;
+ 	if (cl->ms.sym) {
+ 		if (callchain_param.key == CCKEY_ADDRESS &&
+-		    cl->ms.map && !cl->srcline)
+-			cl->srcline = get_srcline(cl->ms.map->dso,
+-						  map__rip_2objdump(cl->ms.map,
+-								    cl->ip),
++		    map && !cl->srcline) {
++			cl->srcline = get_srcline(map->dso,
++						  map__rip_2objdump(map, cl->ip),
+ 						  cl->ms.sym, false);
++		}
+ 		if (cl->srcline)
+ 			printed = scnprintf(bf, bfsize, "%s %s",
+ 					cl->ms.sym->name, cl->srcline);
+ 		else
+ 			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	} else
+-		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++	} else {
++		/*
++		 * The cl->ip value is unbased ip (applied map->map_ip).
++		 * Display the unmap ip in case we have no symbol.
++		 */
++		u64 addr = map ? map->unmap_ip(map, cl->ip) : cl->ip;
 +
- 	host		= mmc_priv(mmc);
- 	host->mmc	= mmc;
- 	host->pdata	= pdata;
-@@ -2059,7 +2042,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
++		printed = scnprintf(bf, bfsize, "%#" PRIx64, addr);
++	}
  
- 	if (pdata->max_freq > 0)
- 		mmc->f_max = pdata->max_freq;
--	else
-+	else if (mmc->f_max == 0)
- 		mmc->f_max = OMAP_MMC_MAX_CLOCK;
- 
- 	spin_lock_init(&host->irq_lock);
-@@ -2113,7 +2096,7 @@ static int omap_hsmmc_probe(struct platform_device *pdev)
- 	if (mmc_pdata(host)->nonremovable)
- 		mmc->caps |= MMC_CAP_NONREMOVABLE;
- 
--	mmc->pm_caps = mmc_pdata(host)->pm_caps;
-+	mmc->pm_caps |= mmc_pdata(host)->pm_caps;
- 
- 	omap_hsmmc_conf_bus_power(host);
- 
-
+ 	if (show_dso)
+ 		scnprintf(bf + printed, bfsize - printed, " %s",
 
