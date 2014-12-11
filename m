@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965521AbaLKV1j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:27:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44532 "EHLO mail.kernel.org"
+	id S965550AbaLKV1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:27:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44608 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965482AbaLKV1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:27:34 -0500
+	id S965517AbaLKV1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 16:27:43 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/18] perf tools: Use sysctl__read_int instead of ad-hoc copies
-Date: Thu, 11 Dec 2014 18:26:04 -0300
-Message-Id: <1418333166-15429-17-git-send-email-acme@kernel.org>
+Subject: [PATCH 18/18] perf trace: Provide a better explanation when mmap fails
+Date: Thu, 11 Dec 2014 18:26:06 -0300
+Message-Id: <1418333166-15429-19-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418333166-15429-1-git-send-email-acme@kernel.org>
 References: <1418333166-15429-1-git-send-email-acme@kernel.org>
@@ -27,6 +27,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+If we ask for a mmap lenght than the max configured via the relevant
+sysctl, provide a better warning, instead of just expanding the EPERM
+returned:
+
+[acme@ssdandy ~]$ trace -m 256 -e nanosleep sleep 2
+Error:	Operation not permitted.
+Hint:	Check /proc/sys/kernel/perf_event_mlock_kb (516 kB) setting.
+Hint:	Tried using 1028 kB.
+Hint:	Try using a bigger -m/--mmap-pages value.
+
+[acme@ssdandy ~]$ trace -m 128 -e nanosleep sleep 2
+  2001.280 (2000.403 ms): nanosleep(rqtp: 0x7fff89a8a7f0) = 0
+[acme@ssdandy ~]$
+
+An upcoming patch will autotune the request for non-root users when -m
+is not used.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -39,57 +56,49 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pt2u7a3b50oddggecx7rwq2n@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cdvxfz2gycetbkopm9sna1qp@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/record.c | 11 +----------
- tools/perf/util/util.c   |  9 +--------
- 2 files changed, 2 insertions(+), 18 deletions(-)
+ tools/perf/builtin-trace.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index cf69325b985f..8acd0df88b5c 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -137,16 +137,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 83a4835c8118..327541e43c7f 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2045,7 +2045,6 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	unsigned long before;
+ 	const bool forks = argc > 0;
+ 	bool draining = false;
+-	char sbuf[STRERR_BUFSIZE];
  
- static int get_max_rate(unsigned int *rate)
- {
--	char path[PATH_MAX];
--	const char *procfs = procfs__mountpoint();
--
--	if (!procfs)
--		return -1;
--
--	snprintf(path, PATH_MAX,
--		 "%s/sys/kernel/perf_event_max_sample_rate", procfs);
--
--	return filename__read_int(path, (int *) rate);
-+	return sysctl__read_int("kernel/perf_event_max_sample_rate", (int *)rate);
- }
+ 	trace->live = true;
  
- static int record_opts__config_freq(struct record_opts *opts)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 41125e5b011e..b86744f29eef 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -506,16 +506,9 @@ const char *get_filename_for_perf_kvm(void)
+@@ -2106,11 +2105,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		goto out_error_open;
  
- int perf_event_paranoid(void)
- {
--	char path[PATH_MAX];
--	const char *procfs = procfs__mountpoint();
- 	int value;
+ 	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
+-	if (err < 0) {
+-		fprintf(trace->output, "Couldn't mmap the events: %s\n",
+-			strerror_r(errno, sbuf, sizeof(sbuf)));
+-		goto out_delete_evlist;
+-	}
++	if (err < 0)
++		goto out_error_mmap;
  
--	if (!procfs)
--		return INT_MAX;
--
--	scnprintf(path, PATH_MAX, "%s/sys/kernel/perf_event_paranoid", procfs);
--
--	if (filename__read_int(path, &value))
-+	if (sysctl__read_int("kernel/perf_event_paranoid", &value))
- 		return INT_MAX;
+ 	perf_evlist__enable(evlist);
  
- 	return value;
+@@ -2210,6 +2206,10 @@ out_error_tp:
+ 	perf_evlist__strerror_tp(evlist, errno, errbuf, sizeof(errbuf));
+ 	goto out_error;
+ 
++out_error_mmap:
++	perf_evlist__strerror_mmap(evlist, errno, errbuf, sizeof(errbuf));
++	goto out_error;
++
+ out_error_open:
+ 	perf_evlist__strerror_open(evlist, errno, errbuf, sizeof(errbuf));
+ 
 -- 
 1.9.3
 
