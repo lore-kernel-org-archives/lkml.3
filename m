@@ -1,107 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934472AbaLKJ7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 04:59:52 -0500
-Received: from mga02.intel.com ([134.134.136.20]:44056 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698AbaLKJ7q convert rfc822-to-8bit (ORCPT
+	id S934479AbaLKKAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:00:55 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:40045 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932698AbaLKKAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 04:59:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
-   d="scan'208";a="652136162"
-From: "Varlese, Marco" <marco.varlese@intel.com>
-To: John Fastabend <john.fastabend@gmail.com>, Jiri Pirko <jiri@resnulli.us>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
- configuration
-Thread-Index: AdAUhPtXGtfGamc6R3Ssf+89G79LDwAFGVwAAAB5JYAAIzgFYA==
-Date: Thu, 11 Dec 2014 09:59:42 +0000
-Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
- <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com>
-In-Reply-To: <54887CF7.70708@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 11 Dec 2014 05:00:54 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <55629ff22c6f9f641757da409aaa9ae7>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
+Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Yunzhi Li <lyz@rock-chips.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 4/5] ARM: dts: rockchip: add rk3288 usb PHY
+Date: Thu, 11 Dec 2014 17:55:21 +0800
+Message-Id: <1418291722-25448-5-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
+References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: John Fastabend [mailto:john.fastabend@gmail.com]
-> Sent: Wednesday, December 10, 2014 5:04 PM
-> To: Jiri Pirko
-> Cc: Varlese, Marco; netdev@vger.kernel.org;
-> stephen@networkplumber.org; Fastabend, John R;
-> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
-> configuration
-> 
-> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
-> > Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com wrote:
-> >> From: Marco Varlese <marco.varlese@intel.com>
-> >>
-> >> Switch hardware offers a list of attributes that are configurable on
-> >> a per port basis.
-> >> This patch provides a mechanism to configure switch ports by adding
-> >> an NDO for setting specific values to specific attributes.
-> >> There will be a separate patch that extends iproute2 to call the new
-> >> NDO.
-> >
-> >
-> > What are these attributes? Can you give some examples. I'm asking
-> > because there is a plan to pass generic attributes to switch ports
-> > replacing current specific ndo_switch_port_stp_update. In this case,
-> > bridge is setting that attribute.
-> >
-> > Is there need to set something directly from userspace or does it make
-> > rather sense to use involved bridge/ovs/bond ? I think that both will
-> > be needed.
-> 
-> +1
-> 
-> I think for many attributes it would be best to have both. The in kernel callers
-> and netlink userspace can use the same driver ndo_ops.
-> 
-> But then we don't _require_ any specific bridge/ovs/etc module. And we
-> may have some attributes that are not specific to any existing software
-> module. I'm guessing Marco has some examples of these.
-> 
-> [...]
-> 
-> 
-> --
-> John Fastabend         Intel Corporation
+This patch adds a device_node for RK3288 SoC usb phy. It also
+defines the phy to be used by three usb controllers: usb_host0/1
+and usb_otg.
 
-We do have a need to configure the attributes directly from user-space and I have identified the tool to do that in iproute2.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
 
-An example of attributes are:
-* enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
-* internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
-* flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
+---
 
-Some attributes would be of the type enabled/disabled while other will allow specific values to allow the user to configure different behaviours of that feature on that particular port on that platform.
+Changes in v6: None
+Changes in v5:
+- reorder the phy dt node to a correct position.
 
-One thing to mention - as John stated as well - there might be some attributes that are not specific to any software module but rather have to do with the actual hardware/platform to configure.
+Changes in v4:
+- Add phy subnodes.
 
-I hope this clarifies some points.
+Changes in v3: None
 
------------------------------------------------------------
-Marco Varlese		-	Intel Corporation
------------------------------------------------------------
+ arch/arm/boot/dts/rk3288.dtsi | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 874e66d..bd2a1e0 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -335,6 +335,8 @@
+ 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_USBHOST0>;
+ 		clock-names = "usbhost";
++		phys = <&usbphy 1>;
++		phy-names = "usb";
+ 		status = "disabled";
+ 	};
+ 
+@@ -347,6 +349,8 @@
+ 		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_USBHOST1>;
+ 		clock-names = "otg";
++		phys = <&usbphy 2>;
++		phy-names = "usb2-phy";
+ 		status = "disabled";
+ 	};
+ 
+@@ -357,6 +361,8 @@
+ 		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_OTG0>;
+ 		clock-names = "otg";
++		phys = <&usbphy 0>;
++		phy-names = "usb2-phy";
+ 		status = "disabled";
+ 	};
+ 
+@@ -497,6 +503,27 @@
+ 		interrupts = <GIC_PPI 9 0xf04>;
+ 	};
+ 
++	usbphy: phy {
++		compatible = "rockchip,rk3288-usb-phy";
++		rockchip,grf = <&grf>;
++		#phy-cells = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++
++		usb-phy@0 {
++			reg = <0>;
++		};
++
++		usb-phy@1 {
++			reg = <1>;
++		};
++
++		usb-phy@2 {
++			reg = <2>;
++		};
++	};
++
+ 	pinctrl: pinctrl {
+ 		compatible = "rockchip,rk3288-pinctrl";
+ 		rockchip,grf = <&grf>;
+-- 
+2.0.0
 
 
