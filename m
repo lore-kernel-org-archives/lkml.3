@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942AbaLKWWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:22:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42424 "EHLO mx1.redhat.com"
+	id S1759025AbaLKWWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:22:30 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:57536 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758751AbaLKWWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:22:02 -0500
-Date: Thu, 11 Dec 2014 23:21:45 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: kan.liang@intel.com
-Cc: acme@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, paulus@samba.org,
-        ak@linux.intel.com, namhyung@kernel.org
-Subject: Re: [PATCH V5 0/3] perf tool: Haswell LBR call stack support (user)
-Message-ID: <20141211222145.GE26788@krava.redhat.com>
-References: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
+	id S1758934AbaLKWW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 17:22:29 -0500
+Date: Thu, 11 Dec 2014 14:21:45 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jani Nikula <jani.nikula@intel.com>, Hannes Reinecke <hare@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] param: do not set store func without write perm
+Message-ID: <20141211222144.GA7070@www.outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417532814-26208-1-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 02, 2014 at 10:06:51AM -0500, kan.liang@intel.com wrote:
+When a module_param is defined without DAC write permissions, it can
+still be changed at runtime and updated. Drivers using a 0444 permission
+may be surprised that these values can still be changed.
 
-SNIP
+For drivers that want to allow updates, any S_IW* flag will set the
+"store" function as before. Drivers without S_IW* flags will have the
+"store" function unset, unforcing a read-only value. Drivers that wish
+neither "store" nor "get" can continue to use "0" for perms to stay out
+of sysfs entirely.
 
-> 
-> Please find the kernel part patch at https://lkml.org/lkml/2014/11/6/432
-> 
-> Changes since v1
->  - Update help document
->  - Force exclude_user to 0 with warning in LBR call stack
->  - Dump both lbr and fp info when report -D
->  - Reconstruct thread__resolve_callchain_sample and split it into two patches
->  - Use has_branch_callstack function to check LBR call stack available
-> 
-> Changes since v2
->  - Rebase to 025ce5d33373
-> 
-> Changes since v3
->  - Rebase to cc502c23aadf
->  - Separated function for lbr call stack sample resolve and print
->  - Some minor changes according to comments
-> 
-> Changes since V4
->  - Rebase to 09a6a1b
->  - Falling back to framepointers if LBR not available, and warning user
-> 
-> Kan Liang (3):
->   perf tools: enable LBR call stack support
->   perf tool: Move cpumode resolve code to add_callchain_ip
->   perf tools: Construct LBR call chain
+Old behavior:
+  # cd /sys/module/snd/parameters
+  # ls -l
+  total 0
+  -r--r--r-- 1 root root 4096 Dec 11 13:55 cards_limit
+  -r--r--r-- 1 root root 4096 Dec 11 13:55 major
+  -r--r--r-- 1 root root 4096 Dec 11 13:55 slots
+  # cat major
+  116
+  # echo -1 > major
+  -bash: major: Permission denied
+  # chmod u+w major
+  # echo -1 > major
+  # cat major
+  -1
 
-haven't reviewed the kernel part, but the user part
-seems to work properly..
+New behavior:
+  ...
+  # chmod u+w major
+  # echo -1 > major
+  -bash: echo: write error: Input/output error
 
-Tested-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ kernel/params.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-jirka
+diff --git a/kernel/params.c b/kernel/params.c
+index db97b791390f..fd50ce9f1bbf 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -647,7 +647,9 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+ 	sysfs_attr_init(&new->attrs[num].mattr.attr);
+ 	new->attrs[num].param = kp;
+ 	new->attrs[num].mattr.show = param_attr_show;
+-	new->attrs[num].mattr.store = param_attr_store;
++	/* Do not allow runtime DAC changes to make param writable. */
++	if ((kp->perm & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0)
++		new->attrs[num].mattr.store = param_attr_store;
+ 	new->attrs[num].mattr.attr.name = (char *)name;
+ 	new->attrs[num].mattr.attr.mode = kp->perm;
+ 	new->num = num+1;
+-- 
+1.9.1
+
+
+-- 
+Kees Cook
+Chrome OS Security
