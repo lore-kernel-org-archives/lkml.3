@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933504AbaLKM6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 07:58:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60517 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932200AbaLKM6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 07:58:32 -0500
-Date: Thu, 11 Dec 2014 13:58:29 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
- memory hot-add code
-Message-ID: <20141211125829.GA19435@dhcp22.suse.cz>
-References: <1417826471-21131-1-git-send-email-kys@microsoft.com>
- <1417826498-21172-1-git-send-email-kys@microsoft.com>
- <1417826498-21172-2-git-send-email-kys@microsoft.com>
- <20141208150445.GB29102@dhcp22.suse.cz>
- <54864F27.8010008@jp.fujitsu.com>
- <20141209090843.GA11373@dhcp22.suse.cz>
- <5486CE2E.4070409@jp.fujitsu.com>
- <20141209105532.GB11373@dhcp22.suse.cz>
- <BY2PR0301MB07118CFD9B32FEBE4E0C9921A0630@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	id S1757815AbaLKM7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 07:59:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55593 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444AbaLKM7d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 07:59:33 -0500
+Date: Thu, 11 Dec 2014 12:58:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "moderated list:ARM/CLKDEV SUPPORT" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
+        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        boris.brezillon@free-electrons.com
+Message-ID: <20141211125837.GV11764@sirena.org.uk>
+References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
+ <1418226513-14105-5-git-send-email-a.hajda@samsung.com>
+ <20141210160720.GS11764@sirena.org.uk>
+ <548976D2.7080005@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5FNPeqk0egs0iuvD"
 Content-Disposition: inline
-In-Reply-To: <BY2PR0301MB07118CFD9B32FEBE4E0C9921A0630@BY2PR0301MB0711.namprd03.prod.outlook.com>
+In-Reply-To: <548976D2.7080005@samsung.com>
+X-Cookie: I don't get no respect.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 04/15] regulator: add restrack support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-12-14 00:21:09, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Michal Hocko [mailto:mhocko@suse.cz]
-> > Sent: Tuesday, December 9, 2014 2:56 AM
-> > To: Yasuaki Ishimatsu
-> > Cc: KY Srinivasan; gregkh@linuxfoundation.org; linux-
-> > kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> > apw@canonical.com; linux-mm@kvack.org
-> > Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
-> > memory hot-add code
-> > 
-> > On Tue 09-12-14 19:25:50, Yasuaki Ishimatsu wrote:
-> > > (2014/12/09 18:08), Michal Hocko wrote:
-> > [...]
-> > > >Doesn't udev retry the operation if it gets EBUSY or EAGAIN?
-> > >
-> > > It depend on implementation of udev.rules. So we can retry
-> > > online/offline operation in udev.rules.
-> > [...]
-> > 
-> > # Memory hotadd request
-> > SUBSYSTEM=="memory", ACTION=="add",
-> > DEVPATH=="/devices/system/memory/memory*[0-9]",
-> > TEST=="/sys$devpath/state", RUN+="/bin/sh -c 'echo online >
-> > /sys$devpath/state'"
-> > 
-> > OK so this is not prepared for a temporary failures and retries.
-> > 
-> > > >And again, why cannot we simply make the onlining fail or try_lock
-> > > >and retry internally if the event consumer cannot cope with errors?
-> > >
-> > > Did you mean the following Srinivasan's first patch looks good to you?
-> > >   https://lkml.org/lkml/2014/12/2/662
-> > 
-> > Heh, I was just about to post this. Because I haven't noticed the previous
-> > patch yet. Yeah, Something like that. Except that I would expect EAGAIN or
-> > EBUSY rather than ERESTARTSYS which should never leak into userspace. And
-> > that would happen here AFAICS because signal_pending will not be true
-> > usually.
-> Michal,
-> 
-> I agree that the fix to this problem must be outside the clients
-> of add_memory() and that is the reason I had sent that patch:
-> https://lkml.org/lkml/2014/12/2/662. Let me know if you want me to
-> resend this patch with the correct return value.
 
-Please think about the other suggested options as well.
- 
-> Regards,
-> 
-> K. Y
-> > 
-> > So there are two options. Either make the udev rule more robust and retry
-> > within RUN section or do the retry withing online_pages (try_lock and go into
-> > interruptible sleep which gets signaled by finished add_memory()). The later
-> > option is safer wrt. the userspace because the operation wouldn't fail
-> > unexpectedly.
-> > Another option would be generating the sysfs file after all the internal
-> > initialization is done and call it outside of the memory hotplug lock.
-> > 
-> > --
-> > Michal Hocko
-> > SUSE Labs
+--5FNPeqk0egs0iuvD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Michal Hocko
-SUSE Labs
+On Thu, Dec 11, 2014 at 11:49:54AM +0100, Andrzej Hajda wrote:
+> On 12/10/2014 05:07 PM, Mark Brown wrote:
+> > On Wed, Dec 10, 2014 at 04:48:22PM +0100, Andrzej Hajda wrote:
+
+> >> Regulators supports various methods of lookup.
+> >> The patch adds restrack support only to DT based regulators.
+
+> > Why, what does this mean and how might one use it?  I've not looked at
+> > the code since I don't know what it's supposed to accomplish...
+
+> Looking at this patch makes no sense without looking at cover letter
+> or at the patch adding restrack framework. In short adding restrack support
+> to regulators will allow to:
+
+I did look at the cover letter and glance at the first couple of patches
+but I still can't tell what this is really intended to do.  There's a
+lot of implementation detail but not a lot of high level overview so
+it's not very clear to me how exactly this solves problems or how it is
+different to the component framework, it sounds very similar.
+
+I'd expect someone reading the change in the regulator API to have at
+least some idea how this fits in with the rest of the API and how to use
+it, and probably more importantly I'd expect to be able to understand
+why this is DT only.
+
+--5FNPeqk0egs0iuvD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUiZT9AAoJECTWi3JdVIfQt+cH/0dvoIx1Mg0GgnLlbSrzaC/+
+e9DXQHbh/ynUlqjM60wKCz/xo0mD/glSQQbZaCkpADoBWObnLDnydaGEg8w9fGub
+bN2gDtOcelvibN4ID1nZshRFHWFa1ubdGksf8v2nqvX7cvmdVcw0XLKIjiVlp4aI
+UVhr3RIqZEn4cCmw4FfrAxrxXMJfm9ehl5mecBKRuUlVGWFgw49AEG2GjKnnt2fM
+KogSkZdKOQpaWRQpst+wGnDnOUpYooe3ojfxBIxv6aZyCndXtUMO4Lr+55yhp5n7
+v+j0yRBmUmOPckm+MYU2/Ops09ROpD/FlShbb3jf+HxgLdy6W/kK45N11oadLu4=
+=wRH4
+-----END PGP SIGNATURE-----
+
+--5FNPeqk0egs0iuvD--
