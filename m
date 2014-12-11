@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933637AbaLKBRB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 20:17:01 -0500
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:48188 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933315AbaLKBQ6 (ORCPT
+	id S933501AbaLKBVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 20:21:50 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:56906 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933184AbaLKBVs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 20:16:58 -0500
+	Wed, 10 Dec 2014 20:21:48 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44839822"
+Message-ID: <5488EDF7.7070001@cn.fujitsu.com>
+Date: Thu, 11 Dec 2014 09:05:59 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <20141210235347.GT11764@sirena.org.uk>
-References: <1418245085-9754-1-git-send-email-dianders@chromium.org> <20141210235347.GT11764@sirena.org.uk>
-From: Alexandru Stan <amstan@chromium.org>
-Date: Wed, 10 Dec 2014 17:08:37 -0800
-Message-ID: <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
- certain voltage
-To: Mark Brown <broonie@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lgirdwood@gmail.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <joe@perches.com>
+Subject: Re: [PATCH v2] net: introduce helper macro for_each_cmsghdr
+References: <5487DBD9.1010908@cn.fujitsu.com> <20141210.134804.1383875260695429574.davem@davemloft.net> <20141210.144430.1749715282635917425.davem@davemloft.net>
+In-Reply-To: <20141210.144430.1749715282635917425.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-7"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spec is from 1.7V to 1.95V, with 1.8V being ideal. It's not that
-symmetric. But let's say that 0.1V is fine for tolerance(so 1.7-1.9V)
+Hi David,
+On 12/11/2014 03:44 AM, David Miller wrote:
 
-regulator_set_voltage_tol looks interesting, but i still think it's
-not the appropriate thing to use in this case.
+> From: David Miller <davem@davemloft.net>
+> Date: Wed, 10 Dec 2014 13:48:04 -0500 (EST)
+> 
+>> From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> Date: Wed, 10 Dec 2014 13:36:25 +0800
+>>
+>>> Introduce helper macro for_each_cmsghdr as a wrapper of the enumerating
+>>> cmsghdr from msghdr, just cleanup. 
+>>>
+>>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>>
+>> Applied, thanks.
+> 
+> This breaks the build, I'm reverting.
 
-Imagine a board has a 1V-1.79 V regulator, we tell it to
-regulator_set_voltage_tol(1800000,100000). It will try the 1.8V-1.9V
-range, when it sees that it can't it'll fallback to 1.7V - 1.9V, and
-it will just be lazy and pick the lowest of the range again:
-1.7V(causing voltage drop issues because we're exactly at the minimum
-of the spec). The correct voltage would be 1.79V
+I'm very sorry.
 
-It's unfortunate that regulator_set_voltage was designed to always
-pick the lowest voltage in that range. I understand that it's a power
-efficiency thing, but it's not ideal in cases like this.
+> 
+> You cannot use your new macros in
+> Documentation/networking/timestamping/txtimestamp.c, that is a
+> userland program and the header you are adding your helper to is not
+> available to userspace.
 
-Alexandru Stan (amstan)
+IMO, the user-land programs need to be build with the matched headers separately.
+I split the kernel codes and the user-land programs, build and install the kernel first,
+and then build the user-land ones. 
+
+> 
+> This also means you didn't sufficiently test the build of your
+> changes.
+
+To be honest, I do the test as I mentioned above.
+
+Thanks,
+Gu
+
+> 
+> Documentation/networking/timestamping/timestamping.c: In function ¡printpacket¢:
+> Documentation/networking/timestamping/timestamping.c:172:2: warning: implicit declaration of function ¡for_each_cmsghdr¢ [-Wimplicit-function-declaration]
+> Documentation/networking/timestamping/timestamping.c:172:30: error: expected ¡;¢ before ¡{¢ token
+> Documentation/networking/timestamping/timestamping.c:161:18: warning: unused variable ¡ts¢ [-Wunused-variable]
+> Documentation/networking/timestamping/timestamping.c:160:17: warning: unused variable ¡tv¢ [-Wunused-variable]
+> make[3]: *** [Documentation/networking/timestamping/timestamping] Error 1
+> make[3]: *** Waiting for unfinished jobs....
+> Documentation/networking/timestamping/txtimestamp.c: In function ¡__recv_errmsg_cmsg¢:
+> Documentation/networking/timestamping/txtimestamp.c:187:2: warning: implicit declaration of function ¡for_each_cmsghdr¢ [-Wimplicit-function-declaration]
+> Documentation/networking/timestamping/txtimestamp.c:187:19: error: ¡cmsg¢ undeclared (first use in this function)
+> Documentation/networking/timestamping/txtimestamp.c:187:19: note: each undeclared identifier is reported only once for each function it appears in
+> Documentation/networking/timestamping/txtimestamp.c:187:30: error: expected ¡;¢ before ¡{¢ token
+> Documentation/networking/timestamping/txtimestamp.c:185:18: warning: unused variable ¡cm¢ [-Wunused-variable]
+> Documentation/networking/timestamping/txtimestamp.c:184:27: warning: unused variable ¡tss¢ [-Wunused-variable]
+> Documentation/networking/timestamping/txtimestamp.c:183:28: warning: unused variable ¡serr¢ [-Wunused-variable]
+> Documentation/networking/timestamping/txtimestamp.c: At top level:
+> Documentation/networking/timestamping/txtimestamp.c:123:13: warning: ¡print_timestamp¢ defined but not used [-Wunused-function]
+> Documentation/networking/timestamping/txtimestamp.c:159:13: warning: ¡print_pktinfo¢ defined but not used [-Wunused-function]
+> 
 
 
-On Wed, Dec 10, 2014 at 3:53 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Wed, Dec 10, 2014 at 12:58:02PM -0800, Doug Anderson wrote:
->> There are some cases where you'd like to set a voltage for a regulator
->> and a range of voltages are OK, but you'd really like to get as close
->> as you can to a specific voltage if at all possible.
->
-> This looks like regulator_set_voltage_tol(), why not use that?  The spec
-> probably even has a number for the tolerance, or you can make one up.
