@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964866AbaLKHQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 02:16:57 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:33760 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932373AbaLKHQz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 02:16:55 -0500
-MIME-Version: 1.0
-In-Reply-To: <6b2bd13bcd934b0fb09712e8950348e6@BN1AFFO11FD005.protection.gbl>
-References: <1418211884-5329-1-git-send-email-harinik@xilinx.com>
-	<1418211884-5329-3-git-send-email-harinik@xilinx.com>
-	<6b2bd13bcd934b0fb09712e8950348e6@BN1AFFO11FD005.protection.gbl>
-Date: Thu, 11 Dec 2014 12:46:53 +0530
-Message-ID: <CAFcVECJDfJaEALDxfZg5-+tsD02mVT43s7PX4RLs349Kx9Jaeg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] i2c: cadence: Check for errata condition involving
- master receive
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Harini Katakam <harini.katakam@xilinx.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vishnu Motghare <vishnum@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757748AbaLKHVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 02:21:32 -0500
+Received: from mga09.intel.com ([134.134.136.24]:60858 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757196AbaLKHVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 02:21:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,556,1413270000"; 
+   d="scan'208";a="622033210"
+From: Kevin Strasser <kevin.strasser@intel.com>
+To: alsa-devel@alsa-project.org
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
+        Mark Brown <broonie@kernel.org>, Mengdong Lin <mengdong.lin@intel.com>,
+        Yang Fang <yang.a.fang@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: Intel: fix possible acpi enumeration panic
+Date: Wed, 10 Dec 2014 23:21:57 -0800
+Message-Id: <1418282517-851-1-git-send-email-kevin.strasser@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Soren,
+A crash can occur on some platforms where adsp is enumerated but codec
+is not matched. Check that the codec_id string is valid before
+attempting to match.
 
-On Wed, Dec 10, 2014 at 11:15 PM, Sören Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
-> On Wed, 2014-12-10 at 05:14PM +0530, Harini Katakam wrote:
->> Cadence I2C controller has the following bugs:
->> - completion indication is not given to the driver at the end of
->> a read/receive transfer with HOLD bit set.
->> - Invalid read transaction are generated on the bus when HW timeout
->> condition occurs with HOLD bit set.
->>
->> As a result of the above, if a set of messages to be transferred with
->> repeated start includes any transfer following a read transfer,
->> completion is never indicated and timeout occurs.
->> Hence a check is implemented to return -EOPNOTSUPP for such sequences.
->>
->> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->> Signed-off-by: Vishnu Motghare <vishnum@xilinx.com>
->> ---
->>
->> v4:
->> Use single dev_warn and make message grep-able.
->>
->> v3:
->> Add warning in case of unsupported transfer.
->>
->> v2:
->> Dont defeteature repeated start. Just check for unsupported conditions in the
->> driver and return error.
->>
->> ---
->>  drivers/i2c/busses/i2c-cadence.c |   14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
->>
->> diff --git a/drivers/i2c/busses/i2c-cadence.c b/drivers/i2c/busses/i2c-cadence.c
->> index 5f5d4fa..f9269a6 100644
->> --- a/drivers/i2c/busses/i2c-cadence.c
->> +++ b/drivers/i2c/busses/i2c-cadence.c
->> @@ -541,6 +541,20 @@ static int cdns_i2c_master_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
->>        * processed with a repeated start.
->>        */
->>       if (num > 1) {
->> +             /*
->> +              * This controller does not give completion interrupt after a
->> +              * master receive transfer if HOLD bit is set (repeated start),
->> +              * resulting in SW timeout. Hence, if a receive transfer is
->> +              * followed by any other transfer, an error is returned
->> +              * indicating that this sequence is not supported.
->> +              */
->> +             for (count = 0; count < num-1; count++) {
->> +                     if (msgs[count].flags & I2C_M_RD)
->> +                             dev_warn(adap->dev.parent, "No support for "
->> +                                      "repeated start when receive is "
->> +                                      "followed by a transfer\n");
->
-> Still not grepable. There must be no line breaks in the string!
+Signed-off-by: Kevin Strasser <kevin.strasser@intel.com>
+---
+ sound/soc/intel/sst/sst_acpi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This message will be printed in one single line.
-Do you want this string to be grepable in the driver? Why is that necessary?
+diff --git a/sound/soc/intel/sst/sst_acpi.c b/sound/soc/intel/sst/sst_acpi.c
+index 31124aa..dd72e58 100644
+--- a/sound/soc/intel/sst/sst_acpi.c
++++ b/sound/soc/intel/sst/sst_acpi.c
+@@ -236,7 +236,7 @@ static struct sst_machines *sst_acpi_find_machine(
+ 	struct sst_machines *mach;
+ 	bool found = false;
+ 
+-	for (mach = machines; mach->codec_id; mach++)
++	for (mach = machines; mach->codec_id[0]; mach++)
+ 		if (ACPI_SUCCESS(acpi_get_devices(mach->codec_id,
+ 						  sst_acpi_mach_match,
+ 						  &found, NULL)) && found)
+-- 
+1.9.1
 
-Regards,
-Harini
