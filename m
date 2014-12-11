@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887AbaLKQll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 11:41:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55687 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753789AbaLKQlj convert rfc822-to-8bit (ORCPT
+	id S1758207AbaLKQnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 11:43:00 -0500
+Received: from lb3-smtp-cloud6.xs4all.net ([194.109.24.31]:49288 "EHLO
+	lb3-smtp-cloud6.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754049AbaLKQm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 11:41:39 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <548172DE.9090007@samsung.com>
-References: <548172DE.9090007@samsung.com> <20141126141709.3944.66589.stgit@warthog.procyon.org.uk> <20141126141753.3944.22213.stgit@warthog.procyon.org.uk>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, rusty@rustcorp.com.au, mmarek@suse.cz,
-        keyrings@linux-nfs.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH 4/5] MODSIGN: Provide a utility to append a PKCS#7 signature to a module [ver #2]
+	Thu, 11 Dec 2014 11:42:58 -0500
+Message-ID: <5489C98A.9030802@xs4all.nl>
+Date: Thu, 11 Dec 2014 17:42:50 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <10248.1418316079.1@warthog.procyon.org.uk>
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Dec 2014 16:41:19 +0000
-Message-ID: <10249.1418316079@warthog.procyon.org.uk>
+To: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+CC: linux-kernel@vger.kernel.org, Linux Media <linux-media@vger.kernel.org>,
+        m.chehab@samsung.com, "hans.verkuil" <hans.verkuil@cisco.com>
+Subject: Re: [PATCH] solo6x10: just pass frame motion flag from hardware,
+ drop additional handling as complicated and unstable
+References: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>	<5465E337.6020808@xs4all.nl> <CAM_ZknUu5xgp7gZoQJ_5XaX6CBRqYVxNJsZzsgBKGFcnUqKAJw@mail.gmail.com>
+In-Reply-To: <CAM_ZknUu5xgp7gZoQJ_5XaX6CBRqYVxNJsZzsgBKGFcnUqKAJw@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Kasatkin <d.kasatkin@samsung.com> wrote:
+On 12/11/2014 05:08 PM, Andrey Utkin wrote:
+> On Fri, Nov 14, 2014 at 1:10 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
+>> Hi Andrew,
+>>
+>> FYI: I need to test this myself and understand it better, so it will take some
+>> time before I get to this. It is in my TODO list, so it won't be forgotten.
+>>
+>> Regards,
+>>
+>>         Hans
+>>
+>> On 11/05/2014 09:11 PM, Andrey Utkin wrote:
+>>> Dropping code (introduced in 316d9e84a72069e04e483de0d5934c1d75f6a44c)
+>>> which intends to make raising of motion events more "smooth"(?).
+>>>
+>>> It made motion event never appear in my installation.
+>>> That code is complicated, so I couldn't figure out quickly how to fix
+>>> it, so dropping it seems better to me.
+>>>
+>>> Another justification is that anyway application would implement
+>>> "motion signal stabilization" if required, it is not necessarily kernel
+>>> driver's job.
+>>>
+>>> Signed-off-by: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+>>> ---
+>>>  drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 30 +-------------------------
+>>>  drivers/media/pci/solo6x10/solo6x10.h          |  2 --
+>>>  2 files changed, 1 insertion(+), 31 deletions(-)
+>>>
 
-> sign-file.c produce lots of annoying noise.
+<snip>
 
-Compiling it manually with -Wformat-security found those problems you listed
-and add -W found yet another problem.  Differential patch attached.  I've
-folded it into the patch that adds sign-file.c.
+>>
+> 
+> Hi Hans, how is it proceeding with the subject of this patch?
 
-David
----
-diff --git a/scripts/sign-file.c b/scripts/sign-file.c
-index 3f9bedbd185f..7941f499ddba 100755
---- a/scripts/sign-file.c
-+++ b/scripts/sign-file.c
-@@ -62,12 +62,12 @@ static void display_openssl_errors(int l)
- }
- 
- 
--#define ERR(cond, ...)				  \
-+#define ERR(cond, fmt, ...)			  \
- 	do {					  \
- 		bool __cond = (cond);		  \
- 		display_openssl_errors(__LINE__); \
- 		if (__cond) {			  \
--			err(1, ## __VA_ARGS__);	  \
-+			err(1, fmt, ## __VA_ARGS__);	\
- 		}				  \
- 	} while(0)
- 
-@@ -133,7 +133,7 @@ int main(int argc, char **argv)
- 	 * across as we read it.
- 	 */
- 	bd = BIO_new_file(dest_name, "wb");
--	ERR(!bd, dest_name);
-+	ERR(!bd, "%s", dest_name);
- 
- 	/* Digest the module data. */
- 	OpenSSL_add_all_digests();
-@@ -149,7 +149,7 @@ int main(int argc, char **argv)
- 			   PKCS7_NOCERTS | PKCS7_PARTIAL | PKCS7_BINARY | PKCS7_DETACHED | PKCS7_STREAM);
- 	ERR(!pkcs7, "PKCS7_sign");
- 
--	ERR(PKCS7_sign_add_signer(pkcs7, x509, private_key, digest_algo, PKCS7_NOCERTS | PKCS7_BINARY) < 0,
-+	ERR(!PKCS7_sign_add_signer(pkcs7, x509, private_key, digest_algo, PKCS7_NOCERTS | PKCS7_BINARY),
- 	    "PKCS7_sign_add_signer");
- 	ERR(PKCS7_final(pkcs7, bm, PKCS7_NOCERTS | PKCS7_BINARY) < 0,
- 	    "PKCS7_final");
-@@ -159,31 +159,31 @@ int main(int argc, char **argv)
- 
- 		ERR(asprintf(&pkcs7_name, "%s.pkcs7", module_name) < 0, "asprintf");
- 		b = BIO_new_file(pkcs7_name, "wb");
--		ERR(!b, pkcs7_name);
--		ERR(i2d_PKCS7_bio_stream(b, pkcs7, NULL, 0) < 0, pkcs7_name);
-+		ERR(!b, "%s", pkcs7_name);
-+		ERR(i2d_PKCS7_bio_stream(b, pkcs7, NULL, 0) < 0, "%s", pkcs7_name);
- 		BIO_free(b);
- 	}
- 
- 	/* Append the marker and the PKCS#7 message to the destination file */
--	ERR(BIO_reset(bm) < 0, module_name);
-+	ERR(BIO_reset(bm) < 0, "%s", module_name);
- 	while ((n = BIO_read(bm, buf, sizeof(buf))),
- 	       n > 0) {
--		ERR(BIO_write(bd, buf, n) < 0, dest_name);
-+		ERR(BIO_write(bd, buf, n) < 0, "%s", dest_name);
- 	}
--	ERR(n < 0, module_name);
-+	ERR(n < 0, "%s", module_name);
- 	module_size = BIO_number_written(bd);
- 
--	ERR(i2d_PKCS7_bio_stream(bd, pkcs7, NULL, 0) < 0, dest_name);
-+	ERR(i2d_PKCS7_bio_stream(bd, pkcs7, NULL, 0) < 0, "%s", dest_name);
- 	pkcs7_size = BIO_number_written(bd) - module_size;
- 	sig_info.sig_len = htonl(pkcs7_size);
--	ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, dest_name);
--	ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, dest_name);
-+	ERR(BIO_write(bd, &sig_info, sizeof(sig_info)) < 0, "%s", dest_name);
-+	ERR(BIO_write(bd, magic_number, sizeof(magic_number) - 1) < 0, "%s", dest_name);
- 
--	ERR(BIO_free(bd) < 0, dest_name);
-+	ERR(BIO_free(bd) < 0, "%s", dest_name);
- 
- 	/* Finally, if we're signing in place, replace the original. */
- 	if (replace_orig)
--		ERR(rename(dest_name, module_name) < 0, dest_name);
-+		ERR(rename(dest_name, module_name) < 0, "%s", dest_name);
- 
- 	return 0;
- }
+Still haven't had the time to check this, other than a very quick test run.
+Don't worry, it's in my TODO list, so I can't forget, but it has been busier
+than usual lately. And this is one patch I really like to test before
+committing.
+
+Fingers crossed that I might be able to do it either tomorrow or on Monday.
+If that fails, then the next opportunity will be after Christmas as I won't
+have access to the hardware for awhile.
+
+Regards,
+
+	Hans
