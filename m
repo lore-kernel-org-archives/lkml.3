@@ -1,104 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965064AbaLKOH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 09:07:58 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:53414 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934032AbaLKOF1 (ORCPT
+	id S1756783AbaLKOLD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 09:11:03 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:52266 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbaLKOLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 09:05:27 -0500
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-        torvalds@linux-foundation.org, George Spelvin <linux@horizon.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>, linux-mm@kvack.org
-Subject: [PATCH 2/8] mm: replace ACCESS_ONCE with READ_ONCE or barriers
-Date: Thu, 11 Dec 2014 15:05:05 +0100
-Message-Id: <1418306712-17245-3-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
-References: <1418306712-17245-1-git-send-email-borntraeger@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121114-0013-0000-0000-0000022E3D8A
+	Thu, 11 Dec 2014 09:11:00 -0500
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 11 Dec 2014 14:10:39 +0000
+X-Google-Sender-Auth: yIupFRsa3aLK3OpX-jzqMri6iv8
+Message-ID: <CACxGe6vVGcbYeZS85Z6iQiV09ecydm2Qq_kWepFJAvFMH4bK=Q@mail.gmail.com>
+Subject: [GIT PULL] Devicetree changes for v3.19
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACCESS_ONCE does not work reliably on non-scalar types. For
-example gcc 4.6 and 4.7 might remove the volatile tag for such
-accesses during the SRA (scalar replacement of aggregates) step
-(https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+Hi Linus,
 
-Let's change the code to access the page table elements with
-READ_ONCE that does implicit scalar accesses for the gup code.
+Please pull the following branch to get the DT changes queued for
+v3.19. Lots of changes this time around as described below...
 
-mm_find_pmd is tricky, because m68k and sparc(32bit) define pmd_t
-as array of longs. This code requires just that the pmd_present
-and pmd_trans_huge check are done on the same value, so a barrier
-is sufficent.
+Thanks,
+g.
 
-A similar case is in handle_pte_fault. On ppc44x the word size is
-32 bit, but a pte is 64 bit. A barrier is ok as well.
+The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-mm@kvack.org
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- mm/gup.c    |  2 +-
- mm/memory.c | 11 ++++++++++-
- mm/rmap.c   |  3 ++-
- 3 files changed, 13 insertions(+), 3 deletions(-)
+  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
 
-diff --git a/mm/gup.c b/mm/gup.c
-index cd62c8c..f2305de 100644
---- a/mm/gup.c
-+++ b/mm/gup.c
-@@ -917,7 +917,7 @@ static int gup_pud_range(pgd_t *pgdp, unsigned long addr, unsigned long end,
- 
- 	pudp = pud_offset(pgdp, addr);
- 	do {
--		pud_t pud = ACCESS_ONCE(*pudp);
-+		pud_t pud = READ_ONCE(*pudp);
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
-diff --git a/mm/memory.c b/mm/memory.c
-index 3e50383..d86aa88 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3202,7 +3202,16 @@ static int handle_pte_fault(struct mm_struct *mm,
- 	pte_t entry;
- 	spinlock_t *ptl;
- 
--	entry = ACCESS_ONCE(*pte);
-+	/*
-+	 * some architectures can have larger ptes than wordsize,
-+	 * e.g.ppc44x-defconfig has CONFIG_PTE_64BIT=y and CONFIG_32BIT=y,
-+	 * so READ_ONCE or ACCESS_ONCE cannot guarantee atomic accesses.
-+	 * The code below just needs a consistent view for the ifs and
-+	 * we later double check anyway with the ptl lock held. So here
-+	 * a barrier will do.
-+	 */
-+	entry = *pte;
-+	barrier();
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 19886fb..1e54274 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -581,7 +581,8 @@ pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address)
- 	 * without holding anon_vma lock for write.  So when looking for a
- 	 * genuine pmde (in which to find pte), test present and !THP together.
- 	 */
--	pmde = ACCESS_ONCE(*pmd);
-+	pmde = *pmd;
-+	barrier();
- 	if (!pmd_present(pmde) || pmd_trans_huge(pmde))
- 		pmd = NULL;
- out:
--- 
-1.9.3
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/glikely/linux
+tags/devicetree-for-linus
+
+for you to fetch changes up to c46ca3c8310b61d253a39ff1375ea97912794cd1:
+
+  of: Delete unnecessary check before calling "of_node_put()"
+(2014-12-03 23:12:41 +0000)
+
+----------------------------------------------------------------
+Devicetree changes for v3.19
+
+Lots of activity in the devicetree code for v3.18. Most of it is related
+to getting all of the overlay support code in place, but there are other
+important things in there.
+
+There are a few trivial merge conflicts. They shouldn't give you any
+trouble.
+
+Highlights:
+- OF_RECONFIG notifiers for SPI, I2C and Platform devices. Those
+  subsystems can now respond to live changes to the device tree.
+- CONFIG_OF_OVERLAY method for applying live changes to the device tree
+- Removal of the of_allnodes list. This used to be used to iterate over
+  all the nodes in the device tree, but it is unnecessary because the
+  same thing can be done by iterating over the list of child pointers.
+  Getting rid of of_allnodes saves some memory and avoids the
+  possibility of of_allnodes being sorted differently from the child
+  lists.
+- Support for retrieving original DTB blob via sysfs. Needed by kexec.
+- More unittests
+- Documentation and minor bug fixes
+
+----------------------------------------------------------------
+Ard Biesheuvel (2):
+      of: check for size < 0 after rounding in early_init_dt_add_memory_arch
+      of/fdt: export fdt blob as /sys/firmware/fdt
+
+Benjamin Herrenschmidt (1):
+      of/address: Don't throw errors on absent ranges properties
+
+Bjorn Helgaas (1):
+      of/fdt: Don't clear initial_boot_params if fdt_check_header() fails
+
+Fabio Estevam (1):
+      spi: Check for spi_of_notifier when CONFIG_OF_DYNAMIC=y
+
+Geert Uytterhoeven (4):
+      of: Correct of_phandle_args node reference in comments
+      of: Improve grammar for of_alias_scan() documentation
+      of: Grammar s/an/a/
+      of: Remove spaces before tabs
+
+Grant Likely (14):
+      of: Eliminate of_allnodes list
+      of/unittest: Remove test devices after adding them
+      of/unittest: Rename selftest.c to unittest.c
+      of/platform: Move platform devices under /sys/devices/platform
+      of: Properly set the OF_POPULATED_BUS flag on root node
+      Merge tag 'v3.18-rc6' into devicetree/next
+      of: Use vargs in __of_node_alloc
+      of: Refactor __of_node_alloc() into __of_node_dup()
+      of/reconfig: Add empty stubs for the of_reconfig methods
+      of/reconfig: Add debug output for OF_RECONFIG notifiers
+      of/reconfig: Always use the same structure for notifiers
+      of: remove select of non-existant OF_DEVICE config symbol
+      of: Remove unneeded and incorrect MODULE_DEVICE_TABLE
+      of: Drop ->next pointer from struct device_node
+
+Jiri Slaby (1):
+      of: base, fix of_property_read_string_helper kernel-doc
+
+Kevin Cernekee (2):
+      of: Fix of_device_is_compatible() comment
+      of: Change of_device_is_available() to return bool
+
+Leif Lindholm (3):
+      of: Add bindings for chosen node, stdout-path
+      of: add optional options parameter to of_find_node_by_path()
+      of: support passing console options with stdout-path
+
+Linus Walleij (1):
+      ARM: dt: fix up PL011 device tree bindings
+
+Markus Elfring (1):
+      of: Delete unnecessary check before calling "of_node_put()"
+
+Matthias Brugger (1):
+      of: Request and map make argument name constant
+
+Pantelis Antoniou (9):
+      of/resolver: Switch to new local fixups format.
+      of/reconfig: Add of_reconfig_get_state_change() of notifier helper.
+      of/reconfig: Add OF_DYNAMIC notifier for platform_bus_type
+      of/overlay: Introduce DT overlay support
+      of/overlay: Add overlay unittests
+      i2c/of: Factor out Devicetree registration code
+      i2c/of: Add OF_RECONFIG notifier handler
+      spi/of: Create new device registration method and accessors
+      spi/of: Add OF notifier handler
+
+Sebastian Reichel (1):
+      of: introduce of_property_read_s32
+
+Thierry Reding (1):
+      of: Fix padding in _OF_DECLARE macro definition
+
+ Documentation/devicetree/bindings/chosen.txt       |  46 ++
+ Documentation/devicetree/bindings/serial/pl011.txt |  28 +-
+ Documentation/devicetree/bindings/unittest.txt     |  14 +
+ Documentation/devicetree/of_selftest.txt           |  20 +-
+ Documentation/devicetree/overlay-notes.txt         | 133 +++++
+ Documentation/devicetree/todo.txt                  |   1 -
+ arch/powerpc/mm/numa.c                             |   3 +-
+ arch/powerpc/platforms/pseries/hotplug-cpu.c       |   7 +-
+ arch/powerpc/platforms/pseries/hotplug-memory.c    |  15 +-
+ arch/powerpc/platforms/pseries/iommu.c             |   5 +-
+ arch/powerpc/platforms/pseries/setup.c             |   5 +-
+ drivers/base/platform.c                            |   1 +
+ drivers/crypto/nx/nx-842.c                         |   4 +-
+ drivers/i2c/i2c-core.c                             | 149 +++--
+ drivers/mfd/vexpress-sysreg.c                      |   2 +-
+ drivers/of/Kconfig                                 |  11 +-
+ drivers/of/Makefile                                |   5 +-
+ drivers/of/address.c                               |   4 +-
+ drivers/of/base.c                                  | 135 +++--
+ drivers/of/dynamic.c                               | 218 +++++--
+ drivers/of/fdt.c                                   | 111 ++--
+ drivers/of/of_private.h                            |   2 +-
+ drivers/of/overlay.c                               | 562 ++++++++++++++++++
+ drivers/of/pdt.c                                   |  27 +-
+ drivers/of/platform.c                              |  65 ++-
+ drivers/of/resolver.c                              | 128 ++++-
+ drivers/of/testcase-data/testcases.dts             |  50 --
+ drivers/of/unittest-data/testcases.dts             |  79 +++
+ .../tests-interrupts.dtsi                          |   0
+ .../tests-match.dtsi                               |   0
+ drivers/of/unittest-data/tests-overlay.dtsi        | 180 ++++++
+ .../tests-phandle.dtsi                             |   0
+ .../tests-platform.dtsi                            |   0
+ drivers/of/{selftest.c => unittest.c}              | 633 +++++++++++++++++++--
+ drivers/spi/spi.c                                  | 306 ++++++----
+ include/linux/of.h                                 | 121 +++-
+ include/linux/of_address.h                         |   4 +-
+ include/linux/of_pdt.h                             |   3 +-
+ include/linux/of_platform.h                        |   6 +
+ 39 files changed, 2560 insertions(+), 523 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/chosen.txt
+ create mode 100644 Documentation/devicetree/bindings/unittest.txt
+ create mode 100644 Documentation/devicetree/overlay-notes.txt
+ create mode 100644 drivers/of/overlay.c
+ delete mode 100644 drivers/of/testcase-data/testcases.dts
+ create mode 100644 drivers/of/unittest-data/testcases.dts
+ rename drivers/of/{testcase-data => unittest-data}/tests-interrupts.dtsi (100%)
+ rename drivers/of/{testcase-data => unittest-data}/tests-match.dtsi (100%)
+ create mode 100644 drivers/of/unittest-data/tests-overlay.dtsi
+ rename drivers/of/{testcase-data => unittest-data}/tests-phandle.dtsi (100%)
+ rename drivers/of/{testcase-data => unittest-data}/tests-platform.dtsi (100%)
+ rename drivers/of/{selftest.c => unittest.c} (66%)
