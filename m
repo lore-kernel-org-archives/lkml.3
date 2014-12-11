@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964804AbaLKWmR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 17:42:17 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:62973 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933541AbaLKWmQ convert rfc822-to-8bit (ORCPT
+	id S966915AbaLKW4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 17:56:44 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44957 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934023AbaLKWuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 17:42:16 -0500
+	Thu, 11 Dec 2014 17:50:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141211220229.GR18807@outflux.net>
-References: <20141211224501.2292cdee@pc> <20141211220229.GR18807@outflux.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 11 Dec 2014 14:41:54 -0800
-Message-ID: <CALCETrUVApaHd3tjekXFK4jZbJKj+aKW=xqYPjgTkPrCixM1Xw@mail.gmail.com>
-Subject: Re: VDSO randomization not very random
-To: Kees Cook <keescook@chromium.org>
-Cc: =?UTF-8?Q?Hanno_B=C3=B6ck?= <hanno@hboeck.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "security@kernel.org" <security@kernel.org>
+In-Reply-To: <20141211144519.GA3509@kroah.com>
+References: <1418302030-11428-1-git-send-email-opensource.ganesh@gmail.com>
+	<20141211144519.GA3509@kroah.com>
+Date: Fri, 12 Dec 2014 06:50:54 +0800
+Message-ID: <CADAEsF9GBp15EGDahzx6j=h1nP2D3o66urpu_oZV_gJuZkpMZA@mail.gmail.com>
+Subject: Re: [PATCH] fs/debugfs: add get/set for atomic_long types
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 2:02 PM, Kees Cook <keescook@chromium.org> wrote:
-> Hi Hanno,
+Hello Greg:
+
+2014-12-11 22:45 GMT+08:00 Greg KH <gregkh@linuxfoundation.org>:
+> On Thu, Dec 11, 2014 at 08:47:10PM +0800, Ganesh Mahendran wrote:
+>> debugfs currently can not create attributes that set/get
+>> atomic_long_t values.
+>>
+>> This patch adds support for this through a new
+>> debugfs_create_atomic_long_t() function.
+>>
+>> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+>> ---
+>>  fs/debugfs/file.c       |   45 +++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/debugfs.h |    2 ++
+>>  2 files changed, 47 insertions(+)
 >
-> On Thu, Dec 11, 2014 at 10:45:01PM +0100, Hanno Böck wrote:
->> Hello,
->>
->> I already reported this into your bugzilla, however Greg KH told me it
->> might be a better idea to post it here:
->>
->> With current Linux kernels it seems the address randomization for
->> loading the vdso library is not that random and can easily be
->> bruteforced.
->>
->> This can easily be demonstrated. Get libvdso address from one
->> executable:
->> $ ldd /usr/bin/less|grep vdso
->>       linux-vdso.so.1 (0x00007fff73bfe000)
->>
->> Now run ldd mutliple times and check if the same address appears:
->> c=0; while (true); do let c=c+1; ldd /usr/bin/less|grep
->> 0x00007fff73bfe000; [ "$?" == 0 ] && echo $c; done
->>
->> It usually takes only a few seconds and around 1000-2000 tries until
->> the loading address is repeated (note that results may vary, it seems
->> the randomization is biased, some values repeat more often than others).
->>
->> This information is mostly from this blog entry:
->> http://v0ids3curity.blogspot.in/2014/12/return-to-vdso-using-elf-auxiliary.html
->> And here's a thread on oss-security discussing the issue:
->> http://www.openwall.com/lists/oss-security/2014/12/09/10
->>
->> The latest version of paxtest added a check for this that guesses the
->> randomness of vdso:
->> https://grsecurity.net/~spender/paxtest-0.9.13.tar.gz $ ./randvdso
->> VDSO randomisation test                  : 11 quality bits (guessed)
->>
->> Bugzilla entry:
->> https://bugzilla.kernel.org/show_bug.cgi?id=89591
+> Do you have kernel code that depends on this?
+
+Currently there is no code that is depending on this.
+I found there is not a debugfs API to get/set atomic_long_t when I was debuging
+mm/zsmalloc. So I sent this patch.
+
 >
-> I'm hoping this will get addressed as part of the discussion around
-> the "ASLRv3" patches. PIE (as well as VDSO) randomization has been a
-> per-arch implementation, and it would be best to unify this in a common
-> high-entropy solution.
+> It's the middle of the merge window, so this will have to wait until
+> after 3.19-rc1, ok?
+
+It is OK. It is not an urgent patch.
+Thanks so much!
+
 >
-> I think the problem with VDSO right now is that it is randomized in
-> relationship to the stack, rather than being randomized on its own.
+> thanks,
 >
-
-As far as I'm concerned, the vdso can go wherever the kernel wants to
-put it, so long as it doesn't conflict with any real-world non-PIE
-binaries.
-
---Andy
-
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> greg k-h
