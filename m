@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722AbaLKTbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 14:31:09 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:46189 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757031AbaLKTbH (ORCPT
+	id S1758762AbaLKTct (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 14:32:49 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:62635 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360AbaLKTcr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 14:31:07 -0500
-Date: Thu, 11 Dec 2014 20:31:03 +0100
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Cc: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        <soren.brinkmann@xilinx.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] net/macb: add TX multiqueue support for gem
-Message-ID: <20141211203103.4191887a@free-electrons.com>
-In-Reply-To: <87a3098203ee6eaa7a60607713a293d3258e2b58.1418291637.git.cyrille.pitchen@atmel.com>
-References: <cover.1418291637.git.cyrille.pitchen@atmel.com>
-	<87a3098203ee6eaa7a60607713a293d3258e2b58.1418291637.git.cyrille.pitchen@atmel.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Thu, 11 Dec 2014 14:32:47 -0500
+Date: Thu, 11 Dec 2014 11:32:43 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Dely Sy <dely.l.sy@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Special handling of display/VGA devices in hotplug drivers
+Message-ID: <20141211113243.3f21551e@jbarnes-t420>
+In-Reply-To: <20141211181136.GA11367@kroah.com>
+References: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
+	<20141211181136.GA11367@kroah.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,73 +28,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Cyrille Pitchen,
+On Thu, 11 Dec 2014 13:11:36 -0500
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-On Thu, 11 Dec 2014 11:16:51 +0100, Cyrille Pitchen wrote:
+> On Thu, Dec 11, 2014 at 10:34:30AM -0700, Bjorn Helgaas wrote:
+> > It looks like you added the initial pciehp driver [1], which
+> > includes the following code in pciehp_disable_slot():
+> > 
+> > + if (class_code == PCI_BASE_CLASS_DISPLAY) {
+> > + /* Display/Video adapter (not supported) */
+> > + rc = REMOVE_NOT_SUPPORTED;
+> > 
+> > + /* If it's a bridge, check the VGA Enable bit */
+> > + if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
+> > + rc = pci_bus_read_config_byte (pci_bus, devfn,
+> > PCI_BRIDGE_CONTROL, &BCR);
+> > + if (rc)
+> > + return rc;
+> > +
+> > + /* If the VGA Enable bit is set, remove isn't supported */
+> > + if (BCR & PCI_BRIDGE_CTL_VGA) {
+> > + rc = REMOVE_NOT_SUPPORTED;
+> > 
+> > I'm trying to figure out why VGA devices are handled specially.  I
+> > can't find anything in the PCI specs that mentions this.  Most of
+> > the other PCI hotplug drivers have similar code.  Do you remember
+> > anything about this?
+> 
+> The PCI spec said that you were not allowed to hotplug VGA drivers.
+> The big issue is that POST usually needs to run on those things, and
+> there is no way to POST a PCI hotplugged device.
+> 
+> Does the spec not say that anymore?  I haven't looked in years at
+> it...
+> 
+> Do you want to hot-add a VGA device?  Are these lines causing a
+> problem with something?
 
-> +#define GEM_ISR1				0x0400
-> +#define GEM_ISR2				0x0404
-> +#define GEM_ISR3				0x0408
-> +#define GEM_ISR4				0x040c
-> +#define GEM_ISR5				0x0410
-> +#define GEM_ISR6				0x0414
-> +#define GEM_ISR7				0x0418
+Yeah, the legacy I/O regions get routed through the bridge with the VGA
+bit set, and most legacy code probably can't handle that (whether POST,
+VBIOS, or VGA drivers).
 
-What about doing instead:
+There is some code for moving the VGA routing around, so that might be
+an option if you wanted to remove such a bridge.  You'd have to find a
+VGA device under another bridge, and enable routing to that first, then
+you could do the remove.
 
-#define GEM_ISR(q)				((q) == 0 ? MACB_ISR : 0x400 + (q) << 2)
-
-And ditto for all other registers, which will save a lot of boring repeated code.
-
-If you do that, then you can avoid the following fields in the
-macb_queue structure:
-
-+	unsigned int		ISR;
-+	unsigned int		IER;
-+	unsigned int		IDR;
-+	unsigned int		IMR;
-+	unsigned int		TBQP;
-
-And the not very pleasant calculation of those offsets:
-
-+	bp->queues[0].bp = bp;
-+	bp->queues[0].ISR  = MACB_ISR;
-+	bp->queues[0].IER  = MACB_IER;
-+	bp->queues[0].IDR  = MACB_IDR;
-+	bp->queues[0].IMR  = MACB_IMR;
-+	bp->queues[0].TBQP = MACB_TBQP;
-+	for (q = 1, queue = &bp->queues[1]; q < MACB_MAX_QUEUES; ++q) {
-+		if (!(queue_mask & (1 << q)))
-+			continue;
-+
-+		queue->bp = bp;
-+		queue->ISR  = (q-1) * sizeof(u32) + GEM_ISR1;
-+		queue->IER  = (q-1) * sizeof(u32) + GEM_IER1;
-+		queue->IDR  = (q-1) * sizeof(u32) + GEM_IDR1;
-+		queue->IMR  = (q-1) * sizeof(u32) + GEM_IMR1;
-+		queue->TBQP = (q-1) * sizeof(u32) + GEM_TBQP1;
-+		queue++;
-+	}
-
-You replace the ISR, IER, IDR, IMR and TBQP by an "id" field in
-macb_queue, which contains the queue number, and then change your:
-
-+#define queue_readl(queue, reg)				\
-+	__raw_readl((queue)->bp->regs + queue->reg)
-+#define queue_writel(queue, reg, value)			\
-+	__raw_writel((value), (queue)->bp->regs + queue->reg)
-
-to
-
-+#define queue_readl(queue, reg)				\
-+	__raw_readl((queue)->bp->regs + reg((queue)->id))
-+#define queue_writel(queue, reg, value)			\
-+	__raw_writel((value), (queue)->bp->regs + reg((queue)->id)
-
-Best regards,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Jesse
