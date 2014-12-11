@@ -1,128 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456AbaLKA0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Dec 2014 19:26:37 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:36802 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933397AbaLKA0f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Dec 2014 19:26:35 -0500
-Date: Wed, 10 Dec 2014 17:26:30 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatxjain@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Subject: Re: [PATCH v2] PCI: pciehp: Check link state before accessing device
- during removal
-Message-ID: <20141211002630.GC22886@google.com>
-References: <546E7120.5080505@gmail.com>
+	id S933307AbaLKAaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Dec 2014 19:30:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49788 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932623AbaLKAaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Dec 2014 19:30:15 -0500
+Message-ID: <5488E552.8050207@zytor.com>
+Date: Wed, 10 Dec 2014 16:29:06 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <546E7120.5080505@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, mingo@redhat.com,
+        peterz@infradead.org
+CC: tglx@linutronix.de, konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        luto@amacapital.net, JBeulich@suse.com, jgross@suse.com,
+        bpoirier@suse.de, x86@kernel.org, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to be preempted
+References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com> <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
+In-Reply-To: <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 20, 2014 at 02:54:24PM -0800, Rajat Jain wrote:
-> While removing a card, we can't assume the presence to mean that the
-> access to card is OK. That is because the cause of removal may be a
-> link down event, and the card may still be physically present. Thus,
-> instead of presence, use the link state to decide whether or not it is
-> OK to access the card devices.
-> 
-> Here are the problem symptoms:
-> During the removal of a card due to link down, sometimes the following
-> error is seen (because pciehp_unconfigure_device() reads 0xFF from
-> bridge control register as the link is down, which cause it to assume
-> that the VGA bit is set):
-> 
-> pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-> pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-> pciehp 0000:21:05.0:pcie24: slot(5): Link Down event
-> pciehp 0000:21:05.0:pcie24: Disabling domain:bus:device=0000:60:00
-> pciehp 0000:21:05.0:pcie24: pciehp_unconfigure_device: domain:bus:dev = 0000:60:00
-> pciehp 0000:21:05.0:pcie24: Cannot remove display device 0000:60:00.0
-> 
-> Ofcourse, when the link comes back up, the device addition fails too:
-> 
-> pciehp 0000:21:05.0:pcie24: pcie_isr: intr_loc 100
-> pciehp 0000:21:05.0:pcie24: Data Link Layer State change
-> pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-> pciehp 0000:21:05.0:pcie24: slot(5): Link Up event
-> pciehp 0000:21:05.0:pcie24: Enabling domain:bus:device=0000:60:00
-> pciehp 0000:21:05.0:pcie24: pciehp_check_link_active: lnk_status = 6011
-> pciehp 0000:21:05.0:pcie24: pciehp_check_link_status: lnk_status = 6011
-> pciehp 0000:21:05.0:pcie24: Device 0000:60:00.0 already exists at 0000:60:00, cannot hot-add
-> pciehp 0000:21:05.0:pcie24: Cannot add device at 0000:60:00
-> 
-> The problem is not seen with this patch applied. The device removal and
-> insertion works as expected.
-> 
-> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> ---
-> v2: Use the already initialized "ctrl" instead of "p_slot->ctrl"
-> 
->  drivers/pci/hotplug/pciehp_pci.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
-> index 9e69403..911f85b 100644
-> --- a/drivers/pci/hotplug/pciehp_pci.c
-> +++ b/drivers/pci/hotplug/pciehp_pci.c
-> @@ -77,7 +77,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
->  {
->  	int rc = 0;
->  	u8 bctl = 0;
-> -	u8 presence = 0;
-> +	bool link_active = false;
->  	struct pci_dev *dev, *temp;
->  	struct pci_bus *parent = p_slot->ctrl->pcie->port->subordinate;
->  	u16 command;
-> @@ -85,7 +85,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
+On 12/10/2014 03:34 PM, Luis R. Rodriguez wrote:
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index 344b63f..40b5c0c 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -982,7 +982,28 @@ ENTRY(xen_hypervisor_callback)
+>  ENTRY(xen_do_upcall)
+>  1:	mov %esp, %eax
+>  	call xen_evtchn_do_upcall
+> +#ifdef CONFIG_PREEMPT
+>  	jmp  ret_from_intr
+> +#else
+> +	GET_THREAD_INFO(%ebp)
+> +#ifdef CONFIG_VM86
+> +	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
+> +	movb PT_CS(%esp), %al
+> +	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
+> +#else
+> +	movl PT_CS(%esp), %eax
+> +	andl $SEGMENT_RPL_MASK, %eax
+> +#endif
+> +	cmpl $USER_RPL, %eax
+> +	jae resume_userspace		# returning to v8086 or userspace
+> +	DISABLE_INTERRUPTS(CLBR_ANY)
+> +	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	jz resume_kernel
+> +	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	call cond_resched_irq
+> +	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	jmp resume_kernel
+> +#endif /* CONFIG_PREEMPT */
+>  	CFI_ENDPROC
+>  ENDPROC(xen_hypervisor_callback)
 >  
->  	ctrl_dbg(ctrl, "%s: domain:bus:dev = %04x:%02x:00\n",
->  		 __func__, pci_domain_nr(parent), parent->number);
-> -	pciehp_get_adapter_status(p_slot, &presence);
-> +	link_active = pciehp_check_link_active(ctrl);
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index c0226ab..0ccdd06 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -1170,7 +1170,23 @@ ENTRY(xen_do_hypervisor_callback)   # do_hypervisor_callback(struct *pt_regs)
+>  	popq %rsp
+>  	CFI_DEF_CFA_REGISTER rsp
+>  	decl PER_CPU_VAR(irq_count)
+> +#ifdef CONFIG_PREEMPT
+>  	jmp  error_exit
+> +#else
+> +	movl %ebx, %eax
+> +	RESTORE_REST
+> +	DISABLE_INTERRUPTS(CLBR_NONE)
+> +	TRACE_IRQS_OFF
+> +	GET_THREAD_INFO(%rcx)
+> +	testl %eax, %eax
+> +	je error_exit_user
+> +	cmpb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	jz retint_kernel
+> +	movb $0,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	call cond_resched_irq
+> +	movb $1,PER_CPU_VAR(xen_in_preemptible_hcall)
+> +	jmp retint_kernel
+> +#endif /* CONFIG_PREEMPT */
+>  	CFI_ENDPROC
+>  END(xen_do_hypervisor_callback)
 >  
->  	pci_lock_rescan_remove();
->  
-> @@ -98,7 +98,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
->  	list_for_each_entry_safe_reverse(dev, temp, &parent->devices,
->  					 bus_list) {
->  		pci_dev_get(dev);
-> -		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && presence) {
-> +		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE && link_active) {
->  			pci_read_config_byte(dev, PCI_BRIDGE_CONTROL, &bctl);
->  			if (bctl & PCI_BRIDGE_CTL_VGA) {
->  				ctrl_err(ctrl,
+> @@ -1398,6 +1414,7 @@ ENTRY(error_exit)
+>  	GET_THREAD_INFO(%rcx)
+>  	testl %eax,%eax
+>  	jne retint_kernel
+> +error_exit_user:
+>  	LOCKDEP_SYS_EXIT_IRQ
+>  	movl TI_flags(%rcx),%edx
+>  	movl $_TIF_WORK_MASK,%edi
 
-Why do we even have this code to check for VGA devices?  I looked (briefly)
-and couldn't find anything in the spec that prohibits removal of VGA
-devices.
+You're adding a bunch of code for the *non*-preemptive case here... why?
 
-If we do need it (and it looks like most or all hotplug drivers copied it),
-isn't there still a race?  Can't we have the following sequence?
+	-hpa
 
-  - pciehp_check_link_active()		# returns true
-  - Link goes down
-  - pci_read_config_byte()		# fails because link is down
 
-Bjorn
-
-> @@ -114,7 +114,7 @@ int pciehp_unconfigure_device(struct slot *p_slot)
->  		 * Ensure that no new Requests will be generated from
->  		 * the device.
->  		 */
-> -		if (presence) {
-> +		if (link_active) {
->  			pci_read_config_word(dev, PCI_COMMAND, &command);
->  			command &= ~(PCI_COMMAND_MASTER | PCI_COMMAND_SERR);
->  			command |= PCI_COMMAND_INTX_DISABLE;
-> -- 
-> 1.7.9.5
-> 
