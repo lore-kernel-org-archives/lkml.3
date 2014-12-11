@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050AbaLKTFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 14:05:51 -0500
-Received: from mail-bn1on0137.outbound.protection.outlook.com ([157.56.110.137]:39181
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757052AbaLKTFt convert rfc822-to-8bit (ORCPT
+	id S1758615AbaLKTJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 14:09:01 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:31297 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaLKTI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 14:05:49 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Sitsofe Wheeler <sitsofe@gmail.com>
-CC: Long Li <longli@microsoft.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
-Thread-Topic: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
-Thread-Index: AQHQFEr2lRl5lG262U+8PhB4FFpJLJyJU4TcgAAVCoCAABEBoIAAv1OAgACEvWA=
-Date: Thu, 11 Dec 2014 18:49:58 +0000
-Message-ID: <BY2PR0301MB0711C426CD05C614C655F3A2A0630@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1418200705-488-1-git-send-email-longli@microsoft.com>
- <yq1h9x3cipr.fsf@sermon.lab.mkp.net>
- <BL2PR03MB1324E11F2CB6EC2652C2F85CE620@BL2PR03MB132.namprd03.prod.outlook.com>
- <BY2PR0301MB0711CF1C9FBD8EFED89B3911A0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20141211101945.GA25624@sucs.org>
-In-Reply-To: <20141211101945.GA25624@sucs.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e8:ed31::3]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0774;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0774;
-x-forefront-prvs: 0422860ED4
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(13464003)(24454002)(189002)(377454003)(20776003)(64706001)(92566001)(21056001)(50986999)(86362001)(54206007)(74316001)(2656002)(86612001)(15395725005)(54356999)(54606007)(68736005)(76176999)(102836002)(15975445007)(46102003)(106356001)(62966003)(105586002)(107046002)(110136001)(99396003)(122556002)(76576001)(87936001)(1411001)(31966008)(19580405001)(77156002)(99286002)(106116001)(4396001)(101416001)(40100003)(120916001)(93886004)(19580395003)(33656002)(97736003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0774;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Dec 2014 14:08:59 -0500
+Date: Thu, 11 Dec 2014 14:08:36 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joerg Roedel <jroedel@suse.de>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] swiotlb: Warn on allocation failure in
+ swiotlb_alloc_coherent
+Message-ID: <20141211190836.GA18992@laptop.dumpdata.com>
+References: <1417174149-31210-1-git-send-email-joro@8bytes.org>
+ <1417174149-31210-2-git-send-email-joro@8bytes.org>
+ <20141201202802.GC21626@laptop.dumpdata.com>
+ <20141202144122.GI3156@suse.de>
+ <20141202184615.GA32622@laptop.dumpdata.com>
+ <20141203102652.GL3156@suse.de>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141203102652.GL3156@suse.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Sitsofe Wheeler [mailto:sitsofe@gmail.com]
-> Sent: Thursday, December 11, 2014 2:54 AM
-> To: KY Srinivasan
-> Cc: Long Li; Martin K. Petersen; Haiyang Zhang; JBottomley@parallels.com;
-> linux-scsi@vger.kernel.org; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
+On Wed, Dec 03, 2014 at 11:26:52AM +0100, Joerg Roedel wrote:
+> On Tue, Dec 02, 2014 at 01:46:15PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Tue, Dec 02, 2014 at 03:41:22PM +0100, Joerg Roedel wrote:
+> > > On Mon, Dec 01, 2014 at 03:28:03PM -0500, Konrad Rzeszutek Wilk wrote:
+> > > > On Fri, Nov 28, 2014 at 12:29:07PM +0100, Joerg Roedel wrote:
+> > > > > From: Joerg Roedel <jroedel@suse.de>
+> > > > > 
+> > > > > Print a warning when all allocation tries have been failed
+> > > > > and the function is about to return NULL. This prepares for
+> > > > > calling the function with __GFP_NOWARN to suppress
+> > > > > allocation failure warnings before all fall-backs have
+> > > > > failed.
+> > > > 
+> > > > This can be quite noisy. Especially the dump-stack.
+> > > 
+> > > Well, this is as noisy as the dump_stack()s from the page-allocator when
+> > > the first allocation try fails. The goal of the first two patches in
+> > 
+> > Right, on the first allocation. Subsequent allocations won't be so noisy
+> > in the page-allocator (I think?).
 > 
-> On Wed, Dec 10, 2014 at 11:30:30PM +0000, KY Srinivasan wrote:
-> >
-> > > >
-> > > > +	{"Msft", "Virtual Disk", "1.0", BLIST_TRY_VPD_PAGES},
-> > > >
-> > > > Is that version field meaningful or is it safe for us to inquire
-> > > > about VPD pages without problems on older versions?
-> > >
-> > > This version is used in all current Hyper-V hosts: Windows 2008 R2,
-> > > 2012 and
-> > > 2012 R2. However it may change in future Windows releases.
-> >
-> > The next version of the host will be claiming conformance to SPC-3
+> >From the code in mm/page_alloc.c (function warn_alloc_failed) it doesn't
+> look like a one-time warning. The dmesg I have seen from a failing
+> kernel also shows a lot of these messages.
 > 
-> Will the version number ("1.0") of Virtual Disks also be changed? Part of me
-> hopes it will as it will mean certain quirks for virtual disks will be easier to
-> apply and won't need host version (are you 2008, 2012,
-> 2016) version logic...
+> So having the warning at the end of swiotlb_alloc_coherent won't be any
+> more noisy than the (removed) warnings from the page allocator.
 
-Spoke to the folks on Windows side of the house. They currently don't have plans to
-Change the version number ("1.0").
-
-K. Y
+OK, then Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> --
-> Sitsofe | http://sucs.org/~sits/
+> 
+> 	Joerg
+> 
