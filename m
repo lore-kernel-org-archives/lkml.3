@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879AbaLKVxa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 16:53:30 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50858 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaLKVx3 (ORCPT
+	id S964982AbaLKVzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 16:55:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:31710 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751654AbaLKVzn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 16:53:29 -0500
-Message-ID: <548A122C.8000906@oracle.com>
-Date: Thu, 11 Dec 2014 16:52:44 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 11 Dec 2014 16:55:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,560,1413270000"; 
+   d="scan'208";a="646306233"
+From: "Strasser, Kevin" <kevin.strasser@intel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>,
+        "Lin, Mengdong" <mengdong.lin@intel.com>,
+        "Fang, Yang A" <yang.a.fang@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ASoC: Intel: fix possible acpi enumeration panic
+Thread-Topic: [PATCH] ASoC: Intel: fix possible acpi enumeration panic
+Thread-Index: AQHQFUV5hrXvYTFNQE+13+CIMdY6QpyK7WFw
+Date: Thu, 11 Dec 2014 21:55:38 +0000
+Message-ID: <51B6C3CD1F10FB47A5702881E0E230A74A0ECAE1@ORSMSX104.amr.corp.intel.com>
+References: <1418282517-851-1-git-send-email-kevin.strasser@intel.com>
+ <20141211132026.GY11764@sirena.org.uk>
+In-Reply-To: <20141211132026.GY11764@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <20141201230339.GA20487@ret.masoncoding.com>	<1417529606.3924.26.camel@maggy.simpson.net>	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>	<1417540493.21136.3@mail.thefacebook.com>	<20141203184111.GA32005@redhat.com>	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>	<20141205171501.GA1320@redhat.com>	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>	<1417806247.4845.1@mail.thefacebook.com>	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>	<20141211145408.GB16800@redhat.com> <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-In-Reply-To: <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/11/2014 04:49 PM, Linus Torvalds wrote:
-> On Thu, Dec 11, 2014 at 6:54 AM, Dave Jones <davej@redhat.com> wrote:
->> >
->> > So either one of those 'good's actually wasn't, or I'm just cursed.
-> Even if there was a good that wasn't, that last "bad"  (6f929b4e5a02)
-> is already sufficient just on its own to say that likely v3.16 already
-> had the problem.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: Thursday, December 11, 2014 5:20 AM> 
+> On Wed, Dec 10, 2014 at 11:21:57PM -0800, Kevin Strasser wrote:
 > 
-> Just do
+> > A crash can occur on some platforms where adsp is enumerated but codec
+> > is not matched. Check that the codec_id string is valid before
+> > attempting to match.
 > 
->    gitk v3.16..6f929b4e5a02
+> > -	for (mach = machines; mach->codec_id; mach++)
+> > +	for (mach = machines; mach->codec_id[0]; mach++)
 > 
-> and cry.
-> 
-> (or "git diff --stat -M v3.16...6f929b4e5a02" to see what that commit
-> brought in from the common ancestor).
-> 
-> So I'd call that bisect a failure, and your "v3.16 is fine" is
-> actually suspect after all. Which *might* mean that it's some hardware
-> issue after all. Or there are multiple different problems, and while
-> v3.16 was fine, the problem was introduced earlier (in the common
-> ancestor of that staging tree), then fixed for 3.16, and then
-> re-introduced later again.
+> This changes the check from verifying if a codec_id is present to verifying if
+> the first character in the codec_id is non-NULL.  That doesn't seem obviously
+> safer and the tables of machines seem to be terminated by having an entry
+> with all fields set to zero (which is a common idiom in Linux) which would
+> now crash with this change.
 
-Is it possible that Dave and myself were seeing the same problem after
-all?
+In this case mach->codec_id is non-NULL, even for the terminating element, because it
+is defined to be a fixed width. So we have to take a look at the first character to see if it
+has been initialized.
 
-I'll go bisect it even further back...
-
-
-Thanks,
-Sasha
+-Kevin
