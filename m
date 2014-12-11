@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757838AbaLKNfp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 08:35:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52075 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753179AbaLKNfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 08:35:44 -0500
-Date: Thu, 11 Dec 2014 14:35:18 +0100
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo.kim@lge.com,
-        brouer@redhat.com
-Subject: Re: [PATCH 0/7] slub: Fastpath optimization (especially for RT) V1
-Message-ID: <20141211143518.02c781ee@redhat.com>
-In-Reply-To: <20141210163017.092096069@linux.com>
-References: <20141210163017.092096069@linux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933775AbaLKNje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 08:39:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:48196 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159AbaLKNjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 08:39:32 -0500
+Message-ID: <1418305153.4037.1.camel@arm.com>
+Subject: Re: [PATCH v4 1/3] perf: Use monotonic clock as a source for
+ timestamps
+From: Pawel Moll <pawel.moll@arm.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Thu, 11 Dec 2014 13:39:13 +0000
+In-Reply-To: <1417100750.4371.1.camel@arm.com>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+	 <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
+	 <1417100750.4371.1.camel@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Dec 2014 10:30:17 -0600
-Christoph Lameter <cl@linux.com> wrote:
-
-[...]
+On Thu, 2014-11-27 at 15:05 +0000, Pawel Moll wrote:
+> On Thu, 2014-11-06 at 16:51 +0000, Pawel Moll wrote:
+> > Until now, perf framework never defined the meaning of the timestamps
+> > captured as PERF_SAMPLE_TIME sample type. The values were obtaining
+> > from local (sched) clock, which is unavailable in userspace. This made
+> > it impossible to correlate perf data with any other events. Other
+> > tracing solutions have the source configurable (ftrace) or just share
+> > a common time domain between kernel and userspace (LTTng).
+> > 
+> > Follow the trend by using monotonic clock, which is readily available
+> > as POSIX CLOCK_MONOTONIC.
+> > 
+> > Also add a sysctl "perf_sample_time_clk_id" attribute which can be used
+> > by the user to obtain the clk_id to be used with POSIX clock API (eg.
+> > clock_gettime()) to obtain a time value comparable with perf samples.
+> > 
+> > Old behaviour can be restored by using "perf_use_local_clock" kernel
+> > parameter.
+> > 
+> > Signed-off-by: Pawel Moll <pawel.moll@arm.com>
 > 
-> Slab Benchmarks on a kernel with CONFIG_PREEMPT show an improvement of
-> 20%-50% of fastpath latency:
+> It's been 3 weeks without any negative feedback (no feedback at all, but
+> I take the optimistic view :-)...
 > 
-> Before:
-> 
-> Single thread testing
-[...]
-> 2. Kmalloc: alloc/free test
-[...]
-> 10000 times kmalloc(256)/kfree -> 116 cycles
-[...]
-> 
-> 
-> After:
-> 
-> Single thread testing
-[...]
-> 2. Kmalloc: alloc/free test
-[...]
-> 10000 times kmalloc(256)/kfree -> 60 cycles
-[...]
+> How about queuing at least this patch alone for the incoming merge
+> window? Or at least getting it into -next, with the view at 3.20?
 
-It looks like an impressive saving 116 -> 60 cycles.  I just don't see
-the same kind of improvements with my similar tests[1][2].
+It's been another two weeks... How about getting it queued for v3.20
+then?
 
-My test[1] is just a fast-path loop over kmem_cache_alloc+free on
-256bytes objects. (Results after explicitly inlining new func
-is_pointer_to_page())
+Pawel
 
- baseline: 47 cycles(tsc) 19.032 ns
- patchset: 45 cycles(tsc) 18.135 ns
-
-I do see the improvement, but it is not as high as I would have expected.
-
-(CPU E5-2695)
-
-[1] https://github.com/netoptimizer/prototype-kernel/blob/master/kernel/lib/time_bench_kmem_cache1.c
-[2] https://github.com/netoptimizer/prototype-kernel/blob/master/kernel/mm/qmempool_bench.c
-
--- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
