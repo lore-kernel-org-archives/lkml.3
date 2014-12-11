@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567AbaLKKx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 05:53:56 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:33130 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110AbaLKKxy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 05:53:54 -0500
-Date: Thu, 11 Dec 2014 10:53:45 +0000
-From: Sitsofe Wheeler <sitsofe@gmail.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Long Li <longli@microsoft.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "JBottomley@parallels.com" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scsi:storvsc enable reading from VPD pages on SPC-2
-Message-ID: <20141211101945.GA25624@sucs.org>
-References: <1418200705-488-1-git-send-email-longli@microsoft.com>
- <yq1h9x3cipr.fsf@sermon.lab.mkp.net>
- <BL2PR03MB1324E11F2CB6EC2652C2F85CE620@BL2PR03MB132.namprd03.prod.outlook.com>
- <BY2PR0301MB0711CF1C9FBD8EFED89B3911A0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
+	id S933744AbaLKK7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 05:59:12 -0500
+Received: from imap.thunk.org ([74.207.234.97]:50863 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932196AbaLKK7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 05:59:10 -0500
+Date: Thu, 11 Dec 2014 05:59:05 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 changes for 3.19
+Message-ID: <20141211105905.GA15768@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BY2PR0301MB0711CF1C9FBD8EFED89B3911A0620@BY2PR0301MB0711.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 11:30:30PM +0000, KY Srinivasan wrote:
-> 
-> > >
-> > > +	{"Msft", "Virtual Disk", "1.0", BLIST_TRY_VPD_PAGES},
-> > >
-> > > Is that version field meaningful or is it safe for us to inquire about
-> > > VPD pages without problems on older versions?
-> > 
-> > This version is used in all current Hyper-V hosts: Windows 2008 R2, 2012 and
-> > 2012 R2. However it may change in future Windows releases.
-> 
-> The next version of the host will be claiming conformance to SPC-3
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-Will the version number ("1.0") of Virtual Disks also be changed? Part
-of me hopes it will as it will mean certain quirks for virtual disks
-will be easier to apply and won't need host version (are you 2008, 2012,
-2016) version logic...
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
--- 
-Sitsofe | http://sucs.org/~sits/
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus
+
+for you to fetch changes up to 50db71abc529c48b21f4c3034d3cff27cfb25795:
+
+  ext4: ext4_da_convert_inline_data_to_extent drop locked page after error (2014-12-05 21:37:15 -0500)
+
+----------------------------------------------------------------
+Lots of bugs fixes, including Zheng and Jan's extent status shrinker
+fixes, which should improve CPU utilization and potential soft lockups
+under heavy memory pressure, and Eric Whitney's bigalloc fixes.
+
+----------------------------------------------------------------
+Al Viro (1):
+      ext4: kill ext4_kvfree()
+
+Darrick J. Wong (1):
+      ext4: create nojournal_checksum mount option
+
+Dmitry Monakhov (6):
+      ext4: move_extent improve bh vanishing success factor
+      ext4: cleanup GFP flags inside resize path
+      ext4: prevent fsreentrance deadlock for inline_data
+      ext4: ext4_inline_data_fiemap should respect callers argument
+      ext4: fix suboptimal seek_{data,hole} extents traversial
+      ext4: ext4_da_convert_inline_data_to_extent drop locked page after error
+
+Eric Sandeen (1):
+      ext4: don't count external journal blocks as overhead
+
+Eric Whitney (4):
+      ext4: fix partial cluster initialization
+      ext4: fix end of leaf partial cluster handling
+      ext4: miscellaneous partial cluster cleanups
+      ext4: fix end of region partial cluster handling
+
+Jan Kara (7):
+      ext4: fix block reservation for bigalloc filesystems
+      ext4: move handling of list of shrinkable inodes into extent status code
+      ext4: limit number of scanned extents in status tree shrinker
+      ext4: cleanup flag definitions for extent status tree
+      ext4: introduce aging to extent status tree
+      ext4: remove never taken branch from ext4_ext_shift_path_extents()
+      ext4: forbid journal_async_commit in data=ordered mode
+
+Markus Elfring (1):
+      ext4: Remove an unnecessary check for NULL before iput()
+
+Namjae Jeon (1):
+      ext4: remove unneeded code in ext4_unlink
+
+Theodore Ts'o (1):
+      jbd2: remove unnecessary NULL check before iput()
+
+Wang Shilong (1):
+      ext4: update comments regarding ext4_delete_inode()
+
+Zheng Liu (2):
+      ext4: cache extent hole in extent status tree for ext4_da_map_blocks()
+      ext4: change LRU to round-robin in extent status tree shrinker
+
+ fs/ext4/ext4.h              |  41 ++-----
+ fs/ext4/extents.c           | 223 +++++++++++++++++++------------------
+ fs/ext4/extents_status.c    | 321 ++++++++++++++++++++++++++++--------------------------
+ fs/ext4/extents_status.h    |  82 ++++++++------
+ fs/ext4/file.c              | 220 ++++++++++++++++++-------------------
+ fs/ext4/inline.c            |  35 ++++--
+ fs/ext4/inode.c             |  37 ++-----
+ fs/ext4/ioctl.c             |   2 -
+ fs/ext4/mballoc.c           |  15 ++-
+ fs/ext4/migrate.c           |   2 +-
+ fs/ext4/move_extent.c       |   8 +-
+ fs/ext4/namei.c             |   1 -
+ fs/ext4/resize.c            |   6 +-
+ fs/ext4/super.c             |  51 +++++----
+ fs/jbd2/journal.c           |   3 +-
+ include/trace/events/ext4.h |  17 +--
+ 16 files changed, 533 insertions(+), 531 deletions(-)
