@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674AbaLKSJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 13:09:42 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:59065 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104AbaLKSJl (ORCPT
+	id S1758683AbaLKSLk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 13:11:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44690 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaLKSLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 13:09:41 -0500
+	Thu, 11 Dec 2014 13:11:38 -0500
+Date: Thu, 11 Dec 2014 13:11:36 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dely Sy <dely.l.sy@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rajat Jain <rajatxjain@gmail.com>, Guenter Roeck <groeck@juniper.net>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Special handling of display/VGA devices in hotplug drivers
+Message-ID: <20141211181136.GA11367@kroah.com>
+References: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1418291722-25448-2-git-send-email-lyz@rock-chips.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-	<1418291722-25448-2-git-send-email-lyz@rock-chips.com>
-Date: Thu, 11 Dec 2014 10:09:40 -0800
-X-Google-Sender-Auth: scArC3anZrOAIqZ5FQ77HhygCjI
-Message-ID: <CAD=FV=WcAJAgj2triu1W4863BT1ew2wf-z6YNHHwiDKpnYmK4w@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] phy: add a driver for the Rockchip SoC internal
- USB2.0 PHY
-From: Doug Anderson <dianders@chromium.org>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
-        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo4iZCUZgqNi-fX+YX=sKV=Ae5z8kn8-++E0Cgft9unmBg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yunzhi,
+On Thu, Dec 11, 2014 at 10:34:30AM -0700, Bjorn Helgaas wrote:
+> It looks like you added the initial pciehp driver [1], which includes
+> the following code in pciehp_disable_slot():
+> 
+> + if (class_code == PCI_BASE_CLASS_DISPLAY) {
+> + /* Display/Video adapter (not supported) */
+> + rc = REMOVE_NOT_SUPPORTED;
+> 
+> + /* If it's a bridge, check the VGA Enable bit */
+> + if ((header_type & 0x7F) == PCI_HEADER_TYPE_BRIDGE) {
+> + rc = pci_bus_read_config_byte (pci_bus, devfn, PCI_BRIDGE_CONTROL, &BCR);
+> + if (rc)
+> + return rc;
+> +
+> + /* If the VGA Enable bit is set, remove isn't supported */
+> + if (BCR & PCI_BRIDGE_CTL_VGA) {
+> + rc = REMOVE_NOT_SUPPORTED;
+> 
+> I'm trying to figure out why VGA devices are handled specially.  I
+> can't find anything in the PCI specs that mentions this.  Most of the
+> other PCI hotplug drivers have similar code.  Do you remember anything
+> about this?
 
-On Thu, Dec 11, 2014 at 1:55 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
-> +               rk_phy->clk = of_clk_get(child, 0);
-> +               if (IS_ERR(rk_phy->clk)) {
-> +                       dev_warn(dev, "failed to get clock\n");
-> +                       rk_phy->clk = NULL;
-> +               }
+The PCI spec said that you were not allowed to hotplug VGA drivers.  The
+big issue is that POST usually needs to run on those things, and there
+is no way to POST a PCI hotplugged device.
 
-The device tree bindings don't specify a clock and the "dtsi" added to
-rk3288 don't reference a clock.  Take that code out and avoid a
-warning in the logs at bootup.
+Does the spec not say that anymore?  I haven't looked in years at it...
 
-...or should there be a clock?
+Do you want to hot-add a VGA device?  Are these lines causing a problem
+with something?
 
+thanks,
 
-> +               rk_phy->phy = devm_phy_create(dev, NULL, &ops);
-
-This has the wrong number of arguments.  Even before the change that
-added the 4th argument, this is still wrong because "ops" is supposed
-to be the 2nd argument, not the 3rd.
-
-...so I'm confused how this compiled for you.  I think this ought to be:
-
-rk_phy->phy = devm_phy_create(dev, child, &ops, NULL);
-
-...but please correct me if I'm mistaken!
+greg k-h
