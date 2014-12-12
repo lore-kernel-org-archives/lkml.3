@@ -1,209 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaLLWIR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:08:17 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:65398 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327AbaLLWIN (ORCPT
+	id S1752542AbaLLWIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:08:21 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:53044 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327AbaLLWIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:13 -0500
+	Fri, 12 Dec 2014 17:08:18 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
         linux-mips@linux-mips.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V5 00/23] Generic BMIPS kernel
-Date: Fri, 12 Dec 2014 14:06:51 -0800
-Message-Id: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V5 03/23] MIPS: bcm3384: Rename "bcm3384" target to "bmips"
+Date: Fri, 12 Dec 2014 14:06:54 -0800
+Message-Id: <1418422034-17099-4-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V4->V5:
+This platform is configured primarily through device tree, and we can
+reuse the same code to support a bunch of other chips.  Change the name
+to reflect this.
 
- - Rebase on top of Linus' head of tree, converting BCM3384 platform code
-   to Generic BMIPS platform code.
-
- - Fix a couple of #include's
-
- - Remove a couple of bogus entries from bmips_be_defconfig
-
-Compile-tested only.  Some BMIPS platforms may require acked-but-unmerged
-changes in other subsystems (like the native-endian serial8250/DT patches).
-
-For 3.19 you'll want the first patch at the minimum (because the build is
-currently broken).
-
-
-Brian Norris (1):
-  irqchip: brcmstb-l2: don't clear wakeable interrupts at init time
-
-Kevin Cernekee (22):
-  MIPS: bcm3384: Fix outdated use of mips_cpu_intc_init()
-  MIPS: Create a common <asm/mach-generic/war.h>
-  MIPS: bcm3384: Rename "bcm3384" target to "bmips"
-  irqchip: Update docs regarding irq_domain_add_tree()
-  irqchip: bcm7120-l2: Refactor driver for arbitrary IRQEN/IRQSTAT
-    offsets
-  irqchip: bcm7120-l2: Split STB-specific logic into its own function
-  irqchip: bcm7120-l2: Add support for BCM3380-style controllers
-  irqchip: Add new driver for BCM7038-style level 1 interrupt
-    controllers
-  MIPS: Let __dt_register_buses accept a single bus type
-  MIPS: Fall back to the generic restart notifier
-  MIPS: Reorder MIPS_L1_CACHE_SHIFT priorities
-  MIPS: BMIPS: Flush the readahead cache after DMA
-  MIPS: BMIPS: Document the firmware->kernel DTB interface
-  MIPS: BMIPS: Rewrite DMA code to use "dma-ranges" property
-  MIPS: BMIPS: Remove bogus bus name
-  MIPS: BMIPS: Add quirks for several Broadcom platforms
-  MIPS: BMIPS: Delete the irqchip driver from irq.c
-  MIPS: BMIPS: Use a non-default FIXADDR_TOP setting
-  MIPS: BMIPS: Enable additional peripheral and CPU support in defconfig
-  MIPS: BMIPS: Refresh BCM3384 DTS files
-  MIPS: BMIPS: Update DT bindings to reflect new SoC support
-  MIPS: BMIPS: Add DTS files for several platforms
-
- Documentation/IRQ-domain.txt                       |   3 +-
- .../interrupt-controller/brcm,bcm3380-l2-intc.txt  |  41 +++
- .../interrupt-controller/brcm,bcm7038-l1-intc.txt  |  52 ++++
- .../interrupt-controller/brcm,bcm7120-l2-intc.txt  |  12 +-
- .../devicetree/bindings/mips/brcm/bcm3384-intc.txt |  37 ---
- .../devicetree/bindings/mips/brcm/cm-dsl.txt       |  11 -
- .../devicetree/bindings/mips/brcm/soc.txt          |  12 +
- Documentation/devicetree/booting-without-of.txt    |  28 ++
- arch/mips/Kbuild.platforms                         |   2 +-
- arch/mips/Kconfig                                  |  37 ++-
- arch/mips/bcm3384/Platform                         |   7 -
- arch/mips/bcm3384/dma.c                            |  81 -----
- arch/mips/bcm3384/irq.c                            | 193 ------------
- arch/mips/bcm3384/setup.c                          |  97 ------
- arch/mips/bmips/Kconfig                            |  50 +++
- arch/mips/{bcm3384 => bmips}/Makefile              |   0
- arch/mips/bmips/Platform                           |   7 +
- arch/mips/bmips/dma.c                              | 117 +++++++
- arch/mips/bmips/irq.c                              |  38 +++
- arch/mips/bmips/setup.c                            | 194 ++++++++++++
- arch/mips/boot/dts/Makefile                        |  10 +-
- arch/mips/boot/dts/bcm3384.dtsi                    | 109 -------
- arch/mips/boot/dts/bcm3384_viper.dtsi              | 108 +++++++
- arch/mips/boot/dts/bcm3384_zephyr.dtsi             | 126 ++++++++
- arch/mips/boot/dts/bcm6328.dtsi                    |  86 ++++++
- arch/mips/boot/dts/bcm6368.dtsi                    |  93 ++++++
- arch/mips/boot/dts/bcm7125.dtsi                    | 139 +++++++++
- arch/mips/boot/dts/bcm7346.dtsi                    | 224 ++++++++++++++
- arch/mips/boot/dts/bcm7360.dtsi                    | 161 ++++++++++
- arch/mips/boot/dts/bcm7420.dtsi                    | 184 +++++++++++
- arch/mips/boot/dts/bcm7425.dtsi                    | 225 ++++++++++++++
- arch/mips/boot/dts/bcm93384wvg.dts                 |   9 +-
- arch/mips/boot/dts/bcm93384wvg_viper.dts           |  25 ++
- arch/mips/boot/dts/bcm96368mvwg.dts                |  31 ++
- arch/mips/boot/dts/bcm97125cbmb.dts                |  31 ++
- arch/mips/boot/dts/bcm97346dbsmb.dts               |  58 ++++
- arch/mips/boot/dts/bcm97360svmb.dts                |  34 +++
- arch/mips/boot/dts/bcm97420c.dts                   |  45 +++
- arch/mips/boot/dts/bcm97425svmb.dts                |  60 ++++
- arch/mips/boot/dts/bcm9ejtagprb.dts                |  22 ++
- .../{bcm3384_defconfig => bmips_be_defconfig}      |  11 +-
- arch/mips/configs/bmips_stb_defconfig              |  88 ++++++
- arch/mips/include/asm/mach-ar7/war.h               |  24 --
- arch/mips/include/asm/mach-ath25/war.h             |  25 --
- arch/mips/include/asm/mach-ath79/war.h             |  24 --
- arch/mips/include/asm/mach-au1x00/war.h            |  24 --
- arch/mips/include/asm/mach-bcm3384/war.h           |  24 --
- arch/mips/include/asm/mach-bcm47xx/war.h           |  24 --
- arch/mips/include/asm/mach-bcm63xx/war.h           |  24 --
- .../{mach-bcm3384 => mach-bmips}/dma-coherence.h   |   6 +-
- arch/mips/include/asm/mach-bmips/spaces.h          |  18 ++
- arch/mips/include/asm/mach-cavium-octeon/war.h     |  25 --
- arch/mips/include/asm/mach-cobalt/war.h            |  24 --
- arch/mips/include/asm/mach-dec/war.h               |  24 --
- arch/mips/include/asm/mach-emma2rh/war.h           |  24 --
- .../asm/{mach-ralink => mach-generic}/war.h        |   6 +-
- arch/mips/include/asm/mach-jazz/war.h              |  24 --
- arch/mips/include/asm/mach-jz4740/war.h            |  24 --
- arch/mips/include/asm/mach-lantiq/war.h            |  23 --
- arch/mips/include/asm/mach-lasat/war.h             |  24 --
- arch/mips/include/asm/mach-loongson/war.h          |  24 --
- arch/mips/include/asm/mach-loongson1/war.h         |  24 --
- arch/mips/include/asm/mach-netlogic/war.h          |  25 --
- arch/mips/include/asm/mach-paravirt/war.h          |  25 --
- arch/mips/include/asm/mach-pnx833x/war.h           |  24 --
- arch/mips/include/asm/mach-tx39xx/war.h            |  24 --
- arch/mips/include/asm/mach-vr41xx/war.h            |  24 --
- arch/mips/kernel/prom.c                            |   5 +-
- arch/mips/kernel/reset.c                           |   2 +
- arch/mips/mm/dma-default.c                         |  13 +
- drivers/irqchip/Kconfig                            |   5 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-bcm7038-l1.c                   | 335 +++++++++++++++++++++
- drivers/irqchip/irq-bcm7120-l2.c                   | 193 ++++++++----
- drivers/irqchip/irq-brcmstb-l2.c                   |   9 +-
- 75 files changed, 2850 insertions(+), 1172 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,bcm3380-l2-intc.txt
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/brcm,bcm7038-l1-intc.txt
- delete mode 100644 Documentation/devicetree/bindings/mips/brcm/bcm3384-intc.txt
- delete mode 100644 Documentation/devicetree/bindings/mips/brcm/cm-dsl.txt
- create mode 100644 Documentation/devicetree/bindings/mips/brcm/soc.txt
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ arch/mips/Kbuild.platforms                                   |  2 +-
+ arch/mips/Kconfig                                            | 12 ++++++------
+ arch/mips/bcm3384/Platform                                   |  7 -------
+ arch/mips/{bcm3384 => bmips}/Makefile                        |  0
+ arch/mips/bmips/Platform                                     |  7 +++++++
+ arch/mips/{bcm3384 => bmips}/dma.c                           |  0
+ arch/mips/{bcm3384 => bmips}/irq.c                           |  0
+ arch/mips/{bcm3384 => bmips}/setup.c                         |  2 +-
+ arch/mips/boot/dts/Makefile                                  |  2 +-
+ arch/mips/configs/{bcm3384_defconfig => bmips_be_defconfig}  |  2 +-
+ .../include/asm/{mach-bcm3384 => mach-bmips}/dma-coherence.h |  6 +++---
+ 11 files changed, 20 insertions(+), 20 deletions(-)
  delete mode 100644 arch/mips/bcm3384/Platform
- delete mode 100644 arch/mips/bcm3384/dma.c
- delete mode 100644 arch/mips/bcm3384/irq.c
- delete mode 100644 arch/mips/bcm3384/setup.c
- create mode 100644 arch/mips/bmips/Kconfig
  rename arch/mips/{bcm3384 => bmips}/Makefile (100%)
  create mode 100644 arch/mips/bmips/Platform
- create mode 100644 arch/mips/bmips/dma.c
- create mode 100644 arch/mips/bmips/irq.c
- create mode 100644 arch/mips/bmips/setup.c
- delete mode 100644 arch/mips/boot/dts/bcm3384.dtsi
- create mode 100644 arch/mips/boot/dts/bcm3384_viper.dtsi
- create mode 100644 arch/mips/boot/dts/bcm3384_zephyr.dtsi
- create mode 100644 arch/mips/boot/dts/bcm6328.dtsi
- create mode 100644 arch/mips/boot/dts/bcm6368.dtsi
- create mode 100644 arch/mips/boot/dts/bcm7125.dtsi
- create mode 100644 arch/mips/boot/dts/bcm7346.dtsi
- create mode 100644 arch/mips/boot/dts/bcm7360.dtsi
- create mode 100644 arch/mips/boot/dts/bcm7420.dtsi
- create mode 100644 arch/mips/boot/dts/bcm7425.dtsi
- create mode 100644 arch/mips/boot/dts/bcm93384wvg_viper.dts
- create mode 100644 arch/mips/boot/dts/bcm96368mvwg.dts
- create mode 100644 arch/mips/boot/dts/bcm97125cbmb.dts
- create mode 100644 arch/mips/boot/dts/bcm97346dbsmb.dts
- create mode 100644 arch/mips/boot/dts/bcm97360svmb.dts
- create mode 100644 arch/mips/boot/dts/bcm97420c.dts
- create mode 100644 arch/mips/boot/dts/bcm97425svmb.dts
- create mode 100644 arch/mips/boot/dts/bcm9ejtagprb.dts
- rename arch/mips/configs/{bcm3384_defconfig => bmips_be_defconfig} (89%)
- create mode 100644 arch/mips/configs/bmips_stb_defconfig
- delete mode 100644 arch/mips/include/asm/mach-ar7/war.h
- delete mode 100644 arch/mips/include/asm/mach-ath25/war.h
- delete mode 100644 arch/mips/include/asm/mach-ath79/war.h
- delete mode 100644 arch/mips/include/asm/mach-au1x00/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm3384/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm47xx/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm63xx/war.h
+ rename arch/mips/{bcm3384 => bmips}/dma.c (100%)
+ rename arch/mips/{bcm3384 => bmips}/irq.c (100%)
+ rename arch/mips/{bcm3384 => bmips}/setup.c (98%)
+ rename arch/mips/configs/{bcm3384_defconfig => bmips_be_defconfig} (98%)
  rename arch/mips/include/asm/{mach-bcm3384 => mach-bmips}/dma-coherence.h (90%)
- create mode 100644 arch/mips/include/asm/mach-bmips/spaces.h
- delete mode 100644 arch/mips/include/asm/mach-cavium-octeon/war.h
- delete mode 100644 arch/mips/include/asm/mach-cobalt/war.h
- delete mode 100644 arch/mips/include/asm/mach-dec/war.h
- delete mode 100644 arch/mips/include/asm/mach-emma2rh/war.h
- rename arch/mips/include/asm/{mach-ralink => mach-generic}/war.h (86%)
- delete mode 100644 arch/mips/include/asm/mach-jazz/war.h
- delete mode 100644 arch/mips/include/asm/mach-jz4740/war.h
- delete mode 100644 arch/mips/include/asm/mach-lantiq/war.h
- delete mode 100644 arch/mips/include/asm/mach-lasat/war.h
- delete mode 100644 arch/mips/include/asm/mach-loongson/war.h
- delete mode 100644 arch/mips/include/asm/mach-loongson1/war.h
- delete mode 100644 arch/mips/include/asm/mach-netlogic/war.h
- delete mode 100644 arch/mips/include/asm/mach-paravirt/war.h
- delete mode 100644 arch/mips/include/asm/mach-pnx833x/war.h
- delete mode 100644 arch/mips/include/asm/mach-tx39xx/war.h
- delete mode 100644 arch/mips/include/asm/mach-vr41xx/war.h
- create mode 100644 drivers/irqchip/irq-bcm7038-l1.c
 
+diff --git a/arch/mips/Kbuild.platforms b/arch/mips/Kbuild.platforms
+index e5fc463..a4d1e4f 100644
+--- a/arch/mips/Kbuild.platforms
++++ b/arch/mips/Kbuild.platforms
+@@ -4,9 +4,9 @@ platforms += alchemy
+ platforms += ar7
+ platforms += ath25
+ platforms += ath79
+-platforms += bcm3384
+ platforms += bcm47xx
+ platforms += bcm63xx
++platforms += bmips
+ platforms += cavium-octeon
+ platforms += cobalt
+ platforms += dec
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 3289969..31bbec0 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -130,8 +130,8 @@ config ATH79
+ 	help
+ 	  Support for the Atheros AR71XX/AR724X/AR913X SoCs.
+ 
+-config BCM3384
+-	bool "Broadcom BCM3384 based boards"
++config BMIPS_GENERIC
++	bool "Broadcom Generic BMIPS kernel"
+ 	select BOOT_RAW
+ 	select NO_EXCEPT_FILL
+ 	select USE_OF
+@@ -151,10 +151,10 @@ config BCM3384
+ 	select USB_OHCI_BIG_ENDIAN_DESC
+ 	select USB_OHCI_BIG_ENDIAN_MMIO
+ 	help
+-	  Support for BCM3384 based boards.  BCM3384/BCM33843 is a cable modem
+-	  chipset with a Linux application processor that is often used to
+-	  provide Samba services, a CUPS print server, and/or advanced routing
+-	  features.
++	  Build a generic DT-based kernel image that boots on select
++	  BCM33xx cable modem chips, BCM63xx DSL chips, and BCM7xxx set-top
++	  box chips.  Note that CONFIG_CPU_BIG_ENDIAN/CONFIG_CPU_LITTLE_ENDIAN
++	  must be set appropriately for your board.
+ 
+ config BCM47XX
+ 	bool "Broadcom BCM47XX based boards"
+diff --git a/arch/mips/bcm3384/Platform b/arch/mips/bcm3384/Platform
+deleted file mode 100644
+index 8e1ca08..0000000
+diff --git a/arch/mips/bcm3384/Makefile b/arch/mips/bmips/Makefile
+similarity index 100%
+rename from arch/mips/bcm3384/Makefile
+rename to arch/mips/bmips/Makefile
+diff --git a/arch/mips/bmips/Platform b/arch/mips/bmips/Platform
+new file mode 100644
+index 0000000..5f127fd
+--- /dev/null
++++ b/arch/mips/bmips/Platform
+@@ -0,0 +1,7 @@
++#
++# Broadcom Generic BMIPS kernel
++#
++platform-$(CONFIG_BMIPS_GENERIC)	+= bmips/
++cflags-$(CONFIG_BMIPS_GENERIC)		+=				\
++		-I$(srctree)/arch/mips/include/asm/mach-bmips/
++load-$(CONFIG_BMIPS_GENERIC)		:= 0xffffffff80010000
+diff --git a/arch/mips/bcm3384/dma.c b/arch/mips/bmips/dma.c
+similarity index 100%
+rename from arch/mips/bcm3384/dma.c
+rename to arch/mips/bmips/dma.c
+diff --git a/arch/mips/bcm3384/irq.c b/arch/mips/bmips/irq.c
+similarity index 100%
+rename from arch/mips/bcm3384/irq.c
+rename to arch/mips/bmips/irq.c
+diff --git a/arch/mips/bcm3384/setup.c b/arch/mips/bmips/setup.c
+similarity index 98%
+rename from arch/mips/bcm3384/setup.c
+rename to arch/mips/bmips/setup.c
+index d84b840..5099109 100644
+--- a/arch/mips/bcm3384/setup.c
++++ b/arch/mips/bmips/setup.c
+@@ -33,7 +33,7 @@ void __init prom_free_prom_memory(void)
+ 
+ const char *get_system_type(void)
+ {
+-	return "BCM3384";
++	return "Generic BMIPS kernel";
+ }
+ 
+ void __init plat_time_init(void)
+diff --git a/arch/mips/boot/dts/Makefile b/arch/mips/boot/dts/Makefile
+index 4f49fa4..18d9999 100644
+--- a/arch/mips/boot/dts/Makefile
++++ b/arch/mips/boot/dts/Makefile
+@@ -1,4 +1,4 @@
+-dtb-$(CONFIG_BCM3384)			+= bcm93384wvg.dtb
++dtb-$(CONFIG_BMIPS_GENERIC)		+= bcm93384wvg.dtb
+ dtb-$(CONFIG_CAVIUM_OCTEON_SOC)		+= octeon_3xxx.dtb octeon_68xx.dtb
+ dtb-$(CONFIG_DT_EASY50712)		+= easy50712.dtb
+ dtb-$(CONFIG_DT_XLP_EVP)		+= xlp_evp.dtb
+diff --git a/arch/mips/configs/bcm3384_defconfig b/arch/mips/configs/bmips_be_defconfig
+similarity index 98%
+rename from arch/mips/configs/bcm3384_defconfig
+rename to arch/mips/configs/bmips_be_defconfig
+index 88711c2..36af5af 100644
+--- a/arch/mips/configs/bcm3384_defconfig
++++ b/arch/mips/configs/bmips_be_defconfig
+@@ -1,4 +1,4 @@
+-CONFIG_BCM3384=y
++CONFIG_BMIPS_GENERIC=y
+ CONFIG_HIGHMEM=y
+ CONFIG_SMP=y
+ CONFIG_NR_CPUS=4
+diff --git a/arch/mips/include/asm/mach-bcm3384/dma-coherence.h b/arch/mips/include/asm/mach-bmips/dma-coherence.h
+similarity index 90%
+rename from arch/mips/include/asm/mach-bcm3384/dma-coherence.h
+rename to arch/mips/include/asm/mach-bmips/dma-coherence.h
+index a3be8e5..65e95b0 100644
+--- a/arch/mips/include/asm/mach-bcm3384/dma-coherence.h
++++ b/arch/mips/include/asm/mach-bmips/dma-coherence.h
+@@ -12,8 +12,8 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#ifndef __ASM_MACH_BCM3384_DMA_COHERENCE_H
+-#define __ASM_MACH_BCM3384_DMA_COHERENCE_H
++#ifndef __ASM_MACH_BMIPS_DMA_COHERENCE_H
++#define __ASM_MACH_BMIPS_DMA_COHERENCE_H
+ 
+ struct device;
+ 
+@@ -45,4 +45,4 @@ static inline int plat_device_is_coherent(struct device *dev)
+ 	return 0;
+ }
+ 
+-#endif /* __ASM_MACH_BCM3384_DMA_COHERENCE_H */
++#endif /* __ASM_MACH_BMIPS_DMA_COHERENCE_H */
 -- 
 2.1.1
 
