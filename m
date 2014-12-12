@@ -1,162 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934822AbaLLSdF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 13:33:05 -0500
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:35116 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933905AbaLLSdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 13:33:01 -0500
-Message-ID: <548B34DA.1040404@hurleysoftware.com>
-Date: Fri, 12 Dec 2014 13:32:58 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Imre Deak <imre.deak@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] vt: fix console lock vs. kernfs s_active lock order
-References: <1418402285-9578-1-git-send-email-imre.deak@intel.com> <1418402285-9578-3-git-send-email-imre.deak@intel.com>
-In-Reply-To: <1418402285-9578-3-git-send-email-imre.deak@intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1755654AbaLLSif (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 13:38:35 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57024 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752780AbaLLSie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 13:38:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="497932896"
+Subject: [PATCH 2/2] x86, mpx: Give MPX a real config option prompt
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, x86@kernel.org, Dave Hansen <dave@sr71.net>,
+        dave.hansen@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 12 Dec 2014 10:38:36 -0800
+References: <20141212183834.1F8D01E5@viggo.jf.intel.com>
+In-Reply-To: <20141212183834.1F8D01E5@viggo.jf.intel.com>
+Message-Id: <20141212183836.2569D58D@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Imre,
 
-On 12/12/2014 11:38 AM, Imre Deak wrote:
-> Currently there is a lock order problem between the console lock and the
-> kernfs s_active lock of the console driver's bind sysfs entry. When
-> writing to the sysfs entry the lock order is first s_active then console
-> lock, when unregistering the console driver via
-> do_unregister_con_driver() the order is the opposite. See the below
-> bugzilla reference for one instance of a lockdep backtrace.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-This description didn't make sense to me because the driver core doesn't
-try to take the console_lock. So I had to go pull the lockdep report
-and I'm not sure I agree with your analysis.
+Give MPX a real config option.  The CPUs that support it
+(referenced here):
 
-I see a three-way dependency which includes the fb atomic notifier call
-chain?
+	https://software.intel.com/en-us/forums/topic/402393
 
-Regards,
-Peter Hurley
+are not available publicly, so we need to make it somewhat
+easy to disable.
 
-> Fix this by unregistering the console driver from a deferred work, where
-> we can safely drop the console lock while unregistering the device and
-> corresponding sysfs entries (which in turn acquire s_active). Note that
-> we have to keep the console driver slot in the registered_con_driver
-> array reserved for the driver that's being unregistered until it's fully
-> removed. Otherwise a concurrent call to do_register_con_driver could
-> try to reuse the same slot and fail when registering the corresponding
-> device with a minor index that's still in use.
-> 
-> Reference: https://bugs.freedesktop.org/show_bug.cgi?id=70523
-> Signed-off-by: Imre Deak <imre.deak@intel.com>
-> ---
->  drivers/tty/vt/vt.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 41 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> index 5dd1880..b9edc77 100644
-> --- a/drivers/tty/vt/vt.c
-> +++ b/drivers/tty/vt/vt.c
-> @@ -108,6 +108,7 @@
->  #define CON_DRIVER_FLAG_MODULE 1
->  #define CON_DRIVER_FLAG_INIT   2
->  #define CON_DRIVER_FLAG_ATTR   4
-> +#define CON_DRIVER_FLAG_ZOMBIE 8
->  
->  struct con_driver {
->  	const struct consw *con;
-> @@ -153,6 +154,7 @@ static int set_vesa_blanking(char __user *p);
->  static void set_cursor(struct vc_data *vc);
->  static void hide_cursor(struct vc_data *vc);
->  static void console_callback(struct work_struct *ignored);
-> +static void con_driver_unregister_callback(struct work_struct *ignored);
->  static void blank_screen_t(unsigned long dummy);
->  static void set_palette(struct vc_data *vc);
->  
-> @@ -180,6 +182,7 @@ static int blankinterval = 10*60;
->  core_param(consoleblank, blankinterval, int, 0444);
->  
->  static DECLARE_WORK(console_work, console_callback);
-> +static DECLARE_WORK(con_driver_unregister_work, con_driver_unregister_callback);
->  
->  /*
->   * fg_console is the current virtual console,
-> @@ -3597,7 +3600,8 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
->  	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
->  		con_driver = &registered_con_driver[i];
->  
-> -		if (con_driver->con == NULL) {
-> +		if (con_driver->con == NULL &&
-> +		    !(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE)) {
->  			con_driver->con = csw;
->  			con_driver->desc = desc;
->  			con_driver->node = i;
-> @@ -3660,16 +3664,10 @@ int do_unregister_con_driver(const struct consw *csw)
->  
->  		if (con_driver->con == csw &&
->  		    con_driver->flag & CON_DRIVER_FLAG_MODULE) {
-> -			vtconsole_deinit_device(con_driver);
-> -			device_destroy(vtconsole_class,
-> -				       MKDEV(0, con_driver->node));
->  			con_driver->con = NULL;
-> -			con_driver->desc = NULL;
-> -			con_driver->dev = NULL;
-> -			con_driver->node = 0;
-> -			con_driver->flag = 0;
-> -			con_driver->first = 0;
-> -			con_driver->last = 0;
-> +			con_driver->flag = CON_DRIVER_FLAG_ZOMBIE;
-> +			schedule_work(&con_driver_unregister_work);
-> +
->  			return 0;
->  		}
->  	}
-> @@ -3678,6 +3676,39 @@ int do_unregister_con_driver(const struct consw *csw)
->  }
->  EXPORT_SYMBOL_GPL(do_unregister_con_driver);
->  
-> +static void con_driver_unregister_callback(struct work_struct *ignored)
-> +{
-> +	int i;
-> +
-> +	console_lock();
-> +
-> +	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-> +		struct con_driver *con_driver = &registered_con_driver[i];
-> +
-> +		if (!(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE))
-> +			continue;
-> +
-> +		console_unlock();
-> +
-> +		vtconsole_deinit_device(con_driver);
-> +		device_destroy(vtconsole_class, MKDEV(0, con_driver->node));
-> +
-> +		if (WARN_ON_ONCE(con_driver->con))
-> +			con_driver->con = NULL;
-> +		con_driver->desc = NULL;
-> +		con_driver->dev = NULL;
-> +		con_driver->node = 0;
-> +		WARN_ON_ONCE(con_driver->flag != CON_DRIVER_FLAG_ZOMBIE);
-> +		con_driver->flag = 0;
-> +		con_driver->first = 0;
-> +		con_driver->last = 0;
-> +
-> +		console_lock();
-> +	}
-> +
-> +	console_unlock();
-> +}
-> +
->  /*
->   *	If we support more console drivers, this function is used
->   *	when a driver wants to take over some existing consoles
-> 
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+---
 
+ b/Documentation/x86/intel_mpx.txt |    6 +++++-
+ b/arch/x86/Kconfig                |   30 ++++++++++++++++++++++++++----
+ 2 files changed, 31 insertions(+), 5 deletions(-)
+
+diff -puN arch/x86/Kconfig~x86-mpx-real-config-option-v4 arch/x86/Kconfig
+--- a/arch/x86/Kconfig~x86-mpx-real-config-option-v4	2014-12-12 10:12:53.531938223 -0800
++++ b/arch/x86/Kconfig	2014-12-12 10:12:53.536938449 -0800
+@@ -248,10 +248,6 @@ config HAVE_INTEL_TXT
+ 	def_bool y
+ 	depends on INTEL_IOMMU && ACPI
+ 
+-config X86_INTEL_MPX
+-	def_bool y
+-	depends on CPU_SUP_INTEL
+-
+ config X86_32_SMP
+ 	def_bool y
+ 	depends on X86_32 && SMP
+@@ -1593,6 +1589,32 @@ config X86_SMAP
+ 
+ 	  If unsure, say Y.
+ 
++config X86_INTEL_MPX
++	prompt "Intel MPX (Memory Protection Extensions)"
++	def_bool y
++	depends on CPU_SUP_INTEL
++	---help---
++	  MPX provides hardware features that can be used in
++	  conjunction with compiler-instrumented code to check
++	  memory references.  It is designed to detect buffer
++	  overflow or underflow bugs.
++
++	  This option enables running applications which are
++	  instrumented or otherwise use MPX.  It does not use MPX
++	  itself inside the kernel or to protect the kernel
++	  against bad memory references.
++
++	  Enabling this option will make the kernel larger:
++	  ~8k of kernel text and 36 bytes of data on a 64-bit
++	  defconfig.  It adds a long to the 'mm_struct' which
++	  will increase the kernel memory overhead of each
++	  process and adds some branches to paths used during
++	  exec() and munmap().
++
++	  For details, see Documentation/x86/intel_mpx.txt
++
++	  If unsure, say Y.
++
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
+diff -puN Documentation/x86/intel_mpx.txt~x86-mpx-real-config-option-v4 Documentation/x86/intel_mpx.txt
+--- a/Documentation/x86/intel_mpx.txt~x86-mpx-real-config-option-v4	2014-12-12 10:12:53.532938268 -0800
++++ b/Documentation/x86/intel_mpx.txt	2014-12-12 10:12:53.537938494 -0800
+@@ -7,11 +7,15 @@ that can be used in conjunction with com
+ references, for those references whose compile-time normal intentions are
+ usurped at runtime due to buffer overflow or underflow.
+ 
++You can tell if your CPU supports MPX by looking in /proc/cpuinfo:
++
++	cat /proc/cpuinfo  | grep ' mpx '
++
+ For more information, please refer to Intel(R) Architecture Instruction
+ Set Extensions Programming Reference, Chapter 9: Intel(R) Memory Protection
+ Extensions.
+ 
+-Note: Currently no hardware with MPX ISA is available but it is always
++Note: As of December 2014, no hardware with MPX is available but it is
+ possible to use SDE (Intel(R) Software Development Emulator) instead, which
+ can be downloaded from
+ http://software.intel.com/en-us/articles/intel-software-development-emulator
+_
