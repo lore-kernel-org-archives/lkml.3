@@ -1,86 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935103AbaLLQO4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:14:56 -0500
-Received: from 16.mo1.mail-out.ovh.net ([178.33.104.224]:38948 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934967AbaLLQOx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:14:53 -0500
-X-Greylist: delayed 4715 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Dec 2014 11:14:52 EST
-From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
-	SoC...),
-        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
-        linux-kernel@vger.kernel.org (open list:COMMON CLK FRAMEWORK)
-Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Subject: [PATCH] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
-Date: Fri, 12 Dec 2014 15:54:26 +0100
-Message-Id: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Mailer: git-send-email 2.1.0
-X-Ovh-Tracer-Id: 144959613829382205
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	id S1030705AbaLLQOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:14:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53632 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934943AbaLLQNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:13:43 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH V3 3/4] mm: reduce try_to_compact_pages parameters
+Date: Fri, 12 Dec 2014 17:13:24 +0100
+Message-Id: <1418400805-4661-4-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1418400805-4661-1-git-send-email-vbabka@suse.cz>
+References: <1418400805-4661-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0 and hclk_usbotg1
-because these clocks must remain enabled to use the USB controllers in host mode.
+Expand the usage of the struct alloc_context introduced in the previous patch
+also for calling try_to_compact_pages(), to reduce the number of its
+parameters. Since the function is in different compilation module, the
+definition of the alloc_context struct is moved to mm.h.
 
-This fixes a regression introduced by patch "clk: rockchip: disable unused clocks"
-https://lkml.kernel.org/g/1415092270-24932-1-git-send-email-kever.yang@rock-chips.com
+With this change we get simpler code and small savings of code size and stack
+usage.
 
-Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
 ---
- drivers/clk/rockchip/clk-rk3188.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ include/linux/compaction.h | 15 +++++++--------
+ include/linux/mm.h         | 14 ++++++++++++++
+ mm/compaction.c            | 23 +++++++++++------------
+ mm/page_alloc.c            | 19 ++-----------------
+ 4 files changed, 34 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
-index c540789..25ddb09 100644
---- a/drivers/clk/rockchip/clk-rk3188.c
-+++ b/drivers/clk/rockchip/clk-rk3188.c
-@@ -430,8 +430,10 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
- 	GATE(0, "hclk_emem_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 7, GFLAGS),
- 	GATE(HCLK_EMAC, "hclk_emac", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 0, GFLAGS),
- 	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 9, GFLAGS),
--	GATE(0, "hclk_usb_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 5, GFLAGS),
--	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 13, GFLAGS),
-+	GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(4), 5, GFLAGS),
-+	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(5), 13, GFLAGS),
- 	GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 5, GFLAGS),
- 	GATE(HCLK_PIDF, "hclk_pidfilter", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 6, GFLAGS),
- 	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 10, GFLAGS),
-@@ -592,7 +594,8 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
- 	GATE(0, "hclk_cif1", "hclk_cpu", 0, RK2928_CLKGATE_CON(6), 6, GFLAGS),
- 	GATE(0, "hclk_hdmi", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+index 3238ffa..44478a2 100644
+--- a/include/linux/compaction.h
++++ b/include/linux/compaction.h
+@@ -30,10 +30,9 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+ 			void __user *buffer, size_t *length, loff_t *ppos);
  
--	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 14, GFLAGS),
-+	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(5), 14, GFLAGS),
+ extern int fragmentation_index(struct zone *zone, unsigned int order);
+-extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+-			int order, gfp_t gfp_mask, nodemask_t *mask,
+-			enum migrate_mode mode, int *contended,
+-			int alloc_flags, int classzone_idx);
++extern unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
++			int alloc_flags, const struct alloc_context *ac,
++			enum migrate_mode mode, int *contended);
+ extern void compact_pgdat(pg_data_t *pgdat, int order);
+ extern void reset_isolation_suitable(pg_data_t *pgdat);
+ extern unsigned long compaction_suitable(struct zone *zone, int order,
+@@ -101,10 +100,10 @@ static inline bool compaction_restarting(struct zone *zone, int order)
+ }
  
- 	GATE(0, "aclk_cif1", "aclk_vio1", 0, RK2928_CLKGATE_CON(6), 7, GFLAGS),
+ #else
+-static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+-			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+-			enum migrate_mode mode, int *contended,
+-			int alloc_flags, int classzone_idx)
++static inline unsigned long try_to_compact_pages(gfp_t gfp_mask,
++			unsigned int order, int alloc_flags,
++			const struct alloc_context *ac,
++			enum migrate_mode mode, int *contended)
+ {
+ 	return COMPACT_CONTINUE;
+ }
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 38cf1d6..b3a9244 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -296,6 +296,20 @@ static inline int get_freepage_migratetype(struct page *page)
+ }
  
-@@ -680,7 +683,8 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
- 	GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
- 	GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
+ /*
++ * Structure for holding the mostly immutable allocation parameters passed
++ * between functions involved in allocations, including the alloc_pages*
++ * family of functions.
++ */
++struct alloc_context {
++	struct zonelist *zonelist;
++	nodemask_t *nodemask;
++	struct zone *preferred_zone;
++	int classzone_idx;
++	int migratetype;
++	enum zone_type high_zoneidx;
++};
++
++/*
+  * FIXME: take this include out, include page-flags.h in
+  * files which need it (119 of them)
+  */
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 546e571..9c7e690 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -1335,22 +1335,20 @@ int sysctl_extfrag_threshold = 500;
  
--	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
-+	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(7), 3, GFLAGS),
- 	GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
+ /**
+  * try_to_compact_pages - Direct compact to satisfy a high-order allocation
+- * @zonelist: The zonelist used for the current allocation
+- * @order: The order of the current allocation
+  * @gfp_mask: The GFP mask of the current allocation
+- * @nodemask: The allowed nodes to allocate from
++ * @order: The order of the current allocation
++ * @alloc_flags: The allocation flags of the current allocation
++ * @ac: The context of current allocation
+  * @mode: The migration mode for async, sync light, or sync migration
+  * @contended: Return value that determines if compaction was aborted due to
+  *	       need_resched() or lock contention
+  *
+  * This is the main entry point for direct page compaction.
+  */
+-unsigned long try_to_compact_pages(struct zonelist *zonelist,
+-			int order, gfp_t gfp_mask, nodemask_t *nodemask,
+-			enum migrate_mode mode, int *contended,
+-			int alloc_flags, int classzone_idx)
++unsigned long try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
++			int alloc_flags, const struct alloc_context *ac,
++			enum migrate_mode mode, int *contended)
+ {
+-	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+ 	int may_enter_fs = gfp_mask & __GFP_FS;
+ 	int may_perform_io = gfp_mask & __GFP_IO;
+ 	struct zoneref *z;
+@@ -1365,8 +1363,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 		return COMPACT_SKIPPED;
  
- 	GATE(PCLK_TIMER3, "pclk_timer3", "pclk_cpu", 0, RK2928_CLKGATE_CON(7), 9, GFLAGS),
+ 	/* Compact each zone in the list */
+-	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+-								nodemask) {
++	for_each_zone_zonelist_nodemask(zone, z, ac->zonelist, ac->high_zoneidx,
++								ac->nodemask) {
+ 		int status;
+ 		int zone_contended;
+ 
+@@ -1374,7 +1372,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			continue;
+ 
+ 		status = compact_zone_order(zone, order, gfp_mask, mode,
+-				&zone_contended, alloc_flags, classzone_idx);
++				&zone_contended, alloc_flags,
++				ac->classzone_idx);
+ 		rc = max(status, rc);
+ 		/*
+ 		 * It takes at least one zone that wasn't lock contended
+@@ -1384,7 +1383,7 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 
+ 		/* If a normal allocation would succeed, stop compacting */
+ 		if (zone_watermark_ok(zone, order, low_wmark_pages(zone),
+-					classzone_idx, alloc_flags)) {
++					ac->classzone_idx, alloc_flags)) {
+ 			/*
+ 			 * We think the allocation will succeed in this zone,
+ 			 * but it is not certain, hence the false. The caller
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 963f9c0..9416ed2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -232,19 +232,6 @@ EXPORT_SYMBOL(nr_node_ids);
+ EXPORT_SYMBOL(nr_online_nodes);
+ #endif
+ 
+-/*
+- * Structure for holding the mostly immutable allocation parameters passed
+- * between alloc_pages* family of functions.
+- */
+-struct alloc_context {
+-	struct zonelist *zonelist;
+-	nodemask_t *nodemask;
+-	struct zone *preferred_zone;
+-	int classzone_idx;
+-	int migratetype;
+-	enum zone_type high_zoneidx;
+-};
+-
+ int page_group_by_mobility_disabled __read_mostly;
+ 
+ void set_pageblock_migratetype(struct page *page, int migratetype)
+@@ -2398,10 +2385,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
+ 		return NULL;
+ 
+ 	current->flags |= PF_MEMALLOC;
+-	compact_result = try_to_compact_pages(ac->zonelist, order, gfp_mask,
+-						ac->nodemask, mode,
+-						contended_compaction,
+-						alloc_flags, ac->classzone_idx);
++	compact_result = try_to_compact_pages(gfp_mask, order, alloc_flags, ac,
++						mode, contended_compaction);
+ 	current->flags &= ~PF_MEMALLOC;
+ 
+ 	switch (compact_result) {
 -- 
-2.1.0
+2.1.2
 
