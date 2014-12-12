@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934758AbaLLJqn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 04:46:43 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:34874 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934631AbaLLJqk convert rfc822-to-8bit (ORCPT
+	id S934786AbaLLJq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 04:46:58 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:54484 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934631AbaLLJq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 04:46:40 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>,
-        Cyrille Pitchen <cyrille.pitchen@atmel.com>
-CC: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 1/1] net/macb: add TX multiqueue support for gem
-Thread-Topic: [PATCH v2 1/1] net/macb: add TX multiqueue support for gem
-Thread-Index: AQHQFXjn6XWo+2ZgNk281xEEq+HfaJyLtH0Q
-Date: Fri, 12 Dec 2014 09:45:30 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0BA36@AcuExch.aculab.com>
-References: <cover.1418291637.git.cyrille.pitchen@atmel.com>
-	<87a3098203ee6eaa7a60607713a293d3258e2b58.1418291637.git.cyrille.pitchen@atmel.com>
- <20141211203103.4191887a@free-electrons.com>
-In-Reply-To: <20141211203103.4191887a@free-electrons.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 12 Dec 2014 04:46:56 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: fixes for 3.19 #1
+Date: Fri, 12 Dec 2014 10:46:55 +0100
+Message-ID: <1418377615-15122-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Petazzoni
-> On Thu, 11 Dec 2014 11:16:51 +0100, Cyrille Pitchen wrote:
-> 
-> > +#define GEM_ISR1				0x0400
-> > +#define GEM_ISR2				0x0404
-> > +#define GEM_ISR3				0x0408
-> > +#define GEM_ISR4				0x040c
-> > +#define GEM_ISR5				0x0410
-> > +#define GEM_ISR6				0x0414
-> > +#define GEM_ISR7				0x0418
-> 
-> What about doing instead:
-> 
-> #define GEM_ISR(q)				((q) == 0 ? MACB_ISR : 0x400 + (q) << 2)
-> 
-> And ditto for all other registers, which will save a lot of boring repeated code.
+Arnd, Olof, Kevin,
 
-It will probably add a lot of object code and, depending on how often
-the registers are accesses, might have performance impact.
+I'm sending today a "fixes" branch which somehow continues the cleanup with
+only code removal. I was waiting for the arm-soc *and* pinctrl material to
+reach Linus T.'s tree before sending this pull-request. In fact this sequence
+was needed for the gpio header removal. The little patch about #include
+deletion just follows an earlier merge conflict in arm-soc tree: I was also
+waiting for this moment before sending the definitive fix, just to be sure.
 
-Having:
-#define GEM_ISR(n) (0x400 + (n) << 4)
-will save source code.
+Otherwise, all is pretty straightforward.
 
-	David
+Oh, one more thing: it is based on the current Linus' git tree, I can obviously
+rebase everything on top of 3.19-rc1 once it is released if you prefer.
 
+Thanks, best regards,
 
+The following changes since commit 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93:
 
+  Merge branch 'for-3.19' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup (2014-12-11 18:57:19 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
+
+for you to fetch changes up to 23db86fb6b514788f57b4ee96962352281139a63:
+
+  ARM: at91/config: sama5: Remove DEBUG_LL (2014-12-12 10:14:56 +0100)
+
+----------------------------------------------------------------
+First fixes batch for AT91 on 3.19 folowing The big cleanup:
+- removal of unused Kconfig RTC options
+- GPIO header file is now close to the pinctrl driver
+- little fix on #includes
+- removal of DEBUG_LL from the sama5 common defconfig
+
+----------------------------------------------------------------
+Boris Brezillon (1):
+      ARM: at91: remove useless header file includes
+
+Maxime Ripard (1):
+      ARM: at91/config: sama5: Remove DEBUG_LL
+
+Nicolas Ferre (2):
+      rtc: at91/Kconfig: remove useless options
+      ARM: at91: remove unneeded header file
+
+ arch/arm/configs/sama5_defconfig           |  2 -
+ arch/arm/mach-at91/at91sam9g45.c           |  1 -
+ arch/arm/mach-at91/at91sam9rl.c            |  1 -
+ arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
+ drivers/rtc/Kconfig                        | 28 -----------
+ 5 files changed, 112 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
+
+-- 
+Nicolas Ferre
