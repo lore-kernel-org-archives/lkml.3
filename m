@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaLLXyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 18:54:18 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:55335 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489AbaLLXyQ convert rfc822-to-8bit (ORCPT
+	id S1753566AbaLLXzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 18:55:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46603 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaLLXza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 18:54:16 -0500
+	Fri, 12 Dec 2014 18:55:30 -0500
+Message-ID: <548B8046.4040808@oracle.com>
+Date: Fri, 12 Dec 2014 18:54:46 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <8867707.LK6gZlxufx@phil>
-References: <8867707.LK6gZlxufx@phil>
-Date: Fri, 12 Dec 2014 15:54:15 -0800
-X-Google-Sender-Auth: cKjq1wrWDFeUW3EzCJ--RjhXv50
-Message-ID: <CAD=FV=VfnXHpZiTMh8+WHyEQ=N0cVNrDLLjmU+xC1ne-uYbuEQ@mail.gmail.com>
-Subject: Re: regression on rk3288 with - mmc: dw_mmc: Remove old card detect infrastructure
-From: Doug Anderson <dianders@chromium.org>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+References: <20141201230339.GA20487@ret.masoncoding.com>	<1417529606.3924.26.camel@maggy.simpson.net>	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>	<1417540493.21136.3@mail.thefacebook.com>	<20141203184111.GA32005@redhat.com>	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>	<20141205171501.GA1320@redhat.com>	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>	<1417806247.4845.1@mail.thefacebook.com>	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>	<20141211145408.GB16800@redhat.com>	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>	<548A122C.8000906@oracle.com> <CA+55aFw68nC+5s=iX2R4SLsgG3nBvURmDXYvX5pFJgHBnQoHMA@mail.gmail.com> <548A2165.9030107@oracle.com>
+In-Reply-To: <548A2165.9030107@oracle.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/11/2014 05:57 PM, Sasha Levin wrote:
+> On 12/11/2014 05:36 PM, Linus Torvalds wrote:
+>> > On Thu, Dec 11, 2014 at 1:52 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>> >> >
+>>>> >> > Is it possible that Dave and myself were seeing the same problem after
+>>>> >> > all?
+>> > Could be. You do have commonalities, even if the actual symptoms then
+>> > differ. And while it looked different when you could trigger it with
+>> > 3.16 but DaveJ couldn't, that's up in the air now that I doubt that
+>> > 3.16 really is ok for DaveJ after all..
+>> > 
+>> > And you might have a better luck bisecting it, since you seem to be
+>> > able to trigger your RCU lockup much more quickly (and apparently
+>> > reliably? Correct?)
+> Right, and it reproduces in 3.10 as well, so it's not really a new thing.
+> 
+> What's odd is that I don't remember seeing this bug so long in the past,
+> I'll try bisecting trinity rather than the kernel - it's the only other
+> thing that changed.
 
-On Fri, Dec 12, 2014 at 12:22 PM, Heiko Stübner <heiko@sntech.de> wrote:
-> Hi,
->
-> when trying linux-next for 20141210 on my rk3288 eval board I got errors
-> when ejecting sd cards. Especially a timeout for a command and following
-> this an rcu stall which essentially stops everything [0].
->
-> My way to reproduce the issue is:
-> - boot into an initramfs
-> - insert card
-> - remove card
-> - boom
->
-> It happens 100% of the time on the first removal of the card.
->
->
-> Bisecting the issue brought me to
->
-> first bad commit
-> 6130e7a9c34d01afbd4e7e215846d1f2d70333bb
-> mmc: dw_mmc: Remove old card detect infrastructure
->
-> and indeed if I revert this one, card ejection works again - also multiple
-> times in a row. Affected machine is a rk3288-evb-rk808 board which
-> currently uses the internal card-detect mechanism of the dw_mmc and
-> relevant git history (--oneline) is:
->
-> 864de9b Revert "mmc: dw_mmc: Remove old card detect infrastructure"
-> 5bd48e0 ARM: dts: Bump SD card pin drive strength up on rk3288-evb
-> 12fd072 Add linux-next specific files for 20141210
-> ...
->
->
-> I'll try to dig deeper, but if anybody has ideas beforehand I would also
-> be very glad.
+So I checked out trinity from half a year ago, and could not reproduce the
+stall any more. Not on v3.16 nor on the current -next.
 
-I tried to reproduce this on the same board on 20141211.  I have a
-different bootloader, but I hope that doesn't matter?
+I ran bisection on trinity, rather than the kernel, and got the following
+result:
 
-git describe
-next-20141211-1-gf8afbb8
+commit f2be2d5ffe4bf896eb5418972013822a2bef0cee
+Author: Dave Jones <davej@redhat.com>
+Date:   Mon Aug 4 19:55:17 2014 -0400
 
-$ git log --oneline next-20141211~..
-f8afbb8 FROMLIST: ARM: dts: Bump SD card pin drive strength up on rk3288-evb
-291ca61 Add linux-next specific files for 20141211
+    begin some infrastructure to use a bunch of test files for fsx like ops.
+
+I've been running trinity f2be2d5ff^ on -next for two hours now, and there's
+no sign of a lockup. Previously it took ~10 minutes trigger.
 
 
-In inserted 3 different cards into the SD card slots (a micro UHS, an
-older micro one, and a full sized UHS).  I inserted / ejected each one
-several times.
-
-Could it be a different set of kernel config options?  That's about
-the best guess I can come up with...
+Thanks,
+Sasha
