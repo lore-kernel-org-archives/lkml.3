@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030957AbaLLRLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:11:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030303AbaLLRLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:11:45 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Krzysztof Konopko <kris@konagma.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com>
-	<548A2E7A.4010303@lwfinger.net> <548AD2F1.3080200@konagma.com>
-Date: Fri, 12 Dec 2014 12:10:36 -0500
-In-Reply-To: <548AD2F1.3080200@konagma.com> (Krzysztof Konopko's message of
-	"Fri, 12 Dec 2014 12:35:13 +0100")
-Message-ID: <wrfjbnn8yesz.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	id S1030966AbaLLRMX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:12:23 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:33547 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030303AbaLLRMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:12:21 -0500
+Date: Fri, 12 Dec 2014 12:12:16 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 1/5] workqueue: fix memory leak in wq_numa_init()
+Message-ID: <20141212171216.GA20020@htj.dyndns.org>
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
+ <1418379595-6281-2-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418379595-6281-2-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Konopko <kris@konagma.com> writes:
-> On 12/12/14 00:53, Larry Finger wrote:
->> In RTL8188EU, both BA_starting_seqctrl and TXOP_limit are unsigned short.
->> 
->
-> That's not quite the case.  `TXOP_limit` is __le16 in RTL8188EU [1].
-> It's __le16 even in your GitHub repo [2].  And that made me thinking
-> that there's probably some inconsistency in the header.
->
-> I'm _far_ from being a wireless expert but doesn't data coming out of
-> the wire/air have the endianess defined explicitly?  And both `AC_param`
-> and `ADDBA_request` come out of air?
->
-> I was hunting particularly for inconsistencies with `sparse` and came
-> across this one.  But I dug a bit further and I wonder why the driver is
-> not using standard stuff like the one in `include/linux/ieee80211.h`
-> where any data wider than one byte is clearly declared as __le<nn>?
+On Fri, Dec 12, 2014 at 06:19:51PM +0800, Lai Jiangshan wrote:
+> wq_numa_init() will quit directly on some bonkers cases without freeing the
+> memory.  Add the missing cleanup code.
+> 
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
+> Cc: tangchen <tangchen@cn.fujitsu.com>
+> Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 09b685d..a6fd2b8 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4811,6 +4811,9 @@ static void __init wq_numa_init(void)
+>  		if (WARN_ON(node == NUMA_NO_NODE)) {
+>  			pr_warn("workqueue: NUMA node mapping not available for cpu%d, disabling NUMA support\n", cpu);
+>  			/* happens iff arch is bonkers, let's just proceed */
+> +			for_each_node(node)
+> +				free_cpumask_var(tbl[node]);
+> +			kfree(tbl);
 
-In general all over the wire data is little-endian. The driver has been
-slowly moved towards using the standard defines from the Linux headers,
-but this is a *lot* of work, and it requires testing. I really don't get
-warm fuzzy feelings from patches that blindly make these kinds of
-changes without also testing them.
+The comment right up there says that this happens if and only if the
+arch code is seriously broken and it's consciously skipping exception
+handling.  That's a condition where we might as well trigger BUG_ON().
+Just leave it alone.
 
-Jes
+Thanks.
+
+-- 
+tejun
