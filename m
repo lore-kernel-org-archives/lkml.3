@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967892AbaLLNRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:17:45 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:34357 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967578AbaLLNRn (ORCPT
+	id S967913AbaLLNV1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:21:27 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56738 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967664AbaLLNV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:17:43 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-95-548aeaf561d4
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, peter.chen@freescale.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com, k.opasiak@samsung.com,
-        Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH] usb: gadget: udc-core: call udc_stop() before gadget unbind
-Date: Fri, 12 Dec 2014 14:17:28 +0100
-Message-id: <1418390248-6254-1-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPJMWRmVeSWpSXmKPExsVy+t9jAd2vr7pCDKavl7A4eL/eonnxejaL
-	2xOnsVlc3jWHzWLRslZmi7VH7rJbHJv9l8niweGd7A4cHv8O9zN57J+7ht2jb8sqRo/jN7Yz
-	eXzeJBfAGsVlk5Kak1mWWqRvl8CVMePKEsaCO1wVW1bcYm9g7ODsYuTkkBAwkbg9o4ERwhaT
-	uHBvPVsXIxeHkMAiRonbty+zgiSEBNqZJJb+EAGx2QR0JLZ8nwDWICIgILH+xSV2kAZmgQuM
-	Ev/edTJ3MXJwCAv4SLz/kwBSwyKgKnHv40dmEJtXwEXi26UZzBDL5CROHpvMOoGRewEjwypG
-	0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4GB5JrWDcWWDxSFGAQ5GJR7eF6ldIUKsiWXFlbmH
-	GCU4mJVEeP9GAYV4UxIrq1KL8uOLSnNSiw8xSnOwKInzKtm3hQgJpCeWpGanphakFsFkmTg4
-	pRoYjZ8LT/zX8S3yqdWHjPRHCs+fvV90ekuu3r0SjXal3PyenZslZr7OWG4/g5XrbB9T6qOb
-	ckyzz72dKLvEyuVMx4Udd+99TJgRuuz0KtGL1cpr9hhetAz286/vsvQ+IcKSdahwWbfylpiZ
-	CdfbxbaY6R9fsExm/stvT55cEz1YwMvPu6vtwGx9XiWW4oxEQy3mouJEAJckYfASAgAA
+	Fri, 12 Dec 2014 08:21:26 -0500
+Date: Fri, 12 Dec 2014 13:21:09 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20141212132109.GH11764@sirena.org.uk>
+References: <1418162021-32229-1-git-send-email-linux@rasmusvillemoes.dk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2Uwm888OkiLvmClh"
+Content-Disposition: inline
+In-Reply-To: <1418162021-32229-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: soc-dapm: Fix comparison of pointers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As usb function drivers assumes that all usb request will be completed
-before function unbind call, we should supply such behavior. In some
-cases ep_disable() won't kill all request effectively, because some
-IN requests can be in running state. In such situation it's possible
-to have unbind function called before last request completion, which
-can cause problems.
 
-For example unbinding f_ecm function while request on 'notify' endpoint
-is not completed, ends up NULL pointer dereference in unbind() function.
+--2Uwm888OkiLvmClh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-usb_gadget_udc_stop() call causes completion of all requests so if it's
-called before gadget unbind there is no risk that some of requests will
-stay uncompleted.
+On Tue, Dec 09, 2014 at 10:53:41PM +0100, Rasmus Villemoes wrote:
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- drivers/usb/gadget/udc/udc-core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>  	if (a->reg != b->reg)
+>  		return a->reg - b->reg;
+> -	if (a->dapm != b->dapm)
+> -		return (unsigned long)a->dapm - (unsigned long)b->dapm;
+> +	if (a->dapm < b->dapm)
+> +		return -1;
+> +	if (a->dapm > b->dapm)
+> +		return 1;
 
-diff --git a/drivers/usb/gadget/udc/udc-core.c b/drivers/usb/gadget/udc/udc-core.c
-index e31d574..6f0d233 100644
---- a/drivers/usb/gadget/udc/udc-core.c
-+++ b/drivers/usb/gadget/udc/udc-core.c
-@@ -331,8 +331,8 @@ static void usb_gadget_remove_driver(struct usb_udc *udc)
- 
- 	usb_gadget_disconnect(udc->gadget);
- 	udc->driver->disconnect(udc->gadget);
--	udc->driver->unbind(udc->gadget);
- 	usb_gadget_udc_stop(udc);
-+	udc->driver->unbind(udc->gadget);
- 
- 	udc->driver = NULL;
- 	udc->dev.driver = NULL;
--- 
-1.9.1
+If we're worrying about standards conformance type stuff here this is
+also buggy since it's out of spec to compare pointers that are not part
+of the same array like this.  Casting to uintptr_t is a better fix here.
 
+--2Uwm888OkiLvmClh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUiuvEAAoJECTWi3JdVIfQHQEH/jWHimuQ8k0BH3LjjDq+LTam
+71Tj0F3eZ7jv34DfnERaBZ0Z6eYZFwsVmxN1CIfR9RzooLHLoVlc3jWxI5al4n8W
+M1q9Bb/hi2hTK6iOiQR8m+XUwtKW6VrUUdlLhNzb1wHwyZ4bmI12Q5KbcrXsxpxQ
+1FatMXXIXbeI+Wz448+3cFoIlr+MQ11AsS0jfVuFnAtdyk6cs0PY0BowJM9qNc7u
+KIDKyRLKGKUgfJxd1pgzNExwO14rXRJdZgO0kjIyk2ch0wN9pFHNXKbPFq9anWX9
+1CugWIHNSfhbPnPGAwUYcXdvqxzS8Z7rW9FqNgCiY0x0g07MbERVygj1Qhb7iis=
+=x4te
+-----END PGP SIGNATURE-----
+
+--2Uwm888OkiLvmClh--
