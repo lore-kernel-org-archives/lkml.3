@@ -1,81 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967971AbaLLN1o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:27:44 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56768 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967664AbaLLN1n (ORCPT
+	id S968000AbaLLNbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:31:08 -0500
+Received: from lb3-smtp-cloud2.xs4all.net ([194.109.24.29]:53412 "EHLO
+	lb3-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967795AbaLLNbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:27:43 -0500
-Date: Fri, 12 Dec 2014 13:27:32 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ben Zhang <benzh@chromium.org>
-Cc: alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Bard Liao <bardliao@realtek.com>, Oder Chiou <oder_chiou@realtek.com>,
-        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
-        Albert Chen <albertchen@realtek.com>, linux-kernel@vger.kernel.org
-Message-ID: <20141212132732.GK11764@sirena.org.uk>
-References: <1418271327-14710-1-git-send-email-benzh@chromium.org>
- <1418271327-14710-2-git-send-email-benzh@chromium.org>
+	Fri, 12 Dec 2014 08:31:05 -0500
+Message-ID: <548AEE11.50303@xs4all.nl>
+Date: Fri, 12 Dec 2014 14:30:57 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PlDVpzlhHY5RV9ko"
-Content-Disposition: inline
-In-Reply-To: <1418271327-14710-2-git-send-email-benzh@chromium.org>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/3] ASoC: rt5677: add a platform config option for
- MICBIAS voltage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Andrey Utkin <andrey.utkin@corp.bluecherry.net>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+CC: m.chehab@samsung.com, hans.verkuil@cisco.com
+Subject: Re: [PATCH] solo6x10: just pass frame motion flag from hardware,
+ drop additional handling as complicated and unstable
+References: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+In-Reply-To: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/05/2014 09:11 PM, Andrey Utkin wrote:
+> Dropping code (introduced in 316d9e84a72069e04e483de0d5934c1d75f6a44c)
+> which intends to make raising of motion events more "smooth"(?).
+> 
+> It made motion event never appear in my installation.
+> That code is complicated, so I couldn't figure out quickly how to fix
+> it, so dropping it seems better to me.
+> 
+> Another justification is that anyway application would implement
+> "motion signal stabilization" if required, it is not necessarily kernel
+> driver's job.
+> 
+> Signed-off-by: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
 
---PlDVpzlhHY5RV9ko
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 
-On Wed, Dec 10, 2014 at 08:15:26PM -0800, Ben Zhang wrote:
+I have tested this and it looks good. I am not sure what problems I had
+originally that caused me to write that code, since it is now functioning
+as expected.
 
-> The MICBIAS voltage for IN1 can be set to 1.476V/2.970V/1.242V/2.475V
+So you can expect this patch to be part of the next 3.20 pull request I'll
+post.
 
-The changelog says "platform config" but this is adding DT binding.
+Sorry for the delay.
 
-> +- realtek,micbias1
-> +  Select 0/1/2/3 to set MICBIAS1 voltage to 1.476V/2.970V/1.242V/2.475V
-> +
+Regards,
 
-Why is this being specified as some magic number rather than using the
-voltage (or at least providing defines for the voltage) - this is going
-to do little to make the DT legible and...
+	Hans
 
-> +enum rt5677_micbias {
-> +	RT5677_MICBIAS_1_476V = 0,
-> +	RT5677_MICBIAS_2_970V = 1,
-> +	RT5677_MICBIAS_1_242V = 2,
-> +	RT5677_MICBIAS_2_475V = 3,
-> +};
+> ---
+>  drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c | 30 +-------------------------
+>  drivers/media/pci/solo6x10/solo6x10.h          |  2 --
+>  2 files changed, 1 insertion(+), 31 deletions(-)
+> 
+> diff --git a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> index 30e09d9..866f7b3 100644
+> --- a/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> +++ b/drivers/media/pci/solo6x10/solo6x10-v4l2-enc.c
+> @@ -239,8 +239,6 @@ static int solo_enc_on(struct solo_enc_dev *solo_enc)
+>  	if (solo_enc->bw_weight > solo_dev->enc_bw_remain)
+>  		return -EBUSY;
+>  	solo_enc->sequence = 0;
+> -	solo_enc->motion_last_state = false;
+> -	solo_enc->frames_since_last_motion = 0;
+>  	solo_dev->enc_bw_remain -= solo_enc->bw_weight;
+>  
+>  	if (solo_enc->type == SOLO_ENC_TYPE_EXT)
+> @@ -555,36 +553,12 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>  	}
+>  
+>  	if (!ret) {
+> -		bool send_event = false;
+> -
+>  		vb->v4l2_buf.sequence = solo_enc->sequence++;
+>  		vb->v4l2_buf.timestamp.tv_sec = vop_sec(vh);
+>  		vb->v4l2_buf.timestamp.tv_usec = vop_usec(vh);
+>  
+>  		/* Check for motion flags */
+> -		if (solo_is_motion_on(solo_enc)) {
+> -			/* It takes a few frames for the hardware to detect
+> -			 * motion. Once it does it clears the motion detection
+> -			 * register and it takes again a few frames before
+> -			 * motion is seen. This means in practice that when the
+> -			 * motion field is 1, it will go back to 0 for the next
+> -			 * frame. This leads to motion detection event being
+> -			 * sent all the time, which is not what we want.
+> -			 * Instead wait a few frames before deciding that the
+> -			 * motion has halted. After some experimentation it
+> -			 * turns out that waiting for 5 frames works well.
+> -			 */
+> -			if (enc_buf->motion == 0 &&
+> -			    solo_enc->motion_last_state &&
+> -			    solo_enc->frames_since_last_motion++ > 5)
+> -				send_event = true;
+> -			else if (enc_buf->motion) {
+> -				solo_enc->frames_since_last_motion = 0;
+> -				send_event = !solo_enc->motion_last_state;
+> -			}
+> -		}
+> -
+> -		if (send_event) {
+> +		if (solo_is_motion_on(solo_enc) && enc_buf->motion) {
+>  			struct v4l2_event ev = {
+>  				.type = V4L2_EVENT_MOTION_DET,
+>  				.u.motion_det = {
+> @@ -594,8 +568,6 @@ static int solo_enc_fillbuf(struct solo_enc_dev *solo_enc,
+>  				},
+>  			};
+>  
+> -			solo_enc->motion_last_state = enc_buf->motion;
+> -			solo_enc->frames_since_last_motion = 0;
+>  			v4l2_event_queue(solo_enc->vfd, &ev);
+>  		}
+>  	}
+> diff --git a/drivers/media/pci/solo6x10/solo6x10.h b/drivers/media/pci/solo6x10/solo6x10.h
+> index 72017b7..dc503fd 100644
+> --- a/drivers/media/pci/solo6x10/solo6x10.h
+> +++ b/drivers/media/pci/solo6x10/solo6x10.h
+> @@ -159,8 +159,6 @@ struct solo_enc_dev {
+>  	u16			motion_thresh;
+>  	bool			motion_global;
+>  	bool			motion_enabled;
+> -	bool			motion_last_state;
+> -	u8			frames_since_last_motion;
+>  	u16			width;
+>  	u16			height;
+>  
+> 
 
-...I see there are defined for platform data.
-
---PlDVpzlhHY5RV9ko
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUiu1DAAoJECTWi3JdVIfQpdUH/1oAN3Z8QmiSAMUziZoVU2KX
-/EXvCC46RKgbZJN2bfPUN3cPdo7Fshhu3Yp8sMdaRB1zokuLo0cEwhUOl8XzCHz/
-VdSYnP5EI0hxEgj20YBjeKzwiahBfMCjYVMk92vEQYt+tEIazH0AogSyoNpsCGNn
-lqp5DnRxfUXRx/2JNMNp+mVsfJtJzneBfoDFu/Q9aL1FpwF0Lf0fPZDZ1ElAoc+1
-itAjPUaTndL2oZ7nZqg5aI/m6qJu0ekrtNVE6fjeyBY+N0NFMiNFiYWftPSglOq3
-81XMdNukEhDuCqp4bI4armXTtp2lcfAn+3N77UCFZlXOr+ymikREKHeahKhnmEI=
-=6cds
------END PGP SIGNATURE-----
-
---PlDVpzlhHY5RV9ko--
