@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966215AbaLLLNK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 06:13:10 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:57932 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965528AbaLLLNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 06:13:08 -0500
-Date: Fri, 12 Dec 2014 13:10:09 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
-        "'oleg@redhat.com'" <oleg@redhat.com>,
-        "'gorcunov@openvz.org'" <gorcunov@openvz.org>,
-        "'pfeiner@google.com'" <pfeiner@google.com>
-Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
-Message-ID: <20141212111009.GA25426@node.dhcp.inet.fi>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
- <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
- <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
- <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
- <20141208114601.GA28846@node.dhcp.inet.fi>
- <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
- <20141210110556.GA10630@node.dhcp.inet.fi>
- <35FD53F367049845BC99AC72306C23D103E688B31406@CNBJMBX05.corpusers.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B31406@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+	id S966285AbaLLLQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 06:16:49 -0500
+Received: from smtprelay0118.hostedemail.com ([216.40.44.118]:59416 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S966236AbaLLLQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 06:16:48 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3653:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:6261:10004:10400:10848:11232:11658:11914:12043:12517:12519:12679:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spark70_f647a31343a
+X-Filterd-Recvd-Size: 2005
+Message-ID: <1418383004.18092.46.camel@perches.com>
+Subject: Re: [PATCH 1/3] checkpatch: Check for use of disallowed macros
+From: Joe Perches <joe@perches.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: linux-kernel@vger.kernel.org
+Date: Fri, 12 Dec 2014 03:16:44 -0800
+In-Reply-To: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1418381488-25123-1-git-send-email-linux@rasmusvillemoes.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 09:59:15AM +0800, Wang, Yalin wrote:
-> > -----Original Message-----
-> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
-> > Sent: Wednesday, December 10, 2014 7:06 PM
-> > To: Wang, Yalin
-> > Cc: 'Andrew Morton'; 'Konstantin Khlebnikov'; 'linux-
-> > kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
-> > kernel@lists.infradead.org'; 'n-horiguchi@ah.jp.nec.com'; 'oleg@redhat.com';
-> > 'gorcunov@openvz.org'; 'pfeiner@google.com'
-> > Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
-> > 
-> > On Wed, Dec 10, 2014 at 03:22:21PM +0800, Wang, Yalin wrote:
-> > > smaps_pte_entry() doesn't ignore zero_huge_page, but it ignore
-> > > zero_page, because vm_normal_page() will ignore it. We remove
-> > > vm_normal_page() call, because walk_page_range() have ignore VM_PFNMAP
-> > > vma maps, it's safe to just use pfn_valid(), so that we can also
-> > > consider zero_page to be a valid page.
-> > 
-> > We fixed huge zero page accounting in smaps recentely. See mm tree.
-> > 
-> Hi 
-> I can't find the git, could you send me a link?
+On Fri, 2014-12-12 at 11:51 +0100, Rasmus Villemoes wrote:
+> Since fe7c36c7 ("Makefile: Build with -Werror=date-time if the
+> compiler supports it"), use of __DATE__, __TIME__, __TIMESTAMP__ has
+> been disallowed. This hasn't prevented a few new users from creeping
+> in. Make checkpatch complain.
+[]
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> @@ -3008,6 +3008,12 @@ sub process {
+>  		$line =~ s@//.*@@;
+>  		$opline =~ s@//.*@@;
+>  
+> +
+> +# Use of __DATE__, __TIME__, __TIMESTAMP__ is not allowed
+> +		if ($line =~ m/\b__(?:DATE|TIME|TIMESTAMP)__\b/) {
+> +		    ERROR("DATETIME", "Do not use the macros __DATE__, __TIME__ and __TIMESTAMP__\n" . $herecurr)
 
-http://git.cmpxchg.org/cgit.cgi/linux-mmotm.git/
+I'd probably add that adjacent to the existing __FUNCTION__
+test near line 5000 and make the test show the specific macro
+used.
 
-or just take linux-next.
+Maybe add __LINE__ and __FILE__ as a separate --strict test too.
 
-The fix is already in Linus' tree.
+Also the error message should should show the specific macro and
+if __DATE__ and __TIME__ are on the same line, the error should
+be emitted twice.
 
--- 
- Kirill A. Shutemov
+Maybe:
+		while ($line =~ /\b(__(?:DATE|TIME|TIMESTAMP)__)\b/g) {
+			ERROR("DATETIME",
+			      "Do not use the $1 macro\n" . $herecurr);
+		}
+ 
+
