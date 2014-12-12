@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966575AbaLLGzq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:55:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51772 "EHLO
+	id S966559AbaLLGzp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:55:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51754 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758767AbaLLGQy (ORCPT
+	by vger.kernel.org with ESMTP id S1758717AbaLLGQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:54 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chuck Lever" <chuck.lever@oracle.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.731325699@decadent.org.uk>
+Message-ID: <lsq.1418364865.561091812@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 140/164] sunrpc: fix byte-swapping of displayed XID
+Subject: [PATCH 3.2 138/164] USB: keyspan: fix overrun-error reporting
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,29 +30,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 71efecb3f58c8c7a15f6135e3f9b39d1e3d3fae3 upstream.
+commit 855515a6d3731242d85850a206f2ec084c917338 upstream.
 
-xprt_lookup_rqst() and bc_send_request() display a byte-swapped XID,
-but receive_cb_reply() does not.
+Fix reporting of overrun errors, which are not associated with a
+character. Instead insert a null character and report only once.
 
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
+[bwh: Backported to 3.2:
+ - s/\&port->port/tty/
+ - Adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/sunrpc/svcsock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1062,7 +1062,7 @@ static int receive_cb_reply(struct svc_s
- 			"%s: Got unrecognized reply: "
- 			"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
- 			__func__, ntohl(calldir),
--			bc_xprt, xid);
-+			bc_xprt, ntohl(xid));
- 		return -EAGAIN;
- 	}
- 
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -437,12 +437,11 @@ static void	usa26_indat_callback(struct
+ 		if ((data[0] & 0x80) == 0) {
+ 			/* no errors on individual bytes, only
+ 			   possible overrun err */
+-			if (data[0] & RXERROR_OVERRUN)
+-				err = TTY_OVERRUN;
+-			else
+-				err = 0;
++			if (data[0] & RXERROR_OVERRUN) {
++				tty_insert_flip_char(tty, 0, TTY_OVERRUN);
++			}
+ 			for (i = 1; i < urb->actual_length ; ++i)
+-				tty_insert_flip_char(tty, data[i], err);
++				tty_insert_flip_char(tty, data[i], TTY_NORMAL);
+ 		} else {
+ 			/* some bytes had errors, every byte has status */
+ 			dbg("%s - RX error!!!!", __func__);
+@@ -982,13 +981,13 @@ static void usa90_indat_callback(struct
+ 			if ((data[0] & 0x80) == 0) {
+ 				/* no errors on individual bytes, only
+ 				   possible overrun err*/
+-				if (data[0] & RXERROR_OVERRUN)
+-					err = TTY_OVERRUN;
+-				else
+-					err = 0;
++				if (data[0] & RXERROR_OVERRUN) {
++					tty_insert_flip_char(tty, 0,
++							     TTY_OVERRUN);
++				}
+ 				for (i = 1; i < urb->actual_length ; ++i)
+ 					tty_insert_flip_char(tty, data[i],
+-									err);
++							     TTY_NORMAL);
+ 			}  else {
+ 			/* some bytes had errors, every byte has status */
+ 				dbg("%s - RX error!!!!", __func__);
 
