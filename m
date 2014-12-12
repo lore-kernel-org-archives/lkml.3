@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299AbaLLK1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:27:52 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:53740 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915AbaLLK1u (ORCPT
+	id S1759393AbaLLKcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:32:01 -0500
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:64302 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758149AbaLLKb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:27:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk>
-References: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk>
-From: Guan Xin <guanx.bac@gmail.com>
-Date: Fri, 12 Dec 2014 11:27:08 +0100
-Message-ID: <CANeMGR5YJKwJtK5RKkz5fJAn+F1x27f5jmqbyFz8ustqhGz2=w@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
-To: Phillip Lougher <phillip@squashfs.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        texstar@gmail.com, martin@mvath.de, Bruno Wolff III <bruno@wolff.to>,
-        dave@vasilevsky.ca, szycha@gmail.com, blyons@students.naropa.edu,
-        tokiclover@gmail.com, afm404@gmail.com, hugochevrain@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Dec 2014 05:31:59 -0500
+Message-ID: <1418380316.5756.37.camel@x220>
+Subject: Re: linux-next: Tree for Dec 12
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 12 Dec 2014 11:31:56 +0100
+In-Reply-To: <20141212210449.7f460bb1@canb.auug.org.au>
+References: <20141212183518.06e3803d@canb.auug.org.au>
+	 <1418377757.5756.24.camel@x220> <20141212210449.7f460bb1@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Dec 2014 10:31:56.0940 (UTC) FILETIME=[DAB864C0:01D015F6]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philip,
+On Fri, 2014-12-12 at 21:04 +1100, Stephen Rothwell wrote:
+> That patch has been in linux-next since Dec 3 as commit 77a4494388ab in
+> Andrew's patch set (and maybe earlier).
 
-Thank you for your work on squashfs and your persistent effort on mainlining
-squashfs-lz4 support!
+Not earlier. Commit 77a4494388ab debuted in next-20141203:
+        $ git tag --contains 77a4494388ab
+        next-20141203
+        next-20141204
+        next-20141205
+        next-20141208
+        next-20141209
+        next-20141210
+        next-20141211
+        next-20141212
+        
+I missed that commit. But then again it never occurred to me that a
+Kconfig symbol would be added and removed in one series. And, obviously,
+grepping for INIT_FALLBACK didn't show anything in linux-next before
+today (the oldest tree I checked was next-20141201, after which I lost
+interest in going back any further). 
 
-I've been using squashfs with lz4 compression (together with aufs by Okajima)
-for my desktop, laptops, home router and bluetooth music player for about
-half a year. There was not a single issue. All I got were reduced latency
-compared to lzo compression, and drastically increased compression speed.
-The later is important to me because my application requires re-mksquashfs of
-the whole system in order to make software updates permanent.
+>   However, also in Adnrew's
+> patch set is another patch ("init: remove CONFIG_INIT_FALLBACK") that
+> then removes CONFIG_INIT_FALLBACK.  There is a conflict because the
+> first has gone into Linus' tree today (as commit 6ef4536e2f19), but the
+> second has not (I don't know why not).
+> 
+> Hmmm, I would have expected the Kconfig entry to be removed as well,
+> but either I missed that, or git is not as clever as I expect it to be.
+> 
+> > Anyhow, I'm sure this all will be sorted out in due time.
+> 
+> I hope so.
 
-lz4 support (especially with -Xhc) is not only helpful, but also a
-valuable addition
-to squashfs.
+I won't be bothering (Andrew and) you again about this. Unless sorting
+this out takes rather long, that is.
 
-Regards,
-Guan
+Thanks,
+
+
+Paul Bolle
+
