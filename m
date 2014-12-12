@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaLLVoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:44:21 -0500
-Received: from mail.ispras.ru ([83.149.199.45]:56046 "EHLO mail.ispras.ru"
+	id S1751974AbaLLVqC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:46:02 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59884 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751161AbaLLVoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:44:19 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        Fariya Fatima <fariyaf@gmail.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] rsi: fix memory leak in rsi_load_ta_instructions()
-Date: Sat, 13 Dec 2014 00:43:55 +0300
-Message-Id: <1418420635-23869-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.9.1
+	id S1751132AbaLLVqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 16:46:00 -0500
+Date: Fri, 12 Dec 2014 22:45:55 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        x86@kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Joerg Roedel <joro@8bytes.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Yinghai Lu <yinghai@kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: Status of tip/x86/apic
+Message-ID: <20141212214555.GI30699@pd.tnic>
+References: <alpine.DEB.2.11.1412121539300.16494@nanos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.11.1412121539300.16494@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory allocated by kmemdup() in rsi_load_ta_instructions() is leaked.
-But duplication of firmware data here is useless,
-so the patch removes kmemdup() at all.
+On Fri, Dec 12, 2014 at 09:35:14PM +0100, Thomas Gleixner wrote:
+>       To provide a proper translation into pretty printed values we
+>       can do the following:
+> 
+>        Create a new section for storing such data and have a data
+>        structure there which describes the content of the buffer. That
+>        section goes into a seperate file and not linked into the
+>        kernel binary. Simple enough for tools to pick up and for bug
+>        reporters to use/provide. If the stupid file is not available
+>        we still can recreate it from source and translate the hex
+>        dump.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+So maybe we don't need to add that section at all but the script which
+parses the buffer should recreate that file simply.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/wireless/rsi/rsi_91x_sdio_ops.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+> 	And in the most cases the pure hexdump will be sufficient
+>        for the people who need actually to look at this.
+> 
+>    2) Proper trace point support so we can actually track allocation
+>       and the hardware access at the various domain levels because
+>       some of these issues cannot be decoded by looking at a state
+>       snapshot in debugfs. With some of them we even can't access
+>       debugfs at all.
+> 
+>       Though one issue with that is, that for the early boot process
+>       there is no way to store that information as the tracer gets
+>       enabled way after init_IRQ(). But there is no reason why the
+>       tracer could not be enabled before that. All it needs is a
+>       working memory allocator. Steven?
+> 
+>       Now there is another class of problems which might be hard to
+>       debug. When the machine just boots into a hang, so we dont get a
+>       ftrace output neither from an oops nor from a console. It would
+>       be nice if we could have a command line option which prints
+>       enabled trace points via (early_)printk. That would avoid
+>       sending out ad hoc printk debug patches which will basically
+>       provide the same information as the trace_points. That would be
+>       useful for other hard to debug boot hangs as well. Steven?
 
-diff --git a/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c b/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
-index 4834a9abc171..b6cc9ff47fc2 100644
---- a/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
-+++ b/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
-@@ -172,7 +172,6 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
- 		(struct rsi_91x_sdiodev *)adapter->rsi_dev;
- 	u32 len;
- 	u32 num_blocks;
--	const u8 *fw;
- 	const struct firmware *fw_entry = NULL;
- 	u32 block_size = dev->tx_blk_size;
- 	int status = 0;
-@@ -201,7 +200,6 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
- 		return status;
- 	}
- 
--	fw = kmemdup(fw_entry->data, fw_entry->size, GFP_KERNEL);
- 	len = fw_entry->size;
- 
- 	if (len % 4)
-@@ -212,7 +210,7 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
- 	rsi_dbg(INIT_ZONE, "%s: Instruction size:%d\n", __func__, len);
- 	rsi_dbg(INIT_ZONE, "%s: num blocks: %d\n", __func__, num_blocks);
- 
--	status = rsi_copy_to_card(common, fw, len, num_blocks);
-+	status = rsi_copy_to_card(common, fw_entry->data, len, num_blocks);
- 	release_firmware(fw_entry);
- 	return status;
- }
+Actually, I've been thinking about how a such functionality will be
+very much useful for tracing other stuff too. Enable tracepoints on the
+cmdline and then catch output on serial console. This would be very cool
+feature for general debugging too.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
