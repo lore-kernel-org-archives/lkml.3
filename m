@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030366AbaLLNwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:52:32 -0500
-Received: from mga01.intel.com ([192.55.52.88]:3535 "EHLO mga01.intel.com"
+	id S1030381AbaLLNww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:52:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:50123 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968138AbaLLNur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:50:47 -0500
+	id S968116AbaLLNuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669107"
+   d="scan'208";a="636669095"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 18/22] perf report: Add Instruction Tracing support
-Date: Fri, 12 Dec 2014 15:48:05 +0200
-Message-Id: <1418392089-5568-19-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 17/22] perf script: Always allow fields 'addr' and 'cpu' for itrace
+Date: Fri, 12 Dec 2014 15:48:04 +0200
+Message-Id: <1418392089-5568-18-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,104 +27,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for decoding an Instruction Trace.
+If a file contains Instruction Tracing data then always allow
+fields 'addr' and 'cpu' to be selected as options for perf
+script.  This is necessary because Instruction Trace decoding
+may synthesize events with that information.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/Documentation/perf-report.txt | 28 ++++++++++++++++++++++++++++
- tools/perf/builtin-report.c              | 12 ++++++++++++
- 2 files changed, 40 insertions(+)
+ tools/perf/builtin-script.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index dd7cccd..835d1e0 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -318,6 +318,34 @@ OPTIONS
- --header-only::
- 	Show only perf.data header (forces --stdio).
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index dbffd00..8976d9b 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -147,9 +147,10 @@ static const char *output_field2str(enum perf_output_field field)
  
-+-Z::
-+--itrace::
-+	Options for decoding Instruction Tracing data. The options are:
-+
-+		i	synthesize instructions events
-+		b	synthesize branches events
-+		c	synthesize branches events (calls only)
-+		r	synthesize branches events (returns only)
-+		e	synthesize error events
-+		d	create a debug log
-+		g	synthesize a call chain for instructions events
-+
-+	The default is all events i.e. the same as -Zibe
-+
-+	In addition, the period (default 1000) for instructions events can be
-+	specified in units of:
-+
-+		i	instructions (default)
-+		t	ticks
-+		ms	milliseconds
-+		us	microseconds
-+		ns	nanoseconds
-+
-+	Also the call chain size (default 16, max. 1024) for instructions
-+	events can be specified.
-+
-+	To disable decoding entirely, use --no-itrace.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-annotate[1]
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3936760..0064db8 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -36,6 +36,8 @@
- #include "util/data.h"
- #include "arch/common.h"
+ #define PRINT_FIELD(x)  (output[attr->type].fields & PERF_OUTPUT_##x)
  
-+#include "util/itrace.h"
-+
- #include <dlfcn.h>
- #include <linux/bitmap.h>
- 
-@@ -573,6 +575,7 @@ parse_percent_limit(const struct option *opt, const char *str,
- int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+-static int perf_evsel__check_stype(struct perf_evsel *evsel,
+-				   u64 sample_type, const char *sample_msg,
+-				   enum perf_output_field field)
++static int perf_evsel__do_check_stype(struct perf_evsel *evsel,
++				      u64 sample_type, const char *sample_msg,
++				      enum perf_output_field field,
++				      bool allow_user_set)
  {
- 	struct perf_session *session;
-+	struct itrace_synth_opts itrace_synth_opts = {0};
- 	struct stat st;
- 	bool has_br_stack = false;
- 	int branch_mode = -1;
-@@ -595,6 +598,10 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.attr		 = perf_event__process_attr,
- 			.tracing_data	 = perf_event__process_tracing_data,
- 			.build_id	 = perf_event__process_build_id,
-+			.id_index	 = perf_event__process_id_index,
-+			.itrace_info	 = perf_event__process_itrace_info,
-+			.itrace		 = perf_event__process_itrace,
-+			.itrace_error	 = perf_event__count_itrace_error,
- 			.ordered_events	 = true,
- 			.ordering_requires_timestamps = true,
- 		},
-@@ -701,6 +708,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
- 		     "how to display percentage of filtered entries", parse_filter_percentage),
-+	OPT_CALLBACK_OPTARG('Z', "itrace", &itrace_synth_opts, NULL, "opts",
-+			    "Instruction Tracing options",
-+			    itrace_parse_synth_opts),
- 	OPT_END()
- 	};
- 	struct perf_data_file file = {
-@@ -745,6 +755,8 @@ repeat:
- 					       report.queue_size);
+ 	struct perf_event_attr *attr = &evsel->attr;
+ 	int type = attr->type;
+@@ -159,6 +160,8 @@ static int perf_evsel__check_stype(struct perf_evsel *evsel,
+ 		return 0;
+ 
+ 	if (output[type].user_set) {
++		if (allow_user_set)
++			return 0;
+ 		evname = perf_evsel__name(evsel);
+ 		pr_err("Samples for '%s' event do not have %s attribute set. "
+ 		       "Cannot print '%s' field.\n",
+@@ -176,10 +179,21 @@ static int perf_evsel__check_stype(struct perf_evsel *evsel,
+ 	return 0;
+ }
+ 
++static int perf_evsel__check_stype(struct perf_evsel *evsel,
++				   u64 sample_type, const char *sample_msg,
++				   enum perf_output_field field)
++{
++	return perf_evsel__do_check_stype(evsel, sample_type, sample_msg, field,
++					  false);
++}
++
+ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 				  struct perf_session *session)
+ {
+ 	struct perf_event_attr *attr = &evsel->attr;
++	bool allow_user_set;
++
++	allow_user_set = perf_header__has_feat(&session->header, HEADER_ITRACE);
+ 
+ 	if (PRINT_FIELD(TRACE) &&
+ 		!perf_session__has_traces(session, "record -R"))
+@@ -192,8 +206,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
  	}
  
-+	session->itrace_synth_opts = &itrace_synth_opts;
-+
- 	report.session = session;
+ 	if (PRINT_FIELD(ADDR) &&
+-		perf_evsel__check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
+-					PERF_OUTPUT_ADDR))
++		perf_evsel__do_check_stype(evsel, PERF_SAMPLE_ADDR, "ADDR",
++					   PERF_OUTPUT_ADDR, allow_user_set))
+ 		return -EINVAL;
  
- 	has_br_stack = perf_header__has_feat(&session->header,
+ 	if (PRINT_FIELD(SYM) && !PRINT_FIELD(IP) && !PRINT_FIELD(ADDR)) {
+@@ -230,8 +244,8 @@ static int perf_evsel__check_attr(struct perf_evsel *evsel,
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(CPU) &&
+-		perf_evsel__check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
+-					PERF_OUTPUT_CPU))
++		perf_evsel__do_check_stype(evsel, PERF_SAMPLE_CPU, "CPU",
++					   PERF_OUTPUT_CPU, allow_user_set))
+ 		return -EINVAL;
+ 
+ 	if (PRINT_FIELD(PERIOD) &&
 -- 
 1.9.1
 
