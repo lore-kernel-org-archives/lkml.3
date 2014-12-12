@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965345AbaLLIqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:46:35 -0500
-Received: from mga01.intel.com ([192.55.52.88]:17287 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933349AbaLLIqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:46:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,561,1413270000"; 
-   d="scan'208";a="646543957"
-Message-ID: <548AAB67.9050005@linux.intel.com>
-Date: Fri, 12 Dec 2014 16:46:31 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S965434AbaLLIqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:46:49 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:39337 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965351AbaLLIqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 03:46:47 -0500
+Date: Fri, 12 Dec 2014 09:46:36 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        paulmck@linux.vnet.ibm.com, peterz@infradead.org, bp@suse.de,
+        jkosina@suse.cz
+Subject: Re: [PATCH v4] CPU hotplug: active_writer not woken up in some
+ cases - deadlock
+Message-ID: <20141212094636.754ab1f8@thinkpad-w530>
+In-Reply-To: <20141210175055.GA11802@redhat.com>
+References: <1418217721-42919-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141210175055.GA11802@redhat.com>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [patch 4/4] acpi: ioapic: Respect the resource flags
-References: <20141211191853.613107396@linutronix.de> <20141211193112.813391696@linutronix.de> <CAE9FiQV4jArUDGuhb3o2BhiVGcGxSXhADU+5=NsdqJGQOo2oJQ@mail.gmail.com> <alpine.DEB.2.11.1412120847400.16494@nanos>
-In-Reply-To: <alpine.DEB.2.11.1412120847400.16494@nanos>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121208-0009-0000-0000-0000025A682A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/12 15:53, Thomas Gleixner wrote:
-> On Thu, 11 Dec 2014, Yinghai Lu wrote:
->> On Thu, Dec 11, 2014 at 11:48 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->>> +static inline bool is_valid_mem_resource(struct resource *res)
->>> +{
->>> +       return !(res->flags & IORESOURCE_DISABLED) &&
->>> +               (res->flags & IORESOURCE_MEM);
->>> +}
->>> +
->> There is minor problem about mem pref handling, original code will ignore them.
-> 
-> Bah. I missed that in that well documented function...
-> 
->> with this patch will let it follow through.
->>
->> should change is_valid_mem_resource to is_valid_mem_nonpref_resource()...
->>
->> +static inline bool is_valid_mem_nonpref_resource(struct resource *res)
->>  {
->>         return !(res->flags & IORESOURCE_DISABLED) &&
->> -               (res->flags & IORESOURCE_MEM);
->> +               (res->flags & IORESOURCE_MEM) &&
->> +               !(res->flags & IORESOURCE_PREFETCH);
->>  }
-> 
-> Unfortunately that does not help, because nothing sets the
-> IORESOURCE_PREFETCH flag. Will fix it proper.
-> 
-> I still have no explanation why the translation offset needs to be
-> applied here.
-Hi Thomas,
-	I have read related section in ACPI spec, seems the addition
-of translation_offset is redundant here.
 
-Quotation from ACPI spec 5a, 6.4.3.5.1
-For bridges that translate addresses across the bridge, this is the
-offset that must be added to the address on the secondary side to
-obtain the address on the primary side. Non-bridge devices must list
-0 for all Address Translation offset bits.
-
-Quotation from ACPI spec 5, 9.17 I/O APIC Device:
-It must also contain a _CRS object that reports the base address of the
-I/O APIC device. The _CRS object is required to contain only one
-resource, a memory resource pointing to the I/O APIC register base.
-
-IO APIC is not a bridge, so translation_offset should always be zero.
-Thanks!
-Gerry
-
+> This is subjective, but how about
 > 
-> Thanks,
+> 	static bool xxx(void)
+> 	{
+> 		mutex_lock(&cpu_hotplug.lock);
+> 		if (atomic_read(&cpu_hotplug.refcount) == 0)
+> 			return true;
+> 		mutex_unlock(&cpu_hotplug.lock);
+> 		return false;
+> 	}
 > 
-> 	tglx
+> 	void cpu_hotplug_begin(void)
+> 	{
+> 		cpu_hotplug.active_writer = current;
 > 
+> 		cpuhp_lock_acquire();
+> 		wait_event(&cpu_hotplug.wq, xxx());
+> 	}
+> 
+> instead?
+> 
+> Oleg.
+> 
+
+[   50.662459] do not call blocking ops when !TASK_RUNNING; state=2 set at [<000000000017340e>] prepare_to_wait_event+0x7a/0x124
+[   50.662472] ------------[ cut here ]------------
+[   50.662475] WARNING: at kernel/sched/core.c:7301
+[   50.662477] Modules linked in:
+[   50.662482] CPU: 5 PID: 225 Comm: cpu_start_stop. Not tainted 3.18.0+ #59
+[   50.662485] task: 0000000001f94b20 ti: 0000000001ffc000 task.ti: 0000000001ffc000
+...
+
+Looks like your suggestion won't work. We can only set the task to
+TASK_UNINTERRUPTIBLE after taking the lock.
+
+David
+
