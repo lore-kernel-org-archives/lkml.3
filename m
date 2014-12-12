@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030500AbaLLPZo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:25:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:36405 "EHLO mga02.intel.com"
+	id S1030521AbaLLPZt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:25:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:15465 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933814AbaLLPZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:25:39 -0500
+	id S1030502AbaLLPZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 10:25:46 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
-   d="scan'208";a="622807338"
+   d="scan'208";a="622807392"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
@@ -16,9 +16,9 @@ To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
 Cc: eric.auger@linaro.org, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
         Feng Wu <feng.wu@intel.com>
-Subject: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for VT-d PI
-Date: Fri, 12 Dec 2014 23:14:47 +0800
-Message-Id: <1418397300-10870-14-git-send-email-feng.wu@intel.com>
+Subject: [v3 14/26] KVM: Get Posted-Interrupts descriptor address from struct kvm_vcpu
+Date: Fri, 12 Dec 2014 23:14:48 +0800
+Message-Id: <1418397300-10870-15-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
 References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
@@ -26,106 +26,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines a new interface kvm_find_dest_vcpu for
-VT-d PI, which can returns the destination vCPU of the
-interrupt for guests.
-
-Since VT-d PI cannot handle broadcast/multicast interrupt,
-Here we only handle Fixed and Lowest priority interrupts.
-
-The current method of handling guest lowest priority interrtups
-is to use a counter 'apic_arb_prio' for each vCPU, we choose the
-vCPU with smallest 'apic_arb_prio' and then increase it by 1.
-However, for VT-d PI, we cannot re-use this, since we no longer
-have control to 'apic_arb_prio' with posted interrupt direct
-delivery by Hardware.
-
-Here, we introduce a similar way with 'apic_arb_prio' to handle
-guest lowest priority interrtups when VT-d PI is used. Here is the
-ideas:
-- Each vCPU has a counter 'round_robin_counter'.
-- When guests sets an interrupts to lowest priority, we choose
-the vCPU with smallest 'round_robin_counter' as the destination,
-then increase it.
+Define a interface to get PI descriptor address from the vCPU structure.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |  4 ++++
- virt/kvm/irq_comm.c             | 41 +++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+)
+ arch/x86/include/asm/kvm_host.h |  1 +
+ arch/x86/kvm/vmx.c              | 12 ++++++++++++
+ 2 files changed, 13 insertions(+)
 
 diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 6ed0c30..7a41808 100644
+index 7a41808..9b45b78 100644
 --- a/arch/x86/include/asm/kvm_host.h
 +++ b/arch/x86/include/asm/kvm_host.h
-@@ -358,6 +358,7 @@ struct kvm_vcpu_arch {
- 	struct kvm_lapic *apic;    /* kernel irqchip context */
- 	unsigned long apic_attention;
- 	int32_t apic_arb_prio;
-+	int32_t round_robin_counter;
- 	int mp_state;
- 	u64 ia32_misc_enable_msr;
- 	bool tpr_access_reporting;
-@@ -1093,4 +1094,7 @@ int kvm_pmu_read_pmc(struct kvm_vcpu *vcpu, unsigned pmc, u64 *data);
- void kvm_handle_pmu_event(struct kvm_vcpu *vcpu);
- void kvm_deliver_pmi(struct kvm_vcpu *vcpu);
+@@ -772,6 +772,7 @@ struct kvm_x86_ops {
+ 	int (*check_nested_events)(struct kvm_vcpu *vcpu, bool external_intr);
  
-+bool kvm_find_dest_vcpu(struct kvm *kvm, struct kvm_lapic_irq *irq,
-+			struct kvm_vcpu **dest_vcpu);
-+
- #endif /* _ASM_X86_KVM_HOST_H */
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 963b899..f3c5d69 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -317,6 +317,47 @@ out:
- 	return r;
+ 	void (*sched_in)(struct kvm_vcpu *kvm, int cpu);
++	u64 (*get_pi_desc_addr)(struct kvm_vcpu *vcpu);
+ };
+ 
+ struct kvm_arch_async_pf {
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 66ca275..81f239b 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -562,6 +562,11 @@ static inline struct vcpu_vmx *to_vmx(struct kvm_vcpu *vcpu)
+ 	return container_of(vcpu, struct vcpu_vmx, vcpu);
  }
  
-+int kvm_compare_rr_counter(struct kvm_vcpu *vcpu1, struct kvm_vcpu *vcpu2)
++struct pi_desc *vcpu_to_pi_desc(struct kvm_vcpu *vcpu)
 +{
-+	return vcpu1->arch.round_robin_counter -
-+			vcpu2->arch.round_robin_counter;
++	return &(to_vmx(vcpu)->pi_desc);
 +}
 +
-+bool kvm_find_dest_vcpu(struct kvm *kvm, struct kvm_lapic_irq *irq,
-+				struct kvm_vcpu **dest_vcpu)
+ #define VMCS12_OFFSET(x) offsetof(struct vmcs12, x)
+ #define FIELD(number, name)	[number] = VMCS12_OFFSET(name)
+ #define FIELD64(number, name)	[number] = VMCS12_OFFSET(name), \
+@@ -4298,6 +4303,11 @@ static void vmx_sync_pir_to_irr_dummy(struct kvm_vcpu *vcpu)
+ 	return;
+ }
+ 
++static u64 vmx_get_pi_desc_addr(struct kvm_vcpu *vcpu)
 +{
-+	int i, r = 0;
-+	struct kvm_vcpu *vcpu, *dest = NULL;
-+
-+	kvm_for_each_vcpu(i, vcpu, kvm) {
-+		if (!kvm_apic_present(vcpu))
-+			continue;
-+
-+		if (!kvm_apic_match_dest(vcpu, NULL, irq->shorthand,
-+					irq->dest_id, irq->dest_mode))
-+			continue;
-+
-+		if (!kvm_is_dm_lowest_prio(irq)) {
-+			r++;
-+			*dest_vcpu = vcpu;
-+		} else if (kvm_lapic_enabled(vcpu)) {
-+			if (!dest)
-+				dest = vcpu;
-+			else if (kvm_compare_rr_counter(vcpu, dest) < 0)
-+				dest = vcpu;
-+		}
-+	}
-+
-+	if (dest) {
-+		dest->arch.round_robin_counter++;
-+		*dest_vcpu = dest;
-+		return true;
-+	} else if (r == 1)
-+		return true;
-+
-+	return false;
++	return __pa((u64)vcpu_to_pi_desc(vcpu));
 +}
 +
- #define IOAPIC_ROUTING_ENTRY(irq) \
- 	{ .gsi = irq, .type = KVM_IRQ_ROUTING_IRQCHIP,	\
- 	  .u.irqchip = { .irqchip = KVM_IRQCHIP_IOAPIC, .pin = (irq) } }
+ /*
+  * Set up the vmcs's constant host-state fields, i.e., host-state fields that
+  * will not change in the lifetime of the guest.
+@@ -9244,6 +9254,8 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.check_nested_events = vmx_check_nested_events,
+ 
+ 	.sched_in = vmx_sched_in,
++
++	.get_pi_desc_addr = vmx_get_pi_desc_addr,
+ };
+ 
+ static int __init vmx_init(void)
 -- 
 1.9.1
 
