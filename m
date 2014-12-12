@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934161AbaLLSxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 13:53:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47452 "EHLO mail.kernel.org"
+	id S965427AbaLLSzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 13:55:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39657 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932531AbaLLSx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 13:53:29 -0500
-Date: Fri, 12 Dec 2014 15:53:24 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 00/22] perf tools: Introduce an abstraction for
- Instruction Tracing
-Message-ID: <20141212185324.GF9845@kernel.org>
-References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
- <548B1425.7090500@gmail.com>
+	id S932531AbaLLSzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 13:55:33 -0500
+Date: Fri, 12 Dec 2014 13:54:54 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141212185454.GB4716@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+ <1417540493.21136.3@mail.thefacebook.com>
+ <20141203184111.GA32005@redhat.com>
+ <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+ <20141205171501.GA1320@redhat.com>
+ <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+ <1417806247.4845.1@mail.thefacebook.com>
+ <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+ <20141211145408.GB16800@redhat.com>
+ <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <548B1425.7090500@gmail.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Dec 12, 2014 at 09:13:25AM -0700, David Ahern escreveu:
-> On 12/12/14 6:47 AM, Adrian Hunter wrote:
-> >Here is V3 of some more preparatory patches for Intel PT
-> >that introduce an abstraction for Instruction tracing.
+On Thu, Dec 11, 2014 at 01:49:17PM -0800, Linus Torvalds wrote:
 
-> This is an x86-Intel only feature correct? If that is the case then the code
-> should be not compiled for other architectures.
+ > Maybe it's worth it to concentrate on just testing current kernels,
+ > and instead try to limit the triggering some other way. In particular,
+ > you had a trinity run that was *only* testing lsetxattr(). Is that
+ > really *all* that was going on? Obviously trinity will be using
+ > timers, fork, and other things? Can you recreate that lsetxattr thing,
+ > and just try to get as many problem reports as possible from one
+ > particular kernel (say, 3.18, since that should be a reasonable modern
+ > base with hopefully not a lot of other random issues)?
 
+Something that's still making me wonder if it's some kind of hardware
+problem is the non-deterministic nature of this bug.
+Take the example above, by limiting trinity to doing nothing but lsetxattr's.
+Why would the bug sometimes take 3-4 hours to shake out, and another
+run take just 45 minutes.
 
-My view so far is that what has been pushed for inclusion facilitates
-supporting an event stream that is so huge that needs to be mapped
-directly from hardware to tools, that would receive it in a special
-area obtained from perf_mmap(). What comes in those events? In this
-case, this Intel PT stuff, but noving (should) prevent it from being
-used for similar situations for other architectures.
+"different entropy" really shouldn't matter a huge amount here. Even if
+we end up picking different pathnames to pass in, it's the same source
+(proc,sys,/dev).   The other arguments are a crapshoot, but it seems
+unlikely that it would matter hugely whatever values they are.
 
-I wonder if we could somehow rename this from 'itrace' to some other
-more meaningful name given the above understanding of this being just
-a way to directly funnel events from hardware to userspace together with
-perf metadata (PERF_RECORD_FORK, PERF_RECORD_MMAP, etc) + other events.
+If it *is* a kernel bug, it's not going to be in lsetxattr, but rather
+some kind of scheduling or mm related thing that happens in some corner
+case when we're under extreme load. That I can drive up the loadavg with
+lsetxattr is I suspect just a symptom rather than the cause.
 
-In the kernel this was called a "AUX" thing, which I also think is
-vague...
+If enough callers pass in huge 'len' arguments, and an mmap that's big
+enough to cover that size, I could see that giving the kernel a lot of
+work to do.
 
-- Arnaldo
+Another thing I keep thinking is "well, how is this different from
+a forkbomb?". The user account I'm running under has no ulimit set on
+the maximum memory size for eg, but if that were the problem, surely
+I'd be seeing the oom-killer rather than lockups.
+
+	Dave
+
