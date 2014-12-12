@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030582AbaLLQBr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:01:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53407 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030548AbaLLQBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:01:43 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH v2 0/3] page stealing tweaks
-Date: Fri, 12 Dec 2014 17:01:22 +0100
-Message-Id: <1418400085-3622-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
+	id S934973AbaLLQDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:03:42 -0500
+Received: from mail-bn1on0136.outbound.protection.outlook.com ([157.56.110.136]:49328
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932640AbaLLQDk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:03:40 -0500
+From: Muthu Mani <muth@cypress.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        Johan Hovold <johan@kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rajaram Regupathy <rera@cypress.com>
+Subject: RE: [PATCH v4 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C
+ adapter
+Thread-Topic: [PATCH v4 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C
+ adapter
+Thread-Index: AQHQC5xnwybedbuoIU6wm8sokCsmuJx9u42AgAGR50A=
+Date: Fri, 12 Dec 2014 16:03:34 +0000
+Message-ID: <BN1PR06MB06912FCBAAE08006E352008CC600@BN1PR06MB069.namprd06.prod.outlook.com>
+References: <1417241986-17841-1-git-send-email-muth@cypress.com>
+ <20141203110755.GA1039@katana>
+In-Reply-To: <20141203110755.GA1039@katana>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [121.243.89.10]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:CO2PR0601MB725;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:CO2PR0601MB725;
+x-forefront-prvs: 04238CD941
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(51164003)(189002)(52604005)(51704005)(199003)(164054003)(99286002)(122556002)(102836002)(31966008)(54206007)(2656002)(76176999)(76576001)(68736005)(110136001)(50986999)(120916001)(77156002)(74316001)(62966003)(97736003)(33656002)(99396003)(101416001)(21056001)(105586002)(4396001)(92566001)(87936001)(106356001)(54356999)(107046002)(86362001)(106116001)(20776003)(64706001)(66066001)(46102003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO2PR0601MB725;H:BN1PR06MB069.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-o Reorder patch 2 and 3, Cc stable for patch 1
-o Fix tracepoint in patch 1 (Joonsoo Kim)
-o Cleanup in patch 2 (suggested by Minchan Kim)
-o Improved comments and changelogs per Minchan and Mel.
-o Considered /proc/pagetypeinfo in evaluation with 3.18 as baseline
+Hi,
 
-When studying page stealing, I noticed some weird looking decisions in
-try_to_steal_freepages(). The first I assume is a bug (Patch 1), the following
-two patches were driven by evaluation.
+Thanks for reviewing the code.
 
-Testing was done with stress-highalloc of mmtests, using the
-mm_page_alloc_extfrag tracepoint and postprocessing to get counts of how often
-page stealing occurs for individual migratetypes, and what migratetypes are
-used for fallbacks. Arguably, the worst case of page stealing is when
-UNMOVABLE allocation steals from MOVABLE pageblock. RECLAIMABLE allocation
-stealing from MOVABLE allocation is also not ideal, so the goal is to minimize
-these two cases.
+> > +/*
+> > + * It exposes sysfs entries under the i2c adapter for getting the i2c
+> > +transfer
+> > + * status, reset i2c read/write module, get/set nak and stop bits.
+> > + */
+>
+> Yes, I see that. Yet, I don't know why they are needed? The driver should
+> know when to send NAK/STOP. Why expose that to the user? And why do
+> we need a reset? Are there stability problems? What about unloading the
+> module? And what is the use case for reading the status?
 
-For some reason, the first patch increased the number of page stealing events
-for MOVABLE allocations in the former evaluation with 3.17-rc7 + compaction
-patches. In theory these events are not as bad, and the second patch does more
-than just to correct this. In v2 evaluation based on 3.18, the weird result
-was gone completely.
+For repeated start (Sr) scenario, the STOP bit will not be set.
+For dummy write scenario (writing EEPROM address from I2C EEPROM slave), the STOP bit should not be set. But, for normal I2C write, the STOP bit should be set.
+We provide control to user to control when to STOP/NAK to handle different scenarios.
 
-In v2 I also checked if /proc/pagetypeinfo has shown an increase of the number
-of unmovable/reclaimable pageblocks during and after the test, and it didn't.
-The test was repeated 25 times with reboot only after each 5 to show
-longer-term differences in the state of the system, which also wasn't the case.
+The reset is an additional provision given to user to reset the I2C read or write engines. It does not require unloading I2C kernel module.
+The status indicates the information about the last i2c read/write operation.
 
-Extfrag events summed over first iteration after reboot (5 repeats)
-                                                        3.18            3.18            3.18            3.18
-                                                   0-nothp-1       1-nothp-1       2-nothp-1       3-nothp-1
-Page alloc extfrag event                                4547160     4593415     2343438     2198189
-Extfrag fragmenting                                     4546361     4592610     2342595     2196611
-Extfrag fragmenting for unmovable                          5725        9196        5720        1093
-Extfrag fragmenting unmovable placed with movable          3877        4091        1330         859
-Extfrag fragmenting for reclaimable                         770         628         511         616
-Extfrag fragmenting reclaimable placed with movable         679         520         407         492
-Extfrag fragmenting for movable                         4539866     4582786     2336364     2194902
+>
+> > +       if (num > 1) {
+> > +               dev_err(&adapter->dev, "i2c_msg number is > 1\n");
+> > +               return -EIO;
+> > +       }
+>
+> Ouch! Don't you have any repeated start option somewhere?
 
-Compared to v1 this looks like a regression for patch 1 wrt unmovable events,
-but I blame noise and less repeats (it was 10 in v1). On the other hand, the
-the mysterious increase in movable allocation events in v1 is gone (due to
-different baseline?)
+In this version of the driver, we handle only single i2c message. In future iterations, we will add support for multiple i2c messages.
 
-Sum for second iterations since reboot:
-                                                         3.18            3.18            3.18            3.18
-                                                    0-nothp-2       1-nothp-2       2-nothp-2       3-nothp-2
-Page alloc extfrag event                                1960806     1682705      868136      602097
-Extfrag fragmenting                                     1960268     1682153      867624      601608
-Extfrag fragmenting for unmovable                         14373       13973       12275        2158
-Extfrag fragmenting unmovable placed with movable         10465        7233        8814        1821
-Extfrag fragmenting for reclaimable                        2268        1244        1122        1284
-Extfrag fragmenting reclaimable placed with movable        2092        1010         940        1033
-Extfrag fragmenting for movable                         1943627     1666936      854227      598166
+Thanks,
+Muthu
 
-Running stress-highalloc again without reboot is indeed different, and worse
-wrt unmovable allocations (also worse wrt high-order allocation success rates)
-but the patches improve it as well. Similar trend can be observed for further
-iterations after reboot.
-
-
-
-
-
-
-
-Vlastimil Babka (3):
-  mm: when stealing freepages, also take pages created by splitting
-    buddy page
-  mm: always steal split buddies in fallback allocations
-  mm: more aggressive page stealing for UNMOVABLE allocations
-
- include/trace/events/kmem.h |  7 ++--
- mm/page_alloc.c             | 78 ++++++++++++++++++++++++---------------------
- 2 files changed, 45 insertions(+), 40 deletions(-)
-
--- 
-2.1.2
-
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
