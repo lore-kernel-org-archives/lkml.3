@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966227AbaLLGt3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:49:29 -0500
+	id S966257AbaLLGts (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:49:48 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751206AbaLLGsj (ORCPT
+	by vger.kernel.org with ESMTP id S966000AbaLLGsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:39 -0500
+	Fri, 12 Dec 2014 01:48:35 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "K. Y. Srinivasan" <kys@microsoft.com>,
-        "Sitsofe Wheeler" <sitsofe@yahoo.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Don A. Bailey" <donb@securitymouse.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Willy Tarreau" <w@1wt.eu>, "Willem Pinckaers" <willem@lekkertech.net>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.309658305@decadent.org.uk>
+Message-ID: <lsq.1418364865.661237204@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 024/164] Drivers: hv: vmbus: Cleanup hv_post_message()
+Subject: [PATCH 3.2 034/164] Revert "lzo: properly check for overruns"
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,133 +32,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Willy Tarreau <w@1wt.eu>
 
-commit b29ef3546aecb253a5552b198cef23750d56e1e4 upstream.
+commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
 
-Minimize failures in this function by pre-allocating the buffer
-for posting messages. The hypercall for posting the message can fail
-for a number of reasons:
+This reverts commit 206a81c ("lzo: properly check for overruns").
 
-        1. Transient resource related issues
-        2. Buffer alignment
-        3. Buffer cannot span a page boundry
+As analysed by Willem Pinckaers, this fix is still incomplete on
+certain rare corner cases, and it is easier to restart from the
+original code.
 
-We address issues 2 and 3 by preallocating a per-cpu page for the buffer.
-Transient resource related failures are handled by retrying by the callers
-of this function.
-
-This patch is based on the investigation
-done by Dexuan Cui <decui@microsoft.com>.
-
-I would like to thank Sitsofe Wheeler <sitsofe@yahoo.com>
-for reporting the issue and helping in debuggging.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reported-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Reported-by: Willem Pinckaers <willem@lekkertech.net>
+Cc: "Don A. Bailey" <donb@securitymouse.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2:
- - s/NR_CPUS/MAX_NUM_CPUS/
- - Adjust context, indentation
- - Also free the page in hv_synic_init() error path]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hv/hv.c           | 27 +++++++++++++++------------
- drivers/hv/hyperv_vmbus.h |  4 ++++
- 2 files changed, 19 insertions(+), 12 deletions(-)
+ lib/lzo/lzo1x_decompress_safe.c | 62 ++++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 41 deletions(-)
 
---- a/drivers/hv/hv.c
-+++ b/drivers/hv/hv.c
-@@ -158,6 +158,8 @@ int hv_init(void)
- 	memset(hv_context.synic_event_page, 0, sizeof(void *) * MAX_NUM_CPUS);
- 	memset(hv_context.synic_message_page, 0,
- 	       sizeof(void *) * MAX_NUM_CPUS);
-+	memset(hv_context.post_msg_page, 0,
-+	       sizeof(void *) * MAX_NUM_CPUS);
+--- a/lib/lzo/lzo1x_decompress_safe.c
++++ b/lib/lzo/lzo1x_decompress_safe.c
+@@ -19,31 +19,11 @@
+ #include <linux/lzo.h>
+ #include "lzodefs.h"
  
- 	if (!query_hypervisor_presence())
- 		goto cleanup;
-@@ -258,26 +260,18 @@ u16 hv_post_message(union hv_connection_
- 		  enum hv_message_type message_type,
- 		  void *payload, size_t payload_size)
- {
--	struct aligned_input {
--		u64 alignment8;
--		struct hv_input_post_message msg;
--	};
- 
- 	struct hv_input_post_message *aligned_msg;
- 	u16 status;
--	unsigned long addr;
- 
- 	if (payload_size > HV_MESSAGE_PAYLOAD_BYTE_COUNT)
- 		return -EMSGSIZE;
- 
--	addr = (unsigned long)kmalloc(sizeof(struct aligned_input), GFP_ATOMIC);
--	if (!addr)
--		return -ENOMEM;
+-#define HAVE_IP(t, x)					\
+-	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
 -
- 	aligned_msg = (struct hv_input_post_message *)
--			(ALIGN(addr, HV_HYPERCALL_PARAM_ALIGN));
-+			hv_context.post_msg_page[get_cpu()];
- 
- 	aligned_msg->connectionid = connection_id;
-+	aligned_msg->reserved = 0;
- 	aligned_msg->message_type = message_type;
- 	aligned_msg->payload_size = payload_size;
- 	memcpy((void *)aligned_msg->payload, payload, payload_size);
-@@ -285,8 +279,7 @@ u16 hv_post_message(union hv_connection_
- 	status = do_hypercall(HVCALL_POST_MESSAGE, aligned_msg, NULL)
- 		& 0xFFFF;
- 
--	kfree((void *)addr);
+-#define HAVE_OP(t, x)					\
+-	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
+-	 (((t + x) >= t) && ((t + x) >= x)))
 -
-+	put_cpu();
- 	return status;
- }
+-#define NEED_IP(t, x)					\
+-	do {						\
+-		if (!HAVE_IP(t, x))			\
+-			goto input_overrun;		\
+-	} while (0)
+-
+-#define NEED_OP(t, x)					\
+-	do {						\
+-		if (!HAVE_OP(t, x))			\
+-			goto output_overrun;		\
+-	} while (0)
+-
+-#define TEST_LB(m_pos)					\
+-	do {						\
+-		if ((m_pos) < out)			\
+-			goto lookbehind_overrun;	\
+-	} while (0)
++#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
++#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
++#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
++#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
++#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
  
-@@ -347,6 +340,14 @@ void hv_synic_init(void *irqarg)
- 		goto cleanup;
- 	}
- 
-+	hv_context.post_msg_page[cpu] =
-+		(void *)get_zeroed_page(GFP_ATOMIC);
-+
-+	if (hv_context.post_msg_page[cpu] == NULL) {
-+		pr_err("Unable to allocate post msg page\n");
-+		goto cleanup;
-+	}
-+
- 	/* Setup the Synic's message page */
- 	rdmsrl(HV_X64_MSR_SIMP, simp.as_uint64);
- 	simp.simp_enabled = 1;
-@@ -388,6 +389,8 @@ cleanup:
- 
- 	if (hv_context.synic_message_page[cpu])
- 		free_page((unsigned long)hv_context.synic_message_page[cpu]);
-+	if (hv_context.post_msg_page[cpu])
-+		free_page((unsigned long)hv_context.post_msg_page[cpu]);
- 	return;
- }
- 
-@@ -426,4 +429,5 @@ void hv_synic_cleanup(void *arg)
- 
- 	free_page((unsigned long)hv_context.synic_message_page[cpu]);
- 	free_page((unsigned long)hv_context.synic_event_page[cpu]);
-+	free_page((unsigned long)hv_context.post_msg_page[cpu]);
- }
---- a/drivers/hv/hyperv_vmbus.h
-+++ b/drivers/hv/hyperv_vmbus.h
-@@ -485,6 +485,10 @@ struct hv_context {
- 
- 	void *synic_message_page[MAX_NUM_CPUS];
- 	void *synic_event_page[MAX_NUM_CPUS];
-+	/*
-+	 * buffer to post messages to the host.
-+	 */
-+	void *post_msg_page[MAX_NUM_CPUS];
- };
- 
- extern struct hv_context hv_context;
+ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
+ 			  unsigned char *out, size_t *out_len)
+@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
+ 					while (unlikely(*ip == 0)) {
+ 						t += 255;
+ 						ip++;
+-						NEED_IP(1, 0);
++						NEED_IP(1);
+ 					}
+ 					t += 15 + *ip++;
+ 				}
+ 				t += 3;
+ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
++				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+ 					const unsigned char *ie = ip + t;
+ 					unsigned char *oe = op + t;
+ 					do {
+@@ -101,8 +81,8 @@ copy_literal_run:
+ 				} else
+ #endif
+ 				{
+-					NEED_OP(t, 0);
+-					NEED_IP(t, 3);
++					NEED_OP(t);
++					NEED_IP(t + 3);
+ 					do {
+ 						*op++ = *ip++;
+ 					} while (--t > 0);
+@@ -115,7 +95,7 @@ copy_literal_run:
+ 				m_pos -= t >> 2;
+ 				m_pos -= *ip++ << 2;
+ 				TEST_LB(m_pos);
+-				NEED_OP(2, 0);
++				NEED_OP(2);
+ 				op[0] = m_pos[0];
+ 				op[1] = m_pos[1];
+ 				op += 2;
+@@ -139,10 +119,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 31 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			m_pos = op - 1;
+ 			next = get_unaligned_le16(ip);
+@@ -157,10 +137,10 @@ copy_literal_run:
+ 				while (unlikely(*ip == 0)) {
+ 					t += 255;
+ 					ip++;
+-					NEED_IP(1, 0);
++					NEED_IP(1);
+ 				}
+ 				t += 7 + *ip++;
+-				NEED_IP(2, 0);
++				NEED_IP(2);
+ 			}
+ 			next = get_unaligned_le16(ip);
+ 			ip += 2;
+@@ -174,7 +154,7 @@ copy_literal_run:
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+ 		if (op - m_pos >= 8) {
+ 			unsigned char *oe = op + t;
+-			if (likely(HAVE_OP(t, 15))) {
++			if (likely(HAVE_OP(t + 15))) {
+ 				do {
+ 					COPY8(op, m_pos);
+ 					op += 8;
+@@ -184,7 +164,7 @@ copy_literal_run:
+ 					m_pos += 8;
+ 				} while (op < oe);
+ 				op = oe;
+-				if (HAVE_IP(6, 0)) {
++				if (HAVE_IP(6)) {
+ 					state = next;
+ 					COPY4(op, ip);
+ 					op += next;
+@@ -192,7 +172,7 @@ copy_literal_run:
+ 					continue;
+ 				}
+ 			} else {
+-				NEED_OP(t, 0);
++				NEED_OP(t);
+ 				do {
+ 					*op++ = *m_pos++;
+ 				} while (op < oe);
+@@ -201,7 +181,7 @@ copy_literal_run:
+ #endif
+ 		{
+ 			unsigned char *oe = op + t;
+-			NEED_OP(t, 0);
++			NEED_OP(t);
+ 			op[0] = m_pos[0];
+ 			op[1] = m_pos[1];
+ 			op += 2;
+@@ -214,15 +194,15 @@ match_next:
+ 		state = next;
+ 		t = next;
+ #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+-		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
++		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+ 			COPY4(op, ip);
+ 			op += t;
+ 			ip += t;
+ 		} else
+ #endif
+ 		{
+-			NEED_IP(t, 3);
+-			NEED_OP(t, 0);
++			NEED_IP(t + 3);
++			NEED_OP(t);
+ 			while (t > 0) {
+ 				*op++ = *ip++;
+ 				t--;
 
