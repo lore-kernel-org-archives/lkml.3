@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934770AbaLLUK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:10:57 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:53988 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941AbaLLUKz (ORCPT
+	id S934070AbaLLUJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:09:59 -0500
+Received: from smtp-3.sys.kth.se ([130.237.48.192]:60852 "EHLO
+	smtp-3.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037AbaLLUJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:10:55 -0500
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-To: myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] extcon-class: kill duplicate #include
-Date: Fri, 12 Dec 2014 23:10:51 +0300
-Message-ID: <157607795.iq96eyHTpY@wasted.cogentembedded.com>
-Organization: Cogent Embedded Inc.
-User-Agent: KMail/4.14.3 (Linux/3.17.4-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+	Fri, 12 Dec 2014 15:09:56 -0500
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Dec 2014 15:09:55 EST
+X-KTH-Auth: niso [89.233.231.155]
+X-KTH-mail-from: niso@kth.se
+From: =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
+To: linux-kernel@vger.kernel.org, laurent.pinchart@ideasonboard.com,
+        linus.walleij@linaro.org
+Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com,
+        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
+Subject: [PATCH 4/4] ARM: shmobile: emev2-kzm9d: Add PFC information for uart1
+Date: Fri, 12 Dec 2014 21:01:37 +0100
+Message-Id: <1418414497-23741-5-git-send-email-niso@kth.se>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418414497-23741-1-git-send-email-niso@kth.se>
+References: <1418414497-23741-1-git-send-email-niso@kth.se>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f841afb17476f485900bb6213cf93a64a7dc303f (extcon: Implement OF-based
-extcon lookup properly) added #include <linux/of.h> (I didn't even understand
-why), while such #include was already there.  Kill the duplicate #include.
+Configure the pinmux on kzm9d to use the serial connector for uart1.
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-
+Signed-off-by: Niklas Söderlund <niso@kth.se>
 ---
-The patch is against the 'extcon-next' branch of the 'extcon.git' repo.
+ arch/arm/boot/dts/emev2-kzm9d.dts | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
- drivers/extcon/extcon-class.c |    1 -
- 1 file changed, 1 deletion(-)
-
-Index: extcon/drivers/extcon/extcon-class.c
-===================================================================
---- extcon.orig/drivers/extcon/extcon-class.c
-+++ extcon/drivers/extcon/extcon-class.c
-@@ -29,7 +29,6 @@
- #include <linux/fs.h>
- #include <linux/err.h>
- #include <linux/extcon.h>
--#include <linux/of.h>
- #include <linux/slab.h>
- #include <linux/sysfs.h>
- #include <linux/of.h>
+diff --git a/arch/arm/boot/dts/emev2-kzm9d.dts b/arch/arm/boot/dts/emev2-kzm9d.dts
+index 667d323..daf19bf 100644
+--- a/arch/arm/boot/dts/emev2-kzm9d.dts
++++ b/arch/arm/boot/dts/emev2-kzm9d.dts
+@@ -94,3 +94,16 @@
+ 		vdd33a-supply = <&reg_3p3v>;
+ 	};
+ };
++
++&pfc {
++	uart1_pins: uart@e1030000 {
++		renesas,groups = "uart1_rx", "uart1_tx", "uart1_ctsb", "uart1_rtsb";
++		renesas,function = "uart1";
++	};
++};
++
++&uart1 {
++	pinctrl-0 = <&uart1_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
+-- 
+2.1.3
 
