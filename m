@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934173AbaLLGVE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:21:04 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51866 "EHLO
+	id S1759522AbaLLGVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:21:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51873 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759484AbaLLGRR (ORCPT
+	by vger.kernel.org with ESMTP id S1759499AbaLLGRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:17:17 -0500
+	Fri, 12 Dec 2014 01:17:18 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Andreas Dilger" <adilger@dilger.ca>,
+        "Eric Sandeen" <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.127924701@decadent.org.uk>
+Message-ID: <lsq.1418364865.35475982@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 059/164] kernel: add support for gcc 5
+Subject: [PATCH 3.2 057/164] ext4: fix reservation overflow in
+ ext4_da_write_begin
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,94 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 71458cfc782eafe4b27656e078d379a34e472adf upstream.
+commit 0ff8947fc5f700172b37cbca811a38eb9cb81e08 upstream.
 
-We're missing include/linux/compiler-gcc5.h which is required now
-because gcc branched off to v5 in trunk.
+Delalloc write journal reservations only reserve 1 credit,
+to update the inode if necessary.  However, it may happen
+once in a filesystem's lifetime that a file will cross
+the 2G threshold, and require the LARGE_FILE feature to
+be set in the superblock as well, if it was not set already.
 
-Just copy the relevant bits out of include/linux/compiler-gcc4.h,
-no new code is added as of now.
+This overruns the transaction reservation, and can be
+demonstrated simply on any ext4 filesystem without the LARGE_FILE
+feature already set:
 
-This fixes a build error when using gcc 5.
+dd if=/dev/zero of=testfile bs=1 seek=2147483646 count=1 \
+	conv=notrunc of=testfile
+sync
+dd if=/dev/zero of=testfile bs=1 seek=2147483647 count=1 \
+	conv=notrunc of=testfile
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+leads to:
+
+EXT4-fs: ext4_do_update_inode:4296: aborting transaction: error 28 in __ext4_handle_dirty_super
+EXT4-fs error (device loop0) in ext4_do_update_inode:4301: error 28
+EXT4-fs error (device loop0) in ext4_reserve_inode_write:4757: Readonly filesystem
+EXT4-fs error (device loop0) in ext4_dirty_inode:4876: error 28
+EXT4-fs error (device loop0) in ext4_da_write_end:2685: error 28
+
+Adjust the number of credits based on whether the flag is
+already set, and whether the current write may extend past the
+LARGE_FILE limit.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Reviewed-by: Andreas Dilger <adilger@dilger.ca>
+[bwh: Backported to 3.2:
+ - ext4_journal_start() doesn't have a type parameter
+ - Adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/compiler-gcc5.h | 66 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
- create mode 100644 include/linux/compiler-gcc5.h
+ fs/ext4/inode.c | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
---- /dev/null
-+++ b/include/linux/compiler-gcc5.h
-@@ -0,0 +1,66 @@
-+#ifndef __LINUX_COMPILER_H
-+#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
-+#endif
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2409,6 +2409,20 @@ static int ext4_nonda_switch(struct supe
+ 	return 0;
+ }
+ 
++/* We always reserve for an inode update; the superblock could be there too */
++static int ext4_da_write_credits(struct inode *inode, loff_t pos, unsigned len)
++{
++	if (likely(EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++				EXT4_FEATURE_RO_COMPAT_LARGE_FILE)))
++		return 1;
 +
-+#define __used				__attribute__((__used__))
-+#define __must_check			__attribute__((warn_unused_result))
-+#define __compiler_offsetof(a, b)	__builtin_offsetof(a, b)
++	if (pos + len <= 0x7fffffffULL)
++		return 1;
 +
-+/* Mark functions as cold. gcc will assume any path leading to a call
-+   to them will be unlikely.  This means a lot of manual unlikely()s
-+   are unnecessary now for any paths leading to the usual suspects
-+   like BUG(), printk(), panic() etc. [but let's keep them for now for
-+   older compilers]
++	/* We might need to update the superblock to set LARGE_FILE */
++	return 2;
++}
 +
-+   Early snapshots of gcc 4.3 don't support this and we can't detect this
-+   in the preprocessor, but we can live with this because they're unreleased.
-+   Maketime probing would be overkill here.
-+
-+   gcc also has a __attribute__((__hot__)) to move hot functions into
-+   a special section, but I don't see any sense in this right now in
-+   the kernel context */
-+#define __cold			__attribute__((__cold__))
-+
-+#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
-+
-+#ifndef __CHECKER__
-+# define __compiletime_warning(message) __attribute__((warning(message)))
-+# define __compiletime_error(message) __attribute__((error(message)))
-+#endif /* __CHECKER__ */
-+
-+/*
-+ * Mark a position in code as unreachable.  This can be used to
-+ * suppress control flow warnings after asm blocks that transfer
-+ * control elsewhere.
-+ *
-+ * Early snapshots of gcc 4.5 don't support this and we can't detect
-+ * this in the preprocessor, but we can live with this because they're
-+ * unreleased.  Really, we need to have autoconf for the kernel.
-+ */
-+#define unreachable() __builtin_unreachable()
-+
-+/* Mark a function definition as prohibited from being cloned. */
-+#define __noclone	__attribute__((__noclone__))
-+
-+/*
-+ * Tell the optimizer that something else uses this function or variable.
-+ */
-+#define __visible __attribute__((externally_visible))
-+
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-+ * Fixed in GCC 4.8.2 and later versions.
-+ *
-+ * (asm goto is automatically volatile - the naming reflects this.)
-+ */
-+#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-+
-+#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
-+#define __HAVE_BUILTIN_BSWAP32__
-+#define __HAVE_BUILTIN_BSWAP64__
-+#define __HAVE_BUILTIN_BSWAP16__
-+#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
+ static int ext4_da_write_begin(struct file *file, struct address_space *mapping,
+ 			       loff_t pos, unsigned len, unsigned flags,
+ 			       struct page **pagep, void **fsdata)
+@@ -2435,7 +2449,8 @@ retry:
+ 	 * to journalling the i_disksize update if writes to the end
+ 	 * of file which has an already mapped buffer.
+ 	 */
+-	handle = ext4_journal_start(inode, 1);
++	handle = ext4_journal_start(inode,
++				ext4_da_write_credits(inode, pos, len));
+ 	if (IS_ERR(handle)) {
+ 		ret = PTR_ERR(handle);
+ 		goto out;
 
