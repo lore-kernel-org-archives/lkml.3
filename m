@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967803AbaLLM7A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 07:59:00 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:46858 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967589AbaLLM67 (ORCPT
+	id S967831AbaLLNAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:00:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56695 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967589AbaLLNAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 07:58:59 -0500
+	Fri, 12 Dec 2014 08:00:30 -0500
+Date: Fri, 12 Dec 2014 12:59:51 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Alexandru Stan <amstan@chromium.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20141212125951.GE11764@sirena.org.uk>
+References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
+ <20141210235347.GT11764@sirena.org.uk>
+ <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
+ <20141211123106.GU11764@sirena.org.uk>
+ <CAD=FV=U4RFYx9NXOACrXJZK2bKkosyYnmTZRHkXuaSz-FS9kNQ@mail.gmail.com>
+ <20141211170934.GZ11764@sirena.org.uk>
+ <CAD=FV=WBAuF0+BVMG9rp53Zt851Ou0kZ6xgTe9mjmgxyugWteg@mail.gmail.com>
+ <20141212002410.GB11764@sirena.org.uk>
+ <CAD=FV=W1r2MXNHXTRiO1pBPWurvgqq+dSoOPgpSJ_zAbpU7T4Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFz+WH+792=Rhec=X3t8h8jDqFrt-PSNLti6UsQPfMm6PA@mail.gmail.com>
-References: <547ccf74.a5198c0a.25de.26d9@mx.google.com>
-	<CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
-	<20141201230339.GA20487@ret.masoncoding.com>
-	<1417529606.3924.26.camel@maggy.simpson.net>
-	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-	<20141205184808.GA2753@redhat.com>
-	<20141206043719.66a1aec6@as>
-	<CAFrnU35+_kPvOcBv0OWPzJF=X1SGP32gYogw2ZrH54z1Cu6bDg@mail.gmail.com>
-	<CA+55aFz+WH+792=Rhec=X3t8h8jDqFrt-PSNLti6UsQPfMm6PA@mail.gmail.com>
-Date: Fri, 12 Dec 2014 13:58:58 +0100
-Message-ID: <CAFrnU37L6WNsw6PmWiY6Ezic8U9EKOu+rYTvSFiBeKYjHkTZhg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Martin van Es <mrvanes@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UfG5WHkLxnCKLvnH"
+Content-Disposition: inline
+In-Reply-To: <CAD=FV=W1r2MXNHXTRiO1pBPWurvgqq+dSoOPgpSJ_zAbpU7T4Q@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
+ certain voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 6, 2014 at 9:09 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Dec 6, 2014 at 8:22 AM, Martin van Es <mrvanes@gmail.com> wrote:
->>
->> Hope this may help in finding the right direction for this bug?
->
-> If you can reproduce it with your spare J1900 system and could perhaps
-> bisect it there, that would be a huge help.
->
 
-I've finally received the memory I needed to prepare the spare J1900
-and have it now configured as mythfrontend to the DVB-C backend that
-was freezing on 3.17.3. It's been playing liveTV for hours now and is
-still going strong. I'd say the freezes can't be reproduced this way.
-The only difference being the disk I/O that is missing on the
-front-end.
+--UfG5WHkLxnCKLvnH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I will give 3.18 a try on production J1900. Knowing I can go back to
-safety in 3.16.7 won't hurt too much of my reputation I hope.
+On Thu, Dec 11, 2014 at 07:31:43PM -0800, Doug Anderson wrote:
+> On Thu, Dec 11, 2014 at 4:24 PM, Mark Brown <broonie@kernel.org> wrote:
 
-Best regards,
-Martin
--- 
-If 'but' was any useful, it would be a logic operator
+> > I mean the latter - what happens if more than one consumer is trying to
+> > use the regulator?  This is IIRC why _set_voltage_tol() uses the cheap
+> > and nasty implementation it does.
+
+> Ah, I see.  I don't think I've ever encountered a case where there
+> were two consumers for a regulator that actually requested voltages...
+
+> ...but isn't regulator_set_voltage_tol() broken there?  If you have
+> two clients, A and B and a regulator that can go 1.0V to 5.0V in .05V
+> increments:
+
+> A requests 1.8V +/- .1V.  We get 1.8V
+> B requests 1.7V +/- .05V.
+
+> The above could be achievable with a voltage of 1.75V but it won't
+> work with the current regulator_set_voltage_tol() I think.
+
+Yeah, it's not perfect but it'll work most of the time.
+
+> > There's also the potential
+> > performance considerations for the DVS type applications now I think
+> > about it.
+
+> Iterating through voltages is really that slow?  If so, perhaps we
+> could add some caching to keep track of what voltage we actually got
+> last time...  I could also add an optimization to try the exact
+> requested voltage right away...
+
+Applications like DVS get pretty performance sensitive and for a
+regulator with high resolution if you're trying to hit a voltage at the
+top of the range you could be iterating over a hundred or more values.
+Perhaps doing something based on the various factorings out of the
+voltage mapping would do the trick, add a new op for getting to the
+closest voltage?
+
+--UfG5WHkLxnCKLvnH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUiubHAAoJECTWi3JdVIfQCJgH/2ad10vNHIV3RbLAQPwtVb/e
+C7Mv9O19a/rHAaoAKpkSneZtD5cZcx48g3LOW95NTfLyqTiysIcqJ3wK/VgfFgUS
+sGJK8yE5XYatuBv2XJKKQNoGeRDkNdg2XCiAVsORQMunHK/qeLmvY2JYXWY63YWA
+mzBdHqaffdoyHLR+U7wgi7bmcMmBH6bzqfLFNtlex5pjDK7bCVlgRD5qsfnRqt48
+6o3nBJB8kax7PWLpWrEjVMMZ/W6Nb5EtYalMbauchW7VXfQaZa71WlYYj8oAvlB8
+RZTk7X7yX7nXPrB+MDMx9Dvt5OLXlw7U3cIxq4GTXi1zH5MgpXM9+6S3vYFF+6c=
+=5gW+
+-----END PGP SIGNATURE-----
+
+--UfG5WHkLxnCKLvnH--
