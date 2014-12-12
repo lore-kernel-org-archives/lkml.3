@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965813AbaLLGoh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:44:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51775 "EHLO
+	id S1760908AbaLLGoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:44:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51773 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758796AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758842AbaLLGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:55 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andy Lutomirski" <luto@amacapital.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
-Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.529953067@decadent.org.uk>
+CC: akpm@linux-foundation.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "Masoud Sharbiani" <msharbiani@twopensource.com>,
+        "Tomas Henzl" <thenzl@redhat.com>,
+        "James Bottomley" <JBottomley@Parallels.com>
+Date: Fri, 12 Dec 2014 06:14:26 +0000
+Message-ID: <lsq.1418364866.310294764@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 150/164] x86_64, traps: Stop using IST for #SS
+Subject: [PATCH 3.2 161/164] [SCSI] hpsa: fix a race in cmd_free/scsi_done
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,118 +34,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Tomas Henzl <thenzl@redhat.com>
 
-commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
+commit 2cc5bfaf854463d9d1aa52091f60110fbf102a96 upstream.
 
-On a 32-bit kernel, this has no effect, since there are no IST stacks.
+When the driver calls scsi_done and after that frees it's internal
+preallocated memory it can happen that a new job is enqueud before
+the memory is freed. The allocation fails and the message
+"cmd_alloc returned NULL" is shown.
+Patch below fixes it by moving cmd->scsi_done after cmd_free.
 
-On a 64-bit kernel, #SS can only happen in user code, on a failed iret
-to user space, a canonical violation on access via RSP or RBP, or a
-genuine stack segment violation in 32-bit kernel code.  The first two
-cases don't need IST, and the latter two cases are unlikely fatal bugs,
-and promoting them to double faults would be fine.
-
-This fixes a bug in which the espfix64 code mishandles a stack segment
-violation.
-
-This saves 4k of memory per CPU and a tiny bit of code.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - No need to define trace_stack_segment
- - Use the errorentry macro to generate #SS asm code
- - Adjust context
- - Checked that this matches Luis's backport for Ubuntu]
+Signed-off-by: Tomas Henzl <thenzl@redhat.com>
+Acked-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Masoud Sharbiani <msharbiani@twopensource.com>
 ---
---- a/arch/x86/include/asm/page_32_types.h
-+++ b/arch/x86/include/asm/page_32_types.h
-@@ -18,7 +18,6 @@
- #define THREAD_ORDER	1
- #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
+ drivers/scsi/hpsa.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -1126,8 +1126,8 @@ static void complete_scsi_command(struct
+ 	scsi_set_resid(cmd, ei->ResidualCnt);
  
--#define STACKFAULT_STACK 0
- #define DOUBLEFAULT_STACK 1
- #define NMI_STACK 0
- #define DEBUG_STACK 0
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -14,12 +14,11 @@
- #define IRQ_STACK_ORDER 2
- #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 	if (ei->CommandStatus == 0) {
+-		cmd->scsi_done(cmd);
+ 		cmd_free(h, cp);
++		cmd->scsi_done(cmd);
+ 		return;
+ 	}
  
--#define STACKFAULT_STACK 1
--#define DOUBLEFAULT_STACK 2
--#define NMI_STACK 3
--#define DEBUG_STACK 4
--#define MCE_STACK 5
--#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
-+#define DOUBLEFAULT_STACK 1
-+#define NMI_STACK 2
-+#define DEBUG_STACK 3
-+#define MCE_STACK 4
-+#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+@@ -1300,8 +1300,8 @@ static void complete_scsi_command(struct
+ 		dev_warn(&h->pdev->dev, "cp %p returned unknown status %x\n",
+ 				cp, ei->CommandStatus);
+ 	}
+-	cmd->scsi_done(cmd);
+ 	cmd_free(h, cp);
++	cmd->scsi_done(cmd);
+ }
  
- #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
- #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
- 		[ DEBUG_STACK-1			]	= "#DB",
- 		[ NMI_STACK-1			]	= "NMI",
- 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
--		[ STACKFAULT_STACK-1		]	= "#SS",
- 		[ MCE_STACK-1			]	= "#MC",
- #if DEBUG_STKSZ > EXCEPTION_STKSZ
- 		[ N_EXCEPTION_STACKS ...
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1383,7 +1383,7 @@ apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
- 
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
--paranoiderrorentry stack_segment do_stack_segment
-+errorentry stack_segment do_stack_segment
- #ifdef CONFIG_XEN
- zeroentry xen_debug do_debug
- zeroentry xen_int3 do_int3
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -213,24 +213,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "copro
- 		coprocessor_segment_overrun)
- DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
- DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
--#ifdef CONFIG_X86_32
- DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
--#endif
- DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
- 		BUS_ADRALN, 0)
- 
- #ifdef CONFIG_X86_64
- /* Runs on IST stack */
--dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
--{
--	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
--			X86_TRAP_SS, SIGBUS) == NOTIFY_STOP)
--		return;
--	preempt_conditional_sti(regs);
--	do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
--	preempt_conditional_cli(regs);
--}
--
- dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- {
- 	static const char str[] = "double fault";
-@@ -711,7 +699,7 @@ void __init trap_init(void)
- 	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
- 	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
- 	set_intr_gate(X86_TRAP_NP, &segment_not_present);
--	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
-+	set_intr_gate(X86_TRAP_SS, stack_segment);
- 	set_intr_gate(X86_TRAP_GP, &general_protection);
- 	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
- 	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
+ static int hpsa_scsi_detect(struct ctlr_info *h)
 
