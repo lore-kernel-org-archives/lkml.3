@@ -1,295 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759283AbaLLFxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 00:53:18 -0500
-Received: from mail-oi0-f43.google.com ([209.85.218.43]:35562 "EHLO
-	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873AbaLLFxR (ORCPT
+	id S1756253AbaLLGBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:01:50 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50431 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753789AbaLLGBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 00:53:17 -0500
+	Fri, 12 Dec 2014 01:01:49 -0500
+Date: Fri, 12 Dec 2014 06:01:38 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Arthur Marsh <arthur.marsh@internode.on.net>
+Cc: Colin Watson <cjwatson@debian.org>, 772807@bugs.debian.org,
+        linux-kernel@vger.kernel.org, vapier@gentoo.org,
+        Joe Perches <joe@perches.com>
+Subject: Re: Bug#772807: binfmt-support: unable to close
+ /proc/sys/fs/binfmt_misc/register: Invalid argument
+Message-ID: <20141212060138.GC22149@ZenIV.linux.org.uk>
+References: <20141211102439.5047.90481.reportbug@localhost>
+ <20141211104408.GQ3020@riva.ucam.org>
+ <548987B8.8090202@internode.on.net>
+ <20141211124024.GR3020@riva.ucam.org>
+ <548A6D63.3010106@internode.on.net>
 MIME-Version: 1.0
-In-Reply-To: <20141211234005.GA13405@bbox>
-References: <1418218820-4153-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141211234005.GA13405@bbox>
-Date: Fri, 12 Dec 2014 13:53:16 +0800
-Message-ID: <CADAEsF9cZ-JOrKx1_9FCu7_SW19Je938wK_wdy+jdBTehgZiXw@mail.gmail.com>
-Subject: Re: [PATCH] mm/zsmalloc: disclose statistics to debugfs
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <548A6D63.3010106@internode.on.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Minchan
+On Fri, Dec 12, 2014 at 02:51:55PM +1030, Arthur Marsh wrote:
+> 6b899c4e9a049dfca759d990bd53b14f81c3626c is the first bad commit
+> commit 6b899c4e9a049dfca759d990bd53b14f81c3626c
+> Author: Mike Frysinger <vapier@gentoo.org>
+> Date:   Wed Dec 10 15:52:08 2014 -0800
+> 
+>     binfmt_misc: add comments & debug logs
+> 
+>     When trying to develop a custom format handler, the errors returned all
+>     effectively get bucketed as EINVAL with no kernel messages.  The other
+>     errors (ENOMEM/EFAULT) are internal/obvious and basic.  Thus any time a
+>     bad handler is rejected, the developer has to walk the dense code and
+>     try to guess where it went wrong.  Needing to dive into kernel code is
+>     itself a fairly high barrier for a lot of people.
+> 
+>     To improve this situation, let's deploy extensive pr_debug markers at
+>     logical parse points, and add comments to the dense parsing logic.  It
+>     let's you see exactly where the parsing aborts, the string the kernel
+>     received (useful when dealing with shell code), how it translated the
+>     buffers to binary data, and how it will apply the mask at runtime.
 
-2014-12-12 7:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
-> Hello Ganesh,
->
-> On Wed, Dec 10, 2014 at 09:40:20PM +0800, Ganesh Mahendran wrote:
->> As we now talk more and more about the fragmentation of zsmalloc. But
->> we still need to manually add some debug code to see the fragmentation.
->> So, I think we may add the statistics of memory fragmention in zsmalloc
->> and disclose them to debugfs. Then we can easily get and analysis
->> them when adding or developing new feature for zsmalloc.
->>
->> Below entries will be created when a zsmalloc pool is created:
->>     /sys/kernel/debug/zsmalloc/pool-n/obj_allocated
->>     /sys/kernel/debug/zsmalloc/pool-n/obj_used
->>
->> Then the status of objects usage will be:
->>     objects_usage = obj_used / obj_allocated
->>
->
-> I didn't look at the code in detail but It would be handy for developer
-> but not sure we should deliver it to admin so need configurable?
-What kind of configuration do you want?
-I think it is reasonable to expose such information to admin like
-*/sys/kernel/debug/usb/device*
+... and looking at it shows the following garbage:
+                p[-1] = '\0';
+-               if (!e->magic[0])
++               if (p == e->magic)
 
-Or maybe we can enclose these code by DEBUG macro which will be
-defined when CONFIG_ZSMALLOC_DEBUG is selected.
+That code makes no sense whatsoever - if p *was* equal to e->magic, the
+assignment before it would be obviously broken.  And a few lines later we
+have another chunk just like that.
 
->
-> How about making it per-sizeclass information, not per-pool?
-Yes, you are right. Per sizeclass information will be better for
-developers than per pool.
+Moreover, if you look at further context, you'll see that it's
+                e->magic = p;
+                p = scanarg(p, del);
+                if (!p)
+                        sod off
+                p[-1] = '\0';
+                if (p == e->magic)
+			sod off
+Now, that condition could be true only if scanarg(p, del) would return p,
+right?  Let's take a look at scanarg():
+static char *scanarg(char *s, char del)
+{
+        char c;
 
-Is it acceptable to show 256 lines like:
-#cat /sys/kernel/debug/zsmalloc/pool-1/obj_in_classes
-class      obj_allocated     obj_used
-1 ...
-2 ...
-....
-....
-255
+        while ((c = *s++) != del) {
+                if (c == '\\' && *s == 'x') {
+                        s++;  
+                        if (!isxdigit(*s++)) 
+                                return NULL;
+                        if (!isxdigit(*s++))
+                                return NULL;
+                }
+        }
+        return s;
+}
 
-Anyway for developers, these information is more usefull.
+See that s++ in the loop condition?  There's no way in hell it would *not*
+increment s.  If we return non-NULL, we know that c was equal to del *and*
+c is equal to previous_value_of_s[0], i.e. s[-1].  IOW, return value points
+to the byte following the first instance of delimeter starting at the argument.
 
-Thanks!
+And p[-1] = '\0' replaces delimiter with NUL.  IOW, the checks used to be
+correct.  And got buggered.
 
-> So we can rely on the class->lock for the locking rule.
+Subject: unfuck fs/binfmt_misc.c
 
+Undo some of the "prettifying" braindamage.
 
-
->
->> Also we can collect other information and add corresponding entries
->> in debugfs when needed.
->>
->> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
->> ---
->>  mm/zsmalloc.c |  108 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
->>  1 file changed, 104 insertions(+), 4 deletions(-)
->>
->> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
->> index 4d0a063..f682ef9 100644
->> --- a/mm/zsmalloc.c
->> +++ b/mm/zsmalloc.c
->> @@ -168,6 +168,8 @@ enum fullness_group {
->>       ZS_FULL
->>  };
->>
->> +static int zs_pool_num;
->> +
->>  /*
->>   * number of size_classes
->>   */
->> @@ -216,11 +218,19 @@ struct link_free {
->>       void *next;
->>  };
->>
->> +struct zs_stats {
->> +     atomic_long_t pages_allocated;
->> +     u64 obj_allocated;
->> +     u64 obj_used;
->> +};
->> +
->>  struct zs_pool {
->>       struct size_class **size_class;
->>
->>       gfp_t flags;    /* allocation flags used when growing pool */
->> -     atomic_long_t pages_allocated;
->> +
->> +     struct zs_stats stats;
->> +     struct dentry *debugfs_dentry;
->>  };
->>
->>  /*
->> @@ -925,12 +935,84 @@ static void init_zs_size_classes(void)
->>       zs_size_classes = nr;
->>  }
->>
->> +
->> +#ifdef CONFIG_DEBUG_FS
->> +#include <linux/debugfs.h>
->> +
->> +static struct dentry *zs_debugfs_root;
->> +
->> +static int __init zs_debugfs_init(void)
->> +{
->> +     if (!debugfs_initialized())
->> +             return -ENODEV;
->> +
->> +     zs_debugfs_root = debugfs_create_dir("zsmalloc", NULL);
->> +     if (!zs_debugfs_root)
->> +             return -ENOMEM;
->> +
->> +     return 0;
->> +}
->> +
->> +static void __exit zs_debugfs_exit(void)
->> +{
->> +     debugfs_remove_recursive(zs_debugfs_root);
->> +}
->> +
->> +static int zs_pool_debugfs_create(struct zs_pool *pool, int index)
->> +{
->> +     char name[10];
->> +     int ret = 0;
->> +
->> +     if (!zs_debugfs_root) {
->> +             ret = -ENODEV;
->> +             goto out;
->> +     }
->> +
->> +     snprintf(name, sizeof(name), "pool-%d", index);
->> +     pool->debugfs_dentry = debugfs_create_dir(name, zs_debugfs_root);
->> +     if (!pool->debugfs_dentry) {
->> +             ret = -ENOMEM;
->> +             goto out;
->> +     }
->> +
->> +     debugfs_create_u64("obj_allocated", S_IRUGO, pool->debugfs_dentry,
->> +                     &pool->stats.obj_allocated);
->> +     debugfs_create_u64("obj_used", S_IRUGO, pool->debugfs_dentry,
->> +                     &pool->stats.obj_used);
->> +
->> +out:
->> +     return ret;
->> +}
->> +
->> +static void zs_pool_debugfs_destroy(struct zs_pool *pool)
->> +{
->> +     debugfs_remove_recursive(pool->debugfs_dentry);
->> +}
->> +
->> +#else
->> +static int __init zs_debugfs_init(void)
->> +{
->> +     return 0;
->> +}
->> +
->> +static void __exit zs_debugfs_exit(void) { }
->> +
->> +static int zs_pool_debugfs_create(struct zs_pool *pool, int index)
->> +{
->> +     return 0;
->> +}
->> +
->> +static void zs_pool_debugfs_destroy(struct zs_pool *pool) {}
->> +#endif
->> +
->>  static void __exit zs_exit(void)
->>  {
->>  #ifdef CONFIG_ZPOOL
->>       zpool_unregister_driver(&zs_zpool_driver);
->>  #endif
->>       zs_unregister_cpu_notifier();
->> +
->> +     zs_debugfs_exit();
->>  }
->>
->>  static int __init zs_init(void)
->> @@ -947,6 +1029,10 @@ static int __init zs_init(void)
->>  #ifdef CONFIG_ZPOOL
->>       zpool_register_driver(&zs_zpool_driver);
->>  #endif
->> +
->> +     if (zs_debugfs_init())
->> +             pr_warn("debugfs initialization failed\n");
->> +
->>       return 0;
->>  }
->>
->> @@ -1039,6 +1125,11 @@ struct zs_pool *zs_create_pool(gfp_t flags)
->>
->>       pool->flags = flags;
->>
->> +     zs_pool_num++;
->> +
->> +     if (zs_pool_debugfs_create(pool, zs_pool_num))
->> +             pr_warn("zs pool debugfs initialization failed\n");
->> +
->>       return pool;
->>
->>  err:
->> @@ -1071,6 +1162,9 @@ void zs_destroy_pool(struct zs_pool *pool)
->>       }
->>
->>       kfree(pool->size_class);
->> +     zs_pool_debugfs_destroy(pool);
->> +     zs_pool_num--;
->> +
->>       kfree(pool);
->>  }
->>  EXPORT_SYMBOL_GPL(zs_destroy_pool);
->> @@ -1110,7 +1204,9 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->>
->>               set_zspage_mapping(first_page, class->index, ZS_EMPTY);
->>               atomic_long_add(class->pages_per_zspage,
->> -                                     &pool->pages_allocated);
->> +                                     &pool->stats.pages_allocated);
->> +             pool->stats.obj_allocated += get_maxobj_per_zspage(class->size,
->> +                             class->pages_per_zspage);
->>               spin_lock(&class->lock);
->>       }
->>
->> @@ -1125,6 +1221,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
->>       kunmap_atomic(vaddr);
->>
->>       first_page->inuse++;
->> +     pool->stats.obj_used++;
->>       /* Now move the zspage to another fullness group, if required */
->>       fix_fullness_group(pool, first_page);
->>       spin_unlock(&class->lock);
->> @@ -1164,12 +1261,15 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->>       first_page->freelist = (void *)obj;
->>
->>       first_page->inuse--;
->> +     pool->stats.obj_used--;
->>       fullness = fix_fullness_group(pool, first_page);
->>       spin_unlock(&class->lock);
->>
->>       if (fullness == ZS_EMPTY) {
->>               atomic_long_sub(class->pages_per_zspage,
->> -                             &pool->pages_allocated);
->> +                             &pool->stats.pages_allocated);
->> +             pool->stats.obj_allocated -= get_maxobj_per_zspage(class->size,
->> +                             class->pages_per_zspage);
->>               free_zspage(first_page);
->>       }
->>  }
->> @@ -1267,7 +1367,7 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
->>
->>  unsigned long zs_get_total_pages(struct zs_pool *pool)
->>  {
->> -     return atomic_long_read(&pool->pages_allocated);
->> +     return atomic_long_read(&pool->stats.pages_allocated);
->>  }
->>  EXPORT_SYMBOL_GPL(zs_get_total_pages);
->>
->> --
->> 1.7.9.5
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-> --
-> Kind regards,
-> Minchan Kim
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 70789e1..a6b6697 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -5,6 +5,8 @@
+  *
+  * binfmt_misc detects binaries via a magic or filename extension and invokes
+  * a specified wrapper. See Documentation/binfmt_misc.txt for more details.
++ *
++ * Cetero censeo, checkpatch.pl esse delendam
+  */
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+@@ -131,9 +133,8 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 	int retval;
+ 	int fd_binary = -1;
+ 
+-	retval = -ENOEXEC;
+ 	if (!enabled)
+-		goto ret;
++		return -ENOEXEC;
+ 
+ 	/* to keep locking time low, we copy the interpreter string */
+ 	read_lock(&entries_lock);
+@@ -142,12 +143,12 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		strlcpy(iname, fmt->interpreter, BINPRM_BUF_SIZE);
+ 	read_unlock(&entries_lock);
+ 	if (!fmt)
+-		goto ret;
++		return -ENOEXEC;
+ 
+ 	if (!(fmt->flags & MISC_FMT_PRESERVE_ARGV0)) {
+ 		retval = remove_arg_zero(bprm);
+ 		if (retval)
+-			goto ret;
++			return retval;
+ 	}
+ 
+ 	if (fmt->flags & MISC_FMT_OPEN_BINARY) {
+@@ -157,10 +158,9 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		 * to it
+ 		 */
+ 		fd_binary = get_unused_fd_flags(0);
+-		if (fd_binary < 0) {
+-			retval = fd_binary;
+-			goto ret;
+-		}
++		if (fd_binary < 0)
++			return fd_binary;
++
+ 		fd_install(fd_binary, bprm->file);
+ 
+ 		/* if the binary is not readable than enforce mm->dumpable=0
+@@ -219,14 +219,13 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 	if (retval < 0)
+ 		goto error;
+ 
+-ret:
+ 	return retval;
+ error:
+ 	if (fd_binary > 0)
+ 		sys_close(fd_binary);
+ 	bprm->interp_flags = 0;
+ 	bprm->interp_data = 0;
+-	goto ret;
++	return retval;
+ }
+ 
+ /* Command parsers */
+@@ -250,6 +249,7 @@ static char *scanarg(char *s, char del)
+ 				return NULL;
+ 		}
+ 	}
++	s[-1] = '\0';
+ 	return s;
+ }
+ 
+@@ -316,7 +316,7 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 
+ 	memset(e, 0, sizeof(Node));
+ 	if (copy_from_user(buf, buffer, count))
+-		goto efault;
++		goto Efault;
+ 
+ 	del = *p++;	/* delimeter */
+ 
+@@ -329,13 +329,13 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 	e->name = p;
+ 	p = strchr(p, del);
+ 	if (!p)
+-		goto einval;
++		goto Einval;
+ 	*p++ = '\0';
+ 	if (!e->name[0] ||
+ 	    !strcmp(e->name, ".") ||
+ 	    !strcmp(e->name, "..") ||
+ 	    strchr(e->name, '/'))
+-		goto einval;
++		goto Einval;
+ 
+ 	pr_debug("register: name: {%s}\n", e->name);
+ 
+@@ -350,10 +350,10 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 		e->flags = (1 << Enabled) | (1 << Magic);
+ 		break;
+ 	default:
+-		goto einval;
++		goto Einval;
+ 	}
+ 	if (*p++ != del)
+-		goto einval;
++		goto Einval;
+ 
+ 	if (test_bit(Magic, &e->flags)) {
+ 		/* Handle the 'M' (magic) format. */
+@@ -362,21 +362,20 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 		/* Parse the 'offset' field. */
+ 		s = strchr(p, del);
+ 		if (!s)
+-			goto einval;
++			goto Einval;
+ 		*s++ = '\0';
+ 		e->offset = simple_strtoul(p, &p, 10);
+ 		if (*p++)
+-			goto einval;
++			goto Einval;
+ 		pr_debug("register: offset: %#x\n", e->offset);
+ 
+ 		/* Parse the 'magic' field. */
+ 		e->magic = p;
+ 		p = scanarg(p, del);
+ 		if (!p)
+-			goto einval;
+-		p[-1] = '\0';
+-		if (p == e->magic)
+-			goto einval;
++			goto Einval;
++		if (!e->magic[0])
++			goto Einval;
+ 		if (USE_DEBUG)
+ 			print_hex_dump_bytes(
+ 				KBUILD_MODNAME ": register: magic[raw]: ",
+@@ -386,9 +385,8 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 		e->mask = p;
+ 		p = scanarg(p, del);
+ 		if (!p)
+-			goto einval;
+-		p[-1] = '\0';
+-		if (p == e->mask) {
++			goto Einval;
++		if (!e->mask[0]) {
+ 			e->mask = NULL;
+ 			pr_debug("register:  mask[raw]: none\n");
+ 		} else if (USE_DEBUG)
+@@ -405,9 +403,9 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 		e->size = string_unescape_inplace(e->magic, UNESCAPE_HEX);
+ 		if (e->mask &&
+ 		    string_unescape_inplace(e->mask, UNESCAPE_HEX) != e->size)
+-			goto einval;
++			goto Einval;
+ 		if (e->size + e->offset > BINPRM_BUF_SIZE)
+-			goto einval;
++			goto Einval;
+ 		pr_debug("register: magic/mask length: %i\n", e->size);
+ 		if (USE_DEBUG) {
+ 			print_hex_dump_bytes(
+@@ -439,23 +437,23 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 		/* Skip the 'offset' field. */
+ 		p = strchr(p, del);
+ 		if (!p)
+-			goto einval;
++			goto Einval;
+ 		*p++ = '\0';
+ 
+ 		/* Parse the 'magic' field. */
+ 		e->magic = p;
+ 		p = strchr(p, del);
+ 		if (!p)
+-			goto einval;
++			goto Einval;
+ 		*p++ = '\0';
+ 		if (!e->magic[0] || strchr(e->magic, '/'))
+-			goto einval;
++			goto Einval;
+ 		pr_debug("register: extension: {%s}\n", e->magic);
+ 
+ 		/* Skip the 'mask' field. */
+ 		p = strchr(p, del);
+ 		if (!p)
+-			goto einval;
++			goto Einval;
+ 		*p++ = '\0';
+ 	}
+ 
+@@ -463,10 +461,10 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 	e->interpreter = p;
+ 	p = strchr(p, del);
+ 	if (!p)
+-		goto einval;
++		goto Einval;
+ 	*p++ = '\0';
+ 	if (!e->interpreter[0])
+-		goto einval;
++		goto Einval;
+ 	pr_debug("register: interpreter: {%s}\n", e->interpreter);
+ 
+ 	/* Parse the 'flags' field. */
+@@ -474,17 +472,17 @@ static Node *create_entry(const char __user *buffer, size_t count)
+ 	if (*p == '\n')
+ 		p++;
+ 	if (p != buf + count)
+-		goto einval;
++		goto Einval;
+ 
+ 	return e;
+ 
+ out:
+ 	return ERR_PTR(err);
+ 
+-efault:
++Efault:
+ 	kfree(e);
+ 	return ERR_PTR(-EFAULT);
+-einval:
++Einval:
+ 	kfree(e);
+ 	return ERR_PTR(-EINVAL);
+ }
