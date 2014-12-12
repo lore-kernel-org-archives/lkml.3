@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760843AbaLLGkj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:40:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51866 "EHLO
+	id S1760872AbaLLGkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:40:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51858 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759187AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759127AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,12 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "Alexey Khoroshilov" <khoroshilov@ispras.ru>,
-        "Matthias Fuchs" <matthias.fuchs@esd.eu>
+        "=?UTF-8?q?Thomas=20K=C3=B6rper?=" <thomas.koerper@esd.eu>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.779201837@decadent.org.uk>
+Message-ID: <lsq.1418364865.895091776@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 132/164] can: esd_usb2: fix memory leak on disconnect
+Subject: [PATCH 3.2 131/164] can: dev: avoid calling kfree_skb() from
+ interrupt context
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,31 +32,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+From: Thomas Körper <thomas.koerper@esd.eu>
 
-commit efbd50d2f62fc1f69a3dcd153e63ba28cc8eb27f upstream.
+commit 5247a589c24022ab34e780039cc8000c48f2035e upstream.
 
-It seems struct esd_usb2 dev is not deallocated on disconnect. The patch adds
-the missing deallocation.
+ikfree_skb() is Called in can_free_echo_skb(), which might be called from (TX
+Error) interrupt, which triggers the folloing warning:
 
-Found by Linux Driver Verification project (linuxtesting.org).
+[ 1153.360705] ------------[ cut here ]------------
+[ 1153.360715] WARNING: CPU: 0 PID: 31 at net/core/skbuff.c:563 skb_release_head_state+0xb9/0xd0()
+[ 1153.360772] Call Trace:
+[ 1153.360778]  [<c167906f>] dump_stack+0x41/0x52
+[ 1153.360782]  [<c105bb7e>] warn_slowpath_common+0x7e/0xa0
+[ 1153.360784]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
+[ 1153.360786]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
+[ 1153.360788]  [<c105bc42>] warn_slowpath_null+0x22/0x30
+[ 1153.360791]  [<c158b909>] skb_release_head_state+0xb9/0xd0
+[ 1153.360793]  [<c158be90>] skb_release_all+0x10/0x30
+[ 1153.360795]  [<c158bf06>] kfree_skb+0x36/0x80
+[ 1153.360799]  [<f8486938>] ? can_free_echo_skb+0x28/0x40 [can_dev]
+[ 1153.360802]  [<f8486938>] can_free_echo_skb+0x28/0x40 [can_dev]
+[ 1153.360805]  [<f849a12c>] esd_pci402_interrupt+0x34c/0x57a [esd402]
+[ 1153.360809]  [<c10a75b5>] handle_irq_event_percpu+0x35/0x180
+[ 1153.360811]  [<c10a7623>] ? handle_irq_event_percpu+0xa3/0x180
+[ 1153.360813]  [<c10a7731>] handle_irq_event+0x31/0x50
+[ 1153.360816]  [<c10a9c7f>] handle_fasteoi_irq+0x6f/0x120
+[ 1153.360818]  [<c10a9c10>] ? handle_edge_irq+0x110/0x110
+[ 1153.360822]  [<c1011b61>] handle_irq+0x71/0x90
+[ 1153.360823]  <IRQ>  [<c168152c>] do_IRQ+0x3c/0xd0
+[ 1153.360829]  [<c1680b6c>] common_interrupt+0x2c/0x34
+[ 1153.360834]  [<c107d277>] ? finish_task_switch+0x47/0xf0
+[ 1153.360836]  [<c167c27b>] __schedule+0x35b/0x7e0
+[ 1153.360839]  [<c10a5334>] ? console_unlock+0x2c4/0x4d0
+[ 1153.360842]  [<c13df500>] ? n_tty_receive_buf_common+0x890/0x890
+[ 1153.360845]  [<c10707b6>] ? process_one_work+0x196/0x370
+[ 1153.360847]  [<c167c723>] schedule+0x23/0x60
+[ 1153.360849]  [<c1070de1>] worker_thread+0x161/0x460
+[ 1153.360852]  [<c1090fcf>] ? __wake_up_locked+0x1f/0x30
+[ 1153.360854]  [<c1070c80>] ? rescuer_thread+0x2f0/0x2f0
+[ 1153.360856]  [<c1074f01>] kthread+0xa1/0xc0
+[ 1153.360859]  [<c1680401>] ret_from_kernel_thread+0x21/0x30
+[ 1153.360861]  [<c1074e60>] ? kthread_create_on_node+0x110/0x110
+[ 1153.360863] ---[ end trace 5ff83639cbb74b35 ]---
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Acked-by: Matthias Fuchs <matthias.fuchs@esd.eu>
+This patch replaces the kfree_skb() by dev_kfree_skb_any().
+
+Signed-off-by: Thomas Körper <thomas.koerper@esd.eu>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/usb/esd_usb2.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/can/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/can/usb/esd_usb2.c
-+++ b/drivers/net/can/usb/esd_usb2.c
-@@ -1097,6 +1097,7 @@ static void esd_usb2_disconnect(struct u
- 			}
- 		}
- 		unlink_all_urbs(dev);
-+		kfree(dev);
+--- a/drivers/net/can/dev.c
++++ b/drivers/net/can/dev.c
+@@ -352,7 +352,7 @@ void can_free_echo_skb(struct net_device
+ 	BUG_ON(idx >= priv->echo_skb_max);
+ 
+ 	if (priv->echo_skb[idx]) {
+-		kfree_skb(priv->echo_skb[idx]);
++		dev_kfree_skb_any(priv->echo_skb[idx]);
+ 		priv->echo_skb[idx] = NULL;
  	}
  }
- 
 
