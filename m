@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030915AbaLLQ77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:59:59 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51790 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030729AbaLLQ76 (ORCPT
+	id S1030928AbaLLRAu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:00:50 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:33014 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030555AbaLLRAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:59:58 -0500
-Date: Fri, 12 Dec 2014 16:59:52 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeff Layton <jeff.layton@primarydata.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Bruce Fields <bfields@fieldses.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>
-Subject: Re: [PATCH v2 00/16] nfsd/sunrpc: add support for a workqueue-based
- nfsd
-Message-ID: <20141212165952.GD22149@ZenIV.linux.org.uk>
-References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
- <20141212021241.GA5944@ZenIV.linux.org.uk>
- <CA+55aFy_LRUzMO_ixgVtysr7OKs=GSk9dU1ORRUdrTn210VuyA@mail.gmail.com>
- <20141212030206.GA22149@ZenIV.linux.org.uk>
- <20141212065408.2f76c41e@tlielax.poochiereds.net>
+	Fri, 12 Dec 2014 12:00:48 -0500
+Date: Fri, 12 Dec 2014 09:00:37 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ying Xue <ying.xue@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rculist: fix sparse warning
+Message-ID: <20141212170037.GR25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418348174-26797-1-git-send-email-ying.xue@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141212065408.2f76c41e@tlielax.poochiereds.net>
+In-Reply-To: <1418348174-26797-1-git-send-email-ying.xue@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121217-8236-0000-0000-000007B86FFF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 06:54:08AM -0500, Jeff Layton wrote:
-
-> > Umm...  I would be very surprised if it turned out to be a problem.
-> > nfsd really doesn't give a fuck about its cwd and root - not in the
-> > thread side of things.  And (un)exporting is (a) not on a hot path
-> > and (b) not done from a kernel thread anyway.  fh_to_dentry and friends
-> > doesn't care about root/cwd, etc.
-> > 
-> > I don't see anything that could cause that kind of issues.
+On Fri, Dec 12, 2014 at 09:36:14AM +0800, Ying Xue wrote:
+> This fixes the following sparse warning when using
 > 
-> I like the change overall -- it would certainly make my patch series
-> simpler, but what about pathwalking? We do take the fs->lock in
-> unlazy_walk. Is it possible we'd end up with more contention there?
+> make C=1 CF=-D__CHECK_ENDIAN__ net/ipv6/addrconf.o
+> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+> net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
+> 
+> To silence above spare complaint, an RCU annotation should be added to
+> "next" pointer of hlist_node structure through hlist_next_rcu() macro
+> when iterating over a hlist with hlist_for_each_entry_continue_rcu_bh().
+> 
+> By the way, this commit also resolves the same error appearing in
+> hlist_for_each_entry_continue_rcu().
+> 
+> Signed-off-by: Ying Xue <ying.xue@windriver.com>
 
-That would take a pathname lookup in kernel thread side of nfsd that
-	* isn't single-component
-	* isn't LOOKUP_ROOT one (i.e. vfs_path_lookup() or file_open_root())
-and I would really hope we don't have such things.  Any such a beast would
-allow probing the tree layout outside of what we export, to start with...
+Queued for 3.20, thank you!
 
-AFAICS, we really don't have anything of that sort.  Note that e.g.
-lookup_one_len() doesn't go anywhere near ->fs->lock...
+							Thanx, Paul
+
+> ---
+> The commit is based on next.2014.12.11a branch of linux-rcu tree 
+> 
+>  include/linux/rculist.h |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/rculist.h b/include/linux/rculist.h
+> index 372ad5e..6f7aefb 100644
+> --- a/include/linux/rculist.h
+> +++ b/include/linux/rculist.h
+> @@ -524,11 +524,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+>   * @member:	the name of the hlist_node within the struct.
+>   */
+>  #define hlist_for_each_entry_continue_rcu(pos, member)			\
+> -	for (pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+> -			typeof(*(pos)), member);			\
+> +	for (pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
+> +			&(pos)->member)), typeof(*(pos)), member);	\
+>  	     pos;							\
+> -	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
+> -			typeof(*(pos)), member))
+> +	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(	\
+> +			&(pos)->member)), typeof(*(pos)), member))
+> 
+>  /**
+>   * hlist_for_each_entry_continue_rcu_bh - iterate over a hlist continuing after current point
+> @@ -536,11 +536,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
+>   * @member:	the name of the hlist_node within the struct.
+>   */
+>  #define hlist_for_each_entry_continue_rcu_bh(pos, member)		\
+> -	for (pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+> -			typeof(*(pos)), member);			\
+> +	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(  \
+> +			&(pos)->member)), typeof(*(pos)), member);	\
+>  	     pos;							\
+> -	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
+> -			typeof(*(pos)), member))
+> +	     pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(	\
+> +			&(pos)->member)), typeof(*(pos)), member))
+> 
+> 
+>  #endif	/* __KERNEL__ */
+> -- 
+> 1.7.9.5
+> 
+
