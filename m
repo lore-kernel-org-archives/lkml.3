@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967566AbaLLHBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:01:24 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51709 "EHLO
+	id S967546AbaLLHBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:01:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51700 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758456AbaLLGQx (ORCPT
+	by vger.kernel.org with ESMTP id S1758271AbaLLGQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:53 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,14 +14,11 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Ricardo Ribalda Delgado" <ricardo.ribalda@gmail.com>
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.679101518@decadent.org.uk>
+Message-ID: <lsq.1418364865.317246939@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 014/164] PCI: Generate uppercase hex for modalias
- interface class
+Subject: [PATCH 3.2 002/164] UBIFS: remove mst_mutex
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,40 +31,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 89ec3dcf17fd3fa009ecf8faaba36828dd6bc416 upstream.
+commit 07e19dff63e3d5d6500d831e36554ac9b1b0560e upstream.
 
-Some implementations of modprobe fail to load the driver for a PCI device
-automatically because the "interface" part of the modalias from the kernel
-is lowercase, and the modalias from file2alias is uppercase.
+The 'mst_mutex' is not needed since because 'ubifs_write_master()' is only
+called on the mount path and commit path. The mount path is sequential and
+there is no parallelism, and the commit path is also serialized - there is only
+one commit going on at a time.
 
-The "interface" is the low-order byte of the Class Code, defined in PCI
-r3.0, Appendix D.  Most interface types defined in the spec do not use
-alpha characters, so they won't be affected.  For example, 00h, 01h, 10h,
-20h, etc. are unaffected.
-
-Print the "interface" byte of the Class Code in uppercase hex, as we
-already do for the Vendor ID, Device ID, Class, etc.
-
-[bhelgaas: changelog]
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/pci-sysfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/commit.c | 2 --
+ fs/ubifs/master.c | 7 +++----
+ fs/ubifs/super.c  | 1 -
+ fs/ubifs/ubifs.h  | 2 --
+ 4 files changed, 3 insertions(+), 9 deletions(-)
 
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -173,7 +173,7 @@ static ssize_t modalias_show(struct devi
- {
- 	struct pci_dev *pci_dev = to_pci_dev(dev);
+--- a/fs/ubifs/commit.c
++++ b/fs/ubifs/commit.c
+@@ -174,7 +174,6 @@ static int do_commit(struct ubifs_info *
+ 	if (err)
+ 		goto out;
  
--	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02x\n",
-+	return sprintf(buf, "pci:v%08Xd%08Xsv%08Xsd%08Xbc%02Xsc%02Xi%02X\n",
- 		       pci_dev->vendor, pci_dev->device,
- 		       pci_dev->subsystem_vendor, pci_dev->subsystem_device,
- 		       (u8)(pci_dev->class >> 16), (u8)(pci_dev->class >> 8),
+-	mutex_lock(&c->mst_mutex);
+ 	c->mst_node->cmt_no      = cpu_to_le64(c->cmt_no);
+ 	c->mst_node->log_lnum    = cpu_to_le32(new_ltail_lnum);
+ 	c->mst_node->root_lnum   = cpu_to_le32(zroot.lnum);
+@@ -204,7 +203,6 @@ static int do_commit(struct ubifs_info *
+ 	else
+ 		c->mst_node->flags &= ~cpu_to_le32(UBIFS_MST_NO_ORPHS);
+ 	err = ubifs_write_master(c);
+-	mutex_unlock(&c->mst_mutex);
+ 	if (err)
+ 		goto out;
+ 
+--- a/fs/ubifs/master.c
++++ b/fs/ubifs/master.c
+@@ -352,10 +352,9 @@ int ubifs_read_master(struct ubifs_info
+  * ubifs_write_master - write master node.
+  * @c: UBIFS file-system description object
+  *
+- * This function writes the master node. The caller has to take the
+- * @c->mst_mutex lock before calling this function. Returns zero in case of
+- * success and a negative error code in case of failure. The master node is
+- * written twice to enable recovery.
++ * This function writes the master node. Returns zero in case of success and a
++ * negative error code in case of failure. The master node is written twice to
++ * enable recovery.
+  */
+ int ubifs_write_master(struct ubifs_info *c)
+ {
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1985,7 +1985,6 @@ static struct ubifs_info *alloc_ubifs_in
+ 		mutex_init(&c->lp_mutex);
+ 		mutex_init(&c->tnc_mutex);
+ 		mutex_init(&c->log_mutex);
+-		mutex_init(&c->mst_mutex);
+ 		mutex_init(&c->umount_mutex);
+ 		mutex_init(&c->bu_mutex);
+ 		mutex_init(&c->write_reserve_mutex);
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1044,7 +1044,6 @@ struct ubifs_debug_info;
+  *
+  * @mst_node: master node
+  * @mst_offs: offset of valid master node
+- * @mst_mutex: protects the master node area, @mst_node, and @mst_offs
+  *
+  * @max_bu_buf_len: maximum bulk-read buffer length
+  * @bu_mutex: protects the pre-allocated bulk-read buffer and @c->bu
+@@ -1284,7 +1283,6 @@ struct ubifs_info {
+ 
+ 	struct ubifs_mst_node *mst_node;
+ 	int mst_offs;
+-	struct mutex mst_mutex;
+ 
+ 	int max_bu_buf_len;
+ 	struct mutex bu_mutex;
 
