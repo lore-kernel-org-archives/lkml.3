@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaLLX3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 18:29:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58890 "EHLO mx2.suse.de"
+	id S1752526AbaLLXnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 18:43:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37936 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823AbaLLX3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 18:29:06 -0500
-Date: Sat, 13 Dec 2014 00:29:03 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Vinson Lee <vlee@twopensource.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Bertrand Jacquin <beber@meleeweb.net>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Pranith Kumar <bobby.prani@gmail.com>,
-        Peter Foley <pefoley2@pefoley.com>,
-        Clark Williams <clark.williams@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Nate Stahl <stahl@twitter.com>, Vinson Lee <vlee@twitter.com>
-Subject: Re: [PATCH] Increase maximum size of dmesg buffer to 16MB.
-Message-ID: <20141212232903.GV25677@wotan.suse.de>
-References: <1418423906-5461-1-git-send-email-vlee@twopensource.com> <20141212224515.GU25677@wotan.suse.de> <CAHTgTXXo-DcmLH-JQ03B4zod_0qOhnJPU8Lc32U7A0PCZXFHuA@mail.gmail.com>
+	id S1751132AbaLLXnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 18:43:40 -0500
+Date: Sat, 13 Dec 2014 00:43:36 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Maintainer abuse
+Message-ID: <20141212234336.GA28451@pd.tnic>
+References: <alpine.DEB.2.11.1412130016090.16494@nanos>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAHTgTXXo-DcmLH-JQ03B4zod_0qOhnJPU8Lc32U7A0PCZXFHuA@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <alpine.DEB.2.11.1412130016090.16494@nanos>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 03:07:23PM -0800, Vinson Lee wrote:
-> On Fri, Dec 12, 2014 at 2:45 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> > On Fri, Dec 12, 2014 at 02:38:26PM -0800, Vinson Lee wrote:
-> >> From: Nate Stahl <stahl@twitter.com>
-> >>
-> >> A full task stack dump of all tasks on a machine can generate more than
-> >> 4MB of output to dmesg. Dumping this data to the serial console causes
-> >> the machine to hang for a number of minutes (an unacceptable impact),
-> >> but dumping the same data to memory is feasible if the dmesg buffer is
-> >> sized large enough to hold the output. Set to 16MB which will hopefully
-> >> be large enough to handle a dump from any of our servers at this time.
-> >>
-> >> Signed-off-by: Nate Stahl <stahl@twitter.com>
-> >> Signed-off-by: Vinson Lee <vlee@twitter.com>
-> >
-> > Isn't this the perpetual issue of having large number of CPUs? If so
-> > consider use of LOG_CPU_MAX_BUF_SHIFT instead, otherwise clarifying how
-> > this would be a different issue would be good. LOG_CPU_MAX_BUF_SHIFT
-> > should scale nicely but you can increase it as well, is it being used?
-> >
-> >  Luis
+On Sat, Dec 13, 2014 at 12:24:03AM +0100, Thomas Gleixner wrote:
+>  - Posting of massive patch sets right during or just before the merge
+>    window
 > 
-> 
-> No, it is not being used.
-> 
-> LOG_CPU_MAX_BUF_SHIFT is a 3.17+ config and we do not have any of the
-> above mentioned production machines running 3.17 or later.
+>  - Reposting of patchsets before the reviewer/maintainer had a chance
+>    to reply to ALL of N patches
 
-Then consider backporting it.
+Absolutely agreed.
 
-> This patch did help us with debugging when running on older stable kernels
-> though.
+The rule of sending out patches and collecting feedback for a week at
+least is not really being respected, from my experience. Shit gets
+blasted out at the highest rate possible. Maybe lkml should have a
+git-send-email throttle.
 
-Understood, give the other stuff a spin.
+And I have the sneaking impression that a lot of people have not really
+understood what merge window means.
 
-  Luis
+> Yours grumpy
+
+And then they wonder why reviewers/maintainers are grumpy.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
