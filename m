@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935084AbaLLPb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:31:59 -0500
-Received: from mail-bn1on0085.outbound.protection.outlook.com ([157.56.110.85]:36531
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934991AbaLLPb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:31:57 -0500
-Date: Fri, 12 Dec 2014 09:31:57 -0600
-From: atull <atull@opensource.altera.com>
-X-X-Sender: atull@linuxheads99
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: kbuild test robot <fengguang.wu@intel.com>, <kbuild-all@01.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <devel@driverdev.osuosl.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH socfpga-nex] staging: fpga manager: socfpga_fpga_ops can
- be static
-In-Reply-To: <20141211204030.42c33e71@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.DEB.2.02.1412120931340.29302@linuxheads99>
-References: <201412110903.GCuPHwdi%fengguang.wu@intel.com> <20141211014324.GA73956@lkp-sb04> <20141211204030.42c33e71@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR00CA0011.namprd00.prod.outlook.com (25.160.102.21) To
- BN3PR0301MB1235.namprd03.prod.outlook.com (25.161.207.23)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BN3PR0301MB1235;
-X-Forefront-PRVS: 04238CD941
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(24454002)(189002)(199003)(107046002)(46406003)(33716001)(105586002)(81156004)(106356001)(77156002)(97736003)(110136001)(4396001)(50466002)(21056001)(68736005)(122386002)(62966003)(46102003)(101416001)(31966008)(23726002)(19580395003)(19580405001)(20776003)(76176999)(42186005)(69596002)(99396003)(87976001)(83506001)(50986999)(66066001)(86362001)(47776003)(53416004)(120916001)(64706001)(92566001)(86152002)(54356999);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1235;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
-X-OriginatorOrg: opensource.altera.com
+	id S1030668AbaLLPcp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:32:45 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36405 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030259AbaLLPZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 10:25:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
+   d="scan'208";a="622807224"
+From: Feng Wu <feng.wu@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
+        joro@8bytes.org, alex.williamson@redhat.com, jiang.liu@linux.intel.com
+Cc: eric.auger@linaro.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
+        Feng Wu <feng.wu@intel.com>
+Subject: [v3 09/26] iommu, x86: define irq_remapping_cap()
+Date: Fri, 12 Dec 2014 23:14:43 +0800
+Message-Id: <1418397300-10870-10-git-send-email-feng.wu@intel.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Dec 2014, One Thousand Gnomes wrote:
+This patch adds a new interface irq_remapping_cap() to detect
+whether irq remapping supports new features, such as VT-d
+Posted-Interrupts. We export this function out, so that KVM
+code can check this and use this mechanism properly.
 
-> On Thu, 11 Dec 2014 09:43:24 +0800
-> kbuild test robot <fengguang.wu@intel.com> wrote:
-> 
-> > drivers/staging/fpga/socfpga.c:655:25: sparse: symbol 'socfpga_fpga_ops' was not declared. Should it be static?
-> > 
-> > Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-> 
-> Ought to be const as well by the look of it - we don't want function
-> pointers in patchable memory spaces.
-> 
+Signed-off-by: Feng Wu <feng.wu@intel.com>
+Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/include/asm/irq_remapping.h |  2 ++
+ drivers/iommu/irq_remapping.c        | 12 ++++++++++++
+ 2 files changed, 14 insertions(+)
 
-I agree.  Will be in v5.
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index f87ac70..b3ad067 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -37,6 +37,7 @@ enum irq_remap_cap {
+ 
+ extern void setup_irq_remapping_ops(void);
+ extern int irq_remapping_supported(void);
++extern bool irq_remapping_cap(enum irq_remap_cap cap);
+ extern void set_irq_remapping_broken(void);
+ extern int irq_remapping_prepare(void);
+ extern int irq_remapping_enable(void);
+@@ -69,6 +70,7 @@ struct vcpu_data {
+ 
+ static inline void setup_irq_remapping_ops(void) { }
+ static inline int irq_remapping_supported(void) { return 0; }
++static bool irq_remapping_cap(enum irq_remap_cap cap) { return 0; }
+ static inline void set_irq_remapping_broken(void) { }
+ static inline int irq_remapping_prepare(void) { return -ENODEV; }
+ static inline int irq_remapping_enable(void) { return -ENODEV; }
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index e63e969..b008663 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -103,6 +103,18 @@ int irq_remapping_supported(void)
+ 	return remap_ops->supported();
+ }
+ 
++bool irq_remapping_cap(enum irq_remap_cap cap)
++{
++	if (disable_irq_post)
++		return 0;
++
++	if (!remap_ops || !remap_ops->capability)
++		return 0;
++
++	return remap_ops->capability(cap);
++}
++EXPORT_SYMBOL_GPL(irq_remapping_cap);
++
+ int __init irq_remapping_prepare(void)
+ {
+ 	if (!remap_ops || !remap_ops->prepare)
+-- 
+1.9.1
 
-Alan
