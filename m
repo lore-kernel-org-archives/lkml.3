@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaLLWLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:11:51 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:49073 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaLLWIj (ORCPT
+	id S1753535AbaLLWMQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:12:16 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:48320 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaLLWIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:39 -0500
+	Fri, 12 Dec 2014 17:08:36 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
         linux-mips@linux-mips.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V5 15/23] MIPS: BMIPS: Rewrite DMA code to use "dma-ranges" property
-Date: Fri, 12 Dec 2014 14:07:06 -0800
-Message-Id: <1418422034-17099-16-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V5 13/23] MIPS: BMIPS: Flush the readahead cache after DMA
+Date: Fri, 12 Dec 2014 14:07:04 -0800
+Message-Id: <1418422034-17099-14-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
 References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
@@ -23,163 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a more standardized way of handling DMA remapping, and it is
-suitable for the memory map found on BCM3384.
+BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
+the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
+may cause parts of the DMA buffer to be prefetched into the RAC.  To
+avoid possible coherency problems, flush the RAC upon DMA completion.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/bmips/dma.c | 100 ++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 68 insertions(+), 32 deletions(-)
+ arch/mips/mm/dma-default.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-diff --git a/arch/mips/bmips/dma.c b/arch/mips/bmips/dma.c
-index ea42012..04790f4 100644
---- a/arch/mips/bmips/dma.c
-+++ b/arch/mips/bmips/dma.c
-@@ -6,76 +6,112 @@
-  * Copyright (C) 2014 Kevin Cernekee <cernekee@gmail.com>
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index af5f046..ee6d12c 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -18,6 +18,7 @@
+ #include <linux/highmem.h>
+ #include <linux/dma-contiguous.h>
+ 
++#include <asm/bmips.h>
+ #include <asm/cache.h>
+ #include <asm/cpu-type.h>
+ #include <asm/io.h>
+@@ -69,6 +70,18 @@ static inline struct page *dma_addr_to_page(struct device *dev,
   */
- 
-+#define pr_fmt(fmt)		"bmips-dma: " fmt
-+
- #include <linux/device.h>
- #include <linux/dma-direction.h>
- #include <linux/dma-mapping.h>
- #include <linux/init.h>
--#include <linux/mm.h>
-+#include <linux/io.h>
- #include <linux/of.h>
--#include <linux/pci.h>
-+#include <linux/printk.h>
-+#include <linux/slab.h>
- #include <linux/types.h>
- #include <dma-coherence.h>
- 
- /*
-- * BCM3384 has configurable address translation windows which allow the
-+ * BCM338x has configurable address translation windows which allow the
-  * peripherals' DMA addresses to be different from the Zephyr-visible
-  * physical addresses.  e.g. usb_dma_addr = zephyr_pa ^ 0x08000000
-  *
-- * If our DT "memory" node has a "dma-xor-mask" property we will enable this
-- * translation using the provided offset.
-+ * If the "brcm,ubus" node has a "dma-ranges" property we will enable this
-+ * translation globally using the provided information.  This implements a
-+ * very limited subset of "dma-ranges" support and it will probably be
-+ * replaced by a more generic version later.
-  */
--static u32 bcm3384_dma_xor_mask;
--static u32 bcm3384_dma_xor_limit = 0xffffffff;
- 
--/*
-- * PCI collapses the memory hole at 0x10000000 - 0x1fffffff.
-- * On systems with a dma-xor-mask, this range is guaranteed to live above
-- * the dma-xor-limit.
-- */
--#define BCM3384_MEM_HOLE_PA	0x10000000
--#define BCM3384_MEM_HOLE_SIZE	0x10000000
-+struct bmips_dma_range {
-+	u32			child_addr;
-+	u32			parent_addr;
-+	u32			size;
-+};
- 
--static dma_addr_t bcm3384_phys_to_dma(struct device *dev, phys_addr_t pa)
-+static struct bmips_dma_range *bmips_dma_ranges;
-+
-+#define FLUSH_RAC		0x100
-+
-+static dma_addr_t bmips_phys_to_dma(struct device *dev, phys_addr_t pa)
+ static inline int cpu_needs_post_dma_flush(struct device *dev)
  {
--	if (dev && dev_is_pci(dev) &&
--	    pa >= (BCM3384_MEM_HOLE_PA + BCM3384_MEM_HOLE_SIZE))
--		return pa - BCM3384_MEM_HOLE_SIZE;
--	if (pa <= bcm3384_dma_xor_limit)
--		return pa ^ bcm3384_dma_xor_mask;
-+	struct bmips_dma_range *r;
++	if (boot_cpu_type() == CPU_BMIPS3300 ||
++	    boot_cpu_type() == CPU_BMIPS4350 ||
++	    boot_cpu_type() == CPU_BMIPS4380) {
++		void __iomem *cbr = BMIPS_GET_CBR();
 +
-+	for (r = bmips_dma_ranges; r && r->size; r++) {
-+		if (pa >= r->child_addr &&
-+		    pa < (r->child_addr + r->size))
-+			return pa - r->child_addr + r->parent_addr;
-+	}
- 	return pa;
- }
- 
- dma_addr_t plat_map_dma_mem(struct device *dev, void *addr, size_t size)
- {
--	return bcm3384_phys_to_dma(dev, virt_to_phys(addr));
-+	return bmips_phys_to_dma(dev, virt_to_phys(addr));
- }
- 
- dma_addr_t plat_map_dma_mem_page(struct device *dev, struct page *page)
- {
--	return bcm3384_phys_to_dma(dev, page_to_phys(page));
-+	return bmips_phys_to_dma(dev, page_to_phys(page));
- }
- 
- unsigned long plat_dma_addr_to_phys(struct device *dev, dma_addr_t dma_addr)
- {
--	if (dev && dev_is_pci(dev) &&
--	    dma_addr >= BCM3384_MEM_HOLE_PA)
--		return dma_addr + BCM3384_MEM_HOLE_SIZE;
--	if ((dma_addr ^ bcm3384_dma_xor_mask) <= bcm3384_dma_xor_limit)
--		return dma_addr ^ bcm3384_dma_xor_mask;
-+	struct bmips_dma_range *r;
++		/* Flush stale data out of the readahead cache */
++		__raw_writel(0x100, cbr + BMIPS_RAC_CONFIG);
++		__raw_readl(cbr + BMIPS_RAC_CONFIG);
 +
-+	for (r = bmips_dma_ranges; r && r->size; r++) {
-+		if (dma_addr >= r->parent_addr &&
-+		    dma_addr < (r->parent_addr + r->size))
-+			return dma_addr - r->parent_addr + r->child_addr;
-+	}
- 	return dma_addr;
- }
- 
--static int __init bcm3384_init_dma_xor(void)
-+static int __init bmips_init_dma_ranges(void)
- {
--	struct device_node *np = of_find_node_by_type(NULL, "memory");
-+	struct device_node *np =
-+		of_find_compatible_node(NULL, NULL, "brcm,ubus");
-+	const __be32 *data;
-+	struct bmips_dma_range *r;
-+	int len;
- 
- 	if (!np)
- 		return 0;
- 
--	of_property_read_u32(np, "dma-xor-mask", &bcm3384_dma_xor_mask);
--	of_property_read_u32(np, "dma-xor-limit", &bcm3384_dma_xor_limit);
-+	data = of_get_property(np, "dma-ranges", &len);
-+	if (!data)
-+		goto out_good;
-+
-+	len /= sizeof(*data) * 3;
-+	if (!len)
-+		goto out_bad;
-+
-+	/* add a dummy (zero) entry at the end as a sentinel */
-+	bmips_dma_ranges = kzalloc(sizeof(struct bmips_dma_range) * (len + 1),
-+				   GFP_KERNEL);
-+	if (!bmips_dma_ranges)
-+		goto out_bad;
- 
-+	for (r = bmips_dma_ranges; len; len--, r++) {
-+		r->child_addr = be32_to_cpup(data++);
-+		r->parent_addr = be32_to_cpup(data++);
-+		r->size = be32_to_cpup(data++);
++		return 0;
 +	}
 +
-+out_good:
- 	of_node_put(np);
- 	return 0;
-+
-+out_bad:
-+	pr_err("error parsing dma-ranges property\n");
-+	of_node_put(np);
-+	return -EINVAL;
- }
--arch_initcall(bcm3384_init_dma_xor);
-+arch_initcall(bmips_init_dma_ranges);
+ 	return !plat_device_is_coherent(dev) &&
+ 	       (boot_cpu_type() == CPU_R10000 ||
+ 		boot_cpu_type() == CPU_R12000 ||
 -- 
 2.1.1
 
