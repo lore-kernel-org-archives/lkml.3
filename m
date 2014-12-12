@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967478AbaLLHBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:01:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51719 "EHLO
+	id S1761010AbaLLHDB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:03:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51699 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758578AbaLLGQx (ORCPT
+	by vger.kernel.org with ESMTP id S1758233AbaLLGQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:53 -0500
+	Fri, 12 Dec 2014 01:16:52 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Sitsofe Wheeler" <sitsofe@yahoo.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Joe Savage" <joe.savage@goketra.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.98972994@decadent.org.uk>
+Message-ID: <lsq.1418364865.941139085@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 019/164] Drivers: hv: vmbus: Cleanup vmbus_post_msg()
+Subject: [PATCH 3.2 012/164] USB: serial: cp210x: added Ketra N1 wireless
+ interface support
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,50 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Joe Savage <joe.savage@goketra.com>
 
-commit fdeebcc62279119dbeafbc1a2e39e773839025fd upstream.
+commit bfc2d7dfdd761ae3beccdb26abebe03cef042f46 upstream.
 
-Posting messages to the host can fail because of transient resource
-related failures. Correctly deal with these failures and increase the
-number of attempts to post the message before giving up.
+Added support for Ketra N1 wireless interface, which uses the
+Silicon Labs' CP2104 USB to UART bridge with customized PID 8946.
 
-In this version of the patch, I have normalized the error code to
-Linux error code.
-
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Joe Savage <joe.savage@goketra.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hv/connection.c | 17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -284,10 +284,21 @@ int vmbus_post_msg(void *buffer, size_t
- 	 * insufficient resources. Retry the operation a couple of
- 	 * times before giving up.
- 	 */
--	while (retries < 3) {
--		ret =  hv_post_message(conn_id, 1, buffer, buflen);
--		if (ret != HV_STATUS_INSUFFICIENT_BUFFERS)
-+	while (retries < 10) {
-+		ret = hv_post_message(conn_id, 1, buffer, buflen);
-+
-+		switch (ret) {
-+		case HV_STATUS_INSUFFICIENT_BUFFERS:
-+			ret = -ENOMEM;
-+		case -ENOMEM:
-+			break;
-+		case HV_STATUS_SUCCESS:
- 			return ret;
-+		default:
-+			pr_err("hv_post_msg() failed; error code:%d\n", ret);
-+			return -EINVAL;
-+		}
-+
- 		retries++;
- 		msleep(100);
- 	}
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -128,6 +128,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 
