@@ -1,689 +1,399 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030410AbaLLNya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:54:30 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:48366 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967898AbaLLNy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:54:27 -0500
-Message-ID: <548AF38E.8010404@kernel.org>
-Date: Fri, 12 Dec 2014 13:54:22 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Daniel Baluta <daniel.baluta@intel.com>, pmeerw@pmeerw.net,
-        srinivas.pandruvada@linux.intel.com, knaack.h@gmx.de
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 6/6] iio: imu: kmx61: Add support for any motion trigger
-References: <1417613513-28285-1-git-send-email-daniel.baluta@intel.com> <1417613513-28285-7-git-send-email-daniel.baluta@intel.com>
-In-Reply-To: <1417613513-28285-7-git-send-email-daniel.baluta@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1030254AbaLLNug (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:50:36 -0500
+Received: from mga01.intel.com ([192.55.52.88]:23138 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967664AbaLLNuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
+   d="scan'208";a="636668860"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH V3 04/22] perf tools: Add support for Instruction Trace recording
+Date: Fri, 12 Dec 2014 15:47:51 +0200
+Message-Id: <1418392089-5568-5-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
+References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/14 13:31, Daniel Baluta wrote:
-> We use WUFE (Wake Up from Sleep Engine) and BTSE (Back to Sleep Engine)
-> to detect general motion input.
-> 
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-Interesting patch. Looks good. Applied to the togreg branch of iio.git
+Add support for reading from the Instruction
+Tracing mmap and synthesizing Instruction
+Tracing events.
 
-Thanks,
+This patch introduces an abstraction for recording
+Instruction Trace data.  Recording is initialized
+by itrace_record__init() which is a weak function
+to be implemented by the architecture to provide
+recording callbacks.  Recording is mainly handled
+by itrace_mmap__read() and
+perf_event__synthesize_itrace() but there are
+callbacks for miscellaneous needs including
+validating and processing user options, populating
+private data in itrace_info_event, and freeing
+the structure when finished.
 
-A nice looking set.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/perf.h        |   2 +
+ tools/perf/util/itrace.c | 196 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/itrace.h |  59 +++++++++++++-
+ tools/perf/util/record.c |  11 ++-
+ 4 files changed, 266 insertions(+), 2 deletions(-)
 
-Jonathan
-> ---
->  drivers/iio/imu/kmx61.c | 433 +++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 426 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
-> index 0f6816a..972424b 100644
-> --- a/drivers/iio/imu/kmx61.c
-> +++ b/drivers/iio/imu/kmx61.c
-> @@ -20,6 +20,7 @@
->  #include <linux/pm_runtime.h>
->  #include <linux/iio/iio.h>
->  #include <linux/iio/sysfs.h>
-> +#include <linux/iio/events.h>
->  #include <linux/iio/trigger.h>
->  #include <linux/iio/buffer.h>
->  #include <linux/iio/triggered_buffer.h>
-> @@ -30,6 +31,8 @@
->  #define KMX61_IRQ_NAME "kmx61_event"
->  
->  #define KMX61_REG_WHO_AM_I	0x00
-> +#define KMX61_REG_INS1		0x01
-> +#define KMX61_REG_INS2		0x02
->  
->  /*
->   * three 16-bit accelerometer output registers for X/Y/Z axis
-> @@ -63,20 +66,36 @@
->  #define KMX61_REG_INL		0x28
->  #define KMX61_REG_STBY		0x29
->  #define KMX61_REG_CTRL1		0x2A
-> +#define KMX61_REG_CTRL2		0x2B
->  #define KMX61_REG_ODCNTL	0x2C
->  #define KMX61_REG_INC1		0x2D
->  
-> +#define KMX61_REG_WUF_THRESH	0x3D
-> +#define KMX61_REG_WUF_TIMER	0x3E
-> +
->  #define KMX61_ACC_STBY_BIT	BIT(0)
->  #define KMX61_MAG_STBY_BIT	BIT(1)
->  #define KMX61_ACT_STBY_BIT	BIT(7)
->  
->  #define KMX61_ALL_STBY		(KMX61_ACC_STBY_BIT | KMX61_MAG_STBY_BIT)
->  
-> +#define KMX61_REG_INS1_BIT_WUFS		BIT(1)
-> +
-> +#define KMX61_REG_INS2_BIT_ZP		BIT(0)
-> +#define KMX61_REG_INS2_BIT_ZN		BIT(1)
-> +#define KMX61_REG_INS2_BIT_YP		BIT(2)
-> +#define KMX61_REG_INS2_BIT_YN		BIT(3)
-> +#define KMX61_REG_INS2_BIT_XP		BIT(4)
-> +#define KMX61_REG_INS2_BIT_XN		BIT(5)
-> +
->  #define KMX61_REG_CTRL1_GSEL_MASK	0x03
->  
->  #define KMX61_REG_CTRL1_BIT_RES		BIT(4)
->  #define KMX61_REG_CTRL1_BIT_DRDYE	BIT(5)
-> +#define KMX61_REG_CTRL1_BIT_WUFE	BIT(6)
-> +#define KMX61_REG_CTRL1_BIT_BTSE	BIT(7)
->  
-> +#define KMX61_REG_INC1_BIT_WUFS		BIT(0)
->  #define KMX61_REG_INC1_BIT_DRDYM	BIT(1)
->  #define KMX61_REG_INC1_BIT_DRDYA	BIT(2)
->  #define KMX61_REG_INC1_BIT_IEN		BIT(5)
-> @@ -86,6 +105,11 @@
->  #define KMX61_ACC_ODR_MASK	0x0F
->  #define KMX61_MAG_ODR_MASK	0xF0
->  
-> +#define KMX61_OWUF_MASK		0x7
-> +
-> +#define KMX61_DEFAULT_WAKE_THRESH	1
-> +#define KMX61_DEFAULT_WAKE_DURATION	1
-> +
->  #define KMX61_SLEEP_DELAY_MS	2000
->  
->  #define KMX61_CHIP_ID		0x12
-> @@ -111,11 +135,16 @@ struct kmx61_data {
->  	/* config bits */
->  	u8 range;
->  	u8 odr_bits;
-> +	u8 wake_thresh;
-> +	u8 wake_duration;
->  
->  	/* accelerometer specific data */
->  	struct iio_dev *acc_indio_dev;
->  	struct iio_trigger *acc_dready_trig;
-> +	struct iio_trigger *motion_trig;
->  	bool acc_dready_trig_on;
-> +	bool motion_trig_on;
-> +	bool ev_enable_state;
->  
->  	/* magnetometer specific data */
->  	struct iio_dev *mag_indio_dev;
-> @@ -154,6 +183,23 @@ static const struct {
->  			{3, 125000, 0x0A},
->  			{6, 250000, 0x0B} };
->  
-> +static const struct {
-> +	int val;
-> +	int val2;
-> +	int odr_bits;
-> +} kmx61_wake_up_odr_table[] = { {0, 781000, 0x00},
-> +				 {1, 563000, 0x01},
-> +				 {3, 125000, 0x02},
-> +				 {6, 250000, 0x03},
-> +				 {12, 500000, 0x04},
-> +				 {25, 0, 0x05},
-> +				 {50, 0, 0x06},
-> +				 {100, 0, 0x06},
-> +				 {200, 0, 0x06},
-> +				 {400, 0, 0x06},
-> +				 {800, 0, 0x06},
-> +				 {1600, 0, 0x06} };
-> +
->  static IIO_CONST_ATTR(accel_scale_available, "0.009582 0.019163 0.038326");
->  static IIO_CONST_ATTR(magn_scale_available, "0.001465");
->  static IIO_CONST_ATTR_SAMP_FREQ_AVAIL(
-> @@ -179,6 +225,14 @@ static const struct attribute_group kmx61_mag_attribute_group = {
->  	.attrs = kmx61_mag_attributes,
->  };
->  
-> +static const struct iio_event_spec kmx61_event = {
-> +	.type = IIO_EV_TYPE_THRESH,
-> +	.dir = IIO_EV_DIR_EITHER,
-> +	.mask_separate = BIT(IIO_EV_INFO_VALUE) |
-> +			 BIT(IIO_EV_INFO_ENABLE) |
-> +			 BIT(IIO_EV_INFO_PERIOD),
-> +};
-> +
->  #define KMX61_ACC_CHAN(_axis) { \
->  	.type = IIO_ACCEL, \
->  	.modified = 1, \
-> @@ -195,6 +249,8 @@ static const struct attribute_group kmx61_mag_attribute_group = {
->  		.shift = 4, \
->  		.endianness = IIO_LE, \
->  	}, \
-> +	.event_spec = &kmx61_event, \
-> +	.num_event_specs = 1 \
->  }
->  
->  #define KMX61_MAG_CHAN(_axis) { \
-> @@ -250,6 +306,31 @@ static int kmx61_convert_freq_to_bit(int val, int val2)
->  	return -EINVAL;
->  }
->  
-> +static int kmx61_convert_bit_to_freq(u8 odr_bits, int *val, int *val2)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
-> +		if (odr_bits == kmx61_samp_freq_table[i].odr_bits) {
-> +			*val = kmx61_samp_freq_table[i].val;
-> +			*val2 = kmx61_samp_freq_table[i].val2;
-> +			return 0;
-> +		}
-> +	return -EINVAL;
-> +}
-> +
-> +
-> +static int kmx61_convert_wake_up_odr_to_bit(int val, int val2)
-> +{
-> +	int i;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(kmx61_wake_up_odr_table); ++i)
-> +		if (kmx61_wake_up_odr_table[i].val == val &&
-> +			kmx61_wake_up_odr_table[i].val2 == val2)
-> +				return kmx61_wake_up_odr_table[i].odr_bits;
-> +	return -EINVAL;
-> +}
-> +
->  /**
->   * kmx61_set_mode() - set KMX61 device operating mode
->   * @data - kmx61 device private data pointer
-> @@ -338,6 +419,21 @@ static int kmx61_get_mode(struct kmx61_data *data, u8 *mode, u8 device)
->  	return 0;
->  }
->  
-> +int kmx61_set_wake_up_odr(struct kmx61_data *data, int val, int val2)
-> +{
-> +	int ret, odr_bits;
-> +
-> +	odr_bits = kmx61_convert_wake_up_odr_to_bit(val, val2);
-> +	if (odr_bits < 0)
-> +		return odr_bits;
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL2,
-> +					odr_bits);
-> +	if (ret < 0)
-> +		dev_err(&data->client->dev, "Error writing reg_ctrl2\n");
-> +	return ret;
-> +}
-> +
->  static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
->  {
->  	int ret;
-> @@ -369,6 +465,12 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
->  	if (ret < 0)
->  		return ret;
->  
-> +	if (device & KMX61_ACC) {
-> +		ret = kmx61_set_wake_up_odr(data, val, val2);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
->  	return kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG, true);
->  }
->  
-> @@ -449,7 +551,7 @@ static int kmx61_set_scale(struct kmx61_data *data, u16 uscale)
->  
->  static int kmx61_chip_init(struct kmx61_data *data)
->  {
-> -	int ret;
-> +	int ret, val, val2;
->  
->  	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_WHO_AM_I);
->  	if (ret < 0) {
-> @@ -476,11 +578,23 @@ static int kmx61_chip_init(struct kmx61_data *data)
->  	}
->  	data->odr_bits = ret;
->  
-> +	/* set output data rate for wake up (motion detection) function */
-> +	ret = kmx61_convert_bit_to_freq(data->odr_bits, &val, &val2);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = kmx61_set_wake_up_odr(data, val, val2);
-> +	if (ret < 0)
-> +		return ret;
-> +
->  	/* set acc/magn to OPERATION mode */
->  	ret = kmx61_set_mode(data, 0, KMX61_ACC | KMX61_MAG, true);
->  	if (ret < 0)
->  		return ret;
->  
-> +	data->wake_thresh = KMX61_DEFAULT_WAKE_THRESH;
-> +	data->wake_duration = KMX61_DEFAULT_WAKE_DURATION;
-> +
->  	return 0;
->  }
->  
-> @@ -547,6 +661,87 @@ static int kmx61_setup_new_data_interrupt(struct kmx61_data *data,
->  	return 0;
->  }
->  
-> +static int kmx61_chip_update_thresholds(struct kmx61_data *data)
-> +{
-> +	int ret;
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client,
-> +					KMX61_REG_WUF_TIMER,
-> +					data->wake_duration);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Errow writing reg_wuf_timer\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client,
-> +					KMX61_REG_WUF_THRESH,
-> +					data->wake_thresh);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error writing reg_wuf_thresh\n");
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int kmx61_setup_any_motion_interrupt(struct kmx61_data *data,
-> +					    bool status, u8 device)
-> +{
-> +	u8 mode;
-> +	int ret;
-> +
-> +	ret = kmx61_get_mode(data, &mode, KMX61_ACC | KMX61_MAG);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = kmx61_chip_update_thresholds(data);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INC1);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error reading reg_inc1\n");
-> +		return ret;
-> +	}
-> +	if (status)
-> +		ret |= (KMX61_REG_INC1_BIT_IEN | KMX61_REG_INC1_BIT_WUFS);
-> +	else
-> +		ret &= ~(KMX61_REG_INC1_BIT_IEN | KMX61_REG_INC1_BIT_WUFS);
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_INC1, ret);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error writing reg_inc1\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-> +		return ret;
-> +	}
-> +
-> +	if (status)
-> +		ret |= KMX61_REG_CTRL1_BIT_WUFE | KMX61_REG_CTRL1_BIT_BTSE;
-> +	else
-> +		ret &= ~(KMX61_REG_CTRL1_BIT_WUFE | KMX61_REG_CTRL1_BIT_BTSE);
-> +
-> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error writing reg_ctrl1\n");
-> +		return ret;
-> +	}
-> +	mode |= KMX61_ACT_STBY_BIT;
-> +	ret = kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG, true);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
->  /**
->   * kmx61_set_power_state() - set power state for kmx61 @device
->   * @data - kmx61 device private pointer
-> @@ -707,12 +902,111 @@ static int kmx61_write_raw(struct iio_dev *indio_dev,
->  	}
->  }
->  
-> +static int kmx61_read_event(struct iio_dev *indio_dev,
-> +			    const struct iio_chan_spec *chan,
-> +			    enum iio_event_type type,
-> +			    enum iio_event_direction dir,
-> +			    enum iio_event_info info,
-> +			    int *val, int *val2)
-> +{
-> +	struct kmx61_data *data = kmx61_get_data(indio_dev);
-> +
-> +	*val2 = 0;
-> +	switch (info) {
-> +	case IIO_EV_INFO_VALUE:
-> +		*val = data->wake_thresh;
-> +		break;
-> +	case IIO_EV_INFO_PERIOD:
-> +		*val = data->wake_duration;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return IIO_VAL_INT;
-> +}
-> +
-> +static int kmx61_write_event(struct iio_dev *indio_dev,
-> +			    const struct iio_chan_spec *chan,
-> +			    enum iio_event_type type,
-> +			    enum iio_event_direction dir,
-> +			    enum iio_event_info info,
-> +			    int val, int val2)
-> +{
-> +	struct kmx61_data *data = kmx61_get_data(indio_dev);
-> +
-> +	if (data->ev_enable_state)
-> +		return -EBUSY;
-> +
-> +	switch (info) {
-> +	case IIO_EV_INFO_VALUE:
-> +		data->wake_thresh = val;
-> +		break;
-> +	case IIO_EV_INFO_PERIOD:
-> +		data->wake_duration = val;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return IIO_VAL_INT;
-> +}
-> +
-> +static int kmx61_read_event_config(struct iio_dev *indio_dev,
-> +				   const struct iio_chan_spec *chan,
-> +				   enum iio_event_type type,
-> +				   enum iio_event_direction dir)
-> +{
-> +	struct kmx61_data *data = kmx61_get_data(indio_dev);
-> +
-> +	return data->ev_enable_state;
-> +}
-> +
-> +static int kmx61_write_event_config(struct iio_dev *indio_dev,
-> +				   const struct iio_chan_spec *chan,
-> +				   enum iio_event_type type,
-> +				   enum iio_event_direction dir,
-> +				   int state)
-> +{
-> +	struct kmx61_data *data = kmx61_get_data(indio_dev);
-> +	int ret;
-> +
-> +	if (state && data->ev_enable_state)
-> +		return 0;
-> +
-> +	mutex_lock(&data->lock);
-> +
-> +	if (!state && data->motion_trig_on) {
-> +		data->ev_enable_state = 0;
-> +		mutex_unlock(&data->lock);
-> +		return 0;
-> +	}
-> +
-> +	ret = kmx61_set_power_state(data, state, KMX61_ACC);
-> +	if (ret < 0) {
-> +		mutex_unlock(&data->lock);
-> +		return ret;
-> +	}
-> +
-> +	ret = kmx61_setup_any_motion_interrupt(data, state, KMX61_ACC);
-> +	if (ret < 0) {
-> +		kmx61_set_power_state(data, false, KMX61_ACC);
-> +		mutex_unlock(&data->lock);
-> +		return ret;
-> +	}
-> +
-> +	data->ev_enable_state = state;
-> +	mutex_unlock(&data->lock);
-> +
-> +	return 0;
-> +}
-> +
->  static int kmx61_acc_validate_trigger(struct iio_dev *indio_dev,
->  				      struct iio_trigger *trig)
->  {
->  	struct kmx61_data *data = kmx61_get_data(indio_dev);
->  
-> -	if (data->acc_dready_trig != trig)
-> +	if (data->acc_dready_trig != trig && data->motion_trig != trig)
->  		return -EINVAL;
->  
->  	return 0;
-> @@ -734,6 +1028,10 @@ static const struct iio_info kmx61_acc_info = {
->  	.read_raw		= kmx61_read_raw,
->  	.write_raw		= kmx61_write_raw,
->  	.attrs			= &kmx61_acc_attribute_group,
-> +	.read_event_value	= kmx61_read_event,
-> +	.write_event_value	= kmx61_write_event,
-> +	.read_event_config	= kmx61_read_event_config,
-> +	.write_event_config	= kmx61_write_event_config,
->  	.validate_trigger	= kmx61_acc_validate_trigger,
->  };
->  
-> @@ -753,11 +1051,18 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->  	u8 device;
->  
->  	struct iio_dev *indio_dev = iio_trigger_get_drvdata(trig);
-> -	struct kmx61_data *data = iio_priv(indio_dev);
-> +	struct kmx61_data *data = kmx61_get_data(indio_dev);
->  
->  	mutex_lock(&data->lock);
->  
-> -	if (data->acc_dready_trig == trig)
-> +	if (!state && data->ev_enable_state && data->motion_trig_on) {
-> +		data->motion_trig_on = false;
-> +		mutex_unlock(&data->lock);
-> +		return 0;
-> +	}
-> +
-> +
-> +	if (data->acc_dready_trig == trig || data->motion_trig)
->  		device = KMX61_ACC;
->  	else
->  		device = KMX61_MAG;
-> @@ -768,7 +1073,10 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->  		return ret;
->  	}
->  
-> -	ret = kmx61_setup_new_data_interrupt(data, state, device);
-> +	if (data->acc_dready_trig == trig || data->mag_dready_trig == trig)
-> +		ret = kmx61_setup_new_data_interrupt(data, state, device);
-> +	else
-> +		ret = kmx61_setup_any_motion_interrupt(data, state, KMX61_ACC);
->  	if (ret < 0) {
->  		kmx61_set_power_state(data, false, device);
->  		mutex_unlock(&data->lock);
-> @@ -777,8 +1085,10 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->  
->  	if (data->acc_dready_trig == trig)
->  		data->acc_dready_trig_on = state;
-> -	else
-> +	else if (data->mag_dready_trig == trig)
->  		data->mag_dready_trig_on = state;
-> +	else
-> +		data->motion_trig_on = state;
->  
->  	mutex_unlock(&data->lock);
->  
-> @@ -806,6 +1116,99 @@ static const struct iio_trigger_ops kmx61_trigger_ops = {
->  	.owner = THIS_MODULE,
->  };
->  
-> +static irqreturn_t kmx61_event_handler(int irq, void *private)
-> +{
-> +	struct kmx61_data *data = private;
-> +	struct iio_dev *indio_dev = data->acc_indio_dev;
-> +	int ret;
-> +
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS1);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error reading reg_ins1\n");
-> +		goto ack_intr;
-> +	}
-> +
-> +	if (ret & KMX61_REG_INS1_BIT_WUFS) {
-> +		ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS2);
-> +		if (ret < 0) {
-> +			dev_err(&data->client->dev, "Error reading reg_ins2\n");
-> +			goto ack_intr;
-> +		}
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_XN)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_X,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_FALLING),
-> +				       0);
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_XP)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_X,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_RISING),
-> +				       0);
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_YN)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_Y,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_FALLING),
-> +				       0);
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_YP)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_Y,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_RISING),
-> +				       0);
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_ZN)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_Z,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_FALLING),
-> +				       0);
-> +
-> +		if (ret & KMX61_REG_INS2_BIT_ZP)
-> +			iio_push_event(indio_dev,
-> +				       IIO_MOD_EVENT_CODE(IIO_ACCEL,
-> +				       0,
-> +				       IIO_MOD_Z,
-> +				       IIO_EV_TYPE_THRESH,
-> +				       IIO_EV_DIR_RISING),
-> +				       0);
-> +	}
-> +
-> +ack_intr:
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
-> +	if (ret < 0)
-> +		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-> +
-> +	ret |= KMX61_REG_CTRL1_BIT_RES;
-> +	ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
-> +	if (ret < 0)
-> +		dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-> +
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INL);
-> +	if (ret < 0)
-> +		dev_err(&data->client->dev, "Error reading reg_inl\n");
-> +
-> +	ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS1);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
->  static irqreturn_t kmx61_data_rdy_trig_poll(int irq, void *private)
->  {
->  	struct kmx61_data *data = private;
-> @@ -815,6 +1218,11 @@ static irqreturn_t kmx61_data_rdy_trig_poll(int irq, void *private)
->  	if (data->mag_dready_trig_on)
->  		iio_trigger_poll(data->mag_dready_trig);
->  
-> +	if (data->motion_trig_on)
-> +		iio_trigger_poll(data->motion_trig);
-> +
-> +	if (data->ev_enable_state)
-> +		return IRQ_WAKE_THREAD;
->  	return IRQ_HANDLED;
->  }
->  
-> @@ -982,7 +1390,7 @@ static int kmx61_probe(struct i2c_client *client,
->  	if (client->irq >= 0) {
->  		ret = devm_request_threaded_irq(&client->dev, client->irq,
->  						kmx61_data_rdy_trig_poll,
-> -						NULL,
-> +						kmx61_event_handler,
->  						IRQF_TRIGGER_RISING,
->  						KMX61_IRQ_NAME,
->  						data);
-> @@ -1003,6 +1411,14 @@ static int kmx61_probe(struct i2c_client *client,
->  			goto err_trigger_unregister;
->  		}
->  
-> +		data->motion_trig =
-> +			kmx61_trigger_setup(data, data->acc_indio_dev,
-> +					    "any-motion");
-> +		if (IS_ERR(data->motion_trig)) {
-> +			ret = PTR_ERR(data->motion_trig);
-> +			goto err_trigger_unregister;
-> +		}
-> +
->  		ret = iio_triggered_buffer_setup(data->acc_indio_dev,
->  						 &iio_pollfunc_store_time,
->  						 kmx61_trigger_handler,
-> @@ -1060,6 +1476,8 @@ err_trigger_unregister:
->  		iio_trigger_unregister(data->acc_dready_trig);
->  	if (data->mag_dready_trig)
->  		iio_trigger_unregister(data->mag_dready_trig);
-> +	if (data->motion_trig)
-> +		iio_trigger_unregister(data->motion_trig);
->  err_chip_uninit:
->  	kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
->  	return ret;
-> @@ -1081,6 +1499,7 @@ static int kmx61_remove(struct i2c_client *client)
->  		iio_triggered_buffer_cleanup(data->mag_indio_dev);
->  		iio_trigger_unregister(data->acc_dready_trig);
->  		iio_trigger_unregister(data->mag_dready_trig);
-> +		iio_trigger_unregister(data->motion_trig);
->  	}
->  
->  	mutex_lock(&data->lock);
-> 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 1dabb85..ca4c09d 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -53,8 +53,10 @@ struct record_opts {
+ 	bool	     sample_time;
+ 	bool	     period;
+ 	bool	     sample_intr_regs;
++	bool	     full_itrace;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
++	unsigned int itrace_mmap_pages;
+ 	unsigned int user_freq;
+ 	u64          branch_stack;
+ 	u64	     default_interval;
+diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
+index c950b4f..77f7c7a 100644
+--- a/tools/perf/util/itrace.c
++++ b/tools/perf/util/itrace.c
+@@ -21,6 +21,10 @@
+ #include <linux/perf_event.h>
+ #include <linux/types.h>
+ 
++#include <stdlib.h>
++#include <string.h>
++#include <errno.h>
++
+ #include "../perf.h"
+ #include "util.h"
+ #include "evlist.h"
+@@ -28,6 +32,9 @@
+ #include "thread_map.h"
+ #include "itrace.h"
+ 
++#include "event.h"
++#include "debug.h"
++
+ int itrace_mmap__mmap(struct itrace_mmap *mm, struct itrace_mmap_params *mp,
+ 		      void *userpg, int fd)
+ {
+@@ -97,3 +104,192 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
+ 		mp->tid = evlist->threads->map[idx];
+ 	}
+ }
++
++size_t itrace_record__info_priv_size(struct itrace_record *itr)
++{
++	if (itr)
++		return itr->info_priv_size(itr);
++	return 0;
++}
++
++static int itrace_not_supported(void)
++{
++	pr_err("Instruction tracing is not supported on this architecture\n");
++	return -EINVAL;
++}
++
++int itrace_record__info_fill(struct itrace_record *itr,
++			     struct perf_session *session,
++			     struct itrace_info_event *itrace_info,
++			     size_t priv_size)
++{
++	if (itr)
++		return itr->info_fill(itr, session, itrace_info, priv_size);
++	return itrace_not_supported();
++}
++
++void itrace_record__free(struct itrace_record *itr)
++{
++	if (itr)
++		itr->free(itr);
++}
++
++int itrace_record__options(struct itrace_record *itr,
++			   struct perf_evlist *evlist,
++			   struct record_opts *opts)
++{
++	if (itr)
++		return itr->recording_options(itr, evlist, opts);
++	return 0;
++}
++
++u64 itrace_record__reference(struct itrace_record *itr)
++{
++	if (itr)
++		return itr->reference(itr);
++	return 0;
++}
++
++struct itrace_record *__weak
++itrace_record__init(struct perf_evlist *evlist __maybe_unused, int *err)
++{
++	*err = 0;
++	return NULL;
++}
++
++int perf_event__synthesize_itrace_info(struct itrace_record *itr,
++				       struct perf_tool *tool,
++				       struct perf_session *session,
++				       perf_event__handler_t process)
++{
++	union perf_event *ev;
++	size_t priv_size;
++	int err;
++
++	pr_debug2("Synthesizing itrace information\n");
++	priv_size = itrace_record__info_priv_size(itr);
++	ev = zalloc(sizeof(struct itrace_info_event) + priv_size);
++	if (!ev)
++		return -ENOMEM;
++
++	ev->itrace_info.header.type = PERF_RECORD_ITRACE_INFO;
++	ev->itrace_info.header.size = sizeof(struct itrace_info_event) +
++				      priv_size;
++	err = itrace_record__info_fill(itr, session, &ev->itrace_info,
++				       priv_size);
++	if (err)
++		goto out_free;
++
++	err = process(tool, ev, NULL, NULL);
++out_free:
++	free(ev);
++	return err;
++}
++
++int perf_event__synthesize_itrace(struct perf_tool *tool,
++				  perf_event__handler_t process,
++				  size_t size, u64 offset, u64 ref, int idx,
++				  u32 tid, u32 cpu)
++{
++	union perf_event ev;
++
++	memset(&ev, 0, sizeof(ev));
++	ev.itrace.header.type = PERF_RECORD_ITRACE;
++	ev.itrace.header.size = sizeof(ev.itrace);
++	ev.itrace.size = size;
++	ev.itrace.offset = offset;
++	ev.itrace.reference = ref;
++	ev.itrace.idx = idx;
++	ev.itrace.tid = tid;
++	ev.itrace.cpu = cpu;
++
++	return process(tool, &ev, NULL, NULL);
++}
++
++int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
++		      struct perf_tool *tool, process_itrace_t fn)
++{
++	u64 head = itrace_mmap__read_head(mm);
++	u64 old = mm->prev, offset, ref;
++	unsigned char *data = mm->base;
++	size_t size, head_off, old_off, len1, len2, padding;
++	union perf_event ev;
++	void *data1, *data2;
++
++	if (old == head)
++		return 0;
++
++	pr_debug3("itrace idx %d old %#"PRIx64" head %#"PRIx64" diff %#"PRIx64"\n",
++		  mm->idx, old, head, head - old);
++
++	if (mm->mask) {
++		head_off = head & mm->mask;
++		old_off = old & mm->mask;
++	} else {
++		head_off = head % mm->len;
++		old_off = old % mm->len;
++	}
++
++	if (head_off > old_off)
++		size = head_off - old_off;
++	else
++		size = mm->len - (old_off - head_off);
++
++	ref = itrace_record__reference(itr);
++
++	if (head > old || size <= head || mm->mask) {
++		offset = head - size;
++	} else {
++		/*
++		 * When the buffer size is not a power of 2, 'head' wraps at the
++		 * highest multiple of the buffer size, so we have to subtract
++		 * the remainder here.
++		 */
++		u64 rem = (0ULL - mm->len) % mm->len;
++
++		offset = head - size - rem;
++	}
++
++	if (size > head_off) {
++		len1 = size - head_off;
++		data1 = &data[mm->len - len1];
++		len2 = head_off;
++		data2 = &data[0];
++	} else {
++		len1 = size;
++		data1 = &data[head_off - len1];
++		len2 = 0;
++		data2 = NULL;
++	}
++
++	/* padding must be written by fn() e.g. record__process_itrace() */
++	padding = size & 7;
++	if (padding)
++		padding = 8 - padding;
++
++	memset(&ev, 0, sizeof(ev));
++	ev.itrace.header.type = PERF_RECORD_ITRACE;
++	ev.itrace.header.size = sizeof(ev.itrace);
++	ev.itrace.size = size + padding;
++	ev.itrace.offset = offset;
++	ev.itrace.reference = ref;
++	ev.itrace.idx = mm->idx;
++	ev.itrace.tid = mm->tid;
++	ev.itrace.cpu = mm->cpu;
++
++	if (fn(tool, &ev, data1, len1, data2, len2))
++		return -1;
++
++	mm->prev = head;
++
++	itrace_mmap__write_tail(mm, head);
++	if (itr->read_finish) {
++		int err;
++
++		err = itr->read_finish(itr, mm->idx);
++		if (err < 0)
++			return err;
++	}
++
++	return 1;
++}
+diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
+index 00ba409..6eef25c 100644
+--- a/tools/perf/util/itrace.h
++++ b/tools/perf/util/itrace.h
+@@ -18,13 +18,18 @@
+ 
+ #include <sys/types.h>
+ #include <stdbool.h>
+-
++#include <stddef.h>
+ #include <linux/perf_event.h>
+ #include <linux/types.h>
+ 
+ #include "../perf.h"
+ 
++union perf_event;
++struct perf_session;
+ struct perf_evlist;
++struct perf_tool;
++struct record_opts;
++struct itrace_info_event;
+ 
+ /**
+  * struct itrace_mmap - records an mmap of the itrace buffer.
+@@ -70,6 +75,29 @@ struct itrace_mmap_params {
+ 	int		cpu;
+ };
+ 
++/**
++ * struct itrace_record - callbacks for recording Instruction Trace data.
++ * @recording_options: validate and process recording options
++ * @info_priv_size: return the size of the private data in itrace_info_event
++ * @info_fill: fill-in the private data in itrace_info_event
++ * @free: free this itrace record structure
++ * @reference: provide a 64-bit reference number for itrace_event
++ * @read_finish: called after reading from an itrace mmap
++ */
++struct itrace_record {
++	int (*recording_options)(struct itrace_record *itr,
++				 struct perf_evlist *evlist,
++				 struct record_opts *opts);
++	size_t (*info_priv_size)(struct itrace_record *itr);
++	int (*info_fill)(struct itrace_record *itr,
++			 struct perf_session *session,
++			 struct itrace_info_event *itrace_info,
++			 size_t priv_size);
++	void (*free)(struct itrace_record *itr);
++	u64 (*reference)(struct itrace_record *itr);
++	int (*read_finish)(struct itrace_record *itr, int idx);
++};
++
+ static inline u64 itrace_mmap__read_head(struct itrace_mmap *mm __maybe_unused)
+ {
+ 	/* Not yet implemented */
+@@ -93,4 +121,33 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
+ 				 struct perf_evlist *evlist, int idx,
+ 				 bool per_cpu);
+ 
++typedef int (*process_itrace_t)(struct perf_tool *tool, union perf_event *event,
++				void *data1, size_t len1, void *data2,
++				size_t len2);
++
++int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
++		      struct perf_tool *tool, process_itrace_t fn);
++
++struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
++
++int itrace_record__options(struct itrace_record *itr,
++			   struct perf_evlist *evlist,
++			   struct record_opts *opts);
++size_t itrace_record__info_priv_size(struct itrace_record *itr);
++int itrace_record__info_fill(struct itrace_record *itr,
++			     struct perf_session *session,
++			     struct itrace_info_event *itrace_info,
++			     size_t priv_size);
++void itrace_record__free(struct itrace_record *itr);
++u64 itrace_record__reference(struct itrace_record *itr);
++
++int perf_event__synthesize_itrace_info(struct itrace_record *itr,
++				       struct perf_tool *tool,
++				       struct perf_session *session,
++				       perf_event__handler_t process);
++int perf_event__synthesize_itrace(struct perf_tool *tool,
++				  perf_event__handler_t process,
++				  size_t size, u64 offset, u64 ref, int idx,
++				  u32 tid, u32 cpu);
++
+ #endif
+diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
+index 8acd0df..1887484 100644
+--- a/tools/perf/util/record.c
++++ b/tools/perf/util/record.c
+@@ -119,7 +119,16 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
+ 			evsel->attr.comm_exec = 1;
+ 	}
+ 
+-	if (evlist->nr_entries > 1) {
++	if (opts->full_itrace) {
++		/*
++		 * Need to be able to synthesize and parse selected events with
++		 * arbitrary sample types, which requires always being able to
++		 * match the id.
++		 */
++		use_sample_identifier = true;
++		evlist__for_each(evlist, evsel)
++			perf_evsel__set_sample_id(evsel, use_sample_identifier);
++	} else if (evlist->nr_entries > 1) {
+ 		struct perf_evsel *first = perf_evlist__first(evlist);
+ 
+ 		evlist__for_each(evlist, evsel) {
+-- 
+1.9.1
 
