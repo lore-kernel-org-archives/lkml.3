@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935264AbaLLSRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 13:17:06 -0500
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:54050 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935145AbaLLSRF convert rfc822-to-8bit (ORCPT
+	id S1031101AbaLLSS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 13:18:58 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:46521 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935132AbaLLSS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 13:17:05 -0500
-Content-Type: text/plain; charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
-From: NEO-Technologies / Julien CHAUVEAU 
-	<julien.chauveau@neo-technologies.fr>
-In-Reply-To: <CABgxDoKKjwDf8+OuWiTjzpbGonshZ0fHXXMvSkJi1Z1U_7AsNA@mail.gmail.com>
-Date: Fri, 12 Dec 2014 19:01:23 +0100
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E20CB6ED-61C3-40B5-84E5-95B2A1F4B8FB@neo-technologies.fr>
-References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr> <CABgxDoKKjwDf8+OuWiTjzpbGonshZ0fHXXMvSkJi1Z1U_7AsNA@mail.gmail.com>
-To: Romain Perier <romain.perier@gmail.com>
-X-Mailer: Apple Mail (2.1993)
-X-Ovh-Tracer-Id: 3277213154274115645
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 12 Dec 2014 13:18:56 -0500
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:157d:7c93:3f22:993c:1f7b]
+In-Reply-To: <54895821.3050902@intel.com>
+References: <54868CF6.6020505@intel.com>
+	<CAOesGMirF-_H2ZzFR-VpwkEErZE2uQJSYx5EuePArQsEh=r_Kw@mail.gmail.com>
+	<20141211010226.GA26253@aaronlu.sh.intel.com>
+	<CAOesGMj_uObbxLdpobEhP=nRPsFUJNCtq01RH7ZSECd5=1Ti6Q@mail.gmail.com>
+	<1418265472.12435.68.camel@rzhang1-toshiba>
+	<548934D0.8000502@intel.com>
+	<1418286781.12435.73.camel@rzhang1-toshiba>
+	<54895821.3050902@intel.com>
+Date: Fri, 12 Dec 2014 10:18:55 -0800
+Message-ID: <CAOesGMjKdi6wPsy+U1makbFyJpsj8RZykOZ5BEYrFWj_VzUxqA@mail.gmail.com>
+Subject: Re: [PATCH v6] Thermal: introduce INT3406 thermal driver
+From: Olof Johansson <olof@lixom.net>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Zhang Rui <rui.zhang@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Le 12 déc. 2014 à 16:44, Romain Perier <romain.perier@gmail.com> a écrit :
-> 
-> Hi,
-> 
-> 2014-12-12 15:54 GMT+01:00 Julien CHAUVEAU
-> <julien.chauveau@neo-technologies.fr>:
->> This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0 and hclk_usbotg1
->> because these clocks must remain enabled to use the USB controllers in host mode.
->> 
->> This fixes a regression introduced by patch "clk: rockchip: disable unused clocks"
->> https://lkml.kernel.org/g/1415092270-24932-1-git-send-email-kever.yang@rock-chips.com
-> 
-> Could you refer the commit id instead ? something like "commit <ID>
-> ("title of the corresponding commit »)  
+Hi,
 
-OK, I'll resubmit with commit 78eaf6095cc7 ("clk: rockchip: disable unused clocks").
 
-> (and use scripts/checkpatch.pl
-> on your patch to be sure that the commit form is okay).
-> 
 
-That’s already done:
+On Thu, Dec 11, 2014 at 12:38 AM, Aaron Lu <aaron.lu@intel.com> wrote:
+> INT3406 ACPI device object resembles an ACPI video output device, but its
+> _BCM is said to be deprecated and should not be used. So we will make
+> use of the raw interface to do the actual cooling. Due to this, the
+> backlight core has some modifications. Also, to re-use some of the ACPI
+> video module's code, one function has been exported.
+>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+> ---
+> v6: Fix an issue that wrongly set error path return value as reported
+> by Olof Johansson.
 
-scripts/checkpatch.pl 0001-clk-rockchip-add-CLK_IGNORE_UNUSED-flag-to-fix-USB-H.patch 
-total: 0 errors, 0 warnings, 30 lines checked
+Last night's -next was still broken. I take it this wasn't applied
+yet? Please at least revert the original patch.
 
-> 
-> I confirm the regression.
-> 
-> Romain
 
+-Olof
