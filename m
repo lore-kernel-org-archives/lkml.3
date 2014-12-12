@@ -1,34 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934914AbaLLPKJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:10:09 -0500
-Received: from lucky1.263xmail.com ([211.157.147.132]:37755 "EHLO
+	id S934927AbaLLPMw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:12:52 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:51461 "EHLO
 	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934025AbaLLPKG (ORCPT
+	with ESMTP id S934025AbaLLPMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:10:06 -0500
+	Fri, 12 Dec 2014 10:12:51 -0500
 X-263anti-spam: KSV:0;
 X-MAIL-GRAY: 1
 X-MAIL-DELIVERY: 0
 X-KSVirus-check: 0
 X-ABS-CHECKED: 4
 X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: paulz@synopsys.com
+X-FST-TO: heiko@sntech.de
 X-SENDER-IP: 58.22.7.114
 X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <8885c23d6aa4d6b768fbebc89923069c>
+X-UNIQUE-TAG: <ca5c859e38bcddf6c7f02f823df3a990>
 X-ATTACHMENT-NUM: 0
 X-DNS-TYPE: 0
 From: Yunzhi Li <lyz@rock-chips.com>
-To: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, heiko@sntech.de, jwerner@chromium.org,
+To: heiko@sntech.de, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jwerner@chromium.org,
         dianders@chromium.org, olof@lixom.net, huangtao@rock-chips.com,
-        zyw@rock-chips.com, cf@rock-chips.com,
-        linux-rockchip@lists.infradead.org
+        zyw@rock-chips.com, cf@rock-chips.com
 Cc: Yunzhi Li <lyz@rock-chips.com>
-Subject: [PATCH v7 3/5] usb: dwc2: add generic PHY framework support for dwc2 usb controler platform driver.
-Date: Fri, 12 Dec 2014 23:09:32 +0800
-Message-Id: <1418396972-32686-1-git-send-email-lyz@rock-chips.com>
+Subject: [PATCH v7 4/5] ARM: dts: rockchip: add rk3288 usb PHY
+Date: Fri, 12 Dec 2014 23:12:21 +0800
+Message-Id: <1418397141-1079-1-git-send-email-lyz@rock-chips.com>
 X-Mailer: git-send-email 2.0.0
 In-Reply-To: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
 References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
@@ -36,155 +39,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get PHY parameters from devicetree and power off usb PHY during
-system suspend.
+This patch adds a device_node for RK3288 SoC usb phy. It also
+defines the phy to be used by three usb controllers: usb_host0/1
+and usb_otg.
 
 Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
-Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
 ---
 
-Changes in v7: None
+Changes in v7:
+- Update dtsi for new usb phy driver.
+
 Changes in v6: None
-Changes in v5: None
-Changes in v4: None
-Changes in v3:
-- Fix coding style: both branches of the if() which only one
-  branch of the conditional statement is a single statement
-  should have braces.
-- No need to test dwc2->phy for NULL before calling generic phy
-  APIs.
+Changes in v5:
+- reorder the phy dt node to a correct position.
 
- drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
- drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 46 insertions(+), 23 deletions(-)
+Changes in v4:
+- Add phy subnodes.
 
-diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
-index 200168e..2601c61 100644
---- a/drivers/usb/dwc2/gadget.c
-+++ b/drivers/usb/dwc2/gadget.c
-@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- {
- 	struct device *dev = hsotg->dev;
- 	struct s3c_hsotg_plat *plat = dev->platform_data;
--	struct phy *phy;
--	struct usb_phy *uphy;
- 	struct s3c_hsotg_ep *eps;
- 	int epnum;
- 	int ret;
-@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
- 	hsotg->phyif = GUSBCFG_PHYIF16;
+Changes in v3: None
+
+ arch/arm/boot/dts/rk3288.dtsi | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288.dtsi b/arch/arm/boot/dts/rk3288.dtsi
+index 874e66d..2a9a029 100644
+--- a/arch/arm/boot/dts/rk3288.dtsi
++++ b/arch/arm/boot/dts/rk3288.dtsi
+@@ -335,6 +335,8 @@
+ 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_USBHOST0>;
+ 		clock-names = "usbhost";
++		phys = <&usbphy1>;
++		phy-names = "usb";
+ 		status = "disabled";
+ 	};
  
- 	/*
--	 * Attempt to find a generic PHY, then look for an old style
--	 * USB PHY, finally fall back to pdata
-+	 * If platform probe couldn't find a generic PHY or an old style
-+	 * USB PHY, fall back to pdata
- 	 */
--	phy = devm_phy_get(dev, "usb2-phy");
--	if (IS_ERR(phy)) {
--		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
--		if (IS_ERR(uphy)) {
--			/* Fallback for pdata */
--			plat = dev_get_platdata(dev);
--			if (!plat) {
--				dev_err(dev,
--				"no platform data or transceiver defined\n");
--				return -EPROBE_DEFER;
--			}
--			hsotg->plat = plat;
--		} else
--			hsotg->uphy = uphy;
--	} else {
--		hsotg->phy = phy;
-+	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
-+		plat = dev_get_platdata(dev);
-+		if (!plat) {
-+			dev_err(dev,
-+			"no platform data or transceiver defined\n");
-+			return -EPROBE_DEFER;
-+		}
-+		hsotg->plat = plat;
-+	} else if (hsotg->phy) {
- 		/*
- 		 * If using the generic PHY framework, check if the PHY bus
- 		 * width is 8-bit and set the phyif appropriately.
- 		 */
--		if (phy_get_bus_width(phy) == 8)
-+		if (phy_get_bus_width(hsotg->phy) == 8)
- 			hsotg->phyif = GUSBCFG_PHYIF8;
- 	}
+@@ -347,6 +349,8 @@
+ 		interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_USBHOST1>;
+ 		clock-names = "otg";
++		phys = <&usbphy2>;
++		phy-names = "usb2-phy";
+ 		status = "disabled";
+ 	};
  
-diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
-index 6a795aa..ae095f0 100644
---- a/drivers/usb/dwc2/platform.c
-+++ b/drivers/usb/dwc2/platform.c
-@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
- 	struct dwc2_core_params defparams;
- 	struct dwc2_hsotg *hsotg;
- 	struct resource *res;
-+	struct phy *phy;
-+	struct usb_phy *uphy;
- 	int retval;
- 	int irq;
+@@ -357,6 +361,8 @@
+ 		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+ 		clocks = <&cru HCLK_OTG0>;
+ 		clock-names = "otg";
++		phys = <&usbphy0>;
++		phy-names = "usb2-phy";
+ 		status = "disabled";
+ 	};
  
-@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
+@@ -497,6 +503,35 @@
+ 		interrupts = <GIC_PPI 9 0xf04>;
+ 	};
  
- 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
- 
-+	/*
-+	 * Attempt to find a generic PHY, then look for an old style
-+	 * USB PHY
-+	 */
-+	phy = devm_phy_get(&dev->dev, "usb2-phy");
-+	if (IS_ERR(phy)) {
-+		hsotg->phy = NULL;
-+		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
-+		if (IS_ERR(uphy))
-+			hsotg->uphy = NULL;
-+		else
-+			hsotg->uphy = uphy;
-+	} else {
-+		hsotg->phy = phy;
-+		phy_power_on(hsotg->phy);
-+		phy_init(hsotg->phy);
-+	}
++	usbphy: phy {
++		compatible = "rockchip,rk3288-usb-phy";
++		rockchip,grf = <&grf>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
 +
- 	spin_lock_init(&hsotg->lock);
- 	mutex_init(&hsotg->init_mutex);
- 	retval = dwc2_gadget_init(hsotg, irq);
-@@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
- 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
--	if (dwc2_is_device_mode(dwc2))
-+	if (dwc2_is_device_mode(dwc2)) {
- 		ret = s3c_hsotg_suspend(dwc2);
-+	} else {
-+		if (dwc2->lx_state == DWC2_L0)
-+			return 0;
-+		phy_exit(dwc2->phy);
-+		phy_power_off(dwc2->phy);
++		usbphy0: usb-phy0 {
++			#phy-cells = <0>;
++			reg = <0x320>;
++			clocks = <&cru SCLK_OTGPHY0>;
++			clock-names = "phyclk";
++		};
 +
-+	}
- 	return ret;
- }
- 
-@@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
- 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
- 	int ret = 0;
- 
--	if (dwc2_is_device_mode(dwc2))
-+	if (dwc2_is_device_mode(dwc2)) {
- 		ret = s3c_hsotg_resume(dwc2);
-+	} else {
-+		phy_power_on(dwc2->phy);
-+		phy_init(dwc2->phy);
++		usbphy1: usb-phy1 {
++			#phy-cells = <0>;
++			reg = <0x334>;
++			clocks = <&cru SCLK_OTGPHY1>;
++			clock-names = "phyclk";
++		};
 +
-+	}
- 	return ret;
- }
- 
++		usbphy2: usb-phy2 {
++			#phy-cells = <0>;
++			reg = <0x348>;
++			clocks = <&cru SCLK_OTGPHY2>;
++			clock-names = "phyclk";
++		};
++	};
++
+ 	pinctrl: pinctrl {
+ 		compatible = "rockchip,rk3288-pinctrl";
+ 		rockchip,grf = <&grf>;
 -- 
 2.0.0
 
