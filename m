@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966435AbaLLGyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:54:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760060AbaLLGsN (ORCPT
+	id S966478AbaLLGyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:54:22 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59386 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966383AbaLLGyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:13 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 12 Dec 2014 01:54:16 -0500
+Date: Fri, 12 Dec 2014 07:54:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141212065411.GA27967@gmail.com>
+References: <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+ <20141205171501.GA1320@redhat.com>
+ <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+ <1417806247.4845.1@mail.thefacebook.com>
+ <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+ <20141211145408.GB16800@redhat.com>
+ <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+ <548A122C.8000906@oracle.com>
+ <CA+55aFw68nC+5s=iX2R4SLsgG3nBvURmDXYvX5pFJgHBnQoHMA@mail.gmail.com>
+ <548A2165.9030107@oracle.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@kernel.org>,
-        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
-Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.195178057@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 027/164] spi: dw-mid: terminate ongoing transfers at exit
-In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <548A2165.9030107@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.65-rc1 review patch.  If anyone has any objections, please let me know.
 
-------------------
+* Sasha Levin <sasha.levin@oracle.com> wrote:
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Right, and it reproduces in 3.10 as well, so it's not really a 
+> new thing.
+> 
+> What's odd is that I don't remember seeing this bug so long in 
+> the past, I'll try bisecting trinity rather than the kernel - 
+> it's the only other thing that changed.
 
-commit 8e45ef682cb31fda62ed4eeede5d9745a0a1b1e2 upstream.
+So I think DaveJ mentioned it that Trinity recently changed its 
+test task count and is now more aggressively loading the system. 
+Such a change might have made a dormant, resource limits related 
+bug or load dependent race more likely.
 
-Do full clean up at exit, means terminate all ongoing DMA transfers.
+I think at this point it would also be useful to debug the hang 
+itself directly: using triggered printks and kgdb and drilling 
+into all the data structures to figure out why the system isn't 
+progressing.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/spi/spi-dw-mid.c | 4 ++++
- 1 file changed, 4 insertions(+)
+If the bug triggers in a VM (which your testing uses) the failed 
+kernel state ought to be a lot more accessible than bare metal.
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -90,7 +90,11 @@ static void mid_spi_dma_exit(struct dw_s
- {
- 	if (!dws->dma_inited)
- 		return;
-+
-+	dmaengine_terminate_all(dws->txchan);
- 	dma_release_channel(dws->txchan);
-+
-+	dmaengine_terminate_all(dws->rxchan);
- 	dma_release_channel(dws->rxchan);
- }
- 
+That it triggers in a VM, and if it's the same bug as DaveJ's, 
+that also makes the hardware bug theory a lot less likely.
 
+Thanks,
+
+	Ingo
