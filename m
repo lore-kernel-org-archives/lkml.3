@@ -1,205 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141AbaLLU35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:29:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:62624 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750949AbaLLU3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:29:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,566,1413270000"; 
-   d="scan'208";a="636841844"
-Message-ID: <1418416187.9524.22.camel@ideak-mobl>
-Subject: Re: [PATCH 3/3] vt: fix console lock vs. kernfs s_active lock order
-From: Imre Deak <imre.deak@intel.com>
-Reply-To: imre.deak@intel.com
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Date: Fri, 12 Dec 2014 22:29:47 +0200
-In-Reply-To: <548B34DA.1040404@hurleysoftware.com>
-References: <1418402285-9578-1-git-send-email-imre.deak@intel.com>
-	 <1418402285-9578-3-git-send-email-imre.deak@intel.com>
-	 <548B34DA.1040404@hurleysoftware.com>
-Organization: Intel
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	id S935189AbaLLUbZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:31:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38227 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932702AbaLLUbY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 15:31:24 -0500
+Date: Fri, 12 Dec 2014 15:31:21 -0500 (EST)
+Message-Id: <20141212.153121.2126874023661472965.davem@davemloft.net>
+To: elfring@users.sourceforge.net
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
+Subject: Re: [PATCH 1/1] IDE: Deletion of an unnecessary check before the
+ function call "module_put"
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <546F91E5.60104@users.sourceforge.net>
+References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+	<5317A59D.4@users.sourceforge.net>
+	<546F91E5.60104@users.sourceforge.net>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Dec 2014 12:31:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Date: Fri, 21 Nov 2014 20:26:29 +0100
 
-thanks for your review.
-
-On Fri, 2014-12-12 at 13:32 -0500, Peter Hurley wrote:
-> Hi Imre,
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Fri, 21 Nov 2014 20:22:32 +0100
 > 
-> On 12/12/2014 11:38 AM, Imre Deak wrote:
-> > Currently there is a lock order problem between the console lock and the
-> > kernfs s_active lock of the console driver's bind sysfs entry. When
-> > writing to the sysfs entry the lock order is first s_active then console
-> > lock, when unregistering the console driver via
-> > do_unregister_con_driver() the order is the opposite. See the below
-> > bugzilla reference for one instance of a lockdep backtrace.
+> The module_put() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
 > 
-> This description didn't make sense to me because the driver core doesn't
-> try to take the console_lock. So I had to go pull the lockdep report
-> and I'm not sure I agree with your analysis.
+> This issue was detected by using the Coccinelle software.
 > 
-> I see a three-way dependency which includes the fb atomic notifier call
-> chain?
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
 
->From the lockdep report in the bugzilla ticket I referenced, you can see
-the following two paths:
-
-i915_driver_load()
-  console_lock()  -> takes console_sem
-  do_unregister_con_driver()
-    vtconsole_deinit_device()
-      device_remove_file()
-        ...
-        __kernfs_remove()
-          kernfs_drain() ->
-            takes s_active rwsem for the console's bind sysfs entry
-            (tracked via kn->dep_map)
-
-
-vfs_write()   for the above console bind sysfs entry
-  kernfs_fop_write()
-    kernfs_get_active() ->
-      takes s_active rwsem for the above sysfs entry
-    ...
-      store_bind() -> takes console_sem
-
-So you have console_sem->s_active ordering on one path and
-s_active->console_sem ordering on the other.
-
-This patch gets rid of the ordering problem and the related lockdep
-warning.
-
---Imre
-
-> 
-> Regards,
-> Peter Hurley
-> 
-> > Fix this by unregistering the console driver from a deferred work, where
-> > we can safely drop the console lock while unregistering the device and
-> > corresponding sysfs entries (which in turn acquire s_active). Note that
-> > we have to keep the console driver slot in the registered_con_driver
-> > array reserved for the driver that's being unregistered until it's fully
-> > removed. Otherwise a concurrent call to do_register_con_driver could
-> > try to reuse the same slot and fail when registering the corresponding
-> > device with a minor index that's still in use.
-> > 
-> > Reference: https://bugs.freedesktop.org/show_bug.cgi?id=70523
-> > Signed-off-by: Imre Deak <imre.deak@intel.com>
-> > ---
-> >  drivers/tty/vt/vt.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
-> >  1 file changed, 41 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
-> > index 5dd1880..b9edc77 100644
-> > --- a/drivers/tty/vt/vt.c
-> > +++ b/drivers/tty/vt/vt.c
-> > @@ -108,6 +108,7 @@
-> >  #define CON_DRIVER_FLAG_MODULE 1
-> >  #define CON_DRIVER_FLAG_INIT   2
-> >  #define CON_DRIVER_FLAG_ATTR   4
-> > +#define CON_DRIVER_FLAG_ZOMBIE 8
-> >  
-> >  struct con_driver {
-> >  	const struct consw *con;
-> > @@ -153,6 +154,7 @@ static int set_vesa_blanking(char __user *p);
-> >  static void set_cursor(struct vc_data *vc);
-> >  static void hide_cursor(struct vc_data *vc);
-> >  static void console_callback(struct work_struct *ignored);
-> > +static void con_driver_unregister_callback(struct work_struct *ignored);
-> >  static void blank_screen_t(unsigned long dummy);
-> >  static void set_palette(struct vc_data *vc);
-> >  
-> > @@ -180,6 +182,7 @@ static int blankinterval = 10*60;
-> >  core_param(consoleblank, blankinterval, int, 0444);
-> >  
-> >  static DECLARE_WORK(console_work, console_callback);
-> > +static DECLARE_WORK(con_driver_unregister_work, con_driver_unregister_callback);
-> >  
-> >  /*
-> >   * fg_console is the current virtual console,
-> > @@ -3597,7 +3600,8 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
-> >  	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-> >  		con_driver = &registered_con_driver[i];
-> >  
-> > -		if (con_driver->con == NULL) {
-> > +		if (con_driver->con == NULL &&
-> > +		    !(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE)) {
-> >  			con_driver->con = csw;
-> >  			con_driver->desc = desc;
-> >  			con_driver->node = i;
-> > @@ -3660,16 +3664,10 @@ int do_unregister_con_driver(const struct consw *csw)
-> >  
-> >  		if (con_driver->con == csw &&
-> >  		    con_driver->flag & CON_DRIVER_FLAG_MODULE) {
-> > -			vtconsole_deinit_device(con_driver);
-> > -			device_destroy(vtconsole_class,
-> > -				       MKDEV(0, con_driver->node));
-> >  			con_driver->con = NULL;
-> > -			con_driver->desc = NULL;
-> > -			con_driver->dev = NULL;
-> > -			con_driver->node = 0;
-> > -			con_driver->flag = 0;
-> > -			con_driver->first = 0;
-> > -			con_driver->last = 0;
-> > +			con_driver->flag = CON_DRIVER_FLAG_ZOMBIE;
-> > +			schedule_work(&con_driver_unregister_work);
-> > +
-> >  			return 0;
-> >  		}
-> >  	}
-> > @@ -3678,6 +3676,39 @@ int do_unregister_con_driver(const struct consw *csw)
-> >  }
-> >  EXPORT_SYMBOL_GPL(do_unregister_con_driver);
-> >  
-> > +static void con_driver_unregister_callback(struct work_struct *ignored)
-> > +{
-> > +	int i;
-> > +
-> > +	console_lock();
-> > +
-> > +	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-> > +		struct con_driver *con_driver = &registered_con_driver[i];
-> > +
-> > +		if (!(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE))
-> > +			continue;
-> > +
-> > +		console_unlock();
-> > +
-> > +		vtconsole_deinit_device(con_driver);
-> > +		device_destroy(vtconsole_class, MKDEV(0, con_driver->node));
-> > +
-> > +		if (WARN_ON_ONCE(con_driver->con))
-> > +			con_driver->con = NULL;
-> > +		con_driver->desc = NULL;
-> > +		con_driver->dev = NULL;
-> > +		con_driver->node = 0;
-> > +		WARN_ON_ONCE(con_driver->flag != CON_DRIVER_FLAG_ZOMBIE);
-> > +		con_driver->flag = 0;
-> > +		con_driver->first = 0;
-> > +		con_driver->last = 0;
-> > +
-> > +		console_lock();
-> > +	}
-> > +
-> > +	console_unlock();
-> > +}
-> > +
-> >  /*
-> >   *	If we support more console drivers, this function is used
-> >   *	when a driver wants to take over some existing consoles
-> > 
-> 
-
-
+Applied.
