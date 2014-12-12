@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965355AbaLLGYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:24:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51769 "EHLO
+	id S1760463AbaLLGZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:25:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52100 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759423AbaLLGRM (ORCPT
+	by vger.kernel.org with ESMTP id S1759393AbaLLGRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:17:12 -0500
+	Fri, 12 Dec 2014 01:17:00 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Trond Myklebust" <trond.myklebust@primarydata.com>
+CC: akpm@linux-foundation.org, "Mike Snitzer" <snitzer@redhat.com>,
+        "Mikulas Patocka" <mpatocka@redhat.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.747003765@decadent.org.uk>
+Message-ID: <lsq.1418364865.4578734@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 037/164] NFSv4: fix open/lock state recovery error
- handling
+Subject: [PATCH 3.2 063/164] dm bufio: change __GFP_IO to __GFP_FS in
+ shrinker callbacks
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,68 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
+commit 9d28eb12447ee08bb5d1e8bb3195cf20e1ecd1c0 upstream.
 
-The current open/lock state recovery unfortunately does not handle errors
-such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
-just proceeds as if the state manager is finished recovering.
-This patch ensures that we loop back, handle higher priority errors
-and complete the open/lock state recovery.
+The shrinker uses gfp flags to indicate what kind of operation can the
+driver wait for. If __GFP_IO flag is present, the driver can wait for
+block I/O operations, if __GFP_FS flag is present, the driver can wait on
+operations involving the filesystem.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+dm-bufio tested for __GFP_IO. However, dm-bufio can run on a loop block
+device that makes calls into the filesystem. If __GFP_IO is present and
+__GFP_FS isn't, dm-bufio could still block on filesystem operations if it
+runs on a loop block device.
+
+The change from __GFP_IO to __GFP_FS supposedly fixes one observed (though
+unreproducible) deadlock involving dm-bufio and loop device.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[bwh: Backported to 3.2:
+ - There's only one shrinker callback
+ - Adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4state.c | 16 ++++++----------
- 1 file changed, 6 insertions(+), 10 deletions(-)
+ drivers/md/dm-bufio.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1447,7 +1447,8 @@ restart:
- 			if (status < 0) {
- 				set_bit(ops->owner_flag_bit, &sp->so_flags);
- 				nfs4_put_state_owner(sp);
--				return nfs4_recovery_handle_error(clp, status);
-+				status = nfs4_recovery_handle_error(clp, status);
-+				return (status != 0) ? status : -EAGAIN;
- 			}
+--- a/drivers/md/dm-bufio.c
++++ b/drivers/md/dm-bufio.c
+@@ -1324,9 +1324,9 @@ static void drop_buffers(struct dm_bufio
  
- 			nfs4_put_state_owner(sp);
-@@ -1456,7 +1457,7 @@ restart:
- 		spin_unlock(&clp->cl_lock);
- 	}
- 	rcu_read_unlock();
--	return status;
-+	return 0;
- }
+ /*
+  * Test if the buffer is unused and too old, and commit it.
+- * At if noio is set, we must not do any I/O because we hold
+- * dm_bufio_clients_lock and we would risk deadlock if the I/O gets rerouted to
+- * different bufio client.
++ * And if GFP_NOFS is used, we must not do any I/O because we hold
++ * dm_bufio_clients_lock and we would risk deadlock if the I/O gets
++ * rerouted to different bufio client.
+  */
+ static int __cleanup_old_buffer(struct dm_buffer *b, gfp_t gfp,
+ 				unsigned long max_jiffies)
+@@ -1334,7 +1334,7 @@ static int __cleanup_old_buffer(struct d
+ 	if (jiffies - b->last_accessed < max_jiffies)
+ 		return 1;
  
- static int nfs4_check_lease(struct nfs_client *clp)
-@@ -1729,23 +1730,18 @@ static void nfs4_state_manager(struct nf
- 		if (test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state)) {
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->reboot_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
--				continue;
--			nfs4_state_end_reclaim_reboot(clp);
--			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
-+			nfs4_state_end_reclaim_reboot(clp);
- 		}
+-	if (!(gfp & __GFP_IO)) {
++	if (!(gfp & __GFP_FS)) {
+ 		if (test_bit(B_READING, &b->state) ||
+ 		    test_bit(B_WRITING, &b->state) ||
+ 		    test_bit(B_DIRTY, &b->state))
+@@ -1373,7 +1373,7 @@ static int shrink(struct shrinker *shrin
+ 	unsigned long r;
+ 	unsigned long nr_to_scan = sc->nr_to_scan;
  
- 		/* Now recover expired state... */
- 		if (test_and_clear_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state)) {
- 			status = nfs4_do_reclaim(clp,
- 				clp->cl_mvops->nograce_recovery_ops);
--			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
--			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
-+			if (status == -EAGAIN)
- 				continue;
- 			if (status < 0)
- 				goto out_error;
+-	if (sc->gfp_mask & __GFP_IO)
++	if (sc->gfp_mask & __GFP_FS)
+ 		dm_bufio_lock(c);
+ 	else if (!dm_bufio_trylock(c))
+ 		return !nr_to_scan ? 0 : -1;
 
