@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965475AbaLLG2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:28:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52024 "EHLO
+	id S965499AbaLLG2H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:28:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52022 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759365AbaLLGQ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759364AbaLLGQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:59 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Berg" <johannes.berg@intel.com>,
-        "Sujith Manoharan" <sujith@msujith.org>,
-        "Johannes Berg" <johannes@sipsolutions.net>
+CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Mathias Krause" <minipli@googlemail.com>,
+        "PaX Team" <pageexec@freemail.hu>,
+        "Brad Spengler" <spender@grsecurity.net>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.148466917@decadent.org.uk>
+Message-ID: <lsq.1418364865.578008802@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 096/164] mac80211: properly flush delayed scan work on
- interface removal
+Subject: [PATCH 3.2 083/164] posix-timers: Fix stack info leak in
+ timer_create()
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,57 +35,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes@sipsolutions.net>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 46238845bd609a5c0fbe076e1b82b4c5b33360b2 upstream.
+commit 6891c4509c792209c44ced55a60f13954cb50ef4 upstream.
 
-When an interface is deleted, an ongoing hardware scan is canceled and
-the driver must abort the scan, at the very least reporting completion
-while the interface is removed.
+If userland creates a timer without specifying a sigevent info, we'll
+create one ourself, using a stack local variable. Particularly will we
+use the timer ID as sival_int. But as sigev_value is a union containing
+a pointer and an int, that assignment will only partially initialize
+sigev_value on systems where the size of a pointer is bigger than the
+size of an int. On such systems we'll copy the uninitialized stack bytes
+from the timer_create() call to userland when the timer actually fires
+and we're going to deliver the signal.
 
-However, if it scheduled the work that might only run after everything
-is said and done, which leads to cfg80211 warning that the scan isn't
-reported as finished yet; this is no fault of the driver, it already
-did, but mac80211 hasn't processed it.
+Initialize sigev_value with 0 to plug the stack info leak.
 
-To fix this situation, flush the delayed work when the interface being
-removed is the one that was executing the scan.
+Found in the PaX patch, written by the PaX Team.
 
-Reported-by: Sujith Manoharan <sujith@msujith.org>
-Tested-by: Sujith Manoharan <sujith@msujith.org>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2:
- - No rcu_access_pointer() needed
- - Adjust context]
+Fixes: 5a9fa7307285 ("posix-timers: kill ->it_sigev_signo and...")
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: PaX Team <pageexec@freemail.hu>
+Link: http://lkml.kernel.org/r/1412456799-32339-1-git-send-email-minipli@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/iface.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ kernel/posix-timers.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -382,10 +382,12 @@ static void ieee80211_do_stop(struct iee
- 	u32 hw_reconf_flags = 0;
- 	int i;
- 	enum nl80211_channel_type orig_ct;
-+	bool cancel_scan;
- 
- 	clear_bit(SDATA_STATE_RUNNING, &sdata->state);
- 
--	if (local->scan_sdata == sdata)
-+	cancel_scan = local->scan_sdata == sdata;
-+	if (cancel_scan)
- 		ieee80211_scan_cancel(local);
- 
- 	/*
-@@ -543,6 +545,9 @@ static void ieee80211_do_stop(struct iee
- 
- 	ieee80211_recalc_ps(local, -1);
- 
-+	if (cancel_scan)
-+		flush_delayed_work(&local->scan_work);
-+
- 	if (local->open_count == 0) {
- 		if (local->ops->napi_poll)
- 			napi_disable(&local->napi);
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -589,6 +589,7 @@ SYSCALL_DEFINE3(timer_create, const cloc
+ 			goto out;
+ 		}
+ 	} else {
++		memset(&event.sigev_value, 0, sizeof(event.sigev_value));
+ 		event.sigev_notify = SIGEV_SIGNAL;
+ 		event.sigev_signo = SIGALRM;
+ 		event.sigev_value.sival_int = new_timer->it_id;
 
