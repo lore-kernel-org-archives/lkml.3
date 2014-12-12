@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760329AbaLLGWq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:22:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51808 "EHLO
+	id S1760313AbaLLGWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:22:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51775 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759466AbaLLGRN (ORCPT
+	by vger.kernel.org with ESMTP id S1759467AbaLLGRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:17:13 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mike Snitzer" <snitzer@redhat.com>,
-        "Mikulas Patocka" <mpatocka@redhat.com>,
-        "Joe Thornber" <ejt@redhat.com>
+CC: akpm@linux-foundation.org, "Quinn Tran" <quinn.tran@qlogic.com>,
+        "Nicholas Bellinger" <nab@linux-iscsi.org>,
+        "Saurav Kashyap" <saurav.kashyap@qlogic.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.419802950@decadent.org.uk>
+Message-ID: <lsq.1418364865.276583896@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 044/164] dm bufio: update last_accessed when relinking
- a buffer
+Subject: [PATCH 3.2 041/164] target: Fix queue full status NULL pointer
+ for SCF_TRANSPORT_TASK_SENSE
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +33,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Thornber <ejt@redhat.com>
+From: Quinn Tran <quinn.tran@qlogic.com>
 
-commit eb76faf53b1ff7a77ce3f78cc98ad392ac70c2a0 upstream.
+commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
 
-The 'last_accessed' member of the dm_buffer structure was only set when
-the the buffer was created.  This led to each buffer being discarded
-after dm_bufio_max_age time even if it was used recently.  In practice
-this resulted in all thinp metadata being evicted soon after being read
--- this is particularly problematic for metadata intensive workloads
-like multithreaded small random IO.
+During temporary resource starvation at lower transport layer, command
+is placed on queue full retry path, which expose this problem.  The TCM
+queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
+cmd twice to lower layer.  The 1st time led to cmd normal free path.
+The 2nd time cause Null pointer access.
 
-'last_accessed' is now updated each time the buffer is moved to the head
-of the LRU list, so the buffer is now properly discarded if it was not
-used in dm_bufio_max_age time.
+This regression bug was originally introduced v3.1-rc code in the
+following commit:
 
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+commit e057f53308a5f071556ee80586b99ee755bf07f5
+Author: Christoph Hellwig <hch@infradead.org>
+Date:   Mon Oct 17 13:56:41 2011 -0400
+
+    target: remove the transport_qf_callback se_cmd callback
+
+Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-bufio.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/target_core_transport.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -468,6 +468,7 @@ static void __relink_lru(struct dm_buffe
- 	b->list_mode = dirty;
- 	list_del(&b->lru_list);
- 	list_add(&b->lru_list, &c->lru[dirty]);
-+	b->last_accessed = jiffies;
- }
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -3147,8 +3147,7 @@ static void transport_complete_qf(struct
  
- /*----------------------------------------------------------------
+ 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
+ 		ret = cmd->se_tfo->queue_status(cmd);
+-		if (ret)
+-			goto out;
++		goto out;
+ 	}
+ 
+ 	switch (cmd->data_direction) {
 
