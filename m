@@ -1,202 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaLLWIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:08:50 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:50988 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaLLWIs (ORCPT
+	id S1753102AbaLLWJB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:09:01 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:58166 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaLLWI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:48 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: ralf@linux-mips.org
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V5 21/23] MIPS: BMIPS: Refresh BCM3384 DTS files
-Date: Fri, 12 Dec 2014 14:07:12 -0800
-Message-Id: <1418422034-17099-22-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
-References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+	Fri, 12 Dec 2014 17:08:59 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Fri, 12 Dec 2014 17:08:56 -0500
+To: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+Message-ID: <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DT bindings for this platform have changed as the bootloader and
-product requirements evolved.  In particular, there are both
-Linux-on-Zephyr and Linux-on-Viper configurations.
+Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
+crystal is not enabled at power up.  Instead the CPU falls back to using
+an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
+20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
+but can also be 19.2 or 27MHz which result in much larger drift.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Since this is used to drive the master counter at 32.768KHz * 375 /
+2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
+seconds per day, and more than the 500ppm NTP is able to tolerate.
+
+Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
+is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
+by known that the real counter frequency can be determined and used.
+The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 75 / 244.
+
+Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
 ---
- arch/mips/boot/dts/bcm3384.dtsi        | 109 ----------------------------
- arch/mips/boot/dts/bcm3384_zephyr.dtsi | 126 +++++++++++++++++++++++++++++++++
- arch/mips/boot/dts/bcm93384wvg.dts     |   9 +--
- 3 files changed, 127 insertions(+), 117 deletions(-)
- delete mode 100644 arch/mips/boot/dts/bcm3384.dtsi
- create mode 100644 arch/mips/boot/dts/bcm3384_zephyr.dtsi
+ arch/arm/mach-omap2/timer.c |  120 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 87 insertions(+), 33 deletions(-)
 
-diff --git a/arch/mips/boot/dts/bcm3384.dtsi b/arch/mips/boot/dts/bcm3384.dtsi
-deleted file mode 100644
-index 21b074a..0000000
-diff --git a/arch/mips/boot/dts/bcm3384_zephyr.dtsi b/arch/mips/boot/dts/bcm3384_zephyr.dtsi
-new file mode 100644
-index 0000000..a7bd856
---- /dev/null
-+++ b/arch/mips/boot/dts/bcm3384_zephyr.dtsi
-@@ -0,0 +1,126 @@
-+/ {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "brcm,bcm3384", "brcm,bcm33843";
-+
-+	memory@0 {
-+		device_type = "memory";
-+
-+		/* Typical range.  The bootloader should fill this in. */
-+		reg = <0x0 0x08000000>;
-+	};
-+
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		/* On BMIPS5000 this is 1/8th of the CPU core clock */
-+		mips-hpt-frequency = <100000000>;
-+
-+		cpu@0 {
-+			compatible = "brcm,bmips5000";
-+			device_type = "cpu";
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "brcm,bmips5000";
-+			device_type = "cpu";
-+			reg = <1>;
-+		};
-+	};
-+
-+	cpu_intc: cpu_intc {
-+		#address-cells = <0>;
-+		compatible = "mti,cpu-interrupt-controller";
-+
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+	};
-+
-+	clocks {
-+		periph_clk: periph_clk {
-+			compatible = "fixed-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <54000000>;
-+		};
-+	};
-+
-+	aliases {
-+		uart0 = &uart0;
-+	};
-+
-+	ubus {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		compatible = "brcm,ubus", "simple-bus";
-+		ranges;
-+		dma-ranges = <0x00000000 0x08000000 0x08000000>,
-+			     <0x08000000 0x00000000 0x08000000>;
-+
-+		periph_intc: periph_intc@14e00038 {
-+			compatible = "brcm,bcm3380-l2-intc";
-+			reg = <0x14e00038 0x4 0x14e0003c 0x4>,
-+			      <0x14e00340 0x4 0x14e00344 0x4>;
-+
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+
-+			interrupt-parent = <&cpu_intc>;
-+			interrupts = <4>;
-+		};
-+
-+		zmips_intc: zmips_intc@104b0060 {
-+			compatible = "brcm,bcm3380-l2-intc";
-+			reg = <0x104b0060 0x4 0x104b0064 0x4>;
-+
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+
-+			interrupt-parent = <&periph_intc>;
-+			interrupts = <29>;
-+			brcm,int-map-mask = <0xffffffff>;
-+		};
-+
-+		iop_intc: iop_intc@14e00058 {
-+			compatible = "brcm,bcm3380-l2-intc";
-+			reg = <0x14e00058 0x4 0x14e0005c 0x4>;
-+
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+
-+			interrupt-parent = <&cpu_intc>;
-+			interrupts = <6>;
-+			brcm,int-map-mask = <0xffffffff>;
-+		};
-+
-+		uart0: serial@14e00520 {
-+			compatible = "brcm,bcm6345-uart";
-+			reg = <0x14e00520 0x18>;
-+			interrupt-parent = <&periph_intc>;
-+			interrupts = <2>;
-+			clocks = <&periph_clk>;
-+			status = "disabled";
-+		};
-+
-+		ehci0: usb@15400300 {
-+			compatible = "brcm,bcm3384-ehci", "generic-ehci";
-+			reg = <0x15400300 0x100>;
-+			big-endian;
-+			interrupt-parent = <&periph_intc>;
-+			interrupts = <41>;
-+			status = "disabled";
-+		};
-+
-+		ohci0: usb@15400400 {
-+			compatible = "brcm,bcm3384-ohci", "generic-ohci";
-+			reg = <0x15400400 0x100>;
-+			big-endian;
-+			no-big-frame-no;
-+			interrupt-parent = <&periph_intc>;
-+			interrupts = <40>;
-+			status = "disabled";
-+		};
-+	};
-+};
-diff --git a/arch/mips/boot/dts/bcm93384wvg.dts b/arch/mips/boot/dts/bcm93384wvg.dts
-index 8317411..d1e44a1 100644
---- a/arch/mips/boot/dts/bcm93384wvg.dts
-+++ b/arch/mips/boot/dts/bcm93384wvg.dts
-@@ -1,6 +1,6 @@
- /dts-v1/;
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index fb0cb2b..f00e4b4 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -497,6 +497,7 @@ static void __init realtime_counter_init(void)
+ 	static struct clk *sys_clk;
+ 	unsigned long rate;
+ 	unsigned int reg, num, den;
++	bool errata_i856_workaround = false;
  
--/include/ "bcm3384.dtsi"
-+/include/ "bcm3384_zephyr.dtsi"
+ 	base = ioremap(REALTIME_COUNTER_BASE, SZ_32);
+ 	if (!base) {
+@@ -510,39 +511,93 @@ static void __init realtime_counter_init(void)
+ 		return;
+ 	}
  
- / {
- 	compatible = "brcm,bcm93384wvg", "brcm,bcm3384";
-@@ -10,13 +10,6 @@
- 		bootargs = "console=ttyS0,115200";
- 		stdout-path = &uart0;
- 	};
--
--	memory@0 {
--		device_type = "memory";
--		reg = <0x0 0x04000000>;
--		dma-xor-mask = <0x08000000>;
--		dma-xor-limit = <0x0fffffff>;
--	};
- };
++	if (soc_is_dra7xx()) {
++		#define CTRL_CORE_BOOTSTRAP 0x4A0026C4
++		#define SPEEDSELECT_MASK 0x00000300
++		void __iomem *corebase;
++		corebase = ioremap(CTRL_CORE_BOOTSTRAP, SZ_4);
++		if (!corebase)
++			pr_err("%s: ioremap failed\n", __func__);
++		else {
++			reg = readl_relaxed(corebase) & SPEEDSELECT_MASK;
++			iounmap(corebase);
++			/*
++			 * Errata i856 says the 32.768KHz crystal does
++			 * not start at power on, so the CPU falls back in
++			 * an emulated 32KHz clock instead.  This causes
++			 * the master counter frequency to not be 6.144MHz
++			 * This affects at least the AM572x 1.0 and
++			 * 1.1 revisions.
++			 *
++			 * Of course any board built without a populated
++			 * 32.768KHz crystal would also need this fix
++			 * even if the CPU is fixed later.
++			 *
++			 * If the two speedselect bits are not 0, then the
++			 * 32.768KHz clock driving the course counter that
++			 * corrects the fine counter every time it ticks is
++			 * actually rate/610 rather than 32.768KHz and we
++			 * should compensate to avoid the 570ppm (At 20MHz,
++			 * much worse at other rates) too fast system time.
++			 */
++			if (reg) {
++				errata_i856_workaround = true;
++			}
++		}
++	}
++
+ 	rate = clk_get_rate(sys_clk);
+-	/* Numerator/denumerator values refer TRM Realtime Counter section */
+-	switch (rate) {
+-	case 12000000:
+-		num = 64;
+-		den = 125;
+-		break;
+-	case 13000000:
+-		num = 768;
+-		den = 1625;
+-		break;
+-	case 19200000:
+-		num = 8;
+-		den = 25;
+-		break;
+-	case 20000000:
+-		num = 192;
+-		den = 625;
+-		break;
+-	case 26000000:
+-		num = 384;
+-		den = 1625;
+-		break;
+-	case 27000000:
+-		num = 256;
+-		den = 1125;
+-		break;
+-	case 38400000:
+-	default:
+-		/* Program it for 38.4 MHz */
+-		num = 4;
+-		den = 25;
+-		break;
++	if (errata_i856_workaround) {
++		/*
++		 * Realtime Counter frequency is not based on a real
++		 * 32.768KHz time source, so calculate the real resulting
++		 * frequency instead.  It is not 6.144MHz in this case.
++		 *
++		 * The frequency is always rate / 610 + 375 / 2 which
++		 * is rate * 244 / 75 and will fit in 32 bit for all rates.
++		 *
++		 * The multiplication has to be first to keep accuracy
++		 * with integer math as high as possible.
++		 */
++		num = 75;
++		den = 244;
++		arch_timer_freq = (rate * num) / den;
++	} else {
++		/* Numerator/denumerator values refer TRM Realtime Counter section */
++		switch (rate) {
++		case 12000000:
++			num = 64;
++			den = 125;
++			break;
++		case 13000000:
++			num = 768;
++			den = 1625;
++			break;
++		case 19200000:
++			num = 8;
++			den = 25;
++			break;
++		case 20000000:
++			num = 192;
++			den = 625;
++			break;
++		case 26000000:
++			num = 384;
++			den = 1625;
++			break;
++		case 27000000:
++			num = 256;
++			den = 1125;
++			break;
++		case 38400000:
++		default:
++			/* Program it for 38.4 MHz */
++			num = 4;
++			den = 25;
++			break;
++		}
++		/* This divides cleanly and fits in 32 bits */
++		arch_timer_freq = (rate / den) * num;
+ 	}
  
- &uart0 {
+ 	/* Program numerator and denumerator registers */
+@@ -556,7 +611,6 @@ static void __init realtime_counter_init(void)
+ 	reg |= den;
+ 	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+ 
+-	arch_timer_freq = (rate / den) * num;
+ 	set_cntfreq();
+ 
+ 	iounmap(base);
 -- 
-2.1.1
+1.7.10.4
 
