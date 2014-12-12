@@ -1,127 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965469AbaLLAC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 19:02:28 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:51332 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758460AbaLLACS (ORCPT
+	id S965483AbaLLAK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 19:10:56 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:35323 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933361AbaLLAKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 19:02:18 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/8] linux/cpumask.h: Update bitmap wrappers to take unsigned int
-Date: Fri, 12 Dec 2014 01:01:49 +0100
-Message-Id: <1418342514-21630-4-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418342514-21630-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1418342514-21630-1-git-send-email-linux@rasmusvillemoes.dk>
+	Thu, 11 Dec 2014 19:10:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApNbAEExilR5LCj0/2dsb2JhbABZgwZSWII1sG0MAQEBAQEBBpI1gSWESwICAQECgRMXAQEBAQF9hAwBAQEDATocGAsFCwgDGAklDwUlAyETiCQH2CMMIBiFaIQKhWgHhCkFhCQCjReDPoFygQ0NiDuBV4YIIoQAKjCCQwEBAQ
+Date: Fri, 12 Dec 2014 11:05:25 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: David Drysdale <drysdale@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Kees Cook <keescook@chromium.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Meredydd Luff <meredydd@senatehouse.org>,
+        Will Drewry <wad@chromium.org>,
+        Jorge Lucangeli Obes <jorgelo@google.com>,
+        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
+        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        fstests@vger.kernel.org
+Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
+Message-ID: <20141212000524.GI24183@dastard>
+References: <1415094884-18349-1-git-send-email-drysdale@google.com>
+ <1415094884-18349-3-git-send-email-drysdale@google.com>
+ <20141111053641.GR23575@dastard>
+ <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the various bitmap_* functions now take an unsigned int as nbits
-parameter, it makes sense to also update the various wrappers, even
-though they're marked as obsolete.
+On Fri, Nov 21, 2014 at 02:19:41PM +0000, David Drysdale wrote:
+> On Tue, Nov 11, 2014 at 5:36 AM, Dave Chinner <david@fromorbit.com> wrote:
+> > [cc fstests@vger.kernel.org]
+> >
+> > On Tue, Nov 04, 2014 at 09:54:43AM +0000, David Drysdale wrote:
+> >> Add simple tests of openat(2) variations, including examples that
+> >> check the new O_BENEATH flag.
+> >>
+> >> Signed-off-by: David Drysdale <drysdale@google.com>
+> >
+> > Wouldn't this be better added to fstests? That's the regression
+> > test suite used by filesystem developers and most distro QA
+> > organisations and where the fs developers aggregate all their new
+> > regression tests.
+> >
+> > IMO, the fewer places we aggregate VFS/filesystem tests the better.
+> > I really don't think the kernel tree is the best place for adding
+> > VFS behavioural tests because it has none of the infrastructure
+> > around it to test arbitrary filesystems and configurations and hence
+> > is not particularly useful to the people whoa re likely to notice
+> > and care about fs regression tests suddenly breaking.
+> >
+> > As an example, the recent renameat() syscall additions (e.g.
+> > RENAME_EXCHANGE, RENAME_NOREPLACE) have unit tests in fstests, so
+> > these new O_BENEATH tests should really follow the same model...
+> 
+> Fair enough, that makes sense -- I've now got a version of the selftest
+> running within xfstests (git://oss.sgi.com/xfs/cmds/xfstests.git is the
+> master repo, right?).
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
- include/linux/cpumask.h | 22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+Or git://git.kernel.org/pub/scm/fs/xfs/xfstests-dev.git, which is
+where I typically update first and push dev branches to.
 
-diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index 0a9a6da21e74..7fd6f4018b5a 100644
---- a/include/linux/cpumask.h
-+++ b/include/linux/cpumask.h
-@@ -888,13 +888,13 @@ static inline void __cpu_clear(int cpu, volatile cpumask_t *dstp)
- }
- 
- #define cpus_setall(dst) __cpus_setall(&(dst), NR_CPUS)
--static inline void __cpus_setall(cpumask_t *dstp, int nbits)
-+static inline void __cpus_setall(cpumask_t *dstp, unsigned int nbits)
- {
- 	bitmap_fill(dstp->bits, nbits);
- }
- 
- #define cpus_clear(dst) __cpus_clear(&(dst), NR_CPUS)
--static inline void __cpus_clear(cpumask_t *dstp, int nbits)
-+static inline void __cpus_clear(cpumask_t *dstp, unsigned int nbits)
- {
- 	bitmap_zero(dstp->bits, nbits);
- }
-@@ -910,21 +910,21 @@ static inline int __cpu_test_and_set(int cpu, cpumask_t *addr)
- 
- #define cpus_and(dst, src1, src2) __cpus_and(&(dst), &(src1), &(src2), NR_CPUS)
- static inline int __cpus_and(cpumask_t *dstp, const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	return bitmap_and(dstp->bits, src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_or(dst, src1, src2) __cpus_or(&(dst), &(src1), &(src2), NR_CPUS)
- static inline void __cpus_or(cpumask_t *dstp, const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	bitmap_or(dstp->bits, src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_xor(dst, src1, src2) __cpus_xor(&(dst), &(src1), &(src2), NR_CPUS)
- static inline void __cpus_xor(cpumask_t *dstp, const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	bitmap_xor(dstp->bits, src1p->bits, src2p->bits, nbits);
- }
-@@ -932,40 +932,40 @@ static inline void __cpus_xor(cpumask_t *dstp, const cpumask_t *src1p,
- #define cpus_andnot(dst, src1, src2) \
- 				__cpus_andnot(&(dst), &(src1), &(src2), NR_CPUS)
- static inline int __cpus_andnot(cpumask_t *dstp, const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	return bitmap_andnot(dstp->bits, src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_equal(src1, src2) __cpus_equal(&(src1), &(src2), NR_CPUS)
- static inline int __cpus_equal(const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	return bitmap_equal(src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_intersects(src1, src2) __cpus_intersects(&(src1), &(src2), NR_CPUS)
- static inline int __cpus_intersects(const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	return bitmap_intersects(src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_subset(src1, src2) __cpus_subset(&(src1), &(src2), NR_CPUS)
- static inline int __cpus_subset(const cpumask_t *src1p,
--					const cpumask_t *src2p, int nbits)
-+					const cpumask_t *src2p, unsigned int nbits)
- {
- 	return bitmap_subset(src1p->bits, src2p->bits, nbits);
- }
- 
- #define cpus_empty(src) __cpus_empty(&(src), NR_CPUS)
--static inline int __cpus_empty(const cpumask_t *srcp, int nbits)
-+static inline int __cpus_empty(const cpumask_t *srcp, unsigned int nbits)
- {
- 	return bitmap_empty(srcp->bits, nbits);
- }
- 
- #define cpus_weight(cpumask) __cpus_weight(&(cpumask), NR_CPUS)
--static inline int __cpus_weight(const cpumask_t *srcp, int nbits)
-+static inline int __cpus_weight(const cpumask_t *srcp, unsigned int nbits)
- {
- 	return bitmap_weight(srcp->bits, nbits);
- }
+> Given that xfstests is independent of the kernel, what's the expected
+> way to deal with flags (or syscalls) that are only in specific kernel
+> versions?  At the moment I've just got a primitive override at
+> compile time (#ifndef O_BENEATH #define O_BENEATH ...), and
+> then the test will fail at run-time against an older kernel -- is there a
+> need for anything more sophisticated?  (And if so, are there any
+> examples I can crib from?)
+
+See the code in the src/renameat2.c for an example of how syscalls
+and their flags are added prior to their being kernel and userspace
+header support.
+
+Also, note the "-t" CLI option for the "test" option in that little
+program.  This is used by the _require_renameat2 function that the
+tests that make use of this functionality call to determine if th
+etest shoul dbe run on this kernel or not.
+
+> Also, is there an archive of the fstests@ mailing list somewhere?
+
+I wish. I've tried to get it archived on all the major sites like
+marc, spinics, etc repeatedly since the list was created and not a
+single one of them have responded to any of my requests, let alone
+started to archive the list....
+
+Cheers,
+
+Dave.
 -- 
-2.1.3
-
+Dave Chinner
+david@fromorbit.com
