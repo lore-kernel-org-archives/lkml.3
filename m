@@ -1,110 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864AbaLLHrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:47:22 -0500
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:60833 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaLLHrU (ORCPT
+	id S964978AbaLLHrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:47:40 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:41577 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934127AbaLLHri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 02:47:20 -0500
+	Fri, 12 Dec 2014 02:47:38 -0500
+References: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com> <2022256.J7VNVZ55j5@vostro.rjw.lan>
+From: Jakub Sitnicki <jsitnicki@gmail.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PNP: Switch from __check_region() to __request_region()
+In-reply-to: <2022256.J7VNVZ55j5@vostro.rjw.lan>
+Date: Fri, 12 Dec 2014 08:47:34 +0100
+Message-ID: <878uid5my1.fsf@frog.home>
 MIME-Version: 1.0
-In-Reply-To: <20141212064055.GA17166@bbox>
-References: <1418218820-4153-1-git-send-email-opensource.ganesh@gmail.com>
-	<20141211234005.GA13405@bbox>
-	<CADAEsF9cZ-JOrKx1_9FCu7_SW19Je938wK_wdy+jdBTehgZiXw@mail.gmail.com>
-	<20141212064055.GA17166@bbox>
-Date: Fri, 12 Dec 2014 15:47:20 +0800
-Message-ID: <CADAEsF9JV3iN28va+T_=a6ty_dkiZJ=75Dg-36H3j_SgTQ0K1g@mail.gmail.com>
-Subject: Re: [PATCH] mm/zsmalloc: disclose statistics to debugfs
-From: Ganesh Mahendran <opensource.ganesh@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-12 14:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
-> On Fri, Dec 12, 2014 at 01:53:16PM +0800, Ganesh Mahendran wrote:
->> Hello Minchan
->>
->> 2014-12-12 7:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
->> > Hello Ganesh,
->> >
->> > On Wed, Dec 10, 2014 at 09:40:20PM +0800, Ganesh Mahendran wrote:
->> >> As we now talk more and more about the fragmentation of zsmalloc. But
->> >> we still need to manually add some debug code to see the fragmentation.
->> >> So, I think we may add the statistics of memory fragmention in zsmalloc
->> >> and disclose them to debugfs. Then we can easily get and analysis
->> >> them when adding or developing new feature for zsmalloc.
->> >>
->> >> Below entries will be created when a zsmalloc pool is created:
->> >>     /sys/kernel/debug/zsmalloc/pool-n/obj_allocated
->> >>     /sys/kernel/debug/zsmalloc/pool-n/obj_used
->> >>
->> >> Then the status of objects usage will be:
->> >>     objects_usage = obj_used / obj_allocated
->> >>
->> >
->> > I didn't look at the code in detail but It would be handy for developer
->> > but not sure we should deliver it to admin so need configurable?
->> What kind of configuration do you want?
->> I think it is reasonable to expose such information to admin like
->> */sys/kernel/debug/usb/device*
->>
->> Or maybe we can enclose these code by DEBUG macro which will be
->> defined when CONFIG_ZSMALLOC_DEBUG is selected.
->
-> Hmm, I'd like to separte DEBUG and STAT because we can add some
-> sanity checking(ex, poisoning for invalid overwriting or
-> handle<->obj mapping verification) with DEBUG while we could
-> count obj stat with STAT.
+Rafael J. Wysocki <rjw@rjwysocki.net> writes:
 
-Yes. Add a CONFIG_ZSMALLOC_STAT will make code cleaner.
+> On Monday, December 08, 2014 10:01:57 PM Jakub Sitnicki wrote:
+>> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+>> index 782e822..f980ff7 100644
+>> --- a/drivers/pnp/resource.c
+>> +++ b/drivers/pnp/resource.c
+>> @@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
+>>  	/* check if the resource is already in use, skip if the
+>>  	 * device is active because it itself may be in use */
+>>  	if (!dev->active) {
+>> -		if (__check_region(&ioport_resource, *port, length(port, end)))
+>> +		if (!request_region(*port, length(port, end), "pnp"))
+>>  			return 0;
+>> +		release_region(*port, length(port, end));
+>
+> Shouldn't we also release the resource returned by request_region() if it is
+> not NULL?
+>
 
->
-> So, now it seems you want CONFIG_ZSMALLOC_STAT?
-Yes, I will follow your suggestion.
+Thanks for taking a look at this. I think we're good here. If you please
+bear with me for a moment:
 
->
->>
->> >
->> > How about making it per-sizeclass information, not per-pool?
->> Yes, you are right. Per sizeclass information will be better for
->> developers than per pool.
->>
->> Is it acceptable to show 256 lines like:
->> #cat /sys/kernel/debug/zsmalloc/pool-1/obj_in_classes
->> class      obj_allocated     obj_used
->> 1 ...
->> 2 ...
->> ....
->> ....
->> 255
->>
->> Anyway for developers, these information is more usefull.
->
-> It would be better to show the number of pages so we can know
-> how many of fragment space in last subpage of zspage is wasted.
-> But I don't want to keep pages_used in memory but you could
-> calcurate it dynamically with obj_allocated when user access debugfs.
->
-> #cat /sys/kernel/debug/zsmalloc/pool-1/obj_in_classes
-> class-size      obj_allocated     obj_used    pages_used
-> 32
-> 48
-> .
-> .
-> .
+release_resource() removes an element from the list of resource parent's
+children (and makes it an orphan):
 
-I got it. I will send a v2 patch.
+	p = &old->parent->child;
+	for (;;) {
+		tmp = *p;
+		if (!tmp)
+			break;
+		if (tmp == old) {
+			*p = tmp->sibling;
+			old->parent = NULL;
+			return 0;
+		}
+		p = &tmp->sibling;
+	}
 
-Thanks.
->
-> Thanks!
->
-> --
-> Kind regards,
-> Minchan Kim
+release_region() does the same but with additional checks, and also
+frees the resource:
+
+	p = &parent->child;
+        /* ... */
+	for (;;) {
+		struct resource *res = *p;
+
+		if (!res)
+			break;
+		if (res->start <= start && res->end >= end) {
+                        /* ... */
+			*p = res->sibling;
+                        /* ... */
+			free_resource(res);
+			return;
+		}
+		p = &res->sibling;
+	}
+
+When making the change I've based on other code in the kernel which also
+make use of request_region().
+
+To quote one example, drivers/net/ethernet/8390/ne2k-pci.c cleans up its
+I/O port region when initialization fails like so:
+
+static int ne2k_pci_init_one(struct pci_dev *pdev,
+			     const struct pci_device_id *ent)
+{
+        /* ... */
+
+	if (request_region (ioaddr, NE_IO_EXTENT, DRV_NAME) == NULL) {
+		dev_err(&pdev->dev, "I/O resource 0x%x @ 0x%lx busy\n",
+			NE_IO_EXTENT, ioaddr);
+		return -EBUSY;
+	}
+
+        /* ... */
+
+	dev = alloc_ei_netdev();
+	if (!dev) {
+		dev_err(&pdev->dev, "cannot allocate ethernet device\n");
+		goto err_out_free_res;
+	}
+
+        /* ... */
+
+err_out_free_res:
+	release_region (ioaddr, NE_IO_EXTENT);
+	return -ENODEV;
+}
+
+>>  	}
+>>  
+>>  	/* check if the resource is reserved */
+>> @@ -241,8 +242,9 @@ int pnp_check_mem(struct pnp_dev *dev, struct resource *res)
+>>  	/* check if the resource is already in use, skip if the
+>>  	 * device is active because it itself may be in use */
+>>  	if (!dev->active) {
+>> -		if (check_mem_region(*addr, length(addr, end)))
+>> +		if (!request_mem_region(*addr, length(addr, end), "pnp"))
+>>  			return 0;
+>> +		release_mem_region(*addr, length(addr, end));
+>>  	}
+>>  
+>>  	/* check if the resource is reserved */
+>> 
