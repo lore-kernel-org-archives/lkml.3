@@ -1,188 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965547AbaLLIS0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:18:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43156 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965478AbaLLISX (ORCPT
+	id S965595AbaLLISi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:18:38 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36045 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965478AbaLLISd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:18:23 -0500
-Date: Fri, 12 Dec 2014 00:18:04 -0800
-From: tip-bot for Kan Liang <tipbot@zytor.com>
-Message-ID: <tip-2e77784bb7d882647c33d8e75a650625e6df0f8b@git.kernel.org>
-Cc: eranian@google.com, namhyung@kernel.org, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, jolsa@redhat.com,
-        ak@linux.intel.com, mingo@redhat.com, acme@redhat.com,
-        paulus@samba.org, mingo@kernel.org, hpa@zytor.com, kan.liang@intel.com
-Reply-To: mingo@kernel.org, kan.liang@intel.com, hpa@zytor.com,
-        a.p.zijlstra@chello.nl, namhyung@kernel.org, eranian@google.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, acme@redhat.com,
-        jolsa@redhat.com, ak@linux.intel.com, mingo@redhat.com,
-        paulus@samba.org
-In-Reply-To: <1417532814-26208-3-git-send-email-kan.liang@intel.com>
-References: <1417532814-26208-3-git-send-email-kan.liang@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf callchain:
-  Move cpumode resolve code to add_callchain_ip
-Git-Commit-ID: 2e77784bb7d882647c33d8e75a650625e6df0f8b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 12 Dec 2014 03:18:33 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418019656-6893-1-git-send-email-markz@nvidia.com>
+References: <1418019656-6893-1-git-send-email-markz@nvidia.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 12 Dec 2014 17:18:12 +0900
+Message-ID: <CAAVeFu+1B44vxuQK8+uH2PzRJQgHAHAYGkTMT9vTi6TTrXf2RA@mail.gmail.com>
+Subject: Re: [PATCH] memory: Add NVIDIA SMMU suspend/resume support
+To: Mark Zhang <markz@nvidia.com>
+Cc: hdoyu@nvidia.com, Joerg Roedel <joro@8bytes.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Olof Johansson <olof@lixom.net>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e77784bb7d882647c33d8e75a650625e6df0f8b
-Gitweb:     http://git.kernel.org/tip/2e77784bb7d882647c33d8e75a650625e6df0f8b
-Author:     Kan Liang <kan.liang@intel.com>
-AuthorDate: Tue, 2 Dec 2014 10:06:53 -0500
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 9 Dec 2014 10:06:29 -0300
+Hi Mark,
 
-perf callchain: Move cpumode resolve code to add_callchain_ip
+On Mon, Dec 8, 2014 at 3:20 PM, Mark Zhang <markz@nvidia.com> wrote:
+> This patch adds suspend/resume support for NVIDIA SMMU.
 
-Using flag to distinguish between branch_history and normal callchain.
 
-Move the cpumode to add_callchain_ip function.
+> This patch is created on top of Thierry Reding's patch set:
+>
+> "[PATCH v7 00/12] NVIDIA Tegra memory controller and IOMMU support"
 
-No change in behavior.
+You should have this comment under the "---" as we don't need it to
+persist once this patch is merged.
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1417532814-26208-3-git-send-email-kan.liang@intel.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/machine.c | 72 +++++++++++++++++++++++------------------------
- 1 file changed, 35 insertions(+), 37 deletions(-)
+>
+> Signed-off-by: Mark Zhang <markz@nvidia.com>
+> ---
+>  drivers/iommu/tegra-smmu.c | 79 +++++++++++++++++++++++++++++++++++++++++++++-
+>  drivers/memory/tegra/mc.c  | 21 ++++++++++++
+>  drivers/memory/tegra/mc.h  |  4 +++
+>  3 files changed, 103 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
+> index 0909e0bae9ec..ab38805055a4 100644
+> --- a/drivers/iommu/tegra-smmu.c
+> +++ b/drivers/iommu/tegra-smmu.c
+> @@ -17,6 +17,8 @@
+>  #include <soc/tegra/ahb.h>
+>  #include <soc/tegra/mc.h>
+>
+> +struct tegra_smmu_as;
+> +
+>  struct tegra_smmu {
+>         void __iomem *regs;
+>         struct device *dev;
+> @@ -25,9 +27,10 @@ struct tegra_smmu {
+>         const struct tegra_smmu_soc *soc;
+>
+>         unsigned long *asids;
+> +       struct tegra_smmu_as **as;
+>         struct mutex lock;
+>
+> -       struct list_head list;
+> +       struct list_head swgroup_asid_list;
+>  };
+>
+>  struct tegra_smmu_as {
+> @@ -40,6 +43,12 @@ struct tegra_smmu_as {
+>         u32 attr;
+>  };
+>
+> +struct tegra_smmu_swgroup_asid {
+> +       struct list_head list;
+> +       unsigned swgroup_id;
+> +       unsigned asid;
+> +};
+> +
+>  static inline void smmu_writel(struct tegra_smmu *smmu, u32 value,
+>                                unsigned long offset)
+>  {
+> @@ -376,6 +385,7 @@ static int tegra_smmu_as_prepare(struct tegra_smmu *smmu,
+>         as->smmu = smmu;
+>         as->use_count++;
+>
+> +       smmu->as[as->id] = as;
+>         return 0;
+>  }
+>
+> @@ -386,6 +396,7 @@ static void tegra_smmu_as_unprepare(struct tegra_smmu *smmu,
+>                 return;
+>
+>         tegra_smmu_free_asid(smmu, as->id);
+> +       smmu->as[as->id] = NULL;
+>         as->smmu = NULL;
+>  }
+>
+> @@ -398,6 +409,7 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
+>         struct of_phandle_args args;
+>         unsigned int index = 0;
+>         int err = 0;
+> +       struct tegra_smmu_swgroup_asid *sa = NULL;
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 15dd0a9..94de3e4 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1385,19 +1385,46 @@ struct mem_info *sample__resolve_mem(struct perf_sample *sample,
- static int add_callchain_ip(struct thread *thread,
- 			    struct symbol **parent,
- 			    struct addr_location *root_al,
--			    int cpumode,
-+			    bool branch_history,
- 			    u64 ip)
- {
- 	struct addr_location al;
- 
- 	al.filtered = 0;
- 	al.sym = NULL;
--	if (cpumode == -1)
-+	if (branch_history)
- 		thread__find_cpumode_addr_location(thread, MAP__FUNCTION,
- 						   ip, &al);
--	else
-+	else {
-+		u8 cpumode = PERF_RECORD_MISC_USER;
-+
-+		if (ip >= PERF_CONTEXT_MAX) {
-+			switch (ip) {
-+			case PERF_CONTEXT_HV:
-+				cpumode = PERF_RECORD_MISC_HYPERVISOR;
-+				break;
-+			case PERF_CONTEXT_KERNEL:
-+				cpumode = PERF_RECORD_MISC_KERNEL;
-+				break;
-+			case PERF_CONTEXT_USER:
-+				cpumode = PERF_RECORD_MISC_USER;
-+				break;
-+			default:
-+				pr_debug("invalid callchain context: "
-+					 "%"PRId64"\n", (s64) ip);
-+				/*
-+				 * It seems the callchain is corrupted.
-+				 * Discard all.
-+				 */
-+				callchain_cursor_reset(&callchain_cursor);
-+				return 1;
-+			}
-+			return 0;
-+		}
- 		thread__find_addr_location(thread, cpumode, MAP__FUNCTION,
- 				   ip, &al);
-+	}
-+
- 	if (al.sym != NULL) {
- 		if (sort__has_parent && !*parent &&
- 		    symbol__match_regex(al.sym, &parent_regex))
-@@ -1480,11 +1507,8 @@ static int thread__resolve_callchain_sample(struct thread *thread,
- 					     struct addr_location *root_al,
- 					     int max_stack)
- {
--	u8 cpumode = PERF_RECORD_MISC_USER;
- 	int chain_nr = min(max_stack, (int)chain->nr);
--	int i;
--	int j;
--	int err;
-+	int i, j, err;
- 	int skip_idx = -1;
- 	int first_call = 0;
- 
-@@ -1542,10 +1566,10 @@ static int thread__resolve_callchain_sample(struct thread *thread,
- 
- 		for (i = 0; i < nr; i++) {
- 			err = add_callchain_ip(thread, parent, root_al,
--					       -1, be[i].to);
-+					       true, be[i].to);
- 			if (!err)
- 				err = add_callchain_ip(thread, parent, root_al,
--						       -1, be[i].from);
-+						       true, be[i].from);
- 			if (err == -EINVAL)
- 				break;
- 			if (err)
-@@ -1574,36 +1598,10 @@ check_calls:
- #endif
- 		ip = chain->ips[j];
- 
--		if (ip >= PERF_CONTEXT_MAX) {
--			switch (ip) {
--			case PERF_CONTEXT_HV:
--				cpumode = PERF_RECORD_MISC_HYPERVISOR;
--				break;
--			case PERF_CONTEXT_KERNEL:
--				cpumode = PERF_RECORD_MISC_KERNEL;
--				break;
--			case PERF_CONTEXT_USER:
--				cpumode = PERF_RECORD_MISC_USER;
--				break;
--			default:
--				pr_debug("invalid callchain context: "
--					 "%"PRId64"\n", (s64) ip);
--				/*
--				 * It seems the callchain is corrupted.
--				 * Discard all.
--				 */
--				callchain_cursor_reset(&callchain_cursor);
--				return 0;
--			}
--			continue;
--		}
-+		err = add_callchain_ip(thread, parent, root_al, false, ip);
- 
--		err = add_callchain_ip(thread, parent, root_al,
--				       cpumode, ip);
--		if (err == -EINVAL)
--			break;
- 		if (err)
--			return err;
-+			return (err < 0) ? err : 0;
- 	}
- 
- 	return 0;
+This initialization is unneeded. Actually this declaration would
+probably be better placed in the while() loop below since its usage is
+local to it.
+
+>
+>         while (!of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
+>                                            &args)) {
+> @@ -411,6 +423,14 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
+>                         return err;
+>
+>                 tegra_smmu_enable(smmu, swgroup, as->id);
+> +
+> +               sa = kzalloc(sizeof(struct tegra_smmu_swgroup_asid),
+> +                               GFP_KERNEL);
+> +               INIT_LIST_HEAD(&sa->list);
+
+You don't need to call INIT_LIST_HEAD on this, list_add_tail() will
+effectively overwrite any initialization done by this macro (see
+include/linux/list.h).
+
+> +               sa->swgroup_id = swgroup;
+> +               sa->asid = as->id;
+> +               list_add_tail(&sa->list, &smmu->swgroup_asid_list);
+> +
+>                 index++;
+>         }
+>
+> @@ -427,6 +447,7 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
+>         struct tegra_smmu *smmu = as->smmu;
+>         struct of_phandle_args args;
+>         unsigned int index = 0;
+> +       struct tegra_smmu_swgroup_asid *sa = NULL;
+
+Same here, move the declaration into the while() loop and remove the
+initialization.
+
+>
+>         while (of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
+>                                           &args)) {
+> @@ -435,6 +456,13 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
+>                 if (args.np != smmu->dev->of_node)
+>                         continue;
+>
+> +               list_for_each_entry(sa, &smmu->swgroup_asid_list, list) {
+> +                       if (sa->asid == as->id && sa->swgroup_id == swgroup)
+> +                               break;
+> +               }
+> +               list_del(&sa->list);
+> +               kfree(sa);
+> +
+>                 tegra_smmu_disable(smmu, swgroup, as->id);
+>                 tegra_smmu_as_unprepare(smmu, as);
+>                 index++;
+> @@ -651,6 +679,48 @@ static void tegra_smmu_ahb_enable(void)
+>         }
+>  }
+>
+> +void tegra_smmu_resume(struct tegra_smmu *smmu)
+> +{
+> +       struct tegra_smmu_as *as = NULL;
+> +       unsigned int bit;
+> +       u32 value;
+> +       struct tegra_smmu_swgroup_asid *sa = NULL;
+
+Again no need to initialize to NULL here.
+
+> +
+> +       for_each_set_bit(bit, smmu->asids, smmu->soc->num_asids) {
+> +               as = smmu->as[bit];
+> +               smmu->soc->ops->flush_dcache(as->pd, 0, SMMU_SIZE_PD);
+> +
+> +               smmu_writel(smmu, as->id & 0x7f, SMMU_PTB_ASID);
+> +               value = SMMU_PTB_DATA_VALUE(as->pd, as->attr);
+> +               smmu_writel(smmu, value, SMMU_PTB_DATA);
+> +       }
+> +
+> +       list_for_each_entry(sa, &smmu->swgroup_asid_list, list)
+> +               tegra_smmu_enable(smmu, sa->swgroup_id, sa->asid);
+
+Actually I wonder if you could not do completely without the list
+here. How about the following:
+
+1) add a "unsigned swgroup_id" member to tegra_smmu_as, set it in
+tegra_smmu_attach_dev() instead of sa->asid
+2) in the "for_each_bit" loop above, call tegra_smmu_enable(smmu,
+as->swgroup_id, as->id) after the last smmu_writel()
+
+Would that work? It would allow you to get rid of the
+tegra_smmu_swgroup_asid struct as well as a few memory allocations. I
+don't know if that kind of 1:1 matching between as and and swgroup
+makes sense for the SMMU though, maybe Thierry or Hiroshi can confirm?
