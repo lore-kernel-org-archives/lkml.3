@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759387AbaLLGQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:16:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51688 "EHLO
+	id S1760601AbaLLG3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:29:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52008 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757942AbaLLGQw (ORCPT
+	by vger.kernel.org with ESMTP id S1759350AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:52 -0500
+	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
-        "hujianyang" <hujianyang@huawei.com>
+CC: akpm@linux-foundation.org, linux-mips@linux-mips.org,
+        "Ralf Baechle" <ralf@linux-mips.org>,
+        "Markos Chandras" <markos.chandras@imgtec.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.918431290@decadent.org.uk>
+Message-ID: <lsq.1418364865.63823868@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 004/164] UBIFS: fix free log space calculation
+Subject: [PATCH 3.2 079/164] MIPS: ftrace: Fix a microMIPS build problem
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,49 +32,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit ba29e721eb2df6df8f33c1f248388bb037a47914 upstream.
+commit aedd153f5bb5b1f1d6d9142014f521ae2ec294cc upstream.
 
-Hu (hujianyang <hujianyang@huawei.com>) discovered an issue in the
-'empty_log_bytes()' function, which calculates how many bytes are left in the
-log:
+Code before the .fixup section needs to have the .insn directive.
+This has no side effects on MIPS32/64 but it affects the way microMIPS
+loads the address for the return label.
 
-"
-If 'c->lhead_lnum + 1 == c->ltail_lnum' and 'c->lhead_offs == c->leb_size', 'h'
-would equalent to 't' and 'empty_log_bytes()' would return 'c->log_bytes'
-instead of 0.
-"
+Fixes the following build problem:
+mips-linux-gnu-ld: arch/mips/built-in.o: .fixup+0x4a0: Unsupported jump between
+ISA modes; consider recompiling with interlinking enabled.
+mips-linux-gnu-ld: final link failed: Bad value
+Makefile:819: recipe for target 'vmlinux' failed
 
-At this point it is not clear what would be the consequences of this, and
-whether this may lead to any problems, but this patch addresses the issue just
-in case.
+The fix is similar to 1658f914ff91c3bf ("MIPS: microMIPS:
+Disable LL/SC and fix linker bug.")
 
-Tested-by: hujianyang <hujianyang@huawei.com>
-Reported-by: hujianyang <hujianyang@huawei.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/8117/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ubifs/log.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/mips/include/asm/ftrace.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ubifs/log.c
-+++ b/fs/ubifs/log.c
-@@ -110,10 +110,14 @@ static inline long long empty_log_bytes(
- 	h = (long long)c->lhead_lnum * c->leb_size + c->lhead_offs;
- 	t = (long long)c->ltail_lnum * c->leb_size;
- 
--	if (h >= t)
-+	if (h > t)
- 		return c->log_bytes - h + t;
--	else
-+	else if (h != t)
- 		return t - h;
-+	else if (c->lhead_lnum != c->ltail_lnum)
-+		return 0;
-+	else
-+		return c->log_bytes;
- }
- 
- /**
+--- a/arch/mips/include/asm/ftrace.h
++++ b/arch/mips/include/asm/ftrace.h
+@@ -24,7 +24,7 @@ do {							\
+ 	asm volatile (					\
+ 		"1: " load " %[" STR(dst) "], 0(%[" STR(src) "])\n"\
+ 		"   li %[" STR(error) "], 0\n"		\
+-		"2:\n"					\
++		"2: .insn\n"				\
+ 							\
+ 		".section .fixup, \"ax\"\n"		\
+ 		"3: li %[" STR(error) "], 1\n"		\
+@@ -46,7 +46,7 @@ do {						\
+ 	asm volatile (				\
+ 		"1: " store " %[" STR(src) "], 0(%[" STR(dst) "])\n"\
+ 		"   li %[" STR(error) "], 0\n"	\
+-		"2:\n"				\
++		"2: .insn\n"			\
+ 						\
+ 		".section .fixup, \"ax\"\n"	\
+ 		"3: li %[" STR(error) "], 1\n"	\
 
