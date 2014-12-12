@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaLLWgm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:36:42 -0500
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62317 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089AbaLLWgk (ORCPT
+	id S1752367AbaLLWii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:38:38 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:39934 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266AbaLLWih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:36:40 -0500
-Message-ID: <1418423797.5756.54.camel@x220>
-Subject: Re: linux-next: Tree for Dec 12
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Fri, 12 Dec 2014 17:38:37 -0500
+From: Vinson Lee <vlee@twopensource.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        "Luis R. Rodriguez" <mcgrof@suse.com>,
         Andy Lutomirski <luto@amacapital.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Date: Fri, 12 Dec 2014 23:36:37 +0100
-In-Reply-To: <20141212135719.4c79bac46d43bfd8d7c8e6a6@linux-foundation.org>
-References: <20141212183518.06e3803d@canb.auug.org.au>
-	 <1418377757.5756.24.camel@x220> <20141212210449.7f460bb1@canb.auug.org.au>
-	 <1418380316.5756.37.camel@x220>
-	 <20141212135719.4c79bac46d43bfd8d7c8e6a6@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Dec 2014 22:36:37.0336 (UTC) FILETIME=[170E4D80:01D0165C]
-X-RcptDomain: vger.kernel.org
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Clark Williams <clark.williams@gmail.com>,
+        Mel Gorman <mgorman@suse.de>
+Cc: linux-kernel@vger.kernel.org, Nate Stahl <stahl@twitter.com>,
+        Vinson Lee <vlee@twitter.com>
+Subject: [PATCH] Increase maximum size of dmesg buffer to 16MB.
+Date: Fri, 12 Dec 2014 14:38:26 -0800
+Message-Id: <1418423906-5461-1-git-send-email-vlee@twopensource.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-12 at 13:57 -0800, Andrew Morton wrote:
-> On Fri, 12 Dec 2014 11:31:56 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
+From: Nate Stahl <stahl@twitter.com>
 
-> > I won't be bothering (Andrew and) you again about this. Unless sorting
-> > this out takes rather long, that is.
-> 
-> Is there some problem with the current mainline 3.19 code?
+A full task stack dump of all tasks on a machine can generate more than
+4MB of output to dmesg. Dumping this data to the serial console causes
+the machine to hang for a number of minutes (an unacceptable impact),
+but dumping the same data to memory is feasible if the dmesg buffer is
+sized large enough to hold the output. Set to 16MB which will hopefully
+be large enough to handle a dump from any of our servers at this time.
 
-The problem I noticed is with next-20141212. For some reason - Stephen
-appears to not know exactly why - it ended up with a Kconfig entry for
-INIT_FALLBACK without any actually users of that Kconfig symbol. My
-infamous 800 line perl monster - which I run on every linux-next release
-to check for exactly stuff like this - can't help but notice that. The
-idea being that my script notices these problems before they actually
-hit mainline.
+Signed-off-by: Nate Stahl <stahl@twitter.com>
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+---
+ init/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Note that the set of people actually worrying about this stuff contains
-me and, maybe, one or two other persons.
-
-
-Paul Bolle
+diff --git a/init/Kconfig b/init/Kconfig
+index 903505e..266a3e8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -812,7 +812,7 @@ config IKCONFIG_PROC
+ 
+ config LOG_BUF_SHIFT
+ 	int "Kernel log buffer size (16 => 64KB, 17 => 128KB)"
+-	range 12 21
++	range 12 24
+ 	default 17
+ 	depends on PRINTK
+ 	help
+-- 
+1.9.1
 
