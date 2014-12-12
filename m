@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759229AbaLLOzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 09:55:45 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:50135 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757044AbaLLOzn (ORCPT
+	id S1759485AbaLLO4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 09:56:53 -0500
+Received: from lucky1.263xmail.com ([211.157.147.130]:55057 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757323AbaLLO4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 09:55:43 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-acpi@lists.linaro.org
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>, rjw@rjwysocki.net,
-        linux-pci@vger.kernel.org, catalin.marinas@arm.com, x86@kernel.org,
-        will.deacon@arm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        wangyijing@huawei.com, Liviu.Dudau@arm.com, tglx@linutronix.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-acpi] [PATCH 2/6] x86, acpi, pci: Move arch-agnostic MMCFG code out of arch/x86/ directory
-Date: Fri, 12 Dec 2014 15:55:23 +0100
-Message-ID: <67564550.9h6b3Ng1Fi@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141210235500.GA22886@google.com>
-References: <1416413091-13452-1-git-send-email-tomasz.nowicki@linaro.org> <1416413091-13452-3-git-send-email-tomasz.nowicki@linaro.org> <20141210235500.GA22886@google.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:70Aoh20hbeeeDbrNfZzkzI6sUU1cMqwAJTkb4HZYIQjoO+XIJyq
- jPgp1aUyRysJXt32mHBh9/bf+lsiviq2QNI7sxzmI5dTuNUSMtHhBtEkzAtacZ2Az1wiJnN
- ztjFTQIlvjfeSGeLPlGM5nu3pNXNelJQU+l8+JQ2fVb6MUTycItNLzesMA1vPQQzfCKvq0t
- jqaKEP6aTOburc6gkj49Q==
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 12 Dec 2014 09:56:51 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <77aa234035cef21920e256ed3bcf7e08>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
+Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
+        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
+        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v7 0/5] Patches to add support for Rockchip usb PHYs.
+Date: Fri, 12 Dec 2014 22:55:52 +0800
+Message-Id: <1418396157-26802-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 December 2014 16:55:00 Bjorn Helgaas wrote:
-> On Wed, Nov 19, 2014 at 05:04:47PM +0100, Tomasz Nowicki wrote:
-> > MMCFG table seems to be architecture independent and it makes sense
-> > to share common code across all architectures. The ones that may need
-> > architectural specific actions have default prototype (__weak).
-> > 
-> > Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-> > Tested-by: Hanjun Guo <hanjun.guo@linaro.org>
-> > ---
-> >  arch/x86/include/asm/pci_x86.h |  29 -----
-> >  arch/x86/pci/acpi.c            |   1 +
-> >  arch/x86/pci/init.c            |   1 +
-> >  arch/x86/pci/mmconfig-shared.c | 200 +---------------------------------
-> >  arch/x86/pci/mmconfig_32.c     |   1 +
-> >  arch/x86/pci/mmconfig_64.c     |   1 +
-> >  drivers/acpi/Makefile          |   1 +
-> >  drivers/acpi/bus.c             |   1 +
-> >  drivers/acpi/mmconfig.c        | 242 +++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mmconfig.h       |  58 ++++++++++
-> >  include/linux/pci.h            |   8 --
-> >  11 files changed, 308 insertions(+), 235 deletions(-)
-> >  create mode 100644 drivers/acpi/mmconfig.c
-> >  create mode 100644 include/linux/mmconfig.h
-> > ... 
-> 
-> Much of the code you're moving to drivers/acpi/mmconfig.c is not actually
-> ACPI-specific and would have to be duplicated for a non-ACPI architecture
-> that supports ECAM.  Could that code be moved somewhere like
-> drivers/pci/ecam.c, where it could be shared?
 
-We have an implementation of ECAM in drivers/pci/host/pci-host-generic.c,
-which today is ARM32 specific but should be migrated to the new generic
-infrastructure we are adding for ARM64, after which that driver becomes
-very simple.
+Patches to add support for Rockchip usb phys.Add a new Rockchip
+usb phy driver and modify dwc2 controller driver to make dwc2
+platform devices support a generic PHY framework driver. This
+patch set has been tested on my rk3288-evb and power off the usb
+phys would reduce about 60mW power budget in total during sustem
+suspend.
 
-I suppose we could either make it use drivers/pci/ecam.c then, or have
-the config space code from pci-host-generic be shared between ACPI and
-DT based platforms. The former approach is probably nicer in the long
-run, and it allows sharing with other drivers that use ECAM but are not
-completely generic otherwise.
+Changes in v7:
+- Update bindings doc
+- Accept Kishon's comments to use phandle args to find a phy
+  struct directly and get rid of using a custom of_xlate
+  function.
+- Update dtsi for new usb phy driver.
 
-	Arnd
+Changes in v6:
+- Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
+
+Changes in v5:
+- Adjust entry order of example devicetree node in document.
+- reorder the phy dt node to a correct position.
+
+Changes in v4:
+- Updata description for phy device tree subnode.
+- Get number of PHYs from device tree.
+- Model each PHY as subnode of the phy provider node.
+- Add phy subnodes.
+
+Changes in v3:
+- Use BIT macro instead of bit shift ops.
+- Rename the config entry to PHY_ROCKCHIP_USB.
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
+
+Yunzhi Li (5):
+  Documentation: bindings: add dt documentation for Rockchip usb PHY
+  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
+  usb: dwc2: add generic PHY framework support for dwc2 usb controler
+    platform driver.
+  ARM: dts: rockchip: add rk3288 usb PHY
+  ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+
+ .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  37 +++++
+ arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
+ arch/arm/boot/dts/rk3288.dtsi                      |  35 +++++
+ drivers/phy/Kconfig                                |   7 +
+ drivers/phy/Makefile                               |   1 +
+ drivers/phy/phy-rockchip-usb.c                     | 158 +++++++++++++++++++++
+ drivers/usb/dwc2/gadget.c                          |  33 ++---
+ drivers/usb/dwc2/platform.c                        |  36 ++++-
+ 8 files changed, 288 insertions(+), 23 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
+ create mode 100644 drivers/phy/phy-rockchip-usb.c
+
+-- 
+2.0.0
+
+
