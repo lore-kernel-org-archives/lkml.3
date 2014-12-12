@@ -1,226 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620AbaLLVDs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:03:48 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:64703 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753043AbaLLVDq (ORCPT
+	id S1753406AbaLLVI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:08:56 -0500
+Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:48430 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753235AbaLLVIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:03:46 -0500
-Message-ID: <548B5830.30904@hurleysoftware.com>
-Date: Fri, 12 Dec 2014 16:03:44 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: imre.deak@intel.com
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] vt: fix console lock vs. kernfs s_active lock order
-References: <1418402285-9578-1-git-send-email-imre.deak@intel.com>	 <1418402285-9578-3-git-send-email-imre.deak@intel.com>	 <548B34DA.1040404@hurleysoftware.com> <1418416187.9524.22.camel@ideak-mobl>
-In-Reply-To: <1418416187.9524.22.camel@ideak-mobl>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Dec 2014 16:08:55 -0500
+From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
+	SoC...),
+        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
+        linux-kernel@vger.kernel.org (open list:COMMON CLK FRAMEWORK)
+Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Subject: [PATCH v2] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
+Date: Fri, 12 Dec 2014 22:05:52 +0100
+Message-Id: <1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
+X-Ovh-Tracer-Id: 6440991893206663229
+X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2014 03:29 PM, Imre Deak wrote:
-> Hi Peter,
-> 
-> thanks for your review.
-> 
-> On Fri, 2014-12-12 at 13:32 -0500, Peter Hurley wrote:
->> Hi Imre,
->>
->> On 12/12/2014 11:38 AM, Imre Deak wrote:
->>> Currently there is a lock order problem between the console lock and the
->>> kernfs s_active lock of the console driver's bind sysfs entry. When
->>> writing to the sysfs entry the lock order is first s_active then console
->>> lock, when unregistering the console driver via
->>> do_unregister_con_driver() the order is the opposite. See the below
->>> bugzilla reference for one instance of a lockdep backtrace.
->>
->> This description didn't make sense to me because the driver core doesn't
->> try to take the console_lock. So I had to go pull the lockdep report
->> and I'm not sure I agree with your analysis.
->>
->> I see a three-way dependency which includes the fb atomic notifier call
->> chain?
-> 
-> From the lockdep report in the bugzilla ticket I referenced, you can see
-> the following two paths:
-> 
-> i915_driver_load()
->   console_lock()  -> takes console_sem
->   do_unregister_con_driver()
->     vtconsole_deinit_device()
->       device_remove_file()
->         ...
->         __kernfs_remove()
->           kernfs_drain() ->
->             takes s_active rwsem for the console's bind sysfs entry
->             (tracked via kn->dep_map)
+This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0
+and hclk_usbotg1 because these clocks must remain enabled to use the
+USB controllers in host mode.
 
-I don't see this call chain.
+This fixes a regression introduced by commit 78eaf6095cc7
+("clk: rockchip: disable unused clocks").
 
-I see: (some obvious intermediate calls redacted)
+Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+---
+Changes since v1:
+- update commit message: refer to commit ID instead of mailing list
 
-  i915_driver_unload
-    do_unregister_framebuffer
-      fb_notifier_call_chain
-        fbcon_event_notify
-          do_unregister_con_driver
-            device_remove_file
-              sysfs_addrm_finish
+ drivers/clk/rockchip/clk-rk3188.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-which has console_lock => fb notifier lock => kernfs lock dependency.
-
-My point being that this occurs only because the fb notifier call chain
-requires console_lock => fb notifier lock dependency ordering; that and
-fbcon assumes that it can do whatever in the notifier.
-
-I would like to see more thorough justification for why this change
-belongs in vt, and not in fbcon. That was my point about the 3-way
-dependency.
-
-Regards,
-Peter Hurley
-
-
-> vfs_write()   for the above console bind sysfs entry
->   kernfs_fop_write()
->     kernfs_get_active() ->
->       takes s_active rwsem for the above sysfs entry
->     ...
->       store_bind() -> takes console_sem
-> 
-> So you have console_sem->s_active ordering on one path and
-> s_active->console_sem ordering on the other.
-> 
-> This patch gets rid of the ordering problem and the related lockdep
-> warning.
-> 
-> --Imre
-> 
->>
->> Regards,
->> Peter Hurley
->>
->>> Fix this by unregistering the console driver from a deferred work, where
->>> we can safely drop the console lock while unregistering the device and
->>> corresponding sysfs entries (which in turn acquire s_active). Note that
->>> we have to keep the console driver slot in the registered_con_driver
->>> array reserved for the driver that's being unregistered until it's fully
->>> removed. Otherwise a concurrent call to do_register_con_driver could
->>> try to reuse the same slot and fail when registering the corresponding
->>> device with a minor index that's still in use.
->>>
->>> Reference: https://bugs.freedesktop.org/show_bug.cgi?id=70523
->>> Signed-off-by: Imre Deak <imre.deak@intel.com>
->>> ---
->>>  drivers/tty/vt/vt.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
->>>  1 file changed, 41 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
->>> index 5dd1880..b9edc77 100644
->>> --- a/drivers/tty/vt/vt.c
->>> +++ b/drivers/tty/vt/vt.c
->>> @@ -108,6 +108,7 @@
->>>  #define CON_DRIVER_FLAG_MODULE 1
->>>  #define CON_DRIVER_FLAG_INIT   2
->>>  #define CON_DRIVER_FLAG_ATTR   4
->>> +#define CON_DRIVER_FLAG_ZOMBIE 8
->>>  
->>>  struct con_driver {
->>>  	const struct consw *con;
->>> @@ -153,6 +154,7 @@ static int set_vesa_blanking(char __user *p);
->>>  static void set_cursor(struct vc_data *vc);
->>>  static void hide_cursor(struct vc_data *vc);
->>>  static void console_callback(struct work_struct *ignored);
->>> +static void con_driver_unregister_callback(struct work_struct *ignored);
->>>  static void blank_screen_t(unsigned long dummy);
->>>  static void set_palette(struct vc_data *vc);
->>>  
->>> @@ -180,6 +182,7 @@ static int blankinterval = 10*60;
->>>  core_param(consoleblank, blankinterval, int, 0444);
->>>  
->>>  static DECLARE_WORK(console_work, console_callback);
->>> +static DECLARE_WORK(con_driver_unregister_work, con_driver_unregister_callback);
->>>  
->>>  /*
->>>   * fg_console is the current virtual console,
->>> @@ -3597,7 +3600,8 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
->>>  	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
->>>  		con_driver = &registered_con_driver[i];
->>>  
->>> -		if (con_driver->con == NULL) {
->>> +		if (con_driver->con == NULL &&
->>> +		    !(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE)) {
->>>  			con_driver->con = csw;
->>>  			con_driver->desc = desc;
->>>  			con_driver->node = i;
->>> @@ -3660,16 +3664,10 @@ int do_unregister_con_driver(const struct consw *csw)
->>>  
->>>  		if (con_driver->con == csw &&
->>>  		    con_driver->flag & CON_DRIVER_FLAG_MODULE) {
->>> -			vtconsole_deinit_device(con_driver);
->>> -			device_destroy(vtconsole_class,
->>> -				       MKDEV(0, con_driver->node));
->>>  			con_driver->con = NULL;
->>> -			con_driver->desc = NULL;
->>> -			con_driver->dev = NULL;
->>> -			con_driver->node = 0;
->>> -			con_driver->flag = 0;
->>> -			con_driver->first = 0;
->>> -			con_driver->last = 0;
->>> +			con_driver->flag = CON_DRIVER_FLAG_ZOMBIE;
->>> +			schedule_work(&con_driver_unregister_work);
->>> +
->>>  			return 0;
->>>  		}
->>>  	}
->>> @@ -3678,6 +3676,39 @@ int do_unregister_con_driver(const struct consw *csw)
->>>  }
->>>  EXPORT_SYMBOL_GPL(do_unregister_con_driver);
->>>  
->>> +static void con_driver_unregister_callback(struct work_struct *ignored)
->>> +{
->>> +	int i;
->>> +
->>> +	console_lock();
->>> +
->>> +	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
->>> +		struct con_driver *con_driver = &registered_con_driver[i];
->>> +
->>> +		if (!(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE))
->>> +			continue;
->>> +
->>> +		console_unlock();
->>> +
->>> +		vtconsole_deinit_device(con_driver);
->>> +		device_destroy(vtconsole_class, MKDEV(0, con_driver->node));
->>> +
->>> +		if (WARN_ON_ONCE(con_driver->con))
->>> +			con_driver->con = NULL;
->>> +		con_driver->desc = NULL;
->>> +		con_driver->dev = NULL;
->>> +		con_driver->node = 0;
->>> +		WARN_ON_ONCE(con_driver->flag != CON_DRIVER_FLAG_ZOMBIE);
->>> +		con_driver->flag = 0;
->>> +		con_driver->first = 0;
->>> +		con_driver->last = 0;
->>> +
->>> +		console_lock();
->>> +	}
->>> +
->>> +	console_unlock();
->>> +}
->>> +
->>>  /*
->>>   *	If we support more console drivers, this function is used
->>>   *	when a driver wants to take over some existing consoles
->>>
->>
-> 
-> 
+diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
+index c540789..25ddb09 100644
+--- a/drivers/clk/rockchip/clk-rk3188.c
++++ b/drivers/clk/rockchip/clk-rk3188.c
+@@ -430,8 +430,10 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
+ 	GATE(0, "hclk_emem_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 7, GFLAGS),
+ 	GATE(HCLK_EMAC, "hclk_emac", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 0, GFLAGS),
+ 	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 9, GFLAGS),
+-	GATE(0, "hclk_usb_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 5, GFLAGS),
+-	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 13, GFLAGS),
++	GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
++			RK2928_CLKGATE_CON(4), 5, GFLAGS),
++	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", CLK_IGNORE_UNUSED,
++			RK2928_CLKGATE_CON(5), 13, GFLAGS),
+ 	GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 5, GFLAGS),
+ 	GATE(HCLK_PIDF, "hclk_pidfilter", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 6, GFLAGS),
+ 	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 10, GFLAGS),
+@@ -592,7 +594,8 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
+ 	GATE(0, "hclk_cif1", "hclk_cpu", 0, RK2928_CLKGATE_CON(6), 6, GFLAGS),
+ 	GATE(0, "hclk_hdmi", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+ 
+-	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 14, GFLAGS),
++	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
++			RK2928_CLKGATE_CON(5), 14, GFLAGS),
+ 
+ 	GATE(0, "aclk_cif1", "aclk_vio1", 0, RK2928_CLKGATE_CON(6), 7, GFLAGS),
+ 
+@@ -680,7 +683,8 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
+ 	GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+ 	GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
+ 
+-	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
++	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
++			RK2928_CLKGATE_CON(7), 3, GFLAGS),
+ 	GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
+ 
+ 	GATE(PCLK_TIMER3, "pclk_timer3", "pclk_cpu", 0, RK2928_CLKGATE_CON(7), 9, GFLAGS),
+-- 
+2.1.0
 
