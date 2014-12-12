@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaLLWMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:12:41 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37704 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaLLWIe (ORCPT
+	id S1753623AbaLLWNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:13:07 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:36356 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660AbaLLWId (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:34 -0500
+	Fri, 12 Dec 2014 17:08:33 -0500
 From: Kevin Cernekee <cernekee@gmail.com>
 To: ralf@linux-mips.org
 Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
         jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
         linux-mips@linux-mips.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH V5 12/23] MIPS: Reorder MIPS_L1_CACHE_SHIFT priorities
-Date: Fri, 12 Dec 2014 14:07:03 -0800
-Message-Id: <1418422034-17099-13-git-send-email-cernekee@gmail.com>
+Subject: [PATCH V5 11/23] MIPS: Fall back to the generic restart notifier
+Date: Fri, 12 Dec 2014 14:07:02 -0800
+Message-Id: <1418422034-17099-12-git-send-email-cernekee@gmail.com>
 X-Mailer: git-send-email 2.1.1
 In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
 References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
@@ -23,39 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enabling support for more than one BMIPS CPU in the same build may
-result in different L1_CACHE_SHIFT values, e.g.
-
-    CPU_BMIPS5000 selects MIPS_L1_CACHE_SHIFT_7
-    CPU_BMIPS4380 selects MIPS_L1_CACHE_SHIFT_6
-    anything else defaults to MIPS_L1_CACHE_SHIFT_5
-
-Ensure that if more than one MIPS_L1_CACHE_SHIFT_x option is selected,
-Kconfig sets CONFIG_MIPS_L1_CACHE_SHIFT to the highest value.
+If the machine doesn't set its own _machine_restart callback, call the
+common do_kernel_restart() instead.  This allows arch-independent reset
+drivers from drivers/power/reset/ to be used to reboot the machine.
 
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/mips/Kconfig | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/mips/kernel/reset.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 31bbec0..d28c29e 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1193,10 +1193,10 @@ config MIPS_L1_CACHE_SHIFT_7
+diff --git a/arch/mips/kernel/reset.c b/arch/mips/kernel/reset.c
+index 07fc524..cf23ab5 100644
+--- a/arch/mips/kernel/reset.c
++++ b/arch/mips/kernel/reset.c
+@@ -29,6 +29,8 @@ void machine_restart(char *command)
+ {
+ 	if (_machine_restart)
+ 		_machine_restart(command);
++	else
++		do_kernel_restart(command);
+ }
  
- config MIPS_L1_CACHE_SHIFT
- 	int
--	default "4" if MIPS_L1_CACHE_SHIFT_4
--	default "5" if MIPS_L1_CACHE_SHIFT_5
--	default "6" if MIPS_L1_CACHE_SHIFT_6
- 	default "7" if MIPS_L1_CACHE_SHIFT_7
-+	default "6" if MIPS_L1_CACHE_SHIFT_6
-+	default "5" if MIPS_L1_CACHE_SHIFT_5
-+	default "4" if MIPS_L1_CACHE_SHIFT_4
- 	default "5"
- 
- config HAVE_STD_PC_SERIAL_PORT
+ void machine_halt(void)
 -- 
 2.1.1
 
