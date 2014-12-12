@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031164AbaLLRSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:18:38 -0500
-Received: from ns.mm-sol.com ([37.157.136.199]:33800 "EHLO extserv.mm-sol.com"
+	id S1031170AbaLLRTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:19:36 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:57744 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031141AbaLLRSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:18:34 -0500
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-pci@vger.kernel.org, Stanimir Varbanov <svarbanov@mm-sol.com>
-Subject: [PATCH 5/5] ARM: qcom: Add Qualcomm APQ8084 SoC
-Date: Fri, 12 Dec 2014 19:14:01 +0200
-Message-Id: <1418404441-5518-6-git-send-email-svarbanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com>
-References: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com>
+	id S1030759AbaLLRTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:19:34 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>, <viresh.kumar@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Simon Horman <horms@verge.net.au>, <linux-sh@vger.kernel.org>,
+        Nishanth Menon <nm@ti.com>
+Subject: [PATCH] ARM: omap2plus_defconfig: use CONFIG_CPUFREQ_DT
+Date: Fri, 12 Dec 2014 11:18:58 -0600
+Message-ID: <1418404738-19124-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds Snapdragon 805 ARM-based SoC as multiplatform
-compatible platform.
+CONFIG_GENERIC_CPUFREQ_CPU0 disappeared with commit bbcf071969b20f
+("cpufreq: cpu0: rename driver and internals to 'cpufreq_dt'")
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+Use the renamed CONFIG_CPUFREQ_DT generic driver. It looks like with
+v3.18-rc1, commit bbcf071969b20f and fdc509b15eb3eb came in via
+different trees causing the resultant v3.18-rc1 to be non-functional for
+cpufreq as default supported with omap2plus_defconfig.
+
+Fixes: fdc509b15eb3eb ("ARM: omap2plus_defconfig: Add cpufreq to defconfig")
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- arch/arm/mach-qcom/Kconfig |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
-index ee5697b..b8abe7d 100644
---- a/arch/arm/mach-qcom/Kconfig
-+++ b/arch/arm/mach-qcom/Kconfig
-@@ -23,6 +23,13 @@ config ARCH_MSM8974
- 	bool "Enable support for MSM8974"
- 	select HAVE_ARM_ARCH_TIMER
- 
-+config ARCH_APQ8084
-+	bool "Enable support for APQ8084"
-+	select HAVE_ARM_ARCH_TIMER
-+	select PCI
-+	select PCI_DOMAINS
-+	select PCI_MSI
-+
- config QCOM_SCM
- 	bool
- 
+NOTE: as of v3.18 tag, The following still need to be fixed - I do not have all
+the platforms impacted to make a generic change, so CCying folks who might be interested
+
+arch/arm/configs/shmobile_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
+arch/arm/configs/multi_v7_defconfig:CONFIG_GENERIC_CPUFREQ_CPU0=y
+
+ arch/arm/configs/omap2plus_defconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+index 3e09286..5fc0dbe 100644
+--- a/arch/arm/configs/omap2plus_defconfig
++++ b/arch/arm/configs/omap2plus_defconfig
+@@ -68,7 +68,7 @@ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_POWERSAVE=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+ CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+-CONFIG_GENERIC_CPUFREQ_CPU0=y
++CONFIG_CPUFREQ_DT=y
+ # CONFIG_ARM_OMAP2PLUS_CPUFREQ is not set
+ CONFIG_CPU_IDLE=y
+ CONFIG_BINFMT_MISC=y
 -- 
-1.7.0.4
+1.7.9.5
 
