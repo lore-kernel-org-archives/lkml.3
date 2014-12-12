@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965729AbaLLKQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:16:01 -0500
-Received: from smtprelay0049.hostedemail.com ([216.40.44.49]:47482 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965640AbaLLKQA (ORCPT
+	id S965893AbaLLKQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:16:14 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:55205 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965640AbaLLKQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:16:00 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2194:2199:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6119:6261:9108:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mint95_3439bb3e53052
-X-Filterd-Recvd-Size: 1500
-Message-ID: <1418379357.18092.44.camel@perches.com>
-Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
-From: Joe Perches <joe@perches.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Fri, 12 Dec 2014 02:15:57 -0800
-In-Reply-To: <1418379009.17201.61.camel@linux.intel.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1418314017.18092.35.camel@perches.com>
-	 <1418379009.17201.61.camel@linux.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Dec 2014 05:16:07 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44952080"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 0/5] workqueue: fix bug when numa mapping is changed
+Date: Fri, 12 Dec 2014 18:19:50 +0800
+Message-ID: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-12 at 12:10 +0200, Andy Shevchenko wrote:
-> On Thu, 2014-12-11 at 08:06 -0800, Joe Perches wrote:
-> > On Thu, 2014-12-11 at 17:53 +0200, Andy Shevchenko wrote:
-> > > This patchset creates a new folder under drivers/mfd and moves there Intel
-> > > related drivers.
-> > 
-> > Missing update of MAINTAINERS?
-> 
-> Oh, right. I could send a follow up patch or update each patch in the
-> series. What is the best approach here?
+Workqueue code has an assumption that the numa mapping is stable
+after system booted.  It is incorrectly currently.
 
-I think it'd be fine to send another patch later on
-if/after this is applied.
+Yasuaki Ishimatsu hit a allocation failure bug when the numa mapping
+between CPU and node is changed. This was the last scene:
+ SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
+  cache: kmalloc-192, object size: 192, buffer size: 192, default order: 1, min order: 0
+  node 0: slabs: 6172, objs: 259224, free: 245741
+  node 1: slabs: 3261, objs: 136962, free: 127656
 
+Yasuaki Ishimatsu investigated that it happened in the following situation:
+
+1) System Node/CPU before offline/online:
+	       | CPU
+	------------------------
+	node 0 |  0-14, 60-74
+	node 1 | 15-29, 75-89
+	node 2 | 30-44, 90-104
+	node 3 | 45-59, 105-119
+
+2) A system-board (contains node2 and node3) is offline:
+	       | CPU
+	------------------------
+	node 0 |  0-14, 60-74
+	node 1 | 15-29, 75-89
+
+3) A new system-board is online, two new node IDs are allocated
+   for the two node of the SB, but the old CPU IDs are allocated for
+   the SB, here the NUMA mapping between node and CPU is changed.
+   (the node of CPU#30 is changed from node#2 to node#4, for example)
+	       | CPU
+	------------------------
+	node 0 |  0-14, 60-74
+	node 1 | 15-29, 75-89
+	node 4 | 30-59
+	node 5 | 90-119
+
+4) now, the NUMA mapping is changed, but wq_numa_possible_cpumask
+   which is the convenient NUMA mapping cache in workqueue.c is still outdated.
+   thus pool->node calculated by get_unbound_pool() is incorrect.
+
+5) when the create_worker() is called with the incorrect offlined
+    pool->node, it is failed and the pool can't make any progress.
+
+To fix this bug, we need to fixup the wq_numa_possible_cpumask and the
+pool->node, it is done in patch2 and patch3.
+
+patch1 fixes memory leak related wq_numa_possible_cpumask.
+patch4 kill another assumption about how the numa mapping changed.
+patch5 reduces the allocation fails when the node is offline or the node
+is lack of memory.
+
+The patchset is untested. It is sent for earlier review.
+
+Thanks,
+Lai.
+
+Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
+Cc: tangchen <tangchen@cn.fujitsu.com>
+Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Lai Jiangshan (5):
+  workqueue: fix memory leak in wq_numa_init()
+  workqueue: update wq_numa_possible_cpumask
+  workqueue: fixup existing pool->node
+  workqueue: update NUMA affinity for the node lost CPU
+  workqueue: retry on NUMA_NO_NODE when create_worker() fails
+
+ kernel/workqueue.c |  129 ++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 109 insertions(+), 20 deletions(-)
+
+-- 
+1.7.4.4
 
