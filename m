@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760785AbaLLGhe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:37:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51902 "EHLO
+	id S965662AbaLLGh2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:37:28 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51852 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759308AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759050AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jonathan Cameron" <jic23@kernel.org>,
-        "Lars-Peter Clausen" <lars@metafoo.de>
+CC: akpm@linux-foundation.org, "Hans de Goede" <hdegoede@redhat.com>,
+        "=?UTF-8?q?Pali=20Roh=C3=A1r?=" <pali.rohar@gmail.com>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.334780956@decadent.org.uk>
+Message-ID: <lsq.1418364865.910216418@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 114/164] staging:iio:ade7758: Remove "raw" from
- channel name
+Subject: [PATCH 3.2 120/164] Input: alps - ignore potential bare packets
+ when device is out of sync
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,100 +33,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Pali Rohár <pali.rohar@gmail.com>
 
-commit b598aacc29331e7e638cd509108600e916c6331b upstream.
+commit 4ab8f7f320f91f279c3f06a9795cfea5c972888a upstream.
 
-"raw" is a property of a channel, but should not be part of the name of
-channel.
+5th and 6th byte of ALPS trackstick V3 protocol match condition for first
+byte of PS/2 3 bytes packet. When driver enters out of sync state and ALPS
+trackstick is sending data then driver match 5th, 6th and next 1st bytes as
+PS/2.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-[bwh: Backported to 3.2: using IIO_CHAN() macro to initialise the structures]
+It basically means if user is using trackstick when driver is in out of
+sync state driver will never resync. Processing these bytes as 3 bytes PS/2
+data cause total mess (random cursor movements, random clicks) and make
+trackstick unusable until psmouse driver decide to do full device reset.
+
+Lot of users reported problems with ALPS devices on Dell Latitude E6440,
+E6540 and E7440 laptops. ALPS device or Dell EC for unknown reason send
+some invalid ALPS PS/2 bytes which cause driver out of sync. It looks like
+that i8042 and psmouse/alps driver always receive group of 6 bytes packets
+so there are no missing bytes and no bytes were inserted between valid
+ones.
+
+This patch does not fix root of problem with ALPS devices found in Dell
+Latitude laptops but it does not allow to process some (invalid)
+subsequence of 6 bytes ALPS packets as 3 bytes PS/2 when driver is out of
+sync.
+
+So with this patch trackstick input device does not report bogus data when
+also driver is out of sync, so trackstick should be usable on those
+machines.
+
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/iio/meter/ade7758_core.c | 24 +++++++++---------------
- 1 file changed, 9 insertions(+), 15 deletions(-)
+ drivers/input/mouse/alps.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/iio/meter/ade7758_core.c
-+++ b/drivers/staging/iio/meter/ade7758_core.c
-@@ -662,63 +662,63 @@ static const struct attribute_group ade7
- };
+--- a/drivers/input/mouse/alps.c
++++ b/drivers/input/mouse/alps.c
+@@ -372,7 +372,13 @@ static psmouse_ret_t alps_process_byte(s
+ 	struct alps_data *priv = psmouse->private;
+ 	const struct alps_model_info *model = priv->i;
  
- static struct iio_chan_spec ade7758_channels[] = {
--	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 0, 0,
-+	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 0, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
- 		0, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 0, 0,
-+	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 0, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
- 		1, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 0, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 0, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
- 		2, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 0, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 0, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
- 		3, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 0, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 0, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
- 		4, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 1, 0,
-+	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 1, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
- 		5, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 1, 0,
-+	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 1, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
- 		6, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 1, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 1, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
- 		7, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 1, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 1, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
- 		8, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 1, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 1, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
- 		9, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 2, 0,
-+	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 2, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
- 		10, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 2, 0,
-+	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 2, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
- 		11, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 2, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 2, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
- 		12, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 2, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 2, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
- 		13, IIO_ST('s', 24, 32, 0), 0),
--	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 2, 0,
-+	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 2, 0,
- 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
- 		AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
- 		14, IIO_ST('s', 24, 32, 0), 0),
+-	if ((psmouse->packet[0] & 0xc8) == 0x08) { /* PS/2 packet */
++	/*
++	 * Check if we are dealing with a bare PS/2 packet, presumably from
++	 * a device connected to the external PS/2 port. Because bare PS/2
++	 * protocol does not have enough constant bits to self-synchronize
++	 * properly we only do this if the device is fully synchronized.
++	 */
++	if (!psmouse->out_of_sync_cnt && (psmouse->packet[0] & 0xc8) == 0x08) {
+ 		if (psmouse->pktcnt == 3) {
+ 			alps_report_bare_ps2_packet(psmouse, psmouse->packet,
+ 						    true);
 
