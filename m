@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759946AbaLLGu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:50:59 -0500
+	id S966066AbaLLGsb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:31 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966043AbaLLGsc (ORCPT
+	by vger.kernel.org with ESMTP id S966043AbaLLGs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:32 -0500
+	Fri, 12 Dec 2014 01:48:27 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andy Adamson" <andros@netapp.com>,
-        "Trond Myklebust" <trond.myklebust@primarydata.com>
+CC: akpm@linux-foundation.org, "" <dorin@i51.org>, "Tejun Heo" <tj@kernel.org>,
+        "Imre Kaloz" <kaloz@openwrt.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.982695529@decadent.org.uk>
+Message-ID: <lsq.1418364865.534775977@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 040/164] NFSv4.1: Fix an NFSv4.1 state renewal regression
+Subject: [PATCH 3.2 085/164] ahci: disable MSI instead of NCQ on Samsung
+ pci-e SSDs on macbooks
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,90 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Adamson <andros@netapp.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit d1f456b0b9545f1606a54cd17c20775f159bd2ce upstream.
+commit 66a7cbc303f4d28f201529b06061944d51ab530c upstream.
 
-Commit 2f60ea6b8ced ("NFSv4: The NFSv4.0 client must send RENEW calls if it holds a delegation") set the NFS4_RENEW_TIMEOUT flag in nfs4_renew_state, and does
-not put an nfs41_proc_async_sequence call, the NFSv4.1 lease renewal heartbeat
-call, on the wire to renew the NFSv4.1 state if the flag was not set.
+Samsung pci-e SSDs on macbooks failed miserably on NCQ commands, so
+67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
+disabled NCQ on them.  It turns out that NCQ is fine as long as MSI is
+not used, so let's turn off MSI and leave NCQ on.
 
-The NFS4_RENEW_TIMEOUT flag is set when "now" is after the last renewal
-(cl_last_renewal) plus the lease time divided by 3. This is arbitrary and
-sometimes does the following:
-
-In normal operation, the only way a future state renewal call is put on the
-wire is via a call to nfs4_schedule_state_renewal, which schedules a
-nfs4_renew_state workqueue task. nfs4_renew_state determines if the
-NFS4_RENEW_TIMEOUT should be set, and the calls nfs41_proc_async_sequence,
-which only gets sent if the NFS4_RENEW_TIMEOUT flag is set.
-Then the nfs41_proc_async_sequence rpc_release function schedules
-another state remewal via nfs4_schedule_state_renewal.
-
-Without this change we can get into a state where an application stops
-accessing the NFSv4.1 share, state renewal calls stop due to the
-NFS4_RENEW_TIMEOUT flag _not_ being set. The only way to recover
-from this situation is with a clientid re-establishment, once the application
-resumes and the server has timed out the lease and so returns
-NFS4ERR_BAD_SESSION on the subsequent SEQUENCE operation.
-
-An example application:
-open, lock, write a file.
-
-sleep for 6 * lease (could be less)
-
-ulock, close.
-
-In the above example with NFSv4.1 delegations enabled, without this change,
-there are no OP_SEQUENCE state renewal calls during the sleep, and the
-clientid is recovered due to lease expiration on the close.
-
-This issue does not occur with NFSv4.1 delegations disabled, nor with
-NFSv4.0, with or without delegations enabled.
-
-Signed-off-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1411486536-23401-1-git-send-email-andros@netapp.com
-Fixes: 2f60ea6b8ced (NFSv4: The NFSv4.0 client must send RENEW calls...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+Tested-by: <dorin@i51.org>
+Tested-by: Imre Kaloz <kaloz@openwrt.org>
+Fixes: 67809f85d31e ("ahci: disable NCQ on Samsung pci-e SSDs on macbooks")
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfs/nfs4proc.c   |  2 +-
- fs/nfs/nfs4renewd.c | 12 ++++++++++--
- 2 files changed, 11 insertions(+), 3 deletions(-)
+ drivers/ata/ahci.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -5612,7 +5612,7 @@ static int nfs41_proc_async_sequence(str
- 	int ret = 0;
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_nomsi,
+ 	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
+@@ -124,6 +125,13 @@ static const struct ata_port_info ahci_p
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_nomsi] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_MSI),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_noncq] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -482,10 +490,10 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
  
- 	if ((renew_flags & NFS4_RENEW_TIMEOUT) == 0)
--		return 0;
-+		return -EAGAIN;
- 	task = _nfs41_proc_sequence(clp, cred, &nfs41_sequence_ops);
- 	if (IS_ERR(task))
- 		ret = PTR_ERR(task);
---- a/fs/nfs/nfs4renewd.c
-+++ b/fs/nfs/nfs4renewd.c
-@@ -88,10 +88,18 @@ nfs4_renew_state(struct work_struct *wor
- 			}
- 			nfs_expire_all_delegations(clp);
- 		} else {
-+			int ret;
-+
- 			/* Queue an asynchronous RENEW. */
--			ops->sched_state_renewal(clp, cred, renew_flags);
-+			ret = ops->sched_state_renewal(clp, cred, renew_flags);
- 			put_rpccred(cred);
--			goto out_exp;
-+			switch (ret) {
-+			default:
-+				goto out_exp;
-+			case -EAGAIN:
-+			case -ENOMEM:
-+				break;
-+			}
- 		}
- 	} else {
- 		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+ 	/*
+-	 * Samsung SSDs found on some macbooks.  NCQ times out.
+-	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 * Samsung SSDs found on some macbooks.  NCQ times out if MSI is
++	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
+ 	 */
+-	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
+ 
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
 
