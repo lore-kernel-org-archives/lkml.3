@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760920AbaLLGog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:44:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51766 "EHLO
+	id S965813AbaLLGoh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:44:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51775 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758738AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758796AbaLLGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:55 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
         "Andy Lutomirski" <luto@amacapital.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.492349132@decadent.org.uk>
+Message-ID: <lsq.1418364865.529953067@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 153/164] x86/asm/traps: Disable tracing and kprobes in
- fixup_bad_iret and sync_regs
+Subject: [PATCH 3.2 150/164] x86_64, traps: Stop using IST for #SS
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,43 +34,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andy Lutomirski <luto@amacapital.net>
 
-commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
+commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
 
-These functions can be executed on the int3 stack, so kprobes
-are dangerous. Tracing is probably a bad idea, too.
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
-Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
+
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
+
+This saves 4k of memory per CPU and a tiny bit of code.
+
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [bwh: Backported to 3.2:
- - Use __kprobes instead of NOKPROBE_SYMBOL()
- - Don't use __visible]
+ - No need to define trace_stack_segment
+ - Use the errorentry macro to generate #SS asm code
+ - Adjust context
+ - Checked that this matches Luis's backport for Ubuntu]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/traps.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -18,7 +18,6 @@
+ #define THREAD_ORDER	1
+ #define THREAD_SIZE 	(PAGE_SIZE << THREAD_ORDER)
+ 
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+ 
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+ 
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+ 		[ DEBUG_STACK-1			]	= "#DB",
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-		[ STACKFAULT_STACK-1		]	= "#SS",
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1383,7 +1383,7 @@ apicinterrupt XEN_HVM_EVTCHN_CALLBACK \
+ 
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+-paranoiderrorentry stack_segment do_stack_segment
++errorentry stack_segment do_stack_segment
+ #ifdef CONFIG_XEN
+ zeroentry xen_debug do_debug
+ zeroentry xen_int3 do_int3
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -344,7 +344,7 @@ dotraplinkage void __kprobes do_int3(str
-  * for scheduling or signal handling. The actual stack switch is done in
-  * entry.S
-  */
--asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
-+asmlinkage notrace __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- {
- 	struct pt_regs *regs = eregs;
- 	/* Did already sync */
-@@ -369,7 +369,7 @@ struct bad_iret_stack {
- 	struct pt_regs regs;
- };
+@@ -213,24 +213,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "copro
+ 		coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
+ DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
+-#ifdef CONFIG_X86_32
+ DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
+-#endif
+ DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
+ 		BUS_ADRALN, 0)
  
--asmlinkage
-+asmlinkage notrace __kprobes
- struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-			X86_TRAP_SS, SIGBUS) == NOTIFY_STOP)
+-		return;
+-	preempt_conditional_sti(regs);
+-	do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+-	preempt_conditional_cli(regs);
+-}
+-
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
  {
- 	/*
+ 	static const char str[] = "double fault";
+@@ -711,7 +699,7 @@ void __init trap_init(void)
+ 	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
+ 	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
+ 	set_intr_gate(X86_TRAP_NP, &segment_not_present);
+-	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_SS, stack_segment);
+ 	set_intr_gate(X86_TRAP_GP, &general_protection);
+ 	set_intr_gate(X86_TRAP_SPURIOUS, &spurious_interrupt_bug);
+ 	set_intr_gate(X86_TRAP_MF, &coprocessor_error);
 
