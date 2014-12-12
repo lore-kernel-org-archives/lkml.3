@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbaLLX0e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 18:26:34 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:54719 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752125AbaLLX0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 18:26:33 -0500
-Date: Fri, 12 Dec 2014 23:26:26 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: Really fix deadlock with mmap_sem
-Message-ID: <20141212232626.GY11285@n2100.arm.linux.org.uk>
-References: <1418425456-19364-1-git-send-email-sboyd@codeaurora.org>
- <20141212230543.GX11285@n2100.arm.linux.org.uk>
- <20141212232416.20398.58297@quantum>
+	id S1752180AbaLLX3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 18:29:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58890 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823AbaLLX3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 18:29:06 -0500
+Date: Sat, 13 Dec 2014 00:29:03 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Vinson Lee <vlee@twopensource.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Josh Triplett <josh@joshtriplett.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Bertrand Jacquin <beber@meleeweb.net>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Pranith Kumar <bobby.prani@gmail.com>,
+        Peter Foley <pefoley2@pefoley.com>,
+        Clark Williams <clark.williams@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Nate Stahl <stahl@twitter.com>, Vinson Lee <vlee@twitter.com>
+Subject: Re: [PATCH] Increase maximum size of dmesg buffer to 16MB.
+Message-ID: <20141212232903.GV25677@wotan.suse.de>
+References: <1418423906-5461-1-git-send-email-vlee@twopensource.com> <20141212224515.GU25677@wotan.suse.de> <CAHTgTXXo-DcmLH-JQ03B4zod_0qOhnJPU8Lc32U7A0PCZXFHuA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141212232416.20398.58297@quantum>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAHTgTXXo-DcmLH-JQ03B4zod_0qOhnJPU8Lc32U7A0PCZXFHuA@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 03:24:16PM -0800, Mike Turquette wrote:
-> Quoting Russell King - ARM Linux (2014-12-12 15:05:43)
-> > On Fri, Dec 12, 2014 at 03:04:16PM -0800, Stephen Boyd wrote:
-> > > Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
-> > > creation, 2014-09-04) forgot to update one place where we hold
-> > > the prepare_lock while creating debugfs directories. This means
-> > > we still have the chance of a deadlock that the commit was trying
-> > > to fix. Actually fix it by moving the debugfs creation outside
-> > > the prepare_lock.
-> > > 
-> > > Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> > 
-> > Please use "Russell King <rmk+kernel@arm.linux.org.uk>" rather than this
-> > address, thanks.
+On Fri, Dec 12, 2014 at 03:07:23PM -0800, Vinson Lee wrote:
+> On Fri, Dec 12, 2014 at 2:45 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
+> > On Fri, Dec 12, 2014 at 02:38:26PM -0800, Vinson Lee wrote:
+> >> From: Nate Stahl <stahl@twitter.com>
+> >>
+> >> A full task stack dump of all tasks on a machine can generate more than
+> >> 4MB of output to dmesg. Dumping this data to the serial console causes
+> >> the machine to hang for a number of minutes (an unacceptable impact),
+> >> but dumping the same data to memory is feasible if the dmesg buffer is
+> >> sized large enough to hold the output. Set to 16MB which will hopefully
+> >> be large enough to handle a dump from any of our servers at this time.
+> >>
+> >> Signed-off-by: Nate Stahl <stahl@twitter.com>
+> >> Signed-off-by: Vinson Lee <vlee@twitter.com>
+> >
+> > Isn't this the perpetual issue of having large number of CPUs? If so
+> > consider use of LOG_CPU_MAX_BUF_SHIFT instead, otherwise clarifying how
+> > this would be a different issue would be good. LOG_CPU_MAX_BUF_SHIFT
+> > should scale nicely but you can increase it as well, is it being used?
+> >
+> >  Luis
 > 
-> Applied to clk-next and fixed up the email address locally.
+> 
+> No, it is not being used.
+> 
+> LOG_CPU_MAX_BUF_SHIFT is a 3.17+ config and we do not have any of the
+> above mentioned production machines running 3.17 or later.
 
-Please make sure it gets into stable kernels too as v3.18 suffers from
-this bug, thanks.
+Then consider backporting it.
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+> This patch did help us with debugging when running on older stable kernels
+> though.
+
+Understood, give the other stuff a spin.
+
+  Luis
