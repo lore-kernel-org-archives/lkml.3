@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760925AbaLLGpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:45:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51805 "EHLO
+	id S1759177AbaLLGrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:47:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51789 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758943AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758857AbaLLGQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:55 -0500
+	Fri, 12 Dec 2014 01:16:54 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Pawel Moll" <pawel.moll@arm.com>,
-        "Ingo Molnar" <mingo@kernel.org>, "Jiri Olsa" <jolsa@redhat.com>,
-        "Zefan Li" <lizefan@huawei.com>, "David Ahern" <dsahern@gmail.com>,
-        "Drew Richardson" <drew.richardson@arm.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Arnaldo Carvalho de Melo" <acme@kernel.org>
-Date: Fri, 12 Dec 2014 06:14:26 +0000
-Message-ID: <lsq.1418364866.74149207@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Champion Chen" <champion_chen@realsil.com.cn>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "Marcel Holtmann" <marcel@holtmann.org>
+Date: Fri, 12 Dec 2014 06:14:25 +0000
+Message-ID: <lsq.1418364865.935583998@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 164/164] perf: Handle compat ioctl
+Subject: [PATCH 3.2 005/164] Bluetooth: Fix issue with USB suspend in
+ btusb driver
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,80 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pawel Moll <pawel.moll@arm.com>
+From: Champion Chen <champion_chen@realsil.com.cn>
 
-commit b3f207855f57b9c8f43a547a801340bb5cbc59e5 upstream.
+commit 85560c4a828ec9c8573840c9b66487b6ae584768 upstream.
 
-When running a 32-bit userspace on a 64-bit kernel (eg. i386
-application on x86_64 kernel or 32-bit arm userspace on arm64
-kernel) some of the perf ioctls must be treated with special
-care, as they have a pointer size encoded in the command.
+Suspend could fail for some platforms because
+btusb_suspend==> btusb_stop_traffic ==> usb_kill_anchored_urbs.
 
-For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
-as 0x80042407, but 64-bit kernel will expect 0x80082407. In
-result the ioctl will fail returning -ENOTTY.
+When btusb_bulk_complete returns before system suspend and resubmits
+an URB, the system cannot enter suspend state.
 
-This patch solves the problem by adding code fixing up the
-size as compat_ioctl file operation.
-
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Pawel Moll <pawel.moll@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-[lizf: Backported to 3.4 by David Ahern]
-Signed-off-by: Zefan Li <lizefan@huawei.com>
+Signed-off-by: Champion Chen <champion_chen@realsil.com.cn>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/core.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -36,6 +36,7 @@
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
- #include <linux/hw_breakpoint.h>
-+#include <linux/compat.h>
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -305,6 +305,9 @@ static void btusb_intr_complete(struct u
+ 			BT_ERR("%s corrupted event packet", hdev->name);
+ 			hdev->stat.err_rx++;
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
  
- #include "internal.h"
+ 	if (!test_bit(BTUSB_INTR_RUNNING, &data->flags))
+@@ -392,6 +395,9 @@ static void btusb_bulk_complete(struct u
+ 			BT_ERR("%s corrupted ACL packet", hdev->name);
+ 			hdev->stat.err_rx++;
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
  
-@@ -3444,6 +3445,25 @@ static long perf_ioctl(struct file *file
- 	return 0;
- }
+ 	if (!test_bit(BTUSB_BULK_RUNNING, &data->flags))
+@@ -485,6 +491,9 @@ static void btusb_isoc_complete(struct u
+ 				hdev->stat.err_rx++;
+ 			}
+ 		}
++	} else if (urb->status == -ENOENT) {
++		/* Avoid suspend failed when usb_kill_urb */
++		return;
+ 	}
  
-+#ifdef CONFIG_COMPAT
-+static long perf_compat_ioctl(struct file *file, unsigned int cmd,
-+				unsigned long arg)
-+{
-+	switch (_IOC_NR(cmd)) {
-+	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
-+		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
-+		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
-+			cmd &= ~IOCSIZE_MASK;
-+			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
-+		}
-+		break;
-+	}
-+	return perf_ioctl(file, cmd, arg);
-+}
-+#else
-+# define perf_compat_ioctl NULL
-+#endif
-+
- int perf_event_task_enable(void)
- {
- 	struct perf_event *event;
-@@ -3910,7 +3930,7 @@ static const struct file_operations perf
- 	.read			= perf_read,
- 	.poll			= perf_poll,
- 	.unlocked_ioctl		= perf_ioctl,
--	.compat_ioctl		= perf_ioctl,
-+	.compat_ioctl		= perf_compat_ioctl,
- 	.mmap			= perf_mmap,
- 	.fasync			= perf_fasync,
- };
+ 	if (!test_bit(BTUSB_ISOC_RUNNING, &data->flags))
 
