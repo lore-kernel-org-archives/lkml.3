@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966044AbaLLGs0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:48:26 -0500
+	id S966108AbaLLGsh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:37 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966000AbaLLGsV (ORCPT
+	by vger.kernel.org with ESMTP id S1751206AbaLLGsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:21 -0500
+	Fri, 12 Dec 2014 01:48:31 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@kernel.org>,
-        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
+CC: akpm@linux-foundation.org, "Sitsofe Wheeler" <sitsofe@yahoo.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.117751536@decadent.org.uk>
+Message-ID: <lsq.1418364865.361486055@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 025/164] spi: dw-mid: respect 8 bit mode
+Subject: [PATCH 3.2 021/164] Drivers: hv: vmbus: Cleanup vmbus_establish_gpadl()
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,39 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit b41583e7299046abdc578c33f25ed83ee95b9b31 upstream.
+commit 72c6b71c245dac8f371167d97ef471b367d0b66b upstream.
 
-In case of 8 bit mode and DMA usage we end up with every second byte written as
-0. We have to respect bits_per_word settings what this patch actually does.
+Eliminate the call to BUG_ON() by waiting for the host to respond. We are
+trying to reclaim the ownership of memory that was given to the host and so
+we will have to wait until the host responds.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi-dw-mid.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/hv/channel.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -135,7 +135,7 @@ static int mid_spi_dma_transfer(struct d
- 	txconf.dst_addr = dws->dma_addr;
- 	txconf.dst_maxburst = LNW_DMA_MSIZE_16;
- 	txconf.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	txconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	txconf.dst_addr_width = dws->dma_width;
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -400,7 +400,6 @@ int vmbus_establish_gpadl(struct vmbus_c
+ 	u32 next_gpadl_handle;
+ 	unsigned long flags;
+ 	int ret = 0;
+-	int t;
  
- 	txchan->device->device_control(txchan, DMA_SLAVE_CONFIG,
- 				       (unsigned long) &txconf);
-@@ -157,7 +157,7 @@ static int mid_spi_dma_transfer(struct d
- 	rxconf.src_addr = dws->dma_addr;
- 	rxconf.src_maxburst = LNW_DMA_MSIZE_16;
- 	rxconf.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
--	rxconf.src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
-+	rxconf.src_addr_width = dws->dma_width;
+ 	next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
+ 	atomic_inc(&vmbus_connection.next_gpadl_handle);
+@@ -447,9 +446,7 @@ int vmbus_establish_gpadl(struct vmbus_c
  
- 	rxchan->device->device_control(rxchan, DMA_SLAVE_CONFIG,
- 				       (unsigned long) &rxconf);
+ 		}
+ 	}
+-	t = wait_for_completion_timeout(&msginfo->waitevent, 5*HZ);
+-	BUG_ON(t == 0);
+-
++	wait_for_completion(&msginfo->waitevent);
+ 
+ 	/* At this point, we received the gpadl created msg */
+ 	*gpadl_handle = gpadlmsg->gpadl;
 
