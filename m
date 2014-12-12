@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965737AbaLLGhl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:37:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51887 "EHLO
+	id S965759AbaLLGho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:37:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51890 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759297AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759295AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Johan Hovold" <johan@kernel.org>
+CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
+        "Dave Hansen" <dave@sr71.net>, x86@kernel.org,
+        "Dave Hansen" <dave.hansen@linux.intel.com>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.641056798@decadent.org.uk>
+Message-ID: <lsq.1418364865.353520296@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 115/164] USB: cdc-acm: only raise DTR on transitions
- from B0
+Subject: [PATCH 3.2 130/164] x86: Require exact match for 'noxsave'
+ command line option
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,37 +34,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-commit 4473d054ceb572557954f9536731d39b20937b0c upstream.
+commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
 
-Make sure to only raise DTR on transitions from B0 in set_termios.
+We have some very similarly named command-line options:
 
-Also allow set_termios to be called from open with a termios_old of
-NULL. Note that DTR will not be raised prematurely in this case.
+arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
+arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
 
-Signed-off-by: Johan Hovold <johan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+__setup() is designed to match options that take arguments, like
+"foo=bar" where you would have:
+
+	__setup("foo", x86_foo_func...);
+
+The problem is that "noxsave" actually _matches_ "noxsaves" in
+the same way that "foo" matches "foo=bar".  If you boot an old
+kernel that does not know about "noxsaves" with "noxsaves" on the
+command line, it will interpret the argument as "noxsave", which
+is not what you want at all.
+
+This makes the "noxsave" handler only return success when it finds
+an *exact* match.
+
+[ tglx: We really need to make __setup() more robust. ]
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/class/cdc-acm.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/common.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -819,11 +819,12 @@ static void acm_tty_set_termios(struct t
- 	/* FIXME: Needs to clear unsupported bits in the termios */
- 	acm->clocal = ((termios->c_cflag & CLOCAL) != 0);
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -140,6 +140,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
  
--	if (!newline.dwDTERate) {
-+	if (C_BAUD(tty) == B0) {
- 		newline.dwDTERate = acm->line.dwDTERate;
- 		newctrl &= ~ACM_CTRL_DTR;
--	} else
-+	} else if (termios_old && (termios_old->c_cflag & CBAUD) == B0) {
- 		newctrl |=  ACM_CTRL_DTR;
-+	}
- 
- 	if (newctrl != acm->ctrlout)
- 		acm_set_control(acm, acm->ctrlout = newctrl);
+ static int __init x86_xsave_setup(char *s)
+ {
++	if (strlen(s))
++		return 0;
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
+ 	return 1;
 
