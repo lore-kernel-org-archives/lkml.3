@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934841AbaLLKK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:10:27 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20935 "EHLO mga02.intel.com"
+	id S965614AbaLLKPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:15:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46752 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934677AbaLLKK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:10:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,561,1413270000"; 
-   d="scan'208";a="652782815"
-Message-ID: <1418379009.17201.61.camel@linux.intel.com>
-Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Fri, 12 Dec 2014 12:10:09 +0200
-In-Reply-To: <1418314017.18092.35.camel@perches.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1418314017.18092.35.camel@perches.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934677AbaLLKPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 05:15:20 -0500
+From: Jiri Olsa <jolsa@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH] perf tools: Fix bare address display value of callchain entries
+Date: Fri, 12 Dec 2014 11:14:58 +0100
+Message-Id: <1418379298-29176-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 08:06 -0800, Joe Perches wrote:
-> On Thu, 2014-12-11 at 17:53 +0200, Andy Shevchenko wrote:
-> > This patchset creates a new folder under drivers/mfd and moves there Intel
-> > related drivers.
-> 
-> Missing update of MAINTAINERS?
+In case we don't have symbol to display we display bare
+'unmapped' address. This was unintentionally changed in
+recent commit:
+  5550171b2a9f perf callchain: Use al.addr to set up call chain
 
-Oh, right. I could send a follow up patch or update each patch in the
-series. What is the best approach here?
+Putting the original way back.
 
-Will wait for more comments, especially from Lee.
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/util/callchain.c | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 64b377e591e4..a4fb25fb26f5 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -816,22 +816,30 @@ out:
+ char *callchain_list__sym_name(struct callchain_list *cl,
+ 			       char *bf, size_t bfsize, bool show_dso)
+ {
++	struct map *map = cl->ms.map;
+ 	int printed;
+ 
+ 	if (cl->ms.sym) {
+ 		if (callchain_param.key == CCKEY_ADDRESS &&
+-		    cl->ms.map && !cl->srcline)
+-			cl->srcline = get_srcline(cl->ms.map->dso,
+-						  map__rip_2objdump(cl->ms.map,
+-								    cl->ip),
++		    map && !cl->srcline) {
++			cl->srcline = get_srcline(map->dso,
++						  map__rip_2objdump(map, cl->ip),
+ 						  cl->ms.sym, false);
++		}
+ 		if (cl->srcline)
+ 			printed = scnprintf(bf, bfsize, "%s %s",
+ 					cl->ms.sym->name, cl->srcline);
+ 		else
+ 			printed = scnprintf(bf, bfsize, "%s", cl->ms.sym->name);
+-	} else
+-		printed = scnprintf(bf, bfsize, "%#" PRIx64, cl->ip);
++	} else {
++		/*
++		 * The cl->ip value is unbased ip (applied map->map_ip).
++		 * Display the unmap ip in case we have no symbol.
++		 */
++		u64 addr = map ? map->unmap_ip(map, cl->ip) : cl->ip;
++
++		printed = scnprintf(bf, bfsize, "%#" PRIx64, addr);
++	}
+ 
+ 	if (show_dso)
+ 		scnprintf(bf + printed, bfsize - printed, " %s",
 -- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
+1.9.3
 
