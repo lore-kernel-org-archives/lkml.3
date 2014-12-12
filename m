@@ -1,238 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030791AbaLLQfv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:35:51 -0500
-Received: from mail-bn1bon0058.outbound.protection.outlook.com ([157.56.111.58]:52128
+	id S1030808AbaLLQg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:36:29 -0500
+Received: from mail-bn1bon0084.outbound.protection.outlook.com ([157.56.111.84]:5191
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030774AbaLLQfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:35:48 -0500
+	id S934882AbaLLQfl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:35:41 -0500
 From: Soren Brinkmann <soren.brinkmann@xilinx.com>
 To: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
 CC: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
+        "Michal Simek" <michal.simek@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         <linux-rockchip@lists.infradead.org>, <linux-sh@vger.kernel.org>,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        "Bjorn Andersson" <bjorn.andersson@sonymobile.com>,
         Beniamino Galvani <b.galvani@gmail.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
+        "Kumar Gala" <galak@codeaurora.org>,
         Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v3 7/7] pinctrl: qcom-spmi-gpio: Migrate to pinconf-generic
-Date: Fri, 12 Dec 2014 08:34:58 -0800
+Subject: [PATCH v3 1/7] pinctrl: pinconf-generic: Infer map type from DT property
+Date: Fri, 12 Dec 2014 08:34:52 -0800
 X-Mailer: git-send-email 2.2.0.1.g9ee0458
 In-Reply-To: <1418402098-3811-1-git-send-email-soren.brinkmann@xilinx.com>
 References: <1418402098-3811-1-git-send-email-soren.brinkmann@xilinx.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 X-RCIS-Action: ALLOW
 X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21172.000
-X-TM-AS-Result: No--13.840-7.0-31-1
-X-imss-scan-details: No--13.840-7.0-31-1;No--13.840-5.0-31-1
+X-TM-AS-Result: No--9.979-7.0-31-1
+X-imss-scan-details: No--9.979-7.0-31-1;No--9.979-5.0-31-1
 X-TM-AS-User-Approved-Sender: No;No
-Message-ID: <dc5e1d6b890747b4bcad87e42dcdcf70@BY2FFO11FD004.protection.gbl>
+Message-ID: <9a21e4de1eac4c3e81a860b69ae99713@BL2FFO11FD060.protection.gbl>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=pass (sender IP is 149.199.60.83)
  smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(199003)(62966003)(19580395003)(53416004)(77156002)(4396001)(6806004)(50226001)(19580405001)(108616004)(230783001)(86362001)(48376002)(50986999)(87936001)(76176999)(74316001)(21056001)(50466002)(31966008)(107046002)(120916001)(92566001)(229853001)(106466001)(99396003)(89996001)(46102003)(92726002)(64706001)(20776003)(104016003)(47776003)(41533002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB060;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB060;
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(199003)(77156002)(31966008)(120916001)(74316001)(62966003)(50466002)(108616004)(50986999)(76176999)(53416004)(106466001)(104016003)(64706001)(4396001)(20776003)(19580405001)(46102003)(23676002)(107046002)(92566001)(21056001)(50226001)(47776003)(99396003)(87936001)(19580395003)(92726002)(89996001)(229853001)(86362001)(6806004)(41533002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB037;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB037;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB060;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB037;
 X-Forefront-PRVS: 04238CD941
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB060;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB037;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB027;
 X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of the driver caring about implementation details like device
-tree, just provide information about driver specific pinconf parameters
-to pinconf-generic which takes care of parsing the DT.
+With the new 'groups' property, the DT parser can infer the map type
+from the fact whether 'pins' or 'groups' is used to specify the pin
+group to work on.
+To maintain backwards compatibitliy with current usage of the DT
+binding, this is only done when PIN_MAP_TYPE_INVALID is passed to the
+parsing function as type.
+Also, a new helper 'pinconf_generic_dt_node_to_map_all()' is introduced,
+which can be used by drivers as generic callback for dt_node_to_map() to
+leverage the new feature.
 
 Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+Tested-by: Andreas Färber <afaerber@suse.de>
 ---
 Changes since v2:
- - remove hyphens in 'pull-up-strength' debugfs representation.
- - driver-specific DT properties are passed to the core in two arrays,
-   one for the actual DT parsing one for the debugfs representation.
-   Issue a compiler warning when the number of entries is not the same
-   for both arrays.
-
-This is compile tested only. So, it's likely that it needs more tweaking
-to make it actually work on HW. But it illustrates the potential
-benefits of the pinconf-generic changes in this series.
+ - rename dt_pin_specifier to subnode_target_type
+ - add additional comment in header file explaining passing an invalid
+   map type
+ - mention map_all() helper in commit message
+Changes since RFC v2:
+ - none
 ---
- drivers/pinctrl/qcom/pinctrl-spmi-gpio.c | 125 +++----------------------------
- 1 file changed, 11 insertions(+), 114 deletions(-)
+ drivers/pinctrl/pinconf-generic.c       | 17 ++++++++++++++---
+ include/linux/pinctrl/pinconf-generic.h | 11 +++++++++++
+ 2 files changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-index b863b5080890..17f811c9c2c0 100644
---- a/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-+++ b/drivers/pinctrl/qcom/pinctrl-spmi-gpio.c
-@@ -131,14 +131,14 @@ struct pmic_gpio_state {
- 	struct gpio_chip chip;
- };
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index f78b416d7984..21b3d90ebb2d 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -264,6 +264,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 	unsigned reserve;
+ 	struct property *prop;
+ 	const char *group;
++	const char *subnode_target_type = "pins";
  
--struct pmic_gpio_bindings {
--	const char	*property;
--	unsigned	param;
-+static const struct pinconf_generic_dt_params pmic_gpio_bindings[] = {
-+	{"qcom,pull-up-strength",	PMIC_GPIO_CONF_PULL_UP,		0},
-+	{"qcom,drive-strength",		PMIC_GPIO_CONF_STRENGTH,	0},
- };
- 
--static struct pmic_gpio_bindings pmic_gpio_bindings[] = {
--	{"qcom,pull-up-strength",	PMIC_GPIO_CONF_PULL_UP},
--	{"qcom,drive-strength",		PMIC_GPIO_CONF_STRENGTH},
-+static const struct pin_config_item pmic_conf_items[ARRAY_SIZE(pmic_gpio_bindings)] = {
-+	PCONFDUMP(PMIC_GPIO_CONF_PULL_UP,  "pull up strength", NULL, true),
-+	PCONFDUMP(PMIC_GPIO_CONF_STRENGTH, "drive-strength", NULL, true),
- };
- 
- static const char *const pmic_gpio_groups[] = {
-@@ -209,118 +209,11 @@ static int pmic_gpio_get_group_pins(struct pinctrl_dev *pctldev, unsigned pin,
- 	return 0;
- }
- 
--static int pmic_gpio_parse_dt_config(struct device_node *np,
--				     struct pinctrl_dev *pctldev,
--				     unsigned long **configs,
--				     unsigned int *nconfs)
--{
--	struct pmic_gpio_bindings *par;
--	unsigned long cfg;
--	int ret, i;
--	u32 val;
--
--	for (i = 0; i < ARRAY_SIZE(pmic_gpio_bindings); i++) {
--		par = &pmic_gpio_bindings[i];
--		ret = of_property_read_u32(np, par->property, &val);
--
--		/* property not found */
--		if (ret == -EINVAL)
--			continue;
--
--		/* use zero as default value */
--		if (ret)
--			val = 0;
--
--		dev_dbg(pctldev->dev, "found %s with value %u\n",
--			par->property, val);
--
--		cfg = pinconf_to_config_packed(par->param, val);
--
--		ret = pinctrl_utils_add_config(pctldev, configs, nconfs, cfg);
--		if (ret)
--			return ret;
--	}
--
--	return 0;
--}
--
--static int pmic_gpio_dt_subnode_to_map(struct pinctrl_dev *pctldev,
--				       struct device_node *np,
--				       struct pinctrl_map **map,
--				       unsigned *reserv, unsigned *nmaps,
--				       enum pinctrl_map_type type)
--{
--	unsigned long *configs = NULL;
--	unsigned nconfs = 0;
--	struct property *prop;
--	const char *group;
--	int ret;
--
--	ret = pmic_gpio_parse_dt_config(np, pctldev, &configs, &nconfs);
--	if (ret < 0)
--		return ret;
--
--	if (!nconfs)
--		return 0;
--
--	ret = of_property_count_strings(np, "pins");
--	if (ret < 0)
+ 	ret = of_property_read_string(np, "function", &function);
+ 	if (ret < 0) {
+@@ -284,10 +285,20 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 		reserve++;
+ 	if (num_configs)
+ 		reserve++;
++
+ 	ret = of_property_count_strings(np, "pins");
+ 	if (ret < 0) {
+-		dev_err(dev, "could not parse property pins\n");
 -		goto exit;
--
--	ret = pinctrl_utils_reserve_map(pctldev, map, reserv, nmaps, ret);
--	if (ret < 0)
--		goto exit;
--
++		ret = of_property_count_strings(np, "groups");
++		if (ret < 0) {
++			dev_err(dev, "could not parse property pins/groups\n");
++			goto exit;
++		}
++		if (type == PIN_MAP_TYPE_INVALID)
++			type = PIN_MAP_TYPE_CONFIGS_GROUP;
++		subnode_target_type = "groups";
++	} else {
++		if (type == PIN_MAP_TYPE_INVALID)
++			type = PIN_MAP_TYPE_CONFIGS_PIN;
+ 	}
+ 	reserve *= ret;
+ 
+@@ -296,7 +307,7 @@ int pinconf_generic_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 	if (ret < 0)
+ 		goto exit;
+ 
 -	of_property_for_each_string(np, "pins", prop, group) {
--		ret = pinctrl_utils_add_map_configs(pctldev, map,
--						    reserv, nmaps, group,
--						    configs, nconfs, type);
--		if (ret < 0)
--			break;
--	}
--exit:
--	kfree(configs);
--	return ret;
--}
--
--static int pmic_gpio_dt_node_to_map(struct pinctrl_dev *pctldev,
--				    struct device_node *np_config,
--				    struct pinctrl_map **map, unsigned *nmaps)
--{
--	enum pinctrl_map_type type;
--	struct device_node *np;
--	unsigned reserv;
--	int ret;
--
--	ret = 0;
--	*map = NULL;
--	*nmaps = 0;
--	reserv = 0;
--	type = PIN_MAP_TYPE_CONFIGS_GROUP;
--
--	for_each_child_of_node(np_config, np) {
--		ret = pinconf_generic_dt_subnode_to_map(pctldev, np, map,
--							&reserv, nmaps, type);
--		if (ret)
--			break;
--
--		ret = pmic_gpio_dt_subnode_to_map(pctldev, np, map, &reserv,
--						  nmaps, type);
--		if (ret)
--			break;
--	}
--
--	if (ret < 0)
--		pinctrl_utils_dt_free_map(pctldev, *map, *nmaps);
--
--	return ret;
--}
--
- static const struct pinctrl_ops pmic_gpio_pinctrl_ops = {
- 	.get_groups_count	= pmic_gpio_get_groups_count,
- 	.get_group_name		= pmic_gpio_get_group_name,
- 	.get_group_pins		= pmic_gpio_get_group_pins,
--	.dt_node_to_map		= pmic_gpio_dt_node_to_map,
-+	.dt_node_to_map		= pinconf_generic_dt_node_to_map_group,
- 	.dt_free_map		= pinctrl_utils_dt_free_map,
- };
- 
-@@ -590,6 +483,7 @@ static void pmic_gpio_config_dbg_show(struct pinctrl_dev *pctldev,
++	of_property_for_each_string(np, subnode_target_type, prop, group) {
+ 		if (function) {
+ 			ret = pinctrl_utils_add_map_mux(pctldev, map,
+ 					reserved_maps, num_maps, group,
+diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+index d578a60eff23..83c89f5ab705 100644
+--- a/include/linux/pinctrl/pinconf-generic.h
++++ b/include/linux/pinctrl/pinconf-generic.h
+@@ -174,6 +174,17 @@ static inline int pinconf_generic_dt_node_to_map_pin(
+ 			PIN_MAP_TYPE_CONFIGS_PIN);
  }
  
- static const struct pinconf_ops pmic_gpio_pinconf_ops = {
-+	.is_generic			= true,
- 	.pin_config_group_get		= pmic_gpio_config_get,
- 	.pin_config_group_set		= pmic_gpio_config_set,
- 	.pin_config_group_dbg_show	= pmic_gpio_config_dbg_show,
-@@ -848,6 +742,9 @@ static int pmic_gpio_probe(struct platform_device *pdev)
- 	pctrldesc->name = dev_name(dev);
- 	pctrldesc->pins = pindesc;
- 	pctrldesc->npins = npins;
-+	pctrldesc->num_dt_params = ARRAY_SIZE(pmic_gpio_bindings);
-+	pctrldesc->params = pmic_gpio_bindings;
-+	pctrldesc->conf_items = pmic_conf_items;
++static inline int pinconf_generic_dt_node_to_map_all(
++		struct pinctrl_dev *pctldev, struct device_node *np_config,
++		struct pinctrl_map **map, unsigned *num_maps)
++{
++	/*
++	 * passing the type as PIN_MAP_TYPE_INVALID causes the underlying parser
++	 * to infer the map type from the DT properties used.
++	 */
++	return pinconf_generic_dt_node_to_map(pctldev, np_config, map, num_maps,
++			PIN_MAP_TYPE_INVALID);
++}
+ #endif
  
- 	for (i = 0; i < npins; i++, pindesc++) {
- 		pad = &pads[i];
+ #endif /* CONFIG_GENERIC_PINCONF */
 -- 
 2.2.0.1.g9ee0458
 
