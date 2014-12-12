@@ -1,131 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759496AbaLLGxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:53:05 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35264 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760081AbaLLGxA (ORCPT
+	id S966356AbaLLGxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:53:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965992AbaLLGsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:53:00 -0500
-Date: Fri, 12 Dec 2014 07:52:35 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Eddie Huang <eddie.huang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>
-Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
- board dts and Makefile
-Message-ID: <20141212065235.GK30369@pengutronix.de>
-References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
- <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
- <20141211180245.GE28150@leverpostej>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 12 Dec 2014 01:48:17 -0500
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <20141211180245.GE28150@leverpostej>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:48:34 up 57 days, 18:02, 67 users,  load average: 0.17, 0.09,
- 0.09
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Scott Carter" <ccscott@funsoft.com>
+Date: Fri, 12 Dec 2014 06:14:25 +0000
+Message-ID: <lsq.1418364865.328973689@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 049/164] pata_serverworks: disable 64-KB DMA transfers
+ on Broadcom OSB4 IDE Controller
+In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 06:02:46PM +0000, Mark Rutland wrote:
-> Hi,
-> 
-> On Wed, Dec 10, 2014 at 10:50:01AM +0000, Eddie Huang wrote:
-> > Add device tree support for MT8173 SoC and evalutaion board based on it.
-> > 
-> > Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
-> > ---
-> >  arch/arm64/boot/dts/Makefile       |   1 +
-> >  arch/arm64/boot/dts/mt8173-evb.dts |  31 +++++++
-> >  arch/arm64/boot/dts/mt8173.dtsi    | 164 +++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 196 insertions(+)
-> >  create mode 100644 arch/arm64/boot/dts/mt8173-evb.dts
-> >  create mode 100644 arch/arm64/boot/dts/mt8173.dtsi
-> > 
-> > diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-> > index f8001a6..db7661e 100644
-> > --- a/arch/arm64/boot/dts/Makefile
-> > +++ b/arch/arm64/boot/dts/Makefile
-> > @@ -1,3 +1,4 @@
-> > +dtb-$(CONFIG_ARCH_MEDIATEK) += mt8173-evb.dtb
-> >  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
-> >  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
-> >  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
-> > diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
-> > new file mode 100644
-> > index 0000000..adf26dd
-> > --- /dev/null
-> > +++ b/arch/arm64/boot/dts/mt8173-evb.dts
-> > @@ -0,0 +1,31 @@
-> > +/*
-> > + * Copyright (c) 2014 MediaTek Inc.
-> > + * Author: Eddie Huang <eddie.huang@mediatek.com>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +
-> > +/dts-v1/;
-> > +#include "mt8173.dtsi"
-> > +
-> > +/ {
-> > +	model = "mediatek,mt8173-evb";
-> > +
-> > +	aliases {
-> > +		serial0 = &uart0;
-> > +		serial1 = &uart1;
-> > +		serial2 = &uart2;
-> > +		serial3 = &uart3;
-> 
-> Do any of these support earlycon?
-> 
-> > +	};
-> > +
-> > +	memory {
-> 
-> Nit: should be memory@40000000 (and you'll need to add device_type =
-> "memory").
+3.2.65-rc1 review patch.  If anyone has any objections, please let me know.
 
-skeleton.dtsi already has a /memory node with device_type = "memory".
-Shouldn't that be used?
+------------------
 
-Sascha
+From: Scott Carter <ccscott@funsoft.com>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
+
+The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
+does not support 64-KB DMA transfers.
+Whenever a 64-KB DMA transfer is attempted,
+the transfer fails and messages similar to the following
+are written to the console log:
+
+   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
+   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
+   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
+   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
+   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
+
+When the libata and pata_serverworks modules
+are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
+the 64-KB transfer size in the scatter-gather list can be seen
+in the console log:
+
+   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
+   [ 2664.897274] 0xf63d85e0
+   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
+   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
+   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
+   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
+   [ 2664.897338] ata_scsi_translate: ENTER
+   [ 2664.897345] ata_sg_setup: ENTER, ata1
+   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
+   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
+   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
+   ------------------------------------------------------> =======
+   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
+   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
+   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
+   [ 2664.897428] ata_sff_tf_load: device 0xA0
+   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
+   [ 2664.897457] ata_scsi_translate: EXIT
+   [ 2664.897462] leaving scsi_dispatch_cmnd()
+   [ 2664.897497] Doing sr request, dev = sr0, block = 0
+   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
+   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
+   [ 2664.897560] atapi_send_cdb: send cdb
+   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
+   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
+   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
+   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
+   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
+   [ 2666.910136] 0xf63d85e0 TIMEOUT
+
+lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
+pata_serverworks:
+
+   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
+           Flags: bus master, medium devsel, latency 64
+           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
+           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
+           I/O ports at 0170 [size=8]
+           I/O ports at 0374 [size=4]
+           I/O ports at 1440 [size=16]
+           Kernel driver in use: pata_serverworks
+
+The pata_serverworks driver supports five distinct device IDs,
+one being the OSB4 and the other four belonging to the CSB series.
+The CSB series appears to support 64-KB DMA transfers,
+as tests on a machine with an SAI2 motherboard
+containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
+showed no problems with 64-KB DMA transfers.
+
+This problem was first discovered when attempting to install openSUSE
+from a DVD on a machine with an STL2 motherboard.
+Using the pata_serverworks module,
+older releases of openSUSE will not install at all due to the timeouts.
+Releases of openSUSE prior to 11.3 can be installed by disabling
+the pata_serverworks module using the brokenmodules boot parameter,
+which causes the serverworks module to be used instead.
+Recent releases of openSUSE (12.2 and later) include better error recovery and
+will install, though very slowly.
+On all openSUSE releases, the problem can be recreated
+on a machine containing a Broadcom OSB4 IDE Controller
+by mounting an install DVD and running a command similar to the following:
+
+   find /mnt -type f -print | xargs cat > /dev/null
+
+The patch below corrects the problem.
+Similar to the other ATA drivers that do not support 64-KB DMA transfers,
+the patch changes the ata_port_operations qc_prep vector to point to a routine
+that breaks any 64-KB segment into two 32-KB segments and
+changes the scsi_host_template sg_tablesize element to reduce by half
+the number of scatter/gather elements allowed.
+These two changes affect only the OSB4.
+
+Signed-off-by: Scott Carter <ccscott@funsoft.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/ata/pata_serverworks.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+--- a/drivers/ata/pata_serverworks.c
++++ b/drivers/ata/pata_serverworks.c
+@@ -252,12 +252,18 @@ static void serverworks_set_dmamode(stru
+ 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
+ }
+ 
+-static struct scsi_host_template serverworks_sht = {
++static struct scsi_host_template serverworks_osb4_sht = {
++	ATA_BMDMA_SHT(DRV_NAME),
++	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
++};
++
++static struct scsi_host_template serverworks_csb_sht = {
+ 	ATA_BMDMA_SHT(DRV_NAME),
+ };
+ 
+ static struct ata_port_operations serverworks_osb4_port_ops = {
+ 	.inherits	= &ata_bmdma_port_ops,
++	.qc_prep	= ata_bmdma_dumb_qc_prep,
+ 	.cable_detect	= serverworks_cable_detect,
+ 	.mode_filter	= serverworks_osb4_filter,
+ 	.set_piomode	= serverworks_set_piomode,
+@@ -266,6 +272,7 @@ static struct ata_port_operations server
+ 
+ static struct ata_port_operations serverworks_csb_port_ops = {
+ 	.inherits	= &serverworks_osb4_port_ops,
++	.qc_prep	= ata_bmdma_qc_prep,
+ 	.mode_filter	= serverworks_csb_filter,
+ };
+ 
+@@ -405,6 +412,7 @@ static int serverworks_init_one(struct p
+ 		}
+ 	};
+ 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
++	struct scsi_host_template *sht = &serverworks_csb_sht;
+ 	int rc;
+ 
+ 	rc = pcim_enable_device(pdev);
+@@ -418,6 +426,7 @@ static int serverworks_init_one(struct p
+ 		/* Select non UDMA capable OSB4 if we can't do fixups */
+ 		if (rc < 0)
+ 			ppi[0] = &info[1];
++		sht = &serverworks_osb4_sht;
+ 	}
+ 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
+ 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
+@@ -434,7 +443,7 @@ static int serverworks_init_one(struct p
+ 			ppi[1] = &ata_dummy_port_info;
+ 	}
+ 
+-	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
++	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
+ }
+ 
+ #ifdef CONFIG_PM
+
