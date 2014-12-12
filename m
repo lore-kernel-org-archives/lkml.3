@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759414AbaLLGRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:17:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51693 "EHLO
+	id S1760253AbaLLGSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:18:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51854 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758182AbaLLGQw (ORCPT
+	by vger.kernel.org with ESMTP id S1759517AbaLLGRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:52 -0500
+	Fri, 12 Dec 2014 01:17:18 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
-        "Kees Cook" <keescook@chromium.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Mark Brown" <broonie@kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.318109164@decadent.org.uk>
+Message-ID: <lsq.1418364865.180577513@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 018/164] firmware_class: make sure fw requests contain
- a name
+Subject: [PATCH 3.2 058/164] spi: pl022: Fix incorrect dma_unmap_sg
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,37 +31,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Ray Jui <rjui@broadcom.com>
 
-commit 471b095dfe0d693a8d624cbc716d1ee4d74eb437 upstream.
+commit 3ffa6158f002e096d28ede71be4e0ee8ab20baa2 upstream.
 
-An empty firmware request name will trigger warnings when building
-device names. Make sure this is caught earlier and rejected.
+When mapped RX DMA entries are unmapped in an error condition when DMA
+is firstly configured in the driver, the number of TX DMA entries was
+passed in, which is incorrect
 
-The warning was visible via the test_firmware.ko module interface:
-
-echo -ne "\x00" > /sys/devices/virtual/misc/test_firmware/trigger_request
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Tested-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ray Jui <rjui@broadcom.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/base/firmware_class.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/spi/spi-pl022.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -521,6 +521,9 @@ static int _request_firmware(const struc
- 	if (!firmware_p)
- 		return -EINVAL;
- 
-+	if (!name || name[0] == '\0')
-+		return -EINVAL;
-+
- 	*firmware_p = firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
- 	if (!firmware) {
- 		dev_err(device, "%s: kmalloc(struct firmware) failed\n",
+--- a/drivers/spi/spi-pl022.c
++++ b/drivers/spi/spi-pl022.c
+@@ -1078,7 +1078,7 @@ err_rxdesc:
+ 		     pl022->sgt_tx.nents, DMA_TO_DEVICE);
+ err_tx_sgmap:
+ 	dma_unmap_sg(rxchan->device->dev, pl022->sgt_rx.sgl,
+-		     pl022->sgt_tx.nents, DMA_FROM_DEVICE);
++		     pl022->sgt_rx.nents, DMA_FROM_DEVICE);
+ err_rx_sgmap:
+ 	sg_free_table(&pl022->sgt_tx);
+ err_alloc_tx_sg:
 
