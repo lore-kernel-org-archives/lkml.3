@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965766AbaLLTYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 14:24:38 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:35789 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531AbaLLTYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 14:24:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141212190731.GB23804@ret.masoncoding.com>
-References: <20141212190731.GB23804@ret.masoncoding.com>
-Date: Fri, 12 Dec 2014 11:24:36 -0800
-X-Google-Sender-Auth: Yh_OO-keXf1KQyVr0OPHNrapuqE
-Message-ID: <CA+55aFzWDZ+3sAHHhZ_iourYAmh_3rfEk-u8H4d4b9=KcJb2gg@mail.gmail.com>
-Subject: Re: [GIT PULL] Btrfs for 3.19-rc
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S935068AbaLLTY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 14:24:56 -0500
+Received: from mga03.intel.com ([134.134.136.65]:30870 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934913AbaLLTYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 14:24:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="497955095"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] two more pstore commits for merge window
+Date: Fri, 12 Dec 2014 11:24:54 -0800
+Message-Id: <548b41063017714840@agluck-desk.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:07 AM, Chris Mason <clm@fb.com> wrote:
->
-> From a feature point of view, most of the code here comes from Miao Xie
-> and others at Fujitsu to implement scrubbing and replacing devices on
-> raid56.  This has been in development for a while, and it's a big
-> improvement.
+The following changes since commit 069fb0b63722f8c9f8b4bbce236793626c89af33:
 
-So this has probably happened before, and I just haven't been looking,
-but I thought I'd mention it.
+  syslog: Provide stub check_syslog_permissions (2014-11-17 10:28:04 -0800)
 
-There are merges from github for this feature, and those merges aren't
-signed, and don't have merge messages. Maybe you actually verified all
-of it other ways, but there's no sign of it. I generally push back on
-merging unsigned stuff from random hosting places (to the point where
-I just refuse to do it, although it's possible that some pass though
-just due to inattention), and I think that's just good practice in
-general. And merges that don't explain what the merge does are just
-bad merges (they are extra annoying when they are back-merges, but
-it's a problem even otherwise).
+are available in the git repository at:
 
-Now, sometimes the "why did you merge" is obvious in just the merge
-itself (maybe the branch name is already sufficient to explain some
-trivial pull). But I thought I'd mention this as an area where the
-kernel development process can still improve. I strive to make sure
-that my merge commits have good messages (generally by asking
-submaintainers to explain things to me in email or in the signed tag),
-and I'm starting to try to encourage others to the same.
+  git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux.git tags/please-pull-morepstore
 
-Again, this is probably something you've done before without me ever
-mentioning/noticing it, and I really don't think the btrfs tree is at
-all alone in this, but I thought I'd mention it since I happened to
-react to it this time.
+for you to fetch changes up to 027bc8b08242c59e19356b4b2c189f2d849ab660:
 
-Regardless - pulled,
+  pstore-ram: Allow optional mapping with pgprot_noncached (2014-12-11 13:38:31 -0800)
 
-                      Linus
+----------------------------------------------------------------
+Couple of pstore-ram enhancements to allow use of different memory attributes
+
+----------------------------------------------------------------
+Rob Herring (1):
+      pstore-ram: Fix hangs by using write-combine mappings
+
+Tony Lindgren (1):
+      pstore-ram: Allow optional mapping with pgprot_noncached
+
+ Documentation/ramoops.txt  | 13 +++++++++++--
+ fs/pstore/ram.c            | 13 +++++++++++--
+ fs/pstore/ram_core.c       | 31 ++++++++++++++++++++++---------
+ include/linux/pstore_ram.h |  4 +++-
+ 4 files changed, 47 insertions(+), 14 deletions(-)
