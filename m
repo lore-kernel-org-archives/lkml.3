@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967370AbaLLG7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:59:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51724 "EHLO
+	id S967323AbaLLG7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:59:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51711 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758603AbaLLGQx (ORCPT
+	by vger.kernel.org with ESMTP id S1758499AbaLLGQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:53 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,20 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Neal Cardwell" <ncardwell@google.com>,
-        "Wilmer van der Gaast" <wilmer@google.com>,
-        "Eric Dumazet" <edumazet@google.com>,
-        "Perry Lorier" <perryl@google.com>,
-        "Dave =?UTF-8?Q?T=C3=A4ht?=" <dave.taht@bufferbloat.net>,
-        "Matt Mathis" <mattmathis@google.com>,
-        "Tom Herbert" <therbert@google.com>, "Ankur Jain" <jankur@google.com>,
-        "Yuchung Cheng" <ycheng@google.com>, "Florian Westphal" <fw@strlen.de>
-Date: Fri, 12 Dec 2014 06:14:26 +0000
-Message-ID: <lsq.1418364866.226415394@decadent.org.uk>
+CC: akpm@linux-foundation.org, "David Matlack" <dmatlack@google.com>,
+        "Xiao Guangrong" <xiaoguangrong@linux.vnet.ibm.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
+Date: Fri, 12 Dec 2014 06:14:25 +0000
+Message-ID: <lsq.1418364865.401836014@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 160/164] tcp: be more strict before accepting ECN
- negociation
+Subject: [PATCH 3.2 001/164] kvm: x86: fix stale mmio cache bug
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -39,96 +32,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: David Matlack <dmatlack@google.com>
 
-commit bd14b1b2e29bd6812597f896dde06eaf7c6d2f24 upstream.
+commit 56f17dd3fbc44adcdbc3340fe3988ddb833a47a7 upstream.
 
-It appears some networks play bad games with the two bits reserved for
-ECN. This can trigger false congestion notifications and very slow
-transferts.
+The following events can lead to an incorrect KVM_EXIT_MMIO bubbling
+up to userspace:
 
-Since RFC 3168 (6.1.1) forbids SYN packets to carry CT bits, we can
-disable TCP ECN negociation if it happens we receive mangled CT bits in
-the SYN packet.
+(1) Guest accesses gpa X without a memory slot. The gfn is cached in
+struct kvm_vcpu_arch (mmio_gfn). On Intel EPT-enabled hosts, KVM sets
+the SPTE write-execute-noread so that future accesses cause
+EPT_MISCONFIGs.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Perry Lorier <perryl@google.com>
-Cc: Matt Mathis <mattmathis@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Wilmer van der Gaast <wilmer@google.com>
-Cc: Ankur Jain <jankur@google.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Dave Täht <dave.taht@bufferbloat.net>
-Acked-by: Neal Cardwell <ncardwell@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+(2) Host userspace creates a memory slot via KVM_SET_USER_MEMORY_REGION
+covering the page just accessed.
+
+(3) Guest attempts to read or write to gpa X again. On Intel, this
+generates an EPT_MISCONFIG. The memory slot generation number that
+was incremented in (2) would normally take care of this but we fast
+path mmio faults through quickly_check_mmio_pf(), which only checks
+the per-vcpu mmio cache. Since we hit the cache, KVM passes a
+KVM_EXIT_MMIO up to userspace.
+
+This patch fixes the issue by using the memslot generation number
+to validate the mmio cache.
+
+Signed-off-by: David Matlack <dmatlack@google.com>
+[xiaoguangrong: adjust the code to make it simpler for stable-tree fix.]
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Reviewed-by: David Matlack <dmatlack@google.com>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Tested-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Florian Westphal <fw@strlen.de>
 ---
- include/net/tcp.h   | 23 ++++++++++++++++-------
- net/ipv4/tcp_ipv4.c |  2 +-
- net/ipv6/tcp_ipv6.c |  2 +-
- 3 files changed, 18 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/kvm_host.h |  1 +
+ arch/x86/kvm/mmu.c              |  2 +-
+ arch/x86/kvm/x86.h              | 20 +++++++++++++++-----
+ 3 files changed, 17 insertions(+), 6 deletions(-)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -358,13 +358,6 @@ static inline void tcp_dec_quickack_mode
- #define	TCP_ECN_DEMAND_CWR	4
- #define	TCP_ECN_SEEN		8
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -435,6 +435,7 @@ struct kvm_vcpu_arch {
+ 	u64 mmio_gva;
+ 	unsigned access;
+ 	gfn_t mmio_gfn;
++	u64 mmio_gen;
  
--static __inline__ void
--TCP_ECN_create_request(struct request_sock *req, struct tcphdr *th)
--{
--	if (sysctl_tcp_ecn && th->ece && th->cwr)
--		inet_rsk(req)->ecn_ok = 1;
--}
--
- enum tcp_tw_status {
- 	TCP_TW_SUCCESS = 0,
- 	TCP_TW_RST = 1,
-@@ -652,6 +645,22 @@ struct tcp_skb_cb {
+ 	/* used for guest single stepping over the given code position */
+ 	unsigned long singlestep_rip;
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2842,7 +2842,7 @@ static void mmu_sync_roots(struct kvm_vc
+ 	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+ 		return;
  
- #define TCP_SKB_CB(__skb)	((struct tcp_skb_cb *)&((__skb)->cb[0]))
- 
-+/* RFC3168 : 6.1.1 SYN packets must not have ECT/ECN bits set
-+ *
-+ * If we receive a SYN packet with these bits set, it means a network is
-+ * playing bad games with TOS bits. In order to avoid possible false congestion
-+ * notifications, we disable TCP ECN negociation.
-+ */
-+static inline void
-+TCP_ECN_create_request(struct request_sock *req, const struct sk_buff *skb)
-+{
-+	const struct tcphdr *th = tcp_hdr(skb);
-+
-+	if (sysctl_tcp_ecn && th->ece && th->cwr &&
-+	    INET_ECN_is_not_ect(TCP_SKB_CB(skb)->ip_dsfield))
-+		inet_rsk(req)->ecn_ok = 1;
+-	vcpu_clear_mmio_info(vcpu, ~0ul);
++	vcpu_clear_mmio_info(vcpu, MMIO_GVA_ANY);
+ 	trace_kvm_mmu_audit(vcpu, AUDIT_PRE_SYNC);
+ 	if (vcpu->arch.mmu.root_level == PT64_ROOT_LEVEL) {
+ 		hpa_t root = vcpu->arch.mmu.root_hpa;
+--- a/arch/x86/kvm/x86.h
++++ b/arch/x86/kvm/x86.h
+@@ -81,15 +81,23 @@ static inline void vcpu_cache_mmio_info(
+ 	vcpu->arch.mmio_gva = gva & PAGE_MASK;
+ 	vcpu->arch.access = access;
+ 	vcpu->arch.mmio_gfn = gfn;
++	vcpu->arch.mmio_gen = kvm_memslots(vcpu->kvm)->generation;
 +}
 +
- /* Due to TSO, an SKB can be composed of multiple actual
-  * packets.  To keep these tracked properly, we use this.
++static inline bool vcpu_match_mmio_gen(struct kvm_vcpu *vcpu)
++{
++	return vcpu->arch.mmio_gen == kvm_memslots(vcpu->kvm)->generation;
+ }
+ 
+ /*
+- * Clear the mmio cache info for the given gva,
+- * specially, if gva is ~0ul, we clear all mmio cache info.
++ * Clear the mmio cache info for the given gva. If gva is MMIO_GVA_ANY, we
++ * clear all mmio cache info.
   */
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1352,7 +1352,7 @@ int tcp_v4_conn_request(struct sock *sk,
- 		goto drop_and_free;
++#define MMIO_GVA_ANY (~(gva_t)0)
++
+ static inline void vcpu_clear_mmio_info(struct kvm_vcpu *vcpu, gva_t gva)
+ {
+-	if (gva != (~0ul) && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
++	if (gva != MMIO_GVA_ANY && vcpu->arch.mmio_gva != (gva & PAGE_MASK))
+ 		return;
  
- 	if (!want_cookie || tmp_opt.tstamp_ok)
--		TCP_ECN_create_request(req, tcp_hdr(skb));
-+		TCP_ECN_create_request(req, skb);
+ 	vcpu->arch.mmio_gva = 0;
+@@ -97,7 +105,8 @@ static inline void vcpu_clear_mmio_info(
  
- 	if (want_cookie) {
- 		isn = cookie_v4_init_sequence(sk, skb, &req->mss);
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1254,7 +1254,7 @@ static int tcp_v6_conn_request(struct so
- 	ipv6_addr_copy(&treq->rmt_addr, &ipv6_hdr(skb)->saddr);
- 	ipv6_addr_copy(&treq->loc_addr, &ipv6_hdr(skb)->daddr);
- 	if (!want_cookie || tmp_opt.tstamp_ok)
--		TCP_ECN_create_request(req, tcp_hdr(skb));
-+		TCP_ECN_create_request(req, skb);
+ static inline bool vcpu_match_mmio_gva(struct kvm_vcpu *vcpu, unsigned long gva)
+ {
+-	if (vcpu->arch.mmio_gva && vcpu->arch.mmio_gva == (gva & PAGE_MASK))
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gva &&
++	      vcpu->arch.mmio_gva == (gva & PAGE_MASK))
+ 		return true;
  
- 	treq->iif = sk->sk_bound_dev_if;
+ 	return false;
+@@ -105,7 +114,8 @@ static inline bool vcpu_match_mmio_gva(s
  
+ static inline bool vcpu_match_mmio_gpa(struct kvm_vcpu *vcpu, gpa_t gpa)
+ {
+-	if (vcpu->arch.mmio_gfn && vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
++	if (vcpu_match_mmio_gen(vcpu) && vcpu->arch.mmio_gfn &&
++	      vcpu->arch.mmio_gfn == gpa >> PAGE_SHIFT)
+ 		return true;
+ 
+ 	return false;
 
