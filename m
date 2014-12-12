@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965817AbaLLKQM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:16:12 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:30395 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965746AbaLLKQK (ORCPT
+	id S966119AbaLLKUB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:20:01 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:35974 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964856AbaLLKT7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:16:10 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="44952084"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 1/5] workqueue: fix memory leak in wq_numa_init()
-Date: Fri, 12 Dec 2014 18:19:51 +0800
-Message-ID: <1418379595-6281-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
+	Fri, 12 Dec 2014 05:19:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+In-Reply-To: <CA+55aFx2yi6sxaWt+DZh1QYaqs550Zw1PWOKn0P=0D8fRsqrKA@mail.gmail.com>
+References: <CACRpkda1EPMPTzW56GcCsMnBvn=s1gnp-pHu4cHP-+P-J2q52w@mail.gmail.com>
+	<CA+55aFx2yi6sxaWt+DZh1QYaqs550Zw1PWOKn0P=0D8fRsqrKA@mail.gmail.com>
+Date: Fri, 12 Dec 2014 11:19:59 +0100
+Message-ID: <CACRpkdYCRYr5AjjZOQbnHV0-dz9hxVfNNAQ6OSs8Uztyd2zKeA@mail.gmail.com>
+Subject: Re: [GIT PULL] bulk GPIO changes for v3.19
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wq_numa_init() will quit directly on some bonkers cases without freeing the
-memory.  Add the missing cleanup code.
+On Thu, Dec 11, 2014 at 8:34 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Dec 9, 2014 at 1:09 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>
+>> here is the bulk of GPIO changes for the v3.19 kernel series.
+>> The major external change is the new API to driver several GPIOs
+>> simultaneously, and the major internal change is that we're getting
+>> rid of a static array of GPIO descriptors and again moving away,
+>> slowly, from the global GPIO numberspace.
+>
+> This does not build for me.
+>
+> The gpio-mcp23s08.c driver now has a "chip.of_node" access outside of
+> #ifdef CONFIG_OF, resulting in
+>
+>   drivers/gpio/gpio-mcp23s08.c: In function ‘mcp23s08_probe_one’:
+>   drivers/gpio/gpio-mcp23s08.c:658:57: error: ‘struct gpio_chip’ has
+> no member named ‘of_node’
+>      mcp->irq_active_high = of_property_read_bool(mcp->chip.of_node,
 
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
-Cc: tangchen <tangchen@cn.fujitsu.com>
-Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Grr how could I miss this. I'll fix up stuff.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 09b685d..a6fd2b8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4811,6 +4811,9 @@ static void __init wq_numa_init(void)
- 		if (WARN_ON(node == NUMA_NO_NODE)) {
- 			pr_warn("workqueue: NUMA node mapping not available for cpu%d, disabling NUMA support\n", cpu);
- 			/* happens iff arch is bonkers, let's just proceed */
-+			for_each_node(node)
-+				free_cpumask_var(tbl[node]);
-+			kfree(tbl);
- 			return;
- 		}
- 		cpumask_set_cpu(cpu, tbl[node]);
--- 
-1.7.4.4
+> Should it be using "mcp->chip.dev->of_node" instead? Or should the
+> driver just depend on OF?
 
+The former I think, the driver has only optional DT support.
+
+I will fix up and send a new pull request when finished.
+
+Maybe I should not have the of_node inside #ifdef CONFIG_OF in
+the gpio_chip and just keep it around like we do in struct device,
+that makes for less #ifdef clutter.
+
+Yours,
+Linus Walleij
