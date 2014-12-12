@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966257AbaLLGts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:49:48 -0500
+	id S966087AbaLLGse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:34 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966000AbaLLGsf (ORCPT
+	by vger.kernel.org with ESMTP id S966000AbaLLGs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:35 -0500
+	Fri, 12 Dec 2014 01:48:28 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Don A. Bailey" <donb@securitymouse.com>,
+CC: akpm@linux-foundation.org, "Sitsofe Wheeler" <sitsofe@yahoo.com>,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Willy Tarreau" <w@1wt.eu>, "Willem Pinckaers" <willem@lekkertech.net>
+        "K. Y. Srinivasan" <kys@microsoft.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.661237204@decadent.org.uk>
+Message-ID: <lsq.1418364865.449306335@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 034/164] Revert "lzo: properly check for overruns"
+Subject: [PATCH 3.2 023/164] Drivers: hv: vmbus: Cleanup vmbus_close_internal()
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,180 +32,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit af958a38a60c7ca3d8a39c918c1baa2ff7b6b233 upstream.
+commit 98d731bb064a9d1817a6ca9bf8b97051334a7cfe upstream.
 
-This reverts commit 206a81c ("lzo: properly check for overruns").
+Eliminate calls to BUG_ON() in vmbus_close_internal().
+We have chosen to potentially leak memory, than crash the guest
+in case of failures.
 
-As analysed by Willem Pinckaers, this fix is still incomplete on
-certain rare corner cases, and it is easier to restart from the
-original code.
+In this version of the patch I have addressed comments from
+Dan Carpenter (dan.carpenter@oracle.com).
 
-Reported-by: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Tested-by: Sitsofe Wheeler <sitsofe@yahoo.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: function is extern; don't change the return
+ type to int as callers will ignore the value]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- lib/lzo/lzo1x_decompress_safe.c | 62 ++++++++++++++---------------------------
- 1 file changed, 21 insertions(+), 41 deletions(-)
+ drivers/hv/channel.c | 29 +++++++++++++++++++++++------
+ 1 file changed, 23 insertions(+), 6 deletions(-)
 
---- a/lib/lzo/lzo1x_decompress_safe.c
-+++ b/lib/lzo/lzo1x_decompress_safe.c
-@@ -19,31 +19,11 @@
- #include <linux/lzo.h>
- #include "lzodefs.h"
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -531,11 +531,28 @@ void vmbus_close(struct vmbus_channel *c
  
--#define HAVE_IP(t, x)					\
--	(((size_t)(ip_end - ip) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define HAVE_OP(t, x)					\
--	(((size_t)(op_end - op) >= (size_t)(t + x)) &&	\
--	 (((t + x) >= t) && ((t + x) >= x)))
--
--#define NEED_IP(t, x)					\
--	do {						\
--		if (!HAVE_IP(t, x))			\
--			goto input_overrun;		\
--	} while (0)
--
--#define NEED_OP(t, x)					\
--	do {						\
--		if (!HAVE_OP(t, x))			\
--			goto output_overrun;		\
--	} while (0)
--
--#define TEST_LB(m_pos)					\
--	do {						\
--		if ((m_pos) < out)			\
--			goto lookbehind_overrun;	\
--	} while (0)
-+#define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
-+#define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
-+#define NEED_IP(x)      if (!HAVE_IP(x)) goto input_overrun
-+#define NEED_OP(x)      if (!HAVE_OP(x)) goto output_overrun
-+#define TEST_LB(m_pos)  if ((m_pos) < out) goto lookbehind_overrun
+ 	ret = vmbus_post_msg(msg, sizeof(struct vmbus_channel_close_channel));
  
- int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
- 			  unsigned char *out, size_t *out_len)
-@@ -78,14 +58,14 @@ int lzo1x_decompress_safe(const unsigned
- 					while (unlikely(*ip == 0)) {
- 						t += 255;
- 						ip++;
--						NEED_IP(1, 0);
-+						NEED_IP(1);
- 					}
- 					t += 15 + *ip++;
- 				}
- 				t += 3;
- copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--				if (likely(HAVE_IP(t, 15) && HAVE_OP(t, 15))) {
-+				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
- 					const unsigned char *ie = ip + t;
- 					unsigned char *oe = op + t;
- 					do {
-@@ -101,8 +81,8 @@ copy_literal_run:
- 				} else
- #endif
- 				{
--					NEED_OP(t, 0);
--					NEED_IP(t, 3);
-+					NEED_OP(t);
-+					NEED_IP(t + 3);
- 					do {
- 						*op++ = *ip++;
- 					} while (--t > 0);
-@@ -115,7 +95,7 @@ copy_literal_run:
- 				m_pos -= t >> 2;
- 				m_pos -= *ip++ << 2;
- 				TEST_LB(m_pos);
--				NEED_OP(2, 0);
-+				NEED_OP(2);
- 				op[0] = m_pos[0];
- 				op[1] = m_pos[1];
- 				op += 2;
-@@ -139,10 +119,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 31 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			m_pos = op - 1;
- 			next = get_unaligned_le16(ip);
-@@ -157,10 +137,10 @@ copy_literal_run:
- 				while (unlikely(*ip == 0)) {
- 					t += 255;
- 					ip++;
--					NEED_IP(1, 0);
-+					NEED_IP(1);
- 				}
- 				t += 7 + *ip++;
--				NEED_IP(2, 0);
-+				NEED_IP(2);
- 			}
- 			next = get_unaligned_le16(ip);
- 			ip += 2;
-@@ -174,7 +154,7 @@ copy_literal_run:
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
- 		if (op - m_pos >= 8) {
- 			unsigned char *oe = op + t;
--			if (likely(HAVE_OP(t, 15))) {
-+			if (likely(HAVE_OP(t + 15))) {
- 				do {
- 					COPY8(op, m_pos);
- 					op += 8;
-@@ -184,7 +164,7 @@ copy_literal_run:
- 					m_pos += 8;
- 				} while (op < oe);
- 				op = oe;
--				if (HAVE_IP(6, 0)) {
-+				if (HAVE_IP(6)) {
- 					state = next;
- 					COPY4(op, ip);
- 					op += next;
-@@ -192,7 +172,7 @@ copy_literal_run:
- 					continue;
- 				}
- 			} else {
--				NEED_OP(t, 0);
-+				NEED_OP(t);
- 				do {
- 					*op++ = *m_pos++;
- 				} while (op < oe);
-@@ -201,7 +181,7 @@ copy_literal_run:
- #endif
- 		{
- 			unsigned char *oe = op + t;
--			NEED_OP(t, 0);
-+			NEED_OP(t);
- 			op[0] = m_pos[0];
- 			op[1] = m_pos[1];
- 			op += 2;
-@@ -214,15 +194,15 @@ match_next:
- 		state = next;
- 		t = next;
- #if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
--		if (likely(HAVE_IP(6, 0) && HAVE_OP(4, 0))) {
-+		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
- 			COPY4(op, ip);
- 			op += t;
- 			ip += t;
- 		} else
- #endif
- 		{
--			NEED_IP(t, 3);
--			NEED_OP(t, 0);
-+			NEED_IP(t + 3);
-+			NEED_OP(t);
- 			while (t > 0) {
- 				*op++ = *ip++;
- 				t--;
+-	BUG_ON(ret != 0);
++	if (ret) {
++		pr_err("Close failed: close post msg return is %d\n", ret);
++		/*
++		 * If we failed to post the close msg,
++		 * it is perhaps better to leak memory.
++		 */
++		return;
++	}
++
+ 	/* Tear down the gpadl for the channel's ring buffer */
+-	if (channel->ringbuffer_gpadlhandle)
+-		vmbus_teardown_gpadl(channel,
+-					  channel->ringbuffer_gpadlhandle);
++	if (channel->ringbuffer_gpadlhandle) {
++		ret = vmbus_teardown_gpadl(channel,
++					   channel->ringbuffer_gpadlhandle);
++		if (ret) {
++			pr_err("Close failed: teardown gpadl return %d\n", ret);
++			/*
++			 * If we failed to teardown gpadl,
++			 * it is perhaps better to leak memory.
++			 */
++			return;
++		}
++	}
+ 
+ 	/* Cleanup the ring buffers for this channel */
+ 	hv_ringbuffer_cleanup(&channel->outbound);
 
