@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965610AbaLLG3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:29:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52011 "EHLO
+	id S965591AbaLLG3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:29:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52014 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759352AbaLLGQ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759356AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Pierre-Louis Bossart" <pierre-louis.bossart@linux.intel.com>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Jamie Iles" <jamie.iles@oracle.com>,
+        "Sasha Levin" <sasha.levin@oracle.com>, stable@vger.kernel.org,
+        "Quentin Casasnovas" <quentin.casasnovas@oracle.com>,
+        "Vegard Nossum" <vegard.nossum@oracle.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.455845034@decadent.org.uk>
+Message-ID: <lsq.1418364865.5423272@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 088/164] ALSA: pcm: Zero-clear reserved fields of PCM
- status ioctl in compat mode
+Subject: [PATCH 3.2 081/164] kvm: fix excessive pages un-pinning in
+ kvm_iommu_map error path.
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,31 +35,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Quentin Casasnovas <quentin.casasnovas@oracle.com>
 
-commit 317168d0c766defd14b3d0e9c2c4a9a258b803ee upstream.
+commit 3d32e4dbe71374a6780eaf51d719d76f9a9bf22f upstream.
 
-In compat mode, we copy each field of snd_pcm_status struct but don't
-touch the reserved fields, and this leaves uninitialized values
-there.  Meanwhile the native ioctl does zero-clear the whole
-structure, so we should follow the same rule in compat mode, too.
+The third parameter of kvm_unpin_pages() when called from
+kvm_iommu_map_pages() is wrong, it should be the number of pages to un-pin
+and not the page size.
 
-Reported-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+This error was facilitated with an inconsistent API: kvm_pin_pages() takes
+a size, but kvn_unpin_pages() takes a number of pages, so fix the problem
+by matching the two.
+
+This was introduced by commit 350b8bd ("kvm: iommu: fix the third parameter
+of kvm_iommu_put_pages (CVE-2014-3601)"), which fixes the lack of
+un-pinning for pages intended to be un-pinned (i.e. memory leak) but
+unfortunately potentially aggravated the number of pages we un-pin that
+should have stayed pinned. As far as I understand though, the same
+practical mitigations apply.
+
+This issue was found during review of Red Hat 6.6 patches to prepare
+Ksplice rebootless updates.
+
+Thanks to Vegard for his time on a late Friday evening to help me in
+understanding this code.
+
+Fixes: 350b8bd ("kvm: iommu: fix the third parameter of... (CVE-2014-3601)")
+Cc: stable@vger.kernel.org
+Signed-off-by: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+Signed-off-by: Vegard Nossum <vegard.nossum@oracle.com>
+Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
+Reviewed-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2: kvm_pin_pages() also takes a struct kvm *kvm param]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/core/pcm_compat.c | 2 ++
- 1 file changed, 2 insertions(+)
+ virt/kvm/iommu.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/core/pcm_compat.c
-+++ b/sound/core/pcm_compat.c
-@@ -204,6 +204,8 @@ static int snd_pcm_status_user_compat(st
- 	if (err < 0)
- 		return err;
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -43,13 +43,13 @@ static void kvm_iommu_put_pages(struct k
+ 				gfn_t base_gfn, unsigned long npages);
  
-+	if (clear_user(src, sizeof(*src)))
-+		return -EFAULT;
- 	if (put_user(status.state, &src->state) ||
- 	    put_user(status.trigger_tstamp.tv_sec, &src->trigger_tstamp.tv_sec) ||
- 	    put_user(status.trigger_tstamp.tv_nsec, &src->trigger_tstamp.tv_nsec) ||
+ static pfn_t kvm_pin_pages(struct kvm *kvm, struct kvm_memory_slot *slot,
+-			   gfn_t gfn, unsigned long size)
++			   gfn_t gfn, unsigned long npages)
+ {
+ 	gfn_t end_gfn;
+ 	pfn_t pfn;
+ 
+ 	pfn     = gfn_to_pfn_memslot(kvm, slot, gfn);
+-	end_gfn = gfn + (size >> PAGE_SHIFT);
++	end_gfn = gfn + npages;
+ 	gfn    += 1;
+ 
+ 	if (is_error_pfn(pfn))
+@@ -117,7 +117,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		 * Pin all pages we are about to map in memory. This is
+ 		 * important because we unmap and unpin in 4kb steps later.
+ 		 */
+-		pfn = kvm_pin_pages(kvm, slot, gfn, page_size);
++		pfn = kvm_pin_pages(kvm, slot, gfn, page_size >> PAGE_SHIFT);
+ 		if (is_error_pfn(pfn)) {
+ 			gfn += 1;
+ 			continue;
+@@ -129,7 +129,7 @@ int kvm_iommu_map_pages(struct kvm *kvm,
+ 		if (r) {
+ 			printk(KERN_ERR "kvm_iommu_map_address:"
+ 			       "iommu failed to map pfn=%llx\n", pfn);
+-			kvm_unpin_pages(kvm, pfn, page_size);
++			kvm_unpin_pages(kvm, pfn, page_size >> PAGE_SHIFT);
+ 			goto unmap_pages;
+ 		}
+ 
 
