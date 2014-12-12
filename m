@@ -1,141 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966503AbaLLVC3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:02:29 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38552 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941AbaLLVC0 (ORCPT
+	id S1758620AbaLLVDs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:03:48 -0500
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:64703 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043AbaLLVDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:02:26 -0500
-Date: Fri, 12 Dec 2014 16:02:24 -0500 (EST)
-Message-Id: <20141212.160224.1795206487557846408.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 12 Dec 2014 16:03:46 -0500
+Message-ID: <548B5830.30904@hurleysoftware.com>
+Date: Fri, 12 Dec 2014 16:03:44 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: imre.deak@intel.com
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] vt: fix console lock vs. kernfs s_active lock order
+References: <1418402285-9578-1-git-send-email-imre.deak@intel.com>	 <1418402285-9578-3-git-send-email-imre.deak@intel.com>	 <548B34DA.1040404@hurleysoftware.com> <1418416187.9524.22.camel@ideak-mobl>
+In-Reply-To: <1418416187.9524.22.camel@ideak-mobl>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Dec 2014 13:02:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/12/2014 03:29 PM, Imre Deak wrote:
+> Hi Peter,
+> 
+> thanks for your review.
+> 
+> On Fri, 2014-12-12 at 13:32 -0500, Peter Hurley wrote:
+>> Hi Imre,
+>>
+>> On 12/12/2014 11:38 AM, Imre Deak wrote:
+>>> Currently there is a lock order problem between the console lock and the
+>>> kernfs s_active lock of the console driver's bind sysfs entry. When
+>>> writing to the sysfs entry the lock order is first s_active then console
+>>> lock, when unregistering the console driver via
+>>> do_unregister_con_driver() the order is the opposite. See the below
+>>> bugzilla reference for one instance of a lockdep backtrace.
+>>
+>> This description didn't make sense to me because the driver core doesn't
+>> try to take the console_lock. So I had to go pull the lockdep report
+>> and I'm not sure I agree with your analysis.
+>>
+>> I see a three-way dependency which includes the fb atomic notifier call
+>> chain?
+> 
+> From the lockdep report in the bugzilla ticket I referenced, you can see
+> the following two paths:
+> 
+> i915_driver_load()
+>   console_lock()  -> takes console_sem
+>   do_unregister_con_driver()
+>     vtconsole_deinit_device()
+>       device_remove_file()
+>         ...
+>         __kernfs_remove()
+>           kernfs_drain() ->
+>             takes s_active rwsem for the console's bind sysfs entry
+>             (tracked via kn->dep_map)
 
-Small follow-up to the main merge pull from the other day:
+I don't see this call chain.
 
-1) Alexander Duyck's DMA memory barrier patch set.
+I see: (some obvious intermediate calls redacted)
 
-2) cxgb4 driver fixes from Karen Xie.
+  i915_driver_unload
+    do_unregister_framebuffer
+      fb_notifier_call_chain
+        fbcon_event_notify
+          do_unregister_con_driver
+            device_remove_file
+              sysfs_addrm_finish
 
-3) Add missing export of fixed_phy_register() to modules, from Mark
-   Salter.
+which has console_lock => fb notifier lock => kernfs lock dependency.
 
-4) DSA bug fixes from Florian Fainelli.
+My point being that this occurs only because the fb notifier call chain
+requires console_lock => fb notifier lock dependency ordering; that and
+fbcon assumes that it can do whatever in the notifier.
 
-Please pull, thanks a lot!
+I would like to see more thorough justification for why this change
+belongs in vt, and not in fbcon. That was my point about the 3-way
+dependency.
 
-The following changes since commit 70e71ca0af244f48a5dcf56dc435243792e3a495:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next (2014-12-11 14:27:06 -0800)
-
-are available in the git repository at:
+Regards,
+Peter Hurley
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+> vfs_write()   for the above console bind sysfs entry
+>   kernfs_fop_write()
+>     kernfs_get_active() ->
+>       takes s_active rwsem for the above sysfs entry
+>     ...
+>       store_bind() -> takes console_sem
+> 
+> So you have console_sem->s_active ordering on one path and
+> s_active->console_sem ordering on the other.
+> 
+> This patch gets rid of the ordering problem and the related lockdep
+> warning.
+> 
+> --Imre
+> 
+>>
+>> Regards,
+>> Peter Hurley
+>>
+>>> Fix this by unregistering the console driver from a deferred work, where
+>>> we can safely drop the console lock while unregistering the device and
+>>> corresponding sysfs entries (which in turn acquire s_active). Note that
+>>> we have to keep the console driver slot in the registered_con_driver
+>>> array reserved for the driver that's being unregistered until it's fully
+>>> removed. Otherwise a concurrent call to do_register_con_driver could
+>>> try to reuse the same slot and fail when registering the corresponding
+>>> device with a minor index that's still in use.
+>>>
+>>> Reference: https://bugs.freedesktop.org/show_bug.cgi?id=70523
+>>> Signed-off-by: Imre Deak <imre.deak@intel.com>
+>>> ---
+>>>  drivers/tty/vt/vt.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
+>>>  1 file changed, 41 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+>>> index 5dd1880..b9edc77 100644
+>>> --- a/drivers/tty/vt/vt.c
+>>> +++ b/drivers/tty/vt/vt.c
+>>> @@ -108,6 +108,7 @@
+>>>  #define CON_DRIVER_FLAG_MODULE 1
+>>>  #define CON_DRIVER_FLAG_INIT   2
+>>>  #define CON_DRIVER_FLAG_ATTR   4
+>>> +#define CON_DRIVER_FLAG_ZOMBIE 8
+>>>  
+>>>  struct con_driver {
+>>>  	const struct consw *con;
+>>> @@ -153,6 +154,7 @@ static int set_vesa_blanking(char __user *p);
+>>>  static void set_cursor(struct vc_data *vc);
+>>>  static void hide_cursor(struct vc_data *vc);
+>>>  static void console_callback(struct work_struct *ignored);
+>>> +static void con_driver_unregister_callback(struct work_struct *ignored);
+>>>  static void blank_screen_t(unsigned long dummy);
+>>>  static void set_palette(struct vc_data *vc);
+>>>  
+>>> @@ -180,6 +182,7 @@ static int blankinterval = 10*60;
+>>>  core_param(consoleblank, blankinterval, int, 0444);
+>>>  
+>>>  static DECLARE_WORK(console_work, console_callback);
+>>> +static DECLARE_WORK(con_driver_unregister_work, con_driver_unregister_callback);
+>>>  
+>>>  /*
+>>>   * fg_console is the current virtual console,
+>>> @@ -3597,7 +3600,8 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
+>>>  	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+>>>  		con_driver = &registered_con_driver[i];
+>>>  
+>>> -		if (con_driver->con == NULL) {
+>>> +		if (con_driver->con == NULL &&
+>>> +		    !(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE)) {
+>>>  			con_driver->con = csw;
+>>>  			con_driver->desc = desc;
+>>>  			con_driver->node = i;
+>>> @@ -3660,16 +3664,10 @@ int do_unregister_con_driver(const struct consw *csw)
+>>>  
+>>>  		if (con_driver->con == csw &&
+>>>  		    con_driver->flag & CON_DRIVER_FLAG_MODULE) {
+>>> -			vtconsole_deinit_device(con_driver);
+>>> -			device_destroy(vtconsole_class,
+>>> -				       MKDEV(0, con_driver->node));
+>>>  			con_driver->con = NULL;
+>>> -			con_driver->desc = NULL;
+>>> -			con_driver->dev = NULL;
+>>> -			con_driver->node = 0;
+>>> -			con_driver->flag = 0;
+>>> -			con_driver->first = 0;
+>>> -			con_driver->last = 0;
+>>> +			con_driver->flag = CON_DRIVER_FLAG_ZOMBIE;
+>>> +			schedule_work(&con_driver_unregister_work);
+>>> +
+>>>  			return 0;
+>>>  		}
+>>>  	}
+>>> @@ -3678,6 +3676,39 @@ int do_unregister_con_driver(const struct consw *csw)
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(do_unregister_con_driver);
+>>>  
+>>> +static void con_driver_unregister_callback(struct work_struct *ignored)
+>>> +{
+>>> +	int i;
+>>> +
+>>> +	console_lock();
+>>> +
+>>> +	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+>>> +		struct con_driver *con_driver = &registered_con_driver[i];
+>>> +
+>>> +		if (!(con_driver->flag & CON_DRIVER_FLAG_ZOMBIE))
+>>> +			continue;
+>>> +
+>>> +		console_unlock();
+>>> +
+>>> +		vtconsole_deinit_device(con_driver);
+>>> +		device_destroy(vtconsole_class, MKDEV(0, con_driver->node));
+>>> +
+>>> +		if (WARN_ON_ONCE(con_driver->con))
+>>> +			con_driver->con = NULL;
+>>> +		con_driver->desc = NULL;
+>>> +		con_driver->dev = NULL;
+>>> +		con_driver->node = 0;
+>>> +		WARN_ON_ONCE(con_driver->flag != CON_DRIVER_FLAG_ZOMBIE);
+>>> +		con_driver->flag = 0;
+>>> +		con_driver->first = 0;
+>>> +		con_driver->last = 0;
+>>> +
+>>> +		console_lock();
+>>> +	}
+>>> +
+>>> +	console_unlock();
+>>> +}
+>>> +
+>>>  /*
+>>>   *	If we support more console drivers, this function is used
+>>>   *	when a driver wants to take over some existing consoles
+>>>
+>>
+> 
+> 
 
-for you to fetch changes up to eea3e8fde92999248863e4de93f325fcf3833a14:
-
-  Merge branch 'gem' (2014-12-12 15:17:32 -0500)
-
-----------------------------------------------------------------
-
-Alexander Duyck (5):
-      arch: Cleanup read_barrier_depends() and comments
-      arch: Add lightweight memory barriers dma_rmb() and dma_wmb()
-      r8169: Use dma_rmb() and dma_wmb() for DescOwn checks
-      fm10k/igb/ixgbe: Use dma_rmb on Rx descriptor reads
-      fib_trie: Fix trie balancing issue if new node pushes down existing node
-
-Chun-Hao Lin (1):
-      r8169:update rtl8168g pcie ephy parameter
-
-Cyrille Pitchen (1):
-      net/macb: add TX multiqueue support for gem
-
-David S. Miller (5):
-      Merge branch 'dsa'
-      Merge branch 'dma_mb'
-      Merge branch 'cxgb4'
-      Merge branch 'kill_tasklet_hi_enable'
-      Merge branch 'gem'
-
-Florian Fainelli (3):
-      net: dsa: handle non-existing PHYs on switch internal bus
-      net: dsa: propagate error code from dsa_slave_phy_setup
-      net: dsa: bcm_sf2: force link for all fixed PHY devices
-
-Hariprasad Shenai (1):
-      cxgb4: Add support for QSA modules
-
-Karen Xie (7):
-      cxgb4i: fix tx immediate data credit check
-      cxgb4i: fix credit check for tx_data_wr
-      cxgb4/cxgb4i: set the max. pdu length in firmware
-      cxgb4i: additional types of negative advice
-      cxgb4i: handle non-pdu-aligned rx data
-      cxgb4i: use set_wr_txq() to set tx queues
-      libcxgbi: fix freeing skb prematurely
-
-Mark Salter (1):
-      net: phy: export fixed_phy_register()
-
-Quentin Lambert (2):
-      jme: replace calls to redundant function
-      linux/interrupt.h: remove the definition of unused tasklet_hi_enable
-
-Tobias Klauser (2):
-      net: ethernet: smsc: Allow to select SMC91X for nios2
-      net: ethernet: davicom: Allow to select DM9000 for nios2
-
-Toshiaki Makita (1):
-      vlan: Add ability to always enable TSO/UFO
-
- Documentation/memory-barriers.txt               |  42 ++++++
- arch/alpha/include/asm/barrier.h                |  51 +++++++
- arch/arm/include/asm/barrier.h                  |   4 +
- arch/arm64/include/asm/barrier.h                |   3 +
- arch/blackfin/include/asm/barrier.h             |  51 +++++++
- arch/ia64/include/asm/barrier.h                 |  25 ++--
- arch/metag/include/asm/barrier.h                |  19 +--
- arch/mips/include/asm/barrier.h                 |  61 +-------
- arch/powerpc/include/asm/barrier.h              |  19 ++-
- arch/s390/include/asm/barrier.h                 |   7 +-
- arch/sparc/include/asm/barrier_64.h             |   7 +-
- arch/x86/include/asm/barrier.h                  |  70 ++-------
- arch/x86/um/asm/barrier.h                       |  20 +--
- drivers/net/dsa/bcm_sf2.c                       |  23 +--
- drivers/net/ethernet/cadence/macb.c             | 456 ++++++++++++++++++++++++++++++++++++--------------------
- drivers/net/ethernet/cadence/macb.h             |  36 ++++-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4.h      |   2 +-
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c |  13 +-
- drivers/net/ethernet/chelsio/cxgb4/t4fw_api.h   |   2 +
- drivers/net/ethernet/davicom/Kconfig            |   2 +-
- drivers/net/ethernet/intel/fm10k/fm10k_main.c   |   6 +-
- drivers/net/ethernet/intel/igb/igb_main.c       |   6 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |   9 +-
- drivers/net/ethernet/jme.c                      |  12 +-
- drivers/net/ethernet/realtek/r8169.c            |  53 +++++--
- drivers/net/ethernet/smsc/Kconfig               |   4 +-
- drivers/net/phy/fixed.c                         |   1 +
- drivers/scsi/cxgbi/cxgb4i/cxgb4i.c              | 144 +++++++++++++-----
- drivers/scsi/cxgbi/libcxgbi.c                   |   4 +-
- drivers/scsi/cxgbi/libcxgbi.h                   |   4 +-
- include/asm-generic/barrier.h                   |   8 +
- include/linux/interrupt.h                       |   6 -
- net/8021q/vlan_dev.c                            |   7 +-
- net/dsa/slave.c                                 |  16 +-
- net/ipv4/fib_trie.c                             |   3 +-
- 35 files changed, 771 insertions(+), 425 deletions(-)
