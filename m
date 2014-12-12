@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968156AbaLLNuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:50:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56634 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030303AbaLLNus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1030301AbaLLNus (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 12 Dec 2014 08:50:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:50123 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968135AbaLLNun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669120"
+   d="scan'208";a="636669072"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 19/22] perf inject: Re-pipe Instruction Tracing events
-Date: Fri, 12 Dec 2014 15:48:06 +0200
-Message-Id: <1418392089-5568-20-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 15/22] perf tools: Add member to struct dso for an instruction cache
+Date: Fri, 12 Dec 2014 15:48:02 +0200
+Message-Id: <1418392089-5568-16-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,111 +27,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New Instruction Tracing events must be re-piped by default.
+Add a member to struct dso that can be used by Instruction
+Trace implementations to hold a cache for decoded instructions.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c | 63 +++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 58 insertions(+), 5 deletions(-)
+ tools/perf/util/dso.c | 2 ++
+ tools/perf/util/dso.h | 3 +++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index 84df2de..29e0840 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -38,14 +38,11 @@ struct event_entry {
- 	union perf_event event[0];
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 45be944..73e28ca 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -4,6 +4,7 @@
+ #include "symbol.h"
+ #include "dso.h"
+ #include "machine.h"
++#include "itrace.h"
+ #include "util.h"
+ #include "debug.h"
+ 
+@@ -914,6 +915,7 @@ void dso__delete(struct dso *dso)
+ 	}
+ 
+ 	dso__data_close(dso);
++	itrace_cache__free(dso->itrace_cache);
+ 	dso_cache__free(&dso->data.cache);
+ 	dso__free_a2l(dso);
+ 	zfree(&dso->symsrc_filename);
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 3782c82..c27c8fc 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -101,6 +101,8 @@ struct dsos {
+ 	struct rb_root	 root;	/* rbtree root sorted by long name */
  };
  
--static int perf_event__repipe_synth(struct perf_tool *tool,
--				    union perf_event *event)
-+static int output_bytes(struct perf_inject *inject, void *buf, size_t sz)
- {
--	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
- 	ssize_t size;
++struct itrace_cache;
++
+ struct dso {
+ 	struct list_head node;
+ 	struct rb_node	 rb_node;	/* rbtree node sorted by long name */
+@@ -130,6 +132,7 @@ struct dso {
+ 	u16		 long_name_len;
+ 	u16		 short_name_len;
+ 	void		*dwfl;			/* DWARF debug info */
++	struct itrace_cache *itrace_cache;
  
--	size = perf_data_file__write(&inject->output, event,
--				     event->header.size);
-+	size = perf_data_file__write(&inject->output, buf, sz);
- 	if (size < 0)
- 		return -errno;
- 
-@@ -53,6 +50,34 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
- 	return 0;
- }
- 
-+static int copy_bytes(struct perf_inject *inject, int fd, off_t size)
-+{
-+	char buf[4096];
-+	ssize_t ssz;
-+	int ret;
-+
-+	while (size > 0) {
-+		ssz = read(fd, buf, MIN(size, sizeof(buf)));
-+		if (ssz < 0)
-+			return -errno;
-+		ret = output_bytes(inject, buf, ssz);
-+		if (ret)
-+			return ret;
-+		size -= ssz;
-+	}
-+
-+	return 0;
-+}
-+
-+static int perf_event__repipe_synth(struct perf_tool *tool,
-+				    union perf_event *event)
-+{
-+	struct perf_inject *inject = container_of(tool, struct perf_inject,
-+						  tool);
-+
-+	return output_bytes(inject, event, event->header.size);
-+}
-+
- static int perf_event__repipe_op2_synth(struct perf_tool *tool,
- 					union perf_event *event,
- 					struct perf_session *session
-@@ -79,6 +104,31 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
- 	return perf_event__repipe_synth(tool, event);
- }
- 
-+static s64 perf_event__repipe_itrace(struct perf_tool *tool,
-+				     union perf_event *event,
-+				     struct perf_session *session
-+				     __maybe_unused)
-+{
-+	struct perf_inject *inject = container_of(tool, struct perf_inject,
-+						  tool);
-+	int ret;
-+
-+	if (perf_data_file__is_pipe(session->file) || !session->one_mmap) {
-+		ret = output_bytes(inject, event, event->header.size);
-+		if (ret < 0)
-+			return ret;
-+		ret = copy_bytes(inject, perf_data_file__fd(session->file),
-+				 event->itrace.size);
-+	} else {
-+		ret = output_bytes(inject, event,
-+				   event->header.size + event->itrace.size);
-+	}
-+	if (ret < 0)
-+		return ret;
-+
-+	return event->itrace.size;
-+}
-+
- static int perf_event__repipe(struct perf_tool *tool,
- 			      union perf_event *event,
- 			      struct perf_sample *sample __maybe_unused,
-@@ -407,6 +457,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.unthrottle	= perf_event__repipe,
- 			.attr		= perf_event__repipe_attr,
- 			.tracing_data	= perf_event__repipe_op2_synth,
-+			.itrace_info	= perf_event__repipe_op2_synth,
-+			.itrace		= perf_event__repipe_itrace,
-+			.itrace_error	= perf_event__repipe_op2_synth,
- 			.finished_round	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
- 			.id_index	= perf_event__repipe_op2_synth,
+ 	/* dso data file */
+ 	struct {
 -- 
 1.9.1
 
