@@ -1,235 +1,546 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030992AbaLLRNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:13:51 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43529 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030303AbaLLRNt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:13:49 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <548B221C.40909@jp.fujitsu.com>
-Date: Sat, 13 Dec 2014 02:13:00 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1031005AbaLLROt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:14:49 -0500
+Received: from mail-bn1bon0095.outbound.protection.outlook.com ([157.56.111.95]:32160
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1030831AbaLLROr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:14:47 -0500
+Date: Fri, 12 Dec 2014 11:14:39 -0600
+From: atull <atull@opensource.altera.com>
+X-X-Sender: atull@linuxheads99
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <rdunlap@infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <delicious.quinoa@gmail.com>,
+        <dinguyen@opensource.altera.com>, <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v4 5/6] staging: fpga manager: framework core
+In-Reply-To: <049ad99df824432caa190566141d1525@BN1BFFO11FD005.protection.gbl>
+Message-ID: <alpine.DEB.2.02.1412121026480.27443@linuxheads99>
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com> <1418156090-23578-6-git-send-email-atull@opensource.altera.com> <049ad99df824432caa190566141d1525@BN1BFFO11FD005.protection.gbl>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [PATCH 0/5] workqueue: fix bug when numa mapping is changed
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset="US-ASCII"
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY1PR00CA0014.namprd00.prod.outlook.com (25.160.102.24) To
+ BY1PR0301MB1239.namprd03.prod.outlook.com (25.161.203.23)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1239;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BY1PR0301MB1239;
+X-Forefront-PRVS: 04238CD941
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(51704005)(24454002)(22564002)(107046002)(106356001)(19580395003)(120916001)(99396003)(54356999)(86362001)(92566001)(105586002)(69596002)(76176999)(86152002)(50986999)(122386002)(21056001)(110136001)(33716001)(15975445007)(68736005)(46406003)(81156004)(101416001)(87976001)(23726002)(64706001)(66066001)(53416004)(97736003)(46102003)(47776003)(20776003)(42186005)(83506001)(31966008)(77156002)(50466002)(62966003)(4396001)(7059030)(2004002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0301MB1239;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB1239;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0301MB0872;
+X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lai,
+On Wed, 10 Dec 2014, Michal Simek wrote:
 
-Thank you for posting the patches. I tried your patches.
-But the following kernel panic occurred.
+Hi Michal,
 
-[  889.394087] BUG: unable to handle kernel paging request at 000000020000f3f1
-[  889.395005] IP: [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-[  889.395005] PGD 17a83067 PUD 0
-[  889.395005] Oops: 0000 [#1] SMP
-[  889.395005] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-[  889.395005] CPU: 8 PID: 13595 Comm: udev_dp_bridge. Not tainted 3.18.0Lai+ #26
-[  889.395005] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-[  889.395005] task: ffff8a074a145160 ti: ffff8a077a6ec000 task.ti: ffff8a077a6ec000
-[  889.395005] RIP: 0010:[<ffffffff8108fe90>]  [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-[  889.395005] RSP: 0018:ffff8a077a6efca8  EFLAGS: 00010202
-[  889.395005] RAX: 0000000000000001 RBX: 000000000000edf1 RCX: 000000000000edf1
-[  889.395005] RDX: 0000000000000100 RSI: 000000020000f3f1 RDI: 0000000000000001
-[  889.395005] RBP: ffff8a077a6efd08 R08: ffffffff81ac6de0 R09: ffff880874610000
-[  889.395005] R10: 00000000ffffffff R11: 0000000000000001 R12: 000000000000f3f0
-[  889.395005] R13: 000000000000001f R14: 00000000ffffffff R15: ffffffff81ac6de0
-[  889.395005] FS:  00007f6b20c67740(0000) GS:ffff88087fd00000(0000) knlGS:0000000000000000
-[  889.395005] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  889.395005] CR2: 000000020000f3f1 CR3: 000000004534c000 CR4: 00000000001407e0
-[  889.395005] Stack:
-[  889.395005]  ffffffffffffffff 0000000000000020 fffffffffffffff8 00000004810a192d
-[  889.395005]  ffff8a0700000204 0000000052f5b32d ffffffff81994fc0 00000000fffffff6
-[  889.395005]  ffffffff81a13840 0000000000000002 000000000000001f 0000000000000000
-[  889.395005] Call Trace:
-[  889.395005]  [<ffffffff81094f6c>] notifier_call_chain+0x4c/0x70
-[  889.395005]  [<ffffffff8109507e>] __raw_notifier_call_chain+0xe/0x10
-[  889.395005]  [<ffffffff810750b3>] cpu_notify+0x23/0x50
-[  889.395005]  [<ffffffff81075408>] _cpu_up+0x188/0x1a0
-[  889.395005]  [<ffffffff810754a9>] cpu_up+0x89/0xb0
-[  889.395005]  [<ffffffff8164f960>] cpu_subsys_online+0x40/0x90
-[  889.395005]  [<ffffffff8140f10d>] device_online+0x6d/0xa0
-[  889.395005]  [<ffffffff8140f1d5>] online_store+0x95/0xa0
-[  889.395005]  [<ffffffff8140c2e8>] dev_attr_store+0x18/0x30
-[  889.395005]  [<ffffffff8126210d>] sysfs_kf_write+0x3d/0x50
-[  889.395005]  [<ffffffff81261624>] kernfs_fop_write+0xe4/0x160
-[  889.395005]  [<ffffffff811e90d7>] vfs_write+0xb7/0x1f0
-[  889.395005]  [<ffffffff81021dcc>] ? do_audit_syscall_entry+0x6c/0x70
-[  889.395005]  [<ffffffff811e9bc5>] SyS_write+0x55/0xd0
-[  889.395005]  [<ffffffff816646a9>] system_call_fastpath+0x12/0x17
-[  889.395005] Code: 44 00 00 83 c7 01 48 63 d7 4c 89 ff e8 3a 2a 28 00 8b 15 78 84 a3 00 89 c7 39 d0 7d 70 48 63 cb 4c 89 e6 48 03 34 cd e0 3a ab 81 <8b> 1e 39 5d bc 74 36 41 39 de 74 0c 48 63 f2 eb c7 0f 1f 80 00
-[  889.395005] RIP  [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-[  889.395005]  RSP <ffff8a077a6efca8>
-[  889.395005] CR2: 000000020000f3f1
-[  889.785760] ---[ end trace 39abbfc9f93402f2 ]---
-[  889.790931] Kernel panic - not syncing: Fatal exception
-[  889.791931] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-[  889.791931] drm_kms_helper: panic occurred, switching back to text console
-[  889.815947] ------------[ cut here ]------------
-[  889.815947] WARNING: CPU: 8 PID: 64 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x5d/0x60()
-[  889.815947] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-[  889.815947] CPU: 8 PID: 64 Comm: migration/8 Tainted: G      D        3.18.0Lai+ #26
-[  889.815947] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-[  889.815947]  0000000000000000 00000000f7f40529 ffff88087fd03d38 ffffffff8165c8d4
-[  889.815947]  0000000000000000 0000000000000000 ffff88087fd03d78 ffffffff81074eb1
-[  889.815947]  ffff88087fd03d78 0000000000000000 ffff88087fc13840 0000000000000008
-[  889.815947] Call Trace:
-[  889.815947]  <IRQ>  [<ffffffff8165c8d4>] dump_stack+0x46/0x58
-[  889.815947]  [<ffffffff81074eb1>] warn_slowpath_common+0x81/0xa0
-[  889.815947]  [<ffffffff81074fca>] warn_slowpath_null+0x1a/0x20
-[  889.815947]  [<ffffffff810489bd>] native_smp_send_reschedule+0x5d/0x60
-[  889.815947]  [<ffffffff810b0ad4>] trigger_load_balance+0x144/0x1b0
-[  889.815947]  [<ffffffff810a009f>] scheduler_tick+0x9f/0xe0
-[  889.815947]  [<ffffffff810daef4>] update_process_times+0x64/0x80
-[  889.815947]  [<ffffffff810eab05>] tick_sched_handle.isra.19+0x25/0x60
-[  889.815947]  [<ffffffff810eab85>] tick_sched_timer+0x45/0x80
-[  889.815947]  [<ffffffff810dbbe7>] __run_hrtimer+0x77/0x1d0
-[  889.815947]  [<ffffffff810eab40>] ? tick_sched_handle.isra.19+0x60/0x60
-[  889.815947]  [<ffffffff810dbfd7>] hrtimer_interrupt+0xf7/0x240
-[  889.815947]  [<ffffffff8104b85b>] local_apic_timer_interrupt+0x3b/0x70
-[  889.815947]  [<ffffffff81667465>] smp_apic_timer_interrupt+0x45/0x60
-[  889.815947]  [<ffffffff8166553d>] apic_timer_interrupt+0x6d/0x80
-[  889.815947]  <EOI>  [<ffffffff810a79c7>] ? set_next_entity+0x67/0x80
-[  889.815947]  [<ffffffffa011d1d7>] ? __drm_modeset_lock_all+0x37/0x120 [drm]
-[  889.815947]  [<ffffffff8109c727>] ? finish_task_switch+0x57/0x180
-[  889.815947]  [<ffffffff8165fba8>] __schedule+0x2e8/0x7e0
-[  889.815947]  [<ffffffff816600c9>] schedule+0x29/0x70
-[  889.815947]  [<ffffffff81097d43>] smpboot_thread_fn+0xd3/0x1b0
-[  889.815947]  [<ffffffff81097c70>] ? SyS_setgroups+0x1a0/0x1a0
-[  889.815947]  [<ffffffff81093df1>] kthread+0xe1/0x100
-[  889.815947]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-[  889.815947]  [<ffffffff816645fc>] ret_from_fork+0x7c/0xb0
-[  889.815947]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-[  889.815947] ---[ end trace 39abbfc9f93402f3 ]---
-[  890.156187] ------------[ cut here ]------------
-[  890.156187] WARNING: CPU: 8 PID: 64 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x5d/0x60()
-[  890.156187] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-[  890.156187] CPU: 8 PID: 64 Comm: migration/8 Tainted: G      D W      3.18.0Lai+ #26
-[  890.156187] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-[  890.156187]  0000000000000000 00000000f7f40529 ffff88087366bc08 ffffffff8165c8d4
-[  890.156187]  0000000000000000 0000000000000000 ffff88087366bc48 ffffffff81074eb1
-[  890.156187]  ffff88087fd142c0 0000000000000044 ffff8a074a145160 ffff8a074a145160
-[  890.156187] Call Trace:
-[  890.156187]  [<ffffffff8165c8d4>] dump_stack+0x46/0x58
-[  890.156187]  [<ffffffff81074eb1>] warn_slowpath_common+0x81/0xa0
-[  890.156187]  [<ffffffff81074fca>] warn_slowpath_null+0x1a/0x20
-[  890.156187]  [<ffffffff810489bd>] native_smp_send_reschedule+0x5d/0x60
-[  890.156187]  [<ffffffff8109ddd8>] resched_curr+0xa8/0xd0
-[  890.156187]  [<ffffffff8109eac0>] check_preempt_curr+0x80/0xa0
-[  890.156187]  [<ffffffff810a78c8>] attach_task+0x48/0x50
-[  890.156187]  [<ffffffff810a7ae5>] active_load_balance_cpu_stop+0x105/0x250
-[  890.156187]  [<ffffffff810a79e0>] ? set_next_entity+0x80/0x80
-[  890.156187]  [<ffffffff8110cab8>] cpu_stopper_thread+0x78/0x150
-[  890.156187]  [<ffffffff8165fba8>] ? __schedule+0x2e8/0x7e0
-[  890.156187]  [<ffffffff81097d6f>] smpboot_thread_fn+0xff/0x1b0
-[  890.156187]  [<ffffffff81097c70>] ? SyS_setgroups+0x1a0/0x1a0
-[  890.156187]  [<ffffffff81093df1>] kthread+0xe1/0x100
-[  890.156187]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-[  890.156187]  [<ffffffff816645fc>] ret_from_fork+0x7c/0xb0
-[  890.156187]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-[  890.156187] ---[ end trace 39abbfc9f93402f4 ]---
+Thanks for the review comments.  I have incorporated most of them.
+A few questions below.
 
-Thanks,
-Yasuaki Ishimatsu
-
-(2014/12/12 19:19), Lai Jiangshan wrote:
-> Workqueue code has an assumption that the numa mapping is stable
-> after system booted.  It is incorrectly currently.
+> > --- /dev/null
+> > +++ b/drivers/staging/fpga/Kconfig
+> > @@ -0,0 +1,21 @@
+> > +#
+> > +# FPGA framework configuration
+> > +#
+> > +
+> > +menu "FPGA devices"
+> > +
+> > +config FPGA
+> > +	tristate "FPGA Framework"
+> > +	help
+> > +	  Say Y here if you want support for configuring FPGAs from the
+> > +	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
+> > +	  manager drivers.
+> > +
 > 
-> Yasuaki Ishimatsu hit a allocation failure bug when the numa mapping
-> between CPU and node is changed. This was the last scene:
->   SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
->    cache: kmalloc-192, object size: 192, buffer size: 192, default order: 1, min order: 0
->    node 0: slabs: 6172, objs: 259224, free: 245741
->    node 1: slabs: 3261, objs: 136962, free: 127656
-> 
-> Yasuaki Ishimatsu investigated that it happened in the following situation:
-> 
-> 1) System Node/CPU before offline/online:
-> 	       | CPU
-> 	------------------------
-> 	node 0 |  0-14, 60-74
-> 	node 1 | 15-29, 75-89
-> 	node 2 | 30-44, 90-104
-> 	node 3 | 45-59, 105-119
-> 
-> 2) A system-board (contains node2 and node3) is offline:
-> 	       | CPU
-> 	------------------------
-> 	node 0 |  0-14, 60-74
-> 	node 1 | 15-29, 75-89
-> 
-> 3) A new system-board is online, two new node IDs are allocated
->     for the two node of the SB, but the old CPU IDs are allocated for
->     the SB, here the NUMA mapping between node and CPU is changed.
->     (the node of CPU#30 is changed from node#2 to node#4, for example)
-> 	       | CPU
-> 	------------------------
-> 	node 0 |  0-14, 60-74
-> 	node 1 | 15-29, 75-89
-> 	node 4 | 30-59
-> 	node 5 | 90-119
-> 
-> 4) now, the NUMA mapping is changed, but wq_numa_possible_cpumask
->     which is the convenient NUMA mapping cache in workqueue.c is still outdated.
->     thus pool->node calculated by get_unbound_pool() is incorrect.
-> 
-> 5) when the create_worker() is called with the incorrect offlined
->      pool->node, it is failed and the pool can't make any progress.
-> 
-> To fix this bug, we need to fixup the wq_numa_possible_cpumask and the
-> pool->node, it is done in patch2 and patch3.
-> 
-> patch1 fixes memory leak related wq_numa_possible_cpumask.
-> patch4 kill another assumption about how the numa mapping changed.
-> patch5 reduces the allocation fails when the node is offline or the node
-> is lack of memory.
-> 
-> The patchset is untested. It is sent for earlier review.
-> 
-> Thanks,
-> Lai.
-> 
-> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
-> Cc: tangchen <tangchen@cn.fujitsu.com>
-> Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-> Lai Jiangshan (5):
->    workqueue: fix memory leak in wq_numa_init()
->    workqueue: update wq_numa_possible_cpumask
->    workqueue: fixup existing pool->node
->    workqueue: update NUMA affinity for the node lost CPU
->    workqueue: retry on NUMA_NO_NODE when create_worker() fails
-> 
->   kernel/workqueue.c |  129 ++++++++++++++++++++++++++++++++++++++++++++--------
->   1 files changed, 109 insertions(+), 20 deletions(-)
+> I would add here
+> if FPGA
 > 
 
+OK
+
+> 
+> > +config FPGA_MGR_SYSFS
+> > +	bool "FPGA Manager SysFS Interface"
+> > +	depends on FPGA
+> 
+> remove this line.
+
+Good
+
+> 
+> > +	depends on SYSFS
+> > +	help
+> > +	  FPGA Manager SysFS interface.
+> > +
+> 
+> maybe this is not needed at, i2c has no this dependency too and compilation
+> looks good too.
+> 
+
+Seems like we are dependent on sysfs, so I need 'depends on SYSFS', right?
+Also, I want to be able to disable the sysfs interface (more below on that).
+
+> 
+> endif here
+
+OK
+
+> 
+> The reason is that all "low level" drivers will depend on FPGA that's why with this
+> we don't need to add depends on FPGA to every entry.
+> 
+> > +endmenu
+> > diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
+> > new file mode 100644
+> > index 0000000..c8a676f
+> > --- /dev/null
+> > +++ b/drivers/staging/fpga/Makefile
+> > @@ -0,0 +1,10 @@
+> > +#
+> > +# Makefile for the fpga framework and fpga manager drivers.
+> > +#
+> > +
+> > +fpga-mgr-core-y += fpga-mgr.o
+> > +
+> > +# Core FPGA Manager Framework
+> > +obj-$(CONFIG_FPGA)			+= fpga-mgr-core.o
+> 
+> Just
+> obj-$(CONFIG_FPGA)			+= fpga-mgr.o
+> should be enough here.
+
+Yes
+
+> 
+> > +
+> > +# FPGA Manager Drivers
+> > diff --git a/drivers/staging/fpga/fpga-mgr.c b/drivers/staging/fpga/fpga-mgr.c
+> > new file mode 100644
+> > index 0000000..d08cb82
+> > --- /dev/null
+> > +++ b/drivers/staging/fpga/fpga-mgr.c
+> > @@ -0,0 +1,485 @@
+> > +/*
+> > + * FPGA Manager Core
+> > + *
+> > + *  Copyright (C) 2013-2014 Altera Corporation
+> > + *
+> > + * With code from the mailing list:
+> > + * Copyright (C) 2013 Xilinx, Inc.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms and conditions of the GNU General Public License,
+> > + * version 2, as published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope it will be useful, but WITHOUT
+> > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> > + * more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along with
+> > + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> > + */
+> 
+> Greg, Grant: What about to use just SPDX?
+> 
+> SPDX-License-Identifier:     GPL-2.0
+> 
+
+This is a standared GPLv2 header, we're keeping it.  Our legal dept wants it.
+
+> > +#include <linux/delay.h>
+> > +#include <linux/firmware.h>
+> > +#include <linux/fpga-mgr.h>
+> 
+> I think it will be worth to add this to linux/fpga/ folder.
+> 
+
+OK
+
+> > +#include <linux/fs.h>
+> > +#include <linux/idr.h>
+> > +#include <linux/interrupt.h>
+> 
+> Already added by fpga-mgr.h
+> 
+> > +#include <linux/kernel.h>
+> 
+> linux/delay.h is adding this header already.
+
+I'm cleaning up the includes in v5.
+
+> > +/*
+> > + * Get FPGA state from low level driver
+> > + * return value is same enum as fpga_mgr_framework_state
+> 
+> This is enum fpga_mgr_states based on fpga-mgr.h
+> 
+> > + *
+> > + * This will be used to initialize framework state
+> > + */
+> 
+> We have an opportunity to have this in kernel-doc format.
+> Description is pretty similar to kernel doc anyway.
+
+I'll change the core (fpga-mgr.c and fpga-mgr.h) to use kernel-doc.
+I'll leave it out of the altera.c part though.
+
+> 
+> > +int fpga_mgr_low_level_state(struct fpga_manager *mgr)
+> 
+> static enum fpga_mgr_states here
+
+OK, there are several places where I've changed to use the enum.
+
+> > +#if IS_ENABLED(CONFIG_FPGA_MGR_SYSFS)
+> 
+> This shouldn't be needed.
+
+>From the way the discussion has gone about this, there is a desire for
+different interfaces for this. I want it to be possible to disable this sysfs
+interface if I'm just using the exported functions or some other future
+interface.  Part of my main point here is to export enough functionality in
+the core functions to make it possible to build other interfaces that people
+want to support different use cases or use models.   Since we are going to be
+in staging, that is a good place to be doing this.
+
+> 
+> > +const char *state_str[] = {
+> 
+> static const ...
+
+Yes, well actually 'static const *const state_str[]...'
+
+> 
+> > +	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
+> > +	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
+> > +	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
+> > +	[FPGA_MGR_STATE_RESET] =		"reset",
+> > +
+> > +	/* write sequence */
+> > +	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
+> > +	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
+> > +	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
+> > +	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
+> > +	[FPGA_MGR_STATE_WRITE] =		"write",
+> > +	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
+> > +	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
+> > +	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
+> > +
+> > +	[FPGA_MGR_STATE_OPERATING] =		"operating",
+> > +};
+> > +
+> > +/*
+> > + * class attributes
+> > + */
+> > +static ssize_t fpga_mgr_name_show(struct device *dev,
+> > +				  struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> > +
+> > +	return fpga_mgr_name(mgr, buf);
+> > +}
+> > +
+
+> > +static DEVICE_ATTR(name, S_IRUGO, fpga_mgr_name_show, NULL);
+> 
+> DEVICE_ATTR_RO - name change.
+> 
+> > +static DEVICE_ATTR(state, S_IRUGO, fpga_mgr_state_show, NULL);
+> 
+> DEVICE_ATTR_RO
+> 
+> > +static DEVICE_ATTR(firmware, S_IRUGO | S_IWUSR,
+> > +		   fpga_mgr_firmware_show, fpga_mgr_firmware_store);
+> 
+> DEVICE_ATTR_RW
+> 
+> > +static DEVICE_ATTR(reset, S_IWUSR, NULL, fpga_mgr_reset_store);
+> 
+> DEVICE_ATTR_WO
+
+Good, thanks.
+
+> 
+> > +
+> > +static struct attribute *fpga_mgr_attrs[] = {
+> > +	&dev_attr_name.attr,
+> > +	&dev_attr_state.attr,
+> > +	&dev_attr_firmware.attr,
+> > +	&dev_attr_reset.attr,
+> > +	NULL,
+> > +};
+> > +
+> > +static const struct attribute_group fpga_mgr_group = {
+> > +	.attrs = fpga_mgr_attrs,
+> > +};
+> > +
+> > +const struct attribute_group *fpga_mgr_groups[] = {
+> > +	&fpga_mgr_group,
+> > +	NULL,
+> > +};
+> > +#else
+> > +#define fpga_mgr_groups NULL
+> > +#endif /* CONFIG_FPGA_MGR_SYSFS */
+> 
+> ATTRIBUTE_GROUPS(fpga_mgr)
+
+Yes
+
+> 
+> > +
+> > +static int fpga_mgr_suspend(struct device *dev)
+> > +{
+> > +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> > +
+> > +	if (!mgr)
+> > +		return -ENODEV;
+> > +
+> > +	if (mgr->mops->suspend)
+> > +		return mgr->mops->suspend(mgr);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int fpga_mgr_resume(struct device *dev)
+> > +{
+> > +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> > +	int ret = 0;
+> > +
+> > +	if (!mgr)
+> > +		return -ENODEV;
+> > +
+> > +	if (mgr->mops->resume) {
+> > +		ret = mgr->mops->resume(mgr);
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> > +
+> > +	if (strlen(mgr->image_name) != 0)
+> > +		fpga_mgr_firmware_write(mgr, mgr->image_name);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
+> 
+> static
+
+Yes
+
+> 
+> > +	.suspend	= fpga_mgr_suspend,
+> > +	.resume		= fpga_mgr_resume,
+> > +};
+> > +
+> > +static void fpga_mgr_dev_release(struct device *dev)
+> > +{
+> > +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> > +
+> > +	dev_dbg(dev, "releasing '%s'\n", dev_name(dev));
+> > +	kfree(mgr);
+> > +}
+> > +
+> > +int fpga_mgr_register(struct device *dev, const char *name,
+> > +		      struct fpga_manager_ops *mops,
+> > +		      void *priv)
+> > +{
+> > +	struct fpga_manager *mgr;
+> > +	int id, ret;
+> > +
+> > +	BUG_ON(!mops || !name || !strlen(name));
+> 
+> Isn't this pretty strong? Any reasonable reaction will be better.
+
+You are right.  Changing it to return an error.
+
+> 
+> > +
+> > +	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
+> > +	if (id < 0)
+> > +		return id;
+> > +
+> > +	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
+> > +	if (!mgr)
+> > +		return -ENOMEM;
+> 
+> here is missing error path handling because you got id.
+> It should be moved before ida_simple_get call
+> 
+
+OK
+
+> > +
+> > +void fpga_mgr_remove(struct device *dev)
+> > +{
+> > +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> > +	int id;
+> > +
+> > +	if (mgr)
+> > +		id = mgr->dev.id;
+> 
+> Why is here the checking? What cases this can cover if mrg
+> is not there?
+> 
+
+Not needed.  Removing it.
+
+> > +
+> > +	device_unregister(dev);
+> > +
+> > +	if (mgr) {
+> > +		if (mgr->mops->fpga_remove)
+> > +			mgr->mops->fpga_remove(mgr);
+> > +
+> > +		mutex_lock(&fpga_mgr_mutex);
+> > +		list_del(&mgr->list);
+> > +		mutex_unlock(&fpga_mgr_mutex);
+> > +		kfree(mgr);
+> > +		ida_simple_remove(&fpga_mgr_ida, id);
+> > +	}
+> > +}
+> > +EXPORT_SYMBOL_GPL(fpga_mgr_remove);
+> > +
+
+> > +++ b/include/linux/fpga-mgr.h
+> > @@ -0,0 +1,104 @@
+> > +/*
+> > + * FPGA Framework
+> > + *
+> > + *  Copyright (C) 2013-2014 Altera Corporation
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms and conditions of the GNU General Public License,
+> > + * version 2, as published by the Free Software Foundation.
+> > + *
+> > + * This program is distributed in the hope it will be useful, but WITHOUT
+> > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> > + * more details.
+> > + *
+> > + * You should have received a copy of the GNU General Public License along with
+> > + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> > + */
+> > +#include <linux/device.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/limits.h>
+> > +#include <linux/mutex.h>
+> > +#include <linux/of.h>
+> > +#include <linux/platform_device.h>
+> > +
+> > +#ifndef _LINUX_FPGA_MGR_H
+> > +#define _LINUX_FPGA_MGR_H
+> > +
+> > +struct fpga_manager;
+> > +
+> > +/*
+> > + * fpga_manager_ops are the low level functions implemented by a specific
+> > + * fpga manager driver.  Leaving any of these out that aren't needed is fine
+> > + * as they are all tested for NULL before being called.
+> > + */
+> > +struct fpga_manager_ops {
+> > +	/* Returns an enum value of the FPGA's state */
+> > +	int (*state)(struct fpga_manager *mgr);
+> 
+> here return should be enum not int.
+> 
+
+Yes
+
+> > +
+> > +	/* Put FPGA into reset state */
+> > +	int (*reset)(struct fpga_manager *mgr);
+> > +
+> > +	/* Prepare the FPGA to receive confuration data */
+> > +	int (*write_init)(struct fpga_manager *mgr);
+> > +
+> > +	/* Write count bytes of configuration data to the FPGA */
+> > +	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
+> > +
+> > +	/* Return FPGA to default state after writing is done */
+> > +	int (*write_complete)(struct fpga_manager *mgr);
+> > +
+> 
+> Here are missing read options which were in any previous series.
+> But they can be added in the following patch.
+
+Yes, they can be added later.
+
+> 
+> > +	/* Optional: Set FPGA into a specific state during driver remove */
+> > +	void (*fpga_remove)(struct fpga_manager *mgr);
+> > +
+> > +	int (*suspend)(struct fpga_manager *mgr);
+> > +
+> > +	int (*resume)(struct fpga_manager *mgr);
+> > +};
+> > +
+> > +/* Valid states may vary by manufacturer; superset is: */
+> > +enum fpga_mgr_states {
+> > +	FPGA_MGR_STATE_UNKNOWN,		/* can't determine state */
+> > +	FPGA_MGR_STATE_POWER_OFF,	/* FPGA power is off */
+> > +	FPGA_MGR_STATE_POWER_UP,	/* FPGA reports power is up */
+> > +	FPGA_MGR_STATE_RESET,		/* FPGA held in reset state */
+> > +
+> > +	/* write sequence */
+> > +	FPGA_MGR_STATE_FIRMWARE_REQ,	/* firmware request in progress */
+> > +	FPGA_MGR_STATE_FIRMWARE_REQ_ERR, /* firmware request failed */
+> > +	FPGA_MGR_STATE_WRITE_INIT,	/* preparing FPGA for programming */
+> > +	FPGA_MGR_STATE_WRITE_INIT_ERR,	/* Error during write_init stage */
+> > +	FPGA_MGR_STATE_WRITE,		/* FPGA ready to receive image data */
+> > +	FPGA_MGR_STATE_WRITE_ERR,	/* Error while programming FPGA */
+> > +	FPGA_MGR_STATE_WRITE_COMPLETE,	/* Doing post programming steps */
+> > +	FPGA_MGR_STATE_WRITE_COMPLETE_ERR, /* Error during write_complete */
+> > +
+> > +	FPGA_MGR_STATE_OPERATING,	/* FPGA is programmed and operating */
+> > +};
+> > +
+> 
+> kernel-doc here will be good.
+
+OK
+
+> 
+> > +struct fpga_manager {
+> > +	const char *name;
+> > +	struct device dev;
+> > +	struct list_head list;
+> > +	struct mutex lock;
+> > +	enum fpga_mgr_states state;
+> > +	char image_name[NAME_MAX];
+> > +
+> > +	struct fpga_manager_ops *mops;
+> > +	void *priv;
+> > +};
+> > +
+> > +#define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
+> > +
+> > +#if IS_ENABLED(CONFIG_FPGA)
+> 
+> you can simple remove this if.
+
+Cool.
+
+Alan
 
