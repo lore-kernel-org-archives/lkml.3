@@ -1,254 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965792AbaLLKsF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:48:05 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60976 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933987AbaLLKsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:48:02 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mike Turquette <mturquette@linaro.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: =?UTF-8?q?Janusz=20U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH v4] clk: Add PWM clock driver
-Date: Fri, 12 Dec 2014 11:47:49 +0100
-Message-Id: <1418381269-26399-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 2.1.3
-X-SA-Exim-Connect-IP: 10.1.0.120
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S966047AbaLLKv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:51:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48108 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965570AbaLLKvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 05:51:25 -0500
+Date: Fri, 12 Dec 2014 11:51:22 +0100
+From: David Sterba <dsterba@suse.cz>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Josef Bacik <jbacik@fb.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
+        linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 7/7] btrfs: enable swap file support
+Message-ID: <20141212105122.GN27601@twin.jikos.cz>
+Reply-To: dsterba@suse.cz
+Mail-Followup-To: dsterba@suse.cz, Omar Sandoval <osandov@osandov.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
+	Josef Bacik <jbacik@fb.com>,
+	Trond Myklebust <trond.myklebust@primarydata.com>,
+	Christoph Hellwig <hch@infradead.org>, linux-btrfs@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <cover.1418173063.git.osandov@osandov.com>
+ <0f9937165d8fc1b8b6332ac97e59593022e9fa5b.1418173063.git.osandov@osandov.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0f9937165d8fc1b8b6332ac97e59593022e9fa5b.1418173063.git.osandov@osandov.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some board designers, when running out of clock output pads, decide to
-(mis)use PWM output pads to provide a clock to external components.
-This driver supports this practice by providing an adapter between the
-PWM and clock bindings in the device tree. As the PWM bindings specify
-the period in the device tree, this is a fixed clock.
+On Tue, Dec 09, 2014 at 05:45:48PM -0800, Omar Sandoval wrote:
+> +static void __clear_swapfile_extents(struct inode *inode)
+> +{
+> +	u64 isize = inode->i_size;
+> +	struct extent_map *em;
+> +	u64 start, len;
+> +
+> +	start = 0;
+> +	while (start < isize) {
+> +		len = isize - start;
+> +		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
+> +		if (IS_ERR(em))
+> +			return;
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
-Changes since v3:
- - Call pwm_enable/disable from prepare/unprepare callbacks
- - Use NSEC_PER_SEC
- - Add CLK_IS_BASIC flag
- - Register clk_pwm_remove function
- - Since this is a platform_device, remove driver.owner = THIS_MODULE
----
- .../devicetree/bindings/clock/pwm-clock.txt        |  26 +++++
- drivers/clk/Kconfig                                |   7 ++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-pwm.c                              | 129 +++++++++++++++++++++
- 4 files changed, 163 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
- create mode 100644 drivers/clk/clk-pwm.c
+This could transiently fail if there's no memory to allocate the em, and
+would leak the following extents.
 
-diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-new file mode 100644
-index 0000000..751fff5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
-@@ -0,0 +1,26 @@
-+Binding for an external clock signal driven by a PWM pin.
-+
-+This binding uses the common clock binding[1] and the common PWM binding[2].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+[2] Documentation/devicetree/bindings/pwm/pwm.txt
-+
-+Required properties:
-+- compatible : shall be "pwm-clock".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- pwms : from common PWM binding; this determines the clock frequency
-+  via the PWM period given in the pwm-specifier.
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+- clock-frequency : Exact output frequency, in case the pwm period
-+  is not exact but was rounded to nanoseconds.
-+
-+Example:
-+	clock {
-+		compatible = "pwm-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <25000000>;
-+		clock-output-names = "mipi_mclk";
-+		pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
-+	};
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 455fd17..36a6918a 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -129,6 +129,13 @@ config COMMON_CLK_PALMAS
- 	  This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
- 	  using common clock framework.
- 
-+config COMMON_CLK_PWM
-+	bool "Clock driver for PWMs used as clock outputs"
-+	depends on PWM
-+	---help---
-+	  Adapter driver so that any PWM output can be (mis)used as clock signal
-+	  at 50% duty cycle.
-+
- config COMMON_CLK_PXA
- 	def_bool COMMON_CLK && ARCH_PXA
- 	---help---
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index d5fba5b..6a0c5cf 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_ARCH_U300)			+= clk-u300.o
- obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
- obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
- obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
-+obj-$(CONFIG_COMMON_CLK_PWM)		+= clk-pwm.o
- obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
- obj-$(CONFIG_ARCH_BCM_MOBILE)		+= bcm/
- obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
-diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
-new file mode 100644
-index 0000000..c7d5652
---- /dev/null
-+++ b/drivers/clk/clk-pwm.c
-@@ -0,0 +1,129 @@
-+/*
-+ * Copyright (C) 2014 Philipp Zabel, Pengutronix
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * PWM (mis)used as clock output
-+ */
-+#include <linux/clk-provider.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/pwm.h>
-+
-+struct clk_pwm {
-+	struct clk_hw hw;
-+	struct pwm_device *pwm;
-+	u32 fixed_rate;
-+};
-+
-+#define to_clk_pwm(_hw) container_of(_hw, struct clk_pwm, hw)
-+
-+static int clk_pwm_prepare(struct clk_hw *hw)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+
-+	return pwm_enable(clk_pwm->pwm);
-+}
-+
-+static void clk_pwm_unprepare(struct clk_hw *hw)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+
-+	pwm_disable(clk_pwm->pwm);
-+}
-+
-+static unsigned long clk_pwm_recalc_rate(struct clk_hw *hw,
-+					 unsigned long parent_rate)
-+{
-+	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
-+
-+	return clk_pwm->fixed_rate;
-+}
-+
-+const struct clk_ops clk_pwm_ops = {
-+	.prepare = clk_pwm_prepare,
-+	.unprepare = clk_pwm_unprepare,
-+	.recalc_rate = clk_pwm_recalc_rate,
-+};
-+
-+int clk_pwm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct clk_init_data init;
-+	struct clk_pwm *clk_pwm;
-+	struct pwm_device *pwm;
-+	const char *clk_name;
-+	struct clk *clk;
-+	int ret;
-+
-+	clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
-+	if (!clk_pwm)
-+		return -ENOMEM;
-+
-+	pwm = devm_pwm_get(&pdev->dev, NULL);
-+	if (IS_ERR(pwm))
-+		return PTR_ERR(pwm);
-+
-+	if (!pwm || !pwm->period) {
-+		dev_err(&pdev->dev, "invalid pwm period\n");
-+		return -EINVAL;
-+	}
-+
-+	if (of_property_read_u32(node, "clock-frequency", &clk_pwm->fixed_rate))
-+		clk_pwm->fixed_rate = NSEC_PER_SEC / pwm->period;
-+
-+	if (pwm->period != NSEC_PER_SEC / clk_pwm->fixed_rate &&
-+	    pwm->period != DIV_ROUND_UP(NSEC_PER_SEC, clk_pwm->fixed_rate)) {
-+		dev_err(&pdev->dev,
-+			"clock-frequency does not match pwm period\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
-+	if (ret < 0)
-+		return ret;
-+
-+	clk_name = node->name;
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+
-+	init.name = clk_name;
-+	init.ops = &clk_pwm_ops;
-+	init.flags = CLK_IS_BASIC | CLK_IS_ROOT;
-+	init.num_parents = 0;
-+
-+	clk_pwm->pwm = pwm;
-+	clk_pwm->hw.init = &init;
-+	clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
-+
-+	return of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+
-+int clk_pwm_remove(struct platform_device *pdev)
-+{
-+	of_clk_del_provider(pdev->dev.of_node);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id clk_pwm_dt_ids[] = {
-+	{ .compatible = "pwm-clock" },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, clk_pwm_dt_ids);
-+
-+static struct platform_driver clk_pwm_driver = {
-+	.probe = clk_pwm_probe,
-+	.remove = clk_pwm_remove,
-+	.driver = {
-+		.name = "pwm-clock",
-+		.of_match_table = of_match_ptr(clk_pwm_dt_ids),
-+	},
-+};
-+
-+module_platform_driver(clk_pwm_driver);
--- 
-2.1.3
+> +
+> +		clear_bit(EXTENT_FLAG_SWAPFILE, &em->flags);
+> +
+> +		start = extent_map_end(em);
+> +		free_extent_map(em);
+> +	}
+> +}
+> +
+> +static int btrfs_swap_activate(struct swap_info_struct *sis, struct file *file,
+> +			       sector_t *span)
+> +{
+> +	struct inode *inode = file_inode(file);
+> +	struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
+> +	struct extent_io_tree *io_tree = &BTRFS_I(inode)->io_tree;
+> +	int ret = 0;
+> +	u64 isize = inode->i_size;
+> +	struct extent_state *cached_state = NULL;
+> +	struct extent_map *em;
+> +	u64 start, len;
+> +
+> +	if (BTRFS_I(inode)->flags & BTRFS_INODE_COMPRESS) {
+> +		/* Can't do direct I/O on a compressed file. */
+> +		btrfs_err(fs_info, "swapfile is compressed");
+> +		return -EINVAL;
+> +	}
+> +	if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATACOW)) {
+> +		/*
+> +		 * Going through the copy-on-write path while swapping pages
+> +		 * in/out and doing a bunch of allocations could stress the
+> +		 * memory management code that got us there in the first place,
+> +		 * and that's sure to be a bad time.
+> +		 */
+> +		btrfs_err(fs_info, "swapfile is copy-on-write");
+> +		return -EINVAL;
+> +	}
+> +
+> +	lock_extent_bits(io_tree, 0, isize - 1, 0, &cached_state);
+> +
+> +	/*
+> +	 * All of the extents must be allocated and support direct I/O. Inline
+> +	 * extents and compressed extents fall back to buffered I/O, so those
+> +	 * are no good. Additionally, all of the extents must be safe for nocow.
+> +	 */
+> +	atomic_inc(&BTRFS_I(inode)->root->nr_swapfiles);
+> +	start = 0;
+> +	while (start < isize) {
+> +		len = isize - start;
+> +		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
+> +		if (IS_ERR(em)) {
 
+		IS_ERR_OR_NULL(em)
+
+>From now on the em is valid and has to be free_extent_map()ed ...
+
+> +			ret = PTR_ERR(em);
+> +			goto out;
+> +		}
+> +
+> +		if (test_bit(EXTENT_FLAG_VACANCY, &em->flags) ||
+> +		    em->block_start == EXTENT_MAP_HOLE) {
+> +			btrfs_err(fs_info, "swapfile has holes");
+> +			ret = -EINVAL;
+
+... and all the error branches would miss it.
+
+> +			goto out;
+> +		}
+> +		if (em->block_start == EXTENT_MAP_INLINE) {
+> +			/*
+> +			 * It's unlikely we'll ever actually find ourselves
+> +			 * here, as a file small enough to fit inline won't be
+> +			 * big enough to store more than the swap header, but in
+> +			 * case something changes in the future, let's catch it
+> +			 * here rather than later.
+> +			 */
+> +			btrfs_err(fs_info, "swapfile is inline");
+> +			ret = -EINVAL;
+
+here
+
+> +			goto out;
+> +		}
+> +		if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
+> +			btrfs_err(fs_info, "swapfile is compresed");
+> +			ret = -EINVAL;
+
+here
+
+> +			goto out;
+> +		}
+> +		ret = can_nocow_extent(inode, start, &len, NULL, NULL, NULL);
+> +		if (ret < 0) {
+
+here
+
+> +			goto out;
+> +		} else if (ret == 1) {
+> +			ret = 0;
+> +		} else {
+> +			btrfs_err(fs_info, "swapfile has extent requiring COW (%llu-%llu)",
+> +				  start, start + len - 1);
+> +			ret = -EINVAL;
+
+here
+
+> +			goto out;
+> +		}
+> +
+> +		set_bit(EXTENT_FLAG_SWAPFILE, &em->flags);
+> +
+> +		start = extent_map_end(em);
+> +		free_extent_map(em);
+> +	}
+> +
+> +out:
+> +	if (ret) {
+
+should be fixed by:
+
+		if (!IS_ERR_OR_NULL(em))
+			free_extent_map(em);
+
+> +		__clear_swapfile_extents(inode);
+> +		atomic_dec(&BTRFS_I(inode)->root->nr_swapfiles);
+> +	}
+> +	unlock_extent_cached(io_tree, 0, isize - 1, &cached_state, GFP_NOFS);
+> +	return ret;
+> +}
