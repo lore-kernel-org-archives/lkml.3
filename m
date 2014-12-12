@@ -1,170 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965916AbaLLKmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:42:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47981 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932345AbaLLKmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:42:11 -0500
-Date: Fri, 12 Dec 2014 11:42:09 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] HID
-Message-ID: <alpine.LNX.2.00.1412121117360.6575@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S965792AbaLLKsF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:48:05 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60976 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933987AbaLLKsC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 05:48:02 -0500
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Mike Turquette <mturquette@linaro.org>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: =?UTF-8?q?Janusz=20U=C5=BCycki?= <j.uzycki@elproma.com.pl>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pwm@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v4] clk: Add PWM clock driver
+Date: Fri, 12 Dec 2014 11:47:49 +0100
+Message-Id: <1418381269-26399-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 2.1.3
+X-SA-Exim-Connect-IP: 10.1.0.120
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Some board designers, when running out of clock output pads, decide to
+(mis)use PWM output pads to provide a clock to external components.
+This driver supports this practice by providing an adapter between the
+PWM and clock bindings in the device tree. As the PWM bindings specify
+the period in the device tree, this is a fixed clock.
 
-please pull from
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+Changes since v3:
+ - Call pwm_enable/disable from prepare/unprepare callbacks
+ - Use NSEC_PER_SEC
+ - Add CLK_IS_BASIC flag
+ - Register clk_pwm_remove function
+ - Since this is a platform_device, remove driver.owner = THIS_MODULE
+---
+ .../devicetree/bindings/clock/pwm-clock.txt        |  26 +++++
+ drivers/clk/Kconfig                                |   7 ++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-pwm.c                              | 129 +++++++++++++++++++++
+ 4 files changed, 163 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/pwm-clock.txt
+ create mode 100644 drivers/clk/clk-pwm.c
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-
-to receive HID updates for 3.19:
-
-=====
-- i2c-hid race condition fix from Jean-Baptiste Maneyrol
-- Logitech driver now supports vendor-specific HID++ protocol, allowing us
-  to deliver a full multitouch support on wider range of Logitech 
-  touchpads. Written by Benjamin Tissoires
-- MS Surface Pro 3 Type Cover support added by Alan Wu
-- RMI touchpad support improvements from Andrew Duggan
-- a lot of updates to Wacom driver from Jason Gerecke and Ping Cheng
-- various small fixes all over the place
-=====
-
-Thanks.
-
-----------------------------------------------------------------
-
-Alan Wu (1):
-      HID: add support for MS Surface Pro 3 Type Cover
-
-Andrew Duggan (2):
-      HID: rmi: Check for additional ACM registers appended to F11 data report
-      HID: rmi: The address of query8 must be calculated based on which query registers are present
-
-Benjamin Tissoires (18):
-      HID: fix merge from wacom into the HID tree
-      HID: core: do not scan reports if the group is already set
-      HID: logitech-dj: rely on hid groups to separate receivers from dj devices
-      HID: logitech-dj: merge header file into the source
-      HID: Introduce hidpp, a module to handle Logitech hid++ devices
-      HID: logitech: move dj devices to the HID++ module
-      HID: logitech-dj: allow transfer of HID++ reports from/to the correct dj device
-      HID: logitech: allow the DJ device to request the unifying name
-      HID: logitech-dj: enable notifications on connect/disconnect
-      HID: logitech-hidpp: late bind the input device on wireless connection
-      HID: logitech-hidpp: Add Wireless Touchpad T650 support
-      HID: logitech-hidpp: add support of the first Logitech Wireless Touchpad
-      HID: logitech-hidpp: support combo keyboard touchpad TK820
-      HID: usbhid: prevent unwanted events to be sent when re-opening the device
-      HID: logitech-hidpp: fix negated returns
-      HID: logitech-hidpp: 2 fixes in hidpp_root_get_protocol_version()
-      HID: wacom: re-add accidentally dropped Lenovo PID
-      HID: wacom: fix freeze on open when autosuspend is on
-
-Dan Carpenter (1):
-      HID: logitech-hidpp: leaks and NULL dereferences
-
-Frank Praznik (2):
-      HID: sony: Use kernel allocated buffers for HID reports
-      HID: sony: Add support for the third-party SMK PS3 Bluetooth Remote
-
-Gwendal Grignou (1):
-      HID: i2c-hid: prevent buffer overflow in early IRQ
-
-Hans Duedal (1):
-      HID: roccat: Fix code style issues
-
-Hans de Goede (1):
-      HID: input: Map unknown consumer page codes to KEY_UNKNOWN
-
-JD Cole (2):
-      HID: plantronics: fix errant mouse events
-      HID: added missing HID Consumer Page identifiers
-
-Jamie Lentin (2):
-      HID: lenovo: Move USB KEY_FILE to 0x00f9 to prevent scancode clash
-      HID: lenovo: Don't set EV_REP to avoid repeating mice buttons
-
-Jason Gerecke (5):
-      HID: wacom: Report ABS_TILT_{X,Y} as signed values
-      HID: wacom: Add angular resolution data to some ABS axes
-      HID: wacom: Consult the application usage when determining field type
-      HID: wacom: Initialize MT slots for generic devices at post_parse_hid
-      HID: wacom: Report input events for each finger on generic devices
-
-Jean-Baptiste Maneyrol (2):
-      HID: i2c-hid: print the correct data in dbg msg
-      HID: i2c-hid: fix race condition reading reports
-
-Jiri Kosina (1):
-      HID: plantronics: remove superfluous .probe()
-
-Mathieu Magnaudet (2):
-      HID: multitouch: Add quirk for VTL touch panels
-      HID: make hid_report_len as a static inline function in hid.h
-
-Oliver Neukum (1):
-      HID: yet another buggy ELAN touchscreen
-
-Peter Wu (4):
-      HID: logitech-hidpp: do not return the name length
-      HID: logitech-hidpp: check name retrieval return code
-      HID: logitech-hidpp: add boundary check for name retrieval
-      HID: logitech-hidpp: disable io in probe error path
-
-Ping Cheng (9):
-      HID: wacom - make sure touch_input is valid before using it
-      HID: wacom: Add support for Intuos Pen Medium
-      HID: wacom - return ENODEV for failed wacom_setup_pad_input_capabilities
-      HID: wacom - Cleanup input_capabilities for Graphire 4 and Bamboo Fun
-      HID: wacom - Bamboo pen-only tablet does not support PAD
-      HID: wacom: PAD is independent with pen/touch
-      HID: wacom: add defines for new Cintiq and DTU outbound tracking
-      HID: wacom: Add support for DTU-1031X
-      HID: wacom: Update maximum X/Y accounding to outbound offset
-
-Ville Aakko (1):
-      HID: saitek: quirk for Saitek R.A.T.7 works with R.A.T.9 too
-
- drivers/hid/Kconfig              |   22 +-
- drivers/hid/Makefile             |    2 +
- drivers/hid/hid-core.c           |   36 +-
- drivers/hid/hid-ids.h            |   12 +
- drivers/hid/hid-input.c          |    4 +-
- drivers/hid/hid-lenovo.c         |   13 +-
- drivers/hid/hid-logitech-dj.c    |  397 +++++++++---
- drivers/hid/hid-logitech-dj.h    |  125 ----
- drivers/hid/hid-logitech-hidpp.c | 1241 ++++++++++++++++++++++++++++++++++++++
- drivers/hid/hid-microsoft.c      |    2 +
- drivers/hid/hid-multitouch.c     |   27 +
- drivers/hid/hid-plantronics.c    |   55 ++
- drivers/hid/hid-rmi.c            |   83 ++-
- drivers/hid/hid-roccat-kone.c    |    9 +-
- drivers/hid/hid-saitek.c         |    4 +-
- drivers/hid/hid-sony.c           |  150 +++--
- drivers/hid/i2c-hid/i2c-hid.c    |   16 +-
- drivers/hid/usbhid/hid-core.c    |   39 +-
- drivers/hid/usbhid/hid-quirks.c  |    2 +
- drivers/hid/usbhid/usbhid.h      |    1 +
- drivers/hid/wacom.h              |    2 +-
- drivers/hid/wacom_sys.c          |   68 ++-
- drivers/hid/wacom_wac.c          |  216 ++++---
- drivers/hid/wacom_wac.h          |    3 +
- drivers/usb/core/quirks.c        |    3 +
- include/linux/hid.h              |   43 +-
- 26 files changed, 2141 insertions(+), 434 deletions(-)
- delete mode 100644 drivers/hid/hid-logitech-dj.h
- create mode 100644 drivers/hid/hid-logitech-hidpp.c
- create mode 100644 drivers/hid/hid-plantronics.c
-
+diff --git a/Documentation/devicetree/bindings/clock/pwm-clock.txt b/Documentation/devicetree/bindings/clock/pwm-clock.txt
+new file mode 100644
+index 0000000..751fff5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/pwm-clock.txt
+@@ -0,0 +1,26 @@
++Binding for an external clock signal driven by a PWM pin.
++
++This binding uses the common clock binding[1] and the common PWM binding[2].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++[2] Documentation/devicetree/bindings/pwm/pwm.txt
++
++Required properties:
++- compatible : shall be "pwm-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- pwms : from common PWM binding; this determines the clock frequency
++  via the PWM period given in the pwm-specifier.
++
++Optional properties:
++- clock-output-names : From common clock binding.
++- clock-frequency : Exact output frequency, in case the pwm period
++  is not exact but was rounded to nanoseconds.
++
++Example:
++	clock {
++		compatible = "pwm-clock";
++		#clock-cells = <0>;
++		clock-frequency = <25000000>;
++		clock-output-names = "mipi_mclk";
++		pwms = <&pwm2 0 40>; /* 1 / 40 ns = 25 MHz */
++	};
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 455fd17..36a6918a 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -129,6 +129,13 @@ config COMMON_CLK_PALMAS
+ 	  This driver supports TI Palmas devices 32KHz output KG and KG_AUDIO
+ 	  using common clock framework.
+ 
++config COMMON_CLK_PWM
++	bool "Clock driver for PWMs used as clock outputs"
++	depends on PWM
++	---help---
++	  Adapter driver so that any PWM output can be (mis)used as clock signal
++	  at 50% duty cycle.
++
+ config COMMON_CLK_PXA
+ 	def_bool COMMON_CLK && ARCH_PXA
+ 	---help---
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index d5fba5b..6a0c5cf 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_ARCH_U300)			+= clk-u300.o
+ obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
+ obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
+ obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
++obj-$(CONFIG_COMMON_CLK_PWM)		+= clk-pwm.o
+ obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
+ obj-$(CONFIG_ARCH_BCM_MOBILE)		+= bcm/
+ obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
+diff --git a/drivers/clk/clk-pwm.c b/drivers/clk/clk-pwm.c
+new file mode 100644
+index 0000000..c7d5652
+--- /dev/null
++++ b/drivers/clk/clk-pwm.c
+@@ -0,0 +1,129 @@
++/*
++ * Copyright (C) 2014 Philipp Zabel, Pengutronix
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * PWM (mis)used as clock output
++ */
++#include <linux/clk-provider.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/pwm.h>
++
++struct clk_pwm {
++	struct clk_hw hw;
++	struct pwm_device *pwm;
++	u32 fixed_rate;
++};
++
++#define to_clk_pwm(_hw) container_of(_hw, struct clk_pwm, hw)
++
++static int clk_pwm_prepare(struct clk_hw *hw)
++{
++	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
++
++	return pwm_enable(clk_pwm->pwm);
++}
++
++static void clk_pwm_unprepare(struct clk_hw *hw)
++{
++	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
++
++	pwm_disable(clk_pwm->pwm);
++}
++
++static unsigned long clk_pwm_recalc_rate(struct clk_hw *hw,
++					 unsigned long parent_rate)
++{
++	struct clk_pwm *clk_pwm = to_clk_pwm(hw);
++
++	return clk_pwm->fixed_rate;
++}
++
++const struct clk_ops clk_pwm_ops = {
++	.prepare = clk_pwm_prepare,
++	.unprepare = clk_pwm_unprepare,
++	.recalc_rate = clk_pwm_recalc_rate,
++};
++
++int clk_pwm_probe(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct clk_init_data init;
++	struct clk_pwm *clk_pwm;
++	struct pwm_device *pwm;
++	const char *clk_name;
++	struct clk *clk;
++	int ret;
++
++	clk_pwm = devm_kzalloc(&pdev->dev, sizeof(*clk_pwm), GFP_KERNEL);
++	if (!clk_pwm)
++		return -ENOMEM;
++
++	pwm = devm_pwm_get(&pdev->dev, NULL);
++	if (IS_ERR(pwm))
++		return PTR_ERR(pwm);
++
++	if (!pwm || !pwm->period) {
++		dev_err(&pdev->dev, "invalid pwm period\n");
++		return -EINVAL;
++	}
++
++	if (of_property_read_u32(node, "clock-frequency", &clk_pwm->fixed_rate))
++		clk_pwm->fixed_rate = NSEC_PER_SEC / pwm->period;
++
++	if (pwm->period != NSEC_PER_SEC / clk_pwm->fixed_rate &&
++	    pwm->period != DIV_ROUND_UP(NSEC_PER_SEC, clk_pwm->fixed_rate)) {
++		dev_err(&pdev->dev,
++			"clock-frequency does not match pwm period\n");
++		return -EINVAL;
++	}
++
++	ret = pwm_config(pwm, (pwm->period + 1) >> 1, pwm->period);
++	if (ret < 0)
++		return ret;
++
++	clk_name = node->name;
++	of_property_read_string(node, "clock-output-names", &clk_name);
++
++	init.name = clk_name;
++	init.ops = &clk_pwm_ops;
++	init.flags = CLK_IS_BASIC | CLK_IS_ROOT;
++	init.num_parents = 0;
++
++	clk_pwm->pwm = pwm;
++	clk_pwm->hw.init = &init;
++	clk = devm_clk_register(&pdev->dev, &clk_pwm->hw);
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
++
++	return of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++
++int clk_pwm_remove(struct platform_device *pdev)
++{
++	of_clk_del_provider(pdev->dev.of_node);
++
++	return 0;
++}
++
++static const struct of_device_id clk_pwm_dt_ids[] = {
++	{ .compatible = "pwm-clock" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, clk_pwm_dt_ids);
++
++static struct platform_driver clk_pwm_driver = {
++	.probe = clk_pwm_probe,
++	.remove = clk_pwm_remove,
++	.driver = {
++		.name = "pwm-clock",
++		.of_match_table = of_match_ptr(clk_pwm_dt_ids),
++	},
++};
++
++module_platform_driver(clk_pwm_driver);
 -- 
-Jiri Kosina
-SUSE Labs
+2.1.3
+
