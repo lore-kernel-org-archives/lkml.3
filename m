@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965944AbaLLGrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:47:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51777 "EHLO
+	id S1760021AbaLLGsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:10 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758839AbaLLGQy (ORCPT
+	by vger.kernel.org with ESMTP id S1750757AbaLLGsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:54 -0500
+	Fri, 12 Dec 2014 01:48:07 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Thomas Gleixner" <tglx@linutronix.de>,
-        "Andy Lutomirski" <luto@amacapital.net>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, "Lars-Peter Clausen" <lars@metafoo.de>,
+        "Jonathan Cameron" <jic23@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.400893252@decadent.org.uk>
+Message-ID: <lsq.1418364865.923146748@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 151/164] x86_64, traps: Fix the espfix64 #DF fixup and
- rewrite it in C
+Subject: [PATCH 3.2 032/164] staging:iio:ad5933: Drop "raw" from channel names
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,117 +31,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
+commit 6822ee34ad57b29a3b44df2c2829910f03c34fa4 upstream.
 
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
+"raw" is the name of a channel property, but should not be part of the
+channel name itself.
 
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
-
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Keep using the paranoiderrorentry macro to generate the asm code
- - Adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk> 
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+[bwh: Backported to 3.2: using IIO_CHAN() macro to initialise the structures]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/entry_64.S | 34 ++--------------------------------
- arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
+ drivers/staging/iio/impedance-analyzer/ad5933.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -873,6 +873,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
- 
-+.global native_irq_return_iret
- native_irq_return_iret:
- 	iretq
- 
-@@ -972,37 +973,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
--
- /*
-  * End of kprobes section
-  */
-@@ -1169,7 +1139,7 @@ zeroentry overflow do_overflow
- zeroentry bounds do_bounds
- zeroentry invalid_op do_invalid_op
- zeroentry device_not_available do_device_not_available
--paranoiderrorentry double_fault __do_double_fault
-+paranoiderrorentry double_fault do_double_fault
- zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
- errorentry invalid_TSS do_invalid_TSS
- errorentry segment_not_present do_segment_not_present
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -224,6 +224,30 @@ dotraplinkage void do_double_fault(struc
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
-+
-+	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
-+	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
-+
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
-+	}
-+#endif
-+
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
- 
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -112,10 +112,10 @@ static struct iio_chan_spec ad5933_chann
+ 	IIO_CHAN(IIO_TEMP, 0, 1, 1, NULL, 0, 0, 0,
+ 		 0, AD5933_REG_TEMP_DATA, IIO_ST('s', 14, 16, 0), 0),
+ 	/* Ring Channels */
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "real_raw", 0, 0,
++	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "real", 0, 0,
+ 		 (1 << IIO_CHAN_INFO_SCALE_SEPARATE),
+ 		 AD5933_REG_REAL_DATA, 0, IIO_ST('s', 16, 16, 0), 0),
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "imag_raw", 0, 0,
++	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "imag", 0, 0,
+ 		 (1 << IIO_CHAN_INFO_SCALE_SEPARATE),
+ 		 AD5933_REG_IMAG_DATA, 1, IIO_ST('s', 16, 16, 0), 0),
+ };
 
