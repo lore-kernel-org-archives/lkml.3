@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935003AbaLLUPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:15:15 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:60453 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbaLLUPM (ORCPT
+	id S935119AbaLLUQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:16:29 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38099 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934033AbaLLUQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:15:12 -0500
-Date: Fri, 12 Dec 2014 12:15:09 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: David Sterba <dsterba@suse.cz>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 0/7] btrfs: implement swap file support
-Message-ID: <20141212201509.GB20971@mew>
-References: <cover.1418173063.git.osandov@osandov.com>
- <20141212103213.GL27601@twin.jikos.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141212103213.GL27601@twin.jikos.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 12 Dec 2014 15:16:28 -0500
+Date: Fri, 12 Dec 2014 15:16:26 -0500 (EST)
+Message-Id: <20141212.151626.1534262330967192209.davem@davemloft.net>
+To: lambert.quentin@gmail.com
+Cc: cooldavid@cooldavid.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Remove redundant function
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20141212123432.GA12765@sloth>
+References: <20141212123432.GA12765@sloth>
+X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Dec 2014 12:16:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:32:13AM +0100, David Sterba wrote:
-> On Tue, Dec 09, 2014 at 05:45:41PM -0800, Omar Sandoval wrote:
-> > After some discussion on the mailing list, I decided that for simplicity and
-> > reliability, it's best to simply disallow COW files and files with shared
-> > extents (like files with extents shared with a snapshot). From a user's
-> > perspective, this means that a snapshotted subvolume cannot be used for a swap
-> > file, but keeping the swap file in a separate subvolume that is never
-> > snapshotted seems entirely reasonable to me.
-> 
-> Well, there are enough special cases how to do things on btrfs and I'd
-> like to avoid introducing another one.
-> 
-> > An alternative suggestion was to
-> > allow swap files to be snapshotted and to do an implied COW on swap file
-> > activation, which I was ready to implement until I realized that we can't permit
-> > snapshotting a subvolume with an active swap file, so this creates a surprising
-> > inconsistency for users (in my opinion).
-> 
-> I still don't see why it's not possible to do the snapshot with an
-> active swapfile.
-> 
-Creating a snapshot of an active swapfile would create shared extents,
-so the next time we have to swap out a page, we'd have to do a COW,
-which we're already trying pretty hard to avoid. We could allow it, but
-it might lead to some unreliable behavior and unhappy emails to the
-mailing list. However, I do see your point about wanting to avoid
-special cases, so I'd like to get some more input from others on this as
-well.
+From: Quentin Lambert <lambert.quentin@gmail.com>
+Date: Fri, 12 Dec 2014 13:34:32 +0100
 
-> > As with before, this functionality is tenuously tested in a virtual machine with
-> > some artificial workloads, but it "works for me". I'm pretty happy with the
-> > results on my end, so please comment away.
+> tasklet_hi_enable and tasklet_enable are redundant. Since
+> tasklet_hi_enable is used only 6 times in 1 file, the first
+> patch changes calls to the function with calls to tasklet_enable.
 > 
-> The non-btrfs changes can go independently and do not have to wait until
-> we resolve the swap vs snapshot problem.
-> 
-> I did a simple test and it crashed instantly, lockep complains:
-> 
-> memory: 2G
-> swap file: 1G
-> kernel: 3.17 + v3
-> 
-[snip]
+> The second patch removes tasklet_hi_enable definition.
 
-That's my fault for not running with lockdep enabled. The problem here
-is that swap-over-NFS is the only caller of nfs_direct_IO, so
-nfs_direct_IO doesn't observe the normal direct_IO locking conventions
-and neither does swap_writepage. I'll have to shuffle around some code
-on the NFS side to fix that.
+This is pretty simple and straightforward, so I hope nobody minds
+my merging this via my networking tree.
 
-It looks like the non-btrfs parts of this might get a bit bigger, so
-I'll look into getting that in separately.
-
-Thanks!
--- 
-Omar
+Series applied, thanks.
