@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713AbaLLBg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 20:36:28 -0500
-Received: from mail.windriver.com ([147.11.1.11]:42715 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaLLBg1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 20:36:27 -0500
-From: Ying Xue <ying.xue@windriver.com>
-To: <paulmck@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rculist: fix sparse warning
-Date: Fri, 12 Dec 2014 09:36:14 +0800
-Message-ID: <1418348174-26797-1-git-send-email-ying.xue@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755287AbaLLB7X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 20:59:23 -0500
+Received: from cnbjrel01.sonyericsson.com ([219.141.167.165]:15359 "EHLO
+	cnbjrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750701AbaLLB7W convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 20:59:22 -0500
+From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+To: "'Kirill A. Shutemov'" <kirill@shutemov.name>
+CC: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
+        "'oleg@redhat.com'" <oleg@redhat.com>,
+        "'gorcunov@openvz.org'" <gorcunov@openvz.org>,
+        "'pfeiner@google.com'" <pfeiner@google.com>
+Date: Fri, 12 Dec 2014 09:59:15 +0800
+Subject: RE: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Thread-Topic: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Thread-Index: AdAUabTsySoG7nhnQeKiYv7Mut+5OwBRXJ+A
+Message-ID: <35FD53F367049845BC99AC72306C23D103E688B31406@CNBJMBX05.corpusers.net>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+ <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+ <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+ <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+ <20141208114601.GA28846@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
+ <20141210110556.GA10630@node.dhcp.inet.fi>
+In-Reply-To: <20141210110556.GA10630@node.dhcp.inet.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following sparse warning when using
-
-make C=1 CF=-D__CHECK_ENDIAN__ net/ipv6/addrconf.o
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-net/ipv6/addrconf.c:3495:9: error: incompatible types in comparison expression (different address spaces)
-
-To silence above spare complaint, an RCU annotation should be added to
-"next" pointer of hlist_node structure through hlist_next_rcu() macro
-when iterating over a hlist with hlist_for_each_entry_continue_rcu_bh().
-
-By the way, this commit also resolves the same error appearing in
-hlist_for_each_entry_continue_rcu().
-
-Signed-off-by: Ying Xue <ying.xue@windriver.com>
----
-The commit is based on next.2014.12.11a branch of linux-rcu tree 
-
- include/linux/rculist.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/rculist.h b/include/linux/rculist.h
-index 372ad5e..6f7aefb 100644
---- a/include/linux/rculist.h
-+++ b/include/linux/rculist.h
-@@ -524,11 +524,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
-  * @member:	the name of the hlist_node within the struct.
-  */
- #define hlist_for_each_entry_continue_rcu(pos, member)			\
--	for (pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
--			typeof(*(pos)), member);			\
-+	for (pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu( \
-+			&(pos)->member)), typeof(*(pos)), member);	\
- 	     pos;							\
--	     pos = hlist_entry_safe(rcu_dereference((pos)->member.next),\
--			typeof(*(pos)), member))
-+	     pos = hlist_entry_safe(rcu_dereference_raw(hlist_next_rcu(	\
-+			&(pos)->member)), typeof(*(pos)), member))
- 
- /**
-  * hlist_for_each_entry_continue_rcu_bh - iterate over a hlist continuing after current point
-@@ -536,11 +536,11 @@ static inline void hlist_add_behind_rcu(struct hlist_node *n,
-  * @member:	the name of the hlist_node within the struct.
-  */
- #define hlist_for_each_entry_continue_rcu_bh(pos, member)		\
--	for (pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
--			typeof(*(pos)), member);			\
-+	for (pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(  \
-+			&(pos)->member)), typeof(*(pos)), member);	\
- 	     pos;							\
--	     pos = hlist_entry_safe(rcu_dereference_bh((pos)->member.next),\
--			typeof(*(pos)), member))
-+	     pos = hlist_entry_safe(rcu_dereference_bh(hlist_next_rcu(	\
-+			&(pos)->member)), typeof(*(pos)), member))
- 
- 
- #endif	/* __KERNEL__ */
--- 
-1.7.9.5
-
+> -----Original Message-----
+> From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> Sent: Wednesday, December 10, 2014 7:06 PM
+> To: Wang, Yalin
+> Cc: 'Andrew Morton'; 'Konstantin Khlebnikov'; 'linux-
+> kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
+> kernel@lists.infradead.org'; 'n-horiguchi@ah.jp.nec.com'; 'oleg@redhat.com';
+> 'gorcunov@openvz.org'; 'pfeiner@google.com'
+> Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+> 
+> On Wed, Dec 10, 2014 at 03:22:21PM +0800, Wang, Yalin wrote:
+> > smaps_pte_entry() doesn't ignore zero_huge_page, but it ignore
+> > zero_page, because vm_normal_page() will ignore it. We remove
+> > vm_normal_page() call, because walk_page_range() have ignore VM_PFNMAP
+> > vma maps, it's safe to just use pfn_valid(), so that we can also
+> > consider zero_page to be a valid page.
+> 
+> We fixed huge zero page accounting in smaps recentely. See mm tree.
+> 
+Hi 
+I can't find the git, could you send me a link?
+Thank you !
