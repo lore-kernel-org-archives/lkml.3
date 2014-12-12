@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030273AbaLLNun (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:50:43 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50123 "EHLO mga01.intel.com"
+	id S968156AbaLLNuv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:50:51 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56634 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968116AbaLLNuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:50:40 -0500
+	id S1030303AbaLLNus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669060"
+   d="scan'208";a="636669120"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 14/22] perf itrace: Add a hashtable for caching decoded instructions
-Date: Fri, 12 Dec 2014 15:48:01 +0200
-Message-Id: <1418392089-5568-15-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 19/22] perf inject: Re-pipe Instruction Tracing events
+Date: Fri, 12 Dec 2014 15:48:06 +0200
+Message-Id: <1418392089-5568-20-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,179 +27,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Decoding Instruction Trace data may involve walking object
-code.  Rather than repetitively decoding the same instructions,
-a cache can be used to cache the results.
+New Instruction Tracing events must be re-piped by default.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 123 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h |  14 ++++++
- 2 files changed, 137 insertions(+)
+ tools/perf/builtin-inject.c | 63 +++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 58 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index feb9159..558c236 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -37,6 +37,8 @@
- #include "thread_map.h"
- #include "itrace.h"
+diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
+index 84df2de..29e0840 100644
+--- a/tools/perf/builtin-inject.c
++++ b/tools/perf/builtin-inject.c
+@@ -38,14 +38,11 @@ struct event_entry {
+ 	union perf_event event[0];
+ };
  
-+#include <linux/hash.h>
-+
- #include "event.h"
- #include "session.h"
- #include "debug.h"
-@@ -917,3 +919,124 @@ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
+-static int perf_event__repipe_synth(struct perf_tool *tool,
+-				    union perf_event *event)
++static int output_bytes(struct perf_inject *inject, void *buf, size_t sz)
+ {
+-	struct perf_inject *inject = container_of(tool, struct perf_inject, tool);
+ 	ssize_t size;
  
- 	return 1;
+-	size = perf_data_file__write(&inject->output, event,
+-				     event->header.size);
++	size = perf_data_file__write(&inject->output, buf, sz);
+ 	if (size < 0)
+ 		return -errno;
+ 
+@@ -53,6 +50,34 @@ static int perf_event__repipe_synth(struct perf_tool *tool,
+ 	return 0;
  }
-+
-+/**
-+ * struct itrace_cache - hash table to cache decoded instruction blocks
-+ * @hashtable: the hashtable
-+ * @sz: hashtable size (number of hlists)
-+ * @entry_size: size of an entry
-+ * @limit: limit the number of entries to this maximum, when reached the cache
-+ *         is dropped and caching begins again with an empty cache
-+ * @cnt: current number of entries
-+ * @bits: hashtable size (@sz = 2^@bits)
-+ */
-+struct itrace_cache {
-+	struct hlist_head *hashtable;
-+	size_t sz;
-+	size_t entry_size;
-+	size_t limit;
-+	size_t cnt;
-+	unsigned int bits;
-+};
-+
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent)
+ 
++static int copy_bytes(struct perf_inject *inject, int fd, off_t size)
 +{
-+	struct itrace_cache *c;
-+	struct hlist_head *ht;
-+	size_t sz, i;
++	char buf[4096];
++	ssize_t ssz;
++	int ret;
 +
-+	c = zalloc(sizeof(struct itrace_cache));
-+	if (!c)
-+		return NULL;
-+
-+	sz = 1UL << bits;
-+
-+	ht = calloc(sz, sizeof(struct hlist_head));
-+	if (!ht)
-+		goto out_free;
-+
-+	for (i = 0; i < sz; i++)
-+		INIT_HLIST_HEAD(&ht[i]);
-+
-+	c->hashtable = ht;
-+	c->sz = sz;
-+	c->entry_size = entry_size;
-+	c->limit = (c->sz * limit_percent) / 100;
-+	c->bits = bits;
-+
-+	return c;
-+
-+out_free:
-+	free(c);
-+	return NULL;
-+}
-+
-+static void itrace_cache__drop(struct itrace_cache *c)
-+{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_node *tmp;
-+	size_t i;
-+
-+	if (!c)
-+		return;
-+
-+	for (i = 0; i < c->sz; i++) {
-+		hlist_for_each_entry_safe(entry, tmp, &c->hashtable[i], hash) {
-+			hlist_del(&entry->hash);
-+			itrace_cache__free_entry(c, entry);
-+		}
++	while (size > 0) {
++		ssz = read(fd, buf, MIN(size, sizeof(buf)));
++		if (ssz < 0)
++			return -errno;
++		ret = output_bytes(inject, buf, ssz);
++		if (ret)
++			return ret;
++		size -= ssz;
 +	}
-+
-+	c->cnt = 0;
-+}
-+
-+void itrace_cache__free(struct itrace_cache *c)
-+{
-+	if (!c)
-+		return;
-+
-+	itrace_cache__drop(c);
-+	free(c->hashtable);
-+	free(c);
-+}
-+
-+void *itrace_cache__alloc_entry(struct itrace_cache *c)
-+{
-+	return malloc(c->entry_size);
-+}
-+
-+void itrace_cache__free_entry(struct itrace_cache *c __maybe_unused,
-+			      void *entry)
-+{
-+	free(entry);
-+}
-+
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry)
-+{
-+	if (c->limit && ++c->cnt > c->limit)
-+		itrace_cache__drop(c);
-+
-+	entry->key = key;
-+	hlist_add_head(&entry->hash, &c->hashtable[hash_32(key, c->bits)]);
 +
 +	return 0;
 +}
 +
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key)
++static int perf_event__repipe_synth(struct perf_tool *tool,
++				    union perf_event *event)
 +{
-+	struct itrace_cache_entry *entry;
-+	struct hlist_head *hlist;
++	struct perf_inject *inject = container_of(tool, struct perf_inject,
++						  tool);
 +
-+	if (!c)
-+		return NULL;
-+
-+	hlist = &c->hashtable[hash_32(key, c->bits)];
-+	hlist_for_each_entry(entry, hlist, hash) {
-+		if (entry->key == key)
-+			return entry;
-+	}
-+
-+	return NULL;
++	return output_bytes(inject, event, event->header.size);
 +}
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 08247d5..3bd899e 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -316,6 +316,20 @@ int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
- void itrace_heap__pop(struct itrace_heap *heap);
- void itrace_heap__free(struct itrace_heap *heap);
- 
-+struct itrace_cache_entry {
-+	struct hlist_node hash;
-+	u32 key;
-+};
 +
-+struct itrace_cache *itrace_cache__new(unsigned int bits, size_t entry_size,
-+				       unsigned int limit_percent);
-+void itrace_cache__free(struct itrace_cache *itrace_cache);
-+void *itrace_cache__alloc_entry(struct itrace_cache *c);
-+void itrace_cache__free_entry(struct itrace_cache *c, void *entry);
-+int itrace_cache__add(struct itrace_cache *c, u32 key,
-+		      struct itrace_cache_entry *entry);
-+void *itrace_cache__lookup(struct itrace_cache *c, u32 key);
-+
- struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
+ static int perf_event__repipe_op2_synth(struct perf_tool *tool,
+ 					union perf_event *event,
+ 					struct perf_session *session
+@@ -79,6 +104,31 @@ static int perf_event__repipe_attr(struct perf_tool *tool,
+ 	return perf_event__repipe_synth(tool, event);
+ }
  
- int itrace_record__options(struct itrace_record *itr,
++static s64 perf_event__repipe_itrace(struct perf_tool *tool,
++				     union perf_event *event,
++				     struct perf_session *session
++				     __maybe_unused)
++{
++	struct perf_inject *inject = container_of(tool, struct perf_inject,
++						  tool);
++	int ret;
++
++	if (perf_data_file__is_pipe(session->file) || !session->one_mmap) {
++		ret = output_bytes(inject, event, event->header.size);
++		if (ret < 0)
++			return ret;
++		ret = copy_bytes(inject, perf_data_file__fd(session->file),
++				 event->itrace.size);
++	} else {
++		ret = output_bytes(inject, event,
++				   event->header.size + event->itrace.size);
++	}
++	if (ret < 0)
++		return ret;
++
++	return event->itrace.size;
++}
++
+ static int perf_event__repipe(struct perf_tool *tool,
+ 			      union perf_event *event,
+ 			      struct perf_sample *sample __maybe_unused,
+@@ -407,6 +457,9 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			.unthrottle	= perf_event__repipe,
+ 			.attr		= perf_event__repipe_attr,
+ 			.tracing_data	= perf_event__repipe_op2_synth,
++			.itrace_info	= perf_event__repipe_op2_synth,
++			.itrace		= perf_event__repipe_itrace,
++			.itrace_error	= perf_event__repipe_op2_synth,
+ 			.finished_round	= perf_event__repipe_op2_synth,
+ 			.build_id	= perf_event__repipe_op2_synth,
+ 			.id_index	= perf_event__repipe_op2_synth,
 -- 
 1.9.1
 
