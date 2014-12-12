@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760800AbaLLGhg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:37:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51889 "EHLO
+	id S1760785AbaLLGhe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:37:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51902 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759296AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759308AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Yosef Khyal" <yosefx.khyal@intel.com>,
-        "Johannes Berg" <johannes.berg@intel.com>
+CC: akpm@linux-foundation.org, "Jonathan Cameron" <jic23@kernel.org>,
+        "Lars-Peter Clausen" <lars@metafoo.de>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.301168300@decadent.org.uk>
+Message-ID: <lsq.1418364865.334780956@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 108/164] mac80211: fix use-after-free in defragmentation
+Subject: [PATCH 3.2 114/164] staging:iio:ade7758: Remove "raw" from
+ channel name
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,56 +32,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit b8fff407a180286aa683d543d878d98d9fc57b13 upstream.
+commit b598aacc29331e7e638cd509108600e916c6331b upstream.
 
-Upon receiving the last fragment, all but the first fragment
-are freed, but the multicast check for statistics at the end
-of the function refers to the current skb (the last fragment)
-causing a use-after-free bug.
+"raw" is a property of a channel, but should not be part of the name of
+channel.
 
-Since multicast frames cannot be fragmented and we check for
-this early in the function, just modify that check to also
-do the accounting to fix the issue.
-
-Reported-by: Yosef Khyal <yosefx.khyal@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+[bwh: Backported to 3.2: using IIO_CHAN() macro to initialise the structures]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/mac80211/rx.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/iio/meter/ade7758_core.c | 24 +++++++++---------------
+ 1 file changed, 9 insertions(+), 15 deletions(-)
 
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1470,11 +1470,14 @@ ieee80211_rx_h_defragment(struct ieee802
- 	sc = le16_to_cpu(hdr->seq_ctrl);
- 	frag = sc & IEEE80211_SCTL_FRAG;
+--- a/drivers/staging/iio/meter/ade7758_core.c
++++ b/drivers/staging/iio/meter/ade7758_core.c
+@@ -662,63 +662,63 @@ static const struct attribute_group ade7
+ };
  
--	if (likely((!ieee80211_has_morefrags(fc) && frag == 0) ||
--		   is_multicast_ether_addr(hdr->addr1))) {
--		/* not fragmented */
-+	if (likely(!ieee80211_has_morefrags(fc) && frag == 0))
-+		goto out;
-+
-+	if (is_multicast_ether_addr(hdr->addr1)) {
-+		rx->local->dot11MulticastReceivedFrameCount++;
- 		goto out;
- 	}
-+
- 	I802_DEBUG_INC(rx->local->rx_handlers_fragments);
- 
- 	if (skb_linearize(rx->skb))
-@@ -1567,10 +1570,7 @@ ieee80211_rx_h_defragment(struct ieee802
-  out:
- 	if (rx->sta)
- 		rx->sta->rx_packets++;
--	if (is_multicast_ether_addr(hdr->addr1))
--		rx->local->dot11MulticastReceivedFrameCount++;
--	else
--		ieee80211_led_rx(rx->local);
-+	ieee80211_led_rx(rx->local);
- 	return RX_CONTINUE;
- }
- 
+ static struct iio_chan_spec ade7758_channels[] = {
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 0, 0,
++	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 0, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_A, AD7758_VOLTAGE),
+ 		0, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 0, 0,
++	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 0, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_A, AD7758_CURRENT),
+ 		1, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 0, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 0, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_A, AD7758_APP_PWR),
+ 		2, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 0, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 0, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_A, AD7758_ACT_PWR),
+ 		3, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 0, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 0, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_A, AD7758_REACT_PWR),
+ 		4, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 1, 0,
++	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 1, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_B, AD7758_VOLTAGE),
+ 		5, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 1, 0,
++	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 1, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_B, AD7758_CURRENT),
+ 		6, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 1, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 1, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_B, AD7758_APP_PWR),
+ 		7, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 1, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 1, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_B, AD7758_ACT_PWR),
+ 		8, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 1, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 1, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_B, AD7758_REACT_PWR),
+ 		9, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, "raw", 2, 0,
++	IIO_CHAN(IIO_VOLTAGE, 0, 1, 0, NULL, 2, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_C, AD7758_VOLTAGE),
+ 		10, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_CURRENT, 0, 1, 0, "raw", 2, 0,
++	IIO_CHAN(IIO_CURRENT, 0, 1, 0, NULL, 2, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_C, AD7758_CURRENT),
+ 		11, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent_raw", 2, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "apparent", 2, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_C, AD7758_APP_PWR),
+ 		12, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "active_raw", 2, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "active", 2, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_C, AD7758_ACT_PWR),
+ 		13, IIO_ST('s', 24, 32, 0), 0),
+-	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive_raw", 2, 0,
++	IIO_CHAN(IIO_POWER, 0, 1, 0, "reactive", 2, 0,
+ 		(1 << IIO_CHAN_INFO_SCALE_SHARED),
+ 		AD7758_WT(AD7758_PHASE_C, AD7758_REACT_PWR),
+ 		14, IIO_ST('s', 24, 32, 0), 0),
 
