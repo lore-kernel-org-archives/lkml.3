@@ -1,189 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131AbaLLUAx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:00:53 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:60945 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343AbaLLUAv (ORCPT
+	id S933514AbaLLUEV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:04:21 -0500
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:54012 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865AbaLLUET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:00:51 -0500
-Date: Fri, 12 Dec 2014 12:00:48 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: David Sterba <dsterba@suse.cz>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Josef Bacik <jbacik@fb.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 7/7] btrfs: enable swap file support
-Message-ID: <20141212200048.GA20971@mew>
-References: <cover.1418173063.git.osandov@osandov.com>
- <0f9937165d8fc1b8b6332ac97e59593022e9fa5b.1418173063.git.osandov@osandov.com>
- <20141212105122.GN27601@twin.jikos.cz>
+	Fri, 12 Dec 2014 15:04:19 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Tomasz Figa <tfiga@chromium.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "open list\:ARM\/Rockchip SoC..." 
+	<linux-rockchip@lists.infradead.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Heiko Stuebner <heiko@sntech.de>,
+        Joerg Roedel <joro@8bytes.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
+	<7h8uiemce7.fsf@deeprootsystems.com>
+	<CAPDyKFo6zH4__Odm+RiJCbvXquAQqaLyCAiXrSN6s3KfQhok=A@mail.gmail.com>
+	<1576771.dIVCOxU0se@vostro.rjw.lan>
+	<CAAFQd5B28WiWUqmbmROJUa3H25R=Y774NuemTZDvkoa=CvZUsw@mail.gmail.com>
+Date: Fri, 12 Dec 2014 12:04:16 -0800
+In-Reply-To: <CAAFQd5B28WiWUqmbmROJUa3H25R=Y774NuemTZDvkoa=CvZUsw@mail.gmail.com>
+	(Tomasz Figa's message of "Fri, 12 Dec 2014 13:15:51 +0900")
+Message-ID: <7ha92sk533.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141212105122.GN27601@twin.jikos.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:51:22AM +0100, David Sterba wrote:
-> On Tue, Dec 09, 2014 at 05:45:48PM -0800, Omar Sandoval wrote:
-> > +static void __clear_swapfile_extents(struct inode *inode)
-> > +{
-> > +	u64 isize = inode->i_size;
-> > +	struct extent_map *em;
-> > +	u64 start, len;
-> > +
-> > +	start = 0;
-> > +	while (start < isize) {
-> > +		len = isize - start;
-> > +		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
-> > +		if (IS_ERR(em))
-> > +			return;
-> 
-> This could transiently fail if there's no memory to allocate the em, and
-> would leak the following extents.
-> 
-This leak I was aware of, and at the time I didn't see a good way to get
-around it. After all, if we can't get the current extent, there's no way
-to iterate through the rest of them. Now I see that instead of doing
-this at the btrfs_get_extent level, I can just go through all of the
-extent_maps in the extent_map_tree.
+Tomasz Figa <tfiga@chromium.org> writes:
 
-> > +
-> > +		clear_bit(EXTENT_FLAG_SWAPFILE, &em->flags);
-> > +
-> > +		start = extent_map_end(em);
-> > +		free_extent_map(em);
-> > +	}
-> > +}
-> > +
-> > +static int btrfs_swap_activate(struct swap_info_struct *sis, struct file *file,
-> > +			       sector_t *span)
-> > +{
-> > +	struct inode *inode = file_inode(file);
-> > +	struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
-> > +	struct extent_io_tree *io_tree = &BTRFS_I(inode)->io_tree;
-> > +	int ret = 0;
-> > +	u64 isize = inode->i_size;
-> > +	struct extent_state *cached_state = NULL;
-> > +	struct extent_map *em;
-> > +	u64 start, len;
-> > +
-> > +	if (BTRFS_I(inode)->flags & BTRFS_INODE_COMPRESS) {
-> > +		/* Can't do direct I/O on a compressed file. */
-> > +		btrfs_err(fs_info, "swapfile is compressed");
-> > +		return -EINVAL;
-> > +	}
-> > +	if (!(BTRFS_I(inode)->flags & BTRFS_INODE_NODATACOW)) {
-> > +		/*
-> > +		 * Going through the copy-on-write path while swapping pages
-> > +		 * in/out and doing a bunch of allocations could stress the
-> > +		 * memory management code that got us there in the first place,
-> > +		 * and that's sure to be a bad time.
-> > +		 */
-> > +		btrfs_err(fs_info, "swapfile is copy-on-write");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	lock_extent_bits(io_tree, 0, isize - 1, 0, &cached_state);
-> > +
-> > +	/*
-> > +	 * All of the extents must be allocated and support direct I/O. Inline
-> > +	 * extents and compressed extents fall back to buffered I/O, so those
-> > +	 * are no good. Additionally, all of the extents must be safe for nocow.
-> > +	 */
-> > +	atomic_inc(&BTRFS_I(inode)->root->nr_swapfiles);
-> > +	start = 0;
-> > +	while (start < isize) {
-> > +		len = isize - start;
-> > +		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
-> > +		if (IS_ERR(em)) {
-> 
-> 		IS_ERR_OR_NULL(em)
-> 
-> From now on the em is valid and has to be free_extent_map()ed ...
-> 
-> > +			ret = PTR_ERR(em);
-> > +			goto out;
-> > +		}
-> > +
-> > +		if (test_bit(EXTENT_FLAG_VACANCY, &em->flags) ||
-> > +		    em->block_start == EXTENT_MAP_HOLE) {
-> > +			btrfs_err(fs_info, "swapfile has holes");
-> > +			ret = -EINVAL;
-> 
-> ... and all the error branches would miss it.
-> 
-> > +			goto out;
-> > +		}
-> > +		if (em->block_start == EXTENT_MAP_INLINE) {
-> > +			/*
-> > +			 * It's unlikely we'll ever actually find ourselves
-> > +			 * here, as a file small enough to fit inline won't be
-> > +			 * big enough to store more than the swap header, but in
-> > +			 * case something changes in the future, let's catch it
-> > +			 * here rather than later.
-> > +			 */
-> > +			btrfs_err(fs_info, "swapfile is inline");
-> > +			ret = -EINVAL;
-> 
-> here
-> 
-> > +			goto out;
-> > +		}
-> > +		if (test_bit(EXTENT_FLAG_COMPRESSED, &em->flags)) {
-> > +			btrfs_err(fs_info, "swapfile is compresed");
-> > +			ret = -EINVAL;
-> 
-> here
-> 
-> > +			goto out;
-> > +		}
-> > +		ret = can_nocow_extent(inode, start, &len, NULL, NULL, NULL);
-> > +		if (ret < 0) {
-> 
-> here
-> 
-> > +			goto out;
-> > +		} else if (ret == 1) {
-> > +			ret = 0;
-> > +		} else {
-> > +			btrfs_err(fs_info, "swapfile has extent requiring COW (%llu-%llu)",
-> > +				  start, start + len - 1);
-> > +			ret = -EINVAL;
-> 
-> here
-> 
-> > +			goto out;
-> > +		}
-> > +
-> > +		set_bit(EXTENT_FLAG_SWAPFILE, &em->flags);
-> > +
-> > +		start = extent_map_end(em);
-> > +		free_extent_map(em);
-> > +	}
-> > +
-> > +out:
-> > +	if (ret) {
-> 
-> should be fixed by:
-> 
-> 		if (!IS_ERR_OR_NULL(em))
-> 			free_extent_map(em);
-> 
-> > +		__clear_swapfile_extents(inode);
-> > +		atomic_dec(&BTRFS_I(inode)->root->nr_swapfiles);
-> > +	}
-> > +	unlock_extent_cached(io_tree, 0, isize - 1, &cached_state, GFP_NOFS);
-> > +	return ret;
-> > +}
-This leak I completely missed. Thanks.
+[...]
 
--- 
-Omar
+> We have a power domain, which contains an IOMMU and an IP block, which
+> can do bus transactions through that IOMMU. Of course the IP block is
+> not aware of the IOMMU, because this is just an integration detail and
+> on other platforms using the same IP block the IOMMU might not be
+> there. This implies that the driver for this IP block should not be
+> aware of the IOMMU either, which, on the buffer allocation and mapping
+> side, is achieved by DMA mapping subsystem. We would also want the
+> IOMMU to be fully transparent to that driver on PM side.
+
+An even more exciting problem exists when a CPU is in the same domain as
+other peripherals, those peripherals are all idle and the power domain
+is gated. :)
+
+> Now, for PM related details, they are located in the same power
+> domain, which means that whenever the power domain is turned off, the
+> CPU can't access their registers and all the hardware state is gone.
+> To make the case more interesting, there is no point in programming
+> the IOMMU unless the device using it is powered on. Similarly, there
+> is no point in powering the domain on to just access the IOMMU. This
+> implies that the power domain should be fully controlled by the
+> stand-alone IP block, while the peripheral IOMMU shouldn't affect its
+> state and its driver only respond to operations performed by driver of
+> that stand-alone IP block.
+
+Which implies that the IOMMU driver should have it's own set of
+runtime_suspend/runtime_resume callbacks to properly save/restore state
+as well.
+
+> A solution like below could work for the above:
+>
+> - There is a per-device list of peripheral devices, which need to be
+> powered on for this device to work.
+> - Whenever the IOMMU subsystem/driver binds an IOMMU to a device, it
+> adds the IOMMU device to the list of peripheral devices of that device
+> (and similarly for removal).
+> - A runtime PM operation on a device will also perform the same
+> operation on all its peripheral devices.
+
+Yes, that is exactly what we need.
+
+I'd rather use the term "dependent" devices rather than peripheral
+devices, but otherwise it sounds like the right approach to me.
+
+Kevin
+
+> Another way would be to extend what the PM runtime core does with
+> parent-child relations to handle the whole list of peripheral devices
+> instead of just the parent.
+
