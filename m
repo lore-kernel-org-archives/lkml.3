@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759313AbaLLGQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:16:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51691 "EHLO
+	id S1759125AbaLLGme (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:42:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51843 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758029AbaLLGQw (ORCPT
+	by vger.kernel.org with ESMTP id S1759047AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:52 -0500
+	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andreas Noever" <andreas.noever@gmail.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
+        "Preston Fick" <pffick@gmail.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.483468712@decadent.org.uk>
+Message-ID: <lsq.1418364865.579781084@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 008/164] PCI: pciehp: Prevent NULL dereference during
- probe
+Subject: [PATCH 3.2 122/164] USB: serial: cp210x: add IDs for CEL
+ MeshConnect USB Stick
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,38 +32,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Noever <andreas.noever@gmail.com>
+From: Preston Fick <pffick@gmail.com>
 
-commit bceee4a97eb58bd0e80e39eff11b506ddd9e7ad3 upstream.
+commit ffcfe30ebd8dd703d0fc4324ffe56ea21f5479f4 upstream.
 
-pciehp assumes that dev->subordinate, the struct pci_bus for a bridge's
-secondary bus, exists.  But we do not create that bus if we run out of bus
-numbers during enumeration.  This leads to a NULL dereference in
-init_slot() (and other places).
-
-Change pciehp_probe() to return -ENODEV when no secondary bus is present.
-
-Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Preston Fick <pffick@gmail.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/hotplug/pciehp_core.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/pci/hotplug/pciehp_core.c
-+++ b/drivers/pci/hotplug/pciehp_core.c
-@@ -237,6 +237,13 @@ static int pciehp_probe(struct pcie_devi
- 	else if (pciehp_acpi_slot_detection_check(dev->port))
- 		goto err_out_none;
- 
-+	if (!dev->port->subordinate) {
-+		/* Can happen if we run out of bus numbers during probe */
-+		dev_err(&dev->device,
-+			"Hotplug bridge without secondary bus, ignoring\n");
-+		goto err_out_none;
-+	}
-+
- 	ctrl = pcie_init(dev);
- 	if (!ctrl) {
- 		dev_err(&dev->device, "Controller initialization failed\n");
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -126,6 +126,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x8875) }, /* CEL MeshConnect USB Stick */
+ 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
 
