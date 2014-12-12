@@ -1,103 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031093AbaLLRRs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:17:48 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:35249 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030596AbaLLRRp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:17:45 -0500
-X-IronPort-AV: E=Sophos;i="5.07,565,1413270000"; 
-   d="scan'208";a="52924055"
-Message-ID: <548B2327.9010004@broadcom.com>
-Date: Fri, 12 Dec 2014 09:17:27 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
+	id S1031111AbaLLRR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:17:58 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:33728 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030596AbaLLRRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:17:55 -0500
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
         Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
-References: <1418342706-14755-2-git-send-email-rjui@broadcom.com> <1918116.UxUgDPTmcq@wuerfel> <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
-In-Reply-To: <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org, Stanimir Varbanov <svarbanov@mm-sol.com>
+Subject: [PATCH 3/5] DT: PCI: qcom: Document PCIe devicetree bindings
+Date: Fri, 12 Dec 2014 19:13:59 +0200
+Message-Id: <1418404441-5518-4-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com>
+References: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Document Qualcomm PCIe driver devicetree bindings.
 
+Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+---
+ .../devicetree/bindings/pci/qcom,pcie.txt          |  159 ++++++++++++++++++++
+ 1 files changed, 159 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/qcom,pcie.txt
 
-On 12/12/2014 5:05 AM, Alexandre Courbot wrote:
-> On Fri, Dec 12, 2014 at 9:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Thursday 11 December 2014 16:05:04 Ray Jui wrote:
->>> +
->>> +- linux,gpio-base:
->>> +    Base GPIO number of this controller
->>> +
->>>
->>
->> We've NAK'ed properties like this multiple times before, and it
->> doesn't get any better this time. What are you trying to achieve
->> here?
->
-> I am to blame for suggesting using this property to Ray, and I am
-> fully aware that this has been rejected before, but look at what
-> people came with recently to palliate the lack of control over the
-> GPIO number space for DT platforms:
->
-> http://www.spinics.net/lists/arm-kernel/msg384847.html
-> https://lkml.org/lkml/2014/12/10/133
->
-> Right now GPIO numbering for platforms using DT is a very inconsistent
-> process, subject to change by the simple action of adjusting the value
-> of ARCH_NR_GPIOS (which we did recently, btw), adding a new GPIO
-> controller, or changing the probe order of devices. For users of the
-> integer or sysfs interfaces, this results in GPIO numbers that change,
-> and drivers and/or user-space programs that behave incorrectly.
-> Ironically, the only way to have consistent numbers is to use the old
-> platform files, where you can specify the base number of a gpio_chip.
->
-> DT is actually probably not such a bad place to provide consistency in
-> GPIO numbering. It has a global vision of the system layout, including
-> all GPIO controllers and the number of GPIOs they include, and thus
-> can make informed decisions. It provides a consistent result
-> regardless of probe order. And allowing it to assign GPIO bases to
-> controllers will free us from the nonsensical dependency of some
-> arbitrary upper-bound for GPIO numbers that ARCH_NR_GPIOS imposes on
-> us. Also about ARCH_NR_GPIOS, the plan is to eventually remove it
-> since we don't need it anymore after the removal of the global
-> gpio_descs array. This will again interfere with the numbering of GPIO
-> chips that do not have a base number provided.
->
-> Note that I don't really like this, either - but the problem is the
-> GPIO integer interface. Until everyone has upgraded to gpiod and we
-> have a replacement for the current sysfs interface (this will take a
-> while) we have to cope with this. This issue has been bothering users
-> for years, so this time I'd like to try and solve it the less ugly
-> way. If there is a better solution, of course I'm all for it.
->
-Agreed.
+diff --git a/Documentation/devicetree/bindings/pci/qcom,pcie.txt b/Documentation/devicetree/bindings/pci/qcom,pcie.txt
+new file mode 100644
+index 0000000..2331144
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/qcom,pcie.txt
+@@ -0,0 +1,159 @@
++* Qualcomm PCI express root complex
++
++- compatible:
++	Usage: required
++	Value type: <stringlist>
++	Definition: Value shall include "qcom,pcie"
++
++- reg:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: Four register ranges as listed in the reg-names property
++
++- reg-names:
++	Usage: required
++	Value type: <stringlist>
++	Definition: Must include the following entries
++		- "parf"   Qualcomm specific registers
++		- "dbi"    Designware PCIe registers
++		- "elbi"   External local bus interface registers
++		- "config" PCIe configuration space
++
++- device_type:
++	Usage: required
++	Value type: <string>
++	Definition: Should be "pci". As specified in designware-pcie.txt
++
++- #address-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: Should be set to 3. As specified in designware-pcie.txt
++
++- #size-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: Should be set 2. As specified in designware-pcie.txt
++
++- ranges:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: As specified in designware-pcie.txt
++
++- interrupts:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: MSI interrupt
++
++- interrupt-names:
++	Usage: required
++	Value type: <stringlist>
++	Definition: Should contain "msi"
++
++- #interrupt-cells:
++	Usage: required
++	Value type: <u32>
++	Definition: Should be 1. As specified in designware-pcie.txt
++
++- interrupt-map-mask:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: As specified in designware-pcie.txt
++
++- interrupt-map:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: As specified in designware-pcie.txt
++
++- clocks:
++	Usage: required
++	Value type: <prop-encoded-array>
++	Definition: Four clocks as listed in clock-names property
++
++- clock-names:
++	Usage: required
++	Value type: <stringlist>
++	Definition: Must include the following entries
++		- "aux"        auxiliary (AUX) clock
++		- "iface"      configuration AHB clock
++		- "bus_master" master AXI clock
++		- "bus_slave"  slave AXI clock
++
++- resets:
++	Usage: required
++	Value type: <phandle>
++	Definition: List of phandle and reset specifier pairs as listed
++		    in reset-names property
++
++- reset-names:
++	Usage: required
++	Value type: <stringlist>
++	Definition: Should contain the following entries
++		- "core" core reset
++
++- <name>-supply:
++	Usage: required
++	Value type: <phandle>
++	Definition: List of phandles to the supply regulators
++		- "vdd_pc" collapsing and restoring power to peripheral
++- gpios:
++	Usage: optional
++	Value type: <phandle>
++	Definition: List of phandle and gpio specifier. Should include
++		    - "perst"  PCIe endpoint reset signal line
++		    - "pewake" PCIe endpoint wake signal line
++
++- pinctrl-0:
++	Usage: required
++	Value type: <phandle>
++	Definition: List of phandles pointing at a pin(s) configuration
++
++- pinctrl-names
++	Usage: required
++	Value type: <stringlist>
++	Definition: List of names of pinctrl-0 state
++
++* Example
++
++	pcie0@fc520000 {
++		compatible = "qcom,pcie";
++		reg = <0xfc520000 0x2000>,
++		      <0xff000000 0x1000>,
++		      <0xff001000 0x1000>,
++		      <0xff002000 0x2000>;
++		reg-names = "parf", "dbi", "elbi", "config";
++		device_type = "pci";
++		linux,pci-domain = <0>;
++		bus-range = <0x00 0xff>;
++		num-lanes = <1>;
++		#address-cells = <3>;
++		#size-cells = <2>;
++		ranges = <0x81000000 0 0          0xff200000 0 0x00100000   /* I/O */
++			  0x82000000 0 0x00300000 0xff300000 0 0x00d00000>; /* Memory */
++		interrupts = <0 243 0>;
++		interrupt-names = "msi";
++		#interrupt-cells = <1>;
++		interrupt-map-mask = <0 0 0 0x7>;
++		interrupt-map = <0 0 0 1 &intc 0 244 IRQ_TYPE_LEVEL_HIGH>, /* int_a */
++				<0 0 0 2 &intc 0 245 IRQ_TYPE_LEVEL_HIGH>, /* int_b */
++				<0 0 0 3 &intc 0 247 IRQ_TYPE_LEVEL_HIGH>, /* int_c */
++				<0 0 0 4 &intc 0 248 IRQ_TYPE_LEVEL_HIGH>; /* int_d */
++
++		clocks = <&gcc GCC_PCIE_0_AUX_CLK>,
++			 <&gcc GCC_PCIE_0_CFG_AHB_CLK>,
++			 <&gcc GCC_PCIE_0_MSTR_AXI_CLK>,
++			 <&gcc GCC_PCIE_0_SLV_AXI_CLK>;
++		clock-names = "aux", "iface", "master_bus", "slave_bus";
++
++		resets = <&gcc GCC_PCIE_0_BCR>;
++		reset-names = "core";
++
++		vdd_pc-supply = <&gdsc_pcie0>;
++
++		phys = <&pciephy0>;
++		phy-names = "pciephy";
++
++		gpios = <&tlmm 70 0>;	/* perst */
++
++		pinctrl-0 = <&pcie0_pins_default>;
++		pinctrl-names = "default";
++	};
+-- 
+1.7.0.4
 
-Since we are just starting to upstream all of our drivers for 
-iProc/Cygnus, enforcing all of our new drivers to use the gpiod 
-interface is not an issue and is something that should be done.
-
-Our current issue is really on the sysfs interface, as I mentioned 
-earlier, a lot of our customers use the sysfs interface for GPIO access. 
-Until the sysfs interface issue is resolved, we sort of need a way to 
-maintain the GPIO base between different GPIO controllers.
