@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934311AbaLLGWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:22:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51766 "EHLO
+	id S933018AbaLLGWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:22:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51773 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759472AbaLLGRO (ORCPT
+	by vger.kernel.org with ESMTP id S1759474AbaLLGRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:17:14 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Chao Yu" <chao2.yu@samsung.com>,
-        "Tyler Hicks" <tyhicks@canonical.com>
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
+        "Jan Kara" <jack@suse.cz>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.831024968@decadent.org.uk>
+Message-ID: <lsq.1418364865.368665223@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 048/164] ecryptfs: avoid to access NULL pointer when
- write metadata in xattr
+Subject: [PATCH 3.2 042/164] vfs: fix data corruption when blocksize <
+ pagesize for mmaped data
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,85 +32,152 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chao Yu <chao2.yu@samsung.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 35425ea2492175fd39f6116481fe98b2b3ddd4ca upstream.
+commit 90a8020278c1598fafd071736a0846b38510309c upstream.
 
-Christopher Head 2014-06-28 05:26:20 UTC described:
-"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
-in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
+->page_mkwrite() is used by filesystems to allocate blocks under a page
+which is becoming writeably mmapped in some process' address space. This
+allows a filesystem to return a page fault if there is not enough space
+available, user exceeds quota or similar problem happens, rather than
+silently discarding data later when writepage is called.
 
-BUG: unable to handle kernel NULL pointer dereference at           (null)
-IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-PGD d7840067 PUD b2c3c067 PMD 0
-Oops: 0002 [#1] SMP
-Modules linked in: nvidia(PO)
-CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
-Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
-task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
-RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
-RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
-RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
-RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
-R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
-FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
-Stack:
-ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
-ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
-00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
-Call Trace:
-[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
-[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
-[<ffffffff81082c2c>] ? should_resched+0x5/0x23
-[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
-[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
-[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
-[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
-[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
-[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
-[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
-[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
-[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
-[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
-RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
-RSP <ffff8800bad71c10>
-CR2: 0000000000000000
----[ end trace df9dba5f1ddb8565 ]---"
+However VFS fails to call ->page_mkwrite() in all the cases where
+filesystems need it when blocksize < pagesize. For example when
+blocksize = 1024, pagesize = 4096 the following is problematic:
+  ftruncate(fd, 0);
+  pwrite(fd, buf, 1024, 0);
+  map = mmap(NULL, 1024, PROT_WRITE, MAP_SHARED, fd, 0);
+  map[0] = 'a';       ----> page_mkwrite() for index 0 is called
+  ftruncate(fd, 10000); /* or even pwrite(fd, buf, 1, 10000) */
+  mremap(map, 1024, 10000, 0);
+  map[4095] = 'a';    ----> no page_mkwrite() called
 
-If we create a file when we mount with ecryptfs_xattr_metadata option, we will
-encounter a crash in this path:
-->ecryptfs_create
-  ->ecryptfs_initialize_file
-    ->ecryptfs_write_metadata
-      ->ecryptfs_write_metadata_to_xattr
-        ->ecryptfs_setxattr
-          ->fsstack_copy_attr_all
-It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
-will be initialized when ecryptfs_initialize_file finish.
+At the moment ->page_mkwrite() is called, filesystem can allocate only
+one block for the page because i_size == 1024. Otherwise it would create
+blocks beyond i_size which is generally undesirable. But later at
+->writepage() time, we also need to store data at offset 4095 but we
+don't have block allocated for it.
 
-So we should skip copying attr from lower inode when the value of ->d_inode is
-invalid.
+This patch introduces a helper function filesystems can use to have
+->page_mkwrite() called at all the necessary moments.
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - truncate_setsize() already has an oldsize variable]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ecryptfs/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/buffer.c        |  3 +++
+ include/linux/mm.h |  1 +
+ mm/truncate.c      | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+)
 
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -1112,7 +1112,7 @@ ecryptfs_setxattr(struct dentry *dentry,
- 	}
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -2019,6 +2019,7 @@ int generic_write_end(struct file *file,
+ 			struct page *page, void *fsdata)
+ {
+ 	struct inode *inode = mapping->host;
++	loff_t old_size = inode->i_size;
+ 	int i_size_changed = 0;
  
- 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
--	if (!rc)
-+	if (!rc && dentry->d_inode)
- 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
- out:
- 	return rc;
+ 	copied = block_write_end(file, mapping, pos, len, copied, page, fsdata);
+@@ -2038,6 +2039,8 @@ int generic_write_end(struct file *file,
+ 	unlock_page(page);
+ 	page_cache_release(page);
+ 
++	if (old_size < pos)
++		pagecache_isize_extended(inode, old_size, pos);
+ 	/*
+ 	 * Don't mark the inode dirty under page lock. First, it unnecessarily
+ 	 * makes the holding time of page lock longer. Second, it forces lock
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -952,6 +952,7 @@ static inline void unmap_shared_mapping_
+ 
+ extern void truncate_pagecache(struct inode *inode, loff_t old, loff_t new);
+ extern void truncate_setsize(struct inode *inode, loff_t newsize);
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to);
+ extern int vmtruncate(struct inode *inode, loff_t offset);
+ extern int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end);
+ 
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -20,6 +20,7 @@
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
++#include <linux/rmap.h>
+ #include "internal.h"
+ 
+ 
+@@ -575,12 +576,65 @@ void truncate_setsize(struct inode *inod
+ 
+ 	oldsize = inode->i_size;
+ 	i_size_write(inode, newsize);
+-
++	if (newsize > oldsize)
++		pagecache_isize_extended(inode, oldsize, newsize);
+ 	truncate_pagecache(inode, oldsize, newsize);
+ }
+ EXPORT_SYMBOL(truncate_setsize);
+ 
+ /**
++ * pagecache_isize_extended - update pagecache after extension of i_size
++ * @inode:	inode for which i_size was extended
++ * @from:	original inode size
++ * @to:		new inode size
++ *
++ * Handle extension of inode size either caused by extending truncate or by
++ * write starting after current i_size. We mark the page straddling current
++ * i_size RO so that page_mkwrite() is called on the nearest write access to
++ * the page.  This way filesystem can be sure that page_mkwrite() is called on
++ * the page before user writes to the page via mmap after the i_size has been
++ * changed.
++ *
++ * The function must be called after i_size is updated so that page fault
++ * coming after we unlock the page will already see the new i_size.
++ * The function must be called while we still hold i_mutex - this not only
++ * makes sure i_size is stable but also that userspace cannot observe new
++ * i_size value before we are prepared to store mmap writes at new inode size.
++ */
++void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
++{
++	int bsize = 1 << inode->i_blkbits;
++	loff_t rounded_from;
++	struct page *page;
++	pgoff_t index;
++
++	WARN_ON(!mutex_is_locked(&inode->i_mutex));
++	WARN_ON(to > inode->i_size);
++
++	if (from >= to || bsize == PAGE_CACHE_SIZE)
++		return;
++	/* Page straddling @from will not have any hole block created? */
++	rounded_from = round_up(from, bsize);
++	if (to <= rounded_from || !(rounded_from & (PAGE_CACHE_SIZE - 1)))
++		return;
++
++	index = from >> PAGE_CACHE_SHIFT;
++	page = find_lock_page(inode->i_mapping, index);
++	/* Page not cached? Nothing to do */
++	if (!page)
++		return;
++	/*
++	 * See clear_page_dirty_for_io() for details why set_page_dirty()
++	 * is needed.
++	 */
++	if (page_mkclean(page))
++		set_page_dirty(page);
++	unlock_page(page);
++	page_cache_release(page);
++}
++EXPORT_SYMBOL(pagecache_isize_extended);
++
++/**
+  * vmtruncate - unmap mappings "freed" by truncate() syscall
+  * @inode: inode of the file used
+  * @newsize: file offset to start truncating
 
