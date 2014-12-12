@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966356AbaLLGxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:53:25 -0500
+	id S965995AbaLLGsQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:16 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965992AbaLLGsR (ORCPT
+	by vger.kernel.org with ESMTP id S1759235AbaLLGsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:17 -0500
+	Fri, 12 Dec 2014 01:48:10 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
-        "Scott Carter" <ccscott@funsoft.com>
+CC: akpm@linux-foundation.org, "David Matlack" <dmatlack@google.com>,
+        "Paolo Bonzini" <pbonzini@redhat.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.328973689@decadent.org.uk>
+Message-ID: <lsq.1418364865.824531594@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 049/164] pata_serverworks: disable 64-KB DMA transfers
- on Broadcom OSB4 IDE Controller
+Subject: [PATCH 3.2 028/164] kvm: don't take vcpu mutex for obviously
+ invalid vcpu ioctls
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,160 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Carter <ccscott@funsoft.com>
+From: David Matlack <dmatlack@google.com>
 
-commit 37017ac6849e772e67dd187ba2fbd056c4afa533 upstream.
+commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
 
-The Broadcom OSB4 IDE Controller (vendor and device IDs: 1166:0211)
-does not support 64-KB DMA transfers.
-Whenever a 64-KB DMA transfer is attempted,
-the transfer fails and messages similar to the following
-are written to the console log:
+vcpu ioctls can hang the calling thread if issued while a vcpu is running.
+However, invalid ioctls can happen when userspace tries to probe the kind
+of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
+we know the ioctl is going to be rejected as invalid anyway and we can
+fail before trying to take the vcpu mutex.
 
-   [ 2431.851125] sr 0:0:0:0: [sr0] Unhandled sense code
-   [ 2431.851139] sr 0:0:0:0: [sr0]  Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
-   [ 2431.851152] sr 0:0:0:0: [sr0]  Sense Key : Hardware Error [current]
-   [ 2431.851166] sr 0:0:0:0: [sr0]  Add. Sense: Logical unit communication time-out
-   [ 2431.851182] sr 0:0:0:0: [sr0] CDB: Read(10): 28 00 00 00 76 f4 00 00 40 00
-   [ 2431.851210] end_request: I/O error, dev sr0, sector 121808
+This patch does not change functionality, it just makes invalid ioctls
+fail faster.
 
-When the libata and pata_serverworks modules
-are recompiled with ATA_DEBUG and ATA_VERBOSE_DEBUG defined in libata.h,
-the 64-KB transfer size in the scatter-gather list can be seen
-in the console log:
-
-   [ 2664.897267] sr 9:0:0:0: [sr0] Send:
-   [ 2664.897274] 0xf63d85e0
-   [ 2664.897283] sr 9:0:0:0: [sr0] CDB:
-   [ 2664.897288] Read(10): 28 00 00 00 7f b4 00 00 40 00
-   [ 2664.897319] buffer = 0xf6d6fbc0, bufflen = 131072, queuecommand 0xf81b7700
-   [ 2664.897331] ata_scsi_dump_cdb: CDB (1:0,0,0) 28 00 00 00 7f b4 00 00 40
-   [ 2664.897338] ata_scsi_translate: ENTER
-   [ 2664.897345] ata_sg_setup: ENTER, ata1
-   [ 2664.897356] ata_sg_setup: 3 sg elements mapped
-   [ 2664.897364] ata_bmdma_fill_sg: PRD[0] = (0x66FD2000, 0xE000)
-   [ 2664.897371] ata_bmdma_fill_sg: PRD[1] = (0x65000000, 0x10000)
-   ------------------------------------------------------> =======
-   [ 2664.897378] ata_bmdma_fill_sg: PRD[2] = (0x66A10000, 0x2000)
-   [ 2664.897386] ata1: ata_dev_select: ENTER, device 0, wait 1
-   [ 2664.897422] ata_sff_tf_load: feat 0x1 nsect 0x0 lba 0x0 0x0 0xFC
-   [ 2664.897428] ata_sff_tf_load: device 0xA0
-   [ 2664.897448] ata_sff_exec_command: ata1: cmd 0xA0
-   [ 2664.897457] ata_scsi_translate: EXIT
-   [ 2664.897462] leaving scsi_dispatch_cmnd()
-   [ 2664.897497] Doing sr request, dev = sr0, block = 0
-   [ 2664.897507] sr0 : reading 64/256 512 byte blocks.
-   [ 2664.897553] ata_sff_hsm_move: ata1: protocol 7 task_state 1 (dev_stat 0x58)
-   [ 2664.897560] atapi_send_cdb: send cdb
-   [ 2666.910058] ata_bmdma_port_intr: ata1: host_stat 0x64
-   [ 2666.910079] __ata_sff_port_intr: ata1: protocol 7 task_state 3
-   [ 2666.910093] ata_sff_hsm_move: ata1: protocol 7 task_state 3 (dev_stat 0x51)
-   [ 2666.910101] ata_sff_hsm_move: ata1: protocol 7 task_state 4 (dev_stat 0x51)
-   [ 2666.910129] sr 9:0:0:0: [sr0] Done:
-   [ 2666.910136] 0xf63d85e0 TIMEOUT
-
-lspci shows that the driver used for the Broadcom OSB4 IDE Controller is
-pata_serverworks:
-
-   00:0f.1 IDE interface: Broadcom OSB4 IDE Controller (prog-if 8e [Master SecP SecO PriP])
-           Flags: bus master, medium devsel, latency 64
-           [virtual] Memory at 000001f0 (32-bit, non-prefetchable) [size=8]
-           [virtual] Memory at 000003f0 (type 3, non-prefetchable) [size=1]
-           I/O ports at 0170 [size=8]
-           I/O ports at 0374 [size=4]
-           I/O ports at 1440 [size=16]
-           Kernel driver in use: pata_serverworks
-
-The pata_serverworks driver supports five distinct device IDs,
-one being the OSB4 and the other four belonging to the CSB series.
-The CSB series appears to support 64-KB DMA transfers,
-as tests on a machine with an SAI2 motherboard
-containing a Broadcom CSB5 IDE Controller (vendor and device IDs: 1166:0212)
-showed no problems with 64-KB DMA transfers.
-
-This problem was first discovered when attempting to install openSUSE
-from a DVD on a machine with an STL2 motherboard.
-Using the pata_serverworks module,
-older releases of openSUSE will not install at all due to the timeouts.
-Releases of openSUSE prior to 11.3 can be installed by disabling
-the pata_serverworks module using the brokenmodules boot parameter,
-which causes the serverworks module to be used instead.
-Recent releases of openSUSE (12.2 and later) include better error recovery and
-will install, though very slowly.
-On all openSUSE releases, the problem can be recreated
-on a machine containing a Broadcom OSB4 IDE Controller
-by mounting an install DVD and running a command similar to the following:
-
-   find /mnt -type f -print | xargs cat > /dev/null
-
-The patch below corrects the problem.
-Similar to the other ATA drivers that do not support 64-KB DMA transfers,
-the patch changes the ata_port_operations qc_prep vector to point to a routine
-that breaks any 64-KB segment into two 32-KB segments and
-changes the scsi_host_template sg_tablesize element to reduce by half
-the number of scatter/gather elements allowed.
-These two changes affect only the OSB4.
-
-Signed-off-by: Scott Carter <ccscott@funsoft.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: David Matlack <dmatlack@google.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/pata_serverworks.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ virt/kvm/kvm_main.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/ata/pata_serverworks.c
-+++ b/drivers/ata/pata_serverworks.c
-@@ -252,12 +252,18 @@ static void serverworks_set_dmamode(stru
- 	pci_write_config_byte(pdev, 0x54, ultra_cfg);
- }
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -52,6 +52,7 @@
  
--static struct scsi_host_template serverworks_sht = {
-+static struct scsi_host_template serverworks_osb4_sht = {
-+	ATA_BMDMA_SHT(DRV_NAME),
-+	.sg_tablesize	= LIBATA_DUMB_MAX_PRD,
-+};
+ #include <asm/processor.h>
+ #include <asm/io.h>
++#include <asm/ioctl.h>
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ 
+@@ -1766,6 +1767,9 @@ static long kvm_vcpu_ioctl(struct file *
+ 	if (vcpu->kvm->mm != current->mm)
+ 		return -EIO;
+ 
++	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
++		return -EINVAL;
 +
-+static struct scsi_host_template serverworks_csb_sht = {
- 	ATA_BMDMA_SHT(DRV_NAME),
- };
- 
- static struct ata_port_operations serverworks_osb4_port_ops = {
- 	.inherits	= &ata_bmdma_port_ops,
-+	.qc_prep	= ata_bmdma_dumb_qc_prep,
- 	.cable_detect	= serverworks_cable_detect,
- 	.mode_filter	= serverworks_osb4_filter,
- 	.set_piomode	= serverworks_set_piomode,
-@@ -266,6 +272,7 @@ static struct ata_port_operations server
- 
- static struct ata_port_operations serverworks_csb_port_ops = {
- 	.inherits	= &serverworks_osb4_port_ops,
-+	.qc_prep	= ata_bmdma_qc_prep,
- 	.mode_filter	= serverworks_csb_filter,
- };
- 
-@@ -405,6 +412,7 @@ static int serverworks_init_one(struct p
- 		}
- 	};
- 	const struct ata_port_info *ppi[] = { &info[id->driver_data], NULL };
-+	struct scsi_host_template *sht = &serverworks_csb_sht;
- 	int rc;
- 
- 	rc = pcim_enable_device(pdev);
-@@ -418,6 +426,7 @@ static int serverworks_init_one(struct p
- 		/* Select non UDMA capable OSB4 if we can't do fixups */
- 		if (rc < 0)
- 			ppi[0] = &info[1];
-+		sht = &serverworks_osb4_sht;
- 	}
- 	/* setup CSB5/CSB6 : South Bridge and IDE option RAID */
- 	else if ((pdev->device == PCI_DEVICE_ID_SERVERWORKS_CSB5IDE) ||
-@@ -434,7 +443,7 @@ static int serverworks_init_one(struct p
- 			ppi[1] = &ata_dummy_port_info;
- 	}
- 
--	return ata_pci_bmdma_init_one(pdev, ppi, &serverworks_sht, NULL, 0);
-+	return ata_pci_bmdma_init_one(pdev, ppi, sht, NULL, 0);
- }
- 
- #ifdef CONFIG_PM
+ #if defined(CONFIG_S390) || defined(CONFIG_PPC)
+ 	/*
+ 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
 
