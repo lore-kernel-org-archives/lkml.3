@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759887AbaLLI1o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:27:44 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:55354 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759848AbaLLI1k (ORCPT
+	id S965868AbaLLI15 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:27:57 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:38563 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758766AbaLLI1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:27:40 -0500
-X-AuditID: cbfee68d-f79296d000004278-f0-548aa6f6c2ed
+	Fri, 12 Dec 2014 03:27:50 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-f3-548aa6f563b1
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 Cc: kgene.kim@samsung.com, rafael.j.wysocki@intel.com, a.kesavan@samsung.com,
@@ -16,37 +16,38 @@ Cc: kgene.kim@samsung.com, rafael.j.wysocki@intel.com, a.kesavan@samsung.com,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [RFC PATCHv3 5/7] ARM: dts: Add PPMU dt node for Exynos3250
-Date: Fri, 12 Dec 2014 17:27:30 +0900
-Message-id: <1418372852-12454-6-git-send-email-cw00.choi@samsung.com>
+Subject: [RFC PATCHv3 2/7] devfreq: event: Add the list of supported
+ devfreq-event type
+Date: Fri, 12 Dec 2014 17:27:27 +0900
+Message-id: <1418372852-12454-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1418372852-12454-1-git-send-email-cw00.choi@samsung.com>
 References: <1418372852-12454-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsWyRsSkSPfbsq4QgxW7JCwer1nMZLFxxnpW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkQPfbsq4Qg0fvmC0er1nMZLFxxnpW
 	i+tfnrNazD9yjtXi9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF7cYVbBaP
-	V7xlt1i16w+jA5/Hzll32T0W73nJ5LF5Sb1H35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZfw6
-	u5CpYItoxdW14g2MbwW6GDk5JARMJF4vOsoMYYtJXLi3nq2LkYtDSGApo0TTjy0sMEV3N56D
-	SixilFg6Yw6U08QkcW7WfrB2NgEtif0vbrCB2CIC5hK7lv4EK2IWuMQksX1mDxNIQljARWLh
-	myNgRSwCqhKHV80DW8Er4CqxYNJiVoh1ChLLls8EszkF3CReXN3A2MXIAbTNVeLnkjqQmRIC
-	x9gltv8/ywwxR0Di2+RDLCA1EgKyEpsOQL0jKXFwxQ2WCYzCCxgZVjGKphYkFxQnpRcZ6hUn
-	5haX5qXrJefnbmIERsrpf896dzDePmB9iFGAg1GJh/dFaleIEGtiWXFl7iFGU6ANE5mlRJPz
-	gfGYVxJvaGxmZGFqYmpsZG5ppiTOqyj1M1hIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo8iN
-	V7FtmdLdOUUW+3c2GT6aXsh8yeH+5TV7Obl1/wW9PPGkxv3Mwb2C3/Y8Tc6+pNPzmfXOS1tr
-	pfIrJcsecWw17A9on99bssm7W1nl24P1gfuXLc+vseflrZZxzLbWufvcaHujv3+bCAdb78HD
-	HYyaz1d35erPzFGdx+CaF7OV9ymPf8UFJZbijERDLeai4kQAnFfk7o8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t9jAd1vy7pCDBYvEbB4vGYxk8XGGetZ
+	V7xlt1i16w+jA5/Hzll32T0W73nJ5LF5Sb1H35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZVzc
+	85Sl4LNRxZvZW9gbGLdodTFyckgImEh83vGHBcIWk7hwbz1bFyMXh5DAUkaJbdtWscMU/enY
+	xwyRWMQocWH7JEYIp4lJ4tys/cwgVWwCWhL7X9xgA7FFBMwldi39CTaKWeASk8T2mT1MIAlh
+	gUiJn3+7wMayCKhKrFr/CayZV8BVYsOUjawQ6xQkli2fCWZzCrhJvLi6AWgbB9A2V4mfS+pA
+	ZkoInGKXeL/hDBvEHAGJb5MPsYDUSAjISmw6wAwxRlLi4IobLBMYhRcwMqxiFE0tSC4oTkov
+	MtErTswtLs1L10vOz93ECIyV0/+eTdjBeO+A9SFGAQ5GJR7eF6ldIUKsiWXFlbmHGE2BNkxk
+	lhJNzgdGZF5JvKGxmZGFqYmpsZG5pZmSOO9rqZ/BQgLpiSWp2ampBalF8UWlOanFhxiZODil
+	GhiTooQqVV2Vrm2Oeh5o6vLcf8bn8KnRezfMc+KzDfrSuHr/q9uLqifFukeuvFZ0e330xyf/
+	G4/rz9rF/Ne3VPbyPtEg1j6L1ayf2p67NOUqNsdNP8o51/9Hi2fshPlzuD47WJ+WmXtrxpHF
+	iw6daxP5IsZ6xYkrx+epqHCM0yP75qqop61FC2YqsRRnJBpqMRcVJwIAgEugOJACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t9jAd2vy7pCDN6tNbd4vGYxk8XGGetZ
 	La5/ec5qMf/IOVaL1y8MLXoXXGWzONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWtxtXsFk8
 	XvGW3WLVrj+MDnweO2fdZfdYvOclk8fmJfUefVtWMXp83iQXwBrVwGiTkZqYklqkkJqXnJ+S
 	mZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA3SokkJZYk4pUCggsbhYSd8O04TQ
-	EDddC5jGCF3fkCC4HiMDNJCwhjHj19mFTAVbRCuurhVvYHwr0MXIySEhYCJxd+M5NghbTOLC
-	vfVANheHkMAiRomlM+ZAOU1MEudm7WcGqWIT0JLY/+IGWIeIgLnErqU/wYqYBS4xSWyf2cME
-	khAWcJFY+OYIWBGLgKrE4VXzWEBsXgFXiQWTFrNCrFOQWLZ8JpjNKeAm8eLqBsYuRg6gba4S
-	P5fUTWDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOA6fSe1gXNlgcYhRgINRiYf3
-	RWpXiBBrYllxZe4hRgkOZiUR3r9RQCHelMTKqtSi/Pii0pzU4kOMpkBHTWSWEk3OB6aIvJJ4
-	Q2MTMyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkGxg2uc9T+OtkVih/Mqf2n
-	zlBTwTT/rc9tTZZJ947fbJO07PPaPLdC7pWuwaST5zkyl84zbBO2ufuIafXbf/3PE5c95++f
-	5aK0nPO8YHyqi7OVhffl9S/inU3EP/9zOSDL7zX1y77IuaFhTLXvnuR897ZvnPVqo/PXZZFX
-	p/JNLtrtYnfbedWcj0osxRmJhlrMRcWJACyupmbZAgAA
+	EDddC5jGCF3fkCC4HiMDNJCwhjHj4p6nLAWfjSrezN7C3sC4RauLkZNDQsBE4k/HPmYIW0zi
+	wr31bF2MXBxCAosYJS5sn8QI4TQxSZybtR+sik1AS2L/ixtsILaIgLnErqU/wTqYBS4xSWyf
+	2cMEkhAWiJT4+beLHcRmEVCVWLX+E1gzr4CrxIYpG1kh1ilILFs+E8zmFHCTeHF1A9A2DqBt
+	rhI/l9RNYORdwMiwilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4Ep9J7WBc2WBxiFGAg1GJ
+	h/dFaleIEGtiWXFl7iFGCQ5mJRHev1FAId6UxMqq1KL8+KLSnNTiQ4ymQEdNZJYSTc4HJom8
+	knhDYxMzI0sjc0MLI2NzJXFeJfu2ECGB9MSS1OzU1ILUIpg+Jg5OqQbGE6vW2k0ucc/+pM76
+	63fsgWcFOldOyk5MVkj9PifEXnUZo3rlycL14tN6RLZeY4sQmCR//vy/R+k3LB6sPLBbZfaW
+	4lWM63Sa86tbNVOnbeM/JOkg+FRd4LPVMuvEL28Vnl98/uHCSu0v8qrltXmLuv6GZa4udNcX
+	DPiaK/Xwjf4rjV81AkKaSizFGYmGWsxFxYkA7ho8KNoCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,105 +55,195 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add PPMU (Performance Profiling Monitoring Units) dt node
-to estimate the utilization of each IP in Exynos SoC throught DEVFREQ Event
-subsystem.
+This patch adds the list of supported devfreq-event type as following.
+Each devfreq-event device driver would support the various devfreq-event type
+for devfreq governor at the same time.
+- DEVFREQ_EVENT_TYPE_RAW_DATA
+- DEVFREQ_EVENT_TYPE_UTILIZATION
+- DEVFREQ_EVENT_TYPE_BANDWIDTH
+- DEVFREQ_EVENT_TYPE_LATENCY
 
-This patch adds following PPMU dt nodes:
-- PPMU_DMC0	0x106a0000
-- PPMU_DMC1	0x106b0000
-- PPMU_RIGHTBUS 0x112A0000
-- PPMU_LEFTBUS  0x116A0000
-- PPMU_CAMIF    0x11AC0000
-- PPMU_LCD0     0x11E40000
-- PPMU_3D       0x13220000
-- PPMU_MFC_L    0x13660000
-- PPMU_CPU	0x106c0000
-
-Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/boot/dts/exynos3250.dtsi | 66 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+ drivers/devfreq/devfreq-event.c | 44 +++++++++++++++++++++++++++++++++++++----
+ include/linux/devfreq.h         | 29 ++++++++++++++++++++++-----
+ 2 files changed, 64 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index c743f60..70a9120 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -529,6 +529,72 @@
- 			compatible = "arm,cortex-a7-pmu";
- 			interrupts = <0 18 0>, <0 19 0>;
- 		};
+diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
+index eaf59c1..9444f93 100644
+--- a/drivers/devfreq/devfreq-event.c
++++ b/drivers/devfreq/devfreq-event.c
+@@ -29,6 +29,9 @@
+ #include <linux/of.h>
+ #include "governor.h"
+ 
++#define EVENT_TYPE_RAW_DATA_MAX		U64_MAX
++#define EVENT_TYPE_UTILIZATION_MAX	100
 +
-+		ppmu_dmc0: ppmu_dmc0@106a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106a0000 0x2000>;
-+			status = "disabled";
-+		};
+ static struct class *devfreq_event_class;
+ 
+ /* The list of all devfreq event list */
+@@ -144,7 +147,8 @@ EXPORT_SYMBOL_GPL(devfreq_event_is_enabled);
+  * Note that this function set the event to the devfreq-event device to start
+  * for getting the event data which could be various event type.
+  */
+-int devfreq_event_set_event(struct devfreq_event_dev *edev)
++int devfreq_event_set_event(struct devfreq_event_dev *edev,
++				enum devfreq_event_type type)
+ {
+ 	int ret;
+ 
+@@ -158,7 +162,15 @@ int devfreq_event_set_event(struct devfreq_event_dev *edev)
+ 		return -EPERM;
+ 
+ 	mutex_lock(&edev->lock);
+-	ret = edev->desc->ops->set_event(edev);
 +
-+		ppmu_dmc1: ppmu_dmc1@106b0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106b0000 0x2000>;
-+			status = "disabled";
-+		};
++	if ((edev->desc->type & type) == 0) {
++		dev_err(&edev->dev, "unsupported of devfreq-event type\n");
++		mutex_unlock(&edev->lock);
++		return -EINVAL;
++	}
 +
-+		ppmu_cpu: ppmu_cpu@106c0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x106c0000 0x2000>;
-+			status = "disabled";
-+		};
++	ret = edev->desc->ops->set_event(edev, type);
 +
-+		ppmu_rightbus: ppmu_rightbus@112a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x112a0000 0x2000>;
-+			clocks = <&cmu CLK_PPMURIGHT>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
+ 	mutex_unlock(&edev->lock);
+ 
+ 	return ret;
+@@ -174,7 +186,9 @@ EXPORT_SYMBOL_GPL(devfreq_event_set_event);
+  * current event data and total_event should be stored in second parameter
+  * (total_event).
+  */
+-u64 devfreq_event_get_event(struct devfreq_event_dev *edev, u64 *total_event)
++u64 devfreq_event_get_event(struct devfreq_event_dev *edev,
++				enum devfreq_event_type type,
++				u64 *total_event)
+ {
+ 	u64 event;
+ 
+@@ -190,7 +204,27 @@ u64 devfreq_event_get_event(struct devfreq_event_dev *edev, u64 *total_event)
+ 		return 0;
+ 
+ 	mutex_lock(&edev->lock);
+-	event = edev->desc->ops->get_event(edev, total_event);
 +
-+		ppmu_leftbus: ppmu_leftbus0@116a0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x116a0000 0x2000>;
-+			clocks = <&cmu CLK_PPMULEFT>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
++	if ((edev->desc->type & type) == 0) {
++		dev_err(&edev->dev, "unsupported of devfreq-event type\n");
++		return -EINVAL;
++	}
 +
-+		ppmu_camif: ppmu_camif@11ac0000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x11ac0000 0x2000>;
-+			clocks = <&cmu CLK_PPMUCAMIF>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
++	event = edev->desc->ops->get_event(edev, type, total_event);
 +
-+		ppmu_lcd0: ppmu_lcd0@11e40000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x11e40000 0x2000>;
-+			clocks = <&cmu CLK_PPMULCD0>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
++	switch (type) {
++	case DEVFREQ_EVENT_TYPE_RAW_DATA:
++	case DEVFREQ_EVENT_TYPE_BANDWIDTH:
++	case DEVFREQ_EVENT_TYPE_LATENCY:
++		if ((event > *total_event)
++			|| ((event > EVENT_TYPE_RAW_DATA_MAX) ||
++				*total_event > EVENT_TYPE_RAW_DATA_MAX))
++			event = 0;
++	case DEVFREQ_EVENT_TYPE_UTILIZATION:
++		if (event > EVENT_TYPE_UTILIZATION_MAX)
++			event = 0;
++	}
 +
-+		ppmu_g3d: ppmu_g3d@13220000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x13220000 0x2000>;
-+			clocks = <&cmu CLK_PPMUG3D>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
+ 	mutex_unlock(&edev->lock);
+ 
+ 	return event;
+@@ -215,8 +249,10 @@ int devfreq_event_reset_event(struct devfreq_event_dev *edev)
+ 		return -EPERM;
+ 
+ 	mutex_lock(&edev->lock);
 +
-+		ppmu_mfc_l: ppmu_mfc_l@13660000 {
-+			compatible = "samsung,exynos-ppmu";
-+			reg = <0x13660000 0x2000>;
-+			clocks = <&cmu CLK_PPMUMFC_L>;
-+			clock-names = "ppmu";
-+			status = "disabled";
-+		};
- 	};
+ 	if (edev->desc->ops && edev->desc->ops->reset)
+ 		ret = edev->desc->ops->reset(edev);
++
+ 	mutex_unlock(&edev->lock);
+ 
+ 	if (ret < 0)
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index a8d2277..82da235 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -197,6 +197,14 @@ struct devfreq_event_dev {
+ 	const struct devfreq_event_desc *desc;
  };
  
++/* The supported type by devfreq-event device */
++enum devfreq_event_type {
++	DEVFREQ_EVENT_TYPE_RAW_DATA	= BIT(0),
++	DEVFREQ_EVENT_TYPE_UTILIZATION	= BIT(1),
++	DEVFREQ_EVENT_TYPE_BANDWIDTH	= BIT(2),
++	DEVFREQ_EVENT_TYPE_LATENCY	= BIT(3),
++};
++
+ /**
+  * struct devfreq_event_ops - the operations of devfreq-event device
+  *
+@@ -219,8 +227,10 @@ struct devfreq_event_ops {
+ 	int (*reset)(struct devfreq_event_dev *event_dev);
+ 
+ 	/* Mandatory functions */
+-	int (*set_event)(struct devfreq_event_dev *event_dev);
+-	u64 (*get_event)(struct devfreq_event_dev *event_dev, u64 *total_event);
++	int (*set_event)(struct devfreq_event_dev *event_dev,
++			enum devfreq_event_type type);
++	u64 (*get_event)(struct devfreq_event_dev *event_dev,
++			enum devfreq_event_type type, u64 *total_event);
+ };
+ 
+ /**
+@@ -228,6 +238,10 @@ struct devfreq_event_ops {
+  *
+  * @name	: the name of devfreq-event device.
+  * @driver_data	: the private data for devfreq-event driver.
++ * @event_type	: the supported devfreq-event type among as following
++ *		  - DEVFREQ_EVENT_TYPE_UTILIZATION
++ *		  - DEVFREQ_EVENT_TYPE_BANDWIDTH
++ *		  - DEVFREQ_EVENT_TYPE_LATENCY
+  * @ops		: the operation to control devfreq-event device.
+  *
+  * Each devfreq-event device is described with a this structure.
+@@ -236,6 +250,7 @@ struct devfreq_event_ops {
+ struct devfreq_event_desc {
+ 	const char *name;
+ 	void *driver_data;
++	enum devfreq_event_type type;
+ 
+ 	struct devfreq_event_ops *ops;
+ };
+@@ -273,8 +288,10 @@ extern void devm_devfreq_unregister_opp_notifier(struct device *dev,
+ extern int devfreq_event_enable_edev(struct devfreq_event_dev *edev);
+ extern int devfreq_event_disable_edev(struct devfreq_event_dev *edev);
+ extern bool devfreq_event_is_enabled(struct devfreq_event_dev *edev);
+-extern int devfreq_event_set_event(struct devfreq_event_dev *edev);
++extern int devfreq_event_set_event(struct devfreq_event_dev *edev,
++				enum devfreq_event_type type);
+ extern u64 devfreq_event_get_event(struct devfreq_event_dev *edev,
++				enum devfreq_event_type type,
+ 				u64 *total_event);
+ extern int devfreq_event_reset_event(struct devfreq_event_dev *edev);
+ extern void *devfreq_event_get_drvdata(struct devfreq_event_dev *edev);
+@@ -397,13 +414,15 @@ static inline bool devfreq_event_is_enabled(struct devfreq_event_dev *edev);
+ 	return false;
+ }
+ 
+-static inline int devfreq_event_set_event(struct devfreq_event_dev *edev);
++static inline int devfreq_event_set_event(struct devfreq_event_dev *edev,
++					enum devfreq_event_type type)
+ {
+ 	return -EINVAL;
+ }
+ 
+ static inline u64 devfreq_event_get_event(struct devfreq_event_dev *edev
+-					u64 *total_event);
++					enum devfreq_event_type type,
++					u64 *total_event)
+ {
+ 	return 0;
+ }
 -- 
 1.8.5.5
 
