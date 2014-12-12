@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934935AbaLLPQI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:16:08 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:33983 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933263AbaLLPQG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:16:06 -0500
-X-Listener-Flag: 11101
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Beniamino Galvani <b.galvani@gmail.com>,
-        Jason Cooper <jason@lakedaemon.net>
-CC: <yingjoe.chen@gmail.com>, <srv_heupstream@mediatek.com>,
-        Marc Zyngier <marc.zyngier@arm.com>, <hc.yen@mediatek.com>,
-        <yh.chen@mediatek.com>, <linux-kernel@vger.kernel.org>,
-        <nathan.chung@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Thomas Gleixner <tglx@linutronix.de>, <eddie.huang@mediatek.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v3] irqchip: mtk-sysirq: Use IS_ERR() instead of NULL pointer check
-Date: Fri, 12 Dec 2014 23:15:56 +0800
-Message-ID: <1418397356-29634-1-git-send-email-yingjoe.chen@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-In-Reply-To: <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
-References: <1418205302-22531-1-git-send-email-yingjoe.chen@mediatek.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+	id S934953AbaLLPRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:17:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2896 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933263AbaLLPRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 10:17:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
+   d="scan'208";a="622804200"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1] libata: export ata_get_cmd_descript()
+Date: Fri, 12 Dec 2014 17:16:31 +0200
+Message-Id: <1418397391-13668-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The driver sata_dwc_460ex is using this symbol. To build it as a module we have
+to have the symbol exported. This patch adds EXPORT_SYMBOL() macro for that.
 
-Small fix to the commit message and the reported by tag, the code stay
-the same.
-
-Thanks
-
-Joe.C
-
-=============================================
-Beniamino noticed a bug that an invalid DT file for the mediatek
-interrupt polarity extension will cause kernel oops.
-
-The reason is that the interrupt polarity support for mediatek chips
-merely checks for NULL pointer instead of a casted error return
-value in mtk_sysirq_of_init() so any other casted error value passes
-the NULL pointer check and causes a kernel panic when dereferenced.
-
-Use IS_ERR() and return the error value via PTR_ERR().
-
-Reported-by: Beniamino Galvani <b.galvani@gmail.com>
-Signed-off-by: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
- drivers/irqchip/irq-mtk-sysirq.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-eh.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/irqchip/irq-mtk-sysirq.c b/drivers/irqchip/irq-mtk-sysirq.c
-index 7e342df..0b0d2c0 100644
---- a/drivers/irqchip/irq-mtk-sysirq.c
-+++ b/drivers/irqchip/irq-mtk-sysirq.c
-@@ -137,9 +137,9 @@ static int __init mtk_sysirq_of_init(struct device_node *node,
- 		return -ENOMEM;
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index 3dbec89..74fef87 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2389,6 +2389,7 @@ const char *ata_get_cmd_descript(u8 command)
  
- 	chip_data->intpol_base = of_io_request_and_map(node, 0, "intpol");
--	if (!chip_data->intpol_base) {
-+	if (IS_ERR(chip_data->intpol_base)) {
- 		pr_err("mtk_sysirq: unable to map sysirq register\n");
--		ret = -ENOMEM;
-+		ret = PTR_ERR(chip_data->intpol_base);
- 		goto out_free;
- 	}
+ 	return NULL;
+ }
++EXPORT_SYMBOL(ata_get_cmd_descript);
  
+ /**
+  *	ata_eh_link_report - report error handling to user
 -- 
-1.8.1.1.dirty
+2.1.3
 
