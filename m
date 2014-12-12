@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759807AbaLLIRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:17:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43056 "EHLO
+	id S965235AbaLLIRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:17:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43076 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbaLLIQ6 (ORCPT
+	with ESMTP id S1759832AbaLLIRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:16:58 -0500
-Date: Fri, 12 Dec 2014 00:16:36 -0800
-From: tip-bot for Tom Huynh <tipbot@zytor.com>
-Message-ID: <tip-e641f696ebe4514efac00d1f4a485a06c8e94eea@git.kernel.org>
-Cc: jolsa@kernel.org, mingo@kernel.org, acme@redhat.com,
-        tom.huynh@freescale.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        kim.phillips@freescale.com, paulus@samba.org, hpa@zytor.com,
-        tglx@linutronix.de, mmullins@mmlx.us
-Reply-To: tom.huynh@freescale.com, linux-kernel@vger.kernel.org,
-        namhyung@kernel.org, mingo@redhat.com, jolsa@kernel.org,
-        mingo@kernel.org, acme@redhat.com, hpa@zytor.com, mmullins@mmlx.us,
-        tglx@linutronix.de, a.p.zijlstra@chello.nl, kim.phillips@freescale.com,
-        paulus@samba.org
-In-Reply-To: <1417541842-9747-1-git-send-email-tom.huynh@freescale.com>
-References: <1417541842-9747-1-git-send-email-tom.huynh@freescale.com>
+	Fri, 12 Dec 2014 03:17:15 -0500
+Date: Fri, 12 Dec 2014 00:16:50 -0800
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-cfd31d85bb42b96449157bd57c638dc779070753@git.kernel.org>
+Cc: namhyung@kernel.org, acme@redhat.com, fweisbec@gmail.com,
+        eranian@google.com, a.p.zijlstra@chello.nl, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com, rostedt@goodmis.org,
+        tglx@linutronix.de, jolsa@kernel.org, cjashfor@linux.vnet.ibm.com,
+        mingo@kernel.org, paulus@samba.org
+Reply-To: jolsa@kernel.org, tglx@linutronix.de, rostedt@goodmis.org,
+        cjashfor@linux.vnet.ibm.com, paulus@samba.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com, eranian@google.com,
+        a.p.zijlstra@chello.nl, hpa@zytor.com, namhyung@kernel.org,
+        acme@redhat.com, fweisbec@gmail.com
+In-Reply-To: <1417460789-13874-2-git-send-email-jolsa@kernel.org>
+References: <1417460789-13874-2-git-send-email-jolsa@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf hists browser:
-  Change print format from %lu to %PRIu64
-Git-Commit-ID: e641f696ebe4514efac00d1f4a485a06c8e94eea
+Subject: [tip:perf/urgent] perf tools:
+  Use single strcmp call instead of two
+Git-Commit-ID: cfd31d85bb42b96449157bd57c638dc779070753
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,45 +38,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e641f696ebe4514efac00d1f4a485a06c8e94eea
-Gitweb:     http://git.kernel.org/tip/e641f696ebe4514efac00d1f4a485a06c8e94eea
-Author:     Tom Huynh <tom.huynh@freescale.com>
-AuthorDate: Tue, 2 Dec 2014 11:37:22 -0600
+Commit-ID:  cfd31d85bb42b96449157bd57c638dc779070753
+Gitweb:     http://git.kernel.org/tip/cfd31d85bb42b96449157bd57c638dc779070753
+Author:     Jiri Olsa <jolsa@kernel.org>
+AuthorDate: Mon, 1 Dec 2014 20:06:22 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 9 Dec 2014 09:14:32 -0300
+CommitDate: Tue, 9 Dec 2014 09:14:33 -0300
 
-perf hists browser: Change print format from %lu to %PRIu64
+perf tools: Use single strcmp call instead of two
 
-The nr_events variable in tools/perf/ui/browsers/hists.c is of type u64,
-so the print format (%lu) causes 'perf report' to show 0 event count
-when running with 32-bit userspace without redirection.
+There's no need to use 2 strcmp calls, one is enough.
 
-This patch fixes that problem by printing nr_events as PRIu64.
-
-Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Kim Phillips <kim.phillips@freescale.com>
-Cc: Matt Mullins <mmullins@mmlx.us>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1417541842-9747-1-git-send-email-tom.huynh@freescale.com
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1417460789-13874-2-git-send-email-jolsa@kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/ui/browsers/hists.c | 2 +-
+ tools/perf/util/config.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 502daff..e6bb04b 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -1252,7 +1252,7 @@ static int hists__browser_title(struct hists *hists,
+diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
+index 57ff826..c802236 100644
+--- a/tools/perf/util/config.c
++++ b/tools/perf/util/config.c
+@@ -522,7 +522,7 @@ static int buildid_dir_command_config(const char *var, const char *value,
+ 	const char *v;
  
- 	nr_samples = convert_unit(nr_samples, &unit);
- 	printed = scnprintf(bf, size,
--			   "Samples: %lu%c of event '%s', Event count (approx.): %lu",
-+			   "Samples: %lu%c of event '%s', Event count (approx.): %" PRIu64,
- 			   nr_samples, unit, ev_name, nr_events);
- 
- 
+ 	/* same dir for all commands */
+-	if (!prefixcmp(var, "buildid.") && !strcmp(var + 8, "dir")) {
++	if (!strcmp(var, "buildid.dir")) {
+ 		v = perf_config_dirname(var, value);
+ 		if (!v)
+ 			return -1;
