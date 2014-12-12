@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965833AbaLLGpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:45:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51808 "EHLO
+	id S1760925AbaLLGpq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:45:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51805 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758888AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758943AbaLLGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:55 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,11 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>
-Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.896318829@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Pawel Moll" <pawel.moll@arm.com>,
+        "Ingo Molnar" <mingo@kernel.org>, "Jiri Olsa" <jolsa@redhat.com>,
+        "Zefan Li" <lizefan@huawei.com>, "David Ahern" <dsahern@gmail.com>,
+        "Drew Richardson" <drew.richardson@arm.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Arnaldo Carvalho de Melo" <acme@kernel.org>
+Date: Fri, 12 Dec 2014 06:14:26 +0000
+Message-ID: <lsq.1418364866.74149207@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 137/164] USB: keyspan: fix tty line-status reporting
+Subject: [PATCH 3.2 164/164] perf: Handle compat ioctl
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,133 +35,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: Pawel Moll <pawel.moll@arm.com>
 
-commit 5d1678a33c731b56e245e888fdae5e88efce0997 upstream.
+commit b3f207855f57b9c8f43a547a801340bb5cbc59e5 upstream.
 
-Fix handling of TTY error flags, which are not bitmasks and must
-specifically not be ORed together as this prevents the line discipline
-from recognising them.
+When running a 32-bit userspace on a 64-bit kernel (eg. i386
+application on x86_64 kernel or 32-bit arm userspace on arm64
+kernel) some of the perf ioctls must be treated with special
+care, as they have a pointer size encoded in the command.
 
-Also insert null characters when reporting overrun errors as these are
-not associated with the received character.
+For example, PERF_EVENT_IOC_ID in 32-bit world will be encoded
+as 0x80042407, but 64-bit kernel will expect 0x80082407. In
+result the ioctl will fail returning -ENOTTY.
 
-Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
-Signed-off-by: Johan Hovold <johan@kernel.org>
-[bwh: Backported to 3.2:
- - s/\&port->port/tty/
- - Adjust context, indentation]
+This patch solves the problem by adding code fixing up the
+size as compat_ioctl file operation.
+
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Pawel Moll <pawel.moll@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1402671812-9078-1-git-send-email-pawel.moll@arm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+[lizf: Backported to 3.4 by David Ahern]
+Signed-off-by: Zefan Li <lizefan@huawei.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -447,14 +447,19 @@ static void	usa26_indat_callback(struct
- 			/* some bytes had errors, every byte has status */
- 			dbg("%s - RX error!!!!", __func__);
- 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
--				int stat = data[i], flag = 0;
--				if (stat & RXERROR_OVERRUN)
--					flag |= TTY_OVERRUN;
--				if (stat & RXERROR_FRAMING)
--					flag |= TTY_FRAME;
--				if (stat & RXERROR_PARITY)
--					flag |= TTY_PARITY;
-+				int stat = data[i];
-+				int flag = TTY_NORMAL;
+ kernel/events/core.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -36,6 +36,7 @@
+ #include <linux/perf_event.h>
+ #include <linux/ftrace_event.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/compat.h>
+ 
+ #include "internal.h"
+ 
+@@ -3444,6 +3445,25 @@ static long perf_ioctl(struct file *file
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static long perf_compat_ioctl(struct file *file, unsigned int cmd,
++				unsigned long arg)
++{
++	switch (_IOC_NR(cmd)) {
++	case _IOC_NR(PERF_EVENT_IOC_SET_FILTER):
++		/* Fix up pointer size (usually 4 -> 8 in 32-on-64-bit case */
++		if (_IOC_SIZE(cmd) == sizeof(compat_uptr_t)) {
++			cmd &= ~IOCSIZE_MASK;
++			cmd |= sizeof(void *) << IOCSIZE_SHIFT;
++		}
++		break;
++	}
++	return perf_ioctl(file, cmd, arg);
++}
++#else
++# define perf_compat_ioctl NULL
++#endif
 +
-+				if (stat & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(tty, 0,
-+								TTY_OVERRUN);
-+				}
- 				/* XXX should handle break (0x10) */
-+				if (stat & RXERROR_PARITY)
-+					flag = TTY_PARITY;
-+				else if (stat & RXERROR_FRAMING)
-+					flag = TTY_FRAME;
-+
- 				tty_insert_flip_char(tty, data[i+1], flag);
- 			}
- 		}
-@@ -832,14 +837,19 @@ static void	usa49_indat_callback(struct
- 		} else {
- 			/* some bytes had errors, every byte has status */
- 			for (i = 0; i + 1 < urb->actual_length; i += 2) {
--				int stat = data[i], flag = 0;
--				if (stat & RXERROR_OVERRUN)
--					flag |= TTY_OVERRUN;
--				if (stat & RXERROR_FRAMING)
--					flag |= TTY_FRAME;
--				if (stat & RXERROR_PARITY)
--					flag |= TTY_PARITY;
-+				int stat = data[i];
-+				int flag = TTY_NORMAL;
-+
-+				if (stat & RXERROR_OVERRUN) {
-+					tty_insert_flip_char(tty, 0,
-+								TTY_OVERRUN);
-+				}
- 				/* XXX should handle break (0x10) */
-+				if (stat & RXERROR_PARITY)
-+					flag = TTY_PARITY;
-+				else if (stat & RXERROR_FRAMING)
-+					flag = TTY_FRAME;
-+
- 				tty_insert_flip_char(tty, data[i+1], flag);
- 			}
- 		}
-@@ -900,14 +910,19 @@ static void usa49wg_indat_callback(struc
- 				 * some bytes had errors, every byte has status
- 				 */
- 				for (x = 0; x + 1 < len; x += 2) {
--					int stat = data[i], flag = 0;
--					if (stat & RXERROR_OVERRUN)
--						flag |= TTY_OVERRUN;
--					if (stat & RXERROR_FRAMING)
--						flag |= TTY_FRAME;
--					if (stat & RXERROR_PARITY)
--						flag |= TTY_PARITY;
-+					int stat = data[i];
-+					int flag = TTY_NORMAL;
-+
-+					if (stat & RXERROR_OVERRUN) {
-+						tty_insert_flip_char(tty, 0,
-+								     TTY_OVERRUN);
-+					}
- 					/* XXX should handle break (0x10) */
-+					if (stat & RXERROR_PARITY)
-+						flag = TTY_PARITY;
-+					else if (stat & RXERROR_FRAMING)
-+						flag = TTY_FRAME;
-+
- 					tty_insert_flip_char(tty,
- 							data[i+1], flag);
- 					i += 2;
-@@ -978,14 +993,20 @@ static void usa90_indat_callback(struct
- 			/* some bytes had errors, every byte has status */
- 				dbg("%s - RX error!!!!", __func__);
- 				for (i = 0; i + 1 < urb->actual_length; i += 2) {
--					int stat = data[i], flag = 0;
--					if (stat & RXERROR_OVERRUN)
--						flag |= TTY_OVERRUN;
--					if (stat & RXERROR_FRAMING)
--						flag |= TTY_FRAME;
--					if (stat & RXERROR_PARITY)
--						flag |= TTY_PARITY;
-+					int stat = data[i];
-+					int flag = TTY_NORMAL;
-+
-+					if (stat & RXERROR_OVERRUN) {
-+						tty_insert_flip_char(
-+								tty, 0,
-+								TTY_OVERRUN);
-+					}
- 					/* XXX should handle break (0x10) */
-+					if (stat & RXERROR_PARITY)
-+						flag = TTY_PARITY;
-+					else if (stat & RXERROR_FRAMING)
-+						flag = TTY_FRAME;
-+
- 					tty_insert_flip_char(tty, data[i+1],
- 									flag);
- 				}
+ int perf_event_task_enable(void)
+ {
+ 	struct perf_event *event;
+@@ -3910,7 +3930,7 @@ static const struct file_operations perf
+ 	.read			= perf_read,
+ 	.poll			= perf_poll,
+ 	.unlocked_ioctl		= perf_ioctl,
+-	.compat_ioctl		= perf_ioctl,
++	.compat_ioctl		= perf_compat_ioctl,
+ 	.mmap			= perf_mmap,
+ 	.fasync			= perf_fasync,
+ };
 
