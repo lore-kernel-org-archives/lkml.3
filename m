@@ -1,355 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967403AbaLLLyg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 06:54:36 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:42156 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966281AbaLLLyb (ORCPT
+	id S967490AbaLLL5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 06:57:18 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47444 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965873AbaLLL5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 06:54:31 -0500
-Date: Fri, 12 Dec 2014 22:54:18 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Update for 3.19
-Message-ID: <20141212115416.GA22692@gondor.apana.org.au>
-References: <20121214103156.GA5840@gondor.apana.org.au>
- <20130223023331.GA11002@gondor.apana.org.au>
- <20130907035544.GA22658@gondor.apana.org.au>
- <20131107080131.GA32307@gondor.apana.org.au>
- <20140123115319.GA20602@gondor.apana.org.au>
- <20140401100001.GA12386@gondor.apana.org.au>
- <20140605062336.GA14440@gondor.apana.org.au>
- <20140804130339.GA1178@gondor.apana.org.au>
- <20141007131826.GA29688@gondor.apana.org.au>
- <20141211125119.GA12380@gondor.apana.org.au>
+	Fri, 12 Dec 2014 06:57:16 -0500
+Message-ID: <548AD814.2060206@kernel.org>
+Date: Fri, 12 Dec 2014 11:57:08 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141211125119.GA12380@gondor.apana.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hartmut Knaack <knaack.h@gmx.de>,
+        Nikolaus Schulz <nikolaus.schulz@avionic-design.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Michael Welling <mwelling@ieee.org>,
+        Philippe Reynes <tremyfr@yahoo.fr>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org
+CC: Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [PATCH v2 2/2] iio: add driver for the TI DAC8554
+References: <1416858614-32265-1-git-send-email-nikolaus.schulz@avionic-design.de> <1416858614-32265-2-git-send-email-nikolaus.schulz@avionic-design.de> <5482EA33.7020305@gmx.de>
+In-Reply-To: <5482EA33.7020305@gmx.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On 06/12/14 11:36, Hartmut Knaack wrote:
+> Nikolaus Schulz schrieb am 24.11.2014 um 20:50:
+>> The TI DAC8554 is a quad-channel Digital-to-Analog Converter with an SPI
+>> interface.
+>>
+>> Changes in v2:
+>> * Use DMA-safe buffer for SPI transfer
+>> * Normalize powerdown_mode name "hi-z" to "three_state" as per
+>>   ABI/testing/sysfs-bus-iio
+>> * Register device late in probe function
+>> * Avoid powerdown broadcast update, which touches all DAC on the bus
+> There are a few issues left, please see my comments inline.
+1 little one from me...
+>>
+>> Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+>> ---
+>>  drivers/iio/dac/Kconfig      |  10 ++
+>>  drivers/iio/dac/Makefile     |   1 +
+>>  drivers/iio/dac/ti-dac8554.c | 374 +++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 385 insertions(+)
+>>  create mode 100644 drivers/iio/dac/ti-dac8554.c
+>>
+>> diff --git a/drivers/iio/dac/Kconfig b/drivers/iio/dac/Kconfig
+>> index 2236ea2..1689260 100644
+>> --- a/drivers/iio/dac/Kconfig
+>> +++ b/drivers/iio/dac/Kconfig
+>> @@ -181,4 +181,14 @@ config MCP4922
+>>  	  To compile this driver as a module, choose M here: the module
+>>  	  will be called mcp4922.
+>>  
+>> +config TI_DAC8554
+>> +	tristate "TI DAC8554 driver"
+>> +	depends on SPI
+>> +	depends on OF
+>> +	help
+>> +	  Say yes here to build the driver for the TI DAC8554.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module
+>> +	  will be called ti-dac8554.
+>> +
+>>  endmenu
+>> diff --git a/drivers/iio/dac/Makefile b/drivers/iio/dac/Makefile
+>> index 52be7e1..b98d79a 100644
+>> --- a/drivers/iio/dac/Makefile
+>> +++ b/drivers/iio/dac/Makefile
+>> @@ -20,3 +20,4 @@ obj-$(CONFIG_MAX517) += max517.o
+>>  obj-$(CONFIG_MAX5821) += max5821.o
+>>  obj-$(CONFIG_MCP4725) += mcp4725.o
+>>  obj-$(CONFIG_MCP4922) += mcp4922.o
+>> +obj-$(CONFIG_TI_DAC8554) += ti-dac8554.o
+>> diff --git a/drivers/iio/dac/ti-dac8554.c b/drivers/iio/dac/ti-dac8554.c
+>> new file mode 100644
+>> index 0000000..fca751f
+>> --- /dev/null
+>> +++ b/drivers/iio/dac/ti-dac8554.c
+>> @@ -0,0 +1,374 @@
+>> +/*
+>> + * TI DAC8554 Digital to Analog Converter SPI driver
+>> + *
+>> + * Copyright (C) 2014 Avionic Design GmbH
+>> + *
+>> + * Based on ad5446r_spi.c
+>> + * Copyright (C) 2010,2011 Analog Devices Inc.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License version 2 as
+>> + * published by the Free Software Foundation.
+>> + */
+>> +
+>> +#include <linux/spi/spi.h>
+>> +#include <linux/regulator/consumer.h>
+>> +#include <linux/module.h>
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/of.h>
+>> +
+>> +#define DAC8554_DRIVERNAME			"ti-dac8554"
+>> +#define DAC8554_DAC_CHANNELS			4
+>> +
+>> +/* Load commands */
+>> +#define DAC8554_CMD_STORE_DAC_N			0x0
+>> +#define DAC8554_CMD_UPDATE_DAC_N		0x1
+>> +#define DAC8554_CMD_STORE_DAC_N_UPDATE_ALL	0x2
+>> +#define DAC8554_CMD_UPDATE_BROADCAST		0x3
+>> +
+>> +#define DAC8554_BROADCAST_USE_SRDATA		0x2
+> Add a blank line here.
+>> +/* Powerdown modes (ORed PD1|PD2 bits) */
+> It took my some time to figure out ORed. I think you could drop it and just
+> mention (PD1 | PD2 bits).
+>> +#define DAC8554_PWRDN_HIZ			0x0
+>> +#define DAC8554_PWRDN_1K			0x1
+>> +#define DAC8554_PWRDN_100K			0x2
+>> +
+>> +#define DAC8554_PWRDN_TO_SR(mode)		(BIT(16) | (mode) << 14)
+>> +
+>> +/**
+>> + * struct dac8554_state - driver instance specific data
+>> + * @spi:		spi_device
+> SPI device?
+>> + * @reg:		supply regulator
+>> + * @addr:		two-bit chip address
+>> + * @vref_mv:		reference voltage in millivolt
+>> + * @val			DAC/channel data
+> DAC channel data?
+>> + * @powerdown		channel powerdown flag
+>> + * @powerdown_mode	channel powerdown mode
+>> + * @xfer		SPI transfer buffer
+> Half of the comments are with colon, the other half are missing it.
+>> + */
+>> +struct dac8554_state {
+>> +	struct spi_device		*spi;
+>> +	struct regulator		*reg;
+>> +	unsigned			addr;
+>> +	unsigned			vref_mv;
+>> +	u16				val[DAC8554_DAC_CHANNELS];
+>> +	bool				powerdown[DAC8554_DAC_CHANNELS];
+>> +	u8				powerdown_mode[DAC8554_DAC_CHANNELS];
+>> +
+>> +	/*
+>> +	 * DMA (thus cache coherency maintenance) requires the
+>> +	 * transfer buffers to live in their own cache lines.
+>> +	 */
+>> +	u8				xfer[3] ____cacheline_aligned;
+>> +};
+>> +
+>> +static int dac8554_spi_write(struct dac8554_state *st,
+>> +			     unsigned cmd,
+>> +			     unsigned chan_addr,
+>> +			     unsigned val)
+>> +{
+>> +	u32 data;
+>> +
+>> +	/*
+>> +	 * The input shift register is 24 bits wide. The 8 MSB are
+>> +	 * control bits, followed by 16 data bits.
+>> +	 * The first two bits A1 and A0 address a DAC8554 chip.
+>> +	 * The next two are the command bits, LD1 and LD0.
+>> +	 * After a don't-care-bit, the next two bits select the channel.
+>> +	 * The final control bit PD0 is a flag signalling if the data
+>> +	 * bits encode a powerdown mode. We merge PD0 with the adjacent
+>> +	 * data bits.
+>> +	 */
+>> +
+>> +	if (cmd > 3 || chan_addr > 3 ||
+>> +			(val > 0xffff && (val & ~DAC8554_PWRDN_TO_SR(3))))
+>> +		return -EINVAL;
+>> +
+>> +	data = (st->addr << 22) | (cmd << 20) | (chan_addr << 17) | val;
+> Could be more readable by using definition for the magic shifts, or macros.
+>> +	st->xfer[0] = data >> 16;
+>> +	st->xfer[1] = data >> 8;
+>> +	st->xfer[2] = data;
+>> +
+>> +	return spi_write(st->spi, st->xfer, sizeof(st->xfer));
+>> +}
+>> +
+>> +static int dac8554_read_raw(struct iio_dev *indio_dev,
+>> +			    struct iio_chan_spec const *chan,
+>> +			    int *val,
+>> +			    int *val2,
+>> +			    long m)
+> Commonly, m is called mask (like you do in _write_raw).
+>> +{
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +
+>> +	switch (m) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		*val = st->val[chan->address];
+>> +		return IIO_VAL_INT;
+>> +	case IIO_CHAN_INFO_SCALE:
+>> +		*val = st->vref_mv;
+>> +		*val2 = 16;
+>> +		return IIO_VAL_FRACTIONAL_LOG2;
+>> +	}
+>> +	return -EINVAL;
+>> +}
+>> +
+>> +static int dac8554_write_raw(struct iio_dev *indio_dev,
+>> +			     struct iio_chan_spec const *chan,
+>> +			     int val,
+>> +			     int val2,
+>> +			     long mask)
+>> +{
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +	int err;
+>> +
+>> +	switch (mask) {
+>> +	case IIO_CHAN_INFO_RAW:
+>> +		if (val > 0xffff || val < 0)
+>> +			return -EINVAL;
+>> +
+>> +		err = dac8554_spi_write(st, DAC8554_CMD_UPDATE_DAC_N,
+>> +					chan->address, val);
+>> +		if (err)
+>> +			return err;
+>> +
+>> +		st->val[chan->address] = val;
+>> +
+>> +		/* By hw design, DAC updates automatically trigger powerup. */
+>> +		st->powerdown[chan->address] = false;
+>> +
+>> +		return 0;
+>> +
+>> +	default:
+>> +		return -EINVAL;
+>> +	}
+>> +}
+>> +
+>> +static int dac8554_get_powerdown_mode(struct iio_dev *indio_dev,
+>> +				      const struct iio_chan_spec *chan)
+>> +{
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +
+>> +	return st->powerdown_mode[chan->address];
+>> +}
+>> +
+>> +static int dac8554_set_powerdown_mode(struct iio_dev *indio_dev,
+>> +				      const struct iio_chan_spec *chan,
+>> +				      unsigned int mode)
+>> +{
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +
+>> +	st->powerdown_mode[chan->address] = mode;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static ssize_t dac8554_read_dac_powerdown(struct iio_dev *indio_dev,
+>> +					  uintptr_t private,
+>> +					  const struct iio_chan_spec *chan,
+>> +					  char *buf)
+>> +{
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +
+>> +	return sprintf(buf, "%d\n", st->powerdown[chan->address]);
+>> +}
+>> +
+>> +static ssize_t dac8554_write_dac_powerdown(struct iio_dev *indio_dev,
+>> +					   uintptr_t private,
+>> +					   const struct iio_chan_spec *chan,
+>> +					   const char *buf,
+>> +					   size_t len)
+>> +{
+>> +	bool powerdown;
+>> +	int ret;
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +	u8 powerdown_mode;
+>> +
+>> +	ret = strtobool(buf, &powerdown);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	st->powerdown[chan->address] = powerdown;
+>> +
+>> +	if (powerdown) {
+>> +		powerdown_mode = st->powerdown_mode[chan->address];
+>> +		ret = dac8554_spi_write(st,
+>> +				DAC8554_CMD_UPDATE_DAC_N,
+>> +				chan->address,
+>> +				DAC8554_PWRDN_TO_SR(powerdown_mode));
+> The parameters sill fit on line even with proper indentation.
+>> +	} else {
+>> +		/* Load DAC with cached value. This triggers a powerup. */
+>> +		ret = dac8554_spi_write(st,
+>> +				DAC8554_CMD_UPDATE_DAC_N,
+>> +				chan->address,
+>> +				st->val[chan->address]);
+> Same here with indentation.
+>> +	}
+>> +
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	return len;
+> Just: return (ret) ? ret : len;
+>> +}
+>> +
+>> +static int dac8554_powerdown(struct dac8554_state *st,
+>> +			     u8 powerdown_mode)
+>> +{
+>> +	int chan, cmd, ret;
+>> +
+>> +	for (chan = DAC8554_DAC_CHANNELS-1; chan >= 0; --chan) {
+> Please mind spaces around operators.
+>> +		cmd = chan ? DAC8554_CMD_STORE_DAC_N
+>> +			   : DAC8554_CMD_STORE_DAC_N_UPDATE_ALL;
+>> +		ret = dac8554_spi_write(st, cmd, chan,
+>> +				DAC8554_PWRDN_TO_SR(powerdown_mode));
+>> +		if (ret)
+>> +			return ret;
+>> +	}
+>> +
+>> +	memset(st->powerdown_mode, powerdown_mode, sizeof(st->powerdown_mode));
+>> +	memset(st->powerdown, true, sizeof(st->powerdown));
+Whilst this probably works, I think for the boolean case it is less
+than entirely obvious, so probably better to have a simple loop.
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct iio_info dac8554_info = {
+>> +	.write_raw = dac8554_write_raw,
+>> +	.read_raw = dac8554_read_raw,
+>> +	.driver_module = THIS_MODULE,
+>> +};
+>> +
+>> +static const char * const dac8554_powerdown_modes[] = {
+>> +	"three_state",
+>> +	"1kohm_to_gnd",
+>> +	"100kohm_to_gnd"
+>> +};
+>> +
+>> +static const struct iio_enum dac8854_powerdown_mode_enum = {
+>> +	.items = dac8554_powerdown_modes,
+>> +	.num_items = ARRAY_SIZE(dac8554_powerdown_modes),
+>> +	.get = dac8554_get_powerdown_mode,
+>> +	.set = dac8554_set_powerdown_mode,
+>> +};
+>> +
+>> +static const struct iio_chan_spec_ext_info dac8554_ext_info[] = {
+>> +	{
+>> +		.name = "powerdown",
+>> +		.read = dac8554_read_dac_powerdown,
+>> +		.write = dac8554_write_dac_powerdown,
+>> +		.shared = IIO_SEPARATE,
+>> +	},
+>> +	IIO_ENUM("powerdown_mode", IIO_SEPARATE,
+>> +		 &dac8854_powerdown_mode_enum),
+>> +	IIO_ENUM_AVAILABLE("powerdown_mode", &dac8854_powerdown_mode_enum),
+>> +	{ },
+>> +};
+>> +
+>> +#define DAC8554_CHANNEL(chan) { \
+>> +	.type = IIO_VOLTAGE, \
+>> +	.indexed = 1, \
+>> +	.output = 1, \
+>> +	.channel = (chan), \
+>> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
+>> +	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE), \
+>> +	.address = (chan), \
+>> +	.ext_info = dac8554_ext_info, \
+>> +}
+>> +const struct iio_chan_spec dac8554_channels[] = {
+>> +	DAC8554_CHANNEL(0),
+>> +	DAC8554_CHANNEL(1),
+>> +	DAC8554_CHANNEL(2),
+>> +	DAC8554_CHANNEL(3),
+>> +};
+>> +#undef DAC8554_CHANNEL
+>> +
+>> +static int dac8554_probe(struct spi_device *spi)
+>> +{
+>> +	struct dac8554_state *st;
+>> +	struct iio_dev *indio_dev;
+>> +	int ret, voltage_uv;
+>> +	u32 addr;
+>> +
+>> +	indio_dev = devm_iio_device_alloc(&spi->dev, sizeof(*st));
+>> +	if (!indio_dev)
+>> +		return -ENOMEM;
+>> +
+>> +	indio_dev->dev.parent = &spi->dev;
+>> +	indio_dev->name = DAC8554_DRIVERNAME;
+>> +	indio_dev->info = &dac8554_info;
+>> +	indio_dev->modes = INDIO_DIRECT_MODE;
+>> +	indio_dev->channels = dac8554_channels;
+>> +	indio_dev->num_channels = ARRAY_SIZE(dac8554_channels);
+>> +
+>> +	spi_set_drvdata(spi, indio_dev);
+>> +
+>> +	st = iio_priv(indio_dev);
+>> +
+>> +	if (!spi->dev.of_node) {
+>> +		dev_err(&spi->dev, "missing OF node");
+>> +		return -ENODEV;
+>> +	}
+>> +	ret = of_property_read_u32(spi->dev.of_node, "address", &addr);
+>> +	if (ret || addr < 0 || addr > 2) {
+>> +		dev_err(&spi->dev, "no or invalid chip address");
+>> +		return -ENODEV;
+>> +	}
+>> +
+>> +	st->spi = spi;
+>> +	st->addr = addr;
+>> +
+> According to your DT bindings, the regulator from property "vref-supply" should
+> be used. This is missing here.
+>> +	st->reg = devm_regulator_get(&spi->dev, "vref");
+>> +	if (IS_ERR(st->reg))
+>> +		return PTR_ERR(st->reg);
+>> +
+>> +	ret = regulator_enable(st->reg);
+>> +	if (ret)
+>> +		return ret;
+>> +
+>> +	voltage_uv = regulator_get_voltage(st->reg);
+>> +	if (voltage_uv < 0)
+>> +		goto error_disable_reg;
+> Missing ret = voltage_uv before goto. Or just drop voltage_uv completely and use ret instead.
+>> +	st->vref_mv = voltage_uv / 1000;
+> How hard do you want to depend on a voltage regulator? Doing regulator_get_voltage()
+> could even be called dynamically in _read_raw(), making a real regulator optional.
+>> +
+>> +	ret = dac8554_powerdown(st, DAC8554_PWRDN_100K);
+>> +	if (ret)
+>> +		goto error_disable_reg;
+>> +
+>> +	ret = iio_device_register(indio_dev);
+>> +	if (ret)
+>> +		goto error_disable_reg;
+>> +
+>> +	return 0;
+>> +
+>> +error_disable_reg:
+>> +	regulator_disable(st->reg);
+>> +	return ret;
+>> +}
+>> +
+>> +static int dac8554_remove(struct spi_device *spi)
+>> +{
+>> +	struct iio_dev *indio_dev = spi_get_drvdata(spi);
+>> +	struct dac8554_state *st = iio_priv(indio_dev);
+>> +
+>> +	iio_device_unregister(indio_dev);
+>> +	regulator_disable(st->reg);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static const struct of_device_id dac8554_of_match[] = {
+>> +	{ .compatible = "ti,dac8554" },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(of, dac8554_of_match);
+>> +
+>> +static struct spi_driver dac8554_driver = {
+>> +	.driver = {
+>> +		.name = DAC8554_DRIVERNAME,
+>> +		.owner = THIS_MODULE,
+>> +		.of_match_table = dac8554_of_match,
+>> +	 },
+>> +	.probe = dac8554_probe,
+>> +	.remove = dac8554_remove,
+>> +};
+>> +module_spi_driver(dac8554_driver);
+>> +
+>> +MODULE_AUTHOR("Nikolaus Schulz <nikolaus.schulz@avionic-design.de>");
+>> +MODULE_DESCRIPTION("Texas Instruments DAC8554 SPI driver");
+>> +MODULE_LICENSE("GPL v2");
+>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Here is a resend of the crypto update for 3.19 since I accidentally
-pushed out an old tree instead of the current crypto tree.
-
-* The crypto API is now documented :)
-* Disallow arbitrary module loading through crypto API.
-* Allow get request with empty driver name through crypto_user.
-* Allow speed testing of arbitrary hash functions.
-* Add caam support for ctr(aes), gcm(aes) and their derivatives.
-* nx now supports concurrent hashing properly.
-* Add sahara support for SHA1/256.
-* Add ARM64 version of CRC32.
-* Misc fixes.
-
-
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Boris Brezillon (4):
-      hwrng: atmel - use clk_prepapre_enable/_disable_unprepare
-      hwrng: atmel - add DT support
-      hwrng: atmel - Add TRNG DT binding doc
-      ARM: at91/dt: add trng node to at91sam9g45
-
-Bruce Allan (4):
-      crypto: qat - fix bad unlock balance
-      crypto: qat - cleanup coccicheck warning - NULL check before freeing functions
-      crypto: qat - cleanup unnecessary break checkpatch warning
-      crypto: qat - misspelling typo - "reseting" should be "resetting"
-
-Catalin Vasile (5):
-      crypto: caam - add support for ctr(aes)
-      crypto: caam - add support for rfc3686(ctr(aes))
-      crypto: caam - add support for rfc3686 with authenc md5, sha1 and sha2
-      crypto: caam - add support for givencrypt cbc(aes) and rfc3686(ctr(aes))
-      crypto: caam - add support for givencrypt cbc(des) and cbc(des3_ede)
-
-Cristian Stoica (1):
-      crypto: caam - fix error reporting
-
-Dan Carpenter (1):
-      crypto: sha-mb - remove a bogus NULL check
-
-Daniel Borkmann (1):
-      crypto: algif - add and use sock_kzfree_s() instead of memzero_explicit()
-
-Herbert Xu (4):
-      Merge git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux
-      crypto: user - Allow get request with empty driver name
-      crypto: algif_skcipher - Fixed blocking recvmsg
-      crypto: tcrypt - Allow speed testing of arbitrary hash functions
-
-Johannes Berg (1):
-      crypto: bfin_crc - don't include linux/unaligned/access_ok.h
-
-Julia Lawall (4):
-      crypto: sparc - replace memset by memzero_explicit
-      crypto: sha - replace memset by memzero_explicit
-      crypto: powerpc - replace memset by memzero_explicit
-      crypto: arm - replace memset by memzero_explicit
-
-Kees Cook (2):
-      crypto: prefix module autoloading with "crypto-"
-      crypto: include crypto- module prefix in template
-
-Leonidas S. Barbosa (8):
-      crypto: nx - Moving NX-AES-CBC to be processed logic
-      crypto: nx - Moving NX-AES-CCM to be processed logic and sg_list bounds
-      crypto: nx - Moving limit and bound logic in CTR and fix IV vector
-      crypto: nx - Moving NX-AES-ECB to be processed logic
-      crypto: nx - Moving NX-AES-GCM to be processed logic
-      crypto: nx - Moving NX-AES-XCBC to be processed logic
-      crypto: nx - Fix SHA concurrence issue and sg limit bounds
-      crypto: nx - Fixing the limit number of bytes to be processed
-
-Masanari Iida (1):
-      crypto: testmgr - Remove unnecessary KERN_INFO from testmgr.c
-
-Nickolaus Woodruff (1):
-      crypto: drbg - use memzero_explicit() for clearing sensitive data
-
-Pranith Kumar (1):
-      crypto: caam - Remove unnecessary smp_read_barrier_depends()
-
-Rickard Strandqvist (1):
-      hwrng: core - Changed from using strncat to strlcat
-
-Steffen Trumtrar (4):
-      crypto: sahara - fix spinlock initialization
-      crypto: sahara - add support for i.MX53
-      crypto: sahara - replace tasklets with kthread
-      crypto: sahara - add support for SHA1/256
-
-Stephan Mueller (22):
-      crypto: drbg - use crypto_inc
-      crypto: drbg - add MODULE_ALIAS for all DRBG types
-      crypto: algif - zeroize message digest buffer
-      crypto: algif - zeroize IV buffer
-      crypto: doc - crypto API high level spec
-      crypto: doc - compile crypto API spec
-      crypto: doc - userspace interface spec
-      crypto: doc - RNG API documentation
-      crypto: doc - hash data structures
-      crypto: doc - AHASH API documentation
-      crypto: doc - SHASH API documentation
-      crypto: doc - cipher data structures
-      crypto: doc - ABLKCIPHER API documentation
-      crypto: doc - AEAD API documentation
-      crypto: doc - BLKCIPHER API documentation
-      crypto: doc - CIPHER API documentation
-      crypto: doc - HASH API documentation
-      crypto: doc - document uncovered member variables
-      crypto: user - add MODULE_ALIAS
-      crypto: drbg - use MODULE_ALIAS_CRYPTO
-      crypto: algif_skcipher - initialize upon init request
-      crypto: af_alg - add user space interface for AEAD
-
-Struk, Tadeusz (3):
-      crypto: qat - Use memzero_explicit
-      crytpo: qat - Fix 64 bytes requests
-      crypto: algif_skcipher - removed unneeded code
-
-Tadeusz Struk (2):
-      crypto: qat - Move BAR definitions to device specific module
-      crypto: qat - fix problem with coalescing enable logic
-
-Tudor Ambarus (4):
-      crypto: caam - add support for gcm(aes)
-      crypto: caam - add support for rfc4106(gcm(aes))
-      crypto: caam - fix output sequence contiguity check
-      crypto: caam - add support for rfc4543(gcm(aes))
-
-Ulf Hansson (2):
-      crypto: ux500/cryp - Silence compiler warning for !CONFIG_PM
-      crypto: ux500/hash - Silence compiler warning for !CONFIG_PM
-
-Valentin Rothberg (1):
-      crypto: aesni - remove unnecessary #define
-
-Yazen Ghannam (1):
-      crypto: crc32 - Add ARM64 CRC32 hw accelerated module
-
- Documentation/DocBook/Makefile                     |    2 +-
- Documentation/DocBook/crypto-API.tmpl              | 1253 ++++++++++
- Documentation/crypto/crypto-API-userspace.txt      |  205 ++
- .../devicetree/bindings/crypto/fsl-imx-sahara.txt  |    2 +-
- .../devicetree/bindings/hwrng/atmel-trng.txt       |   16 +
- arch/arm/boot/dts/at91sam9g45.dtsi                 |    7 +
- arch/arm/crypto/aes_glue.c                         |    4 +-
- arch/arm/crypto/sha1_glue.c                        |    2 +-
- arch/arm/crypto/sha1_neon_glue.c                   |    2 +-
- arch/arm/crypto/sha512_neon_glue.c                 |    6 +-
- arch/arm64/crypto/Kconfig                          |    4 +
- arch/arm64/crypto/Makefile                         |    4 +
- arch/arm64/crypto/aes-ce-ccm-glue.c                |    2 +-
- arch/arm64/crypto/aes-glue.c                       |    8 +-
- arch/arm64/crypto/crc32-arm64.c                    |  274 +++
- arch/powerpc/crypto/sha1.c                         |    4 +-
- arch/s390/crypto/aes_s390.c                        |    2 +-
- arch/s390/crypto/des_s390.c                        |    4 +-
- arch/s390/crypto/ghash_s390.c                      |    2 +-
- arch/s390/crypto/sha1_s390.c                       |    2 +-
- arch/s390/crypto/sha256_s390.c                     |    4 +-
- arch/s390/crypto/sha512_s390.c                     |    4 +-
- arch/sparc/crypto/aes_glue.c                       |    2 +-
- arch/sparc/crypto/camellia_glue.c                  |    2 +-
- arch/sparc/crypto/crc32c_glue.c                    |    2 +-
- arch/sparc/crypto/des_glue.c                       |    2 +-
- arch/sparc/crypto/md5_glue.c                       |    2 +-
- arch/sparc/crypto/sha1_glue.c                      |    2 +-
- arch/sparc/crypto/sha256_glue.c                    |    6 +-
- arch/sparc/crypto/sha512_glue.c                    |    6 +-
- arch/x86/crypto/aes_glue.c                         |    4 +-
- arch/x86/crypto/aesni-intel_glue.c                 |   10 +-
- arch/x86/crypto/blowfish_glue.c                    |    4 +-
- arch/x86/crypto/camellia_aesni_avx2_glue.c         |    4 +-
- arch/x86/crypto/camellia_aesni_avx_glue.c          |    4 +-
- arch/x86/crypto/camellia_glue.c                    |    4 +-
- arch/x86/crypto/cast5_avx_glue.c                   |    2 +-
- arch/x86/crypto/cast6_avx_glue.c                   |    2 +-
- arch/x86/crypto/crc32-pclmul_glue.c                |    4 +-
- arch/x86/crypto/crc32c-intel_glue.c                |    4 +-
- arch/x86/crypto/crct10dif-pclmul_glue.c            |    4 +-
- arch/x86/crypto/des3_ede_glue.c                    |    8 +-
- arch/x86/crypto/fpu.c                              |    3 +
- arch/x86/crypto/ghash-clmulni-intel_glue.c         |    2 +-
- arch/x86/crypto/salsa20_glue.c                     |    4 +-
- arch/x86/crypto/serpent_avx2_glue.c                |    4 +-
- arch/x86/crypto/serpent_avx_glue.c                 |    2 +-
- arch/x86/crypto/serpent_sse2_glue.c                |    2 +-
- arch/x86/crypto/sha-mb/sha1_mb.c                   |    3 +-
- arch/x86/crypto/sha1_ssse3_glue.c                  |    2 +-
- arch/x86/crypto/sha256_ssse3_glue.c                |    6 +-
- arch/x86/crypto/sha512_ssse3_glue.c                |    6 +-
- arch/x86/crypto/twofish_avx_glue.c                 |    2 +-
- arch/x86/crypto/twofish_glue.c                     |    4 +-
- arch/x86/crypto/twofish_glue_3way.c                |    4 +-
- crypto/842.c                                       |    1 +
- crypto/aes_generic.c                               |    2 +-
- crypto/af_alg.c                                    |    6 +
- crypto/algapi.c                                    |    4 +-
- crypto/algif_hash.c                                |    4 +-
- crypto/algif_skcipher.c                            |   15 +-
- crypto/ansi_cprng.c                                |    2 +-
- crypto/anubis.c                                    |    1 +
- crypto/api.c                                       |    4 +-
- crypto/arc4.c                                      |    1 +
- crypto/authenc.c                                   |    1 +
- crypto/authencesn.c                                |    1 +
- crypto/blowfish_generic.c                          |    2 +-
- crypto/camellia_generic.c                          |    2 +-
- crypto/cast5_generic.c                             |    2 +-
- crypto/cast6_generic.c                             |    2 +-
- crypto/cbc.c                                       |    1 +
- crypto/ccm.c                                       |    5 +-
- crypto/chainiv.c                                   |    1 +
- crypto/cmac.c                                      |    1 +
- crypto/crc32.c                                     |    1 +
- crypto/crc32c_generic.c                            |    2 +-
- crypto/crct10dif_generic.c                         |    2 +-
- crypto/cryptd.c                                    |    1 +
- crypto/crypto_null.c                               |    6 +-
- crypto/crypto_user.c                               |    6 +-
- crypto/ctr.c                                       |    3 +-
- crypto/cts.c                                       |    1 +
- crypto/deflate.c                                   |    2 +-
- crypto/des_generic.c                               |    2 +-
- crypto/drbg.c                                      |  127 +-
- crypto/ecb.c                                       |    1 +
- crypto/eseqiv.c                                    |    1 +
- crypto/fcrypt.c                                    |    1 +
- crypto/gcm.c                                       |    7 +-
- crypto/ghash-generic.c                             |    2 +-
- crypto/hmac.c                                      |    1 +
- crypto/khazad.c                                    |    1 +
- crypto/krng.c                                      |    2 +-
- crypto/lrw.c                                       |    1 +
- crypto/lz4.c                                       |    1 +
- crypto/lz4hc.c                                     |    1 +
- crypto/lzo.c                                       |    1 +
- crypto/mcryptd.c                                   |    1 +
- crypto/md4.c                                       |    2 +-
- crypto/md5.c                                       |    1 +
- crypto/michael_mic.c                               |    1 +
- crypto/pcbc.c                                      |    1 +
- crypto/pcrypt.c                                    |    1 +
- crypto/rmd128.c                                    |    1 +
- crypto/rmd160.c                                    |    1 +
- crypto/rmd256.c                                    |    1 +
- crypto/rmd320.c                                    |    1 +
- crypto/salsa20_generic.c                           |    2 +-
- crypto/seed.c                                      |    1 +
- crypto/seqiv.c                                     |    1 +
- crypto/serpent_generic.c                           |    4 +-
- crypto/sha1_generic.c                              |    2 +-
- crypto/sha256_generic.c                            |    4 +-
- crypto/sha512_generic.c                            |    4 +-
- crypto/tcrypt.c                                    |   32 +-
- crypto/tea.c                                       |    4 +-
- crypto/testmgr.c                                   |    3 +-
- crypto/tgr192.c                                    |    4 +-
- crypto/twofish_generic.c                           |    2 +-
- crypto/vmac.c                                      |    1 +
- crypto/wp512.c                                     |    4 +-
- crypto/xcbc.c                                      |    1 +
- crypto/xts.c                                       |    1 +
- crypto/zlib.c                                      |    1 +
- drivers/char/hw_random/Kconfig                     |    2 +-
- drivers/char/hw_random/atmel-rng.c                 |   15 +-
- drivers/char/hw_random/core.c                      |   12 +-
- drivers/crypto/bfin_crc.c                          |    2 +-
- drivers/crypto/caam/caamalg.c                      | 2412 +++++++++++++++++---
- drivers/crypto/caam/compat.h                       |    1 +
- drivers/crypto/caam/desc_constr.h                  |    2 +
- drivers/crypto/caam/error.c                        |   25 +-
- drivers/crypto/caam/jr.c                           |    3 -
- drivers/crypto/nx/nx-aes-cbc.c                     |   12 +-
- drivers/crypto/nx/nx-aes-ccm.c                     |   61 +-
- drivers/crypto/nx/nx-aes-ctr.c                     |   13 +-
- drivers/crypto/nx/nx-aes-ecb.c                     |   12 +-
- drivers/crypto/nx/nx-aes-gcm.c                     |   66 +-
- drivers/crypto/nx/nx-aes-xcbc.c                    |   81 +-
- drivers/crypto/nx/nx-sha256.c                      |  208 +-
- drivers/crypto/nx/nx-sha512.c                      |  222 +-
- drivers/crypto/nx/nx.c                             |  127 +-
- drivers/crypto/nx/nx.h                             |    8 +-
- drivers/crypto/padlock-aes.c                       |    2 +-
- drivers/crypto/padlock-sha.c                       |    8 +-
- drivers/crypto/qat/qat_common/adf_accel_devices.h  |    2 -
- drivers/crypto/qat/qat_common/adf_aer.c            |    2 +-
- drivers/crypto/qat/qat_common/adf_ctl_drv.c        |    3 +-
- drivers/crypto/qat/qat_common/adf_dev_mgr.c        |    6 +-
- drivers/crypto/qat/qat_common/adf_transport.c      |   15 +-
- .../qat/qat_common/adf_transport_access_macros.h   |    9 +-
- drivers/crypto/qat/qat_common/qat_algs.c           |   37 +-
- drivers/crypto/qat/qat_common/qat_hal.c            |    3 +-
- .../crypto/qat/qat_dh895xcc/adf_dh895xcc_hw_data.h |    2 +
- drivers/crypto/qat/qat_dh895xcc/adf_isr.c          |   12 +-
- drivers/crypto/sahara.c                            |  794 ++++++-
- drivers/crypto/ux500/cryp/cryp_core.c              |    6 +-
- drivers/crypto/ux500/hash/hash_core.c              |   10 +-
- drivers/s390/crypto/ap_bus.c                       |    3 +-
- include/crypto/hash.h                              |  492 ++++
- include/crypto/if_alg.h                            |    1 +
- include/crypto/rng.h                               |   80 +
- include/linux/crypto.h                             | 1112 ++++++++-
- include/net/sock.h                                 |    1 +
- include/uapi/linux/if_alg.h                        |    2 +
- net/core/sock.c                                    |   24 +-
- 167 files changed, 7090 insertions(+), 1068 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
