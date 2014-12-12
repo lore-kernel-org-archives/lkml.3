@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759862AbaLLG3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:29:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51954 "EHLO
+	id S965634AbaLLGbq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:31:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51976 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759331AbaLLGQ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759333AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,11 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Wade Farnsworth" <wade_farnsworth@mentor.com>,
-        "Will Deacon" <will.deacon@arm.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Jason Baron" <jbaron@redhat.com>
+CC: akpm@linux-foundation.org, "Alex Deucher" <alexander.deucher@amd.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.19326747@decadent.org.uk>
+Message-ID: <lsq.1418364865.77589238@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 102/164] tracing/syscalls: Fix perf syscall tracing
- when syscall_nr == -1
+Subject: [PATCH 3.2 090/164] drm/radeon: remove invalid pci id
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,46 +30,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 60916a9382e88fbf5e54fd36a3e658efd7ab7bed upstream.
+commit 8c3e434769b1707fd2d24de5a2eb25fedc634c4a upstream.
 
-syscall_get_nr can return -1 in the case that the task is not executing
-a system call.
+0x4c6e is a secondary device id so should not be used
+by the driver.
 
-This patch fixes perf_syscall_{enter,exit} to check that the syscall
-number is valid before using it as an index into a bitmap.
-
-Link: http://lkml.kernel.org/r/1345137254-7377-1-git-send-email-will.deacon@arm.com
-
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Wade Farnsworth <wade_farnsworth@mentor.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Noticed-by: Mark Kettenis <mark.kettenis@xs4all.nl>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/trace_syscalls.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ include/drm/drm_pciids.h | 1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -519,6 +519,8 @@ static void perf_syscall_enter(void *ign
- 	int size;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
-+		return;
- 	if (!test_bit(syscall_nr, enabled_perf_enter_syscalls))
- 		return;
- 
-@@ -593,6 +595,8 @@ static void perf_syscall_exit(void *igno
- 	int size;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
-+	if (syscall_nr < 0)
-+		return;
- 	if (!test_bit(syscall_nr, enabled_perf_exit_syscalls))
- 		return;
- 
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -56,7 +56,6 @@
+ 	{0x1002, 0x4C64, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x4C66, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x4C67, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV250|RADEON_IS_MOBILITY}, \
+-	{0x1002, 0x4C6E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV280|RADEON_IS_MOBILITY}, \
+ 	{0x1002, 0x4E44, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
+ 	{0x1002, 0x4E45, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
+ 	{0x1002, 0x4E46, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R300}, \
 
