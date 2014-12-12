@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758284AbaLLInL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:43:11 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:37119 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaLLInJ convert rfc822-to-8bit (ORCPT
+	id S1758970AbaLLIoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:44:20 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:61318 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757092AbaLLIoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:43:09 -0500
-Message-ID: <548AAA95.6020001@arm.com>
-Date: Fri, 12 Dec 2014 14:13:01 +0530
-From: Sudeep Holla <sudeep.holla@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 12 Dec 2014 03:44:19 -0500
 MIME-Version: 1.0
-To: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>
-CC: Sudeep Holla <sudeep.holla@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Linaro-acpi] [PATCH] Mailbox: Complete wait event only if Tx
- was successful
-References: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
-In-Reply-To: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
-X-OriginalArrivalTime: 12 Dec 2014 08:43:04.0775 (UTC) FILETIME=[A53F1D70:01D015E7]
-X-MC-Unique: 114121208430600201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1418155343.2058.99.camel@x220>
+References: <1418155343.2058.99.camel@x220>
+Date: Fri, 12 Dec 2014 16:44:17 +0800
+X-Google-Sender-Auth: NvbepIVKfD_uXtF1cQqkMsNzvww
+Message-ID: <CAFiDJ5_=xLtYdhbXj3K1tAqv_9P2kQG4WArE1hQwoRr8=h4VOA@mail.gmail.com>
+Subject: Re: [PATCH] nios2: enable "make defconfig"
+From: Ley Foon Tan <lftan@altera.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "nios2-dev@lists.rocketboards.org" <nios2-dev@lists.rocketboards.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ashwin,
-
-On Thursday 11 December 2014 01:46 AM, Ashwin Chaugule wrote:
-> If a wait_for_completion_timeout() call returns due to a timeout,
-> the mbox code can still call complete() after returning from the wait.
-> This can cause subsequent transmissions on a channel to fail, since
-> the wait_for_completion_timeout() sees the completion variable
-> is !=0, caused by the erroneous complete() call, and immediately
-> returns without waiting for the time as expected by the client.
+On Wed, Dec 10, 2014 at 4:02 AM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> Running "make defconfig" currently fails for nios2:
+>     $ make ARCH=nios2 defconfig
+>     scripts/kconfig/conf --defconfig Kconfig
+>     ***
+>     *** Can't find default configuration "arch/nios2/defconfig"!
+>     ***
+>     make[1]: *** [defconfig] Error 1
+>     make: *** [defconfig] Error 2
 >
-> Fix this by calling complete() only if the TX was successful.
+> Add a definition for KBUILD_DEFCONFIG to the nios2's main Makefile to
+> enable this make target.
 >
-> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->   drivers/mailbox/mailbox.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
-> index 17e9e4a..4acaddb 100644
-> --- a/drivers/mailbox/mailbox.c
-> +++ b/drivers/mailbox/mailbox.c
-> @@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
->   	if (mssg && chan->cl->tx_done)
->   		chan->cl->tx_done(chan->cl, mssg, r);
->
-> -	if (chan->cl->tx_block)
-> +	if ((!r) && chan->cl->tx_block)
->   		complete(&chan->tx_complete);
+Applied.
 
-Just curious to check if there's another possible race which is
-a different issue.
-
-Suppose the timer fired and indicated that the Tx is complete, then
-it tries to execute complete while the wait_for_completion_timeout timed
-out. Does that make sense ?
-
-So if yes, how about adding !completion_done(..) to the check while you
-are at this ?
-
-Regards,
-Sudeep
-
+Thanks.
