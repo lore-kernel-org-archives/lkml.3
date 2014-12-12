@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758982AbaLLS0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 13:26:50 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:61426 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131AbaLLS0s (ORCPT
+	id S965564AbaLLS1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 13:27:00 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:40420 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932399AbaLLS06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 13:26:48 -0500
+	Fri, 12 Dec 2014 13:26:58 -0500
 From: Eduardo Valentin <edubezval@gmail.com>
 To: Linux PM <linux-pm@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Eduardo Valentin <edubezval@gmail.com>
-Subject: [PATCH 0/2] Fix message outputing when failing to register cpu cooling
-Date: Fri, 12 Dec 2014 10:14:23 -0400
-Message-Id: <1418393665-16850-1-git-send-email-edubezval@gmail.com>
+        Eduardo Valentin <edubezval@gmail.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH 1/2] thermal: db8500: Do not print error message in the EPROBE_DEFER case
+Date: Fri, 12 Dec 2014 10:14:24 -0400
+Message-Id: <1418393665-16850-2-git-send-email-edubezval@gmail.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418393665-16850-1-git-send-email-edubezval@gmail.com>
+References: <1418393665-16850-1-git-send-email-edubezval@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Avoid printing the error message in the EPROBE_DEFER case
+where registering cpu cooling at db8500 thermal driver.
 
-Similar to the IMX case, other two drivers may require to avoid printing
-error messages when PROBE DEFER happens.
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Eduardo Valentin <edubezval@gmail.com>
+---
+ drivers/thermal/db8500_cpufreq_cooling.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-http://marc.info/?l=linux-pm&m=141833235831158&w=2
-
-This minor series fix them.
-
-Cheers,
-
-Eduardo Valentin (2):
-  thermal: db8500: Do not print error message in the EPROBE_DEFER case
-  thermal: ti-soc-thermal: Do not print error message in the
-    EPROBE_DEFER case
-
- drivers/thermal/db8500_cpufreq_cooling.c           | 10 ++++++++--
- drivers/thermal/ti-soc-thermal/ti-thermal-common.c | 11 ++++++++---
- 2 files changed, 16 insertions(+), 5 deletions(-)
-
+diff --git a/drivers/thermal/db8500_cpufreq_cooling.c b/drivers/thermal/db8500_cpufreq_cooling.c
+index 3cc3dd9..28bbff9 100644
+--- a/drivers/thermal/db8500_cpufreq_cooling.c
++++ b/drivers/thermal/db8500_cpufreq_cooling.c
+@@ -30,8 +30,14 @@ static int db8500_cpufreq_cooling_probe(struct platform_device *pdev)
+ 
+ 	cdev = cpufreq_cooling_register(cpu_present_mask);
+ 	if (IS_ERR(cdev)) {
+-		dev_err(&pdev->dev, "Failed to register cooling device\n");
+-		return PTR_ERR(cdev);
++		int ret = PTR_ERR(cdev);
++
++		if (ret != -EPROBE_DEFER)
++			dev_err(&pdev->dev,
++				"Failed to register cooling device %d\n",
++				ret);
++				
++		return ret;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, cdev);
 -- 
 2.1.3
 
