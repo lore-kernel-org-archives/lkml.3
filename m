@@ -1,146 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759319AbaLLBal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 20:30:41 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:33481 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961AbaLLBah convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 20:30:37 -0500
+	id S1759341AbaLLBb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 20:31:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:32891 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759321AbaLLBbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 20:31:55 -0500
+Date: Fri, 12 Dec 2014 02:31:49 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] TTY: add slave driver to power-on device via a
+ regulator.
+Message-ID: <20141212013149.GB16599@earth.universe>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+ <20141211215944.4127.4186.stgit@notabene.brown>
+ <20141211225847.GB11666@earth.universe>
+ <3884A980-C9EE-42A2-8D23-DF65FEC61DD2@holtmann.org>
 MIME-Version: 1.0
-In-Reply-To: <87iohh3c9c.fsf@x220.int.ebiederm.org>
-References: <52e0643bd47b1e5c65921d6e00aea1f724bb510a.1417281801.git.luto@amacapital.net>
- <87fvcxyf28.fsf_-_@x220.int.ebiederm.org> <874mtdyexp.fsf_-_@x220.int.ebiederm.org>
- <CALCETrXyC7XPaqj6oe-TmyypOVc_CkZbF6UAAx8YfkyD=gEMOQ@mail.gmail.com>
- <87a935u3nj.fsf@x220.int.ebiederm.org> <CALCETrXkEOiyzpvqtXtk1f4sL+M1Q-Y6rV=K91ez3yv2nb4Y0Q@mail.gmail.com>
- <87388xodlj.fsf@x220.int.ebiederm.org> <CALCETrXWx2-ZejEHmOi7aSoF-qJMRGR5yseeMhuurZwJRrQbUg@mail.gmail.com>
- <87h9x5re41.fsf_-_@x220.int.ebiederm.org> <87mw6xpzb0.fsf_-_@x220.int.ebiederm.org>
- <CALCETrU-o5mPr1jCaLXDuuF6J2N470zAtx=8Fa-SjF=ZpdE8mQ@mail.gmail.com>
- <87ppbtn4mv.fsf@x220.int.ebiederm.org> <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
- <87a92xn2io.fsf@x220.int.ebiederm.org> <87r3w8liw4.fsf@x220.int.ebiederm.org>
- <87iohklfvj.fsf_-_@x220.int.ebiederm.org> <87fvcok11h.fsf_-_@x220.int.ebiederm.org>
- <CALCETrVfKiXuY=KY_=nHpkTyLWgpy_3DK=4Mr2mhpyX9z1TzrA@mail.gmail.com>
- <971ad3f6-90fd-4e3f-916c-8988af3c826d@email.android.com> <CALCETrWpzvNm=fjOa3_+4QOqYP8qZUJvQAd6AsRZ71xyHZQRCg@mail.gmail.com>
- <87wq5zf83t.fsf@x220.int.ebiederm.org> <87iohh3c9c.fsf@x220.int.ebiederm.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 11 Dec 2014 17:30:15 -0800
-Message-ID: <CALCETrV-nqDwa09pHC76uE6OMe3D7zZMGYqyUf98WUtZbXUXdw@mail.gmail.com>
-Subject: Re: [CFT][PATCH 7/8] userns: Add a knob to disable setgroups on a per
- user namespace basis
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-man <linux-man@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Richard Weinberger <richard@nod.at>,
-        Kenton Varda <kenton@sandstorm.io>, stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="A6N2fC+uXW/VQSAv"
+Content-Disposition: inline
+In-Reply-To: <3884A980-C9EE-42A2-8D23-DF65FEC61DD2@holtmann.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 5:09 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> ebiederm@xmission.com (Eric W. Biederman) writes:
->
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> On Tue, Dec 9, 2014 at 4:04 PM, Eric W.Biederman <ebiederm@xmission.com> wrote:
->>>>
->>>>
->>>> On December 9, 2014 4:28:38 PM CST, Andy Lutomirski <luto@amacapital.net> wrote:
->>>>>On Tue, Dec 9, 2014 at 12:42 PM, Eric W. Biederman
->>>>><ebiederm@xmission.com> wrote:
->>>>>>
->>>>>> - Expose the knob to user space through a proc file
->>>>>/proc/<pid>/setgroups
->>>>>>
->>>>>>   A value of "deny" means the setgroups system call is disabled in
->>>>>the
->>>>>>   current processes user namespace and can not be enabled in the
->>>>>>   future in this user namespace.
->>>>>>
->>>>>>   A value of "allow" means the segtoups system call is enabled.
->>>>>>
->>>>>> - Descendant user namespaces inherit the value of setgroups from
->>>>>>   their parents.
->>>>>>
->>>>>> - A proc file is used (instead of a sysctl) as sysctls
->>>>>>   currently do not pass in a struct file so file_ns_capable
->>>>>>   is unusable.
->>>>>
->>>>>Reviewed-by: Andy Lutomirski <luto@amacapital.net>
->>>>>
->>>>>But I still don't like the name "setgroups".  People may look at that
->>>>>and have no clue what the scope of the setting is.  And anyone who, as
->>>>>root, writes "deny" to /proc/self/setgroups, thinking that it acts on
->>>>>self, will be in for a surprise.
->>>>
->>>> True setgroups isn't perfect.  Documenting it in a manpage may have to be enough. The only real improvement I can think of would be to make the setting a sysctl.   But I think pursuing that approaches the point where perfection is the enemy of getting this problem fixed.
->>>>
->>>
->>> Would "userns_setgroups" be okay?
->>
->> Maybe.
->>
->> I just played with this and this is a much bigger booby trap than I had
->> realized.  Disabling setgroups disables the possibility of logging in the
->> future and since it is a one way switch the only way out is to reboot.
->>
->> Hooray our software checks the returns of setgroups.  Booh.  This is a
->> really nasty knob to have anywhere.
->>
->> I need to think about this a little bit.  Giving root the power to shoot
->> himself in the foot is one thing.  Giving root a loaded gun pointed at
->> his foot with the hammer pulled back, and a sign that says I dare you to
->> pull the trigger, seems like a bad idea.
->>
->> I think I need to reduce when that knob can be used.  Grr.
->> Back to the drawing board!
->
-> I tried out a bunch of things and finally found a simple rule.  Don't
-> allow setgroups to be disabled after setgroups has been enabled in a
-> user namespace.  Or in practical terms don't allow setgroups to be
-> disabled after the gid_map has been set.
->
-> Which in practice pretty nearly means that we are only allowing writes
-> to setgroups when it is a single process and it's eventual children that
-> can be affected.
->
-> At which point I don't think a name change would make things any
-> clearer.
 
-The name change still helps the user to does:
+--A6N2fC+uXW/VQSAv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-$ ls /proc/self
+Hi Marcel,
 
-"setgroups?  what's that?"
+On Fri, Dec 12, 2014 at 01:46:33AM +0100, Marcel Holtmann wrote:
+> > NACK. The compatible value should describe the connected device. You
+> > did not connect a regulator, but a bluetooth chip! DT should look
+> > like this:
+> >=20
+> > &uart1 {
+> >    bluetooth {
+> >        compatible =3D "vendor,bluetooth-chip";
+> >        vdd-supply =3D <&vaux4>;
+> >    };
+> > };
+> >=20
+> > I think it would be ok to use your generic driver to handle the
+> > specific compatible value, though.
+> >=20
+> > Having the proper compatible value means, that there can be a more
+> > specific driver later, that other operating systems can expose the
+> > device as some kind of /dev/bluetooth instead of /dev/ttyXY, that
+> > userspace is able to know there is a bluetooth device connected to
+> > /dev/ttyXY by parsing the DT and results in easier-to-understand
+> > DTS.
+>=20
+> I think that is up to udev to be able to make this a nice device
+> node. However the device node name is pretty much irrelevant.=20
 
->
-> I have also updated the code to move the permission checks to open
-> where they belong (doh!).  Patch follows.
+Ah that was not about Linux, but about $random-os using DT. Just
+ignore the device name its not important for the argument.
 
-Will review and test.
+> What you want is enough meta data to tell that there is Bluetooth
+> chip behind this TTY.
 
->
-> Eric
->
->
->
->
->
->
+Yes, that is what I tried to say :)
 
+> From a Bluetooth stack perspective only hciattach needs to be run
+> to get the N_HCI line discipline up and running for that chip.
 
+Yes, but with the metadata from Neil's proposed binding you do not
+know, that there is a bluetooth chip connected, so you need to do
+this manually. Not very nice, when it could be done automatically.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+> However what would be interesting for hciattach would be a
+> possibility to expose the Bluetooth manufacturer. Since the init
+> routine is different for each manufacturer.
+
+Yes and it may be, that a manufacturer breaks its init routine at
+some point. The problem is not much different from other devices
+and normally solved through the compatible string.
+
+> So if that could be encoded in the DT, then that would be
+> certainly helpful.
+
+All needed data should be encoded when specified as in the following
+example:
+
+&uart1 {
+    bluetooth {
+        compatible =3D "wi2wi,w2cbw003";
+        vdd-supply =3D <&vaux4>;
+    };
+};
+
+Note: wi2wi is not yet in
+Documentation/devicetree/bindings/vendor-prefixes.txt
+
+-- Sebastian
+
+--A6N2fC+uXW/VQSAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUikWBAAoJENju1/PIO/qaB2UQAJyPw3+4tNUfepvVjUcVOcMg
+meEqyk9BQer1nQPWlUmgVcyb8ukwfh68tOGTTd3sMnATk4d1rpuPtDgCtTKJWSEC
+r1hPUcdSy2ccPmIGTPaEpM6BmmIJeL/0eSFzEUOh/kTZU8sbO92WhUiUrDG8+z2L
+TujjxZ8QMy4WUmzs9fsLUUNcaAiz1vHdg3xyozNMG5vRxJpYTnYhdHb+j+Z9MT6V
+e19hRNCM4hsFLTmEg+s+GcQnw/5jrhzTJuE8uzwdROqWr26dvYz+CA5FGweiCLNG
+bMMrMJZdB632JF79x4q4ZTCzGvg5HDxBKWCpVIqPVF9HCQ7TwRqDn7uiBqzTVHtI
+4ZyFS4wE8PKkiFWCpWDmhaQFiT5MePVVGkQ7F84IeJqleCcgXANpRFu8nLXphOgY
+r7clnLNUkwSLA6d+z7N5GUerWJPH32yNwbeNkixyWPpPCTTqUQ71j3NMZFIn+KHS
+ikAeWlAeKBbxO7fi1ZtL7zSW30zbLROUY8J6Oz9Wj35gyV+AyaQnPrJ69ffJzqyA
+gkqdObhSclNf0ArmzXAVxi84ltC6DIUpUtDxLQ9O9ZTw4Cs7sRxlNVie/hhQaoDj
+IwpyzUy+fZ6atKe6jWn21KrHrogjP5IiqWOUbVqc41jOk5nKvjKtY4jNhA/GNmS3
+dNl7iPgCvA+o0DMUm/LR
+=+EbL
+-----END PGP SIGNATURE-----
+
+--A6N2fC+uXW/VQSAv--
