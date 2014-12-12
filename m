@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030867AbaLLQkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:40:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:47892 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030331AbaLLQkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:40:46 -0500
-Message-ID: <548B1A7D.7040403@zytor.com>
-Date: Fri, 12 Dec 2014 08:40:29 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1030872AbaLLQlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:41:19 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:39437 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030303AbaLLQlR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:41:17 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [GIT pull] x86 mpx support for 3.19
-References: <alpine.DEB.2.11.1412091504490.16275@nanos>	<CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>	<5488A203.7000600@linux.intel.com>	<CA+55aFwTpZ8U7vUvBE8xkX1_vfktyVDcCwchssMhhP44M8TzUg@mail.gmail.com>	<5488AF8D.5070702@linux.intel.com> <CA+55aFwzCuFCzASb4Kj1WC7S9v1wSKN2dHj_ns_1uy2GG6Svqw@mail.gmail.com>
-In-Reply-To: <CA+55aFwzCuFCzASb4Kj1WC7S9v1wSKN2dHj_ns_1uy2GG6Svqw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141212162852.GA40238@snb.sh.intel.com>
+References: <201412130004.58sFmPKu%fengguang.wu@intel.com>
+	<20141212162852.GA40238@snb.sh.intel.com>
+Date: Fri, 12 Dec 2014 18:41:15 +0200
+X-Google-Sender-Auth: DiJMT0gLWYATuqF2EYVneS3jmYM
+Message-ID: <CAEnQRZBc4=coYPy8-04oKB9OWCjD_CKovMYtmeV348-tLx2kpA@mail.gmail.com>
+Subject: Re: [PATCH iio] iio: imu: kmx61: kmx61_set_wake_up_odr() can be static
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: Daniel Baluta <daniel.baluta@intel.com>, kbuild-all@01.org,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/10/2014 12:49 PM, Linus Torvalds wrote:
-> On Wed, Dec 10, 2014 at 12:39 PM, Dave Hansen
-> <dave.hansen@linux.intel.com> wrote:
->>
->> I misspoke there.  I meant SMAP (I placed MPX below its config option).
-> 
-> Ok, I agree on SMAP, we might want to have that be configurable too,
-> especially for smaller systems (I *think* SMAP is big-core only,
-> right?). I'm not sure how much of a possible performance downside it
-> has, but it does add instructions to potentially critical areas.
-> 
+On Fri, Dec 12, 2014 at 6:28 PM, kbuild test robot
+<fengguang.wu@intel.com> wrote:
+> drivers/iio/imu/kmx61.c:422:5: sparse: symbol 'kmx61_set_wake_up_odr' was not declared. Should it be static?
+>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-*As far as I know*, SMAP will be pushed into all CPUs over time.
+Reviewed-by: Daniel Baluta <daniel.baluta@intel.com>
 
-SMAP is already configurable, although the overhead on non-SMAP-enabled
-hardware is minimal (the CLAC/STAC instructions get patched out.)
-
-	-hpa
-
-
+> ---
+>  kmx61.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
+> index bda9c40..9b32f01 100644
+> --- a/drivers/iio/imu/kmx61.c
+> +++ b/drivers/iio/imu/kmx61.c
+> @@ -419,7 +419,7 @@ static int kmx61_get_mode(struct kmx61_data *data, u8 *mode, u8 device)
+>         return 0;
+>  }
+>
+> -int kmx61_set_wake_up_odr(struct kmx61_data *data, int val, int val2)
+> +static int kmx61_set_wake_up_odr(struct kmx61_data *data, int val, int val2)
+>  {
+>         int ret, odr_bits;
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
