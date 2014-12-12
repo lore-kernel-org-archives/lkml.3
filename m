@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030396AbaLLNx6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:53:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:50123 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030261AbaLLNui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1030271AbaLLNui (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 12 Dec 2014 08:50:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28233 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968028AbaLLNub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:31 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669055"
+   d="scan'208";a="636668913"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 13/22] perf itrace: Add processing for Instruction Tracing events
-Date: Fri, 12 Dec 2014 15:48:00 +0200
-Message-Id: <1418392089-5568-14-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 06/22] perf record: Extend -m option for Instruction Tracing mmap pages
+Date: Fri, 12 Dec 2014 15:47:53 +0200
+Message-Id: <1418392089-5568-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,132 +27,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide hooks so that an Instruction Trace
-decoder can process Instruction Tracing
-events.
+Extend the -m option so that the number
+of mmap pages for Instruction Tracing
+can be specified.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 49 ++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h | 13 +++++++++++++
- 2 files changed, 62 insertions(+)
+ tools/perf/Documentation/perf-record.txt |  2 ++
+ tools/perf/builtin-record.c              | 49 ++++++++++++++++++++++++++++++--
+ tools/perf/util/evlist.c                 | 10 +++++--
+ tools/perf/util/evlist.h                 |  1 +
+ 4 files changed, 56 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index ee05677..feb9159 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -600,6 +600,28 @@ out_free:
- 	return err;
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index af9a54e..a5f2096 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -91,6 +91,8 @@ OPTIONS
+ 	Number of mmap data pages (must be a power of two) or size
+ 	specification with appended unit character - B/K/M/G. The
+ 	size is rounded up to have nearest pages power of two value.
++	Also, by adding a comma, the number of mmap pages for Instruction
++	Tracing can be specified.
+ 
+ -g::
+ 	Enables call-graph (stack chain/backtrace) recording.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index ab8cd02..95519e3 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -751,6 +751,49 @@ static int perf_record_config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
  }
  
-+static bool itrace__dont_decode(struct perf_session *session)
++static int record__parse_mmap_pages(const struct option *opt,
++				    const char *str,
++				    int unset __maybe_unused)
 +{
-+	return !session->itrace_synth_opts ||
-+	       session->itrace_synth_opts->dont_decode;
-+}
++	struct record_opts *opts = opt->value;
++	char *s, *p;
++	unsigned int mmap_pages;
++	int ret;
 +
-+int perf_event__process_itrace_info(struct perf_tool *tool __maybe_unused,
-+				    union perf_event *event,
-+				    struct perf_session *session __maybe_unused)
-+{
-+	enum itrace_type type = event->itrace_info.type;
-+
-+	if (dump_trace)
-+		fprintf(stdout, " type: %u\n", type);
-+
-+	switch (type) {
-+	case PERF_ITRACE_UNKNOWN:
-+	default:
++	if (!str)
 +		return -EINVAL;
++
++	s = strdup(str);
++	if (!s)
++		return -ENOMEM;
++
++	p = strchr(s, ',');
++	if (p)
++		*p = '\0';
++
++	if (*s) {
++		ret = __perf_evlist__parse_mmap_pages(&mmap_pages, s);
++		if (ret)
++			goto out_free;
++		opts->mmap_pages = mmap_pages;
 +	}
++
++	if (!p) {
++		ret = 0;
++		goto out_free;
++	}
++
++	ret = __perf_evlist__parse_mmap_pages(&mmap_pages, p + 1);
++	if (ret)
++		goto out_free;
++
++	opts->itrace_mmap_pages = mmap_pages;
++
++out_free:
++	free(s);
++	return ret;
 +}
 +
- int perf_event__synthesize_itrace(struct perf_tool *tool,
- 				  perf_event__handler_t process,
- 				  size_t size, u64 offset, u64 ref, int idx,
-@@ -620,6 +642,30 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
- 	return process(tool, &ev, NULL, NULL);
+ static const char * const __record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -824,9 +867,9 @@ struct option __record_options[] = {
+ 			&record.opts.no_inherit_set,
+ 			"child tasks do not inherit counters"),
+ 	OPT_UINTEGER('F', "freq", &record.opts.user_freq, "profile at this frequency"),
+-	OPT_CALLBACK('m', "mmap-pages", &record.opts.mmap_pages, "pages",
+-		     "number of mmap data pages",
+-		     perf_evlist__parse_mmap_pages),
++	OPT_CALLBACK('m', "mmap-pages", &record.opts, "pages[,pages]",
++		     "number of mmap data pages and instruction tracing mmap pages",
++		     record__parse_mmap_pages),
+ 	OPT_BOOLEAN(0, "group", &record.opts.group,
+ 		    "put the counters into a counter group"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &record.opts,
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index e363cfe..fa0681b 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -985,10 +985,8 @@ static long parse_pages_arg(const char *str, unsigned long min,
+ 	return pages;
  }
  
-+s64 perf_event__process_itrace(struct perf_tool *tool, union perf_event *event,
-+			       struct perf_session *session)
+-int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+-				  int unset __maybe_unused)
++int __perf_evlist__parse_mmap_pages(unsigned int *mmap_pages, const char *str)
+ {
+-	unsigned int *mmap_pages = opt->value;
+ 	unsigned long max = UINT_MAX;
+ 	long pages;
+ 
+@@ -1005,6 +1003,12 @@ int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
++int perf_evlist__parse_mmap_pages(const struct option *opt, const char *str,
++				  int unset __maybe_unused)
 +{
-+	s64 err;
-+
-+	if (dump_trace)
-+		fprintf(stdout, " size: %#"PRIx64"  offset: %#"PRIx64"  ref: %#"PRIx64"  idx: %u  tid: %d  cpu: %d\n",
-+			event->itrace.size, event->itrace.offset,
-+			event->itrace.reference, event->itrace.idx,
-+			event->itrace.tid, event->itrace.cpu);
-+
-+	if (itrace__dont_decode(session))
-+		return event->itrace.size;
-+
-+	if (!session->itrace || event->header.type != PERF_RECORD_ITRACE)
-+		return -EINVAL;
-+
-+	err = session->itrace->process_itrace_event(session, event, tool);
-+	if (err < 0)
-+		return err;
-+
-+	return event->itrace.size;
++	return __perf_evlist__parse_mmap_pages(opt->value, str);
 +}
 +
- #define PERF_ITRACE_DEFAULT_PERIOD_TYPE		PERF_ITRACE_PERIOD_NANOSECS
- #define PERF_ITRACE_DEFAULT_PERIOD		100000
- #define PERF_ITRACE_DEFAULT_CALLCHAIN_SZ	16
-@@ -765,6 +811,9 @@ int perf_event__process_itrace_error(struct perf_tool *tool __maybe_unused,
- 				     union perf_event *event,
- 				     struct perf_session *session)
- {
-+	if (itrace__dont_decode(session))
-+		return 0;
-+
- 	if (session->itrace)
- 		session->itrace->error_count += 1;
+ /**
+  * perf_evlist__mmap_ex - Create mmaps to receive events.
+  * @evlist: list of events
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 0f1e716..5bdb8a5 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -121,6 +121,7 @@ int perf_evlist__start_workload(struct perf_evlist *evlist);
  
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 0b00d50..08247d5 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -34,6 +34,10 @@ struct option;
- struct record_opts;
- struct itrace_info_event;
+ struct option;
  
-+enum itrace_type {
-+	PERF_ITRACE_UNKNOWN,
-+};
-+
- enum itrace_error_type {
- 	PERF_ITRACE_DECODER_ERROR = 1,
- };
-@@ -90,6 +94,9 @@ struct itrace {
- 			     union perf_event *event,
- 			     struct perf_sample *sample,
- 			     struct perf_tool *tool);
-+	int (*process_itrace_event)(struct perf_session *session,
-+				    union perf_event *event,
-+				    struct perf_tool *tool);
- 	int (*flush_events)(struct perf_session *session,
- 			    struct perf_tool *tool);
- 	void (*free_events)(struct perf_session *session);
-@@ -330,10 +337,16 @@ int perf_event__synthesize_itrace_info(struct itrace_record *itr,
- 				       struct perf_tool *tool,
- 				       struct perf_session *session,
- 				       perf_event__handler_t process);
-+int perf_event__process_itrace_info(struct perf_tool *tool,
-+				    union perf_event *event,
-+				    struct perf_session *session);
- int perf_event__synthesize_itrace(struct perf_tool *tool,
- 				  perf_event__handler_t process,
- 				  size_t size, u64 offset, u64 ref, int idx,
- 				  u32 tid, u32 cpu);
-+s64 perf_event__process_itrace(struct perf_tool *tool,
-+			       union perf_event *event,
-+			       struct perf_session *session);
- int perf_event__process_itrace_error(struct perf_tool *tool,
- 				     union perf_event *event,
- 				     struct perf_session *session);
++int __perf_evlist__parse_mmap_pages(unsigned int *mmap_pages, const char *str);
+ int perf_evlist__parse_mmap_pages(const struct option *opt,
+ 				  const char *str,
+ 				  int unset);
 -- 
 1.9.1
 
