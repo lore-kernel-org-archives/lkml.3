@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966093AbaLLTaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 14:30:19 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57100 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932581AbaLLTaQ (ORCPT
+	id S1759139AbaLLTdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 14:33:10 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:57857 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755540AbaLLTdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 14:30:16 -0500
-Date: Fri, 12 Dec 2014 19:29:36 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Andrew Jackson <andrew.jackson@arm.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20141212192936.GT11764@sirena.org.uk>
-References: <cover.1418372910.git.Andrew.Jackson@arm.com>
- <97f65b6037b9ac676f6ca7717a230a68cbe81fd1.1418372910.git.Andrew.Jackson@arm.com>
+	Fri, 12 Dec 2014 14:33:09 -0500
+Date: Fri, 12 Dec 2014 14:33:00 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: [GIT PULL] Btrfs for 3.19-rc
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Message-ID: <1418412780.4845.22@mail.thefacebook.com>
+In-Reply-To: <CA+55aFzWDZ+3sAHHhZ_iourYAmh_3rfEk-u8H4d4b9=KcJb2gg@mail.gmail.com>
+References: <20141212190731.GB23804@ret.masoncoding.com>
+	<CA+55aFzWDZ+3sAHHhZ_iourYAmh_3rfEk-u8H4d4b9=KcJb2gg@mail.gmail.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ddlq+5wZogx8hGrT"
-Content-Disposition: inline
-In-Reply-To: <97f65b6037b9ac676f6ca7717a230a68cbe81fd1.1418372910.git.Andrew.Jackson@arm.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/6] ASoC: dwc: Remove unnecessary debug messages and
- tests
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-12_07:2014-12-12,2014-12-12,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=29.4129509548051
+ compositescore=0.939076664828693 urlsuspect_oldscore=0.939076664828693
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=64355
+ rbsscore=0.939076664828693 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412120178
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ddlq+5wZogx8hGrT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Dec 12, 2014 at 09:25:00AM +0000, Andrew Jackson wrote:
-> From: Andrew Jackson <Andrew.Jackson@arm.com>
->=20
-> The devm_XXX allocation functions print a message on failure,
-> so additional messages are not required.
+On Fri, Dec 12, 2014 at 2:24 PM, Linus Torvalds 
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Dec 12, 2014 at 11:07 AM, Chris Mason <clm@fb.com> wrote:
+>> 
+>>  From a feature point of view, most of the code here comes from Miao 
+>> Xie
+>>  and others at Fujitsu to implement scrubbing and replacing devices 
+>> on
+>>  raid56.  This has been in development for a while, and it's a big
+>>  improvement.
+> 
+> So this has probably happened before, and I just haven't been looking,
+> but I thought I'd mention it.
+> 
+> There are merges from github for this feature, and those merges aren't
+> signed, and don't have merge messages. Maybe you actually verified all
+> of it other ways, but there's no sign of it. I generally push back on
+> merging unsigned stuff from random hosting places (to the point where
+> I just refuse to do it, although it's possible that some pass though
+> just due to inattention), and I think that's just good practice in
+> general. And merges that don't explain what the merge does are just
+> bad merges (they are extra annoying when they are back-merges, but
+> it's a problem even otherwise).
 
-Applied, thanks.
+Thanks, in this case he also posted the patches to the btrfs list.  
+Using git pull is easier for all the obvious reasons, so I took the 
+github tree.  It definitely looked right to me, but I'll compare the 
+github code with his patches directly on top of rc6.
 
---ddlq+5wZogx8hGrT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Next time I'll make sure they are signed though.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+-chris
 
-iQEcBAEBAgAGBQJUi0IfAAoJECTWi3JdVIfQTDgIAIY5bDThEf6xA3UGvw2Sqov0
-LLrnGf2Lgk8KnuNp3hZweTZzyHddqK3e0BF7rm0cSc83t31zc8sICmaLhlVuam7c
-oLxxPtBFM7ej6TeGXQJQbB681bCoM2pIQuv1leS/GuKNhRb7XSCl/koKy3i7An4q
-0rivYjI7wjoqUUV72QWEBlMzxp7rnfvywRWzJit0v/NN6NzrVvmkJAz1erZC6dkT
-DoBeSHbGZca9xbweVJqMjXf7xSfwNVJtsVMAZD8mSGYMfrMF53x+Nn8Ud4dcXY8T
-mMr0h405UvDyAEIG4uaYH7iek7OFk6+qzlNYfiBg5lclerDsUpxXRBqoRIJBgmQ=
-=6kUA
------END PGP SIGNATURE-----
-
---ddlq+5wZogx8hGrT--
