@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188AbaLLG7K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:59:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51727 "EHLO
+	id S967247AbaLLG7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:59:34 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51732 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758614AbaLLGQy (ORCPT
+	by vger.kernel.org with ESMTP id S1758605AbaLLGQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:54 -0500
+	Fri, 12 Dec 2014 01:16:53 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Bjorn Helgaas" <bhelgaas@google.com>,
-        "Douglas Lehr" <dllehr@us.ibm.com>,
-        "Anton Blanchard" <anton@samba.org>,
-        "Milton Miller" <miltonm@us.ibm.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Alan Stern" <stern@rowland.harvard.edu>,
+        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
+        "Lu Baolu" <baolu.lu@linux.intel.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.102134355@decadent.org.uk>
+Message-ID: <lsq.1418364865.496257986@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 009/164] PCI: Increase IBM ipr SAS Crocodile BARs to
- at least system page size
+Subject: [PATCH 3.2 149/164] usb: xhci: rework root port wake bits if
+ controller isn't allowed to wakeup
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,64 +35,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Douglas Lehr <dllehr@us.ibm.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit 9fe373f9997b48fcd6222b95baf4a20c134b587a upstream.
+commit a1377e5397ab321e21b793ec8cd2b6f12bd3c718 upstream.
 
-The Crocodile chip occasionally comes up with 4k and 8k BAR sizes.  Due to
-an erratum, setting the SR-IOV page size causes the physical function BARs
-to expand to the system page size.  Since ppc64 uses 64k pages, when Linux
-tries to assign the smaller resource sizes to the now 64k BARs the address
-will be truncated and the BARs will overlap.
+When system is being suspended, if host device is not allowed to do wakeup,
+xhci_suspend() needs to clear all root port wake on bits. Otherwise, some
+platforms may generate spurious wakeup, even if PCI PME# is disabled.
 
-Force Linux to allocate the resource as a full page, which avoids the
-overlap.
+The initial commit ff8cbf250b44 ("xhci: clear root port wake on bits"),
+which also got into stable, turned out to not work correctly and had to
+be reverted, and is now rewritten.
 
-[bhelgaas: print expanded resource, too]
-Signed-off-by: Douglas Lehr <dllehr@us.ibm.com>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Milton Miller <miltonm@us.ibm.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Suggested-by: Alan Stern <stern@rowland.harvard.edu>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+[Mathias Nyman: reword commit message]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context; drop xhci-plat changes]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/quirks.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -26,6 +26,7 @@
- #include <linux/dmi.h>
- #include <linux/pci-aspm.h>
- #include <linux/ioport.h>
-+#include <linux/mm.h>
- #include <asm/dma.h>	/* isa_dma_bridge_buggy */
- #include "pci.h"
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -235,7 +235,7 @@ static int xhci_pci_suspend(struct usb_h
+ 			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
+ 		return -EINVAL;
  
-@@ -352,6 +353,25 @@ static void __devinit quirk_citrine(stru
+-	retval = xhci_suspend(xhci);
++	retval = xhci_suspend(xhci, do_wakeup);
+ 
+ 	return retval;
  }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM,	PCI_DEVICE_ID_IBM_CITRINE,	quirk_citrine);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -33,6 +33,8 @@
+ #define DRIVER_AUTHOR "Sarah Sharp"
+ #define DRIVER_DESC "'eXtensible' Host Controller (xHC) Driver"
  
-+/*  On IBM Crocodile ipr SAS adapters, expand BAR to system page size */
-+static void quirk_extend_bar_to_page(struct pci_dev *dev)
++#define	PORT_WAKE_BITS	(PORT_WKOC_E | PORT_WKDISC_E | PORT_WKCONN_E)
++
+ /* Some 0.95 hardware can't handle the chain bit on a Link TRB being cleared */
+ static int link_quirk;
+ module_param(link_quirk, int, S_IRUGO | S_IWUSR);
+@@ -867,19 +869,57 @@ static void xhci_clear_command_ring(stru
+ 	xhci_set_cmd_ring_deq(xhci);
+ }
+ 
++static void xhci_disable_port_wake_on_bits(struct xhci_hcd *xhci)
 +{
-+	int i;
++	int port_index;
++	__le32 __iomem **port_array;
++	unsigned long flags;
++	u32 t1, t2;
 +
-+	for (i = 0; i < PCI_STD_RESOURCE_END; i++) {
-+		struct resource *r = &dev->resource[i];
++	spin_lock_irqsave(&xhci->lock, flags);
 +
-+		if (r->flags & IORESOURCE_MEM && resource_size(r) < PAGE_SIZE) {
-+			r->end = PAGE_SIZE - 1;
-+			r->start = 0;
-+			r->flags |= IORESOURCE_UNSET;
-+			dev_info(&dev->dev, "expanded BAR %d to page size: %pR\n",
-+				 i, r);
-+		}
++	/* disble usb3 ports Wake bits*/
++	port_index = xhci->num_usb3_ports;
++	port_array = xhci->usb3_ports;
++	while (port_index--) {
++		t1 = readl(port_array[port_index]);
++		t1 = xhci_port_state_to_neutral(t1);
++		t2 = t1 & ~PORT_WAKE_BITS;
++		if (t1 != t2)
++			writel(t2, port_array[port_index]);
 +	}
++
++	/* disble usb2 ports Wake bits*/
++	port_index = xhci->num_usb2_ports;
++	port_array = xhci->usb2_ports;
++	while (port_index--) {
++		t1 = readl(port_array[port_index]);
++		t1 = xhci_port_state_to_neutral(t1);
++		t2 = t1 & ~PORT_WAKE_BITS;
++		if (t1 != t2)
++			writel(t2, port_array[port_index]);
++	}
++
++	spin_unlock_irqrestore(&xhci->lock, flags);
 +}
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_IBM, 0x034a, quirk_extend_bar_to_page);
 +
  /*
-  *  S3 868 and 968 chips report region size equal to 32M, but they decode 64M.
-  *  If it's needed, re-allocate the region.
+  * Stop HC (not bus-specific)
+  *
+  * This is called when the machine transition into S3/S4 mode.
+  *
+  */
+-int xhci_suspend(struct xhci_hcd *xhci)
++int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup)
+ {
+ 	int			rc = 0;
+ 	unsigned int		delay = XHCI_MAX_HALT_USEC;
+ 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
+ 	u32			command;
+ 
++	/* Clear root port wake on bits if wakeup not allowed. */
++	if (!do_wakeup)
++		xhci_disable_port_wake_on_bits(xhci);
++
+ 	/* Don't poll the roothubs on bus suspend. */
+ 	xhci_dbg(xhci, "%s: stopping port polling.\n", __func__);
+ 	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1698,7 +1698,7 @@ void xhci_shutdown(struct usb_hcd *hcd);
+ int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks);
+ 
+ #ifdef	CONFIG_PM
+-int xhci_suspend(struct xhci_hcd *xhci);
++int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup);
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
+ #else
+ #define	xhci_suspend	NULL
 
