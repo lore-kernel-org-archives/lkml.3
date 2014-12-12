@@ -1,203 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031199AbaLLRiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:38:09 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58457 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030898AbaLLRiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:38:06 -0500
-Message-ID: <548B27E5.4090108@ti.com>
-Date: Fri, 12 Dec 2014 11:37:41 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1031097AbaLLRkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:40:09 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:44302 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030596AbaLLRkG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:40:06 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Geert Uytterhoeven <geert+renesas@glider.be>, ulf.hansson@linaro.org,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 2/2] of/clk: use "clkops-clocks" to specify clocks handled by clock_ops domain
+Date: Fri, 12 Dec 2014 19:40:52 +0200
+Message-ID: <2061380.HdoWyg3PvY@avalon>
+User-Agent: KMail/4.12.5 (Linux/3.16.5-gentoo; KDE/4.12.5; x86_64; ; )
+In-Reply-To: <53D8F24B.7010104@ti.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be> <2717555.fiA6A86F65@avalon> <53D8F24B.7010104@ti.com>
 MIME-Version: 1.0
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: ARM: OMAP5/DRA7: Fix counter frequency drift for AM572x errata
- i856
-References: <20141211204116.GT24110@csclub.uwaterloo.ca> <20141211204308.GU24110@csclub.uwaterloo.ca>
-In-Reply-To: <20141211204308.GU24110@csclub.uwaterloo.ca>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--sricharan, as the email ID is defunct.
+Hi Grygorii,
 
-On 12/11/2014 02:43 PM, Lennart Sorensen wrote:
-> On Thu, Dec 11, 2014 at 03:41:16PM -0500, Lennart Sorensen wrote:
->> Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
->> crystal is not enabled at power up.  Instead the CPU falls back to using
->> an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
->> 20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
->> but can also be 19.2 or 27MHz which result in much larger drift.
+I've found this mail deep inside my inbox :-)
 
-Why not just change the clock parent to something that is more
-accurate like the 32k clk?
-
->>
->> Since this is used to drive the master counter at 32.768KHz * 375 /
->> 2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
->> seconds per day, and more than the 500ppm NTP is able to tolerate.
->>
->> Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
->> is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
-Without digging into docs, This is just the boot configuration, right?
-are we not able to reconfigure?
-
->> by known that the real counter frequency can be determined and used.
->> The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 375 / 1220.
->> This is unfortunately not integer math so the actual arch_timer_freq
->> needs to be precalculated.
->>
->> Also the SYSCLK1 frequencies that have never been used by an omap
->> evaluation board were all missing a 0.
->>
-
-Please sign-off on you patch. use git format-patch -M -s to generate
-patches. and when posting a series, use --cover-letter. Will also be
-good to provide tests that show that this is indeed an issue on OMAP5
-and DRA7 (considering the $subject here).
-
->> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
->> index 4f61148..2e81511 100644
->> --- a/arch/arm/mach-omap2/timer.c
->> +++ b/arch/arm/mach-omap2/timer.c
->> @@ -513,11 +513,11 @@ static void __init realtime_counter_init(void)
->>  	rate = clk_get_rate(sys_clk);
->>  	/* Numerator/denumerator values refer TRM Realtime Counter section */
->>  	switch (rate) {
->> -	case 1200000:
->> +	case 12000000:
->>  		num = 64;
->>  		den = 125;
->>  		break;
->> -	case 1300000:
->> +	case 13000000:
->>  		num = 768;
->>  		den = 1625;
->>  		break;
->> @@ -529,11 +529,11 @@ static void __init realtime_counter_init(void)
->>  		num = 192;
->>  		den = 625;
->>  		break;
->> -	case 2600000:
->> +	case 26000000:
->>  		num = 384;
->>  		den = 1625;
->>  		break;
->> -	case 2700000:
->> +	case 27000000:
->>  		num = 256;
->>  		den = 1125;
->>  		break;
-
-These should probably fall in as a separate patch.
-
->> @@ -557,6 +557,73 @@ static void __init realtime_counter_init(void)
->>  	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
->>  
->>  	arch_timer_freq = (rate / den) * num;
->> +
->> +	if (soc_is_dra7xx()) {
->> +		#define CTRL_CORE_BOOTSTRAP 0x4A0026C4
->> +		#define SPEEDSELECT_MASK 0x00000300
-
-we dont usually define it like this.
-
->> +		void __iomem *corebase;
->> +		corebase = ioremap(CTRL_CORE_BOOTSTRAP, SZ_4);
->> +		if (!corebase)
->> +			pr_err("%s: ioremap failed\n", __func__);
->> +		else {
-
-also run ./scripts/checkpatch.pl --strict on your patch prior to
-posting. try to ensure there are 0 warnings or checks.
-
->> +			reg = readl_relaxed(corebase) & SPEEDSELECT_MASK;
->> +			iounmap(corebase);
->> +			/*
->> +			 * Errata i856 says the 32.768KHz crystal does
->> +			 * not start at power on, so the CPU falls back in
->> +			 * an emulated 32KHz clock instead.  This causes
->> +			 * the master counter frequency to not be what it
->> +			 * was expected to be.	This affects at least
->> +			 * the AM572x 1.0 and 1.1 revisions.
->> +			 * Of course any board built without a populated
->> +			 * 32.768KHz crystal would also need this fix
->> +			 * even if the CPU is fixed later.
->> +			 *
->> +			 * If the two speedselect bits are not 0, then the
->> +			 * 32.768KHz clock driving the course counter that
->> +			 * corrects the fine counter every time it ticks is
->> +			 * actually rate/610 rather than 32.768KHz and we
->> +			 * should compensate to avoid the 570ppm (At 20MHz,
->> +			 * much worse at other rates) too fast system time.
->> +			 *
->> +			 * Precalculate the arch_timer_freq, since
->> +			 * rate/610 isn't integer math and accuracy is
->> +			 * desirable here.
->> +			 */
->> +			if (reg) {
->> +				switch (rate) {
->> +				case 19200000:
->> +					num = 375;
->> +					den = 1220;
->> +					arch_timer_freq = 5901639;
->> +					break;
->> +				case 27000000:
->> +					num = 375;
->> +					den = 1220;
->> +					arch_timer_freq = 8299180;
->> +					break;
->> +				case 20000000:
-
->> +				default:
->> +					num = 375;
->> +					den = 1220;
->> +					arch_timer_freq = 6147541;
->> +					break;
->> +				}
->> +				reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
->> +						NUMERATOR_DENUMERATOR_MASK;
->> +				reg |= num;
->> +				writel_relaxed(reg, base + INCREMENTER_NUMERATOR_OFFSET);
->> +
->> +				reg = readl_relaxed(base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET) &
->> +						NUMERATOR_DENUMERATOR_MASK;
->> +				reg |= den;
->> +				writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
->> +
->> +				printk(KERN_WARNING "DRA7xx CP15 compensated for sloppy internal 32KHz clock.\n");
-
-we would want to reuse the configuration code previously done, not
-repeat the logic.
-
-in general we want the flow to be common - so the point in logic where
-num, den is decided is also the place you want this logic to fit in..
-
-
->> +			}
->> +		}
->> +	}
->> +
->>  	set_cntfreq();
->>  
->>  	iounmap(base);
+On Wednesday 30 July 2014 16:25:31 Grygorii Strashko wrote:
+> On 07/30/2014 03:06 AM, Laurent Pinchart wrote:
+> > On Monday 28 July 2014 23:52:34 Grant Likely wrote:
+> >> On Mon, Jul 28, 2014 at 11:47 AM, Grygorii Strashko wrote:
+> >>> On 07/28/2014 05:05 PM, Grant Likely wrote:
+> >>>> On Thu, 12 Jun 2014 19:53:43 +0300, Grygorii Strashko wrote:
+> >>>>> Use "clkops-clocks" property to specify clocks handled by
+> >>>>> clock_ops domain PM domain. Only clocks defined in "clkops-clocks"
+> >>>>> set of clocks will be handled by Runtime PM through clock_ops
+> >>>>> Pm domain.
+> >>>>> 
+> >>>>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> >>>>> ---
+> >>>>> 
+> >>>>>    drivers/of/of_clk.c |    7 ++-----
+> >>>>>    1 file changed, 2 insertions(+), 5 deletions(-)
+> >>>>> 
+> >>>>> diff --git a/drivers/of/of_clk.c b/drivers/of/of_clk.c
+> >>>>> index 35f5e9f..5f9b90e 100644
+> >>>>> --- a/drivers/of/of_clk.c
+> >>>>> +++ b/drivers/of/of_clk.c
+> >>>>> @@ -86,11 +86,8 @@ int of_clk_register_runtime_pm_clocks(struct
+> >>>>> device_node *np,>>>
+> >>>>> 
+> >>>>>       struct clk *clk;
+> >>>>>       int error;
+> >>>>> 
+> >>>>> -    for (i = 0; (clk = of_clk_get(np, i)) && !IS_ERR(clk); i++) {
+> >>>>> -            if (!clk_may_runtime_pm(clk)) {
+> >>>>> -                    clk_put(clk);
+> >>>>> -                    continue;
+> >>>>> -            }
+> >>>>> +    for (i = 0; (clk = of_clk_get_from_set(np, "clkops", i)) &&
+> >>>>> +                 !IS_ERR(clk); i++) {
+> >>>> 
+> >>>> This really looks like an ABI break to me. What happens to all the
+> >>>> existing platforms who don't have this new clkops-clocks in their
+> >>>> device tree?
+> >>> 
+> >>> Agree. This patch as is will break such platforms.
+> >>> As possible solution for above problem - the NULL can be used as clock's
+> >>> prefix by default and platform code can configure new value of clock's
+> >>> prefix during initialization.
+> >>> In addition, to make this solution full the of_clk_get_by_name() will
+> >>> need to be modified too.
+> >>> 
+> >>> But note pls, this is pure RFC patches which I did to find out the
+> >>> answer on questions: - What is better: maintain Runtime PM clocks
+> >>> configuration in DT or in code?
+> >> 
+> >> In code. I don't think it is workable to embed runtime PM behaviour
+> >> into the DT bindings. I think there will be too much variance in what
+> >> hardware requires. We can create helpers to make this simpler, but I
+> >> don't think it is a good idea to set it up automatically without any
+> >> control from the driver itself.
+> >> 
+> >>> - Where and when to call of_clk_register_runtime_pm_clocks()?
+> >>> 
+> >>>    Bus notifier/ platform core/ device drivers
+> >> 
+> >> I would say in device drivers.
+> > 
+> > I tend to agree with that.
+> > 
+> > It will help here to take a step back and remember what the problem we're
+> > trying to solve is.
+> > 
+> > At the root is clock management. Our system comprise many clocks, and they
+> > need to be handled. The Common Clock Framework nicely models the clocks,
+> > and offers an API for drivers to retrieve device clocks and control them.
+> > Drivers can thus implement clock management manually without much pain.
+> > 
+> > A clock can be managed in roughly three different ways :
+> > 
+> > - it can be enabled at probe time and disabled at remove time ;
+> > 
+> > - it can be enabled right before the device leaves its idle state and
+> > disabled when the device goes back to idle ; or
+> > 
+> > - it can be enabled and disabled in a more fine-grained, device-specific
+> > manner.
+> > 
+> > The selected clock management granularity depends on constraints specific
+> > to the device and on how aggressive power saving needs to be. Enabling
+> > the clocks at probe time and disabling them at remove time is enough for
+> > most devices, but leads to a high power consumption. For that reason the
+> > second clock management scheme is often desired.
+> > 
+> > Managing clocks manually in the driver is a valid option. However, when
+> > adding runtime PM to the equation, and realizing that the clocks need to
+> > be enabled in the runtime PM resume handler and disabled in the suspend
+> > handler, the clock management code starts looking very similar in most
+> > drivers. We're thus tempted to factorize it away from the drivers into a
+> > shared location.
+> > 
+> > It's important to note at this point that the goal here is only to
+> > simplify drivers. Moving clock management code out of the drivers doesn't
+> > (unless I'm missing something) open the door to new possibilities, it just
+> > serves as a simplification.
+> > 
+> > Now, as Grygorii mentioned, differences between how a given IP core is
+> > integrated in various SoCs can make clock management SoC-dependent. In the
+> > vast majority of cases (which is really what we need to target, given that
+> > our target is simplifying drivers) SoC integration can be described as a
+> > list of clocks that must be managed. That list can be common to all
+> > devices in a given SoC, or can be device-dependent as well.
 > 
-> I am perfectly willing to split this into two patches it prefered (one
-> for the counter frequency fix and one for the rate typos).
+> That's actually a problem - now we have static list of managed clocks
+> per-SoC and not per device.
 > 
-> Other cleanups needed would be great too, since I am still not too
-> pleased with how this looks.
+> > Few locations can be used to express a per-device list of per-SoC clocks.
+> > We can have clocks lists in a per-SoC and per-device location, per-device
+> > clocks lists in an SoC-specific location, or per-SoC clocks lists in a
+> > device- specific location.
+> > 
+> > The first option would require listing clocks to be managed by runtime PM
+> > in DT nodes, as proposed by this patch set. I don't think this is the
+> > best option, as that information is a mix of hardware description and
+> > software policy, with the hardware description part being already present
+> > in DT in the clocks property.
 > 
-> With this fix however many boards have run ntp with drift less than 3ppm,
-> so it works very well.
-> 
+> I'm not fully agree here. The clock is "functional clock" If It's managed by
+> runtime PM. And all such clocks need to be enabled/disabled always when
+> device is powered on/off. So, from my point of view it's HW description and
+> it follows TRM.
+>
+> Other clocks are optional
 
+That's actually use-case dependent, some of them might be mandatory.
+
+> and only drivers should control them.
+> And question is how to define sets of such clocks in the best way?
+> 
+> > The second option calls for storing the lists in SoC code under arch/. As
+> > we're trying to minimize the amount of SoC code there (and even remove SoC
+> > code completely when possible) I don't think that's a good option.
+> > 
+> > The third option would require storing the clocks lists in device drivers.
+> > I believe this is our best option, as a trade-off between simplicity and
+> > versatility. Drivers that use runtime PM already need to enable it
+> > explicitly when probing devices. Passing a list of clock names to runtime
+> > PM at that point wouldn't complicate drivers much. When the clocks list
+> > isn't SoC- dependent it could be stored as static information. Otherwise
+> > it could be derived from DT (or any other source of hardware description)
+> > using C code, offering all the versatility we need.
+> 
+> Ok. if I understand right, you propose smth like this:
+> 1) DT based solution:
+> 
+> devA {
+> 	clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
+> 	rpm-clocks = <&clkpa>, <&clkcpgmac>;
+> - or -
+> 	clocks = <&clkpa>, <&clkcpgmac>, <&chipclk12>;
+> 	clock-names = "clk_pa", "clk_cpgmac", "cpsw_cpts_rft_clk";
+> 	rpm-clocks =  "clk_pa", "clk_cpgmac";
+> }
+
+On a side note I believe the "rpm-clocks" name is too tied to the Linux 
+implementation. A name similar to "functional-clocks" would be better.
+
+> in driver:
+>  pm_runtime_enable();
+> 
+>   |- of_clk_register_runtime_pm_clocks()
+> 
+> - or -
+>  of_clk_register_runtime_pm_clocks()
+>  pm_runtime_enable();
+
+I prefer the second option, as an explicit opt-in is less likely to cause 
+regressions, and would also offer an easy way for drivers to opt-out.
+
+> 2) Static solution:
+> char *con_ids_davinci[] =
+>     { "fck", "master", "slave", NULL };
+> char *con_ids_keystone[] =
+>     { "clk_pa", "clk_cpgmac" };
+> 
+> static struct of_device_id of_match[] = {
+> 	{ .compatible = "ti,keystone", con_ids_keystone},
+> 	{ .compatible = "ti,davinci", con_ids_davinci},
+> 	{},
+> };
+> 
+> Personally, I like option 1 and, seems, it will not break ABI.
+
+Is option 2 really representative of most use cases ? The list of clock inputs 
+to an IP core is a property of the IP core itself. How those inputs are 
+connected in the SoC is a property of the SoC integration. The clocks 
+references in DT can thus vary per-SoC, but the clock names should be pretty 
+much constant for a given IP core. Thus, if we have a single list of clocks to 
+manager for a given IP core, it shouldn't be difficult to pass that list to 
+the of_clk_register_runtime_pm_clocks() function.
+
+> > The only drawback of this solution I can think of right now is that the
+> > runtime PM core couldn't manage device clocks before probing the device.
+> > Specifically device clocks couldn't be managed if no driver is loaded for
+> > that device. I somehow recall that someone raised this as being a
+> > problem, but I can't remember why.
+> 
+> I can recollect only OMAP2+ SoCs where some abstraction called HW_MOD is
+> used during platform initialization to reset all devices and turn off
+> unused ones before probing the devices. But clock_ops are not used by
+> OMAP2+:)
 
 -- 
 Regards,
-Nishanth Menon
+
+Laurent Pinchart
+
