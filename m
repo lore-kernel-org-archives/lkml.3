@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965279AbaLLG0v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:26:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52017 "EHLO
+	id S1760537AbaLLG0u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:26:50 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52012 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759360AbaLLGQ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759358AbaLLGQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:59 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@kernel.org>,
-        "Kuninori Morimoto" <kuninori.morimoto.gx@renesas.com>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.488701783@decadent.org.uk>
+Message-ID: <lsq.1418364865.276110095@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 092/164] ASoC: fsi: remove unsupported PAUSE flag
+Subject: [PATCH 3.2 098/164] ext4: fix oops when loading block bitmap failed
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,31 +31,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+From: Jan Kara <jack@suse.cz>
 
-commit c1b9b9b1ad2df6144ca3fbe6989f7bd9ea5c5562 upstream.
+commit 599a9b77ab289d85c2d5c8607624efbe1f552b0f upstream.
 
-FSI doesn't support PAUSE.
-Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
+When we fail to load block bitmap in __ext4_new_inode() we will
+dereference NULL pointer in ext4_journal_get_write_access(). So check
+for error from ext4_read_block_bitmap().
 
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-[bwh: Backported to 3.2: adjust context]
+Coverity-id: 989065
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/sh/fsi.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/ext4/ialloc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/soc/sh/fsi.c
-+++ b/sound/soc/sh/fsi.c
-@@ -1096,8 +1096,7 @@ static struct snd_soc_dai_ops fsi_dai_op
- static struct snd_pcm_hardware fsi_pcm_hardware = {
- 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
- 			SNDRV_PCM_INFO_MMAP		|
--			SNDRV_PCM_INFO_MMAP_VALID	|
--			SNDRV_PCM_INFO_PAUSE,
-+			SNDRV_PCM_INFO_MMAP_VALID,
- 	.formats		= FSI_FMTS,
- 	.rates			= FSI_RATES,
- 	.rate_min		= 8000,
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -813,6 +813,10 @@ got:
+ 		struct buffer_head *block_bitmap_bh;
+ 
+ 		block_bitmap_bh = ext4_read_block_bitmap(sb, group);
++		if (!block_bitmap_bh) {
++			err = -EIO;
++			goto out;
++		}
+ 		BUFFER_TRACE(block_bitmap_bh, "get block bitmap access");
+ 		err = ext4_journal_get_write_access(handle, block_bitmap_bh);
+ 		if (err) {
 
