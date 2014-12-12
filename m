@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030254AbaLLNug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:50:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23138 "EHLO mga01.intel.com"
+	id S1030438AbaLLNyt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:54:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28233 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967664AbaLLNuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:50:24 -0500
+	id S1030238AbaLLNuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636668860"
+   d="scan'208";a="636669028"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 04/22] perf tools: Add support for Instruction Trace recording
-Date: Fri, 12 Dec 2014 15:47:51 +0200
-Message-Id: <1418392089-5568-5-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 11/22] perf itrace: Add helpers for queuing Instruction Tracing data
+Date: Fri, 12 Dec 2014 15:47:58 +0200
+Message-Id: <1418392089-5568-12-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,373 +27,468 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for reading from the Instruction
-Tracing mmap and synthesizing Instruction
-Tracing events.
+Provide functions to queue Instruction Tracing data
+buffers for processing.  A Instruction Trace decoder
+need not use the queues, however Intel BTS and Intel PT
+will use them.
 
-This patch introduces an abstraction for recording
-Instruction Trace data.  Recording is initialized
-by itrace_record__init() which is a weak function
-to be implemented by the architecture to provide
-recording callbacks.  Recording is mainly handled
-by itrace_mmap__read() and
-perf_event__synthesize_itrace() but there are
-callbacks for miscellaneous needs including
-validating and processing user options, populating
-private data in itrace_info_event, and freeing
-the structure when finished.
+There is one queue for each of the mmap buffers that
+were used for recording.  Because those mmaps were
+associated with per-cpu or per-thread contexts, the
+data is time-ordered with respect to those contexts.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/perf.h        |   2 +
- tools/perf/util/itrace.c | 196 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h |  59 +++++++++++++-
- tools/perf/util/record.c |  11 ++-
- 4 files changed, 266 insertions(+), 2 deletions(-)
+ tools/perf/util/itrace.c | 304 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/itrace.h |  87 ++++++++++++++
+ 2 files changed, 391 insertions(+)
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 1dabb85..ca4c09d 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -53,8 +53,10 @@ struct record_opts {
- 	bool	     sample_time;
- 	bool	     period;
- 	bool	     sample_intr_regs;
-+	bool	     full_itrace;
- 	unsigned int freq;
- 	unsigned int mmap_pages;
-+	unsigned int itrace_mmap_pages;
- 	unsigned int user_freq;
- 	u64          branch_stack;
- 	u64	     default_interval;
 diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index c950b4f..77f7c7a 100644
+index a6d38f5..d6433e2c 100644
 --- a/tools/perf/util/itrace.c
 +++ b/tools/perf/util/itrace.c
-@@ -21,6 +21,10 @@
+@@ -20,11 +20,15 @@
+ #include <linux/kernel.h>
  #include <linux/perf_event.h>
  #include <linux/types.h>
++#include <linux/string.h>
  
-+#include <stdlib.h>
-+#include <string.h>
-+#include <errno.h>
-+
++#include <sys/param.h>
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <limits.h>
+ #include <errno.h>
++#include <linux/list.h>
+ 
  #include "../perf.h"
  #include "util.h"
- #include "evlist.h"
-@@ -28,6 +32,9 @@
- #include "thread_map.h"
- #include "itrace.h"
- 
-+#include "event.h"
-+#include "debug.h"
-+
- int itrace_mmap__mmap(struct itrace_mmap *mm, struct itrace_mmap_params *mp,
- 		      void *userpg, int fd)
- {
-@@ -97,3 +104,192 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
- 		mp->tid = evlist->threads->map[idx];
+@@ -108,6 +112,241 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
  	}
  }
+ 
++#define ITRACE_INIT_NR_QUEUES	32
 +
-+size_t itrace_record__info_priv_size(struct itrace_record *itr)
++static struct itrace_queue *itrace_alloc_queue_array(unsigned int nr_queues)
 +{
-+	if (itr)
-+		return itr->info_priv_size(itr);
++	struct itrace_queue *queue_array;
++	unsigned int max_nr_queues, i;
++
++	max_nr_queues = MIN(UINT_MAX, SIZE_MAX) / sizeof(struct itrace_queue);
++	if (nr_queues > max_nr_queues)
++		return NULL;
++
++	queue_array = calloc(nr_queues, sizeof(struct itrace_queue));
++	if (!queue_array)
++		return NULL;
++
++	for (i = 0; i < nr_queues; i++) {
++		INIT_LIST_HEAD(&queue_array[i].head);
++		queue_array[i].priv = NULL;
++	}
++
++	return queue_array;
++}
++
++int itrace_queues__init(struct itrace_queues *queues)
++{
++	queues->nr_queues = ITRACE_INIT_NR_QUEUES;
++	queues->queue_array = itrace_alloc_queue_array(queues->nr_queues);
++	if (!queues->queue_array)
++		return -ENOMEM;
 +	return 0;
 +}
 +
-+static int itrace_not_supported(void)
++static int itrace_queues__grow(struct itrace_queues *queues,
++			       unsigned int new_nr_queues)
 +{
-+	pr_err("Instruction tracing is not supported on this architecture\n");
-+	return -EINVAL;
-+}
++	unsigned int nr_queues = queues->nr_queues;
++	struct itrace_queue *queue_array;
++	unsigned int i;
 +
-+int itrace_record__info_fill(struct itrace_record *itr,
-+			     struct perf_session *session,
-+			     struct itrace_info_event *itrace_info,
-+			     size_t priv_size)
-+{
-+	if (itr)
-+		return itr->info_fill(itr, session, itrace_info, priv_size);
-+	return itrace_not_supported();
-+}
++	if (!nr_queues)
++		nr_queues = ITRACE_INIT_NR_QUEUES;
 +
-+void itrace_record__free(struct itrace_record *itr)
-+{
-+	if (itr)
-+		itr->free(itr);
-+}
++	while (nr_queues && nr_queues < new_nr_queues)
++		nr_queues <<= 1;
 +
-+int itrace_record__options(struct itrace_record *itr,
-+			   struct perf_evlist *evlist,
-+			   struct record_opts *opts)
-+{
-+	if (itr)
-+		return itr->recording_options(itr, evlist, opts);
-+	return 0;
-+}
++	if (nr_queues < queues->nr_queues || nr_queues < new_nr_queues)
++		return -EINVAL;
 +
-+u64 itrace_record__reference(struct itrace_record *itr)
-+{
-+	if (itr)
-+		return itr->reference(itr);
-+	return 0;
-+}
-+
-+struct itrace_record *__weak
-+itrace_record__init(struct perf_evlist *evlist __maybe_unused, int *err)
-+{
-+	*err = 0;
-+	return NULL;
-+}
-+
-+int perf_event__synthesize_itrace_info(struct itrace_record *itr,
-+				       struct perf_tool *tool,
-+				       struct perf_session *session,
-+				       perf_event__handler_t process)
-+{
-+	union perf_event *ev;
-+	size_t priv_size;
-+	int err;
-+
-+	pr_debug2("Synthesizing itrace information\n");
-+	priv_size = itrace_record__info_priv_size(itr);
-+	ev = zalloc(sizeof(struct itrace_info_event) + priv_size);
-+	if (!ev)
++	queue_array = itrace_alloc_queue_array(nr_queues);
++	if (!queue_array)
 +		return -ENOMEM;
 +
-+	ev->itrace_info.header.type = PERF_RECORD_ITRACE_INFO;
-+	ev->itrace_info.header.size = sizeof(struct itrace_info_event) +
-+				      priv_size;
-+	err = itrace_record__info_fill(itr, session, &ev->itrace_info,
-+				       priv_size);
-+	if (err)
-+		goto out_free;
++	for (i = 0; i < queues->nr_queues; i++) {
++		list_splice_tail(&queues->queue_array[i].head,
++				 &queue_array[i].head);
++		queue_array[i].priv = queues->queue_array[i].priv;
++	}
 +
-+	err = process(tool, ev, NULL, NULL);
-+out_free:
-+	free(ev);
-+	return err;
++	queues->nr_queues = nr_queues;
++	queues->queue_array = queue_array;
++
++	return 0;
 +}
 +
-+int perf_event__synthesize_itrace(struct perf_tool *tool,
-+				  perf_event__handler_t process,
-+				  size_t size, u64 offset, u64 ref, int idx,
-+				  u32 tid, u32 cpu)
++static void *itrace_copy_data(u64 size, struct perf_session *session)
 +{
-+	union perf_event ev;
++	int fd = perf_data_file__fd(session->file);
++	void *p;
++	ssize_t ret;
 +
-+	memset(&ev, 0, sizeof(ev));
-+	ev.itrace.header.type = PERF_RECORD_ITRACE;
-+	ev.itrace.header.size = sizeof(ev.itrace);
-+	ev.itrace.size = size;
-+	ev.itrace.offset = offset;
-+	ev.itrace.reference = ref;
-+	ev.itrace.idx = idx;
-+	ev.itrace.tid = tid;
-+	ev.itrace.cpu = cpu;
++	if (size > SSIZE_MAX)
++		return NULL;
 +
-+	return process(tool, &ev, NULL, NULL);
++	p = malloc(size);
++	if (!p)
++		return NULL;
++
++	ret = readn(fd, p, size);
++	if (ret != (ssize_t)size) {
++		free(p);
++		return NULL;
++	}
++
++	return p;
 +}
 +
-+int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
-+		      struct perf_tool *tool, process_itrace_t fn)
++static int itrace_queues__add_buffer(struct itrace_queues *queues,
++				     unsigned int idx,
++				     struct itrace_buffer *buffer)
 +{
-+	u64 head = itrace_mmap__read_head(mm);
-+	u64 old = mm->prev, offset, ref;
-+	unsigned char *data = mm->base;
-+	size_t size, head_off, old_off, len1, len2, padding;
-+	union perf_event ev;
-+	void *data1, *data2;
++	struct itrace_queue *queue;
++	int err;
 +
-+	if (old == head)
-+		return 0;
-+
-+	pr_debug3("itrace idx %d old %#"PRIx64" head %#"PRIx64" diff %#"PRIx64"\n",
-+		  mm->idx, old, head, head - old);
-+
-+	if (mm->mask) {
-+		head_off = head & mm->mask;
-+		old_off = old & mm->mask;
-+	} else {
-+		head_off = head % mm->len;
-+		old_off = old % mm->len;
-+	}
-+
-+	if (head_off > old_off)
-+		size = head_off - old_off;
-+	else
-+		size = mm->len - (old_off - head_off);
-+
-+	ref = itrace_record__reference(itr);
-+
-+	if (head > old || size <= head || mm->mask) {
-+		offset = head - size;
-+	} else {
-+		/*
-+		 * When the buffer size is not a power of 2, 'head' wraps at the
-+		 * highest multiple of the buffer size, so we have to subtract
-+		 * the remainder here.
-+		 */
-+		u64 rem = (0ULL - mm->len) % mm->len;
-+
-+		offset = head - size - rem;
-+	}
-+
-+	if (size > head_off) {
-+		len1 = size - head_off;
-+		data1 = &data[mm->len - len1];
-+		len2 = head_off;
-+		data2 = &data[0];
-+	} else {
-+		len1 = size;
-+		data1 = &data[head_off - len1];
-+		len2 = 0;
-+		data2 = NULL;
-+	}
-+
-+	/* padding must be written by fn() e.g. record__process_itrace() */
-+	padding = size & 7;
-+	if (padding)
-+		padding = 8 - padding;
-+
-+	memset(&ev, 0, sizeof(ev));
-+	ev.itrace.header.type = PERF_RECORD_ITRACE;
-+	ev.itrace.header.size = sizeof(ev.itrace);
-+	ev.itrace.size = size + padding;
-+	ev.itrace.offset = offset;
-+	ev.itrace.reference = ref;
-+	ev.itrace.idx = mm->idx;
-+	ev.itrace.tid = mm->tid;
-+	ev.itrace.cpu = mm->cpu;
-+
-+	if (fn(tool, &ev, data1, len1, data2, len2))
-+		return -1;
-+
-+	mm->prev = head;
-+
-+	itrace_mmap__write_tail(mm, head);
-+	if (itr->read_finish) {
-+		int err;
-+
-+		err = itr->read_finish(itr, mm->idx);
-+		if (err < 0)
++	if (idx >= queues->nr_queues) {
++		err = itrace_queues__grow(queues, idx + 1);
++		if (err)
 +			return err;
 +	}
 +
-+	return 1;
++	queue = &queues->queue_array[idx];
++
++	if (!queue->set) {
++		queue->set = true;
++		queue->tid = buffer->tid;
++		queue->cpu = buffer->cpu;
++	} else if (buffer->cpu != queue->cpu || buffer->tid != queue->tid) {
++		pr_err("itrace queue conflict: cpu %d, tid %d vs cpu %d, tid %d\n",
++		       queue->cpu, queue->tid, buffer->cpu, buffer->tid);
++		return -EINVAL;
++	}
++
++	buffer->buffer_nr = queues->next_buffer_nr++;
++
++	list_add_tail(&buffer->list, &queue->head);
++
++	queues->new_data = true;
++	queues->populated = true;
++
++	return 0;
 +}
++
++/* Limit buffers to 32MiB on 32-bit */
++#define BUFFER_LIMIT_FOR_32_BIT (32 * 1024 * 1024)
++
++static int itrace_queues__split_buffer(struct itrace_queues *queues,
++				       unsigned int idx,
++				       struct itrace_buffer *buffer)
++{
++	u64 sz = buffer->size;
++	bool consecutive = false;
++	struct itrace_buffer *b;
++	int err;
++
++	while (sz > BUFFER_LIMIT_FOR_32_BIT) {
++		b = memdup(buffer, sizeof(struct itrace_buffer));
++		if (!b)
++			return -ENOMEM;
++		b->size = BUFFER_LIMIT_FOR_32_BIT;
++		b->consecutive = consecutive;
++		err = itrace_queues__add_buffer(queues, idx, b);
++		if (err) {
++			itrace_buffer__free(b);
++			return err;
++		}
++		buffer->data_offset += BUFFER_LIMIT_FOR_32_BIT;
++		sz -= BUFFER_LIMIT_FOR_32_BIT;
++		consecutive = true;
++	}
++
++	buffer->size = sz;
++	buffer->consecutive = consecutive;
++
++	return 0;
++}
++
++static int itrace_queues__add_event_buffer(struct itrace_queues *queues,
++					   struct perf_session *session,
++					   unsigned int idx,
++					   struct itrace_buffer *buffer)
++{
++	if (session->one_mmap) {
++		buffer->data = buffer->data_offset - session->one_mmap_offset +
++			       session->one_mmap_addr;
++	} else if (perf_data_file__is_pipe(session->file)) {
++		buffer->data = itrace_copy_data(buffer->size, session);
++		if (!buffer->data)
++			return -ENOMEM;
++		buffer->data_needs_freeing = true;
++	} else if (BITS_PER_LONG == 32 &&
++		   buffer->size > BUFFER_LIMIT_FOR_32_BIT) {
++		int err;
++
++		err = itrace_queues__split_buffer(queues, idx, buffer);
++		if (err)
++			return err;
++	}
++
++	return itrace_queues__add_buffer(queues, idx, buffer);
++}
++
++int itrace_queues__add_event(struct itrace_queues *queues,
++			     struct perf_session *session,
++			     union perf_event *event, off_t data_offset,
++			     struct itrace_buffer **buffer_ptr)
++{
++	struct itrace_buffer *buffer;
++	unsigned int idx;
++	int err;
++
++	buffer = zalloc(sizeof(struct itrace_buffer));
++	if (!buffer)
++		return -ENOMEM;
++
++	buffer->pid = -1;
++	buffer->tid = event->itrace.tid;
++	buffer->cpu = event->itrace.cpu;
++	buffer->data_offset = data_offset;
++	buffer->offset = event->itrace.offset;
++	buffer->reference = event->itrace.reference;
++	buffer->size = event->itrace.size;
++	idx = event->itrace.idx;
++
++	err = itrace_queues__add_event_buffer(queues, session, idx, buffer);
++	if (err)
++		goto out_err;
++
++	if (buffer_ptr)
++		*buffer_ptr = buffer;
++
++	return 0;
++
++out_err:
++	itrace_buffer__free(buffer);
++	return err;
++}
++
++void itrace_queues__free(struct itrace_queues *queues)
++{
++	unsigned int i;
++
++	for (i = 0; i < queues->nr_queues; i++) {
++		while (!list_empty(&queues->queue_array[i].head)) {
++			struct itrace_buffer *buffer;
++
++			buffer = list_entry(queues->queue_array[i].head.next,
++					    struct itrace_buffer, list);
++			list_del(&buffer->list);
++			itrace_buffer__free(buffer);
++		}
++	}
++
++	zfree(&queues->queue_array);
++	queues->nr_queues = 0;
++}
++
+ size_t itrace_record__info_priv_size(struct itrace_record *itr)
+ {
+ 	if (itr)
+@@ -160,6 +399,71 @@ itrace_record__init(struct perf_evlist *evlist __maybe_unused, int *err)
+ 	return NULL;
+ }
+ 
++struct itrace_buffer *itrace_buffer__next(struct itrace_queue *queue,
++					  struct itrace_buffer *buffer)
++{
++	if (buffer) {
++		if (list_is_last(&buffer->list, &queue->head))
++			return NULL;
++		return list_entry(buffer->list.next, struct itrace_buffer,
++				  list);
++	} else {
++		if (list_empty(&queue->head))
++			return NULL;
++		return list_entry(queue->head.next, struct itrace_buffer, list);
++	}
++}
++
++void *itrace_buffer__get_data(struct itrace_buffer *buffer, int fd)
++{
++	size_t adj = buffer->data_offset & (page_size - 1);
++	size_t size = buffer->size + adj;
++	off_t file_offset = buffer->data_offset - adj;
++	void *addr;
++
++	if (buffer->data)
++		return buffer->data;
++
++	addr = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, file_offset);
++	if (addr == MAP_FAILED)
++		return NULL;
++
++	buffer->mmap_addr = addr;
++	buffer->mmap_size = size;
++
++	buffer->data = addr + adj;
++
++	return buffer->data;
++}
++
++void itrace_buffer__put_data(struct itrace_buffer *buffer)
++{
++	if (!buffer->data || !buffer->mmap_addr)
++		return;
++	munmap(buffer->mmap_addr, buffer->mmap_size);
++	buffer->mmap_addr = NULL;
++	buffer->mmap_size = 0;
++	buffer->data = NULL;
++	buffer->use_data = NULL;
++}
++
++void itrace_buffer__drop_data(struct itrace_buffer *buffer)
++{
++	itrace_buffer__put_data(buffer);
++	if (buffer->data_needs_freeing) {
++		buffer->data_needs_freeing = false;
++		zfree(&buffer->data);
++		buffer->use_data = NULL;
++		buffer->size = 0;
++	}
++}
++
++void itrace_buffer__free(struct itrace_buffer *buffer)
++{
++	itrace_buffer__drop_data(buffer);
++	free(buffer);
++}
++
+ void itrace_synth_error(struct itrace_error_event *itrace_error, int type,
+ 			int code, int cpu, pid_t pid, pid_t tid, u64 ip,
+ 			const char *msg)
 diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 00ba409..6eef25c 100644
+index 54b8607..fd97606 100644
 --- a/tools/perf/util/itrace.h
 +++ b/tools/perf/util/itrace.h
-@@ -18,13 +18,18 @@
- 
+@@ -19,6 +19,7 @@
  #include <sys/types.h>
  #include <stdbool.h>
--
-+#include <stddef.h>
+ #include <stddef.h>
++#include <linux/list.h>
  #include <linux/perf_event.h>
  #include <linux/types.h>
  
- #include "../perf.h"
- 
-+union perf_event;
-+struct perf_session;
- struct perf_evlist;
-+struct perf_tool;
-+struct record_opts;
-+struct itrace_info_event;
- 
- /**
-  * struct itrace_mmap - records an mmap of the itrace buffer.
-@@ -70,6 +75,29 @@ struct itrace_mmap_params {
- 	int		cpu;
+@@ -97,6 +98,80 @@ struct itrace {
  };
  
-+/**
-+ * struct itrace_record - callbacks for recording Instruction Trace data.
-+ * @recording_options: validate and process recording options
-+ * @info_priv_size: return the size of the private data in itrace_info_event
-+ * @info_fill: fill-in the private data in itrace_info_event
-+ * @free: free this itrace record structure
-+ * @reference: provide a 64-bit reference number for itrace_event
-+ * @read_finish: called after reading from an itrace mmap
+ /**
++ * struct itrace_buffer - a buffer containing Instruction Tracing data.
++ * @list: buffers are queued in a list held by struct itrace_queue
++ * @size: size of the buffer in bytes
++ * @pid: in per-thread mode, the pid this buffer is associated with
++ * @tid: in per-thread mode, the tid this buffer is associated with
++ * @cpu: in per-cpu mode, the cpu this buffer is associated with
++ * @data: actual buffer data (can be null if the data has not been loaded)
++ * @data_offset: file offset at which the buffer can be read
++ * @mmap_addr: mmap address at which the buffer can be read
++ * @mmap_size: size of the mmap at @mmap_addr
++ * @data_needs_freeing: @data was malloc'd so free it when it is no longer
++ *                      needed
++ * @consecutive: the original data was split up and this buffer is consecutive
++ *               to the previous buffer
++ * @offset: offset as determined by aux_head / aux_tail members of struct
++ *          perf_event_mmap_page
++ * @reference: an implementation-specific reference determined when the data is
++ *             recorded
++ * @buffer_nr: used to number each buffer
++ * @use_size: implementation actually only uses this number of bytes
++ * @use_data: implementation actually only uses data starting at this address
 + */
-+struct itrace_record {
-+	int (*recording_options)(struct itrace_record *itr,
-+				 struct perf_evlist *evlist,
-+				 struct record_opts *opts);
-+	size_t (*info_priv_size)(struct itrace_record *itr);
-+	int (*info_fill)(struct itrace_record *itr,
-+			 struct perf_session *session,
-+			 struct itrace_info_event *itrace_info,
-+			 size_t priv_size);
-+	void (*free)(struct itrace_record *itr);
-+	u64 (*reference)(struct itrace_record *itr);
-+	int (*read_finish)(struct itrace_record *itr, int idx);
++struct itrace_buffer {
++	struct list_head	list;
++	size_t			size;
++	pid_t			pid;
++	pid_t			tid;
++	int			cpu;
++	void			*data;
++	off_t			data_offset;
++	void			*mmap_addr;
++	size_t			mmap_size;
++	bool			data_needs_freeing;
++	bool			consecutive;
++	u64			offset;
++	u64			reference;
++	u64			buffer_nr;
++	size_t			use_size;
++	void			*use_data;
 +};
 +
- static inline u64 itrace_mmap__read_head(struct itrace_mmap *mm __maybe_unused)
- {
- 	/* Not yet implemented */
-@@ -93,4 +121,33 @@ void itrace_mmap_params__set_idx(struct itrace_mmap_params *mp,
- 				 struct perf_evlist *evlist, int idx,
- 				 bool per_cpu);
++/**
++ * struct itrace_queue - a queue of Instruction Tracing data buffers.
++ * @head: head of buffer list
++ * @tid: in per-thread mode, the tid this queue is associated with
++ * @cpu: in per-cpu mode, the cpu this queue is associated with
++ * @set: %true once this queue has been dedicated to a specific thread or cpu
++ * @priv: implementation-specific data
++ */
++struct itrace_queue {
++	struct list_head	head;
++	pid_t			tid;
++	int			cpu;
++	bool			set;
++	void			*priv;
++};
++
++/**
++ * struct itrace_queues - an array of Instruction Tracing queues.
++ * @queue_array: array of queues
++ * @nr_queues: number of queues
++ * @new_data: set whenever new data is queued
++ * @populated: queues have been fully populated using the itrace_index
++ * @next_buffer_nr: used to number each buffer
++ */
++struct itrace_queues {
++	struct itrace_queue	*queue_array;
++	unsigned int		nr_queues;
++	bool			new_data;
++	bool			populated;
++	u64			next_buffer_nr;
++};
++
++/**
+  * struct itrace_mmap - records an mmap of the itrace buffer.
+  * @base: address of mapped area
+  * @userpg: pointer to buffer's perf_event_mmap_page
+@@ -193,6 +268,18 @@ typedef int (*process_itrace_t)(struct perf_tool *tool, union perf_event *event,
+ int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
+ 		      struct perf_tool *tool, process_itrace_t fn);
  
-+typedef int (*process_itrace_t)(struct perf_tool *tool, union perf_event *event,
-+				void *data1, size_t len1, void *data2,
-+				size_t len2);
-+
-+int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
-+		      struct perf_tool *tool, process_itrace_t fn);
-+
-+struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
-+
-+int itrace_record__options(struct itrace_record *itr,
-+			   struct perf_evlist *evlist,
-+			   struct record_opts *opts);
-+size_t itrace_record__info_priv_size(struct itrace_record *itr);
-+int itrace_record__info_fill(struct itrace_record *itr,
++int itrace_queues__init(struct itrace_queues *queues);
++int itrace_queues__add_event(struct itrace_queues *queues,
 +			     struct perf_session *session,
-+			     struct itrace_info_event *itrace_info,
-+			     size_t priv_size);
-+void itrace_record__free(struct itrace_record *itr);
-+u64 itrace_record__reference(struct itrace_record *itr);
-+
-+int perf_event__synthesize_itrace_info(struct itrace_record *itr,
-+				       struct perf_tool *tool,
-+				       struct perf_session *session,
-+				       perf_event__handler_t process);
-+int perf_event__synthesize_itrace(struct perf_tool *tool,
-+				  perf_event__handler_t process,
-+				  size_t size, u64 offset, u64 ref, int idx,
-+				  u32 tid, u32 cpu);
-+
- #endif
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index 8acd0df..1887484 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -119,7 +119,16 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- 			evsel->attr.comm_exec = 1;
- 	}
++			     union perf_event *event, off_t data_offset,
++			     struct itrace_buffer **buffer_ptr);
++void itrace_queues__free(struct itrace_queues *queues);
++struct itrace_buffer *itrace_buffer__next(struct itrace_queue *queue,
++					  struct itrace_buffer *buffer);
++void *itrace_buffer__get_data(struct itrace_buffer *buffer, int fd);
++void itrace_buffer__put_data(struct itrace_buffer *buffer);
++void itrace_buffer__drop_data(struct itrace_buffer *buffer);
++void itrace_buffer__free(struct itrace_buffer *buffer);
+ struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
  
--	if (evlist->nr_entries > 1) {
-+	if (opts->full_itrace) {
-+		/*
-+		 * Need to be able to synthesize and parse selected events with
-+		 * arbitrary sample types, which requires always being able to
-+		 * match the id.
-+		 */
-+		use_sample_identifier = true;
-+		evlist__for_each(evlist, evsel)
-+			perf_evsel__set_sample_id(evsel, use_sample_identifier);
-+	} else if (evlist->nr_entries > 1) {
- 		struct perf_evsel *first = perf_evlist__first(evlist);
- 
- 		evlist__for_each(evlist, evsel) {
+ int itrace_record__options(struct itrace_record *itr,
 -- 
 1.9.1
 
