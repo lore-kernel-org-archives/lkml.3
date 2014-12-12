@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934735AbaLLJ1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 04:27:13 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:35749 "EHLO
+	id S934720AbaLLJ1M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 04:27:12 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:35902 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934622AbaLLJ0E (ORCPT
+	by vger.kernel.org with ESMTP id S934669AbaLLJ0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 04:26:04 -0500
 From: Andrew Jackson <andrew.jackson@arm.com>
@@ -16,9 +16,9 @@ Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
         linux-arm-kernel@lists.infradead.org, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/6] ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
-Date: Fri, 12 Dec 2014 09:25:01 +0000
-Message-Id: <a3b4a11dfe1688eea07471c6cfa27676cc9a58a8.1418372910.git.Andrew.Jackson@arm.com>
+Subject: [PATCH v2 6/6] ASoC: dwc: Add documentation for I2S DT
+Date: Fri, 12 Dec 2014 09:25:05 +0000
+Message-Id: <06b5211efde0c39c6239e7f68b629f692a1c31de.1418372910.git.Andrew.Jackson@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1418372910.git.Andrew.Jackson@arm.com>
 References: <cover.1418372910.git.Andrew.Jackson@arm.com>
@@ -30,33 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrew Jackson <Andrew.Jackson@arm.com>
 
-If the FIFOs aren't flushed, the left/right channels may be swapped:
-this may occur if the FIFOs are not empty when the streams start.
+Add documentation for Designware I2S hardware block.  The block requires
+two clocks (one for audio sampling, the other for APB) and DMA channels
+for receive and transmit.
 
 Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
 ---
- sound/soc/dwc/designware_i2s.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/sound/designware-i2s.txt   |   32 ++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/designware-i2s.txt
 
-diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
-index ef771ea..b9d6a25 100644
---- a/sound/soc/dwc/designware_i2s.c
-+++ b/sound/soc/dwc/designware_i2s.c
-@@ -228,12 +228,14 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
- 	i2s_disable_channels(dev, substream->stream);
- 
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-+		i2s_write_reg(dev->i2s_base, TXFFR, 1);
- 		i2s_write_reg(dev->i2s_base, TCR(ch_reg), xfer_resolution);
- 		i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
- 		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
- 		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
- 		i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
- 	} else {
-+		i2s_write_reg(dev->i2s_base, RXFFR, 1);
- 		i2s_write_reg(dev->i2s_base, RCR(ch_reg), xfer_resolution);
- 		i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
- 		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
+diff --git a/Documentation/devicetree/bindings/sound/designware-i2s.txt b/Documentation/devicetree/bindings/sound/designware-i2s.txt
+new file mode 100644
+index 0000000..cdee591
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/designware-i2s.txt
+@@ -0,0 +1,32 @@
++DesignWare I2S controller
++
++Required properties:
++ - compatible : Must be "snps,designware-i2s"
++ - reg : Must contain I2S core's registers location and length
++ - clocks : Pairs of phandle and specifier referencing the controller's clocks.
++   The controller expects two clocks, the clock used for the APB interface and
++   the clock used as the sampling rate reference clock sample.
++ - clock-names : "apb_plck" for the clock to the APB interface, "i2sclk" for the sample
++   rate reference clock.
++ - dmas: Pairs of phandle and specifier for the DMA channels that are used by
++   the core. The core expects one or two dma channels, one for transmit and one for
++   receive.
++ - dma-names : "tx" for the transmit channel, "rx" for the receive channel.
++
++For more details on the 'dma', 'dma-names', 'clock' and 'clock-names' properties
++please check:
++	* resource-names.txt
++	* clock/clock-bindings.txt
++	* dma/dma.txt
++
++Example:
++
++	soc_i2s: i2s@7ff90000 {
++		compatible = "snps,designware-i2s";
++		reg = <0x0 0x7ff90000 0x0 0x1000>;
++		clocks = <&scpi_i2sclk 0>, <&soc_refclk100mhz>;
++		clock-names = "i2sclk", "apb_pclk";
++		#sound-dai-cells = <0>;
++		dmas = <&dma0 5>;
++		dma-names = "tx";
++	};
 -- 
 1.7.1
 
