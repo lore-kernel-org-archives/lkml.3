@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760948AbaLLGvw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:51:52 -0500
+	id S966031AbaLLGsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:24 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750757AbaLLGs0 (ORCPT
+	by vger.kernel.org with ESMTP id S1760938AbaLLGsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:26 -0500
+	Fri, 12 Dec 2014 01:48:19 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Mark Brown" <broonie@kernel.org>,
-        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
+CC: akpm@linux-foundation.org, "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.211227502@decadent.org.uk>
+Message-ID: <lsq.1418364865.410045683@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 026/164] spi: dw-mid: check that DMA was inited before
- exit
+Subject: [PATCH 3.2 052/164] fix misuses of f_count() in ppp and netlink
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,33 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 63d84b1a46957b3ecc56af8087220c0df42e0ef2 upstream.
+commit 24dff96a37a2ca319e75a74d3929b2de22447ca6 upstream.
 
-commit fb57862ead652454ceeb659617404c5f13bc34b5 upstream.
+we used to check for "nobody else could start doing anything with
+that opened file" by checking that refcount was 2 or less - one
+for descriptor table and one we'd acquired in fget() on the way to
+wherever we are.  That was race-prone (somebody else might have
+had a reference to descriptor table and do fget() just as we'd
+been checking) and it had become flat-out incorrect back when
+we switched to fget_light() on those codepaths - unlike fget(),
+it doesn't grab an extra reference unless the descriptor table
+is shared.  The same change allowed a race-free check, though -
+we are safe exactly when refcount is less than 2.
 
-If the driver was compiled with DMA support, but DMA channels weren't acquired
-by some reason, mid_spi_dma_exit() will crash the kernel.
+It was a long time ago; pre-2.6.12 for ioctl() (the codepath leading
+to ppp one) and 2.6.17 for sendmsg() (netlink one).  OTOH,
+netlink hadn't grown that check until 3.9 and ppp used to live
+in drivers/net, not drivers/net/ppp until 3.1.  The bug existed
+well before that, though, and the same fix used to apply in old
+location of file.
 
-Fixes: 7063c0d942a1 (spi/dw_spi: add DMA support)
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[bwh: Backported to 3.2: drop changes to netlink_mmap_sendmsg()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/spi/spi-dw-mid.c | 2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/spi/spi-dw-mid.c
-+++ b/drivers/spi/spi-dw-mid.c
-@@ -88,6 +88,8 @@ err_exit:
- 
- static void mid_spi_dma_exit(struct dw_spi *dws)
- {
-+	if (!dws->dma_inited)
-+		return;
- 	dma_release_channel(dws->txchan);
- 	dma_release_channel(dws->rxchan);
- }
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -588,7 +588,7 @@ static long ppp_ioctl(struct file *file,
+ 			if (file == ppp->owner)
+ 				ppp_shutdown_interface(ppp);
+ 		}
+-		if (atomic_long_read(&file->f_count) <= 2) {
++		if (atomic_long_read(&file->f_count) < 2) {
+ 			ppp_release(NULL, file);
+ 			err = 0;
+ 		} else
 
