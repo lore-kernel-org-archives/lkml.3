@@ -1,105 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485AbaLLO4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 09:56:53 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:55057 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757323AbaLLO4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 09:56:51 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: lyz@rock-chips.com
-X-FST-TO: heiko@sntech.de
-X-SENDER-IP: 58.22.7.114
-X-LOGIN-NAME: lyz@rock-chips.com
-X-UNIQUE-TAG: <77aa234035cef21920e256ed3bcf7e08>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yunzhi Li <lyz@rock-chips.com>
-To: heiko@sntech.de, jwerner@chromium.org, dianders@chromium.org
-Cc: olof@lixom.net, huangtao@rock-chips.com, zyw@rock-chips.com,
-        cf@rock-chips.com, linux-rockchip@lists.infradead.org,
-        Yunzhi Li <lyz@rock-chips.com>, devicetree@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Paul Zimmerman <paulz@synopsys.com>, linux-usb@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v7 0/5] Patches to add support for Rockchip usb PHYs.
-Date: Fri, 12 Dec 2014 22:55:52 +0800
-Message-Id: <1418396157-26802-1-git-send-email-lyz@rock-chips.com>
-X-Mailer: git-send-email 2.0.0
+	id S1759623AbaLLO5D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 09:57:03 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49237 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759493AbaLLO5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 09:57:00 -0500
+Date: Fri, 12 Dec 2014 15:56:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        x86@kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [patch 3/4] x86: pci: acpi: Fix the range check for IO resources
+Message-ID: <20141212145657.GC30699@pd.tnic>
+References: <20141211191853.613107396@linutronix.de>
+ <20141211193112.725667793@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141211193112.725667793@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 11, 2014 at 07:48:22PM -0000, Thomas Gleixner wrote:
+> The range check in setup_res() checks the IO range against
+> iomem_resource. That's just wrong.
+> 
+> Move the check into a separate function and use ioport_resource for IO
+> ranges.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/x86/pci/acpi.c |   51 +++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 33 insertions(+), 18 deletions(-)
+> 
+> Index: tip/arch/x86/pci/acpi.c
+> ===================================================================
+> --- tip.orig/arch/x86/pci/acpi.c
+> +++ tip/arch/x86/pci/acpi.c
+> @@ -240,12 +240,41 @@ static acpi_status count_resource(struct
+>  	return AE_OK;
+>  }
+>  
+> +static bool valid_resource_range(struct resource *r, struct device *dev)
+> +{
+> +	struct resource *ior;
+> +	u64 end;
+> +
+> +	ior = (r->flags & IORESOURCE_IO) ? &ioport_resource : &iomem_resource;
+> +
+> +	/*
+> +	 * Exclude non-addressable range or non-addressable portion of
+> +	 * range. We only check end because ior->start is always 0.
+> +	 */
+> +	end = r->end;
+> +	r->end = min(r->end, ior->end);
+> +	if (r->end <= r->start) {
+> +		dev_info(dev, "host bridge %s window [%#llx-%#llx] invalid range\n",
+> +			 r->flags & IORESOURCE_IO ? "io" : "mem",
 
-Patches to add support for Rockchip usb phys.Add a new Rockchip
-usb phy driver and modify dwc2 controller driver to make dwc2
-platform devices support a generic PHY framework driver. This
-patch set has been tested on my rk3288-evb and power off the usb
-phys would reduce about 60mW power budget in total during sustem
-suspend.
+I think you can simplify this and below even further as the check
+Iagainst ORESOURCE_IO is done already when selecting the ior thing (diff
+Iontop):
 
-Changes in v7:
-- Update bindings doc
-- Accept Kishon's comments to use phandle args to find a phy
-  struct directly and get rid of using a custom of_xlate
-  function.
-- Update dtsi for new usb phy driver.
-
-Changes in v6:
-- Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
-
-Changes in v5:
-- Adjust entry order of example devicetree node in document.
-- reorder the phy dt node to a correct position.
-
-Changes in v4:
-- Updata description for phy device tree subnode.
-- Get number of PHYs from device tree.
-- Model each PHY as subnode of the phy provider node.
-- Add phy subnodes.
-
-Changes in v3:
-- Use BIT macro instead of bit shift ops.
-- Rename the config entry to PHY_ROCKCHIP_USB.
-- Fix coding style: both branches of the if() which only one
-  branch of the conditional statement is a single statement
-  should have braces.
-- No need to test dwc2->phy for NULL before calling generic phy
-  APIs.
-
-Yunzhi Li (5):
-  Documentation: bindings: add dt documentation for Rockchip usb PHY
-  phy: add a driver for the Rockchip SoC internal USB2.0 PHY
-  usb: dwc2: add generic PHY framework support for dwc2 usb controler
-    platform driver.
-  ARM: dts: rockchip: add rk3288 usb PHY
-  ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
-
- .../devicetree/bindings/phy/rockchip-usb-phy.txt   |  37 +++++
- arch/arm/boot/dts/rk3288-evb.dtsi                  |   4 +
- arch/arm/boot/dts/rk3288.dtsi                      |  35 +++++
- drivers/phy/Kconfig                                |   7 +
- drivers/phy/Makefile                               |   1 +
- drivers/phy/phy-rockchip-usb.c                     | 158 +++++++++++++++++++++
- drivers/usb/dwc2/gadget.c                          |  33 ++---
- drivers/usb/dwc2/platform.c                        |  36 ++++-
- 8 files changed, 288 insertions(+), 23 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/phy/rockchip-usb-phy.txt
- create mode 100644 drivers/phy/phy-rockchip-usb.c
+---
+Index: b/arch/x86/pci/acpi.c
+===================================================================
+--- a/arch/x86/pci/acpi.c	2014-12-12 15:54:40.856317113 +0100
++++ b/arch/x86/pci/acpi.c	2014-12-12 15:53:16.832319561 +0100
+@@ -255,7 +255,7 @@ static bool valid_resource_range(struct
+ 	r->end = min(r->end, ior->end);
+ 	if (r->end <= r->start) {
+ 		dev_info(dev, "host bridge %s window [%#llx-%#llx] invalid range\n",
+-			 r->flags & IORESOURCE_IO ? "io" : "mem",
++			 ior->name,
+ 			 (unsigned long long)r->start, end);
+ 		return false;
+ 	}
+@@ -264,7 +264,7 @@ static bool valid_resource_range(struct
+ 		return true;
+ 
+ 	dev_info(dev, "host bridge %s window [%#llx-%#llx] truncated to [%#llx-%#llx]\n",
+-		 r->flags & IORESOURCE_IO ? "io" : "mem",
++		 ior->name,
+ 		 (unsigned long long)r->start, end,
+ 		 (unsigned long long)r->start, (unsigned long long)r->end);
+ 	return true;
 
 -- 
-2.0.0
+Regards/Gruss,
+    Boris.
 
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
