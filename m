@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971AbaLLSwr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 13:52:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47240 "EHLO mx1.redhat.com"
+	id S934161AbaLLSxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 13:53:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47452 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087AbaLLSwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 13:52:45 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Krzysztof Konopko <kris@konagma.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com>
-	<548A2E7A.4010303@lwfinger.net> <548AD2F1.3080200@konagma.com>
-	<548B2752.7030607@lwfinger.net>
-Date: Fri, 12 Dec 2014 13:52:35 -0500
-In-Reply-To: <548B2752.7030607@lwfinger.net> (Larry Finger's message of "Fri,
-	12 Dec 2014 11:35:14 -0600")
-Message-ID: <wrfjwq5wwvik.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	id S932531AbaLLSx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 13:53:29 -0500
+Date: Fri, 12 Dec 2014 15:53:24 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 00/22] perf tools: Introduce an abstraction for
+ Instruction Tracing
+Message-ID: <20141212185324.GF9845@kernel.org>
+References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
+ <548B1425.7090500@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <548B1425.7090500@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry Finger <Larry.Finger@lwfinger.net> writes:
-> On 12/12/2014 05:35 AM, Krzysztof Konopko wrote:
->> I was hunting particularly for inconsistencies with `sparse` and came
->> across this one.  But I dug a bit further and I wonder why the driver is
->> not using standard stuff like the one in `include/linux/ieee80211.h`
->> where any data wider than one byte is clearly declared as __le<nn>?
->
-> That is a good question. One possibility is that those definitions do
-> not exist on some of the older kernels that Realtek supports. They
-> generally work with 2.6.18 and newer.
+Em Fri, Dec 12, 2014 at 09:13:25AM -0700, David Ahern escreveu:
+> On 12/12/14 6:47 AM, Adrian Hunter wrote:
+> >Here is V3 of some more preparatory patches for Intel PT
+> >that introduce an abstraction for Instruction tracing.
 
-The reason the 8723au driver doesn't use the defines from there is that
-in ieee80211.h they are part of struct ieee80211_mgmt, while the 8723au
-driver access the addba etc. elements without the full struct in place.
+> This is an x86-Intel only feature correct? If that is the case then the code
+> should be not compiled for other architectures.
 
-Jes
+
+My view so far is that what has been pushed for inclusion facilitates
+supporting an event stream that is so huge that needs to be mapped
+directly from hardware to tools, that would receive it in a special
+area obtained from perf_mmap(). What comes in those events? In this
+case, this Intel PT stuff, but noving (should) prevent it from being
+used for similar situations for other architectures.
+
+I wonder if we could somehow rename this from 'itrace' to some other
+more meaningful name given the above understanding of this being just
+a way to directly funnel events from hardware to userspace together with
+perf metadata (PERF_RECORD_FORK, PERF_RECORD_MMAP, etc) + other events.
+
+In the kernel this was called a "AUX" thing, which I also think is
+vague...
+
+- Arnaldo
