@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594AbaLLVmR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:42:17 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:59716 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880AbaLLVmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:42:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
-	<1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
-Date: Fri, 12 Dec 2014 22:42:15 +0100
-Message-ID: <CABgxDo+x-jjXYgPFPC3WB=3JcqzhmET-UPO5FEAdLn953ochKg@mail.gmail.com>
-Subject: Re: [PATCH v2] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
-From: Romain Perier <romain.perier@gmail.com>
-To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "moderated list:ARM/Rockchip SoC..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751785AbaLLVoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:44:21 -0500
+Received: from mail.ispras.ru ([83.149.199.45]:56046 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161AbaLLVoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 16:44:19 -0500
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        Fariya Fatima <fariyaf@gmail.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] rsi: fix memory leak in rsi_load_ta_instructions()
+Date: Sat, 13 Dec 2014 00:43:55 +0300
+Message-Id: <1418420635-23869-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-12 22:05 GMT+01:00 Julien CHAUVEAU
-<julien.chauveau@neo-technologies.fr>:
-> This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0
-> and hclk_usbotg1 because these clocks must remain enabled to use the
-> USB controllers in host mode.
->
-> This fixes a regression introduced by commit 78eaf6095cc7
-> ("clk: rockchip: disable unused clocks").
->
-> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-> ---
-> Changes since v1:
-> - update commit message: refer to commit ID instead of mailing list
->
->  drivers/clk/rockchip/clk-rk3188.c | 12 ++++++++----
->  1 file changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
-> index c540789..25ddb09 100644
-> --- a/drivers/clk/rockchip/clk-rk3188.c
-> +++ b/drivers/clk/rockchip/clk-rk3188.c
-> @@ -430,8 +430,10 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
->         GATE(0, "hclk_emem_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 7, GFLAGS),
->         GATE(HCLK_EMAC, "hclk_emac", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 0, GFLAGS),
->         GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 9, GFLAGS),
-> -       GATE(0, "hclk_usb_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 5, GFLAGS),
-> -       GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 13, GFLAGS),
-> +       GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
-> +                       RK2928_CLKGATE_CON(4), 5, GFLAGS),
-> +       GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", CLK_IGNORE_UNUSED,
-> +                       RK2928_CLKGATE_CON(5), 13, GFLAGS),
->         GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 5, GFLAGS),
->         GATE(HCLK_PIDF, "hclk_pidfilter", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 6, GFLAGS),
->         GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 10, GFLAGS),
-> @@ -592,7 +594,8 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
->         GATE(0, "hclk_cif1", "hclk_cpu", 0, RK2928_CLKGATE_CON(6), 6, GFLAGS),
->         GATE(0, "hclk_hdmi", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
->
-> -       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 14, GFLAGS),
-> +       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-> +                       RK2928_CLKGATE_CON(5), 14, GFLAGS),
->
->         GATE(0, "aclk_cif1", "aclk_vio1", 0, RK2928_CLKGATE_CON(6), 7, GFLAGS),
->
-> @@ -680,7 +683,8 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
->         GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
->         GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
->
-> -       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
-> +       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-> +                       RK2928_CLKGATE_CON(7), 3, GFLAGS),
->         GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
->
->         GATE(PCLK_TIMER3, "pclk_timer3", "pclk_cpu", 0, RK2928_CLKGATE_CON(7), 9, GFLAGS),
-> --
-> 2.1.0
-Reviewed-by: Romain Perier <romain.perier@gmail.com>
-Tested-by: Romain Perier <romain.perier@gmail.com>
+Memory allocated by kmemdup() in rsi_load_ta_instructions() is leaked.
+But duplication of firmware data here is useless,
+so the patch removes kmemdup() at all.
+
+Found by Linux Driver Verification project (linuxtesting.org).
+
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/wireless/rsi/rsi_91x_sdio_ops.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c b/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
+index 4834a9abc171..b6cc9ff47fc2 100644
+--- a/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
++++ b/drivers/net/wireless/rsi/rsi_91x_sdio_ops.c
+@@ -172,7 +172,6 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
+ 		(struct rsi_91x_sdiodev *)adapter->rsi_dev;
+ 	u32 len;
+ 	u32 num_blocks;
+-	const u8 *fw;
+ 	const struct firmware *fw_entry = NULL;
+ 	u32 block_size = dev->tx_blk_size;
+ 	int status = 0;
+@@ -201,7 +200,6 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
+ 		return status;
+ 	}
+ 
+-	fw = kmemdup(fw_entry->data, fw_entry->size, GFP_KERNEL);
+ 	len = fw_entry->size;
+ 
+ 	if (len % 4)
+@@ -212,7 +210,7 @@ static int rsi_load_ta_instructions(struct rsi_common *common)
+ 	rsi_dbg(INIT_ZONE, "%s: Instruction size:%d\n", __func__, len);
+ 	rsi_dbg(INIT_ZONE, "%s: num blocks: %d\n", __func__, num_blocks);
+ 
+-	status = rsi_copy_to_card(common, fw, len, num_blocks);
++	status = rsi_copy_to_card(common, fw_entry->data, len, num_blocks);
+ 	release_firmware(fw_entry);
+ 	return status;
+ }
+-- 
+1.9.1
+
