@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759970AbaLLGkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:40:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51870 "EHLO
+	id S934645AbaLLGkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:40:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51869 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759202AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759279AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Ramos" <daramos@stanford.edu>,
-        "Stefan Richter" <stefanr@s5r6.in-berlin.de>
+CC: akpm@linux-foundation.org, "Aaro Koskinen" <aaro.koskinen@iki.fi>,
+        "Markos Chandras" <Markos.Chandras@imgtec.com>,
+        "Huacai Chen" <chenhc@lemote.com>, linux-mips@linux-mips.org,
+        "Ralf Baechle" <ralf@linux-mips.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.880044007@decadent.org.uk>
+Message-ID: <lsq.1418364865.411721390@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 128/164] firewire: cdev: prevent kernel stack leaking
- into ioctl arguments
+Subject: [PATCH 3.2 155/164] MIPS: Loongson: Make platform serial setup
+ always built-in.
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,58 +34,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
+commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
 
-Found by the UC-KLEE tool:  A user could supply less input to
-firewire-cdev ioctls than write- or write/read-type ioctl handlers
-expect.  The handlers used data from uninitialized kernel stack then.
+If SERIAL_8250 is compiled as a module, the platform specific setup
+for Loongson will be a module too, and it will not work very well.
+At least on Loongson 3 it will trigger a build failure,
+since loongson_sysconf is not exported to modules.
 
-This could partially leak back to the user if the kernel subsequently
-generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
-which notably would contain the _u64 closure field which many of the
-ioctl argument structures contain.
+Fix by making the platform specific serial code always built-in.
 
-The fact that the handlers would act on random garbage input is a
-lesser issue since all handlers must check their input anyway.
-
-The fix simply always null-initializes the entire ioctl argument buffer
-regardless of the actual length of expected user input.  That is, a
-runtime overhead of memset(..., 40) is added to each firewirew-cdev
-ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
-most likely to be already in the cache.]
-
-Remarks:
-  - There was never any leak from kernel stack to the ioctl output
-    buffer itself.  IOW, it was not possible to read kernel stack by a
-    read-type or write/read-type ioctl alone; the leak could at most
-    happen in combination with read()ing subsequent event data.
-  - The actual expected minimum user input of each ioctl from
-    include/uapi/linux/firewire-cdev.h is, in bytes:
-    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
-    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
-    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
-    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
-    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
-
-Reported-by: David Ramos <daramos@stanford.edu>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8533/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/firewire/core-cdev.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/mips/loongson/common/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -1605,8 +1605,7 @@ static int dispatch_ioctl(struct client
- 	    _IOC_SIZE(cmd) > sizeof(buffer))
- 		return -ENOTTY;
+--- a/arch/mips/loongson/common/Makefile
++++ b/arch/mips/loongson/common/Makefile
+@@ -10,7 +10,8 @@ obj-$(CONFIG_GENERIC_GPIO) += gpio.o
+ # Serial port support
+ #
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-obj-$(CONFIG_SERIAL_8250) += serial.o
++loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
++obj-y += $(loongson-serial-m) $(loongson-serial-y)
+ obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
+ obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
  
--	if (_IOC_DIR(cmd) == _IOC_READ)
--		memset(&buffer, 0, _IOC_SIZE(cmd));
-+	memset(&buffer, 0, sizeof(buffer));
- 
- 	if (_IOC_DIR(cmd) & _IOC_WRITE)
- 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
 
