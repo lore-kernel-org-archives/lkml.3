@@ -1,196 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753102AbaLLWJB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:09:01 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:58166 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaLLWI7 (ORCPT
+	id S1753274AbaLLWJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:09:44 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52190 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942AbaLLWIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:59 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Fri, 12 Dec 2014 17:08:56 -0500
-To: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-Message-ID: <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Dec 2014 17:08:49 -0500
+From: Kevin Cernekee <cernekee@gmail.com>
+To: ralf@linux-mips.org
+Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
+        jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
+        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH V5 22/23] MIPS: BMIPS: Update DT bindings to reflect new SoC support
+Date: Fri, 12 Dec 2014 14:07:13 -0800
+Message-Id: <1418422034-17099-23-git-send-email-cernekee@gmail.com>
+X-Mailer: git-send-email 2.1.1
+In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
-crystal is not enabled at power up.  Instead the CPU falls back to using
-an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
-20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
-but can also be 19.2 or 27MHz which result in much larger drift.
+Add an entry for each supported Broadcom SoC.
 
-Since this is used to drive the master counter at 32.768KHz * 375 /
-2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
-seconds per day, and more than the 500ppm NTP is able to tolerate.
-
-Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
-is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
-by known that the real counter frequency can be determined and used.
-The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 75 / 244.
-
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- arch/arm/mach-omap2/timer.c |  120 +++++++++++++++++++++++++++++++------------
- 1 file changed, 87 insertions(+), 33 deletions(-)
+ Documentation/devicetree/bindings/mips/brcm/cm-dsl.txt | 11 -----------
+ Documentation/devicetree/bindings/mips/brcm/soc.txt    | 12 ++++++++++++
+ 2 files changed, 12 insertions(+), 11 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/mips/brcm/cm-dsl.txt
+ create mode 100644 Documentation/devicetree/bindings/mips/brcm/soc.txt
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index fb0cb2b..f00e4b4 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -497,6 +497,7 @@ static void __init realtime_counter_init(void)
- 	static struct clk *sys_clk;
- 	unsigned long rate;
- 	unsigned int reg, num, den;
-+	bool errata_i856_workaround = false;
- 
- 	base = ioremap(REALTIME_COUNTER_BASE, SZ_32);
- 	if (!base) {
-@@ -510,39 +511,93 @@ static void __init realtime_counter_init(void)
- 		return;
- 	}
- 
-+	if (soc_is_dra7xx()) {
-+		#define CTRL_CORE_BOOTSTRAP 0x4A0026C4
-+		#define SPEEDSELECT_MASK 0x00000300
-+		void __iomem *corebase;
-+		corebase = ioremap(CTRL_CORE_BOOTSTRAP, SZ_4);
-+		if (!corebase)
-+			pr_err("%s: ioremap failed\n", __func__);
-+		else {
-+			reg = readl_relaxed(corebase) & SPEEDSELECT_MASK;
-+			iounmap(corebase);
-+			/*
-+			 * Errata i856 says the 32.768KHz crystal does
-+			 * not start at power on, so the CPU falls back in
-+			 * an emulated 32KHz clock instead.  This causes
-+			 * the master counter frequency to not be 6.144MHz
-+			 * This affects at least the AM572x 1.0 and
-+			 * 1.1 revisions.
-+			 *
-+			 * Of course any board built without a populated
-+			 * 32.768KHz crystal would also need this fix
-+			 * even if the CPU is fixed later.
-+			 *
-+			 * If the two speedselect bits are not 0, then the
-+			 * 32.768KHz clock driving the course counter that
-+			 * corrects the fine counter every time it ticks is
-+			 * actually rate/610 rather than 32.768KHz and we
-+			 * should compensate to avoid the 570ppm (At 20MHz,
-+			 * much worse at other rates) too fast system time.
-+			 */
-+			if (reg) {
-+				errata_i856_workaround = true;
-+			}
-+		}
-+	}
+diff --git a/Documentation/devicetree/bindings/mips/brcm/cm-dsl.txt b/Documentation/devicetree/bindings/mips/brcm/cm-dsl.txt
+deleted file mode 100644
+index 8a139cb..0000000
+diff --git a/Documentation/devicetree/bindings/mips/brcm/soc.txt b/Documentation/devicetree/bindings/mips/brcm/soc.txt
+new file mode 100644
+index 0000000..f011443
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mips/brcm/soc.txt
+@@ -0,0 +1,12 @@
++* Broadcom cable/DSL/settop platforms
 +
- 	rate = clk_get_rate(sys_clk);
--	/* Numerator/denumerator values refer TRM Realtime Counter section */
--	switch (rate) {
--	case 12000000:
--		num = 64;
--		den = 125;
--		break;
--	case 13000000:
--		num = 768;
--		den = 1625;
--		break;
--	case 19200000:
--		num = 8;
--		den = 25;
--		break;
--	case 20000000:
--		num = 192;
--		den = 625;
--		break;
--	case 26000000:
--		num = 384;
--		den = 1625;
--		break;
--	case 27000000:
--		num = 256;
--		den = 1125;
--		break;
--	case 38400000:
--	default:
--		/* Program it for 38.4 MHz */
--		num = 4;
--		den = 25;
--		break;
-+	if (errata_i856_workaround) {
-+		/*
-+		 * Realtime Counter frequency is not based on a real
-+		 * 32.768KHz time source, so calculate the real resulting
-+		 * frequency instead.  It is not 6.144MHz in this case.
-+		 *
-+		 * The frequency is always rate / 610 + 375 / 2 which
-+		 * is rate * 244 / 75 and will fit in 32 bit for all rates.
-+		 *
-+		 * The multiplication has to be first to keep accuracy
-+		 * with integer math as high as possible.
-+		 */
-+		num = 75;
-+		den = 244;
-+		arch_timer_freq = (rate * num) / den;
-+	} else {
-+		/* Numerator/denumerator values refer TRM Realtime Counter section */
-+		switch (rate) {
-+		case 12000000:
-+			num = 64;
-+			den = 125;
-+			break;
-+		case 13000000:
-+			num = 768;
-+			den = 1625;
-+			break;
-+		case 19200000:
-+			num = 8;
-+			den = 25;
-+			break;
-+		case 20000000:
-+			num = 192;
-+			den = 625;
-+			break;
-+		case 26000000:
-+			num = 384;
-+			den = 1625;
-+			break;
-+		case 27000000:
-+			num = 256;
-+			den = 1125;
-+			break;
-+		case 38400000:
-+		default:
-+			/* Program it for 38.4 MHz */
-+			num = 4;
-+			den = 25;
-+			break;
-+		}
-+		/* This divides cleanly and fits in 32 bits */
-+		arch_timer_freq = (rate / den) * num;
- 	}
- 
- 	/* Program numerator and denumerator registers */
-@@ -556,7 +611,6 @@ static void __init realtime_counter_init(void)
- 	reg |= den;
- 	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
- 
--	arch_timer_freq = (rate / den) * num;
- 	set_cntfreq();
- 
- 	iounmap(base);
++Required properties:
++
++- compatible: "brcm,bcm3384", "brcm,bcm33843"
++              "brcm,bcm3384-viper", "brcm,bcm33843-viper"
++              "brcm,bcm6328", "brcm,bcm6368",
++              "brcm,bcm7125", "brcm,bcm7346", "brcm,bcm7360",
++              "brcm,bcm7420", "brcm,bcm7425"
++
++The experimental -viper variants are for running Linux on the 3384's
++BMIPS4355 cable modem CPU instead of the BMIPS5000 application processor.
 -- 
-1.7.10.4
+2.1.1
 
