@@ -1,127 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031032AbaLLRqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:46:06 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62510 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934073AbaLLRqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:46:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,565,1413270000"; 
-   d="scan'208";a="646753715"
-Message-ID: <548B29CA.5060707@intel.com>
-Date: Fri, 12 Dec 2014 19:45:46 +0200
-From: Mathias Nyman <mathias.nyman@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB driver fixes for 3.18-rc7
-References: <20141128224028.GA29538@kroah.com> <CA+55aFyJunLbQPBgUf4rhZN0vbaj7hpK3Jwqwqf-S7A2-LLhFA@mail.gmail.com> <20141202181810.GB15869@kroah.com> <547F3400.6030400@intel.com> <20141211184730.GA12817@kroah.com>
-In-Reply-To: <20141211184730.GA12817@kroah.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1031132AbaLLRqv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:46:51 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:54115 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030970AbaLLRqt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:46:49 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
+To: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20141211215943.4127.24792.stgit@notabene.brown>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+	<20141211215943.4127.24792.stgit@notabene.brown>
+Date: Fri, 12 Dec 2014 11:59:20 +0000
+Message-Id: <20141212115920.4277AC408F1@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.12.2014 20:47, Greg KH wrote:
-> On Wed, Dec 03, 2014 at 06:02:08PM +0200, Mathias Nyman wrote:
->> On 02.12.2014 20:18, Greg KH wrote:
->>> On Sun, Nov 30, 2014 at 11:47:20AM -0800, Linus Torvalds wrote:
->>>> Hmm, Greg.
->>>>
->>>> I seem to get this problem possibly more commonly at boot these days:
->>>>
->>>>   usb 1-6: new full-speed USB device number 2 using xhci_hcd
->>>>   usb 1-6: device descriptor read/64, error -71
->>>>   xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1.
->>>>   usb 1-6: hub failed to enable device, error -22
->>>>   usb 1-6: new full-speed USB device number 3 using xhci_hcd
->>>>   usb 1-6: device descriptor read/64, error -71
->>>>   usb 1-6: hub failed to enable device, error -22
->>>>   usb 1-6: new full-speed USB device number 4 using xhci_hcd
->>>>   usb 1-6: Device not responding to setup address.
->>>>   usb 1-6: Device not responding to setup address.
->>>>   usb 1-6: device not accepting address 4, error -71
->>>>   usb 1-6: new full-speed USB device number 5 using xhci_hcd
->>>>   usb 1-6: Device not responding to setup address.
->>>>   usb 1-6: Device not responding to setup address.
->>>>   usb 1-6: device not accepting address 5, error -71
->>>>  usb usb1-port6: unable to enumerate USB device
->>>>
->>>> and my keyboard doesn't work. I then unplug and re-plug it, and get
->>>>
->>>>   usb 1-6: new full-speed USB device number 9 using xhci_hcd
->>>>   usb 1-6: New USB device found, idVendor=2516, idProduct=0020
->>>>   usb 1-6: New USB device strings: Mfr=1, Product=2, SerialNumber=0
->>>>   usb 1-6: Product: Quickfire Rapid i
->>>>   usb 1-6: Manufacturer: CM Storm
->>>>
->>>> Any ideas? Some setup delay that isn't long enough at boot time for a
->>>> slightly finicky device? It has happened before, but now I've gotten
->>>> it twice within a couple of days:
->>>>
->>>>   Nov 02 12:18:56 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
->>>>   Nov 28 16:54:06 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
->>>>   Nov 30 11:26:35 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
->>>>
->>>> (I've had this keyboard since mid-September, and looking at the logs
->>>> this machine has been rebooted 41 times since, with those three
->>>> failures..)
->>>
->>> I've been seeing this occasionally recently as well, but was blaming a
->>> "bad" USB 3 hub I have here that I use, and the problem goes away with a
->>> replug.
->>>
->>> Mathias, any ideas what is going on here?
->>>
->>
->> Looks like when xhci changed to use "new scheme" device enumeration for non
->> SuperSpeed devices, we broke the device descriptor read retry for xhci.
->>
->> Normally we try to read the descriptor again, and if it still fails then fall back
->> to old scheme. In this failing xhci case the slot is left in a default state after
->> first failed descriptor read, and we then try to enable the slot again in retry, 
->> which is an invalid xhci context state change, and prints the error message:
->>
->> xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1
+On Fri, 12 Dec 2014 08:59:44 +1100
+, NeilBrown <neilb@suse.de>
+ wrote:
+> A "tty slave" is a device connected via UART.
+> It may need a driver to, for example, power the device on
+> when the tty is opened, and power it off when the tty
+> is released.
+
+Some nit picking below, mostly about avoiding nasty surprises on devices
+that may already have child nodes below the tty node.
+
 > 
-> I see this all the time on my MinnowboardMax.  For slot 2 that is.
+> A "tty slave" is a platform device which is declared as a
+> child of the uart in device-tree:
+
+As far as the binding is concerned, talking about platform devices isn't
+relevant. That's an implementation detail. They are just devices.
+
+Using a platform device is somewhat problematic for the kernel because
+the DT could specify pretty much *any* platform device compatible value
+here and the kernel will happily bind a driver to it. I strongly
+recommend a separate bus type so that the pool of drivers remains
+separate. It would be a good time to look at platform_bus_type and see
+if more of it can be generalized so that subsystems can have custom bus
+types without very much code at all.
+
 > 
-> And on this machine, it does not boot from USB properly, I have to,
-> after the kernel comes up (which was read off of USB by UEFI just fine),
-> unplug and plug the storage device back in so that the boot process
-> continues.
+> &uart1 {
+> 	bluetooth {
+> 		compatible = "tty,regulator";
+> 		vdd-supply = <&vaux4>;
+> 	};
+
+The example here isn't great. The compatible value should specify the
+specific device, not a generic "tty,regulator" type binding. The
+expectation is the driver understands the attachment and understands how
+to do PM on the device.
+
+> };
 > 
-> Works that way for 2 different USB 3.0 storage devices.
+> runtime power management is used to power-up the device
+> on tty_open() and  power-down on tty_release().
+
+What about devices that need to stay powered up even if the tty is not
+opened? The runtime PM model needs to be better described for tty slaves.
+
 > 
-
-I got a patch that should fix the xhci "Setup ERROR" part in a setup-error-fix branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/mnyman/xhci.git setup-error-fix
-
-It's based on Gregs usb-next tree. 
-It doesn't solve why the first device descritor read fails.
-
->> After this It might be hard to get the device addressed. 
->>
->> I don't know why it fail the first device descriptor read, but fixing the xhci part
->> should allow more real reties. I'll work on it.
->>
->> The change to use xhci "new scheme" enumeration was done in 3.14 to support known
->> legacy devices requiring it. commit 48fc7dbd52c0559647291f33a10ccdc6cdbe4c72
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  .../devicetree/bindings/serial/of-serial.txt       |    4 ++++
+>  drivers/tty/tty_io.c                               |   22 ++++++++++++++++++++
+>  2 files changed, 26 insertions(+)
 > 
-> How can that break "non-legacy" devices?
+> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
+> index 8c4fd0332028..b59501ee2f21 100644
+> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
+> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
+> @@ -39,6 +39,10 @@ Optional properties:
+>    driver is allowed to detect support for the capability even without this
+>    property.
+>  
+> +Optional child node:
+> +- a platform device listed as a child node will be probed and
+> +  powered-on whenever the tty is in use (open).
+> +
 
-It added a enable_device callback for all usb2 devices during enumeration, which
-fails if called twice, or if the slot was already enabled in the xhci case.
-Caused whole enumeration to be aborted.   
+The biggest concern I have is what happens to nodes that already have
+child devices that /don't/ match this use case? It is possible that some
+UART nodes already have a child node used to store other data. There are
+two ways to handle this; 1) add a new bool property that indicates the
+child nodes are tty slave devices, or 2) Make each uart driver
+explicitly enable the feature so that driver authors can check if it is
+a problem for that device. I personally would suggest #1 because then it
+can be enabled in generic code.
 
--Mathias   
+>  Example:
+>  
+>  	uart@80230000 {
+> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+> index 0508a1d8e4cd..7acdc6f093f4 100644
+> --- a/drivers/tty/tty_io.c
+> +++ b/drivers/tty/tty_io.c
+> @@ -95,6 +95,8 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/serial.h>
+>  #include <linux/ratelimit.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/of_platform.h>
+>  
+>  #include <linux/uaccess.h>
+>  
+> @@ -1683,6 +1685,17 @@ static int tty_release_checks(struct tty_struct *tty, struct tty_struct *o_tty,
+>  	return 0;
+>  }
+>  
+> +static int open_child(struct device *dev, void *data)
+> +{
+> +	pm_runtime_get_sync(dev);
+> +	return 0;
+> +}
+> +static int release_child(struct device *dev, void *data)
+> +{
+> +	pm_runtime_put_autosuspend(dev);
+> +	return 0;
+> +}
+> +
+>  /**
+>   *	tty_release		-	vfs callback for close
+>   *	@inode: inode of tty
+> @@ -1712,6 +1725,8 @@ int tty_release(struct inode *inode, struct file *filp)
+>  	long	timeout = 0;
+>  	int	once = 1;
+>  
+> +	if (tty->dev)
+> +		device_for_each_child(tty->dev, NULL, release_child);
+>  	if (tty_paranoia_check(tty, inode, __func__))
+>  		return 0;
+>  
+> @@ -2118,6 +2133,8 @@ retry_open:
+>  		__proc_set_tty(current, tty);
+>  	spin_unlock_irq(&current->sighand->siglock);
+>  	tty_unlock(tty);
+> +	if (tty->dev)
+> +		device_for_each_child(tty->dev, NULL, open_child);
+>  	mutex_unlock(&tty_mutex);
+>  	return 0;
+>  err_unlock:
+> @@ -3207,6 +3224,11 @@ struct device *tty_register_device_attr(struct tty_driver *driver,
+>  	retval = device_register(dev);
+>  	if (retval)
+>  		goto error;
+> +	if (device && device->of_node)
+> +		/* Children are platform devices and will be
+> +		 * runtime_pm managed by this tty.
+> +		 */
+> +		of_platform_populate(device->of_node, NULL, NULL, dev);
 
+Also need to remove all the tty slaves on driver unbind.
+
+>  
+>  	return dev;
+>  
+> 
+> 
 
