@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942AbaLLUUE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:20:04 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:42809 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865AbaLLUUD (ORCPT
+	id S965679AbaLLUWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:22:18 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38859 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaLLUWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:20:03 -0500
+	Fri, 12 Dec 2014 15:22:17 -0500
+Message-ID: <548B4E75.5010507@amacapital.net>
+Date: Fri, 12 Dec 2014 12:22:13 -0800
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1412121157060.18579@nftneq.ynat.uz>
-References: <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
-	<1417540493.21136.3@mail.thefacebook.com>
-	<20141203184111.GA32005@redhat.com>
-	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-	<1417806247.4845.1@mail.thefacebook.com>
-	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
-	<20141211145408.GB16800@redhat.com>
-	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-	<20141212185454.GB4716@redhat.com>
-	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
-	<alpine.DEB.2.02.1412121157060.18579@nftneq.ynat.uz>
-Date: Fri, 12 Dec 2014 12:20:01 -0800
-X-Google-Sender-Auth: Yo5E2zvvRAh027Gc0iaNhTh_s5o
-Message-ID: <CA+55aFwLZi-JXAx9U-6rPPqoD1rmFjbzhv4acA9NKWEKo-UPRg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Lang <david@lang.hm>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org
+CC: tglx@linutronix.de, x86@kernel.org
+Subject: Re: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit
+ kernels
+References: <20141212191213.579887D2@viggo.jf.intel.com>
+In-Reply-To: <20141212191213.579887D2@viggo.jf.intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:58 AM, David Lang <david@lang.hm> wrote:
+On 12/12/2014 11:12 AM, Dave Hansen wrote:
+> This is 3.20 material.  I'm hoping to get some comments early
+> in case folks have some issues with the way it's being done.
 >
-> If the machine has NOHZ and has a cpu bound userspace task, it could take
-> quite a while before userspace would trigger a reschedule (at least if I've
-> understood the comments on this thread properly)
+> --
+>
+> The MPX hardware structures differ in layout in 32 and 64-bit
+> mode.  A 32-bit binary running on a 64-bit kernel needs the
+> 32-bit structures, so we need code which switches between
+> the two modes.
 
-The thing is, we'd have to return to user space for that to happen.
-And when we do that, we check the "should we schedule" flag again. So
-races like this really shouldn't matter, but there could be something
-kind-of-similar that just ends up causing a wakeup to be delayed.
+The OS community figured out years ago that you aren't supposed to do 
+this.  Did everyone forget to tell the hardware people?
 
-But it would need to be delayed for seconds (for the RCU threads) or
-for tens of seconds (for the watchdog) to matter.
+:(
 
-Which just seems unlikely. Even the "very high load" thing shouldn't
-really matter, since while that could delay one particular thread
-being scheduled, it shouldn't delay the next "should we schedule"
-test. In fact, high load would normally be extected to make the next
-"should we schedule" come faster.
+--Andy
 
-But this is where some load calculation overflow might screw things
-up, of course.
+>
+> The first patch is just a documentation update.  The next 5
+> patches are really just prepwork.  The meat is in the last 3.
+>
+> 	x86: make is_64bit_mm() widely available
+> 	x86: make __VIRTUAL_MASK safe to use on 32 bit
+> 	x86, mpx: we do not allocate the bounds directory
+> 	x86, mpx: remove redundant MPX_BNDCFG_ADDR_MASK
+> 	x86, mpx: Add temporary variable to reduce masking
+> 	x86, mpx: new directory entry to addr helper
+> 	x86, mpx: do 32-bit-only cmpxchg for 32-bit apps
+> 	x86, mpx: support 32bit binaries on 64bit kernel
+>
+>   Documentation/x86/intel_mpx.txt    |   12 +++-
+>   arch/x86/include/asm/mmu_context.h |   13 +++++
+>   arch/x86/include/asm/mpx.h         |    2
+>   arch/x86/include/asm/page_types.h  |    8 +++
+>   arch/x86/kernel/uprobes.c          |   10 ---
+>   arch/x86/mm/mpx.c                  |   93 ++++++++++++++++++++++++++++++-------
+>   6 files changed, 107 insertions(+), 31 deletions(-)
+>
 
-                 Linus
