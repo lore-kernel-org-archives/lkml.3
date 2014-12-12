@@ -1,201 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965595AbaLLISi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:18:38 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:36045 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965478AbaLLISd (ORCPT
+	id S965620AbaLLISl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:18:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43167 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965582AbaLLISi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:18:33 -0500
+	Fri, 12 Dec 2014 03:18:38 -0500
+Date: Fri, 12 Dec 2014 00:18:20 -0800
+From: tip-bot for Arjun Sreedharan <tipbot@zytor.com>
+Message-ID: <tip-e4e458b45c5861808674eebfea94cee2258bb2ea@git.kernel.org>
+Cc: arjun024@gmail.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        paulus@samba.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, mingo@kernel.org, mingo@redhat.com,
+        yann.morin.1998@free.fr
+Reply-To: arjun024@gmail.com, paulus@samba.org, acme@redhat.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, a.p.zijlstra@chello.nl, yann.morin.1998@free.fr,
+        mingo@redhat.com
+In-Reply-To: <1417866043-1877-1-git-send-email-arjun024@gmail.com>
+References: <1417866043-1877-1-git-send-email-arjun024@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] calloc/xcalloc: Fix argument order
+Git-Commit-ID: e4e458b45c5861808674eebfea94cee2258bb2ea
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1418019656-6893-1-git-send-email-markz@nvidia.com>
-References: <1418019656-6893-1-git-send-email-markz@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 12 Dec 2014 17:18:12 +0900
-Message-ID: <CAAVeFu+1B44vxuQK8+uH2PzRJQgHAHAYGkTMT9vTi6TTrXf2RA@mail.gmail.com>
-Subject: Re: [PATCH] memory: Add NVIDIA SMMU suspend/resume support
-To: Mark Zhang <markz@nvidia.com>
-Cc: hdoyu@nvidia.com, Joerg Roedel <joro@8bytes.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Olof Johansson <olof@lixom.net>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Commit-ID:  e4e458b45c5861808674eebfea94cee2258bb2ea
+Gitweb:     http://git.kernel.org/tip/e4e458b45c5861808674eebfea94cee2258bb2ea
+Author:     Arjun Sreedharan <arjun024@gmail.com>
+AuthorDate: Sat, 6 Dec 2014 17:10:43 +0530
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 9 Dec 2014 10:06:29 -0300
 
-On Mon, Dec 8, 2014 at 3:20 PM, Mark Zhang <markz@nvidia.com> wrote:
-> This patch adds suspend/resume support for NVIDIA SMMU.
+calloc/xcalloc: Fix argument order
 
+The calloc() and xcalloc() functions takes @nmemb first and then @size.  Fix all w/
+pattern "calloc\s*(\s*sizeof".
 
-> This patch is created on top of Thierry Reding's patch set:
->
-> "[PATCH v7 00/12] NVIDIA Tegra memory controller and IOMMU support"
+Signed-off-by: Arjun Sreedharan <arjun024@gmail.com>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1417866043-1877-1-git-send-email-arjun024@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ scripts/kconfig/mconf.c    | 4 ++--
+ tools/perf/ui/hist.c       | 4 ++--
+ tools/thermal/tmon/sysfs.c | 6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-You should have this comment under the "---" as we don't need it to
-persist once this patch is merged.
-
->
-> Signed-off-by: Mark Zhang <markz@nvidia.com>
-> ---
->  drivers/iommu/tegra-smmu.c | 79 +++++++++++++++++++++++++++++++++++++++++++++-
->  drivers/memory/tegra/mc.c  | 21 ++++++++++++
->  drivers/memory/tegra/mc.h  |  4 +++
->  3 files changed, 103 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
-> index 0909e0bae9ec..ab38805055a4 100644
-> --- a/drivers/iommu/tegra-smmu.c
-> +++ b/drivers/iommu/tegra-smmu.c
-> @@ -17,6 +17,8 @@
->  #include <soc/tegra/ahb.h>
->  #include <soc/tegra/mc.h>
->
-> +struct tegra_smmu_as;
-> +
->  struct tegra_smmu {
->         void __iomem *regs;
->         struct device *dev;
-> @@ -25,9 +27,10 @@ struct tegra_smmu {
->         const struct tegra_smmu_soc *soc;
->
->         unsigned long *asids;
-> +       struct tegra_smmu_as **as;
->         struct mutex lock;
->
-> -       struct list_head list;
-> +       struct list_head swgroup_asid_list;
->  };
->
->  struct tegra_smmu_as {
-> @@ -40,6 +43,12 @@ struct tegra_smmu_as {
->         u32 attr;
->  };
->
-> +struct tegra_smmu_swgroup_asid {
-> +       struct list_head list;
-> +       unsigned swgroup_id;
-> +       unsigned asid;
-> +};
-> +
->  static inline void smmu_writel(struct tegra_smmu *smmu, u32 value,
->                                unsigned long offset)
->  {
-> @@ -376,6 +385,7 @@ static int tegra_smmu_as_prepare(struct tegra_smmu *smmu,
->         as->smmu = smmu;
->         as->use_count++;
->
-> +       smmu->as[as->id] = as;
->         return 0;
->  }
->
-> @@ -386,6 +396,7 @@ static void tegra_smmu_as_unprepare(struct tegra_smmu *smmu,
->                 return;
->
->         tegra_smmu_free_asid(smmu, as->id);
-> +       smmu->as[as->id] = NULL;
->         as->smmu = NULL;
->  }
->
-> @@ -398,6 +409,7 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
->         struct of_phandle_args args;
->         unsigned int index = 0;
->         int err = 0;
-> +       struct tegra_smmu_swgroup_asid *sa = NULL;
-
-This initialization is unneeded. Actually this declaration would
-probably be better placed in the while() loop below since its usage is
-local to it.
-
->
->         while (!of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
->                                            &args)) {
-> @@ -411,6 +423,14 @@ static int tegra_smmu_attach_dev(struct iommu_domain *domain,
->                         return err;
->
->                 tegra_smmu_enable(smmu, swgroup, as->id);
-> +
-> +               sa = kzalloc(sizeof(struct tegra_smmu_swgroup_asid),
-> +                               GFP_KERNEL);
-> +               INIT_LIST_HEAD(&sa->list);
-
-You don't need to call INIT_LIST_HEAD on this, list_add_tail() will
-effectively overwrite any initialization done by this macro (see
-include/linux/list.h).
-
-> +               sa->swgroup_id = swgroup;
-> +               sa->asid = as->id;
-> +               list_add_tail(&sa->list, &smmu->swgroup_asid_list);
-> +
->                 index++;
->         }
->
-> @@ -427,6 +447,7 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
->         struct tegra_smmu *smmu = as->smmu;
->         struct of_phandle_args args;
->         unsigned int index = 0;
-> +       struct tegra_smmu_swgroup_asid *sa = NULL;
-
-Same here, move the declaration into the while() loop and remove the
-initialization.
-
->
->         while (of_parse_phandle_with_args(np, "iommus", "#iommu-cells", index,
->                                           &args)) {
-> @@ -435,6 +456,13 @@ static void tegra_smmu_detach_dev(struct iommu_domain *domain, struct device *de
->                 if (args.np != smmu->dev->of_node)
->                         continue;
->
-> +               list_for_each_entry(sa, &smmu->swgroup_asid_list, list) {
-> +                       if (sa->asid == as->id && sa->swgroup_id == swgroup)
-> +                               break;
-> +               }
-> +               list_del(&sa->list);
-> +               kfree(sa);
-> +
->                 tegra_smmu_disable(smmu, swgroup, as->id);
->                 tegra_smmu_as_unprepare(smmu, as);
->                 index++;
-> @@ -651,6 +679,48 @@ static void tegra_smmu_ahb_enable(void)
->         }
->  }
->
-> +void tegra_smmu_resume(struct tegra_smmu *smmu)
-> +{
-> +       struct tegra_smmu_as *as = NULL;
-> +       unsigned int bit;
-> +       u32 value;
-> +       struct tegra_smmu_swgroup_asid *sa = NULL;
-
-Again no need to initialize to NULL here.
-
-> +
-> +       for_each_set_bit(bit, smmu->asids, smmu->soc->num_asids) {
-> +               as = smmu->as[bit];
-> +               smmu->soc->ops->flush_dcache(as->pd, 0, SMMU_SIZE_PD);
-> +
-> +               smmu_writel(smmu, as->id & 0x7f, SMMU_PTB_ASID);
-> +               value = SMMU_PTB_DATA_VALUE(as->pd, as->attr);
-> +               smmu_writel(smmu, value, SMMU_PTB_DATA);
-> +       }
-> +
-> +       list_for_each_entry(sa, &smmu->swgroup_asid_list, list)
-> +               tegra_smmu_enable(smmu, sa->swgroup_id, sa->asid);
-
-Actually I wonder if you could not do completely without the list
-here. How about the following:
-
-1) add a "unsigned swgroup_id" member to tegra_smmu_as, set it in
-tegra_smmu_attach_dev() instead of sa->asid
-2) in the "for_each_bit" loop above, call tegra_smmu_enable(smmu,
-as->swgroup_id, as->id) after the last smmu_writel()
-
-Would that work? It would allow you to get rid of the
-tegra_smmu_swgroup_asid struct as well as a few memory allocations. I
-don't know if that kind of 1:1 matching between as and and swgroup
-makes sense for the SMMU though, maybe Thierry or Hiroshi can confirm?
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 14cea74..4dd3755 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -330,10 +330,10 @@ static void set_subtitle(void)
+ 	list_for_each_entry(sp, &trail, entries) {
+ 		if (sp->text) {
+ 			if (pos) {
+-				pos->next = xcalloc(sizeof(*pos), 1);
++				pos->next = xcalloc(1, sizeof(*pos));
+ 				pos = pos->next;
+ 			} else {
+-				subtitles = pos = xcalloc(sizeof(*pos), 1);
++				subtitles = pos = xcalloc(1, sizeof(*pos));
+ 			}
+ 			pos->text = sp->text;
+ 		}
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 2af1837..dc0d095 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -162,8 +162,8 @@ static int __hpp__sort(struct hist_entry *a, struct hist_entry *b,
+ 		return ret;
+ 
+ 	nr_members = evsel->nr_members;
+-	fields_a = calloc(sizeof(*fields_a), nr_members);
+-	fields_b = calloc(sizeof(*fields_b), nr_members);
++	fields_a = calloc(nr_members, sizeof(*fields_a));
++	fields_b = calloc(nr_members, sizeof(*fields_b));
+ 
+ 	if (!fields_a || !fields_b)
+ 		goto out;
+diff --git a/tools/thermal/tmon/sysfs.c b/tools/thermal/tmon/sysfs.c
+index dfe4548..1c12536 100644
+--- a/tools/thermal/tmon/sysfs.c
++++ b/tools/thermal/tmon/sysfs.c
+@@ -446,7 +446,7 @@ int probe_thermal_sysfs(void)
+ 		return -1;
+ 	}
+ 
+-	ptdata.tzi = calloc(sizeof(struct tz_info), ptdata.max_tz_instance+1);
++	ptdata.tzi = calloc(ptdata.max_tz_instance+1, sizeof(struct tz_info));
+ 	if (!ptdata.tzi) {
+ 		fprintf(stderr, "Err: allocate tz_info\n");
+ 		return -1;
+@@ -454,8 +454,8 @@ int probe_thermal_sysfs(void)
+ 
+ 	/* we still show thermal zone information if there is no cdev */
+ 	if (ptdata.nr_cooling_dev) {
+-		ptdata.cdi = calloc(sizeof(struct cdev_info),
+-				ptdata.max_cdev_instance + 1);
++		ptdata.cdi = calloc(ptdata.max_cdev_instance + 1,
++				sizeof(struct cdev_info));
+ 		if (!ptdata.cdi) {
+ 			free(ptdata.tzi);
+ 			fprintf(stderr, "Err: allocate cdev_info\n");
