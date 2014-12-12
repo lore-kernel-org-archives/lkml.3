@@ -1,168 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031132AbaLLRqv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:46:51 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:54115 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030970AbaLLRqt (ORCPT
+	id S1031192AbaLLRra (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:47:30 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:45490 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030970AbaLLRr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:46:49 -0500
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-To: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20141211215943.4127.24792.stgit@notabene.brown>
-References: <20141211214801.4127.93914.stgit@notabene.brown>
-	<20141211215943.4127.24792.stgit@notabene.brown>
-Date: Fri, 12 Dec 2014 11:59:20 +0000
-Message-Id: <20141212115920.4277AC408F1@trevor.secretlab.ca>
+	Fri, 12 Dec 2014 12:47:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <548AAA95.6020001@arm.com>
+References: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
+	<548AAA95.6020001@arm.com>
+Date: Fri, 12 Dec 2014 12:47:26 -0500
+Message-ID: <CAJ5Y-eYFsK_heBRQUOmPXGtkLtze-NGzWKy1=0qJVV3x2EycUw@mail.gmail.com>
+Subject: Re: [Linaro-acpi] [PATCH] Mailbox: Complete wait event only if Tx was successful
+From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+To: Sudeep Holla <sudeep.holla@arm.com>
+Cc: "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Dec 2014 08:59:44 +1100
-, NeilBrown <neilb@suse.de>
- wrote:
-> A "tty slave" is a device connected via UART.
-> It may need a driver to, for example, power the device on
-> when the tty is opened, and power it off when the tty
-> is released.
+On 12 December 2014 at 03:43, Sudeep Holla <sudeep.holla@arm.com> wrote:
+> Hi Ashwin,
 
-Some nit picking below, mostly about avoiding nasty surprises on devices
-that may already have child nodes below the tty node.
+Hi,
 
-> 
-> A "tty slave" is a platform device which is declared as a
-> child of the uart in device-tree:
+> On Thursday 11 December 2014 01:46 AM, Ashwin Chaugule wrote:
+>>
+>> If a wait_for_completion_timeout() call returns due to a timeout,
+>> the mbox code can still call complete() after returning from the wait.
+>> This can cause subsequent transmissions on a channel to fail, since
+>> the wait_for_completion_timeout() sees the completion variable
+>> is !=0, caused by the erroneous complete() call, and immediately
+>> returns without waiting for the time as expected by the client.
+>>
+>> Fix this by calling complete() only if the TX was successful.
+>>
+>> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+>> ---
+>>   drivers/mailbox/mailbox.c | 2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+>> index 17e9e4a..4acaddb 100644
+>> --- a/drivers/mailbox/mailbox.c
+>> +++ b/drivers/mailbox/mailbox.c
+>> @@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
+>>         if (mssg && chan->cl->tx_done)
+>>                 chan->cl->tx_done(chan->cl, mssg, r);
+>>
+>> -       if (chan->cl->tx_block)
+>> +       if ((!r) && chan->cl->tx_block)
+>>                 complete(&chan->tx_complete);
+>
+>
+> Just curious to check if there's another possible race which is
+> a different issue.
+>
+> Suppose the timer fired and indicated that the Tx is complete, then
+> it tries to execute complete while the wait_for_completion_timeout timed
+> out. Does that make sense ?
+>
+> So if yes, how about adding !completion_done(..) to the check while you
+> are at this ?
 
-As far as the binding is concerned, talking about platform devices isn't
-relevant. That's an implementation detail. They are just devices.
+Yea. Seems like another race condition. I'll add it along with this..
 
-Using a platform device is somewhat problematic for the kernel because
-the DT could specify pretty much *any* platform device compatible value
-here and the kernel will happily bind a driver to it. I strongly
-recommend a separate bus type so that the pool of drivers remains
-separate. It would be a good time to look at platform_bus_type and see
-if more of it can be generalized so that subsystems can have custom bus
-types without very much code at all.
-
-> 
-> &uart1 {
-> 	bluetooth {
-> 		compatible = "tty,regulator";
-> 		vdd-supply = <&vaux4>;
-> 	};
-
-The example here isn't great. The compatible value should specify the
-specific device, not a generic "tty,regulator" type binding. The
-expectation is the driver understands the attachment and understands how
-to do PM on the device.
-
-> };
-> 
-> runtime power management is used to power-up the device
-> on tty_open() and  power-down on tty_release().
-
-What about devices that need to stay powered up even if the tty is not
-opened? The runtime PM model needs to be better described for tty slaves.
-
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->  .../devicetree/bindings/serial/of-serial.txt       |    4 ++++
->  drivers/tty/tty_io.c                               |   22 ++++++++++++++++++++
->  2 files changed, 26 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/of-serial.txt
-> index 8c4fd0332028..b59501ee2f21 100644
-> --- a/Documentation/devicetree/bindings/serial/of-serial.txt
-> +++ b/Documentation/devicetree/bindings/serial/of-serial.txt
-> @@ -39,6 +39,10 @@ Optional properties:
->    driver is allowed to detect support for the capability even without this
->    property.
->  
-> +Optional child node:
-> +- a platform device listed as a child node will be probed and
-> +  powered-on whenever the tty is in use (open).
-> +
-
-The biggest concern I have is what happens to nodes that already have
-child devices that /don't/ match this use case? It is possible that some
-UART nodes already have a child node used to store other data. There are
-two ways to handle this; 1) add a new bool property that indicates the
-child nodes are tty slave devices, or 2) Make each uart driver
-explicitly enable the feature so that driver authors can check if it is
-a problem for that device. I personally would suggest #1 because then it
-can be enabled in generic code.
-
->  Example:
->  
->  	uart@80230000 {
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 0508a1d8e4cd..7acdc6f093f4 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -95,6 +95,8 @@
->  #include <linux/seq_file.h>
->  #include <linux/serial.h>
->  #include <linux/ratelimit.h>
-> +#include <linux/pm_runtime.h>
-> +#include <linux/of_platform.h>
->  
->  #include <linux/uaccess.h>
->  
-> @@ -1683,6 +1685,17 @@ static int tty_release_checks(struct tty_struct *tty, struct tty_struct *o_tty,
->  	return 0;
->  }
->  
-> +static int open_child(struct device *dev, void *data)
-> +{
-> +	pm_runtime_get_sync(dev);
-> +	return 0;
-> +}
-> +static int release_child(struct device *dev, void *data)
-> +{
-> +	pm_runtime_put_autosuspend(dev);
-> +	return 0;
-> +}
-> +
->  /**
->   *	tty_release		-	vfs callback for close
->   *	@inode: inode of tty
-> @@ -1712,6 +1725,8 @@ int tty_release(struct inode *inode, struct file *filp)
->  	long	timeout = 0;
->  	int	once = 1;
->  
-> +	if (tty->dev)
-> +		device_for_each_child(tty->dev, NULL, release_child);
->  	if (tty_paranoia_check(tty, inode, __func__))
->  		return 0;
->  
-> @@ -2118,6 +2133,8 @@ retry_open:
->  		__proc_set_tty(current, tty);
->  	spin_unlock_irq(&current->sighand->siglock);
->  	tty_unlock(tty);
-> +	if (tty->dev)
-> +		device_for_each_child(tty->dev, NULL, open_child);
->  	mutex_unlock(&tty_mutex);
->  	return 0;
->  err_unlock:
-> @@ -3207,6 +3224,11 @@ struct device *tty_register_device_attr(struct tty_driver *driver,
->  	retval = device_register(dev);
->  	if (retval)
->  		goto error;
-> +	if (device && device->of_node)
-> +		/* Children are platform devices and will be
-> +		 * runtime_pm managed by this tty.
-> +		 */
-> +		of_platform_populate(device->of_node, NULL, NULL, dev);
-
-Also need to remove all the tty slaves on driver unbind.
-
->  
->  	return dev;
->  
-> 
-> 
-
+Thanks,
+Ashwin
