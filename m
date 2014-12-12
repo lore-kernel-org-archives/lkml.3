@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030937AbaLLRJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:09:28 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:28003 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030303AbaLLRJ0 (ORCPT
+	id S1030948AbaLLRKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:10:11 -0500
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:32922 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030303AbaLLRKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:09:26 -0500
-X-IronPort-AV: E=Sophos;i="5.07,565,1413270000"; 
-   d="scan'208";a="53087375"
-Message-ID: <548B2144.4070408@broadcom.com>
-Date: Fri, 12 Dec 2014 09:09:24 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 12 Dec 2014 12:10:09 -0500
+X-Greylist: delayed 554 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Dec 2014 12:10:09 EST
+Message-ID: <548B1F3C.8000600@ovro.caltech.edu>
+Date: Fri, 12 Dec 2014 09:00:44 -0800
+From: David Hawkins <dwh@ovro.caltech.edu>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 3/4] ARM: mach-bcm: Enable PCIe support for iProc
-References: <1418351817-14898-4-git-send-email-rjui@broadcom.com> <3173848.p74DGitYxH@wuerfel> <548B1E33.4090806@broadcom.com> <2928443.nLu7V1bDNK@wuerfel>
-In-Reply-To: <2928443.nLu7V1bDNK@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Hans Verkuil <hverkuil@xs4all.nl>, Ira Snyder <ira.snyder@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, iws@ovro.caltech.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] carma-fpga: remove videobuf dependency
+References: <1416752630-47360-1-git-send-email-hverkuil@xs4all.nl> <CAH1ssNCnfdzCx5DhVW1=Kd8_J0wGaQ2yhbmUoZLG29g+12qV+g@mail.gmail.com> <548AF563.3050204@xs4all.nl>
+In-Reply-To: <548AF563.3050204@xs4all.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (ovro.ovro.caltech.edu [0.0.0.0]); Fri, 12 Dec 2014 09:00:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hans!
 
+>> On Nov 23, 2014 6:31 AM, "Hans Verkuil" <hverkuil@xs4all.nl
+>> <mailto:hverkuil@xs4all.nl>> wrote:
+>>>
+>>> While checking which drivers were still abusing internal videobuf
+>>> API functions I came across these carma fpga misc drivers. These
+>>> drivers have absolutely nothing to do with videobuf or the media
+>>> subsystem.
+>>>
+>>> Drivers shouldn't use those low-level functions in the first
+>>> place, and in fact in the long run the videobuf API will be
+>>> removed altogether.
+>>>
+>>> So remove the videobuf dependency from these two drivers.
+>>>
+>>> This has been compile tested (and that clearly hasn't been done
+>>> for carma-fpga-program.c recently).
+>>>
+>>> Greg, is this something you want to take as misc driver
+>>> maintainer? That makes more sense than going through the media
+>>> tree.
+>>>
+>>> The first patch should probably go to 3.18.
+>>>
+>>> I have no idea if anyone can test this with actual hardware. Ira,
+>>> is that something you can do?
+>>
+>> Hi Hans. My colleague Dave Hawkins (CC'd) is in charge of this
+>> hardware now. He can help to get this patch tested.
+>
+> Any updates on this?
 
-On 12/12/2014 9:02 AM, Arnd Bergmann wrote:
-> On Friday 12 December 2014 08:56:19 Ray Jui wrote:
->>>>
->>>> diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
->>>> index aaeec78..a13a0b2 100644
->>>> --- a/arch/arm/mach-bcm/Kconfig
->>>> +++ b/arch/arm/mach-bcm/Kconfig
->>>> @@ -19,6 +19,7 @@ config ARCH_BCM_IPROC
->>>>       select ARCH_REQUIRE_GPIOLIB
->>>>       select ARM_AMBA
->>>>       select PINCTRL
->>>> +    select PCIE_IPROC
->>>>       help
->>>>         This enables support for systems based on Broadcom IPROC architected SoCs.
->>>>         The IPROC complex contains one or more ARM CPUs along with common
->>>>
->>>
->>> No, just enable it in multi_v7_defconfig and bcm_defconfig.
->>>
->>>        Arnd
->>>
->> Or can I simply have the PCIE_IPROC default to y in
->> drivers/pci/host/Kconfig? Note PCIE_IPROC depends on ARCH_BCM_IPROC. By
->> defaulting it to y, it will be automatically enabled for all iProc
->> family of SoCs.
->
-> I still think it's best not to turn it on automatically. The convention
-> for device drivers is to make them all optional.
->
-> What you can do however is to add
->
-> 	depends on ARCH_BCM_IPROC || COMPILE_TEST
->
-> to the driver to do the reverse and not let the driver be turned on
-> unless IPROC is selected or you are just testing the build.
-> A lot of distros just turn on all drivers, so this way you wouldn't
-> accidentally enable it for a kernel that doesn't support IPROC.
->
-> 	Arnd
->
-Okay I'll do that. Thanks.
+Sorry, I was hoping to get around to setting up a build system
+for this board and testing it, but I have not had a chance to.
+
+Go ahead and apply any changes you need, and I'll try to get a
+hardware test done before Christmas :)
+
+Thanks!
+
+Cheers,
+Dave
+
