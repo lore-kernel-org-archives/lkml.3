@@ -1,179 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934351AbaLLTHl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 14:07:41 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:32238 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932399AbaLLTHj (ORCPT
+	id S934875AbaLLTIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 14:08:14 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:53496 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932399AbaLLTIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 14:07:39 -0500
-Date: Fri, 12 Dec 2014 14:07:31 -0500
-From: Chris Mason <clm@fb.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-btrfs@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs for 3.19-rc
-Message-ID: <20141212190731.GB23804@ret.masoncoding.com>
-Mail-Followup-To: Chris Mason <clm@fb.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-12_07:2014-12-12,2014-12-12,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=28.9261618248808
- compositescore=0.939076664828693 urlsuspect_oldscore=0.939076664828693
- suspectscore=2 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.939076664828693 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412120174
-X-FB-Internal: deliver
+	Fri, 12 Dec 2014 14:08:11 -0500
+Message-ID: <1418411287.13491.22.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: David Miller <davem@davemloft.net>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Date: Fri, 12 Dec 2014 11:08:07 -0800
+In-Reply-To: <548B2468.5050402@users.sourceforge.net>
+References: <548B0A29.8050503@users.sourceforge.net>
+	 <20141212.105106.1162681032492664308.davem@davemloft.net>
+	 <548B1E44.6050005@users.sourceforge.net>
+	 <20141212.115922.687789059853236747.davem@davemloft.net>
+	 <548B2468.5050402@users.sourceforge.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 2014-12-12 at 18:22 +0100, SF Markus Elfring wrote:
 
-Please pull my for-linus branch:
+> Will it be acceptable for you that anyone (or even me) will introduce
+> such a change with a seventh (and eventually eighth) update step here?
+> Do you want any other sequence for source code preparation of
+> the requested software improvement?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+The thing is : We are in the merge window, tracking bugs added in latest
+dev cycle.
 
->From a feature point of view, most of the code here comes from Miao Xie
-and others at Fujitsu to implement scrubbing and replacing devices on
-raid56.  This has been in development for a while, and it's a big
-improvement.
+Having to deal with patches like yours is adding pressure
+on the maintainer (and other developers) at the wrong time.
 
-Filipe and Josef have a great assortment of fixes, many of which solve
-problems corruptions either after a crash or in error conditions.  I
-still have a round two from Filipe for next week that solves corruptions
-with discard and block group removal.
 
-This was based on 3.18-rc5 but does have a merge with rc6 because I
-wanted to make sure testers had the use-after-free fix you pulled in
-from the networking tree.
 
-Filipe Manana (30) commits (+804/-272):
-    Btrfs: fix snapshot inconsistency after a file write followed by truncate (+60/-24)
-    Btrfs: make btrfs_abort_transaction consider existence of new block groups (+4/-3)
-    Btrfs: report error after failure inlining extent in compressed write path (+4/-0)
-    Btrfs: fix race between fs trimming and block group remove/allocation (+140/-21)
-    Btrfs: deal with convert_extent_bit errors to avoid fs corruption (+76/-18)
-    Btrfs: fix freeing used extents after removing empty block group (+10/-11)
-    Btrfs: collect only the necessary ordered extents on ranged fsync (+17/-5)
-    Btrfs: fix invalid block group rbtree access after bg is removed (+13/-0)
-    Btrfs: avoid returning -ENOMEM in convert_extent_bit() too early (+10/-1)
-    Btrfs: fix freeing used extent after removing empty block group (+11/-2)
-    Btrfs: fix race between writing free space cache and trimming (+71/-6)
-    Btrfs: correctly flush compressed data before/after direct IO (+24/-4)
-    Btrfs: make find_first_extent_bit be able to cache any state (+15/-4)
-    Btrfs: don't leak pages and memory on compressed write error (+19/-9)
-    Btrfs: set page and mapping error on compressed write failure (+8/-1)
-    Btrfs: process all async extents on compressed write failure (+1/-5)
-    Btrfs: ensure ordered extent errors aren't missed on fsync (+37/-0)
-    Btrfs: make inode.c:submit_compressed_extents() return void (+2/-5)
-    Btrfs: ensure send always works on roots without orphans (+49/-29)
-    Btrfs: fix unprotected deletion from pending_chunks list (+7/-1)
-    Btrfs: make inode.c:compress_file_range() return void (+2/-5)
-    Btrfs: fix memory leak after block remove + trimming (+6/-0)
-    Btrfs: avoid premature -ENOMEM in clear_extent_bit() (+7/-2)
-    Btrfs: don't ignore compressed bio write errors (+12/-6)
-    Btrfs: fix crash caused by block group removal (+28/-0)
-    Btrfs: don't ignore log btree writeback errors (+15/-6)
-    Btrfs: make xattr replace operations atomic (+102/-65)
-    Btrfs: add helper btrfs_fdatawrite_range (+34/-39)
-    Btrfs: fix hang on compressed write error (+14/-0)
-    Btrfs: fix fs mapping extent map leak (+6/-0)
 
-David Sterba (8) commits (+122/-44):
-    btrfs: switch inode_cache option handling to pending changes (+18/-15)
-    btrfs: fix wrong accounting of raid1 data profile in statfs (+1/-1)
-    btrfs: do commit in sync_fs if there are pending changes (+11/-3)
-    btrfs: move commit out of sysfs when changing features (+5/-8)
-    btrfs: move commit out of sysfs when changing label (+8/-13)
-    btrfs: add support for processing pending changes (+69/-0)
-    btrfs: fix typos in btrfs_check_super_valid (+4/-4)
-    btrfs: introduce pending action: commit (+6/-0)
-
-Miao Xie (7) commits (+1556/-150):
-    Btrfs, raid56: fix use-after-free problem in the final device replace procedure on raid56 (+45/-20)
-    Btrfs, scrub: repair the common data on RAID5/6 if it is corrupted (+235/-33)
-    Btrfs, replace: write raid56 parity into the replace target device (+24/-1)
-    Btrfs, replace: write dirty pages into the replace target device (+97/-43)
-    Btrfs, raid56: use a variant to record the operation type (+17/-14)
-    Btrfs, raid56: support parity scrub on raid56 (+1115/-20)
-    Btrfs, raid56: don't change bbio and raid_map (+23/-19)
-
-Josef Bacik (6) commits (+141/-63):
-    Btrfs: make sure logged extents complete in the current transaction V3 (+72/-6)
-    Btrfs: make sure we wait on logged extents when fsycning two subvols (+1/-1)
-    Btrfs: don't take the chunk_mutex/dev_list mutex in statfs V2 (+47/-25)
-    Btrfs: make get_caching_control unconditionally return the ctl (+4/-6)
-    Btrfs: move read only block groups onto their own list V2 (+17/-23)
-    Btrfs: do not move em to modified list when unpinning (+0/-2)
-
-Zhao Lei (3) commits (+2/-10):
-    Btrfs: remove unnecessary code of stripe_index assignment in __btrfs_map_block (+1/-3)
-    Btrfs: remove noused bbio_ret in __btrfs_map_block in condition (+1/-2)
-    Btrfs, replace: enable dev-replace for raid56 (+0/-5)
-
-Stefan Behrens (2) commits (+53/-93):
-    Btrfs: check-int: don't complain about balanced blocks (+42/-38)
-    Btrfs: check_int: use the known block location (+11/-55)
-
-Shilong Wang (2) commits (+19/-13):
-    Btrfs: fix allocationg memory failure for btrfsic_state structure (+11/-5)
-    Btrfs: fix incorrect compression ratio detection (+8/-8)
-
-Chris Mason (1) commits (+1/-0):
-    Btrfs: include vmalloc.h in check-integrity.c
-
-Gui Hecheng (1) commits (+60/-30):
-    btrfs: fix dead lock while running replace and defrag concurrently
-
-Eryu Guan (1) commits (+10/-3):
-    Btrfs: return failure if btrfs_dev_replace_finishing() failed
-
-Qu Wenruo (1) commits (+18/-9):
-    btrfs: Fix a lockdep warning when running xfstest.
-
-Total: (62) commits (+2786/-687)
-
- fs/btrfs/check-integrity.c  | 163 ++++----
- fs/btrfs/compression.c      |  18 +-
- fs/btrfs/ctree.c            |   2 +-
- fs/btrfs/ctree.h            |  85 ++++-
- fs/btrfs/dev-replace.c      |  32 +-
- fs/btrfs/dir-item.c         |  10 +-
- fs/btrfs/disk-io.c          |  49 ++-
- fs/btrfs/extent-tree.c      | 211 ++++++++---
- fs/btrfs/extent_io.c        |  41 +-
- fs/btrfs/extent_io.h        |   1 +
- fs/btrfs/extent_map.c       |   2 -
- fs/btrfs/file.c             |  51 ++-
- fs/btrfs/free-space-cache.c | 117 +++++-
- fs/btrfs/free-space-cache.h |   2 +
- fs/btrfs/inode-map.c        |   4 +-
- fs/btrfs/inode.c            | 152 ++++++--
- fs/btrfs/ioctl.c            |  36 +-
- fs/btrfs/ordered-data.c     |  49 ++-
- fs/btrfs/ordered-data.h     |  12 +-
- fs/btrfs/raid56.c           | 763 +++++++++++++++++++++++++++++++++----
- fs/btrfs/raid56.h           |  16 +-
- fs/btrfs/scrub.c            | 893 +++++++++++++++++++++++++++++++++++++++++---
- fs/btrfs/send.c             |  49 +++
- fs/btrfs/super.c            |  94 +++--
- fs/btrfs/sysfs.c            |  34 +-
- fs/btrfs/transaction.c      | 166 ++++++--
- fs/btrfs/transaction.h      |   6 +-
- fs/btrfs/tree-log.c         |  50 ++-
- fs/btrfs/volumes.c          |  90 +++--
- fs/btrfs/volumes.h          |  32 +-
- fs/btrfs/xattr.c            | 150 +++++---
- include/uapi/linux/btrfs.h  |   1 +
- 32 files changed, 2740 insertions(+), 641 deletions(-)
