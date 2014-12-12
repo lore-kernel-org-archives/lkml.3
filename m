@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965373AbaLLGYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:24:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51733 "EHLO
+	id S965355AbaLLGYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:24:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51769 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758809AbaLLGRL (ORCPT
+	by vger.kernel.org with ESMTP id S1759423AbaLLGRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:17:11 -0500
+	Fri, 12 Dec 2014 01:17:12 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org,
+        "Trond Myklebust" <trond.myklebust@primarydata.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.178933043@decadent.org.uk>
+Message-ID: <lsq.1418364865.747003765@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 031/164] rt2800: correct BBP1_TX_POWER_CTRL mask
+Subject: [PATCH 3.2 037/164] NFSv4: fix open/lock state recovery error
+ handling
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,30 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 01f7feeaf4528bec83798316b3c811701bac5d3e upstream.
+commit df817ba35736db2d62b07de6f050a4db53492ad8 upstream.
 
-Two bits control TX power on BBP_R1 register. Correct the mask,
-otherwise we clear additional bit on BBP_R1 register, what can have
-unknown, possible negative effect.
+The current open/lock state recovery unfortunately does not handle errors
+such as NFS4ERR_CONN_NOT_BOUND_TO_SESSION correctly. Instead of looping,
+just proceeds as if the state manager is finished recovering.
+This patch ensures that we loop back, handle higher priority errors
+and complete the open/lock state recovery.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2800.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4state.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2800.h
-+++ b/drivers/net/wireless/rt2x00/rt2800.h
-@@ -1737,7 +1737,7 @@ struct mac_iveiv_entry {
-  * 2 - drop tx power by 12dBm,
-  * 3 - increase tx power by 6dBm
-  */
--#define BBP1_TX_POWER_CTRL		FIELD8(0x07)
-+#define BBP1_TX_POWER_CTRL		FIELD8(0x03)
- #define BBP1_TX_ANTENNA			FIELD8(0x18)
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1447,7 +1447,8 @@ restart:
+ 			if (status < 0) {
+ 				set_bit(ops->owner_flag_bit, &sp->so_flags);
+ 				nfs4_put_state_owner(sp);
+-				return nfs4_recovery_handle_error(clp, status);
++				status = nfs4_recovery_handle_error(clp, status);
++				return (status != 0) ? status : -EAGAIN;
+ 			}
  
- /*
+ 			nfs4_put_state_owner(sp);
+@@ -1456,7 +1457,7 @@ restart:
+ 		spin_unlock(&clp->cl_lock);
+ 	}
+ 	rcu_read_unlock();
+-	return status;
++	return 0;
+ }
+ 
+ static int nfs4_check_lease(struct nfs_client *clp)
+@@ -1729,23 +1730,18 @@ static void nfs4_state_manager(struct nf
+ 		if (test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state)) {
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->reboot_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state))
+-				continue;
+-			nfs4_state_end_reclaim_reboot(clp);
+-			if (test_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
++			nfs4_state_end_reclaim_reboot(clp);
+ 		}
+ 
+ 		/* Now recover expired state... */
+ 		if (test_and_clear_bit(NFS4CLNT_RECLAIM_NOGRACE, &clp->cl_state)) {
+ 			status = nfs4_do_reclaim(clp,
+ 				clp->cl_mvops->nograce_recovery_ops);
+-			if (test_bit(NFS4CLNT_LEASE_EXPIRED, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_SESSION_RESET, &clp->cl_state) ||
+-			    test_bit(NFS4CLNT_RECLAIM_REBOOT, &clp->cl_state))
++			if (status == -EAGAIN)
+ 				continue;
+ 			if (status < 0)
+ 				goto out_error;
 
