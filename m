@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760586AbaLLG3v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:29:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52006 "EHLO
+	id S1759352AbaLLG3t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:29:49 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51981 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759355AbaLLGQ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759334AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Dmitry Kasatkin" <d.kasatkin@samsung.com>,
-        "Mimi Zohar" <zohar@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Johannes Weiner" <hannes@cmpxchg.org>,
+        "Michal Hocko" <mhocko@suse.cz>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Wang Nan" <wangnan0@huawei.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.718975776@decadent.org.uk>
+Message-ID: <lsq.1418364865.577540530@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 089/164] evm: check xattr value length and type in
- evm_inode_setxattr()
+Subject: [PATCH 3.2 093/164] cgroup/kmemleak: add kmemleak_free() for
+ cgroup deallocations.
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,83 +35,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
+From: Wang Nan <wangnan0@huawei.com>
 
-commit 3b1deef6b1289a99505858a3b212c5b50adf0c2f upstream.
+commit 401507d67d5c2854f5a88b3f93f64fc6f267bca5 upstream.
 
-evm_inode_setxattr() can be called with no value. The function does not
-check the length so that following command can be used to produce the
-kernel oops: setfattr -n security.evm FOO. This patch fixes it.
+Commit ff7ee93f4715 ("cgroup/kmemleak: Annotate alloc_page() for cgroup
+allocations") introduces kmemleak_alloc() for alloc_page_cgroup(), but
+corresponding kmemleak_free() is missing, which makes kmemleak be
+wrongly disabled after memory offlining.  Log is pasted at the end of
+this commit message.
 
-Changes in v3:
-* there is no reason to return different error codes for EVM_XATTR_HMAC
-  and non EVM_XATTR_HMAC. Remove unnecessary test then.
+This patch add kmemleak_free() into free_page_cgroup().  During page
+offlining, this patch removes corresponding entries in kmemleak rbtree.
+After that, the freed memory can be allocated again by other subsystems
+without killing kmemleak.
 
-Changes in v2:
-* testing for validity of xattr type
+  bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
 
-[ 1106.396921] BUG: unable to handle kernel NULL pointer dereference at           (null)
-[ 1106.398192] IP: [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.399244] PGD 29048067 PUD 290d7067 PMD 0
-[ 1106.399953] Oops: 0000 [#1] SMP
-[ 1106.400020] Modules linked in: bridge stp llc evdev serio_raw i2c_piix4 button fuse
-[ 1106.400020] CPU: 0 PID: 3635 Comm: setxattr Not tainted 3.16.0-kds+ #2936
-[ 1106.400020] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[ 1106.400020] task: ffff8800291a0000 ti: ffff88002917c000 task.ti: ffff88002917c000
-[ 1106.400020] RIP: 0010:[<ffffffff812af7b8>]  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020] RSP: 0018:ffff88002917fd50  EFLAGS: 00010246
-[ 1106.400020] RAX: 0000000000000000 RBX: ffff88002917fdf8 RCX: 0000000000000000
-[ 1106.400020] RDX: 0000000000000000 RSI: ffffffff818136d3 RDI: ffff88002917fdf8
-[ 1106.400020] RBP: ffff88002917fd68 R08: 0000000000000000 R09: 00000000003ec1df
-[ 1106.400020] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800438a0a00
-[ 1106.400020] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
-[ 1106.400020] FS:  00007f7dfa7d7740(0000) GS:ffff88005da00000(0000) knlGS:0000000000000000
-[ 1106.400020] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1106.400020] CR2: 0000000000000000 CR3: 000000003763e000 CR4: 00000000000006f0
-[ 1106.400020] Stack:
-[ 1106.400020]  ffff8800438a0a00 ffff88002917fdf8 0000000000000000 ffff88002917fd98
-[ 1106.400020]  ffffffff812a1030 ffff8800438a0a00 ffff88002917fdf8 0000000000000000
-[ 1106.400020]  0000000000000000 ffff88002917fde0 ffffffff8116d08a ffff88002917fdc8
-[ 1106.400020] Call Trace:
-[ 1106.400020]  [<ffffffff812a1030>] security_inode_setxattr+0x5d/0x6a
-[ 1106.400020]  [<ffffffff8116d08a>] vfs_setxattr+0x6b/0x9f
-[ 1106.400020]  [<ffffffff8116d1e0>] setxattr+0x122/0x16c
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff8114d011>] ? __sb_start_write+0x10f/0x143
-[ 1106.400020]  [<ffffffff811687e8>] ? mnt_want_write+0x21/0x45
-[ 1106.400020]  [<ffffffff811687c0>] ? __mnt_want_write+0x48/0x4f
-[ 1106.400020]  [<ffffffff8116d3e6>] SyS_setxattr+0x6e/0xb0
-[ 1106.400020]  [<ffffffff81529da9>] system_call_fastpath+0x16/0x1b
-[ 1106.400020] Code: c3 0f 1f 44 00 00 55 48 89 e5 41 55 49 89 d5 41 54 49 89 fc 53 48 89 f3 48 c7 c6 d3 36 81 81 48 89 df e8 18 22 04 00 85 c0 75 07 <41> 80 7d 00 02 74 0d 48 89 de 4c 89 e7 e8 5a fe ff ff eb 03 83
-[ 1106.400020] RIP  [<ffffffff812af7b8>] evm_inode_setxattr+0x2a/0x48
-[ 1106.400020]  RSP <ffff88002917fd50>
-[ 1106.400020] CR2: 0000000000000000
-[ 1106.428061] ---[ end trace ae08331628ba3050 ]---
+  Offlined Pages 32768
+  kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
+  CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
+  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+  Call Trace:
+    dump_stack+0x46/0x58
+    create_object+0x266/0x2c0
+    kmemleak_alloc+0x26/0x50
+    kmem_cache_alloc+0xd3/0x160
+    __sigqueue_alloc+0x49/0xd0
+    __send_signal+0xcb/0x410
+    send_signal+0x45/0x90
+    __group_send_sig_info+0x13/0x20
+    do_notify_parent+0x1bb/0x260
+    do_exit+0x767/0xa40
+    do_group_exit+0x44/0xa0
+    SyS_exit_group+0x17/0x20
+    system_call_fastpath+0x16/0x1b
 
-Reported-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+  kmemleak: Kernel memory leak detector disabled
+  kmemleak: Object 0xffff880016900000 (size 524288):
+  kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
+  kmemleak:   min_count = 0
+  kmemleak:   count = 0
+  kmemleak:   flags = 0x1
+  kmemleak:   checksum = 0
+  kmemleak:   backtrace:
+        log_early+0x63/0x77
+        kmemleak_alloc+0x4b/0x50
+        init_section_page_cgroup+0x7f/0xf5
+        page_cgroup_init+0xc5/0xd0
+        start_kernel+0x333/0x408
+        x86_64_start_reservations+0x2a/0x2c
+        x86_64_start_kernel+0xf5/0xfc
+
+Fixes: ff7ee93f4715 (cgroup/kmemleak: Annotate alloc_page() for cgroup allocations)
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/integrity/evm/evm_main.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ mm/page_cgroup.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -218,9 +218,12 @@ int evm_inode_setxattr(struct dentry *de
- {
- 	const struct evm_ima_xattr_data *xattr_data = xattr_value;
+--- a/mm/page_cgroup.c
++++ b/mm/page_cgroup.c
+@@ -160,6 +160,7 @@ static void free_page_cgroup(void *addr)
+ 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
  
--	if ((strcmp(xattr_name, XATTR_NAME_EVM) == 0)
--	    && (xattr_data->type == EVM_XATTR_HMAC))
--		return -EPERM;
-+	if (strcmp(xattr_name, XATTR_NAME_EVM) == 0) {
-+		if (!xattr_value_len)
-+			return -EINVAL;
-+		if (xattr_data->type != EVM_IMA_XATTR_DIGSIG)
-+			return -EPERM;
-+	}
- 	return evm_protect_xattr(dentry, xattr_name, xattr_value,
- 				 xattr_value_len);
+ 		BUG_ON(PageReserved(page));
++		kmemleak_free(addr);
+ 		free_pages_exact(addr, table_size);
+ 	}
  }
 
