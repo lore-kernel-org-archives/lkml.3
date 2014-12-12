@@ -1,112 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966536AbaLLLfU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 06:35:20 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:36365 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966072AbaLLLfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 06:35:17 -0500
-Message-ID: <548AD2F1.3080200@konagma.com>
-Date: Fri, 12 Dec 2014 12:35:13 +0100
-From: Krzysztof Konopko <kris@konagma.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+	id S966582AbaLLLfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 06:35:48 -0500
+Received: from lekensteyn.nl ([178.21.112.251]:37620 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966072AbaLLLfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 06:35:46 -0500
+From: Peter Wu <peter@lekensteyn.nl>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com> <548A2E7A.4010303@lwfinger.net>
-In-Reply-To: <548A2E7A.4010303@lwfinger.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2] HID: logitech-hidpp: prefix the name with Logitech
+Date: Fri, 12 Dec 2014 12:35:37 +0100
+Message-ID: <1793038.ms5vbWQ64b@al>
+User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1418337599-10239-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1418337599-10239-1-git-send-email-benjamin.tissoires@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14 00:53, Larry Finger wrote:
-> On 12/11/2014 04:23 PM, Krzysztof Konopko wrote:
->> Some struct fields in wifi.h are meant to be __le16 bu were declared as
->> unsigned short.  This was reported by sparse:
->>
->>    rtw_wlan_util.c:538:24: warning: cast to restricted __le16
->>    rtw_wlan_util.c:1544:29: warning: cast to restricted __le16
->>    rtw_wlan_util.c:1546:25: warning: cast to restricted __le16
->>
->> This patch changes declared types of the struct fields involved.
->>
->> Signed-off-by: Krzysztof Konopko <kris@konagma.com>
->> ---
->>   drivers/staging/rtl8723au/include/wifi.h | 6 +++---
->>   1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8723au/include/wifi.h
->> b/drivers/staging/rtl8723au/include/wifi.h
->> index fd3da3b..8a2adc5 100644
->> --- a/drivers/staging/rtl8723au/include/wifi.h
->> +++ b/drivers/staging/rtl8723au/include/wifi.h
->> @@ -28,7 +28,7 @@
->>   struct AC_param {
->>       unsigned char        ACI_AIFSN;
->>       unsigned char        CW;
->> -    unsigned short    TXOP_limit;
->> +    __le16            TXOP_limit;
->>   }  __packed;
->>
->>   struct WMM_para_element {
->> @@ -39,9 +39,9 @@ struct WMM_para_element {
->>
->>   struct ADDBA_request {
->>       unsigned char        dialog_token;
->> -    unsigned short    BA_para_set;
->> +    __le16        BA_para_set;
->>       unsigned short    BA_timeout_value;
->> -    unsigned short    BA_starting_seqctrl;
->> +    __le16        BA_starting_seqctrl;
->>   }  __packed;
+On Thursday 11 December 2014 17:39:59 Benjamin Tissoires wrote:
+> Current names are reported as "K750", "M705", and it can be misleading
+> for the users when they look at their input device list.
 > 
-> This fix may make the sparse warnings go away, but I think it introduces
-> new bugs.
+> Prefixing the names with "Logitech " makes things better.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-Right, I see.  Nice try though, isn't it? ;)
+Reviewed-by: Peter Wu <peter@lekensteyn.nl>
 
-> In particular, did you test on big-endian hardware after you
-> made this change?
+I have not tested this one, but the approach looks correct. What I have
+also been thinking of is the possibility that Logitech adds "LOGITECH"
+or "Logicool" (the Japanese trademark) before devices, but I think that
+is unlikely so there is no need to check for other strings.
 
-Nope.  I don't have any big-endian hardware.  I don't even have the
-wireless card TBH.  But I'm happy to try to get one.  Is Rtl8723AE the
-right model?
-
-> I recently found that the driver for RTL8188EU needed
-> to have BA_para_set to unsigned short, and the endianess warnings needed
-> to be fixed in the code. Then it would work on my PowerBook G4 with a
-> PPC processor.
+> ---
+> 
+> Changes in v2:
+> - renamed PREFIX_SIZE into PREFIX_LENGTH
+> - changed "name_length + PREFIX_LENGTH;" into "PREFIX_LENGTH + name_length;"
+> - rebased on Peter's last patch series
+> 
+>  drivers/hid/hid-logitech-hidpp.c | 34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> index 2f420c0..274dbb7 100644
+> --- a/drivers/hid/hid-logitech-hidpp.c
+> +++ b/drivers/hid/hid-logitech-hidpp.c
+> @@ -282,6 +282,33 @@ static inline bool hidpp_report_is_connect_event(struct hidpp_report *report)
+>  		(report->rap.sub_id == 0x41);
+>  }
+>  
+> +/**
+> + * hidpp_prefix_name() prefixes the current given name with "Logitech ".
+> + */
+> +static void hidpp_prefix_name(char **name, int name_length)
+> +{
+> +#define PREFIX_LENGTH 9 /* "Logitech " */
+> +
+> +	int new_length;
+> +	char *new_name;
+> +
+> +	if (name_length > PREFIX_LENGTH &&
+> +	    strncmp(*name, "Logitech ", PREFIX_LENGTH) == 0)
+> +		/* The prefix has is already in the name */
+> +		return;
+> +
+> +	new_length = PREFIX_LENGTH + name_length;
+> +	new_name = kzalloc(new_length, GFP_KERNEL);
+> +	if (!new_name)
+> +		return;
+> +
+> +	snprintf(new_name, new_length, "Logitech %s", *name);
+> +
+> +	kfree(*name);
+> +
+> +	*name = new_name;
+> +}
+> +
+>  /* -------------------------------------------------------------------------- */
+>  /* HIDP++ 1.0 commands                                                        */
+>  /* -------------------------------------------------------------------------- */
+> @@ -321,6 +348,10 @@ static char *hidpp_get_unifying_name(struct hidpp_device *hidpp_dev)
+>  		return NULL;
+>  
+>  	memcpy(name, &response.rap.params[2], len);
+> +
+> +	/* include the terminating '\0' */
+> +	hidpp_prefix_name(&name, len + 1);
+> +
+>  	return name;
+>  }
+>  
+> @@ -498,6 +529,9 @@ static char *hidpp_get_device_name(struct hidpp_device *hidpp)
+>  		index += ret;
+>  	}
+>  
+> +	/* include the terminating '\0' */
+> +	hidpp_prefix_name(&name, __name_length + 1);
+> +
+>  	return name;
+>  }
+>  
 > 
 
-OK.  Does it still work with little endian?
+-- 
+Kind regards,
+Peter
+https://lekensteyn.nl
 
-> In RTL8188EU, both BA_starting_seqctrl and TXOP_limit are unsigned short.
-> 
-
-That's not quite the case.  `TXOP_limit` is __le16 in RTL8188EU [1].
-It's __le16 even in your GitHub repo [2].  And that made me thinking
-that there's probably some inconsistency in the header.
-
-I'm _far_ from being a wireless expert but doesn't data coming out of
-the wire/air have the endianess defined explicitly?  And both `AC_param`
-and `ADDBA_request` come out of air?
-
-I was hunting particularly for inconsistencies with `sparse` and came
-across this one.  But I dug a bit further and I wonder why the driver is
-not using standard stuff like the one in `include/linux/ieee80211.h`
-where any data wider than one byte is clearly declared as __le<nn>?
-
-Cheers,
-Kris
-
---
-
-[1] drivers/staging/rtl8188eu/include/wifi.h as of next-20141211
-[2] https://github.com/lwfinger/rtl8188eu/blob/master/include/wifi.h
