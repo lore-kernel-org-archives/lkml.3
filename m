@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967819AbaLLMkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 07:40:16 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:46128 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967584AbaLLMkN (ORCPT
+	id S967716AbaLLMpy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 07:45:54 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:21304 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966556AbaLLMpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 07:40:13 -0500
-Date: Fri, 12 Dec 2014 13:40:08 +0100
-From: Dongsu Park <dongsu.park@profitbricks.com>
-To: Ming Lin <mlin@minggr.net>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-fsdevel@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: Block layer projects that I haven't had time for
-Message-ID: <20141212124008.GA3365@gmail.com>
-References: <20141124041629.GA17907@kmo-pixel>
- <20141204110027.GA28552@gmail.com>
- <20141206030205.GA22669@kmo-pixel>
- <20141208114813.GA2724@gmail.com>
- <CAF1ivSYYTO-abY32rFy2SVscPpxJaDyDZTULygXTys3rgWLONg@mail.gmail.com>
- <20141210225707.GC31102@daterainc.com>
- <572ec4bea03f28abe72225a053684878.squirrel@minggr.net>
- <20141211100751.GA2409@gmail.com>
- <548A8BFF.9020801@minggr.net>
+	Fri, 12 Dec 2014 07:45:53 -0500
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+To: <ralf@linux-mips.org>
+CC: <Markos.Chandras@imgtec.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mips: pci: Add ifdef around pci_proc_domain
+Date: Fri, 12 Dec 2014 12:45:39 +0000
+Message-ID: <1418388339-19750-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <548A8BFF.9020801@minggr.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.12.2014 22:32, Ming Lin wrote:
-> On 12/11/2014 02:07 AM, Dongsu Park wrote:
-> > On 10.12.2014 23:11, Ming Lin wrote:
-> >> Just tried to edit a btrfs file.
-> >>
-> >> [   45.216351] BTRFS error (device sdb1): partial page write in btrfs with
-> >> offset 0 and length 8192
-> >> [   45.217522] BTRFS critical (device sdb1): bad ordered accounting left 0
-> >> size 4096
-> > 
-> > @ming: I guess you managed to see this error as you're testing with a
-> > SCSI device, not virtio-blk device like me.
-> > Are you seeing it without any back traces?
-> > Does the attached patch fix your issue?
-> > (This is already included in the branch block-mpage-bvecs-for-next.)
-> 
-> How about below fix?
-> "bvec.bv_len != PAGE_CACHE_SIZE" should be not valid any more, because now bio
-> handles arbitrary size, right?
+Without these, there are multiple definitions of pci_proc_domain()
+and pci_domain_nr() if linux/pci.h and asm/pci.h are included.
 
-Thanks for figuring it out. :-)
-I applied the change not only in _writepage(), but also in _readpage(),
-also with some minor changes. See the attached patch.
+Add #ifdefs around them
 
-I've just tested it under btrfs on a SCSI device via scsi_debug.
-No such errors any more. Hope it works also for you.
-Probably there will be a lot of places where a single page is assumed.
-
-Cheers,
-Dongsu
-
-----
->From db3abe857f8c0f722c5ade450389e78e79ee7d17 Mon Sep 17 00:00:00 2001
-From: Ming Lin <mlin@minggr.net>
-Date: Thu, 11 Dec 2014 22:32:31 -0800
-Subject: [PATCH] btrfs: allow read-/writing an extent to handle arbitrarily
- sized bios
-
-Fix bugs in end_bio_extent_{read,write}page(), upon reading or writing
-biovec that has length of multiple pages. The condition "bvec.bv_len
-!= PAGE_CACHE_SIZE" would not be always valid any more, because now
-biovec is able to handle arbitrary size of bio. Without this patch,
-read/write IO stalls with the following log:
-
-  BTRFS error (device sdb1): partial page write in btrfs with offset 0 and length 8192
-  BTRFS critical (device sdb1): bad ordered accounting left 0 size 4096
-
-Signed-off-by: Ming Lin <mlin@minggr.net>
-Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
+Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Reviewed-by: Markos Chandras <Markos.Chandras@imgtec.com>
 ---
- fs/btrfs/extent_io.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ arch/mips/include/asm/pci.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 2ac08e2..790a83b 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -2468,7 +2468,7 @@ static void end_bio_extent_writepage(struct bio *bio, int err)
- 		 * advance bv_offset and adjust bv_len to compensate.
- 		 * Print a warning for nonzero offsets, and an error
- 		 * if they don't add up to a full page.  */
--		if (bvec.bv_offset || bvec.bv_len != PAGE_CACHE_SIZE) {
-+		if (bvec.bv_offset) {
- 			if (bvec.bv_offset + bvec.bv_len != PAGE_CACHE_SIZE)
- 				btrfs_err(BTRFS_I(page->mapping->host)->root->fs_info,
- 				   "partial page write in btrfs with offset %u and length %u",
-@@ -2481,7 +2481,8 @@ static void end_bio_extent_writepage(struct bio *bio, int err)
- 		}
+diff --git a/arch/mips/include/asm/pci.h b/arch/mips/include/asm/pci.h
+index 6952962..193b4c6 100644
+--- a/arch/mips/include/asm/pci.h
++++ b/arch/mips/include/asm/pci.h
+@@ -121,6 +121,7 @@ static inline void pci_dma_burst_advice(struct pci_dev *pdev,
+ }
+ #endif
  
- 		start = page_offset(page);
--		end = start + bvec.bv_offset + bvec.bv_len - 1;
-+		end = start + bvec.bv_offset
-+			+ min_t(unsigned int, bvec.bv_len, PAGE_CACHE_SIZE) - 1;
++#ifdef CONFIG_PCI_DOMAINS
+ #define pci_domain_nr(bus) ((struct pci_controller *)(bus)->sysdata)->index
  
- 		if (end_extent_writepage(page, err, start, end))
- 			continue;
-@@ -2548,7 +2549,7 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
- 		 * advance bv_offset and adjust bv_len to compensate.
- 		 * Print a warning for nonzero offsets, and an error
- 		 * if they don't add up to a full page.  */
--		if (bvec.bv_offset || bvec.bv_len != PAGE_CACHE_SIZE) {
-+		if (bvec.bv_offset) {
- 			if (bvec.bv_offset + bvec.bv_len != PAGE_CACHE_SIZE)
- 				btrfs_err(BTRFS_I(page->mapping->host)->root->fs_info,
- 				   "partial page read in btrfs with offset %u and length %u",
-@@ -2561,7 +2562,8 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
- 		}
+ static inline int pci_proc_domain(struct pci_bus *bus)
+@@ -128,6 +129,7 @@ static inline int pci_proc_domain(struct pci_bus *bus)
+ 	struct pci_controller *hose = bus->sysdata;
+ 	return hose->need_domain_info;
+ }
++#endif /* CONFIG_PCI_DOMAINS */
  
- 		start = page_offset(page);
--		end = start + bvec.bv_offset + bvec.bv_len - 1;
-+		end = start + bvec.bv_offset
-+			+ min_t(unsigned int, bvec.bv_len, PAGE_CACHE_SIZE) - 1;
- 		len = bvec.bv_len;
+ #endif /* __KERNEL__ */
  
- 		mirror = io_bio->mirror_num;
 -- 
-2.1.0
+1.9.1
 
