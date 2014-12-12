@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967057AbaLLUqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:46:49 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:37794 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934056AbaLLUqq (ORCPT
+	id S967433AbaLLUtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:49:12 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33666 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757345AbaLLUtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:46:46 -0500
-Date: Fri, 12 Dec 2014 12:46:42 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-cc: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org, bpoirier@suse.de,
-        x86@kernel.org, kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-kernel@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Borislav Petkov <bp@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v2 2/2] x86, arm, platform, xen, kconfig: add xen defconfig
- helper
-In-Reply-To: <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com>
-Message-ID: <alpine.DEB.2.10.1412121246250.2273@chino.kir.corp.google.com>
-References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com> <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 12 Dec 2014 15:49:11 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <548B4FBE.5090101@sr71.net>
+References: <20141212191213.579887D2@viggo.jf.intel.com> <548B4E75.5010507@amacapital.net>
+ <548B4FBE.5090101@sr71.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 12 Dec 2014 12:48:49 -0800
+Message-ID: <CALCETrW4f3EUYGG_zyzb7sZBXaoW3eHMpTn3dd3WpDgJq2HjtA@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit kernels
+To: Dave Hansen <dave@sr71.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Dec 2014, Luis R. Rodriguez wrote:
+On Fri, Dec 12, 2014 at 12:27 PM, Dave Hansen <dave@sr71.net> wrote:
+> On 12/12/2014 12:22 PM, Andy Lutomirski wrote:
+>> On 12/12/2014 11:12 AM, Dave Hansen wrote:
+>>> This is 3.20 material.  I'm hoping to get some comments early
+>>> in case folks have some issues with the way it's being done.
+>>>
+>>> The MPX hardware structures differ in layout in 32 and 64-bit
+>>> mode.  A 32-bit binary running on a 64-bit kernel needs the
+>>> 32-bit structures, so we need code which switches between
+>>> the two modes.
+>>
+>> The OS community figured out years ago that you aren't supposed to do
+>> this.  Did everyone forget to tell the hardware people?
+>
+> What is your concern with it, exactly?
+>
+> You want the same size structures with the same format for 32-bit and
+> 64-bit modes?
 
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> This lets you build a kernel which can support xen dom0
-> or xen guests by just using:
-> 
->    make xenconfig
-> 
-> on both x86 and arm64 kernels. This also splits out the
-> options which are available currently to be built with x86
-> and 'make ARCH=arm64' under a shared config.
-> 
-> Technically xen supports a dom0 kernel and also a guest
-> kernel configuration but upon review with the xen team
-> since we don't have many dom0 options its best to just
-> combine these two into one.
-> 
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: penberg@kernel.org
-> Cc: levinsasha928@gmail.com
-> Cc: mtosatti@redhat.com
-> Cc: fengguang.wu@intel.com
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Ian Campbell <Ian.Campbell@citrix.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: xen-devel@lists.xenproject.org
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Yes.  Especially because programs can switch between 32-bit and 64-bit
+mode entirely in userspace.  I don't know whether any do in practice,
+but programs *can*.
 
-Acked-by: David Rientjes <rientjes@google.com>
+Or better yet: Intel could have skipped supporting it at all in 32-bit
+mode.  Isn't mpx somewhat of an address space hog anyway?
+
+--Andy
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
