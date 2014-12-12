@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965035AbaLLDFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 22:05:31 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:51251 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933928AbaLLDF2 (ORCPT
+	id S1759965AbaLLDGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 22:06:39 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49149 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757800AbaLLDGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 22:05:28 -0500
+	Thu, 11 Dec 2014 22:06:38 -0500
+Date: Fri, 12 Dec 2014 03:06:35 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeff Layton <jlayton@primarydata.com>, Bruce Fields <bfields@fieldses.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>
+Subject: Re: [PATCH v2 00/16] nfsd/sunrpc: add support for a workqueue-based
+ nfsd
+Message-ID: <20141212030635.GB22149@ZenIV.linux.org.uk>
+References: <1418238480-18857-1-git-send-email-jlayton@primarydata.com>
+ <20141212021241.GA5944@ZenIV.linux.org.uk>
+ <CA+55aFy_LRUzMO_ixgVtysr7OKs=GSk9dU1ORRUdrTn210VuyA@mail.gmail.com>
+ <20141212030206.GA22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAD=FV=WcAJAgj2triu1W4863BT1ew2wf-z6YNHHwiDKpnYmK4w@mail.gmail.com>
-References: <1418291722-25448-1-git-send-email-lyz@rock-chips.com>
-	<1418291722-25448-2-git-send-email-lyz@rock-chips.com>
-	<CAD=FV=WcAJAgj2triu1W4863BT1ew2wf-z6YNHHwiDKpnYmK4w@mail.gmail.com>
-Date: Thu, 11 Dec 2014 19:05:27 -0800
-X-Google-Sender-Auth: IcfV-vk3qnxK18qCVinakqjhQZ0
-Message-ID: <CAD=FV=XrOpZ16k7dNyqzf8m_8Sjq8yn5xCj7+YLiTPU3O2KrrQ@mail.gmail.com>
-Subject: Re: [PATCH v6 1/5] phy: add a driver for the Rockchip SoC internal
- USB2.0 PHY
-From: Doug Anderson <dianders@chromium.org>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>, jwerner@chromium.org,
-        Olof Johansson <olof@lixom.net>, Tao Huang <huangtao@rock-chips.com>,
-        Chris <zyw@rock-chips.com>, Eddie Cai <cf@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141212030206.GA22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yunzhi,
+On Fri, Dec 12, 2014 at 03:02:06AM +0000, Al Viro wrote:
+> On Thu, Dec 11, 2014 at 06:29:37PM -0800, Linus Torvalds wrote:
+> > On Thu, Dec 11, 2014 at 6:12 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> > >
+> > > Linus, do you see any problems with the following patch (against the mainline)?
+> > 
+> > Not concpetually, but create_kthread() uses CLONE_FS, and I don't
+> > think it's just umask that things like nfsd want to avoid sharing.
+> > What about all the *other* fields?
+> > 
+> > Just as an example: even if all the threads actually end up all having
+> > the same global root, what about contention on 'fs->lock'?
+> > 
+> > I have *not* looked at the details, and maybe there's some reason I'm
+> > completely off, but it worries me.
+> 
+> Umm...  I would be very surprised if it turned out to be a problem.
+> nfsd really doesn't give a fuck about its cwd and root - not in the
+> thread side of things.  And (un)exporting is (a) not on a hot path
+> and (b) not done from a kernel thread anyway.  fh_to_dentry and friends
+> doesn't care about root/cwd, etc.
+> 
+> I don't see anything that could cause that kind of issues.
 
-On Thu, Dec 11, 2014 at 10:09 AM, Doug Anderson <dianders@chromium.org> wrote:
->> +               rk_phy->phy = devm_phy_create(dev, NULL, &ops);
->
-> This has the wrong number of arguments.  Even before the change that
-> added the 4th argument, this is still wrong because "ops" is supposed
-> to be the 2nd argument, not the 3rd.
->
-> ...so I'm confused how this compiled for you.  I think this ought to be:
->
-> rk_phy->phy = devm_phy_create(dev, child, &ops, NULL);
->
-> ...but please correct me if I'm mistaken!
-
-As you pointed out privately, I didn't have (dbc9863 phy: remove the
-old lookup method).  Sorry about the noise..
-
-Hopefully my other comments are not quite as stupid...
-
--Doug
+PS: I haven't checked if lustre is trying to avoid that kind of contention;
+it might be, but I would consider having those threads resolve _any_ kind
+of pathnames from root or cwd as serious bug - after all, we are not guaranteed
+that filesystem in question is reachable from the namespace PID 1 is running
+it.
