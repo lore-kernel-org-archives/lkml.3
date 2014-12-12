@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967854AbaLLNEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:04:54 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56710 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967589AbaLLNEw (ORCPT
+	id S967864AbaLLNGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:06:00 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:64222 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967589AbaLLNF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:04:52 -0500
-Date: Fri, 12 Dec 2014 13:04:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Message-ID: <20141212130437.GF11764@sirena.org.uk>
-References: <1418305221-30348-1-git-send-email-k.kozlowski@samsung.com>
+	Fri, 12 Dec 2014 08:05:58 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BDlG3CzP/kphk9YG"
-Content-Disposition: inline
-In-Reply-To: <1418305221-30348-1-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] regulator: s2mps11: Fix dw_mmc failure on Gear 2
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1918116.UxUgDPTmcq@wuerfel>
+References: <1418342706-14755-2-git-send-email-rjui@broadcom.com> <1918116.UxUgDPTmcq@wuerfel>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 12 Dec 2014 22:05:37 +0900
+Message-ID: <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Scott Branden <sbranden@broadcom.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 12, 2014 at 9:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 11 December 2014 16:05:04 Ray Jui wrote:
+>> +
+>> +- linux,gpio-base:
+>> +    Base GPIO number of this controller
+>> +
+>>
+>
+> We've NAK'ed properties like this multiple times before, and it
+> doesn't get any better this time. What are you trying to achieve
+> here?
 
---BDlG3CzP/kphk9YG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I am to blame for suggesting using this property to Ray, and I am
+fully aware that this has been rejected before, but look at what
+people came with recently to palliate the lack of control over the
+GPIO number space for DT platforms:
 
-On Thu, Dec 11, 2014 at 02:40:21PM +0100, Krzysztof Kozlowski wrote:
-> Invalid buck4 configuration for linear mapping of voltage in S2MPS14
-> regulators caused boot failure on Gear 2 (dw_mmc-exynos):
+http://www.spinics.net/lists/arm-kernel/msg384847.html
+https://lkml.org/lkml/2014/12/10/133
 
-Applied, thanks.
+Right now GPIO numbering for platforms using DT is a very inconsistent
+process, subject to change by the simple action of adjusting the value
+of ARCH_NR_GPIOS (which we did recently, btw), adding a new GPIO
+controller, or changing the probe order of devices. For users of the
+integer or sysfs interfaces, this results in GPIO numbers that change,
+and drivers and/or user-space programs that behave incorrectly.
+Ironically, the only way to have consistent numbers is to use the old
+platform files, where you can specify the base number of a gpio_chip.
 
---BDlG3CzP/kphk9YG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+DT is actually probably not such a bad place to provide consistency in
+GPIO numbering. It has a global vision of the system layout, including
+all GPIO controllers and the number of GPIOs they include, and thus
+can make informed decisions. It provides a consistent result
+regardless of probe order. And allowing it to assign GPIO bases to
+controllers will free us from the nonsensical dependency of some
+arbitrary upper-bound for GPIO numbers that ARCH_NR_GPIOS imposes on
+us. Also about ARCH_NR_GPIOS, the plan is to eventually remove it
+since we don't need it anymore after the removal of the global
+gpio_descs array. This will again interfere with the numbering of GPIO
+chips that do not have a base number provided.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUiufkAAoJECTWi3JdVIfQ+WwH/0xZzrp3W1H2NSE8arNrCoQM
-U+QWyAYaueijKGfBTove/5SYsU+cVdz0l5Ov4WA8zTJ3uyEpF0FABWSBset5ZqqS
-M/YI9tlE9tS3ZjkcNfbh3kQr1Jv0ZTnKGuu3VrfoLbWRF/n9PR2LC8aCsqfJgL0y
-xmfhbi9N5wYhXJsd1B+MrGXtL5b6QCr+YJfWoZiyi+mgfzptet7C2elp1XG2wO8x
-ycrXPkVuokVfkhF++0Mai0txINhyd7eXhSOt0n9CVR16cl+Wu7INcRryjlpqcaUt
-02EEa7cBPgsJPG/YQIccE5VwGuazyAVw7shi7rx54aqefN+8Coovj3a1vHnuUIQ=
-=9w6F
------END PGP SIGNATURE-----
-
---BDlG3CzP/kphk9YG--
+Note that I don't really like this, either - but the problem is the
+GPIO integer interface. Until everyone has upgraded to gpiod and we
+have a replacement for the current sysfs interface (this will take a
+while) we have to cope with this. This issue has been bothering users
+for years, so this time I'd like to try and solve it the less ugly
+way. If there is a better solution, of course I'm all for it.
