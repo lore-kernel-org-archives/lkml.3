@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965810AbaLLIUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:20:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43292 "EHLO
+	id S1759840AbaLLIUy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:20:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43301 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414AbaLLIUh (ORCPT
+	with ESMTP id S1757513AbaLLIUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:20:37 -0500
-Date: Fri, 12 Dec 2014 00:19:56 -0800
+	Fri, 12 Dec 2014 03:20:52 -0500
+Date: Fri, 12 Dec 2014 00:20:11 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org>
-Cc: paulus@samba.org, jolsa@redhat.com, mingo@kernel.org,
-        adrian.hunter@intel.com, bp@suse.de, tglx@linutronix.de,
-        peterz@infradead.org, namhyung@kernel.org, eranian@google.com,
-        hpa@zytor.com, dzickus@redhat.com, acme@redhat.com, fweisbec@gmail.com,
-        dsahern@gmail.com, linux-kernel@vger.kernel.org, efault@gmx.de
-Reply-To: paulus@samba.org, jolsa@redhat.com, mingo@kernel.org,
-        adrian.hunter@intel.com, bp@suse.de, peterz@infradead.org,
-        tglx@linutronix.de, eranian@google.com, hpa@zytor.com,
-        namhyung@kernel.org, dzickus@redhat.com, acme@redhat.com,
-        dsahern@gmail.com, linux-kernel@vger.kernel.org, efault@gmx.de,
-        fweisbec@gmail.com
+Message-ID: <tip-cdvxfz2gycetbkopm9sna1qp@git.kernel.org>
+Cc: fweisbec@gmail.com, jolsa@redhat.com, adrian.hunter@intel.com,
+        mingo@kernel.org, dsahern@gmail.com, acme@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, dzickus@redhat.com, peterz@infradead.org,
+        bp@suse.de, efault@gmx.de, namhyung@kernel.org, paulus@samba.org,
+        tglx@linutronix.de, eranian@google.com
+Reply-To: tglx@linutronix.de, eranian@google.com, paulus@samba.org,
+        namhyung@kernel.org, efault@gmx.de, bp@suse.de, peterz@infradead.org,
+        dzickus@redhat.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        hpa@zytor.com, dsahern@gmail.com, mingo@kernel.org,
+        adrian.hunter@intel.com, jolsa@redhat.com, fweisbec@gmail.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evlist: Introduce strerror_mmap method
-Git-Commit-ID: 956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
+Subject: [tip:perf/urgent] perf trace:
+  Provide a better explanation when mmap fails
+Git-Commit-ID: e09b18d4907992d3d615b215c1abf585721b2810
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,17 +36,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
-Gitweb:     http://git.kernel.org/tip/956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
+Commit-ID:  e09b18d4907992d3d615b215c1abf585721b2810
+Gitweb:     http://git.kernel.org/tip/e09b18d4907992d3d615b215c1abf585721b2810
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 11 Dec 2014 18:03:01 -0300
+AuthorDate: Thu, 11 Dec 2014 18:04:10 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 11 Dec 2014 18:03:01 -0300
+CommitDate: Thu, 11 Dec 2014 18:04:10 -0300
 
-perf evlist: Introduce strerror_mmap method
+perf trace: Provide a better explanation when mmap fails
 
-To pretty print hints about perf_evlist__mmap errors. Will be used in
-'trace' in the next patch.
+If we ask for a mmap lenght than the max configured via the relevant
+sysctl, provide a better warning, instead of just expanding the EPERM
+returned:
+
+[acme@ssdandy ~]$ trace -m 256 -e nanosleep sleep 2
+Error:	Operation not permitted.
+Hint:	Check /proc/sys/kernel/perf_event_mlock_kb (516 kB) setting.
+Hint:	Tried using 1028 kB.
+Hint:	Try using a bigger -m/--mmap-pages value.
+
+[acme@ssdandy ~]$ trace -m 128 -e nanosleep sleep 2
+  2001.280 (2000.403 ms): nanosleep(rqtp: 0x7fff89a8a7f0) = 0
+[acme@ssdandy ~]$
+
+An upcoming patch will autotune the request for non-root users when -m
+is not used.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -59,63 +73,46 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-cdvxfz2gycetbkopm9sna1qp@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evlist.c | 23 +++++++++++++++++++++++
- tools/perf/util/evlist.h |  1 +
- 2 files changed, 24 insertions(+)
+ tools/perf/builtin-trace.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index cfbe2b9..bb5dfc5 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -8,6 +8,7 @@
-  */
- #include "util.h"
- #include <api/fs/debugfs.h>
-+#include <api/fs/fs.h>
- #include <poll.h>
- #include "cpumap.h"
- #include "thread_map.h"
-@@ -1483,6 +1484,28 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
- 	return 0;
- }
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 83a4835..327541e 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -2045,7 +2045,6 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 	unsigned long before;
+ 	const bool forks = argc > 0;
+ 	bool draining = false;
+-	char sbuf[STRERR_BUFSIZE];
  
-+int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size)
-+{
-+	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
-+	int value;
-+
-+	switch (err) {
-+	case EPERM:
-+		sysctl__read_int("kernel/perf_event_mlock_kb", &value);
-+		scnprintf(buf, size, "Error:\t%s.\n"
-+				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
-+				     "Hint:\tTried using %zd kB.\n"
-+				     "Hint:\tTry using a bigger -m/--mmap-pages value.",
-+				     emsg, value, evlist->mmap_len / 1024);
-+		break;
-+	default:
-+		scnprintf(buf, size, "%s", emsg);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
- void perf_evlist__to_front(struct perf_evlist *evlist,
- 			   struct perf_evsel *move_evsel)
- {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 649b0c5..0ba93f6 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -185,6 +185,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
+ 	trace->live = true;
  
- int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
- int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
-+int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size);
+@@ -2106,11 +2105,8 @@ static int trace__run(struct trace *trace, int argc, const char **argv)
+ 		goto out_error_open;
  
- static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
- {
+ 	err = perf_evlist__mmap(evlist, trace->opts.mmap_pages, false);
+-	if (err < 0) {
+-		fprintf(trace->output, "Couldn't mmap the events: %s\n",
+-			strerror_r(errno, sbuf, sizeof(sbuf)));
+-		goto out_delete_evlist;
+-	}
++	if (err < 0)
++		goto out_error_mmap;
+ 
+ 	perf_evlist__enable(evlist);
+ 
+@@ -2210,6 +2206,10 @@ out_error_tp:
+ 	perf_evlist__strerror_tp(evlist, errno, errbuf, sizeof(errbuf));
+ 	goto out_error;
+ 
++out_error_mmap:
++	perf_evlist__strerror_mmap(evlist, errno, errbuf, sizeof(errbuf));
++	goto out_error;
++
+ out_error_open:
+ 	perf_evlist__strerror_open(evlist, errno, errbuf, sizeof(errbuf));
+ 
