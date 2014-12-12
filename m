@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966329AbaLLGvc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:51:32 -0500
+	id S1760948AbaLLGvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:51:52 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966047AbaLLGsa (ORCPT
+	by vger.kernel.org with ESMTP id S1750757AbaLLGs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:30 -0500
+	Fri, 12 Dec 2014 01:48:26 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
-        "Jens Axboe" <axboe@fb.com>, linux-scsi@vger.kernel.org,
-        "Jens Axboe" <axboe@kernel.dk>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Mark Brown" <broonie@kernel.org>,
+        "Andy Shevchenko" <andriy.shevchenko@linux.intel.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.327458186@decadent.org.uk>
+Message-ID: <lsq.1418364865.211227502@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 075/164] scsi: Fix error handling in SCSI_IOCTL_SEND_COMMAND
+Subject: [PATCH 3.2 026/164] spi: dw-mid: check that DMA was inited before
+ exit
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +34,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-commit 84ce0f0e94ac97217398b3b69c21c7a62ebeed05 upstream.
+commit 63d84b1a46957b3ecc56af8087220c0df42e0ef2 upstream.
 
-When sg_scsi_ioctl() fails to prepare request to submit in
-blk_rq_map_kern() we jump to a label where we just end up copying
-(luckily zeroed-out) kernel buffer to userspace instead of reporting
-error. Fix the problem by jumping to the right label.
+commit fb57862ead652454ceeb659617404c5f13bc34b5 upstream.
 
-CC: Jens Axboe <axboe@kernel.dk>
-CC: linux-scsi@vger.kernel.org
-Coverity-id: 1226871
-Signed-off-by: Jan Kara <jack@suse.cz>
+If the driver was compiled with DMA support, but DMA channels weren't acquired
+by some reason, mid_spi_dma_exit() will crash the kernel.
 
-Fixed up the, now unused, out label.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Fixes: 7063c0d942a1 (spi/dw_spi: add DMA support)
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- block/scsi_ioctl.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/spi/spi-dw-mid.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -505,7 +505,7 @@ int sg_scsi_ioctl(struct request_queue *
+--- a/drivers/spi/spi-dw-mid.c
++++ b/drivers/spi/spi-dw-mid.c
+@@ -88,6 +88,8 @@ err_exit:
  
- 	if (bytes && blk_rq_map_kern(q, rq, buffer, bytes, __GFP_WAIT)) {
- 		err = DRIVER_ERROR << 24;
--		goto out;
-+		goto error;
- 	}
- 
- 	memset(sense, 0, sizeof(sense));
-@@ -515,7 +515,6 @@ int sg_scsi_ioctl(struct request_queue *
- 
- 	blk_execute_rq(q, disk, rq, 0);
- 
--out:
- 	err = rq->errors & 0xff;	/* only 8 bit SCSI status */
- 	if (err) {
- 		if (rq->sense_len && rq->sense) {
+ static void mid_spi_dma_exit(struct dw_spi *dws)
+ {
++	if (!dws->dma_inited)
++		return;
+ 	dma_release_channel(dws->txchan);
+ 	dma_release_channel(dws->rxchan);
+ }
 
