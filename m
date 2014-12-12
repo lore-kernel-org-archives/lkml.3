@@ -1,662 +1,930 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759292AbaLLHfb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:35:31 -0500
-Received: from ozlabs.org ([103.22.144.67]:49168 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104AbaLLHf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 02:35:28 -0500
-Date: Fri, 12 Dec 2014 18:35:18 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: linux-next: Tree for Dec 12
-Message-ID: <20141212183518.06e3803d@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S933753AbaLLHo6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:44:58 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:50253 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755886AbaLLHoy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 02:44:54 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/hc81GiXZFl2xKzL_zA8QlDR"; protocol="application/pgp-signature"
+In-Reply-To: <1418130912-24725-3-git-send-email-tomeu.vizoso@collabora.com>
+References: <1418130912-24725-1-git-send-email-tomeu.vizoso@collabora.com> <1418130912-24725-3-git-send-email-tomeu.vizoso@collabora.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 12 Dec 2014 16:44:24 +0900
+Message-ID: <CAAVeFu+Qp+J688DtMVpsMDA_QgzDRPsK9aVd59FaRdF+yRA07g@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] PM / devfreq: tegra: add devfreq driver for Tegra
+ Activity Monitor
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/hc81GiXZFl2xKzL_zA8QlDR
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Tomeu,
 
-Hi all,
+On Tue, Dec 9, 2014 at 10:15 PM, Tomeu Vizoso
+<tomeu.vizoso@collabora.com> wrote:
+> The ACTMON block can monitor several counters, providing averaging and firing
+> interrupts based on watermarking configuration. This implementation monitors
+> the MCALL and MCCPU counters to choose an appropriate frequency for the
+> external memory clock.
+>
+> This patch is based on work by Alex Frid <afrid@nvidia.com> and Mikko
+> Perttunen <mikko.perttunen@kapsi.fi>.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>
+> ---
+>
+> v3:     * Address misc. style issues found by Thierry and Alexander
+>         * Added helpers for register i/o
+>         * Further documented the structs
+>         * Enable the ACTMON after the IRQ handler has been installed
+>         * Disable the ACTMON before removing the IRQ handler
+>         * Add governor in a subsys initcall
+>         * Rename tegra-devfreq.c to tegra-actmon-devfreq.c
+>
+> v2:     * Use devfreq
 
-Please do not add any code destined for v3.20 to your linux-next included
-trees/branches until after v3.19-rc1 is released.
+This is taking shape, and although it will be desirable to port it to
+the more suitable watermark model once it gets merged, I am for
+merging this first version in the meantime as it provides a useful
+feature. Then we could use it to test-drive watermarking and argue the
+advantages of that model with impressive negative line count patches.
+;)
 
-Changes since 20141211:
+A few comments below but I am close to giving my ack to this.
 
-The rcu tree regained a build failure for which I reverted a commit.
+> ---
+>  drivers/devfreq/Kconfig                |   9 +
+>  drivers/devfreq/Makefile               |   1 +
+>  drivers/devfreq/tegra-actmon-devfreq.c | 777 +++++++++++++++++++++++++++++++++
+>  3 files changed, 787 insertions(+)
+>  create mode 100644 drivers/devfreq/tegra-actmon-devfreq.c
+>
+> diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
+> index faf4e70..76be33a 100644
+> --- a/drivers/devfreq/Kconfig
+> +++ b/drivers/devfreq/Kconfig
+> @@ -87,4 +87,13 @@ config ARM_EXYNOS5_BUS_DEVFREQ
+>           It reads PPMU counters of memory controllers and adjusts the
+>           operating frequencies and voltages with OPP support.
+>
+> +config ARM_TEGRA_ACTMON_DEVFREQ
+> +       bool "Tegra ACTMON DEVFREQ Driver"
+> +       depends on ARCH_TEGRA
+> +       select PM_OPP
+> +       help
+> +         This adds the DEVFREQ driver for the Tegra family of SoCs.
+> +         It reads ACTMON counters of memory controllers and adjusts the
+> +         operating frequencies and voltages with OPP support.
+> +
+>  endif # PM_DEVFREQ
+> diff --git a/drivers/devfreq/Makefile b/drivers/devfreq/Makefile
+> index 16138c9..c9159c5 100644
+> --- a/drivers/devfreq/Makefile
+> +++ b/drivers/devfreq/Makefile
+> @@ -7,3 +7,4 @@ obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)     += governor_userspace.o
+>  # DEVFREQ Drivers
+>  obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)  += exynos/
+>  obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)  += exynos/
+> +obj-$(CONFIG_ARM_TEGRA_ACTMON_DEVFREQ) += tegra-actmon-devfreq.o
+> diff --git a/drivers/devfreq/tegra-actmon-devfreq.c b/drivers/devfreq/tegra-actmon-devfreq.c
+> new file mode 100644
+> index 0000000..8d2ea22f
+> --- /dev/null
+> +++ b/drivers/devfreq/tegra-actmon-devfreq.c
+> @@ -0,0 +1,777 @@
+> +/*
+> + * A devfreq driver for NVIDIA Tegra SoCs
+> + *
+> + * Copyright (c) 2014 NVIDIA CORPORATION. All rights reserved.
+> + * Copyright (C) 2014 Google, Inc
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program. If not, see <http://www.gnu.org/licenses/>.
+> + *
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/cpufreq.h>
+> +#include <linux/devfreq.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_opp.h>
+> +#include <linux/reset.h>
+> +
+> +#include "governor.h"
+> +
+> +#define ACTMON_GLB_STATUS                                      0x0
+> +#define ACTMON_GLB_PERIOD_CTRL                                 0x4
+> +
+> +#define ACTMON_DEV_CTRL                                                0x0
+> +#define ACTMON_DEV_CTRL_K_VAL_SHIFT                            10
+> +#define ACTMON_DEV_CTRL_ENB_PERIODIC                           BIT(18)
+> +#define ACTMON_DEV_CTRL_AVG_BELOW_WMARK_EN                     BIT(20)
+> +#define ACTMON_DEV_CTRL_AVG_ABOVE_WMARK_EN                     BIT(21)
+> +#define ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_NUM_SHIFT      23
+> +#define ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_NUM_SHIFT      26
+> +#define ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN             BIT(29)
+> +#define ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN             BIT(30)
+> +#define ACTMON_DEV_CTRL_ENB                                    BIT(31)
+> +
+> +#define ACTMON_DEV_UPPER_WMARK                                 0x4
+> +#define ACTMON_DEV_LOWER_WMARK                                 0x8
+> +#define ACTMON_DEV_INIT_AVG                                    0xc
+> +#define ACTMON_DEV_AVG_UPPER_WMARK                             0x10
+> +#define ACTMON_DEV_AVG_LOWER_WMARK                             0x14
+> +#define ACTMON_DEV_COUNT_WEIGHT                                        0x18
+> +#define ACTMON_DEV_AVG_COUNT                                   0x20
+> +#define ACTMON_DEV_INTR_STATUS                                 0x24
+> +
+> +#define ACTMON_INTR_STATUS_CLEAR                               0xffffffff
+> +
+> +#define ACTMON_DEV_INTR_CONSECUTIVE_UPPER                      BIT(31)
+> +#define ACTMON_DEV_INTR_CONSECUTIVE_LOWER                      BIT(30)
+> +
+> +#define ACTMON_ABOVE_WMARK_WINDOW                              1
+> +#define ACTMON_BELOW_WMARK_WINDOW                              3
+> +#define ACTMON_BOOST_FREQ_STEP                                 16000
+> +
+> +/*
+> + * Activity counter is incremented every 256 memory transactions, and each
+> + * transaction takes 4 EMC clocks for Tegra124; So the COUNT_WEIGHT is
+> + * 4 * 256 = 1024.
+> + */
+> +#define ACTMON_COUNT_WEIGHT                                    0x400
+> +
+> +/*
+> + * ACTMON_AVERAGE_WINDOW_LOG2: default value for @DEV_CTRL_K_VAL, which
+> + * translates to 2 ^ (K_VAL + 1). ex: 2 ^ (6 + 1) = 128
+> + */
+> +#define ACTMON_AVERAGE_WINDOW_LOG2                     6
+> +#define ACTMON_SAMPLING_PERIOD                         12 /* ms */
+> +#define ACTMON_DEFAULT_AVG_BAND                                6  /* 1/10 of % */
+> +
+> +#define KHZ                                                    1000
+> +
+> +/* Assume that the bus is saturated if the utilization is 25% */
+> +#define BUS_SATURATION_RATIO                                   25
+> +
+> +/**
+> + * struct tegra_devfreq_device_config - configuration specific to an ACTMON
+> + * device
+> + *
+> + * Coefficients and thresholds are in %
+> + */
+> +struct tegra_devfreq_device_config {
+> +       u32             offset;
+> +       u32             irq_mask;
+> +
+> +       /* Factors applied to boost_freq every consecutive watermark breach */
+> +       unsigned int    boost_up_coeff;
+> +       unsigned int    boost_down_coeff;
+> +
+> +       /* Define the watermark bounds when applied to the current avg */
+> +       unsigned int    boost_up_threshold;
+> +       unsigned int    boost_down_threshold;
+> +
+> +       /*
+> +        * Threshold of activity below which the CPU frequency isn't to be
+> +        * taken into account. This is to avoid increasing the EMC frequency
+> +        * when the CPU is very busy but not accessing the bus often.
+> +        */
+> +       u32             avg_dependency_threshold;
+> +};
+> +
+> +enum tegra_actmon_device {
+> +       MCALL = 0,
+> +       MCCPU,
+> +};
+> +
+> +static struct tegra_devfreq_device_config actmon_device_configs[] = {
+> +       {
+> +               /* MCALL: All memory accesses (including from the CPUs) */
+> +               .offset = 0x1c0,
+> +               .irq_mask = 1 << 26,
+> +               .boost_up_coeff = 200,
+> +               .boost_down_coeff = 50,
+> +               .boost_up_threshold = 60,
+> +               .boost_down_threshold = 40,
+> +       },
+> +       {
+> +               /* MCCPU: memory accesses from the CPUs */
+> +               .offset = 0x200,
+> +               .irq_mask = 1 << 25,
+> +               .boost_up_coeff = 800,
+> +               .boost_down_coeff = 90,
+> +               .boost_up_threshold = 27,
+> +               .boost_down_threshold = 10,
+> +               .avg_dependency_threshold = 50000,
 
-Non-merge commits (relative to Linus' tree): 5823
- 5659 files changed, 195192 insertions(+), 162226 deletions(-)
+The comment above says that coefficients and thresholds are in % - but
+does it apply to avg_dependency_threshold? The number looks like it is
+something else.
 
-----------------------------------------------------------------------------
+> +       },
+> +};
+> +
+> +/**
+> + * struct tegra_devfreq_device - state specific to an ACTMON device
+> + *
+> + * Frequencies are in kHz.
+> + */
+> +struct tegra_devfreq_device {
+> +       const struct tegra_devfreq_device_config *config;
+> +
+> +       void __iomem *regs;
+> +
+> +       /* Average event count sampled in the last interrupt */
+> +       u32 avg_count;
+> +
+> +       /*
+> +        * Extra frequency to increase the target by due to consecutive
+> +        * watermark breaches.
+> +        */
+> +       unsigned long boost_freq;
+> +
+> +       /* Optimal frequency calculated from the stats for this device */
+> +       unsigned long target_freq;
+> +};
+> +
+> +struct tegra_devfreq {
+> +       struct devfreq          *devfreq;
+> +
+> +       struct platform_device  *pdev;
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" and checkout or reset to the new
-master.
+It seems like pdev is not used anywhere in this file.
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64 and a
-multi_v7_defconfig for arm. After the final fixups (if any), it is also
-built with powerpc allnoconfig (32 and 64 bit), ppc44x_defconfig and
-allyesconfig (this fails its final link) and i386, sparc, sparc64 and arm
-defconfig.
+> +       struct reset_control    *reset;
+> +       struct clk              *clock;
+> +       void __iomem            *regs;
+> +
+> +       spinlock_t              lock;
+> +
+> +       struct clk              *emc_clock;
+> +       unsigned long           max_freq;
+> +       unsigned long           cur_freq;
+> +       struct notifier_block   rate_change_nb;
+> +
+> +       struct tegra_devfreq_device devices[ARRAY_SIZE(actmon_device_configs)];
+> +};
+> +
+> +struct tegra_actmon_emc_ratio {
+> +       unsigned long cpu_freq;
+> +       unsigned long emc_freq;
+> +};
+> +
+> +static struct tegra_actmon_emc_ratio actmon_emc_ratios[] = {
+> +       { 1400000, ULONG_MAX },
+> +       { 1200000,    750000 },
+> +       { 1100000,    600000 },
+> +       { 1000000,    500000 },
+> +       {  800000,    375000 },
+> +       {  500000,    200000 },
+> +       {  250000,    100000 },
+> +};
+> +
+> +static u32 actmon_readl(struct tegra_devfreq *tegra, u32 offset)
+> +{
+> +       return readl(tegra->regs + offset);
+> +}
+> +
+> +static void actmon_writel(struct tegra_devfreq *tegra, u32 val, u32 offset)
+> +{
+> +       writel(val, tegra->regs + offset);
+> +}
+> +
+> +static u32 device_readl(struct tegra_devfreq_device *dev, u32 offset)
+> +{
+> +       return readl(dev->regs + offset);
+> +}
+> +
+> +static void device_writel(struct tegra_devfreq_device *dev, u32 val,
+> +                         u32 offset)
+> +{
+> +       writel(val, dev->regs + offset);
+> +}
+> +
+> +static unsigned long do_percent(unsigned long val, unsigned int pct)
+> +{
+> +       return val * pct / 100;
+> +}
+> +
+> +static void tegra_devfreq_update_avg_wmark(struct tegra_devfreq *tegra,
+> +                                          struct tegra_devfreq_device *dev)
+> +{
+> +       u32 avg = dev->avg_count;
+> +       u32 avg_band_freq = tegra->max_freq * ACTMON_DEFAULT_AVG_BAND / KHZ;
+> +       u32 band = avg_band_freq * ACTMON_SAMPLING_PERIOD;
+> +
+> +       device_writel(dev, avg + band, ACTMON_DEV_AVG_UPPER_WMARK);
+> +
+> +       avg = max(dev->avg_count, band);
+> +       device_writel(dev, avg - band, ACTMON_DEV_AVG_LOWER_WMARK);
+> +}
+> +
+> +static void tegra_devfreq_update_wmark(struct tegra_devfreq *tegra,
+> +                                      struct tegra_devfreq_device *dev)
+> +{
+> +       u32 val = tegra->cur_freq * ACTMON_SAMPLING_PERIOD;
+> +
+> +       device_writel(dev, do_percent(val, dev->config->boost_up_threshold),
+> +                     ACTMON_DEV_UPPER_WMARK);
+> +
+> +       device_writel(dev, do_percent(val, dev->config->boost_down_threshold),
+> +                     ACTMON_DEV_LOWER_WMARK);
+> +}
+> +
+> +static void actmon_write_barrier(struct tegra_devfreq *tegra)
+> +{
+> +       /* ensure the update has reached the ACTMON */
+> +       wmb();
+> +       actmon_readl(tegra, ACTMON_GLB_STATUS);
+> +}
+> +
+> +static irqreturn_t actmon_isr(int irq, void *data)
+> +{
+> +       struct tegra_devfreq *tegra = data;
+> +       struct tegra_devfreq_device *dev = NULL;
+> +       unsigned long flags;
+> +       u32 val, intr_status, dev_ctrl;
+> +       unsigned int i;
+> +
+> +       val = actmon_readl(tegra, ACTMON_GLB_STATUS);
+> +
+> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+> +               if (val & tegra->devices[i].config->irq_mask) {
+> +                       dev = tegra->devices + i;
+> +                       break;
+> +               }
+> +       }
 
-Below is a summary of the state of the merge.
+Just to be sure: could it happen that we have several IRQ bits set for
+a single interrupt? If so, it seems like the current code is not
+designed to handle this.
 
-I am currently merging 231 trees (counting Linus' and 32 trees of patches
-pending for Linus' tree).
+> +
+> +       if (!dev)
+> +               return IRQ_NONE;
+> +
+> +       spin_lock_irqsave(&tegra->lock, flags);
+> +
+> +       dev->avg_count = device_readl(dev, ACTMON_DEV_AVG_COUNT);
+> +       tegra_devfreq_update_avg_wmark(tegra, dev);
+> +
+> +       intr_status = device_readl(dev, ACTMON_DEV_INTR_STATUS);
+> +       dev_ctrl = device_readl(dev, ACTMON_DEV_CTRL);
+> +
+> +       if (intr_status & ACTMON_DEV_INTR_CONSECUTIVE_UPPER) {
+> +               /*
+> +                * new_boost = min(old_boost * up_coef + step, max_freq)
+> +                */
+> +               dev->boost_freq = do_percent(dev->boost_freq,
+> +                                            dev->config->boost_up_coeff);
+> +               dev->boost_freq += ACTMON_BOOST_FREQ_STEP;
+> +
+> +               dev_ctrl |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+> +
+> +               if (dev->boost_freq >= tegra->max_freq)
+> +                       dev->boost_freq = tegra->max_freq;
+> +               else
+> +                       dev_ctrl |= ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN;
+> +       } else if (intr_status & ACTMON_DEV_INTR_CONSECUTIVE_LOWER) {
+> +               /*
+> +                * new_boost = old_boost * down_coef
+> +                * or 0 if (old_boost * down_coef < step / 2)
+> +                */
+> +               dev->boost_freq = do_percent(dev->boost_freq,
+> +                                            dev->config->boost_down_coeff);
+> +
+> +               dev_ctrl |= ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN;
+> +
+> +               if (dev->boost_freq < (ACTMON_BOOST_FREQ_STEP >> 1))
+> +                       dev->boost_freq = 0;
+> +               else
+> +                       dev_ctrl |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+> +       }
+> +
+> +       if (dev->config->avg_dependency_threshold) {
+> +               if (dev->avg_count >= dev->config->avg_dependency_threshold)
+> +                       dev_ctrl |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+> +               else if (dev->boost_freq == 0)
+> +                       dev_ctrl &= ~ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN;
+> +       }
+> +
+> +       device_writel(dev, dev_ctrl, ACTMON_DEV_CTRL);
+> +
+> +       device_writel(dev, ACTMON_INTR_STATUS_CLEAR, ACTMON_DEV_INTR_STATUS);
+> +
+> +       actmon_write_barrier(tegra);
+> +
+> +       spin_unlock_irqrestore(&tegra->lock, flags);
+> +
+> +       return IRQ_WAKE_THREAD;
+> +}
+> +
+> +static unsigned long actmon_cpu_to_emc_rate(struct tegra_devfreq *tegra,
+> +                                           unsigned long cpu_freq)
+> +{
+> +       unsigned int i;
+> +       struct tegra_actmon_emc_ratio *ratio = actmon_emc_ratios;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(actmon_emc_ratios); i++, ratio++) {
+> +               if (cpu_freq >= ratio->cpu_freq) {
+> +                       if (ratio->emc_freq >= tegra->max_freq)
+> +                               return tegra->max_freq;
+> +                       else
+> +                               return ratio->emc_freq;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void actmon_update_target(struct tegra_devfreq *tegra,
+> +                                struct tegra_devfreq_device *dev)
+> +{
+> +       unsigned long cpu_freq = 0;
+> +       unsigned long static_cpu_emc_freq = 0;
+> +       unsigned int avg_sustain_coef;
+> +       unsigned long flags;
+> +
+> +       if (dev->config->avg_dependency_threshold) {
+> +               cpu_freq = cpufreq_get(0);
+> +               static_cpu_emc_freq = actmon_cpu_to_emc_rate(tegra, cpu_freq);
+> +       }
+> +
+> +       spin_lock_irqsave(&tegra->lock, flags);
+> +
+> +       dev->target_freq = dev->avg_count / ACTMON_SAMPLING_PERIOD;
+> +       avg_sustain_coef = 100 * 100 / dev->config->boost_up_threshold;
+> +       dev->target_freq = do_percent(dev->target_freq, avg_sustain_coef);
+> +       dev->target_freq += dev->boost_freq;
+> +
+> +       if (dev->avg_count >= dev->config->avg_dependency_threshold)
+> +               dev->target_freq = max(dev->target_freq, static_cpu_emc_freq);
+> +
+> +       spin_unlock_irqrestore(&tegra->lock, flags);
+> +}
+> +
+> +static irqreturn_t actmon_thread_isr(int irq, void *data)
+> +{
+> +       struct tegra_devfreq *tegra = data;
+> +
+> +       mutex_lock(&tegra->devfreq->lock);
+> +       update_devfreq(tegra->devfreq);
+> +       mutex_unlock(&tegra->devfreq->lock);
+> +
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +static int tegra_actmon_rate_notify_cb(struct notifier_block *nb,
+> +                                      unsigned long action, void *ptr)
+> +{
+> +       struct clk_notifier_data *data = ptr;
+> +       struct tegra_devfreq *tegra;
+> +       unsigned int i;
+> +       unsigned long flags;
+> +
+> +       if (action != POST_RATE_CHANGE)
+> +               return NOTIFY_OK;
+> +
+> +       tegra = container_of(nb, struct tegra_devfreq, rate_change_nb);
+> +
+> +       spin_lock_irqsave(&tegra->lock, flags);
+> +
+> +       tegra->cur_freq = data->new_rate / KHZ;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++)
+> +               tegra_devfreq_update_wmark(tegra, tegra->devices + i);
+> +
+> +       actmon_write_barrier(tegra);
+> +
+> +       spin_unlock_irqrestore(&tegra->lock, flags);
+> +
+> +       return NOTIFY_OK;
+> +}
+> +
+> +static void tegra_actmon_configure_device(struct tegra_devfreq *tegra,
+> +                                         struct tegra_devfreq_device *dev)
+> +{
+> +       u32 val = 0;
+> +
+> +       dev->target_freq = tegra->cur_freq;
+> +
+> +       dev->avg_count = tegra->cur_freq * ACTMON_SAMPLING_PERIOD;
+> +       device_writel(dev, dev->avg_count, ACTMON_DEV_INIT_AVG);
+> +
+> +       tegra_devfreq_update_avg_wmark(tegra, dev);
+> +       tegra_devfreq_update_wmark(tegra, dev);
+> +
+> +       device_writel(dev, ACTMON_COUNT_WEIGHT, ACTMON_DEV_COUNT_WEIGHT);
+> +       device_writel(dev, ACTMON_INTR_STATUS_CLEAR, ACTMON_DEV_INTR_STATUS);
+> +
+> +       val |= ACTMON_DEV_CTRL_ENB_PERIODIC |
+> +              ACTMON_DEV_CTRL_AVG_ABOVE_WMARK_EN |
+> +              ACTMON_DEV_CTRL_AVG_BELOW_WMARK_EN;
+> +       val |= (ACTMON_AVERAGE_WINDOW_LOG2 - 1)
+> +               << ACTMON_DEV_CTRL_K_VAL_SHIFT;
+> +       val |= (ACTMON_BELOW_WMARK_WINDOW - 1)
+> +               << ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_NUM_SHIFT;
+> +       val |= (ACTMON_ABOVE_WMARK_WINDOW - 1)
+> +               << ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_NUM_SHIFT;
+> +       val |= ACTMON_DEV_CTRL_CONSECUTIVE_BELOW_WMARK_EN |
+> +              ACTMON_DEV_CTRL_CONSECUTIVE_ABOVE_WMARK_EN;
+> +
+> +       device_writel(dev, val, ACTMON_DEV_CTRL);
+> +
+> +       actmon_write_barrier(tegra);
+> +}
+> +
+> +static void tegra_actmon_enable_device(struct tegra_devfreq *tegra,
+> +                                      struct tegra_devfreq_device *dev)
+> +{
+> +       u32 val;
+> +
+> +       val = device_readl(dev, ACTMON_DEV_CTRL);
+> +       val |= ACTMON_DEV_CTRL_ENB;
+> +       device_writel(dev, val, ACTMON_DEV_CTRL);
+> +
+> +       actmon_write_barrier(tegra);
+> +}
+> +
+> +static void tegra_actmon_disable_device(struct tegra_devfreq *tegra,
+> +                                       struct tegra_devfreq_device *dev)
+> +{
+> +       u32 val;
+> +
+> +       val = device_readl(dev, ACTMON_DEV_CTRL);
+> +       val &= ~ACTMON_DEV_CTRL_ENB;
+> +       device_writel(dev, val, ACTMON_DEV_CTRL);
+> +
+> +       actmon_write_barrier(tegra);
+> +}
+> +
+> +static int tegra_devfreq_target(struct device *dev, unsigned long *freq,
+> +                               u32 flags)
+> +{
+> +       struct platform_device *pdev;
+> +       struct tegra_devfreq *tegra = dev_get_drvdata(dev);
+> +       struct dev_pm_opp *opp;
+> +       unsigned long rate = *freq * KHZ;
+> +
+> +       pdev = container_of(dev, struct platform_device, dev);
+> +
+> +       rcu_read_lock();
+> +       opp = devfreq_recommended_opp(dev, &rate, flags);
+> +       if (IS_ERR(opp)) {
+> +               rcu_read_unlock();
+> +               dev_err(dev, "Failed to find opp for %lu KHz\n", *freq);
+> +               return PTR_ERR(opp);
+> +       }
+> +       rate = dev_pm_opp_get_freq(opp);
+> +       rcu_read_unlock();
+> +
+> +       /* TODO: Once we have per-user clk constraints, set a floor */
+> +       clk_set_rate(tegra->emc_clock, rate);
+> +
+> +       /* TODO: Set voltage as well */
+> +
+> +       return 0;
+> +}
+> +
+> +static int tegra_devfreq_get_dev_status(struct device *dev,
+> +                                       struct devfreq_dev_status *stat)
+> +{
+> +       struct platform_device *pdev;
+> +       struct tegra_devfreq *tegra = dev_get_drvdata(dev);
+> +       struct tegra_devfreq_device *actmon_dev;
+> +
+> +       pdev = container_of(dev, struct platform_device, dev);
+> +
+> +       stat->current_frequency = tegra->cur_freq;
+> +
+> +       /* To be used by the tegra governor */
+> +       stat->private_data = tegra;
+> +
+> +       /* The below are to be used by the other governors */
+> +
+> +       actmon_dev = &tegra->devices[MCALL];
+> +
+> +       /* Number of cycles spent on memory access */
+> +       stat->busy_time = actmon_dev->avg_count;
+> +
+> +       /* The bus can be considered to be saturated way before 100% */
+> +       stat->busy_time *= 100 / BUS_SATURATION_RATIO;
+> +
+> +       /* Number of cycles in a sampling period */
+> +       stat->total_time = ACTMON_SAMPLING_PERIOD * tegra->cur_freq;
+> +
+> +       return 0;
+> +}
+> +
+> +static struct devfreq_dev_profile tegra_devfreq_profile = {
+> +       .polling_ms     = 0,
+> +       .target         = tegra_devfreq_target,
+> +       .get_dev_status = tegra_devfreq_get_dev_status,
+> +};
+> +
+> +static int tegra_governor_get_target(struct devfreq *devfreq,
+> +                                    unsigned long *freq)
+> +{
+> +       struct devfreq_dev_status stat;
+> +       struct tegra_devfreq *tegra;
+> +       struct tegra_devfreq_device *dev;
+> +       unsigned long target_freq = 0;
+> +       unsigned int i;
+> +       int err;
+> +
+> +       err = devfreq->profile->get_dev_status(devfreq->dev.parent, &stat);
+> +       if (err)
+> +               return err;
+> +
+> +       tegra = stat.private_data;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+> +               dev = &tegra->devices[i];
+> +
+> +               actmon_update_target(tegra, dev);
+> +
+> +               target_freq = max(target_freq, dev->target_freq);
+> +       }
+> +
+> +       *freq = target_freq;
+> +
+> +       return 0;
+> +}
+> +
+> +static int tegra_governor_event_handler(struct devfreq *devfreq,
+> +                                       unsigned int event, void *data)
+> +{
+> +       return 0;
+> +}
 
-Stats about the size of the tree over time can be seen at
-http://neuling.org/linux-next-size.html .
+>From my v2 review, I don't think you replied to this point:
 
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
+I think you will need an implementation of this.
+DEVFREQ_GOV_START/DEVFREQ_GOV_RESUME, enable actmon interrupts. On
+DEVFREQ_GOV_STOP/DEVFREQ_GOV_SUSPEND, disable interrupts. I know you
+are doing it somewhere, but it should be done here as this is what
+devfreq expects (e.g. to correctly stop interrupts if you switch from
+the "tegra" to the "performance" governor).
 
-Thanks to Randy Dunlap for doing many randconfig builds.  And to Paul
-Gortmaker for triage and bug fixes.
+Your suspend/resume callbacks can then call
+devfreq_suspend_device()/devfreq_resume_device().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Or maybe you are keeping it this way to avoid having to store the
+devfreq_device in the governor. That's something I can understand, but
+I'm afraid it may cause issues when switching governors. Granted, the
+possibility of this happening is very small, but there is also the
+fact that we don't need/want the watermark interrupts to be fired if
+we are using a polling or fixed governor such as "performance". This
+will certainly result in an interrupt storm of some sort.
 
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master (70e71ca0af24 Merge git://git.kernel.org/pub/scm/linu=
-x/kernel/git/davem/net-next)
-Merging fixes/master (b94d525e58dc Merge git://git.kernel.org/pub/scm/linux=
-/kernel/git/davem/net)
-Merging kbuild-current/rc-fixes (f114040e3ea6 Linux 3.18-rc1)
-Merging arc-current/for-curr (2ce7598c9a45 Linux 3.17-rc4)
-Merging arm-current/fixes (3f4aa45ceea5 ARM: 8226/1: cacheflush: get rid of=
- restarting block)
-Merging m68k-current/for-linus (f0b99a643e96 m68k/mm: Eliminate memset afte=
-r alloc_bootmem_pages)
-Merging metag-fixes/fixes (ffe6902b66aa asm-generic: remove _STK_LIM_MAX)
-Merging mips-fixes/mips-fixes (1795cd9b3a91 Linux 3.16-rc5)
-Merging powerpc-merge/merge (31345e1a071e powerpc/pci: Remove unused force_=
-32bit_msi quirk)
-Merging powerpc-merge-mpe/fixes (b2776bf7149b Linux 3.18)
-Merging sparc/master (0d1d9092b536 sparc: Add NOP dma_cache_sync() implemen=
-tation.)
-Merging net/master (69204cf7eb9c net: fix suspicious rcu_dereference_check =
-in net/sched/sch_fq_codel.c)
-Merging ipsec/master (f855691975bb xfrm6: Fix the nexthdr offset in _decode=
-_session6.)
-Merging sound-current/for-linus (6e1d7a51392f ALSA: pcxhr: NULL dereference=
- on probe failure)
-Merging pci-current/for-linus (5106787a9e08 PCI: tegra: Use physical range =
-for I/O mapping)
-Merging wireless/master (81c412600f94 Merge branch 'master' of git://git.ke=
-rnel.org/pub/scm/linux/kernel/git/linville/wireless)
-Merging driver-core.current/driver-core-linus (206c5f60a3d9 Linux 3.18-rc4)
-Merging tty.current/tty-linus (009d0431c391 Linux 3.18-rc7)
-Merging usb.current/usb-linus (009d0431c391 Linux 3.18-rc7)
-Merging usb-gadget-fixes/fixes (520fe7633692 usb: dwc3: ep0: fix for dead c=
-ode)
-Merging usb-serial-fixes/usb-linus (009d0431c391 Linux 3.18-rc7)
-Merging staging.current/staging-linus (009d0431c391 Linux 3.18-rc7)
-Merging char-misc.current/char-misc-linus (0df1f2487d2f Linux 3.18-rc3)
-Merging input-current/for-linus (a1f9a4072655 Input: xpad - use proper endp=
-oint type)
-Merging md-current/for-linus (d47648fcf061 raid5: avoid finding "discard" s=
-tripe)
-Merging crypto-current/master (48e6dc1b2a1a crypto: dcp - Fix the path for =
-releasing the resources)
-Merging ide/master (7546e52b5e3d Drivers: ide: Remove typedef atiixp_ide_ti=
-ming)
-Merging dwmw2/master (5950f0803ca9 pcmcia: remove RPX board stuff)
-Merging devicetree-current/devicetree/merge (094cb98179f1 of/fdt: memblock_=
-reserve /memreserve/ regions in the case of partial overlap)
-Merging rr-fixes/fixes (3438cf549d2f param: fix crash on bad kernel argumen=
-ts)
-Merging vfio-fixes/for-linus (239a87020b26 Merge branch 'for-joerg/arm-smmu=
-/fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into fo=
-r-linus)
-Merging kselftest-fixes/fixes (3ce51050fadd selftest: size: Add size test f=
-or Linux kernel)
-CONFLICT (content): Merge conflict in include/uapi/linux/Kbuild
-Merging drm-intel-fixes/for-linux-next-fixes (b0616c5306b3 drm/i915: Unlock=
- panel even when LVDS is disabled)
-Merging asm-generic/master (cb61f6769b88 ARM64: use GENERIC_PCI_IOMAP)
-Merging arc/for-next (996bad6cb351 ARC: add power management options)
-Merging arm/for-next (e9f2d6d66037 Merge branch 'devel-stable' into for-nex=
-t)
-CONFLICT (content): Merge conflict in include/linux/pm_runtime.h
-Merging arm-perf/for-next/perf (cac7f2429872 Linux 3.18-rc2)
-Merging arm-soc/for-next (a7420e29aec1 arm-soc: document merges)
-CONFLICT (content): Merge conflict in arch/arm/configs/multi_v7_defconfig
-Merging bcm2835/for-next (b2776bf7149b Linux 3.18)
-Merging berlin/berlin/for-next (91bcb334bf0b Merge branch 'berlin/dt' into =
-berlin/for-next)
-Merging cortex-m/for-next (f0d7515372ff ARM: v7m: add trivial suspend suppo=
-rt)
-Merging ep93xx/ep93xx-for-next (bfb0709fd17b Merge branch 'ep93xx-fixes' in=
-to ep93xx-for-next)
-Merging imx-mxs/for-next (8a73e870fc56 Merge tag 'imx-dt-3.19' into for-nex=
-t)
-Merging ixp4xx/next (19f949f52599 Linux 3.8)
-Merging keystone/next (b17275a4a6cc Merge branch 'for_3.19/soc' into next)
-Merging msm/for-next (81cf1e061d00 ARM: msm: Rename msm devicetrees to have=
- standard 'qcom' prefix)
-Merging mvebu/for-next (9993917cbc99 Merge branch 'mvebu/dt-usb_phy' into m=
-vebu/for-next)
-Merging renesas/next (b56fb445a83f Merge branch 'heads/defconfig-fixes-for-=
-v3.19' into next)
-Merging samsung/for-next (9db7d78aca2c Merge branch 'v3.19-next/dt-samsung-=
-3' into for-next)
-CONFLICT (content): Merge conflict in arch/arm64/Kconfig
-Merging sunxi/sunxi/for-next (ad01dbad5626 Merge branch 'sunxi/clocks-for-3=
-.19' into sunxi/for-next)
-Merging tegra/for-next (fa047e01365d Merge branch for-3.19/soc into for-nex=
-t)
-Merging arm64/for-next/core (fb59d007a0e4 arm64: mm: dump: don't skip final=
- region)
-Merging blackfin/for-linus (275f5a8573e7 blackfin: defconfigs: cleanup unus=
-ed CONFIG_MTD_CHAR, add MTD_SPI_NOR for BF537-STAMP)
-Merging c6x/for-linux-next (ae72758f1dd9 c6x: fix build failure caused by c=
-ache.h)
-Merging cris/for-next (21bd887cd7c4 CRISv32: Remove last remnants of ETRAX_=
-SPI_MMC_BOARD)
-Merging hexagon/linux-next (a9a44fdf3296 Hexagon: update CR year for elf.h)
-Merging ia64/next (0fd2468fd035 Merge branch 'misc-3.19' into next)
-Merging m68k/for-next (f0b99a643e96 m68k/mm: Eliminate memset after alloc_b=
-ootmem_pages)
-Merging m68knommu/for-next (0259650b4cf7 m68knommu: fix irq handler types i=
-n 68360/commproc.c)
-Merging metag/for-next (f93125ae17d1 metag: cachepart: Fix failure check)
-Merging microblaze/next (78320c4d983c microblaze: Fix mmap for cache cohere=
-nt memory)
-Merging mips/mips-for-linux-next (17aabbd94a29 Merge branch '3.18-fixes' in=
-to mips-for-linux-next)
-Merging nios2/nios2-next (5426f10a89b3 nios2: enable "make defconfig")
-Merging openrisc/for-upstream (548dafe880ad openrisc: Use get_signal() sign=
-al_setup_done())
-Merging parisc/for-next (6c700d71f7fa [PARISC] hpux: Remove obsolete regs p=
-arameter from do_execve() in hpux_execve())
-Merging parisc-hd/for-next (b2776bf7149b Linux 3.18)
-Merging powerpc/next (d557b09800da powerpc/mm/thp: Use tlbiel if possible)
-Merging powerpc-mpe/next (56548fc0e86c powerpc/powernv: Return to cpu offli=
-ne loop when finished in KVM guest)
-Merging fsl/next (76f3e2929bb6 powerpc/config: Enable memory driver)
-Merging mpc5xxx/next (9e813308a5c1 powerpc/thp: Add tracepoints to track hu=
-gepage invalidate)
-Merging s390/features (351997810131 s390/cputime: fix 31-bit compile)
-Merging sparc-next/master (9f935675d41a Merge branch 'for-linus' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/dtor/input)
-Merging tile/master (c47b15c4928c arch/tile: update MAINTAINERS email to EZ=
-chip)
-Merging uml/next (989e59fa41c5 um: Include generic barrier.h)
-CONFLICT (content): Merge conflict in arch/um/include/asm/Kbuild
-Merging unicore32/unicore32 (d670878e2c9a unicore32: Remove ARCH_HAS_CPUFRE=
-Q config option)
-Merging xtensa/for_next (c0d7aa07504a Merge tag 'xtensa-for-next-20141021-2=
-' of git://github.com/jcmvbkbc/linux-xtensa into for_next)
-Merging btrfs/next (9627aeee3e20 Merge branch 'raid56-scrub-replace' of git=
-://github.com/miaoxie/linux-btrfs into for-linus)
-Merging ceph/master (388cfdc9bc19 libceph: require cephx message signature =
-by default)
-Merging cifs/for-next (00f43e315555 Convert MessageID in smb2_hdr to LE)
-Merging configfs/linux-next (b930c26416c4 Merge branch 'for-linus' of git:/=
-/git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs)
-Merging ecryptfs/next (942080643bce eCryptfs: Remove buggy and unnecessary =
-write in file name decode routine)
-Merging ext3/for_next (fdf2657bc81b udf: One function call less in udf_fill=
-_super() after error detection)
-Merging ext4/dev (50db71abc529 ext4: ext4_da_convert_inline_data_to_extent =
-drop locked page after error)
-Merging f2fs/dev (635aee1fefef f2fs: avoid to ra unneeded blocks in recover=
- flow)
-Merging fscache/fscache (1a8ed18fb7db cachefiles: remove two unused pagevec=
-s.)
-CONFLICT (content): Merge conflict in fs/fscache/object.c
-Merging fuse/for-next (6e44af897a4f fuse: introduce fuse_simple_request hel=
-per)
-Merging gfs2/master (ec7d879c4576 GFS2: gfs2_atomic_open(): simplify the us=
-e of finish_no_open())
-Merging jfs/jfs-next (bb5e50aaa805 fs/jfs/super.c: convert simple_str to ks=
-tr)
-Merging logfs/master (339466142b3f Fix the call to BUG() caused by no free =
-segment found)
-Merging nfs/linux-next (388f0c776781 sunrpc: add a debugfs rpc_xprt directo=
-ry with an info file in it)
-Merging nfsd/nfsd-next (1b2e122d167d sunrpc/cache: convert to use string_es=
-cape_str())
-Merging omfs/for-next (976d167615b6 Linux 3.1-rc9)
-Merging overlayfs/overlayfs-next (8cb983cec9d1 ovl: support multiple lower =
-layers)
-Merging squashfs/master (62421645bb70 Squashfs: Add LZ4 compression configu=
-ration option)
-Merging v9fs/for-next (f15844e0777f 9P: fix return value in v9fs_fid_xattr_=
-set)
-Merging ubifs/linux-next (f38aed975c0c UBI: Fix invalid vfree())
-Merging xfs/for-next (6044e4386cd5 Merge branch 'xfs-misc-fixes-for-3.19-2'=
- into for-next)
-Merging file-locks/linux-next (1b2b32dcdb3d locks: fix fcntl_setlease/getle=
-ase return when !CONFIG_FILE_LOCKING)
-Merging vfs/for-next (bd9b51e79cb0 make default ->i_fop have ->open() fail =
-with ENXIO)
-Merging pci/next (149792795d2b Merge branch 'pci/msi' into next)
-Merging hid/for-next (a16748e22e9a Merge branch 'for-3.19/wacom' into for-n=
-ext)
-Merging i2c/i2c/for-next (2c11207e02e4 Merge branch 'i2c/for-3.19' into i2c=
-/for-next)
-CONFLICT (content): Merge conflict in drivers/i2c/i2c-core.c
-Merging jdelvare-hwmon/master (ae530d4403e9 hwmon: (i5500_temp) Convert to =
-use ATTRIBUTE_GROUPS macro)
-Merging hwmon-staging/hwmon-next (907a6d582459 hwmon: (tmp401) Detect TMP43=
-5 on all addresses it supports)
-Merging v4l-dvb/master (4d0522ca5d07 Merge branch 'patchwork' into to_next)
-Merging kbuild/for-next (657eeca39128 Merge branch 'kbuild/misc' into kbuil=
-d/for-next)
-CONFLICT (content): Merge conflict in scripts/Kbuild.include
-Merging kconfig/for-next (95edca5c523c localmodconfig: Add config depends b=
-y default settings)
-Merging libata/for-next (d325a876e2b3 Merge branch 'for-3.18-fixes' into fo=
-r-next)
-Merging pm/linux-next (37e1c14b0632 Merge branch 'pm-opp')
-Merging idle/next (a8b65b07d753 tools/power turbostat: decode MSR_*_PERF_LI=
-MIT_REASONS)
-CONFLICT (content): Merge conflict in arch/x86/include/uapi/asm/msr-index.h
-Merging apm/for-next (53675abbd1e5 x86, apm: Remove unused variable)
-Merging cpupowerutils/master (f16603386b38 cpupower tools: add install targ=
-et to the debug tools' makefiles)
-Merging thermal/next (0370db0eaaa7 Merge branches 'thermal-core-fix', 'ther=
-mal-soc' and 'thermal-int340x' of .git into next)
-Merging thermal-soc/next (87e88cdff632 Merge branch 'work-fixes' into work-=
-next)
-Merging ieee1394/for-next (d737d7da8e7e firewire: sbp2: replace card lock b=
-y target lock)
-Merging dlm/next (2ab4bd8ea3a6 dlm: adopt orphan locks)
-Merging swiotlb/linux-next (8e0629c1d4ce swiotlb: don't assume PA 0 is inva=
-lid)
-Merging slave-dma/next (9a0a47f5e620 Merge branch 'for-linus' into next)
-Merging net-next/master (00c83b01d580 Fix race condition between vxlan_sock=
-_add and vxlan_sock_release)
-Merging ipsec-next/master (fbe68ee87522 vti6: Add a lookup method for tunne=
-ls with wildcard endpoints.)
-Merging wireless-next/master (81c412600f94 Merge branch 'master' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/linville/wireless)
-Merging bluetooth/master (1aeb9c651c06 Bluetooth: Fix notifying mgmt power =
-off before flushing connection list)
-Merging infiniband/for-next (7b909bb49ac2 Merge branches 'core', 'cxgb4', '=
-iser', 'mlx5' and 'ocrdma' into for-next)
-Merging mtd/master (89cf38dd536a mtd: cfi_cmdset_0001.c: fix resume for LH2=
-8F640BF chips)
-Merging l2-mtd/master (58c81957b7d2 mtd: spi-nor: allow NULL as chip name a=
-nd try to auto detect it)
-Merging crypto/master (8606813a6c89 crypto: tcrypt - Allow speed testing of=
- arbitrary hash functions)
-Merging drm/drm-next (f41c2581bc2b drm/doc: Document drm_add_modes_noedid()=
- usage)
-Merging drm-panel/drm/panel/for-next (1976dbca047e drm/panel: Add Sharp LQ1=
-01R1SX01 support)
-Merging drm-intel/for-linux-next (c352d1ba1e1e drm/i915: vlv: fix IRQ maski=
-ng when uninstalling interrupts)
-Merging drm-tegra/drm/tegra/for-next (7e0180e3570c drm/tegra: gem: Check be=
-fore freeing CMA memory)
-Merging drm-misc/topic/core-stuff (7432ca5acec8 drm/plane-helper: Test for =
-plane disable earlier)
-Merging sound/for-next (9faa73f06ec2 ALSA: hda - Add "eapd" model string fo=
-r AD1986A codec)
-Merging sound-asoc/for-next (e32a46487533 Merge remote-tracking branches 'a=
-soc/fix/adsp', 'asoc/fix/davinci', 'asoc/fix/max98090', 'asoc/fix/samsung',=
- 'asoc/fix/sigmadsp' and 'asoc/fix/tlv320aic31xx' into asoc-linus)
-Merging modules/modules-next (18eb74fa9416 params: cleanup sysfs allocation)
-Merging virtio/virtio-next (5a10b7dbf904 virtio_balloon: free some memory f=
-rom balloon on OOM)
-Merging input/next (66aee90088da Input: add support for Elan eKTH I2C touch=
-screens)
-Merging input-mt/for-next (5e01dc7b26d9 Linux 3.12)
-Merging block/for-next (318c606926d7 Merge branch 'for-3.19/core' into for-=
-next)
-Merging device-mapper/for-next (1a82db0592fa dm thin: fix missing out-of-da=
-ta-space to write mode transition if blocks are released)
-Merging embedded/master (4744b43431e8 embedded: fix vc_translate operator p=
-recedence)
-Merging firmware/master (6e03a201bbe8 firmware: speed up request_firmware()=
-, v3)
-Merging pcmcia/master (80af9e6d7ae6 pcmcia at91_cf: fix raw gpio number usa=
-ge)
-Merging mmc/mmc-next (11bc9381b277 mmc: sdhci-s3c: use mmc_of_parse and rem=
-ove the card_tasklet)
-Merging mmc-uh/next (85f4d1ddb469 PM: Remove the SET_PM_RUNTIME_PM_OPS() ma=
-cro)
-Merging kgdb/kgdb-next (0f16996cf2ed kernel/debug/debug_core.c: Logging cle=
-an-up)
-Merging uclinux/for-next (6dbe51c251a3 Linux 3.9-rc1)
-Merging md/for-next (13002b77a9d9 md: make reconfig_mutex optional for writ=
-es to md sysfs files.)
-Merging mfd/for-mfd-next (a3b63979f8a3 mfd: rtsx: Add func to split u32 int=
-o register)
-Merging backlight/for-backlight-next (3d6969a641d0 MAINTAINERS: Remove my n=
-ame from Backlight subsystem)
-Merging battery/master (b81180b3fd48 power: reset: adjust priority of simpl=
-e syscon reboot driver)
-Merging fbdev/for-next (718b90ac4c21 video: xilinxfb: Simplify error path)
-Merging viafb/viafb-next (838ac785d521 viafb: avoid refresh and mode lookup=
- in set_par)
-Merging omap_dss2/for-next (574d54112fda Merge branches '3.19/omapdss' and =
-'3.19/simplefb' into for-next)
-Merging regulator/for-next (176488fbc121 Merge remote-tracking branches 're=
-gulator/topic/sky81452' and 'regulator/topic/stub' into regulator-next)
-Merging security/next (b2d1965dcea1 Merge branch 'next' of git://git.infrad=
-ead.org/users/pcmoore/selinux into next)
-CONFLICT (content): Merge conflict in init/main.c
-Merging integrity/next (63a0eb7891bd ima: Fix build failure on powerpc when=
- TCG_IBMVTPM dependencies are not met)
-Merging selinux/next (00fec2a10b51 selinux: Remove security_ops extern)
-Merging lblnet/next (d8ec26d7f828 Linux 3.13)
-Merging watchdog/master (f3f62a38ceda Merge tag 'scsi-for-linus' of git://g=
-it.kernel.org/pub/scm/linux/kernel/git/jejb/scsi)
-Merging iommu/next (76771c938e95 Merge branches 'arm/omap', 'arm/msm', 'arm=
-/rockchip', 'arm/renesas', 'arm/smmu', 'x86/vt-d', 'x86/amd' and 'core' int=
-o next)
-Merging dwmw2-iommu/master (1860e379875d Linux 3.15)
-Merging vfio/next (5e9f36c59a48 drivers/vfio: allow type-1 IOMMU instantiat=
-ion on top of an ARM SMMU)
-Merging osd/linux-next (1fa3a002b254 Boaz Harrosh - fix email in Documentat=
-ion)
-Merging jc_docs/docs-next (9b64c09bb960 kobject: grammar fix)
-Merging trivial/for-next (078014dd3698 intel_ips: fix a type in error messa=
-ge)
-CONFLICT (content): Merge conflict in drivers/pci/pci-driver.c
-Merging audit/next (0288d7183c41 audit: convert status version to a feature=
- bitmap)
-Merging fsnotify/for-next (1ca39ab9d21a inotify: automatically restart sysc=
-alls)
-Merging devicetree/devicetree/next (c46ca3c8310b of: Delete unnecessary che=
-ck before calling "of_node_put()")
-Merging dt-rh/for-next (a0e27f51ba8a documentation: pinctrl bindings: Fix t=
-rivial typo 'abitrary')
-Merging mailbox/mailbox-for-next (9f3e3cacb2ff dt: mailbox: add generic bin=
-dings)
-Merging spi/for-next (0e647037fed5 Merge remote-tracking branches 'spi/topi=
-c/spidev' and 'spi/topic/txx9' into spi-next)
-Merging tip/auto-latest (ee46ec3279c3 Merge branch 'x86/urgent')
-CONFLICT (content): Merge conflict in drivers/irqchip/Makefile
-Merging clockevents/clockevents/next (b0ad5917960c ARM/ARM64: arch-timer: f=
-ix arch_timer_probed logic)
-Merging edac/linux_next (fec53af531dd sb_edac: Fix typo computing number of=
- banks)
-Merging edac-amd/for-next (50872ccd8786 EDAC, MCE, AMD: Correct formatting =
-of decoded text)
-Merging irqchip/irqchip/for-next (5cc8f658723f Merge branch 'irqchip/irqdom=
-ain-arm' into irqchip/for-next)
-Merging tiny/tiny/next (f114040e3ea6 Linux 3.18-rc1)
-Merging ftrace/for-next (2db633eb8df6 Merge branch 'for-next/ftrace/testing=
-' into trace/for-next)
-Merging rcu/rcu/next (b60caf3f0fda rcu: Improve diagnostics for spurious RC=
-U CPU stall warnings)
-Merging uprobes/for-next (0326f5a94dde uprobes/core: Handle breakpoint and =
-singlestep exceptions)
-Merging kvm/linux-next (e08e833616f7 KVM: cpuid: recompute CPUID 0xD.0:EBX,=
-ECX)
-CONFLICT (modify/delete): arch/ia64/kvm/kvm-ia64.c deleted in kvm/linux-nex=
-t and modified in HEAD. Version HEAD of arch/ia64/kvm/kvm-ia64.c left in tr=
-ee.
-CONFLICT (modify/delete): arch/ia64/kvm/Kconfig deleted in kvm/linux-next a=
-nd modified in HEAD. Version HEAD of arch/ia64/kvm/Kconfig left in tree.
-$ git rm -f arch/ia64/kvm/Kconfig arch/ia64/kvm/kvm-ia64.c
-Merging kvm-arm/next (016ed39c54b8 arm/arm64: KVM: vgic: kick the specific =
-vcpu instead of iterating through all)
-CONFLICT (modify/delete): arch/ia64/kvm/kvm-ia64.c deleted in HEAD and modi=
-fied in kvm-arm/next. Version kvm-arm/next of arch/ia64/kvm/kvm-ia64.c left=
- in tree.
-$ git rm -f arch/ia64/kvm/kvm-ia64.c
-Merging kvm-ppc/kvm-ppc-next (8d0eff638564 KVM: PPC: Pass enum to kvmppc_ge=
-t_last_inst)
-Merging oprofile/for-next (6ce4eac1f600 Linux 3.13-rc1)
-Merging fw-nohz/nohz/next (74876a98a87a printk: Wake up klogd using irq_wor=
-k)
-Merging xen-tip/linux-next (2e917175e1ef xen: Speed up set_phys_to_machine(=
-) by using read-only mappings)
-CONFLICT (content): Merge conflict in arch/arm/include/asm/dma-mapping.h
-Applying: arm: introduce is_device_dma_coherent merge fix
-Merging percpu/for-next (bfaa047a9415 Merge branch 'for-3.18-fixes' into fo=
-r-next)
-Merging workqueues/for-next (008847f66c38 workqueue: allow rescuer thread t=
-o do more work.)
-Merging drivers-x86/for-next (3161293ba6df Documentation: Add entry for del=
-l-laptop sysfs interface)
-Merging chrome-platform/for-next (5502486a2077 platform/chrome: chromeos_la=
-ptop - Add a limit for deferred retries)
-Merging sysctl/master (4e474a00d7ff sysctl: protect poll() in entries that =
-may go away)
-Merging regmap/for-next (a63b87838a59 Merge remote-tracking branches 'regma=
-p/topic/ac97' and 'regmap/topic/headers' into regmap-next)
-Merging hsi/for-next (d95dc9e38810 HSI: nokia-modem: fix error handling of =
-irq_of_parse_and_map)
-Merging leds/for-next (2969bb18f889 leds: lp8860: Fix module dependency)
-Merging ipmi/for-next (ee0a40fd288e Change ACPI IPMI support to "default y")
-CONFLICT (content): Merge conflict in arch/powerpc/platforms/powernv/opal-w=
-rappers.S
-CONFLICT (content): Merge conflict in arch/powerpc/include/asm/opal.h
-Merging driver-core/driver-core-next (f1c488a78d9f Revert "ath: ath9k: use =
-debugfs_create_devm_seqfile() helper for seq_file entries")
-CONFLICT (modify/delete): sound/soc/omap/omap-hdmi.c deleted in HEAD and mo=
-dified in driver-core/driver-core-next. Version driver-core/driver-core-nex=
-t of sound/soc/omap/omap-hdmi.c left in tree.
-CONFLICT (modify/delete): sound/soc/omap/omap-hdmi-card.c deleted in HEAD a=
-nd modified in driver-core/driver-core-next. Version driver-core/driver-cor=
-e-next of sound/soc/omap/omap-hdmi-card.c left in tree.
-CONFLICT (content): Merge conflict in sound/soc/intel/sst-haswell-pcm.c
-CONFLICT (modify/delete): drivers/staging/media/omap24xx/omap24xxcam.c dele=
-ted in HEAD and modified in driver-core/driver-core-next. Version driver-co=
-re/driver-core-next of drivers/staging/media/omap24xx/omap24xxcam.c left in=
- tree.
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-omap.c
-CONFLICT (content): Merge conflict in drivers/pinctrl/pinctrl-rockchip.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/ath/ath9k/debug.c
-CONFLICT (modify/delete): drivers/net/ieee802154/fakehard.c deleted in HEAD=
- and modified in driver-core/driver-core-next. Version driver-core/driver-c=
-ore-next of drivers/net/ieee802154/fakehard.c left in tree.
-CONFLICT (content): Merge conflict in drivers/mtd/devices/docg3.c
-CONFLICT (content): Merge conflict in drivers/mfd/syscon.c
-CONFLICT (modify/delete): drivers/memory/tegra30-mc.c deleted in HEAD and m=
-odified in driver-core/driver-core-next. Version driver-core/driver-core-ne=
-xt of drivers/memory/tegra30-mc.c left in tree.
-CONFLICT (content): Merge conflict in drivers/leds/leds-gpio.c
-CONFLICT (content): Merge conflict in drivers/iommu/tegra-smmu.c
-CONFLICT (content): Merge conflict in drivers/input/keyboard/gpio_keys_poll=
-ed.c
-CONFLICT (content): Merge conflict in drivers/hwmon/ibmpowernv.c
-CONFLICT (content): Merge conflict in drivers/bus/omap_l3_noc.c
-CONFLICT (content): Merge conflict in drivers/base/Makefile
-$ git rm -f drivers/memory/tegra30-mc.c drivers/net/ieee802154/fakehard.c d=
-rivers/staging/media/omap24xx/omap24xxcam.c sound/soc/omap/omap-hdmi-card.c=
- sound/soc/omap/omap-hdmi.c
-Merging tty/tty-next (dd63af108f08 Merge 3.18-rc7 into tty-next)
-CONFLICT (content): Merge conflict in drivers/tty/n_tty.c
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ser=
-ial/pl011.txt
-Merging usb/usb-next (81e1dadfb5b2 arm: omap3: twl: remove usb phy init dat=
-a)
-CONFLICT (content): Merge conflict in drivers/usb/storage/uas.c
-CONFLICT (content): Merge conflict in drivers/usb/storage/debug.c
-CONFLICT (content): Merge conflict in drivers/usb/gadget/udc/pxa27x_udc.c
-CONFLICT (content): Merge conflict in drivers/usb/dwc2/gadget.c
-CONFLICT (content): Merge conflict in drivers/usb/chipidea/core.c
-Merging usb-gadget/next (ebf3992061db usb: musb: Use IS_ENABLED for tusb601=
-0)
-Merging usb-serial/usb-next (e7181d005e84 USB: qcserial: Add support for HP=
- lt4112 LTE/HSPA+ Gobi 4G Modem)
-Merging staging/staging-next (17d2c6439be6 Staging: slicoss: Fix long line =
-issues in slicoss.c)
-CONFLICT (modify/delete): drivers/staging/media/omap24xx/tcm825x.c deleted =
-in HEAD and modified in staging/staging-next. Version staging/staging-next =
-of drivers/staging/media/omap24xx/tcm825x.c left in tree.
-CONFLICT (modify/delete): drivers/staging/media/omap24xx/omap24xxcam.c dele=
-ted in HEAD and modified in staging/staging-next. Version staging/staging-n=
-ext of drivers/staging/media/omap24xx/omap24xxcam.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/media/lirc/lirc_sasem=
-.c
-CONFLICT (content): Merge conflict in drivers/staging/media/lirc/lirc_imon.c
-CONFLICT (modify/delete): drivers/staging/media/lirc/lirc_igorplugusb.c del=
-eted in HEAD and modified in staging/staging-next. Version staging/staging-=
-next of drivers/staging/media/lirc/lirc_igorplugusb.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/s=
-tatahead.c
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/n=
-amei.c
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/l=
-lite_lib.c
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/l=
-lite_internal.h
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/f=
-ile.c
-CONFLICT (content): Merge conflict in drivers/staging/lustre/lustre/llite/d=
-cache.c
-$ git rm -f drivers/staging/media/lirc/lirc_igorplugusb.c drivers/staging/m=
-edia/omap24xx/omap24xxcam.c drivers/staging/media/omap24xx/tcm825x.c
-Merging char-misc/char-misc-next (91905b6f4afe parport: parport_pc, do not =
-remove parent devices early)
-CONFLICT (content): Merge conflict in drivers/misc/cxl/irq.c
-CONFLICT (content): Merge conflict in drivers/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/Kconfig
-CONFLICT (modify/delete): arch/arm/kernel/etm.c deleted in char-misc/char-m=
-isc-next and modified in HEAD. Version HEAD of arch/arm/kernel/etm.c left i=
-n tree.
-$ git rm -f arch/arm/kernel/etm.c
-Merging cgroup/for-next (eeecbd197151 cgroup: implement cgroup_get_e_css())
-Merging scsi/for-next (b34681d64769 Merge remote-tracking branch 'scsi-queu=
-e/drivers-for-3.19' into for-next)
-Merging target-updates/for-next (36ab12ea2b7c iser-target: Fix wc->wr_id ca=
-st warning)
-Merging target-merge/for-next-merge (b28a960c42fc Linux 3.14-rc2)
-Merging writeback/writeback-for-next (f9b0e058cbd0 writeback: Fix data corr=
-uption on NFS)
-Merging hwspinlock/linux-next (8b37fcfc9b34 hwspinlock: add MAINTAINERS ent=
-ries)
-Merging pinctrl/for-next (ae76f13b9b49 pinctrl: meson: add device tree bind=
-ings documentation)
-Merging vhost/linux-next (970379f59d81 vhost: move memory pointer to VQs)
-CONFLICT (content): Merge conflict in drivers/vhost/vhost.h
-CONFLICT (content): Merge conflict in drivers/vhost/vhost.c
-CONFLICT (content): Merge conflict in drivers/vhost/net.c
-Merging remoteproc/for-next (9a3c4145af32 Linux 3.16-rc6)
-Merging rpmsg/for-next (b1b9891441fa rpmsg: use less buffers when vrings ar=
-e small)
-Merging gpio/for-next (0e9a5edf5d01 gpio: fix deferred probe detection for =
-legacy API)
-Merging dma-mapping/dma-mapping-next (dda02fd6278d mm, cma: make parameters=
- order consistent in func declaration and definition)
-Merging pwm/for-next (39e046f2c1dd pwm: atmel-hlcdc: add at91sam9x5 and sam=
-a5d3 errata handling)
-Merging dma-buf/for-next (101e31050bf1 dma-buf/fence: Fix one more kerneldo=
-c warning)
-Merging userns/for-next (3e6a4ad789d7 userns: Unbreak the unprivileged remo=
-unt tests)
-CONFLICT (content): Merge conflict in kernel/user_namespace.c
-CONFLICT (content): Merge conflict in kernel/user.c
-CONFLICT (content): Merge conflict in include/linux/user_namespace.h
-Merging ktest/for-next (17150fef4ab1 ktest: Add back "tail -1" to kernelrel=
-ease make)
-Merging signal/for-next (20b4fb485227 Merge branch 'for-linus' of git://git=
-.kernel.org/pub/scm/linux/kernel/git/viro/vfs)
-Merging clk/clk-next (646cafc6aa4d clk: Change clk_ops->determine_rate to r=
-eturn a clk_hw as the best parent)
-Merging random/dev (7185ad2672a7 crypto: memzero_explicit - make sure to cl=
-ear out sensitive data)
-Merging lzo-update/lzo-update (42b775abafaf lib/lzo: huge LZO decompression=
- speedup on ARM by using unaligned access)
-Merging aio/master (d3785cf42979 Merge ../aio-fixes)
-Merging llvmlinux/for-next (25d4aee23af2 arm: LLVMLinux: Use global stack r=
-egister variable for percpu)
-Merging documentation/for-next (0415447aa3b4 Documentation: fix broken v4l-=
-utils URL)
-Merging kselftest/next (0df1f2487d2f Linux 3.18-rc3)
-Merging y2038/y2038 (45446a99cef6 staging: media: lirc: Replace timeval wit=
-h ktime_t in lirc_parallel.c)
-CONFLICT (content): Merge conflict in drivers/staging/media/lirc/lirc_sasem=
-.c
-CONFLICT (content): Merge conflict in drivers/staging/ft1000/ft1000-usb/ft1=
-000_debug.c
-CONFLICT (content): Merge conflict in drivers/staging/ft1000/ft1000-pcmcia/=
-ft1000_hw.c
-Merging luto-misc/next (5595364a6bd9 x86, entry: Switch stacks on a paranoi=
-d entry from userspace)
-Merging access_once/linux-next (2bf53e48d94b s390/kvm: REPLACE barrier fixu=
-p with READ_ONCE)
-Applying: x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
-[master 06c56f63affb] Revert "srcu: Isolate srcu sections using CONFIG_SRCU"
-Merging akpm-current/current (35ac317b788c shmdt: use i_size_read() instead=
- of ->i_size)
-CONFLICT (content): Merge conflict in tools/testing/selftests/Makefile
-CONFLICT (content): Merge conflict in mm/page_alloc.c
-CONFLICT (content): Merge conflict in mm/memcontrol.c
-CONFLICT (content): Merge conflict in mm/hugetlb.c
-CONFLICT (content): Merge conflict in kernel/printk/printk.c
-CONFLICT (content): Merge conflict in kernel/exit.c
-CONFLICT (content): Merge conflict in init/main.c
-CONFLICT (content): Merge conflict in include/linux/mmzone.h
-CONFLICT (content): Merge conflict in fs/proc/task_mmu.c
-CONFLICT (content): Merge conflict in fs/ocfs2/inode.h
-CONFLICT (content): Merge conflict in fs/binfmt_misc.c
-CONFLICT (content): Merge conflict in drivers/usb/storage/debug.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-omap.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-isl12057.c
-CONFLICT (content): Merge conflict in drivers/rtc/rtc-ds1374.c
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/ven=
-dor-prefixes.txt
-CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/i2c=
-/trivial-devices.txt
-$ git checkout -b akpm remotes/origin/akpm/master
-Applying: drivers/gpio/gpio-zevio.c: fix build
-Applying: slab: fix cpuset check in fallback_alloc
-Applying: slub: fix cpuset check in get_any_partial
-Applying: mm/cma: make kmemleak ignore CMA regions
-Applying: mm: cma: split cma-reserved in dmesg log
-Applying: fs: proc: include cma info in proc/meminfo
-Applying: lib/show_mem.c: adds cma reserved information
-Applying: lib-show_mem-this-patch-adds-cma-reserved-infromation-fix
-Applying: fallocate: create FAN_MODIFY and IN_MODIFY events
-Applying: tools/testing/selftests/Makefile: alphasort the TARGETS list
-Applying: fsnotify: unify inode and mount marks handling
-Applying: fsnotify: remove destroy_list from fsnotify_mark
-Applying: percpu: remove __get_cpu_var and __raw_get_cpu_var macros
-Applying: percpu: update local_ops.txt to reflect this_cpu operations
-Applying: parisc: percpu: update comments refereing to __get_cpu_var
-Applying: mm: replace remap_file_pages() syscall with emulation
-Applying: drivers/w1/w1_int.c: call put_device if device_register fails
-Applying: mm: add strictlimit knob
-Merging akpm/master (c5ae10f21ddc mm: add strictlimit knob)
+But looking at it twice it seems like avg_count will never be updated
+unless the interrupts are fired, so maybe we should update that
+counter from some other place, like tegra_devfreq_get_dev_status? Does
+that sound feasible?
 
---Sig_/hc81GiXZFl2xKzL_zA8QlDR
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUipq7AAoJEMDTa8Ir7ZwVL88P/3HS/07LPE3kK7PNXsblyDLO
-xaIdQJKocw+Sn1L2pLJvhDiIkNFXkMmjn0y0wtgxcrOJtZcEJ354Vl/DIhwM1c6g
-+p8orwNzrzmNy/+lsdSJjQSDRG2LiLL/AKJwa0/Z3i0UivQjWtE/vW7A4pKHFkRS
-BF6+BIjKWsxbYK7rkbtpqFx/0lutGYNOJEw8cvW0svp+j+IEdkddxf1miEhNBq1R
-xhVOnJUD8SmWPwlFe7Eq7zMNsRMgWlELpnrfBlW/ARN3f977Wd6iNPjAa0ig6m2+
-e3xbfOEPqg715nx4zg+QR7IPd9muiUSXdWvKXCw2k9UIG7HgzRCYXmvl58IhwCsI
-u9ECuYs26ytbGfQIL6yJPJsW9e9Ku+bq/ze3k7RZOaMU+7AGXh5t3c/I99oWkCyM
-W0XZgv3wov2EIwimP0YXkPIGAA7yqR5sE8q42/bjQigKJzTAvxvfbmvqpKroMQoQ
-o6sK1MeygNM5uhrlugijpciEMLw3vipBLYvazrRA9rU3Ve2ABaLaxXsDLm8dg+uJ
-D+1Ivd3sc0E+dFrWkn2sP++Nr+mgAmv9r7MpeL1VoBoB87rnnqof+Qr9LLrl4m4z
-ENnELeNbMA8Rz9b5EUOuFBY7BgYd4DjI3fwqATK1xAYhEvQrNhCMLB10uQ6Dx+NP
-tbYsW/RK3rlmRgYSseSH
-=AGmU
------END PGP SIGNATURE-----
-
---Sig_/hc81GiXZFl2xKzL_zA8QlDR--
+> +
+> +static struct devfreq_governor tegra_devfreq_governor = {
+> +       .name = "tegra_actmon",
+> +       .get_target_freq = tegra_governor_get_target,
+> +       .event_handler = tegra_governor_event_handler,
+> +};
+> +
+> +static int __init tegra_governor_init(void)
+> +{
+> +       return devfreq_add_governor(&tegra_devfreq_governor);
+> +}
+> +subsys_initcall(tegra_governor_init);
+> +
+> +static int tegra_devfreq_probe(struct platform_device *pdev)
+> +{
+> +       struct tegra_devfreq *tegra;
+> +       struct tegra_devfreq_device *dev;
+> +       struct resource *res;
+> +       unsigned long max_freq;
+> +       unsigned int i;
+> +       int irq;
+> +       int err;
+> +
+> +       tegra = devm_kzalloc(&pdev->dev, sizeof(*tegra), GFP_KERNEL);
+> +       if (!tegra)
+> +               return -ENOMEM;
+> +
+> +       spin_lock_init(&tegra->lock);
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +       tegra->regs = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(tegra->regs))
+> +               return PTR_ERR(tegra->regs);
+> +
+> +       tegra->reset = devm_reset_control_get(&pdev->dev, "actmon");
+> +       if (IS_ERR(tegra->reset)) {
+> +               dev_err(&pdev->dev, "Failed to get reset\n");
+> +               return PTR_ERR(tegra->reset);
+> +       }
+> +
+> +       tegra->clock = devm_clk_get(&pdev->dev, "actmon");
+> +       if (IS_ERR(tegra->clock)) {
+> +               dev_err(&pdev->dev, "Failed to get actmon clock\n");
+> +               return PTR_ERR(tegra->clock);
+> +       }
+> +
+> +       tegra->emc_clock = devm_clk_get(&pdev->dev, "emc");
+> +       if (IS_ERR(tegra->emc_clock)) {
+> +               dev_err(&pdev->dev, "Failed to get emc clock\n");
+> +               return PTR_ERR(tegra->emc_clock);
+> +       }
+> +
+> +       err = of_init_opp_table(&pdev->dev);
+> +       if (err) {
+> +               dev_err(&pdev->dev, "Failed to init operating point table\n");
+> +               return err;
+> +       }
+> +
+> +       tegra->rate_change_nb.notifier_call = tegra_actmon_rate_notify_cb;
+> +       err = clk_notifier_register(tegra->emc_clock, &tegra->rate_change_nb);
+> +       if (err) {
+> +               dev_err(&pdev->dev,
+> +                       "Failed to register rate change notifier\n");
+> +               return err;
+> +       }
+> +
+> +       reset_control_assert(tegra->reset);
+> +
+> +       err = clk_prepare_enable(tegra->clock);
+> +       if (err) {
+> +               dev_err(&pdev->dev,
+> +                       "Failed to prepare and enable ACTMON clock\n");
+> +               return err;
+> +       }
+> +
+> +       reset_control_deassert(tegra->reset);
+> +
+> +       max_freq = clk_round_rate(tegra->emc_clock, ULONG_MAX);
+> +       tegra->max_freq = max_freq / KHZ;
+> +
+> +       clk_set_rate(tegra->emc_clock, max_freq);
+> +
+> +       tegra->cur_freq = clk_get_rate(tegra->emc_clock) / KHZ;
+> +
+> +       actmon_writel(tegra, ACTMON_SAMPLING_PERIOD - 1,
+> +                     ACTMON_GLB_PERIOD_CTRL);
+> +
+> +       for (i = 0; i < ARRAY_SIZE(actmon_device_configs); i++) {
+> +               dev = tegra->devices + i;
+> +               dev->config = actmon_device_configs + i;
+> +               dev->regs = tegra->regs + dev->config->offset;
+> +
+> +               tegra_actmon_configure_device(tegra, dev);
+> +       }
+> +
+> +       tegra_devfreq_profile.initial_freq = clk_get_rate(tegra->emc_clock);
+> +       tegra->devfreq = devm_devfreq_add_device(&pdev->dev,
+> +                                                &tegra_devfreq_profile,
+> +                                                "tegra_actmon",
+> +                                                NULL);
+> +
+> +       irq = platform_get_irq(pdev, 0);
+> +       if (irq <= 0) {
+> +               dev_err(&pdev->dev, "Failed to get IRQ\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       platform_set_drvdata(pdev, tegra);
+> +
+> +       err = devm_request_threaded_irq(&pdev->dev, irq, actmon_isr,
+> +                                       actmon_thread_isr, IRQF_SHARED,
+> +                                       "tegra-devfreq", tegra);
+> +       if (err) {
+> +               dev_err(&pdev->dev, "Interrupt request failed\n");
+> +               return err;
+> +       }
+> +
+> +       for (i = 0; i < ARRAY_SIZE(actmon_device_configs); i++)
+> +               tegra_actmon_enable_device(tegra, tegra->devices + i);
+> +
+> +       return 0;
+> +}
+> +
+> +static int tegra_devfreq_remove(struct platform_device *pdev)
+> +{
+> +       struct tegra_devfreq *tegra = platform_get_drvdata(pdev);
+> +       int irq = platform_get_irq(pdev, 0);
+> +       unsigned int i;
+> +
+> +       for (i = 0; i < ARRAY_SIZE(actmon_device_configs); i++)
+> +               tegra_actmon_disable_device(tegra, tegra->devices + i);
+> +
+> +       devm_free_irq(&pdev->dev, irq, tegra);
+> +
+> +       clk_notifier_unregister(tegra->emc_clock, &tegra->rate_change_nb);
+> +
+> +       clk_disable_unprepare(tegra->clock);
+> +
+> +       return 0;
+> +}
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +
+> +static int tegra_devfreq_suspend(struct device *dev)
+> +{
+> +       struct platform_device *pdev;
+> +       struct tegra_devfreq *tegra = dev_get_drvdata(dev);
+> +       struct tegra_devfreq_device *actmon_dev;
+> +       unsigned int i;
+> +
+> +       pdev = container_of(dev, struct platform_device, dev);
+> +
+> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+> +               actmon_dev = &tegra->devices[i];
+> +
+> +               tegra_actmon_disable_device(tegra, actmon_dev);
+> +
+> +               device_writel(actmon_dev, ACTMON_INTR_STATUS_CLEAR,
+> +                             ACTMON_DEV_INTR_STATUS);
+> +
+> +               actmon_write_barrier(tegra);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static int tegra_devfreq_resume(struct device *dev)
+> +{
+> +       struct platform_device *pdev;
+> +       struct tegra_devfreq *tegra = dev_get_drvdata(dev);
+> +       struct tegra_devfreq_device *actmon_dev;
+> +       unsigned int i;
+> +
+> +       pdev = container_of(dev, struct platform_device, dev);
+> +
+> +       for (i = 0; i < ARRAY_SIZE(tegra->devices); i++) {
+> +               actmon_dev = &tegra->devices[i];
+> +
+> +               tegra_actmon_configure_device(tegra, actmon_dev);
+> +               tegra_actmon_enable_device(tegra, actmon_dev);
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +#endif /* CONFIG_PM_SLEEP */
+> +
+> +static SIMPLE_DEV_PM_OPS(tegra_devfreq_pm_ops,
+> +                        tegra_devfreq_suspend,
+> +                        tegra_devfreq_resume);
+> +
+> +static struct of_device_id tegra_devfreq_of_match[] = {
+> +       { .compatible = "nvidia,tegra124-actmon" },
+> +       { },
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, tegra_devfreq_of_match);
+> +
+> +static struct platform_driver tegra_devfreq_driver = {
+> +       .probe  = tegra_devfreq_probe,
+> +       .remove = tegra_devfreq_remove,
+> +       .driver = {
+> +               .name = "tegra-devfreq",
+> +               .of_match_table = tegra_devfreq_of_match,
+> +               .pm = &tegra_devfreq_pm_ops,
+> +       },
+> +};
+> +module_platform_driver(tegra_devfreq_driver);
+> +
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("Tegra devfreq driver");
+> +MODULE_AUTHOR("Tomeu Vizoso <tomeu.vizoso@collabora.com>");
+> --
+> 1.9.3
+>
