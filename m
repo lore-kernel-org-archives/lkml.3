@@ -1,174 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaLLWO5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:14:57 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:57309 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbaLLWIQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752385AbaLLWIQ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 12 Dec 2014 17:08:16 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: ralf@linux-mips.org
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V5 02/23] MIPS: Create a common <asm/mach-generic/war.h>
-Date: Fri, 12 Dec 2014 14:06:53 -0800
-Message-Id: <1418422034-17099-3-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
-References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+Received: from comal.ext.ti.com ([198.47.26.152]:48808 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752239AbaLLWIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 17:08:09 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Benoit Parrot <bparrot@ti.com>
+Subject: [Patch v4 2/2] gpio: Document GPIO hogging mechanism
+Date: Fri, 12 Dec 2014 16:07:31 -0600
+Message-ID: <1418422051-9471-3-git-send-email-bparrot@ti.com>
+X-Mailer: git-send-email 1.8.5.1
+In-Reply-To: <1418422051-9471-1-git-send-email-bparrot@ti.com>
+References: <1418422051-9471-1-git-send-email-bparrot@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11 platforms require at least one of these workarounds to be enabled; 22
-platforms do not.  In the latter case we can fall back to a generic version.
+Add GPIO hogging documentation to gpio.txt
 
-Note that this also deletes an orphaned reference to RM9000_CDEX_SMP_WAR.
-
-Suggested-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
 ---
- arch/mips/include/asm/mach-ar7/war.h               | 24 ---------------------
- arch/mips/include/asm/mach-ath25/war.h             | 25 ----------------------
- arch/mips/include/asm/mach-ath79/war.h             | 24 ---------------------
- arch/mips/include/asm/mach-au1x00/war.h            | 24 ---------------------
- arch/mips/include/asm/mach-bcm3384/war.h           | 24 ---------------------
- arch/mips/include/asm/mach-bcm47xx/war.h           | 24 ---------------------
- arch/mips/include/asm/mach-bcm63xx/war.h           | 24 ---------------------
- arch/mips/include/asm/mach-cavium-octeon/war.h     | 25 ----------------------
- arch/mips/include/asm/mach-cobalt/war.h            | 24 ---------------------
- arch/mips/include/asm/mach-dec/war.h               | 24 ---------------------
- arch/mips/include/asm/mach-emma2rh/war.h           | 24 ---------------------
- .../asm/{mach-ralink => mach-generic}/war.h        |  6 +++---
- arch/mips/include/asm/mach-jazz/war.h              | 24 ---------------------
- arch/mips/include/asm/mach-jz4740/war.h            | 24 ---------------------
- arch/mips/include/asm/mach-lantiq/war.h            | 23 --------------------
- arch/mips/include/asm/mach-lasat/war.h             | 24 ---------------------
- arch/mips/include/asm/mach-loongson/war.h          | 24 ---------------------
- arch/mips/include/asm/mach-loongson1/war.h         | 24 ---------------------
- arch/mips/include/asm/mach-netlogic/war.h          | 25 ----------------------
- arch/mips/include/asm/mach-paravirt/war.h          | 25 ----------------------
- arch/mips/include/asm/mach-pnx833x/war.h           | 24 ---------------------
- arch/mips/include/asm/mach-tx39xx/war.h            | 24 ---------------------
- arch/mips/include/asm/mach-vr41xx/war.h            | 24 ---------------------
- 23 files changed, 3 insertions(+), 534 deletions(-)
- delete mode 100644 arch/mips/include/asm/mach-ar7/war.h
- delete mode 100644 arch/mips/include/asm/mach-ath25/war.h
- delete mode 100644 arch/mips/include/asm/mach-ath79/war.h
- delete mode 100644 arch/mips/include/asm/mach-au1x00/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm3384/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm47xx/war.h
- delete mode 100644 arch/mips/include/asm/mach-bcm63xx/war.h
- delete mode 100644 arch/mips/include/asm/mach-cavium-octeon/war.h
- delete mode 100644 arch/mips/include/asm/mach-cobalt/war.h
- delete mode 100644 arch/mips/include/asm/mach-dec/war.h
- delete mode 100644 arch/mips/include/asm/mach-emma2rh/war.h
- rename arch/mips/include/asm/{mach-ralink => mach-generic}/war.h (86%)
- delete mode 100644 arch/mips/include/asm/mach-jazz/war.h
- delete mode 100644 arch/mips/include/asm/mach-jz4740/war.h
- delete mode 100644 arch/mips/include/asm/mach-lantiq/war.h
- delete mode 100644 arch/mips/include/asm/mach-lasat/war.h
- delete mode 100644 arch/mips/include/asm/mach-loongson/war.h
- delete mode 100644 arch/mips/include/asm/mach-loongson1/war.h
- delete mode 100644 arch/mips/include/asm/mach-netlogic/war.h
- delete mode 100644 arch/mips/include/asm/mach-paravirt/war.h
- delete mode 100644 arch/mips/include/asm/mach-pnx833x/war.h
- delete mode 100644 arch/mips/include/asm/mach-tx39xx/war.h
- delete mode 100644 arch/mips/include/asm/mach-vr41xx/war.h
+Changes since v3:
+ * Renamed the "direction" DT properties to "state".
 
-diff --git a/arch/mips/include/asm/mach-ar7/war.h b/arch/mips/include/asm/mach-ar7/war.h
-deleted file mode 100644
-index 99071e5..0000000
-diff --git a/arch/mips/include/asm/mach-ath25/war.h b/arch/mips/include/asm/mach-ath25/war.h
-deleted file mode 100644
-index e3a5250..0000000
-diff --git a/arch/mips/include/asm/mach-ath79/war.h b/arch/mips/include/asm/mach-ath79/war.h
-deleted file mode 100644
-index 0bb3090..0000000
-diff --git a/arch/mips/include/asm/mach-au1x00/war.h b/arch/mips/include/asm/mach-au1x00/war.h
-deleted file mode 100644
-index 72e260d..0000000
-diff --git a/arch/mips/include/asm/mach-bcm3384/war.h b/arch/mips/include/asm/mach-bcm3384/war.h
-deleted file mode 100644
-index 59d7599..0000000
-diff --git a/arch/mips/include/asm/mach-bcm47xx/war.h b/arch/mips/include/asm/mach-bcm47xx/war.h
-deleted file mode 100644
-index a3d2f44..0000000
-diff --git a/arch/mips/include/asm/mach-bcm63xx/war.h b/arch/mips/include/asm/mach-bcm63xx/war.h
-deleted file mode 100644
-index 05ee867..0000000
-diff --git a/arch/mips/include/asm/mach-cavium-octeon/war.h b/arch/mips/include/asm/mach-cavium-octeon/war.h
-deleted file mode 100644
-index eb72b35..0000000
-diff --git a/arch/mips/include/asm/mach-cobalt/war.h b/arch/mips/include/asm/mach-cobalt/war.h
-deleted file mode 100644
-index 34ae404..0000000
-diff --git a/arch/mips/include/asm/mach-dec/war.h b/arch/mips/include/asm/mach-dec/war.h
-deleted file mode 100644
-index d29996f..0000000
-diff --git a/arch/mips/include/asm/mach-emma2rh/war.h b/arch/mips/include/asm/mach-emma2rh/war.h
-deleted file mode 100644
-index 79ae82d..0000000
-diff --git a/arch/mips/include/asm/mach-ralink/war.h b/arch/mips/include/asm/mach-generic/war.h
-similarity index 86%
-rename from arch/mips/include/asm/mach-ralink/war.h
-rename to arch/mips/include/asm/mach-generic/war.h
-index c074b5d..a1bc2e7 100644
---- a/arch/mips/include/asm/mach-ralink/war.h
-+++ b/arch/mips/include/asm/mach-generic/war.h
-@@ -5,8 +5,8 @@
-  *
-  * Copyright (C) 2002, 2004, 2007 by Ralf Baechle <ralf@linux-mips.org>
-  */
--#ifndef __ASM_MACH_RALINK_WAR_H
--#define __ASM_MACH_RALINK_WAR_H
-+#ifndef __ASM_MACH_GENERIC_WAR_H
-+#define __ASM_MACH_GENERIC_WAR_H
+ Documentation/devicetree/bindings/gpio/gpio.txt | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
+index 3fb8f53..a38da91 100644
+--- a/Documentation/devicetree/bindings/gpio/gpio.txt
++++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+@@ -103,6 +103,22 @@ Every GPIO controller node must contain both an empty "gpio-controller"
+ property, and a #gpio-cells integer property, which indicates the number of
+ cells in a gpio-specifier.
  
- #define R4600_V1_INDEX_ICACHEOP_WAR	0
- #define R4600_V1_HIT_CACHEOP_WAR	0
-@@ -21,4 +21,4 @@
- #define R10000_LLSC_WAR			0
- #define MIPS34K_MISSED_ITLB_WAR		0
++The GPIO chip may contain GPIO hog definitions. GPIO hogging is a mechanism
++providing automatic GPIO request and configuration as part of the
++gpio-controller's driver probe function.
++
++Each GPIO hog definition is represented as a child node of the GPIO controller.
++Required properties:
++- gpio-hog:  A property specifying that this child node represent a gpio-hog.
++- gpios:     Store the gpio information (id, flags, ...). Shall contain the
++	     number of cells specified in its parent node (GPIO controller
++	     node).
++- state:     A property specifying the direction/value needed. This property
++	     can take the folowing values: input, output-high, output-low.
++
++Optional properties:
++- line-name: The GPIO label name. If not present the node name is used.
++
+ Example of two SOC GPIO banks defined as gpio-controller nodes:
  
--#endif /* __ASM_MACH_RALINK_WAR_H */
-+#endif /* __ASM_MACH_GENERIC_WAR_H */
-diff --git a/arch/mips/include/asm/mach-jazz/war.h b/arch/mips/include/asm/mach-jazz/war.h
-deleted file mode 100644
-index 5b18b9a..0000000
-diff --git a/arch/mips/include/asm/mach-jz4740/war.h b/arch/mips/include/asm/mach-jz4740/war.h
-deleted file mode 100644
-index 9b511d3..0000000
-diff --git a/arch/mips/include/asm/mach-lantiq/war.h b/arch/mips/include/asm/mach-lantiq/war.h
-deleted file mode 100644
-index 358ca97..0000000
-diff --git a/arch/mips/include/asm/mach-lasat/war.h b/arch/mips/include/asm/mach-lasat/war.h
-deleted file mode 100644
-index 741ae72..0000000
-diff --git a/arch/mips/include/asm/mach-loongson/war.h b/arch/mips/include/asm/mach-loongson/war.h
-deleted file mode 100644
-index f2570df..0000000
-diff --git a/arch/mips/include/asm/mach-loongson1/war.h b/arch/mips/include/asm/mach-loongson1/war.h
-deleted file mode 100644
-index 8fb50d0..0000000
-diff --git a/arch/mips/include/asm/mach-netlogic/war.h b/arch/mips/include/asm/mach-netlogic/war.h
-deleted file mode 100644
-index 2c72168..0000000
-diff --git a/arch/mips/include/asm/mach-paravirt/war.h b/arch/mips/include/asm/mach-paravirt/war.h
-deleted file mode 100644
-index 36d3afb..0000000
-diff --git a/arch/mips/include/asm/mach-pnx833x/war.h b/arch/mips/include/asm/mach-pnx833x/war.h
-deleted file mode 100644
-index e410df4..0000000
-diff --git a/arch/mips/include/asm/mach-tx39xx/war.h b/arch/mips/include/asm/mach-tx39xx/war.h
-deleted file mode 100644
-index 6a52e65..0000000
-diff --git a/arch/mips/include/asm/mach-vr41xx/war.h b/arch/mips/include/asm/mach-vr41xx/war.h
-deleted file mode 100644
-index ffe31e7..0000000
+ 	qe_pio_a: gpio-controller@1400 {
+@@ -110,6 +126,13 @@ Example of two SOC GPIO banks defined as gpio-controller nodes:
+ 		reg = <0x1400 0x18>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
++
++		line_b {
++			gpio-hog;
++			gpios = <6 0>;
++			state = "output-low";
++			line-name = "foo-bar-gpio";
++		};
+ 	};
+ 
+ 	qe_pio_e: gpio-controller@1460 {
 -- 
-2.1.1
+1.8.5.1
 
