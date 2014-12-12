@@ -1,79 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031192AbaLLRra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:47:30 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:45490 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030970AbaLLRr3 (ORCPT
+	id S1031222AbaLLRt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:49:26 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:39773 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030936AbaLLRtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:47:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <548AAA95.6020001@arm.com>
-References: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
-	<548AAA95.6020001@arm.com>
-Date: Fri, 12 Dec 2014 12:47:26 -0500
-Message-ID: <CAJ5Y-eYFsK_heBRQUOmPXGtkLtze-NGzWKy1=0qJVV3x2EycUw@mail.gmail.com>
-Subject: Re: [Linaro-acpi] [PATCH] Mailbox: Complete wait event only if Tx was successful
-From: Ashwin Chaugule <ashwin.chaugule@linaro.org>
-To: Sudeep Holla <sudeep.holla@arm.com>
-Cc: "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 12 Dec 2014 12:49:25 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH 2/3] TTY: add slave driver to power-on device via
+ =?iso-8859-1?Q?a=0D?= regulator.
+To: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20141211215944.4127.4186.stgit@notabene.brown>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+	<20141211215944.4127.4186.stgit@notabene.brown>
+Date: Fri, 12 Dec 2014 12:05:42 +0000
+Message-Id: <20141212120542.E4CB8C40932@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 December 2014 at 03:43, Sudeep Holla <sudeep.holla@arm.com> wrote:
-> Hi Ashwin,
+On Fri, 12 Dec 2014 08:59:44 +1100
+, NeilBrown <neilb@suse.de>
+ wrote:
+> The regulator is identified in devicetree as 'vdd-supply'
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  .../devicetree/bindings/serial/slave-reg.txt       |   18 ++++
+>  drivers/tty/Kconfig                                |    2 
+>  drivers/tty/Makefile                               |    1 
+>  drivers/tty/slaves/Kconfig                         |   12 ++
+>  drivers/tty/slaves/Makefile                        |    2 
+>  drivers/tty/slaves/tty-reg.c                       |  102 ++++++++++++++++++++
+>  6 files changed, 137 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/serial/slave-reg.txt
+>  create mode 100644 drivers/tty/slaves/Kconfig
+>  create mode 100644 drivers/tty/slaves/Makefile
+>  create mode 100644 drivers/tty/slaves/tty-reg.c
+> 
+> diff --git a/Documentation/devicetree/bindings/serial/slave-reg.txt b/Documentation/devicetree/bindings/serial/slave-reg.txt
+> new file mode 100644
+> index 000000000000..7896bce8dfe4
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/serial/slave-reg.txt
+> @@ -0,0 +1,18 @@
+> +Regulator powered UART-attached device
+> +
+> +Required properties:
+> +- compatible: "tty,regulator"
+> +- vdd-supply: regulator to power the device
 
-Hi,
+The binding should be specfic to the device. Trying to do a generic
+binding like this doesn't scale well. Do a specific binding for the
+bluetooth chipset and make that driver understand how to do PM
+operations on that device. That way each kind of tty slave device driver
+can have its own set of PM mechanism which may be completely different.
 
-> On Thursday 11 December 2014 01:46 AM, Ashwin Chaugule wrote:
->>
->> If a wait_for_completion_timeout() call returns due to a timeout,
->> the mbox code can still call complete() after returning from the wait.
->> This can cause subsequent transmissions on a channel to fail, since
->> the wait_for_completion_timeout() sees the completion variable
->> is !=0, caused by the erroneous complete() call, and immediately
->> returns without waiting for the time as expected by the client.
->>
->> Fix this by calling complete() only if the TX was successful.
->>
->> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
->> ---
->>   drivers/mailbox/mailbox.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
->> index 17e9e4a..4acaddb 100644
->> --- a/drivers/mailbox/mailbox.c
->> +++ b/drivers/mailbox/mailbox.c
->> @@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
->>         if (mssg && chan->cl->tx_done)
->>                 chan->cl->tx_done(chan->cl, mssg, r);
->>
->> -       if (chan->cl->tx_block)
->> +       if ((!r) && chan->cl->tx_block)
->>                 complete(&chan->tx_complete);
->
->
-> Just curious to check if there's another possible race which is
-> a different issue.
->
-> Suppose the timer fired and indicated that the Tx is complete, then
-> it tries to execute complete while the wait_for_completion_timeout timed
-> out. Does that make sense ?
->
-> So if yes, how about adding !completion_done(..) to the check while you
-> are at this ?
+> +This is listed as a child node of a UART.  When the
+> +UART is opened, the device is powered.
 
-Yea. Seems like another race condition. I'll add it along with this..
+Another thought, what if I *don't* want the device to be powered
+merely because the uart is opened?
 
-Thanks,
-Ashwin
+> +
+> +Example:
+> +
+> +&uart1 {
+> +	bluetooth {
+> +		compatible = "tty,regulator";
+> +		vdd-supply = <&vaux4>;
+> +	};
+> +};
+> diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+> index b24aa010f68c..ea3383c71701 100644
+> --- a/drivers/tty/Kconfig
+> +++ b/drivers/tty/Kconfig
+> @@ -419,4 +419,6 @@ config DA_CONSOLE
+>  	help
+>  	  This enables a console on a Dash channel.
+>  
+> +source drivers/tty/slaves/Kconfig
+> +
+>  endif # TTY
+> diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+> index 58ad1c05b7f8..45957d671e33 100644
+> --- a/drivers/tty/Makefile
+> +++ b/drivers/tty/Makefile
+> @@ -13,6 +13,7 @@ obj-$(CONFIG_R3964)		+= n_r3964.o
+>  obj-y				+= vt/
+>  obj-$(CONFIG_HVC_DRIVER)	+= hvc/
+>  obj-y				+= serial/
+> +obj-$(CONFIG_TTY_SLAVE)		+= slaves/
+>  
+>  # tty drivers
+>  obj-$(CONFIG_AMIGA_BUILTIN_SERIAL) += amiserial.o
+> diff --git a/drivers/tty/slaves/Kconfig b/drivers/tty/slaves/Kconfig
+> new file mode 100644
+> index 000000000000..2dd1acf80f8c
+> --- /dev/null
+> +++ b/drivers/tty/slaves/Kconfig
+> @@ -0,0 +1,12 @@
+> +menuconfig TTY_SLAVE
+> +	bool "TTY slave devices"
+> +	help
+> +	 Devices which attach via a uart, but need extra
+> +	 driver support for power management etc.
+> +
+> +if TTY_SLAVE
+> +
+> +config TTY_SLAVE_REGULATOR
+> +	tristate "TTY slave device powered by regulator"
+> +
+> +endif
+> diff --git a/drivers/tty/slaves/Makefile b/drivers/tty/slaves/Makefile
+> new file mode 100644
+> index 000000000000..e636bf49f1cc
+> --- /dev/null
+> +++ b/drivers/tty/slaves/Makefile
+> @@ -0,0 +1,2 @@
+> +
+> +obj-$(CONFIG_TTY_SLAVE_REGULATOR) += tty-reg.o
+> diff --git a/drivers/tty/slaves/tty-reg.c b/drivers/tty/slaves/tty-reg.c
+> new file mode 100644
+> index 000000000000..613f8b10967c
+> --- /dev/null
+> +++ b/drivers/tty/slaves/tty-reg.c
+> @@ -0,0 +1,102 @@
+> +/*
+> + * tty-reg:
+> + *   Support for any device which needs a regulator turned on
+> + *   when a tty is opened.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/slab.h>
+> +#include <linux/err.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/tty.h>
+> +
+> +struct tty_reg_data {
+> +	struct regulator *reg;
+> +	bool	reg_enabled;
+> +};
+> +
+> +static int tty_reg_runtime_resume(struct device *slave)
+> +{
+> +	struct tty_reg_data *data = dev_get_drvdata(slave);
+> +	if (!data->reg_enabled &&
+> +	    regulator_enable(data->reg) == 0) {
+> +		dev_dbg(slave, "power on\n");
+> +		data->reg_enabled = true;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int tty_reg_runtime_suspend(struct device *slave)
+> +{
+> +	struct tty_reg_data *data = dev_get_drvdata(slave);
+> +
+> +	if (data->reg_enabled &&
+> +	    regulator_disable(data->reg) == 0) {
+> +		dev_dbg(slave, "power off\n");
+> +		data->reg_enabled = false;
+> +	}
+> +	return 0;
+> +}
+> +
+> +static int tty_reg_probe(struct platform_device *pdev)
+> +{
+> +	struct tty_reg_data *data;
+> +	struct regulator *reg;
+> +	int err;
+> +
+> +	err = -ENODEV;
+> +	if (pdev->dev.parent == NULL)
+> +		goto out;
+> +	reg = devm_regulator_get(&pdev->dev, "vdd");
+> +	err = PTR_ERR(reg);
+> +	if (IS_ERR(reg))
+> +		goto out;
+> +
+> +	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> +	err = -ENOMEM;
+> +	if (!data)
+> +		goto out;
+> +	data->reg = reg;
+> +	data->reg_enabled = false;
+> +	pm_runtime_enable(&pdev->dev);
+> +	platform_set_drvdata(pdev, data);
+> +	err = 0;
+> +out:
+> +	return err;
+> +}
+> +
+> +static struct of_device_id tty_reg_dt_ids[] = {
+> +	{ .compatible = "tty,regulator", },
+> +	{}
+> +};
+> +
+> +static const struct dev_pm_ops tty_reg_pm_ops = {
+> +	SET_RUNTIME_PM_OPS(tty_reg_runtime_suspend,
+> +			   tty_reg_runtime_resume, NULL)
+> +};
+> +
+> +static struct platform_driver tty_reg_driver = {
+> +	.driver.name	= "tty-regulator",
+> +	.driver.owner	= THIS_MODULE,
+> +	.driver.of_match_table = tty_reg_dt_ids,
+> +	.driver.pm	= &tty_reg_pm_ops,
+> +	.probe		= tty_reg_probe,
+> +};
+
+Instead of creating a full driver that binds against the device, would
+it not be better to provide a library of stock PM operations that other
+device drivers (like the bluetooth driver) can use as-is instead of
+defining its own?
+
+> +
+> +static int __init tty_reg_init(void)
+> +{
+> +	return platform_driver_register(&tty_reg_driver);
+> +}
+> +module_init(tty_reg_init);
+> +
+> +static void __exit tty_reg_exit(void)
+> +{
+> +	platform_driver_unregister(&tty_reg_driver);
+> +}
+> +module_exit(tty_reg_exit);
+> +
+> +MODULE_AUTHOR("NeilBrown <neilb@suse.de>");
+> +MODULE_DESCRIPTION("Serial port device which requires a regulator when open.");
+> +MODULE_LICENSE("GPL v2");
+> 
+> 
+
