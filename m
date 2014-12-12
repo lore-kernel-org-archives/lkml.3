@@ -1,186 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759046AbaLLIL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:11:28 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:17063 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758577AbaLLIL0 (ORCPT
+	id S965162AbaLLIMc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:12:32 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:52354 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754890AbaLLIMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:11:26 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-0a-548aa32a0d3c
-Message-id: <548AA329.80002@samsung.com>
-Date: Fri, 12 Dec 2014 17:11:21 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: cw00.choi@samsung.com
-Cc: Chanwoo Choi <cwchoi00@gmail.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, rafael.j.wysocki@intel.com,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [RFC PATCHv2 0/7] devfreq: Add devfreq-event class to provide raw
- data for devfreq device
-References: <1418134386-14681-1-git-send-email-cw00.choi@samsung.com>
- <1418206046.16644.26.camel@AMDC1943>
- <CAGTfZH3DoSCTTgW-6o3na_mO2-scrV1JftpdTM5u3w=EunLfaA@mail.gmail.com>
-In-reply-to: <CAGTfZH3DoSCTTgW-6o3na_mO2-scrV1JftpdTM5u3w=EunLfaA@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsWyRsSkUFdrcVeIwbYtIhaP1yxmstg4Yz2r
-	xfUvz1ktnh3Vtph/5ByrxesXhha9C66yWZxtesNusenxNVaLy7vmsFl87j3CaDHj/D4mi9uN
-	K9gsHq94y26xatcfRgd+j52z7rJ7LN7zkslj85J6j74tqxg9Pm+SC2CN4rJJSc3JLEst0rdL
-	4Mo4Ou88W8F1zYqvM7YwNzA2KHUxcnJICJhIvDjQzwhhi0lcuLeerYuRi0NIYCmjxOkvD1m7
-	GDnAilbfLYKIL2KU2P/mAitIg5DAa0aJ/59EQWxeAQ2Jv88WMYPYLAKqEtPXzGcDsdkEtCT2
-	v7gBZosKhEmsnH6FBaJeUOLH5HssIPNFBCQlWvaZgcxnFuhjlTg8uZsRJC4skCHR+c4DYu9m
-	RokrV2YxgfRyCgRLfFi3BOwGZgF1iUnzIPYyC8hLbF7zlhmkQUKgk0Piw7strBAHCUh8m3yI
-	BeIZWYlNB5ghHpaUOLjiBssERrFZSE6ahWTsLCRjFzAyr2IUTS1ILihOSi8y1StOzC0uzUvX
-	S87P3cQIjN/T/55N3MF4/4D1IUYBDkYlHt4XqV0hQqyJZcWVuYcYTYGumMgsJZqcD0wSeSXx
-	hsZmRhamJqbGRuaWZkrivDrSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MM5L7tTL8xZJ
-	4/rmuzGU7Qcf19Pg2ctcOzKZme9+Zn//fM23iTfmuZyY9EDk9vRC1s+bnp9nvHj1yKZZj+/7
-	OKeG7ZjQkhJ0be0+pyS1/Pu7yl/vidtXfNbf5iL73VvaaRo79Gskt745ce+QB2OeXd9dCdWD
-	mW4S6nvPhmz5tvGKWtjp5DNaateVWIozEg21mIuKEwHdpeS02gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV2txV0hBr3vuSwer1nMZLFxxnpW
-	i+tfnrNaPDuqbTH/yDlWi9cvDC16F1xlszjb9IbdYtPja6wWl3fNYbP43HuE0WLG+X1MFrcb
-	V7BZPF7xlt1i1a4/jA78Hjtn3WX3WLznJZPH5iX1Hn1bVjF6fN4kF8Aa1cBok5GamJJapJCa
-	l5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0rJJCWWJOKVAoILG4WEnf
-	DtOE0BA3XQuYxghd35AguB4jAzSQsIYx4+i882wF1zUrvs7YwtzA2KDUxcjBISFgIrH6blEX
-	IyeQKSZx4d56ti5GLg4hgUWMEvvfXGAFSQgJvGaU+P9JFMTmFdCQ+PtsETOIzSKgKjF9zXw2
-	EJtNQEti/4sbYLaoQJjEyulXWCDqBSV+TL7HArJLREBSomWfGch8ZoE+VonDk7sZQeLCAhkS
-	ne88IPZuZpS4cmUWE0gvp0CwxId1S8BuYBZQl5g0D2Ivs4C8xOY1b5knMArMQrJiFpKyWUjK
-	FjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQITg7PpHYwrmywOMQowMGoxMP7IrUrRIg1
-	say4MvcQowQHs5II798ooBBvSmJlVWpRfnxRaU5q8SFGU2AITGSWEk3OByauvJJ4Q2MTMyNL
-	I3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkGxumH9wSz8TMt5T5ULmCzJvOny4PY
-	z1r19yVW8cx28GtiFO6+8cbFme8ZX5XgzVjXe+5/+ed0MFnPDW0L8b4nImTAvOpckPaxJ0d3
-	6KQun55Y+G/fVUmu/xM/Fq6tsPuZMelka/Ta02/8Oha1SRycw+B7j6NcSIBpmvmGLawVK+TO
-	h4a+ulxUrsRSnJFoqMVcVJwIACT2ha8kAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 12 Dec 2014 03:12:31 -0500
+From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+To: Andrew Duggan <aduggan@synaptics.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        benjamin.tissoires@redhat.com, jkosina@suse.cz
+Subject: Re: NULL pointer dereference in i2c-hid
+Date: Fri, 12 Dec 2014 09:12:27 +0100
+Message-ID: <2094646.ov2KaAkedO@xps13>
+User-Agent: KMail/4.14.2 (Linux/3.18.0+; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <548A3618.1020903@synaptics.com>
+References: <31518562.V5Oyo0POsI@xps13> <6821401.vEKgLjO8sD@xps13> <548A3618.1020903@synaptics.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+On Thursday 11 December 2014 16:26:00 Andrew Duggan wrote:
+> On 12/11/2014 01:57 PM, Gabriele Mazzotta wrote:
+> > On Thursday 11 December 2014 13:34:02 Andrew Duggan wrote:
+> >> On 12/11/2014 01:17 PM, Gabriele Mazzotta wrote:
+> >>> On Thursday 11 December 2014 12:46:53 Andrew Duggan wrote:
+> >>>> On 12/11/2014 11:40 AM, Gabriele Mazzotta wrote:
+> >>>>> On Thursday 11 December 2014 11:21:43 Andrew Duggan wrote:
+> >>>>>> On 12/11/2014 11:11 AM, Gabriele Mazzotta wrote:
+> >>>>>>> On Thursday 11 December 2014 10:40:05 Andrew Duggan wrote:
+> >>>>>>>> On 12/11/2014 10:16 AM, Gabriele Mazzotta wrote:
+> >>>>>>>>> On Thursday 11 December 2014 16:03:07 Mika Westerberg wrote:
+> >>>>>>>>>> On Thu, Dec 11, 2014 at 10:58:01AM +0200, Mika Westerberg wrote:
+> >>>>>>>>>>> On Wed, Dec 10, 2014 at 06:04:51PM +0100, Gabriele Mazzotta wrote:
+> >>>>>>>>>>>> my laptop uses a touchpad that needs hid-rmi along with i2c-hid to work.
+> >>>>>>>>>>>> i2c-hid and hid-rmi can be loaded and unloaded independelty from each
+> >>>>>>>>>>>> other, however since 34f439e4afcd ("HID: i2c-hid: add runtime PM support")
+> >>>>>>>>>>>> if I unload hid-rmi and after it I also unload i2c-hid, I get a NULL
+> >>>>>>>>>>>> pointer dereference.
+> >>>>>>>>>>> I'll look into this.
+> >>>>>>>>>>>
+> >>>>>>>>>>> I can reproduce this easily with i2c-hid + hid-multitouch following your
+> >>>>>>>>>>> directions.
+> >>>>>>>>>> Can you try the below patch?
+> >>>>>>>>>>
+> >>>>>>>>>> I think we shouldn't free buffers yet in ->stop() because we need the
+> >>>>>>>>>> command buffer sending power commands to the device. Also it seems that
+> >>>>>>>>>> ->start() re-allocates buffers anyway if maximum size increases.
+> >>>>>>>>>>
+> >>>>>>>>>> It shouldn't even leak memory as we release buffers at ->remove()
+> >>>>>>>>>> anyway.
+> >>>>>>>>>>
+> >>>>>>>>>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>>>>>> index 62cec01937ea..68a8c938feea 100644
+> >>>>>>>>>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>>>>>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> >>>>>>>>>> @@ -705,12 +705,7 @@ static int i2c_hid_start(struct hid_device *hid)
+> >>>>>>>>>>       
+> >>>>>>>>>>       static void i2c_hid_stop(struct hid_device *hid)
+> >>>>>>>>>>       {
+> >>>>>>>>>> -	struct i2c_client *client = hid->driver_data;
+> >>>>>>>>>> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
+> >>>>>>>>>> -
+> >>>>>>>>>>       	hid->claimed = 0;
+> >>>>>>>>>> -
+> >>>>>>>>>> -	i2c_hid_free_buffers(ihid);
+> >>>>>>>>>>       }
+> >>>>>>>>>>       
+> >>>>>>>>>>       static int i2c_hid_open(struct hid_device *hid)
+> >>>>>>>>> Yes, it works, thanks.
+> >>>>>>>>>
+> >>>>>>>>> This change seems to also prevent kernel ooops when I unload either
+> >>>>>>>>> i2c-hid or i2c-designware-platform while the touchpad is in use,
+> >>>>>>>>> thing that is likely to happen because of the other bug I reported.
+> >>>>>>>>>
+> >>>>>>>>> Speaking of it, does any of you have any suggestion on how to debug it?
+> >>>>>>>> I was able to reproduce the initial issue by unloading hid-rmi and
+> >>>>>>>> i2c-hid while holding my fingers on the touchpad. Mika's patch fixes it
+> >>>>>>>> for me.
+> >>>>>>>>
+> >>>>>>>> For the original bug, you can modprobe i2c-hid debug=1 and we can see
+> >>>>>>>> what data the touchpad is reporting. That might help narrowing down if
+> >>>>>>>> it's noise which the touchpad thinks are fingers or if there is a
+> >>>>>>>> problem with the I2C lines causing spurious interrupts.
+> >>>>>>>>
+> >>>>>>>> Andrew
+> >>>>>>> I've already tried to do that and here what I got:
+> >>>>>>>
+> >>>>>>> When I release the finger, the last message is repeated 81 times.
+> >>>>>>> If the byte containing informations about the width of the finger
+> >>>>>>> becomes equal to either c0 or 0c at least once, the last message is
+> >>>>>>> repeated indefinitely and changes as soon as I start using the touchpad.
+> >>>>>>> The only way to stop it is to unload and reload i2c-hid.
+> >>>>>> The reports before log throttling kicks in would still be useful. For
+> >>>>>> instance c0 is outside of the range of finger width which we report so
+> >>>>>> something is wrong there. But, the touchpad should stop interrupting
+> >>>>>> once the finger is lifted. The fact that subsequent reads are reporting
+> >>>>>> the same data does sound like a problem with I2C getting confused and
+> >>>>>> continuously interrupting and reading the old finger data. I am also
+> >>>>>> curious about the value of the byte after the report id.
+> >>>>>>
+> >>>>>> Andrew
+> >>>>> If I'm not wrong c0 means that the width is 12 on y axis, while 0c means
+> >>>>> that the width is 12 on the x axis.
+> >>>> You are correct! I forgot width was 4 bits for X and Y in the same byte.
+> >>>> That makes more sense.
+> >>>>
+> >>>>> I have to correct myself. The important thing is that the byte is either
+> >>>>> cx or xc, where x is anything below c.
+> >>>>>
+> >>>>> Another correction. Sometimes unloading i2c-hid is not enough, I have to
+> >>>>> first disable the touchpad with xinput and then unload i2c-hid. If I
+> >>>>> don't do it, the messages starts reappearing as soon as I reload i2c-hid.
+> >>>>>
+> >>>>> I did several tests in the past months and I'm quite sure that the bug
+> >>>>> happens only past xc/cy.
+> >>>> This maybe coincidental. It is not obvious to me why a certain width
+> >>>> value would cause the symptoms described.
+> >>> Yes, I don't deny it. This is just a constant I found in my tests.
+> >>>
+> >>>>> Here few lines right before the bug. The last line is repeated indefinitely:
+> >>>>>
+> >>>>> [ 1983.527097] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 61 0a 5f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.537211] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 63 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.547329] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 64 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.557486] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 66 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.567663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 68 0a 60 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.577719] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6a 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.587852] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 67 5b 6b 0a 61 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.598001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 67 5b 6e 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.608215] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 61 0a 62 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.618288] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 64 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.628493] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 67 0b 63 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.638552] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 69 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.648663] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 68 5b 6c 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.658789] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 68 5b 6f 0b 64 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.668923] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 61 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.678819] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 64 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.689230] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 66 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.699435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 69 5b 68 0b 65 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.709502] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6a 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.719574] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6c 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.729713] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 69 5b 6e 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.739863] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 60 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.750001] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 62 0b 66 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.760150] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 64 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.770291] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 66 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.780445] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 68 0b 67 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.790490] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6a 5b 5a 0b 68 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.800667] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6a 5b 4e 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.810691] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 31 0c 69 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.820963] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 24 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.831071] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 17 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.841178] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 09 0c 6a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.851325] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0b 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.861435] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6b 5b 0d 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.871566] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6b 5b 0f 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.881735] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 01 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.891975] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 03 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.902073] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 05 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.912155] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 07 0c 6b 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.922224] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 09 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.932364] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0b 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.942480] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6c 5b 0d 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.952612] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6c 5b 0f 0c 6c 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.962774] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f1 0d 6d 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.972932] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f3 0d 6e 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.982872] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a f6 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1983.993194] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6d 5a f9 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.003295] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a fc 0d 6f 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.013511] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6d 5a ff 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.023590] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f2 0d 70 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.033747] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6e 5a f5 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.043850] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a f8 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.053873] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fb 0e 71 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.064077] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6e 5a fe 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.074207] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f1 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.084425] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 6f 5a f3 0e 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.094533] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f6 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.104629] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a f8 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.114742] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fa 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.124890] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fc 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.135006] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 6f 5a fe 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.145149] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a f0 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.155317] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a e2 0e 73 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.165380] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d4 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.175532] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d6 0d 74 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.185409] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a d8 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.195761] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 70 5a db 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.205909] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 70 5a dd 0d 75 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.216034] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d0 0e 76 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.226198] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 71 5a d3 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.236301] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a d6 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.246520] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 71 5a cb 0f 79 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.256573] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 01 00 72 5a b1 0e 78 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.266697] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a a7 0e 77 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.276823] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 72 5a 6d 0d 72 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.286921] i2c_hid i2c-DLL060A:00: input: 20 00 0c 0c 01 00 73 59 96 0a 5a 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.296888] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.306825] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>>> [ 1984.316980] i2c_hid i2c-DLL060A:00: input: 20 00 0c 04 00 00 73 59 96 00 00 03 09 40 00 00 90 86 1d 00 00 00 00 00 00 00 00 00 00 00 00 00
+> >>>> The last report which repeats indicates that no fingers are present.
+> >>>> But, the click button is generating the interrupt and it is reporting
+> >>>> that it is in the down position. Could the click button be getting stuck
+> >>>> down? That would also explain why the data in the report is not
+> >>>> changing. Could you be bumping the touchpad with your palm which is
+> >>>> causing the click button to get stuck in the down position? That might
+> >>>> also explain the large width value. Our max width is 15, so 12 would
+> >>>> typically indicate a contact larger then a normal finger contact. That
+> >>>> would explain the width of 12 showing up when this happens.
+> >>> Yes, that's not a normal finger touch and the reported width seems
+> >>> quite accurate to me. There are no clicks involved, laying the side of
+> >>> my thumb gently on the top part of the clickpad (from where even voluntary
+> >>> clicks are hard to obtain) is enough to trigger the bug. If a click is
+> >>> reported, than something is really wrong.
+> >> Do the reports look the same? With the repeated reports starting with
+> >> "20 00 0c 04"?
+> > I'm not sure I understood exactly what you want to know, so this might
+> > not answer your questions.
+> >
+> > All the repeated messages look like this:
+> >
+> > 20 00 0c 04 00 00 27 57 fa 00 00 07 8a 0c 00 00 7e 87 eb 00 00 aa 8f 37 00 00 61 4d f1 00 00 00
+> >
+> > The values equal to zero are always equal to zero when there are no
+> > fingers on the touchpad. The non-zero values are equal to the last
+> > valid value recorded and don't change when the fingers are released.
+> >
+> > To get the above line I touched the touchpad with 5 fingers so that
+> > all the bytes (except the last one which is different from zero on
+> > click release) were used.
+> 
+> Yes, that was the information I was looking for. But, this must not be 
+> my day since it turns out I misremembered what 0x4 stood for and this is 
+> unrelated to the click button. You can ignore everything I said about 
+> the click button =)
+> 
+> The report you have above is actually a finger lift report which 
+> indicates that all of the fingers left the touchpad. I checked the 
+> firmware configuration for this touchpad and it will repeat the lift 
+> report probably about 40 times. This is the expected behavior. However, 
+> you reported earlier that the message had been repeated 81 times? That 
+> seems a bit high and it would not explain why it gets repeated indefinitely.
+> 
+> You can try disabling the repeating finger lift reports and see if that 
+> helps. To do that you need to download a utility at:
+> https://github.com/aduggan/rmi4utils
+> 
+> After building it run:
+> $ sudo ./rmihidtool -r 0x45 1 /dev/hidraw0
+> This should print out 0x78 assuming the register address is what I 
+> expect. If not I can send further instructions on how to figure that out.
+> 
+> To disable the repeating lift report run:
+> $ sudo ./rmihidtool -w 0x45 0x38 /dev/hidraw0
+> 
+> After you do that there should only be one finger lift report.
 
-On 12/10/2014 10:21 PM, Chanwoo Choi wrote:
-> Hi Krzysztof,
-> 
-> On Wed, Dec 10, 2014 at 7:07 PM, Krzysztof Kozlowski
-> <k.kozlowski@samsung.com> wrote:
->> On wto, 2014-12-09 at 23:12 +0900, Chanwoo Choi wrote:
->>> This patchset add new devfreq_event class to provide raw data to determine
->>> current utilization of device  which is used for devfreq governor.
->>>
->>> [Description of devfreq-event class]
->>> This patchset add new devfreq_event class for devfreq_event device which provide
->>> raw data (e.g., memory bus utilization/GPU utilization). This raw data from
->>> devfreq_event data would be used for the governor of devfreq subsystem.
->>> - devfreq_event device : Provide raw data for governor of existing devfreq device
->>> - devfreq device       : Monitor device state and change frequency/voltage of device
->>>                          using the raw data from devfreq_event device
->>>
->>> The devfreq subsystem support generic DVFS(Dynamic Voltage/Frequency Scaling)
->>> for Non-CPU Devices. The devfreq device would dertermine current device state
->>> using various governor (e.g., ondemand, performance, powersave). After completed
->>> determination of system state, devfreq device would change the frequency/voltage
->>> of devfreq device according to the result of governor.
->>>
->>> But, devfreq governor must need basic data which indicates current device state.
->>> Existing devfreq subsystem only consider devfreq device which check current system
->>> state and determine proper system state using basic data. There is no subsystem
->>> for device providing basic data to devfreq device.
->>>
->>> The devfreq subsystem must need devfreq_event device(data-provider device) for
->>> existing devfreq device. So, this patch add new devfreq_event class for
->>> devfreq_event device which read various basic data(e.g, memory bus utilization,
->>> GPU utilization) and provide measured data to existing devfreq device through
->>> standard APIs of devfreq_event class.
->>>
->>> The following description explains the feature of two kind of devfreq class:
->>> - devfreq class (existing)
->>>  : devfreq consumer device use raw data from devfreq_event device for
->>>    determining proper current system state and change voltage/frequency
->>>    dynamically using various governors.
->>> - devfreq_event class (new)
->>>  : Provide measured raw data to devfreq device for governor
->>>
->>> Also, the devfreq-event device would support various type event as following:
->>>  : DEVFREQ_EVENT_TYPE_RAW_DATA
->>>  : DEVFREQ_EVENT_TYPE_UTILIZATION
->>>  : DEVFREQ_EVENT_TYPE_BANDWIDTH
->>>  : DEVFREQ_EVENT_TYPE_LATENCY
->>>
->>> [For example]
->>> If board dts includes PPMU_DMC0/DMC1/CPU event node,
->>> would show following sysfs entry. Also devfreq driver(e.g., exynos4_bus.c)
->>> can get the instance of devfreq-event device by using provided API and then
->>> get raw data which reflect the current state of device.
->>>
->>
->> Hi,
->>
->> Overall I like the idea. I understand that now devfreq devices (like
->> exynos devfreq) should bind themselves to buses, not to PPMU. It makes
->> sense to me because bus clock and bus voltage are properties of bus, not
->> monitoring unit.
->>
->> I see that this is still a RFC so it would be hard to base current
->> devfreq work on top of it.
-> 
-> The goal of this patch set is not for devfreq device. This patch set
-> just is used for
-> devfreq-event device according to patch description.
-> 
-> The devfreq must need devfreq-event device (e.g., exynos-ppmu.c)
-> but current devfreq subsystem have not been supported any reason for
-> exyons-ppmu.c as devfreq-event device.
-> 
-> I discussed this same issue on following patch[1] which was posted to support
-> exynos4 busfreq by me.
-> [1] https://lkml.org/lkml/2014/3/14/132
-> - [PATCHv2 8/8] devfreq: exynos4: Add busfreq driver for exynos4210/exynos4x12
-> After discussion, I thought that devfreq-event class must be needed
-> before supporting
-> the dt of devfreq device.
-> 
-> So, I think that devfreq have to support the devfreq-event subsystem
-> for exynos-ppmu. And then I'll work to support the device-tree of devfreq device
-> as next job.
-> 
->>
->> One more general comment: you're adding a some API which is not used by
->> current devfreq_event user (exynos). For example the exclusive flag or
->> event types. I think it will be simpler to stick to the basic approach
->> (reduced API). If some other user emerges then new API will be added.
-> 
-> I think that devfreq-event must support both event_flag(e.g., exclusive flag)
-> and event_type(e.g., raw_data, utilization, bandwidth, latency) because
-> devfreq-event device (e.g., exynos-ppmu) would provide various event data.
-> For example, exynos-ppmu driver could support the utilization/bandwidth/latency
-> of each IP of Exynos SoC. I checked PPMU IP on Exynos TRM.
-> 
-> Also, If specific devfreq-event device should be used on only one device driver,
-> devfrewq-event class have to support 'exclusive' flag. If
-> devfreq-event class don't
-> support the exclusive flag, devfreq-event could not guarantee the
-> integrity of event
-> from devfreq-event device.
+Yes, this disables the repeating lift report, but the bug is still there.
 
-I'll drop 'exclusive' flag according to your comment.
+> Also, if you can get the firmware id from your touchpad that would also 
+> be useful.
+> 
+> $ sudo ./rmihidtool -f /dev/hidraw0
 
-Thanks for your review.
-
-Best Regards,
-Chanwoo Choi
-
-
+firmware id: 1522295
