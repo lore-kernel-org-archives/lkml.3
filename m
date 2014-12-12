@@ -1,232 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837AbaLLXKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 18:10:23 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:62959 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911AbaLLXKW (ORCPT
+	id S1753140AbaLLXM1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 18:12:27 -0500
+Received: from mail-wg0-f67.google.com ([74.125.82.67]:62664 "EHLO
+	mail-wg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752078AbaLLXMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 18:10:22 -0500
+	Fri, 12 Dec 2014 18:12:24 -0500
+From: AH <najdrozszy@gmail.com>
+X-Google-Original-From: AH <andrzej.hajda@gmail.com>
+Message-ID: <548B7653.7020004@gmail.com>
+Date: Sat, 13 Dec 2014 00:12:19 +0100
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <548B6F58.6010108@linaro.org>
-References: <547F242D.1060705@redhat.com>
-	<547F94B0.1000902@linaro.org>
-	<547FB5DD.901@redhat.com>
-	<547FCB73.1010707@linaro.org>
-	<CAPvkgC3=KKKMa1hWdOYOcV7D7kQSLtnNnXLBB64_P-V+_qUwTw@mail.gmail.com>
-	<54803ADD.2090201@hitachi.com>
-	<CAPvkgC26-CprjLVH55=7z73JtxTumFFZ4W7itevXxMwReVqQ1g@mail.gmail.com>
-	<54804B1F.3020703@hitachi.com>
-	<20141209133340.GA20265@linaro.org>
-	<548706C6.2050105@linaro.org>
-	<20141210163817.GA27500@linaro.org>
-	<548B6F58.6010108@linaro.org>
-Date: Fri, 12 Dec 2014 23:10:21 +0000
-Message-ID: <CAPvkgC3OCbh8s=dp3D3vS+fDDK6qPGLPp=mC8Zoh7Og66Po+Kg@mail.gmail.com>
-Subject: Re: [PATCH v3 0/5] ARM64: Add kernel probes(Kprobes) support
-From: Steve Capper <steve.capper@linaro.org>
-To: David Long <dave.long@linaro.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+To: Mark Brown <broonie@kernel.org>, Andrzej Hajda <a.hajda@samsung.com>
+CC: open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        William Cohen <wcohen@redhat.com>, David Miller <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        ARM/CLKDEV SUPPORT <linux-arm-kernel@lists.infradead.org>,
+        GPIO SUBSYSTEM <linux-gpio@vger.kernel.org>,
+        DRM PANEL DRIVERS <dri-devel@lists.freedesktop.org>,
+        "ARM/S5P EXYNOS AR..." <linux-samsung-soc@vger.kernel.org>,
+        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+Subject: Re: [RFC 01/15] drivers/base: add track framework
+References: <1418226513-14105-2-git-send-email-a.hajda@samsung.com> <20141212163653.GO11764@sirena.org.uk>
+In-Reply-To: <20141212163653.GO11764@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 December 2014 at 22:42, David Long <dave.long@linaro.org> wrote:
-> On 12/10/14 11:38, Steve Capper wrote:
->>
->> On Tue, Dec 09, 2014 at 09:27:18AM -0500, David Long wrote:
->>>
->>> On 12/09/14 08:33, Steve Capper wrote:
->>>>
->>>> On Thu, Dec 04, 2014 at 08:53:03PM +0900, Masami Hiramatsu wrote:
->>
->>
->> [...]
->>
->>>>
->>>> Not sure if this is helpful, but the following also caused a crash for
->>>> me:
->>>>
->>>> echo "p:trace_event_buffer_lock_reserve trace_event_buffer_lock_reserve"
->>>> > /sys/kernel/debug/tracing/kprobe_events
->>>> echo "p:memcpy memcpy" >> /sys/kernel/debug/tracing/kprobe_events
->>>> echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
->>>>
->>>> [immediate crash]
->>>>
->>>> The crash point for me is in the arm64 ASID allocator, it again looks
->>>> like the interrupts are in an unexpected state.
->>>> (check_and_switch_context goes down the irqs disabled code path, I
->>>> think incorrectly).
->>>>
->>>> This occurred for me both with and without the proposed irq saving fix.
->>>>
->>>> I will do some more digging.
->>>>
->>>
->>> Thanks, more information is good.
->>>
->>
->> Hi,
->>
->> Some good news, I think I've fixed the problem I've been experiencing.
->>
->> Basically, I've torn out all the interrupt save/restore and have
->> narrowed the scope to just sandwich the instruction single-step. This
->> simplifies a lot of logic, and I've now been able to perf record a
->> kprobe on memcpy (and the trace_event_buffer_lock_reserve + memcpy
->> test) without any issues on a Juno platform.
->>
->> I may have been somewhat over-zealous with the chainsaw, so please do
->> put this fix through its paces.
->>
->> Cheers,
->> --
->> Steve
->>
->>
->>  From d3f4d80ce19bec71bd03209beb2fbfd8084d6543 Mon Sep 17 00:00:00 2001
->> From: Steve Capper <steve.capper@linaro.org>
->> Date: Mon, 1 Dec 2014 11:30:10 +0000
->> Subject: [PATCH] Fix the interrupt handling for kprobes
->>
->> ---
->>   arch/arm64/kernel/kprobes.c | 16 ++--------------
->>   1 file changed, 2 insertions(+), 14 deletions(-)
->>
->> diff --git a/arch/arm64/kernel/kprobes.c b/arch/arm64/kernel/kprobes.c
->> index be7c330..d39d826 100644
->> --- a/arch/arm64/kernel/kprobes.c
->> +++ b/arch/arm64/kernel/kprobes.c
->> @@ -229,10 +229,6 @@ skip_singlestep_missed(struct kprobe_ctlblk *kcb,
->> struct pt_regs *regs)
->>   {
->>         /* set return addr to next pc to continue */
->>         instruction_pointer(regs) += sizeof(kprobe_opcode_t);
->> -
->> -       if (kcb->kprobe_status != KPROBE_REENTER)
->> -               kprobes_restore_local_irqflag(regs);
->> -
->>   }
->>
->>   static void __kprobes setup_singlestep(struct kprobe *p,
->> @@ -259,7 +255,7 @@ static void __kprobes setup_singlestep(struct kprobe
->> *p,
->>                         spsr_set_debug_flag(regs, 0);
->>
->>                 /* IRQs and single stepping do not mix well. */
->> -               local_irq_disable();
->> +               kprobes_save_local_irqflag(regs);
->>                 kernel_enable_single_step(regs);
->>                 instruction_pointer(regs) = slot;
->>         } else  {
->> @@ -326,7 +322,6 @@ post_kprobe_handler(struct kprobe_ctlblk *kcb, struct
->> pt_regs *regs)
->>         }
->>
->>         reset_current_kprobe();
->> -       kprobes_restore_local_irqflag(regs);
->>   }
->>
->>   int __kprobes kprobe_fault_handler(struct pt_regs *regs, unsigned int
->> fsr)
->> @@ -380,8 +375,6 @@ int __kprobes kprobe_fault_handler(struct pt_regs
->> *regs, unsigned int fsr)
->>                         return 1;
->>
->>                 break;
->> -       default:
->> -               break;
->>         }
->>         return 0;
->>   }
->> @@ -446,7 +439,6 @@ void __kprobes kprobe_handler(struct pt_regs *regs)
->>                  * handling of this interrupt is appropriate.
->>                  * Return back to original instruction, and continue.
->>                  */
->> -               kprobes_restore_local_irqflag(regs);
->>                 return;
->>         } else if (cur) {
->>                 /* We probably hit a jprobe.  Call its break handler. */
->> @@ -459,7 +451,6 @@ void __kprobes kprobe_handler(struct pt_regs *regs)
->>                 /* breakpoint is removed, now in a race
->>                  * Return back to original instruction & continue.
->>                  */
->> -               kprobes_restore_local_irqflag(regs);
->>         }
->>   }
->>
->> @@ -485,6 +476,7 @@ kprobe_single_step_handler(struct pt_regs *regs,
->> unsigned int esr)
->>         retval = kprobe_ss_hit(kcb, instruction_pointer(regs));
->>
->>         if (retval == DBG_HOOK_HANDLED) {
->> +               kprobes_restore_local_irqflag(regs);
->>                 kernel_disable_single_step();
->>
->>                 if (kcb->kprobe_status == KPROBE_REENTER)
->> @@ -499,7 +491,6 @@ kprobe_single_step_handler(struct pt_regs *regs,
->> unsigned int esr)
->>   static int __kprobes
->>   kprobe_breakpoint_handler(struct pt_regs *regs, unsigned int esr)
->>   {
->> -       kprobes_save_local_irqflag(regs);
->>         kprobe_handler(regs);
->>         return DBG_HOOK_HANDLED;
->>   }
->> @@ -563,7 +554,6 @@ int __kprobes longjmp_break_handler(struct kprobe *p,
->> struct pt_regs *regs)
->>                 memcpy((void *)stack_addr, kcb->jprobes_stack,
->>                        MIN_STACK_SIZE(stack_addr));
->>                 preempt_enable_no_resched();
->> -               kprobes_restore_local_irqflag(regs);
->>                 return 1;
->>         }
->>         return 0;
->> @@ -655,8 +645,6 @@ trampoline_probe_handler(struct kprobe *p, struct
->> pt_regs *regs)
->>                 kfree(ri);
->>         }
->>
->> -       kprobes_restore_local_irqflag(regs);
->> -
->>         /* return 1 so that post handlers not called */
->>         return 1;
->>   }
->>
+Hi Mark,
+
+Thanks for review.
+
+Mark Brown wrote on 12.12.2014 17:36:
+> On Wed, Dec 10, 2014 at 04:48:19PM +0100, Andrzej Hajda wrote:
+>> track is a generic framework for safe tracking presence of any kernel objects
+>> having an id. There are no special requirements about type of object or its
+>> id. Id shall be unique.
 >
-> Sorry for the delay in responding.  The assumption with the existing code is
-> that you can't enable single-stepping in MDSCR until you disable interrupts.
-> But since we get to that point (in this case) with debug exceptions masked
-> in daif I suppose this is an unnecessary constraint, as you have
-> demonstrated.  I do actually wonder if we need to set the bit in MDSCR_EL1
-> at all since we're also setting it in the spsr in the regs structure that
-> will be restored when the eret is done, but it looks like
-> kernel_enable_single_step() sets both.
+> This is pretty confusing, when it talks about "kernel objects" that
+> sounds like it means struct kobject but in fact there's no connection
+> with that or any of the other kernel object stuff.  Perhaps it makes
+> sense but it should be addressed.
 >
 
-I do think we need to disable interrupts, but only when we're about to
-single-step.
-(My explanation before was imprecise, apologies).
-The change I posted disables interrupts in __kprobes_single_step, and
-restores them in kprobe_single_step_handler.
-I did try removing the interrupt logic completely, but this then
-resulted in a system hang after a few seconds.
+OK
 
-I will think about MDSCR_EL1, when I'm awake :-).
+>> Typical usage of the framework by consumer looks as follow:
+>> 1. Consumer registers notifier callback for objects with given id.
+>
+> This is also a custom thing not connected with the notifier mechanism
+> implemented by struct notifier_block.  Again this should probably be
+> addressed, even if it's just used internally it seems like there should
+> be some opportunity for code reuse here.
 
-Cheers,
---
-Steve
+I though about using notfier_block, but beside the struct itself there 
+wouldn't be too much code to reuse. In my previous attempt of this 
+framework more arguments were passed to the callback so I have dropped
+this idea completely, but now after simplifying the callback it fits better.
+
+>
+>> +	case track_task_up:
+>> +		node = track_get_node(track, task->type, task->id, true);
+>> +
+>> +		node->up = true;
+>> +		node->data = task->data;
+>> +		list_for_each_entry_safe(itb, node->itb_next, &node->itb_head,
+>> +					 list)
+>> +			itb->callback(itb, node->data, true);
+>> +		return;
+>> +	case track_task_down:
+>
+> I'm not sure the up and down naming is the most obvious naming for
+> users.  It's obviously inspired by semaphores but it's not entirely
+> obvious that this is going to make things clear and meaningful for
+> someone trying to understand the interface.
+
+In my 1st attempt I have called the framework interface_tracker, so it 
+was named ifup/ifdown after unix commands:) Now it is less obvious.
+Finding good names is always painful, anyway I will think about it.
+
+>
+>> +static int track_process_queue(struct tracker *track)
+>> +{
+>> +	struct track_task *task, *ptask = NULL;
+>> +	unsigned long flags;
+>> +	bool empty;
+>> +
+>> +	/* Queue non-emptiness is used as a sentinel to prevent processing
+>> +	 * by multiple threads, so we cannot delete entry from the queue
+>> +	 * until it is processed.
+>> +	 */
+>> +	while (true) {
+>> +		spin_lock_irqsave(&track->queue_lock, flags);
+>> +
+>> +		if (ptask)
+>> +			list_del(&ptask->list);
+>> +		task = list_first_entry(&track->queue,
+>> +					struct track_task, list);
+>> +
+>> +		empty = list_empty(&track->queue);
+>> +		if (empty)
+>> +			complete_all(&track->queue_empty);
+>> +
+>> +		spin_unlock_irqrestore(&track->queue_lock, flags);
+>
+> Here we get a task from the head of the list and drop the lock, leaving
+> the task on the list...
+
+Yes and it is explained in the comment few lines above.
+
+>
+>> +		kfree(ptask);
+>> +
+>> +		if (empty)
+>> +			break;
+>> +
+>> +		track_process_task(track, task);
+>
+> ...we then go and do some other stuff, including processing that task,
+> without the lock or or any other means I can see of excluding other
+> users before going round and removing the task.  This seems to leave us
+> vulnerable to double execution.
+
+No, if you look at track_add_task function you will see that the queue 
+is processed only if it is initially empty, otherwise the task is only 
+added to the queue, so it will be processed after processing earlier tasks.
+So the rule is that if someone add task to the queue it checks if the 
+queue is empty, in such case it process all tasks from the queue until
+the queue becomes empty, even the tasks added by other processed.
+This way all tasks are serialized.
+
+
+> I *think* this is supposed to be
+> handled by your comment "Provider should take care of calling
+> notifications synchronously in proper order" in the changelog but that's
+> a bit obscure, it's not specific about what the requirements are (or
+> what the limits are supposed to be on the notification callbacks).
+
+No, this comment is just to avoid advertising object (ie calling 
+track_up) that can be just removed by concurrent thread.
+
+
+>
+> I'm also unclear what is supposed to happen if adding a notification
+> races with removing the thing being watched.
+>
+
+The sequence should be always as follows:
+1. create thing, then call track_up(thing).
+...
+2. call track_down(thing) then remove thing.
+
+If we put 1 into probe and 2 into remove callback of the driver it will 
+be safe - we are synchronised by device_lock. But if, for some reason, 
+we want to create object after probe we should do own synchronization or 
+just put device_lock around 1. The same applies if we want to remove
+object earlier. This is the comment above about. I will expand it to 
+more verbose explanation.
+
+Regards
+Andrzej
+
+
+
+
