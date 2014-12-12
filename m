@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964838AbaLLGmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:42:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51847 "EHLO
+	id S1760920AbaLLGog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:44:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51766 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759033AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758738AbaLLGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:55 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Fabio Estevam" <fabio.estevam@freescale.com>,
-        "Mark Brown" <broonie@kernel.org>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Andy Lutomirski" <luto@amacapital.net>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.496384547@decadent.org.uk>
+Message-ID: <lsq.1418364865.492349132@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 127/164] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Subject: [PATCH 3.2 153/164] x86/asm/traps: Disable tracing and kprobes in
+ fixup_bad_iret and sync_regs
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,51 +34,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
+commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
 
-On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
-5 seconds after the end of a playback.
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-The SMALL_POP bit should fix this, but its definition is incorrect:
-according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
-bit 1.
-
-Fix the definition accordingly and enable the bit as intended per the code
-comment.
-
-After applying this change, no loud 'click' sound is heard after playback
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+[bwh: Backported to 3.2:
+ - Use __kprobes instead of NOKPROBE_SYMBOL()
+ - Don't use __visible]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/sgtl5000.c | 3 +--
- sound/soc/codecs/sgtl5000.h | 2 +-
- 2 files changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/traps.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -1304,8 +1304,7 @@ static int sgtl5000_probe(struct snd_soc
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -344,7 +344,7 @@ dotraplinkage void __kprobes do_int3(str
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage notrace __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -369,7 +369,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
  
- 	/* enable small pop, introduce 400ms delay in turning off */
- 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
--				SGTL5000_SMALL_POP,
--				SGTL5000_SMALL_POP);
-+				SGTL5000_SMALL_POP, 1);
- 
- 	/* disable short cut detector */
- 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -275,7 +275,7 @@
- #define SGTL5000_BIAS_CTRL_MASK			0x000e
- #define SGTL5000_BIAS_CTRL_SHIFT		1
- #define SGTL5000_BIAS_CTRL_WIDTH		3
--#define SGTL5000_SMALL_POP			0x0001
-+#define SGTL5000_SMALL_POP			0
- 
- /*
-  * SGTL5000_CHIP_MIC_CTRL
+-asmlinkage
++asmlinkage notrace __kprobes
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
 
