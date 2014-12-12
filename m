@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030528AbaLLQVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:21:18 -0500
-Received: from mail-bn1bn0100.outbound.protection.outlook.com ([157.56.110.100]:46080
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964851AbaLLQVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:21:16 -0500
-Date: Fri, 12 Dec 2014 08:21:03 -0800
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-rockchip@lists.infradead.org>, <linux-sh@vger.kernel.org>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>
-Subject: Re: [PATCH v2 7/7] pinctrl: qcom-spmi-gpio: Migrate to
- pinconf-generic
-References: <1417137993-8337-1-git-send-email-soren.brinkmann@xilinx.com>
- <1417137993-8337-8-git-send-email-soren.brinkmann@xilinx.com>
- <1417766393.22963.9.camel@mm-sol.com>
- <bc08b9044a3f46f5a575dca2fa18a663@BY2FFO11FD057.protection.gbl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <bc08b9044a3f46f5a575dca2fa18a663@BY2FFO11FD057.protection.gbl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21172.000
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <f754e0fd1e704d18913a5d89c607e57f@BN1BFFO11FD030.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(164054003)(189002)(24454002)(377424004)(199003)(110136001)(33646002)(85202003)(76176999)(104016003)(54356999)(50986999)(106466001)(87936001)(85182001)(230783001)(83506001)(92726002)(53416004)(108616004)(93886004)(86362001)(92566001)(23676002)(20776003)(64706001)(99396003)(62966003)(47776003)(77156002)(74316001)(46102003)(50466002)(120916001)(31966008)(107046002)(21056001)(4396001)(6806004)(41533002)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB052;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB052;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB052;
-X-Forefront-PRVS: 04238CD941
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB052;
-X-OriginatorOrg: xilinx.com
+	id S935100AbaLLQYk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:24:40 -0500
+Received: from mga11.intel.com ([192.55.52.93]:61906 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932622AbaLLQYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:24:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
+   d="scan'208";a="636733554"
+Message-ID: <1418401440.30433.20.camel@sauron.fi.intel.com>
+Subject: [GIT PULL] UBI/UBIFS updates 3.19-rc1
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Dec 2014 18:24:00 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-05 at 09:08AM -0800, Sören Brinkmann wrote:
-> On Fri, 2014-12-05 at 09:59AM +0200, Ivan T. Ivanov wrote:
-> > 
-> > On Thu, 2014-11-27 at 17:26 -0800, Soren Brinkmann wrote:
-> > > 
-> > >  static const struct pinconf_ops pmic_gpio_pinconf_ops = {
-> > > +       .is_generic= true,
-> > >         .pin_config_group_get= pmic_gpio_config_get,
-> > >         .pin_config_group_set= pmic_gpio_config_set,
-> > >         .pin_config_group_dbg_show= pmic_gpio_config_dbg_show,
-> > > @@ -848,6 +742,9 @@ static int pmic_gpio_probe(struct platform_device *pdev)
-> > >         pctrldesc->name = dev_name(dev);
-> > >         pctrldesc->pins = pindesc;
-> > >         pctrldesc->npins = npins;
-> > > +       pctrldesc->num_dt_params = ARRAY_SIZE(pmic_gpio_bindings);
-> > > +       pctrldesc->params = pmic_gpio_bindings;
-> > > +       pctrldesc->conf_items = pmic_conf_items;
-> > > 
-> > 
-> > What will happen if number of conf_items is less than number of params?
-> 
-> I suppose bad things :) You're right, that should probably be checked
-> somewhere. Let me see whether I find a good place to put such a check.
+Hi Linus,
 
-I looked at merging these arrays. Unfortunately that doesn't work that
-easy.
-There are two arrays. The first one establishes a mapping from
-strings used in DT to specify pinconf parameters to a pinconf parameter.
-This array has some entries which map to the same pinconf parameter.
-E.g. 'input-enable' and 'input-disable', the only difference in those
-entries is the resulting value of the parameter.
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-The second array establishes a debugfs representation for each pinconf
-parameter.
-So, for the core parameters, the number of entries in these arrays
-differ.
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
-For this patch, I was assuming that these arrays match in size. I'd keep
-it the way it is now and if it turns out that this is not sufficient,
-passing the size of the second array too is an easy addition.
+are available in the git repository at:
 
-	Thanks,
-	Sören
+  git://git.infradead.org/linux-ubifs.git tags/upstream-3.19-rc1
+
+for you to fetch changes up to f38aed975c0c3645bbdfc5ebe35726e64caaf588:
+
+  UBI: Fix invalid vfree() (2014-11-07 15:14:09 +0200)
+
+----------------------------------------------------------------
+This pull request includes the following UBI/UBIFS changes:
+* UBI debug messages now include the UBI device number. This change
+  is responsible for the big diffstat since it touched every debugging
+  print statement.
+* An Xattr bug-fix which fixes SELinux support
+* Several error path fixes in UBI/UBIFS
+
+----------------------------------------------------------------
+Artem Bityutskiy (1):
+      UBIFS: fix budget leak in error path
+
+Richard Weinberger (3):
+      UBI: vtbl: Use ubi_eba_atomic_leb_change()
+      UBI: Fix double free after do_sync_erase()
+      UBI: Fix invalid vfree()
+
+Subodh Nijsure (1):
+      UBIFS: fix a couple bugs in UBIFS xattr length calculation
+
+Tanya Brokhman (1):
+      UBI: Extend UBI layer debug/messaging capabilities
+
+ drivers/mtd/ubi/attach.c  | 126 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------------------
+ drivers/mtd/ubi/block.c   |  41 ++++++++++++++++++++---------------------
+ drivers/mtd/ubi/build.c   | 126 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------------
+ drivers/mtd/ubi/cdev.c    |  36 +++++++++++++++++++-----------------
+ drivers/mtd/ubi/debug.c   |  10 +++++-----
+ drivers/mtd/ubi/eba.c     |  53 +++++++++++++++++++++++++++--------------------------
+ drivers/mtd/ubi/fastmap.c |  96 ++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------
+ drivers/mtd/ubi/io.c      | 150 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-------------------------------------------------------------------------
+ drivers/mtd/ubi/kapi.c    |   6 +++---
+ drivers/mtd/ubi/misc.c    |   4 ++--
+ drivers/mtd/ubi/ubi.h     |  13 +++++++------
+ drivers/mtd/ubi/upd.c     |  10 ++++++----
+ drivers/mtd/ubi/vmt.c     |  69 ++++++++++++++++++++++++++++++++++++---------------------------------
+ drivers/mtd/ubi/vtbl.c    |  71 ++++++++++++++++++++++++++++++++++-------------------------------------
+ drivers/mtd/ubi/wl.c      |  80 ++++++++++++++++++++++++++++++++++++++++++--------------------------------------
+ fs/ubifs/file.c           |   1 +
+ fs/ubifs/journal.c        |   7 ++++++-
+ 17 files changed, 466 insertions(+), 433 deletions(-)
+
+--
+Artem
+
