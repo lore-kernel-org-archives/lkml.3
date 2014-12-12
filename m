@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaLLWD7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:03:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39861 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaLLWDz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:03:55 -0500
-Message-ID: <548B6629.6050203@ti.com>
-Date: Fri, 12 Dec 2014 16:03:21 -0600
-From: Dave Gerlach <d-gerlach@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.1
+	id S1752088AbaLLWHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:07:47 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:43328 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaLLWHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 17:07:45 -0500
+From: Benoit Parrot <bparrot@ti.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Alexandre Courbot <gnurou@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jiri Prchal <jiri.prchal@aksignal.cz>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Benoit Parrot <bparrot@ti.com>
+Subject: [Patch v4 0/2] gpio: add GPIO hogging mechanism
+Date: Fri, 12 Dec 2014 16:07:29 -0600
+Message-ID: <1418422051-9471-1-git-send-email-bparrot@ti.com>
+X-Mailer: git-send-email 1.8.5.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Paul Walmsley <paul@pwsan.com>, Kevin Hilman <khilman@linaro.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>
-Subject: Re: [RFC PATCH 2/3] soc: ti: Add wkup_m3_ipc driver
-References: <cover.1417029919.git.d-gerlach@ti.com> <3334d8483dca2d061cf43da9c047ec27f31e8719.1417029919.git.d-gerlach@ti.com> <2763467.KfXHXHxPJd@wuerfel>
-In-Reply-To: <2763467.KfXHXHxPJd@wuerfel>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2014 03:51 PM, Arnd Bergmann wrote:
-> On Wednesday 26 November 2014 15:38:09 Dave Gerlach wrote:
->> +
->> +static const struct wkup_m3_wakeup_src wakeups[] = {
->> +       {.irq_nr = 35,  .src = "USB0_PHY"},
->> +       {.irq_nr = 36,  .src = "USB1_PHY"},
->> +       {.irq_nr = 40,  .src = "I2C0"},
->> +       {.irq_nr = 41,  .src = "RTC Timer"},
->> +       {.irq_nr = 42,  .src = "RTC Alarm"},
->> +       {.irq_nr = 43,  .src = "Timer0"},
->> +       {.irq_nr = 44,  .src = "Timer1"},
->> +       {.irq_nr = 45,  .src = "UART"},
->> +       {.irq_nr = 46,  .src = "GPIO0"},
->> +       {.irq_nr = 48,  .src = "MPU_WAKE"},
->> +       {.irq_nr = 49,  .src = "WDT0"},
->> +       {.irq_nr = 50,  .src = "WDT1"},
->> +       {.irq_nr = 51,  .src = "ADC_TSC"},
->> +       {.irq_nr = 0,   .src = "Unknown"},
->> +};
->>
-> 
-> This seems awfully specific to some SoC version, and not aware of
-> IRQ domains. It also seems to be only used in a dev_dbg statement,
-> so I guess you could just kill this off entirely.
+This patch set re-introduces the gpio hogging concept first 
+presented by Boris Brezillion.
+This patch set provides a way to initally configure specific GPIO
+when the gpio controller is probed.
 
-This is determined by the firmware in use on the remote processor and works for
-both am335x and am437x. However it is not required information and I'd be fine
-with taking it out.
+The actual DT scanning to collect the GPIO specific data is performed
+as part of the of_gpiochip_add().
 
-> 
->> +static struct rproc *wkup_m3_get_rproc(struct device *dev)
->> +{
->> +       struct device_node *node;
->> +       struct rproc *rp;
->> +
->> +       node = of_parse_phandle(dev->of_node, "ti,rproc", 0);
->> +       if (!node)
->> +               return NULL;
->> +
->> +       dev = bus_find_device(&platform_bus_type, NULL, node, match);
->> +       if (!dev)
->> +               return NULL;
->> +
->> +       rp = dev_get_drvdata(dev);
->> +       return rp;
-> 
-> This is wrong on a number of levels. I suspect what you really want
-> is an interface exported from drivers/remoteproc that looks up
-> a 'struct rproc' and performs the necessary reference counting.
-> 
-> That one can just use of_find_node_by_phandle() to get to
-> a device_node and use that to look up the rproc device in
-> a linked list it maintains.
+The purpose of this is to allows specific GPIOs to be configured
+without any driver specific code.
+This particularly useful because board design are getting
+increasingly complex and given SoC pins can now have upward
+of 10 mux values a lot of connections are now dependent on
+external IO muxes to switch various modes and combination.
 
-Added Ohad as I should have cc'd him in the first place..
+Specific drivers should not necessarily need to be aware of
+what accounts to a specific board implementation. This board level
+"description" should be best kept as part of the dts file.
 
-Yes I agree that it's not the best solution. There used to be an
-rproc_get/rproc_put api but that was removed, I'll look into adding
-rproc_get_by_phandle into drivers/remoteproc as that would be ideal for this
-situation and a cleaner way of doing it. Thanks for the comments.
+Changes since v3:
+ * Relocated the non-DT "hog" function to gpiolib.c.
+ * Rename some of the function to be clearer and remove _ prefixes.
+ * Replace the gpiod_request/gpiod_put usage with
+   gpiochip_request_own_desc/free_own_desc version instead.
+ * Refactor some of the logic to better handle error condition/reporting
+ * Renamed the "direction" DT properties to "state".
 
-Regards,
-Dave
+Changes since v2:
+ * Refactor the gpio-hog mechanism to split the DT related action
+   from the actual "hogging" operation.
+ * This allows non-DT providers to implement hogs as well.
+ * Added FLAG_IS_HOGGED to mark hogged gpio and make gpiochip removal
+   able to release hogged gpio.
+ * Similarly to the hogging, the cleanup is performed as part of
+   of_gpiochip_remove
 
-> 
-> 	Arnd
-> 
+Changes since v1:
+ * Split the devicetree bindings documentation in its own patch.
+ * Refactor the gpio-hog mechanism as private functions meant to
+   be to invoked from of_gpiochip_add().
+
+Benoit Parrot (2):
+  gpio: add GPIO hogging mechanism
+  gpio: Document GPIO hogging mechanism
+
+ Documentation/devicetree/bindings/gpio/gpio.txt |  23 +++++
+ drivers/gpio/gpiolib-of.c                       | 119 ++++++++++++++++++++++
+ drivers/gpio/gpiolib.c                          | 128 ++++++++++++++++++++----
+ drivers/gpio/gpiolib.h                          |   3 +
+ 4 files changed, 253 insertions(+), 20 deletions(-)
+
+-- 
+1.8.5.1
 
