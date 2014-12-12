@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762AbaLLWPo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:15:44 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48365 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaLLWIP (ORCPT
+	id S1752323AbaLLWIN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:08:13 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:34705 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752243AbaLLWIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:08:15 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: ralf@linux-mips.org
-Cc: f.fainelli@gmail.com, tglx@linutronix.de, jason@lakedaemon.net,
-        jogo@openwrt.org, arnd@arndb.de, computersforpeace@gmail.com,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH V5 01/23] MIPS: bcm3384: Fix outdated use of mips_cpu_intc_init()
-Date: Fri, 12 Dec 2014 14:06:52 -0800
-Message-Id: <1418422034-17099-2-git-send-email-cernekee@gmail.com>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
-References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+	Fri, 12 Dec 2014 17:08:09 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Fri, 12 Dec 2014 17:08:07 -0500
+To: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 0/2] ARM: omap5/dra7xx counter frequency fixes
+Message-ID: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function was renamed to mips_cpu_irq_of_init(), so fix it to avoid
-a compile error.
+While trying to deal with errata i856 on the dra7xx I encountered some
+obvious typos in the frequencies checked in timer.c, so those are being
+fixed in case anyone ever tries to use one of them.
 
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- arch/mips/bcm3384/irq.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Also implement a fix for errata i856.  Without the fix the time on the
+system will get ahead by 43 seconds per day if SYSCLK1 is 20MHz, which it
+is on the EVM boards as well as the other boards I am currently aware of.
+ntp declares that the system time drifts by over 500ppm (the maximum
+ntp will tolerate).
 
-diff --git a/arch/mips/bcm3384/irq.c b/arch/mips/bcm3384/irq.c
-index 0fb5134..fd94fe8 100644
---- a/arch/mips/bcm3384/irq.c
-+++ b/arch/mips/bcm3384/irq.c
-@@ -180,7 +180,7 @@ static int __init intc_of_init(struct device_node *node,
- 
- static struct of_device_id of_irq_ids[] __initdata = {
- 	{ .compatible = "mti,cpu-interrupt-controller",
--	  .data = mips_cpu_intc_init },
-+	  .data = mips_cpu_irq_of_init },
- 	{ .compatible = "brcm,bcm3384-intc",
- 	  .data = intc_of_init },
- 	{},
+To fix it, check the status register to determine if the 32.768KHz clock
+source is real (driven by an external crystal) or emulated (SYSCLK1 /
+610), and if it is emulated use the appropriate numerator and divisor
+to make the fine master counter match the coarse master counter (which
+is driven directly from the 32KHz clock (real or emulated) with a fixed
+multiplier of 375 / 2).  Making the fine counter run at a frequency
+different from the coarse counter is not an option, as the value in the
+fine counter is updated to match the coarse counter if they ever get
+out of sync.
+
+With 19.2MHz installed on the board, the clock runs almost 5% slow.
+
+With the change in place, ntp runs with a drift of around 3ppm on all
+boards I have tried which is well within the spec of the crystals used
+for SYSCLK1.
+
+Even if the errata is fixed in future revisions of the chip, there is
+still the option of someone purposely not connecting a 32.768KHz crystal
+to save cost or board space, and relying on the emulated clock instead,
+in which case this correction will still be necessary.
+
+Len Sorensen (2):
+  ARM: omap5/dra7xx: Fix frequency typos.
+  ARM: omap5/dra7xx: Fix counter frequency drift for AM572x errata
+    i856.
+
+ arch/arm/mach-omap2/timer.c |  120 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 87 insertions(+), 33 deletions(-)
+
 -- 
-2.1.1
+1.7.10.4
 
