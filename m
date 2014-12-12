@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965716AbaLLGhk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:37:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51864 "EHLO
+	id S1760815AbaLLGhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:37:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51891 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759301AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759300AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -14,13 +14,13 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        "Meelis Roos" <meelis.roos@ut.ee>, "Christoph Hellwig" <hch@lst.de>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Imre Deak" <imre.deak@intel.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.269958255@decadent.org.uk>
+Message-ID: <lsq.1418364865.559241897@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 123/164] scsi: only re-lock door after EH on devices
- that were reset
+Subject: [PATCH 3.2 118/164] tty/vt: don't set font mappings on vc not
+ supporting this
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,37 +33,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christoph Hellwig <hch@lst.de>
+From: Imre Deak <imre.deak@intel.com>
 
-commit 48379270fe6808cf4612ee094adc8da2b7a83baa upstream.
+commit 9e326f78713a4421fe11afc2ddeac07698fac131 upstream.
 
-Setups that use the blk-mq I/O path can lock up if a host with a single
-device that has its door locked enters EH.  Make sure to only send the
-command to re-lock the door to devices that actually were reset and thus
-might have lost their state.  Otherwise the EH code might be get blocked
-on blk_get_request as all requests for non-reset devices might be in use.
+We can call this function for a dummy console that doesn't support
+setting the font mapping, which will result in a null ptr BUG. So check
+for this case and return error for consoles w/o font mapping support.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Meelis Roos <meelis.roos@ut.ee>
-Tested-by: Meelis Roos <meelis.roos@ut.ee>
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=59321
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: this function doesn't take a lock, so doesn't
+ need to unlock on error]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/scsi_error.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -1665,8 +1665,10 @@ static void scsi_restart_operations(stru
- 	 * is no point trying to lock the door of an off-line device.
- 	 */
- 	shost_for_each_device(sdev, shost) {
--		if (scsi_device_online(sdev) && sdev->locked)
-+		if (scsi_device_online(sdev) && sdev->was_reset && sdev->locked) {
- 			scsi_eh_lock_door(sdev);
-+			sdev->was_reset = 0;
-+		}
- 	}
+--- a/drivers/tty/vt/consolemap.c
++++ b/drivers/tty/vt/consolemap.c
+@@ -518,6 +518,8 @@ int con_set_unimap(struct vc_data *vc, u
  
- 	/*
+ 	/* Save original vc_unipagdir_loc in case we allocate a new one */
+ 	p = (struct uni_pagedir *)*vc->vc_uni_pagedir_loc;
++	if (!p)
++		return -EINVAL;
+ 	if (p->readonly) return -EIO;
+ 	
+ 	if (!ct) return 0;
 
