@@ -1,191 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030423AbaLLNyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:54:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:6651 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030243AbaLLNuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:50:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669042"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 12/22] perf itrace: Add a heap for sorting Instruction Tracing queues
-Date: Fri, 12 Dec 2014 15:47:59 +0200
-Message-Id: <1418392089-5568-13-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
-References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1030455AbaLLNzL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:55:11 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:62616 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968007AbaLLNzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:55:06 -0500
+MIME-Version: 1.0
+In-Reply-To: <548A0125.6040708@linutronix.de>
+References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
+	<20141124115116.GA14997@linutronix.de>
+	<547C3A95.30605@ti.com>
+	<547C3C19.5090501@linutronix.de>
+	<547C42FF.5010700@ti.com>
+	<CAH=tA9FO5MCzE274thc-NugCNte6WdyC-Rxc6yfnuR=+6_qMbA@mail.gmail.com>
+	<548A0125.6040708@linutronix.de>
+Date: Fri, 12 Dec 2014 15:55:04 +0200
+Message-ID: <CABH3fy8zCjsxARsqBf9JXOHBkzySdiqifA1KtjnGpJdBY2EikA@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
+From: Catalin Crenguta <catalin.crenguta@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Nicolae Rosia <nicolae.rosia@gmail.com>, Vignesh R <vigneshr@ti.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        richardcochran@gmail.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Felipe Balbi <balbi@ti.com>,
+        Brad Griffis <bgriffis@ti.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kardell <jan.kardell@telliq.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to process Instruction Tracing
-data in time order, the queue with data
-with the lowest timestamp must be
-processed first.  Provide a heap to
-keep track of which queue that is.
+Hello,
 
-As with the queues, a decoder does not have
-to use the heap, but Intel BTS and Intel PT
-will use it.
+I have tried your patches by cloning [1] and copying the
+relevant files over the kernel I've cloned from [2].
+It compiles & runs, but I'm seeing lots of pen-down/pen-up
+events when I'm not touching the screen.
+Any suggestions?
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/itrace.c | 85 ++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h | 29 +++++++++++++++++
- 2 files changed, 114 insertions(+)
+Hardware: Beaglebone Black with BB-View 4.3 Cape from Farnell
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index d6433e2c..ee05677 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -347,6 +347,91 @@ void itrace_queues__free(struct itrace_queues *queues)
- 	queues->nr_queues = 0;
- }
- 
-+static void itrace_heapify(struct itrace_heap_item *heap_array,
-+			   unsigned int pos, unsigned int queue_nr,
-+			   u64 ordinal)
-+{
-+	unsigned int parent;
-+
-+	while (pos) {
-+		parent = (pos - 1) >> 1;
-+		if (heap_array[parent].ordinal <= ordinal)
-+			break;
-+		heap_array[pos] = heap_array[parent];
-+		pos = parent;
-+	}
-+	heap_array[pos].queue_nr = queue_nr;
-+	heap_array[pos].ordinal = ordinal;
-+}
-+
-+int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
-+		     u64 ordinal)
-+{
-+	struct itrace_heap_item *heap_array;
-+
-+	if (queue_nr >= heap->heap_sz) {
-+		unsigned int heap_sz = ITRACE_INIT_NR_QUEUES;
-+
-+		while (heap_sz <= queue_nr)
-+			heap_sz <<= 1;
-+		heap_array = realloc(heap->heap_array,
-+				     heap_sz * sizeof(struct itrace_heap_item));
-+		if (!heap_array)
-+			return -ENOMEM;
-+		heap->heap_array = heap_array;
-+		heap->heap_sz = heap_sz;
-+	}
-+
-+	itrace_heapify(heap->heap_array, heap->heap_cnt++, queue_nr, ordinal);
-+
-+	return 0;
-+}
-+
-+void itrace_heap__free(struct itrace_heap *heap)
-+{
-+	zfree(&heap->heap_array);
-+	heap->heap_cnt = 0;
-+	heap->heap_sz = 0;
-+}
-+
-+void itrace_heap__pop(struct itrace_heap *heap)
-+{
-+	unsigned int pos, last, heap_cnt = heap->heap_cnt;
-+	struct itrace_heap_item *heap_array;
-+
-+	if (!heap_cnt)
-+		return;
-+
-+	heap->heap_cnt -= 1;
-+
-+	heap_array = heap->heap_array;
-+
-+	pos = 0;
-+	while (1) {
-+		unsigned int left, right;
-+
-+		left = (pos << 1) + 1;
-+		if (left >= heap_cnt)
-+			break;
-+		right = left + 1;
-+		if (right >= heap_cnt) {
-+			heap_array[pos] = heap_array[left];
-+			return;
-+		}
-+		if (heap_array[left].ordinal < heap_array[right].ordinal) {
-+			heap_array[pos] = heap_array[left];
-+			pos = left;
-+		} else {
-+			heap_array[pos] = heap_array[right];
-+			pos = right;
-+		}
-+	}
-+
-+	last = heap_cnt - 1;
-+	itrace_heapify(heap_array, pos, heap_array[last].queue_nr,
-+		       heap_array[last].ordinal);
-+}
-+
- size_t itrace_record__info_priv_size(struct itrace_record *itr)
- {
- 	if (itr)
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index fd97606..0b00d50 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -172,6 +172,29 @@ struct itrace_queues {
- };
- 
- /**
-+ * struct itrace_heap_item - element of struct itrace_heap.
-+ * @queue_nr: queue number
-+ * @ordinal: value used for sorting (lowest ordinal is top of the heap) expected
-+ *           to be a timestamp
-+ */
-+struct itrace_heap_item {
-+	unsigned int		queue_nr;
-+	u64			ordinal;
-+};
-+
-+/**
-+ * struct itrace_heap - a heap suitable for sorting Instruction Tracing queues.
-+ * @heap_array: the heap
-+ * @heap_cnt: the number of elements in the heap
-+ * @heap_sz: maximum number of elements (grows as needed)
-+ */
-+struct itrace_heap {
-+	struct itrace_heap_item	*heap_array;
-+	unsigned int		heap_cnt;
-+	unsigned int		heap_sz;
-+};
-+
-+/**
-  * struct itrace_mmap - records an mmap of the itrace buffer.
-  * @base: address of mapped area
-  * @userpg: pointer to buffer's perf_event_mmap_page
-@@ -280,6 +303,12 @@ void *itrace_buffer__get_data(struct itrace_buffer *buffer, int fd);
- void itrace_buffer__put_data(struct itrace_buffer *buffer);
- void itrace_buffer__drop_data(struct itrace_buffer *buffer);
- void itrace_buffer__free(struct itrace_buffer *buffer);
-+
-+int itrace_heap__add(struct itrace_heap *heap, unsigned int queue_nr,
-+		     u64 ordinal);
-+void itrace_heap__pop(struct itrace_heap *heap);
-+void itrace_heap__free(struct itrace_heap *heap);
-+
- struct itrace_record *itrace_record__init(struct perf_evlist *evlist, int *err);
- 
- int itrace_record__options(struct itrace_record *itr,
--- 
-1.9.1
-
+[1] git clone -b tsc-devel git://git.ti.com/kernel/tsc-adc.git
+(tsc-devel branch)
+[2] https://github.com/beagleboard/linux/tree/3.14
