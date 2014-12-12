@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966596AbaLLG5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:57:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51762 "EHLO
+	id S966709AbaLLG5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:57:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51743 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758704AbaLLGQy (ORCPT
+	by vger.kernel.org with ESMTP id S1758641AbaLLGQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:54 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Lu Baolu" <baolu.lu@linux.intel.com>,
+CC: akpm@linux-foundation.org,
         "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
-        "Dmitry Nezhevenko" <dion@inhex.net>
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.179299143@decadent.org.uk>
+Message-ID: <lsq.1418364865.331224114@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 147/164] Revert "xhci: clear root port wake on bits if
- controller isn't wake-up capable"
+Subject: [PATCH 3.2 157/164] Input: xpad - use proper endpoint type
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,47 +33,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 9b41ebd3cf0f68d8cad779d3eeba336f78262e43 upstream.
+commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
 
-commit ff8cbf250b44 ("xhci: clear root port wake on bits if controller isn't")
-can cause device detection error if runtime PM is enabled, and S3 wake
-is disabled. Revert it.
-https://bugzilla.kernel.org/show_bug.cgi?id=85701
+The xpad wireless endpoint is not a bulk endpoint on my devices, but
+rather an interrupt one, so the USB core complains when it is submitted.
+I'm guessing that the author really did mean that this should be an
+interrupt urb, but as there are a zillion different xpad devices out
+there, let's cover out bases and handle both bulk and interrupt
+endpoints just as easily.
 
-This commit got into stable and should be reverted from there as well.
-
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Reported-by: Dmitry Nezhevenko <dion@inhex.net>
-[Mathias Nyman: reword commit message]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-hub.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/input/joystick/xpad.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -21,7 +21,6 @@
-  */
- 
- #include <linux/gfp.h>
--#include <linux/device.h>
- #include <asm/unaligned.h>
- 
- #include "xhci.h"
-@@ -996,9 +995,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd
- 			t2 |= PORT_LINK_STROBE | XDEV_U3;
- 			set_bit(port_index, &bus_state->bus_suspended);
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -979,9 +979,19 @@ static int xpad_probe(struct usb_interfa
  		}
--		if (hcd->self.root_hub->do_remote_wakeup
--				&& device_may_wakeup(hcd->self.controller)) {
--
-+		if (hcd->self.root_hub->do_remote_wakeup) {
- 			if (t1 & PORT_CONNECT) {
- 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
- 				t2 &= ~PORT_WKCONN_E;
+ 
+ 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
+-		usb_fill_bulk_urb(xpad->bulk_out, udev,
+-				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+-				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
++			usb_fill_bulk_urb(xpad->bulk_out, udev,
++					  usb_sndbulkpipe(udev,
++							  ep_irq_in->bEndpointAddress),
++					  xpad->bdata, XPAD_PKT_LEN,
++					  xpad_bulk_out, xpad);
++		} else {
++			usb_fill_int_urb(xpad->bulk_out, udev,
++					 usb_sndintpipe(udev,
++							ep_irq_in->bEndpointAddress),
++					 xpad->bdata, XPAD_PKT_LEN,
++					 xpad_bulk_out, xpad, 0);
++		}
+ 
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
 
