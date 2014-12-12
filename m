@@ -1,109 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233AbaLORxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:53:12 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:52534 "EHLO
+	id S1751263AbaLORx1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:53:27 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:60563 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaLORxH (ORCPT
+	with ESMTP id S1751037AbaLORxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:53:07 -0500
+	Mon, 15 Dec 2014 12:53:09 -0500
 From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
+To: Ray Jui <rjui@broadcom.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
         Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
         Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
         Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
-Date: Fri, 12 Dec 2014 16:28:16 +0100
-Message-ID: <1628217.66frkAqHMc@wuerfel>
+        Russell King <linux@arm.linux.org.uk>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Scott Branden <sbranden@broadcom.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
+Date: Fri, 12 Dec 2014 18:21:37 +0100
+Message-ID: <1790462.K12S5vem48@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
-References: <1418342706-14755-2-git-send-email-rjui@broadcom.com> <1918116.UxUgDPTmcq@wuerfel> <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
+In-Reply-To: <548B2120.4080207@broadcom.com>
+References: <1418351817-14898-3-git-send-email-rjui@broadcom.com> <2190666.DfrpWiLTCc@wuerfel> <548B2120.4080207@broadcom.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:SMhuV7i6B/lBIoScq31Y8HumcmwDqKBZA9ZSb6jzUOdCGo+kySn
- c99kCX1moVY1GzqDy8RaXD50iqoq4u/An4piZ1LaKiyd+99txSf3mkmpp3D6glDeMmmVheg
- OIoNSCKfEXJtPO/R5H0gYb9q30HdgxQREw59vGk98sRfaM0igDUAl74b3dwSQZHcZzMgVGB
- AhTgD/0d8q3aYa99fKNXw==
+X-Provags-ID: V03:K0:a26srnl066voI7l2DhVNknZuhRJlXnkAjKIf+8BIOZOxhc2NxrX
+ C+VIDWPrklAwWKV6JJ6LzESeaDldjoiufhntz6B5GfqLjlPqcBaO9Q0mUaQQFZ/KYpeBfSi
+ +hml2EtbisH9I6prFjXJ9Ep9iXyslS6T4AObsDvL/zO+I9qtCdNaVU/9zmHe8fjcMpTiTuY
+ Y12DmDx0gWLq4BuDouUeA==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 December 2014 22:05:37 Alexandre Courbot wrote:
-> On Fri, Dec 12, 2014 at 9:08 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Thursday 11 December 2014 16:05:04 Ray Jui wrote:
-> >> +
-> >> +- linux,gpio-base:
-> >> +    Base GPIO number of this controller
-> >> +
+On Friday 12 December 2014 09:08:48 Ray Jui wrote:
+> 
+> On 12/12/2014 4:29 AM, Arnd Bergmann wrote:
+> > On Thursday 11 December 2014 18:36:55 Ray Jui wrote:
+> >> Add initial version of the Broadcom iProc PCIe driver. This driver
+> >> has been tested on NSP and Cygnus and is expected to work on all iProc
+> >> family of SoCs that deploys the same PCIe host controller
 > >>
+> >> The driver also supports MSI
 > >
-> > We've NAK'ed properties like this multiple times before, and it
-> > doesn't get any better this time. What are you trying to achieve
-> > here?
-> 
-> I am to blame for suggesting using this property to Ray, and I am
-> fully aware that this has been rejected before, but look at what
-> people came with recently to palliate the lack of control over the
-> GPIO number space for DT platforms:
-> 
-> http://www.spinics.net/lists/arm-kernel/msg384847.html
-> https://lkml.org/lkml/2014/12/10/133
-> 
-> Right now GPIO numbering for platforms using DT is a very inconsistent
-> process, subject to change by the simple action of adjusting the value
-> of ARCH_NR_GPIOS (which we did recently, btw), adding a new GPIO
-> controller, or changing the probe order of devices. For users of the
-> integer or sysfs interfaces, this results in GPIO numbers that change,
-> and drivers and/or user-space programs that behave incorrectly.
-> Ironically, the only way to have consistent numbers is to use the old
-> platform files, where you can specify the base number of a gpio_chip.
-> 
-> DT is actually probably not such a bad place to provide consistency in
-> GPIO numbering. It has a global vision of the system layout, including
-> all GPIO controllers and the number of GPIOs they include, and thus
-> can make informed decisions. It provides a consistent result
-> regardless of probe order. And allowing it to assign GPIO bases to
-> controllers will free us from the nonsensical dependency of some
-> arbitrary upper-bound for GPIO numbers that ARCH_NR_GPIOS imposes on
-> us. Also about ARCH_NR_GPIOS, the plan is to eventually remove it
-> since we don't need it anymore after the removal of the global
-> gpio_descs array. This will again interfere with the numbering of GPIO
-> chips that do not have a base number provided.
-> 
-> Note that I don't really like this, either - but the problem is the
-> GPIO integer interface. Until everyone has upgraded to gpiod and we
-> have a replacement for the current sysfs interface (this will take a
-> while) we have to cope with this. This issue has been bothering users
-> for years, so this time I'd like to try and solve it the less ugly
-> way. If there is a better solution, of course I'm all for it.
+> > Overall, I'm not convinced it's worth continuing this driver. While it
+> > supports more features, Hauke's version seemed much cleaner, and I'd
+> > rather see his driver merged and have you add the additional features.
+> >
+> > Why did you drop him from Cc again?
+> >
+> In fact, Hauke is on the "to" list of all v2 patchset that I sent out. I 
+> added him to the "to" list because he mentioned during v1 patchset 
+> review that he'll help to test this on North Star.
 
-I think the scheme will fail if you ever get gpio controllers that are
-not part of the DT: We have hotpluggable devices (PCI, USB, ...) that
-are not represented in DT and that may also provide GPIOs for internal
-uses.
+Sorry, my mistake. I looked through the Cc list multiple times but failed
+to see him there.
+ 
+> Doesn't Hauke's driver depends on BCMA? In that case, how does it work 
+> on the SoCs that do not have the IP block to support BCMA?
 
-The current state of affairs is definitely problematic, but defining
-the GPIO numbers in DT properties would only be a relative improvement,
-not a solution, and I fear it would make it harder to change the kernel
-to remove the gpio numbers eventually.
+I hadn't realized that there are some SoCs that are not BCMA based.
+As the host controller implementation is closely related, we will
+have to come up with some solution.
 
-I wonder if we could instead come up with an approach that completely
-randomizes the gpio numbers (as a compile-time option) to find any
-places that still rely on specific numbers.
+One way to solve this would be by turning the driver into a library
+the same way as the pcie-dw driver, and have separate front-ends
+for it for platform_device and bcma_device.
+
+As I mentioned in my other reply, we will likely have the same problem
+in a number of other drivers too, so we could try to come up with
+a way to make bcma_device fit better into the platform_device
+infrastructure, but I wouldn't know how to do that without giving
+it more thought.
+
+> >> +static void iproc_pcie_reset(struct iproc_pcie *pcie)
+> >> +{
+> >> +	u32 val;
+> >> +
+> >> +	/* send a downstream reset */
+> >> +	val = EP_MODE_SURVIVE_PERST | RC_PCIE_RST_OUTPUT;
+> >> +	writel(val, pcie->reg + CLK_CONTROL_OFFSET);
+> >> +	udelay(250);
+> >> +	val &= ~EP_MODE_SURVIVE_PERST;
+> >> +	writel(val, pcie->reg + CLK_CONTROL_OFFSET);
+> >> +	mdelay(250);
+> >> +}
+> >
+> > 250ms delay is not acceptable. Please find a way to call this function
+> > from a context in which you can sleep.
+> >
+> This is called from driver probe, where runs in the process context 
+> where you can sleep. Is my understanding correct? I can change mdelay to 
+> msleep so the CPU does not waste time spinning.
+
+Right, that sounds good.
+
+> >> +	if (nlw == 0) {
+> >> +		/* try GEN 1 link speed */
+> >> +#define PCI_LINK_STATUS_CTRL_2_OFFSET 0xDC
+> >> +#define PCI_TARGET_LINK_SPEED_MASK    0xF
+> >> +#define PCI_TARGET_LINK_SPEED_GEN2    0x2
+> >> +#define PCI_TARGET_LINK_SPEED_GEN1    0x1
+> >> +		pci_bus_read_config_dword(&bus, 0,
+> >> +				PCI_LINK_STATUS_CTRL_2_OFFSET, &val);
+> >> +		if ((val & PCI_TARGET_LINK_SPEED_MASK) ==
+> >> +				PCI_TARGET_LINK_SPEED_GEN2) {
+> >> +			val &= ~PCI_TARGET_LINK_SPEED_MASK;
+> >> +			val |= PCI_TARGET_LINK_SPEED_GEN1;
+> >> +			pci_bus_write_config_dword(&bus, 0,
+> >> +					PCI_LINK_STATUS_CTRL_2_OFFSET, val);
+> >> +			pci_bus_read_config_dword(&bus, 0,
+> >> +					PCI_LINK_STATUS_CTRL_2_OFFSET, &val);
+> >> +			mdelay(100);
+> >
+> > Too much delay.
+> >
+> Need to confirm with the ASIC engineer. The delay may be what's needed.
+
+If you can turn it into msleep here, it's fine. Just don't waste 100
+million CPU cycles for no reason.
+
+> >> +static int __init iproc_pcie_init(void)
+> >> +{
+> >> +	return platform_driver_probe(&iproc_pcie_driver,
+> >> +			iproc_pcie_probe);
+> >> +}
+> >> +subsys_initcall(iproc_pcie_init);
+> >
+> > module_init()? Doesn't seem necessary to have this early.
+> >
+> > 	Arnd
+> >
+> Will look into this. Forgot why we use subsys_initcall here...
+
+Probably copied from other drivers. It used to be required.
 
 	Arnd
