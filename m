@@ -1,109 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965483AbaLLAK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 19:10:56 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:35323 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933361AbaLLAKy (ORCPT
+	id S965425AbaLLAYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 19:24:39 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56175 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933520AbaLLAYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 19:10:54 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApNbAEExilR5LCj0/2dsb2JhbABZgwZSWII1sG0MAQEBAQEBBpI1gSWESwICAQECgRMXAQEBAQF9hAwBAQEDATocGAsFCwgDGAklDwUlAyETiCQH2CMMIBiFaIQKhWgHhCkFhCQCjReDPoFygQ0NiDuBV4YIIoQAKjCCQwEBAQ
-Date: Fri, 12 Dec 2014 11:05:25 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: David Drysdale <drysdale@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Meredydd Luff <meredydd@senatehouse.org>,
-        Will Drewry <wad@chromium.org>,
-        Jorge Lucangeli Obes <jorgelo@google.com>,
-        Ricky Zhou <rickyz@google.com>, Lee Campbell <leecam@google.com>,
-        Julien Tinnes <jln@google.com>, Mike Depinet <mdepinet@google.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, Paul Moore <paul@paul-moore.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        fstests@vger.kernel.org
-Subject: Re: [PATCHv2 2/3] selftests: Add test of O_BENEATH & openat(2)
-Message-ID: <20141212000524.GI24183@dastard>
-References: <1415094884-18349-1-git-send-email-drysdale@google.com>
- <1415094884-18349-3-git-send-email-drysdale@google.com>
- <20141111053641.GR23575@dastard>
- <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
+	Thu, 11 Dec 2014 19:24:38 -0500
+Date: Fri, 12 Dec 2014 00:24:10 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Alexandru Stan <amstan@chromium.org>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20141212002410.GB11764@sirena.org.uk>
+References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
+ <20141210235347.GT11764@sirena.org.uk>
+ <CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
+ <20141211123106.GU11764@sirena.org.uk>
+ <CAD=FV=U4RFYx9NXOACrXJZK2bKkosyYnmTZRHkXuaSz-FS9kNQ@mail.gmail.com>
+ <20141211170934.GZ11764@sirena.org.uk>
+ <CAD=FV=WBAuF0+BVMG9rp53Zt851Ou0kZ6xgTe9mjmgxyugWteg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZrqbukKJvfR9Lgmd"
 Content-Disposition: inline
-In-Reply-To: <CAHse=S9OwP8tSErW59Hd3VPbKVrE9VJM=5gMgZQwsv3kB9Ax0w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAD=FV=WBAuF0+BVMG9rp53Zt851Ou0kZ6xgTe9mjmgxyugWteg@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
+ certain voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 02:19:41PM +0000, David Drysdale wrote:
-> On Tue, Nov 11, 2014 at 5:36 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > [cc fstests@vger.kernel.org]
-> >
-> > On Tue, Nov 04, 2014 at 09:54:43AM +0000, David Drysdale wrote:
-> >> Add simple tests of openat(2) variations, including examples that
-> >> check the new O_BENEATH flag.
-> >>
-> >> Signed-off-by: David Drysdale <drysdale@google.com>
-> >
-> > Wouldn't this be better added to fstests? That's the regression
-> > test suite used by filesystem developers and most distro QA
-> > organisations and where the fs developers aggregate all their new
-> > regression tests.
-> >
-> > IMO, the fewer places we aggregate VFS/filesystem tests the better.
-> > I really don't think the kernel tree is the best place for adding
-> > VFS behavioural tests because it has none of the infrastructure
-> > around it to test arbitrary filesystems and configurations and hence
-> > is not particularly useful to the people whoa re likely to notice
-> > and care about fs regression tests suddenly breaking.
-> >
-> > As an example, the recent renameat() syscall additions (e.g.
-> > RENAME_EXCHANGE, RENAME_NOREPLACE) have unit tests in fstests, so
-> > these new O_BENEATH tests should really follow the same model...
-> 
-> Fair enough, that makes sense -- I've now got a version of the selftest
-> running within xfstests (git://oss.sgi.com/xfs/cmds/xfstests.git is the
-> master repo, right?).
 
-Or git://git.kernel.org/pub/scm/fs/xfs/xfstests-dev.git, which is
-where I typically update first and push dev branches to.
+--ZrqbukKJvfR9Lgmd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Given that xfstests is independent of the kernel, what's the expected
-> way to deal with flags (or syscalls) that are only in specific kernel
-> versions?  At the moment I've just got a primitive override at
-> compile time (#ifndef O_BENEATH #define O_BENEATH ...), and
-> then the test will fail at run-time against an older kernel -- is there a
-> need for anything more sophisticated?  (And if so, are there any
-> examples I can crib from?)
+On Thu, Dec 11, 2014 at 11:55:55AM -0800, Doug Anderson wrote:
+> On Thu, Dec 11, 2014 at 9:09 AM, Mark Brown <broonie@kernel.org> wrote:
 
-See the code in the src/renameat2.c for an example of how syscalls
-and their flags are added prior to their being kernel and userspace
-header support.
+> > Please also bear in mind the need to handle shared supplies in your
+> > implementation.
 
-Also, note the "-t" CLI option for the "test" option in that little
-program.  This is used by the _require_renameat2 function that the
-tests that make use of this functionality call to determine if th
-etest shoul dbe run on this kernel or not.
+> I'm being dense, can you give more details?  Do you want me to grab
+> the mutex or do something smarter like track the voltage / tolerance
+> requested by multiple clients and resolve them, or ...?
 
-> Also, is there an archive of the fstests@ mailing list somewhere?
+I mean the latter - what happens if more than one consumer is trying to
+use the regulator?  This is IIRC why _set_voltage_tol() uses the cheap
+and nasty implementation it does.  There's also the potential
+performance considerations for the DVS type applications now I think
+about it.
 
-I wish. I've tried to get it archived on all the major sites like
-marc, spinics, etc repeatedly since the list was created and not a
-single one of them have responded to any of my requests, let alone
-started to archive the list....
+--ZrqbukKJvfR9Lgmd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cheers,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+iQEcBAEBAgAGBQJUijWqAAoJECTWi3JdVIfQ4s8H/ippCCXQNa8GHrDONciNqrE0
+KXsEyrz3PxL0WXmJXabtdOM914wl+g+jBhntiv9JloBZz/0P1i8MIoBwf6C+VXnZ
+BTSu7iXAudIxB20R62CcWlCsvVCo77+1p2heOg+Qxe0A9iODIMDwdKm7+b0/GcRH
+ESk75sgWo3XUaQfh00Q0JOFYLc+q+H9RGEXDsRpAlxhel2NjBtkJ1Af8lAGt/cHh
+jhlPJyxCCYtep/BfcFUrr7LbmEvVfHtSLjENBRZqJErHqCPYQYxrwXBUyOUWqPS0
+EF5JjkITapWhld+ZNdeXlgvUrw8+zoAoNZvx91eBFhkqhAEqIhyF3w1uPoVLDS4=
+=ontc
+-----END PGP SIGNATURE-----
+
+--ZrqbukKJvfR9Lgmd--
