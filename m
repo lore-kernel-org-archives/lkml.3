@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760872AbaLLGkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:40:43 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51858 "EHLO
+	id S1759970AbaLLGkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:40:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51870 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759127AbaLLGQ4 (ORCPT
+	by vger.kernel.org with ESMTP id S1759202AbaLLGQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:56 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "=?UTF-8?q?Thomas=20K=C3=B6rper?=" <thomas.koerper@esd.eu>
+CC: akpm@linux-foundation.org, "David Ramos" <daramos@stanford.edu>,
+        "Stefan Richter" <stefanr@s5r6.in-berlin.de>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.895091776@decadent.org.uk>
+Message-ID: <lsq.1418364865.880044007@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 131/164] can: dev: avoid calling kfree_skb() from
- interrupt context
+Subject: [PATCH 3.2 128/164] firewire: cdev: prevent kernel stack leaking
+ into ioctl arguments
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,67 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Körper <thomas.koerper@esd.eu>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 5247a589c24022ab34e780039cc8000c48f2035e upstream.
+commit eaca2d8e75e90a70a63a6695c9f61932609db212 upstream.
 
-ikfree_skb() is Called in can_free_echo_skb(), which might be called from (TX
-Error) interrupt, which triggers the folloing warning:
+Found by the UC-KLEE tool:  A user could supply less input to
+firewire-cdev ioctls than write- or write/read-type ioctl handlers
+expect.  The handlers used data from uninitialized kernel stack then.
 
-[ 1153.360705] ------------[ cut here ]------------
-[ 1153.360715] WARNING: CPU: 0 PID: 31 at net/core/skbuff.c:563 skb_release_head_state+0xb9/0xd0()
-[ 1153.360772] Call Trace:
-[ 1153.360778]  [<c167906f>] dump_stack+0x41/0x52
-[ 1153.360782]  [<c105bb7e>] warn_slowpath_common+0x7e/0xa0
-[ 1153.360784]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
-[ 1153.360786]  [<c158b909>] ? skb_release_head_state+0xb9/0xd0
-[ 1153.360788]  [<c105bc42>] warn_slowpath_null+0x22/0x30
-[ 1153.360791]  [<c158b909>] skb_release_head_state+0xb9/0xd0
-[ 1153.360793]  [<c158be90>] skb_release_all+0x10/0x30
-[ 1153.360795]  [<c158bf06>] kfree_skb+0x36/0x80
-[ 1153.360799]  [<f8486938>] ? can_free_echo_skb+0x28/0x40 [can_dev]
-[ 1153.360802]  [<f8486938>] can_free_echo_skb+0x28/0x40 [can_dev]
-[ 1153.360805]  [<f849a12c>] esd_pci402_interrupt+0x34c/0x57a [esd402]
-[ 1153.360809]  [<c10a75b5>] handle_irq_event_percpu+0x35/0x180
-[ 1153.360811]  [<c10a7623>] ? handle_irq_event_percpu+0xa3/0x180
-[ 1153.360813]  [<c10a7731>] handle_irq_event+0x31/0x50
-[ 1153.360816]  [<c10a9c7f>] handle_fasteoi_irq+0x6f/0x120
-[ 1153.360818]  [<c10a9c10>] ? handle_edge_irq+0x110/0x110
-[ 1153.360822]  [<c1011b61>] handle_irq+0x71/0x90
-[ 1153.360823]  <IRQ>  [<c168152c>] do_IRQ+0x3c/0xd0
-[ 1153.360829]  [<c1680b6c>] common_interrupt+0x2c/0x34
-[ 1153.360834]  [<c107d277>] ? finish_task_switch+0x47/0xf0
-[ 1153.360836]  [<c167c27b>] __schedule+0x35b/0x7e0
-[ 1153.360839]  [<c10a5334>] ? console_unlock+0x2c4/0x4d0
-[ 1153.360842]  [<c13df500>] ? n_tty_receive_buf_common+0x890/0x890
-[ 1153.360845]  [<c10707b6>] ? process_one_work+0x196/0x370
-[ 1153.360847]  [<c167c723>] schedule+0x23/0x60
-[ 1153.360849]  [<c1070de1>] worker_thread+0x161/0x460
-[ 1153.360852]  [<c1090fcf>] ? __wake_up_locked+0x1f/0x30
-[ 1153.360854]  [<c1070c80>] ? rescuer_thread+0x2f0/0x2f0
-[ 1153.360856]  [<c1074f01>] kthread+0xa1/0xc0
-[ 1153.360859]  [<c1680401>] ret_from_kernel_thread+0x21/0x30
-[ 1153.360861]  [<c1074e60>] ? kthread_create_on_node+0x110/0x110
-[ 1153.360863] ---[ end trace 5ff83639cbb74b35 ]---
+This could partially leak back to the user if the kernel subsequently
+generated fw_cdev_event_'s (to be read from the firewire-cdev fd)
+which notably would contain the _u64 closure field which many of the
+ioctl argument structures contain.
 
-This patch replaces the kfree_skb() by dev_kfree_skb_any().
+The fact that the handlers would act on random garbage input is a
+lesser issue since all handlers must check their input anyway.
 
-Signed-off-by: Thomas Körper <thomas.koerper@esd.eu>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+The fix simply always null-initializes the entire ioctl argument buffer
+regardless of the actual length of expected user input.  That is, a
+runtime overhead of memset(..., 40) is added to each firewirew-cdev
+ioctl() call.  [Comment from Clemens Ladisch:  This part of the stack is
+most likely to be already in the cache.]
+
+Remarks:
+  - There was never any leak from kernel stack to the ioctl output
+    buffer itself.  IOW, it was not possible to read kernel stack by a
+    read-type or write/read-type ioctl alone; the leak could at most
+    happen in combination with read()ing subsequent event data.
+  - The actual expected minimum user input of each ioctl from
+    include/uapi/linux/firewire-cdev.h is, in bytes:
+    [0x00] = 32, [0x05] =  4, [0x0a] = 16, [0x0f] = 20, [0x14] = 16,
+    [0x01] = 36, [0x06] = 20, [0x0b] =  4, [0x10] = 20, [0x15] = 20,
+    [0x02] = 20, [0x07] =  4, [0x0c] =  0, [0x11] =  0, [0x16] =  8,
+    [0x03] =  4, [0x08] = 24, [0x0d] = 20, [0x12] = 36, [0x17] = 12,
+    [0x04] = 20, [0x09] = 24, [0x0e] =  4, [0x13] = 40, [0x18] =  4.
+
+Reported-by: David Ramos <daramos@stanford.edu>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firewire/core-cdev.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -352,7 +352,7 @@ void can_free_echo_skb(struct net_device
- 	BUG_ON(idx >= priv->echo_skb_max);
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1605,8 +1605,7 @@ static int dispatch_ioctl(struct client
+ 	    _IOC_SIZE(cmd) > sizeof(buffer))
+ 		return -ENOTTY;
  
- 	if (priv->echo_skb[idx]) {
--		kfree_skb(priv->echo_skb[idx]);
-+		dev_kfree_skb_any(priv->echo_skb[idx]);
- 		priv->echo_skb[idx] = NULL;
- 	}
- }
+-	if (_IOC_DIR(cmd) == _IOC_READ)
+-		memset(&buffer, 0, _IOC_SIZE(cmd));
++	memset(&buffer, 0, sizeof(buffer));
+ 
+ 	if (_IOC_DIR(cmd) & _IOC_WRITE)
+ 		if (copy_from_user(&buffer, arg, _IOC_SIZE(cmd)))
 
