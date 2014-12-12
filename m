@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760313AbaLLGWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:22:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51775 "EHLO
+	id S934311AbaLLGWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:22:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51766 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759467AbaLLGRN (ORCPT
+	by vger.kernel.org with ESMTP id S1759472AbaLLGRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:17:13 -0500
+	Fri, 12 Dec 2014 01:17:14 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Quinn Tran" <quinn.tran@qlogic.com>,
-        "Nicholas Bellinger" <nab@linux-iscsi.org>,
-        "Saurav Kashyap" <saurav.kashyap@qlogic.com>
+CC: akpm@linux-foundation.org, "Chao Yu" <chao2.yu@samsung.com>,
+        "Tyler Hicks" <tyhicks@canonical.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.276583896@decadent.org.uk>
+Message-ID: <lsq.1418364865.831024968@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 041/164] target: Fix queue full status NULL pointer
- for SCF_TRANSPORT_TASK_SENSE
+Subject: [PATCH 3.2 048/164] ecryptfs: avoid to access NULL pointer when
+ write metadata in xattr
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,43 +32,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Quinn Tran <quinn.tran@qlogic.com>
+From: Chao Yu <chao2.yu@samsung.com>
 
-commit 082f58ac4a48d3f5cb4597232cb2ac6823a96f43 upstream.
+commit 35425ea2492175fd39f6116481fe98b2b3ddd4ca upstream.
 
-During temporary resource starvation at lower transport layer, command
-is placed on queue full retry path, which expose this problem.  The TCM
-queue full handling of SCF_TRANSPORT_TASK_SENSE currently sends the same
-cmd twice to lower layer.  The 1st time led to cmd normal free path.
-The 2nd time cause Null pointer access.
+Christopher Head 2014-06-28 05:26:20 UTC described:
+"I tried to reproduce this on 3.12.21. Instead, when I do "echo hello > foo"
+in an ecryptfs mount with ecryptfs_xattr specified, I get a kernel crash:
 
-This regression bug was originally introduced v3.1-rc code in the
-following commit:
+BUG: unable to handle kernel NULL pointer dereference at           (null)
+IP: [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+PGD d7840067 PUD b2c3c067 PMD 0
+Oops: 0002 [#1] SMP
+Modules linked in: nvidia(PO)
+CPU: 3 PID: 3566 Comm: bash Tainted: P           O 3.12.21-gentoo-r1 #2
+Hardware name: ASUSTek Computer Inc. G60JX/G60JX, BIOS 206 03/15/2010
+task: ffff8801948944c0 ti: ffff8800bad70000 task.ti: ffff8800bad70000
+RIP: 0010:[<ffffffff8110eb39>]  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+RSP: 0018:ffff8800bad71c10  EFLAGS: 00010246
+RAX: 00000000000181a4 RBX: ffff880198648480 RCX: 0000000000000000
+RDX: 0000000000000004 RSI: ffff880172010450 RDI: 0000000000000000
+RBP: ffff880198490e40 R08: 0000000000000000 R09: 0000000000000000
+R10: ffff880172010450 R11: ffffea0002c51e80 R12: 0000000000002000
+R13: 000000000000001a R14: 0000000000000000 R15: ffff880198490e40
+FS:  00007ff224caa700(0000) GS:ffff88019fcc0000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000000bb07f000 CR4: 00000000000007e0
+Stack:
+ffffffff811826e8 ffff8800a39d8000 0000000000000000 000000000000001a
+ffff8800a01d0000 ffff8800a39d8000 ffffffff81185fd5 ffffffff81082c2c
+00000001a39d8000 53d0abbc98490e40 0000000000000037 ffff8800a39d8220
+Call Trace:
+[<ffffffff811826e8>] ? ecryptfs_setxattr+0x40/0x52
+[<ffffffff81185fd5>] ? ecryptfs_write_metadata+0x1b3/0x223
+[<ffffffff81082c2c>] ? should_resched+0x5/0x23
+[<ffffffff8118322b>] ? ecryptfs_initialize_file+0xaf/0xd4
+[<ffffffff81183344>] ? ecryptfs_create+0xf4/0x142
+[<ffffffff810f8c0d>] ? vfs_create+0x48/0x71
+[<ffffffff810f9c86>] ? do_last.isra.68+0x559/0x952
+[<ffffffff810f7ce7>] ? link_path_walk+0xbd/0x458
+[<ffffffff810fa2a3>] ? path_openat+0x224/0x472
+[<ffffffff810fa7bd>] ? do_filp_open+0x2b/0x6f
+[<ffffffff81103606>] ? __alloc_fd+0xd6/0xe7
+[<ffffffff810ee6ab>] ? do_sys_open+0x65/0xe9
+[<ffffffff8157d022>] ? system_call_fastpath+0x16/0x1b
+RIP  [<ffffffff8110eb39>] fsstack_copy_attr_all+0x2/0x61
+RSP <ffff8800bad71c10>
+CR2: 0000000000000000
+---[ end trace df9dba5f1ddb8565 ]---"
 
-commit e057f53308a5f071556ee80586b99ee755bf07f5
-Author: Christoph Hellwig <hch@infradead.org>
-Date:   Mon Oct 17 13:56:41 2011 -0400
+If we create a file when we mount with ecryptfs_xattr_metadata option, we will
+encounter a crash in this path:
+->ecryptfs_create
+  ->ecryptfs_initialize_file
+    ->ecryptfs_write_metadata
+      ->ecryptfs_write_metadata_to_xattr
+        ->ecryptfs_setxattr
+          ->fsstack_copy_attr_all
+It's because our dentry->d_inode used in fsstack_copy_attr_all is NULL, and it
+will be initialized when ecryptfs_initialize_file finish.
 
-    target: remove the transport_qf_callback se_cmd callback
+So we should skip copying attr from lower inode when the value of ->d_inode is
+invalid.
 
-Signed-off-by: Quinn Tran <quinn.tran@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/target_core_transport.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/ecryptfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -3147,8 +3147,7 @@ static void transport_complete_qf(struct
- 
- 	if (cmd->se_cmd_flags & SCF_TRANSPORT_TASK_SENSE) {
- 		ret = cmd->se_tfo->queue_status(cmd);
--		if (ret)
--			goto out;
-+		goto out;
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -1112,7 +1112,7 @@ ecryptfs_setxattr(struct dentry *dentry,
  	}
  
- 	switch (cmd->data_direction) {
+ 	rc = vfs_setxattr(lower_dentry, name, value, size, flags);
+-	if (!rc)
++	if (!rc && dentry->d_inode)
+ 		fsstack_copy_attr_all(dentry->d_inode, lower_dentry->d_inode);
+ out:
+ 	return rc;
 
