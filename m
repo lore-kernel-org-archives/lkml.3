@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759352AbaLLG3t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:29:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51981 "EHLO
+	id S965610AbaLLG3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:29:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52011 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759334AbaLLGQ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759352AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,16 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Michal Hocko" <mhocko@suse.cz>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Wang Nan" <wangnan0@huawei.com>
+CC: akpm@linux-foundation.org,
+        "Pierre-Louis Bossart" <pierre-louis.bossart@linux.intel.com>,
+        "Takashi Iwai" <tiwai@suse.de>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.577540530@decadent.org.uk>
+Message-ID: <lsq.1418364865.455845034@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 093/164] cgroup/kmemleak: add kmemleak_free() for
- cgroup deallocations.
+Subject: [PATCH 3.2 088/164] ALSA: pcm: Zero-clear reserved fields of PCM
+ status ioctl in compat mode
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -35,78 +33,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wang Nan <wangnan0@huawei.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 401507d67d5c2854f5a88b3f93f64fc6f267bca5 upstream.
+commit 317168d0c766defd14b3d0e9c2c4a9a258b803ee upstream.
 
-Commit ff7ee93f4715 ("cgroup/kmemleak: Annotate alloc_page() for cgroup
-allocations") introduces kmemleak_alloc() for alloc_page_cgroup(), but
-corresponding kmemleak_free() is missing, which makes kmemleak be
-wrongly disabled after memory offlining.  Log is pasted at the end of
-this commit message.
+In compat mode, we copy each field of snd_pcm_status struct but don't
+touch the reserved fields, and this leaves uninitialized values
+there.  Meanwhile the native ioctl does zero-clear the whole
+structure, so we should follow the same rule in compat mode, too.
 
-This patch add kmemleak_free() into free_page_cgroup().  During page
-offlining, this patch removes corresponding entries in kmemleak rbtree.
-After that, the freed memory can be allocated again by other subsystems
-without killing kmemleak.
-
-  bash # for x in 1 2 3 4; do echo offline > /sys/devices/system/memory/memory$x/state ; sleep 1; done ; dmesg | grep leak
-
-  Offlined Pages 32768
-  kmemleak: Cannot insert 0xffff880016969000 into the object search tree (overlaps existing)
-  CPU: 0 PID: 412 Comm: sleep Not tainted 3.17.0-rc5+ #86
-  Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-  Call Trace:
-    dump_stack+0x46/0x58
-    create_object+0x266/0x2c0
-    kmemleak_alloc+0x26/0x50
-    kmem_cache_alloc+0xd3/0x160
-    __sigqueue_alloc+0x49/0xd0
-    __send_signal+0xcb/0x410
-    send_signal+0x45/0x90
-    __group_send_sig_info+0x13/0x20
-    do_notify_parent+0x1bb/0x260
-    do_exit+0x767/0xa40
-    do_group_exit+0x44/0xa0
-    SyS_exit_group+0x17/0x20
-    system_call_fastpath+0x16/0x1b
-
-  kmemleak: Kernel memory leak detector disabled
-  kmemleak: Object 0xffff880016900000 (size 524288):
-  kmemleak:   comm "swapper/0", pid 0, jiffies 4294667296
-  kmemleak:   min_count = 0
-  kmemleak:   count = 0
-  kmemleak:   flags = 0x1
-  kmemleak:   checksum = 0
-  kmemleak:   backtrace:
-        log_early+0x63/0x77
-        kmemleak_alloc+0x4b/0x50
-        init_section_page_cgroup+0x7f/0xf5
-        page_cgroup_init+0xc5/0xd0
-        start_kernel+0x333/0x408
-        x86_64_start_reservations+0x2a/0x2c
-        x86_64_start_kernel+0xf5/0xfc
-
-Fixes: ff7ee93f4715 (cgroup/kmemleak: Annotate alloc_page() for cgroup allocations)
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Pierre-Louis Bossart <pierre-louis.bossart@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/page_cgroup.c | 1 +
- 1 file changed, 1 insertion(+)
+ sound/core/pcm_compat.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/mm/page_cgroup.c
-+++ b/mm/page_cgroup.c
-@@ -160,6 +160,7 @@ static void free_page_cgroup(void *addr)
- 			sizeof(struct page_cgroup) * PAGES_PER_SECTION;
+--- a/sound/core/pcm_compat.c
++++ b/sound/core/pcm_compat.c
+@@ -204,6 +204,8 @@ static int snd_pcm_status_user_compat(st
+ 	if (err < 0)
+ 		return err;
  
- 		BUG_ON(PageReserved(page));
-+		kmemleak_free(addr);
- 		free_pages_exact(addr, table_size);
- 	}
- }
++	if (clear_user(src, sizeof(*src)))
++		return -EFAULT;
+ 	if (put_user(status.state, &src->state) ||
+ 	    put_user(status.trigger_tstamp.tv_sec, &src->trigger_tstamp.tv_sec) ||
+ 	    put_user(status.trigger_tstamp.tv_nsec, &src->trigger_tstamp.tv_nsec) ||
 
