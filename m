@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934786AbaLLJq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 04:46:58 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:54484 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934631AbaLLJq4 (ORCPT
+	id S934801AbaLLJro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 04:47:44 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50843 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934631AbaLLJrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 04:46:56 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: fixes for 3.19 #1
-Date: Fri, 12 Dec 2014 10:46:55 +0100
-Message-ID: <1418377615-15122-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-Organization: atmel
+	Fri, 12 Dec 2014 04:47:41 -0500
+Date: Fri, 12 Dec 2014 09:47:39 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] multi-layer support for overlay filesystem
+Message-ID: <20141212094738.GB5944@ZenIV.linux.org.uk>
+References: <20141209103745.GA32280@tucsk.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141209103745.GA32280@tucsk.suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
+On Tue, Dec 09, 2014 at 11:37:45AM +0100, Miklos Szeredi wrote:
+> Al,
+> 
+> Please pull from
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
+> 
+> This adds support for multiple read-only layers to overlayfs.  It also makes the
+> writable upper layer optional.
 
-I'm sending today a "fixes" branch which somehow continues the cleanup with
-only code removal. I was waiting for the arm-soc *and* pinctrl material to
-reach Linus T.'s tree before sending this pull-request. In fact this sequence
-was needed for the gpio header removal. The little patch about #include
-deletion just follows an earlier merge conflict in arm-soc tree: I was also
-waiting for this moment before sending the definitive fix, just to be sure.
+First of all, your checks in ovl_mount_dir_noesc() have no effect besides
+spamming the logs.  In
+        if (err) 
+                pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
+        else if (!ovl_is_allowed_fs_type(path->dentry))
+                pr_err("overlayfs: filesystem on '%s' not supported\n", name);
+        else if (!S_ISDIR(path->dentry->d_inode->i_mode))
+                pr_err("overlayfs: '%s' not a directory\n", name);
+        else   
+                err = 0;
+the fourth alternative is completely pointless and both the second and the
+third leave you with err being zero.
 
-Otherwise, all is pretty straightforward.
+That opens all kinds of unpleasant holes, obviously.  If you fix that by
+setting err in the 2nd and thr 3rd alternatives, you get the next problem -
+leaks on such failures.  Suppose the first ovl_mount_dir() call fails on
+those checks.  You go to out_free_config and voila - upperpath has leaked.
+The same in the second call means leaked workpath.  And those failures in
+ovl_lower_dir(), as well as failures of vfs_getattr() there, end up leaking
+vfsmount/dentry in stack[...].
 
-Oh, one more thing: it is based on the current Linus' git tree, I can obviously
-rebase everything on top of 3.19-rc1 once it is released if you prefer.
+Next piece of fun: suppose you have in one of the lower layers a filesystem
+with ->lookup()-enforced upper limit on name length.  Pretty much every
+local fs has one, but... they are not all equal.  255 characters is the
+common upper limit, but e.g. jffs2 stops at 254, minixfs upper limit is
+somewhere from 14 to 60, depending upon version, etc.  You are doing a lookup
+for something that is present in upper layer, but happens to be too long for
+one of the lower layers.  Too bad - ENAMETOOLONG for you...
 
-Thanks, best regards,
+BTW, that sucker really needs cleaning up.  I seriously suspect that
+quite a few conditions in there might be redundant, but after several
+hours of staring at it I'm still not sure that I hadn't missed some
+paths in there ;-/  AFAICS, it would get cleaner if you unrolled the idx == 0
+pass out of that loop - as in "deal with ovl_path_upper() if present, then
+simple for (lower = 0; lower < oe->numlower; lower++)".  TBH, ovl_path_next()
+seems to be a bad primitive for that use and the other caller doesn't give
+a damn about upper vs. lower, so I wonder if the games with reporting that
+make any sense.  They certainly make ovl_path_next() much uglier...
 
-The following changes since commit 2756d373a3f45a3a9ebf4ac389f9e0e02bd35a93:
+Another thing: in theory, you can get up to about 2000 (identical)
+single-letter names in lowerdirs.  Resulting arrays of struct path (i.e.
+pairs of pointers) will make allocators unhappy - 32Kb kmalloc() is
+not nice.  IMO that needs more or less sane limit enforced at mount time -
+relying on "mount data is at most one page, can't fit too much there"
+is not enough.
 
-  Merge branch 'for-3.19' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup (2014-12-11 18:57:19 -0800)
+Logics in ovl_dir_read_merged() looks odd - why is the lowermost one special
+and not the uppermost?  BTW, what if you find a whiteout in the lowermost
+layer?  And while we are at it, what happens when the _upper_ layer is an
+overlayfs - how do you create whiteouts there?  That, AFAICS, applies to
+the current mainline as well...
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-fixes
-
-for you to fetch changes up to 23db86fb6b514788f57b4ee96962352281139a63:
-
-  ARM: at91/config: sama5: Remove DEBUG_LL (2014-12-12 10:14:56 +0100)
-
-----------------------------------------------------------------
-First fixes batch for AT91 on 3.19 folowing The big cleanup:
-- removal of unused Kconfig RTC options
-- GPIO header file is now close to the pinctrl driver
-- little fix on #includes
-- removal of DEBUG_LL from the sama5 common defconfig
-
-----------------------------------------------------------------
-Boris Brezillon (1):
-      ARM: at91: remove useless header file includes
-
-Maxime Ripard (1):
-      ARM: at91/config: sama5: Remove DEBUG_LL
-
-Nicolas Ferre (2):
-      rtc: at91/Kconfig: remove useless options
-      ARM: at91: remove unneeded header file
-
- arch/arm/configs/sama5_defconfig           |  2 -
- arch/arm/mach-at91/at91sam9g45.c           |  1 -
- arch/arm/mach-at91/at91sam9rl.c            |  1 -
- arch/arm/mach-at91/include/mach/at91_pio.h | 80 ------------------------------
- drivers/rtc/Kconfig                        | 28 -----------
- 5 files changed, 112 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_pio.h
-
--- 
-Nicolas Ferre
+Anyway, more after I get some sleep - it's nearly 5am here ;-/
