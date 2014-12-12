@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934326AbaLLIh1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:37:27 -0500
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:58699 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933358AbaLLIhY (ORCPT
+	id S1758284AbaLLInL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:43:11 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:37119 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaLLInJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:37:24 -0500
+	Fri, 12 Dec 2014 03:43:09 -0500
+Message-ID: <548AAA95.6020001@arm.com>
+Date: Fri, 12 Dec 2014 14:13:01 +0530
+From: Sudeep Holla <sudeep.holla@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20141210225006.GA13407@ti.com>
-References: <1417726922-10376-1-git-send-email-bparrot@ti.com>
- <1417726922-10376-3-git-send-email-bparrot@ti.com> <CAAVeFuJHwGqXSgCu-FstUr32UZJaKjSBAUkfySkQVFqUhV75JQ@mail.gmail.com>
- <20141210225006.GA13407@ti.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Fri, 12 Dec 2014 17:37:03 +0900
-Message-ID: <CAAVeFuKR24LjLWPnFkX88b-x-aYoqCQoZHuneUtxHNp3T7=vjA@mail.gmail.com>
-Subject: Re: [Patch v3 2/2] gpio: Document GPIO hogging mechanism
-To: Benoit Parrot <bparrot@ti.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Jiri Prchal <jiri.prchal@aksignal.cz>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=UTF-8
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>
+CC: Sudeep Holla <sudeep.holla@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Linaro-acpi] [PATCH] Mailbox: Complete wait event only if Tx
+ was successful
+References: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
+In-Reply-To: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
+X-OriginalArrivalTime: 12 Dec 2014 08:43:04.0775 (UTC) FILETIME=[A53F1D70:01D015E7]
+X-MC-Unique: 114121208430600201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 7:50 AM, Benoit Parrot <bparrot@ti.com> wrote:
-> Alexandre Courbot <gnurou@gmail.com> wrote on Wed [2014-Dec-10 19:56:17 +0900]:
->> On Fri, Dec 5, 2014 at 6:02 AM, Benoit Parrot <bparrot@ti.com> wrote:
->> > Add GPIO hogging documentation to gpio.txt
->> >
->> > Signed-off-by: Benoit Parrot <bparrot@ti.com>
->> > ---
->> > Changes since v2:
->> >  * Updated to the latest hog syntax.
->> >
->> > Changes since v1:
->> >  * Split the devicetree bindings documentation in its own patch.
->> >
->> >  Documentation/devicetree/bindings/gpio/gpio.txt | 23 +++++++++++++++++++++++
->> >  1 file changed, 23 insertions(+)
->> >
->> > diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt b/Documentation/devicetree/bindings/gpio/gpio.txt
->> > index 3fb8f53..6d88133 100644
->> > --- a/Documentation/devicetree/bindings/gpio/gpio.txt
->> > +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
->> > @@ -103,6 +103,22 @@ Every GPIO controller node must contain both an empty "gpio-controller"
->> >  property, and a #gpio-cells integer property, which indicates the number of
->> >  cells in a gpio-specifier.
->> >
->> > +The GPIO chip may contain GPIO hog definitions. GPIO hogging is a mechanism
->> > +providing automatic GPIO request and configuration as part of the
->> > +gpio-controller's driver probe function.
->> > +
->> > +Each GPIO hog definition is represented as a child node of the GPIO controller.
->> > +Required properties:
->> > +- gpio-hog:  A property specifying that this child node represent a gpio-hog.
->> > +- gpios:     Store the gpio information (id, flags, ...). Shall contain the
->> > +            number of cells specified in its parent node (GPIO controller
->> > +            node).
->>
->> Since this property will only describe one GPIO, why use the plural
->> form? Would it not be confusing?
->
-> I would tend to agree in this case but based on this original comment from Linus on this thread:
+Hi Ashwin,
 
-Ok, good for me then.
+On Thursday 11 December 2014 01:46 AM, Ashwin Chaugule wrote:
+> If a wait_for_completion_timeout() call returns due to a timeout,
+> the mbox code can still call complete() after returning from the wait.
+> This can cause subsequent transmissions on a channel to fail, since
+> the wait_for_completion_timeout() sees the completion variable
+> is !=0, caused by the erroneous complete() call, and immediately
+> returns without waiting for the time as expected by the client.
+>
+> Fix this by calling complete() only if the TX was successful.
+>
+> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+> ---
+>   drivers/mailbox/mailbox.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> index 17e9e4a..4acaddb 100644
+> --- a/drivers/mailbox/mailbox.c
+> +++ b/drivers/mailbox/mailbox.c
+> @@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
+>   	if (mssg && chan->cl->tx_done)
+>   		chan->cl->tx_done(chan->cl, mssg, r);
+>
+> -	if (chan->cl->tx_block)
+> +	if ((!r) && chan->cl->tx_block)
+>   		complete(&chan->tx_complete);
 
->
-> http://marc.info/?l=linux-gpio&m=138917388625221&w=2
-> where on 08/01/2014 10:37, Linus Walleij wrote:
->
->   > +Each GPIO hog definition is represented as a child node of the GPIO controller.
->   > +Required properties:
->   > +- gpio: store the gpio informations (id, flags, ...). Shall contain the
->   > +  number of cells specified in its parent node (GPIO controller node).
->
->   This property is alway plural "gpios".
->
-> As long as everyone agree, I am fine with it.
->
->>
->> > +- direction: A property specifying the direction/value needed. This property
->> > +            can take the folowing values: input, output-high, output-low.
->>
->> nit: since this property not only describes the direction but also the
->> (potential) value, I suggest to rename it to "state".
->
-> Since you are the one who suggested "direction" in the first place, as long as you agree with yourself :)
+Just curious to check if there's another possible race which is
+a different issue.
 
-/me of today is not the same person as /me of yesterday... :P
+Suppose the timer fired and indicated that the Tx is complete, then
+it tries to execute complete while the wait_for_completion_timeout timed
+out. Does that make sense ?
 
-This is just a suggestion though, please pick the name *you* think is
-the most adequate.
+So if yes, how about adding !completion_done(..) to the check while you
+are at this ?
+
+Regards,
+Sudeep
+
