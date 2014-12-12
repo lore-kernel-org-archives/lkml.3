@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965662AbaLLGh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:37:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51852 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759050AbaLLGQ4 (ORCPT
+	id S1759055AbaLLGj7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:39:59 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52901 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856AbaLLGj4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:16:56 -0500
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Fri, 12 Dec 2014 01:39:56 -0500
+X-Original-SENDERIP: 10.177.220.156
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 12 Dec 2014 15:40:55 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm/zsmalloc: disclose statistics to debugfs
+Message-ID: <20141212064055.GA17166@bbox>
+References: <1418218820-4153-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141211234005.GA13405@bbox>
+ <CADAEsF9cZ-JOrKx1_9FCu7_SW19Je938wK_wdy+jdBTehgZiXw@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Hans de Goede" <hdegoede@redhat.com>,
-        "=?UTF-8?q?Pali=20Roh=C3=A1r?=" <pali.rohar@gmail.com>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.910216418@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 120/164] Input: alps - ignore potential bare packets
- when device is out of sync
-In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CADAEsF9cZ-JOrKx1_9FCu7_SW19Je938wK_wdy+jdBTehgZiXw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.65-rc1 review patch.  If anyone has any objections, please let me know.
+On Fri, Dec 12, 2014 at 01:53:16PM +0800, Ganesh Mahendran wrote:
+> Hello Minchan
+> 
+> 2014-12-12 7:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> > Hello Ganesh,
+> >
+> > On Wed, Dec 10, 2014 at 09:40:20PM +0800, Ganesh Mahendran wrote:
+> >> As we now talk more and more about the fragmentation of zsmalloc. But
+> >> we still need to manually add some debug code to see the fragmentation.
+> >> So, I think we may add the statistics of memory fragmention in zsmalloc
+> >> and disclose them to debugfs. Then we can easily get and analysis
+> >> them when adding or developing new feature for zsmalloc.
+> >>
+> >> Below entries will be created when a zsmalloc pool is created:
+> >>     /sys/kernel/debug/zsmalloc/pool-n/obj_allocated
+> >>     /sys/kernel/debug/zsmalloc/pool-n/obj_used
+> >>
+> >> Then the status of objects usage will be:
+> >>     objects_usage = obj_used / obj_allocated
+> >>
+> >
+> > I didn't look at the code in detail but It would be handy for developer
+> > but not sure we should deliver it to admin so need configurable?
+> What kind of configuration do you want?
+> I think it is reasonable to expose such information to admin like
+> */sys/kernel/debug/usb/device*
+> 
+> Or maybe we can enclose these code by DEBUG macro which will be
+> defined when CONFIG_ZSMALLOC_DEBUG is selected.
 
-------------------
+Hmm, I'd like to separte DEBUG and STAT because we can add some
+sanity checking(ex, poisoning for invalid overwriting or
+handle<->obj mapping verification) with DEBUG while we could
+count obj stat with STAT.
 
-From: Pali Rohár <pali.rohar@gmail.com>
+So, now it seems you want CONFIG_ZSMALLOC_STAT?
 
-commit 4ab8f7f320f91f279c3f06a9795cfea5c972888a upstream.
+> 
+> >
+> > How about making it per-sizeclass information, not per-pool?
+> Yes, you are right. Per sizeclass information will be better for
+> developers than per pool.
+> 
+> Is it acceptable to show 256 lines like:
+> #cat /sys/kernel/debug/zsmalloc/pool-1/obj_in_classes
+> class      obj_allocated     obj_used
+> 1 ...
+> 2 ...
+> ....
+> ....
+> 255
+> 
+> Anyway for developers, these information is more usefull.
 
-5th and 6th byte of ALPS trackstick V3 protocol match condition for first
-byte of PS/2 3 bytes packet. When driver enters out of sync state and ALPS
-trackstick is sending data then driver match 5th, 6th and next 1st bytes as
-PS/2.
+It would be better to show the number of pages so we can know
+how many of fragment space in last subpage of zspage is wasted.
+But I don't want to keep pages_used in memory but you could
+calcurate it dynamically with obj_allocated when user access debugfs.
 
-It basically means if user is using trackstick when driver is in out of
-sync state driver will never resync. Processing these bytes as 3 bytes PS/2
-data cause total mess (random cursor movements, random clicks) and make
-trackstick unusable until psmouse driver decide to do full device reset.
+#cat /sys/kernel/debug/zsmalloc/pool-1/obj_in_classes
+class-size      obj_allocated     obj_used    pages_used
+32
+48
+.
+.
+.
 
-Lot of users reported problems with ALPS devices on Dell Latitude E6440,
-E6540 and E7440 laptops. ALPS device or Dell EC for unknown reason send
-some invalid ALPS PS/2 bytes which cause driver out of sync. It looks like
-that i8042 and psmouse/alps driver always receive group of 6 bytes packets
-so there are no missing bytes and no bytes were inserted between valid
-ones.
+Thanks!
 
-This patch does not fix root of problem with ALPS devices found in Dell
-Latitude laptops but it does not allow to process some (invalid)
-subsequence of 6 bytes ALPS packets as 3 bytes PS/2 when driver is out of
-sync.
-
-So with this patch trackstick input device does not report bogus data when
-also driver is out of sync, so trackstick should be usable on those
-machines.
-
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
-Reviewed-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/input/mouse/alps.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---- a/drivers/input/mouse/alps.c
-+++ b/drivers/input/mouse/alps.c
-@@ -372,7 +372,13 @@ static psmouse_ret_t alps_process_byte(s
- 	struct alps_data *priv = psmouse->private;
- 	const struct alps_model_info *model = priv->i;
- 
--	if ((psmouse->packet[0] & 0xc8) == 0x08) { /* PS/2 packet */
-+	/*
-+	 * Check if we are dealing with a bare PS/2 packet, presumably from
-+	 * a device connected to the external PS/2 port. Because bare PS/2
-+	 * protocol does not have enough constant bits to self-synchronize
-+	 * properly we only do this if the device is fully synchronized.
-+	 */
-+	if (!psmouse->out_of_sync_cnt && (psmouse->packet[0] & 0xc8) == 0x08) {
- 		if (psmouse->pktcnt == 3) {
- 			alps_report_bare_ps2_packet(psmouse, psmouse->packet,
- 						    true);
-
+-- 
+Kind regards,
+Minchan Kim
