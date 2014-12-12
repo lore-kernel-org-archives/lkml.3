@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966136AbaLLGsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:48:41 -0500
+	id S966163AbaLLGsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:48:45 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966102AbaLLGsh (ORCPT
+	by vger.kernel.org with ESMTP id S966121AbaLLGsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:37 -0500
+	Fri, 12 Dec 2014 01:48:41 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Willy Tarreau" <w@1wt.eu>,
-        "Willem Pinckaers" <willem@lekkertech.net>,
-        "Don A. Bailey" <donb@securitymouse.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org,
+        "Bryan O'Donoghue" <pure.logic@nexus-software.ie>,
+        "Borislav Petkov" <bp@alien8.de>, "Ingo Molnar" <mingo@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.296737365@decadent.org.uk>
+Message-ID: <lsq.1418364865.564039178@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 033/164] Documentation: lzo: document part of the encoding
+Subject: [PATCH 3.2 029/164] x86/intel/quark: Switch off CR4.PGE so TLB
+ flush uses CR3 instead
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,189 +33,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Willy Tarreau <w@1wt.eu>
+From: Bryan O'Donoghue <pure.logic@nexus-software.ie>
 
-commit d98a0526434d27e261f622cf9d2e0028b5ff1a00 upstream.
+commit ee1b5b165c0a2f04d2107e634e51f05d0eb107de upstream.
 
-Add a complete description of the LZO format as processed by the
-decompressor. I have not found a public specification of this format
-hence this analysis, which will be used to better understand the code.
+Quark x1000 advertises PGE via the standard CPUID method
+PGE bits exist in Quark X1000's PTEs. In order to flush
+an individual PTE it is necessary to reload CR3 irrespective
+of the PTE.PGE bit.
 
-Cc: Willem Pinckaers <willem@lekkertech.net>
-Cc: "Don A. Bailey" <donb@securitymouse.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+See Quark Core_DevMan_001.pdf section 6.4.11
+
+This bug was fixed in Galileo kernels, unfixed vanilla kernels are expected to
+crash and burn on this platform.
+
+Signed-off-by: Bryan O'Donoghue <pure.logic@nexus-software.ie>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1411514784-14885-1-git-send-email-pure.logic@nexus-software.ie
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/lzo.txt | 164 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 164 insertions(+)
- create mode 100644 Documentation/lzo.txt
+ arch/x86/kernel/cpu/intel.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- /dev/null
-+++ b/Documentation/lzo.txt
-@@ -0,0 +1,164 @@
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -143,6 +143,21 @@ static void __cpuinit early_init_intel(s
+ 			setup_clear_cpu_cap(X86_FEATURE_ERMS);
+ 		}
+ 	}
 +
-+LZO stream format as understood by Linux's LZO decompressor
-+===========================================================
-+
-+Introduction
-+
-+  This is not a specification. No specification seems to be publicly available
-+  for the LZO stream format. This document describes what input format the LZO
-+  decompressor as implemented in the Linux kernel understands. The file subject
-+  of this analysis is lib/lzo/lzo1x_decompress_safe.c. No analysis was made on
-+  the compressor nor on any other implementations though it seems likely that
-+  the format matches the standard one. The purpose of this document is to
-+  better understand what the code does in order to propose more efficient fixes
-+  for future bug reports.
-+
-+Description
-+
-+  The stream is composed of a series of instructions, operands, and data. The
-+  instructions consist in a few bits representing an opcode, and bits forming
-+  the operands for the instruction, whose size and position depend on the
-+  opcode and on the number of literals copied by previous instruction. The
-+  operands are used to indicate :
-+
-+    - a distance when copying data from the dictionary (past output buffer)
-+    - a length (number of bytes to copy from dictionary)
-+    - the number of literals to copy, which is retained in variable "state"
-+      as a piece of information for next instructions.
-+
-+  Optionally depending on the opcode and operands, extra data may follow. These
-+  extra data can be a complement for the operand (eg: a length or a distance
-+  encoded on larger values), or a literal to be copied to the output buffer.
-+
-+  The first byte of the block follows a different encoding from other bytes, it
-+  seems to be optimized for literal use only, since there is no dictionary yet
-+  prior to that byte.
-+
-+  Lengths are always encoded on a variable size starting with a small number
-+  of bits in the operand. If the number of bits isn't enough to represent the
-+  length, up to 255 may be added in increments by consuming more bytes with a
-+  rate of at most 255 per extra byte (thus the compression ratio cannot exceed
-+  around 255:1). The variable length encoding using #bits is always the same :
-+
-+       length = byte & ((1 << #bits) - 1)
-+       if (!length) {
-+               length = ((1 << #bits) - 1)
-+               length += 255*(number of zero bytes)
-+               length += first-non-zero-byte
-+       }
-+       length += constant (generally 2 or 3)
-+
-+  For references to the dictionary, distances are relative to the output
-+  pointer. Distances are encoded using very few bits belonging to certain
-+  ranges, resulting in multiple copy instructions using different encodings.
-+  Certain encodings involve one extra byte, others involve two extra bytes
-+  forming a little-endian 16-bit quantity (marked LE16 below).
-+
-+  After any instruction except the large literal copy, 0, 1, 2 or 3 literals
-+  are copied before starting the next instruction. The number of literals that
-+  were copied may change the meaning and behaviour of the next instruction. In
-+  practice, only one instruction needs to know whether 0, less than 4, or more
-+  literals were copied. This is the information stored in the <state> variable
-+  in this implementation. This number of immediate literals to be copied is
-+  generally encoded in the last two bits of the instruction but may also be
-+  taken from the last two bits of an extra operand (eg: distance).
-+
-+  End of stream is declared when a block copy of distance 0 is seen. Only one
-+  instruction may encode this distance (0001HLLL), it takes one LE16 operand
-+  for the distance, thus requiring 3 bytes.
-+
-+  IMPORTANT NOTE : in the code some length checks are missing because certain
-+  instructions are called under the assumption that a certain number of bytes
-+  follow because it has already been garanteed before parsing the instructions.
-+  They just have to "refill" this credit if they consume extra bytes. This is
-+  an implementation design choice independant on the algorithm or encoding.
-+
-+Byte sequences
-+
-+  First byte encoding :
-+
-+      0..17   : follow regular instruction encoding, see below. It is worth
-+                noting that codes 16 and 17 will represent a block copy from
-+                the dictionary which is empty, and that they will always be
-+                invalid at this place.
-+
-+      18..21  : copy 0..3 literals
-+                state = (byte - 17) = 0..3  [ copy <state> literals ]
-+                skip byte
-+
-+      22..255 : copy literal string
-+                length = (byte - 17) = 4..238
-+                state = 4 [ don't copy extra literals ]
-+                skip byte
-+
-+  Instruction encoding :
-+
-+      0 0 0 0 X X X X  (0..15)
-+        Depends on the number of literals copied by the last instruction.
-+        If last instruction did not copy any literal (state == 0), this
-+        encoding will be a copy of 4 or more literal, and must be interpreted
-+        like this :
-+
-+           0 0 0 0 L L L L  (0..15)  : copy long literal string
-+           length = 3 + (L ?: 15 + (zero_bytes * 255) + non_zero_byte)
-+           state = 4  (no extra literals are copied)
-+
-+        If last instruction used to copy between 1 to 3 literals (encoded in
-+        the instruction's opcode or distance), the instruction is a copy of a
-+        2-byte block from the dictionary within a 1kB distance. It is worth
-+        noting that this instruction provides little savings since it uses 2
-+        bytes to encode a copy of 2 other bytes but it encodes the number of
-+        following literals for free. It must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 2 bytes from <= 1kB distance
-+           length = 2
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 1
-+
-+        If last instruction used to copy 4 or more literals (as detected by
-+        state == 4), the instruction becomes a copy of a 3-byte block from the
-+        dictionary from a 2..3kB distance, and must be interpreted like this :
-+
-+           0 0 0 0 D D S S  (0..15)  : copy 3 bytes from 2..3 kB distance
-+           length = 3
-+           state = S (copy S literals after this block)
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 2) + D + 2049
-+
-+      0 0 0 1 H L L L  (16..31)
-+           Copy of a block within 16..48kB distance (preferably less than 10B)
-+           length = 2 + (L ?: 7 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = 16384 + (H << 14) + D
-+           state = S (copy S literals after this block)
-+           End of stream is reached if distance == 16384
-+
-+      0 0 1 L L L L L  (32..63)
-+           Copy of small block within 16kB distance (preferably less than 34B)
-+           length = 2 + (L ?: 31 + (zero_bytes * 255) + non_zero_byte)
-+        Always followed by exactly one LE16 :  D D D D D D D D : D D D D D D S S
-+           distance = D + 1
-+           state = S (copy S literals after this block)
-+
-+      0 1 L D D D S S  (64..127)
-+           Copy 3-4 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 3 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+      1 L L D D D S S  (128..255)
-+           Copy 5-8 bytes from block within 2kB distance
-+           state = S (copy S literals after this block)
-+           length = 5 + L
-+         Always followed by exactly one byte : H H H H H H H H
-+           distance = (H << 3) + D + 1
-+
-+Authors
-+
-+  This document was written by Willy Tarreau <w@1wt.eu> on 2014/07/19 during an
-+  analysis of the decompression code available in Linux 3.16-rc5. The code is
-+  tricky, it is possible that this document contains mistakes or that a few
-+  corner cases were overlooked. In any case, please report any doubt, fix, or
-+  proposed updates to the author(s) so that the document can be updated.
++	/*
++	 * Intel Quark Core DevMan_001.pdf section 6.4.11
++	 * "The operating system also is required to invalidate (i.e., flush)
++	 *  the TLB when any changes are made to any of the page table entries.
++	 *  The operating system must reload CR3 to cause the TLB to be flushed"
++	 *
++	 * As a result cpu_has_pge() in arch/x86/include/asm/tlbflush.h should
++	 * be false so that __flush_tlb_all() causes CR3 insted of CR4.PGE
++	 * to be modified
++	 */
++	if (c->x86 == 5 && c->x86_model == 9) {
++		pr_info("Disabling PGE capability bit\n");
++		setup_clear_cpu_cap(X86_FEATURE_PGE);
++	}
+ }
+ 
+ #ifdef CONFIG_X86_32
 
