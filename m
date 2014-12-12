@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758733AbaLLD7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 22:59:24 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:33389 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757819AbaLLD7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 22:59:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJZ5v0i3UhvaAu9JV_BuB0fPFmHAa_NdX+eXYBnAHcsiaVOw9g@mail.gmail.com>
-References: <CAJZ5v0i3UhvaAu9JV_BuB0fPFmHAa_NdX+eXYBnAHcsiaVOw9g@mail.gmail.com>
-Date: Thu, 11 Dec 2014 19:59:20 -0800
-X-Google-Sender-Auth: 5o1-CqCejmtIdzreSMFXCvBuM6A
-Message-ID: <CA+55aFx+8gKsDSDKSAxB4+JuL_M22uuHDmzSfsv1qJ=dSZ3-ww@mail.gmail.com>
-Subject: Re: [GIT PULL] ACPI and power management updates for 3.19-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rafael@kernel.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1758632AbaLLEDs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 23:03:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43705 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751867AbaLLEDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 23:03:47 -0500
+From: Mark Salter <msalter@redhat.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH] net: phy: export fixed_phy_register()
+Date: Thu, 11 Dec 2014 23:03:26 -0500
+Message-Id: <1418357006-2450-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 8, 2014 at 4:21 PM, Rafael J. Wysocki <rafael@kernel.org> wrote:
->
-> Also the ACPI core is now going to support the _DEP configuration
-> information in a limited way.
+When building the bcmgenet driver as module, I get:
 
-Hmm. That seems to be the cause of this annoying new message:
+ERROR: "fixed_phy_register" [drivers/net/ethernet/broadcom/genet/genet.ko] undefined!
 
-    ...
-    ACPI: Using IOAPIC for interrupt routing
-    PCI: Using host bridge windows from ACPI; if necessary, use
-"pci=nocrs" and report a bug
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:00: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:01: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:02: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:03: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:04: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:05: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:06: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb200)
-    acpi LNXCPU:07: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb840)
-    acpi device:27: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb840)
-    acpi device:3f: Failed to evaluate _DEP.
-    ACPI: [Package] has zero elements (ffff88040ccdb8c0)
-    acpi LNXVIDEO:00: Failed to evaluate _DEP.
-    ACPI: Power Resource [FN00] (off)
-    ...
+commit b0ba512e225d72 ("net: bcmgenet: enable driver to work without device
+tree") which added a call to fixed_phy_register. But fixed_phy_register
+needs to be exported if used from a module.
 
-which doesn't seem to hinder anything from working, but is extremely
-annoying because it's printed out as some super-important "KERN_ERR
-message of Doom!"
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ drivers/net/phy/fixed.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I don't see why incomplete ACPI tables would *ever* be "KERN_ERR"
-level messages, but I particularly don't see it when it seems to be
-our own meaningless fake entries.
+diff --git a/drivers/net/phy/fixed.c b/drivers/net/phy/fixed.c
+index 47872caa..3ad0e6e 100644
+--- a/drivers/net/phy/fixed.c
++++ b/drivers/net/phy/fixed.c
+@@ -274,6 +274,7 @@ struct phy_device *fixed_phy_register(unsigned int irq,
+ 
+ 	return phy;
+ }
++EXPORT_SYMBOL_GPL(fixed_phy_register);
+ 
+ static int __init fixed_mdio_bus_init(void)
+ {
+-- 
+1.8.3.1
 
-                   Linus
