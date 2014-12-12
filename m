@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934912AbaLLPZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:25:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:21486 "EHLO mga02.intel.com"
+	id S1030247AbaLLPZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:25:22 -0500
+Received: from mga02.intel.com ([134.134.136.20]:36405 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759400AbaLLPZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:25:01 -0500
+	id S933783AbaLLPZT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 10:25:19 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
-   d="scan'208";a="622807108"
+   d="scan'208";a="622807181"
 From: Feng Wu <feng.wu@intel.com>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         gleb@kernel.org, pbonzini@redhat.com, dwmw2@infradead.org,
@@ -16,9 +16,9 @@ To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
 Cc: eric.auger@linaro.org, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org, kvm@vger.kernel.org,
         Feng Wu <feng.wu@intel.com>
-Subject: [v3 02/26] iommu: Add new member capability to struct irq_remap_ops
-Date: Fri, 12 Dec 2014 23:14:36 +0800
-Message-Id: <1418397300-10870-3-git-send-email-feng.wu@intel.com>
+Subject: [v3 07/26] iommu, x86: Add cap_pi_support() to detect VT-d PI capability
+Date: Fri, 12 Dec 2014 23:14:41 +0800
+Message-Id: <1418397300-10870-8-git-send-email-feng.wu@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
 References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
@@ -26,54 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new member capability to struct irq_remap_ops,
-this new function ops can be used to check whether some
-features are supported, such as VT-d Posted-Interrupts.
+Add helper function to detect VT-d Posted-Interrupts capability.
 
 Signed-off-by: Feng Wu <feng.wu@intel.com>
 Reviewed-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/irq_remapping.h | 4 ++++
- drivers/iommu/irq_remapping.h        | 4 ++++
- 2 files changed, 8 insertions(+)
+ include/linux/intel-iommu.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index 6ba2431..f67ae08 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -31,6 +31,10 @@ struct irq_alloc_info;
- 
- #ifdef CONFIG_IRQ_REMAP
- 
-+enum irq_remap_cap {
-+	IRQ_POSTING_CAP = 0,
-+};
-+
- extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
- extern void set_irq_remapping_broken(void);
-diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
-index 4bd791d..2d991b2 100644
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -28,6 +28,7 @@ struct irq_data;
- struct msi_msg;
- struct irq_domain;
- struct irq_alloc_info;
-+enum irq_remap_cap;
- 
- extern int disable_irq_remap;
- extern int irq_remap_broken;
-@@ -39,6 +40,9 @@ struct irq_remap_ops {
- 	/* Check whether Interrupt Remapping is supported */
- 	int (*supported)(void);
- 
-+	/* Check some capability is supported */
-+	bool (*capability)(enum irq_remap_cap);
-+
- 	/* Initializes hardware and makes it ready for remapping interrupts */
- 	int  (*prepare)(void);
- 
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index ecaf3a9..8174ae8 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -87,6 +87,7 @@ static inline void dmar_writeq(void __iomem *addr, u64 val)
+ /*
+  * Decoding Capability Register
+  */
++#define cap_pi_support(c)	(((c) >> 59) & 1)
+ #define cap_read_drain(c)	(((c) >> 55) & 1)
+ #define cap_write_drain(c)	(((c) >> 54) & 1)
+ #define cap_max_amask_val(c)	(((c) >> 48) & 0x3f)
 -- 
 1.9.1
 
