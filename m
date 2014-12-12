@@ -1,148 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965267AbaLLEWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Dec 2014 23:22:03 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:10301 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S964808AbaLLEV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Dec 2014 23:21:59 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AocGAIdsilQOAjMVdGdsb2JhbABZg1hYxX+FagKBFRcBAQEBAREBa4QNAQU4HiIBEAgDDgYECRYECwkDAgECASceBgEMAQUCAognDsZ4kQUBAQEBAQEBAQIBAQEBAQEBARqPcgeEKQWMKoE0g1+GPTCIGIFXglGDN4IgHhSBTyswAQEDgj4BAQE
-Message-ID: <548A6D63.3010106@internode.on.net>
-Date: Fri, 12 Dec 2014 14:51:55 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S965282AbaLLE0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Dec 2014 23:26:47 -0500
+Received: from ozlabs.org ([103.22.144.67]:55058 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933985AbaLLE0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Dec 2014 23:26:45 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
+Cc: Christoph Hellwig <hch@infradead.org>, Jani Nikula <jani.nikula@intel.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH] param: do not set store func without write perm
+In-Reply-To: <20141211222144.GA7070@www.outflux.net>
+References: <20141211222144.GA7070@www.outflux.net>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 12 Dec 2014 13:38:08 +1030
+Message-ID: <87r3w5d0pz.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Colin Watson <cjwatson@debian.org>, 772807@bugs.debian.org,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org
-CC: Al Viro <viro@zeniv.linux.org.uk>, Joe Perches <joe@perches.com>
-Subject: Re: Bug#772807: binfmt-support: unable to close /proc/sys/fs/binfmt_misc/register:
- Invalid argument
-References: <20141211102439.5047.90481.reportbug@localhost> <20141211104408.GQ3020@riva.ucam.org> <548987B8.8090202@internode.on.net> <20141211124024.GR3020@riva.ucam.org>
-In-Reply-To: <20141211124024.GR3020@riva.ucam.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Colin Watson wrote on 11/12/14 23:10:
-> On Thu, Dec 11, 2014 at 10:32:00PM +1030, Arthur Marsh wrote:
->> Colin Watson wrote on 11/12/14 21:14:
->>> The latest binfmt_misc module in git has much more detailed debugging
->>> output in dmesg.  What does "dmesg | grep binfmt_misc" say?
->>
->> Hi, I'm seeing:
->>
->> $ dmesg|grep binfmt_misc
+Kees Cook <keescook@chromium.org> writes:
+> When a module_param is defined without DAC write permissions, it can
+> still be changed at runtime and updated. Drivers using a 0444 permission
+> may be surprised that these values can still be changed.
 >
-> Hm.  Does your tree include
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/fs/binfmt_misc.c?id=6b899c4e9a049dfca759d990bd53b14f81c3626c
-> ?  If not, it would help to try again with that.
+> For drivers that want to allow updates, any S_IW* flag will set the
+> "store" function as before. Drivers without S_IW* flags will have the
+> "store" function unset, unforcing a read-only value. Drivers that wish
+> neither "store" nor "get" can continue to use "0" for perms to stay out
+> of sysfs entirely.
+
+Hmm, fair enough.  The use of the acronym DAC here is a bit weird;
+I would have just said:
+
+	/* If no perms, it's not writable even if root chmods it! */
+	if ((kp->perm & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0)
+		new->attrs[num].mattr.store = param_attr_store;
+
+Applied (with fuzz fixed, since I reworked that code in my tree).
+
+Thanks,
+Rusty.
+
 >
-> (Hm, I guess you might need CONFIG_DYNAMIC_DEBUG.  Not sure.)
+> Old behavior:
+>   # cd /sys/module/snd/parameters
+>   # ls -l
+>   total 0
+>   -r--r--r-- 1 root root 4096 Dec 11 13:55 cards_limit
+>   -r--r--r-- 1 root root 4096 Dec 11 13:55 major
+>   -r--r--r-- 1 root root 4096 Dec 11 13:55 slots
+>   # cat major
+>   116
+>   # echo -1 > major
+>   -bash: major: Permission denied
+>   # chmod u+w major
+>   # echo -1 > major
+>   # cat major
+>   -1
 >
-> Thanks,
+> New behavior:
+>   ...
+>   # chmod u+w major
+>   # echo -1 > major
+>   -bash: echo: write error: Input/output error
 >
-
-The earlier conversation is at:
-
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=772807
-
-Short version, on recent kernels I was seeing:
-
-Thu Dec 11 20:40:29 2014: [....] Enabling additional executable binary 
-formats:
-binfmt-supportupdate-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-Thu Dec 11 20:40:30 2014: update-binfmts: warning: unable to close 
-/proc/sys/fs/binfmt_misc/register: Invalid argument
-
-and only the first of several binfmt's registered (all the qemu 
-binfmt's) when update-binfmts was run at boot time.
-
-A git-bisect revealed:
-
-  git bisect good
-6b899c4e9a049dfca759d990bd53b14f81c3626c is the first bad commit
-commit 6b899c4e9a049dfca759d990bd53b14f81c3626c
-Author: Mike Frysinger <vapier@gentoo.org>
-Date:   Wed Dec 10 15:52:08 2014 -0800
-
-     binfmt_misc: add comments & debug logs
-
-     When trying to develop a custom format handler, the errors returned all
-     effectively get bucketed as EINVAL with no kernel messages.  The other
-     errors (ENOMEM/EFAULT) are internal/obvious and basic.  Thus any time a
-     bad handler is rejected, the developer has to walk the dense code and
-     try to guess where it went wrong.  Needing to dive into kernel code is
-     itself a fairly high barrier for a lot of people.
-
-     To improve this situation, let's deploy extensive pr_debug markers at
-     logical parse points, and add comments to the dense parsing logic.  It
-     let's you see exactly where the parsing aborts, the string the kernel
-     received (useful when dealing with shell code), how it translated the
-     buffers to binary data, and how it will apply the mask at runtime.
-
-     Some example output:
-       $ echo 
-':qemu-foo:M::\x7fELF\xAD\xAD\x01\x00:\xff\xff\xff\xff\xff\x00\xff\x00:/usr/bin/qemu-foo:POC' 
- > register
-       $ dmesg
-       binfmt_misc: register: received 92 bytes
-       binfmt_misc: register: delim: 0x3a {:}
-       binfmt_misc: register: name: {qemu-foo}
-       binfmt_misc: register: type: M (magic)
-       binfmt_misc: register: offset: 0x0
-       binfmt_misc: register: magic[raw]: 5c 78 37 66 45 4c 46 5c 78 41 
-44 5c 78 41 44 5c  \x7fELF\xAD\xAD\
-       binfmt_misc: register: magic[raw]: 78 30 31 5c 78 30 30 00 
-                    x01\x00.
-       binfmt_misc: register:  mask[raw]: 5c 78 66 66 5c 78 66 66 5c 78 
-66 66 5c 78 66 66  \xff\xff\xff\xff
-       binfmt_misc: register:  mask[raw]: 5c 78 66 66 5c 78 30 30 5c 78 
-66 66 5c 78 30 30  \xff\x00\xff\x00
-       binfmt_misc: register:  mask[raw]: 00 
-                    .
-       binfmt_misc: register: magic/mask length: 8
-       binfmt_misc: register: magic[decoded]: 7f 45 4c 46 ad ad 01 00 
-                        .ELF....
-       binfmt_misc: register:  mask[decoded]: ff ff ff ff ff 00 ff 00 
-                        ........
-       binfmt_misc: register:  magic[masked]: 7f 45 4c 46 ad 00 01 00 
-                        .ELF....
-       binfmt_misc: register: interpreter: {/usr/bin/qemu-foo}
-       binfmt_misc: register: flag: P (preserve argv0)
-       binfmt_misc: register: flag: O (open binary)
-       binfmt_misc: register: flag: C (preserve creds)
-
-     The [raw] lines show us exactly what was received from userspace.  The
-     lines after that show us how the kernel has decoded things.
-
-     Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-     Cc: Al Viro <viro@zeniv.linux.org.uk>
-     Cc: Joe Perches <joe@perches.com>
-     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-:040000 040000 d8354a4a420ed15399a6c41aa0914a8a4c6dba9a 
-2d491c10c9418cd16f367916f25d6050eb60152d M      fs
-
-Regards,
-
-Arthur.
-
-
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+>  kernel/params.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/kernel/params.c b/kernel/params.c
+> index db97b791390f..fd50ce9f1bbf 100644
+> --- a/kernel/params.c
+> +++ b/kernel/params.c
+> @@ -647,7 +647,9 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
+>  	sysfs_attr_init(&new->attrs[num].mattr.attr);
+>  	new->attrs[num].param = kp;
+>  	new->attrs[num].mattr.show = param_attr_show;
+> -	new->attrs[num].mattr.store = param_attr_store;
+> +	/* Do not allow runtime DAC changes to make param writable. */
+> +	if ((kp->perm & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0)
+> +		new->attrs[num].mattr.store = param_attr_store;
+>  	new->attrs[num].mattr.attr.name = (char *)name;
+>  	new->attrs[num].mattr.attr.mode = kp->perm;
+>  	new->num = num+1;
+> -- 
+> 1.9.1
+>
+>
+> -- 
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
