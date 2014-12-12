@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935189AbaLLUbZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 15:31:25 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38227 "EHLO
+	id S966072AbaLLUbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 15:31:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:38231 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaLLUbY (ORCPT
+	with ESMTP id S932702AbaLLUb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 15:31:24 -0500
-Date: Fri, 12 Dec 2014 15:31:21 -0500 (EST)
-Message-Id: <20141212.153121.2126874023661472965.davem@davemloft.net>
-To: elfring@users.sourceforge.net
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, julia.lawall@lip6.fr
-Subject: Re: [PATCH 1/1] IDE: Deletion of an unnecessary check before the
- function call "module_put"
+	Fri, 12 Dec 2014 15:31:29 -0500
+Date: Fri, 12 Dec 2014 15:31:27 -0500 (EST)
+Message-Id: <20141212.153127.41600648682351296.davem@davemloft.net>
+To: linux@rasmusvillemoes.dk
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: ide: Fix mostly harmless off-by-one hardcoded
+ value
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <546F91E5.60104@users.sourceforge.net>
-References: <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
-	<5317A59D.4@users.sourceforge.net>
-	<546F91E5.60104@users.sourceforge.net>
+In-Reply-To: <1417125449-6007-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1417125449-6007-1-git-send-email-linux@rasmusvillemoes.dk>
 X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Dec 2014 12:31:24 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 12 Dec 2014 12:31:29 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-Date: Fri, 21 Nov 2014 20:26:29 +0100
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Date: Thu, 27 Nov 2014 22:57:29 +0100
 
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Fri, 21 Nov 2014 20:22:32 +0100
+> The string "IOMEGA Clik!" has length 12, not 11. Using strstarts
+> avoids the error-prone hardcoding of the prefix length. For
+> consistency, also change the occurence just above.
 > 
-> The module_put() function tests whether its argument is NULL and then
-> returns immediately. Thus the test around the call is not needed.
-> 
-> This issue was detected by using the Coccinelle software.
-> 
-> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
 Applied.
