@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030707AbaLLPeG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:34:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220AbaLLPeE (ORCPT
+	id S1759979AbaLLPfo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:35:44 -0500
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:59213 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540AbaLLPfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:34:04 -0500
-Date: Fri, 12 Dec 2014 10:34:02 -0500
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Grant Likely <grant.likely@linaro.org>, Bill Huang <bilhuang@nvidia.com>
-Cc: vinceh@nvidia.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/1] driver core: re-order dpm_list after a succussful probe
-Message-ID: <20141212153402.GA4746@kroah.com>
-References: <1418385015-26811-1-git-send-email-bilhuang@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418385015-26811-1-git-send-email-bilhuang@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 12 Dec 2014 10:35:41 -0500
+From: Dmitry Osipenko <digetx@gmail.com>
+To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
+Cc: stable@vger.kernel.org, Dmitry Osipenko <digetx@gmail.com>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: dts: tegra20: fix GR3D, DSI unit and reg base addresses
+Date: Fri, 12 Dec 2014 18:19:19 +0300
+Message-Id: <1418397559-19646-1-git-send-email-digetx@gmail.com>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 03:50:15AM -0800, Bill Huang wrote:
-> The dpm_list was added in the call "device_add" and when we do defer
-> probe we'll explicitly move the probed device to be the last in the
-> dpm_list, we should do the same for the normal probe since there are
-> cases that we won't have chance to do defer probe to change the PM order
-> as the below example.
-> 
-> If we would like the device driver A to be suspended earlier than the
-> device driver B, we won't have chance to do defer probe to fix the
-> suspend dependency since at the time device driver A is probed, device B
-> was up and running.
-> 
-> Device A was added
-> Device B was added
-> Driver for device B was binded
-> Driver for device A was binded
-> 
-> Signed-off-by: Bill Huang <bilhuang@nvidia.com>
-> ---
-> 
-> It seems to me this is a bug in the core driver, but I'm not sure how should
-> we fix it.
-> 
-> - Do we have better fix?
-> - This proposed fix or any other fix might introduces side effect that breaks
->   existing working suspend dependencies which happen to work based on the
->   existing wrong suspend order.
-> 
-> Any thoughts? Thanks.
-> 
->  drivers/base/dd.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-> index cdc779c..54886d2 100644
-> --- a/drivers/base/dd.c
-> +++ b/drivers/base/dd.c
-> @@ -308,6 +308,10 @@ static int really_probe(struct device *dev, struct device_driver *drv)
->  			goto probe_failed;
->  	}
->  
-> +	device_pm_lock();
-> +	device_pm_move_last(dev);
-> +	device_pm_unlock();
-> +
->  	driver_bound(dev);
->  	ret = 1;
->  	pr_debug("bus: '%s': %s: bound device %s to driver %s\n",
+Commit 58ecb23f64ee ("ARM: tegra: add missing unit addresses to DT") added
+unit address and changed reg base for GR3D and DSI host1x modules, but these
+addresses belongs to GR2D and TVO modules respectively. Fix it by changing
+modules unit and reg base addresses to proper ones.
 
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+Fixes: 58ecb23f64ee (ARM: tegra: add missing unit addresses to DT)
+Cc: <stable@vger.kernel.org> # v3.13+
+---
+ arch/arm/boot/dts/tegra20.dtsi | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Adding Grant, as he did the deferred probe stuff...
+diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
+index 8acf5d8..f76fe94 100644
+--- a/arch/arm/boot/dts/tegra20.dtsi
++++ b/arch/arm/boot/dts/tegra20.dtsi
+@@ -68,9 +68,9 @@
+ 			reset-names = "2d";
+ 		};
+ 
+-		gr3d@54140000 {
++		gr3d@54180000 {
+ 			compatible = "nvidia,tegra20-gr3d";
+-			reg = <0x54140000 0x00040000>;
++			reg = <0x54180000 0x00040000>;
+ 			clocks = <&tegra_car TEGRA20_CLK_GR3D>;
+ 			resets = <&tegra_car 24>;
+ 			reset-names = "3d";
+@@ -130,9 +130,9 @@
+ 			status = "disabled";
+ 		};
+ 
+-		dsi@542c0000 {
++		dsi@54300000 {
+ 			compatible = "nvidia,tegra20-dsi";
+-			reg = <0x542c0000 0x00040000>;
++			reg = <0x54300000 0x00040000>;
+ 			clocks = <&tegra_car TEGRA20_CLK_DSI>;
+ 			resets = <&tegra_car 48>;
+ 			reset-names = "dsi";
+-- 
+2.2.0
 
-And it's the middle of the merge window, I'll not have time to look at
-this for a few weeks at the earliest, sorry.
-
-thanks,
-
-greg k-h
