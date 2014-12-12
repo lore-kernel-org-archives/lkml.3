@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965995AbaLLGsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:48:16 -0500
+	id S966379AbaLLGxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:53:51 -0500
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759235AbaLLGsK (ORCPT
+	by vger.kernel.org with ESMTP id S965978AbaLLGsP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:48:10 -0500
+	Fri, 12 Dec 2014 01:48:15 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David Matlack" <dmatlack@google.com>,
-        "Paolo Bonzini" <pbonzini@redhat.com>
+CC: akpm@linux-foundation.org, "Frans Klaver" <frans.klaver@xsens.com>,
+        "Johan Hovold" <johan@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.824531594@decadent.org.uk>
+Message-ID: <lsq.1418364865.919250263@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 028/164] kvm: don't take vcpu mutex for obviously
- invalid vcpu ioctls
+Subject: [PATCH 3.2 070/164] usb: serial: ftdi_sio: add Awinda Station and
+ Dongle products
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,45 +32,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Matlack <dmatlack@google.com>
+From: Frans Klaver <frans.klaver@xsens.com>
 
-commit 2ea75be3219571d0ec009ce20d9971e54af96e09 upstream.
+commit edd74ffab1f6909eee400c7de8ce621870aacac9 upstream.
 
-vcpu ioctls can hang the calling thread if issued while a vcpu is running.
-However, invalid ioctls can happen when userspace tries to probe the kind
-of file descriptors (e.g. isatty() calls ioctl(TCGETS)); in that case,
-we know the ioctl is going to be rejected as invalid anyway and we can
-fail before trying to take the vcpu mutex.
+Add new IDs for the Xsens Awinda Station and Awinda Dongle.
 
-This patch does not change functionality, it just makes invalid ioctls
-fail faster.
+While at it, order the definitions by PID and add a logical separation
+between devices using Xsens' VID and those using FTDI's VID.
 
-Signed-off-by: David Matlack <dmatlack@google.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/kvm_main.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -52,6 +52,7 @@
- 
- #include <asm/processor.h>
- #include <asm/io.h>
-+#include <asm/ioctl.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
- 
-@@ -1766,6 +1767,9 @@ static long kvm_vcpu_ioctl(struct file *
- 	if (vcpu->kvm->mm != current->mm)
- 		return -EIO;
- 
-+	if (unlikely(_IOC_TYPE(ioctl) != KVMIO))
-+		return -EINVAL;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -685,6 +685,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, XSENS_CONVERTER_7_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_DONGLE_PID) },
++	{ USB_DEVICE(XSENS_VID, XSENS_AWINDA_STATION_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_CONVERTER_PID) },
+ 	{ USB_DEVICE(XSENS_VID, XSENS_MTW_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OMNI1509) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -143,8 +143,12 @@
+  * Xsens Technologies BV products (http://www.xsens.com).
+  */
+ #define XSENS_VID		0x2639
+-#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
++#define XSENS_AWINDA_STATION_PID 0x0101
++#define XSENS_AWINDA_DONGLE_PID 0x0102
+ #define XSENS_MTW_PID		0x0200	/* Xsens MTw */
++#define XSENS_CONVERTER_PID	0xD00D	/* Xsens USB-serial converter */
 +
- #if defined(CONFIG_S390) || defined(CONFIG_PPC)
- 	/*
- 	 * Special cases: vcpu ioctls that are asynchronous to vcpu execution,
++/* Xsens devices using FTDI VID */
+ #define XSENS_CONVERTER_0_PID	0xD388	/* Xsens USB converter */
+ #define XSENS_CONVERTER_1_PID	0xD389	/* Xsens Wireless Receiver */
+ #define XSENS_CONVERTER_2_PID	0xD38A
 
