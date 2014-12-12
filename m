@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934818AbaLLKAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 05:00:47 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:37462 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934654AbaLLKAp convert rfc822-to-8bit (ORCPT
+	id S934830AbaLLKD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 05:03:29 -0500
+Received: from cn.fujitsu.com ([59.151.112.132]:28066 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934608AbaLLKD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 05:00:45 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Cyrille Pitchen'" <cyrille.pitchen@atmel.com>,
-        "'Thomas Petazzoni'" <thomas.petazzoni@free-electrons.com>
-CC: "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "soren.brinkmann@xilinx.com" <soren.brinkmann@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 1/1] net/macb: add TX multiqueue support for gem
-Thread-Topic: [PATCH v2 1/1] net/macb: add TX multiqueue support for gem
-Thread-Index: AQHQFXjn6XWo+2ZgNk281xEEq+HfaJyLtH0Q///0YwCAABC9QA==
-Date: Fri, 12 Dec 2014 09:59:36 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CA0BA7D@AcuExch.aculab.com>
-References: <cover.1418291637.git.cyrille.pitchen@atmel.com>
-	<87a3098203ee6eaa7a60607713a293d3258e2b58.1418291637.git.cyrille.pitchen@atmel.com>
- <20141211203103.4191887a@free-electrons.com>
- <063D6719AE5E284EB5DD2968C1650D6D1CA0BA36@AcuExch.aculab.com>
- <548AAE66.8070501@atmel.com>
-In-Reply-To: <548AAE66.8070501@atmel.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Fri, 12 Dec 2014 05:03:27 -0500
+X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
+   d="scan'208";a="44951224"
+From: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>
+Subject: [RESEND][PATCH] userns: use macro instead of magic number for max userns level
+Date: Fri, 12 Dec 2014 18:02:54 +0800
+Message-ID: <1418378574-10917-1-git-send-email-chenhanxiao@cn.fujitsu.com>
+X-Mailer: git-send-email 1.9.3
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyrille Pitchen [...
-> > It will probably add a lot of object code and, depending on how often
-> > the registers are accesses, might have performance impact.
-> >
-> > Having:
-> > #define GEM_ISR(n) (0x400 + (n) << 4)
-> > will save source code.
-> >
-> > 	David
-> >
-> >
-> >
-> So you suggest that we keep the unsigned int fields ISR, IMR, IER, IDR, TBQP in
-> the struct macb_queue and initialize them once for all in macb_probe() like
-> patch v2 does but only replace the GEM_ISR1 .. GEM_ISR7 defines by GEM_ISR(n)
-> in macb.h?
-> 
-> This way there would be to test at run time and we can handle the special
-> register mapping of queue0.
-> 
-> Is it what you meant?
+Use macro instead of magic number
+for max user namespace level.
 
-In one word, yes.
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-	David
+Signed-off-by: Chen Hanxiao <chenhanxiao@cn.fujitsu.com>
+---
+ kernel/user_namespace.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index aa312b0..5435489 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -47,6 +47,8 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
+ 	cred->user_ns = user_ns;
+ }
+ 
++#define MAX_USER_NS_LEVEL 32
++
+ /*
+  * Create a new user namespace, deriving the creator from the user in the
+  * passed credentials, and replacing that user with the new root user for the
+@@ -62,7 +64,7 @@ int create_user_ns(struct cred *new)
+ 	kgid_t group = new->egid;
+ 	int ret;
+ 
+-	if (parent_ns->level > 32)
++	if (parent_ns->level > MAX_USER_NS_LEVEL)
+ 		return -EUSERS;
+ 
+ 	/*
+-- 
+1.9.3
 
