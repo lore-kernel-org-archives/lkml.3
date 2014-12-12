@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaLLWeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:34:19 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:40650 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356AbaLLWeS (ORCPT
+	id S1752588AbaLLWgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:36:42 -0500
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:62317 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751089AbaLLWgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:34:18 -0500
-Message-ID: <548B6D66.3090106@konagma.com>
-Date: Fri, 12 Dec 2014 23:34:14 +0100
-From: Krzysztof Konopko <kris@konagma.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Jes Sorensen <Jes.Sorensen@redhat.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com> <wrfj7fxwyeq5.fsf@redhat.com>
-In-Reply-To: <wrfj7fxwyeq5.fsf@redhat.com>
-Content-Type: text/plain; charset=windows-1252
+	Fri, 12 Dec 2014 17:36:40 -0500
+Message-ID: <1418423797.5756.54.camel@x220>
+Subject: Re: linux-next: Tree for Dec 12
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        Josh Triplett <josh@joshtriplett.org>
+Date: Fri, 12 Dec 2014 23:36:37 +0100
+In-Reply-To: <20141212135719.4c79bac46d43bfd8d7c8e6a6@linux-foundation.org>
+References: <20141212183518.06e3803d@canb.auug.org.au>
+	 <1418377757.5756.24.camel@x220> <20141212210449.7f460bb1@canb.auug.org.au>
+	 <1418380316.5756.37.camel@x220>
+	 <20141212135719.4c79bac46d43bfd8d7c8e6a6@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Dec 2014 22:36:37.0336 (UTC) FILETIME=[170E4D80:01D0165C]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14 18:12, Jes Sorensen wrote:
-> Krzysztof Konopko <kris@konagma.com> writes:
->> Some struct fields in wifi.h are meant to be __le16 bu were declared as
->> unsigned short.  This was reported by sparse:
->>
->>   rtw_wlan_util.c:538:24: warning: cast to restricted __le16
->>   rtw_wlan_util.c:1544:29: warning: cast to restricted __le16
->>   rtw_wlan_util.c:1546:25: warning: cast to restricted __le16
->>
->> This patch changes declared types of the struct fields involved.
->>
->> Signed-off-by: Krzysztof Konopko <kris@konagma.com>
->> ---
->>  drivers/staging/rtl8723au/include/wifi.h | 6 +++---
->>  1 file changed, 3 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/staging/rtl8723au/include/wifi.h b/drivers/staging/rtl8723au/include/wifi.h
->> index fd3da3b..8a2adc5 100644
->> --- a/drivers/staging/rtl8723au/include/wifi.h
->> +++ b/drivers/staging/rtl8723au/include/wifi.h
->> @@ -28,7 +28,7 @@
->>  struct AC_param {
->>  	unsigned char		ACI_AIFSN;
->>  	unsigned char		CW;
->> -	unsigned short	TXOP_limit;
->> +	__le16			TXOP_limit;
->>  }  __packed;
->>  
->>  struct WMM_para_element {
->> @@ -39,9 +39,9 @@ struct WMM_para_element {
->>  
->>  struct ADDBA_request {
->>  	unsigned char		dialog_token;
->> -	unsigned short	BA_para_set;
->> +	__le16		BA_para_set;
->>  	unsigned short	BA_timeout_value;
->> -	unsigned short	BA_starting_seqctrl;
->> +	__le16		BA_starting_seqctrl;
->>  }  __packed;
-> 
-> If you are going to make the struct comply with the on-wire data format,
-> be consistent. Don't just change half the elements of the struct - that
-> will just lead to confusion.
-> 
-> Jes
-> 
+On Fri, 2014-12-12 at 13:57 -0800, Andrew Morton wrote:
+> On Fri, 12 Dec 2014 11:31:56 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
 
-Yes, my change was inconsistent.  Looking at `addba_req` and
-`ieee80211_wmm_ac_param` in include/linux/ieee80211.h, all data wider
-than 1 byte should be declared as __le.  I'll send through a patch that
-makes this change consistently.
+> > I won't be bothering (Andrew and) you again about this. Unless sorting
+> > this out takes rather long, that is.
+> 
+> Is there some problem with the current mainline 3.19 code?
 
-Thanks,
-Kris
+The problem I noticed is with next-20141212. For some reason - Stephen
+appears to not know exactly why - it ended up with a Kconfig entry for
+INIT_FALLBACK without any actually users of that Kconfig symbol. My
+infamous 800 line perl monster - which I run on every linux-next release
+to check for exactly stuff like this - can't help but notice that. The
+idea being that my script notices these problems before they actually
+hit mainline.
+
+Note that the set of people actually worrying about this stuff contains
+me and, maybe, one or two other persons.
+
+
+Paul Bolle
+
