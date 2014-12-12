@@ -1,560 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030352AbaLLOik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 09:38:40 -0500
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:64786 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966399AbaLLOih (ORCPT
+	id S1030324AbaLLOi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 09:38:29 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39668 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030242AbaLLOi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 09:38:37 -0500
-Message-ID: <548AFDE9.6000909@gmail.com>
-Date: Fri, 12 Dec 2014 08:38:33 -0600
-From: Dinh Nguyen <dinh.linux@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        linux-kernel@vger.kernel.org
-CC: lftan.linux@gmail.com, Suman Anna <s-anna@ti.com>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH (resend)] mailbox: Add Altera mailbox driver
-References: <1418378690-3466-1-git-send-email-lftan@altera.com>
-In-Reply-To: <1418378690-3466-1-git-send-email-lftan@altera.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Dec 2014 09:38:26 -0500
+From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Patrick Titiano <ptitiano@baylibre.com>,
+        LM Sensors <lm-sensors@lm-sensors.org>,
+        Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Subject: [PATCH v6 5/5] hwmon: ina2xx: allow to change the averaging rate at run-time
+Date: Fri, 12 Dec 2014 15:37:55 +0100
+Message-Id: <1418395075-16850-6-git-send-email-bgolaszewski@baylibre.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418395075-16850-1-git-send-email-bgolaszewski@baylibre.com>
+References: <1418395075-16850-1-git-send-email-bgolaszewski@baylibre.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The averaging rate of ina226 is hardcoded to 16 in the driver. Make it
+modifiable at run-time via a new sysfs attribute.
 
+While we're at it - add an additional variable to ina2xx_data, which holds
+the current configuration settings - this way we'll be able to restore the
+configuration in case of an unexpected chip reset.
 
-On 12/12/14, 4:04 AM, Ley Foon Tan wrote:
-> The Altera mailbox allows for interprocessor communication. It supports
-> only one channel and work as either sender or receiver.
-> 
-> Signed-off-by: Ley Foon Tan <lftan@altera.com>
-> ---
->  .../devicetree/bindings/mailbox/altera-mailbox.txt |  49 +++
->  drivers/mailbox/Kconfig                            |   6 +
->  drivers/mailbox/Makefile                           |   2 +
->  drivers/mailbox/mailbox-altera.c                   | 404 +++++++++++++++++++++
->  4 files changed, 461 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
->  create mode 100644 drivers/mailbox/mailbox-altera.c
-> 
-> diff --git a/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
-> new file mode 100644
-> index 0000000..c261979
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
-> @@ -0,0 +1,49 @@
-> +Altera Mailbox Driver
-> +=====================
-> +
-> +Required properties:
-> +- compatible :	"altr,mailbox-1.0".
-> +- reg : 	physical base address of the mailbox and length of
-> +		memory mapped region.
-> +- #mbox-cells:	Common mailbox binding property to identify the number
-> +		of cells required for the mailbox specifier. Should be 1.
-> +
-> +Optional properties:
-> +- interrupt-parent :	interrupt source phandle.
-> +- interrupts :		interrupt number. The interrupt specifier format
-> +			depends on the interrupt controller parent.
-> +
-> +Example:
-> +	mbox_tx: mailbox@0x100 {
-> +		compatible = "altr,mailbox-1.0";
-> +		reg = <0x100 0x8>;
-> +		interrupt-parent = < &gic_0 >;
-> +		interrupts = <5>;
-> +		#mbox-cells = <1>;
-> +	};
-> +
-> +	mbox_rx: mailbox@0x200 {
-> +		compatible = "altr,mailbox-1.0";
-> +		reg = <0x200 0x8>;
-> +		interrupt-parent = < &gic_0 >;
-> +		interrupts = <6>;
-> +		#mbox-cells = <1>;
-> +	};
-> +
-> +Mailbox client
-> +===============
-> +"mboxes" and the optional "mbox-names" (please see
-> +Documentation/devicetree/bindings/mailbox/mailbox.txt for details). Each value
-> +of the mboxes property should contain a phandle to the mailbox controller
-> +device node and second argument is the channel index. It must be 0 (hardware
-> +support only one channel).The equivalent "mbox-names" property value can be
-> +used to give a name to the communication channel to be used by the client user.
-> +
-> +Example:
-> +	mclient0: mclient0@0x400 {
-> +		compatible = "client-1.0";
-> +		reg = <0x400 0x10>;
-> +		mbox-names = "mbox-tx", "mbox-rx";
-> +		mboxes = <&mbox_tx 0>,
-> +			 <&mbox_rx 0>;
-> +	};
-> diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
-> index c04fed9..84325f2 100644
-> --- a/drivers/mailbox/Kconfig
-> +++ b/drivers/mailbox/Kconfig
-> @@ -45,4 +45,10 @@ config PCC
->  	  states). Select this driver if your platform implements the
->  	  PCC clients mentioned above.
->  
-> +config ALTERA_MBOX
-> +	tristate "Altera Mailbox"
-> +	help
-> +	  An implementation of the Altera Mailbox soft core. It is used
-> +	  to send message between processors. Say Y here if you want to use the
-> +	  Altera mailbox support.
->  endif
-> diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-> index dd412c2..2e79231 100644
-> --- a/drivers/mailbox/Makefile
-> +++ b/drivers/mailbox/Makefile
-> @@ -7,3 +7,5 @@ obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
->  obj-$(CONFIG_OMAP2PLUS_MBOX)	+= omap-mailbox.o
->  
->  obj-$(CONFIG_PCC)		+= pcc.o
-> +
-> +obj-$(CONFIG_ALTERA_MBOX)	+= mailbox-altera.o
-> diff --git a/drivers/mailbox/mailbox-altera.c b/drivers/mailbox/mailbox-altera.c
-> new file mode 100644
-> index 0000000..9ed10de
-> --- /dev/null
-> +++ b/drivers/mailbox/mailbox-altera.c
-> @@ -0,0 +1,404 @@
-> +/*
-> + * Copyright Altera Corporation (C) 2013-2014. All rights reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +#include <linux/mailbox_controller.h>
+Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+---
+ Documentation/hwmon/ina2xx |   3 ++
+ drivers/hwmon/ina2xx.c     | 132 +++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 131 insertions(+), 4 deletions(-)
 
-Alphabetize the headers.
+diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
+index 320dd69..a11256d 100644
+--- a/Documentation/hwmon/ina2xx
++++ b/Documentation/hwmon/ina2xx
+@@ -48,3 +48,6 @@ The shunt value in micro-ohms can be set via platform data or device tree at
+ compile-time or via the shunt_resistor attribute in sysfs at run-time. Please
+ refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
+ if the device tree is used.
++
++The averaging rate of INA226 and INA230 can be changed via the avg_rate sysfs
++attribute. The available rates are: 1, 4, 16, 64, 128, 256, 512 and 1024.
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index c7358e8..38c1f32 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -68,6 +68,15 @@
+ 
+ #define INA2XX_RSHUNT_DEFAULT		10000
+ 
++/* bit masks for the averaging setting in the configuration register */
++#define INA226_AVG_RD_MASK		0x0E00
++#define INA226_AVG_WR_MASK		0xF1FF
++
++#define INA226_READ_AVG(reg) ((reg & INA226_AVG_RD_MASK) >> 9)
++
++/* common attrs, ina226 attrs and NULL */
++#define INA2XX_MAX_ATTRIBUTE_GROUPS	3
++
+ enum ina2xx_ids { ina219, ina226 };
+ 
+ struct ina2xx_config {
+@@ -85,12 +94,14 @@ struct ina2xx_data {
+ 	const struct ina2xx_config *config;
+ 
+ 	long rshunt;
++	u16 curr_config;
+ 
+ 	struct mutex update_lock;
+ 	bool valid;
+ 	unsigned long last_updated;
+ 
+ 	int kind;
++	const struct attribute_group *groups[INA2XX_MAX_ATTRIBUTE_GROUPS];
+ 	u16 regs[INA2XX_MAX_REGISTERS];
+ };
+ 
+@@ -115,6 +126,38 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	},
+ };
+ 
++/*
++ * Available averaging rates for ina226. The indices correspond with
++ * the bit values expected by the chip (according to the ina226 datasheet,
++ * table 3 AVG bit settings, found at
++ * http://www.ti.com/lit/ds/symlink/ina226.pdf.
++ */
++static const int ina226_avg_tab[] = { 1, 4, 16, 64, 128, 256, 512, 1024 };
++
++static int ina226_avg_bits(int avg)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ina226_avg_tab); i++) {
++		if (avg == ina226_avg_tab[i])
++			return i;
++	}
++
++	return -EINVAL;
++}
++
++static int ina226_avg_val(int bits)
++{
++	/*
++	 * Value read from the config register should be correct, but do check
++	 * the boundary just in case.
++	 */
++	if (bits >= ARRAY_SIZE(ina226_avg_tab))
++		return -ENODEV;
++
++	return ina226_avg_tab[bits];
++}
++
+ static int ina2xx_calibrate(struct ina2xx_data *data)
+ {
+ 	return i2c_smbus_write_word_swapped(data->client, INA2XX_CALIBRATION,
+@@ -131,7 +174,7 @@ static int ina2xx_init(struct ina2xx_data *data)
+ 
+ 	/* device configuration */
+ 	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
+-					   data->config->config_default);
++					   data->curr_config);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -278,6 +321,66 @@ static ssize_t ina2xx_set_shunt(struct device *dev,
+ 	return count;
+ }
+ 
++static ssize_t ina226_show_avg(struct device *dev,
++			       struct device_attribute *da, char *buf)
++{
++	struct ina2xx_data *data = ina2xx_update_device(dev);
++	int avg, i, written = 0;
++	const char *fmt;
++
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	avg = ina226_avg_val(INA226_READ_AVG(data->regs[INA2XX_CONFIG]));
++	if (avg < 0)
++		return avg;
++
++	for (i = 0; i < ARRAY_SIZE(ina226_avg_tab); i++) {
++		if (avg == ina226_avg_tab[i])
++			fmt = "\t[%d]";
++		else
++			fmt = "\t%d";
++
++		written += snprintf(buf + written, PAGE_SIZE - written,
++				    fmt, ina226_avg_tab[i]);
++	}
++	written += snprintf(buf + written, PAGE_SIZE - written, "\n");
++
++	return written;
++}
++
++static ssize_t ina226_set_avg(struct device *dev,
++			      struct device_attribute *da,
++			      const char *buf, size_t count)
++{
++	struct ina2xx_data *data = ina2xx_update_device(dev);
++	long val;
++	int status, avg;
++
++	if (IS_ERR(data))
++		return PTR_ERR(data);
++
++	status = kstrtol(buf, 10, &val);
++	if (status < 0)
++		return status;
++
++	avg = ina226_avg_bits(val);
++	if (avg < 0)
++		return avg;
++
++	mutex_lock(&data->update_lock);
++	data->curr_config = (data->regs[INA2XX_CONFIG] &
++			     INA226_AVG_WR_MASK) | (avg << 9);
++	status = i2c_smbus_write_word_swapped(data->client,
++					      INA2XX_CONFIG,
++					      data->curr_config);
++	mutex_unlock(&data->update_lock);
++	if (status < 0)
++		return status;
++
++	return count;
++}
++
+ /* shunt voltage */
+ static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, ina2xx_show_value, NULL,
+ 			  INA2XX_SHUNT_VOLTAGE);
+@@ -299,6 +402,10 @@ static SENSOR_DEVICE_ATTR(shunt_resistor, S_IRUGO | S_IWUSR,
+ 			  ina2xx_show_value, ina2xx_set_shunt,
+ 			  INA2XX_CALIBRATION);
+ 
++/* averaging rate */
++static SENSOR_DEVICE_ATTR(avg_rate, S_IRUGO | S_IWUSR,
++			  ina226_show_avg, ina226_set_avg, 0);
++
+ /* pointers to created device attributes */
+ static struct attribute *ina2xx_attrs[] = {
+ 	&sensor_dev_attr_in0_input.dev_attr.attr,
+@@ -308,7 +415,19 @@ static struct attribute *ina2xx_attrs[] = {
+ 	&sensor_dev_attr_shunt_resistor.dev_attr.attr,
+ 	NULL,
+ };
+-ATTRIBUTE_GROUPS(ina2xx);
++
++static const struct attribute_group ina2xx_group = {
++	.attrs = ina2xx_attrs,
++};
++
++static struct attribute *ina226_attrs[] = {
++	&sensor_dev_attr_avg_rate.dev_attr.attr,
++	NULL,
++};
++
++static const struct attribute_group ina226_group = {
++	.attrs = ina226_attrs,
++};
+ 
+ static int ina2xx_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+@@ -319,7 +438,7 @@ static int ina2xx_probe(struct i2c_client *client,
+ 	struct ina2xx_data *data;
+ 	struct device *hwmon_dev;
+ 	u32 val;
+-	int ret;
++	int ret, group = 0;
+ 
+ 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
+ 		return -ENODEV;
+@@ -341,6 +460,7 @@ static int ina2xx_probe(struct i2c_client *client,
+ 	/* set the device type */
+ 	data->kind = id->driver_data;
+ 	data->config = &ina2xx_config[data->kind];
++	data->curr_config = data->config->config_default;
+ 	data->client = client;
+ 
+ 	if (data->rshunt <= 0 ||
+@@ -355,8 +475,12 @@ static int ina2xx_probe(struct i2c_client *client,
+ 
+ 	mutex_init(&data->update_lock);
+ 
++	data->groups[group++] = &ina2xx_group;
++	if (data->kind == ina226)
++		data->groups[group++] = &ina226_group;
++
+ 	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
+-							   data, ina2xx_groups);
++							   data, data->groups);
+ 	if (IS_ERR(hwmon_dev))
+ 		return PTR_ERR(hwmon_dev);
+ 
+-- 
+2.1.3
 
-> +
-> +#define DRIVER_NAME	"altera-mailbox"
-> +
-> +#define MAILBOX_CMD_REG			0x00
-> +#define MAILBOX_PTR_REG			0x04
-> +#define MAILBOX_STS_REG			0x08
-> +#define MAILBOX_INTMASK_REG		0x0C
-> +
-> +#define INT_PENDING_MSK			0x1
-> +#define INT_SPACE_MSK			0x2
-> +
-> +#define STS_PENDING_MSK			0x1
-> +#define STS_FULL_MSK			0x2
-> +#define STS_FULL_OFT			0x1
-> +
-> +#define MBOX_PENDING(status)	(((status) & STS_PENDING_MSK))
-> +#define MBOX_FULL(status)	(((status) & STS_FULL_MSK) >> STS_FULL_OFT)
-> +
-> +enum altera_mbox_msg {
-> +	MBOX_CMD = 0,
-> +	MBOX_PTR,
-> +};
-> +
-> +#define MBOX_POLLING_MS		1	/* polling interval 1ms */
-> +
-> +struct altera_mbox {
-> +	bool is_sender;		/* 1-sender, 0-receiver */
-> +	bool intr_mode;
-> +	int irq;
-> +	void __iomem *mbox_base;
-> +	struct device *dev;
-> +	struct mbox_chan chan;
-> +	struct mbox_controller controller;
-> +
-> +	/* If the controller supports only RX polling mode */
-> +	struct timer_list rxpoll_timer;
-> +};
-> +
-> +static inline struct altera_mbox *to_altera_mbox(struct mbox_chan *chan)
-> +{
-> +	if (!chan)
-> +		return NULL;
-> +
-> +	return container_of(chan, struct altera_mbox, chan);
-> +}
-> +
-> +static inline int altera_mbox_full(struct altera_mbox *mbox)
-> +{
-> +	u32 status;
-> +
-> +	status = __raw_readl(mbox->mbox_base + MAILBOX_STS_REG);
-> +	return MBOX_FULL(status);
-> +}
-> +
-> +static inline int altera_mbox_pending(struct altera_mbox *mbox)
-> +{
-> +	u32 status;
-> +
-> +	status = __raw_readl(mbox->mbox_base + MAILBOX_STS_REG);
-> +	return MBOX_PENDING(status);
-> +}
-> +
-> +static void altera_mbox_rx_intmask(struct altera_mbox *mbox, bool enable)
-> +{
-> +	u32 mask;
-> +
-> +	mask = __raw_readl(mbox->mbox_base + MAILBOX_INTMASK_REG);
-> +	if (enable)
-> +		mask |= INT_PENDING_MSK;
-> +	else
-> +		mask &= ~INT_PENDING_MSK;
-> +	__raw_writel(mask, mbox->mbox_base + MAILBOX_INTMASK_REG);
-> +}
-> +
-> +static void altera_mbox_tx_intmask(struct altera_mbox *mbox, bool enable)
-> +{
-> +	u32 mask;
-> +
-> +	mask = __raw_readl(mbox->mbox_base + MAILBOX_INTMASK_REG);
-> +	if (enable)
-> +		mask |= INT_SPACE_MSK;
-> +	else
-> +		mask &= ~INT_SPACE_MSK;
-> +	__raw_writel(mask, mbox->mbox_base + MAILBOX_INTMASK_REG);
-> +}
-> +
-> +static bool altera_mbox_is_sender(struct altera_mbox *mbox)
-> +{
-> +	u32 reg;
-> +	/* Write a magic number to PTR register and read back this register.
-> +	 * This register is read-write if it is a sender.
-> +	 */
-> +	#define MBOX_MAGIC	0xA5A5AA55
-> +	__raw_writel(MBOX_MAGIC, mbox->mbox_base + MAILBOX_PTR_REG);
-> +	reg = __raw_readl(mbox->mbox_base + MAILBOX_PTR_REG);
-> +	if (reg == MBOX_MAGIC) {
-> +		/* Clear to 0 */
-> +		__raw_writel(0, mbox->mbox_base + MAILBOX_PTR_REG);
-> +		return true;
-> +	}
-> +	return false;
-> +}
-> +
-> +static void altera_mbox_rx_data(struct mbox_chan *chan)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +	u32 data[2];
-> +
-> +	if (altera_mbox_pending(mbox)) {
-> +		data[MBOX_PTR] = __raw_readl(mbox->mbox_base + MAILBOX_PTR_REG);
-> +		data[MBOX_CMD] = __raw_readl(mbox->mbox_base + MAILBOX_CMD_REG);
-> +		mbox_chan_received_data(chan, (void *)data);
-> +	}
-> +}
-> +
-> +static void altera_mbox_poll_rx(unsigned long data)
-> +{
-> +	struct mbox_chan *chan = (struct mbox_chan *)data;
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	altera_mbox_rx_data(chan);
-> +
-> +	mod_timer(&mbox->rxpoll_timer,
-> +		jiffies + msecs_to_jiffies(MBOX_POLLING_MS));
-> +}
-> +
-> +static irqreturn_t altera_mbox_tx_interrupt(int irq, void *p)
-> +{
-> +	struct mbox_chan *chan = (struct mbox_chan *)p;
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	altera_mbox_tx_intmask(mbox, false);
-> +	mbox_chan_txdone(chan, 0);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static irqreturn_t altera_mbox_rx_interrupt(int irq, void *p)
-> +{
-> +	struct mbox_chan *chan = (struct mbox_chan *)p;
-> +
-> +	altera_mbox_rx_data(chan);
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int altera_mbox_startup_sender(struct mbox_chan *chan)
-> +{
-> +	int ret;
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	if (mbox->intr_mode) {
-> +		ret = request_irq(mbox->irq, altera_mbox_tx_interrupt, 0,
-
-Use devm_request_irq, since you didn't have and don't need use free_irq
-in the shutdown function.
-
-> +			DRIVER_NAME, chan);
-> +		if (unlikely(ret)) {
-> +			dev_err(mbox->dev,
-> +				"failed to register mailbox interrupt:%d\n",
-> +				ret);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int altera_mbox_startup_receiver(struct mbox_chan *chan)
-> +{
-> +	int ret;
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	if (mbox->intr_mode) {
-> +		ret = request_irq(mbox->irq, altera_mbox_rx_interrupt, 0,
-> +			DRIVER_NAME, chan);
-
-Use devm_request_irq
-
-
-> +		if (unlikely(ret)) {
-> +			dev_err(mbox->dev,
-> +				"failed to register mailbox interrupt:%d\n",
-> +				ret);
-> +			return ret;
-> +		}
-> +		altera_mbox_rx_intmask(mbox, true);
-> +	} else {
-> +		/* Setup polling timer */
-> +		setup_timer(&mbox->rxpoll_timer, altera_mbox_poll_rx,
-> +			(unsigned long)chan);
-> +		mod_timer(&mbox->rxpoll_timer,
-> +			jiffies + msecs_to_jiffies(MBOX_POLLING_MS));
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int altera_mbox_send_data(struct mbox_chan *chan, void *data)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +	u32 *udata = (u32 *)data;
-> +
-> +	if (!mbox || !data)
-> +		return -EINVAL;
-> +	if (!mbox->is_sender) {
-> +		dev_warn(mbox->dev,
-> +			"failed to send. This is receiver mailbox.\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (altera_mbox_full(mbox))
-> +		return -EBUSY;
-> +
-> +	/* Enable interrupt before send */
-> +	altera_mbox_tx_intmask(mbox, true);
-> +
-> +	/* Pointer register must write before command register */
-> +	__raw_writel(udata[MBOX_PTR], mbox->mbox_base + MAILBOX_PTR_REG);
-> +	__raw_writel(udata[MBOX_CMD], mbox->mbox_base + MAILBOX_CMD_REG);
-> +
-> +	return 0;
-> +}
-> +
-> +static bool altera_mbox_last_tx_done(struct mbox_chan *chan)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	if (WARN_ON(!mbox))
-> +		return false;
-
-Are these checks necessary? Shouldn't the driver probe function have
-already failed?
-
-> +
-> +	/* Return false if mailbox is full */
-> +	return altera_mbox_full(mbox) ? false : true;
-> +}
-> +
-> +static bool altera_mbox_peek_data(struct mbox_chan *chan)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	if (WARN_ON(!mbox))
-> +		return false;
-> +
-> +	return altera_mbox_pending(mbox) ? true : false;
-> +}
-> +
-> +static int altera_mbox_startup(struct mbox_chan *chan)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +	int ret = 0;
-> +
-> +	if (!mbox)
-> +		return -EINVAL;
-> +
-> +	if (mbox->is_sender)
-> +		ret = altera_mbox_startup_sender(chan);
-> +	else
-> +		ret = altera_mbox_startup_receiver(chan);
-> +
-> +	return ret;
-> +}
-> +
-> +static void altera_mbox_shutdown(struct mbox_chan *chan)
-> +{
-> +	struct altera_mbox *mbox = to_altera_mbox(chan);
-> +
-> +	if (WARN_ON(!mbox))
-> +		return;
-> +
-> +	if (mbox->intr_mode) {
-> +		/* Unmask all interrupt masks */
-> +		__raw_writel(~0, mbox->mbox_base + MAILBOX_INTMASK_REG);
-> +		free_irq(mbox->irq, chan);
-> +	} else if (!mbox->is_sender)
-> +		del_timer_sync(&mbox->rxpoll_timer);
-
-Need braces around the else as well.
-
-> +}
-> +
-> +static struct mbox_chan_ops altera_mbox_ops = {
-> +	.send_data = altera_mbox_send_data,
-> +	.startup = altera_mbox_startup,
-> +	.shutdown = altera_mbox_shutdown,
-> +	.last_tx_done = altera_mbox_last_tx_done,
-> +	.peek_data = altera_mbox_peek_data,
-> +};
-> +
-> +static int altera_mbox_probe(struct platform_device *pdev)
-> +{
-> +	struct altera_mbox *mbox;
-> +	struct mbox_chan *chans[1];
-
-It would be cleaner if you use devm_kzalloc to allocate the channel here.
-
-> +	struct resource	*regs;
-> +	int ret;
-> +
-> +	mbox = devm_kzalloc(&pdev->dev, sizeof(struct altera_mbox),
-> +		GFP_KERNEL);
-> +	if (!mbox)
-> +		return -ENOMEM;
-> +
-> +	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!regs)
-> +		return -ENXIO;
-> +
-> +	mbox->mbox_base = devm_ioremap_resource(&pdev->dev, regs);
-> +	if (IS_ERR(mbox->mbox_base))
-> +		return PTR_ERR(mbox->mbox_base);
-> +
-> +	/* Check is it a sender or receiver? */
-> +	mbox->is_sender = altera_mbox_is_sender(mbox);
-> +
-> +	mbox->irq = platform_get_irq(pdev, 0);
-> +	if (mbox->irq >= 0)
-> +		mbox->intr_mode = true;
-> +
-> +	mbox->dev = &pdev->dev;
-> +
-> +	/* Hardware supports only one channel. */
-> +	chans[0] = &mbox->chan;
-> +	mbox->controller.dev = mbox->dev;
-> +	mbox->controller.num_chans = 1;
-> +	mbox->controller.chans =  &mbox->chan;
-> +	mbox->controller.ops = &altera_mbox_ops;
-> +
-> +	if (mbox->is_sender) {
-> +		if (mbox->intr_mode)
-> +			mbox->controller.txdone_irq = true;
-> +		else {
-> +			mbox->controller.txdone_poll = true;
-> +			mbox->controller.txpoll_period = MBOX_POLLING_MS;
-> +		}
-
-Need braces around the if as well.
-
-> +	}
-> +
-> +	ret = mbox_controller_register(&mbox->controller);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Register mailbox failed\n");
-> +		goto err;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, mbox);
-> +	return 0;
-> +err:
-> +	return ret;
-> +}
-> +
-> +static int altera_mbox_remove(struct platform_device *pdev)
-> +{
-> +	struct altera_mbox *mbox = platform_get_drvdata(pdev);
-> +
-> +	if (!mbox)
-> +		return -EINVAL;
-> +
-> +	mbox_controller_unregister(&mbox->controller);
-> +
-> +	platform_set_drvdata(pdev, NULL);
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id altera_mbox_match[] = {
-> +	{ .compatible = "altr,mailbox-1.0" },
-> +	{ /* Sentinel */ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(of, altera_mbox_match);
-> +
-> +static struct platform_driver altera_mbox_driver = {
-> +	.probe	= altera_mbox_probe,
-> +	.remove	= altera_mbox_remove,
-> +	.driver	= {
-> +		.name	= DRIVER_NAME,
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table	= altera_mbox_match,
-> +	},
-> +};
-> +
-> +static int altera_mbox_init(void)
-> +{
-> +	return platform_driver_register(&altera_mbox_driver);
-> +}
-> +
-> +static void altera_mbox_exit(void)
-> +{
-> +	platform_driver_unregister(&altera_mbox_driver);
-> +}
-> +
-> +module_init(altera_mbox_init);
-> +module_exit(altera_mbox_exit);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_DESCRIPTION("Altera mailbox specific functions");
-> +MODULE_AUTHOR("Ley Foon Tan <lftan@altera.com>");
-> +MODULE_ALIAS("platform:altera-mailbox");
-> 
-
-Dinh
