@@ -1,57 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031182AbaLLRV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:21:27 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47350 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030845AbaLLRV0 (ORCPT
+	id S1031091AbaLLRWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:22:23 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:55079 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030874AbaLLRWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:21:26 -0500
-Date: Fri, 12 Dec 2014 18:21:24 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [GIT pull] x86 mpx support for 3.19
-Message-ID: <20141212172124.GB7760@amd>
-References: <alpine.DEB.2.11.1412091504490.16275@nanos>
- <CA+55aFyu4HYdWzqOuCYb_pRKOZU==xbxTyuBHSn+wV8gT7q+rw@mail.gmail.com>
- <5488A203.7000600@linux.intel.com>
- <CA+55aFwTpZ8U7vUvBE8xkX1_vfktyVDcCwchssMhhP44M8TzUg@mail.gmail.com>
- <5488AF8D.5070702@linux.intel.com>
- <20141211061935.GA5059@gmail.com>
- <548A147E.1020507@linux.intel.com>
- <20141212123048.GA31711@amd>
- <548B0E14.6040409@linux.intel.com>
+	Fri, 12 Dec 2014 12:22:22 -0500
+Date: Fri, 12 Dec 2014 09:22:12 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        peterz@infradead.org, oleg@redhat.com, bp@suse.de, jkosina@suse.cz
+Subject: Re: [PATCH v5] CPU hotplug: active_writer not woken up in some cases
+ - deadlock
+Message-ID: <20141212172212.GS25340@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1418375504-28715-1-git-send-email-dahi@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <548B0E14.6040409@linux.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418375504-28715-1-git-send-email-dahi@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121217-0013-0000-0000-000007041783
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Dec 12, 2014 at 10:11:44AM +0100, David Hildenbrand wrote:
+> Commit b2c4623dcd07 ("rcu: More on deadlock between CPU hotplug and expedited
+> grace periods") introduced another problem that can easily be reproduced by
+> starting/stopping cpus in a loop.
+> 
+> E.g.:
+>   for i in `seq 5000`; do
+>       echo 1 > /sys/devices/system/cpu/cpu1/online
+>       echo 0 > /sys/devices/system/cpu/cpu1/online
+>   done
+> 
+> Will result in:
+>   INFO: task /cpu_start_stop:1 blocked for more than 120 seconds.
+>   Call Trace:
+>   ([<00000000006a028e>] __schedule+0x406/0x91c)
+>    [<0000000000130f60>] cpu_hotplug_begin+0xd0/0xd4
+>    [<0000000000130ff6>] _cpu_up+0x3e/0x1c4
+>    [<0000000000131232>] cpu_up+0xb6/0xd4
+>    [<00000000004a5720>] device_online+0x80/0xc0
+>    [<00000000004a57f0>] online_store+0x90/0xb0
+>   ...
+> 
+> And a deadlock.
+> 
+> Problem is that if the last ref in put_online_cpus() can't get the
+> cpu_hotplug.lock the puts_pending count is incremented, but a sleeping
+> active_writer might never be woken up, therefore never exiting the loop in
+> cpu_hotplug_begin().
+> 
+> This fix removes puts_pending and turns refcount into an atomic variable. We
+> also introduce a wait queue for the active_writer, to avoid possible races and
+> use-after-free. There is no need to take the lock in put_online_cpus() anymore.
+> 
+> Can't reproduce it with this fix.
+> 
+> Signed-off-by: David Hildenbrand <dahi@linux.vnet.ibm.com>
 
-> +	  If unsure, say Y.
+Queued for testing, thank you!
 
-"If you bought your cpu in 2014 or earlier, say N here".
+							Thanx, Paul
 
-:-)
+> ---
+>  kernel/cpu.c | 56 +++++++++++++++++++++++---------------------------------
+>  1 file changed, 23 insertions(+), 33 deletions(-)
+> 
+> diff --git a/kernel/cpu.c b/kernel/cpu.c
+> index 5d22023..1972b16 100644
+> --- a/kernel/cpu.c
+> +++ b/kernel/cpu.c
+> @@ -58,22 +58,23 @@ static int cpu_hotplug_disabled;
+> 
+>  static struct {
+>  	struct task_struct *active_writer;
+> -	struct mutex lock; /* Synchronizes accesses to refcount, */
+> +	/* wait queue to wake up the active_writer */
+> +	wait_queue_head_t wq;
+> +	/* verifies that no writer will get active while readers are active */
+> +	struct mutex lock;
+>  	/*
+>  	 * Also blocks the new readers during
+>  	 * an ongoing cpu hotplug operation.
+>  	 */
+> -	int refcount;
+> -	/* And allows lockless put_online_cpus(). */
+> -	atomic_t puts_pending;
+> +	atomic_t refcount;
+> 
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  	struct lockdep_map dep_map;
+>  #endif
+>  } cpu_hotplug = {
+>  	.active_writer = NULL,
+> +	.wq = __WAIT_QUEUE_HEAD_INITIALIZER(cpu_hotplug.wq),
+>  	.lock = __MUTEX_INITIALIZER(cpu_hotplug.lock),
+> -	.refcount = 0,
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  	.dep_map = {.name = "cpu_hotplug.lock" },
+>  #endif
+> @@ -86,15 +87,6 @@ static struct {
+>  #define cpuhp_lock_acquire()      lock_map_acquire(&cpu_hotplug.dep_map)
+>  #define cpuhp_lock_release()      lock_map_release(&cpu_hotplug.dep_map)
+> 
+> -static void apply_puts_pending(int max)
+> -{
+> -	int delta;
+> -
+> -	if (atomic_read(&cpu_hotplug.puts_pending) >= max) {
+> -		delta = atomic_xchg(&cpu_hotplug.puts_pending, 0);
+> -		cpu_hotplug.refcount -= delta;
+> -	}
+> -}
+> 
+>  void get_online_cpus(void)
+>  {
+> @@ -103,8 +95,7 @@ void get_online_cpus(void)
+>  		return;
+>  	cpuhp_lock_acquire_read();
+>  	mutex_lock(&cpu_hotplug.lock);
+> -	apply_puts_pending(65536);
+> -	cpu_hotplug.refcount++;
+> +	atomic_inc(&cpu_hotplug.refcount);
+>  	mutex_unlock(&cpu_hotplug.lock);
+>  }
+>  EXPORT_SYMBOL_GPL(get_online_cpus);
+> @@ -116,8 +107,7 @@ bool try_get_online_cpus(void)
+>  	if (!mutex_trylock(&cpu_hotplug.lock))
+>  		return false;
+>  	cpuhp_lock_acquire_tryread();
+> -	apply_puts_pending(65536);
+> -	cpu_hotplug.refcount++;
+> +	atomic_inc(&cpu_hotplug.refcount);
+>  	mutex_unlock(&cpu_hotplug.lock);
+>  	return true;
+>  }
+> @@ -125,20 +115,18 @@ EXPORT_SYMBOL_GPL(try_get_online_cpus);
+> 
+>  void put_online_cpus(void)
+>  {
+> +	int refcount;
+> +
+>  	if (cpu_hotplug.active_writer == current)
+>  		return;
+> -	if (!mutex_trylock(&cpu_hotplug.lock)) {
+> -		atomic_inc(&cpu_hotplug.puts_pending);
+> -		cpuhp_lock_release();
+> -		return;
+> -	}
+> 
+> -	if (WARN_ON(!cpu_hotplug.refcount))
+> -		cpu_hotplug.refcount++; /* try to fix things up */
+> +	refcount = atomic_dec_return(&cpu_hotplug.refcount);
+> +	if (WARN_ON(refcount < 0)) /* try to fix things up */
+> +		atomic_inc(&cpu_hotplug.refcount);
+> +
+> +	if (refcount <= 0 && waitqueue_active(&cpu_hotplug.wq))
+> +		wake_up(&cpu_hotplug.wq);
+> 
+> -	if (!--cpu_hotplug.refcount && unlikely(cpu_hotplug.active_writer))
+> -		wake_up_process(cpu_hotplug.active_writer);
+> -	mutex_unlock(&cpu_hotplug.lock);
+>  	cpuhp_lock_release();
+> 
+>  }
+> @@ -168,18 +156,20 @@ EXPORT_SYMBOL_GPL(put_online_cpus);
+>   */
+>  void cpu_hotplug_begin(void)
+>  {
+> -	cpu_hotplug.active_writer = current;
+> +	DEFINE_WAIT(wait);
+> 
+> +	cpu_hotplug.active_writer = current;
+>  	cpuhp_lock_acquire();
+> +
+>  	for (;;) {
+>  		mutex_lock(&cpu_hotplug.lock);
+> -		apply_puts_pending(1);
+> -		if (likely(!cpu_hotplug.refcount))
+> -			break;
+> -		__set_current_state(TASK_UNINTERRUPTIBLE);
+> +		prepare_to_wait(&cpu_hotplug.wq, &wait, TASK_UNINTERRUPTIBLE);
+> +		if (likely(!atomic_read(&cpu_hotplug.refcount)))
+> +				break;
+>  		mutex_unlock(&cpu_hotplug.lock);
+>  		schedule();
+>  	}
+> +	finish_wait(&cpu_hotplug.wq, &wait);
+>  }
+> 
+>  void cpu_hotplug_done(void)
+> -- 
+> 1.8.5.5
+> 
 
-> -Note: Currently no hardware with MPX ISA is available but it is always
-> +Note: As of December 2014, no hardware with MPX is available but it is
->  possible to use SDE (Intel(R) Software Development Emulator) instead, which
->  can be downloaded from
->  http://software.intel.com/en-us/articles/intel-software-development-emulator
-
-Ack.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
