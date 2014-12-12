@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152AbaLLWxQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 17:53:16 -0500
-Received: from mdfmta005.mxout.tbr.inty.net ([91.221.168.46]:52545 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752130AbaLLWxP (ORCPT
+	id S1753214AbaLLWzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 17:55:12 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:44014 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752288AbaLLWzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 17:53:15 -0500
-X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Dec 2014 17:53:14 EST
-Message-ID: <548B6FFD.4040607@lougher.demon.co.uk>
-Date: Fri, 12 Dec 2014 22:45:17 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
+	Fri, 12 Dec 2014 17:55:10 -0500
+Message-ID: <548B7249.1060602@konagma.com>
+Date: Fri, 12 Dec 2014 23:55:05 +0100
+From: Krzysztof Konopko <kris@konagma.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Bruno Wolff III <bruno@wolff.to>, toki clover <tokiclover@gmail.com>
-CC: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, texstar@gmail.com, martin@mvath.de,
-        Guan Xin <guanx.bac@gmail.com>, dave@vasilevsky.ca, szycha@gmail.com,
-        blyons@students.naropa.edu, afm404@gmail.com, hugochevrain@gmail.com
-Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
-References: <1417075250-6502-1-git-send-email-phillip@squashfs.org.uk> <CAGw_SrN6tZyXRx6pxkpnhWc2U5845HRbfzhOK5v9qkjWejFpmA@mail.gmail.com> <20141212155605.GA31859@wolff.to>
-In-Reply-To: <20141212155605.GA31859@wolff.to>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jes Sorensen <Jes.Sorensen@redhat.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
+References: <1418336609-10191-1-git-send-email-kris@konagma.com>	<548A2E7A.4010303@lwfinger.net> <548AD2F1.3080200@konagma.com>	<548B2752.7030607@lwfinger.net> <wrfjwq5wwvik.fsf@redhat.com>
+In-Reply-To: <wrfjwq5wwvik.fsf@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-MDF-HostID: 4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14 15:56, Bruno Wolff III wrote:
-> On Fri, Dec 12, 2014 at 13:23:19 +0100,
->   toki clover <tokiclover@gmail.com> wrote:
+On 12/12/14 19:52, Jes Sorensen wrote:
+> Larry Finger <Larry.Finger@lwfinger.net> writes:
+>> On 12/12/2014 05:35 AM, Krzysztof Konopko wrote:
+>>> I was hunting particularly for inconsistencies with `sparse` and came
+>>> across this one.  But I dug a bit further and I wonder why the driver is
+>>> not using standard stuff like the one in `include/linux/ieee80211.h`
+>>> where any data wider than one byte is clearly declared as __le<nn>?
 >>
->> Now, I did not see any Linux FS devs activity/response to this... What
->> a waste of time because if those patch don't make it for this merge
->> window, rebasing/reposting will be, again, necessary.
->
-> The patches got pulled into linux-next. For XZ, the patches sat in linux-next for a full release cycle. I don't know whether or not if that is the plan for the lz4 patches.
-> .
->
+>> That is a good question. One possibility is that those definitions do
+>> not exist on some of the older kernels that Realtek supports. They
+>> generally work with 2.6.18 and newer.
+> 
+> The reason the 8723au driver doesn't use the defines from there is that
+> in ieee80211.h they are part of struct ieee80211_mgmt, while the 8723au
+> driver access the addba etc. elements without the full struct in place.
+> 
 
-The plan is to send out the merge request this weekend.
+And why is that the case?
+(I'm trying to understand, not debunk)
 
-I've been too busy this week with my main job to do the merge request,
-sorry (I'll probably be working past midnight again tonight, the
-weeks leading up to Christmas are always really busy).
+Looks to me that this driver has been kept out of the tree for quite a
+while (by Realtek) and now suffers from locally invented stuff.  I
+understand this is a lot of work to unify the codebase with ieee80211.h,
+but are there any technical hurdles?  I'm just curious.
 
-Phillip
+Thanks,
+Kris
 
