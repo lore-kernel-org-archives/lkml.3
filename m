@@ -1,184 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030690AbaLLQff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:35:35 -0500
-Received: from mail-by2on0092.outbound.protection.outlook.com ([207.46.100.92]:14608
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933644AbaLLQfd convert rfc822-to-8bit (ORCPT
+	id S1030827AbaLLQhf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:37:35 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:56954 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030210AbaLLQh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:35:33 -0500
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Linus Walleij <linus.walleij@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>
-CC: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Alessandro Rubini <rubini@unipv.it>, Heiko Stuebner <heiko@sntech.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        <linux-rockchip@lists.infradead.org>, <linux-sh@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH v3 3/7] pinctrl: zynq: Document DT binding
-Date: Fri, 12 Dec 2014 08:34:54 -0800
-X-Mailer: git-send-email 2.2.0.1.g9ee0458
-In-Reply-To: <1418402098-3811-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1418402098-3811-1-git-send-email-soren.brinkmann@xilinx.com>
+	Fri, 12 Dec 2014 11:37:29 -0500
+Date: Fri, 12 Dec 2014 16:36:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "moderated list:ARM/CLKDEV SUPPORT" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
+        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        boris.brezillon@free-electrons.com
+Message-ID: <20141212163653.GO11764@sirena.org.uk>
+References: <1418226513-14105-2-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21172.000
-X-TM-AS-Result: No--13.364-7.0-31-1
-X-imss-scan-details: No--13.364-7.0-31-1;No--13.364-5.0-31-1
-X-TM-AS-User-Approved-Sender: No;No
-Message-ID: <f37b0fd0d52f4619abed4eeaa66a4156@BY2FFO11FD031.protection.gbl>
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(189002)(74316001)(20776003)(19580395003)(21056001)(50466002)(108616004)(106466001)(46102003)(64706001)(23676002)(19580405001)(53416004)(31966008)(47776003)(89996001)(87936001)(6806004)(50226001)(92726002)(86362001)(104016003)(76176999)(62966003)(107046002)(99396003)(4396001)(120916001)(229853001)(77156002)(92566001)(50986999)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB047;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB047;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB047;
-X-Forefront-PRVS: 04238CD941
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=soren.brinkmann@xilinx.com; 
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB047;
-X-OriginatorOrg: xilinx.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="H8fFO+isr9ADh2Iv"
+Content-Disposition: inline
+In-Reply-To: <1418226513-14105-2-git-send-email-a.hajda@samsung.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 01/15] drivers/base: add track framework
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add documentation for the devicetree binding for the Zynq pincontroller.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Tested-by: Andreas Färber <afaerber@suse.de>
----
-Changes since v1:
- - fix typo
- - add USB related documentation
- - remove 'pinctrl-' prefix for pinctrl sub-nodes
- - update documentation to enforce strict separation of pinmux
-   and pinconf nodes
-   - update example accordingly
----
- .../bindings/pinctrl/xlnx,zynq-pinctrl.txt         | 104 +++++++++++++++++++++
- 1 file changed, 104 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt
+--H8fFO+isr9ADh2Iv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt
-new file mode 100644
-index 000000000000..b7b55a964f65
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/xlnx,zynq-pinctrl.txt
-@@ -0,0 +1,104 @@
-+	Binding for Xilinx Zynq Pinctrl
-+
-+Required properties:
-+- compatible: "xlnx,zynq-pinctrl"
-+- syscon: phandle to SLCR
-+- reg: Offset and length of pinctrl space in SLCR
-+
-+Please refer to pinctrl-bindings.txt in this directory for details of the
-+common pinctrl bindings used by client devices, including the meaning of the
-+phrase "pin configuration node".
-+
-+Zynq's pin configuration nodes act as a container for an arbitrary number of
-+subnodes. Each of these subnodes represents some desired configuration for a
-+pin, a group, or a list of pins or groups. This configuration can include the
-+mux function to select on those pin(s)/group(s), and various pin configuration
-+parameters, such as pull-up, slew rate, etc.
-+
-+Each configuration node can consist of multiple nodes describing the pinmux and
-+pinconf options. Those nodes can be pinmux nodes or pinconf nodes.
-+
-+The name of each subnode is not important; all subnodes should be enumerated
-+and processed purely based on their content.
-+
-+Required properties for pinmux nodes are:
-+ - groups: A list of pinmux groups.
-+ - function: The name of a pinmux function to activate for the specified set
-+   of groups.
-+
-+Required properties for configuration nodes:
-+One of:
-+ - pins: a list of pin names
-+ - groups: A list of pinmux groups.
-+
-+The following generic properties as defined in pinctrl-bindings.txt are valid
-+to specify in a pinmux subnode:
-+ groups, function
-+
-+The following generic properties as defined in pinctrl-bindings.txt are valid
-+to specify in a pinconf subnode:
-+ groups, pins, bias-disable, bias-high-impedance, bias-pull-up, slew-rate,
-+ low-power-disable, low-power-enable
-+
-+ Valid arguments for 'slew-rate' are '0' and '1' to select between slow and fast
-+ respectively.
-+
-+ Valid values for groups are:
-+   ethernet0_0_grp, ethernet1_0_grp, mdio0_0_grp, mdio1_0_grp,
-+   qspi0_0_grp, qspi1_0_grp, qspi_fbclk, qspi_cs1_grp, spi0_0_grp,
-+   spi0_1_grp - spi0_2_grp, spi1_0_grp - spi1_3_grp, sdio0_0_grp - sdio0_2_grp,
-+   sdio1_0_grp - sdio1_3_grp, sdio0_emio_wp, sdio0_emio_cd, sdio1_emio_wp,
-+   sdio1_emio_cd, smc0_nor, smc0_nor_cs1_grp, smc0_nor_addr25_grp, smc0_nand,
-+   can0_0_grp - can0_10_grp, can1_0_grp - can1_11_grp, uart0_0_grp - uart0_10_grp,
-+   uart1_0_grp - uart1_11_grp, i2c0_0_grp - i2c0_10_grp, i2c1_0_grp - i2c1_10_grp,
-+   ttc0_0_grp - ttc0_2_grp, ttc1_0_grp - ttc1_2_grp, swdt0_0_grp - swdt0_4_grp,
-+   gpio0_0_grp - gpio0_53_grp, usb0_0_grp, usb1_0_grp
-+
-+ Valid values for pins are:
-+   MIO0 - MIO53
-+
-+ Valid values for function are:
-+   ethernet0, ethernet1, mdio0, mdio1, qspi0, qspi1, qspi_fbclk, qspi_cs1,
-+   spi0, spi1, sdio0, sdio0_pc, sdio0_cd, sdio0_wp,
-+   sdio1, sdio1_pc, sdio1_cd, sdio1_wp,
-+   smc0_nor, smc0_nor_cs1, smc0_nor_addr25, smc0_nand, can0, can1, uart0, uart1,
-+   i2c0, i2c1, ttc0, ttc1, swdt0, gpio0, usb0, usb1
-+
-+The following driver-specific properties as defined here are valid to specify in
-+a pin configuration subnode:
-+ - io-standard: Configure the pin to use the selected IO standard according to
-+   this mapping:
-+    1: LVCMOS18
-+    2: LVCMOS25
-+    3: LVCMOS33
-+    4: HSTL
-+
-+Example:
-+	pinctrl0: pinctrl@700 {
-+		compatible = "xlnx,pinctrl-zynq";
-+		reg = <0x700 0x200>;
-+		syscon = <&slcr>;
-+
-+		pinctrl_uart1_default: uart1-default {
-+			mux {
-+				groups = "uart1_10_grp";
-+				function = "uart1";
-+			};
-+
-+			conf {
-+				groups = "uart1_10_grp";
-+				slew-rate = <0>;
-+				io-standard = <1>;
-+			};
-+
-+			conf-rx {
-+				pins = "MIO49";
-+				bias-high-impedance;
-+			};
-+
-+			conf-tx {
-+				pins = "MIO48";
-+				bias-disable;
-+			};
-+		};
-+	};
--- 
-2.2.0.1.g9ee0458
+On Wed, Dec 10, 2014 at 04:48:19PM +0100, Andrzej Hajda wrote:
+> track is a generic framework for safe tracking presence of any kernel objects
+> having an id. There are no special requirements about type of object or its
+> id. Id shall be unique.
 
+This is pretty confusing, when it talks about "kernel objects" that
+sounds like it means struct kobject but in fact there's no connection
+with that or any of the other kernel object stuff.  Perhaps it makes
+sense but it should be addressed.
+
+> Typical usage of the framework by consumer looks as follow:
+> 1. Consumer registers notifier callback for objects with given id.
+
+This is also a custom thing not connected with the notifier mechanism
+implemented by struct notifier_block.  Again this should probably be
+addressed, even if it's just used internally it seems like there should
+be some opportunity for code reuse here.
+
+> +	case track_task_up:
+> +		node = track_get_node(track, task->type, task->id, true);
+> +
+> +		node->up = true;
+> +		node->data = task->data;
+> +		list_for_each_entry_safe(itb, node->itb_next, &node->itb_head,
+> +					 list)
+> +			itb->callback(itb, node->data, true);
+> +		return;
+> +	case track_task_down:
+
+I'm not sure the up and down naming is the most obvious naming for
+users.  It's obviously inspired by semaphores but it's not entirely
+obvious that this is going to make things clear and meaningful for
+someone trying to understand the interface.
+
+> +static int track_process_queue(struct tracker *track)
+> +{
+> +	struct track_task *task, *ptask = NULL;
+> +	unsigned long flags;
+> +	bool empty;
+> +
+> +	/* Queue non-emptiness is used as a sentinel to prevent processing
+> +	 * by multiple threads, so we cannot delete entry from the queue
+> +	 * until it is processed.
+> +	 */
+> +	while (true) {
+> +		spin_lock_irqsave(&track->queue_lock, flags);
+> +
+> +		if (ptask)
+> +			list_del(&ptask->list);
+> +		task = list_first_entry(&track->queue,
+> +					struct track_task, list);
+> +
+> +		empty = list_empty(&track->queue);
+> +		if (empty)
+> +			complete_all(&track->queue_empty);
+> +
+> +		spin_unlock_irqrestore(&track->queue_lock, flags);
+
+Here we get a task from the head of the list and drop the lock, leaving
+the task on the list...
+
+> +		kfree(ptask);
+> +
+> +		if (empty)
+> +			break;
+> +
+> +		track_process_task(track, task);
+
+...we then go and do some other stuff, including processing that task,
+without the lock or or any other means I can see of excluding other
+users before going round and removing the task.  This seems to leave us
+vulnerable to double execution.  I *think* this is supposed to be
+handled by your comment "Provider should take care of calling
+notifications synchronously in proper order" in the changelog but that's
+a bit obscure, it's not specific about what the requirements are (or
+what the limits are supposed to be on the notification callbacks).
+
+I'm also unclear what is supposed to happen if adding a notification
+races with removing the thing being watched.
+
+--H8fFO+isr9ADh2Iv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUixmlAAoJECTWi3JdVIfQYzkH/2PSJ17rhazR845Aysdj33h4
+A05VuTFXiQ8CO8EcV82HCkc+b3nTzdev8gmxCUIFf5F6VPPyHdbueAh3GCvvqYH8
+XAN3WQLPfiSmf/hqKbhAM39SLF/xTUYkUlLsx4foKB6JK5ENvsCoS/M/i022cQfl
+i5y7AruOzC+TAm70HQ/lKhDc5Xu3Pl25+thsVccYL3UUlCIZxiFpTyHueeA5IoTK
+BWJ7uLVLNnq2ngPs+IZpwrl6LmybAp8WHwe+FOYvMeqQd2T5RGjroMfuvyOBGXsH
+yHb/+Qbo3byiFrEjckIFKcK1RBrMb1kqEfvuhpwrIafC7hT6LqHPAT17rOeDlJg=
+=TiBG
+-----END PGP SIGNATURE-----
+
+--H8fFO+isr9ADh2Iv--
