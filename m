@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759979AbaLLPfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:35:44 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:59213 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540AbaLLPfl (ORCPT
+	id S1760006AbaLLPoK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:44:10 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:48066 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665AbaLLPoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:35:41 -0500
-From: Dmitry Osipenko <digetx@gmail.com>
-To: swarren@wwwdotorg.org, thierry.reding@gmail.com, gnurou@gmail.com
-Cc: stable@vger.kernel.org, Dmitry Osipenko <digetx@gmail.com>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: dts: tegra20: fix GR3D, DSI unit and reg base addresses
-Date: Fri, 12 Dec 2014 18:19:19 +0300
-Message-Id: <1418397559-19646-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 2.2.0
+	Fri, 12 Dec 2014 10:44:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
+Date: Fri, 12 Dec 2014 16:44:06 +0100
+Message-ID: <CABgxDoKKjwDf8+OuWiTjzpbGonshZ0fHXXMvSkJi1Z1U_7AsNA@mail.gmail.com>
+Subject: Re: [PATCH] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
+From: Romain Perier <romain.perier@gmail.com>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 58ecb23f64ee ("ARM: tegra: add missing unit addresses to DT") added
-unit address and changed reg base for GR3D and DSI host1x modules, but these
-addresses belongs to GR2D and TVO modules respectively. Fix it by changing
-modules unit and reg base addresses to proper ones.
+Hi,
 
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
-Fixes: 58ecb23f64ee (ARM: tegra: add missing unit addresses to DT)
-Cc: <stable@vger.kernel.org> # v3.13+
----
- arch/arm/boot/dts/tegra20.dtsi | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+2014-12-12 15:54 GMT+01:00 Julien CHAUVEAU
+<julien.chauveau@neo-technologies.fr>:
+> This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0 and hclk_usbotg1
+> because these clocks must remain enabled to use the USB controllers in host mode.
+>
+> This fixes a regression introduced by patch "clk: rockchip: disable unused clocks"
+> https://lkml.kernel.org/g/1415092270-24932-1-git-send-email-kever.yang@rock-chips.com
 
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-index 8acf5d8..f76fe94 100644
---- a/arch/arm/boot/dts/tegra20.dtsi
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -68,9 +68,9 @@
- 			reset-names = "2d";
- 		};
- 
--		gr3d@54140000 {
-+		gr3d@54180000 {
- 			compatible = "nvidia,tegra20-gr3d";
--			reg = <0x54140000 0x00040000>;
-+			reg = <0x54180000 0x00040000>;
- 			clocks = <&tegra_car TEGRA20_CLK_GR3D>;
- 			resets = <&tegra_car 24>;
- 			reset-names = "3d";
-@@ -130,9 +130,9 @@
- 			status = "disabled";
- 		};
- 
--		dsi@542c0000 {
-+		dsi@54300000 {
- 			compatible = "nvidia,tegra20-dsi";
--			reg = <0x542c0000 0x00040000>;
-+			reg = <0x54300000 0x00040000>;
- 			clocks = <&tegra_car TEGRA20_CLK_DSI>;
- 			resets = <&tegra_car 48>;
- 			reset-names = "dsi";
--- 
-2.2.0
+Could you refer the commit id instead ? something like "commit <ID>
+("title of the corresponding commit")  (and use scripts/checkpatch.pl
+on your patch to be sure that the commit form is okay).
 
+
+I confirm the regression.
+
+Romain
