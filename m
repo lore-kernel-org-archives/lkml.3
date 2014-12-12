@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760994AbaLLHDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:03:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51703 "EHLO
+	id S967572AbaLLHC6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:02:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51705 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758337AbaLLGQw (ORCPT
+	by vger.kernel.org with ESMTP id S1758409AbaLLGQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:52 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Andreas Bomholtz" <andreas@seluxit.com>,
-        "Johan Hovold" <johan@kernel.org>
-Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.69484965@decadent.org.uk>
+CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
+        "Ondrej Kozina" <okozina@redhat.com>
+Date: Fri, 12 Dec 2014 06:14:26 +0000
+Message-ID: <lsq.1418364866.453576473@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 013/164] USB: cp210x: add support for Seluxit USB dongle
+Subject: [PATCH 3.2 163/164] crypto: algif - avoid excessive use of socket
+ buffer in skcipher
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,27 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Bomholtz <andreas@seluxit.com>
+From: Ondrej Kozina <okozina@redhat.com>
 
-commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
+commit e2cffb5f493a8b431dc87124388ea59b79f0bccb upstream.
 
-Added the Seluxit ApS USB Serial Dongle to cp210x driver.
+On archs with PAGE_SIZE >= 64 KiB the function skcipher_alloc_sgl()
+fails with -ENOMEM no matter what user space actually requested.
+This is caused by the fact sock_kmalloc call inside the function tried
+to allocate more memory than allowed by the default kernel socket buffer
+size (kernel param net.core.optmem_max).
 
-Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+Signed-off-by: Ondrej Kozina <okozina@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ crypto/algif_skcipher.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -162,6 +162,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
-+	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
- 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
+diff --git a/crypto/algif_skcipher.c b/crypto/algif_skcipher.c
+index a19c027..83187f4 100644
+--- a/crypto/algif_skcipher.c
++++ b/crypto/algif_skcipher.c
+@@ -49,7 +49,7 @@ struct skcipher_ctx {
+ 	struct ablkcipher_request req;
+ };
+ 
+-#define MAX_SGL_ENTS ((PAGE_SIZE - sizeof(struct skcipher_sg_list)) / \
++#define MAX_SGL_ENTS ((4096 - sizeof(struct skcipher_sg_list)) / \
+ 		      sizeof(struct scatterlist) - 1)
+ 
+ static inline int skcipher_sndbuf(struct sock *sk)
 
