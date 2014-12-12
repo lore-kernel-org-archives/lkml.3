@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966141AbaLLLMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 06:12:18 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:49281 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965528AbaLLLMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 06:12:16 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RFC PATCH] arm: Remove early stack deallocation from restore_user_regs
-Date: Fri, 12 Dec 2014 11:11:58 +0000
-Message-Id: <1418382718-16323-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	id S966215AbaLLLNK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 06:13:10 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:57932 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965528AbaLLLNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 06:13:08 -0500
+Date: Fri, 12 Dec 2014 13:10:09 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
+        "'linux-arm-kernel@lists.infradead.org'" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>,
+        "'oleg@redhat.com'" <oleg@redhat.com>,
+        "'gorcunov@openvz.org'" <gorcunov@openvz.org>,
+        "'pfeiner@google.com'" <pfeiner@google.com>
+Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+Message-ID: <20141212111009.GA25426@node.dhcp.inet.fi>
+References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
+ <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
+ <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
+ <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
+ <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
+ <20141208114601.GA28846@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
+ <35FD53F367049845BC99AC72306C23D103E688B31403@CNBJMBX05.corpusers.net>
+ <20141210110556.GA10630@node.dhcp.inet.fi>
+ <35FD53F367049845BC99AC72306C23D103E688B31406@CNBJMBX05.corpusers.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <35FD53F367049845BC99AC72306C23D103E688B31406@CNBJMBX05.corpusers.net>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently restore_user_regs deallocates the SVC stack early in
-its execution and relies on no exception being taken between
-the deallocation and the registers being restored. The introduction
-of a default FIQ handler that also uses the SVC stack breaks this
-assumption and can result in corrupted register state.
+On Fri, Dec 12, 2014 at 09:59:15AM +0800, Wang, Yalin wrote:
+> > -----Original Message-----
+> > From: Kirill A. Shutemov [mailto:kirill@shutemov.name]
+> > Sent: Wednesday, December 10, 2014 7:06 PM
+> > To: Wang, Yalin
+> > Cc: 'Andrew Morton'; 'Konstantin Khlebnikov'; 'linux-
+> > kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
+> > kernel@lists.infradead.org'; 'n-horiguchi@ah.jp.nec.com'; 'oleg@redhat.com';
+> > 'gorcunov@openvz.org'; 'pfeiner@google.com'
+> > Subject: Re: [RFC] mm:fix zero_page huge_zero_page rss/pss statistic
+> > 
+> > On Wed, Dec 10, 2014 at 03:22:21PM +0800, Wang, Yalin wrote:
+> > > smaps_pte_entry() doesn't ignore zero_huge_page, but it ignore
+> > > zero_page, because vm_normal_page() will ignore it. We remove
+> > > vm_normal_page() call, because walk_page_range() have ignore VM_PFNMAP
+> > > vma maps, it's safe to just use pfn_valid(), so that we can also
+> > > consider zero_page to be a valid page.
+> > 
+> > We fixed huge zero page accounting in smaps recentely. See mm tree.
+> > 
+> Hi 
+> I can't find the git, could you send me a link?
 
-This patch works around the problem by removing the early
-stack deallocation and using r2 as a temporary instead. I have
-not found a way to do this without introducing an extra mov
-instruction to the macro.
+http://git.cmpxchg.org/cgit.cgi/linux-mmotm.git/
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
+or just take linux-next.
 
-Notes:
-    I have recently started to hook up the PMU via FIQ (although
-    its slightly hacky at present) and was seeing random userspace
-    SEGVs when perf was running (after ~100,000 or so FIQs).
-    
-    Instrumenting the code eventually revealed that in almost all
-    cases the last FIQ handler to run prior the SEGV had interrupted
-    ret_to_user_from_irq or ret_fast_syscall. Very occasionally it was
-    in the fault handling code (because that code runs as part of SEGV
-    handling and the PMU is instrumenting that too).
-    
-    No SEGV problems have been observed since fixing the issue. This
-    version of the patch has seen >7M FIQs and an older version (based
-    on cpsid f) ran overnight.
-    
+The fix is already in Linus' tree.
 
- arch/arm/kernel/entry-header.S | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 4176df721bf0..1a0045abead7 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -253,21 +253,22 @@
- 	.endm
-
- 	.macro	restore_user_regs, fast = 0, offset = 0
--	ldr	r1, [sp, #\offset + S_PSR]	@ get calling cpsr
--	ldr	lr, [sp, #\offset + S_PC]!	@ get pc
-+	mov	r2, sp
-+	ldr	r1, [r2, #\offset + S_PSR]	@ get calling cpsr
-+	ldr	lr, [r2, #\offset + S_PC]!	@ get pc
- 	msr	spsr_cxsf, r1			@ save in spsr_svc
- #if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_32v6K)
- 	@ We must avoid clrex due to Cortex-A15 erratum #830321
--	strex	r1, r2, [sp]			@ clear the exclusive monitor
-+	strex	r1, r2, [r2]			@ clear the exclusive monitor
- #endif
- 	.if	\fast
--	ldmdb	sp, {r1 - lr}^			@ get calling r1 - lr
-+	ldmdb	r2, {r1 - lr}^			@ get calling r1 - lr
- 	.else
--	ldmdb	sp, {r0 - lr}^			@ get calling r0 - lr
-+	ldmdb	r2, {r0 - lr}^			@ get calling r0 - lr
- 	.endif
- 	mov	r0, r0				@ ARMv5T and earlier require a nop
- 						@ after ldm {}^
--	add	sp, sp, #S_FRAME_SIZE - S_PC
-+	add	sp, sp, #\offset + S_FRAME_SIZE
- 	movs	pc, lr				@ return & move spsr_svc into cpsr
- 	.endm
-
---
-1.9.3
-
+-- 
+ Kirill A. Shutemov
