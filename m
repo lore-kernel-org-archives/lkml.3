@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965565AbaLLG2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:28:11 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52020 "EHLO
+	id S965586AbaLLG2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:28:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:52005 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759363AbaLLGQ7 (ORCPT
+	by vger.kernel.org with ESMTP id S1759351AbaLLGQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:59 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Hans de Goede" <hdegoede@redhat.com>
+CC: akpm@linux-foundation.org, austin.linux@gmail.com, darren@dvhart.com,
+        "Thomas Gleixner" <tglx@linutronix.de>, peterz@infradead.org,
+        "Brian Silverman" <bsilver16384@gmail.com>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.345674137@decadent.org.uk>
+Message-ID: <lsq.1418364865.917167390@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 082/164] Input: i8042 - quirks for Fujitsu Lifebook
- A544 and Lifebook AH544
+Subject: [PATCH 3.2 084/164] futex: Fix a race condition between
+ REQUEUE_PI and task death
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,44 +33,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Brian Silverman <bsilver16384@gmail.com>
 
-commit 993b3a3f80a7842a48cd46c2b41e1b3ef6302468 upstream.
+commit 30a6b8031fe14031ab27c1fa3483cb9780e7f63c upstream.
 
-These models need i8042.notimeout, otherwise the touchpad will not work.
+free_pi_state and exit_pi_state_list both clean up futex_pi_state's.
+exit_pi_state_list takes the hb lock first, and most callers of
+free_pi_state do too. requeue_pi doesn't, which means free_pi_state
+can free the pi_state out from under exit_pi_state_list. For example:
 
-BugLink: https://bugzilla.kernel.org/show_bug.cgi?id=69731
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1111138
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+task A                            |  task B
+exit_pi_state_list                |
+  pi_state =                      |
+      curr->pi_state_list->next   |
+                                  |  futex_requeue(requeue_pi=1)
+                                  |    // pi_state is the same as
+                                  |    // the one in task A
+                                  |    free_pi_state(pi_state)
+                                  |      list_del_init(&pi_state->list)
+                                  |      kfree(pi_state)
+  list_del_init(&pi_state->list)  |
+
+Move the free_pi_state calls in requeue_pi to before it drops the hb
+locks which it's already holding.
+
+[ tglx: Removed a pointless free_pi_state() call and the hb->lock held
+  	debugging. The latter comes via a seperate patch ]
+
+Signed-off-by: Brian Silverman <bsilver16384@gmail.com>
+Cc: austin.linux@gmail.com
+Cc: darren@dvhart.com
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1414282837-23092-1-git-send-email-bsilver16384@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/serio/i8042-x86ia64io.h | 16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ kernel/futex.c | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -608,6 +608,22 @@ static const struct dmi_system_id __init
- 		},
- 	},
- 	{
-+		/* Fujitsu A544 laptop */
-+		/* https://bugzilla.redhat.com/show_bug.cgi?id=1111138 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK A544"),
-+		},
-+	},
-+	{
-+		/* Fujitsu AH544 laptop */
-+		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "LIFEBOOK AH544"),
-+		},
-+	},
-+	{
- 		/* Fujitsu U574 laptop */
- 		/* https://bugzilla.kernel.org/show_bug.cgi?id=69731 */
- 		.matches = {
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -484,8 +484,14 @@ static struct futex_pi_state * alloc_pi_
+ 	return pi_state;
+ }
+ 
++/*
++ * Must be called with the hb lock held.
++ */
+ static void free_pi_state(struct futex_pi_state *pi_state)
+ {
++	if (!pi_state)
++		return;
++
+ 	if (!atomic_dec_and_test(&pi_state->refcount))
+ 		return;
+ 
+@@ -1399,15 +1405,6 @@ static int futex_requeue(u32 __user *uad
+ 	}
+ 
+ retry:
+-	if (pi_state != NULL) {
+-		/*
+-		 * We will have to lookup the pi_state again, so free this one
+-		 * to keep the accounting correct.
+-		 */
+-		free_pi_state(pi_state);
+-		pi_state = NULL;
+-	}
+-
+ 	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1, VERIFY_READ);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+@@ -1495,6 +1492,8 @@ retry_private:
+ 		case 0:
+ 			break;
+ 		case -EFAULT:
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1504,6 +1503,8 @@ retry_private:
+ 			goto out;
+ 		case -EAGAIN:
+ 			/* The owner was exiting, try again. */
++			free_pi_state(pi_state);
++			pi_state = NULL;
+ 			double_unlock_hb(hb1, hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+@@ -1580,6 +1581,7 @@ retry_private:
+ 	}
+ 
+ out_unlock:
++	free_pi_state(pi_state);
+ 	double_unlock_hb(hb1, hb2);
+ 
+ 	/*
+@@ -1596,8 +1598,6 @@ out_put_keys:
+ out_put_key1:
+ 	put_futex_key(&key1);
+ out:
+-	if (pi_state != NULL)
+-		free_pi_state(pi_state);
+ 	return ret ? ret : task_count;
+ }
+ 
 
