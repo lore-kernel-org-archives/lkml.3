@@ -1,195 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030608AbaLLQBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:01:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53399 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030549AbaLLQBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:01:43 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Vlastimil Babka <vbabka@suse.cz>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v2 2/3] mm: always steal split buddies in fallback allocations
-Date: Fri, 12 Dec 2014 17:01:24 +0100
-Message-Id: <1418400085-3622-3-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1418400085-3622-1-git-send-email-vbabka@suse.cz>
-References: <1418400085-3622-1-git-send-email-vbabka@suse.cz>
+	id S1030657AbaLLQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:02:16 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:40006 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030544AbaLLQCL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:02:11 -0500
+Message-ID: <548B117F.7090509@suse.cz>
+Date: Fri, 12 Dec 2014 17:02:07 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: reiserfs-devel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        All Versions <stable@vger.kernel.org>, Jeff Mahoney <jeffm@suse.com>
+Subject: Re: [PATCH 1/1] reiserfs: destroy allocated commit workqueue
+References: <1418398169-19820-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1418398169-19820-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When allocation falls back to another migratetype, it will steal a page with
-highest available order, and (depending on this order and desired migratetype),
-it might also steal the rest of free pages from the same pageblock.
+On 12/12/2014, 04:29 PM, Jiri Slaby wrote:
+> When resirefs is trying to mount a partition, it creates a commit
+> workqueue (sbi->commit_wq). But when mount fails later, the workqueue
+> is not freed.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Reported-by: auxsvr@gmail.com
+> Reported-by: Benoît Monin <benoit.monin@gmx.fr>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: All Versions <stable@vger.kernel.org>
 
-Given the preference of highest available order, it is likely that it will be
-higher than the desired order, and result in the stolen buddy page being split.
-The remaining pages after split are currently stolen only when the rest of the
-free pages are stolen. This can however lead to situations where for MOVABLE
-allocations we split e.g. order-4 fallback UNMOVABLE page, but steal only
-order-0 page. Then on the next MOVABLE allocation (which may be batched to
-fill the pcplists) we split another order-3 or higher page, etc. By stealing
-all pages that we have split, we can avoid further stealing.
+This is not quite correct. It was introduced in commit
+797d9016ceca69879bb273218810fa0beef46aac (reiserfs: use per-fs commit
+workqueues), so only 3.16+ is affected.
 
-This patch therefore adjusts the page stealing so that buddy pages created by
-split are always stolen. This has effect only on MOVABLE allocations, as
-RECLAIMABLE and UNMOVABLE allocations already always do that in addition to
-stealing the rest of free pages from the pageblock. The change also allows
-to simplify try_to_steal_freepages() and factor out CMA handling.
+> Cc: reiserfs-devel@vger.kernel.org
+> ---
+>  fs/reiserfs/super.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+> index ea63ab13ef92..71fbbe3e2dab 100644
+> --- a/fs/reiserfs/super.c
+> +++ b/fs/reiserfs/super.c
+> @@ -2172,6 +2172,9 @@ error_unlocked:
+>  		reiserfs_write_unlock(s);
+>  	}
+>  
+> +	if (sbi->commit_wq)
+> +		destroy_workqueue(sbi->commit_wq);
+> +
+>  	cancel_delayed_work_sync(&REISERFS_SB(s)->old_work);
+>  
+>  	reiserfs_free_bitmap_cache(s);
+> 
 
-According to Mel, it has been intended since the beginning that buddy pages
-after split would be stolen always, but it doesn't seem like it was ever the
-case until commit 47118af076f6 ("mm: mmzone: MIGRATE_CMA migration type
-added"). The commit has unintentionally introduced this behavior, but was
-reverted by commit 0cbef29a7821 ("mm: __rmqueue_fallback() should respect
-pageblock type"). Neither included evaluation.
 
-My evaluation with stress-highalloc from mmtests shows about 2.5x reduction
-of page stealing events for MOVABLE allocations, without affecting the page
-stealing events for other allocation migratetypes.
-
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/page_alloc.c | 62 +++++++++++++++++++++++++++------------------------------
- 1 file changed, 29 insertions(+), 33 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index c32cb64..2cfd5d9 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1067,33 +1067,18 @@ static void change_pageblock_range(struct page *pageblock_page,
- /*
-  * If breaking a large block of pages, move all free pages to the preferred
-  * allocation list. If falling back for a reclaimable kernel allocation, be
-- * more aggressive about taking ownership of free pages.
-- *
-- * On the other hand, never change migration type of MIGRATE_CMA pageblocks
-- * nor move CMA pages to different free lists. We don't want unmovable pages
-- * to be allocated from MIGRATE_CMA areas.
-- *
-- * Returns the allocation migratetype if free pages were stolen, or the
-- * fallback migratetype if it was decided not to steal.
-+ * more aggressive about taking ownership of free pages. If we claim more than
-+ * half of the pageblock, change pageblock's migratetype as well.
-  */
--static int try_to_steal_freepages(struct zone *zone, struct page *page,
-+static void try_to_steal_freepages(struct zone *zone, struct page *page,
- 				  int start_type, int fallback_type)
- {
- 	int current_order = page_order(page);
- 
--	/*
--	 * When borrowing from MIGRATE_CMA, we need to release the excess
--	 * buddy pages to CMA itself. We also ensure the freepage_migratetype
--	 * is set to CMA so it is returned to the correct freelist in case
--	 * the page ends up being not actually allocated from the pcp lists.
--	 */
--	if (is_migrate_cma(fallback_type))
--		return fallback_type;
--
- 	/* Take ownership for orders >= pageblock_order */
- 	if (current_order >= pageblock_order) {
- 		change_pageblock_range(page, current_order, start_type);
--		return start_type;
-+		return;
- 	}
- 
- 	if (current_order >= pageblock_order / 2 ||
-@@ -1107,11 +1092,7 @@ static int try_to_steal_freepages(struct zone *zone, struct page *page,
- 		if (pages >= (1 << (pageblock_order-1)) ||
- 				page_group_by_mobility_disabled)
- 			set_pageblock_migratetype(page, start_type);
--
--		return start_type;
- 	}
--
--	return fallback_type;
- }
- 
- /* Remove an element from the buddy allocator from the fallback list */
-@@ -1121,14 +1102,15 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
- 	struct free_area *area;
- 	unsigned int current_order;
- 	struct page *page;
--	int migratetype, new_type, i;
- 
- 	/* Find the largest possible block of pages in the other list */
- 	for (current_order = MAX_ORDER-1;
- 				current_order >= order && current_order <= MAX_ORDER-1;
- 				--current_order) {
-+		int i;
- 		for (i = 0;; i++) {
--			migratetype = fallbacks[start_migratetype][i];
-+			int migratetype = fallbacks[start_migratetype][i];
-+			int buddy_type = start_migratetype;
- 
- 			/* MIGRATE_RESERVE handled later if necessary */
- 			if (migratetype == MIGRATE_RESERVE)
-@@ -1142,22 +1124,36 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
- 					struct page, lru);
- 			area->nr_free--;
- 
--			new_type = try_to_steal_freepages(zone, page,
--							  start_migratetype,
--							  migratetype);
-+			if (!is_migrate_cma(migratetype)) {
-+				try_to_steal_freepages(zone, page,
-+							start_migratetype,
-+							migratetype);
-+			} else {
-+				/*
-+				 * When borrowing from MIGRATE_CMA, we need to
-+				 * release the excess buddy pages to CMA
-+				 * itself, and we do not try to steal extra
-+				 * free pages.
-+				 */
-+				buddy_type = migratetype;
-+			}
- 
- 			/* Remove the page from the freelists */
- 			list_del(&page->lru);
- 			rmv_page_order(page);
- 
- 			expand(zone, page, order, current_order, area,
--			       new_type);
--			/* The freepage_migratetype may differ from pageblock's
-+					buddy_type);
-+
-+			/*
-+			 * The freepage_migratetype may differ from pageblock's
- 			 * migratetype depending on the decisions in
--			 * try_to_steal_freepages. This is OK as long as it does
--			 * not differ for MIGRATE_CMA type.
-+			 * try_to_steal_freepages(). This is OK as long as it
-+			 * does not differ for MIGRATE_CMA pageblocks. For CMA
-+			 * we need to make sure unallocated pages flushed from
-+			 * pcp lists are returned to the correct freelist.
- 			 */
--			set_freepage_migratetype(page, new_type);
-+			set_freepage_migratetype(page, buddy_type);
- 
- 			trace_mm_page_alloc_extfrag(page, order, current_order,
- 				start_migratetype, migratetype);
 -- 
-2.1.2
-
+js
+suse labs
