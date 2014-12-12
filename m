@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718AbaLLGd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:33:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51947 "EHLO
+	id S1760690AbaLLGdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:33:24 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51972 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759328AbaLLGQ6 (ORCPT
+	by vger.kernel.org with ESMTP id S1759332AbaLLGQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:58 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Hurley" <peter@hurleysoftware.com>,
-        "Robert =?UTF-8?Q?=C5=9Awi=C4=99cki?=" <robert@swiecki.net>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.749088556@decadent.org.uk>
+Message-ID: <lsq.1418364865.969256740@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 116/164] serial: Fix divide-by-zero fault in
- uart_get_divisor()
+Subject: [PATCH 3.2 091/164] zap_pte_range: update addr when forcing flush
+ after TLB batching faiure
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,44 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Hurley <peter@hurleysoftware.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 547039ec502076e60034eeb79611df3433a99b7d upstream.
+commit ce9ec37bddb633404a0c23e1acb181a264e7f7f2 upstream.
 
-uart_get_baud_rate() will return baud == 0 if the max rate is set
-to the "magic" 38400 rate and the SPD_* flags are also specified.
-On the first iteration, if the current baud rate is higher than the
-max, the baud rate is clamped at the max (which in the degenerate
-case is 38400). On the second iteration, the now-"magic" 38400 baud
-rate selects the possibly higher alternate baud rate indicated by
-the SPD_* flag. Since only two loop iterations are performed, the
-loop is exited, a kernel WARNING is generated and a baud rate of
-0 is returned.
+When unmapping a range of pages in zap_pte_range, the page being
+unmapped is added to an mmu_gather_batch structure for asynchronous
+freeing. If we run out of space in the batch structure before the range
+has been completely unmapped, then we break out of the loop, force a
+TLB flush and free the pages that we have batched so far. If there are
+further pages to unmap, then we resume the loop where we left off.
 
-Reproducible with:
- setserial /dev/ttyS0 spd_hi base_baud 38400
+Unfortunately, we forget to update addr when we break out of the loop,
+which causes us to truncate the range being invalidated as the end
+address is exclusive. When we re-enter the loop at the same address, the
+page has already been freed and the pte_present test will fail, meaning
+that we do not reconsider the address for invalidation.
 
-Only perform the "magic" 38400 -> SPD_* baud transform on the first
-loop iteration, which prevents the degenerate case from recognizing
-the clamped baud rate as the "magic" 38400 value.
+This patch fixes the problem by incrementing addr by the PAGE_SIZE
+before breaking out of the loop on batch failure.
 
-Reported-by: Robert Święcki <robert@swiecki.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context; add braces]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/serial_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -360,7 +360,7 @@ uart_get_baud_rate(struct uart_port *por
- 		 * The spd_hi, spd_vhi, spd_shi, spd_warp kludge...
- 		 * Die! Die! Die!
- 		 */
--		if (baud == 38400)
-+		if (try == 0 && baud == 38400)
- 			baud = altbaud;
- 
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1178,8 +1178,10 @@ again:
+ 			if (unlikely(page_mapcount(page) < 0))
+ 				print_bad_pte(vma, addr, ptent, page);
+ 			force_flush = !__tlb_remove_page(tlb, page);
+-			if (force_flush)
++			if (force_flush) {
++				addr += PAGE_SIZE;
+ 				break;
++			}
+ 			continue;
+ 		}
  		/*
 
