@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760129AbaLLGRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:17:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51889 "EHLO
+	id S1760111AbaLLGRs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:17:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51902 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760080AbaLLGRU (ORCPT
+	by vger.kernel.org with ESMTP id S1760081AbaLLGRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:17:20 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
-        "Daniele Palmas" <dnlplm@gmail.com>
+CC: akpm@linux-foundation.org, "Nathaniel Ting" <nathaniel.ting@silabs.com>,
+        "Johan Hovold" <johan@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.115069978@decadent.org.uk>
+Message-ID: <lsq.1418364865.248694973@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 071/164] usb: option: add support for Telit LE910
+Subject: [PATCH 3.2 069/164] USB: serial: cp210x: add Silicon Labs 358x
+ VID and PID
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,50 +32,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniele Palmas <dnlplm@gmail.com>
+From: Nathaniel Ting <nathaniel.ting@silabs.com>
 
-commit 2d0eb862dd477c3c4f32b201254ca0b40e6f465c upstream.
+commit 35cc83eab097e5720a9cc0ec12bdc3a726f58381 upstream.
 
-Add VID/PID for Telit LE910 modem. Interfaces description is almost the
-same than LE920, except that the qmi interface is number 2 (instead than
-5).
+Enable Silicon Labs Ember VID chips to enumerate with the cp210x usb serial
+driver. EM358x devices operating with the Ember Z-Net 5.1.2 stack may now
+connect to host PCs over a USB serial link.
 
-Signed-off-by: Daniele Palmas <dnlplm@gmail.com>
+Signed-off-by: Nathaniel Ting <nathaniel.ting@silabs.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/cp210x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -269,6 +269,7 @@ static void option_instat_callback(struc
- #define TELIT_PRODUCT_DE910_DUAL		0x1010
- #define TELIT_PRODUCT_UE910_V2			0x1012
- #define TELIT_PRODUCT_LE920			0x1200
-+#define TELIT_PRODUCT_LE910			0x1201
- 
- /* ZTE PRODUCTS */
- #define ZTE_VENDOR_ID				0x19d2
-@@ -586,6 +587,11 @@ static const struct option_blacklist_inf
- 	.reserved = BIT(3) | BIT(4),
- };
- 
-+static const struct option_blacklist_info telit_le910_blacklist = {
-+	.sendsetup = BIT(0),
-+	.reserved = BIT(1) | BIT(2),
-+};
-+
- static const struct option_blacklist_info telit_le920_blacklist = {
- 	.sendsetup = BIT(0),
- 	.reserved = BIT(1) | BIT(5),
-@@ -1135,6 +1141,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_CC864_SINGLE) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_DE910_DUAL) },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_UE910_V2) },
-+	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE910),
-+		.driver_info = (kernel_ulong_t)&telit_le910_blacklist },
- 	{ USB_DEVICE(TELIT_VENDOR_ID, TELIT_PRODUCT_LE920),
- 		.driver_info = (kernel_ulong_t)&telit_le920_blacklist },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF622, 0xff, 0xff, 0xff) }, /* ZTE WCDMA products */
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -161,6 +161,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
++	{ USB_DEVICE(0x1BA4, 0x0002) },	/* Silicon Labs 358x factory default */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
 
