@@ -1,98 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967688AbaLLM2L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 07:28:11 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:34162 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967609AbaLLM2J convert rfc822-to-8bit (ORCPT
+	id S967712AbaLLM3u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 07:29:50 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:47679 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967475AbaLLM3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 07:28:09 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: __hci_cmd_sync() not suitable for nokia h4p
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20141212095153.GB2905@amd>
-Date: Fri, 12 Dec 2014 13:28:00 +0100
-Cc: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<ivo.g.dimitrov.75@gmail.com>,
-        "Gustavo F. Padovan" <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <45FED76E-F0E2-4810-8D79-64C5D1693EFA@holtmann.org>
-References: <20141209190210.GA15641@amd> <304050AD-DB11-4A2B-A1F7-8B1BBB5F04F0@holtmann.org> <20141209201328.GA18003@amd> <7EFD3C33-E503-4FB6-BCCF-52836080ABD6@holtmann.org> <20141210131519.GA14748@amd> <EE1A4B9D-30D5-4BD9-9A43-532619494A0C@holtmann.org> <20141211221306.GA2905@amd> <CAA1630D-1A2E-4D3D-9BBC-2EE86256D58B@holtmann.org> <20141212095153.GB2905@amd>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1993)
+	Fri, 12 Dec 2014 07:29:48 -0500
+Message-ID: <548ADFBA.6000303@kernel.org>
+Date: Fri, 12 Dec 2014 12:29:46 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-iio@vger.kernel.org
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Hartmut Knaack <knaack.h@gmx.de>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] iio / PM: Replace CONFIG_PM_RUNTIME with CONFIG_PM
+References: <202529361.GBbZ7zGgn8@vostro.rjw.lan>
+In-Reply-To: <202529361.GBbZ7zGgn8@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
-
->>>>>> What needs to be done is the bring up of the device including the proper UART settings and speed and then just run the firmware downloads. All firmware files on the Nokia devices where just HCI commands with vendor specific details. Some from CSR, some from Broadcom and some from TI. You can actually decode them if you really want to. Shouldn't be that hard.
->>>>>> 
->>>>> 
->>>>> Speed changes at the end of firmware load, but I guess that's detail?
->>>>> Anyway, patch would look like this.
->>>> 
->>>> You should really look into providing hdev->setup() callback. That is normally the callback where you want to load the firmware.
->>>> 
->>> 
->>> I can provide setup() callback and load firmware from there.
->>> 
->>> I have created provisional device tree binding, and the driver still
->>> works.
->>> 
->>> Some time ago you mentioned that with the "big" issues fixed, you'd be
->>> willing to take it into the tree. What way forward do you see? Would
->>> it make sense to re-enable the driver in staging, so that "big"
->>> changes could be applied, followed by renames?
->> 
->> If the driver is clean, there is no point in taking it through staging. It can be cleaned up and then merged all together.
->> 
+On 03/12/14 02:06, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > 
-> Ok, so you can revert a4102f90e87cfaa3fdbed6fdf469b23f0eeb4bfd in your
-> tree, and I can post patches against that?
-
-just treat this a submission of a new driver.
-
->> I think the important part is to focus on the N900 derivative with
->> the Broadcom chip inside. And just ignore all the rest. So start
->> small and do not try to carry the N770, N800, N810 hacks over.
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
+> depending on CONFIG_PM_RUNTIME may now be changed to depend on
+> CONFIG_PM.
 > 
-> Well, I did remove non-relevant firmware loaders, and I can remove the
-> switches for different firmware loaders, too, but spending time
-> removing support for different hardware does not sound quite right.
-
-Lets face it, you are not getting it upstream that way. If nobody has the hardware to test it or cares about the hardware anymore, then this should not be upstream in the first place.
-
-Make your life easier and get your hardware supported. Then someone can evolve this for older Nokia devices. But I am not taking code that nobody has tested.
-
-Keep it simple is really the only way to get this driver merged. There is so much old cruft in there that you are better off only caring about the N900 version of the hardware.
-
->> However you might want to check Neil Brown's patches for TTY-slave
->> devices he just posted. Maybe the N900 devices should be exposed as
->> TTY and we just attach N_HCI line discipline to it. If all the GPIO
->> wiggling can be done automatically at TTY open, then that should be
->> the way to go. I also send an email about using the new unconfigured
->> stage to get this done cleanly.
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM everywhere under
+> drivers/iio/.
 > 
-> I seen them, but they don't help, I'm afraid. The GPIOs are used for
-> power saving, and they are used in various places including the serial
-> irq handler.
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+> ---
+> 
+> Note: This depends on commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if
+> PM_SLEEP is selected) which is only in linux-next at the moment (via the
+> linux-pm tree).
+> 
+> Please let me know if it is OK to take this one into linux-pm.
+It is.  If I took too long to reply and the dependency merged
+in the current window, I can take these through IIO if you'd prefer?
 
-That is something that might need some extra work on it, but it seems that the general direction of TTY slaves is the right one.
+Thanks,
 
-Anyway, the main order of business is really that it supports DT and that it can be compiled on every single platform and you could even load the driver on x86 without doing any harm.
-
-Regards
-
-Marcel
+Jonathan
+> 
+> ---
+>  drivers/iio/accel/bmc150-accel.c |    4 ++--
+>  drivers/iio/accel/kxcjk-1013.c   |    4 ++--
+>  drivers/iio/gyro/bmg160.c        |    4 ++--
+>  3 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> Index: linux-pm/drivers/iio/accel/bmc150-accel.c
+> ===================================================================
+> --- linux-pm.orig/drivers/iio/accel/bmc150-accel.c
+> +++ linux-pm/drivers/iio/accel/bmc150-accel.c
+> @@ -510,7 +510,7 @@ static int bmc150_accel_get_bw(struct bm
+>  	return -EINVAL;
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int bmc150_accel_get_startup_times(struct bmc150_accel_data *data)
+>  {
+>  	int i;
+> @@ -1349,7 +1349,7 @@ static int bmc150_accel_resume(struct de
+>  }
+>  #endif
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int bmc150_accel_runtime_suspend(struct device *dev)
+>  {
+>  	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
+> Index: linux-pm/drivers/iio/accel/kxcjk-1013.c
+> ===================================================================
+> --- linux-pm.orig/drivers/iio/accel/kxcjk-1013.c
+> +++ linux-pm/drivers/iio/accel/kxcjk-1013.c
+> @@ -358,7 +358,7 @@ static int kxcjk1013_chip_init(struct kx
+>  	return 0;
+>  }
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int kxcjk1013_get_startup_times(struct kxcjk1013_data *data)
+>  {
+>  	int i;
+> @@ -1357,7 +1357,7 @@ static int kxcjk1013_resume(struct devic
+>  }
+>  #endif
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int kxcjk1013_runtime_suspend(struct device *dev)
+>  {
+>  	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
+> Index: linux-pm/drivers/iio/gyro/bmg160.c
+> ===================================================================
+> --- linux-pm.orig/drivers/iio/gyro/bmg160.c
+> +++ linux-pm/drivers/iio/gyro/bmg160.c
+> @@ -237,7 +237,7 @@ static int bmg160_chip_init(struct bmg16
+>  
+>  static int bmg160_set_power_state(struct bmg160_data *data, bool on)
+>  {
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  	int ret;
+>  
+>  	if (on)
+> @@ -1164,7 +1164,7 @@ static int bmg160_resume(struct device *
+>  }
+>  #endif
+>  
+> -#ifdef CONFIG_PM_RUNTIME
+> +#ifdef CONFIG_PM
+>  static int bmg160_runtime_suspend(struct device *dev)
+>  {
+>  	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
+> 
 
