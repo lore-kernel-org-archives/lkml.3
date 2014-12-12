@@ -1,161 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030336AbaLLQNp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:13:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53600 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933792AbaLLQNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:13:43 -0500
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: [PATCH V3 0/4] Reducing parameters of alloc_pages* family of functions
-Date: Fri, 12 Dec 2014 17:13:21 +0100
-Message-Id: <1418400805-4661-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 2.1.2
+	id S1030585AbaLLQOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:14:05 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:54254 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968152AbaLLQNq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:13:46 -0500
+Date: Fri, 12 Dec 2014 17:15:36 +0100
+From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Michael Welling <mwelling@ieee.org>,
+        Philippe Reynes <tremyfr@yahoo.fr>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [PATCH v2 2/2] iio: add driver for the TI DAC8554
+Message-ID: <20141212161536.GC1142@avionic-0071.adnet.avionic-design.de>
+References: <1416858614-32265-1-git-send-email-nikolaus.schulz@avionic-design.de>
+ <1416858614-32265-2-git-send-email-nikolaus.schulz@avionic-design.de>
+ <5482EA33.7020305@gmx.de>
+ <548AD814.2060206@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <548AD814.2060206@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:pnI4l/ZnAQeNTvA0A6nT7d+e6aKY4gKpzsAQ2TjCixY4XPGZfSg
+ U37NWlQjLGcfgPh4zkL4JMdsvjVFbpY/zabVNInL1L9V25sQyLjjqmY3o1MATtXKKvBXIzQ
+ 9QsZeRF5jp03ba3JY6y6+YS/KCJiKA/sektDmfuyFWg48C0bTNWgeVKIvNXObi2J7/HeUhS
+ Mtu9HVDwaR24ZPehLEMxg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey all,
+On Fri, Dec 12, 2014 at 11:57:08AM +0000, Jonathan Cameron wrote:
+> On 06/12/14 11:36, Hartmut Knaack wrote:
+> > Nikolaus Schulz schrieb am 24.11.2014 um 20:50:
+> >> The TI DAC8554 is a quad-channel Digital-to-Analog Converter with an SPI
+> >> interface.
+> >>
+> >> Changes in v2:
+> >> * Use DMA-safe buffer for SPI transfer
+> >> * Normalize powerdown_mode name "hi-z" to "three_state" as per
+> >>   ABI/testing/sysfs-bus-iio
+> >> * Register device late in probe function
+> >> * Avoid powerdown broadcast update, which touches all DAC on the bus
+> > There are a few issues left, please see my comments inline.
+> 1 little one from me...
+> >>
+> >> Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+> >> ---
+> >>  drivers/iio/dac/Kconfig      |  10 ++
+> >>  drivers/iio/dac/Makefile     |   1 +
+> >>  drivers/iio/dac/ti-dac8554.c | 374 +++++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 385 insertions(+)
+> >>  create mode 100644 drivers/iio/dac/ti-dac8554.c
+[...]
+> >> diff --git a/drivers/iio/dac/ti-dac8554.c b/drivers/iio/dac/ti-dac8554.c
+> >> new file mode 100644
+> >> index 0000000..fca751f
+> >> --- /dev/null
+> >> +++ b/drivers/iio/dac/ti-dac8554.c
+[...]
+> >> +static int dac8554_powerdown(struct dac8554_state *st,
+> >> +			     u8 powerdown_mode)
+> >> +{
+> >> +	int chan, cmd, ret;
+> >> +
+> >> +	for (chan = DAC8554_DAC_CHANNELS-1; chan >= 0; --chan) {
+> > Please mind spaces around operators.
+> >> +		cmd = chan ? DAC8554_CMD_STORE_DAC_N
+> >> +			   : DAC8554_CMD_STORE_DAC_N_UPDATE_ALL;
+> >> +		ret = dac8554_spi_write(st, cmd, chan,
+> >> +				DAC8554_PWRDN_TO_SR(powerdown_mode));
+> >> +		if (ret)
+> >> +			return ret;
+> >> +	}
+> >> +
+> >> +	memset(st->powerdown_mode, powerdown_mode, sizeof(st->powerdown_mode));
+> >> +	memset(st->powerdown, true, sizeof(st->powerdown));
+> Whilst this probably works, I think for the boolean case it is less
+> than entirely obvious, so probably better to have a simple loop.
 
-this is a V3 of attempting something that has been discussed when Minchan
-proposed to expand the x86 kernel stack [1], namely the reduction of huge
-number of parameters that the alloc_pages* family and get_page_from_freelist()
-functions have.
+Yeah, I agree it's better to keep it as simple and obvious as possible.
+Fixed in v3.
 
-The result is this series, ordered in the subjective importance of the patches.
-
-The series is based on mmotm-2014-12-02-15-55 and I use gcc 4.8.3 20140627 on
-openSUSE 13.2. Config includess NUMA and COMPACTION. It also applies to
-next-20141212.
-
-Changes since v2:
-o Per Linus's suggestion, removed order from alloc_context due to poor
-  conceptual fit. Interestingly, this improved the stack/code size a bit.
-o Attempted to merge migratetype into alloc_flags, but it was ugly and made
-  things only worse. So I didn't even attempt to merge order there.
-
-The core is a new struct alloc_context, which looks like this:
-
-struct alloc_context {
-        struct zonelist *zonelist;
-        nodemask_t *nodemask;
-        struct zone *preferred_zone;
-        int classzone_idx;
-        int migratetype;
-        enum zone_type high_zoneidx;
-};
-
-All the contents is mostly constant, except that __alloc_pages_slowpath()
-changes preferred_zone, classzone_idx and potentially zonelist. But that's not
-a problem in case control returns to retry_cpuset: in __alloc_pages_nodemask(),
-those will be reset to initial values again (although it's a bit subtle).
-On the other hand, gfp_flags and alloc_info mutate so much that it doesn't
-make sense to put them into alloc_context. Still, the result is one parameter
-instead of up to 7. This is all in Patch 2.
-
-Patch 3 is a step to expand alloc_context usage out of page_alloc.c itself.
-The function try_to_compact_pages() can also much benefit from the parameter
-reduction, but it means the struct definition has to be moved to a shared
-header.
-
-Patch 1 should IMHO be included even if the rest is deemed not useful enough.
-It improves maintainability and also has some code/stack reduction. Patch 4
-is OTOH a tiny optimization.
-
-First, let's look at the code size savings by bloat-o-meter, as the patches
-stack up:
-
-Patch 1 (vs mmotm):
-
-function                                     old     new   delta
-get_page_from_freelist                      2554    2490     -64
-
-Patch 2:
-
-function                                     old     new   delta
-__alloc_pages_nodemask                       571    2220   +1649
-get_page_from_freelist                      2490    2560     +70
-__alloc_pages_direct_compact                 332     302     -30
-__alloc_pages_slowpath                      1878       -   -1878
-
-Here gcc decided to inline _slowpath, so let's try comparing with Patch 1
-plus forced inline of _slowpath:
-
-add/remove: 0/0 grow/shrink: 1/2 up/down: 70/-428 (-358)
-function                                     old     new   delta
-get_page_from_freelist                      2490    2560     +70
-__alloc_pages_direct_compact                 332     284     -48
-__alloc_pages_nodemask                      2618    2194    -424
-
-Looks like get_page_from_freelist() did benefit from getting the parameters
-separately, but overal it's a win.
-
-Patch 3:
-
-__alloc_pages_direct_compact                 284     256     -28
-try_to_compact_pages                         582     566     -16
-
-A tiny overal win.
-
-Patch 4:
-
-function                                     old     new   delta
-__alloc_pages_nodemask                      2194    2191      -3
-nr_free_zone_pages                           129     115     -14
-get_page_from_freelist                      2560    2505     -55
-try_to_compact_pages                         566     579     +13
-
-Small overal win. A few more object files should be also affected,
-but were not tested.
-
-Now stack sizes per ./scripts/checkstack.pl:
-
-                        mmotm    P1   P2
-__alloc_pages_slowpath    176   176    -
-get_page_from_freelist:   160   152  160
-__alloc_pages_nodemask    104   104  168 
-__alloc_pages_direct_c     32    32   16
-
-Patch 1 saves a bit, Patch 2 result muddled by inlining.
-Again, let's use Patch 1 + forced inline as baseline for the rest:
-
-                          P1i    P2    P3    P4
-__alloc_pages_nodemask    240   168   168   168
-get_page_from_freelist:   152   160   160   160
-try_to_compact_pages       64    64    56    56
-__alloc_pages_direct_c     32    16     -     -
-
-Again, Patch 2 bloats get_page_from_freelist(), but overal is a win. The
-rest almost doesn't affect stack usage.
-
-[1] http://marc.info/?l=linux-mm&m=140142462528257&w=2
-
-Vlastimil Babka (4):
-  mm: set page->pfmemalloc in prep_new_page()
-  mm, page_alloc: reduce number of alloc_pages* functions' parameters
-  mm: reduce try_to_compact_pages parameters
-  mm: microoptimize zonelist operations
-
- include/linux/compaction.h |  15 ++-
- include/linux/mm.h         |  14 +++
- include/linux/mmzone.h     |  13 +--
- mm/compaction.c            |  23 ++---
- mm/mmzone.c                |   4 +-
- mm/page_alloc.c            | 250 +++++++++++++++++++--------------------------
- 6 files changed, 144 insertions(+), 175 deletions(-)
+> >> +
+> >> +	return 0;
+> >> +}
 
 -- 
-2.1.2
+Avionic Design GmbH
+Nikolaus Schulz
+Wragekamp 10
+D-22397 Hamburg
+Germany
 
+Tel.:  +49 40 88187-163
+Fax:   +49 40 88187-150
+Email: nikolaus.schulz@avionic-design.de
+
+Avionic Design GmbH
+Amtsgericht Hamburg HRB 82598
+Geschäftsführung: Cornelis Broers
+Ust.-Ident-Nr.: DE813378254
