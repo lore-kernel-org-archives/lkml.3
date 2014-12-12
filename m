@@ -1,141 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030781AbaLLQxu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:53:50 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:5553 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933082AbaLLQxr (ORCPT
+	id S935116AbaLLQzo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:55:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54660 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934379AbaLLQzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:53:47 -0500
-X-IronPort-AV: E=Sophos;i="5.07,565,1413270000"; 
-   d="scan'208";a="52921407"
-Message-ID: <548B1D98.6030400@broadcom.com>
-Date: Fri, 12 Dec 2014 08:53:44 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Hauke Mehrtens <hauke@hauke-m.de>, <devicetree@vger.kernel.org>,
-        Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v2 1/4] pci: iProc: define Broadcom iProc PCIe binding
-References: <1418351817-14898-2-git-send-email-rjui@broadcom.com> <3375037.6pjWmlOLA3@wuerfel>
-In-Reply-To: <3375037.6pjWmlOLA3@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Dec 2014 11:55:42 -0500
+Message-ID: <1418403328.3599.85.camel@decadent.org.uk>
+Subject: Re: [PATCH 3.2 000/164] 3.2.65-rc1 review
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        Phil Jensen <pjensen@evernote.com>, akpm@linux-foundation.org
+Date: Fri, 12 Dec 2014 16:55:28 +0000
+In-Reply-To: <20141212162623.GC28564@roeck-us.net>
+References: <lsq.1418364865.554543691@decadent.org.uk>
+	 <20141212162623.GC28564@roeck-us.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-FrtDs7i1xpJOHAtiCcd5"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--=-FrtDs7i1xpJOHAtiCcd5
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On 12/12/2014 4:14 AM, Arnd Bergmann wrote:
-> On Thursday 11 December 2014 18:36:54 Ray Jui wrote:
->> index 0000000..040bc0f
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt
->> @@ -0,0 +1,74 @@
->> +* Broadcom iProc PCIe controller
->> +
->> +Required properties:
->> +- compatible: Must be "brcm,iproc-pcie"
->> +- reg: base address and length of the PCIe controller and the MDIO interface
->> +  that controls the PCIe PHY
->> +- #interrupt-cells: set to <1>
->> +- interrupts: interrupt IDs
->
-> How many, and what are they?
->
-Different iProc SoCs might have different number of interrupts. I'll 
-elaborate more on the next patch.
+On Fri, 2014-12-12 at 08:26 -0800, Guenter Roeck wrote:
+> On Fri, Dec 12, 2014 at 06:14:25AM +0000, Ben Hutchings wrote:
+> > This is the start of the stable review cycle for the 3.2.65 release.
+> > There are 164 patches in this series, which will be posted as responses
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >=20
+> > Responses should be made by Sun Dec 14 06:14:25 UTC 2014.
+> > Anything received after that time might be too late.
+> >=20
+> Build results:
+> 	total: 111 pass: 107 fail: 4
+> Failed builds:
+> 	arm:mxs_defconfig
+> 	mips:allmodconfig
+> 	xtensa:defconfig
+> 	xtensa:allmodconfig
+>=20
+> Qemu tests:
+> 	total: 20 pass: 20 fail: 0
+>=20
+> The arm build failure looks like it is new, but it is due to 'Inconsisten=
+t
+> kallsyms data' which I see randomly with arm builds, so it is not a real
+> concern. It may show up now because I switched from the Yocto 1.4.2 toolc=
+hain
+> to Yocto 1.7; as result some previously failing arm builds now pass while
+> others now fail.
+>=20
+> Details are available at http://server.roeck-us.net:8010/builders.
 
->> +- interrupt-map-mask and interrupt-map, standard PCI properties to define the
->> +  mapping of the PCIe interface to interrupt numbers
->> +- bus-range: PCI bus numbers covered
->> +- #address-cells: set to <3>
->> +- #size-cells: set to <2>
->> +- device_type: set to "pci"
->> +- ranges: ranges for the PCI memory and I/O regions
->> +- phy-addr: MDC/MDIO adddress of the PCIe PHY
->
-> It looks like the phy controller is separate from the PCI controller,
-> and you even list the same register range for both PHYs. Better make
-> that a separate driver and put the phy address into the "phys" reference.
->
-Okay. In this case, I need to create a separate PHY driver under the 
-drivers/phy directory and have the PCIe host driver reference it through 
-the standard PHY API.
+Thanks for checking.  I caught a couple of build failures with your
+build server before sending these out for review.
 
->> +- have-msi-inten-reg: Required for legacy iProc PCIe controllers that need the
->> +  MSI interrupt enable register to be set explicitly
->> +
->> +The Broadcom iProc PCie driver adapts the multi-domain structure, i.e., each
->> +interface has its own domain and therefore has its own device node
->> +Example:
->> +
->> +SoC specific DT Entry:
->> +
->> +       pcie0: pcie@18012000 {
->> +               compatible = "brcm,iproc-pcie";
->> +               reg = <0x18012000 0x1000>,
->> +                       <0x18002000 0x1000>;
->
-> I guess the addresses should be relative to the BCMA bus, and this node
-> get moved under that. Please see Hauke's patch series, we've discussed
-> this in great length already.
->
+Ben.
 
-As Arend van Spriel pointed out in the previous discussion:
+--=20
+Ben Hutchings
+Kids!  Bringing about Armageddon can be dangerous.  Do not attempt it in
+your own home. - Terry Pratchett and Neil Gaiman, `Good Omens'
 
-BCMA core is the bus driver for discoverable ARM AXI interconnect. Apart 
-from that it also provides drivers for some cores. For the chips to be 
-discoverable it needs additional IP logic.
+--=-FrtDs7i1xpJOHAtiCcd5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Not all iProc family of SoCs have the additional IP logic and for those 
-which don't, they cannot use the BCMA bus.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
->> +               #interrupt-cells = <1>;
->> +               interrupts = <GIC_SPI 96 IRQ_TYPE_NONE>,
->> +                            <GIC_SPI 97 IRQ_TYPE_NONE>,
->> +                            <GIC_SPI 98 IRQ_TYPE_NONE>,
->> +                            <GIC_SPI 99 IRQ_TYPE_NONE>,
->> +                            <GIC_SPI 100 IRQ_TYPE_NONE>,
->> +                            <GIC_SPI 101 IRQ_TYPE_NONE>;
->
->
->
->> +               interrupt-map-mask = <0 0 0 0>;
->> +               interrupt-map = <0 0 0 0 &gic GIC_SPI 100 IRQ_TYPE_NONE>;
->
-> This interrupt is also listed in the "interrupts" above, which is
-> probably a mistake, unless the IRQ line is shared between all PCI
-> devices and the PCI host itself.
->
-interrupts are for MSI interrupt support and interrupt-map is for legacy 
-INTx support. To my best knowledge, MSI and INTx cannot be used at the 
-same time. "nvidia,tegra20-pcie.txt" and "rcar-pci.txt" have similar 
-configurations.
+iQIVAwUAVIseBee/yOyVhhEJAQoD9g//V/boUlIjWVOLmjxSGy8R61YLQnbRv+JB
+ht74IygX+aXEfA0OtxiU3SBMe9n1DmVB9ZpX9YSwLp2YyRjCRK0ZrlMzhFswbjms
+SEYvoilgQoKXyk0L1iBcIwlb9/SYjpZP1AEG9F4L1ad1aseoat+NDLpfem9lUwXV
+ecrLtjJ6JKVgwP4APEHFC9hNpRZ+QNL0Jkv0VwMpnTJCbuiw2qL6KuzShrfsWaSQ
+SUVkFmybraTK3xX4LsAFQJwKTw4Kk+Elj+ct4Pxsks9nCL3E/ehOCyMvED6STmlL
+7AcwM4i5WTpyWXzNr54ko8c156teLNGXChKK7haRFqw3gzR7pYVF7iw+w8KQeuxy
+UMkeg9fN0KYQwE8z117uNXxdiX+eUwLWKPjt4A5/sRDuNoWiiXK06ffi7ls6etu5
+iIxiwghw1oNTuXs2+9wUvOmFXl0tBSLNYpessYOGmPyaxOierXcawDw0JjS4sxSE
+vEUYZVumF9eQgFmCM8vpyNSgtDspTJYhVNrX00v5zDh4+Z/FxHlimV0pxETqjc91
+8RisSosjHZ0FYbHMLPVdOtFeVY+6aki1a0gDIY9lkvs5rzN3q4KrrhKbcCgEpTr8
+fMk1mMmFLxg57YBOilQb4i3PJg3SHoDSZk19aQQn2FSrFdw2RhWbF0U7VCauNH/o
+HJjToB02Lo8=
+=2pH7
+-----END PGP SIGNATURE-----
 
->> +               bus-range = <0x00 0xFF>;
->> +
->> +               #address-cells = >;
->> +               #size-cells = <2>;
->> +               device_type = "pci";
->> +               ranges = <0x81000000 0 0          0x28000000 0 0x00010000   /* downstream I/O */
->> +                         0x82000000 0 0x20000000 0x20000000 0 0x04000000>; /* non-prefetchable memory */
->> +               phy-addr = <5>;
->> +       };
->>
->
-> 	Arnd
->
+--=-FrtDs7i1xpJOHAtiCcd5--
