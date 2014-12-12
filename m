@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaLLXEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 18:04:21 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:37488 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288AbaLLXET (ORCPT
+	id S1753263AbaLLXFC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 18:05:02 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:61373 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752803AbaLLXFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 18:04:19 -0500
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: [PATCH] clk: Really fix deadlock with mmap_sem
-Date: Fri, 12 Dec 2014 15:04:16 -0800
-Message-Id: <1418425456-19364-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 2.1.0.61.ge50deb1
+	Fri, 12 Dec 2014 18:05:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <548B60F4.6020903@sr71.net>
+References: <20141212191213.579887D2@viggo.jf.intel.com> <548B4E75.5010507@amacapital.net>
+ <548B4FBE.5090101@sr71.net> <CALCETrW4f3EUYGG_zyzb7sZBXaoW3eHMpTn3dd3WpDgJq2HjtA@mail.gmail.com>
+ <548B60F4.6020903@sr71.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 12 Dec 2014 15:04:38 -0800
+Message-ID: <CALCETrVZcED1x+YV4V+c9nnieaz8DMbO4D455h2QYF__jX-DKg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit kernels
+To: Dave Hansen <dave@sr71.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6314b6796e3c (clk: Don't hold prepare_lock across debugfs
-creation, 2014-09-04) forgot to update one place where we hold
-the prepare_lock while creating debugfs directories. This means
-we still have the chance of a deadlock that the commit was trying
-to fix. Actually fix it by moving the debugfs creation outside
-the prepare_lock.
+n Fri, Dec 12, 2014 at 1:41 PM, Dave Hansen <dave@sr71.net> wrote:
+> On 12/12/2014 12:48 PM, Andy Lutomirski wrote:
+>> On Fri, Dec 12, 2014 at 12:27 PM, Dave Hansen <dave@sr71.net> wrote:
+>>> You want the same size structures with the same format for 32-bit and
+>>> 64-bit modes?
+>>
+>> Yes.  Especially because programs can switch between 32-bit and 64-bit
+>> mode entirely in userspace.  I don't know whether any do in practice,
+>> but programs *can*.
+>
+> So, you want a 2GB of the 32-bit address space dedicated to a bounds
+> directory, and half of the space for the bounds tables to be simply
+> zero-filled unused address bits?  That seems, um, a bit unreasonable.
 
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/clk/clk.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Fair enough.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 44cdc47a6cc5..c9430653ddc9 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -240,12 +240,13 @@ static const struct file_operations clk_dump_fops = {
- 	.release	= single_release,
- };
- 
--/* caller must hold prepare_lock */
- static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
- {
- 	struct dentry *d;
- 	int ret = -ENOMEM;
- 
-+	lockdep_assert_held(clk_debug_lock);
-+
- 	if (!clk || !pdentry) {
- 		ret = -EINVAL;
- 		goto out;
-@@ -1944,7 +1945,6 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	else
- 		clk->rate = 0;
- 
--	clk_debug_register(clk);
- 	/*
- 	 * walk the list of orphan clocks and reparent any that are children of
- 	 * this clock
-@@ -1979,6 +1979,9 @@ int __clk_init(struct device *dev, struct clk *clk)
- out:
- 	clk_prepare_unlock();
- 
-+	if (!ret)
-+		clk_debug_register(clk);
-+
- 	return ret;
- }
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
+>
+>> Or better yet: Intel could have skipped supporting it at all in 32-bit
+>> mode.
+>
+> So, we should not have this security feature for 32-bit apps... because
+> it costs us 50 lines of code in the kernel to support?  Did you look at
+> the diffstat?
+>
+>> Isn't mpx somewhat of an address space hog anyway?
+>
+> Yes, it will be troublesome for 32-bit apps that are already bumping up
+> against the virtual address space size to support it.  But, really, how
+> many of those *are* there these days?
 
+I wonder how many 32-bit apps will end up using mpx regardless.
+
+Anyway, do your patches handle the case where a 32-bit app maliciously
+executes a 64-bit mpx insn with a very large address?  I think it's
+okay, but I might have missed something.
+
+--Andy
