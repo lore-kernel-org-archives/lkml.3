@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934875AbaLLTIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 14:08:14 -0500
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:53496 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932399AbaLLTIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 14:08:11 -0500
-Message-ID: <1418411287.13491.22.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2 0/6] net-PPP: Deletion of a few unnecessary checks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: David Miller <davem@davemloft.net>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Date: Fri, 12 Dec 2014 11:08:07 -0800
-In-Reply-To: <548B2468.5050402@users.sourceforge.net>
-References: <548B0A29.8050503@users.sourceforge.net>
-	 <20141212.105106.1162681032492664308.davem@davemloft.net>
-	 <548B1E44.6050005@users.sourceforge.net>
-	 <20141212.115922.687789059853236747.davem@davemloft.net>
-	 <548B2468.5050402@users.sourceforge.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934924AbaLLTMM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 14:12:12 -0500
+Received: from mga03.intel.com ([134.134.136.65]:51801 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754302AbaLLTML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 14:12:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="497949406"
+Subject: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit kernels
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, x86@kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 12 Dec 2014 11:12:13 -0800
+Message-Id: <20141212191213.579887D2@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-12 at 18:22 +0100, SF Markus Elfring wrote:
+This is 3.20 material.  I'm hoping to get some comments early
+in case folks have some issues with the way it's being done.
 
-> Will it be acceptable for you that anyone (or even me) will introduce
-> such a change with a seventh (and eventually eighth) update step here?
-> Do you want any other sequence for source code preparation of
-> the requested software improvement?
+--
 
-The thing is : We are in the merge window, tracking bugs added in latest
-dev cycle.
+The MPX hardware structures differ in layout in 32 and 64-bit
+mode.  A 32-bit binary running on a 64-bit kernel needs the
+32-bit structures, so we need code which switches between
+the two modes.
 
-Having to deal with patches like yours is adding pressure
-on the maintainer (and other developers) at the wrong time.
+The first patch is just a documentation update.  The next 5
+patches are really just prepwork.  The meat is in the last 3.
 
+	x86: make is_64bit_mm() widely available
+	x86: make __VIRTUAL_MASK safe to use on 32 bit
+	x86, mpx: we do not allocate the bounds directory
+	x86, mpx: remove redundant MPX_BNDCFG_ADDR_MASK
+	x86, mpx: Add temporary variable to reduce masking
+	x86, mpx: new directory entry to addr helper
+	x86, mpx: do 32-bit-only cmpxchg for 32-bit apps
+	x86, mpx: support 32bit binaries on 64bit kernel
 
-
+ Documentation/x86/intel_mpx.txt    |   12 +++-
+ arch/x86/include/asm/mmu_context.h |   13 +++++
+ arch/x86/include/asm/mpx.h         |    2 
+ arch/x86/include/asm/page_types.h  |    8 +++
+ arch/x86/kernel/uprobes.c          |   10 ---
+ arch/x86/mm/mpx.c                  |   93 ++++++++++++++++++++++++++++++-------
+ 6 files changed, 107 insertions(+), 31 deletions(-)
 
