@@ -1,122 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935150AbaLLRoq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:44:46 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:54997 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934073AbaLLRoo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:44:44 -0500
-Date: Fri, 12 Dec 2014 19:44:35 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2014-12-12
-Message-ID: <20141212174435.GA22678@t440s.P-661HNU-F1>
-Mail-Followup-To: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1031032AbaLLRqG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:46:06 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62510 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934073AbaLLRqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 12:46:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,565,1413270000"; 
+   d="scan'208";a="646753715"
+Message-ID: <548B29CA.5060707@intel.com>
+Date: Fri, 12 Dec 2014 19:45:46 +0200
+From: Mathias Nyman <mathias.nyman@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB driver fixes for 3.18-rc7
+References: <20141128224028.GA29538@kroah.com> <CA+55aFyJunLbQPBgUf4rhZN0vbaj7hpK3Jwqwqf-S7A2-LLhFA@mail.gmail.com> <20141202181810.GB15869@kroah.com> <547F3400.6030400@intel.com> <20141211184730.GA12817@kroah.com>
+In-Reply-To: <20141211184730.GA12817@kroah.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11.12.2014 20:47, Greg KH wrote:
+> On Wed, Dec 03, 2014 at 06:02:08PM +0200, Mathias Nyman wrote:
+>> On 02.12.2014 20:18, Greg KH wrote:
+>>> On Sun, Nov 30, 2014 at 11:47:20AM -0800, Linus Torvalds wrote:
+>>>> Hmm, Greg.
+>>>>
+>>>> I seem to get this problem possibly more commonly at boot these days:
+>>>>
+>>>>   usb 1-6: new full-speed USB device number 2 using xhci_hcd
+>>>>   usb 1-6: device descriptor read/64, error -71
+>>>>   xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1.
+>>>>   usb 1-6: hub failed to enable device, error -22
+>>>>   usb 1-6: new full-speed USB device number 3 using xhci_hcd
+>>>>   usb 1-6: device descriptor read/64, error -71
+>>>>   usb 1-6: hub failed to enable device, error -22
+>>>>   usb 1-6: new full-speed USB device number 4 using xhci_hcd
+>>>>   usb 1-6: Device not responding to setup address.
+>>>>   usb 1-6: Device not responding to setup address.
+>>>>   usb 1-6: device not accepting address 4, error -71
+>>>>   usb 1-6: new full-speed USB device number 5 using xhci_hcd
+>>>>   usb 1-6: Device not responding to setup address.
+>>>>   usb 1-6: Device not responding to setup address.
+>>>>   usb 1-6: device not accepting address 5, error -71
+>>>>  usb usb1-port6: unable to enumerate USB device
+>>>>
+>>>> and my keyboard doesn't work. I then unplug and re-plug it, and get
+>>>>
+>>>>   usb 1-6: new full-speed USB device number 9 using xhci_hcd
+>>>>   usb 1-6: New USB device found, idVendor=2516, idProduct=0020
+>>>>   usb 1-6: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+>>>>   usb 1-6: Product: Quickfire Rapid i
+>>>>   usb 1-6: Manufacturer: CM Storm
+>>>>
+>>>> Any ideas? Some setup delay that isn't long enough at boot time for a
+>>>> slightly finicky device? It has happened before, but now I've gotten
+>>>> it twice within a couple of days:
+>>>>
+>>>>   Nov 02 12:18:56 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
+>>>>   Nov 28 16:54:06 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
+>>>>   Nov 30 11:26:35 i7.lan kernel: usb 1-6: device descriptor read/64, error -71
+>>>>
+>>>> (I've had this keyboard since mid-September, and looking at the logs
+>>>> this machine has been rebooted 41 times since, with those three
+>>>> failures..)
+>>>
+>>> I've been seeing this occasionally recently as well, but was blaming a
+>>> "bad" USB 3 hub I have here that I use, and the problem goes away with a
+>>> replug.
+>>>
+>>> Mathias, any ideas what is going on here?
+>>>
+>>
+>> Looks like when xhci changed to use "new scheme" device enumeration for non
+>> SuperSpeed devices, we broke the device descriptor read retry for xhci.
+>>
+>> Normally we try to read the descriptor again, and if it still fails then fall back
+>> to old scheme. In this failing xhci case the slot is left in a default state after
+>> first failed descriptor read, and we then try to enable the slot again in retry, 
+>> which is an invalid xhci context state change, and prints the error message:
+>>
+>> xhci_hcd 0000:00:14.0: Setup ERROR: setup context command for slot 1
+> 
+> I see this all the time on my MinnowboardMax.  For slot 2 that is.
+> 
+> And on this machine, it does not boot from USB properly, I have to,
+> after the kernel comes up (which was read off of USB by UEFI just fine),
+> unplug and plug the storage device back in so that the boot process
+> continues.
+> 
+> Works that way for 2 different USB 3.0 storage devices.
+> 
 
---/9DWx/yDrRhgMJTb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I got a patch that should fix the xhci "Setup ERROR" part in a setup-error-fix branch:
 
-Hi John,
+git://git.kernel.org/pub/scm/linux/kernel/git/mnyman/xhci.git setup-error-fix
 
-These fixes are intended for 3.19, note that the tree to pull from is
-bluetooth-next (unlike the subject implies). I'd have normally done a
-pull request from bluetooth.git, but since these fixes for 3.19 is all
-we have so far I thought it's simpler if you just pull from our -next
-tree. The patches consist of:
+It's based on Gregs usb-next tree. 
+It doesn't solve why the first device descritor read fails.
 
- - Coccinelle warning fix
- - hci_dev_lock/unlock fixes
- - Fixes for pending mgmt command handling
- - Fixes for properly following the force_lesc_support switch
- - Fix for a Microsoft branded Broadcom adapter
- - New device id for Atheros AR3012
- - Fix for BR/EDR Secure Connections enabling
+>> After this It might be hard to get the device addressed. 
+>>
+>> I don't know why it fail the first device descriptor read, but fixing the xhci part
+>> should allow more real reties. I'll work on it.
+>>
+>> The change to use xhci "new scheme" enumeration was done in 3.14 to support known
+>> legacy devices requiring it. commit 48fc7dbd52c0559647291f33a10ccdc6cdbe4c72
+> 
+> How can that break "non-legacy" devices?
 
-Please let me know if there are any issues pulling. Thanks.
+It added a enable_device callback for all usb2 devices during enumeration, which
+fails if called twice, or if the slot was already enabled in the xhci case.
+Caused whole enumeration to be aborted.   
 
-Johan
-
----
-The following changes since commit 5a34bd5f5d8119def4feb1d2b4e3906b71059416:
-
-  Bluetooth: Enable events for P-256 Public Key and DHKey commands (2014-12-05 18:17:49 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-
-for you to fetch changes up to 9845904fd489288bcf693642c1b31cc463c0b660:
-
-  Bluetooth: Fix mgmt response status when removing adapter (2014-12-12 13:20:12 +0100)
-
-----------------------------------------------------------------
-Fengguang Wu (1):
-      Bluetooth: fix err_cast.cocci warnings
-
-Jaganath Kanakkassery (2):
-      Bluetooth: Fix missing hci_dev_lock/unlock in mgmt req_complete()
-      Bluetooth: Fix missing hci_dev_lock/unlock in hci_event
-
-Janne Heikkinen (1):
-      Bluetooth: Add USB device 04ca:3010 as Atheros AR3012
-
-Johan Hedberg (5):
-      Bluetooth: Fix calling hci_conn_put too early
-      Bluetooth: Fix incorrect pending cmd removal in pairing_complete()
-      Bluetooth: Fix notifying mgmt power off before flushing connection list
-      Bluetooth: Fix enabling BR/EDR SC when powering on
-      Bluetooth: Fix mgmt response status when removing adapter
-
-Marcel Holtmann (4):
-      Bluetooth: Check for force_lesc_support when enabling SMP over BR/EDR
-      Bluetooth: Check for force_lesc_support before rejecting SMP over BR/EDR
-      Bluetooth: Fix generation of non-resolvable private addresses
-      Bluetooth: Fix check for support for page scan related commands
-
- drivers/bluetooth/ath3k.c  |  2 ++
- drivers/bluetooth/btusb.c  |  1 +
- net/bluetooth/hci_conn.c   |  2 +-
- net/bluetooth/hci_core.c   | 60 +++++++++++++++++++-------------
- net/bluetooth/hci_event.c  | 20 +++++++++++
- net/bluetooth/l2cap_core.c |  5 +--
- net/bluetooth/mgmt.c       | 85 ++++++++++++++++++++++++++++++++-------------
- net/bluetooth/smp.c        |  5 +--
- 8 files changed, 126 insertions(+), 54 deletions(-)
+-Mathias   
 
 
---/9DWx/yDrRhgMJTb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUiymCAAoJECQj9vv5qNQSTOQP/24LXL/Zc6ny2HLhfWm/XsAI
-2Er5dpB9jcMwlkuLgeo64hmHIcWjd0WXFrsHExA5hLcL2j1EWZodeqFGq+Ojo1yV
-9Nxn7S/QRxzvpiyQZhxaU0C6iGayVHkNO9/b9VegfPo+ynub8qlGy6j/7oVMwFfA
-NSY/uSMRUu1e0VWzPOvXOp6kL2Av1rc/U7chT6CTggAMEUJc8hvoD+p4gmqWYSlt
-EjxEKJjb5I5o2zrhb0GV+wpQrixen10apvVjzLNuWX+K0zHLVG5cBJmoG1y9g1pd
-xiZllH4hSrb0uzBhN7JtzMOBR8lywyXsvnfGlmOmN9WYPd9GRkIQSZzjeWyGj3wo
-0bEaVMmrehxot3eJf33HakJ3eXXSlB8MTCVctaDzhAZtM/Aj2v/GKpbQELev2EUE
-bzLam55rdwiT+Cylgo85Nglp8t/o21sb8KXJVzjJe3K57WEB5PSvqcamD28aV28O
-opslbin4nRykS5QlK3cPbCI+Q8YmbiY+MEzkJ2GCojdobDOMltwiUTZn1YPlugyh
-kIbYfTpA8qd0cjuCZVT1RUUjt7eN9pR7hbMmeqyajP47cmXxxHzSplaVrVYmhFzg
-bCxej3WDbFtmm+6ISX2NJj7mtakNxGlFMkwHsia3bQYfZo8LsBSgqiFBKI8dFvSo
-qx680iNTcRve2xTd16Py
-=gxVH
------END PGP SIGNATURE-----
-
---/9DWx/yDrRhgMJTb--
