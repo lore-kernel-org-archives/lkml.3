@@ -1,106 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934885AbaLLPJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:09:19 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:47503 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934161AbaLLPJS (ORCPT
+	id S934914AbaLLPKJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:10:09 -0500
+Received: from lucky1.263xmail.com ([211.157.147.132]:37755 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934025AbaLLPKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:09:18 -0500
-Message-ID: <548B0517.6070603@gmail.com>
-Date: Sat, 13 Dec 2014 00:09:11 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: thornber@redhat.com
-CC: snitzer@redhat.com, gregkh@linuxfoundation.org, dm-devel@redhat.com,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: writeboost: Add dm-writeboost
-References: <54883195.1060304@gmail.com> <20141211152626.GA8196@redhat.com> <548A39E7.80508@gmail.com> <20141212142447.GA30315@debian>
-In-Reply-To: <20141212142447.GA30315@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Dec 2014 10:10:06 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: paulz@synopsys.com
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <8885c23d6aa4d6b768fbebc89923069c>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: paulz@synopsys.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, heiko@sntech.de, jwerner@chromium.org,
+        dianders@chromium.org, olof@lixom.net, huangtao@rock-chips.com,
+        zyw@rock-chips.com, cf@rock-chips.com,
+        linux-rockchip@lists.infradead.org
+Cc: Yunzhi Li <lyz@rock-chips.com>
+Subject: [PATCH v7 3/5] usb: dwc2: add generic PHY framework support for dwc2 usb controler platform driver.
+Date: Fri, 12 Dec 2014 23:09:32 +0800
+Message-Id: <1418396972-32686-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> However, after looking at the current code, and using it I think it's
-> a long, long way from being ready for production.  As we've already
-> discussed there are some very naive design decisions in there, such as
-> copying every bio payload to another memory buffer, splitting all io
-> down to 4k.  Think about the cpu overhead and memory consumption!
-> Think about how it will perform when memory is constrained and it
-> can't allocate many of those rambufs!  I'm sure more issues will be
-> found if I read further.
-These decisions are made based on measurement. They are not naive.
-I am a man who dislikes performance optimization without measurement.
-As a result, I regard things brought by the simplicity much important
-than what's from other design decisions possible.
+Get PHY parameters from devicetree and power off usb PHY during
+system suspend.
 
-About the CPU consumption,
-the average CPU consumption while performing random write fio
-with consumer level SSD is only 3% or so,
-which is 5 times efficient than bcache per iops.
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-With RAM-backed cache device, it reaches about 1.5GB/sec throughput.
-Even in this case the CPU consumption is only 12%.
-Please see this post,
-http://www.redhat.com/archives/dm-devel/2014-February/msg00000.html
+---
 
-I don't think the CPU consumption is small enough to ignore.
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3:
+- Fix coding style: both branches of the if() which only one
+  branch of the conditional statement is a single statement
+  should have braces.
+- No need to test dwc2->phy for NULL before calling generic phy
+  APIs.
 
-About the memory consumption,
-you seem to misunderstand the fact.
-The rambufs are not dynamically allocated but statically.
-The default amount is 8MB and this is usually not to argue.
+ drivers/usb/dwc2/gadget.c   | 33 ++++++++++++---------------------
+ drivers/usb/dwc2/platform.c | 36 ++++++++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 23 deletions(-)
 
-> Mike raised the question of why you want this in the kernel so much?
-> You'd find none of the distros would support it; so it doesn't widen
-> your audience much.  It's far better for you to maintain it outside of
-> the kernel at this point.  Any users will be bold, adventurous people,
-> who will be quite capable of building a kernel module.
-Some people deploy Writeboost in their daily use.
-The sound of "log-structured" seems to easily attract storage guys' attention.
-If this driver is merged into upstream, I think it gains many audience and
-thus feedback.
-When my driver was introduced by Phoronix before, it actually drew attentions.
-They must wait for Writeboost become available in upstream.
-http://www.phoronix.com/scan.php?page=news_item&px=MTQ1Mjg
+diff --git a/drivers/usb/dwc2/gadget.c b/drivers/usb/dwc2/gadget.c
+index 200168e..2601c61 100644
+--- a/drivers/usb/dwc2/gadget.c
++++ b/drivers/usb/dwc2/gadget.c
+@@ -3410,8 +3410,6 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ {
+ 	struct device *dev = hsotg->dev;
+ 	struct s3c_hsotg_plat *plat = dev->platform_data;
+-	struct phy *phy;
+-	struct usb_phy *uphy;
+ 	struct s3c_hsotg_ep *eps;
+ 	int epnum;
+ 	int ret;
+@@ -3421,30 +3419,23 @@ int dwc2_gadget_init(struct dwc2_hsotg *hsotg, int irq)
+ 	hsotg->phyif = GUSBCFG_PHYIF16;
+ 
+ 	/*
+-	 * Attempt to find a generic PHY, then look for an old style
+-	 * USB PHY, finally fall back to pdata
++	 * If platform probe couldn't find a generic PHY or an old style
++	 * USB PHY, fall back to pdata
+ 	 */
+-	phy = devm_phy_get(dev, "usb2-phy");
+-	if (IS_ERR(phy)) {
+-		uphy = devm_usb_get_phy(dev, USB_PHY_TYPE_USB2);
+-		if (IS_ERR(uphy)) {
+-			/* Fallback for pdata */
+-			plat = dev_get_platdata(dev);
+-			if (!plat) {
+-				dev_err(dev,
+-				"no platform data or transceiver defined\n");
+-				return -EPROBE_DEFER;
+-			}
+-			hsotg->plat = plat;
+-		} else
+-			hsotg->uphy = uphy;
+-	} else {
+-		hsotg->phy = phy;
++	if (IS_ERR_OR_NULL(hsotg->phy) && IS_ERR_OR_NULL(hsotg->uphy)) {
++		plat = dev_get_platdata(dev);
++		if (!plat) {
++			dev_err(dev,
++			"no platform data or transceiver defined\n");
++			return -EPROBE_DEFER;
++		}
++		hsotg->plat = plat;
++	} else if (hsotg->phy) {
+ 		/*
+ 		 * If using the generic PHY framework, check if the PHY bus
+ 		 * width is 8-bit and set the phyif appropriately.
+ 		 */
+-		if (phy_get_bus_width(phy) == 8)
++		if (phy_get_bus_width(hsotg->phy) == 8)
+ 			hsotg->phyif = GUSBCFG_PHYIF8;
+ 	}
+ 
+diff --git a/drivers/usb/dwc2/platform.c b/drivers/usb/dwc2/platform.c
+index 6a795aa..ae095f0 100644
+--- a/drivers/usb/dwc2/platform.c
++++ b/drivers/usb/dwc2/platform.c
+@@ -155,6 +155,8 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 	struct dwc2_core_params defparams;
+ 	struct dwc2_hsotg *hsotg;
+ 	struct resource *res;
++	struct phy *phy;
++	struct usb_phy *uphy;
+ 	int retval;
+ 	int irq;
+ 
+@@ -212,6 +214,24 @@ static int dwc2_driver_probe(struct platform_device *dev)
+ 
+ 	hsotg->dr_mode = of_usb_get_dr_mode(dev->dev.of_node);
+ 
++	/*
++	 * Attempt to find a generic PHY, then look for an old style
++	 * USB PHY
++	 */
++	phy = devm_phy_get(&dev->dev, "usb2-phy");
++	if (IS_ERR(phy)) {
++		hsotg->phy = NULL;
++		uphy = devm_usb_get_phy(&dev->dev, USB_PHY_TYPE_USB2);
++		if (IS_ERR(uphy))
++			hsotg->uphy = NULL;
++		else
++			hsotg->uphy = uphy;
++	} else {
++		hsotg->phy = phy;
++		phy_power_on(hsotg->phy);
++		phy_init(hsotg->phy);
++	}
++
+ 	spin_lock_init(&hsotg->lock);
+ 	mutex_init(&hsotg->init_mutex);
+ 	retval = dwc2_gadget_init(hsotg, irq);
+@@ -231,8 +251,15 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_suspend(dwc2);
++	} else {
++		if (dwc2->lx_state == DWC2_L0)
++			return 0;
++		phy_exit(dwc2->phy);
++		phy_power_off(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+@@ -241,8 +268,13 @@ static int __maybe_unused dwc2_resume(struct device *dev)
+ 	struct dwc2_hsotg *dwc2 = dev_get_drvdata(dev);
+ 	int ret = 0;
+ 
+-	if (dwc2_is_device_mode(dwc2))
++	if (dwc2_is_device_mode(dwc2)) {
+ 		ret = s3c_hsotg_resume(dwc2);
++	} else {
++		phy_power_on(dwc2->phy);
++		phy_init(dwc2->phy);
++
++	}
+ 	return ret;
+ }
+ 
+-- 
+2.0.0
 
-> I'm sorry to have disappointed you so, but if I let this go upstream
-> it would mean a massive amount of support work for me, not to mention
-> a damaged reputation for dm.
-If you read the code further, you will find how simple the mechanism is.
-Not to mention the code itself is.
-
-- Akira
-
-On 12/12/14 11:24 PM, Joe Thornber wrote:
-> On Fri, Dec 12, 2014 at 09:42:15AM +0900, Akira Hayakawa wrote:
->> The SSD-caching should be log-structured.
-> 
-> No argument there, and this is why I've supported you with
-> dm-writeboost over the last couple of years.
-> 
-> However, after looking at the current code, and using it I think it's
-> a long, long way from being ready for production.  As we've already
-> discussed there are some very naive design decisions in there, such as
-> copying every bio payload to another memory buffer, splitting all io
-> down to 4k.  Think about the cpu overhead and memory consumption!
-> Think about how it will perform when memory is constrained and it
-> can't allocate many of those rambufs!  I'm sure more issues will be
-> found if I read further.
-> 
-> I'm sorry to have disappointed you so, but if I let this go upstream
-> it would mean a massive amount of support work for me, not to mention
-> a damaged reputation for dm.
-> 
-> Mike raised the question of why you want this in the kernel so much?
-> You'd find none of the distros would support it; so it doesn't widen
-> your audience much.  It's far better for you to maintain it outside of
-> the kernel at this point.  Any users will be bold, adventurous people,
-> who will be quite capable of building a kernel module.
-> 
-> - Joe
-> 
 
