@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965775AbaLLIUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 03:20:25 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43273 "EHLO
+	id S965810AbaLLIUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 03:20:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43292 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965701AbaLLIUX (ORCPT
+	with ESMTP id S933414AbaLLIUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 03:20:23 -0500
-Date: Fri, 12 Dec 2014 00:19:41 -0800
+	Fri, 12 Dec 2014 03:20:37 -0500
+Date: Fri, 12 Dec 2014 00:19:56 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-pt2u7a3b50oddggecx7rwq2n@git.kernel.org>
-Cc: tglx@linutronix.de, peterz@infradead.org, bp@suse.de, jolsa@redhat.com,
-        namhyung@kernel.org, hpa@zytor.com, fweisbec@gmail.com,
-        acme@redhat.com, mingo@kernel.org, eranian@google.com,
-        adrian.hunter@intel.com, efault@gmx.de, dsahern@gmail.com,
-        paulus@samba.org, linux-kernel@vger.kernel.org, dzickus@redhat.com
-Reply-To: tglx@linutronix.de, peterz@infradead.org, bp@suse.de,
-        jolsa@redhat.com, namhyung@kernel.org, hpa@zytor.com,
-        fweisbec@gmail.com, acme@redhat.com, mingo@kernel.org,
-        eranian@google.com, adrian.hunter@intel.com, dsahern@gmail.com,
-        efault@gmx.de, paulus@samba.org, linux-kernel@vger.kernel.org,
-        dzickus@redhat.com
+Message-ID: <tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org>
+Cc: paulus@samba.org, jolsa@redhat.com, mingo@kernel.org,
+        adrian.hunter@intel.com, bp@suse.de, tglx@linutronix.de,
+        peterz@infradead.org, namhyung@kernel.org, eranian@google.com,
+        hpa@zytor.com, dzickus@redhat.com, acme@redhat.com, fweisbec@gmail.com,
+        dsahern@gmail.com, linux-kernel@vger.kernel.org, efault@gmx.de
+Reply-To: paulus@samba.org, jolsa@redhat.com, mingo@kernel.org,
+        adrian.hunter@intel.com, bp@suse.de, peterz@infradead.org,
+        tglx@linutronix.de, eranian@google.com, hpa@zytor.com,
+        namhyung@kernel.org, dzickus@redhat.com, acme@redhat.com,
+        dsahern@gmail.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        fweisbec@gmail.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Use sysctl__read_int instead of ad-hoc copies
-Git-Commit-ID: ce27309f67c347e6e49ebd45042f5362b0ccbdcc
+Subject: [tip:perf/urgent] perf evlist: Introduce strerror_mmap method
+Git-Commit-ID: 956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,14 +36,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce27309f67c347e6e49ebd45042f5362b0ccbdcc
-Gitweb:     http://git.kernel.org/tip/ce27309f67c347e6e49ebd45042f5362b0ccbdcc
+Commit-ID:  956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
+Gitweb:     http://git.kernel.org/tip/956fa57106d1ad3ffbe73f4534b9f3b3bc92dd6c
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Thu, 11 Dec 2014 13:37:59 -0300
+AuthorDate: Thu, 11 Dec 2014 18:03:01 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 11 Dec 2014 17:53:04 -0300
+CommitDate: Thu, 11 Dec 2014 18:03:01 -0300
 
-perf tools: Use sysctl__read_int instead of ad-hoc copies
+perf evlist: Introduce strerror_mmap method
+
+To pretty print hints about perf_evlist__mmap errors. Will be used in
+'trace' in the next patch.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -57,54 +59,63 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-pt2u7a3b50oddggecx7rwq2n@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-2g3gczfwyz0xt3we0s15mqqt@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/record.c | 11 +----------
- tools/perf/util/util.c   |  9 +--------
- 2 files changed, 2 insertions(+), 18 deletions(-)
+ tools/perf/util/evlist.c | 23 +++++++++++++++++++++++
+ tools/perf/util/evlist.h |  1 +
+ 2 files changed, 24 insertions(+)
 
-diff --git a/tools/perf/util/record.c b/tools/perf/util/record.c
-index cf69325..8acd0df 100644
---- a/tools/perf/util/record.c
-+++ b/tools/perf/util/record.c
-@@ -137,16 +137,7 @@ void perf_evlist__config(struct perf_evlist *evlist, struct record_opts *opts)
- 
- static int get_max_rate(unsigned int *rate)
- {
--	char path[PATH_MAX];
--	const char *procfs = procfs__mountpoint();
--
--	if (!procfs)
--		return -1;
--
--	snprintf(path, PATH_MAX,
--		 "%s/sys/kernel/perf_event_max_sample_rate", procfs);
--
--	return filename__read_int(path, (int *) rate);
-+	return sysctl__read_int("kernel/perf_event_max_sample_rate", (int *)rate);
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index cfbe2b9..bb5dfc5 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -8,6 +8,7 @@
+  */
+ #include "util.h"
+ #include <api/fs/debugfs.h>
++#include <api/fs/fs.h>
+ #include <poll.h>
+ #include "cpumap.h"
+ #include "thread_map.h"
+@@ -1483,6 +1484,28 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
+ 	return 0;
  }
  
- static int record_opts__config_freq(struct record_opts *opts)
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index 41125e5..b86744f 100644
---- a/tools/perf/util/util.c
-+++ b/tools/perf/util/util.c
-@@ -506,16 +506,9 @@ const char *get_filename_for_perf_kvm(void)
- 
- int perf_event_paranoid(void)
++int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size)
++{
++	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
++	int value;
++
++	switch (err) {
++	case EPERM:
++		sysctl__read_int("kernel/perf_event_mlock_kb", &value);
++		scnprintf(buf, size, "Error:\t%s.\n"
++				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
++				     "Hint:\tTried using %zd kB.\n"
++				     "Hint:\tTry using a bigger -m/--mmap-pages value.",
++				     emsg, value, evlist->mmap_len / 1024);
++		break;
++	default:
++		scnprintf(buf, size, "%s", emsg);
++		break;
++	}
++
++	return 0;
++}
++
+ void perf_evlist__to_front(struct perf_evlist *evlist,
+ 			   struct perf_evsel *move_evsel)
  {
--	char path[PATH_MAX];
--	const char *procfs = procfs__mountpoint();
- 	int value;
+diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
+index 649b0c5..0ba93f6 100644
+--- a/tools/perf/util/evlist.h
++++ b/tools/perf/util/evlist.h
+@@ -185,6 +185,7 @@ size_t perf_evlist__fprintf(struct perf_evlist *evlist, FILE *fp);
  
--	if (!procfs)
--		return INT_MAX;
--
--	scnprintf(path, PATH_MAX, "%s/sys/kernel/perf_event_paranoid", procfs);
--
--	if (filename__read_int(path, &value))
-+	if (sysctl__read_int("kernel/perf_event_paranoid", &value))
- 		return INT_MAX;
+ int perf_evlist__strerror_tp(struct perf_evlist *evlist, int err, char *buf, size_t size);
+ int perf_evlist__strerror_open(struct perf_evlist *evlist, int err, char *buf, size_t size);
++int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size);
  
- 	return value;
+ static inline unsigned int perf_mmap__read_head(struct perf_mmap *mm)
+ {
