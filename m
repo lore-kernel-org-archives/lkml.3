@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965882AbaLLGpt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:45:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51806 "EHLO
+	id S965856AbaLLGps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:45:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51812 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758886AbaLLGQz (ORCPT
+	by vger.kernel.org with ESMTP id S1758931AbaLLGQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:55 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Cristina Ciocan" <cristina.ciocan@intel.com>,
-        "Jonathan Cameron" <jic23@kernel.org>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.474998945@decadent.org.uk>
+Message-ID: <lsq.1418364865.120064723@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 129/164] iio: Fix IIO_EVENT_CODE_EXTRACT_DIR bit mask
+Subject: [PATCH 3.2 154/164] ALSA: hda - Limit 40bit DMA for AMD HDMI
+ controllers
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,31 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cristina Ciocan <cristina.ciocan@intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ccf54555da9a5e91e454b909ca6a5303c7d6b910 upstream.
+commit 413cbf469a19e7662ba5025695bf5a573927105a upstream.
 
-The direction field is set on 7 bits, thus we need to AND it with 0111 111 mask
-in order to retrieve it, that is 0x7F, not 0xCF as it is now.
+AMD/ATI HDMI controller chip models, we already have a filter to lower
+to 32bit DMA, but the rest are supposed to be working with 64bit
+although the hardware doesn't really work with 63bit but only with 40
+or 48bit DMA.  In this patch, we take 40bit DMA for safety for the
+AMD/ATI controllers as the graphics drivers does.
 
-Fixes: ade7ef7ba (staging:iio: Differential channel handling)
-Signed-off-by: Cristina Ciocan <cristina.ciocan@intel.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/AZX_GCAP_64OK/ICH6_GCAP_64OK/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/iio/sysfs.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/hda_intel.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/staging/iio/sysfs.h
-+++ b/drivers/staging/iio/sysfs.h
-@@ -147,7 +147,7 @@ enum iio_event_direction {
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2667,6 +2667,7 @@ static int __devinit azx_create(struct s
+ 	struct azx *chip;
+ 	int i, err;
+ 	unsigned short gcap;
++	unsigned int dma_bits = 64;
+ 	static struct snd_device_ops ops = {
+ 		.dev_free = azx_dev_free,
+ 	};
+@@ -2754,9 +2755,14 @@ static int __devinit azx_create(struct s
+ 	gcap = azx_readw(chip, GCAP);
+ 	snd_printdd(SFX "chipset global capabilities = 0x%x\n", gcap);
  
- #define IIO_EVENT_CODE_EXTRACT_TYPE(mask) ((mask >> 56) & 0xFF)
++	/* AMD devices support 40 or 48bit DMA, take the safe one */
++	if (chip->pci->vendor == PCI_VENDOR_ID_AMD)
++		dma_bits = 40;
++
+ 	/* disable SB600 64bit support for safety */
+ 	if (chip->pci->vendor == PCI_VENDOR_ID_ATI) {
+ 		struct pci_dev *p_smbus;
++		dma_bits = 40;
+ 		p_smbus = pci_get_device(PCI_VENDOR_ID_ATI,
+ 					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 					 NULL);
+@@ -2779,9 +2785,11 @@ static int __devinit azx_create(struct s
+ 		chip->align_buffer_size = 0;
  
--#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0xCF)
-+#define IIO_EVENT_CODE_EXTRACT_DIR(mask) ((mask >> 48) & 0x7F)
- 
- #define IIO_EVENT_CODE_EXTRACT_CHAN_TYPE(mask) ((mask >> 32) & 0xFF)
- 
+ 	/* allow 64bit DMA address if supported by H/W */
+-	if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
+-		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
+-	else {
++	if (!(gcap & ICH6_GCAP_64OK))
++		dma_bits = 32;
++	if (!pci_set_dma_mask(pci, DMA_BIT_MASK(dma_bits))) {
++		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(dma_bits));
++	} else {
+ 		pci_set_dma_mask(pci, DMA_BIT_MASK(32));
+ 		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
+ 	}
 
