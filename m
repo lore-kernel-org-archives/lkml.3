@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031135AbaLLR1p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 12:27:45 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:44718 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030909AbaLLR1o (ORCPT
+	id S1031013AbaLLR3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 12:29:35 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:48503 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030845AbaLLR3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 12:27:44 -0500
-Date: Fri, 12 Dec 2014 12:27:39 -0500
-From: Tejun Heo <tj@kernel.org>
+	Fri, 12 Dec 2014 12:29:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAHGf_=ps80f47d3JdyaYt3iEEF-Ur_OxLS_R7q7cPA7yMO7Pag@mail.gmail.com>
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
+ <1418379595-6281-6-git-send-email-laijs@cn.fujitsu.com> <CAHGf_=ps80f47d3JdyaYt3iEEF-Ur_OxLS_R7q7cPA7yMO7Pag@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Fri, 12 Dec 2014 12:29:13 -0500
+Message-ID: <CAHGf_=qB43133oCcU+k1oO+1OtK9EPniF5CJq4ZUh-u+z6hNbQ@mail.gmail.com>
+Subject: Re: [PATCH 5/5] workqueue: retry on NUMA_NO_NODE when create_worker() fails
 To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
+Cc: LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
         Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
         "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
         tangchen <tangchen@cn.fujitsu.com>,
         Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 4/5] workqueue: update NUMA affinity for the node lost CPU
-Message-ID: <20141212172739.GD20020@htj.dyndns.org>
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com>
- <1418379595-6281-5-git-send-email-laijs@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418379595-6281-5-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 06:19:54PM +0800, Lai Jiangshan wrote:
-> We fixed the major cases when the numa mapping is changed.
-> 
-> We still have the assumption that when the node<->cpu mapping is changed
-> the original node is offline, and the current code of memory-hutplug also
-> prove this.
-> 
-> This assumption might be changed in future and the orig_node is still online
-> in some cases.  And in these cases, the cpumask of the pwqs of the orig_node
-> still contains the onlining CPU which is a CPU of another node, and the worker
-> may run on the onlining CPU (aka run on the wrong node).
-> 
-> So we drop this assumption and make the code calls wq_update_unbound_numa()
-> to update the affinity in this case.
+On Fri, Dec 12, 2014 at 11:05 AM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+> On Fri, Dec 12, 2014 at 5:19 AM, Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+>> A pwq bound to a specified node might be last long or even forever after
+>> the node was offline.  Especially when this pwq has some back-to-back work
+>> items which requeue themselves and cause the pwq can't quit.
+>>
+>> This kinds of pwqs will cause their own pools busy and maybe create workers.
+>> This pools will fail on create_worker() since the node is offline.
+>>
+>> This case is extremely rare, but it is possible. And we hope create_worker()
+>> to be fault-tolerant in this case and other different cases when the node
+>> is lack of memory, for example, create_worker() can try to allocate memory
+>> from the whole system rather than only the target node, the most important
+>> thing is making some progress.
+>>
+>> So the solution is that, when the create_worker() fails on a specified node,
+>> it will retry with NUMA_NO_NODE for further allocation.
+>
+> The code looks correct. But I don't think this issue depend on node offlining.
+> The allocation may also fail if node has no memory.
 
-This is seriously obfuscating.  I really don't think meddling with
-existing pools is a good idea.  The foundation those pools were
-standing are gone.  Drain and discard the pools.  Please don't try to
-retro-fit it to new foundations.
-
-Thanks.
-
--- 
-tejun
+Oh, sorry. my comment is no correct. Please forget.
