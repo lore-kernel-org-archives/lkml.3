@@ -1,216 +1,560 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030294AbaLLOiZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 09:38:25 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:46976 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030242AbaLLOiV (ORCPT
+	id S1030352AbaLLOik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 09:38:40 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:64786 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966399AbaLLOih (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 09:38:21 -0500
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH v6 1/5] hwmon: ina2xx: reinitialize the chip in case it's been reset
-Date: Fri, 12 Dec 2014 15:37:51 +0100
-Message-Id: <1418395075-16850-2-git-send-email-bgolaszewski@baylibre.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418395075-16850-1-git-send-email-bgolaszewski@baylibre.com>
-References: <1418395075-16850-1-git-send-email-bgolaszewski@baylibre.com>
+	Fri, 12 Dec 2014 09:38:37 -0500
+Message-ID: <548AFDE9.6000909@gmail.com>
+Date: Fri, 12 Dec 2014 08:38:33 -0600
+From: Dinh Nguyen <dinh.linux@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Ley Foon Tan <lftan@altera.com>, Jassi Brar <jassisinghbrar@gmail.com>,
+        linux-kernel@vger.kernel.org
+CC: lftan.linux@gmail.com, Suman Anna <s-anna@ti.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH (resend)] mailbox: Add Altera mailbox driver
+References: <1418378690-3466-1-git-send-email-lftan@altera.com>
+In-Reply-To: <1418378690-3466-1-git-send-email-lftan@altera.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chips from the ina family don't like to be uninitialized. In case the power
-is cut-off and restored again the calibration register will be reset
-to 0 and both the power and current registers will remain at 0.
 
-Check the calibration register in ina2xx_update_device() and reinitialize
-the chip if needed.
 
-Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
----
- drivers/hwmon/ina2xx.c | 90 ++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 65 insertions(+), 25 deletions(-)
+On 12/12/14, 4:04 AM, Ley Foon Tan wrote:
+> The Altera mailbox allows for interprocessor communication. It supports
+> only one channel and work as either sender or receiver.
+> 
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+>  .../devicetree/bindings/mailbox/altera-mailbox.txt |  49 +++
+>  drivers/mailbox/Kconfig                            |   6 +
+>  drivers/mailbox/Makefile                           |   2 +
+>  drivers/mailbox/mailbox-altera.c                   | 404 +++++++++++++++++++++
+>  4 files changed, 461 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
+>  create mode 100644 drivers/mailbox/mailbox-altera.c
+> 
+> diff --git a/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
+> new file mode 100644
+> index 0000000..c261979
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
+> @@ -0,0 +1,49 @@
+> +Altera Mailbox Driver
+> +=====================
+> +
+> +Required properties:
+> +- compatible :	"altr,mailbox-1.0".
+> +- reg : 	physical base address of the mailbox and length of
+> +		memory mapped region.
+> +- #mbox-cells:	Common mailbox binding property to identify the number
+> +		of cells required for the mailbox specifier. Should be 1.
+> +
+> +Optional properties:
+> +- interrupt-parent :	interrupt source phandle.
+> +- interrupts :		interrupt number. The interrupt specifier format
+> +			depends on the interrupt controller parent.
+> +
+> +Example:
+> +	mbox_tx: mailbox@0x100 {
+> +		compatible = "altr,mailbox-1.0";
+> +		reg = <0x100 0x8>;
+> +		interrupt-parent = < &gic_0 >;
+> +		interrupts = <5>;
+> +		#mbox-cells = <1>;
+> +	};
+> +
+> +	mbox_rx: mailbox@0x200 {
+> +		compatible = "altr,mailbox-1.0";
+> +		reg = <0x200 0x8>;
+> +		interrupt-parent = < &gic_0 >;
+> +		interrupts = <6>;
+> +		#mbox-cells = <1>;
+> +	};
+> +
+> +Mailbox client
+> +===============
+> +"mboxes" and the optional "mbox-names" (please see
+> +Documentation/devicetree/bindings/mailbox/mailbox.txt for details). Each value
+> +of the mboxes property should contain a phandle to the mailbox controller
+> +device node and second argument is the channel index. It must be 0 (hardware
+> +support only one channel).The equivalent "mbox-names" property value can be
+> +used to give a name to the communication channel to be used by the client user.
+> +
+> +Example:
+> +	mclient0: mclient0@0x400 {
+> +		compatible = "client-1.0";
+> +		reg = <0x400 0x10>;
+> +		mbox-names = "mbox-tx", "mbox-rx";
+> +		mboxes = <&mbox_tx 0>,
+> +			 <&mbox_rx 0>;
+> +	};
+> diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
+> index c04fed9..84325f2 100644
+> --- a/drivers/mailbox/Kconfig
+> +++ b/drivers/mailbox/Kconfig
+> @@ -45,4 +45,10 @@ config PCC
+>  	  states). Select this driver if your platform implements the
+>  	  PCC clients mentioned above.
+>  
+> +config ALTERA_MBOX
+> +	tristate "Altera Mailbox"
+> +	help
+> +	  An implementation of the Altera Mailbox soft core. It is used
+> +	  to send message between processors. Say Y here if you want to use the
+> +	  Altera mailbox support.
+>  endif
+> diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
+> index dd412c2..2e79231 100644
+> --- a/drivers/mailbox/Makefile
+> +++ b/drivers/mailbox/Makefile
+> @@ -7,3 +7,5 @@ obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
+>  obj-$(CONFIG_OMAP2PLUS_MBOX)	+= omap-mailbox.o
+>  
+>  obj-$(CONFIG_PCC)		+= pcc.o
+> +
+> +obj-$(CONFIG_ALTERA_MBOX)	+= mailbox-altera.o
+> diff --git a/drivers/mailbox/mailbox-altera.c b/drivers/mailbox/mailbox-altera.c
+> new file mode 100644
+> index 0000000..9ed10de
+> --- /dev/null
+> +++ b/drivers/mailbox/mailbox-altera.c
+> @@ -0,0 +1,404 @@
+> +/*
+> + * Copyright Altera Corporation (C) 2013-2014. All rights reserved
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/device.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/mailbox_controller.h>
 
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index e01feba..4c5c9ab 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -35,6 +35,7 @@
- #include <linux/hwmon-sysfs.h>
- #include <linux/jiffies.h>
- #include <linux/of.h>
-+#include <linux/delay.h>
- 
- #include <linux/platform_data/ina2xx.h>
- 
-@@ -64,6 +65,9 @@
- 
- /* worst case is 68.10 ms (~14.6Hz, ina219) */
- #define INA2XX_CONVERSION_RATE		15
-+#define INA2XX_MAX_DELAY		69 /* worst case delay in ms */
-+
-+#define INA2XX_RSHUNT_DEFAULT		10000
- 
- enum ina2xx_ids { ina219, ina226 };
- 
-@@ -81,6 +85,8 @@ struct ina2xx_data {
- 	struct i2c_client *client;
- 	const struct ina2xx_config *config;
- 
-+	long rshunt;
-+
- 	struct mutex update_lock;
- 	bool valid;
- 	unsigned long last_updated;
-@@ -110,6 +116,28 @@ static const struct ina2xx_config ina2xx_config[] = {
- 	},
- };
- 
-+/*
-+ * Initialize the configuration and calibration registers.
-+ */
-+static int ina2xx_init(struct ina2xx_data *data)
-+{
-+	struct i2c_client *client = data->client;
-+	int ret;
-+
-+	/* device configuration */
-+	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
-+					   data->config->config_default);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * Set current LSB to 1mA, shunt is in uOhms
-+	 * (equation 13 in datasheet).
-+	 */
-+	return i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
-+			data->config->calibration_factor / data->rshunt);
-+}
-+
- static struct ina2xx_data *ina2xx_update_device(struct device *dev)
- {
- 	struct ina2xx_data *data = dev_get_drvdata(dev);
-@@ -121,19 +149,45 @@ static struct ina2xx_data *ina2xx_update_device(struct device *dev)
- 	if (time_after(jiffies, data->last_updated +
- 		       HZ / INA2XX_CONVERSION_RATE) || !data->valid) {
- 
--		int i;
-+		int i, rv;
- 
- 		dev_dbg(&client->dev, "Starting ina2xx update\n");
- 
-+again:
- 		/* Read all registers */
- 		for (i = 0; i < data->config->registers; i++) {
--			int rv = i2c_smbus_read_word_swapped(client, i);
-+			rv = i2c_smbus_read_word_swapped(client, i);
- 			if (rv < 0) {
- 				ret = ERR_PTR(rv);
- 				goto abort;
- 			}
- 			data->regs[i] = rv;
- 		}
-+
-+		/*
-+		 * If the current value in the calibration register is 0, the
-+		 * power and current registers will also remain at 0. In case
-+		 * the chip has been reset let's check the calibration
-+		 * register and reinitialize if needed.
-+		 */
-+		if (data->regs[INA2XX_CALIBRATION] == 0) {
-+			/* Reinitialize the chip */
-+			dev_warn(dev, "chip not calibrated, reinitializing\n");
-+
-+			rv = ina2xx_init(data);
-+			if (rv < 0) {
-+				ret = ERR_PTR(rv);
-+				goto abort;
-+			}
-+
-+			/*
-+			 * Let's make sure the power and current registers
-+			 * have been updated before trying again.
-+			 */
-+			mdelay(INA2XX_MAX_DELAY);
-+			goto again;
-+		}
-+
- 		data->last_updated = jiffies;
- 		data->valid = 1;
- 	}
-@@ -221,7 +275,6 @@ static int ina2xx_probe(struct i2c_client *client,
- 	struct device *dev = &client->dev;
- 	struct ina2xx_data *data;
- 	struct device *hwmon_dev;
--	long shunt = 10000; /* default shunt value 10mOhms */
- 	u32 val;
- 	int ret;
- 
-@@ -234,41 +287,28 @@ static int ina2xx_probe(struct i2c_client *client,
- 
- 	if (dev_get_platdata(dev)) {
- 		pdata = dev_get_platdata(dev);
--		shunt = pdata->shunt_uohms;
-+		data->rshunt = pdata->shunt_uohms;
- 	} else if (!of_property_read_u32(dev->of_node,
- 					 "shunt-resistor", &val)) {
--		shunt = val;
-+		data->rshunt = val;
-+	} else {
-+		data->rshunt = INA2XX_RSHUNT_DEFAULT;
- 	}
- 
--	if (shunt <= 0)
--		return -ENODEV;
--
- 	/* set the device type */
- 	data->kind = id->driver_data;
- 	data->config = &ina2xx_config[data->kind];
-+	data->client = client;
- 
--	/* device configuration */
--	ret = i2c_smbus_write_word_swapped(client, INA2XX_CONFIG,
--					   data->config->config_default);
--	if (ret < 0) {
--		dev_err(dev,
--			"error writing to the config register: %d", ret);
-+	if (data->rshunt <= 0)
- 		return -ENODEV;
--	}
- 
--	/*
--	 * Set current LSB to 1mA, shunt is in uOhms
--	 * (equation 13 in datasheet).
--	 */
--	ret = i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
--				data->config->calibration_factor / shunt);
-+	ret = ina2xx_init(data);
- 	if (ret < 0) {
--		dev_err(dev,
--			"error writing to the calibration register: %d", ret);
-+		dev_err(dev, "error configuring the device: %d\n", ret);
- 		return -ENODEV;
- 	}
- 
--	data->client = client;
- 	mutex_init(&data->update_lock);
- 
- 	hwmon_dev = devm_hwmon_device_register_with_groups(dev, client->name,
-@@ -277,7 +317,7 @@ static int ina2xx_probe(struct i2c_client *client,
- 		return PTR_ERR(hwmon_dev);
- 
- 	dev_info(dev, "power monitor %s (Rshunt = %li uOhm)\n",
--		 id->name, shunt);
-+		 id->name, data->rshunt);
- 
- 	return 0;
- }
--- 
-2.1.3
+Alphabetize the headers.
 
+> +
+> +#define DRIVER_NAME	"altera-mailbox"
+> +
+> +#define MAILBOX_CMD_REG			0x00
+> +#define MAILBOX_PTR_REG			0x04
+> +#define MAILBOX_STS_REG			0x08
+> +#define MAILBOX_INTMASK_REG		0x0C
+> +
+> +#define INT_PENDING_MSK			0x1
+> +#define INT_SPACE_MSK			0x2
+> +
+> +#define STS_PENDING_MSK			0x1
+> +#define STS_FULL_MSK			0x2
+> +#define STS_FULL_OFT			0x1
+> +
+> +#define MBOX_PENDING(status)	(((status) & STS_PENDING_MSK))
+> +#define MBOX_FULL(status)	(((status) & STS_FULL_MSK) >> STS_FULL_OFT)
+> +
+> +enum altera_mbox_msg {
+> +	MBOX_CMD = 0,
+> +	MBOX_PTR,
+> +};
+> +
+> +#define MBOX_POLLING_MS		1	/* polling interval 1ms */
+> +
+> +struct altera_mbox {
+> +	bool is_sender;		/* 1-sender, 0-receiver */
+> +	bool intr_mode;
+> +	int irq;
+> +	void __iomem *mbox_base;
+> +	struct device *dev;
+> +	struct mbox_chan chan;
+> +	struct mbox_controller controller;
+> +
+> +	/* If the controller supports only RX polling mode */
+> +	struct timer_list rxpoll_timer;
+> +};
+> +
+> +static inline struct altera_mbox *to_altera_mbox(struct mbox_chan *chan)
+> +{
+> +	if (!chan)
+> +		return NULL;
+> +
+> +	return container_of(chan, struct altera_mbox, chan);
+> +}
+> +
+> +static inline int altera_mbox_full(struct altera_mbox *mbox)
+> +{
+> +	u32 status;
+> +
+> +	status = __raw_readl(mbox->mbox_base + MAILBOX_STS_REG);
+> +	return MBOX_FULL(status);
+> +}
+> +
+> +static inline int altera_mbox_pending(struct altera_mbox *mbox)
+> +{
+> +	u32 status;
+> +
+> +	status = __raw_readl(mbox->mbox_base + MAILBOX_STS_REG);
+> +	return MBOX_PENDING(status);
+> +}
+> +
+> +static void altera_mbox_rx_intmask(struct altera_mbox *mbox, bool enable)
+> +{
+> +	u32 mask;
+> +
+> +	mask = __raw_readl(mbox->mbox_base + MAILBOX_INTMASK_REG);
+> +	if (enable)
+> +		mask |= INT_PENDING_MSK;
+> +	else
+> +		mask &= ~INT_PENDING_MSK;
+> +	__raw_writel(mask, mbox->mbox_base + MAILBOX_INTMASK_REG);
+> +}
+> +
+> +static void altera_mbox_tx_intmask(struct altera_mbox *mbox, bool enable)
+> +{
+> +	u32 mask;
+> +
+> +	mask = __raw_readl(mbox->mbox_base + MAILBOX_INTMASK_REG);
+> +	if (enable)
+> +		mask |= INT_SPACE_MSK;
+> +	else
+> +		mask &= ~INT_SPACE_MSK;
+> +	__raw_writel(mask, mbox->mbox_base + MAILBOX_INTMASK_REG);
+> +}
+> +
+> +static bool altera_mbox_is_sender(struct altera_mbox *mbox)
+> +{
+> +	u32 reg;
+> +	/* Write a magic number to PTR register and read back this register.
+> +	 * This register is read-write if it is a sender.
+> +	 */
+> +	#define MBOX_MAGIC	0xA5A5AA55
+> +	__raw_writel(MBOX_MAGIC, mbox->mbox_base + MAILBOX_PTR_REG);
+> +	reg = __raw_readl(mbox->mbox_base + MAILBOX_PTR_REG);
+> +	if (reg == MBOX_MAGIC) {
+> +		/* Clear to 0 */
+> +		__raw_writel(0, mbox->mbox_base + MAILBOX_PTR_REG);
+> +		return true;
+> +	}
+> +	return false;
+> +}
+> +
+> +static void altera_mbox_rx_data(struct mbox_chan *chan)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +	u32 data[2];
+> +
+> +	if (altera_mbox_pending(mbox)) {
+> +		data[MBOX_PTR] = __raw_readl(mbox->mbox_base + MAILBOX_PTR_REG);
+> +		data[MBOX_CMD] = __raw_readl(mbox->mbox_base + MAILBOX_CMD_REG);
+> +		mbox_chan_received_data(chan, (void *)data);
+> +	}
+> +}
+> +
+> +static void altera_mbox_poll_rx(unsigned long data)
+> +{
+> +	struct mbox_chan *chan = (struct mbox_chan *)data;
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	altera_mbox_rx_data(chan);
+> +
+> +	mod_timer(&mbox->rxpoll_timer,
+> +		jiffies + msecs_to_jiffies(MBOX_POLLING_MS));
+> +}
+> +
+> +static irqreturn_t altera_mbox_tx_interrupt(int irq, void *p)
+> +{
+> +	struct mbox_chan *chan = (struct mbox_chan *)p;
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	altera_mbox_tx_intmask(mbox, false);
+> +	mbox_chan_txdone(chan, 0);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static irqreturn_t altera_mbox_rx_interrupt(int irq, void *p)
+> +{
+> +	struct mbox_chan *chan = (struct mbox_chan *)p;
+> +
+> +	altera_mbox_rx_data(chan);
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int altera_mbox_startup_sender(struct mbox_chan *chan)
+> +{
+> +	int ret;
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	if (mbox->intr_mode) {
+> +		ret = request_irq(mbox->irq, altera_mbox_tx_interrupt, 0,
+
+Use devm_request_irq, since you didn't have and don't need use free_irq
+in the shutdown function.
+
+> +			DRIVER_NAME, chan);
+> +		if (unlikely(ret)) {
+> +			dev_err(mbox->dev,
+> +				"failed to register mailbox interrupt:%d\n",
+> +				ret);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int altera_mbox_startup_receiver(struct mbox_chan *chan)
+> +{
+> +	int ret;
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	if (mbox->intr_mode) {
+> +		ret = request_irq(mbox->irq, altera_mbox_rx_interrupt, 0,
+> +			DRIVER_NAME, chan);
+
+Use devm_request_irq
+
+
+> +		if (unlikely(ret)) {
+> +			dev_err(mbox->dev,
+> +				"failed to register mailbox interrupt:%d\n",
+> +				ret);
+> +			return ret;
+> +		}
+> +		altera_mbox_rx_intmask(mbox, true);
+> +	} else {
+> +		/* Setup polling timer */
+> +		setup_timer(&mbox->rxpoll_timer, altera_mbox_poll_rx,
+> +			(unsigned long)chan);
+> +		mod_timer(&mbox->rxpoll_timer,
+> +			jiffies + msecs_to_jiffies(MBOX_POLLING_MS));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int altera_mbox_send_data(struct mbox_chan *chan, void *data)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +	u32 *udata = (u32 *)data;
+> +
+> +	if (!mbox || !data)
+> +		return -EINVAL;
+> +	if (!mbox->is_sender) {
+> +		dev_warn(mbox->dev,
+> +			"failed to send. This is receiver mailbox.\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	if (altera_mbox_full(mbox))
+> +		return -EBUSY;
+> +
+> +	/* Enable interrupt before send */
+> +	altera_mbox_tx_intmask(mbox, true);
+> +
+> +	/* Pointer register must write before command register */
+> +	__raw_writel(udata[MBOX_PTR], mbox->mbox_base + MAILBOX_PTR_REG);
+> +	__raw_writel(udata[MBOX_CMD], mbox->mbox_base + MAILBOX_CMD_REG);
+> +
+> +	return 0;
+> +}
+> +
+> +static bool altera_mbox_last_tx_done(struct mbox_chan *chan)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	if (WARN_ON(!mbox))
+> +		return false;
+
+Are these checks necessary? Shouldn't the driver probe function have
+already failed?
+
+> +
+> +	/* Return false if mailbox is full */
+> +	return altera_mbox_full(mbox) ? false : true;
+> +}
+> +
+> +static bool altera_mbox_peek_data(struct mbox_chan *chan)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	if (WARN_ON(!mbox))
+> +		return false;
+> +
+> +	return altera_mbox_pending(mbox) ? true : false;
+> +}
+> +
+> +static int altera_mbox_startup(struct mbox_chan *chan)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +	int ret = 0;
+> +
+> +	if (!mbox)
+> +		return -EINVAL;
+> +
+> +	if (mbox->is_sender)
+> +		ret = altera_mbox_startup_sender(chan);
+> +	else
+> +		ret = altera_mbox_startup_receiver(chan);
+> +
+> +	return ret;
+> +}
+> +
+> +static void altera_mbox_shutdown(struct mbox_chan *chan)
+> +{
+> +	struct altera_mbox *mbox = to_altera_mbox(chan);
+> +
+> +	if (WARN_ON(!mbox))
+> +		return;
+> +
+> +	if (mbox->intr_mode) {
+> +		/* Unmask all interrupt masks */
+> +		__raw_writel(~0, mbox->mbox_base + MAILBOX_INTMASK_REG);
+> +		free_irq(mbox->irq, chan);
+> +	} else if (!mbox->is_sender)
+> +		del_timer_sync(&mbox->rxpoll_timer);
+
+Need braces around the else as well.
+
+> +}
+> +
+> +static struct mbox_chan_ops altera_mbox_ops = {
+> +	.send_data = altera_mbox_send_data,
+> +	.startup = altera_mbox_startup,
+> +	.shutdown = altera_mbox_shutdown,
+> +	.last_tx_done = altera_mbox_last_tx_done,
+> +	.peek_data = altera_mbox_peek_data,
+> +};
+> +
+> +static int altera_mbox_probe(struct platform_device *pdev)
+> +{
+> +	struct altera_mbox *mbox;
+> +	struct mbox_chan *chans[1];
+
+It would be cleaner if you use devm_kzalloc to allocate the channel here.
+
+> +	struct resource	*regs;
+> +	int ret;
+> +
+> +	mbox = devm_kzalloc(&pdev->dev, sizeof(struct altera_mbox),
+> +		GFP_KERNEL);
+> +	if (!mbox)
+> +		return -ENOMEM;
+> +
+> +	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!regs)
+> +		return -ENXIO;
+> +
+> +	mbox->mbox_base = devm_ioremap_resource(&pdev->dev, regs);
+> +	if (IS_ERR(mbox->mbox_base))
+> +		return PTR_ERR(mbox->mbox_base);
+> +
+> +	/* Check is it a sender or receiver? */
+> +	mbox->is_sender = altera_mbox_is_sender(mbox);
+> +
+> +	mbox->irq = platform_get_irq(pdev, 0);
+> +	if (mbox->irq >= 0)
+> +		mbox->intr_mode = true;
+> +
+> +	mbox->dev = &pdev->dev;
+> +
+> +	/* Hardware supports only one channel. */
+> +	chans[0] = &mbox->chan;
+> +	mbox->controller.dev = mbox->dev;
+> +	mbox->controller.num_chans = 1;
+> +	mbox->controller.chans =  &mbox->chan;
+> +	mbox->controller.ops = &altera_mbox_ops;
+> +
+> +	if (mbox->is_sender) {
+> +		if (mbox->intr_mode)
+> +			mbox->controller.txdone_irq = true;
+> +		else {
+> +			mbox->controller.txdone_poll = true;
+> +			mbox->controller.txpoll_period = MBOX_POLLING_MS;
+> +		}
+
+Need braces around the if as well.
+
+> +	}
+> +
+> +	ret = mbox_controller_register(&mbox->controller);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Register mailbox failed\n");
+> +		goto err;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, mbox);
+> +	return 0;
+> +err:
+> +	return ret;
+> +}
+> +
+> +static int altera_mbox_remove(struct platform_device *pdev)
+> +{
+> +	struct altera_mbox *mbox = platform_get_drvdata(pdev);
+> +
+> +	if (!mbox)
+> +		return -EINVAL;
+> +
+> +	mbox_controller_unregister(&mbox->controller);
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id altera_mbox_match[] = {
+> +	{ .compatible = "altr,mailbox-1.0" },
+> +	{ /* Sentinel */ }
+> +};
+> +
+> +MODULE_DEVICE_TABLE(of, altera_mbox_match);
+> +
+> +static struct platform_driver altera_mbox_driver = {
+> +	.probe	= altera_mbox_probe,
+> +	.remove	= altera_mbox_remove,
+> +	.driver	= {
+> +		.name	= DRIVER_NAME,
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table	= altera_mbox_match,
+> +	},
+> +};
+> +
+> +static int altera_mbox_init(void)
+> +{
+> +	return platform_driver_register(&altera_mbox_driver);
+> +}
+> +
+> +static void altera_mbox_exit(void)
+> +{
+> +	platform_driver_unregister(&altera_mbox_driver);
+> +}
+> +
+> +module_init(altera_mbox_init);
+> +module_exit(altera_mbox_exit);
+> +
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("Altera mailbox specific functions");
+> +MODULE_AUTHOR("Ley Foon Tan <lftan@altera.com>");
+> +MODULE_ALIAS("platform:altera-mailbox");
+> 
+
+Dinh
