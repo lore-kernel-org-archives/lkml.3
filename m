@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620AbaLLGWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:22:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51782 "EHLO
+	id S965271AbaLLGX6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:23:58 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51806 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759476AbaLLGRP (ORCPT
+	by vger.kernel.org with ESMTP id S1759457AbaLLGRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 01:17:15 -0500
+	Fri, 12 Dec 2014 01:17:12 -0500
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mikulas Patocka" <mpatocka@redhat.com>,
-        "Tomi Valkeinen" <tomi.valkeinen@ti.com>
+CC: akpm@linux-foundation.org, "Finn Thain" <fthain@telegraphics.com.au>,
+        "Geert Uytterhoeven" <geert@linux-m68k.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.622933312@decadent.org.uk>
+Message-ID: <lsq.1418364865.163741933@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 039/164] framebuffer: fix screen corruption when copying
+Subject: [PATCH 3.2 043/164] m68k: Disable/restore interrupts in
+ hwreg_present()/hwreg_write()
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,70 +32,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-commit 5b789da8a7fc357661fc61faaf853e9161cc9700 upstream.
+commit e4dc601bf99ccd1c95b7e6eef1d3cf3c4b0d4961 upstream.
 
-The function bitcpy_rev has a bug that may result in screen corruption.
-The bug happens under these conditions:
-* the end of the destination area of a copy operation is aligned on a long
-  word boundary
-* the end of the source area is not aligned on a long word boundary
-* we are copying more than one long word
+hwreg_present() and hwreg_write() temporarily change the VBR register to
+another vector table. This table contains a valid bus error handler
+only, all other entries point to arbitrary addresses.
 
-In this case, the variable shift is non-zero and the variable first is
-zero. The statements FB_WRITEL(comp(d0, FB_READL(dst), first), dst) reads
-the last long word of the destination and writes it back unchanged
-(because first is zero). Correctly, we should write the variable d0 to the
-last word of the destination in this case.
+If an interrupt comes in while the temporary table is active, the
+processor will start executing at such an arbitrary address, and the
+kernel will crash.
 
-This patch fixes the bug by introducing and extra test if first is zero.
+While most callers run early, before interrupts are enabled, or
+explicitly disable interrupts, Finn Thain pointed out that macsonic has
+one callsite that doesn't, causing intermittent boot crashes.
+There's another unsafe callsite in hilkbd.
 
-The patch also removes the references to fb_memmove in the code that is
-commented out because fb_memmove was removed from framebuffer subsystem.
+Fix this for good by disabling and restoring interrupts inside
+hwreg_present() and hwreg_write().
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-[bwh: Backported to 3.2: adjust context]
+Explicitly disabling interrupts can be removed from the callsites later.
+
+Reported-by: Finn Thain <fthain@telegraphics.com.au>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/cfbcopyarea.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ arch/m68k/mm/hwtest.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/video/cfbcopyarea.c
-+++ b/drivers/video/cfbcopyarea.c
-@@ -55,8 +55,8 @@ bitcpy(struct fb_info *p, unsigned long
- 	 * If you suspect bug in this function, compare it with this simple
- 	 * memmove implementation.
- 	 */
--	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
--		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		(char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
- 	return;
- #endif
+--- a/arch/m68k/mm/hwtest.c
++++ b/arch/m68k/mm/hwtest.c
+@@ -28,9 +28,11 @@
+ int hwreg_present( volatile void *regp )
+ {
+     int	ret = 0;
++    unsigned long flags;
+     long	save_sp, save_vbr;
+     long	tmp_vectors[3];
  
-@@ -221,8 +221,8 @@ bitcpy_rev(struct fb_info *p, unsigned l
- 	 * If you suspect bug in this function, compare it with this simple
- 	 * memmove implementation.
- 	 */
--	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
--		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		(char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
- 	return;
- #endif
++    local_irq_save(flags);
+     __asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr1,%4@(8)\n\t"
+@@ -46,6 +48,7 @@ int hwreg_present( volatile void *regp )
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors)
+                 );
++    local_irq_restore(flags);
  
-@@ -324,7 +324,10 @@ bitcpy_rev(struct fb_info *p, unsigned l
- 				d0 = d0 << left | d1 >> right;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
--			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-+			if (!first)
-+				FB_WRITEL(d0, dst);
-+			else
-+				FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
- 			d0 = d1;
- 			dst--;
- 			n -= dst_idx+1;
+     return( ret );
+ }
+@@ -58,9 +61,11 @@ EXPORT_SYMBOL(hwreg_present);
+ int hwreg_write( volatile void *regp, unsigned short val )
+ {
+ 	int		ret;
++	unsigned long flags;
+ 	long	save_sp, save_vbr;
+ 	long	tmp_vectors[3];
+ 
++	local_irq_save(flags);
+ 	__asm__ __volatile__
+ 	(	"movec	%/vbr,%2\n\t"
+ 		"movel	#Lberr2,%4@(8)\n\t"
+@@ -78,6 +83,7 @@ int hwreg_write( volatile void *regp, un
+ 		: "=&d" (ret), "=&r" (save_sp), "=&r" (save_vbr)
+ 		: "a" (regp), "a" (tmp_vectors), "g" (val)
+ 	);
++	local_irq_restore(flags);
+ 
+ 	return( ret );
+ }
 
