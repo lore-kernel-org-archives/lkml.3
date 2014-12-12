@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934953AbaLLPRZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 10:17:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2896 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933263AbaLLPRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 10:17:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,564,1413270000"; 
-   d="scan'208";a="622804200"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v1] libata: export ata_get_cmd_descript()
-Date: Fri, 12 Dec 2014 17:16:31 +0200
-Message-Id: <1418397391-13668-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.3
+	id S934970AbaLLPRc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 10:17:32 -0500
+Received: from lucky1.263xmail.com ([211.157.147.133]:51151 "EHLO
+	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933263AbaLLPRa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 10:17:30 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 1
+X-MAIL-DELIVERY: 0
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: lyz@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 58.22.7.114
+X-LOGIN-NAME: lyz@rock-chips.com
+X-UNIQUE-TAG: <70532bc8142d97db7e5a5eb17002aa41>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yunzhi Li <lyz@rock-chips.com>
+To: heiko@sntech.de, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jwerner@chromium.org,
+        dianders@chromium.org, olof@lixom.net, huangtao@rock-chips.com,
+        zyw@rock-chips.com, cf@rock-chips.com
+Cc: Yunzhi Li <lyz@rock-chips.com>
+Subject: [PATCH v7 5/5] ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+Date: Fri, 12 Dec 2014 23:17:02 +0800
+Message-Id: <1418397422-17249-1-git-send-email-lyz@rock-chips.com>
+X-Mailer: git-send-email 2.0.0
+In-Reply-To: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver sata_dwc_460ex is using this symbol. To build it as a module we have
-to have the symbol exported. This patch adds EXPORT_SYMBOL() macro for that.
+Enable usb PHY for all usb ports on rk3288-evb.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+
 ---
- drivers/ata/libata-eh.c | 1 +
- 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
-index 3dbec89..74fef87 100644
---- a/drivers/ata/libata-eh.c
-+++ b/drivers/ata/libata-eh.c
-@@ -2389,6 +2389,7 @@ const char *ata_get_cmd_descript(u8 command)
+Changes in v7: None
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+
+ arch/arm/boot/dts/rk3288-evb.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index cb83cea..992f323 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -174,6 +174,10 @@
+ 	};
+ };
  
- 	return NULL;
- }
-+EXPORT_SYMBOL(ata_get_cmd_descript);
- 
- /**
-  *	ata_eh_link_report - report error handling to user
++&usbphy {
++	status = "okay";
++};
++
+ &usb_host0_ehci {
+ 	status = "okay";
+ };
 -- 
-2.1.3
+2.0.0
+
 
