@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753406AbaLLVI4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:08:56 -0500
-Received: from 3.mo2.mail-out.ovh.net ([46.105.58.226]:48430 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753235AbaLLVIz (ORCPT
+	id S1753571AbaLLVMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:12:10 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:50557 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753386AbaLLVMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:08:55 -0500
-From: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-To: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org (moderated list:ARM/Rockchip
-	SoC...),
-        linux-rockchip@lists.infradead.org (open list:ARM/Rockchip SoC...),
-        linux-kernel@vger.kernel.org (open list:COMMON CLK FRAMEWORK)
-Cc: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
-Subject: [PATCH v2] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
-Date: Fri, 12 Dec 2014 22:05:52 +0100
-Message-Id: <1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
-References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
-X-Ovh-Tracer-Id: 6440991893206663229
-X-Ovh-Remote: 193.248.240.88 (laubervilliers-656-1-116-88.w193-248.abo.wanadoo.fr)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejiedrgeejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Fri, 12 Dec 2014 16:12:07 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: Re: [PATCH] e100: Don't enable WoL by default on Toshiba devices
+Date: Fri, 12 Dec 2014 22:11:26 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: David Miller <davem@davemloft.net>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1415832445-9524-1-git-send-email-linux@rainbow-software.org> <20141112.181813.1072534293888457853.davem@davemloft.net> <1415849927.2454.14.camel@jtkirshe-mobl>
+In-Reply-To: <1415849927.2454.14.camel@jtkirshe-mobl>
+X-KMail-QuotePrefix: > 
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201412122211.27074.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0
-and hclk_usbotg1 because these clocks must remain enabled to use the
-USB controllers in host mode.
+On Thursday 13 November 2014 04:38:47 Jeff Kirsher wrote:
+> On Wed, 2014-11-12 at 18:18 -0500, David Miller wrote:
+> > From: Ondrej Zary <linux@rainbow-software.org>
+> > Date: Wed, 12 Nov 2014 23:47:25 +0100
+> >
+> > > Enabling WoL on some Toshiba laptops (such as Portege R100) causes
+> > > battery drain after shutdown (WoL is active even on battery). These
+> > > laptops have the WoL bit set in EEPROM ID, causing e100 driver to
+> > > enable WoL by default.
+> > >
+> > > Check subsystem vendor ID and if it's Toshiba, don't enable WoL by
+> > > default from EEPROM settings.
+> > >
+> > > Fixes https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
+> > >
+> > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> >
+> > Jeff, are you gonna pick this up?
+>
+> Yes, sorry I did not catch it earlier.
 
-This fixes a regression introduced by commit 78eaf6095cc7
-("clk: rockchip: disable unused clocks").
+Will this go in 3.19?
 
-Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
----
-Changes since v1:
-- update commit message: refer to commit ID instead of mailing list
-
- drivers/clk/rockchip/clk-rk3188.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
-index c540789..25ddb09 100644
---- a/drivers/clk/rockchip/clk-rk3188.c
-+++ b/drivers/clk/rockchip/clk-rk3188.c
-@@ -430,8 +430,10 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
- 	GATE(0, "hclk_emem_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 7, GFLAGS),
- 	GATE(HCLK_EMAC, "hclk_emac", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 0, GFLAGS),
- 	GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 9, GFLAGS),
--	GATE(0, "hclk_usb_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 5, GFLAGS),
--	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 13, GFLAGS),
-+	GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(4), 5, GFLAGS),
-+	GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(5), 13, GFLAGS),
- 	GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 5, GFLAGS),
- 	GATE(HCLK_PIDF, "hclk_pidfilter", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 6, GFLAGS),
- 	GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 10, GFLAGS),
-@@ -592,7 +594,8 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
- 	GATE(0, "hclk_cif1", "hclk_cpu", 0, RK2928_CLKGATE_CON(6), 6, GFLAGS),
- 	GATE(0, "hclk_hdmi", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
- 
--	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 14, GFLAGS),
-+	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(5), 14, GFLAGS),
- 
- 	GATE(0, "aclk_cif1", "aclk_vio1", 0, RK2928_CLKGATE_CON(6), 7, GFLAGS),
- 
-@@ -680,7 +683,8 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
- 	GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
- 	GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
- 
--	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
-+	GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
-+			RK2928_CLKGATE_CON(7), 3, GFLAGS),
- 	GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
- 
- 	GATE(PCLK_TIMER3, "pclk_timer3", "pclk_cpu", 0, RK2928_CLKGATE_CON(7), 9, GFLAGS),
 -- 
-2.1.0
-
+Ondrej Zary
