@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934801AbaLLJro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 04:47:44 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50843 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934631AbaLLJrl (ORCPT
+	id S934813AbaLLJtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 04:49:25 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:53740 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934764AbaLLJtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 04:47:41 -0500
-Date: Fri, 12 Dec 2014 09:47:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Fri, 12 Dec 2014 04:49:22 -0500
+Message-ID: <1418377757.5756.24.camel@x220>
+Subject: Re: linux-next: Tree for Dec 12
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] multi-layer support for overlay filesystem
-Message-ID: <20141212094738.GB5944@ZenIV.linux.org.uk>
-References: <20141209103745.GA32280@tucsk.suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141209103745.GA32280@tucsk.suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 12 Dec 2014 10:49:17 +0100
+In-Reply-To: <20141212183518.06e3803d@canb.auug.org.au>
+References: <20141212183518.06e3803d@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Dec 2014 09:49:17.0951 (UTC) FILETIME=[E571A8F0:01D015F0]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 09, 2014 at 11:37:45AM +0100, Miklos Szeredi wrote:
-> Al,
-> 
-> Please pull from
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
-> 
-> This adds support for multiple read-only layers to overlayfs.  It also makes the
-> writable upper layer optional.
+Hi Stephen,
 
-First of all, your checks in ovl_mount_dir_noesc() have no effect besides
-spamming the logs.  In
-        if (err) 
-                pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
-        else if (!ovl_is_allowed_fs_type(path->dentry))
-                pr_err("overlayfs: filesystem on '%s' not supported\n", name);
-        else if (!S_ISDIR(path->dentry->d_inode->i_mode))
-                pr_err("overlayfs: '%s' not a directory\n", name);
-        else   
-                err = 0;
-the fourth alternative is completely pointless and both the second and the
-third leave you with err being zero.
+On Fri, 2014-12-12 at 18:35 +1100, Stephen Rothwell wrote:
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-That opens all kinds of unpleasant holes, obviously.  If you fix that by
-setting err in the 2nd and thr 3rd alternatives, you get the next problem -
-leaks on such failures.  Suppose the first ovl_mount_dir() call fails on
-those checks.  You go to out_free_config and voila - upperpath has leaked.
-The same in the second call means leaked workpath.  And those failures in
-ovl_lower_dir(), as well as failures of vfs_getattr() there, end up leaking
-vfsmount/dentry in stack[...].
+(Side note: it took me some time to realize that evolution automagically
+removes the above lines and the log that follows because it is
+considered one humongous signature. Maybe there's a setting to stop
+evolution doing that. Anyhow, I copied the quotes in this message by
+hand.)
 
-Next piece of fun: suppose you have in one of the lower layers a filesystem
-with ->lookup()-enforced upper limit on name length.  Pretty much every
-local fs has one, but... they are not all equal.  255 characters is the
-common upper limit, but e.g. jffs2 stops at 254, minixfs upper limit is
-somewhere from 14 to 60, depending upon version, etc.  You are doing a lookup
-for something that is present in upper layer, but happens to be too long for
-one of the lower layers.  Too bad - ENAMETOOLONG for you...
+> $ git checkout master
+> $ git reset --hard stable
+> [...]
+> Merging akpm-current/current (35ac317b788c shmdt: use i_size_read() instead of ->i_size)
+> CONFLICT (content): Merge conflict in tools/testing/selftests/Makefile
+> CONFLICT (content): Merge conflict in mm/page_alloc.c
+> CONFLICT (content): Merge conflict in mm/memcontrol.c
+> CONFLICT (content): Merge conflict in mm/hugetlb.c
+> CONFLICT (content): Merge conflict in kernel/printk/printk.c
+> CONFLICT (content): Merge conflict in kernel/exit.c
+> CONFLICT (content): Merge conflict in init/main.c
 
-BTW, that sucker really needs cleaning up.  I seriously suspect that
-quite a few conditions in there might be redundant, but after several
-hours of staring at it I'm still not sure that I hadn't missed some
-paths in there ;-/  AFAICS, it would get cleaner if you unrolled the idx == 0
-pass out of that loop - as in "deal with ovl_path_upper() if present, then
-simple for (lower = 0; lower < oe->numlower; lower++)".  TBH, ovl_path_next()
-seems to be a bad primitive for that use and the other caller doesn't give
-a damn about upper vs. lower, so I wonder if the games with reporting that
-make any sense.  They certainly make ovl_path_next() much uglier...
+I think the conflict resolution here can be found in your merge commit
+bcab756e1d32 ("Merge branch 'akpm-current/current'").
 
-Another thing: in theory, you can get up to about 2000 (identical)
-single-letter names in lowerdirs.  Resulting arrays of struct path (i.e.
-pairs of pointers) will make allocators unhappy - 32Kb kmalloc() is
-not nice.  IMO that needs more or less sane limit enforced at mount time -
-relying on "mount data is at most one page, can't fit too much there"
-is not enough.
+For some reason it removes the only check for CONFIG_INIT_FALLBACK. I
+only noticed because that makes the Kconfig entry INIT_FALLBACK a nop.
+That check and Kconfig entry were added in commit 6ef4536e2f19 ("init:
+allow CONFIG_INIT_FALLBACK=n to disable defaults if init= fails"). That
+commit debuted in today's linux-next.
 
-Logics in ovl_dir_read_merged() looks odd - why is the lowermost one special
-and not the uppermost?  BTW, what if you find a whiteout in the lowermost
-layer?  And while we are at it, what happens when the _upper_ layer is an
-overlayfs - how do you create whiteouts there?  That, AFAICS, applies to
-the current mainline as well...
+Anyhow, I'm sure this all will be sorted out in due time.
 
-Anyway, more after I get some sleep - it's nearly 5am here ;-/
+> CONFLICT (content): Merge conflict in include/linux/mmzone.h
+> CONFLICT (content): Merge conflict in fs/proc/task_mmu.c
+> CONFLICT (content): Merge conflict in fs/ocfs2/inode.h
+> CONFLICT (content): Merge conflict in fs/binfmt_misc.c
+> CONFLICT (content): Merge conflict in drivers/usb/storage/debug.c
+> CONFLICT (content): Merge conflict in drivers/rtc/rtc-omap.c
+> CONFLICT (content): Merge conflict in drivers/rtc/rtc-isl12057.c
+> CONFLICT (content): Merge conflict in drivers/rtc/rtc-ds1374.c
+> CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/vendor-prefixes.txt
+> CONFLICT (content): Merge conflict in Documentation/devicetree/bindings/i2c/trivial-devices.txt
+
+Thanks,
+
+
+Paul Bolle
+
