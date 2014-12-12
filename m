@@ -1,111 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030585AbaLLQOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 11:14:05 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:54254 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968152AbaLLQNq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 11:13:46 -0500
-Date: Fri, 12 Dec 2014 17:15:36 +0100
-From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Michael Welling <mwelling@ieee.org>,
-        Philippe Reynes <tremyfr@yahoo.fr>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [PATCH v2 2/2] iio: add driver for the TI DAC8554
-Message-ID: <20141212161536.GC1142@avionic-0071.adnet.avionic-design.de>
-References: <1416858614-32265-1-git-send-email-nikolaus.schulz@avionic-design.de>
- <1416858614-32265-2-git-send-email-nikolaus.schulz@avionic-design.de>
- <5482EA33.7020305@gmx.de>
- <548AD814.2060206@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <548AD814.2060206@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:pnI4l/ZnAQeNTvA0A6nT7d+e6aKY4gKpzsAQ2TjCixY4XPGZfSg
- U37NWlQjLGcfgPh4zkL4JMdsvjVFbpY/zabVNInL1L9V25sQyLjjqmY3o1MATtXKKvBXIzQ
- 9QsZeRF5jp03ba3JY6y6+YS/KCJiKA/sektDmfuyFWg48C0bTNWgeVKIvNXObi2J7/HeUhS
- Mtu9HVDwaR24ZPehLEMxg==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1030654AbaLLQOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 11:14:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53645 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934967AbaLLQNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 11:13:44 -0500
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, David Rientjes <rientjes@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH V3 4/4] mm: microoptimize zonelist operations
+Date: Fri, 12 Dec 2014 17:13:25 +0100
+Message-Id: <1418400805-4661-5-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1418400805-4661-1-git-send-email-vbabka@suse.cz>
+References: <1418400805-4661-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:57:08AM +0000, Jonathan Cameron wrote:
-> On 06/12/14 11:36, Hartmut Knaack wrote:
-> > Nikolaus Schulz schrieb am 24.11.2014 um 20:50:
-> >> The TI DAC8554 is a quad-channel Digital-to-Analog Converter with an SPI
-> >> interface.
-> >>
-> >> Changes in v2:
-> >> * Use DMA-safe buffer for SPI transfer
-> >> * Normalize powerdown_mode name "hi-z" to "three_state" as per
-> >>   ABI/testing/sysfs-bus-iio
-> >> * Register device late in probe function
-> >> * Avoid powerdown broadcast update, which touches all DAC on the bus
-> > There are a few issues left, please see my comments inline.
-> 1 little one from me...
-> >>
-> >> Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-> >> ---
-> >>  drivers/iio/dac/Kconfig      |  10 ++
-> >>  drivers/iio/dac/Makefile     |   1 +
-> >>  drivers/iio/dac/ti-dac8554.c | 374 +++++++++++++++++++++++++++++++++++++++++++
-> >>  3 files changed, 385 insertions(+)
-> >>  create mode 100644 drivers/iio/dac/ti-dac8554.c
-[...]
-> >> diff --git a/drivers/iio/dac/ti-dac8554.c b/drivers/iio/dac/ti-dac8554.c
-> >> new file mode 100644
-> >> index 0000000..fca751f
-> >> --- /dev/null
-> >> +++ b/drivers/iio/dac/ti-dac8554.c
-[...]
-> >> +static int dac8554_powerdown(struct dac8554_state *st,
-> >> +			     u8 powerdown_mode)
-> >> +{
-> >> +	int chan, cmd, ret;
-> >> +
-> >> +	for (chan = DAC8554_DAC_CHANNELS-1; chan >= 0; --chan) {
-> > Please mind spaces around operators.
-> >> +		cmd = chan ? DAC8554_CMD_STORE_DAC_N
-> >> +			   : DAC8554_CMD_STORE_DAC_N_UPDATE_ALL;
-> >> +		ret = dac8554_spi_write(st, cmd, chan,
-> >> +				DAC8554_PWRDN_TO_SR(powerdown_mode));
-> >> +		if (ret)
-> >> +			return ret;
-> >> +	}
-> >> +
-> >> +	memset(st->powerdown_mode, powerdown_mode, sizeof(st->powerdown_mode));
-> >> +	memset(st->powerdown, true, sizeof(st->powerdown));
-> Whilst this probably works, I think for the boolean case it is less
-> than entirely obvious, so probably better to have a simple loop.
+The function next_zones_zonelist() returns zoneref pointer, as well as zone
+pointer via extra parameter. Since the latter can be trivially obtained by
+dereferencing the former, the overhead of the extra parameter is unjustified.
 
-Yeah, I agree it's better to keep it as simple and obvious as possible.
-Fixed in v3.
+This patch thus removes the zone parameter from next_zones_zonelist(). Both
+callers happen to be in the same header file, so it's simple to add the
+zoneref dereference inline. We save some bytes of code size.
 
-> >> +
-> >> +	return 0;
-> >> +}
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/mmzone.h | 13 +++++++------
+ mm/mmzone.c            |  4 +---
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 2f0856d..a2884ef 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -970,7 +970,6 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
+  * @z - The cursor used as a starting point for the search
+  * @highest_zoneidx - The zone index of the highest zone to return
+  * @nodes - An optional nodemask to filter the zonelist with
+- * @zone - The first suitable zone found is returned via this parameter
+  *
+  * This function returns the next zone at or below a given zone index that is
+  * within the allowed nodemask using a cursor as the starting point for the
+@@ -980,8 +979,7 @@ static inline int zonelist_node_idx(struct zoneref *zoneref)
+  */
+ struct zoneref *next_zones_zonelist(struct zoneref *z,
+ 					enum zone_type highest_zoneidx,
+-					nodemask_t *nodes,
+-					struct zone **zone);
++					nodemask_t *nodes);
+ 
+ /**
+  * first_zones_zonelist - Returns the first zone at or below highest_zoneidx within the allowed nodemask in a zonelist
+@@ -1000,8 +998,10 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
+ 					nodemask_t *nodes,
+ 					struct zone **zone)
+ {
+-	return next_zones_zonelist(zonelist->_zonerefs, highest_zoneidx, nodes,
+-								zone);
++	struct zoneref *z = next_zones_zonelist(zonelist->_zonerefs,
++							highest_zoneidx, nodes);
++	*zone = zonelist_zone(z);
++	return z;
+ }
+ 
+ /**
+@@ -1018,7 +1018,8 @@ static inline struct zoneref *first_zones_zonelist(struct zonelist *zonelist,
+ #define for_each_zone_zonelist_nodemask(zone, z, zlist, highidx, nodemask) \
+ 	for (z = first_zones_zonelist(zlist, highidx, nodemask, &zone);	\
+ 		zone;							\
+-		z = next_zones_zonelist(++z, highidx, nodemask, &zone))	\
++		z = next_zones_zonelist(++z, highidx, nodemask),	\
++			zone = zonelist_zone(z))			\
+ 
+ /**
+  * for_each_zone_zonelist - helper macro to iterate over valid zones in a zonelist at or below a given zone index
+diff --git a/mm/mmzone.c b/mm/mmzone.c
+index bf34fb8..7d87ebb 100644
+--- a/mm/mmzone.c
++++ b/mm/mmzone.c
+@@ -54,8 +54,7 @@ static inline int zref_in_nodemask(struct zoneref *zref, nodemask_t *nodes)
+ /* Returns the next zone at or below highest_zoneidx in a zonelist */
+ struct zoneref *next_zones_zonelist(struct zoneref *z,
+ 					enum zone_type highest_zoneidx,
+-					nodemask_t *nodes,
+-					struct zone **zone)
++					nodemask_t *nodes)
+ {
+ 	/*
+ 	 * Find the next suitable zone to use for the allocation.
+@@ -69,7 +68,6 @@ struct zoneref *next_zones_zonelist(struct zoneref *z,
+ 				(z->zone && !zref_in_nodemask(z, nodes)))
+ 			z++;
+ 
+-	*zone = zonelist_zone(z);
+ 	return z;
+ }
+ 
 -- 
-Avionic Design GmbH
-Nikolaus Schulz
-Wragekamp 10
-D-22397 Hamburg
-Germany
+2.1.2
 
-Tel.:  +49 40 88187-163
-Fax:   +49 40 88187-150
-Email: nikolaus.schulz@avionic-design.de
-
-Avionic Design GmbH
-Amtsgericht Hamburg HRB 82598
-Geschäftsführung: Cornelis Broers
-Ust.-Ident-Nr.: DE813378254
