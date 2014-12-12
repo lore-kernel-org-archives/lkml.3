@@ -1,130 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964978AbaLLHrk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:47:40 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:41577 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934127AbaLLHri (ORCPT
+	id S1758782AbaLLHxZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:53:25 -0500
+Received: from www.linutronix.de ([62.245.132.108]:33066 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaLLHxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 02:47:38 -0500
-References: <1418072517-5413-1-git-send-email-jsitnicki@gmail.com> <2022256.J7VNVZ55j5@vostro.rjw.lan>
-From: Jakub Sitnicki <jsitnicki@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: rafael.j.wysocki@intel.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PNP: Switch from __check_region() to __request_region()
-In-reply-to: <2022256.J7VNVZ55j5@vostro.rjw.lan>
-Date: Fri, 12 Dec 2014 08:47:34 +0100
-Message-ID: <878uid5my1.fsf@frog.home>
+	Fri, 12 Dec 2014 02:53:24 -0500
+Date: Fri, 12 Dec 2014 08:53:16 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [patch 4/4] acpi: ioapic: Respect the resource flags
+In-Reply-To: <CAE9FiQV4jArUDGuhb3o2BhiVGcGxSXhADU+5=NsdqJGQOo2oJQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1412120847400.16494@nanos>
+References: <20141211191853.613107396@linutronix.de> <20141211193112.813391696@linutronix.de> <CAE9FiQV4jArUDGuhb3o2BhiVGcGxSXhADU+5=NsdqJGQOo2oJQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki <rjw@rjwysocki.net> writes:
+On Thu, 11 Dec 2014, Yinghai Lu wrote:
+> On Thu, Dec 11, 2014 at 11:48 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > +static inline bool is_valid_mem_resource(struct resource *res)
+> > +{
+> > +       return !(res->flags & IORESOURCE_DISABLED) &&
+> > +               (res->flags & IORESOURCE_MEM);
+> > +}
+> > +
+> There is minor problem about mem pref handling, original code will ignore them.
 
-> On Monday, December 08, 2014 10:01:57 PM Jakub Sitnicki wrote:
->> diff --git a/drivers/pnp/resource.c b/drivers/pnp/resource.c
->> index 782e822..f980ff7 100644
->> --- a/drivers/pnp/resource.c
->> +++ b/drivers/pnp/resource.c
->> @@ -179,8 +179,9 @@ int pnp_check_port(struct pnp_dev *dev, struct resource *res)
->>  	/* check if the resource is already in use, skip if the
->>  	 * device is active because it itself may be in use */
->>  	if (!dev->active) {
->> -		if (__check_region(&ioport_resource, *port, length(port, end)))
->> +		if (!request_region(*port, length(port, end), "pnp"))
->>  			return 0;
->> +		release_region(*port, length(port, end));
->
-> Shouldn't we also release the resource returned by request_region() if it is
-> not NULL?
->
+Bah. I missed that in that well documented function...
 
-Thanks for taking a look at this. I think we're good here. If you please
-bear with me for a moment:
+> with this patch will let it follow through.
+> 
+> should change is_valid_mem_resource to is_valid_mem_nonpref_resource()...
+> 
+> +static inline bool is_valid_mem_nonpref_resource(struct resource *res)
+>  {
+>         return !(res->flags & IORESOURCE_DISABLED) &&
+> -               (res->flags & IORESOURCE_MEM);
+> +               (res->flags & IORESOURCE_MEM) &&
+> +               !(res->flags & IORESOURCE_PREFETCH);
+>  }
 
-release_resource() removes an element from the list of resource parent's
-children (and makes it an orphan):
+Unfortunately that does not help, because nothing sets the
+IORESOURCE_PREFETCH flag. Will fix it proper.
 
-	p = &old->parent->child;
-	for (;;) {
-		tmp = *p;
-		if (!tmp)
-			break;
-		if (tmp == old) {
-			*p = tmp->sibling;
-			old->parent = NULL;
-			return 0;
-		}
-		p = &tmp->sibling;
-	}
+I still have no explanation why the translation offset needs to be
+applied here.
 
-release_region() does the same but with additional checks, and also
-frees the resource:
+Thanks,
 
-	p = &parent->child;
-        /* ... */
-	for (;;) {
-		struct resource *res = *p;
+	tglx
 
-		if (!res)
-			break;
-		if (res->start <= start && res->end >= end) {
-                        /* ... */
-			*p = res->sibling;
-                        /* ... */
-			free_resource(res);
-			return;
-		}
-		p = &res->sibling;
-	}
-
-When making the change I've based on other code in the kernel which also
-make use of request_region().
-
-To quote one example, drivers/net/ethernet/8390/ne2k-pci.c cleans up its
-I/O port region when initialization fails like so:
-
-static int ne2k_pci_init_one(struct pci_dev *pdev,
-			     const struct pci_device_id *ent)
-{
-        /* ... */
-
-	if (request_region (ioaddr, NE_IO_EXTENT, DRV_NAME) == NULL) {
-		dev_err(&pdev->dev, "I/O resource 0x%x @ 0x%lx busy\n",
-			NE_IO_EXTENT, ioaddr);
-		return -EBUSY;
-	}
-
-        /* ... */
-
-	dev = alloc_ei_netdev();
-	if (!dev) {
-		dev_err(&pdev->dev, "cannot allocate ethernet device\n");
-		goto err_out_free_res;
-	}
-
-        /* ... */
-
-err_out_free_res:
-	release_region (ioaddr, NE_IO_EXTENT);
-	return -ENODEV;
-}
-
->>  	}
->>  
->>  	/* check if the resource is reserved */
->> @@ -241,8 +242,9 @@ int pnp_check_mem(struct pnp_dev *dev, struct resource *res)
->>  	/* check if the resource is already in use, skip if the
->>  	 * device is active because it itself may be in use */
->>  	if (!dev->active) {
->> -		if (check_mem_region(*addr, length(addr, end)))
->> +		if (!request_mem_region(*addr, length(addr, end), "pnp"))
->>  			return 0;
->> +		release_mem_region(*addr, length(addr, end));
->>  	}
->>  
->>  	/* check if the resource is reserved */
->> 
