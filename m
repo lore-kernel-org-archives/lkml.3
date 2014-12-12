@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968274AbaLLN5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:57:36 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57771 "EHLO mga01.intel.com"
+	id S1030312AbaLLN54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:57:56 -0500
+Received: from mga01.intel.com ([192.55.52.88]:60531 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030224AbaLLNud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:50:33 -0500
+	id S968085AbaLLNuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:50:22 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,563,1413270000"; 
-   d="scan'208";a="636669008"
+   d="scan'208";a="636668853"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH V3 10/22] perf itrace: Add helpers for Instruction Tracing errors
-Date: Fri, 12 Dec 2014 15:47:57 +0200
-Message-Id: <1418392089-5568-11-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V3 03/22] perf tools: Add user events for Instruction Tracing
+Date: Fri, 12 Dec 2014 15:47:50 +0200
+Message-Id: <1418392089-5568-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
 References: <1418392089-5568-1-git-send-email-adrian.hunter@intel.com>
@@ -27,147 +27,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add functions to synthesize, count and print
-Instruction Tracing error events.
+Add two user events for Instruction Tracing.
+
+PERF_RECORD_ITRACE_INFO contains metadata,
+consisting primarily the type of the
+Instruction Tracing data plus some amount
+of architecture-specific information.
+There should be only one
+PERF_RECORD_ITRACE_INFO event.
+
+PERF_RECORD_ITRACE identifies Instruction
+Tracing data copied from the mmapped
+Instruction Tracing region.  The actual
+data is not part of the event but
+immediately follows it.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/itrace.c | 55 ++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/itrace.h | 16 ++++++++++++++
- 2 files changed, 71 insertions(+)
+ tools/perf/util/event.c   |  2 ++
+ tools/perf/util/event.h   | 22 +++++++++++++++
+ tools/perf/util/session.c | 69 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/tool.h    |  9 ++++++-
+ 4 files changed, 101 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/itrace.c b/tools/perf/util/itrace.c
-index 0d3ff21..a6d38f5 100644
---- a/tools/perf/util/itrace.c
-+++ b/tools/perf/util/itrace.c
-@@ -22,6 +22,7 @@
- #include <linux/types.h>
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 6c6d044..efe6475 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -29,6 +29,8 @@ static const char *perf_event__names[] = {
+ 	[PERF_RECORD_HEADER_BUILD_ID]		= "BUILD_ID",
+ 	[PERF_RECORD_FINISHED_ROUND]		= "FINISHED_ROUND",
+ 	[PERF_RECORD_ID_INDEX]			= "ID_INDEX",
++	[PERF_RECORD_ITRACE_INFO]		= "ITRACE_INFO",
++	[PERF_RECORD_ITRACE]			= "ITRACE",
+ };
  
- #include <stdlib.h>
-+#include <stdio.h>
- #include <string.h>
- #include <errno.h>
+ const char *perf_event__name(unsigned int id)
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index c4ffe2b..660bae0 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -215,6 +215,8 @@ enum perf_user_event_type { /* above any possible kernel type */
+ 	PERF_RECORD_HEADER_BUILD_ID		= 67,
+ 	PERF_RECORD_FINISHED_ROUND		= 68,
+ 	PERF_RECORD_ID_INDEX			= 69,
++	PERF_RECORD_ITRACE_INFO			= 70,
++	PERF_RECORD_ITRACE			= 71,
+ 	PERF_RECORD_HEADER_MAX
+ };
  
-@@ -33,6 +34,7 @@
- #include "itrace.h"
+@@ -281,6 +283,24 @@ struct id_index_event {
+ 	struct id_index_entry entries[0];
+ };
  
- #include "event.h"
-+#include "session.h"
- #include "debug.h"
- #include "parse-options.h"
++struct itrace_info_event {
++	struct perf_event_header header;
++	u32 type;
++	u32 reserved__; /* For alignment */
++	u64 priv[];
++};
++
++struct itrace_event {
++	struct perf_event_header header;
++	u64 size;
++	u64 offset;
++	u64 reference;
++	u32 idx;
++	u32 tid;
++	u32 cpu;
++	u32 reserved__; /* For alignment */
++};
++
+ union perf_event {
+ 	struct perf_event_header	header;
+ 	struct mmap_event		mmap;
+@@ -296,6 +316,8 @@ union perf_event {
+ 	struct tracing_data_event	tracing_data;
+ 	struct build_id_event		build_id;
+ 	struct id_index_event		id_index;
++	struct itrace_info_event	itrace_info;
++	struct itrace_event		itrace;
+ };
  
-@@ -158,6 +160,28 @@ itrace_record__init(struct perf_evlist *evlist __maybe_unused, int *err)
- 	return NULL;
+ void perf_event__print_totals(void);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 5f0e05a..0c5365b 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -237,6 +237,40 @@ static int process_id_index_stub(struct perf_tool *tool __maybe_unused,
+ 	return 0;
  }
  
-+void itrace_synth_error(struct itrace_error_event *itrace_error, int type,
-+			int code, int cpu, pid_t pid, pid_t tid, u64 ip,
-+			const char *msg)
++static int process_event_itrace_info_stub(struct perf_tool *tool __maybe_unused,
++				  union perf_event *event __maybe_unused,
++				  struct perf_session *session __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
++	return 0;
++}
++
++static int skipn(int fd, off_t n)
++{
++	char buf[4096];
++	ssize_t ret;
++
++	while (n > 0) {
++		ret = read(fd, buf, MIN(n, sizeof(buf)));
++		if (ret <= 0)
++			return ret;
++		n -= ret;
++	}
++
++	return 0;
++}
++
++static s64 process_event_itrace_stub(struct perf_tool *tool __maybe_unused,
++				     union perf_event *event,
++				     struct perf_session *session
++				     __maybe_unused)
++{
++	dump_printf(": unhandled!\n");
++	if (perf_data_file__is_pipe(session->file))
++		skipn(perf_data_file__fd(session->file), event->itrace.size);
++	return event->itrace.size;
++}
++
+ void perf_tool__fill_defaults(struct perf_tool *tool)
+ {
+ 	if (tool->sample == NULL)
+@@ -273,6 +307,10 @@ void perf_tool__fill_defaults(struct perf_tool *tool)
+ 	}
+ 	if (tool->id_index == NULL)
+ 		tool->id_index = process_id_index_stub;
++	if (tool->itrace_info == NULL)
++		tool->itrace_info = process_event_itrace_info_stub;
++	if (tool->itrace == NULL)
++		tool->itrace = process_event_itrace_stub;
+ }
+  
+ static void swap_sample_id_all(union perf_event *event, void *data)
+@@ -453,6 +491,29 @@ static void perf_event__tracing_data_swap(union perf_event *event,
+ 	event->tracing_data.size = bswap_32(event->tracing_data.size);
+ }
+ 
++static void perf_event__itrace_info_swap(union perf_event *event,
++					 bool sample_id_all __maybe_unused)
 +{
 +	size_t size;
 +
-+	memset(itrace_error, 0, sizeof(struct itrace_error_event));
++	event->itrace_info.type = bswap_32(event->itrace_info.type);
 +
-+	itrace_error->header.type = PERF_RECORD_ITRACE_ERROR;
-+	itrace_error->type = type;
-+	itrace_error->code = code;
-+	itrace_error->cpu = cpu;
-+	itrace_error->pid = pid;
-+	itrace_error->tid = tid;
-+	itrace_error->ip = ip;
-+	strlcpy(itrace_error->msg, msg, MAX_ITRACE_ERROR_MSG);
-+
-+	size = (void *)itrace_error->msg - (void *)itrace_error +
-+	       strlen(itrace_error->msg) + 1;
-+	itrace_error->header.size = PERF_ALIGN(size, sizeof(u64));
++	size = event->header.size;
++	size -= (void *)&event->itrace_info.priv - (void *)event;
++	mem_bswap_64(event->itrace_info.priv, size);
 +}
 +
- int perf_event__synthesize_itrace_info(struct itrace_record *itr,
- 				       struct perf_tool *tool,
- 				       struct perf_session *session,
-@@ -337,6 +361,37 @@ out_err:
- 	return -EINVAL;
- }
- 
-+size_t perf_event__fprintf_itrace_error(union perf_event *event, FILE *fp)
++static void perf_event__itrace_swap(union perf_event *event,
++				    bool sample_id_all __maybe_unused)
 +{
-+	struct itrace_error_event *e = &event->itrace_error;
-+	int ret;
-+
-+	ret = fprintf(fp, " Instruction trace error type %u", e->type);
-+	ret += fprintf(fp, " cpu %d pid %d tid %d ip %#"PRIx64" code %u: %s\n",
-+		       e->cpu, e->pid, e->tid, e->ip, e->code, e->msg);
-+	return ret;
++	event->itrace.size      = bswap_64(event->itrace.size);
++	event->itrace.offset    = bswap_64(event->itrace.offset);
++	event->itrace.reference = bswap_64(event->itrace.reference);
++	event->itrace.idx       = bswap_32(event->itrace.idx);
++	event->itrace.tid       = bswap_32(event->itrace.tid);
++	event->itrace.cpu       = bswap_32(event->itrace.cpu);
 +}
 +
-+int perf_event__process_itrace_error(struct perf_tool *tool __maybe_unused,
-+				     union perf_event *event,
-+				     struct perf_session *session)
-+{
-+	if (session->itrace)
-+		session->itrace->error_count += 1;
-+
-+	perf_event__fprintf_itrace_error(event, stdout);
-+	return 0;
-+}
-+
-+int perf_event__count_itrace_error(struct perf_tool *tool __maybe_unused,
-+				   union perf_event *event __maybe_unused,
-+				   struct perf_session *session)
-+{
-+	if (session->itrace)
-+		session->itrace->error_count += 1;
-+	return 0;
-+}
-+
- int itrace_mmap__read(struct itrace_mmap *mm, struct itrace_record *itr,
- 		      struct perf_tool *tool, process_itrace_t fn)
- {
-diff --git a/tools/perf/util/itrace.h b/tools/perf/util/itrace.h
-index 5abb85a..54b8607 100644
---- a/tools/perf/util/itrace.h
-+++ b/tools/perf/util/itrace.h
-@@ -33,6 +33,10 @@ struct option;
- struct record_opts;
- struct itrace_info_event;
+ typedef void (*perf_event__swap_op)(union perf_event *event,
+ 				    bool sample_id_all);
  
-+enum itrace_error_type {
-+	PERF_ITRACE_DECODER_ERROR = 1,
-+};
-+
- enum itrace_period_type {
- 	PERF_ITRACE_PERIOD_INSTRUCTIONS,
- 	PERF_ITRACE_PERIOD_TICKS,
-@@ -202,6 +206,10 @@ int itrace_record__info_fill(struct itrace_record *itr,
- void itrace_record__free(struct itrace_record *itr);
- u64 itrace_record__reference(struct itrace_record *itr);
+@@ -472,6 +533,8 @@ static perf_event__swap_op perf_event__swap_ops[] = {
+ 	[PERF_RECORD_HEADER_TRACING_DATA] = perf_event__tracing_data_swap,
+ 	[PERF_RECORD_HEADER_BUILD_ID]	  = NULL,
+ 	[PERF_RECORD_ID_INDEX]		  = perf_event__all64_swap,
++	[PERF_RECORD_ITRACE_INFO]	  = perf_event__itrace_info_swap,
++	[PERF_RECORD_ITRACE]		  = perf_event__itrace_swap,
+ 	[PERF_RECORD_HEADER_MAX]	  = NULL,
+ };
  
-+void itrace_synth_error(struct itrace_error_event *itrace_error, int type,
-+			int code, int cpu, pid_t pid, pid_t tid, u64 ip,
-+			const char *msg);
-+
- int perf_event__synthesize_itrace_info(struct itrace_record *itr,
- 				       struct perf_tool *tool,
- 				       struct perf_session *session,
-@@ -210,10 +218,18 @@ int perf_event__synthesize_itrace(struct perf_tool *tool,
- 				  perf_event__handler_t process,
- 				  size_t size, u64 offset, u64 ref, int idx,
- 				  u32 tid, u32 cpu);
-+int perf_event__process_itrace_error(struct perf_tool *tool,
-+				     union perf_event *event,
-+				     struct perf_session *session);
-+int perf_event__count_itrace_error(struct perf_tool *tool __maybe_unused,
-+				   union perf_event *event __maybe_unused,
-+				   struct perf_session *session);
- int itrace_parse_synth_opts(const struct option *opt, const char *str,
- 			    int unset);
- void itrace_synth_opts__set_default(struct itrace_synth_opts *synth_opts);
+@@ -932,6 +995,12 @@ static s64 perf_session__process_user_event(struct perf_session *session,
+ 		return tool->finished_round(tool, event, session);
+ 	case PERF_RECORD_ID_INDEX:
+ 		return tool->id_index(tool, event, session);
++	case PERF_RECORD_ITRACE_INFO:
++		return tool->itrace_info(tool, event, session);
++	case PERF_RECORD_ITRACE:
++		/* setup for reading amidst mmap */
++		lseek(fd, file_offset + event->header.size, SEEK_SET);
++		return tool->itrace(tool, event, session);
+ 	default:
+ 		return -EINVAL;
+ 	}
+diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
+index bb2708b..b734c1a 100644
+--- a/tools/perf/util/tool.h
++++ b/tools/perf/util/tool.h
+@@ -3,6 +3,8 @@
  
-+size_t perf_event__fprintf_itrace_error(union perf_event *event, FILE *fp);
+ #include <stdbool.h>
+ 
++#include <linux/types.h>
 +
- static inline int itrace__process_event(struct perf_session *session,
- 					union perf_event *event,
- 					struct perf_sample *sample,
+ struct perf_session;
+ union perf_event;
+ struct perf_evlist;
+@@ -25,6 +27,9 @@ typedef int (*event_attr_op)(struct perf_tool *tool,
+ typedef int (*event_op2)(struct perf_tool *tool, union perf_event *event,
+ 			 struct perf_session *session);
+ 
++typedef s64 (*event_op3)(struct perf_tool *tool, union perf_event *event,
++			 struct perf_session *session);
++
+ struct perf_tool {
+ 	event_sample	sample,
+ 			read;
+@@ -40,7 +45,9 @@ struct perf_tool {
+ 	event_op2	tracing_data;
+ 	event_op2	finished_round,
+ 			build_id,
+-			id_index;
++			id_index,
++			itrace_info;
++	event_op3	itrace;
+ 	bool		ordered_events;
+ 	bool		ordering_requires_timestamps;
+ };
 -- 
 1.9.1
 
