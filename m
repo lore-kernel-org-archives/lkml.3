@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaLLVlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 16:41:11 -0500
-Received: from www.sr71.net ([198.145.64.142]:54234 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908AbaLLVlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 16:41:10 -0500
-Message-ID: <548B60F4.6020903@sr71.net>
-Date: Fri, 12 Dec 2014 13:41:08 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751594AbaLLVmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 16:42:17 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:59716 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbaLLVmQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 16:42:16 -0500
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>
-Subject: Re: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit
- kernels
-References: <20141212191213.579887D2@viggo.jf.intel.com> <548B4E75.5010507@amacapital.net> <548B4FBE.5090101@sr71.net> <CALCETrW4f3EUYGG_zyzb7sZBXaoW3eHMpTn3dd3WpDgJq2HjtA@mail.gmail.com>
-In-Reply-To: <CALCETrW4f3EUYGG_zyzb7sZBXaoW3eHMpTn3dd3WpDgJq2HjtA@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
+References: <1418396066-31360-1-git-send-email-julien.chauveau@neo-technologies.fr>
+	<1418418352-3947-1-git-send-email-julien.chauveau@neo-technologies.fr>
+Date: Fri, 12 Dec 2014 22:42:15 +0100
+Message-ID: <CABgxDo+x-jjXYgPFPC3WB=3JcqzhmET-UPO5FEAdLn953ochKg@mail.gmail.com>
+Subject: Re: [PATCH v2] clk: rockchip: add CLK_IGNORE_UNUSED flag to fix USB Host
+From: Romain Perier <romain.perier@gmail.com>
+To: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "moderated list:ARM/Rockchip SoC..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "open list:COMMON CLK FRAMEWORK" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2014 12:48 PM, Andy Lutomirski wrote:
-> On Fri, Dec 12, 2014 at 12:27 PM, Dave Hansen <dave@sr71.net> wrote:
->> You want the same size structures with the same format for 32-bit and
->> 64-bit modes?
-> 
-> Yes.  Especially because programs can switch between 32-bit and 64-bit
-> mode entirely in userspace.  I don't know whether any do in practice,
-> but programs *can*.
-
-So, you want a 2GB of the 32-bit address space dedicated to a bounds
-directory, and half of the space for the bounds tables to be simply
-zero-filled unused address bits?  That seems, um, a bit unreasonable.
-
-> Or better yet: Intel could have skipped supporting it at all in 32-bit
-> mode.  
-
-So, we should not have this security feature for 32-bit apps... because
-it costs us 50 lines of code in the kernel to support?  Did you look at
-the diffstat?
-
-> Isn't mpx somewhat of an address space hog anyway?
-
-Yes, it will be troublesome for 32-bit apps that are already bumping up
-against the virtual address space size to support it.  But, really, how
-many of those *are* there these days?
+2014-12-12 22:05 GMT+01:00 Julien CHAUVEAU
+<julien.chauveau@neo-technologies.fr>:
+> This patch adds CLK_IGNORE_UNUSED flag to hclk_usb_peri, hclk_usbotg0
+> and hclk_usbotg1 because these clocks must remain enabled to use the
+> USB controllers in host mode.
+>
+> This fixes a regression introduced by commit 78eaf6095cc7
+> ("clk: rockchip: disable unused clocks").
+>
+> Signed-off-by: Julien CHAUVEAU <julien.chauveau@neo-technologies.fr>
+> ---
+> Changes since v1:
+> - update commit message: refer to commit ID instead of mailing list
+>
+>  drivers/clk/rockchip/clk-rk3188.c | 12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/clk/rockchip/clk-rk3188.c b/drivers/clk/rockchip/clk-rk3188.c
+> index c540789..25ddb09 100644
+> --- a/drivers/clk/rockchip/clk-rk3188.c
+> +++ b/drivers/clk/rockchip/clk-rk3188.c
+> @@ -430,8 +430,10 @@ static struct rockchip_clk_branch common_clk_branches[] __initdata = {
+>         GATE(0, "hclk_emem_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 7, GFLAGS),
+>         GATE(HCLK_EMAC, "hclk_emac", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 0, GFLAGS),
+>         GATE(HCLK_NANDC0, "hclk_nandc0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 9, GFLAGS),
+> -       GATE(0, "hclk_usb_peri", "hclk_peri", 0, RK2928_CLKGATE_CON(4), 5, GFLAGS),
+> -       GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 13, GFLAGS),
+> +       GATE(0, "hclk_usb_peri", "hclk_peri", CLK_IGNORE_UNUSED,
+> +                       RK2928_CLKGATE_CON(4), 5, GFLAGS),
+> +       GATE(HCLK_OTG0, "hclk_usbotg0", "hclk_peri", CLK_IGNORE_UNUSED,
+> +                       RK2928_CLKGATE_CON(5), 13, GFLAGS),
+>         GATE(HCLK_HSADC, "hclk_hsadc", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 5, GFLAGS),
+>         GATE(HCLK_PIDF, "hclk_pidfilter", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 6, GFLAGS),
+>         GATE(HCLK_SDMMC, "hclk_sdmmc", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 10, GFLAGS),
+> @@ -592,7 +594,8 @@ static struct rockchip_clk_branch rk3066a_clk_branches[] __initdata = {
+>         GATE(0, "hclk_cif1", "hclk_cpu", 0, RK2928_CLKGATE_CON(6), 6, GFLAGS),
+>         GATE(0, "hclk_hdmi", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+>
+> -       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(5), 14, GFLAGS),
+> +       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
+> +                       RK2928_CLKGATE_CON(5), 14, GFLAGS),
+>
+>         GATE(0, "aclk_cif1", "aclk_vio1", 0, RK2928_CLKGATE_CON(6), 7, GFLAGS),
+>
+> @@ -680,7 +683,8 @@ static struct rockchip_clk_branch rk3188_clk_branches[] __initdata = {
+>         GATE(0, "hclk_imem0", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 14, GFLAGS),
+>         GATE(0, "hclk_imem1", "hclk_cpu", 0, RK2928_CLKGATE_CON(4), 15, GFLAGS),
+>
+> -       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 3, GFLAGS),
+> +       GATE(HCLK_OTG1, "hclk_usbotg1", "hclk_peri", CLK_IGNORE_UNUSED,
+> +                       RK2928_CLKGATE_CON(7), 3, GFLAGS),
+>         GATE(HCLK_HSIC, "hclk_hsic", "hclk_peri", 0, RK2928_CLKGATE_CON(7), 4, GFLAGS),
+>
+>         GATE(PCLK_TIMER3, "pclk_timer3", "pclk_cpu", 0, RK2928_CLKGATE_CON(7), 9, GFLAGS),
+> --
+> 2.1.0
+Reviewed-by: Romain Perier <romain.perier@gmail.com>
+Tested-by: Romain Perier <romain.perier@gmail.com>
