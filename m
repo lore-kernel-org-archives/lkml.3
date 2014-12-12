@@ -1,337 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967838AbaLLNKK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 08:10:10 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:40365 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S967589AbaLLNKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 08:10:08 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhAGAA3oilQOAjMVdGdsb2JhbABZg1hYxXqFdgKBFBcBAQEBAREBa4QMAQEBBCcRHiIBEAgDFAMBCRYECwkDAgECAScWCAYNAQUCAognxniRHwEBAQEBBQEBAQEBARyPcgeEKQEEkT2GPDCIGoFXhguCUoFPKzCCQwEBAQ
-Message-ID: <548AE929.3040302@internode.on.net>
-Date: Fri, 12 Dec 2014 23:40:01 +1030
-From: Arthur Marsh <arthur.marsh@internode.on.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S967861AbaLLNQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 08:16:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967578AbaLLNQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 08:16:56 -0500
+Message-ID: <548AEA8E.6040100@redhat.com>
+Date: Fri, 12 Dec 2014 14:15:58 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Colin Watson <cjwatson@debian.org>, 772807@bugs.debian.org,
-        linux-kernel@vger.kernel.org, vapier@gentoo.org,
-        Joe Perches <joe@perches.com>
-Subject: Re: Bug#772807: binfmt-support: unable to close /proc/sys/fs/binfmt_misc/register:
- Invalid argument
-References: <20141211102439.5047.90481.reportbug@localhost> <20141211104408.GQ3020@riva.ucam.org> <548987B8.8090202@internode.on.net> <20141211124024.GR3020@riva.ucam.org> <548A6D63.3010106@internode.on.net> <20141212060138.GC22149@ZenIV.linux.org.uk>
-In-Reply-To: <20141212060138.GC22149@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-sunxi@googlegroups.com, dmitry.torokhov@gmail.com,
+        maxime.ripard@free-electrons.com, linux@arm.linux.org.uk
+CC: leafy.myeh@newbietech.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org,
+        vishnupatekar <VishnuPatekar0510@gmail.com>
+Subject: Re: [linux-sunxi] [PATCHv2 0/3] ARM:sunxi:ps2 Added support for A10/A20
+ ps2 controller.
+References: <1417907719-26775-1-git-send-email-VishnuPatekar0510@gmail.com>
+In-Reply-To: <1417907719-26775-1-git-send-email-VishnuPatekar0510@gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------000808020300080807030800"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------000808020300080807030800
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+
+Hi,
+
+On 07-12-14 00:15, vishnupatekar wrote:
+> Here is v2 of SUNXI PS2 controller support patch-set as with v1.
+
+So as promised I've run this on an A10 board, with a small fix to
+the interrupt property in the sun4i.dtsi file this works as is.
+
+This means that the sun7i compat should be dropped, and the sun4i
+compat used everywhere.
+
+I've created 3 fixup patches to do this, note one also renames / moves
+the bindings file as it is in the wrong place.
+
+I've attached the 3 fixup patches, pleasesquash these into your
+existing patches before posting the next version.
+
+Thanks & Regards,
+
+Hans
 
 
-Al Viro wrote on 12/12/14 16:31:
-> On Fri, Dec 12, 2014 at 02:51:55PM +1030, Arthur Marsh wrote:
->> 6b899c4e9a049dfca759d990bd53b14f81c3626c is the first bad commit
->> commit 6b899c4e9a049dfca759d990bd53b14f81c3626c
->> Author: Mike Frysinger <vapier@gentoo.org>
->> Date:   Wed Dec 10 15:52:08 2014 -0800
->>
->>      binfmt_misc: add comments & debug logs
->>
->>      When trying to develop a custom format handler, the errors returned all
->>      effectively get bucketed as EINVAL with no kernel messages.  The other
->>      errors (ENOMEM/EFAULT) are internal/obvious and basic.  Thus any time a
->>      bad handler is rejected, the developer has to walk the dense code and
->>      try to guess where it went wrong.  Needing to dive into kernel code is
->>      itself a fairly high barrier for a lot of people.
->>
->>      To improve this situation, let's deploy extensive pr_debug markers at
->>      logical parse points, and add comments to the dense parsing logic.  It
->>      let's you see exactly where the parsing aborts, the string the kernel
->>      received (useful when dealing with shell code), how it translated the
->>      buffers to binary data, and how it will apply the mask at runtime.
 >
-> ... and looking at it shows the following garbage:
->                  p[-1] = '\0';
-> -               if (!e->magic[0])
-> +               if (p == e->magic)
+> Changes in v2:
+> 1. added default n depends on ARCH_SUNXI || COMPILE_TEST in Kconfig.
+> 2. handled errors and free resources on errors.
+> 3. used BIT(x), DIV_ROUND_UP macros.
+> 4. corrected style errors.
+> 5. added support for A10 also, A10 and A2 have same properties of PS2 controller.
+> 6. by default commented ps20 and ps21 nodes,as ps20 pins conflict with HDMI
+>     connector on Lime2 Board.
+> 7. added compatible as allwinner,sun4i-a10-ps2.
+> 8. corrected the possible race condition.
 >
-> That code makes no sense whatsoever - if p *was* equal to e->magic, the
-> assignment before it would be obviously broken.  And a few lines later we
-> have another chunk just like that.
+> Patch 0 Summary: Allwinner A10/A20 PS2 controller. These modifications are
+> 	for PS2 host controller. IBM compliant IBM PS2 and AT-compatible
+> 	keyboard and mouse can be connected.
 >
-> Moreover, if you look at further context, you'll see that it's
->                  e->magic = p;
->                  p = scanarg(p, del);
->                  if (!p)
->                          sod off
->                  p[-1] = '\0';
->                  if (p == e->magic)
-> 			sod off
-> Now, that condition could be true only if scanarg(p, del) would return p,
-> right?  Let's take a look at scanarg():
-> static char *scanarg(char *s, char del)
-> {
->          char c;
+> Patch 1 device tree bindings.
 >
->          while ((c = *s++) != del) {
->                  if (c == '\\' && *s == 'x') {
->                          s++;
->                          if (!isxdigit(*s++))
->                                  return NULL;
->                          if (!isxdigit(*s++))
->                                  return NULL;
->                  }
->          }
->          return s;
-> }
+> Patch 2 adds support for sun7i ps2 driver.
 >
-> See that s++ in the loop condition?  There's no way in hell it would *not*
-> increment s.  If we return non-NULL, we know that c was equal to del *and*
-> c is equal to previous_value_of_s[0], i.e. s[-1].  IOW, return value points
-> to the byte following the first instance of delimeter starting at the argument.
+> Patch 3 device tree support for PS2 controller.
+>   1) Added A10/A20 ps2 nodes to the dtsi
+>   2) Added A10/A20 ps2 pinmux to the dtsi
+>   3) Added ps2 nodes to the lime2 dts file
 >
-> And p[-1] = '\0' replaces delimiter with NUL.  IOW, the checks used to be
-> correct.  And got buggered.
+> vishnupatekar (3):
+>    sunxi:dts-bindings:input:ps2 bindings for A10/A20 ps2.
+>    sunxi:drivers:input:ps2 Added sunxi A10/A20 ps2 driver
+>    ARM:dts:sunxi:ps2 dt nodes for A10/A20 PS2 controller.
 >
-> Subject: unfuck fs/binfmt_misc.c
->
-> Undo some of the "prettifying" braindamage.
->
-> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> ---
-> diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-> index 70789e1..a6b6697 100644
-> --- a/fs/binfmt_misc.c
-> +++ b/fs/binfmt_misc.c
-> @@ -5,6 +5,8 @@
->    *
->    * binfmt_misc detects binaries via a magic or filename extension and invokes
->    * a specified wrapper. See Documentation/binfmt_misc.txt for more details.
-> + *
-> + * Cetero censeo, checkpatch.pl esse delendam
->    */
->
->   #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> @@ -131,9 +133,8 @@ static int load_misc_binary(struct linux_binprm *bprm)
->   	int retval;
->   	int fd_binary = -1;
->
-> -	retval = -ENOEXEC;
->   	if (!enabled)
-> -		goto ret;
-> +		return -ENOEXEC;
->
->   	/* to keep locking time low, we copy the interpreter string */
->   	read_lock(&entries_lock);
-> @@ -142,12 +143,12 @@ static int load_misc_binary(struct linux_binprm *bprm)
->   		strlcpy(iname, fmt->interpreter, BINPRM_BUF_SIZE);
->   	read_unlock(&entries_lock);
->   	if (!fmt)
-> -		goto ret;
-> +		return -ENOEXEC;
->
->   	if (!(fmt->flags & MISC_FMT_PRESERVE_ARGV0)) {
->   		retval = remove_arg_zero(bprm);
->   		if (retval)
-> -			goto ret;
-> +			return retval;
->   	}
->
->   	if (fmt->flags & MISC_FMT_OPEN_BINARY) {
-> @@ -157,10 +158,9 @@ static int load_misc_binary(struct linux_binprm *bprm)
->   		 * to it
->   		 */
->   		fd_binary = get_unused_fd_flags(0);
-> -		if (fd_binary < 0) {
-> -			retval = fd_binary;
-> -			goto ret;
-> -		}
-> +		if (fd_binary < 0)
-> +			return fd_binary;
-> +
->   		fd_install(fd_binary, bprm->file);
->
->   		/* if the binary is not readable than enforce mm->dumpable=0
-> @@ -219,14 +219,13 @@ static int load_misc_binary(struct linux_binprm *bprm)
->   	if (retval < 0)
->   		goto error;
->
-> -ret:
->   	return retval;
->   error:
->   	if (fd_binary > 0)
->   		sys_close(fd_binary);
->   	bprm->interp_flags = 0;
->   	bprm->interp_data = 0;
-> -	goto ret;
-> +	return retval;
->   }
->
->   /* Command parsers */
-> @@ -250,6 +249,7 @@ static char *scanarg(char *s, char del)
->   				return NULL;
->   		}
->   	}
-> +	s[-1] = '\0';
->   	return s;
->   }
->
-> @@ -316,7 +316,7 @@ static Node *create_entry(const char __user *buffer, size_t count)
->
->   	memset(e, 0, sizeof(Node));
->   	if (copy_from_user(buf, buffer, count))
-> -		goto efault;
-> +		goto Efault;
->
->   	del = *p++;	/* delimeter */
->
-> @@ -329,13 +329,13 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   	e->name = p;
->   	p = strchr(p, del);
->   	if (!p)
-> -		goto einval;
-> +		goto Einval;
->   	*p++ = '\0';
->   	if (!e->name[0] ||
->   	    !strcmp(e->name, ".") ||
->   	    !strcmp(e->name, "..") ||
->   	    strchr(e->name, '/'))
-> -		goto einval;
-> +		goto Einval;
->
->   	pr_debug("register: name: {%s}\n", e->name);
->
-> @@ -350,10 +350,10 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   		e->flags = (1 << Enabled) | (1 << Magic);
->   		break;
->   	default:
-> -		goto einval;
-> +		goto Einval;
->   	}
->   	if (*p++ != del)
-> -		goto einval;
-> +		goto Einval;
->
->   	if (test_bit(Magic, &e->flags)) {
->   		/* Handle the 'M' (magic) format. */
-> @@ -362,21 +362,20 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   		/* Parse the 'offset' field. */
->   		s = strchr(p, del);
->   		if (!s)
-> -			goto einval;
-> +			goto Einval;
->   		*s++ = '\0';
->   		e->offset = simple_strtoul(p, &p, 10);
->   		if (*p++)
-> -			goto einval;
-> +			goto Einval;
->   		pr_debug("register: offset: %#x\n", e->offset);
->
->   		/* Parse the 'magic' field. */
->   		e->magic = p;
->   		p = scanarg(p, del);
->   		if (!p)
-> -			goto einval;
-> -		p[-1] = '\0';
-> -		if (p == e->magic)
-> -			goto einval;
-> +			goto Einval;
-> +		if (!e->magic[0])
-> +			goto Einval;
->   		if (USE_DEBUG)
->   			print_hex_dump_bytes(
->   				KBUILD_MODNAME ": register: magic[raw]: ",
-> @@ -386,9 +385,8 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   		e->mask = p;
->   		p = scanarg(p, del);
->   		if (!p)
-> -			goto einval;
-> -		p[-1] = '\0';
-> -		if (p == e->mask) {
-> +			goto Einval;
-> +		if (!e->mask[0]) {
->   			e->mask = NULL;
->   			pr_debug("register:  mask[raw]: none\n");
->   		} else if (USE_DEBUG)
-> @@ -405,9 +403,9 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   		e->size = string_unescape_inplace(e->magic, UNESCAPE_HEX);
->   		if (e->mask &&
->   		    string_unescape_inplace(e->mask, UNESCAPE_HEX) != e->size)
-> -			goto einval;
-> +			goto Einval;
->   		if (e->size + e->offset > BINPRM_BUF_SIZE)
-> -			goto einval;
-> +			goto Einval;
->   		pr_debug("register: magic/mask length: %i\n", e->size);
->   		if (USE_DEBUG) {
->   			print_hex_dump_bytes(
-> @@ -439,23 +437,23 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   		/* Skip the 'offset' field. */
->   		p = strchr(p, del);
->   		if (!p)
-> -			goto einval;
-> +			goto Einval;
->   		*p++ = '\0';
->
->   		/* Parse the 'magic' field. */
->   		e->magic = p;
->   		p = strchr(p, del);
->   		if (!p)
-> -			goto einval;
-> +			goto Einval;
->   		*p++ = '\0';
->   		if (!e->magic[0] || strchr(e->magic, '/'))
-> -			goto einval;
-> +			goto Einval;
->   		pr_debug("register: extension: {%s}\n", e->magic);
->
->   		/* Skip the 'mask' field. */
->   		p = strchr(p, del);
->   		if (!p)
-> -			goto einval;
-> +			goto Einval;
->   		*p++ = '\0';
->   	}
->
-> @@ -463,10 +461,10 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   	e->interpreter = p;
->   	p = strchr(p, del);
->   	if (!p)
-> -		goto einval;
-> +		goto Einval;
->   	*p++ = '\0';
->   	if (!e->interpreter[0])
-> -		goto einval;
-> +		goto Einval;
->   	pr_debug("register: interpreter: {%s}\n", e->interpreter);
->
->   	/* Parse the 'flags' field. */
-> @@ -474,17 +472,17 @@ static Node *create_entry(const char __user *buffer, size_t count)
->   	if (*p == '\n')
->   		p++;
->   	if (p != buf + count)
-> -		goto einval;
-> +		goto Einval;
->
->   	return e;
->
->   out:
->   	return ERR_PTR(err);
->
-> -efault:
-> +Efault:
->   	kfree(e);
->   	return ERR_PTR(-EFAULT);
-> -einval:
-> +Einval:
->   	kfree(e);
->   	return ERR_PTR(-EINVAL);
->   }
+>   .../bindings/input/allwinner,sunxi-ps2.txt         |   23 ++
+>   arch/arm/boot/dts/sun4i-a10.dtsi                   |   27 ++
+>   arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts    |   13 +
+>   arch/arm/boot/dts/sun7i-a20.dtsi                   |   29 ++
+>   drivers/input/serio/Kconfig                        |   10 +
+>   drivers/input/serio/Makefile                       |    1 +
+>   drivers/input/serio/sunxi-ps2.c                    |  364 ++++++++++++++++++++
+>   7 files changed, 467 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/input/allwinner,sunxi-ps2.txt
+>   create mode 100644 drivers/input/serio/sunxi-ps2.c
 >
 
-Thanks, I've successfully applied and built the patch and update-binfmts 
-works again.
+--------------000808020300080807030800
+Content-Type: text/x-patch;
+ name="0001-FIXUP-sunxi-dts-bindings-input-ps2-bindings-for-A10-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-FIXUP-sunxi-dts-bindings-input-ps2-bindings-for-A10-.pa";
+ filename*1="tch"
 
-Arthur.
+>From 85105ec25cfb0dcff102e579e00a0a6c38ac34e9 Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Fri, 12 Dec 2014 14:05:56 +0100
+Subject: [PATCH v2 1/4] FIXUP: "sunxi:dts-bindings:input:ps2 bindings for
+ A10/A20 ps2."
+
+2 fixups for: "sunxi:dts-bindings:input:ps2 bindings for A10/A20 ps2."
+
+1) dt bindings should use the compat string for the earliest version of the
+hardware which has the relevant hardware block, unless there are differences,
+the A10 and A20 ps2 controllers are identical, so for both sun4i-a10-ps2
+should be used as compat string.
+
+2) ps2 / serio bindings belong under Documentation/devicetree/bindings/serio
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ .../bindings/input/allwinner,sunxi-ps2.txt         | 23 ----------------------
+ .../bindings/serio/allwinner,sun4i-a10-ps2.txt     | 22 +++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 23 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/input/allwinner,sunxi-ps2.txt
+ create mode 100644 Documentation/devicetree/bindings/serio/allwinner,sun4i-a10-ps2.txt
+
+diff --git a/Documentation/devicetree/bindings/input/allwinner,sunxi-ps2.txt b/Documentation/devicetree/bindings/input/allwinner,sunxi-ps2.txt
+deleted file mode 100644
+index 3a8919a..0000000
+--- a/Documentation/devicetree/bindings/input/allwinner,sunxi-ps2.txt
++++ /dev/null
+@@ -1,23 +0,0 @@
+-* Device tree bindings for Allwinner A10, A20 PS2 host controller
+-
+-A20 PS2 is dual role controller(PS2 host and PS2 device). These bindings are for PS2 host controller.
+-IBM compliant IBM PS2 and AT-compatible keyboard and mouse can be connected.
+-
+-Required properties:
+-
+- - reg             : Offset and length of the register set for the device.
+- - compatible      : Should one of the following:
+-                     - "allwinner,sun7i-a20-ps2"
+-                     - "allwinner,sun4i-a10-ps2"
+- - interrupts      : The interrupt line connected to the PS2.
+- - clocks          : The gate clk connected to the PS2.
+-
+-
+-Example:
+-	ps20: ps2@0x01c2a000 {
+-		compatible = "allwinner,sun7i-a20-ps2";
+-		reg = <0x01c2a000 0x400>;
+-		interrupts = <0 62 4>;
+-		clocks = <&apb1_gates 6>;
+-		status = "disabled";
+-	};
+diff --git a/Documentation/devicetree/bindings/serio/allwinner,sun4i-a10-ps2.txt b/Documentation/devicetree/bindings/serio/allwinner,sun4i-a10-ps2.txt
+new file mode 100644
+index 0000000..c93ca90
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serio/allwinner,sun4i-a10-ps2.txt
+@@ -0,0 +1,22 @@
++* Device tree bindings for Allwinner A10, A20 PS2 host controller
++
++A10 PS2 is dual role controller (PS2 host and PS2 device). These bindings are
++for the PS2 host controller.
++IBM compliant IBM PS2 and AT-compatible keyboard and mouse can be connected.
++
++Required properties:
++
++ - reg             : Offset and length of the register set for the device.
++ - compatible      : "allwinner,sun4i-a10-ps2"
++ - interrupts      : The interrupt line connected to the PS2.
++ - clocks          : The gate clk connected to the PS2.
++
++
++Example:
++	ps20: ps2@0x01c2a000 {
++		compatible = "allwinner,sun4i-a10-ps2";
++		reg = <0x01c2a000 0x400>;
++		interrupts = <0 62 4>;
++		clocks = <&apb1_gates 6>;
++		status = "disabled";
++	};
+-- 
+2.1.0
+
+
+--------------000808020300080807030800
+Content-Type: text/x-patch;
+ name="0002-FIXUP-sunxi-drivers-input-ps2-Added-sunxi-A10-A20-ps.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0002-FIXUP-sunxi-drivers-input-ps2-Added-sunxi-A10-A20-ps.pa";
+ filename*1="tch"
+
+>From 0eecd5e763278a59c4533e576ac1c9616310c21e Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Fri, 12 Dec 2014 14:11:56 +0100
+Subject: [PATCH v2 2/4] FIXUP: "sunxi:drivers:input:ps2 Added sunxi A10/A20
+ ps2 driver"
+
+dt bindings should use the compat string for the earliest version of the
+hardware which has the relevant hardware block, unless there are differences,
+the A10 and A20 ps2 controllers are identical, so for both sun4i-a10-ps2
+should be used as compat string, drop the sun7i-a20-ps2 compat string.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ drivers/input/serio/sunxi-ps2.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/input/serio/sunxi-ps2.c b/drivers/input/serio/sunxi-ps2.c
+index 4cd89ae..cb89d80 100644
+--- a/drivers/input/serio/sunxi-ps2.c
++++ b/drivers/input/serio/sunxi-ps2.c
+@@ -340,7 +340,6 @@ static int sunxips2_remove(struct platform_device *pdev)
+ 
+ /* Match table for of_platform binding */
+ static const struct of_device_id sunxips2_of_match[] = {
+-	{ .compatible = "allwinner,sun7i-a20-ps2", },
+ 	{ .compatible = "allwinner,sun4i-a10-ps2", },
+ 	{ },
+ };
+-- 
+2.1.0
+
+
+--------------000808020300080807030800
+Content-Type: text/x-patch;
+ name="0003-FIXUP-ARM-dts-sunxi-ps2-dt-nodes-for-A10-A20-PS2-con.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0003-FIXUP-ARM-dts-sunxi-ps2-dt-nodes-for-A10-A20-PS2-con.pa";
+ filename*1="tch"
+
+>From 45985183f3e96adf1c846c7bbde32647367024dc Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hdegoede@redhat.com>
+Date: Fri, 12 Dec 2014 14:01:43 +0100
+Subject: [PATCH v2 3/4] FIXUP: "ARM:dts:sunxi:ps2 dt nodes for A10/A20 PS2
+ controller."
+
+2 fixups for: "ARM:dts:sunxi:ps2 dt nodes for A10/A20 PS2 controller."
+
+1) Fixup the sun4i ps/2 nodes interrupt property, sun4i interrupts take
+only 1 specifier
+
+2) dt bindings should use the compat string for the earliest version of the
+hardware which has the relevant hardware block, unless there are differences,
+the A10 and A20 ps2 controllers are identical, so for both sun4i-a10-ps2
+should be used as compat string, update the sun7i.dtsi ps2 entries to
+use the sun4i-a10-ps2 compat string.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+---
+ arch/arm/boot/dts/sun4i-a10.dtsi | 4 ++--
+ arch/arm/boot/dts/sun7i-a20.dtsi | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
+index c04c117..e8cd6db 100644
+--- a/arch/arm/boot/dts/sun4i-a10.dtsi
++++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+@@ -818,14 +818,14 @@
+ 		ps20: ps2@0x01c2a000 {
+ 			compatible = "allwinner,sun4i-a10-ps2";
+ 			reg = <0x01c2a000 0x400>;
+-			interrupts = <0 62 4>;
++			interrupts = <62>;
+ 			clocks = <&apb1_gates 6>;
+ 			status = "disabled";
+ 		};
+ 		ps21: ps2@0x01c2a400 {
+ 			compatible = "allwinner,sun4i-a10-ps2";
+ 			reg = <0x01c2a400 0x400>;
+-			interrupts = <0 63 4>;
++			interrupts = <63>;
+ 			clocks = <&apb1_gates 7>;
+ 			status = "disabled";
+ 		};
+diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
+index 4417c8c3..d54d684 100644
+--- a/arch/arm/boot/dts/sun7i-a20.dtsi
++++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+@@ -1114,14 +1114,14 @@
+ 			interrupts = <1 9 0xf04>;
+ 		};
+ 		ps20: ps2@0x01c2a000 {
+-			compatible = "allwinner,sun7i-a20-ps2";
++			compatible = "allwinner,sun4i-a10-ps2";
+ 			reg = <0x01c2a000 0x400>;
+ 			interrupts = <0 62 4>;
+ 			clocks = <&apb1_gates 6>;
+ 			status = "disabled";
+ 		};
+ 		ps21: ps2@0x01c2a400 {
+-			compatible = "allwinner,sun7i-a20-ps2";
++			compatible = "allwinner,sun4i-a10-ps2";
+ 			reg = <0x01c2a400 0x400>;
+ 			interrupts = <0 63 4>;
+ 			clocks = <&apb1_gates 7>;
+-- 
+2.1.0
+
+
+--------------000808020300080807030800--
