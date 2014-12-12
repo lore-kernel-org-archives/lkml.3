@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761010AbaLLHDB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 02:03:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51699 "EHLO
+	id S1760994AbaLLHDA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 02:03:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51703 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758233AbaLLGQw (ORCPT
+	by vger.kernel.org with ESMTP id S1758337AbaLLGQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:16:52 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johan Hovold" <johan@kernel.org>,
-        "Joe Savage" <joe.savage@goketra.com>
+CC: akpm@linux-foundation.org, "Andreas Bomholtz" <andreas@seluxit.com>,
+        "Johan Hovold" <johan@kernel.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.941139085@decadent.org.uk>
+Message-ID: <lsq.1418364865.69484965@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 012/164] USB: serial: cp210x: added Ketra N1 wireless
- interface support
+Subject: [PATCH 3.2 013/164] USB: cp210x: add support for Seluxit USB dongle
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,14 +31,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Savage <joe.savage@goketra.com>
+From: Andreas Bomholtz <andreas@seluxit.com>
 
-commit bfc2d7dfdd761ae3beccdb26abebe03cef042f46 upstream.
+commit dee80ad12d2b1b304286a707fde7ab05d1fc7bab upstream.
 
-Added support for Ketra N1 wireless interface, which uses the
-Silicon Labs' CP2104 USB to UART bridge with customized PID 8946.
+Added the Seluxit ApS USB Serial Dongle to cp210x driver.
 
-Signed-off-by: Joe Savage <joe.savage@goketra.com>
+Signed-off-by: Andreas Bomholtz <andreas@seluxit.com>
 Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
@@ -48,12 +46,12 @@ Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 
 --- a/drivers/usb/serial/cp210x.c
 +++ b/drivers/usb/serial/cp210x.c
-@@ -128,6 +128,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
-+	{ USB_DEVICE(0x10C4, 0x8946) }, /* Ketra N1 Wireless Interface */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+@@ -162,6 +162,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1B1C, 0x1C00) }, /* Corsair USB Dongle */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
++	{ USB_DEVICE(0x1D6F, 0x0010) }, /* Seluxit ApS RF Dongle */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+ 	{ USB_DEVICE(0x1FB9, 0x0100) }, /* Lake Shore Model 121 Current Source */
 
