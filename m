@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934245AbaLLGVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 01:21:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51858 "EHLO
+	id S934173AbaLLGVE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 01:21:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51866 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759483AbaLLGRR (ORCPT
+	by vger.kernel.org with ESMTP id S1759484AbaLLGRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Dec 2014 01:17:17 -0500
 Content-Type: text/plain; charset="UTF-8"
@@ -13,15 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alexey Dobriyan" <adobriyan@gmail.com>,
-        "Hannes Frederic Sowa" <hannes@stressinduktion.org>,
-        "Daniel Borkmann" <dborkman@redhat.com>, zatimend@hotmail.co.uk,
-        "Theodore Ts'o" <tytso@mit.edu>
+CC: akpm@linux-foundation.org, "Sasha Levin" <sasha.levin@oracle.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>
 Date: Fri, 12 Dec 2014 06:14:25 +0000
-Message-ID: <lsq.1418364865.703718035@decadent.org.uk>
+Message-ID: <lsq.1418364865.127924701@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 065/164] random: add and use memzero_explicit() for
- clearing data
+Subject: [PATCH 3.2 059/164] kernel: add support for gcc 5
 In-Reply-To: <lsq.1418364865.554543691@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:c97:8151:cc89:c28d
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,105 +31,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit d4c5efdb97773f59a2b711754ca0953f24516739 upstream.
+commit 71458cfc782eafe4b27656e078d379a34e472adf upstream.
 
-zatimend has reported that in his environment (3.16/gcc4.8.3/corei7)
-memset() calls which clear out sensitive data in extract_{buf,entropy,
-entropy_user}() in random driver are being optimized away by gcc.
+We're missing include/linux/compiler-gcc5.h which is required now
+because gcc branched off to v5 in trunk.
 
-Add a helper memzero_explicit() (similarly as explicit_bzero() variants)
-that can be used in such cases where a variable with sensitive data is
-being cleared out in the end. Other use cases might also be in crypto
-code. [ I have put this into lib/string.c though, as it's always built-in
-and doesn't need any dependencies then. ]
+Just copy the relevant bits out of include/linux/compiler-gcc4.h,
+no new code is added as of now.
 
-Fixes kernel bugzilla: 82041
+This fixes a build error when using gcc 5.
 
-Reported-by: zatimend@hotmail.co.uk
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-[bwh: Backported to 3.2:
- - extract_buf() needs to use this for the 'extract' array as well
- - Adjust context]
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -954,8 +954,8 @@ static void extract_buf(struct entropy_s
- 	 * pool while mixing, and hash one final time.
- 	 */
- 	sha_transform(hash.w, extract, workspace);
--	memset(extract, 0, sizeof(extract));
--	memset(workspace, 0, sizeof(workspace));
-+	memzero_explicit(extract, sizeof(extract));
-+	memzero_explicit(workspace, sizeof(workspace));
- 
- 	/*
- 	 * In case the hash function has some recognizable output
-@@ -978,7 +978,7 @@ static void extract_buf(struct entropy_s
- 	}
- 
- 	memcpy(out, &hash, EXTRACT_SIZE);
--	memset(&hash, 0, sizeof(hash));
-+	memzero_explicit(&hash, sizeof(hash));
- }
- 
- static ssize_t extract_entropy(struct entropy_store *r, void *buf,
-@@ -1010,7 +1010,7 @@ static ssize_t extract_entropy(struct en
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
-@@ -1047,7 +1047,7 @@ static ssize_t extract_entropy_user(stru
- 	}
- 
- 	/* Wipe data just returned from memory */
--	memset(tmp, 0, sizeof(tmp));
-+	memzero_explicit(tmp, sizeof(tmp));
- 
- 	return ret;
- }
---- a/include/linux/string.h
-+++ b/include/linux/string.h
-@@ -144,5 +144,7 @@ static inline bool strstarts(const char
- {
- 	return strncmp(str, prefix, strlen(prefix)) == 0;
- }
+ include/linux/compiler-gcc5.h | 66 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+ create mode 100644 include/linux/compiler-gcc5.h
+
+--- /dev/null
++++ b/include/linux/compiler-gcc5.h
+@@ -0,0 +1,66 @@
++#ifndef __LINUX_COMPILER_H
++#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
++#endif
 +
-+void memzero_explicit(void *s, size_t count);
- #endif
- #endif /* _LINUX_STRING_H_ */
---- a/lib/string.c
-+++ b/lib/string.c
-@@ -583,6 +583,22 @@ void *memset(void *s, int c, size_t coun
- EXPORT_SYMBOL(memset);
- #endif
- 
-+/**
-+ * memzero_explicit - Fill a region of memory (e.g. sensitive
-+ *		      keying data) with 0s.
-+ * @s: Pointer to the start of the area.
-+ * @count: The size of the area.
++#define __used				__attribute__((__used__))
++#define __must_check			__attribute__((warn_unused_result))
++#define __compiler_offsetof(a, b)	__builtin_offsetof(a, b)
++
++/* Mark functions as cold. gcc will assume any path leading to a call
++   to them will be unlikely.  This means a lot of manual unlikely()s
++   are unnecessary now for any paths leading to the usual suspects
++   like BUG(), printk(), panic() etc. [but let's keep them for now for
++   older compilers]
++
++   Early snapshots of gcc 4.3 don't support this and we can't detect this
++   in the preprocessor, but we can live with this because they're unreleased.
++   Maketime probing would be overkill here.
++
++   gcc also has a __attribute__((__hot__)) to move hot functions into
++   a special section, but I don't see any sense in this right now in
++   the kernel context */
++#define __cold			__attribute__((__cold__))
++
++#define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
++
++#ifndef __CHECKER__
++# define __compiletime_warning(message) __attribute__((warning(message)))
++# define __compiletime_error(message) __attribute__((error(message)))
++#endif /* __CHECKER__ */
++
++/*
++ * Mark a position in code as unreachable.  This can be used to
++ * suppress control flow warnings after asm blocks that transfer
++ * control elsewhere.
 + *
-+ * memzero_explicit() doesn't need an arch-specific version as
-+ * it just invokes the one of memset() implicitly.
++ * Early snapshots of gcc 4.5 don't support this and we can't detect
++ * this in the preprocessor, but we can live with this because they're
++ * unreleased.  Really, we need to have autoconf for the kernel.
 + */
-+void memzero_explicit(void *s, size_t count)
-+{
-+	memset(s, 0, count);
-+	OPTIMIZER_HIDE_VAR(s);
-+}
-+EXPORT_SYMBOL(memzero_explicit);
++#define unreachable() __builtin_unreachable()
 +
- #ifndef __HAVE_ARCH_MEMCPY
- /**
-  * memcpy - Copy one area of memory to another
++/* Mark a function definition as prohibited from being cloned. */
++#define __noclone	__attribute__((__noclone__))
++
++/*
++ * Tell the optimizer that something else uses this function or variable.
++ */
++#define __visible __attribute__((externally_visible))
++
++/*
++ * GCC 'asm goto' miscompiles certain code sequences:
++ *
++ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
++ *
++ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
++ * Fixed in GCC 4.8.2 and later versions.
++ *
++ * (asm goto is automatically volatile - the naming reflects this.)
++ */
++#define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
++
++#ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
++#define __HAVE_BUILTIN_BSWAP32__
++#define __HAVE_BUILTIN_BSWAP64__
++#define __HAVE_BUILTIN_BSWAP16__
++#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
 
