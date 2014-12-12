@@ -1,109 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966372AbaLLLck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 06:32:40 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:48089 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966313AbaLLLci (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 06:32:38 -0500
+	id S966502AbaLLLdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 06:33:11 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50143 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966281AbaLLLdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 06:33:08 -0500
+Date: Fri, 12 Dec 2014 12:33:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        x86@kernel.org, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [patch 1/4] x86, pci, acpi: Redo sanity checks for root brigde
+ probing
+Message-ID: <20141212113304.GA30699@pd.tnic>
+References: <20141211191853.613107396@linutronix.de>
+ <20141211193112.547808552@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Date: Fri, 12 Dec 2014 12:32:30 +0100
-From: Stefan Agner <stefan@agner.ch>
-To: chris@printf.net, ulf.hansson@linaro.org, anton@enomsg.org
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rmk+kernel@arm.linux.org.uk, shawn.guo@linaro.org,
-        b29396@freescale.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] mmc: sdhci-pltfm: fix abort due to missing runtime PM
-In-Reply-To: <1417538845-10867-1-git-send-email-stefan@agner.ch>
-References: <1417538845-10867-1-git-send-email-stefan@agner.ch>
-Message-ID: <66cd0a564e08d507210a6806c91d3bd3@agner.ch>
-User-Agent: Roundcube Webmail/1.0.3
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Dec 12 12:31:45 2014
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 548ad22112811760017828
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141211193112.547808552@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-12-02 17:47, Stefan Agner wrote:
-> When entering suspend while the device is in runtime PM, the
-> sdhci_[suspend|resume]_host function are called without taking
-> care of runtime PM. On Vybrid SoC this leads to external abort
-> since during runtime suspend, the clocks for this peripheral
-> are disabled.
+On Thu, Dec 11, 2014 at 07:48:18PM -0000, Thomas Gleixner wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
 > 
-> [   37.772967] Unhandled fault: imprecise external abort (0x1c06) at 0x76f5f000
-> [   37.780304] Internal error: : 1c06 [#1] ARM
-> [   37.784670] Modules linked in:
-> [   37.787908] CPU: 0 PID: 428 Comm: sh Not tainted
-> 3.18.0-rc5-00119-geefd097-dirty #1540
-> [   37.796142] task: 8e246c00 ti: 8ca6c000 task.ti: 8ca6c000
-> [   37.801785] PC is at esdhc_writel_le+0x40/0xec
-> [   37.806431] LR is at sdhci_set_card_detection+0xe0/0xe4
-> [   37.811877] pc : [<803f0584>]    lr : [<803eaaa0>]    psr: 400f0013
-> [   37.811877] sp : 8ca6dd28  ip : 00000001  fp : 8ca6dd3c
-> [   37.823766] r10: 807a233c  r9 : 00000000  r8 : 8e8b7210
-> [   37.829194] r7 : 802d8a08  r6 : 8082e928  r5 : 00000000  r4 : 00000002
-> [   37.835974] r3 : 8ea34e90  r2 : 00000038  r1 : 00000000  r0 : 8ea32ac0
-> ...
+> commit e22ce93870de ("x86, PCI, ACPI: Kill private function
+> resource_to_addr() in arch/x86/pci/acpi.c") dropped the sanity checks
+> for resources initialized via acpi_dev_resource_memory().
 > 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
+> It further dropped a check for address_length = 0 for the resources
+> which are initialized via acpi_dev_resource_address_space().
+> 
+> For translated addresses the range check operates on the non
+> translated end address. Assign orig_end after adding the translation
+> offset.
+> 
+> This causes that invalid resources are not dropped and the range check
+> for translated addresses fails.
+> 
+> [ tglx: Rewrote changelog.
+> 
+>   Added the address_length check to the x86 code and not into
+>   acpi_dev_resource_address_space(). While the acpi function should
+>   check this, we want to have a proper check which sets the
+>   IORESOURCE_DISABLED bit as it does for IO resources.
+> 
+>   Removed the pointless memset of addr. acpi_resource_to_address64()
+>   either fails or fills it completely ]
+> 
+> Fixes: commit e22ce93870de ("x86, PCI, ACPI: Kill private function resource_to_addr() in arch/x86/pci/acpi.c").
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Link: http://lkml.kernel.org/r/CAE9FiQWaL1Qu1eP-fQV784ucy+r-65AZ95VyiUrefn0dNtfLDw@mail.gmail.com
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
 > ---
-> Not really sure this is the right place to fix this. The function now
-> ended up to be identically to the implementations in sdhci-pxav3.c...
-
-Any thoughts on this?
-
+>  arch/x86/pci/acpi.c |   63 ++++++++++++++++++++++++++--------------------------
+>  1 file changed, 32 insertions(+), 31 deletions(-)
 > 
->  drivers/mmc/host/sdhci-pltfm.c | 17 +++++++++++++++--
->  1 file changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
-> index c5b01d6..0bc864e 100644
-> --- a/drivers/mmc/host/sdhci-pltfm.c
-> +++ b/drivers/mmc/host/sdhci-pltfm.c
-> @@ -31,6 +31,7 @@
->  #include <linux/err.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
-> +#include <linux/pm_runtime.h>
->  #ifdef CONFIG_PPC
->  #include <asm/machdep.h>
->  #endif
-> @@ -237,17 +238,29 @@ EXPORT_SYMBOL_GPL(sdhci_pltfm_unregister);
->  #ifdef CONFIG_PM
->  int sdhci_pltfm_suspend(struct device *dev)
+> Index: tip/arch/x86/pci/acpi.c
+> ===================================================================
+> --- tip.orig/arch/x86/pci/acpi.c
+> +++ tip/arch/x86/pci/acpi.c
+> @@ -221,10 +221,9 @@ static void teardown_mcfg_map(struct pci
+>  static acpi_status count_resource(struct acpi_resource *acpi_res, void *data)
 >  {
-> +	int ret;
->  	struct sdhci_host *host = dev_get_drvdata(dev);
+>  	struct pci_root_info *info = data;
+> -	struct resource r = {
+> -		.flags = 0
+> -	};
+> +	struct resource r;
 >  
-> -	return sdhci_suspend_host(host);
-> +	pm_runtime_get_sync(dev);
-> +	ret = sdhci_suspend_host(host);
-> +	pm_runtime_mark_last_busy(dev);
-> +	pm_runtime_put_autosuspend(dev);
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(sdhci_pltfm_suspend);
->  
->  int sdhci_pltfm_resume(struct device *dev)
+> +	memset(&r, 0, sizeof(r));
+>  	if (!acpi_dev_resource_memory(acpi_res, &r) &&
+>  	    !acpi_dev_resource_address_space(acpi_res, &r))
+>  		return AE_OK;
+> @@ -239,14 +238,13 @@ static acpi_status setup_resource(struct
 >  {
-> +	int ret;
->  	struct sdhci_host *host = dev_get_drvdata(dev);
+>  	struct pci_root_info *info = data;
+>  	u64 translation_offset = 0;
+> -	struct resource r = {
+> -		.flags = 0
+> -	};
+> +	struct resource r;
+> +	u64 orig_end;
 >  
-> -	return sdhci_resume_host(host);
-> +	pm_runtime_get_sync(dev);
-> +	ret = sdhci_resume_host(host);
-> +	pm_runtime_mark_last_busy(dev);
-> +	pm_runtime_put_autosuspend(dev);
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(sdhci_pltfm_resume);
+> +	memset(&r, 0, sizeof(r));
+>  	if (acpi_dev_resource_memory(acpi_res, &r)) {
+> -		r.flags &= IORESOURCE_MEM | IORESOURCE_IO;
+> +		r.flags &= IORESOURCE_MEM;
 
+As you pointed out on IRC, the &= is kinda ass-backwards logically but
+I don't understand the big picture yet to know what happens with this
+resource when it gets copied into the root a bit further down:
+
+	...
+        info->res[info->res_num] = r;
+
+and what a *cleared* IORESOURCE_MEM flag for a memory resource means...
+
+>  	} else if (acpi_dev_resource_address_space(acpi_res, &r)) {
+> -		u64 orig_end;
+>  		struct acpi_resource_address64 addr;
+>  
+>  		r.flags &= IORESOURCE_MEM | IORESOURCE_IO;
+> @@ -256,40 +254,43 @@ static acpi_status setup_resource(struct
+>  		if (ACPI_FAILURE(acpi_resource_to_address64(acpi_res, &addr)))
+>  			return AE_OK;
+>  
+> +		if (!addr.address_length)
+> +			return AE_OK;
+> +
+
+We have an
+                if (r.flags == 0)
+
+test above this - might change it to
+
+		if (!r.flags)
+
+for consistency.
+
+>  		if (addr.resource_type == ACPI_MEMORY_RANGE &&
+>  		    addr.info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+>  			r.flags |= IORESOURCE_PREFETCH;
+>  
+>  		translation_offset = addr.translation_offset;
+> -		orig_end = r.end;
+>  		r.start += translation_offset;
+>  		r.end += translation_offset;
+> -
+> -		/* Exclude non-addressable range or non-addressable portion of range */
+> -		r.end = min(r.end, iomem_resource.end);
+> -		if (r.end <= r.start) {
+> -			dev_info(&info->bridge->dev,
+> -				"host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
+> -				 (unsigned long long)r.start, orig_end);
+> -			return AE_OK;
+> -		} else if (orig_end != r.end) {
+> -			dev_info(&info->bridge->dev,
+> -				"host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
+> -				 (unsigned long long)r.start, orig_end,
+> -				 (unsigned long long)r.end + 1, orig_end);
+> -		}
+> +	} else {
+> +		return AE_OK;
+>  	}
+>  
+> -	if (r.flags && resource_size(&r)) {
+> -		r.name = info->name;
+> -		info->res[info->res_num] = r;
+> -		info->res_offset[info->res_num] = translation_offset;
+> -		info->res_num++;
+> -		if (!pci_use_crs)
+> -			dev_printk(KERN_DEBUG, &info->bridge->dev,
+> -				   "host bridge window %pR (ignored)\n", &r);
+> +	/* Exclude non-addressable range or non-addressable portion of range */
+> +	orig_end = r.end;
+> +	r.end = min(r.end, iomem_resource.end);
+> +	if (r.end <= r.start) {
+> +		dev_info(&info->bridge->dev,
+> +			"host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
+> +			 (unsigned long long)r.start, orig_end);
+> +		return AE_OK;
+> +	} else if (orig_end != r.end) {
+> +		dev_info(&info->bridge->dev,
+> +			"host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
+> +			 (unsigned long long)r.start, orig_end,
+> +			 (unsigned long long)r.end + 1, orig_end);
+
+This hunk could be made a little more readable (diff ontop):
+
+---
+Index: b/arch/x86/pci/acpi.c
+===================================================================
+--- a/arch/x86/pci/acpi.c	2014-12-12 12:25:56.036682117 +0100
++++ b/arch/x86/pci/acpi.c	2014-12-12 12:25:11.892683404 +0100
+@@ -270,26 +270,29 @@ static acpi_status setup_resource(struct
+ 
+ 	/* Exclude non-addressable range or non-addressable portion of range */
+ 	orig_end = r.end;
+-	r.end = min(r.end, iomem_resource.end);
++	r.end	 = min(r.end, iomem_resource.end);
++
+ 	if (r.end <= r.start) {
+ 		dev_info(&info->bridge->dev,
+ 			"host bridge window [%#llx-%#llx] (ignored, not CPU addressable)\n",
+ 			 (unsigned long long)r.start, orig_end);
+ 		return AE_OK;
+-	} else if (orig_end != r.end) {
++	}
++
++	if (orig_end != r.end) {
+ 		dev_info(&info->bridge->dev,
+ 			"host bridge window [%#llx-%#llx] ([%#llx-%#llx] ignored, not CPU addressable)\n",
+ 			 (unsigned long long)r.start, orig_end,
+ 			 (unsigned long long)r.end + 1, orig_end);
+ 	}
+ 
++	if (!pci_use_crs)
++		dev_printk(KERN_DEBUG, &info->bridge->dev, "host bridge window %pR (ignored)\n", &r);
++
+ 	r.name = info->name;
+ 	info->res[info->res_num] = r;
+ 	info->res_offset[info->res_num] = translation_offset;
+ 	info->res_num++;
+-	if (!pci_use_crs)
+-		dev_printk(KERN_DEBUG, &info->bridge->dev,
+-			"host bridge window %pR (ignored)\n", &r);
+ 
+ 	return AE_OK;
+ }
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
