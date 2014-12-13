@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965784AbaLMHgo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 02:36:44 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:48366 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965655AbaLMHgm (ORCPT
+	id S965832AbaLMHnj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 02:43:39 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:62448 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965655AbaLMHni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 02:36:42 -0500
-Date: Sat, 13 Dec 2014 08:36:34 +0100
+	Sat, 13 Dec 2014 02:43:38 -0500
+Date: Sat, 13 Dec 2014 08:43:32 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Cc: David Lang <david@lang.hm>, Dave Jones <davej@redhat.com>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
         Sasha Levin <sasha.levin@oracle.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched: Fix lost reschedule in __cond_resched()
-Message-ID: <20141213073634.GD32572@gmail.com>
-References: <20141203184111.GA32005@redhat.com>
- <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
- <20141205171501.GA1320@redhat.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141213074332.GE32572@gmail.com>
+References: <20141205171501.GA1320@redhat.com>
  <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
  <1417806247.4845.1@mail.thefacebook.com>
  <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
@@ -29,10 +28,12 @@ References: <20141203184111.GA32005@redhat.com>
  <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
  <20141212185454.GB4716@redhat.com>
  <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+ <alpine.DEB.2.02.1412121157060.18579@nftneq.ynat.uz>
+ <CA+55aFwLZi-JXAx9U-6rPPqoD1rmFjbzhv4acA9NKWEKo-UPRg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+In-Reply-To: <CA+55aFwLZi-JXAx9U-6rPPqoD1rmFjbzhv4acA9NKWEKo-UPRg@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -41,66 +42,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> I'm also not sure if the bug ever happens with preemption 
-> disabled. Sasha, was that you who reported that you cannot 
-> reproduce it without preemption? It strikes me that there's a 
-> race condition in __cond_resched() wrt preemption, for example: 
-> we do
+> On Fri, Dec 12, 2014 at 11:58 AM, David Lang <david@lang.hm> wrote:
+> >
+> > If the machine has NOHZ and has a cpu bound userspace task, 
+> > it could take quite a while before userspace would trigger a 
+> > reschedule (at least if I've understood the comments on this 
+> > thread properly)
 > 
->         __preempt_count_add(PREEMPT_ACTIVE);
->         __schedule();
->         __preempt_count_sub(PREEMPT_ACTIVE);
+> The thing is, we'd have to return to user space for that to 
+> happen. And when we do that, we check the "should we schedule" 
+> flag again. So races like this really shouldn't matter, but 
+> there could be something kind-of-similar that just ends up 
+> causing a wakeup to be delayed.
+
+Furthermore there ought to be a scheduler tick active in that 
+case - which won't be as fast as an immediate reschedule, but 
+fast enough to beat the softlockup watchdog's threshold of 20 
+seconds or so.
+
+That is why I think it would be interesting to examine how the 
+locked up state looks like: is the system truly locked up, 
+impossible to log in to, locks held but not released, etc., or is 
+the lockup transient?
+
+> But it would need to be delayed for seconds (for the RCU 
+> threads) or for tens of seconds (for the watchdog) to matter.
 > 
-> and in between the __schedule() and __preempt_count_sub(), if 
-> an interrupt comes in and wakes up some important process, it 
-> won't reschedule (because preemption is active), but then we 
-> enable preemption again and don't check whether we should 
-> reschedule (again), and we just go on our merry ways.
+> Which just seems unlikely. Even the "very high load" thing 
+> shouldn't really matter, since while that could delay one 
+> particular thread being scheduled, it shouldn't delay the next 
+> "should we schedule" test. In fact, high load would normally be 
+> extected to make the next "should we schedule" come faster.
+> 
+> But this is where some load calculation overflow might screw 
+> things up, of course.
 
-Indeed, that's a really good find regardless of whether it's the 
-source of these lockups - the (untested) patch below ought to 
-cure that.
-
-> Now, I don't see how that could really matter for a long time - 
-> returning to user space will check need_resched, and sleeping 
-> will obviously force a reschedule anyway, so these kinds of 
-> races should at most delay things by just a tiny amount, but 
-> maybe there is some case where we screw up in a bigger way. So 
-> I do *not* believe that the one in __cond_resched() matters, 
-> but I'm giving it as an example of the kind of things that 
-> could go wrong.
-
-(as you later note) NOHZ is somewhat special in this regard, 
-because there we try really hard not to run anything 
-periodically, so a lost reschedule will matter more.
-
-But ... I'd be surprised if this patch made a difference: it 
-should normally not be possible to go idle with tasks on the 
-runqueue (even with this bug present), and with at least one busy 
-task on the CPU we get the regular scheduler tick which ought to 
-hide such latencies.
-
-It's nevertheless a good thing to fix, I'm just not sure it's the 
-root cause of the observed lockup here.
+Also, the percpu watchdog threads are SCHED_FIFO:99, woken up 
+through percpu hrtimers, which are not easy to delay through high 
+SCHED_OTHER load.
 
 Thanks,
 
 	Ingo
-
---
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org> 
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index bb398c0c5f08..532809aa0544 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4207,6 +4207,8 @@ static void __cond_resched(void)
- 	__preempt_count_add(PREEMPT_ACTIVE);
- 	__schedule();
- 	__preempt_count_sub(PREEMPT_ACTIVE);
-+	if (need_resched())
-+		__schedule();
- }
- 
- int __sched _cond_resched(void)
