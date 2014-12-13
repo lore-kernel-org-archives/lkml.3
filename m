@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089AbaLMQ7A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 11:59:00 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:27697 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220AbaLMQ64 (ORCPT
+	id S932093AbaLMQ7Q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 11:59:16 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:45021 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaLMQ65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 11:58:56 -0500
-X-AuditID: cbfee68d-f79296d000004278-06-548c704c38cc
+	Sat, 13 Dec 2014 11:58:57 -0500
+X-AuditID: cbfee68d-f79296d000004278-0f-548c704f5421
 From: Amit Daniel Kachhap <amit.daniel@samsung.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-samsung-soc@vger.kernel.org, khilman@linaro.org, rjw@rjwysocki.net,
@@ -17,36 +17,39 @@ Cc: linux-samsung-soc@vger.kernel.org, khilman@linaro.org, rjw@rjwysocki.net,
         geert+renesas@glider.be, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore
- to use restore types
-Date: Sat, 13 Dec 2014 22:21:57 +0530
-Message-id: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+Subject: [PATCH RFC v3 2/2] clk: samsung: Add PM runtime support for clocks.
+Date: Sat, 13 Dec 2014 22:21:58 +0530
+Message-id: <1418489518-7252-2-git-send-email-amit.daniel@samsung.com>
 X-Mailer: git-send-email 2.2.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNLMWRmVeSWpSXmKPExsWyRsSkWte3oCfE4MRPZouGqyEWc2dPYrTo
+In-reply-to: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsWyRsSkWte/oCfE4P9ecYuGqyEWc2dPYrTo
 	XXCVzeLr4RWMFrOm7GWy2PT4GqvF5V1z2Cw+9x5htJhxfh+Txdojd9ktFm39wm5x5vQlVovD
 	b9pZLTqWMVqs2vWH0eL42nAHAY+JZ3U9ds66y+6xeM9LJo871/aweWxeUu+x5Wo7i0ffllWM
-	Hp83yQVwRHHZpKTmZJalFunbJXBlfPk2j6Vgm2XF3BOvWBoY9+h3MXJySAiYSHzYuYwZwhaT
-	uHBvPVsXIxeHkMBSRomLB08zwhSd2DCbCSIxnVHi2P6bLBDOBCaJe+fPsIJUsQkYS/zcuZ8d
-	xBYR0JCY0vWYHaSIWWAKs0RH6yImkISwQKpE+5rLYA0sAqoSh2a3gK3gFXCTuDb9GNQdchJb
-	bj1ih7AvsUv0TK2DqBeQ+Db5ENBmDqC4rMSmA1DlkhIHV9xgmcAouICRYRWjaGpBckFxUnqR
-	oV5xYm5xaV66XnJ+7iZGYJyc/vesdwfj7QPWhxgFOBiVeHgtertDhFgTy4orcw8xmgJtmMgs
-	JZqcD4zGvJJ4Q2MzIwtTE1NjI3NLMyVxXkWpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUa
-	GF3yf7I6buE96Bt1+NddDubLxnEHOXimL557aN+ZS+0fZUNydzucdtmbku6bfPXg0etTGdwu
-	Ls/SMf0qbe53J/AHV3nF/bVLjH/cu/hp7cdXj+zmrrupFP/GWOF71r5yq3+pS0Q1NEUOxq2Y
-	USR24sMbR9k/247lb21ZKJgelZ5SxWj87di9Sg8lluKMREMt5qLiRAD+L4rQjgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t9jQV2fgp4Qgx0bTC0aroZYzJ09idGi
+	Hp83yQVwRHHZpKTmZJalFunbJXBlbFjxiL3gunrFobMrGBsYNyh2MXJySAiYSKxp6GWBsMUk
+	Ltxbz9bFyMUhJLCUUaLz9iT2LkYOsKI5q1Ih4tMZJS5uucQC4Uxgklj79ylYN5uAscTPnfvZ
+	QWwRAQ2JKV2P2UGKmAWmMEt0tC5iAkkIC/hIHN6+nw3EZhFQldjWtBgszivgJvF2/n5WiDPk
+	JLbcegQ2iFPAXaJ/93SwGiGgmu3Lr7CCDJUQ+Mgu8e9kIxPEIAGJb5MPsUCcKiux6QAzxBxJ
+	iYMrbrBMYBRewMiwilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMwrk7/e9a7g/H2AetDjAIc
+	jEo8vBa93SFCrIllxZW5hxhNgTZMZJYSTc4HRm9eSbyhsZmRhamJqbGRuaWZkjivotTPYCGB
+	9MSS1OzU1ILUovii0pzU4kOMTBycUg2Mh++p2ZiJeaUpPBO2380+IXnWnaM50hOlvVTt3FwX
+	353t8I7r796vu0Vezb+e2ZyuEn7llf+PFb9KfxVf3vXgmckk7f88D7KrFxY+f/WQKaW4pnt2
+	7gqHxzVcU2Oa1oin6d8LPZ+8ovC6V7vP9PpdSzgOpXrYTnxz/oPK0U8/T5QFcKRPqXPpVWIp
+	zkg01GIuKk4EAD9Z5eumAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQV3/gp4Qgzd/eSwaroZYzJ09idGi
 	d8FVNouvh1cwWsyaspfJYtPja6wWl3fNYbP43HuE0WLG+X1MFmuP3GW3WLT1C7vFmdOXWC0O
 	v2lntehYxmixatcfRovja8MdBDwmntX12DnrLrvH4j0vmTzuXNvD5rF5Sb3HlqvtLB59W1Yx
 	enzeJBfAEdXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdL6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePLt3ksBdssK+ae
-	eMXSwLhHv4uRk0NCwETixIbZTBC2mMSFe+vZuhi5OIQEpjNKHNt/kwXCmcAkce/8GVaQKjYB
-	Y4mfO/ezg9giAhoSU7oes4MUMQtMYZboaF0ENkpYIFWifc1lsAYWAVWJQ7NbGEFsXgE3iWvT
-	jzFDrJOT2HLrEfsERu4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYLj8JnUDsaVDRaH
-	GAU4GJV4eC16u0OEWBPLiitzDzFKcDArifCGZfWECPGmJFZWpRblxxeV5qQWH2I0Bdo+kVlK
-	NDkfmCLySuINjU3MTY1NLU0sTMwslcR5lezbQoQE0hNLUrNTUwtSi2D6mDg4pRoYm5YnLde8
-	XjCjQOZ/Tca6mE/Fy03+7AiYfkVq3cwFak8Nt/3PfCvS5mpw7tO9oNemFzk4Q95uPdaxVu76
-	nZeNi9k2sRyefD3km47cMgUJmcqfCjMLTxrrfHezOPr0TMBBt0MHnzq6S9Vf1TjH0auTxWpy
-	5YBcdV5o1T/HP6oXq8uCStxe7Fm5U4mlOCPRUIu5qDgRACU7I3DZAgAA
+	lpkDdL6SQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMWPDikfsBdfVKw6d
+	XcHYwLhBsYuRg0NCwERizqrULkZOIFNM4sK99WxdjFwcQgLTGSUubrnEAuFMYJJY+/cpC0gV
+	m4CxxM+d+9lBbBEBDYkpXY/ZQYqYBaYwS3S0LmICSQgL+Egc3r6fDcRmEVCV2Na0GCzOK+Am
+	8Xb+flaIdXISW249AhvEKeAu0b97OliNEFDN9uVXWCcw8i5gZFjFKJpakFxQnJSea6hXnJhb
+	XJqXrpecn7uJERy1z6R2MK5ssDjEKMDBqMTDa9HbHSLEmlhWXJl7iFGCg1lJhDcsqydEiDcl
+	sbIqtSg/vqg0J7X4EKMp0FUTmaVEk/OBCSWvJN7Q2MTc1NjU0sTCxMxSSZxXyb4tREggPbEk
+	NTs1tSC1CKaPiYNTqoHRcaLq8iq+vrMHTwjNFC7n6v3wZWs0W2fhZMV5RzN2Wb2IE7MwPpge
+	W1QY3usjkcIldDBR9MGipKXz9syIjr197fFOtdrv4W89Kj+vVeOx5Hp3fBbvy22Jtb/dYp2n
+	iz7WC17R9uK436QfUktsw27tslj/m2PLYqGvfNz1cf89b1zLlpXRddypxFKckWioxVxUnAgA
+	xl05gfACAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,188 +57,167 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using bool to restore suspended devices initially, use flags
-like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
-The first two flags will be similar to the existing true/false functionality.
-The third flag may be used to force restore of suspended devices
-whenever their associated power domain is turned on.
+This patch adds PM runtime support for clocks associated with Power
+Domain. The PM runtime suspend/resume handlers will be called when the
+power domain associated with it, is turned on/off.
 
-Currently, PD power off function powers off all the associated unused
-devices. The functionality added in this patch is similar to it.
-
-This feature may be used for those devices which are always in ON state
-if the PD associated with them is ON but may need local runtime resume
-and suspend during PD On/Off. These devices (like clock) may not implement
-complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
-subsystems interaction behaviour or any other reason.
-
-The model works like,
-    DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
-    /	pm_runtime_put. Its local runtime_suspend/resume is invoked via
-   /	GPD_DEV_RESTORE_FORCE option)
-  /
-PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
-  \	pm_runtime_put. This in turn invokes PD On/Off)
-   \
-    DEV3 (Similar to DEV1)
+The registration of clocks happen in early initailisation. The probe
+is later called to register the clock device with the power domain.
 
 Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 ---
-This work is continuation of earlier work,
+ drivers/clk/samsung/clk.c | 95 +++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/clk/samsung/clk.h | 11 ++++++
+ 2 files changed, 106 insertions(+)
 
-In V2: Completely removed notfiers and add support for huge clock list to be
-	suspended and restored. There was some issue in this as some clocks are
-	not exposed and are just initialised by bootloaders. This approach
-	required all of them to be exposed which is cumbersome. Also some
-	clock API's set_parent are disabling the original parent clocks
-	which is not required.
-	Link (https://lkml.org/lkml/2014/11/24/290)
-
-In V1: Implemented PM Domain notfier such as PD_ON_PRE, PD_ON_POST
-	PD_OFF_PRE and PD_OFF_POST. This was not supported and other
-	options suggested. link (http://www.spinics.net/lists/linux-samsung-soc/msg38442.html)
-
-This work may also assist exynos iommu pm runtime posted earlier by Marek
-http://lists.linaro.org/pipermail/linaro-mm-sig/2014-August/004099.html
-	
- drivers/base/power/domain.c | 40 ++++++++++++++++++++++++++++++++++++----
- include/linux/pm_domain.h   | 15 +++++++++++++--
- 2 files changed, 49 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
-index 6a103a3..d955a05 100644
---- a/drivers/base/power/domain.c
-+++ b/drivers/base/power/domain.c
-@@ -49,6 +49,7 @@
+diff --git a/drivers/clk/samsung/clk.c b/drivers/clk/samsung/clk.c
+index dd1f7c9..c517aa8 100644
+--- a/drivers/clk/samsung/clk.c
++++ b/drivers/clk/samsung/clk.c
+@@ -11,6 +11,10 @@
+  * clock framework for Samsung platforms.
+ */
  
- static LIST_HEAD(gpd_list);
- static DEFINE_MUTEX(gpd_list_lock);
-+static void __pm_genpd_restore_devices(struct generic_pm_domain *genpd);
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/pm_domain.h>
++#include <linux/pm_runtime.h>
+ #include <linux/syscore_ops.h>
+ #include "clk.h"
  
- static struct generic_pm_domain *pm_genpd_lookup_name(const char *domain_name)
- {
-@@ -176,6 +177,8 @@ static int genpd_power_on(struct generic_pm_domain *genpd)
- 	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
- 		genpd->name, "on", elapsed_ns);
+@@ -370,6 +374,93 @@ static void samsung_clk_sleep_init(void __iomem *reg_base,
+ 		unsigned long nr_rdump) {}
+ #endif
  
-+	__pm_genpd_restore_devices(genpd);
-+
- 	return ret;
- }
- 
-@@ -453,6 +456,24 @@ static void __pm_genpd_restore_device(struct pm_domain_data *pdd,
- }
- 
- /**
-+ * __pm_genpd_restore_devices- Restore the pre-suspend state of all device
-+ *				according to the restore flag.
-+ * @genpd: PM domain the device belongs to.
-+ */
-+static void __pm_genpd_restore_devices(struct generic_pm_domain *genpd)
++static int samsung_cmu_runtime_suspend(struct device *dev)
 +{
-+	struct pm_domain_data *pdd;
-+	struct generic_pm_domain_data *gpd_data;
++	struct samsung_clock_pd_reg_cache *reg_cache;
 +
-+	/* Force restore the devices according to the restore flag */
-+	list_for_each_entry(pdd, &genpd->dev_list, list_node) {
-+		gpd_data = to_gpd_data(pdd);
-+		if (gpd_data->force_restore == true)
-+			__pm_genpd_restore_device(pdd, genpd);
-+	}
++	reg_cache = dev_get_drvdata(dev);
++	samsung_clk_save(reg_cache->reg_base, reg_cache->rdump,
++			reg_cache->rd_num);
++	return 0;
 +}
 +
-+/**
-  * genpd_abort_poweroff - Check if a PM domain power off should be aborted.
-  * @genpd: PM domain to check.
-  *
-@@ -1469,6 +1490,7 @@ int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
- 	gpd_data->base.dev = dev;
- 	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
- 	gpd_data->need_restore = -1;
-+	gpd_data->force_restore = false;
- 	gpd_data->td.constraint_changed = true;
- 	gpd_data->td.effective_constraint_ns = -1;
- 	mutex_unlock(&gpd_data->lock);
-@@ -1561,18 +1583,28 @@ int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- /**
-  * pm_genpd_dev_need_restore - Set/unset the device's "need restore" flag.
-  * @dev: Device to set/unset the flag for.
-- * @val: The new value of the device's "need restore" flag.
-+ * @val: This can have values GPD_DEV_SUSPEND_INIT or GPD_DEV_RESTORE_INIT
-+ *	together with GPD_DEV_RESTORE_FORCE.
-  */
--void pm_genpd_dev_need_restore(struct device *dev, bool val)
-+void pm_genpd_dev_need_restore(struct device *dev, unsigned int val)
- {
- 	struct pm_subsys_data *psd;
-+	struct generic_pm_domain_data *pdd;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&dev->power.lock, flags);
- 
- 	psd = dev_to_psd(dev);
--	if (psd && psd->domain_data)
--		to_gpd_data(psd->domain_data)->need_restore = val ? 1 : 0;
-+	if (psd && psd->domain_data) {
-+		pdd = to_gpd_data(psd->domain_data);
-+		if (val & GPD_DEV_SUSPEND_INIT)
-+			pdd->need_restore = 0;
-+		else if (val & GPD_DEV_RESTORE_INIT)
-+			pdd->need_restore = 1;
++static int samsung_cmu_runtime_resume(struct device *dev)
++{
++	struct samsung_clock_pd_reg_cache *reg_cache;
 +
-+		if (val & GPD_DEV_RESTORE_FORCE)
-+			pdd->force_restore = true;
-+	}
++	reg_cache = dev_get_drvdata(dev);
++	samsung_clk_restore(reg_cache->reg_base, reg_cache->rdump,
++			reg_cache->rd_num);
++	return 0;
++}
++
++#define MAX_CMU_DEVICE_MATCH	50
++static int samsung_cmu_count;
++static struct of_device_id samsung_cmu_match[MAX_CMU_DEVICE_MATCH];
++MODULE_DEVICE_TABLE(of, samsung_cmu_match);
++
++static void samsung_clk_pd_init(struct device_node *np, void __iomem *reg_base,
++				struct samsung_cmu_info *cmu)
++{
++	struct samsung_clock_pd_reg_cache *pd_reg_cache;
++	const char *name;
++
++	if (samsung_cmu_count == MAX_CMU_DEVICE_MATCH)
++		panic("Maximum clock device limit reached.\n");
++
++	if (of_property_read_string_index(np, "compatible", 0, &name))
++		panic("Invalid DT node.\n");
++
++	pd_reg_cache = kzalloc(sizeof(struct samsung_clock_pd_reg_cache),
++			GFP_KERNEL);
++	if (!pd_reg_cache)
++		panic("Could not allocate register reg_cache.\n");
++
++	pd_reg_cache->rdump = samsung_clk_alloc_reg_dump(cmu->pd_clk_regs,
++				cmu->nr_pd_clk_regs);
++	if (!pd_reg_cache->rdump)
++		panic("Could not allocate register dump storage.\n");
++
++	pd_reg_cache->reg_base = reg_base;
++	pd_reg_cache->rd_num = cmu->nr_pd_clk_regs;
++
++	/* Fill up the compatible string and data */
++	samsung_cmu_match[samsung_cmu_count].data = pd_reg_cache;
++	strcpy(samsung_cmu_match[samsung_cmu_count].compatible, name);
++	samsung_cmu_count++;
++}
++
++static int __init samsung_cmu_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct of_device_id *match;
++
++	/* get the platform data */
++	match = (struct of_device_id *)of_match_node(samsung_cmu_match,
++							pdev->dev.of_node);
++	if (!match)
++		return 0;
++	platform_set_drvdata(pdev, (void *)match->data);
++	pm_runtime_enable(dev);
++	pm_genpd_dev_need_restore(dev,
++				GPD_DEV_RESTORE_FORCE | GPD_DEV_SUSPEND_INIT);
++	return 0;
++}
++
++static const struct dev_pm_ops samsung_cmu_pm_ops = {
++	SET_RUNTIME_PM_OPS(samsung_cmu_runtime_suspend,
++			samsung_cmu_runtime_resume, NULL)
++};
++
++static struct platform_driver samsung_cmu_driver = {
++	.driver = {
++		.name   = "exynos-clk",
++		.of_match_table = samsung_cmu_match,
++		.pm = &samsung_cmu_pm_ops,
++	},
++	.probe = samsung_cmu_probe,
++};
++
+ /*
+  * Common function which registers plls, muxes, dividers and gates
+  * for each CMU. It also add CMU register list to register cache.
+@@ -409,5 +500,9 @@ void __init samsung_cmu_register_one(struct device_node *np,
+ 		samsung_clk_sleep_init(reg_base, cmu->clk_regs,
+ 			cmu->nr_clk_regs);
  
- 	spin_unlock_irqrestore(&dev->power.lock, flags);
++	if (cmu->pd_clk_regs)
++		samsung_clk_pd_init(np, reg_base, cmu);
++
+ 	samsung_clk_of_add_provider(np, ctx);
  }
-diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
-index 6cd20d5..8aa74ee 100644
---- a/include/linux/pm_domain.h
-+++ b/include/linux/pm_domain.h
-@@ -20,6 +20,15 @@
- /* Defines used for the flags field in the struct generic_pm_domain */
- #define GENPD_FLAG_PM_CLK	(1U << 0) /* PM domain uses PM clk */
- 
-+/* Defines used for the types of restore */
-+#define	GPD_DEV_SUSPEND_INIT	0x1	/* Initiate the device runtime as
-+					   suspend/resume/suspend... */
-+#define	GPD_DEV_RESTORE_INIT	0x10	/* Initiate the device runtime as
-+					   resume/suspend/suspend... */
-+#define	GPD_DEV_RESTORE_FORCE	0x100	/* Force these devices to always do
-+					   resume in PD power on. Initial
-+					   behaviour can be one of the above */
-+
- enum gpd_status {
- 	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
- 	GPD_STATE_WAIT_MASTER,	/* PM domain's master is being waited for */
-@@ -116,6 +125,7 @@ struct generic_pm_domain_data {
- 	struct mutex lock;
- 	unsigned int refcount;
- 	int need_restore;
-+	bool force_restore;
++module_platform_driver(samsung_cmu_driver);
+diff --git a/drivers/clk/samsung/clk.h b/drivers/clk/samsung/clk.h
+index 3f471e9..c184ec1 100644
+--- a/drivers/clk/samsung/clk.h
++++ b/drivers/clk/samsung/clk.h
+@@ -331,6 +331,12 @@ struct samsung_clock_reg_cache {
+ 	unsigned int rd_num;
  };
  
- #ifdef CONFIG_PM_GENERIC_DOMAINS
-@@ -140,7 +150,7 @@ extern int __pm_genpd_name_add_device(const char *domain_name,
++struct samsung_clock_pd_reg_cache {
++	void __iomem *reg_base;
++	struct samsung_clk_reg_dump *rdump;
++	unsigned int rd_num;
++};
++
+ struct samsung_cmu_info {
+ 	/* list of pll clocks and respective count */
+ 	struct samsung_pll_clock *pll_clks;
+@@ -356,6 +362,11 @@ struct samsung_cmu_info {
+ 	/* list and number of clocks registers */
+ 	unsigned long *clk_regs;
+ 	unsigned int nr_clk_regs;
++
++	/* list and number of clocks to be saved/restored during
++	 * power domain shutdown */
++	unsigned long *pd_clk_regs;
++	unsigned int nr_pd_clk_regs;
+ };
  
- extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- 				  struct device *dev);
--extern void pm_genpd_dev_need_restore(struct device *dev, bool val);
-+extern void pm_genpd_dev_need_restore(struct device *dev, unsigned int val);
- extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 				  struct generic_pm_domain *new_subdomain);
- extern int pm_genpd_add_subdomain_names(const char *master_name,
-@@ -187,7 +197,8 @@ static inline int pm_genpd_remove_device(struct generic_pm_domain *genpd,
- {
- 	return -ENOSYS;
- }
--static inline void pm_genpd_dev_need_restore(struct device *dev, bool val) {}
-+static inline void pm_genpd_dev_need_restore(struct device *dev,
-+						unsigned int val) {}
- static inline int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
- 					 struct generic_pm_domain *new_sd)
- {
+ extern struct samsung_clk_provider *__init samsung_clk_init(
 -- 
 2.2.0
 
