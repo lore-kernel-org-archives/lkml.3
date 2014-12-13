@@ -1,146 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759AbaLMAH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 19:07:28 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:45461 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaLMAH0 (ORCPT
+	id S1753839AbaLMALr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 19:11:47 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:40121 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580AbaLMALp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 19:07:26 -0500
-Date: Sat, 13 Dec 2014 01:07:34 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] multi-layer support for overlay filesystem
-Message-ID: <20141213000734.GA11739@tucsk.suse.de>
-References: <20141209103745.GA32280@tucsk.suse.de>
- <20141212094738.GB5944@ZenIV.linux.org.uk>
+	Fri, 12 Dec 2014 19:11:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141212094738.GB5944@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <548B7764.2060608@sr71.net>
+References: <20141212191213.579887D2@viggo.jf.intel.com> <548B4E75.5010507@amacapital.net>
+ <548B4FBE.5090101@sr71.net> <CALCETrW4f3EUYGG_zyzb7sZBXaoW3eHMpTn3dd3WpDgJq2HjtA@mail.gmail.com>
+ <548B60F4.6020903@sr71.net> <CALCETrVZcED1x+YV4V+c9nnieaz8DMbO4D455h2QYF__jX-DKg@mail.gmail.com>
+ <548B7764.2060608@sr71.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 12 Dec 2014 16:11:23 -0800
+Message-ID: <CALCETrVEDS9Os5P11ub+FxHsDACgDWnkC4N6yqquQSfUv-=3kw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/8] x86, mpx: Support 32-bit binaries on 64-bit kernels
+To: Dave Hansen <dave@sr71.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the review.
+On Fri, Dec 12, 2014 at 3:16 PM, Dave Hansen <dave@sr71.net> wrote:
+> On 12/12/2014 03:04 PM, Andy Lutomirski wrote:
+>> Anyway, do your patches handle the case where a 32-bit app maliciously
+>> executes a 64-bit mpx insn with a very large address?  I think it's
+>> okay, but I might have missed something.
+>
+> You mean in the instruction decoder?  I haven't tried that case
+> explicitly, but I did do a substantial amount of testing throwing random
+> instruction streams at the decoder to make sure it never fell over.
+> (Well, mostly random, I made sure to throw the MPX opcodes in there a
+> bunch so it would get much deeper in to the decoder).
+>
+> It's not about the instruction size, it's about the mode the CPU is in.
+> If a 32-bit app manages to switch over to 64-bit mode and doesn't tell
+> the kernel (TIF_IA32 remains set), then we'll treat it as a 32-bit
+> instruction.
 
-On Fri, Dec 12, 2014 at 09:47:39AM +0000, Al Viro wrote:
-> First of all, your checks in ovl_mount_dir_noesc() have no effect besides
-> spamming the logs.  In
->         if (err) 
->                 pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
->         else if (!ovl_is_allowed_fs_type(path->dentry))
->                 pr_err("overlayfs: filesystem on '%s' not supported\n", name);
->         else if (!S_ISDIR(path->dentry->d_inode->i_mode))
->                 pr_err("overlayfs: '%s' not a directory\n", name);
->         else   
->                 err = 0;
-> the fourth alternative is completely pointless and both the second and the
-> third leave you with err being zero.
+The insn decoder should probably use user_64bit_mode, not TIF_IA32.
+It's actually quite easy to far jump/call/ret or sigreturn to a
+different bitness.
 
-Fixed.
+>
+> The kernel might end up going and looking for the bounds tables in some
+> funky places if the kernel and the hardware disagree about 32 vs. 64-bit
+> modes, but it's not going to do any harm since we treat all of the data
+> we get from MPX (instruction decoding, register contents, bounds table
+> contents, etc...) as completely untrusted.
+>
+> It's a nice, paranoid thing to ask and I'm glad you brought it up
+> because I hadn't thought about it, but I don't think any harm can come
+> of it.
 
-> 
-> That opens all kinds of unpleasant holes, obviously.  If you fix that by
-> setting err in the 2nd and thr 3rd alternatives, you get the next problem -
-> leaks on such failures.  Suppose the first ovl_mount_dir() call fails on
-> those checks.  You go to out_free_config and voila - upperpath has leaked.
-> The same in the second call means leaked workpath.  And those failures in
-> ovl_lower_dir(), as well as failures of vfs_getattr() there, end up leaking
-> vfsmount/dentry in stack[...].
+Paranoia is fun!
 
-Fixed.
+The only thing I'd really be worried about is if the code that turns
+va into bounds table offset generates some absurdly large offset as a
+result and causes a problem.
 
-> 
-> Next piece of fun: suppose you have in one of the lower layers a filesystem
-> with ->lookup()-enforced upper limit on name length.  Pretty much every
-> local fs has one, but... they are not all equal.  255 characters is the
-> common upper limit, but e.g. jffs2 stops at 254, minixfs upper limit is
-> somewhere from 14 to 60, depending upon version, etc.  You are doing a lookup
-> for something that is present in upper layer, but happens to be too long for
-> one of the lower layers.  Too bad - ENAMETOOLONG for you...
+--Andy
 
-Fixed.
-
-> 
-> BTW, that sucker really needs cleaning up.  I seriously suspect that
-> quite a few conditions in there might be redundant, but after several
-> hours of staring at it I'm still not sure that I hadn't missed some
-> paths in there ;-/  AFAICS, it would get cleaner if you unrolled the idx == 0
-> pass out of that loop - as in "deal with ovl_path_upper() if present, then
-> simple for (lower = 0; lower < oe->numlower; lower++)".  TBH, ovl_path_next()
-> seems to be a bad primitive for that use and the other caller doesn't give
-> a damn about upper vs. lower, so I wonder if the games with reporting that
-> make any sense.  They certainly make ovl_path_next() much uglier...
-
-Done cleanup.
-
-> 
-> Another thing: in theory, you can get up to about 2000 (identical)
-> single-letter names in lowerdirs.  Resulting arrays of struct path (i.e.
-> pairs of pointers) will make allocators unhappy - 32Kb kmalloc() is
-> not nice.  IMO that needs more or less sane limit enforced at mount time -
-> relying on "mount data is at most one page, can't fit too much there"
-> is not enough.
-
-Fixed.
-
-> 
-> Logics in ovl_dir_read_merged() looks odd - why is the lowermost one special
-> and not the uppermost?  BTW, what if you find a whiteout in the lowermost
-> layer?
-Yeah, it was supposed to be an optimization (no need to check for whiteouts on
-lower, since whiteouts never exist on lower) and is present in the lookup code
-as well.
-
-I switched to checking whiteouts in lowest layer as well, for consitency.
-
->   And while we are at it, what happens when the _upper_ layer is an
-> overlayfs - how do you create whiteouts there?  That, AFAICS, applies to
-> the current mainline as well...
-
-It really doesn't make sense to make upper layer an overlayfs.  It won't work,
-but it shouldn't crash.  Should we blacklist it, so any such stupidity is found
-out at mount time?
-
-Fixes pushed to
-
-   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
-
-Thanks,
-Miklos
-
----
-Miklos Szeredi (15):
-      ovl: check whiteout while reading directory
-      ovl: make path-type a bitmap
-      ovl: dont replace opaque dir
-      ovl: add mutli-layer infrastructure
-      ovl: helper to iterate layers
-      ovl: multi-layer readdir
-      ovl: multi-layer lookup
-      ovl: check whiteout on lowest layer as well
-      ovl: lookup ENAMETOOLONG on lower means ENOENT
-      ovl: allow statfs if no upper layer
-      ovl: mount: change order of initialization
-      ovl: improve mount helpers
-      ovl: make upperdir optional
-      ovl: support multiple lower layers
-      ovl: add testsuite to docs
-
-hujianyang (2):
-      ovl: Cleanup redundant blank lines
-      ovl: Use macros to present ovl_xattr
-
----
- Documentation/filesystems/overlayfs.txt |  24 ++
- fs/overlayfs/copy_up.c                  |   5 +-
- fs/overlayfs/dir.c                      |  28 +-
- fs/overlayfs/inode.c                    |  12 +-
- fs/overlayfs/overlayfs.h                |  18 +-
- fs/overlayfs/readdir.c                  | 145 ++++-----
- fs/overlayfs/super.c                    | 546 +++++++++++++++++++++-----------
- 7 files changed, 482 insertions(+), 296 deletions(-)
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
