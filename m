@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933345AbaLMOQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 09:16:29 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47759 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932945AbaLMOQ1 (ORCPT
+	id S1031193AbaLMOYH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 09:24:07 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41159 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932945AbaLMOYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 09:16:27 -0500
-Message-ID: <548C4A06.5020301@oracle.com>
-Date: Sat, 13 Dec 2014 09:15:34 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 13 Dec 2014 09:24:05 -0500
+Date: Sat, 13 Dec 2014 14:23:44 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
+Message-ID: <20141213142344.61372b92@lxorguk.ukuu.org.uk>
+In-Reply-To: <548AE778.90205@hurleysoftware.com>
+References: <20141211214801.4127.93914.stgit@notabene.brown>
+	<20141211215943.4127.24792.stgit@notabene.brown>
+	<548A264D.8070103@hurleysoftware.com>
+	<20141212162352.66be5b5e@notabene.brown>
+	<548AE778.90205@hurleysoftware.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?windows-1252?Q?D=E2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: frequent lockups in 3.18rc4
-References: <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com> <20141205171501.GA1320@redhat.com> <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com> <1417806247.4845.1@mail.thefacebook.com> <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com> <20141211145408.GB16800@redhat.com> <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com> <20141212185454.GB4716@redhat.com> <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com> <20141213081953.GG32572@gmail.com> <20141213082751.GA1526@gmail.com>
-In-Reply-To: <20141213082751.GA1526@gmail.com>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2014 03:27 AM, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
->>
->> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->>> On Fri, Dec 12, 2014 at 10:54 AM, Dave Jones <davej@redhat.com> wrote:
->>>
->>>>
->>>> Something that's still making me wonder if it's some kind of 
->>>> hardware problem is the non-deterministic nature of this bug.
->>>
->>> I'd expect it to be a race condition, though. Which can easily 
->>> cause these kinds of issues, and the timing will be pretty 
->>> random even if the load is very regular.
->>>
->>> And we know that the scheduler has an integer overflow under 
->>> Sasha's loads, although I didn't hear anything from Ingo and 
->>> friends about it. Ingo/Peter, you were cc'd on that report, 
->>> where at least one of the multiplcations in wake_affine() ended 
->>> up overflowing..
->>
->> Just to make sure, is there any other wake_affine report other 
->> than the one in this thread? (I tried a wake_affine full text 
->> search on my inbox and didn't find anything that appeared 
->> relevant.)
-> 
-> Found the report from Sasha:
-> 
->     sched: odd values for effective load calculations
-> 
-> right?
+On Fri, 12 Dec 2014 08:02:48 -0500
+> Which brings up another point: why not do this in the runtime power management;
+> ie, turn on the slave device when the master device is turned on? Sebastian
+> recently made the 8250 driver power-managed per access, which would enable
+> significant power savings over just leaving the slave device on the whole time.
 
-Yup, that's the one.
+That per access model only works on 8250 (in fact only on some 8250). On
+most devices if the UART is in low power you lose bytes send to it rather
+than then queuing up anywhere.
 
+It doesn't handle cases where you need to keep power on to different rules
+(for example there are cases where you do things like power the uart down
+after no bits have been received for 'n' millseconds). Right now if you
+look into Androidspace you'll find people doing this in userspace by
+having the sysfs node open and playing crazy games with sysfs, Android
+glue hacks and gpio poking via the gpio sysfs/gpio lib routines.
 
-Thanks,
-Sasha
+Good example is some of the GPS and serial based sensor chips. The
+latency of tty open/close is unacceptable and risks losing bits so they
+keep the tty open and whack the power management by hand right now.
 
+The kind of thing many of them want is stuff like
+
+"hold power on until we see receive data, then keep it on until it shuts
+up for a bit"
+
+"assert gpio, send, receive, wait idle, drop gpio"
+
+"on GPIO interrupt wake uart, wait for data, when idle, power uart down"
+
+> >> 2) why is this tied to the tty core and not the serial core
+> >>    if this is only for UART?
+> > 
+> > Because the knowledge of "the device is being opened" or "the device is being
+> > closed" seems to exist in the tty core but not in the serial core.
+> 
+> uart_open() = device file is being opened
+> uart_close() = device file is being released
+
+Only for a subset of uart type devices that use the uart layer. Quite a
+few don't, including all the USB ones, and the sd ones.
+
+> > I'm happy to move it to serial_core.c if that is preferred.
+> > I'll also move the open/close handling if you can point to where it should go.
+> 
+> Yes, please.
+
+NAK - I certainly object to it being moved to uart. That's the wrong
+abstraction layer for this. It's a generic behaviour, it's a tty level
+behaviour without any uart specific properties. It should work for uarts
+that don't use the legacy serial_core code, uarts that do, uarts that use
+USB, uarts that are directly connected to things like sdio etc.
+
+That means it has to be tty layer.
+
+Alan
