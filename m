@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253AbaLMEKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 23:10:36 -0500
-Received: from ozlabs.org ([103.22.144.67]:60640 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933210AbaLMEKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 23:10:34 -0500
-Date: Sat, 13 Dec 2014 15:10:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: linux-next: Tree for Dec 12
-Message-ID: <20141213151026.79a75a8f@canb.auug.org.au>
-In-Reply-To: <20141212145623.dc2394c57c2254b2603456e4@linux-foundation.org>
-References: <20141212183518.06e3803d@canb.auug.org.au>
-	<1418377757.5756.24.camel@x220>
-	<20141212210449.7f460bb1@canb.auug.org.au>
-	<1418380316.5756.37.camel@x220>
-	<20141212135719.4c79bac46d43bfd8d7c8e6a6@linux-foundation.org>
-	<1418423797.5756.54.camel@x220>
-	<20141212145623.dc2394c57c2254b2603456e4@linux-foundation.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754786AbaLMEWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 23:22:20 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:11715 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754388AbaLMEWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Dec 2014 23:22:18 -0500
+Message-Id: <20141213042216.999677852@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Fri, 12 Dec 2014 23:21:45 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: [PATCH 1/2] ftrace/x86: Update i386 call to prepare_ftrace_return()
+References: <20141213042144.599602592@goodmis.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/5mds9I==dpRLAn3wVw4zIGd"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-ftrace-x86-Update-i386-call-to-prepare_ftrace_return.patch
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5mds9I==dpRLAn3wVw4zIGd
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Hi Andrew,
+The parameters for prepare_ftrace_return() used by the function graph
+tracer were swapped to simplify the code on x86_64. But i386 function
+graph trampoline also calls this function, and it did not have its
+parameters swapped.
 
-On Fri, 12 Dec 2014 14:56:23 -0800 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> How'd that happen?=20
-> http://ozlabs.org/~akpm/mmots/broken-out/init-remove-config_init_fallback=
-.patch
-> removes all mention of CONFIG_INIT_FALLBACK?
+Link: http://lkml.kernel.org/r/20141210231732.GA24163@wfg-t540p.sh.intel.com
 
-Well, the patch now in Linus's tree adds the INIT_FALLBACK bit to the
-Kconfig file, but in your patchset, the bit is added and then removed.
-So when git comes to merge the two results, it looks like the
-apm-current branch in linux-next does not change that file at all, so
-git just uses the version from Linus' tree.  I missed it among all the
-other conflicts I had to fix up last evening.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Fixes: 6a06bdbf7f9c "ftrace/fgraph/x86: Have prepare_ftrace_return() take ip as first parameter"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/entry_32.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index b553ed89e5f5..df3e608d409b 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -1192,10 +1192,10 @@ ENTRY(ftrace_graph_caller)
+ 	pushl %eax
+ 	pushl %ecx
+ 	pushl %edx
+-	movl 0xc(%esp), %edx
+-	lea 0x4(%ebp), %eax
++	movl 0xc(%esp), %eax
++	lea 0x4(%ebp), %edx
+ 	movl (%ebp), %ecx
+-	subl $MCOUNT_INSN_SIZE, %edx
++	subl $MCOUNT_INSN_SIZE, %eax
+ 	call prepare_ftrace_return
+ 	popl %edx
+ 	popl %ecx
+-- 
+2.1.3
 
---Sig_/5mds9I==dpRLAn3wVw4zIGd
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUi7w3AAoJEMDTa8Ir7ZwV7PoP/AvNK1smmvLRpLuFIoYBiSih
-zDE3o3FZNFZF46NA3fmFE5gHk5gL0Q6pvf9WLpIyG6mR/1BqmWPei2ZN0ws7sEAw
-IO438/MO6WZKC4RJAgMrlTjyUDlh1USYgid38kd5LszYHtMrVNqobFRneVa1u7SD
-80WSWqy20N6DRC/TzZfDJjZPWg9ySfYp6y6tvr9j87iiqZr5a2gZrJkTRiHjSm2u
-cerGMj+xUWBHqFgfJZx8XqXgy/+F/IgPnfiU+zBVsd1p4zooOWEyPgB2f6ZjhszD
-BXh86qPhmaOXMwxlfRlnnrKAu4RXjOFw8sjVLd0xVWqRD3VW8O8FJf0C4hVUIf/a
-bBSVorCXlXLnPY0YBa8MFBP8LUdFaGi7YGCwiGvobMY/Ewt9LZIkGZa4TnL2N59Q
-OwaL0sX/wPkPuc39GX4CwtKoMU8pm9pc1Hixejxo0e049UyEvjpGLAO6KWHbNCV6
-7QiEVfZNWt0tVKXRiRoQZobT/oa4KemMcTKFsxwjv1RRSYESG+Rve1zakDALZT0a
-ggJb55R+UnHcqUD1tfjws6Cp+cMhH8Ko03qQdtakH0lblpoVeEBGbM4AvjkcHUGR
-2CTr+dxz/oYJko/GUXgevbjZEoeY08gTRs7poYzVGZyBnVOyr1n66n0P18AlVobZ
-FDleKo0bIRNb1Anf8/Tm
-=sI3g
------END PGP SIGNATURE-----
-
---Sig_/5mds9I==dpRLAn3wVw4zIGd--
