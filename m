@@ -1,83 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868AbaLMOdq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 09:33:46 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50525 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751977AbaLMOdo (ORCPT
+	id S966623AbaLMOj4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 09:39:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:12956 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751977AbaLMOjy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 09:33:44 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/GvNHWIIeWZ0l/jvBPNCmxRvAh/ulcNlw=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 802766305BB
-Date: Sat, 13 Dec 2014 09:33:28 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Silvio Fricke <silvio.fricke@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 0/3] removing of some unused/unsupported dts entries
-Message-ID: <20141213143328.GA967@titan.lakedaemon.net>
-References: <cover.1418434448.git.silvio.fricke@gmail.com>
- <8761dfgb1o.fsf@why.wild-wind.fr.eu.org>
+	Sat, 13 Dec 2014 09:39:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="428553148"
+From: "Rosen, Rami" <rami.rosen@intel.com>
+To: "Varlese, Marco" <marco.varlese@intel.com>,
+        Roopa Prabhu <roopa@cumulusnetworks.com>,
+        Jiri Pirko <jiri@resnulli.us>
+CC: John Fastabend <john.fastabend@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Index: AdAUhPtXGtfGamc6R3Ssf+89G79LDwAA6HkAAAB5JoAAI3poAAACJk2AAAvAsQAAAKcLgAABkD+AACDIooAAQVIcAA==
+Date: Sat, 13 Dec 2014 14:39:49 +0000
+Message-ID: <9B0331B6EBBD0E4684FBFAEDA55776F918890AE2@HASMSX110.ger.corp.intel.com>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+ <20141211110115.GA1979@nanopsycho.lan>
+ <5489C85A.5020400@cumulusnetworks.com>
+ <20141211165627.GF1912@nanopsycho.orion>
+ <5489D739.9010303@cumulusnetworks.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761dfgb1o.fsf@why.wild-wind.fr.eu.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silvio, Marc,
+Hi, all,
 
-On Sat, Dec 13, 2014 at 09:21:23AM +0000, Marc Zyngier wrote:
-> On Sat, Dec 13 2014 at  1:46:45 am GMT, Silvio Fricke <silvio.fricke@gmail.com> wrote:
+Regarding preferring using netlink sockets versus ethtool IOCTLs for setting kernel network attributes from userspace, I fully agree with Marco. The netlink API is much more structured and
+much more geared towards this type of operation, than the IOCTL-based ethtool. 
+
+Regards,
+Rami Rosen
+Software Engineer, Intel
+
+-----Original Message-----
+From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On Behalf Of Varlese, Marco
+Sent: Friday, December 12, 2014 11:20
+To: Roopa Prabhu; Jiri Pirko
+Cc: John Fastabend; netdev@vger.kernel.org; stephen@networkplumber.org; Fastabend, John R; sfeldma@gmail.com; linux-kernel@vger.kernel.org
+Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+
+> -----Original Message-----
+> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
+> Sent: Thursday, December 11, 2014 5:41 PM
+> To: Jiri Pirko
+> Cc: Varlese, Marco; John Fastabend; netdev@vger.kernel.org; 
+> stephen@networkplumber.org; Fastabend, John R; sfeldma@gmail.com; 
+> linux-kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port 
+> configuration
 > 
-> Hi Silvio,
+> On 12/11/14, 8:56 AM, Jiri Pirko wrote:
+> > Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
+> >> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
+> >>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
+> >>>>> -----Original Message-----
+> >>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
+> >>>>> Sent: Wednesday, December 10, 2014 5:04 PM
+> >>>>> To: Jiri Pirko
+> >>>>> Cc: Varlese, Marco; netdev@vger.kernel.org; 
+> >>>>> stephen@networkplumber.org; Fastabend, John R; 
+> >>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux- 
+> >>>>> kernel@vger.kernel.org
+> >>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch 
+> >>>>> port configuration
+> >>>>>
+> >>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+> >>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com
+> wrote:
+> >>>>>>> From: Marco Varlese <marco.varlese@intel.com>
+> >>>>>>>
+> >>>>>>> Switch hardware offers a list of attributes that are 
+> >>>>>>> configurable on a per port basis.
+> >>>>>>> This patch provides a mechanism to configure switch ports by 
+> >>>>>>> adding an NDO for setting specific values to specific attributes.
+> >>>>>>> There will be a separate patch that extends iproute2 to call 
+> >>>>>>> the new NDO.
+> >>>>>> What are these attributes? Can you give some examples. I'm 
+> >>>>>> asking because there is a plan to pass generic attributes to 
+> >>>>>> switch ports replacing current specific 
+> >>>>>> ndo_switch_port_stp_update. In this case, bridge is setting that attribute.
+> >>>>>>
+> >>>>>> Is there need to set something directly from userspace or does 
+> >>>>>> it make rather sense to use involved bridge/ovs/bond ? I think 
+> >>>>>> that both will be needed.
+> >>>>> +1
+> >>>>>
+> >>>>> I think for many attributes it would be best to have both. The 
+> >>>>> in kernel callers and netlink userspace can use the same driver ndo_ops.
+> >>>>>
+> >>>>> But then we don't _require_ any specific bridge/ovs/etc module.
+> >>>>> And we may have some attributes that are not specific to any 
+> >>>>> existing software module. I'm guessing Marco has some examples 
+> >>>>> of
+> these.
+> >>>>>
+> >>>>> [...]
+> >>>>>
+> >>>>>
+> >>>>> --
+> >>>>> John Fastabend         Intel Corporation
+> >>>> We do have a need to configure the attributes directly from 
+> >>>> user-space
+> and I have identified the tool to do that in iproute2.
+> >>>>
+> >>>> An example of attributes are:
+> >>>> * enabling/disabling of learning of source addresses on a given 
+> >>>> port (you can imagine the attribute called LEARNING for example);
+> >>>> * internal loopback control (i.e. LOOPBACK) which will control 
+> >>>> how the flow of traffic behaves from the switch fabric towards an 
+> >>>> egress port;
+> >>>> * flooding for broadcast/multicast/unicast type of packets (i.e.
+> >>>> BFLOODING, MFLOODING, UFLOODING);
+> >>>>
+> >>>> Some attributes would be of the type enabled/disabled while other 
+> >>>> will
+> allow specific values to allow the user to configure different 
+> behaviours of that feature on that particular port on that platform.
+> >>>>
+> >>>> One thing to mention - as John stated as well - there might be 
+> >>>> some
+> attributes that are not specific to any software module but rather 
+> have to do with the actual hardware/platform to configure.
+> >>>>
+> >>>> I hope this clarifies some points.
+> >>> It does. Makes sense. We need to expose this attr set/get for both 
+> >>> in-kernel and userspace use cases.
+> >>>
+> >>> Please adjust you patch for this. Also, as a second patch, it 
+> >>> would be great if you can convert ndo_switch_port_stp_update to 
+> >>> this new
+> ndo.
+> >> Why are we exposing generic switch attribute get/set from userspace 
+> >> ?. We already have specific attributes for learning/flooding which 
+> >> can be extended further.
+> > Yes, but that is for PF_BRIDGE and bridge specific attributes. There 
+> > might be another generic attrs, no?
+> I cant think of any. And plus, the whole point of switchdev l2 
+> offloads was to map these to existing bridge attributes. And we 
+> already have a match for some of the attributes that marco wants.
 > 
-> > I have found some dts entries which are not evaluated by the drivers. This
-> > patch remove this entries from the dts files.
-> > Jason has mentioned I should CC: Thomas, Marc and him self to this
-> > mails.
+> If there is a need for such attributes, i don't see why it is needed 
+> for switch devices only.
+> It is needed for any hw (nics etc). And, a precedence to this is to do 
+> it via ethtool.
 > 
-> As far as I can tell, this looks correct. A few key things though:
+> Having said that, am sure we will find a need for this in the future.
+> And having a netlink attribute always helps.
 > 
-> - Please write decent commit logs. Indicate *why* you think these
->   properties can be removed (hint: not finding corresponding in the
->   drivers is not enough a reason, the binding itself matters).
+> Today, it seems like these can be mapped to existing attributes that 
+> are settable via ndo_bridge_setlink/getlink.
+> 
+> >
+> >> And for in kernel api....i had a sample patch in my RFC series 
+> >> (Which i was going to resubmit, until it was decided that we will 
+> >> use existing api around
+> >> ndo_bridge_setlink/ndo_bridge_getlink):
+> >> http://www.spinics.net/lists/netdev/msg305473.html
+> > Yes, this might become handy for other generic non-bridge attrs.
+> >
+> >> Thanks,
+> >> Roopa
+> >>
+> >>
+> >>
 
-Right.  The real issue is the state of these properties within the
-binding documentation.  Linux isn't the only consumer of these dts
-files (*BSD, barebox, etc), so us not using them doesn't necessarily
-mean the property should be removed.
+The list I provided is only a subset of the attributes we will need to be exposed. I do have more and I'm sure that more will come in the future. As I mentioned in few posts earlier, some attributes are generic and some are not. 
 
-The most important lesson (recently learned ;-) ) is to make sure all
-properties are accurately describing the *hardware*.  Not Linux's
-implementation of talking to the hardware.  That'll go a long way if the
-changelog discusses how property X is an implementation detail vice a
-hardware characteristic or feature.
+I did not consider ethtool for few reasons but the main one is that I was under the impression that netlink was preferred in many circumstances over the ethotool_ops. Plus, all the cases I have identified so far are going to nicely fit into the setlink set of operations.
 
-> - Cc the relevant platform maintainers. You're changing things that they
->   care about, basic courtesy is to keep them in the loop.
+--
+To unsubscribe from this list: send the line "unsubscribe netdev" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+---------------------------------------------------------------------
+Intel Israel (74) Limited
 
-True.  In Silvio's defense, I just told him to Cc us to get the ball
-rolling.  (I tend to dislike long discussions on chat mediums, I'd much
-rather they be in email.  So I was definitely too succinct).
+This e-mail and any attachments may contain confidential material for
+the sole use of the intended recipient(s). Any review or distribution
+by others is strictly prohibited. If you are not the intended
+recipient, please contact the sender and delete all copies.
 
-For the record, you can use ./scripts/get_maintainer.pl on your patches
-to make sure you get most of the right people.  In this case, that'll
-include the DT maintainers.  You may want to run a get_maintainer.pl -f
-arch/arm/mach-$ARCH for each of the dts file you touch.  Those
-maintainers usually wrangle the patches for their dts files.
-Unfortunately, not all of them have updated MAINTAINERS
-(<cough>mvebu<cough>) to include the dts file patterns.
-
-thx,
-
-Jason.
