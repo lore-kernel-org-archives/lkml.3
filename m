@@ -1,159 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965650AbaLMHGZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 02:06:25 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:48834 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965425AbaLMHGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 02:06:23 -0500
-Message-ID: <548BE569.5040803@cumulusnetworks.com>
-Date: Fri, 12 Dec 2014 23:06:17 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S965724AbaLMH1B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 02:27:01 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35008 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965655AbaLMH07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 02:26:59 -0500
+Message-ID: <548BE99E.2000409@ti.com>
+Date: Sat, 13 Dec 2014 12:54:14 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
 MIME-Version: 1.0
-To: "Varlese, Marco" <marco.varlese@intel.com>
-CC: Jiri Pirko <jiri@resnulli.us>, John Fastabend <john.fastabend@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "stephen@networkplumber.org" <stephen@networkplumber.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan> <5489C85A.5020400@cumulusnetworks.com> <20141211165627.GF1912@nanopsycho.orion> <5489D739.9010303@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Doug Anderson <dianders@chromium.org>, Yunzhi Li <lyz@rock-chips.com>
+CC: =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        <jwerner@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>
+Subject: Re: [PATCH v7 2/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>	<1418396866-32625-1-git-send-email-lyz@rock-chips.com> <CAD=FV=XiP37Q8EkDYpBgh=Ng9nJD9-Uow0qCy78u6kCZomGNPA@mail.gmail.com>
+In-Reply-To: <CAD=FV=XiP37Q8EkDYpBgh=Ng9nJD9-Uow0qCy78u6kCZomGNPA@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14, 1:19 AM, Varlese, Marco wrote:
->> -----Original Message-----
->> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
->> Sent: Thursday, December 11, 2014 5:41 PM
->> To: Jiri Pirko
->> Cc: Varlese, Marco; John Fastabend; netdev@vger.kernel.org;
->> stephen@networkplumber.org; Fastabend, John R; sfeldma@gmail.com;
->> linux-kernel@vger.kernel.org
->> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->> configuration
->>
->> On 12/11/14, 8:56 AM, Jiri Pirko wrote:
->>> Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
->>>> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
->>>>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
->>>>>>> -----Original Message-----
->>>>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
->>>>>>> Sent: Wednesday, December 10, 2014 5:04 PM
->>>>>>> To: Jiri Pirko
->>>>>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
->>>>>>> stephen@networkplumber.org; Fastabend, John R;
->>>>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
->>>>>>> kernel@vger.kernel.org
->>>>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
->>>>>>> configuration
->>>>>>>
->>>>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
->>>>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com
->> wrote:
->>>>>>>>> From: Marco Varlese <marco.varlese@intel.com>
->>>>>>>>>
->>>>>>>>> Switch hardware offers a list of attributes that are
->>>>>>>>> configurable on a per port basis.
->>>>>>>>> This patch provides a mechanism to configure switch ports by
->>>>>>>>> adding an NDO for setting specific values to specific attributes.
->>>>>>>>> There will be a separate patch that extends iproute2 to call the
->>>>>>>>> new NDO.
->>>>>>>> What are these attributes? Can you give some examples. I'm asking
->>>>>>>> because there is a plan to pass generic attributes to switch
->>>>>>>> ports replacing current specific ndo_switch_port_stp_update. In
->>>>>>>> this case, bridge is setting that attribute.
->>>>>>>>
->>>>>>>> Is there need to set something directly from userspace or does it
->>>>>>>> make rather sense to use involved bridge/ovs/bond ? I think that
->>>>>>>> both will be needed.
->>>>>>> +1
->>>>>>>
->>>>>>> I think for many attributes it would be best to have both. The in
->>>>>>> kernel callers and netlink userspace can use the same driver ndo_ops.
->>>>>>>
->>>>>>> But then we don't _require_ any specific bridge/ovs/etc module.
->>>>>>> And we may have some attributes that are not specific to any
->>>>>>> existing software module. I'm guessing Marco has some examples of
->> these.
->>>>>>> [...]
->>>>>>>
->>>>>>>
->>>>>>> --
->>>>>>> John Fastabend         Intel Corporation
->>>>>> We do have a need to configure the attributes directly from user-space
->> and I have identified the tool to do that in iproute2.
->>>>>> An example of attributes are:
->>>>>> * enabling/disabling of learning of source addresses on a given
->>>>>> port (you can imagine the attribute called LEARNING for example);
->>>>>> * internal loopback control (i.e. LOOPBACK) which will control how
->>>>>> the flow of traffic behaves from the switch fabric towards an
->>>>>> egress port;
->>>>>> * flooding for broadcast/multicast/unicast type of packets (i.e.
->>>>>> BFLOODING, MFLOODING, UFLOODING);
->>>>>>
->>>>>> Some attributes would be of the type enabled/disabled while other will
->> allow specific values to allow the user to configure different behaviours of
->> that feature on that particular port on that platform.
->>>>>> One thing to mention - as John stated as well - there might be some
->> attributes that are not specific to any software module but rather have to do
->> with the actual hardware/platform to configure.
->>>>>> I hope this clarifies some points.
->>>>> It does. Makes sense. We need to expose this attr set/get for both
->>>>> in-kernel and userspace use cases.
->>>>>
->>>>> Please adjust you patch for this. Also, as a second patch, it would
->>>>> be great if you can convert ndo_switch_port_stp_update to this new
->> ndo.
->>>> Why are we exposing generic switch attribute get/set from userspace
->>>> ?. We already have specific attributes for learning/flooding which
->>>> can be extended further.
->>> Yes, but that is for PF_BRIDGE and bridge specific attributes. There
->>> might be another generic attrs, no?
->> I cant think of any. And plus, the whole point of switchdev l2 offloads was to
->> map these to existing bridge attributes. And we already have a match for
->> some of the attributes that marco wants.
->>
->> If there is a need for such attributes, i don't see why it is needed for switch
->> devices only.
->> It is needed for any hw (nics etc). And, a precedence to this is to do it via
->> ethtool.
->>
->> Having said that, am sure we will find a need for this in the future.
->> And having a netlink attribute always helps.
->>
->> Today, it seems like these can be mapped to existing attributes that are
->> settable via ndo_bridge_setlink/getlink.
->>
->>>> And for in kernel api....i had a sample patch in my RFC series (Which
->>>> i was going to resubmit, until it was decided that we will use
->>>> existing api around
->>>> ndo_bridge_setlink/ndo_bridge_getlink):
->>>> http://www.spinics.net/lists/netdev/msg305473.html
->>> Yes, this might become handy for other generic non-bridge attrs.
->>>
->>>> Thanks,
->>>> Roopa
->>>>
->>>>
->>>>
-> The list I provided is only a subset of the attributes we will need to be exposed. I do have more and I'm sure that more will come in the future. As I mentioned in few posts earlier, some attributes are generic and some are not.
->
-> I did not consider ethtool for few reasons but the main one is that I was under the impression that netlink was preferred in many circumstances over the ethotool_ops.
-That is correct. I don't think anybody hinted that you should extend 
-ethtool.
->   Plus, all the cases I have identified so far are going to nicely fit into the setlink set of operations.
->
+hi,
 
-Would be better if you submitted your iproute2 patch with this patch.
+On Saturday 13 December 2014 05:49 AM, Doug Anderson wrote:
+> Yunzhi,
+> 
+> On Fri, Dec 12, 2014 at 7:07 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+>> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
+>> currently this driver can support RK3288. The RK3288 SoC have
+>> three independent USB PHY IPs which are all configured through a
+>> set of registers located in the GRF (general register files)
+>> module.
+>>
+>> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+>>
+>> ---
+>>
+>> Changes in v7:
+>> - Accept Kishon's comments to use phandle args to find a phy
+>>   struct directly and get rid of using a custom of_xlate
+>>   function.
+> 
+> I'm going to assume you didn't test this version, since it doesn't
+> work for me.  At suspend time power is high and my printouts in the
+> powerup/powerdown code aren't called...
+> 
+> 
+>> +       for_each_available_child_of_node(dev->of_node, child) {
+>> +               rk_phy = devm_kzalloc(dev, sizeof(*rk_phy), GFP_KERNEL);
+>> +               if (!rk_phy)
+>> +                       return -ENOMEM;
+>> +
+>> +               if (of_property_read_u32(child, "reg", &reg_offset)) {
+>> +                       dev_err(dev, "missing reg property in node %s\n",
+>> +                               child->name);
+>> +                       return -EINVAL;
+>> +               }
+>> +
+>> +               rk_phy->reg_offset = reg_offset;
+>> +               rk_phy->reg_base = grf;
+>> +
+>> +               rk_phy->clk = of_clk_get_by_name(child, "phyclk");
+>> +               if (IS_ERR(rk_phy->clk))
+>> +                       rk_phy->clk = NULL;
+>> +
+>> +               rk_phy->phy = devm_phy_create(dev, child, &ops);
+>> +               if (IS_ERR(rk_phy->phy)) {
+>> +                       dev_err(dev, "failed to create PHY\n");
+>> +                       return PTR_ERR(rk_phy->phy);
+>> +               }
+>> +               phy_set_drvdata(rk_phy->phy, rk_phy);
+>> +       }
+>> +
+>> +       phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+> 
+> I think your bug is here.  I think you now need to register 3 phy
+> providers, not just one.
 
-I do plan to resubmit my generic ndo patch soon.
+No there should be only one phy provider. It means the bug is elsewhere.
 
-Thanks,
-Roopa
+Thanks
+Kishon
