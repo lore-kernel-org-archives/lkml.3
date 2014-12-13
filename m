@@ -1,183 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaLMRy0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 12:54:26 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:45992 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaLMRyY (ORCPT
+	id S1753386AbaLMRzX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 12:55:23 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60865 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbaLMRzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 12:54:24 -0500
-Date: Sat, 13 Dec 2014 17:53:00 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-cc: Peter Huewe <peterhuewe@gmx.de>, Marcel Selhorst <tpmdd@selhorst.net>,
-        linux-kernel@vger.kernel.org, tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH v10 0/8] TPM 2.0 support
-In-Reply-To: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1412131735040.1585@localhost.localdomain>
-References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sat, 13 Dec 2014 12:55:22 -0500
+Date: Sat, 13 Dec 2014 09:55:18 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Loic Pefferkorn <loic@loicp.eu>
+Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jun.j.tian@intel.com,
+        octavian.purdila@intel.com, nnk@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: goldfish: Fix minor coding style
+Message-ID: <20141213175518.GA28616@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Loic Pefferkorn <loic@loicp.eu>, gregkh@linuxfoundation.org,
+	alan@linux.intel.com, jun.j.tian@intel.com,
+	octavian.purdila@intel.com, nnk@google.com,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Loic,
 
-On Fri, 12 Dec 2014, Jarkko Sakkinen wrote:
+On Sat, Dec 13, 2014 at 05:29:26PM +0100, Loic Pefferkorn wrote:
+> Hello,
+> 
+> The convention for checking for NULL pointers is !ptr and not ptr == NULL.
+> This patch fixes such occurences in goldfish driver, it applies against next-20141212
+> 
+Whose convention is this?  I can't find any mention in
+Documention/CodingStyle. checkpatch.pl doesn't complain about them.
+And there are almost three thousand examples in staging which don't
+use this convention.
 
-> This patch set enables TPM2 protocol and provides drivers for FIFO and
-> CRB interfaces. This patch set does not export any sysfs attributes for
-> TPM 2.0 because existing sysfs attributes have three non-trivial issues:
-> 
-> - They are associated with the platform device instead of character
->   device.
-> - They are are not trivial key-value pairs but contain text that is
->   not easily parsed by a computer.
-> - Raciness as described in
->   http://kroah.com/log/blog/2013/06/26/how-to-create-a-sysfs-file-correctly/
-> 
-> v2:
-> - Improved struct tpm_chip life-cycle by taking advantage of devres
->   API.
-> - Refined sysfs attributes as simple key-values thereby not repeating
->   mistakes in TPM1 sysfs attributes.
-> - Documented functions in tpm-chip.c and tpm2-cmd.c.
-> - Documented sysfs attributes.
-> 
-> v3:
-> - Lots of fixes in calling order in device drivers (thanks to Jason
->   Gunthorpe for pointing these out!).
-> - Attach sysfs attributes to the misc device because it represents
->   TPM device to the user space.
-> 
-> v4:
-> - Disable sysfs attibutes for TPM 2.0 for until we can sort out the 
->   best approach for them.
-> - Fixed all the style issues found with checkpatch.pl.
-> 
-> v5:
-> - missing EXPORT_SYMBOL_GPL()
-> - own class for TPM devices used for TPM 2.0 devices and onwards.
-> 
-> v6:
-> - Non-racy initialization for sysfs attributes using struct device's
->   groups field.
-> - The class 'tpm' is used now for all TPM devices. For the first device
->   node major MISC_MAJOR and minor TPM_MINOR is used in order to retain
->   backwards compatability.
-> 
-> v7:
-> - Release device number and free struct tpm_chip memory inside
->   tpm_dev_release callback.
-> - Moved code from tpm-interface.c and tpm_dev.c to tpm-chip.c.
-> 
-> v8:
-> - Cleaned up unneeded cast from tpm_transmit_cmd().
-> - Cleaned up redundant PPI_VERSION_LEN constant from tpm_ppi.c.
-> - Fixed tpm_tis to use tpm2_calc_ordinal_duration() for TPM2 devices.
-> - tpm_crb: in crb_recv, check that count can hold the TPM header at
->   minimum.
-> - tpm_crb: add enumerations for bit flags in start and cancel fields
->   of the control area.
-> - tpm_crb: use ioremap() for command and response buffer because
->   they might be anywhere.
-> - tpm_crb: use IO access functions for reading ioremapped buffers
->   because using direct pointers is not portable.
-> - tpm_crb: only apply ACPI start if start method reported by the
->   TPM2 ACPI table allows it.
-> - In tpm2_pcr_read() just calculate index and bit and get rid of
->   hacky loop.
-> - Do not add sysfs attributes for TPM 2.0 devices.
-> 
-> v9:
-> - Fixed compilation issues in v8 (sorry for not using the correct
->   tree).
-> - Just do "return tpm_chip_register();" instead of copying return
->   value to a variable.
-> - Removed unused tpm2_startup().
-> - In the CRB driver ACPI TPM2 table could contain platform specific
->   and therefore inequality test does not work. Fixed in this patch
->   set.
-> 
-> v10:
-> - Fixed coccicheck and sparse errors and other reported style errors.
-> - Fixed build errors without CONFIG_ACPI.
-> - Fixed build error with CONFIG_OF.
-> - Added TPM_CHIP_FLAG_REGISTERED to mark successful tpm_chip_register().
->   It is checked in the beginning of tpm_chip_unregister(), which is 
->   called even when "attach" callback for a device fails because "detach"
->   callback is always called.
-> - Added TPM_CHIP_FLAG_PPI to mark successful PPI interface lookup because 
->   in older TPM chips version string might be non-existent.
-> - Check TPM version from the 4th byte of STS register after requesting 
->   the locality because otherwise the read will return bogus data.
-> - Some TPM chips just give 0xff as the 4th byte so using that for detecting
->   TPM family is unstable. Instead I chose the approach of using idempotent 
->   TPM 2.x command to detect such case.
-> 
-> Jarkko Sakkinen (8):
->   tpm: merge duplicate transmit_cmd() functions
->   tpm: two-phase chip management functions
->   tpm: fix raciness of PPI interface lookup
->   tpm: rename chip->dev to chip->pdev
->   tpm: device class for tpm
->   tpm: TPM 2.0 baseline support
->   tpm: TPM 2.0 CRB Interface
->   tpm: TPM 2.0 FIFO Interface
-> 
->  Documentation/ABI/stable/sysfs-class-tpm |  22 +-
->  drivers/char/tpm/Kconfig                 |   9 +
->  drivers/char/tpm/Makefile                |   3 +-
->  drivers/char/tpm/tpm-chip.c              | 256 +++++++++++++
->  drivers/char/tpm/tpm-dev.c               |  42 +--
->  drivers/char/tpm/tpm-interface.c         | 263 +++++--------
->  drivers/char/tpm/tpm-sysfs.c             |  29 +-
->  drivers/char/tpm/tpm.h                   | 118 +++++-
->  drivers/char/tpm/tpm2-cmd.c              | 617 +++++++++++++++++++++++++++++++
->  drivers/char/tpm/tpm_atmel.c             |  25 +-
->  drivers/char/tpm/tpm_crb.c               | 354 ++++++++++++++++++
->  drivers/char/tpm/tpm_i2c_atmel.c         |  55 +--
->  drivers/char/tpm/tpm_i2c_infineon.c      |  43 +--
->  drivers/char/tpm/tpm_i2c_nuvoton.c       |  71 ++--
->  drivers/char/tpm/tpm_i2c_stm_st33.c      |  32 +-
->  drivers/char/tpm/tpm_ibmvtpm.c           |  17 +-
->  drivers/char/tpm/tpm_infineon.c          |  51 +--
->  drivers/char/tpm/tpm_nsc.c               |  34 +-
->  drivers/char/tpm/tpm_ppi.c               | 141 ++++---
->  drivers/char/tpm/tpm_tis.c               | 224 ++++++-----
->  drivers/char/tpm/xen-tpmfront.c          |  14 +-
->  21 files changed, 1820 insertions(+), 600 deletions(-)
->  create mode 100644 drivers/char/tpm/tpm-chip.c
->  create mode 100644 drivers/char/tpm/tpm2-cmd.c
->  create mode 100644 drivers/char/tpm/tpm_crb.c
-> 
-> -- 
-> 2.1.0
-> 
+  linux-next$ grep -r "== NULL" drivers/staging/* | wc -l
+  2844
 
-This patchset works on a TPM 1.2 Toshiba CB35-A3120 using either
+> 
+> Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
+> ---
+>  drivers/staging/goldfish/goldfish_audio.c |  8 ++++----
+>  drivers/staging/goldfish/goldfish_nand.c  | 10 +++++-----
+>  2 files changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/staging/goldfish/goldfish_audio.c b/drivers/staging/goldfish/goldfish_audio.c
+> index f200359..7ab034b 100644
+> --- a/drivers/staging/goldfish/goldfish_audio.c
+> +++ b/drivers/staging/goldfish/goldfish_audio.c
+> @@ -273,19 +273,19 @@ static int goldfish_audio_probe(struct platform_device *pdev)
+>  	dma_addr_t buf_addr;
+>  
+>  	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+> -	if (data == NULL)
+> +	if (!data)
+>  		return -ENOMEM;
+>  	spin_lock_init(&data->lock);
+>  	init_waitqueue_head(&data->wait);
+>  	platform_set_drvdata(pdev, data);
+>  
+>  	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	if (r == NULL) {
+> +	if (!r) {
+>  		dev_err(&pdev->dev, "platform_get_resource failed\n");
+>  		return -ENODEV;
+>  	}
+>  	data->reg_base = devm_ioremap(&pdev->dev, r->start, PAGE_SIZE);
+> -	if (data->reg_base == NULL)
+> +	if (!data->reg_base)
+>  		return -ENOMEM;
+>  
+[...]
 
-CONFIG_TCG_TPM=y
-CONFIG_TCG_TIS=y
-# CONFIG_TCG_TIS_I2C_ATMEL is not set
-# CONFIG_TCG_TIS_I2C_INFINEON is not set
-# CONFIG_TCG_TIS_I2C_NUVOTON is not set
-# CONFIG_TCG_NSC is not set
-# CONFIG_TCG_ATMEL is not set
-# CONFIG_TCG_INFINEON is not set
-# CONFIG_TCG_CRB is not set
-
-or
-
-CONFIG_TCG_TPM=y
-CONFIG_TCG_TIS=y
-CONFIG_TCG_TIS_I2C_ATMEL=y
-CONFIG_TCG_TIS_I2C_INFINEON=y
-CONFIG_TCG_TIS_I2C_NUVOTON=y
-CONFIG_TCG_NSC=y
-CONFIG_TCG_ATMEL=y
-CONFIG_TCG_INFINEON=y
-CONFIG_TCG_CRB=y
-
-Tested-by: Scot Doyle <lkml14@scotdoyle.com>
+-- 
+- Jeremiah Mahler
