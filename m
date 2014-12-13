@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764AbaLMBQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 20:16:00 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:65161 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932591AbaLMBP7 (ORCPT
+	id S932832AbaLMBSa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 20:18:30 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:14881 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932599AbaLMBS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 20:15:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
+	Fri, 12 Dec 2014 20:18:29 -0500
+Message-ID: <1418433507.3683.0.camel@goodmis.org>
+Subject: Re: [Resend][PATCH] tracing / PM: Replace CONFIG_PM_RUNTIME with
+ CONFIG_PM
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Ingo Molnar <mingo@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Subject: [Resend][PATCH] power / PM: Eliminate CONFIG_PM_RUNTIME
-Date: Sat, 13 Dec 2014 02:37:38 +0100
-Message-ID: <2140907.kiDBIytxHB@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2283612.6Ya1ZnvRTt@vostro.rjw.lan>
-References: <2283612.6Ya1ZnvRTt@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        Linux PM list <linux-pm@vger.kernel.org>
+Date: Fri, 12 Dec 2014 20:18:27 -0500
+In-Reply-To: <2199353.4ffnTtchId@vostro.rjw.lan>
+References: <1729515.GUkTny2h5Y@vostro.rjw.lan>
+	 <2199353.4ffnTtchId@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Sat, 2014-12-13 at 02:34 +0100, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
+> selected) PM_RUNTIME is always set if PM is set, so files that are
+> build conditionally if CONFIG_PM_RUNTIME is set may now be build
+> if CONFIG_PM is set.
+> 
+> Replace CONFIG_PM_RUNTIME with CONFIG_PM in kernel/trace/Makefile
+> for this reason.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+> 
+> Please let me know if there are any objections against this.  If not, I'll
+> take it through the linux-pm tree, as I'm going to remove CONFIG_PM_RUNTIME
+> entirely shortly.
 
-After commit b2b49ccbdd54 (PM: Kconfig: Set PM_RUNTIME if PM_SLEEP is
-selected) PM_RUNTIME is always set if PM is set, so #ifdef blocks
-depending on CONFIG_PM_RUNTIME within #ifdef blocks depending on
-CONFIG_PM may be dropped now.
+Feel free to take it.
 
-Do that in drivers/power/pm2301_charger.c.
+Acked-by: Steven Rostedt <rostedt@goodmis.org.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+-- Steve
 
-Please let me know if there are any objections against this.  If not, I'll
-take it through the linux-pm tree, as I'm going to remove CONFIG_PM_RUNTIME
-entirely shortly.
+> 
+> ---
+>  kernel/trace/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-pm/kernel/trace/Makefile
+> ===================================================================
+> --- linux-pm.orig/kernel/trace/Makefile
+> +++ linux-pm/kernel/trace/Makefile
+> @@ -55,7 +55,7 @@ obj-$(CONFIG_EVENT_TRACING) += trace_eve
+>  obj-$(CONFIG_EVENT_TRACING) += trace_events_trigger.o
+>  obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+>  obj-$(CONFIG_TRACEPOINTS) += power-traces.o
+> -ifeq ($(CONFIG_PM_RUNTIME),y)
+> +ifeq ($(CONFIG_PM),y)
+>  obj-$(CONFIG_TRACEPOINTS) += rpm-traces.o
+>  endif
+>  ifeq ($(CONFIG_TRACING),y)
 
----
- drivers/power/pm2301_charger.c |    4 ----
- 1 file changed, 4 deletions(-)
-
-Index: linux-pm/drivers/power/pm2301_charger.c
-===================================================================
---- linux-pm.orig/drivers/power/pm2301_charger.c
-+++ linux-pm/drivers/power/pm2301_charger.c
-@@ -951,8 +951,6 @@ static int pm2xxx_wall_charger_suspend(s
- 
- #endif
- 
--#ifdef CONFIG_PM_RUNTIME
--
- static int  pm2xxx_runtime_suspend(struct device *dev)
- {
- 	struct i2c_client *pm2xxx_i2c_client = to_i2c_client(dev);
-@@ -977,8 +975,6 @@ static int  pm2xxx_runtime_resume(struct
- 	return 0;
- }
- 
--#endif
--
- static const struct dev_pm_ops pm2xxx_pm_ops = {
- 	SET_SYSTEM_SLEEP_PM_OPS(pm2xxx_wall_charger_suspend,
- 		pm2xxx_wall_charger_resume)
 
