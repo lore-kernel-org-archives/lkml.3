@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaLMATy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 19:19:54 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:55484 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaLMATv (ORCPT
+	id S1753973AbaLMAXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 19:23:18 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:39013 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930AbaLMAXR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 19:19:51 -0500
+	Fri, 12 Dec 2014 19:23:17 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418396866-32625-1-git-send-email-lyz@rock-chips.com>
-References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
-	<1418396866-32625-1-git-send-email-lyz@rock-chips.com>
-Date: Fri, 12 Dec 2014 16:19:49 -0800
-X-Google-Sender-Auth: iF9fVxPc93hg1Sg9ZeLiSEiOiPU
-Message-ID: <CAD=FV=XiP37Q8EkDYpBgh=Ng9nJD9-Uow0qCy78u6kCZomGNPA@mail.gmail.com>
-Subject: Re: [PATCH v7 2/5] phy: add a driver for the Rockchip SoC internal
- USB2.0 PHY
-From: Doug Anderson <dianders@chromium.org>
-To: Yunzhi Li <lyz@rock-chips.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        jwerner@chromium.org, Olof Johansson <olof@lixom.net>,
-        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>
+In-Reply-To: <548B8046.4040808@oracle.com>
+References: <20141201230339.GA20487@ret.masoncoding.com>
+	<1417529606.3924.26.camel@maggy.simpson.net>
+	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+	<1417540493.21136.3@mail.thefacebook.com>
+	<20141203184111.GA32005@redhat.com>
+	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+	<20141205171501.GA1320@redhat.com>
+	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+	<1417806247.4845.1@mail.thefacebook.com>
+	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+	<20141211145408.GB16800@redhat.com>
+	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+	<548A122C.8000906@oracle.com>
+	<CA+55aFw68nC+5s=iX2R4SLsgG3nBvURmDXYvX5pFJgHBnQoHMA@mail.gmail.com>
+	<548A2165.9030107@oracle.com>
+	<548B8046.4040808@oracle.com>
+Date: Fri, 12 Dec 2014 16:23:16 -0800
+X-Google-Sender-Auth: Is5LFLPvse-eE-WQmbZJskeGMYk
+Message-ID: <CA+55aFyRW6su2J5O+ie70GqMvO3TYuSj93xwyJaPjGK1M=vUgA@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yunzhi,
-
-On Fri, Dec 12, 2014 at 7:07 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
-> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
-> currently this driver can support RK3288. The RK3288 SoC have
-> three independent USB PHY IPs which are all configured through a
-> set of registers located in the GRF (general register files)
-> module.
+On Fri, Dec 12, 2014 at 3:54 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
 >
-> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
->
-> ---
->
-> Changes in v7:
-> - Accept Kishon's comments to use phandle args to find a phy
->   struct directly and get rid of using a custom of_xlate
->   function.
+> I ran bisection on trinity, rather than the kernel, and got the following
+> result:
 
-I'm going to assume you didn't test this version, since it doesn't
-work for me.  At suspend time power is high and my printouts in the
-powerup/powerdown code aren't called...
+Heh. That commit is pretty small, but I guess the effect of having a
+number of regular files open and being used on the trinity loads can
+be almost arbitrarily large.
 
+Where do those files get opened? What filesystem?
 
-> +       for_each_available_child_of_node(dev->of_node, child) {
-> +               rk_phy = devm_kzalloc(dev, sizeof(*rk_phy), GFP_KERNEL);
-> +               if (!rk_phy)
-> +                       return -ENOMEM;
-> +
-> +               if (of_property_read_u32(child, "reg", &reg_offset)) {
-> +                       dev_err(dev, "missing reg property in node %s\n",
-> +                               child->name);
-> +                       return -EINVAL;
-> +               }
-> +
-> +               rk_phy->reg_offset = reg_offset;
-> +               rk_phy->reg_base = grf;
-> +
-> +               rk_phy->clk = of_clk_get_by_name(child, "phyclk");
-> +               if (IS_ERR(rk_phy->clk))
-> +                       rk_phy->clk = NULL;
-> +
-> +               rk_phy->phy = devm_phy_create(dev, child, &ops);
-> +               if (IS_ERR(rk_phy->phy)) {
-> +                       dev_err(dev, "failed to create PHY\n");
-> +                       return PTR_ERR(rk_phy->phy);
-> +               }
-> +               phy_set_drvdata(rk_phy->phy, rk_phy);
-> +       }
-> +
-> +       phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+That might actually explain your and DaveJ's big differences: you are
+running in virtualization, and I remember some 9p traces with virtio
+etc from your reports.
 
-I think your bug is here.  I think you now need to register 3 phy
-providers, not just one.
+While DaveJ obviously runs on bare hardware, possibly on /tmp and tmpfs?
 
-I'll continue to assert my utter noviceness with this code, but my
-attempt at a solution (which works) can be found at:
+> I've been running trinity f2be2d5ff^ on -next for two hours now, and there's
+> no sign of a lockup. Previously it took ~10 minutes trigger.
 
-https://chromium-review.googlesource.com/235456
+DaveJ?  Is there anything limiting the size of those files?
 
--Doug
+                   Linus
