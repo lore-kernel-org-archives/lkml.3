@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030197AbaLMK7m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 05:59:42 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:43923 "EHLO mail.skyhub.de"
+	id S966469AbaLMLMD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 06:12:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57053 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966436AbaLMK7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 05:59:40 -0500
-Date: Sat, 13 Dec 2014 11:59:25 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>, x86@kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
-        Joerg Roedel <joro@8bytes.org>, Marc Zyngier <marc.zyngier@arm.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [RFC PATCH 2/2] tracing: Add tracepoint_printk cmdline
-Message-ID: <20141213105925.GB29934@pd.tnic>
-References: <alpine.DEB.2.11.1412121539300.16494@nanos>
- <20141212181420.47100d5c@gandalf.local.home>
- <20141213004830.792da019@gandalf.local.home>
- <20141213005037.78eca245@gandalf.local.home>
+	id S966450AbaLMLMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 06:12:00 -0500
+Message-ID: <548C1E7D.1000005@redhat.com>
+Date: Sat, 13 Dec 2014 12:09:49 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20141213005037.78eca245@gandalf.local.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: VishnuPatekar <vishnupatekar0510@gmail.com>, linux-input@vger.kernel.org,
+        maxime.ripard@free-electrons.com, dmitry.torokhov@gmail.com
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux@arm.linux.org.uk, grant.likely@linaro.org,
+        benh@kernel.crashing.org, msalter@redhat.com, ralf@linux-mips.org,
+        jdelvare@suse.de
+Subject: Re: [PATCHv3 0/5] ARM:sunxi:ps2 Added support for A10/A20 ps2 controller.
+References: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>
+In-Reply-To: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 12:50:37AM -0500, Steven Rostedt wrote:
-> 
-> Add the kernel command line tracepoint_printk option that will
-> have tracepoints that are active sent to printk().
-> 
-> Passing "tracepoint_printk" will activate this. To turn it off
-> the sysctl /proc/sys/kernel/tracepoint_printk can have '0' echoed
-> into it. Note, this only works if the cmdline option is used.
-> Echoing 1 into the sysctl file without the cmdline option will
-> have no affect.
-> 
-> Note, this is a dangerous option. Having high frequency
-> tracepoints send their data to printk() can possibly cause
-> a live lock.
-> 
-> Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
-> 
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  Documentation/kernel-parameters.txt | 18 ++++++++++++++++++
->  include/linux/ftrace.h              |  1 +
->  kernel/sysctl.c                     |  7 +++++++
->  kernel/trace/trace.c                | 17 +++++++++++++++++
->  kernel/trace/trace.h                |  1 +
->  kernel/trace/trace_events.c         | 32 ++++++++++++++++++++++++++++++++
->  6 files changed, 76 insertions(+)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 1d09eb37c562..d81f464a7358 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -3500,6 +3500,24 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			See also Documentation/trace/ftrace.txt "trace options"
->  			section.
->  
-> +	tracepoint_printk[FTRACE]
+Hi VishnuPatekar,
 
-Damn, this is long and most likely nasty to type on some dingy box when
-you're trying to debug stuff. Can we shorten it?
+The patch mangling for this set seems to have gone a bit wrong I'm afraid,
+a lot of the patches have my fixup commit messages (which should have
+disappeared when squashing in the patches), please replace those by proper
+commit messages describing what the patch actually does.
 
-trace_printk
-tp_printk
-tp_print
-tp_pr
-...
+Also the adding of the commented nodes for the lime2 seems to be gone entirely
+from the set, instead now only a comment about the conflict with the hdmi
+pins is added, but it is above the i2c node instead of above a ps2 node.
 
-Last one is my favourite - we should call it ToiletPaper_Print :-)
+Regards,
 
-> +			Have the tracepoints sent to printk as well as the
-> +			tracing ring buffer. This is useful for early boot up
-> +			where the system hangs or reboots and does not give the
-> +			option for reading the tracing buffer or performing a
-> +			ftrace_dump_on_oops.
+Hans
 
--- 
-Regards/Gruss,
-    Boris.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+On 12-12-14 19:25, VishnuPatekar wrote:
+> v2 --> v3
+> 1. changed config to SERIO_SUN4I_PS2 from SERIO_SUNXI_PS2
+> 2. changed driver name to sun4i-ps2 from sunxi-ps2.
+> 3. changed the function names to sun4i_ps2_*.
+> 4. added locking in sun4i_ps2_open.
+> 5. kept compatible "sun4i-a10-ps2" for A10 and A20, as A10 is earlier SOC.
+> 6. corrected the style errors.
+> 7. separated the dts patches.
+> 8. removed commented ps2 notes from lime2 dts.
+> 9. added note that ps2 pins confilt with hdmi.
+> 10. corrected the interrupt property for A10.
+> 11. moved dt-bindings to Documentation/devicetree/bindings/serio
+>
+> v1 --> v2:
+> 1. added default n depends on ARCH_SUNXI || COMPILE_TEST in Kconfig.
+> 2. handled errors and free resources on errors.
+> 3. used BIT(x), DIV_ROUND_UP macros.
+> 4. corrected style errors.
+> 5. added support for A10 also, A10 and A2 have same properties of PS2 controller.
+> 6. by default commented ps20 and ps21 nodes,as ps20 pins conflict with HDMI.
+> 7. added compatible as allwinner,sun4i-a10-ps2.
+> 8. corrected the possible race condition.
+>
+>
+> VishnuPatekar (5):
+>    sunxi:dts-bindings:input:ps2 bindings for A10/A20 ps2.
+>    ARM:sunxi:drivers:input Add support for A10/A20 PS2
+>    ARM: sunxi: dts: Add PS2 nodes to dtsi for A10 and A20
+>    ARM: sunxi: dts: Add A10/A20 PS2 pin muxing options
+>    ARM: sunxi: dts: Add note ps2 pins conflict with hdmi
+>
+>   .../bindings/serio/allwinner,sun4i-ps2.txt         |   23 ++
+>   arch/arm/boot/dts/sun4i-a10.dtsi                   |   31 ++
+>   arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts    |    6 +-
+>   arch/arm/boot/dts/sun7i-a20.dtsi                   |   32 ++
+>   drivers/input/serio/Kconfig                        |   11 +
+>   drivers/input/serio/Makefile                       |    1 +
+>   drivers/input/serio/sun4i-ps2.c                    |  362 ++++++++++++++++++++
+>   7 files changed, 465 insertions(+), 1 deletion(-)
+>   create mode 100644 Documentation/devicetree/bindings/serio/allwinner,sun4i-ps2.txt
+>   create mode 100644 drivers/input/serio/sun4i-ps2.c
+>
