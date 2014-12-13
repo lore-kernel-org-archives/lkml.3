@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaLMTH3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 14:07:29 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:41316 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080AbaLMTH2 (ORCPT
+	id S1753844AbaLMTJd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 14:09:33 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:62993 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701AbaLMTJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 14:07:28 -0500
-Date: Sat, 13 Dec 2014 19:07:05 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Loic Pefferkorn <loic@loicp.eu>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jun.j.tian@intel.com,
-        octavian.purdila@intel.com, nnk@google.com, devel@driverdev.osuosl.org,
+	Sat, 13 Dec 2014 14:09:32 -0500
+Date: Sat, 13 Dec 2014 11:09:26 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-input@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: goldfish: Fix minor coding style
-Message-ID: <20141213190705.0faaf119@lxorguk.ukuu.org.uk>
-In-Reply-To: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
-References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+Subject: Re: [PATCH 2/2] Input: gpio_keys - replace timer and workqueue with
+ delayed workqueue
+Message-ID: <20141213190926.GD22702@dtor-ws>
+References: <20141208071930.GA20802@dtor-ws>
+ <20141208072124.GA21031@dtor-ws>
+ <1418236376.17201.57.camel@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418236376.17201.57.camel@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Dec 2014 17:29:26 +0100
-Loic Pefferkorn <loic@loicp.eu> wrote:
+Hi Andy,
 
-> Hello,
+On Wed, Dec 10, 2014 at 08:32:56PM +0200, Andy Shevchenko wrote:
+> On Sun, 2014-12-07 at 23:21 -0800, Dmitry Torokhov wrote:
+> > We do not need to roll our own implementation of delayed work now that we
+> > have proper implementation of mod_delayed_work.
+> > 
+> > For interrupt-only driven buttons we retain the timer, but we rename
+> > it to release_timer to better reflect its purpose.
 > 
-> The convention for checking for NULL pointers is !ptr and not ptr == NULL.
-> This patch fixes such occurences in goldfish driver, it applies against next-20141212
+> At least it doesn't break the driver on Intel Medfield device.
 > 
-> 
-> Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
+> Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-Pointless churn. It makes it less readable if anything, and it removes
-the type safety as you are now checking against 0 not (void *)0
+Thank you for testing it. Assume it is for both patches, right?
 
-NAK
-
-Alan
+-- 
+Dmitry
