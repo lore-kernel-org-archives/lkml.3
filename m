@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965932AbaLMILr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 03:11:47 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40661 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965655AbaLMILq (ORCPT
+	id S965973AbaLMIT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 03:19:59 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:35615 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965934AbaLMIT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 03:11:46 -0500
-Date: Sat, 13 Dec 2014 09:11:40 +0100
+	Sat, 13 Dec 2014 03:19:58 -0500
+Date: Sat, 13 Dec 2014 09:19:53 +0100
 From: Ingo Molnar <mingo@kernel.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Chris Mason <clm@fb.com>,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Dave Jones <davej@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141213081140.GF32572@gmail.com>
-References: <547b8a45.6e608c0a.20f9.1002@mx.google.com>
- <CA+55aFzQ0QZxL-PRnv4Db=wo1pDmBR45P-vpGxyeJnt1DFnSfA@mail.gmail.com>
- <547bbe36.48548c0a.105c.779c@mx.google.com>
- <20141201191431.GA17385@linux.vnet.ibm.com>
- <547ccf74.a5198c0a.25de.26d9@mx.google.com>
- <CA+55aFx0K=T8yvfRCYeaJG_5YO+Qm8EEQfA9Xp59xedbzj=f2A@mail.gmail.com>
- <20141201230339.GA20487@ret.masoncoding.com>
- <1417529606.3924.26.camel@maggy.simpson.net>
- <CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
- <1417542432.3924.39.camel@maggy.simpson.net>
+Message-ID: <20141213081953.GG32572@gmail.com>
+References: <20141203184111.GA32005@redhat.com>
+ <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+ <20141205171501.GA1320@redhat.com>
+ <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+ <1417806247.4845.1@mail.thefacebook.com>
+ <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+ <20141211145408.GB16800@redhat.com>
+ <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+ <20141212185454.GB4716@redhat.com>
+ <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1417542432.3924.39.camel@maggy.simpson.net>
+In-Reply-To: <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> On Tue, 2014-12-02 at 08:33 -0800, Linus Torvalds wrote:
+> On Fri, Dec 12, 2014 at 10:54 AM, Dave Jones <davej@redhat.com> wrote:
+>
+> >
+> > Something that's still making me wonder if it's some kind of 
+> > hardware problem is the non-deterministic nature of this bug.
 > 
-> > Looking again at that patch (the commit message still doesn't strike
-> > me as wonderfully explanatory :^) makes me worry, though.
-> > 
-> > Is that
-> > 
-> >         if (rq->skip_clock_update-- > 0)
-> >                 return;
-> > 
-> > really right? If skip_clock_update was zero (normal), it now gets set
-> > to -1, which has its own specific meaning (see "force clock update"
-> > comment in kernel/sched/rt.c). Is that intentional? That seems insane.
+> I'd expect it to be a race condition, though. Which can easily 
+> cause these kinds of issues, and the timing will be pretty 
+> random even if the load is very regular.
 > 
-> Yeah, it was intentional.  Least lines.
-> 
-> > Or should it be
-> > 
-> >         if (rq->skip_clock_update > 0) {
-> >                 rq->skip_clock_update = 0;
-> >                 return;
-> >         }
-> > 
-> > or what? Maybe there was a reason the patch never got applied even to -tip.
-> 
-> Peterz was looking at corner case proofing the thing.  Saving those
-> cycles has been entirely too annoying.
-> 
-> https://lkml.org/lkml/2014/4/8/295
+> And we know that the scheduler has an integer overflow under 
+> Sasha's loads, although I didn't hear anything from Ingo and 
+> friends about it. Ingo/Peter, you were cc'd on that report, 
+> where at least one of the multiplcations in wake_affine() ended 
+> up overflowing..
 
-Hm, so that discussion died with:
+Just to make sure, is there any other wake_affine report other 
+than the one in this thread? (I tried a wake_affine full text 
+search on my inbox and didn't find anything that appeared 
+relevant.)
 
-  https://lkml.org/lkml/2014/4/8/343
+> Some scheduler thing that overflows only under heavy load, and 
+> screws up scheduling could easily account for the RCU thread 
+> thing. I see it *less* easily accounting for DaveJ's case, 
+> though, because the watchdog is running at RT priority, and the 
+> scheduler would have to screw up much more to then not schedule 
+> an RT task, but..
 
-Did you ever get around to trying Peter's patch?
-
-But ... I've yet to see rq_clock problems cause actual lockups. 
-That's the main problem we have with its (un)robustness and why 
-Peter created that rq_clock debug facility: bugs there cause 
-latencies but no easily actionable symptoms, which are much 
-harder to debug.
+Yeah, the RT scheduler is harder (but not impossible) to confuse 
+due to its simplicity, but scheduler counts overflowing could 
+definitely cause all sorts of trouble and make debugging harder, 
+so we want to fix it regardless of its likelihood of causing 
+lockups.
 
 Thanks,
 
