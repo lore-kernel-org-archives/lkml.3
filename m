@@ -1,67 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965491AbaLMGnH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 01:43:07 -0500
-Received: from smtprelay0230.hostedemail.com ([216.40.44.230]:58568 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965425AbaLMGnF (ORCPT
+	id S965558AbaLMGpe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 01:45:34 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:64415 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965425AbaLMGpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 01:43:05 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:4321:5007:6261:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12517:12519:12555:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crib41_8eebdc678004f
-X-Filterd-Recvd-Size: 2017
-Message-ID: <1418452981.29082.7.camel@perches.com>
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-From: Joe Perches <joe@perches.com>
-To: Krzysztof Konopko <kris@konagma.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 12 Dec 2014 22:43:01 -0800
-In-Reply-To: <1418425137-13339-1-git-send-email-kris@konagma.com>
-References: <1418336609-10191-1-git-send-email-kris@konagma.com>
-	 <1418425137-13339-1-git-send-email-kris@konagma.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Dec 2014 01:45:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <548B0517.6070603@gmail.com>
+References: <54883195.1060304@gmail.com>
+	<20141211152626.GA8196@redhat.com>
+	<548A39E7.80508@gmail.com>
+	<20141212142447.GA30315@debian>
+	<548B0517.6070603@gmail.com>
+Date: Fri, 12 Dec 2014 22:45:30 -0800
+Message-ID: <CAB=cV2Rvp95xuKNd0WzfLpMGrwdSCPxGt6npo+FH0H1y_5kY9Q@mail.gmail.com>
+Subject: Re: [dm-devel] [PATCH v2] staging: writeboost: Add dm-writeboost
+From: Jianjian Huo <samuel.huo@gmail.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: thornber@redhat.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        snitzer@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-12 at 23:58 +0100, Krzysztof Konopko wrote:
-> This patch changes the types of the struct fields involved to be
-> little-endian which is what is received over the air and consistent with
-> relevant structs in include/linux/ieee80211.h.
-[]
-> diff --git a/drivers/staging/rtl8723au/include/wifi.h b/drivers/staging/rtl8723au/include/wifi.h
-[]
-> @@ -28,7 +28,7 @@
->  struct AC_param {
->  	unsigned char		ACI_AIFSN;
->  	unsigned char		CW;
-> -	unsigned short	TXOP_limit;
-> +	__le16			TXOP_limit;
->  }  __packed;
->  
->  struct WMM_para_element {
-> @@ -39,9 +39,9 @@ struct WMM_para_element {
->  
->  struct ADDBA_request {
->  	unsigned char		dialog_token;
-> -	unsigned short	BA_para_set;
-> -	unsigned short	BA_timeout_value;
-> -	unsigned short	BA_starting_seqctrl;
-> +	__le16		BA_para_set;
-> +	__le16		BA_timeout_value;
-> +	__le16		BA_starting_seqctrl;
->  }  __packed;
+If I understand it correctly, the whole idea indeed is very simple,
+the consumer/provider and circular buffer model. use SSD as a circular
+write buffer, write flush thread stores incoming writes to this buffer
+sequentially as provider, and writeback thread write those data logs
+sequentially into backing device as consumer.
 
-If I did this, I would also change the
-unsigned char uses to u8 at the same time.
+If writeboost can do that without any random writes, then probably it
+can save SSD/FTL of doing a lot of dirty jobs, and utilize the faster
+sequential read/write performance from SSD. That'll be awesome.
+However, I saw every data log segment in its design has meta data
+header, like dirty_bits, so I guess writeboost has to randomly write
+those data headers of stored data logs in SSD; also, splitting all bio
+into 4KB will hurt its ability to get max raw SSD throughput, modern
+NAND Flash has pages much bigger than 4KB; so overall I think the
+actual benefits writeboost gets from this design will be discounted.
 
+The good thing is that it seems writeboost doesn't use garbage
+collection to clean old invalid logs, this will avoid the double
+garage collection effect other caching module has, which essentially
+both caching module and internal SSD will perform garbage collections
+twice.
 
+And one question, how long will be data logs replay time during init,
+if SSD is almost full of dirty data logs?
 
+Jianjian
+
+On Fri, Dec 12, 2014 at 7:09 AM, Akira Hayakawa <ruby.wktk@gmail.com> wrote:
+>> However, after looking at the current code, and using it I think it's
+>> a long, long way from being ready for production.  As we've already
+>> discussed there are some very naive design decisions in there, such as
+>> copying every bio payload to another memory buffer, splitting all io
+>> down to 4k.  Think about the cpu overhead and memory consumption!
+>> Think about how it will perform when memory is constrained and it
+>> can't allocate many of those rambufs!  I'm sure more issues will be
+>> found if I read further.
+> These decisions are made based on measurement. They are not naive.
+> I am a man who dislikes performance optimization without measurement.
+> As a result, I regard things brought by the simplicity much important
+> than what's from other design decisions possible.
+>
+> About the CPU consumption,
+> the average CPU consumption while performing random write fio
+> with consumer level SSD is only 3% or so,
+> which is 5 times efficient than bcache per iops.
+>
+> With RAM-backed cache device, it reaches about 1.5GB/sec throughput.
+> Even in this case the CPU consumption is only 12%.
+> Please see this post,
+> http://www.redhat.com/archives/dm-devel/2014-February/msg00000.html
+>
+> I don't think the CPU consumption is small enough to ignore.
+>
+> About the memory consumption,
+> you seem to misunderstand the fact.
+> The rambufs are not dynamically allocated but statically.
+> The default amount is 8MB and this is usually not to argue.
+>
+>> Mike raised the question of why you want this in the kernel so much?
+>> You'd find none of the distros would support it; so it doesn't widen
+>> your audience much.  It's far better for you to maintain it outside of
+>> the kernel at this point.  Any users will be bold, adventurous people,
+>> who will be quite capable of building a kernel module.
+> Some people deploy Writeboost in their daily use.
+> The sound of "log-structured" seems to easily attract storage guys' attention.
+> If this driver is merged into upstream, I think it gains many audience and
+> thus feedback.
+> When my driver was introduced by Phoronix before, it actually drew attentions.
+> They must wait for Writeboost become available in upstream.
+> http://www.phoronix.com/scan.php?page=news_item&px=MTQ1Mjg
+>
+>> I'm sorry to have disappointed you so, but if I let this go upstream
+>> it would mean a massive amount of support work for me, not to mention
+>> a damaged reputation for dm.
+> If you read the code further, you will find how simple the mechanism is.
+> Not to mention the code itself is.
+>
+> - Akira
+>
+> On 12/12/14 11:24 PM, Joe Thornber wrote:
+>> On Fri, Dec 12, 2014 at 09:42:15AM +0900, Akira Hayakawa wrote:
+>>> The SSD-caching should be log-structured.
+>>
+>> No argument there, and this is why I've supported you with
+>> dm-writeboost over the last couple of years.
+>>
+>> However, after looking at the current code, and using it I think it's
+>> a long, long way from being ready for production.  As we've already
+>> discussed there are some very naive design decisions in there, such as
+>> copying every bio payload to another memory buffer, splitting all io
+>> down to 4k.  Think about the cpu overhead and memory consumption!
+>> Think about how it will perform when memory is constrained and it
+>> can't allocate many of those rambufs!  I'm sure more issues will be
+>> found if I read further.
+>>
+>> I'm sorry to have disappointed you so, but if I let this go upstream
+>> it would mean a massive amount of support work for me, not to mention
+>> a damaged reputation for dm.
+>>
+>> Mike raised the question of why you want this in the kernel so much?
+>> You'd find none of the distros would support it; so it doesn't widen
+>> your audience much.  It's far better for you to maintain it outside of
+>> the kernel at this point.  Any users will be bold, adventurous people,
+>> who will be quite capable of building a kernel module.
+>>
+>> - Joe
+>>
+>
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
