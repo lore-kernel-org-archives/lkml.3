@@ -1,60 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283AbaLMXKD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 18:10:03 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:51105 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaLMXKA (ORCPT
+	id S1754354AbaLMXMP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 18:12:15 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:54593 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbaLMXMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 18:10:00 -0500
+	Sat, 13 Dec 2014 18:12:12 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
-References: <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
-	<20141205171501.GA1320@redhat.com>
-	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
-	<1417806247.4845.1@mail.thefacebook.com>
-	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
-	<20141211145408.GB16800@redhat.com>
-	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-	<20141212185454.GB4716@redhat.com>
-	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
-	<20141213165915.GA12756@redhat.com>
-	<20141213223616.GA22559@redhat.com>
-	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
-	<CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
-Date: Sat, 13 Dec 2014 15:09:59 -0800
-X-Google-Sender-Auth: IVWmPrmjkYbxbngQiQx0c5fZxwM
-Message-ID: <CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <548BE99E.2000409@ti.com>
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+	<1418396866-32625-1-git-send-email-lyz@rock-chips.com>
+	<CAD=FV=XiP37Q8EkDYpBgh=Ng9nJD9-Uow0qCy78u6kCZomGNPA@mail.gmail.com>
+	<548BE99E.2000409@ti.com>
+Date: Sat, 13 Dec 2014 15:12:10 -0800
+X-Google-Sender-Auth: 4OUm-u-wOfq8kPmmwizwLPpCHTk
+Message-ID: <CAD=FV=UZn1Xjq8eS35Wk=b-EL1U2hh+Wxt48k40f_zupaUHdMw@mail.gmail.com>
+Subject: Re: [PATCH v7 2/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+From: Doug Anderson <dianders@chromium.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Yunzhi Li <lyz@rock-chips.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        jwerner@chromium.org, Olof Johansson <olof@lixom.net>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 2:59 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> The generic code does that mnt_want_write/mnt_drop_write
-> dance adound the call to setxattr, and that in turn does
->
->         while (ACCESS_ONCE(mnt->mnt.mnt_flags) & MNT_WRITE_HOLD)
->                 cpu_relax();
->
-> with preemption explicitly disabled.
+Hi,
 
-Btw, I see no reason why mnt_want_write/mnt_drop_write disables
-preemption. They don't care, they just care about the ordering of the
-write counts and the MNT_WRITE_HOLD bit. It's the code that sets the
-bit that should care, afaik. But maybe I'm missing something.
+On Fri, Dec 12, 2014 at 11:24 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> hi,
+>
+> On Saturday 13 December 2014 05:49 AM, Doug Anderson wrote:
+>> Yunzhi,
+>>
+>> On Fri, Dec 12, 2014 at 7:07 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+>>> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
+>>> currently this driver can support RK3288. The RK3288 SoC have
+>>> three independent USB PHY IPs which are all configured through a
+>>> set of registers located in the GRF (general register files)
+>>> module.
+>>>
+>>> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+>>>
+>>> ---
+>>>
+>>> Changes in v7:
+>>> - Accept Kishon's comments to use phandle args to find a phy
+>>>   struct directly and get rid of using a custom of_xlate
+>>>   function.
+>>
+>> I'm going to assume you didn't test this version, since it doesn't
+>> work for me.  At suspend time power is high and my printouts in the
+>> powerup/powerdown code aren't called...
+>>
+>>
+>>> +       for_each_available_child_of_node(dev->of_node, child) {
+>>> +               rk_phy = devm_kzalloc(dev, sizeof(*rk_phy), GFP_KERNEL);
+>>> +               if (!rk_phy)
+>>> +                       return -ENOMEM;
+>>> +
+>>> +               if (of_property_read_u32(child, "reg", &reg_offset)) {
+>>> +                       dev_err(dev, "missing reg property in node %s\n",
+>>> +                               child->name);
+>>> +                       return -EINVAL;
+>>> +               }
+>>> +
+>>> +               rk_phy->reg_offset = reg_offset;
+>>> +               rk_phy->reg_base = grf;
+>>> +
+>>> +               rk_phy->clk = of_clk_get_by_name(child, "phyclk");
+>>> +               if (IS_ERR(rk_phy->clk))
+>>> +                       rk_phy->clk = NULL;
+>>> +
+>>> +               rk_phy->phy = devm_phy_create(dev, child, &ops);
+>>> +               if (IS_ERR(rk_phy->phy)) {
+>>> +                       dev_err(dev, "failed to create PHY\n");
+>>> +                       return PTR_ERR(rk_phy->phy);
+>>> +               }
+>>> +               phy_set_drvdata(rk_phy->phy, rk_phy);
+>>> +       }
+>>> +
+>>> +       phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
+>>
+>> I think your bug is here.  I think you now need to register 3 phy
+>> providers, not just one.
+>
+> No there should be only one phy provider. It means the bug is elsewhere.
 
-                 Linus
+Ah.  That's what I get for testing on a backported kernel.  I bet it's
+because I'm missing:
+
+2a4c370 phy: core: Fix of_phy_provider_lookup to return PHY provider
+for sub node
+
+Hrm, that made things better, but I still only got one printout when I
+expected 3 (one for each user of the PHY).  I bet there are more picks
+I need then...  :-/  Ah, yup.  When I pick the whole load of PHY
+related stuff then I get all 3.  :)
+
+I'll do more testing when I have more time and post up a Tested-by, then...
+
+-Doug
