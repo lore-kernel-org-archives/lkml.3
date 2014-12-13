@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266AbaLMVVB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 16:21:01 -0500
-Received: from syn.loicp.eu ([176.31.96.212]:53264 "EHLO mx0.loicp.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932109AbaLMVVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 16:21:00 -0500
-Date: Sat, 13 Dec 2014 22:20:52 +0100
-From: Loic Pefferkorn <loic@loicp.eu>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: gregkh@linuxfoundation.org, alan@linux.intel.com, jun.j.tian@intel.com,
-        octavian.purdila@intel.com, nnk@google.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: goldfish: Fix minor coding style
-Message-ID: <20141213212051.GB6979@iron>
-References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
- <20141213190705.0faaf119@lxorguk.ukuu.org.uk>
+	id S932354AbaLMVci (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 16:32:38 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:43403 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932280AbaLMVcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 16:32:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141213190705.0faaf119@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <548750AD.6090201@osg.samsung.com>
+References: <548750AD.6090201@osg.samsung.com>
+Date: Sat, 13 Dec 2014 13:32:35 -0800
+X-Google-Sender-Auth: F60TXigctrtfWJcN3a9iIiNhN5E
+Message-ID: <CA+55aFx2DSXuikfd-RyEN3V+OaLSYhWub92=NJsNXGUhVnKKFQ@mail.gmail.com>
+Subject: Re: [GIT PULL] kselftest-3.19-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 07:07:05PM +0000, One Thousand Gnomes wrote:
-> 
-> Pointless churn. It makes it less readable if anything, and it removes
-> the type safety as you are now checking against 0 not (void *)0
-> 
-> NAK
-> 
-> Alan
+On Tue, Dec 9, 2014 at 11:42 AM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>
+> Please pull the following kselftest updates for 3.19-rc1. Details
+> in the singed tag:
 
-The type safety is an interesting point I was not aware of.
+Gaah. Why do you do this to me?
 
-Just in case, do you have something for me on your todo list?
+> git@gitolite.kernel.org:/pub/scm/linux/kernel/git/shuah/linux-kselftest
+> fixes
 
--- 
-Cheers,
-Loïc
+That's the wrong format, but it's also the wrong branch name.
+
+What it *should* have said is
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest
+tags/kselftest-3.19-rc1
+
+which is actually publicly accessible, and has the right tag name.
+
+EXCEPT THAT'S WRONG TOO! The actual kselftest-3.19-rc1 tag doesn't
+point to the commits in fixes at all! It points to commit
+0df1f2487d2f, which is my 3.18-rc3 commit.
+
+Please fix your script/workflow. I'm not pulling this mess.
+
+                      Linus
