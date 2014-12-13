@@ -1,176 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966397AbaLMKGC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 05:06:02 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:47654 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966327AbaLMKF6 (ORCPT
+	id S966424AbaLMKR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 05:17:59 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:33084 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966327AbaLMKR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 05:05:58 -0500
-X-IronPort-AV: E=Sophos;i="5.07,570,1413270000"; 
-   d="scan'208";a="52836672"
-Message-ID: <548C0F80.2090300@broadcom.com>
-Date: Sat, 13 Dec 2014 11:05:52 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Sat, 13 Dec 2014 05:17:57 -0500
+Date: Sat, 13 Dec 2014 02:17:53 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v14 00/12] input: cyapa: instruction of cyapa patches
+Message-ID: <20141213101753.GA9290@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418351262-8163-1-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Ray Jui <rjui@broadcom.com>, <linux-arm-kernel@lists.infradead.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Hauke Mehrtens" <hauke@hauke-m.de>, <devicetree@vger.kernel.org>,
-        Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCH v2 1/4] pci: iProc: define Broadcom iProc PCIe binding
-References: <1418351817-14898-2-git-send-email-rjui@broadcom.com> <3375037.6pjWmlOLA3@wuerfel> <548B1D98.6030400@broadcom.com> <3907917.zNo7yttzkh@wuerfel>
-In-Reply-To: <3907917.zNo7yttzkh@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418351262-8163-1-git-send-email-dudley.dulixin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14 18:14, Arnd Bergmann wrote:
-> On Friday 12 December 2014 08:53:44 Ray Jui wrote:
->>
->> On 12/12/2014 4:14 AM, Arnd Bergmann wrote:
->>> On Thursday 11 December 2014 18:36:54 Ray Jui wrote:
->>>> index 0000000..040bc0f
->>>> --- /dev/null
->>>> +++ b/Documentation/devicetree/bindings/pci/brcm,iproc-pcie.txt
->>>> @@ -0,0 +1,74 @@
->>>> +* Broadcom iProc PCIe controller
->>>> +
->>>> +Required properties:
->>>> +- compatible: Must be "brcm,iproc-pcie"
->>>> +- reg: base address and length of the PCIe controller and the MDIO interface
->>>> +  that controls the PCIe PHY
->>>> +- #interrupt-cells: set to<1>
->>>> +- interrupts: interrupt IDs
->>>
->>> How many, and what are they?
->>>
->> Different iProc SoCs might have different number of interrupts. I'll
->> elaborate more on the next patch.
->
-> Ok.
->
->>>> +- interrupt-map-mask and interrupt-map, standard PCI properties to define the
->>>> +  mapping of the PCIe interface to interrupt numbers
->>>> +- bus-range: PCI bus numbers covered
->>>> +- #address-cells: set to<3>
->>>> +- #size-cells: set to<2>
->>>> +- device_type: set to "pci"
->>>> +- ranges: ranges for the PCI memory and I/O regions
->>>> +- phy-addr: MDC/MDIO adddress of the PCIe PHY
->>>
->>> It looks like the phy controller is separate from the PCI controller,
->>> and you even list the same register range for both PHYs. Better make
->>> that a separate driver and put the phy address into the "phys" reference.
->>>
->> Okay. In this case, I need to create a separate PHY driver under the
->> drivers/phy directory and have the PCIe host driver reference it through
->> the standard PHY API.
->
-> Yes, that is what I meant. In particular, that has the advantage of letting
-> you reuse the two drivers separately if some new SoC comes up that uses
-> one but not the other. A lot of PHY implementations can support multiple
-> protocols (e.g. pcie and usb3), but I don't know if yours does.
->
->>>> +- have-msi-inten-reg: Required for legacy iProc PCIe controllers that need the
->>>> +  MSI interrupt enable register to be set explicitly
->>>> +
->>>> +The Broadcom iProc PCie driver adapts the multi-domain structure, i.e., each
->>>> +interface has its own domain and therefore has its own device node
->>>> +Example:
->>>> +
->>>> +SoC specific DT Entry:
->>>> +
->>>> +       pcie0: pcie@18012000 {
->>>> +               compatible = "brcm,iproc-pcie";
->>>> +               reg =<0x18012000 0x1000>,
->>>> +<0x18002000 0x1000>;
->>>
->>> I guess the addresses should be relative to the BCMA bus, and this node
->>> get moved under that. Please see Hauke's patch series, we've discussed
->>> this in great length already.
->>>
->>
->> As Arend van Spriel pointed out in the previous discussion:
->>
->> BCMA core is the bus driver for discoverable ARM AXI interconnect. Apart
->> from that it also provides drivers for some cores. For the chips to be
->> discoverable it needs additional IP logic.
->>
->> Not all iProc family of SoCs have the additional IP logic and for those
->> which don't, they cannot use the BCMA bus.
->
-> Ok, but the one from your example almost certainly does because the
-> addresses are exactly the same ones as on bcm53xx.
->
-> The same problem likely occurs on other peripherals, not just PCI,
-> so we will have to come up with a way to have a common driver for
-> bcma_bus and platform_bus for USB, SPI, brcmsmac, and likely others
-> too.
+Dudley,
 
-Makes sense. I think that is what Hauke meant by "adding
-additional support for registering to bcma". So the discovery info is a 
-piece of read-only memory in the chip. Its address is stored in the 
-chipcommon core register space. BCMA parses that memory blob resulting 
-in a list of cores which register address info. We could add DT support 
-in BCMA matching the compatible string and register a core for it.
+On Fri, Dec 12, 2014 at 10:27:30AM +0800, Dudley Du wrote:
+> V14 patches have below updates, details of other updates see history list:
+> 1) Correct 9 miss spelling issues of "bufferred" to "buffered".
+> 2) Fix the upgrade issue of removing MOUSE_CYAPA config when make oldconfig
+>    by replase "depends on I2C && CRC_ITU_T" with
+> 	"depends on I2C"
+> 	"select CRC_ITU_T"
+>    in patch 9.
+> 
+[...]
 
-However, apart from the discovery info a "discoverable ARM AXI" chip has 
-a register space per core that provides common procedures like 
-enable/disable, reset, core status, which are implemented in BCMA. I am 
-not seeing that register space in the DT examples so I guess this IP 
-block is not there for iProc chips.
+I found some sparse warnings that should be fixed.
 
-Regards,
-Arend
+  jeri@newt:~/linux-next$ touch drivers/input/mouse/*.c
+  jeri@newt:~/linux-next$ touch drivers/input/mouse/*.h
+  jeri@newt:~/linux-next$ make C=1
+    CHK     include/config/kernel.release
+    CHK     include/generated/uapi/linux/version.h
+    CHK     include/generated/utsrelease.h
+    CALL    scripts/checksyscalls.sh
+    CHK     include/generated/compile.h
+    CHK     kernel/config_data.h
+    CHECK   drivers/input/mouse/cyapa.c
+  drivers/input/mouse/cyapa.c:43:9: warning: symbol 'cyapa_i2c_read' was
+  not declared. Should it be static?
+  drivers/input/mouse/cyapa.c:80:9: warning: symbol 'cyapa_i2c_write' was
+  not declared. Should it be static?
+  drivers/input/mouse/cyapa.c:289:5: warning: symbol 'cyapa_detect' was
+  not declared. Should it be static?
+    CC [M]  drivers/input/mouse/cyapa.o
+    CHECK   drivers/input/mouse/cyapa_gen3.c
+  drivers/input/mouse/cyapa_gen3.c:299:5: warning: symbol
+  'cyapa_read_byte' was not declared. Should it be static?
+  drivers/input/mouse/cyapa_gen3.c:312:5: warning: symbol
+  'cyapa_write_byte' was not declared. Should it be static?
+  drivers/input/mouse/cyapa_gen3.c:331:9: warning: symbol
+  'cyapa_i2c_reg_write_block' was not declared. Should it be static?
+    CC [M]  drivers/input/mouse/cyapa_gen3.o
+    CHECK   drivers/input/mouse/cyapa_gen5.c
+  drivers/input/mouse/cyapa_gen5.c:334:5: warning: symbol
+  'cyapa_empty_pip_output_data' was not declared. Should it be static?
+  drivers/input/mouse/cyapa_gen5.c:553:6: warning: symbol
+  'cyapa_gen5_sort_tsg_pip_bl_resp_data' was not declared. Should it be
+  static?
+  drivers/input/mouse/cyapa_gen5.c:568:6: warning: symbol
+  'cyapa_gen5_sort_tsg_pip_app_resp_data' was not declared. Should it be
+  static?
+  drivers/input/mouse/cyapa_gen5.c:595:6: warning: symbol
+  'cyapa_gen5_sort_application_launch_data' was not declared. Should it be
+  static?
+  drivers/input/mouse/cyapa_gen5.c:995:6: warning: symbol
+  'cyapa_gen5_sort_bl_exit_data' was not declared. Should it be static?
+  drivers/input/mouse/cyapa_gen5.c:1112:72: warning: Using plain integer
+  as NULL pointer
+    CC [M]  drivers/input/mouse/cyapa_gen5.o
+    LD [M]  drivers/input/mouse/cyapatp.o
+  Kernel: arch/x86/boot/bzImage is ready  (#127)
+    Building modules, stage 2.
+    MODPOST 187 modules
+    CC      drivers/input/mouse/cyapatp.mod.o
+    LDFINAL [M]  drivers/input/mouse/cyapatp.ko
+  jeri@newt:~/linux-next
 
->>>> +               #interrupt-cells =<1>;
->>>> +               interrupts =<GIC_SPI 96 IRQ_TYPE_NONE>,
->>>> +<GIC_SPI 97 IRQ_TYPE_NONE>,
->>>> +<GIC_SPI 98 IRQ_TYPE_NONE>,
->>>> +<GIC_SPI 99 IRQ_TYPE_NONE>,
->>>> +<GIC_SPI 100 IRQ_TYPE_NONE>,
->>>> +<GIC_SPI 101 IRQ_TYPE_NONE>;
->>>
->>>
->>>
->>>> +               interrupt-map-mask =<0 0 0 0>;
->>>> +               interrupt-map =<0 0 0 0&gic GIC_SPI 100 IRQ_TYPE_NONE>;
->>>
->>> This interrupt is also listed in the "interrupts" above, which is
->>> probably a mistake, unless the IRQ line is shared between all PCI
->>> devices and the PCI host itself.
->>>
->> interrupts are for MSI interrupt support and interrupt-map is for legacy
->> INTx support. To my best knowledge, MSI and INTx cannot be used at the
->> same time. "nvidia,tegra20-pcie.txt" and "rcar-pci.txt" have similar
->> configurations.
->
-> Linux drivers will absolutely use MSI and legacy interrupts together, because
-> some drivers don't support MSI and others enable it unconditionally.
->
-> In both your examples (tegra and rcar), the interrupts that share the same
-> number are auxiliary and are correctly used with IRQF_SHARED, so that works.
-> If a device MSI just maps to a host IRQ however, you wouldn't be able to
-> use IRQF_SHARED.
->
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+-- 
+- Jeremiah Mahler
