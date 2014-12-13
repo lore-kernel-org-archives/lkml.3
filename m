@@ -1,35 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645AbaLMCG2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 21:06:28 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:35732 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313AbaLMCG1 (ORCPT
+	id S964809AbaLMCId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 21:08:33 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:46422 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753313AbaLMCIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 21:06:27 -0500
+	Fri, 12 Dec 2014 21:08:31 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418408748-9797-6-git-send-email-vishnupatekar0510@gmail.com>
-References: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com> <1418408748-9797-6-git-send-email-vishnupatekar0510@gmail.com>
+In-Reply-To: <1418395859-32209-2-git-send-email-matthias.bgg@gmail.com>
+References: <1418395859-32209-1-git-send-email-matthias.bgg@gmail.com> <1418395859-32209-2-git-send-email-matthias.bgg@gmail.com>
 From: Chen-Yu Tsai <wens@csie.org>
-Date: Sat, 13 Dec 2014 10:06:04 +0800
-X-Google-Sender-Auth: 4PCT7WgxH0R-7g83hzARdGRwW0I
-Message-ID: <CAGb2v65xpUhiMzSKu_1+JGNbg3oFdpw2EQ+JGUYkivCtG2O6gw@mail.gmail.com>
-Subject: Re: [PATCHv3 5/5] ARM: sunxi: dts: Add note ps2 pins conflict with hdmi
-To: VishnuPatekar <vishnupatekar0510@gmail.com>
-Cc: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans De Goede <hdegoede@redhat.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>, benh@kernel.crashing.org,
-        msalter@redhat.com, linux-kernel <linux-kernel@vger.kernel.org>,
-        ralf@linux-mips.org, Rob Herring <robh+dt@kernel.org>,
-        jdelvare@suse.de, Kumar Gala <galak@codeaurora.org>,
+Date: Sat, 13 Dec 2014 10:08:10 +0800
+X-Google-Sender-Auth: siu6N-Zyk_EYbt7taFAcqiaAkoo
+Message-ID: <CAGb2v65uM_-Mi9_X5XxMGtOznRa7a5qRcFJQ3zg7t6z6tOhPAA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] watchdog: Add driver for Mediatek watchdog
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
         Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        yingjoe.chen@gmail.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        ibanezchen@gmail.com, greta.zhang@mediatek.com,
+        eddie.huang@mediatek.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-watchdog@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,51 +34,323 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Sat, Dec 13, 2014 at 2:25 AM, VishnuPatekar
-<vishnupatekar0510@gmail.com> wrote:
-> 1. Please note that ps20 pins conflict with HDMI on Lime2 Board
-> so, by deault ps20 and ps21 are disabled for Lime2 Board.
-> There is no on board ps2 connector and these pins can be used
-> for different purpose.
+On Fri, Dec 12, 2014 at 10:50 PM, Matthias Brugger
+<matthias.bgg@gmail.com> wrote:
+> This patch adds a driver for the Mediatek SoC integrated
+> watchdog. This driver supports watchdog and software reset
+> for mt65xx and mt81xx SoCs.
 >
-> Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
 > ---
->  arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
+>  drivers/watchdog/Kconfig   |  10 ++
+>  drivers/watchdog/Makefile  |   1 +
+>  drivers/watchdog/mtk_wdt.c | 257 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 268 insertions(+)
+>  create mode 100644 drivers/watchdog/mtk_wdt.c
 >
-> diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> index ed364d5..951b615 100644
-> --- a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> @@ -112,7 +112,11 @@
->                         pinctrl-0 = <&uart0_pins_a>;
->                         status = "okay";
->                 };
-> -
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index d0107d4..fcbca1b 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -505,6 +505,16 @@ config MESON_WATCHDOG
+>           To compile this driver as a module, choose M here: the
+>           module will be called meson_wdt.
+>
+> +config MEDIATEK_WATCHDOG
+> +       tristate "Mediatek SoCs watchdog support"
+> +       depends on ARCH_MEDIATEK
+> +       select WATCHDOG_CORE
+> +       help
+> +         Say Y here to include support for the watchdog timer
+> +         in Mediatek SoCs.
+> +         To compile this driver as a module, choose M here: the
+> +         module will be called mtk_wdt.
 > +
-> +               /* PS2 0 and PS2 1 are disabled by default; Please note that
-> +               ps20 pins conflict with HDMI on Lime2 Board
-> +               */
-> +
+>  # AVR32 Architecture
+>
+>  config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index c569ec8..0d4821f 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -63,6 +63,7 @@ obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
+>  obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>  obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>  obj-$(CONFIG_MESON_WATCHDOG) += meson_wdt.o
+> +obj-$(CONFIG_MEDIATEK_WATCHDOG) += mtk_wdt.o
+>
+>  # AVR32 Architecture
+>  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+> new file mode 100644
+> index 0000000..5f75442
+> --- /dev/null
+> +++ b/drivers/watchdog/mtk_wdt.c
+> @@ -0,0 +1,257 @@
+> +/*
+> + * Mediatek Watchdog Driver
+> + *
+> + * Copyright (C) 2014 Matthias Brugger
+> + *
+> + * Matthias Brugger <matthias.bgg@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Based on mtk_wdt.c
 
-Multi-line comments should be:
-
-/*
- * line 1
- * line 2
- * ...
- */
-
-And why is there a delete and insert for an empty line?
-Weird... though git seems to ignore it when applying.
+Did you base your code on itself from the future? :)
 
 ChenYu
 
->                 i2c0: i2c@01c2ac00 {
->                         pinctrl-names = "default";
->                         pinctrl-0 = <&i2c0_pins_a>;
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/err.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/types.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/notifier.h>
+> +#include <linux/reboot.h>
+> +#include <linux/delay.h>
+> +
+> +#define WDT_MAX_TIMEOUT                31
+> +#define WDT_MIN_TIMEOUT                1
+> +#define WDT_LENGTH_TIMEOUT(n)  ((n) << 5)
+> +
+> +#define WDT_LENGTH             0x04
+> +#define WDT_LENGTH_KEY         0x8
+> +
+> +#define WDT_RST                        0x08
+> +#define WDT_RST_RELOAD         0x1971
+> +
+> +#define WDT_MODE               0x00
+> +#define WDT_MODE_EN            (1 << 0)
+> +#define WDT_MODE_EXT_POL_LOW   (0 << 1)
+> +#define WDT_MODE_EXT_POL_HIGH  (1 << 1)
+> +#define WDT_MODE_EXRST_EN      (1 << 2)
+> +#define WDT_MODE_IRQ_EN                (1 << 3)
+> +#define WDT_MODE_AUTO_START    (1 << 4)
+> +#define WDT_MODE_DUAL_EN       (1 << 6)
+> +#define WDT_MODE_KEY           0x22000000
+> +
+> +#define WDT_SWRST              0x14
+> +#define WDT_SWRST_KEY          0x1209
+> +
+> +#define DRV_NAME               "mtk-wdt"
+> +#define DRV_VERSION            "1.0"
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static unsigned int timeout = WDT_MAX_TIMEOUT;
+> +
+> +struct mtk_wdt_dev {
+> +       struct watchdog_device wdt_dev;
+> +       void __iomem *wdt_base;
+> +       struct notifier_block restart_handler;
+> +};
+> +
+> +static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
+> +                               void *cmd)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt = container_of(this,
+> +                                                      struct mtk_wdt_dev,
+> +                                                      restart_handler);
+> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +       u32 reg;
+> +
+> +       /* Reset system */
+> +       writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
+> +
+> +       while (1) {
+> +               mdelay(5);
+> +               writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
+> +       }
+> +       return NOTIFY_DONE;
+> +
+> +}
+> +
+> +static int mtk_wdt_ping(struct watchdog_device *wdt_dev)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +
+> +       iowrite32(WDT_RST_RELOAD, wdt_base + WDT_RST);
+> +
+> +       return 0;
+> +}
+> +
+> +static int mtk_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +               unsigned int timeout)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +       u32 reg;
+> +
+> +       mtk_wdt->wdt_dev.timeout = timeout;
+> +
+> +       /* One bit is the value of 512 ticks
+> +        * The clock has 32 KHz
+> +        */
+> +       reg = WDT_LENGTH_TIMEOUT(timeout << 6) | WDT_LENGTH_KEY;
+> +       iowrite32(reg, wdt_base + WDT_LENGTH);
+> +
+> +       mtk_wdt_ping(wdt_dev);
+> +
+> +       return 0;
+> +}
+> +
+> +static int mtk_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +       u32 reg;
+> +
+> +       reg = readl(wdt_base + WDT_MODE);
+> +       reg &= ~(WDT_MODE_EN);
+> +       iowrite32(reg, wdt_base + WDT_MODE);
+> +
+> +       return 0;
+> +}
+> +
+> +static int mtk_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +       u32 reg;
+> +       struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +       void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +       u32 ret;
+> +
+> +       ret = mtk_wdt_set_timeout(&mtk_wdt->wdt_dev,
+> +                       mtk_wdt->wdt_dev.timeout);
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       reg = ioread32(wdt_base + WDT_MODE);
+> +       reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
+> +       reg |= (WDT_MODE_EN | WDT_MODE_KEY);
+> +       iowrite32(reg, wdt_base + WDT_MODE);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct watchdog_info mtk_wdt_info = {
+> +       .identity       = DRV_NAME,
+> +       .options        = WDIOF_SETTIMEOUT |
+> +                         WDIOF_KEEPALIVEPING |
+> +                         WDIOF_MAGICCLOSE,
+> +};
+> +
+> +static const struct watchdog_ops mtk_wdt_ops = {
+> +       .owner          = THIS_MODULE,
+> +       .start          = mtk_wdt_start,
+> +       .stop           = mtk_wdt_stop,
+> +       .ping           = mtk_wdt_ping,
+> +       .set_timeout    = mtk_wdt_set_timeout,
+> +};
+> +
+> +static int mtk_wdt_probe(struct platform_device *pdev)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt;
+> +       struct resource *res;
+> +       int err;
+> +
+> +       mtk_wdt = devm_kzalloc(&pdev->dev, sizeof(*mtk_wdt), GFP_KERNEL);
+> +       if (!mtk_wdt)
+> +               return -EINVAL;
+> +
+> +       platform_set_drvdata(pdev, mtk_wdt);
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       mtk_wdt->wdt_base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(mtk_wdt->wdt_base))
+> +               return PTR_ERR(mtk_wdt->wdt_base);
+> +
+> +       mtk_wdt->wdt_dev.info = &mtk_wdt_info;
+> +       mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
+> +       mtk_wdt->wdt_dev.timeout = WDT_MAX_TIMEOUT;
+> +       mtk_wdt->wdt_dev.max_timeout = WDT_MAX_TIMEOUT;
+> +       mtk_wdt->wdt_dev.min_timeout = WDT_MIN_TIMEOUT;
+> +       mtk_wdt->wdt_dev.parent = &pdev->dev;
+> +
+> +       watchdog_init_timeout(&mtk_wdt->wdt_dev, timeout, &pdev->dev);
+> +       watchdog_set_nowayout(&mtk_wdt->wdt_dev, nowayout);
+> +
+> +       watchdog_set_drvdata(&mtk_wdt->wdt_dev, mtk_wdt);
+> +
+> +       mtk_wdt_stop(&mtk_wdt->wdt_dev);
+> +
+> +       err = watchdog_register_device(&mtk_wdt->wdt_dev);
+> +       if (unlikely(err))
+> +               return err;
+> +
+> +       mtk_wdt->restart_handler.notifier_call = mtk_reset_handler;
+> +       mtk_wdt->restart_handler.priority = 128;
+> +       err = register_restart_handler(&mtk_wdt->restart_handler);
+> +       if (err)
+> +               dev_err(&pdev->dev,
+> +                       "cannot register restart handler (err=%d)\n", err);
+> +
+> +       dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
+> +                       mtk_wdt->wdt_dev.timeout, nowayout);
+> +
+> +       return 0;
+> +}
+> +
+> +static int mtk_wdt_remove(struct platform_device *pdev)
+> +{
+> +       struct mtk_wdt_dev *mtk_wdt = platform_get_drvdata(pdev);
+> +
+> +       unregister_restart_handler(&mtk_wdt->restart_handler);
+> +
+> +       watchdog_unregister_device(&mtk_wdt->wdt_dev);
+> +       watchdog_set_drvdata(&mtk_wdt->wdt_dev, NULL);
+> +
+> +       return 0;
+> +}
+> +
+> +static const struct of_device_id mtk_wdt_dt_ids[] = {
+> +       { .compatible = "mediatek,mt6589-wdt" },
+> +       { /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, mtk_wdt_dt_ids);
+> +
+> +static struct platform_driver mtk_wdt_driver = {
+> +       .probe          = mtk_wdt_probe,
+> +       .remove         = mtk_wdt_remove,
+> +       .driver         = {
+> +               .owner          = THIS_MODULE,
+> +               .name           = DRV_NAME,
+> +               .of_match_table = mtk_wdt_dt_ids,
+> +       },
+> +};
+> +
+> +module_platform_driver(mtk_wdt_driver);
+> +
+> +module_param(timeout, uint, 0);
+> +MODULE_PARM_DESC(timeout, "Watchdog heartbeat in seconds");
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +                       __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Matthias Brugger <matthias.bgg@gmail.com>");
+> +MODULE_DESCRIPTION("Mediatek WatchDog Timer Driver");
+> +MODULE_VERSION(DRV_VERSION);
 > --
-> 1.7.9.5
+> 1.9.1
 >
 >
 > _______________________________________________
