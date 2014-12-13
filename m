@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030838AbaLMMOj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 07:14:39 -0500
-Received: from sauhun.de ([89.238.76.85]:58976 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030648AbaLMMOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 07:14:37 -0500
-Date: Sat, 13 Dec 2014 13:14:26 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Muthu Mani <muth@cypress.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        Johan Hovold <johan@kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Rajaram Regupathy <rera@cypress.com>
-Subject: Re: [PATCH v4 2/3] i2c: add support for Cypress CYUSBS234 USB-I2C
- adapter
-Message-ID: <20141213121425.GA1034@katana>
-References: <1417241986-17841-1-git-send-email-muth@cypress.com>
- <20141203110755.GA1039@katana>
- <BN1PR06MB06912FCBAAE08006E352008CC600@BN1PR06MB069.namprd06.prod.outlook.com>
+	id S1030876AbaLMNSr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 08:18:47 -0500
+Received: from smtprelay0076.hostedemail.com ([216.40.44.76]:54638 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933281AbaLMNSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 08:18:45 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:1801:2198:2199:2393:2525:2553:2560:2563:2682:2685:2693:2859:2902:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3167:3354:3622:3865:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:4605:5007:6119:6120:6261:6742:7875:7903:8599:8660:8957:9025:10004:10400:10848:10967:11026:11232:11658:11914:12043:12291:12296:12517:12519:12555:12683:12740:12783:13148:13230:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: offer97_6930a18b4b41a
+X-Filterd-Recvd-Size: 3884
+Date: Sat, 13 Dec 2014 08:18:32 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>, x86@kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
+        Joerg Roedel <joro@8bytes.org>, Marc Zyngier <marc.zyngier@arm.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+Subject: Re: [RFC PATCH 2/2] tracing: Add tracepoint_printk cmdline
+Message-ID: <20141213081832.05cb4e6b@gandalf.local.home>
+In-Reply-To: <20141213105925.GB29934@pd.tnic>
+References: <alpine.DEB.2.11.1412121539300.16494@nanos>
+	<20141212181420.47100d5c@gandalf.local.home>
+	<20141213004830.792da019@gandalf.local.home>
+	<20141213005037.78eca245@gandalf.local.home>
+	<20141213105925.GB29934@pd.tnic>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-In-Reply-To: <BN1PR06MB06912FCBAAE08006E352008CC600@BN1PR06MB069.namprd06.prod.outlook.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 13 Dec 2014 11:59:25 +0100
+Borislav Petkov <bp@alien8.de> wrote:
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Sat, Dec 13, 2014 at 12:50:37AM -0500, Steven Rostedt wrote:
+> > 
+> > Add the kernel command line tracepoint_printk option that will
+> > have tracepoints that are active sent to printk().
+> > 
+> > Passing "tracepoint_printk" will activate this. To turn it off
+> > the sysctl /proc/sys/kernel/tracepoint_printk can have '0' echoed
+> > into it. Note, this only works if the cmdline option is used.
+> > Echoing 1 into the sysctl file without the cmdline option will
+> > have no affect.
+> > 
+> > Note, this is a dangerous option. Having high frequency
+> > tracepoints send their data to printk() can possibly cause
+> > a live lock.
+> > 
+> > Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
+> > 
+> > Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  Documentation/kernel-parameters.txt | 18 ++++++++++++++++++
+> >  include/linux/ftrace.h              |  1 +
+> >  kernel/sysctl.c                     |  7 +++++++
+> >  kernel/trace/trace.c                | 17 +++++++++++++++++
+> >  kernel/trace/trace.h                |  1 +
+> >  kernel/trace/trace_events.c         | 32 ++++++++++++++++++++++++++++++++
+> >  6 files changed, 76 insertions(+)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 1d09eb37c562..d81f464a7358 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -3500,6 +3500,24 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  			See also Documentation/trace/ftrace.txt "trace options"
+> >  			section.
+> >  
+> > +	tracepoint_printk[FTRACE]
+> 
+> Damn, this is long and most likely nasty to type on some dingy box when
+> you're trying to debug stuff. Can we shorten it?
+> 
+> trace_printk
 
+No this is already taken.
 
-> For repeated start (Sr) scenario, the STOP bit will not be set. For
-> dummy write scenario (writing EEPROM address from I2C EEPROM slave),
-> the STOP bit should not be set. But, for normal I2C write, the STOP
-> bit should be set. We provide control to user to control when to
-> STOP/NAK to handle different scenarios.
+> tp_printk
 
-No, your driver needs to do all of that.
+Actually, I was thinking about shortening it to tp_printk.
 
-> The reset is an additional provision given to user to reset the I2C
-> read or write engines. It does not require unloading I2C kernel
-> module. The status indicates the information about the last i2c
-> read/write operation.
+> tp_print
+> tp_pr
+> ...
+> 
+> Last one is my favourite - we should call it ToiletPaper_Print :-)
 
-I don't see the need for the user to do this. Better skip it,
-there should be a real need for userspace API.
+What you need when your kernel is in the crapper.
 
-> In this version of the driver, we handle only single i2c message. In
-> future iterations, we will add support for multiple i2c messages.
+-- Steve
 
-Then please resubmit when all this is done. It is OK to add features
-incrementally, but hey, the essential things should be there right from
-the beginning. Also, it would be nice if you told me your plans about
-incrementally working on it right from the beginning. That would have
-saved me a bit of reviewing time, a resource which is too scarce
-already.
+> 
+> > +			Have the tracepoints sent to printk as well as the
+> > +			tracing ring buffer. This is useful for early boot up
+> > +			where the system hangs or reboots and does not give the
+> > +			option for reading the tracing buffer or performing a
+> > +			ftrace_dump_on_oops.
+> 
 
-
---LZvS9be/3tNcYl/X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUjC2hAAoJEBQN5MwUoCm2UswP/iKEQf70svv9O7sG8x5OoeZj
-8WzJvMRNUlP4Q9xBwpP+ZUWPGCGFwA+4hQn4gtHp7n8rVtUmStIGV0jTy/EpJk3V
-rZ8G5hQ6pHdFazLoAqE260MFLwxH5S7LXUD1qdcscYAtC67HYQIAV91mdoq0BHMG
-WMAmLc+siAdye2UPVDAfqZvApVWWsbBV9X6gaxZfOYPpNfO/VoziXH+IRlO0IYRz
-AFa3rguJbqRe8qvQ+0KBlIkfJ826M9nxeLLP9Uv529L543OzAkc0JBhUl1QLlsDL
-jT+I6TolCL9R6DD9+GqxPraEN/ON52b7M8nAEWfja7quZ5Ug8hkjIiCb9ytBtRHL
-PiDENvZYth3QodGJgPLIpmygBehgweXZYKZmAKn4/fcidzdmm7ti0JXHgtCvzHM1
-AdAd9MYLfppXcoVhfbrkikpHyje1rxm9lW++HywbPc0qSR9akOIRYpEftwXOpzIh
-5V1mts+RxvWf8vTuVcGc0bmRIa+6dEAL5oYwD68Nj/LSeT+1k3YY78N4HkHbyRJw
-KXUQyPbQDem8f2yP+iIxLdRkwKu+eCjcJJ57OsA/bt4Nx23J9GxlsLlx0au1O/st
-kAvpWWRQKgNK2/Qoo4BrnLTZg5mDVJHRuTQwpMXYY53FQRf2iz7oU0TRgMkEdMsn
-4zEVKRGR2z7zRVqMkUYk
-=5gep
------END PGP SIGNATURE-----
-
---LZvS9be/3tNcYl/X--
