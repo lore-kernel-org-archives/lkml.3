@@ -1,141 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965558AbaLMGpe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 01:45:34 -0500
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:64415 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965425AbaLMGpd (ORCPT
+	id S965650AbaLMHGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 02:06:25 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:48834 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965425AbaLMHGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 01:45:33 -0500
+	Sat, 13 Dec 2014 02:06:23 -0500
+Message-ID: <548BE569.5040803@cumulusnetworks.com>
+Date: Fri, 12 Dec 2014 23:06:17 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <548B0517.6070603@gmail.com>
-References: <54883195.1060304@gmail.com>
-	<20141211152626.GA8196@redhat.com>
-	<548A39E7.80508@gmail.com>
-	<20141212142447.GA30315@debian>
-	<548B0517.6070603@gmail.com>
-Date: Fri, 12 Dec 2014 22:45:30 -0800
-Message-ID: <CAB=cV2Rvp95xuKNd0WzfLpMGrwdSCPxGt6npo+FH0H1y_5kY9Q@mail.gmail.com>
-Subject: Re: [dm-devel] [PATCH v2] staging: writeboost: Add dm-writeboost
-From: Jianjian Huo <samuel.huo@gmail.com>
-To: device-mapper development <dm-devel@redhat.com>
-Cc: thornber@redhat.com, gregkh@linuxfoundation.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
-        snitzer@redhat.com
-Content-Type: text/plain; charset=UTF-8
+To: "Varlese, Marco" <marco.varlese@intel.com>
+CC: Jiri Pirko <jiri@resnulli.us>, John Fastabend <john.fastabend@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141211110115.GA1979@nanopsycho.lan> <5489C85A.5020400@cumulusnetworks.com> <20141211165627.GF1912@nanopsycho.orion> <5489D739.9010303@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC4609@IRSMSX108.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I understand it correctly, the whole idea indeed is very simple,
-the consumer/provider and circular buffer model. use SSD as a circular
-write buffer, write flush thread stores incoming writes to this buffer
-sequentially as provider, and writeback thread write those data logs
-sequentially into backing device as consumer.
+On 12/12/14, 1:19 AM, Varlese, Marco wrote:
+>> -----Original Message-----
+>> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
+>> Sent: Thursday, December 11, 2014 5:41 PM
+>> To: Jiri Pirko
+>> Cc: Varlese, Marco; John Fastabend; netdev@vger.kernel.org;
+>> stephen@networkplumber.org; Fastabend, John R; sfeldma@gmail.com;
+>> linux-kernel@vger.kernel.org
+>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+>> configuration
+>>
+>> On 12/11/14, 8:56 AM, Jiri Pirko wrote:
+>>> Thu, Dec 11, 2014 at 05:37:46PM CET, roopa@cumulusnetworks.com wrote:
+>>>> On 12/11/14, 3:01 AM, Jiri Pirko wrote:
+>>>>> Thu, Dec 11, 2014 at 10:59:42AM CET, marco.varlese@intel.com wrote:
+>>>>>>> -----Original Message-----
+>>>>>>> From: John Fastabend [mailto:john.fastabend@gmail.com]
+>>>>>>> Sent: Wednesday, December 10, 2014 5:04 PM
+>>>>>>> To: Jiri Pirko
+>>>>>>> Cc: Varlese, Marco; netdev@vger.kernel.org;
+>>>>>>> stephen@networkplumber.org; Fastabend, John R;
+>>>>>>> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+>>>>>>> kernel@vger.kernel.org
+>>>>>>> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+>>>>>>> configuration
+>>>>>>>
+>>>>>>> On 12/10/2014 08:50 AM, Jiri Pirko wrote:
+>>>>>>>> Wed, Dec 10, 2014 at 05:23:40PM CET, marco.varlese@intel.com
+>> wrote:
+>>>>>>>>> From: Marco Varlese <marco.varlese@intel.com>
+>>>>>>>>>
+>>>>>>>>> Switch hardware offers a list of attributes that are
+>>>>>>>>> configurable on a per port basis.
+>>>>>>>>> This patch provides a mechanism to configure switch ports by
+>>>>>>>>> adding an NDO for setting specific values to specific attributes.
+>>>>>>>>> There will be a separate patch that extends iproute2 to call the
+>>>>>>>>> new NDO.
+>>>>>>>> What are these attributes? Can you give some examples. I'm asking
+>>>>>>>> because there is a plan to pass generic attributes to switch
+>>>>>>>> ports replacing current specific ndo_switch_port_stp_update. In
+>>>>>>>> this case, bridge is setting that attribute.
+>>>>>>>>
+>>>>>>>> Is there need to set something directly from userspace or does it
+>>>>>>>> make rather sense to use involved bridge/ovs/bond ? I think that
+>>>>>>>> both will be needed.
+>>>>>>> +1
+>>>>>>>
+>>>>>>> I think for many attributes it would be best to have both. The in
+>>>>>>> kernel callers and netlink userspace can use the same driver ndo_ops.
+>>>>>>>
+>>>>>>> But then we don't _require_ any specific bridge/ovs/etc module.
+>>>>>>> And we may have some attributes that are not specific to any
+>>>>>>> existing software module. I'm guessing Marco has some examples of
+>> these.
+>>>>>>> [...]
+>>>>>>>
+>>>>>>>
+>>>>>>> --
+>>>>>>> John Fastabend         Intel Corporation
+>>>>>> We do have a need to configure the attributes directly from user-space
+>> and I have identified the tool to do that in iproute2.
+>>>>>> An example of attributes are:
+>>>>>> * enabling/disabling of learning of source addresses on a given
+>>>>>> port (you can imagine the attribute called LEARNING for example);
+>>>>>> * internal loopback control (i.e. LOOPBACK) which will control how
+>>>>>> the flow of traffic behaves from the switch fabric towards an
+>>>>>> egress port;
+>>>>>> * flooding for broadcast/multicast/unicast type of packets (i.e.
+>>>>>> BFLOODING, MFLOODING, UFLOODING);
+>>>>>>
+>>>>>> Some attributes would be of the type enabled/disabled while other will
+>> allow specific values to allow the user to configure different behaviours of
+>> that feature on that particular port on that platform.
+>>>>>> One thing to mention - as John stated as well - there might be some
+>> attributes that are not specific to any software module but rather have to do
+>> with the actual hardware/platform to configure.
+>>>>>> I hope this clarifies some points.
+>>>>> It does. Makes sense. We need to expose this attr set/get for both
+>>>>> in-kernel and userspace use cases.
+>>>>>
+>>>>> Please adjust you patch for this. Also, as a second patch, it would
+>>>>> be great if you can convert ndo_switch_port_stp_update to this new
+>> ndo.
+>>>> Why are we exposing generic switch attribute get/set from userspace
+>>>> ?. We already have specific attributes for learning/flooding which
+>>>> can be extended further.
+>>> Yes, but that is for PF_BRIDGE and bridge specific attributes. There
+>>> might be another generic attrs, no?
+>> I cant think of any. And plus, the whole point of switchdev l2 offloads was to
+>> map these to existing bridge attributes. And we already have a match for
+>> some of the attributes that marco wants.
+>>
+>> If there is a need for such attributes, i don't see why it is needed for switch
+>> devices only.
+>> It is needed for any hw (nics etc). And, a precedence to this is to do it via
+>> ethtool.
+>>
+>> Having said that, am sure we will find a need for this in the future.
+>> And having a netlink attribute always helps.
+>>
+>> Today, it seems like these can be mapped to existing attributes that are
+>> settable via ndo_bridge_setlink/getlink.
+>>
+>>>> And for in kernel api....i had a sample patch in my RFC series (Which
+>>>> i was going to resubmit, until it was decided that we will use
+>>>> existing api around
+>>>> ndo_bridge_setlink/ndo_bridge_getlink):
+>>>> http://www.spinics.net/lists/netdev/msg305473.html
+>>> Yes, this might become handy for other generic non-bridge attrs.
+>>>
+>>>> Thanks,
+>>>> Roopa
+>>>>
+>>>>
+>>>>
+> The list I provided is only a subset of the attributes we will need to be exposed. I do have more and I'm sure that more will come in the future. As I mentioned in few posts earlier, some attributes are generic and some are not.
+>
+> I did not consider ethtool for few reasons but the main one is that I was under the impression that netlink was preferred in many circumstances over the ethotool_ops.
+That is correct. I don't think anybody hinted that you should extend 
+ethtool.
+>   Plus, all the cases I have identified so far are going to nicely fit into the setlink set of operations.
+>
 
-If writeboost can do that without any random writes, then probably it
-can save SSD/FTL of doing a lot of dirty jobs, and utilize the faster
-sequential read/write performance from SSD. That'll be awesome.
-However, I saw every data log segment in its design has meta data
-header, like dirty_bits, so I guess writeboost has to randomly write
-those data headers of stored data logs in SSD; also, splitting all bio
-into 4KB will hurt its ability to get max raw SSD throughput, modern
-NAND Flash has pages much bigger than 4KB; so overall I think the
-actual benefits writeboost gets from this design will be discounted.
+Would be better if you submitted your iproute2 patch with this patch.
 
-The good thing is that it seems writeboost doesn't use garbage
-collection to clean old invalid logs, this will avoid the double
-garage collection effect other caching module has, which essentially
-both caching module and internal SSD will perform garbage collections
-twice.
+I do plan to resubmit my generic ndo patch soon.
 
-And one question, how long will be data logs replay time during init,
-if SSD is almost full of dirty data logs?
-
-Jianjian
-
-On Fri, Dec 12, 2014 at 7:09 AM, Akira Hayakawa <ruby.wktk@gmail.com> wrote:
->> However, after looking at the current code, and using it I think it's
->> a long, long way from being ready for production.  As we've already
->> discussed there are some very naive design decisions in there, such as
->> copying every bio payload to another memory buffer, splitting all io
->> down to 4k.  Think about the cpu overhead and memory consumption!
->> Think about how it will perform when memory is constrained and it
->> can't allocate many of those rambufs!  I'm sure more issues will be
->> found if I read further.
-> These decisions are made based on measurement. They are not naive.
-> I am a man who dislikes performance optimization without measurement.
-> As a result, I regard things brought by the simplicity much important
-> than what's from other design decisions possible.
->
-> About the CPU consumption,
-> the average CPU consumption while performing random write fio
-> with consumer level SSD is only 3% or so,
-> which is 5 times efficient than bcache per iops.
->
-> With RAM-backed cache device, it reaches about 1.5GB/sec throughput.
-> Even in this case the CPU consumption is only 12%.
-> Please see this post,
-> http://www.redhat.com/archives/dm-devel/2014-February/msg00000.html
->
-> I don't think the CPU consumption is small enough to ignore.
->
-> About the memory consumption,
-> you seem to misunderstand the fact.
-> The rambufs are not dynamically allocated but statically.
-> The default amount is 8MB and this is usually not to argue.
->
->> Mike raised the question of why you want this in the kernel so much?
->> You'd find none of the distros would support it; so it doesn't widen
->> your audience much.  It's far better for you to maintain it outside of
->> the kernel at this point.  Any users will be bold, adventurous people,
->> who will be quite capable of building a kernel module.
-> Some people deploy Writeboost in their daily use.
-> The sound of "log-structured" seems to easily attract storage guys' attention.
-> If this driver is merged into upstream, I think it gains many audience and
-> thus feedback.
-> When my driver was introduced by Phoronix before, it actually drew attentions.
-> They must wait for Writeboost become available in upstream.
-> http://www.phoronix.com/scan.php?page=news_item&px=MTQ1Mjg
->
->> I'm sorry to have disappointed you so, but if I let this go upstream
->> it would mean a massive amount of support work for me, not to mention
->> a damaged reputation for dm.
-> If you read the code further, you will find how simple the mechanism is.
-> Not to mention the code itself is.
->
-> - Akira
->
-> On 12/12/14 11:24 PM, Joe Thornber wrote:
->> On Fri, Dec 12, 2014 at 09:42:15AM +0900, Akira Hayakawa wrote:
->>> The SSD-caching should be log-structured.
->>
->> No argument there, and this is why I've supported you with
->> dm-writeboost over the last couple of years.
->>
->> However, after looking at the current code, and using it I think it's
->> a long, long way from being ready for production.  As we've already
->> discussed there are some very naive design decisions in there, such as
->> copying every bio payload to another memory buffer, splitting all io
->> down to 4k.  Think about the cpu overhead and memory consumption!
->> Think about how it will perform when memory is constrained and it
->> can't allocate many of those rambufs!  I'm sure more issues will be
->> found if I read further.
->>
->> I'm sorry to have disappointed you so, but if I let this go upstream
->> it would mean a massive amount of support work for me, not to mention
->> a damaged reputation for dm.
->>
->> Mike raised the question of why you want this in the kernel so much?
->> You'd find none of the distros would support it; so it doesn't widen
->> your audience much.  It's far better for you to maintain it outside of
->> the kernel at this point.  Any users will be bold, adventurous people,
->> who will be quite capable of building a kernel module.
->>
->> - Joe
->>
->
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
+Thanks,
+Roopa
