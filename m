@@ -1,51 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753666AbaLMAGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 19:06:30 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:51859 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbaLMAG1 (ORCPT
+	id S1753759AbaLMAH2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Dec 2014 19:07:28 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:45461 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689AbaLMAH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 19:06:27 -0500
-Date: Fri, 12 Dec 2014 16:05:21 -0800
-From: Darren Hart <dvhart@infradead.org>
-To: =?iso-8859-1?Q?=C9ric?= Piel <eric.piel@tremplin-utc.net>
-Cc: Takashi Iwai <tiwai@suse.de>, Dominique Leuenberger <dimstar@opensuse.org>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hp_accel: Add support for HP ZBook 15
-Message-ID: <20141213000520.GA76819@vmdeb7>
-References: <1415908657-26477-1-git-send-email-tiwai@suse.de>
- <5489713F.9050408@tremplin-utc.net>
+	Fri, 12 Dec 2014 19:07:26 -0500
+Date: Sat, 13 Dec 2014 01:07:34 +0100
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-unionfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] multi-layer support for overlay filesystem
+Message-ID: <20141213000734.GA11739@tucsk.suse.de>
+References: <20141209103745.GA32280@tucsk.suse.de>
+ <20141212094738.GB5944@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5489713F.9050408@tremplin-utc.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141212094738.GB5944@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 11:26:07AM +0100, Éric Piel wrote:
-> On 13-11-14 20:57, Takashi Iwai wrote:
-> >From: Dominique Leuenberger <dimstar@opensuse.org>
-> >
-> >HP ZBook 15 laptop needs a non-standard mapping (x_inverted).
-> >
-> >BugLink: http://bugzilla.opensuse.org/show_bug.cgi?id=905329
-> >Signed-off-by: Dominique Leuenberger <dimstar@opensuse.org>
-> >Cc: <stable@vger.kernel.org>
-> >Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> Sorry, it got a be delayed... but it looks completely fine :-)
+Thanks for the review.
+
+On Fri, Dec 12, 2014 at 09:47:39AM +0000, Al Viro wrote:
+> First of all, your checks in ovl_mount_dir_noesc() have no effect besides
+> spamming the logs.  In
+>         if (err) 
+>                 pr_err("overlayfs: failed to resolve '%s': %i\n", name, err);
+>         else if (!ovl_is_allowed_fs_type(path->dentry))
+>                 pr_err("overlayfs: filesystem on '%s' not supported\n", name);
+>         else if (!S_ISDIR(path->dentry->d_inode->i_mode))
+>                 pr_err("overlayfs: '%s' not a directory\n", name);
+>         else   
+>                 err = 0;
+> the fourth alternative is completely pointless and both the second and the
+> third leave you with err being zero.
+
+Fixed.
+
 > 
-> Signed-off-by: Éric Piel <eric.piel@tremplin-utc.net>
+> That opens all kinds of unpleasant holes, obviously.  If you fix that by
+> setting err in the 2nd and thr 3rd alternatives, you get the next problem -
+> leaks on such failures.  Suppose the first ovl_mount_dir() call fails on
+> those checks.  You go to out_free_config and voila - upperpath has leaked.
+> The same in the second call means leaked workpath.  And those failures in
+> ovl_lower_dir(), as well as failures of vfs_getattr() there, end up leaking
+> vfsmount/dentry in stack[...].
+
+Fixed.
+
 > 
-> Darren, would you wind picking up this patch via your tree?
+> Next piece of fun: suppose you have in one of the lower layers a filesystem
+> with ->lookup()-enforced upper limit on name length.  Pretty much every
+> local fs has one, but... they are not all equal.  255 characters is the
+> common upper limit, but e.g. jffs2 stops at 254, minixfs upper limit is
+> somewhere from 14 to 60, depending upon version, etc.  You are doing a lookup
+> for something that is present in upper layer, but happens to be too long for
+> one of the lower layers.  Too bad - ENAMETOOLONG for you...
 
-Yes, already in next.
+Fixed.
 
-Thanks :-)
+> 
+> BTW, that sucker really needs cleaning up.  I seriously suspect that
+> quite a few conditions in there might be redundant, but after several
+> hours of staring at it I'm still not sure that I hadn't missed some
+> paths in there ;-/  AFAICS, it would get cleaner if you unrolled the idx == 0
+> pass out of that loop - as in "deal with ovl_path_upper() if present, then
+> simple for (lower = 0; lower < oe->numlower; lower++)".  TBH, ovl_path_next()
+> seems to be a bad primitive for that use and the other caller doesn't give
+> a damn about upper vs. lower, so I wonder if the games with reporting that
+> make any sense.  They certainly make ovl_path_next() much uglier...
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+Done cleanup.
+
+> 
+> Another thing: in theory, you can get up to about 2000 (identical)
+> single-letter names in lowerdirs.  Resulting arrays of struct path (i.e.
+> pairs of pointers) will make allocators unhappy - 32Kb kmalloc() is
+> not nice.  IMO that needs more or less sane limit enforced at mount time -
+> relying on "mount data is at most one page, can't fit too much there"
+> is not enough.
+
+Fixed.
+
+> 
+> Logics in ovl_dir_read_merged() looks odd - why is the lowermost one special
+> and not the uppermost?  BTW, what if you find a whiteout in the lowermost
+> layer?
+Yeah, it was supposed to be an optimization (no need to check for whiteouts on
+lower, since whiteouts never exist on lower) and is present in the lookup code
+as well.
+
+I switched to checking whiteouts in lowest layer as well, for consitency.
+
+>   And while we are at it, what happens when the _upper_ layer is an
+> overlayfs - how do you create whiteouts there?  That, AFAICS, applies to
+> the current mainline as well...
+
+It really doesn't make sense to make upper layer an overlayfs.  It won't work,
+but it shouldn't crash.  Should we blacklist it, so any such stupidity is found
+out at mount time?
+
+Fixes pushed to
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git overlayfs-next
+
+Thanks,
+Miklos
+
+---
+Miklos Szeredi (15):
+      ovl: check whiteout while reading directory
+      ovl: make path-type a bitmap
+      ovl: dont replace opaque dir
+      ovl: add mutli-layer infrastructure
+      ovl: helper to iterate layers
+      ovl: multi-layer readdir
+      ovl: multi-layer lookup
+      ovl: check whiteout on lowest layer as well
+      ovl: lookup ENAMETOOLONG on lower means ENOENT
+      ovl: allow statfs if no upper layer
+      ovl: mount: change order of initialization
+      ovl: improve mount helpers
+      ovl: make upperdir optional
+      ovl: support multiple lower layers
+      ovl: add testsuite to docs
+
+hujianyang (2):
+      ovl: Cleanup redundant blank lines
+      ovl: Use macros to present ovl_xattr
+
+---
+ Documentation/filesystems/overlayfs.txt |  24 ++
+ fs/overlayfs/copy_up.c                  |   5 +-
+ fs/overlayfs/dir.c                      |  28 +-
+ fs/overlayfs/inode.c                    |  12 +-
+ fs/overlayfs/overlayfs.h                |  18 +-
+ fs/overlayfs/readdir.c                  | 145 ++++-----
+ fs/overlayfs/super.c                    | 546 +++++++++++++++++++++-----------
+ 7 files changed, 482 insertions(+), 296 deletions(-)
