@@ -1,148 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981AbaLMQ2b (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 11:28:31 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62636 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652AbaLMQ1i (ORCPT
+	id S1754043AbaLMQ2i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 11:28:38 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:54827 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987AbaLMQ2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 11:27:38 -0500
-From: Bartosz Golaszewski <bgolaszewski@baylibre.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Patrick Titiano <ptitiano@baylibre.com>,
-        LM Sensors <lm-sensors@lm-sensors.org>,
-        Bartosz Golaszewski <bgolaszewski@baylibre.com>
-Subject: [PATCH v7 4/5] hwmon: ina2xx: make shunt resistance configurable at run-time
-Date: Sat, 13 Dec 2014 17:27:20 +0100
-Message-Id: <1418488041-7433-5-git-send-email-bgolaszewski@baylibre.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418488041-7433-1-git-send-email-bgolaszewski@baylibre.com>
-References: <1418488041-7433-1-git-send-email-bgolaszewski@baylibre.com>
+	Sat, 13 Dec 2014 11:28:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxmseHugpuNMqFxiz8r86PPwth=Fd-U-_wC8_E-kDP3hA@mail.gmail.com>
+References: <20141201230339.GA20487@ret.masoncoding.com>
+	<1417529606.3924.26.camel@maggy.simpson.net>
+	<CA+55aFw8smHBw9HiCiYL_ohkULLeunWo6qfayM19zhF1hKAxXg@mail.gmail.com>
+	<1417540493.21136.3@mail.thefacebook.com>
+	<20141203184111.GA32005@redhat.com>
+	<CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
+	<20141205171501.GA1320@redhat.com>
+	<CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+	<1417806247.4845.1@mail.thefacebook.com>
+	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+	<20141211145408.GB16800@redhat.com>
+	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+	<548A122C.8000906@oracle.com>
+	<CA+55aFw68nC+5s=iX2R4SLsgG3nBvURmDXYvX5pFJgHBnQoHMA@mail.gmail.com>
+	<548A2165.9030107@oracle.com>
+	<548B8046.4040808@oracle.com>
+	<CA+55aFyRW6su2J5O+ie70GqMvO3TYuSj93xwyJaPjGK1M=vUgA@mail.gmail.com>
+	<548B897C.8090803@oracle.com>
+	<CA+55aFxmseHugpuNMqFxiz8r86PPwth=Fd-U-_wC8_E-kDP3hA@mail.gmail.com>
+Date: Sun, 14 Dec 2014 00:28:33 +0800
+Message-ID: <CAAJw_ZsQBeMRXgrM8CHS9FPTEk_fJYkqWm6NJpgrBGdY=_X6Tw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The shunt resistance can only be set via platform_data or device tree. This
-isn't suitable for devices in which the shunt resistance can change/isn't
-known at boot-time.
+I started seeing this behavior somewhere around 3.16 with
+CONFIG_PREEMPT set. Setting CONFIG_PREEMPT off seems to help. And,
+yes, it happens on high load (compiling mozilla, xul) and using qemu
+chroot to compile mesa.
 
-Add a sysfs attribute that allows to read and set the shunt resistance.
+I'm seeing a few persons bisecting already. If you want, I could start
+bisecting too, but 3.16 was unstable for me as I'm still on reiserfs.
 
-Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
----
- Documentation/hwmon/ina2xx |  5 +++--
- drivers/hwmon/ina2xx.c     | 48 ++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 49 insertions(+), 4 deletions(-)
+Jeff.
 
-diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
-index 4223c2d..320dd69 100644
---- a/Documentation/hwmon/ina2xx
-+++ b/Documentation/hwmon/ina2xx
-@@ -44,6 +44,7 @@ The INA226 monitors both a shunt voltage drop and bus supply voltage.
- The INA230 is a high or low side current shunt and power monitor with an I2C
- interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
- 
--The shunt value in micro-ohms can be set via platform data or device tree.
--Please refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
-+The shunt value in micro-ohms can be set via platform data or device tree at
-+compile-time or via the shunt_resistor attribute in sysfs at run-time. Please
-+refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
- if the device tree is used.
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index 3234e57..49537ea 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -115,6 +115,12 @@ static const struct ina2xx_config ina2xx_config[] = {
- 	},
- };
- 
-+static int ina2xx_calibrate(struct ina2xx_data *data)
-+{
-+	return i2c_smbus_write_word_swapped(data->client, INA2XX_CALIBRATION,
-+			data->config->calibration_factor / data->rshunt);
-+}
-+
- /*
-  * Initialize the configuration and calibration registers.
-  */
-@@ -133,8 +139,7 @@ static int ina2xx_init(struct ina2xx_data *data)
- 	 * Set current LSB to 1mA, shunt is in uOhms
- 	 * (equation 13 in datasheet).
- 	 */
--	return i2c_smbus_write_word_swapped(client, INA2XX_CALIBRATION,
--			data->config->calibration_factor / data->rshunt);
-+	return ina2xx_calibrate(data);
- }
- 
- static int ina2xx_do_update(struct device *dev)
-@@ -231,6 +236,9 @@ static int ina2xx_get_value(struct ina2xx_data *data, u8 reg)
- 		/* signed register, LSB=1mA (selected), in mA */
- 		val = (s16)data->regs[reg];
- 		break;
-+	case INA2XX_CALIBRATION:
-+		val = data->config->calibration_factor / data->regs[reg];
-+		break;
- 	default:
- 		/* programmer goofed */
- 		WARN_ON_ONCE(1);
-@@ -254,6 +262,36 @@ static ssize_t ina2xx_show_value(struct device *dev,
- 			ina2xx_get_value(data, attr->index));
- }
- 
-+static ssize_t ina2xx_set_shunt(struct device *dev,
-+				struct device_attribute *da,
-+				const char *buf, size_t count)
-+{
-+	struct ina2xx_data *data = ina2xx_update_device(dev);
-+	unsigned long val;
-+	int status;
-+
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
-+
-+	status = kstrtoul(buf, 10, &val);
-+	if (status < 0)
-+		return status;
-+
-+	if (val == 0 ||
-+	    /* Values greater than the calibration factor make no sense. */
-+	    val > data->config->calibration_factor)
-+		return -EINVAL;
-+
-+	mutex_lock(&data->update_lock);
-+	data->rshunt = val;
-+	status = ina2xx_calibrate(data);
-+	mutex_unlock(&data->update_lock);
-+	if (status < 0)
-+		return status;
-+
-+	return count;
-+}
-+
- /* shunt voltage */
- static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, ina2xx_show_value, NULL,
- 			  INA2XX_SHUNT_VOLTAGE);
-@@ -270,12 +308,18 @@ static SENSOR_DEVICE_ATTR(curr1_input, S_IRUGO, ina2xx_show_value, NULL,
- static SENSOR_DEVICE_ATTR(power1_input, S_IRUGO, ina2xx_show_value, NULL,
- 			  INA2XX_POWER);
- 
-+/* shunt resistance */
-+static SENSOR_DEVICE_ATTR(shunt_resistor, S_IRUGO | S_IWUSR,
-+			  ina2xx_show_value, ina2xx_set_shunt,
-+			  INA2XX_CALIBRATION);
-+
- /* pointers to created device attributes */
- static struct attribute *ina2xx_attrs[] = {
- 	&sensor_dev_attr_in0_input.dev_attr.attr,
- 	&sensor_dev_attr_in1_input.dev_attr.attr,
- 	&sensor_dev_attr_curr1_input.dev_attr.attr,
- 	&sensor_dev_attr_power1_input.dev_attr.attr,
-+	&sensor_dev_attr_shunt_resistor.dev_attr.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(ina2xx);
--- 
-2.1.3
 
+
+On Sat, Dec 13, 2014 at 8:44 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Dec 12, 2014 at 4:34 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+>>
+>> Right, it's virtio-9p. However, virtio-9p acts merely as a proxy to an underlying
+>> tmpfs - so while it's slow, I don't think it's way slower than the average disk
+>> backed ext4.
+>
+> I was thinking more in the sense of "how much of the trouble is about
+> something like tmpfs eating tons of memory when trinity starts doing
+> random system calls on those files".
+>
+> I was also thinking that some of it might be filesystem-specific. We
+> already *did* see one trace where it was in the loop getting virtio
+> channel data. Maybe it's actually possible to overwhelm the 9p
+> filesystem exactly because the backing store is tmpfs, and basically
+> have a CPU 100% busy handling ring events from the virtual
+> filesystem..
+>
+> But I'm just flailing..
+>
+>                      Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
