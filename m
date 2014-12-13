@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030437AbaLMLqu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 06:46:50 -0500
-Received: from mail-bl2on0104.outbound.protection.outlook.com ([65.55.169.104]:39808
+	id S1030485AbaLMLrH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 06:47:07 -0500
+Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:64960
 	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S966553AbaLMLqr convert rfc822-to-8bit (ORCPT
+	id S1030442AbaLMLq7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 06:46:47 -0500
+	Sat, 13 Dec 2014 06:46:59 -0500
 From: Muthu Mani <muth@cypress.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Wolfram Sang <wsa@the-dreams.de>,
@@ -17,10 +17,12 @@ To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-i2c@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
         Muthu Mani <muth@cypress.com>, Rajaram Regupathy <rera@cypress.com>
-Subject: [PATCH v5 1/3] mfd: add support for Cypress CYUSBS234 USB Serial Bridge controller
-Date: Sat, 13 Dec 2014 17:17:42 +0530
-Message-ID: <1418471264-31896-1-git-send-email-muth@cypress.com>
+Subject: [PATCH v5 3/3] gpio: add support for Cypress CYUSBS234 USB-GPIO adapter
+Date: Sat, 13 Dec 2014 17:17:44 +0530
+Message-ID: <1418471264-31896-3-git-send-email-muth@cypress.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1418471264-31896-1-git-send-email-muth@cypress.com>
+References: <1418471264-31896-1-git-send-email-muth@cypress.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 X-Originating-IP: [121.243.89.10]
@@ -32,91 +34,98 @@ Content-Transfer-Encoding: 7BIT
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:CO1PR06MB077;
 X-Forefront-PRVS: 04244E0DC5
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51164003)(189002)(199003)(33646002)(48376002)(36756003)(50466002)(99396003)(92566001)(122386002)(62966003)(77156002)(15975445007)(4396001)(97736003)(40100003)(101416001)(50226001)(68736005)(89996001)(229853001)(105586002)(77096005)(21056001)(50986999)(42186005)(20776003)(66066001)(46102003)(87976001)(19580405001)(107046002)(31966008)(86362001)(575784001)(120916001)(106356001)(19580395003)(64706001)(47776003)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR06MB077;H:prji-Latitude-E6420.india.cypress.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51164003)(189002)(199003)(33646002)(48376002)(36756003)(50466002)(99396003)(92566001)(122386002)(62966003)(77156002)(15975445007)(4396001)(97736003)(40100003)(101416001)(50226001)(68736005)(89996001)(229853001)(105586002)(77096005)(21056001)(50986999)(42186005)(20776003)(66066001)(46102003)(87976001)(19580405001)(107046002)(31966008)(86362001)(120916001)(106356001)(19580395003)(64706001)(47776003)(76176999)(21314002)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR06MB077;H:prji-Latitude-E6420.india.cypress.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR06MB077;
 X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
+Adds support for USB-GPIO interface of Cypress Semiconductor
 CYUSBS234 USB-Serial Bridge controller.
+
+The GPIO get/set can be done through vendor command on control endpoint
+for the configured gpios.
 
 Details about the device can be found at:
 http://www.cypress.com/?rID=84126
-
-Separate cell drivers are available for I2C and GPIO. SPI and UART
-are not supported yet.
 
 Signed-off-by: Muthu Mani <muth@cypress.com>
 Signed-off-by: Rajaram Regupathy <rera@cypress.com>
 ---
 Changes since v4:
-* Used macros for subclass values
+* used BIT macro for the mask
+* used macros for magic numbers
 
 Changes since v3:
-* Added devm_* allocation function
-* Added vendor commands to read configuration info
+* added reading gpio configuration from device
+* exposed only the gpios available
+* exposed correct direction of gpios
+* removed the direction input/output handler as
+  setting gpio direction is not supported by the device
 
 Changes since v2:
-* Used auto mfd id to support multiple devices
-* Cleaned up the code
+* added helper macros
+* removed lock
+* given gpio chip device for dev_xxx
+* cleaned up the code
 
 Changes since v1:
-* Identified different serial interface and loaded correct cell driver
-* Formed a mfd id to support multiple devices
-* Removed unused platform device
+* allocated memory on heap for usb transfer data
+* changed gpio label as platform device name to identify multiple devices
 
- drivers/mfd/Kconfig           |  11 +++
- drivers/mfd/Makefile          |   1 +
- drivers/mfd/cyusbs23x.c       | 153 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/cyusbs23x.h |  55 +++++++++++++++
- 4 files changed, 220 insertions(+)
- create mode 100644 drivers/mfd/cyusbs23x.c
- create mode 100644 include/linux/mfd/cyusbs23x.h
+ drivers/gpio/Kconfig          |  13 ++
+ drivers/gpio/Makefile         |   1 +
+ drivers/gpio/gpio-cyusbs23x.c | 291 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 305 insertions(+)
+ create mode 100644 drivers/gpio/gpio-cyusbs23x.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 2e6b731..109358e 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -128,6 +128,17 @@ config MFD_ASIC3
-          This driver supports the ASIC3 multifunction chip found on many
-          PDAs (mainly iPAQ and HTC based ones)
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 23dfd5f..0b7b344 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -894,6 +894,19 @@ config GPIO_BCM_KONA
 
-+config MFD_CYUSBS23X
-+       tristate "Cypress CYUSBS23x USB Serial Bridge controller"
-+       select MFD_CORE
-+       depends on USB
+ comment "USB GPIO expanders:"
+
++config GPIO_CYUSBS23X
++       tristate "CYUSBS23x GPIO support"
++       depends on MFD_CYUSBS23X
 +       help
-+         Say yes here if you want support for Cypress Semiconductor
-+         CYUSBS23x USB-Serial Bridge controller.
++         Say yes here to access the GPIO signals of Cypress
++         Semiconductor CYUSBS23x USB Serial Bridge Controller.
++
++         This driver enables the GPIO interface of CYUSBS23x USB Serial
++         Bridge controller.
 +
 +         This driver can also be built as a module. If so, the module will be
-+         called cyusbs23x.
++         called gpio-cyusbs23x.
 +
- config PMIC_DA903X
-        bool "Dialog Semiconductor DA9030/DA9034 PMIC Support"
-        depends on I2C=y
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 53467e2..c0f6193 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -151,6 +151,7 @@ si476x-core-y := si476x-cmd.o si476x-prop.o si476x-i2c.o
- obj-$(CONFIG_MFD_SI476X_CORE)  += si476x-core.o
-
- obj-$(CONFIG_MFD_CS5535)       += cs5535-mfd.o
-+obj-$(CONFIG_MFD_CYUSBS23X)     += cyusbs23x.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)        += omap-usb-host.o omap-usb-tll.o
- obj-$(CONFIG_MFD_PM8921_CORE)  += pm8921-core.o ssbi.o
- obj-$(CONFIG_MFD_SPMI_PMIC)    += qcom-spmi-pmic.o
-diff --git a/drivers/mfd/cyusbs23x.c b/drivers/mfd/cyusbs23x.c
+ config GPIO_VIPERBOARD
+        tristate "Viperboard GPIO a & b support"
+        depends on MFD_VIPERBOARD && USB
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index e60677b..c269174 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_GPIO_BT8XX)      += gpio-bt8xx.o
+ obj-$(CONFIG_GPIO_CLPS711X)    += gpio-clps711x.o
+ obj-$(CONFIG_GPIO_CS5535)      += gpio-cs5535.o
+ obj-$(CONFIG_GPIO_CRYSTAL_COVE)        += gpio-crystalcove.o
++obj-$(CONFIG_GPIO_CYUSBS23X)   += gpio-cyusbs23x.o
+ obj-$(CONFIG_GPIO_DA9052)      += gpio-da9052.o
+ obj-$(CONFIG_GPIO_DA9055)      += gpio-da9055.o
+ obj-$(CONFIG_GPIO_DAVINCI)     += gpio-davinci.o
+diff --git a/drivers/gpio/gpio-cyusbs23x.c b/drivers/gpio/gpio-cyusbs23x.c
 new file mode 100644
-index 0000000..18ebe6a
+index 0000000..523b4ec
 --- /dev/null
-+++ b/drivers/mfd/cyusbs23x.c
-@@ -0,0 +1,153 @@
++++ b/drivers/gpio/gpio-cyusbs23x.c
+@@ -0,0 +1,291 @@
 +/*
-+ * Cypress USB-Serial Bridge Controller USB adapter driver
++ * GPIO subdriver for Cypress CYUSBS234 USB-Serial Bridge controller.
++ * Details about the device can be found at:
++ *    http://www.cypress.com/?rID=84126
 + *
 + * Copyright (c) 2014 Cypress Semiconductor Corporation.
 + *
@@ -132,12 +141,10 @@ index 0000000..18ebe6a
 + */
 +
 +/*
-+ * This is core MFD driver for Cypress Semiconductor CYUSBS234 USB-Serial
-+ * Bridge controller. CYUSBS234 offers a single channel serial interface
-+ * (I2C/SPI/UART). It can be configured to enable either of I2C, SPI, UART
-+ * interfaces. The GPIOs are also available to access.
-+ * Details about the device can be found at:
-+ *    http://www.cypress.com/?rID=84126
++ * Only the GPIOs configured as input and output using Configuration Utility
++ * can be requested. The GPIO configuration information is stored in the
++ * internal flash memory as bitmap. GPIO information is available at the
++ * following offset: Drive 0: offset 436, Drive 1: offset 440, Input: 444
 + */
 +
 +#include <linux/kernel.h>
@@ -145,190 +152,267 @@ index 0000000..18ebe6a
 +#include <linux/module.h>
 +#include <linux/slab.h>
 +#include <linux/types.h>
-+#include <linux/mfd/core.h>
-+#include <linux/mfd/cyusbs23x.h>
++#include <linux/bitops.h>
++#include <linux/platform_device.h>
 +#include <linux/usb.h>
++#include <linux/gpio.h>
++#include <linux/mfd/cyusbs23x.h>
 +
-+/* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
-+#define CY_USBS_SCB_DISABLED   0
-+#define CY_USBS_SCB_UART       1
-+#define CY_USBS_SCB_SPI                2
-+#define CY_USBS_SCB_I2C                3
++#define CY_GPIO_GET_LEN                2
++#define CY_DEVICE_CONFIG_SIZE  512
 +
-+static const struct usb_device_id cyusbs23x_usb_table[] = {
-+       { USB_DEVICE(0x04b4, 0x0004) },   /* Cypress Semiconductor CYUSBS234 */
-+       { }
-+};
++/* total GPIOs present */
++#define CYUSBS234_GPIO_NUM     12
 +
-+MODULE_DEVICE_TABLE(usb, cyusbs23x_usb_table);
++#define CY_USBS_READ_CONFIG    0xA6BC
++#define CY_USBS_ENABLE_READ    0xB1B0
++#define CY_USBS_DISABLE_READ   0xB9B0
 +
-+static const struct mfd_cell cyusbs23x_i2c_gpio_devs[] = {
-+       { .name = "cyusbs23x-i2c", },
-+       { .name = "cyusbs23x-gpio", },
-+};
++#define CY_CFG_DRIVE0_GPIO_OFFSET     436
++#define CY_CFG_DRIVE1_GPIO_OFFSET     440
++#define CY_CFG_INPUT_GPIO_OFFSET      444
 +
-+static int update_ep_details(struct usb_interface *interface,
-+                               struct cyusbs23x *cyusbs)
-+{
-+       struct usb_host_interface *iface_desc;
-+       struct usb_endpoint_descriptor *ep;
-+       int i;
-+
-+       iface_desc = interface->cur_altsetting;
-+
-+       for (i = 0; i < iface_desc->desc.bNumEndpoints; ++i) {
-+
-+               ep = &iface_desc->endpoint[i].desc;
-+
-+               if (!cyusbs->bulk_in_ep_num && usb_endpoint_is_bulk_in(ep))
-+                       cyusbs->bulk_in_ep_num = ep->bEndpointAddress;
-+               if (!cyusbs->bulk_out_ep_num && usb_endpoint_is_bulk_out(ep))
-+                       cyusbs->bulk_out_ep_num = ep->bEndpointAddress;
-+               if (!cyusbs->intr_in_ep_num && usb_endpoint_is_int_in(ep))
-+                       cyusbs->intr_in_ep_num = ep->bEndpointAddress;
-+       }
-+
-+       dev_dbg(&interface->dev, "%s intr_in=%d, bulk_in=%d, bulk_out=%d\n",
-+               __func__, cyusbs->intr_in_ep_num,
-+               cyusbs->bulk_in_ep_num, cyusbs->bulk_out_ep_num);
-+
-+       if (!cyusbs->bulk_in_ep_num || !cyusbs->bulk_out_ep_num ||
-+               !cyusbs->intr_in_ep_num) {
-+               dev_err(&interface->dev, "%s invalid endpoints\n", __func__);
-+               return -ENODEV;
-+       }
-+
-+       return 0;
-+}
-+
-+static int cyusbs23x_probe(struct usb_interface *interface,
-+                          const struct usb_device_id *id)
-+{
++struct cyusbs_gpio {
++       struct gpio_chip gpio;
 +       struct cyusbs23x *cyusbs;
-+       const struct mfd_cell *cyusbs23x_devs;
-+       int ret, ndevs;
++       u32 out_gpio;             /* Bitmap of output GPIOs */
++       u32 out_value;            /* Bitmap of output GPIOs value */
++       u32 in_gpio;              /* Bitmap of input GPIOs */
++};
 +
-+       cyusbs = devm_kzalloc(&interface->dev, sizeof(*cyusbs), GFP_KERNEL);
-+       if (!cyusbs)
++#define to_cyusbs_gpio(chip) container_of(chip, struct cyusbs_gpio, gpio)
++
++static int cy_gpio_get(struct gpio_chip *chip,
++                       unsigned offset)
++{
++       int ret;
++       char *buf;
++       u16 wIndex, wValue;
++       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
++       struct cyusbs23x *cyusbs = gpio->cyusbs;
++
++       if (gpio->out_gpio & BIT(offset))
++               return !!(gpio->out_value & BIT(offset));
++
++       wValue = offset;
++       wIndex = 0;
++       buf = kmalloc(CY_GPIO_GET_LEN, GFP_KERNEL);
++       if (buf == NULL)
 +               return -ENOMEM;
 +
-+       ret = update_ep_details(interface, cyusbs);
-+       if (ret)
-+               return -ENODEV;
-+
-+       /* Serial interfaces (I2C, SPI, UART) differ in interface subclass */
-+       switch (interface->cur_altsetting->desc.bInterfaceSubClass) {
-+       case CY_USBS_SCB_I2C:
-+               dev_info(&interface->dev, "using I2C interface\n");
-+               cyusbs23x_devs = cyusbs23x_i2c_gpio_devs;
-+               ndevs = ARRAY_SIZE(cyusbs23x_i2c_gpio_devs);
-+               break;
-+       default:
-+               dev_err(&interface->dev, "unsupported subclass\n");
-+               return -ENODEV;
++       ret = usb_control_msg(cyusbs->usb_dev,
++                       usb_rcvctrlpipe(cyusbs->usb_dev, 0),
++                       CY_GPIO_GET_VALUE_CMD,
++                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
++                       wValue, wIndex, buf, CY_GPIO_GET_LEN,
++                       CY_USBS_CTRL_XFER_TIMEOUT);
++       if (ret == CY_GPIO_GET_LEN) {
++               dev_dbg(chip->dev, "%s: offset=%d %02X %02X\n",
++                       __func__, offset, buf[0], buf[1]);
++               if (buf[0] == 0)
++                       ret = !!buf[1];
++               else
++                       ret = -EIO;
++       } else {
++               dev_err(chip->dev, "%s: offset=%d %d\n", __func__, offset, ret);
++               ret = -EIO;
 +       }
 +
-+       cyusbs->usb_dev = usb_get_dev(interface_to_usbdev(interface));
-+       cyusbs->usb_intf = interface;
-+       usb_set_intfdata(interface, cyusbs);
-+
-+       ret = mfd_add_devices(&interface->dev, PLATFORM_DEVID_AUTO,
-+                               cyusbs23x_devs, ndevs, NULL, 0, NULL);
-+       if (ret) {
-+               dev_err(&interface->dev, "Failed to register devices\n");
-+               goto error;
-+       }
-+
-+       return 0;
-+
-+error:
-+       usb_put_dev(cyusbs->usb_dev);
-+
++       kfree(buf);
 +       return ret;
 +}
 +
-+static void cyusbs23x_disconnect(struct usb_interface *interface)
++static void cy_gpio_set(struct gpio_chip *chip,
++                       unsigned offset, int value)
 +{
-+       struct cyusbs23x *cyusbs = usb_get_intfdata(interface);
++       int ret;
++       u16 wIndex, wValue;
++       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
++       struct cyusbs23x *cyusbs = gpio->cyusbs;
 +
-+       mfd_remove_devices(&interface->dev);
-+       usb_put_dev(cyusbs->usb_dev);
++       wValue = offset;
++       wIndex = value;
++
++       ret = usb_control_msg(cyusbs->usb_dev,
++                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
++                       CY_GPIO_SET_VALUE_CMD,
++                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
++                       wValue, wIndex, NULL, 0, CY_USBS_CTRL_XFER_TIMEOUT);
++       if (ret < 0)
++               dev_err(chip->dev, "error setting gpio %d: %d\n", offset, ret);
++       else {
++               if (value)
++                       gpio->out_value |= BIT(offset);
++               else
++                       gpio->out_value &= ~BIT(offset);
++       }
 +}
 +
-+static struct usb_driver cyusbs23x_usb_driver = {
-+       .name           = "cyusbs23x",
-+       .probe          = cyusbs23x_probe,
-+       .disconnect     = cyusbs23x_disconnect,
-+       .id_table       = cyusbs23x_usb_table,
++static int cy_gpio_request(struct gpio_chip *chip, unsigned offset)
++{
++       u32 gpios;
++       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
++
++       gpios = gpio->out_gpio | gpio->in_gpio;
++       if (gpios & BIT(offset))
++               return 0;
++
++       return -ENODEV;
++}
++
++static int cy_gpio_get_direction(struct gpio_chip *chip,
++                                       unsigned offset)
++{
++       struct cyusbs_gpio *gpio = to_cyusbs_gpio(chip);
++
++       if (gpio->out_gpio & BIT(offset))
++               return GPIOF_DIR_OUT;
++       else if (gpio->in_gpio & BIT(offset))
++               return GPIOF_DIR_IN;
++
++       return -EIO;
++}
++
++static int cy_get_device_config(struct cyusbs23x *cyusbs, u8 *buf)
++{
++       int ret;
++
++       ret = usb_control_msg(cyusbs->usb_dev,
++                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
++                       CY_DEV_ENABLE_CONFIG_READ_CMD,
++                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
++                       CY_USBS_READ_CONFIG, CY_USBS_ENABLE_READ, NULL, 0,
++                       CY_USBS_CTRL_XFER_TIMEOUT);
++       if (ret) {
++               dev_err(&cyusbs->usb_dev->dev,
++                       "%s: enable config read status %d\n", __func__, ret);
++               return -ENODEV;
++       }
++
++       ret = usb_control_msg(cyusbs->usb_dev,
++                       usb_rcvctrlpipe(cyusbs->usb_dev, 0),
++                       CY_DEV_READ_CONFIG_CMD,
++                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
++                       0, 0, buf, CY_DEVICE_CONFIG_SIZE,
++                       CY_USBS_CTRL_XFER_TIMEOUT);
++       if (ret != CY_DEVICE_CONFIG_SIZE) {
++               dev_err(&cyusbs->usb_dev->dev,
++                       "%s: read config status %d\n", __func__, ret);
++               return -ENODEV;
++       }
++
++       ret = usb_control_msg(cyusbs->usb_dev,
++                       usb_sndctrlpipe(cyusbs->usb_dev, 0),
++                       CY_DEV_ENABLE_CONFIG_READ_CMD,
++                       USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
++                       CY_USBS_READ_CONFIG, CY_USBS_DISABLE_READ, NULL, 0,
++                       CY_USBS_CTRL_XFER_TIMEOUT);
++       if (ret) {
++               dev_err(&cyusbs->usb_dev->dev,
++                       "%s: disable config read status %d\n", __func__, ret);
++               return -ENODEV;
++       }
++
++       return 0;
++}
++
++static int cy_gpio_retrieve_gpio_details(struct cyusbs_gpio *gpio)
++{
++       int ret;
++       u32 drive0, drive1;
++       u8 *buf;
++       struct cyusbs23x *cyusbs = gpio->cyusbs;
++
++       buf = kzalloc(CY_DEVICE_CONFIG_SIZE, GFP_KERNEL);
++       if (buf == NULL)
++               return -ENOMEM;
++
++       ret = cy_get_device_config(cyusbs, buf);
++       if (ret) {
++               dev_err(&cyusbs->usb_dev->dev,
++                       "could not retrieve device configuration\n");
++               goto error;
++       }
++
++       /* Retrieve the GPIO configuration details */
++       drive0 = le32_to_cpu(*((u32 *)&buf[CY_CFG_DRIVE0_GPIO_OFFSET]));
++       drive1 = le32_to_cpu(*((u32 *)&buf[CY_CFG_DRIVE1_GPIO_OFFSET]));
++       gpio->out_gpio = drive0 | drive1;
++       gpio->out_value = drive1;
++       gpio->in_gpio = le32_to_cpu(*((u32 *)&buf[CY_CFG_INPUT_GPIO_OFFSET]));
++
++error:
++       kfree(buf);
++       return ret;
++}
++
++static int cyusbs23x_gpio_probe(struct platform_device *pdev)
++{
++       struct cyusbs23x *cyusbs;
++       struct cyusbs_gpio *cy_gpio;
++       int ret = 0;
++
++       dev_dbg(&pdev->dev, "%s\n", __func__);
++
++       cyusbs = dev_get_drvdata(pdev->dev.parent);
++
++       cy_gpio = devm_kzalloc(&pdev->dev, sizeof(*cy_gpio), GFP_KERNEL);
++       if (cy_gpio == NULL)
++               return -ENOMEM;
++
++       cy_gpio->cyusbs = cyusbs;
++       /* retrieve GPIO configuration info */
++       ret = cy_gpio_retrieve_gpio_details(cy_gpio);
++       if (ret) {
++               dev_err(&pdev->dev, "could not retrieve gpio details\n");
++               return -ENODEV;
++       }
++
++       /* registering gpio */
++       cy_gpio->gpio.label = dev_name(&pdev->dev);
++       cy_gpio->gpio.dev = &pdev->dev;
++       cy_gpio->gpio.owner = THIS_MODULE;
++       cy_gpio->gpio.base = -1;
++       cy_gpio->gpio.ngpio = CYUSBS234_GPIO_NUM;
++       cy_gpio->gpio.can_sleep = true;
++       cy_gpio->gpio.request = cy_gpio_request;
++       cy_gpio->gpio.set = cy_gpio_set;
++       cy_gpio->gpio.get = cy_gpio_get;
++       cy_gpio->gpio.get_direction = cy_gpio_get_direction;
++       ret = gpiochip_add(&cy_gpio->gpio);
++       if (ret < 0) {
++               dev_err(cy_gpio->gpio.dev, "could not add gpio\n");
++               return ret;
++       }
++
++       platform_set_drvdata(pdev, cy_gpio);
++
++       dev_dbg(&pdev->dev, "added GPIO\n");
++       return ret;
++}
++
++static int cyusbs23x_gpio_remove(struct platform_device *pdev)
++{
++       struct cyusbs_gpio *cy_gpio = platform_get_drvdata(pdev);
++
++       dev_dbg(&pdev->dev, "%s\n", __func__);
++       gpiochip_remove(&cy_gpio->gpio);
++       return 0;
++}
++
++static struct platform_driver cyusbs23x_gpio_driver = {
++       .driver.name    = "cyusbs23x-gpio",
++       .probe          = cyusbs23x_gpio_probe,
++       .remove         = cyusbs23x_gpio_remove,
 +};
 +
-+module_usb_driver(cyusbs23x_usb_driver);
++module_platform_driver(cyusbs23x_gpio_driver);
 +
 +MODULE_AUTHOR("Rajaram Regupathy <rera@cypress.com>");
 +MODULE_AUTHOR("Muthu Mani <muth@cypress.com>");
-+MODULE_DESCRIPTION("Cypress CYUSBS23x MFD core driver");
++MODULE_DESCRIPTION("GPIO driver for CYUSBS23x");
 +MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/cyusbs23x.h b/include/linux/mfd/cyusbs23x.h
-new file mode 100644
-index 0000000..10899ba
---- /dev/null
-+++ b/include/linux/mfd/cyusbs23x.h
-@@ -0,0 +1,55 @@
-+/*
-+ * Cypress USB-Serial Bridge Controller definitions
-+ *
-+ * Copyright (c) 2014 Cypress Semiconductor Corporation.
-+ *
-+ * Author:
-+ *   Muthu Mani <muth@cypress.com>
-+ *
-+ * Additional contributors include:
-+ *   Rajaram Regupathy <rera@cypress.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ */
-+
-+#ifndef __MFD_CYUSBS23X_H__
-+#define __MFD_CYUSBS23X_H__
-+
-+#include <linux/types.h>
-+#include <linux/usb.h>
-+
-+/* Structure to hold all device specific stuff */
-+struct cyusbs23x {
-+       struct usb_device *usb_dev;
-+       struct usb_interface *usb_intf;
-+
-+       u8 bulk_in_ep_num;
-+       u8 bulk_out_ep_num;
-+       u8 intr_in_ep_num;
-+};
-+
-+enum cy_usbs_vendor_cmds {
-+       CY_DEV_READ_CONFIG_CMD         = 0xB5,
-+       CY_I2C_GET_CONFIG_CMD          = 0xC4,
-+       CY_I2C_SET_CONFIG_CMD          = 0xC5,
-+       CY_I2C_WRITE_CMD               = 0xC6,
-+       CY_I2C_READ_CMD                = 0xC7,
-+       CY_I2C_GET_STATUS_CMD          = 0xC8,
-+       CY_I2C_RESET_CMD               = 0xC9,
-+       CY_GPIO_GET_CONFIG_CMD         = 0xD8,
-+       CY_GPIO_SET_CONFIG_CMD         = 0xD9,
-+       CY_GPIO_GET_VALUE_CMD          = 0xDA,
-+       CY_GPIO_SET_VALUE_CMD          = 0xDB,
-+       CY_DEV_ENABLE_CONFIG_READ_CMD  = 0xE2
-+};
-+
-+/* SCB index shift */
-+#define CY_SCB_INDEX_SHIFT      15
-+
-+#define CY_USBS_CTRL_XFER_TIMEOUT      2000
-+#define CY_USBS_BULK_XFER_TIMEOUT      5000
-+#define CY_USBS_INTR_XFER_TIMEOUT      5000
-+
-+#endif /* __MFD_CYUSBS23X_H__ */
++MODULE_ALIAS("platform:cyusbs23x-gpio");
 --
 1.8.3.2
 
