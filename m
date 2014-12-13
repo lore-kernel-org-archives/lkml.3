@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079AbaLMUUS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 15:20:18 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:49181 "EHLO ja.ssi.bg"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752704AbaLMUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 15:20:15 -0500
-Date: Sat, 13 Dec 2014 22:19:55 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Smart Weblications GmbH - Florian Wiessner 
-	<f.wiessner@smart-weblications.de>
-cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
-        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
-Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
-In-Reply-To: <5489A465.6090305@smart-weblications.de>
-Message-ID: <alpine.LFD.2.11.1412132211260.3229@ja.home.ssi.bg>
-References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de>
- <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg> <54858948.2060007@smart-weblications.de> <alpine.LFD.2.11.1412082234350.2401@ja.home.ssi.bg> <5486CD9D.4060107@smart-weblications.de> <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
- <5489A465.6090305@smart-weblications.de>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1754253AbaLMUmi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 15:42:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224AbaLMUmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 15:42:37 -0500
+Date: Sat, 13 Dec 2014 15:41:52 -0500
+From: Dave Jones <davej@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141213204152.GA15714@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20141205171501.GA1320@redhat.com>
+ <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+ <1417806247.4845.1@mail.thefacebook.com>
+ <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+ <20141211145408.GB16800@redhat.com>
+ <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+ <20141212185454.GB4716@redhat.com>
+ <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+ <20141213165915.GA12756@redhat.com>
+ <20141213180408.GH25340@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141213180408.GH25340@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Dec 13, 2014 at 10:04:08AM -0800, Paul E. McKenney wrote:
+ > On Sat, Dec 13, 2014 at 11:59:15AM -0500, Dave Jones wrote:
+ > > On Fri, Dec 12, 2014 at 11:14:06AM -0800, Linus Torvalds wrote:
+ > >  > On Fri, Dec 12, 2014 at 10:54 AM, Dave Jones <davej@redhat.com> wrote:
+ > >  > >
+ > >  > > Something that's still making me wonder if it's some kind of hardware
+ > >  > > problem is the non-deterministic nature of this bug.
+ > >  > 
+ > >  > I'd expect it to be a race condition, though. Which can easily cause
+ > >  > these kinds of issues, and the timing will be pretty random even if
+ > >  > the load is very regular.
+ > >  > 
+ > >  > And we know that the scheduler has an integer overflow under Sasha's
+ > >  > loads, although I didn't hear anything from Ingo and friends about it.
+ > >  > Ingo/Peter, you were cc'd on that report, where at least one of the
+ > >  > multiplcations in wake_affine() ended up overflowing..
+ > >  > 
+ > >  > Some scheduler thing that overflows only under heavy load, and screws
+ > >  > up scheduling could easily account for the RCU thread thing. I see it
+ > >  > *less* easily accounting for DaveJ's case, though, because the
+ > >  > watchdog is running at RT priority,  and the scheduler would have to
+ > >  > screw up much more to then not schedule an RT task, but..
+ > >  > 
+ > >  > I'm also not sure if the bug ever happens with preemption disabled.
+ > > 
+ > > Bah, so I see some watchdog traces with preemption off, and that then
+ > > taints the kernel, and the fuzzing stops.  I'll hack something up
+ > > so it ignores the taint and keeps going. All I really care about here
+ > > is the "machine hangs completely" case, which the trace below didn't
+ > > hit..
+ > > 
+ > > (back to fuzzing almost everything, not just lsetxattr btw)
+ > 
+ > Hmmm...  This one looks like the RCU grace-period kthread is getting
+ > starved: "idle=b4c/0/0".  Is this running with the "dangerous" patch
+ > that sets these kthreads to RT priority?
 
-	Hello,
+sorry, no. Ran out of time yesterday. I'll try and get to applying that
+later this evening if I get chance.
 
-On Thu, 11 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
-
-> >> [  512.485323] CPU: 4 PID: 28142 Comm: vsftpd Not tainted 3.12.33 #5
-> >
-> > 	Above "#5" is same as previous oops. It means kernel
-> > is not updated. Or you updated only the IPVS modules after
-> > applying the both patches?
-> 
-> I did it with make-kpkg --initrd linux_image which only rebuilt the modules,
-> correct. I can retry with make clean before building the package
-
-	I just tested PASV and PORT with 3.12.33 including
-both patches (seq adj fix + ip_route_me_harder fix) and do not
-see any crashes in nf_ct_seqadj_set. If you still have problem
-with FTP send me more info offlist.
-
-> > 	You can also try without FTP tests to see if there
-> > are oopses in xfrm, so that we can close this topic and then
-> > to continue for the FTP problem on IPVS lists without
-> > bothering non-IPVS people.
-> >
-> 
-> yeah, it seems that the xfrm issue is away.
-
-	Thanks for the confirmation!
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+	Dave
