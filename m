@@ -1,193 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222AbaLMUSn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 15:18:43 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:34558 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752271AbaLMUSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 15:18:41 -0500
-Date: Sat, 13 Dec 2014 13:18:44 -0700
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Block driver updates for 3.19
-Message-ID: <20141213201844.GA24677@kernel.dk>
+	id S932079AbaLMUUS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 15:20:18 -0500
+Received: from ja.ssi.bg ([178.16.129.10]:49181 "EHLO ja.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752704AbaLMUUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 15:20:15 -0500
+Date: Sat, 13 Dec 2014 22:19:55 +0200 (EET)
+From: Julian Anastasov <ja@ssi.bg>
+To: Smart Weblications GmbH - Florian Wiessner 
+	<f.wiessner@smart-weblications.de>
+cc: Steffen Klassert <steffen.klassert@secunet.com>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Simon Horman <horms@verge.net.au>, lvs-devel@vger.kernel.org
+Subject: Re: 3.12.33 - BUG xfrm_selector_match+0x25/0x2f6
+In-Reply-To: <5489A465.6090305@smart-weblications.de>
+Message-ID: <alpine.LFD.2.11.1412132211260.3229@ja.home.ssi.bg>
+References: <547F2462.6040405@smart-weblications.de> <20141204075627.GE6390@secunet.com> <alpine.LFD.2.11.1412042338370.4841@ja.home.ssi.bg> <5481173A.9060308@smart-weblications.de> <alpine.LFD.2.11.1412051126090.2522@ja.home.ssi.bg> <5481B944.2000002@smart-weblications.de>
+ <alpine.LFD.2.11.1412072019410.1885@ja.home.ssi.bg> <54858948.2060007@smart-weblications.de> <alpine.LFD.2.11.1412082234350.2401@ja.home.ssi.bg> <5486CD9D.4060107@smart-weblications.de> <alpine.LFD.2.11.1412102331230.4043@ja.home.ssi.bg>
+ <5489A465.6090305@smart-weblications.de>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-13_02:2014-12-13,2014-12-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.11022302462516e-15 kscore.compositescore=0
- circleOfTrustscore=33.2965958620397 compositescore=0.986137415400633
- urlsuspect_oldscore=0.986137415400633 suspectscore=11
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.986137415400633 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412130209
-X-FB-Internal: deliver
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Below is the block driver pull request for 3.19, it sits on top of the
-core pull request submitted yesterday. It contains:
+	Hello,
 
-- NVMe updates
+On Thu, 11 Dec 2014, Smart Weblications GmbH - Florian Wiessner wrote:
 
-        - The blk-mq conversion from Matias (and others)
+> >> [  512.485323] CPU: 4 PID: 28142 Comm: vsftpd Not tainted 3.12.33 #5
+> >
+> > 	Above "#5" is same as previous oops. It means kernel
+> > is not updated. Or you updated only the IPVS modules after
+> > applying the both patches?
+> 
+> I did it with make-kpkg --initrd linux_image which only rebuilt the modules,
+> correct. I can retry with make clean before building the package
 
-        - A stack of NVMe bug fixes from the nvme tree, mostly from Keith.
+	I just tested PASV and PORT with 3.12.33 including
+both patches (seq adj fix + ip_route_me_harder fix) and do not
+see any crashes in nf_ct_seqadj_set. If you still have problem
+with FTP send me more info offlist.
 
-        - Various bug fixes from me, fixing issues in both the blk-mq
-          conversion and generic bugs.
+> > 	You can also try without FTP tests to see if there
+> > are oopses in xfrm, so that we can close this topic and then
+> > to continue for the FTP problem on IPVS lists without
+> > bothering non-IPVS people.
+> >
+> 
+> yeah, it seems that the xfrm issue is away.
 
-        - Abort and CPU online fix from Sam.
+	Thanks for the confirmation!
 
-        - Hot add/remove fix from Indraneel.
+Regards
 
-- A couple of drbd fixes from the drbd team (Andreas, Lars, Philipp)
-
-- With the generic IO stat accounting from 3.19/core, converting md,
-  bcache, and rsxx to use those. From Gu Zheng.
-
-- Boundary check for queue/irq mode for null_blk from Matias. Fixes
-  cases where invalid values could be given, causing the device to hang.
-
-- The xen blkfront pull request, with two bug fixes from Vitaly.
-
-
-Please pull!
-
-
-  git://git.kernel.dk/linux-block.git for-3.19/drivers
-
-
-----------------------------------------------------------------
-Andreas Gruenbacher (2):
-      drbd: Minor cleanups
-      drbd: Only use drbd_msg_put_info() in drbd_nl.c
-
-Andreea-Cristina Bernat (1):
-      nvme: Replace rcu_assign_pointer() with RCU_INIT_POINTER()
-
-Dan Carpenter (1):
-      NVMe: blk_mq_alloc_request() returns error pointers
-
-Dan McLeran (2):
-      NVMe: Change nvme_enable_ctrl to set EN and manage CC thru ctrl_config.
-      NVMe: Add shutdown timeout as module parameter.
-
-Gu Zheng (4):
-      md/bcache: use generic io stats accounting functions to simplify io stat accounting
-      drbd: use generic io stats accounting functions to simplify io stat accounting
-      md: use generic io stats accounting functions to simplify io stat accounting
-      block/rsxx: use generic io stats accounting functions to simplify io stat accounting
-
-Indraneel M (1):
-      NVMe: Fix FS mount issue (hot-remove followed by hot-add)
-
-Jens Axboe (13):
-      Merge branch 'for-3.19/core' into for-3.19/drivers
-      NVMe: replace blk_put_request() with blk_mq_free_request()
-      NVMe: nvme_submit_async_admin_req() must use atomic rq allocation
-      NVMe: enable IO stats by default
-      Merge branch 'master' into for-3.19/drivers
-      NVMe: make setup work for devices that don't do INTx
-      NVMe: add ->exit_hctx() hook
-      NVMe: fail pci initialization if the device doesn't have any BARs
-      Merge branch 'for-3.19/core' into for-3.19/drivers
-      NVMe: fix error return checking from blk_mq_alloc_request()
-      Merge branch 'for-jens-3.19' of git://git.kernel.org/.../konrad/xen into for-3.19/drivers
-      NVMe: fix retry/error logic in nvme_queue_rq()
-      NVMe: fix race condition in nvme_submit_sync_cmd()
-
-Joe Perches (1):
-      block: Use dma_zalloc_coherent
-
-Keith Busch (22):
-      NVMe: Async event request
-      NVMe: Mismatched host/device page size support
-      NVMe: Handling devices incapable of I/O
-      NVMe: Use pci_stop_and_remove_bus_device_locked()
-      NVMe: Whitespace fixes
-      NVMe: Skip orderly shutdown on failed devices
-      NVMe: Call nvme_free_queue directly
-      NVMe: Fix filesystem sync deadlock on removal
-      NVMe: Reference count pci device
-      NVMe: Remove duplicate compat SG_IO code
-      NVMe: Fix SG_IO status values
-      NVMe: Translate NVMe status to errno
-      NVMe: Fix nvmeq waitqueue entry initialization
-      NVMe: Add revalidate_disk callback
-      NVMe: Passthrough IOCTL for IO commands
-      NVMe: Updates for 1.1 spec
-      NVMe: Fix device probe waiting on kthread
-      NVMe: Clear QUEUE_FLAG_STACKABLE
-      NVMe: Do not open disks that are being deleted
-      NVMe: Do not over allocate for discard requests
-      NVMe: Update module version major number
-      NVMe: Fix command setup on IO retry
-
-Lars Ellenberg (2):
-      drbd: fix resync throttling initialization
-      drbd: merge_bvec_fn: properly remap bvm->bi_bdev
-
-Matias Bjorling (1):
-      null_blk: boundary check queue_mode and irqmode
-
-Matias Bjørling (1):
-      NVMe: Convert to blk-mq
-
-Matthew Wilcox (1):
-      NVMe: Update list of status codes
-
-Philipp Reisner (3):
-      drbd: fix race between role change and handshake
-      drbd: Fix state change in case of connection timeout
-      drbd: Remove an useless copy of kernel_setsockopt()
-
-Sam Bradshaw (2):
-      NVMe: Correctly handle IOCTL_SUBMIT_IO when cpus > online queues
-      NVMe: fix freeing of wrong request in abort path
-
-Vitaly Kuznetsov (2):
-      xen/blkfront: improve protection against issuing unsupported REQ_FUA
-      xen/blkfront: remove redundant flush_op
-
-kbuild test robot (1):
-      NVMe: __nvme_submit_admin_cmd() can be static
-
- drivers/block/drbd/drbd_actlog.c   |    3 +-
- drivers/block/drbd/drbd_int.h      |   39 +-
- drivers/block/drbd/drbd_main.c     |   23 +-
- drivers/block/drbd/drbd_nl.c       |   64 +-
- drivers/block/drbd/drbd_receiver.c |    2 +-
- drivers/block/drbd/drbd_req.c      |   25 +-
- drivers/block/drbd/drbd_state.c    |   42 +-
- drivers/block/drbd/drbd_state.h    |    5 +
- drivers/block/drbd/drbd_worker.c   |    5 +-
- drivers/block/null_blk.c           |   42 +-
- drivers/block/nvme-core.c          | 1594 +++++++++++++++++-------------------
- drivers/block/nvme-scsi.c          |  162 +---
- drivers/block/rsxx/dev.c           |   29 +-
- drivers/block/xen-blkfront.c       |   65 +-
- drivers/md/bcache/request.c        |   23 +-
- drivers/md/dm.c                    |   13 +-
- drivers/md/md.c                    |    6 +-
- include/linux/drbd.h               |    2 +-
- include/linux/nvme.h               |   18 +-
- include/uapi/linux/nvme.h          |   46 +-
- 20 files changed, 1009 insertions(+), 1199 deletions(-)
-
--- 
-Jens Axboe
-
+--
+Julian Anastasov <ja@ssi.bg>
