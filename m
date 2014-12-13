@@ -1,89 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966469AbaLMLMD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 06:12:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57053 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966450AbaLMLMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 06:12:00 -0500
-Message-ID: <548C1E7D.1000005@redhat.com>
-Date: Sat, 13 Dec 2014 12:09:49 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751887AbaLMLQW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 06:16:22 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:40774 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaLMLQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 06:16:19 -0500
+Date: Sat, 13 Dec 2014 03:16:15 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v14 01/12] input: cyapa: re-design driver to support
+ multi-trackpad in one driver
+Message-ID: <20141213111615.GA21729@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudley.dulixin@gmail.com>, dmitry.torokhov@gmail.com,
+	rydberg@euromail.se, bleung@google.com, linux-input@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418351262-8163-1-git-send-email-dudley.dulixin@gmail.com>
+ <1418351262-8163-2-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
-To: VishnuPatekar <vishnupatekar0510@gmail.com>, linux-input@vger.kernel.org,
-        maxime.ripard@free-electrons.com, dmitry.torokhov@gmail.com
-CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux@arm.linux.org.uk, grant.likely@linaro.org,
-        benh@kernel.crashing.org, msalter@redhat.com, ralf@linux-mips.org,
-        jdelvare@suse.de
-Subject: Re: [PATCHv3 0/5] ARM:sunxi:ps2 Added support for A10/A20 ps2 controller.
-References: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>
-In-Reply-To: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418351262-8163-2-git-send-email-dudley.dulixin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi VishnuPatekar,
+Dudley,
 
-The patch mangling for this set seems to have gone a bit wrong I'm afraid,
-a lot of the patches have my fixup commit messages (which should have
-disappeared when squashing in the patches), please replace those by proper
-commit messages describing what the patch actually does.
+A few suggestions and questions below...
 
-Also the adding of the commented nodes for the lime2 seems to be gone entirely
-from the set, instead now only a comment about the conflict with the hdmi
-pins is added, but it is above the i2c node instead of above a ps2 node.
+On Fri, Dec 12, 2014 at 10:27:31AM +0800, Dudley Du wrote:
+> In order to support multiple different chipsets and communication protocols
+> trackpad devices in one cyapa driver, the new cyapa driver is re-designed
+> with one cyapa driver core and multiple device specific functions component.
+> The cyapa driver core is contained in this patch, it supplies basic functions
+> that working with kernel and input subsystem, and also supplies the interfaces
+> that the specific devices' component can connect and work together with as
+> one driver.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> ---
+>  drivers/input/mouse/Makefile     |    3 +-
+>  drivers/input/mouse/cyapa.c      | 1050 ++++++++++++++------------------------
+>  drivers/input/mouse/cyapa.h      |  316 ++++++++++++
+[...]
+> -	{ REG_OFFSET_QUERY_BASE, QUERY_DATA_SIZE },
+> -	{ BL_HEAD_OFFSET, 3 },
+> -	{ BL_HEAD_OFFSET, 16 },
+> -	{ BL_HEAD_OFFSET, 16 },
+> -	{ BL_DATA_OFFSET, 16 },
+> -	{ BL_HEAD_OFFSET, 32 },
+> -	{ REG_OFFSET_QUERY_BASE, PRODUCT_ID_SIZE },
+> -	{ REG_OFFSET_DATA_BASE, 32 }
+> -};
+> +const char unique_str[] = "CYTRA";
+>  
+Since 'unique_str' is used to check the product id why not call it
+'product_id'?
 
-Regards,
+[...]
+> +/**
+> + * cyapa_i2c_write - Execute i2c block data write operation
+> + * @cyapa: Handle to this driver
+> + * @ret: Offset of the data to written in the register map
+> + * @len: number of bytes to write
+> + * @values: Data to be written
+>   *
+> - * Note:
+> - * In trackpad device, the memory block allocated for I2C register map
+> - * is 256 bytes, so the max read block for I2C bus is 256 bytes.
+> + * Return negative errno code on error; return zero when success.
+>   */
+> -static ssize_t cyapa_smbus_read_block(struct cyapa *cyapa, u8 cmd, size_t len,
+> -				      u8 *values)
+> +ssize_t cyapa_i2c_write(struct cyapa *cyapa, u8 reg,
+> +					 size_t len, const void *values)
+>  {
+> -	ssize_t ret;
+> -	u8 index;
+> -	u8 smbus_cmd;
+> -	u8 *buf;
+> +	int ret;
+>  	struct i2c_client *client = cyapa->client;
+> +	char data[32], *buf;
+>  
+> -	if (!(SMBUS_BYTE_BLOCK_CMD_MASK & cmd))
+> -		return -EINVAL;
+> -
+> -	if (SMBUS_GROUP_BLOCK_CMD_MASK & cmd) {
+> -		/* read specific block registers command. */
+> -		smbus_cmd = SMBUS_ENCODE_RW(cmd, SMBUS_READ);
+> -		ret = i2c_smbus_read_block_data(client, smbus_cmd, values);
+> -		goto out;
+> -	}
+> -
+> -	ret = 0;
+> -	for (index = 0; index * I2C_SMBUS_BLOCK_MAX < len; index++) {
+> -		smbus_cmd = SMBUS_ENCODE_IDX(cmd, index);
+> -		smbus_cmd = SMBUS_ENCODE_RW(smbus_cmd, SMBUS_READ);
+> -		buf = values + I2C_SMBUS_BLOCK_MAX * index;
+> -		ret = i2c_smbus_read_block_data(client, smbus_cmd, buf);
+> -		if (ret < 0)
+> -			goto out;
+> -	}
+> -
+> -out:
+> -	return ret > 0 ? len : ret;
+> -}
+> -
+> -static s32 cyapa_read_byte(struct cyapa *cyapa, u8 cmd_idx)
+> -{
+> -	u8 cmd;
+> -
+> -	if (cyapa->smbus) {
+> -		cmd = cyapa_smbus_cmds[cmd_idx].cmd;
+> -		cmd = SMBUS_ENCODE_RW(cmd, SMBUS_READ);
+> +	if (len > 31) {
+> +		buf = kzalloc(len + 1, GFP_KERNEL);
+> +		if (!buf)
+> +			return -ENOMEM;
+>  	} else {
+> -		cmd = cyapa_i2c_cmds[cmd_idx].cmd;
+> +		buf = data;
+>  	}
+> -	return i2c_smbus_read_byte_data(cyapa->client, cmd);
+> -}
+>  
+> -static s32 cyapa_write_byte(struct cyapa *cyapa, u8 cmd_idx, u8 value)
+> -{
+> -	u8 cmd;
+> +	buf[0] = reg;
+> +	memcpy(&buf[1], values, len);
+> +	ret = i2c_master_send(client, buf, len + 1);
+>  
+> -	if (cyapa->smbus) {
+> -		cmd = cyapa_smbus_cmds[cmd_idx].cmd;
+> -		cmd = SMBUS_ENCODE_RW(cmd, SMBUS_WRITE);
+> -	} else {
+> -		cmd = cyapa_i2c_cmds[cmd_idx].cmd;
+> -	}
+> -	return i2c_smbus_write_byte_data(cyapa->client, cmd, value);
+> +	if (buf != data)
+> +		kfree(buf);
+> +	return (ret == (len + 1)) ? 0 : ((ret < 0) ? ret : -EIO);
+>  }
+>  
 
-Hans
+Ugh.  This is hard to read since diff replaced three functions with one,
+cyapa_i2c_write().  Nothing can be done about this, just a note for the
+other reviewers.
 
+The final cyapa_i2c_write() is shown below.
 
-On 12-12-14 19:25, VishnuPatekar wrote:
-> v2 --> v3
-> 1. changed config to SERIO_SUN4I_PS2 from SERIO_SUNXI_PS2
-> 2. changed driver name to sun4i-ps2 from sunxi-ps2.
-> 3. changed the function names to sun4i_ps2_*.
-> 4. added locking in sun4i_ps2_open.
-> 5. kept compatible "sun4i-a10-ps2" for A10 and A20, as A10 is earlier SOC.
-> 6. corrected the style errors.
-> 7. separated the dts patches.
-> 8. removed commented ps2 notes from lime2 dts.
-> 9. added note that ps2 pins confilt with hdmi.
-> 10. corrected the interrupt property for A10.
-> 11. moved dt-bindings to Documentation/devicetree/bindings/serio
->
-> v1 --> v2:
-> 1. added default n depends on ARCH_SUNXI || COMPILE_TEST in Kconfig.
-> 2. handled errors and free resources on errors.
-> 3. used BIT(x), DIV_ROUND_UP macros.
-> 4. corrected style errors.
-> 5. added support for A10 also, A10 and A2 have same properties of PS2 controller.
-> 6. by default commented ps20 and ps21 nodes,as ps20 pins conflict with HDMI.
-> 7. added compatible as allwinner,sun4i-a10-ps2.
-> 8. corrected the possible race condition.
->
->
-> VishnuPatekar (5):
->    sunxi:dts-bindings:input:ps2 bindings for A10/A20 ps2.
->    ARM:sunxi:drivers:input Add support for A10/A20 PS2
->    ARM: sunxi: dts: Add PS2 nodes to dtsi for A10 and A20
->    ARM: sunxi: dts: Add A10/A20 PS2 pin muxing options
->    ARM: sunxi: dts: Add note ps2 pins conflict with hdmi
->
->   .../bindings/serio/allwinner,sun4i-ps2.txt         |   23 ++
->   arch/arm/boot/dts/sun4i-a10.dtsi                   |   31 ++
->   arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts    |    6 +-
->   arch/arm/boot/dts/sun7i-a20.dtsi                   |   32 ++
->   drivers/input/serio/Kconfig                        |   11 +
->   drivers/input/serio/Makefile                       |    1 +
->   drivers/input/serio/sun4i-ps2.c                    |  362 ++++++++++++++++++++
->   7 files changed, 465 insertions(+), 1 deletion(-)
->   create mode 100644 Documentation/devicetree/bindings/serio/allwinner,sun4i-ps2.txt
->   create mode 100644 drivers/input/serio/sun4i-ps2.c
->
+  /**
+   * cyapa_i2c_write - Execute i2c block data write operation
+   * @cyapa: Handle to this driver
+   * @ret: Offset of the data to written in the register map
+   * @len: number of bytes to write
+   * @values: Data to be written
+   *
+   * Return negative errno code on error; return zero when success.
+   */
+  ssize_t cyapa_i2c_write(struct cyapa *cyapa, u8 reg,
+                                           size_t len, const void *values)
+  {
+          int ret;
+          struct i2c_client *client = cyapa->client;
+          char data[32], *buf;
+  
+          if (len > 31) {
+                  buf = kzalloc(len + 1, GFP_KERNEL);
+                  if (!buf)
+                          return -ENOMEM;
+          } else {
+                  buf = data;
+          }
+  
+          buf[0] = reg;
+          memcpy(&buf[1], values, len);
+          ret = i2c_master_send(client, buf, len + 1);
+  
+          if (buf != data)
+                  kfree(buf);
+          return (ret == (len + 1)) ? 0 : ((ret < 0) ? ret : -EIO);
+  }
+
+What is interesting about this code is that it switches between buffers
+depending on length.  If it is less than or equal to 31 bytes a static
+buffer is used.  If it is larger, memory is allocated.
+
+Is this complexity justified or is this premature optimization?
+
+I could only find one place where cyapa_i2c_write() was used and it only
+involved 2 bytes so 32 is plenty.
+
+Why not simplify it and only use the static buffer and just reject
+anything that is too large?
+
+  ssize_t cyapa_i2c_write(struct cyapa *cyapa, u8 reg,
+                                           size_t len, const void *values)
+  {
+          int ret;
+          struct i2c_client *client = cyapa->client;
+          char buf[32];
+  
+          if (len > 31)
+	  	return -ENOMEM;
+  
+          buf[0] = reg;
+          memcpy(&buf[1], values, len);
+          ret = i2c_master_send(client, buf, len + 1);
+  
+          return (ret == (len + 1)) ? 0 : ((ret < 0) ? ret : -EIO);
+  }
+
+[...]
+
+-- 
+- Jeremiah Mahler
