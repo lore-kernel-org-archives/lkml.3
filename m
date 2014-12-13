@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830AbaLMEqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Dec 2014 23:46:04 -0500
-Received: from smtp302.phy.lolipop.jp ([210.157.22.85]:53090 "EHLO
-	smtp302.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797AbaLMEqD (ORCPT
+	id S965112AbaLMFNK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 00:13:10 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:63608 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760AbaLMFNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Dec 2014 23:46:03 -0500
-Message-ID: <548BC483.4090703@sakamocchi.jp>
-Date: Sat, 13 Dec 2014 13:45:55 +0900
-From: Takashi Sakamoto <o-takashi@sakamocchi.jp>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sat, 13 Dec 2014 00:13:08 -0500
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>,
-        Clemens Ladisch <clemens@ladisch.de>
-CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch 2/2] ALSA: oxfw: fix detect_loud_models() return value
-References: <20141212192810.GB22234@mwanda>
-In-Reply-To: <20141212192810.GB22234@mwanda>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Date: Sat, 13 Dec 2014 10:43:04 +0530
+Message-ID: <CALHRZuotPpSoX9bnQin=93k0Hr7tEp_HZDaaBvfKaPfmoi_EBQ@mail.gmail.com>
+Subject: query on DWC3
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 13 2014 04:28, Dan Carpenter wrote:
-> This code causes a static checker warning:
-> 
-> 	sound/firewire/oxfw/oxfw.c:46 detect_loud_models()
-> 	warn: signedness bug returning '(-2)'
-> 
-> The detect_loud_models() function should return false on falure, so that
-> we don't try to set up the loud code for hardware that doesn't support
-> it.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/sound/firewire/oxfw/oxfw.c b/sound/firewire/oxfw/oxfw.c
-> index cf1d0b5..60e5cad 100644
-> --- a/sound/firewire/oxfw/oxfw.c
-> +++ b/sound/firewire/oxfw/oxfw.c
-> @@ -43,7 +43,7 @@ static bool detect_loud_models(struct fw_unit *unit)
->  	err = fw_csr_string(unit->directory, CSR_MODEL,
->  			    model, sizeof(model));
->  	if (err < 0)
-> -		return err;
-> +		return false;
->  
->  	for (i = 0; i < ARRAY_SIZE(models); i++) {
->  		if (strcmp(models[i], model) == 0)
+Hi Felipe,
 
-Reviewd-by: Takashi Sakamoto <o-takashi@sakamocchi.jp>
+In DWC3 driver, for three stage Control OUT transfer there is a check:
 
+   else if (!IS_ALIGNED(req->request.length, dep->endpoint.maxpacket)
 
-Thanks
+             && (dep->number == 0)) {.
+    }
 
-Takashi Sakamoto
-o-takashi@sakamocchi.jp
+I understand that we check for alignment of sizes and if not we
+prepare trb with maxpacket and enable interrupt on short packet. In
+databook I could not find anything related to this, it talks only
+about addresses should be aligned. In Control transfer programming
+model there is no difference between Control OUT or IN transfer, if
+three stage transfer - prepare trb with length wLength. Initially I
+followed this and not able to receive data on EP0 OUT.:( .After adding
+the above check it is working. Please help me to understand why we do
+this?
+
+Thank in advance,
+Sundeep.B.S.
