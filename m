@@ -1,82 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbaLMXrn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 18:47:43 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58307 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151AbaLMXrm (ORCPT
+	id S1754096AbaLMXvf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 18:51:35 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38739 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361AbaLMXvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 18:47:42 -0500
-Date: Sat, 13 Dec 2014 23:47:30 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141213234730.GP22149@ZenIV.linux.org.uk>
-References: <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
- <20141212185454.GB4716@redhat.com>
- <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213165915.GA12756@redhat.com>
- <20141213223616.GA22559@redhat.com>
- <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
- <CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
- <CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
- <20141213233508.GN22149@ZenIV.linux.org.uk>
- <CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
+	Sat, 13 Dec 2014 18:51:33 -0500
+Date: Sun, 14 Dec 2014 00:51:31 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
+        linux-bluetooth@vger.kernel.org
+Subject: Re: bluetooth: Add hci_h4p driver
+Message-ID: <20141213235131.GA23566@amd>
+References: <20141213223727.GA13894@amd>
+ <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 03:38:57PM -0800, Linus Torvalds wrote:
-> On Sat, Dec 13, 2014 at 3:35 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Er...  There's much more direct reason - suppose we get a timer interrupt
-> > right in the middle of mnt_drop_write().  And lost the timeslice.
-> 
-> So?
-> 
-> You didn't have preemption disabled in *between* the mnt_want_write()
-> and mnt_drop_write(), there's absolutely no reason to have it inside
-> of them.
-> 
-> Nobody cares if you get preempted and go away for a while. It's
-> exactly equivalent to sleeping while doing the write that the pair was
-> protecting.
-> 
-> Seriously, the preemption disable looks like just voodoo code. It
-> doesn't protect anything, it doesn't fix anything, it doesn't change
-> anything. All it does is disable preemption over a random sequence of
-> code.
+Hi!
 
-Huh?  Sure, we can enable it after mnt_inc_writers() and disable just prior to
-mnt_dec_writers(), but we absolutely *do* need it disabled during either.
-Is that what you are talking about?  If so, yes, we can do that.
+> > My notes say that Marcel wanted different filenames, but I'd need
+> > advice exactly what filenames. I guess platform data supprort should
+> > be removed altogether, rather than renamed.
+> 
+> Yes, the platform support should go away. This should be purely based on DT.
+> 
+> Can you also start using git format-patch so that patches get a diffstat.
 
-But that applies only to __mnt_want_write() - __mnt_drop_write() is pure
-mnt_dec_writers() and we can't call that one with preemption enabled.
-Seriously, look at the mnt_dec_writers():
-static inline void mnt_dec_writers(struct mount *mnt)
-{
-#ifdef CONFIG_SMP
-        this_cpu_dec(mnt->mnt_pcp->mnt_writers);  
-#else
-        mnt->mnt_writers--;
-#endif
-}
-It's load/modify/store, without any kind of atomicity; get preempted in the
-middle of that sequence by another caller of mnt_dec_writers() and obvious bad
-things will happen...
-
-Al, really confused by now...
+So the rest of filenames look ok?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
