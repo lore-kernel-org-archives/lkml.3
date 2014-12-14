@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbaLNUuX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:50:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52903 "EHLO
+	id S1754562AbaLNUua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:50:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52893 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365AbaLNUVn (ORCPT
+	with ESMTP id S1751361AbaLNUVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Helge Deller <deller@gmx.de>, Petr Mladek <pmladek@suse.cz>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 07/24] drm/radeon: kernel panic in drm_calc_vbltimestamp_from_scanoutpos with 3.18.0-rc6
-Date: Sun, 14 Dec 2014 12:20:27 -0800
-Message-Id: <20141214201800.857635765@linuxfoundation.org>
+        Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.10 05/24] i2c: omap: fix i207 errata handling
+Date: Sun, 14 Dec 2014 12:20:25 -0800
+Message-Id: <20141214201800.793582608@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -29,133 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Mladek <pmladek@suse.cz>
+From: Alexander Kochetkov <al.kochet@gmail.com>
 
-commit f5475cc43c899e33098d4db44b7c5e710f16589d upstream.
+commit ccfc866356674cb3a61829d239c685af6e85f197 upstream.
 
-I was unable too boot 3.18.0-rc6 because of the following kernel
-panic in drm_calc_vbltimestamp_from_scanoutpos():
+commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
+and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
+Set) get handled. 6d9939f6514 code doesn't correspond to workaround provided by
+errata.
 
-    [drm] Initialized drm 1.1.0 20060810
-    [drm] radeon kernel modesetting enabled.
-    [drm] initializing kernel modesetting (RV100 0x1002:0x515E 0x15D9:0x8080).
-    [drm] register mmio base: 0xC8400000
-    [drm] register mmio size: 65536
-    radeon 0000:0b:01.0: VRAM: 128M 0x00000000D0000000 - 0x00000000D7FFFFFF (16M used)
-    radeon 0000:0b:01.0: GTT: 512M 0x00000000B0000000 - 0x00000000CFFFFFFF
-    [drm] Detected VRAM RAM=128M, BAR=128M
-    [drm] RAM width 16bits DDR
-    [TTM] Zone  kernel: Available graphics memory: 3829346 kiB
-    [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
-    [TTM] Initializing pool allocator
-    [TTM] Initializing DMA pool allocator
-    [drm] radeon: 16M of VRAM memory ready
-    [drm] radeon: 512M of GTT memory ready.
-    [drm] GART: num cpu pages 131072, num gpu pages 131072
-    [drm] PCI GART of 512M enabled (table at 0x0000000037880000).
-    radeon 0000:0b:01.0: WB disabled
-    radeon 0000:0b:01.0: fence driver on ring 0 use gpu addr 0x00000000b0000000 and cpu addr 0xffff8800bbbfa000
-    [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-    [drm] Driver supports precise vblank timestamp query.
-    [drm] radeon: irq initialized.
-    [drm] Loading R100 Microcode
-    radeon 0000:0b:01.0: Direct firmware load for radeon/R100_cp.bin failed with error -2
-    radeon_cp: Failed to load firmware "radeon/R100_cp.bin"
-    [drm:r100_cp_init] *ERROR* Failed to load firmware!
-    radeon 0000:0b:01.0: failed initializing CP (-2).
-    radeon 0000:0b:01.0: Disabling GPU acceleration
-    [drm] radeon: cp finalized
-    BUG: unable to handle kernel NULL pointer dereference at 000000000000025c
-    IP: [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
-    PGD 0
-    Oops: 0000 [#1] SMP
-    Modules linked in:
-    CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc6-4-default #2649
-    Hardware name: Supermicro X7DB8/X7DB8, BIOS 6.00 07/26/2006
-    task: ffff880234da2010 ti: ffff880234da4000 task.ti: ffff880234da4000
-    RIP: 0010:[<ffffffff8150423b>]  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
-    RSP: 0000:ffff880234da7918  EFLAGS: 00010086
-    RAX: ffffffff81557890 RBX: 0000000000000000 RCX: ffff880234da7a48
-    RDX: ffff880234da79f4 RSI: 0000000000000000 RDI: ffff880232e15000
-    RBP: ffff880234da79b8 R08: 0000000000000000 R09: 0000000000000000
-    R10: 000000000000000a R11: 0000000000000001 R12: ffff880232dda1c0
-    R13: ffff880232e1518c R14: 0000000000000292 R15: ffff880232e15000
-    FS:  0000000000000000(0000) GS:ffff88023fc40000(0000) knlGS:0000000000000000
-    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-    CR2: 000000000000025c CR3: 0000000002014000 CR4: 00000000000007e0
-    Stack:
-     ffff880234da79d8 0000000000000286 ffff880232dcbc00 0000000000002480
-     ffff880234da7958 0000000000000296 ffff880234da7998 ffffffff8151b51d
-     ffff880234da7a48 0000000032dcbeb0 ffff880232dcbc00 ffff880232dcbc58
-    Call Trace:
-     [<ffffffff8151b51d>] ? drm_vma_offset_remove+0x1d/0x110
-     [<ffffffff8152dc98>] radeon_get_vblank_timestamp_kms+0x38/0x60
-     [<ffffffff8152076a>] ? ttm_bo_release_list+0xba/0x180
-     [<ffffffff81503751>] drm_get_last_vbltimestamp+0x41/0x70
-     [<ffffffff81503933>] vblank_disable_and_save+0x73/0x1d0
-     [<ffffffff81106b2f>] ? try_to_del_timer_sync+0x4f/0x70
-     [<ffffffff81505245>] drm_vblank_cleanup+0x65/0xa0
-     [<ffffffff815604fa>] radeon_irq_kms_fini+0x1a/0x70
-     [<ffffffff8156c07e>] r100_init+0x26e/0x410
-     [<ffffffff8152ae3e>] radeon_device_init+0x7ae/0xb50
-     [<ffffffff8152d57f>] radeon_driver_load_kms+0x8f/0x210
-     [<ffffffff81506965>] drm_dev_register+0xb5/0x110
-     [<ffffffff8150998f>] drm_get_pci_dev+0x8f/0x200
-     [<ffffffff815291cd>] radeon_pci_probe+0xad/0xe0
-     [<ffffffff8141a365>] local_pci_probe+0x45/0xa0
-     [<ffffffff8141b741>] pci_device_probe+0xd1/0x130
-     [<ffffffff81633dad>] driver_probe_device+0x12d/0x3e0
-     [<ffffffff8163413b>] __driver_attach+0x9b/0xa0
-     [<ffffffff816340a0>] ? __device_attach+0x40/0x40
-     [<ffffffff81631cd3>] bus_for_each_dev+0x63/0xa0
-     [<ffffffff8163378e>] driver_attach+0x1e/0x20
-     [<ffffffff81633390>] bus_add_driver+0x180/0x240
-     [<ffffffff81634914>] driver_register+0x64/0xf0
-     [<ffffffff81419cac>] __pci_register_driver+0x4c/0x50
-     [<ffffffff81509bf5>] drm_pci_init+0xf5/0x120
-     [<ffffffff821dc871>] ? ttm_init+0x6a/0x6a
-     [<ffffffff821dc908>] radeon_init+0x97/0xb5
-     [<ffffffff810002fc>] do_one_initcall+0xbc/0x1f0
-     [<ffffffff810e3278>] ? __wake_up+0x48/0x60
-     [<ffffffff8218e256>] kernel_init_freeable+0x18a/0x215
-     [<ffffffff8218d983>] ? initcall_blacklist+0xc0/0xc0
-     [<ffffffff818a78f0>] ? rest_init+0x80/0x80
-     [<ffffffff818a78fe>] kernel_init+0xe/0xf0
-     [<ffffffff818c0c3c>] ret_from_fork+0x7c/0xb0
-     [<ffffffff818a78f0>] ? rest_init+0x80/0x80
-    Code: 45 ac 0f 88 a8 01 00 00 3b b7 d0 01 00 00 49 89 ff 0f 83 99 01 00 00 48 8b 47 20 48 8b 80 88 00 00 00 48 85 c0 0f 84 cd 01 00 00 <41> 8b b1 5c 02 00 00 41 8b 89 58 02 00 00 89 75 98 41 8b b1 60
-    RIP  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
-     RSP <ffff880234da7918>
-    CR2: 000000000000025c
-    ---[ end trace ad2c0aadf48e2032 ]---
-    Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+According to errata ISR must filter out spurious RDR before data read not after.
+ISR must read RXSTAT to get number of bytes available to read. Because RDR
+could be set while there could no data in the receive FIFO.
 
-It has helped me to add a NULL pointer check that was suggested at
-http://lists.freedesktop.org/archives/dri-devel/2014-October/070663.html
+Restored pre 6d9939f6514 way of handling errata.
 
-I am not familiar with the code. But the change looks sane
-and we need something fast at this stage of 3.18 development.
+Found by code review. Real impact haven't seen.
+Tested on Beagleboard XM C.
 
-Suggested-by: Helge Deller <deller@gmx.de>
-Signed-off-by: Petr Mladek <pmladek@suse.cz>
-Tested-by: Petr Mladek <pmladek@suse.cz>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+Fixes: 6d9939f651419a63e09110 i2c: omap: split out [XR]DR and [XR]RDY
+Tested-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_kms.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/i2c/busses/i2c-omap.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -666,6 +666,8 @@ int radeon_get_vblank_timestamp_kms(stru
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -958,11 +958,13 @@ omap_i2c_isr_thread(int this_irq, void *
+ 			if (dev->fifo_size)
+ 				num_bytes = dev->buf_len;
  
- 	/* Get associated drm_crtc: */
- 	drmcrtc = &rdev->mode_info.crtcs[crtc]->base;
-+	if (!drmcrtc)
-+		return -EINVAL;
+-			omap_i2c_receive_data(dev, num_bytes, true);
+-
+-			if (dev->errata & I2C_OMAP_ERRATA_I207)
++			if (dev->errata & I2C_OMAP_ERRATA_I207) {
+ 				i2c_omap_errata_i207(dev, stat);
++				num_bytes = (omap_i2c_read_reg(dev,
++					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
++			}
  
- 	/* Helper routine in DRM core does all the work: */
- 	return drm_calc_vbltimestamp_from_scanoutpos(dev, crtc, max_error,
++			omap_i2c_receive_data(dev, num_bytes, true);
+ 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
+ 			continue;
+ 		}
 
 
