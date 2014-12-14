@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaLNUYB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:24:01 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43873 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751262AbaLNUXq (ORCPT
+	id S1752088AbaLNUYW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:24:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52926 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751325AbaLNUWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:23:46 -0500
-Date: Sun, 14 Dec 2014 12:23:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
- early_initcall()
-Message-ID: <20141214202340.GH5310@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141214164104.307127356@goodmis.org>
- <20141214164803.991954802@goodmis.org>
- <20141214115332.76be1b8b@gandalf.local.home>
- <20141214180854.GC5310@linux.vnet.ibm.com>
- <20141214131538.7a6c1438@gandalf.local.home>
- <20141214181835.GG5310@linux.vnet.ibm.com>
- <20141214132556.6f8d6fb9@gandalf.local.home>
+	Sun, 14 Dec 2014 15:22:22 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 30/47] Fix race condition between vxlan_sock_add and vxlan_sock_release
+Date: Sun, 14 Dec 2014 12:21:05 -0800
+Message-Id: <20141214201819.658450125@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141214132556.6f8d6fb9@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121420-0017-0000-0000-0000071B8180
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 01:25:56PM -0500, Steven Rostedt wrote:
-> On Sun, 14 Dec 2014 10:18:35 -0800
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-> 
-> > > With your feed back, and because I would like this to go into 3.19, I
-> > > would like to keep the current patch as is (with the read_mostly
-> > > update, which I'm currently testing). We can always change it later
-> > > after call_rcu() has been changed.
-> > 
-> > Completely agreed!  ;-)
-> 
-> For this late in the game, we need to play it safe.
-> 
-> I got rid of my tracepoint patch and moved trace_init() to after
-> rcu_init(), which I think is good enough for Thomas. Thomas?
-> 
-> I'll start testing that now.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-That should work as well.
+------------------
 
-> Later, if you could add a rcu_init() version that lets us call
-> call_rcu_sched() just after mm_init() then we could move trace_init()
-> up a bit more.
+From: Marcelo Leitner <mleitner@redhat.com>
 
-OK, will put something together for that.  Good to hear that this is
-not needed indefinitely early -- that would be a bit harder.  ;-)
+[ Upstream commit 00c83b01d58068dfeb2e1351cca6fccf2a83fa8f ]
 
-							Thanx, Paul
+Currently, when trying to reuse a socket, vxlan_sock_add will grab
+vn->sock_lock, locate a reusable socket, inc refcount and release
+vn->sock_lock.
+
+But vxlan_sock_release() will first decrement refcount, and then grab
+that lock. refcnt operations are atomic but as currently we have
+deferred works which hold vs->refcnt each, this might happen, leading to
+a use after free (specially after vxlan_igmp_leave):
+
+  CPU 1                            CPU 2
+
+deferred work                    vxlan_sock_add
+  ...                              ...
+                                   spin_lock(&vn->sock_lock)
+                                   vs = vxlan_find_sock();
+  vxlan_sock_release
+    dec vs->refcnt, reaches 0
+    spin_lock(&vn->sock_lock)
+                                   vxlan_sock_hold(vs), refcnt=1
+                                   spin_unlock(&vn->sock_lock)
+    hlist_del_rcu(&vs->hlist);
+    vxlan_notify_del_rx_port(vs)
+    spin_unlock(&vn->sock_lock)
+
+So when we look for a reusable socket, we check if it wasn't freed
+already before reusing it.
+
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Fixes: 7c47cedf43a8b3 ("vxlan: move IGMP join/leave to work queue")
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/vxlan.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2050,9 +2050,8 @@ static int vxlan_init(struct net_device
+ 	spin_lock(&vn->sock_lock);
+ 	vs = vxlan_find_sock(vxlan->net, ipv6 ? AF_INET6 : AF_INET,
+ 			     vxlan->dst_port);
+-	if (vs) {
++	if (vs && atomic_add_unless(&vs->refcnt, 1, 0)) {
+ 		/* If we have a socket with same port already, reuse it */
+-		atomic_inc(&vs->refcnt);
+ 		vxlan_vs_add_dev(vs, vxlan);
+ 	} else {
+ 		/* otherwise make new socket outside of RTNL */
+@@ -2459,12 +2458,9 @@ struct vxlan_sock *vxlan_sock_add(struct
+ 
+ 	spin_lock(&vn->sock_lock);
+ 	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
+-	if (vs) {
+-		if (vs->rcv == rcv)
+-			atomic_inc(&vs->refcnt);
+-		else
++	if (vs && ((vs->rcv != rcv) ||
++		   !atomic_add_unless(&vs->refcnt, 1, 0)))
+ 			vs = ERR_PTR(-EBUSY);
+-	}
+ 	spin_unlock(&vn->sock_lock);
+ 
+ 	if (!vs)
+
 
