@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598AbaLNUkR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:40:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53412 "EHLO
+	id S1752665AbaLNUkX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:40:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228AbaLNUbx (ORCPT
+	with ESMTP id S1753222AbaLNUbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:53 -0500
+	Sun, 14 Dec 2014 15:31:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dann Frazier <dann.frazier@canonical.com>,
         Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 08/19] tcp: fix more NULL deref after prequeue changes
-Date: Sun, 14 Dec 2014 12:21:19 -0800
-Message-Id: <20141214201823.781644064@linuxfoundation.org>
+Subject: [PATCH 3.18 06/19] net: mvneta: fix race condition in mvneta_tx()
+Date: Sun, 14 Dec 2014 12:21:17 -0800
+Message-Id: <20141214201823.725086258@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
 References: <20141214201823.543296369@linuxfoundation.org>
@@ -32,127 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 0f85feae6b710ced3abad5b2b47d31dfcb956b62 ]
+[ Upstream commit 5f478b41033606d325e420df693162e2524c2b94 ]
 
-When I cooked commit c3658e8d0f1 ("tcp: fix possible NULL dereference in
-tcp_vX_send_reset()") I missed other spots we could deref a NULL
-skb_dst(skb)
+mvneta_tx() dereferences skb to get skb->len too late,
+as hardware might have completed the transmit and TX completion
+could have freed the skb from another cpu.
 
-Again, if a socket is provided, we do not need skb_dst() to get a
-pointer to network namespace : sock_net(sk) is good enough.
-
-Reported-by: Dann Frazier <dann.frazier@canonical.com>
-Bisected-by: Dann Frazier <dann.frazier@canonical.com>
-Tested-by: Dann Frazier <dann.frazier@canonical.com>
+Fixes: 71f6d1b31fb1 ("net: mvneta: replace Tx timer with a real interrupt")
 Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: ca777eff51f7 ("tcp: remove dst refcount false sharing for prequeue mode")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_ipv4.c |    4 ++--
- net/ipv6/tcp_ipv6.c |   28 ++++++++++++++--------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
+ drivers/net/ethernet/marvell/mvneta.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -623,6 +623,7 @@ static void tcp_v4_send_reset(struct soc
- 	arg.iov[0].iov_base = (unsigned char *)&rep;
- 	arg.iov[0].iov_len  = sizeof(rep.th);
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1721,6 +1721,7 @@ static int mvneta_tx(struct sk_buff *skb
+ 	u16 txq_id = skb_get_queue_mapping(skb);
+ 	struct mvneta_tx_queue *txq = &pp->txqs[txq_id];
+ 	struct mvneta_tx_desc *tx_desc;
++	int len = skb->len;
+ 	int frags = 0;
+ 	u32 tx_cmd;
  
-+	net = sk ? sock_net(sk) : dev_net(skb_dst(skb)->dev);
- #ifdef CONFIG_TCP_MD5SIG
- 	hash_location = tcp_parse_md5sig_option(th);
- 	if (!sk && hash_location) {
-@@ -633,7 +634,7 @@ static void tcp_v4_send_reset(struct soc
- 		 * Incoming packet is checked with md5 hash with finding key,
- 		 * no RST generated if md5 hash doesn't match.
- 		 */
--		sk1 = __inet_lookup_listener(dev_net(skb_dst(skb)->dev),
-+		sk1 = __inet_lookup_listener(net,
- 					     &tcp_hashinfo, ip_hdr(skb)->saddr,
- 					     th->source, ip_hdr(skb)->daddr,
- 					     ntohs(th->source), inet_iif(skb));
-@@ -681,7 +682,6 @@ static void tcp_v4_send_reset(struct soc
- 	if (sk)
- 		arg.bound_dev_if = sk->sk_bound_dev_if;
+@@ -1788,7 +1789,7 @@ out:
  
--	net = dev_net(skb_dst(skb)->dev);
- 	arg.tos = ip_hdr(skb)->tos;
- 	ip_send_unicast_reply(net, skb, &TCP_SKB_CB(skb)->header.h4.opt,
- 			      ip_hdr(skb)->saddr, ip_hdr(skb)->daddr,
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -787,16 +787,16 @@ static const struct tcp_request_sock_ops
- 	.queue_hash_add =	inet6_csk_reqsk_queue_hash_add,
- };
- 
--static void tcp_v6_send_response(struct sk_buff *skb, u32 seq, u32 ack, u32 win,
--				 u32 tsval, u32 tsecr, int oif,
--				 struct tcp_md5sig_key *key, int rst, u8 tclass,
--				 u32 label)
-+static void tcp_v6_send_response(struct sock *sk, struct sk_buff *skb, u32 seq,
-+				 u32 ack, u32 win, u32 tsval, u32 tsecr,
-+				 int oif, struct tcp_md5sig_key *key, int rst,
-+				 u8 tclass, u32 label)
- {
- 	const struct tcphdr *th = tcp_hdr(skb);
- 	struct tcphdr *t1;
- 	struct sk_buff *buff;
- 	struct flowi6 fl6;
--	struct net *net = dev_net(skb_dst(skb)->dev);
-+	struct net *net = sk ? sock_net(sk) : dev_net(skb_dst(skb)->dev);
- 	struct sock *ctl_sk = net->ipv6.tcp_sk;
- 	unsigned int tot_len = sizeof(struct tcphdr);
- 	struct dst_entry *dst;
-@@ -946,7 +946,7 @@ static void tcp_v6_send_reset(struct soc
- 			  (th->doff << 2);
- 
- 	oif = sk ? sk->sk_bound_dev_if : 0;
--	tcp_v6_send_response(skb, seq, ack_seq, 0, 0, 0, oif, key, 1, 0, 0);
-+	tcp_v6_send_response(sk, skb, seq, ack_seq, 0, 0, 0, oif, key, 1, 0, 0);
- 
- #ifdef CONFIG_TCP_MD5SIG
- release_sk1:
-@@ -957,13 +957,13 @@ release_sk1:
- #endif
- }
- 
--static void tcp_v6_send_ack(struct sk_buff *skb, u32 seq, u32 ack,
--			    u32 win, u32 tsval, u32 tsecr, int oif,
-+static void tcp_v6_send_ack(struct sock *sk, struct sk_buff *skb, u32 seq,
-+			    u32 ack, u32 win, u32 tsval, u32 tsecr, int oif,
- 			    struct tcp_md5sig_key *key, u8 tclass,
- 			    u32 label)
- {
--	tcp_v6_send_response(skb, seq, ack, win, tsval, tsecr, oif, key, 0, tclass,
--			     label);
-+	tcp_v6_send_response(sk, skb, seq, ack, win, tsval, tsecr, oif, key, 0,
-+			     tclass, label);
- }
- 
- static void tcp_v6_timewait_ack(struct sock *sk, struct sk_buff *skb)
-@@ -971,7 +971,7 @@ static void tcp_v6_timewait_ack(struct s
- 	struct inet_timewait_sock *tw = inet_twsk(sk);
- 	struct tcp_timewait_sock *tcptw = tcp_twsk(sk);
- 
--	tcp_v6_send_ack(skb, tcptw->tw_snd_nxt, tcptw->tw_rcv_nxt,
-+	tcp_v6_send_ack(sk, skb, tcptw->tw_snd_nxt, tcptw->tw_rcv_nxt,
- 			tcptw->tw_rcv_wnd >> tw->tw_rcv_wscale,
- 			tcp_time_stamp + tcptw->tw_ts_offset,
- 			tcptw->tw_ts_recent, tw->tw_bound_dev_if, tcp_twsk_md5_key(tcptw),
-@@ -986,10 +986,10 @@ static void tcp_v6_reqsk_send_ack(struct
- 	/* sk->sk_state == TCP_LISTEN -> for regular TCP_SYN_RECV
- 	 * sk->sk_state == TCP_SYN_RECV -> for Fast Open.
- 	 */
--	tcp_v6_send_ack(skb, (sk->sk_state == TCP_LISTEN) ?
-+	tcp_v6_send_ack(sk, skb, (sk->sk_state == TCP_LISTEN) ?
- 			tcp_rsk(req)->snt_isn + 1 : tcp_sk(sk)->snd_nxt,
--			tcp_rsk(req)->rcv_nxt,
--			req->rcv_wnd, tcp_time_stamp, req->ts_recent, sk->sk_bound_dev_if,
-+			tcp_rsk(req)->rcv_nxt, req->rcv_wnd,
-+			tcp_time_stamp, req->ts_recent, sk->sk_bound_dev_if,
- 			tcp_v6_md5_do_lookup(sk, &ipv6_hdr(skb)->daddr),
- 			0, 0);
- }
+ 		u64_stats_update_begin(&stats->syncp);
+ 		stats->tx_packets++;
+-		stats->tx_bytes  += skb->len;
++		stats->tx_bytes  += len;
+ 		u64_stats_update_end(&stats->syncp);
+ 	} else {
+ 		dev->stats.tx_dropped++;
 
 
