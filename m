@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaLNRl2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 12:41:28 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44170 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbaLNRl1 (ORCPT
+	id S1752019AbaLNRoh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 12:44:37 -0500
+Received: from smtprelay0194.hostedemail.com ([216.40.44.194]:51454 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751297AbaLNRod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 12:41:27 -0500
+	Sun, 14 Dec 2014 12:44:33 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:5007:6261:7875:7903:10004:10400:10848:10967:11026:11232:11658:11914:12043:12438:12517:12519:12740:13069:13255:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: knot71_a7e3ed772326
+X-Filterd-Recvd-Size: 2415
+Date: Sun, 14 Dec 2014 12:44:31 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
+ early_initcall()
+Message-ID: <20141214124431.48689d64@gandalf.local.home>
+In-Reply-To: <759389895.27358.1418578168225.JavaMail.zimbra@efficios.com>
+References: <20141214164104.307127356@goodmis.org>
+	<20141214164803.991954802@goodmis.org>
+	<1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com>
+	<20141214121457.59b22354@gandalf.local.home>
+	<20141214122136.1664e104@gandalf.local.home>
+	<759389895.27358.1418578168225.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141214173715.GB5310@linux.vnet.ibm.com>
-References: <20141214175747.2e6c506e@canb.auug.org.au> <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
- <20141214120318.GA5310@linux.vnet.ibm.com> <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
- <20141214173715.GB5310@linux.vnet.ibm.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 14 Dec 2014 09:41:04 -0800
-Message-ID: <CALCETrWT7SLO3E+nV2g=QzJHAeWU4FBRENq=7OvoNDrHA7W0fg@mail.gmail.com>
-Subject: Re: linux-next: question about the luto-misc tree
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 9:37 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Sun, Dec 14, 2014 at 08:29:33AM -0800, Andy Lutomirski wrote:
->> On Sun, Dec 14, 2014 at 4:03 AM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > On Sat, Dec 13, 2014 at 11:26:36PM -0800, Andy Lutomirski wrote:
->> >> On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
->> >> >
->> >> > Hi Andy,
->> >> >
->> >> > The luto-misc tree seems to have a whole series of commits in it that
->> >> > have just bee removed from the rcu tree ...  You really have to be very
->> >> > careful if you base your work on a tree that is regularly rebased.
->> >>
->> >> Hmm.  They were there a couple days ago.  Paul, what should I do about
->> >> this?  I only need the one NMI nesting change for the stuff in
->> >> luto/next.
->> >>
->> >> > I also wonder if the other commits in that tree are destined for
->> >> > v3.19?  If they are for v3.20, then they should not be in linux-next
->> >> > until after v3.19-rc1 has been released.
->> >>
->> >> They're for 3.20.  I'll drop the whole series from the next branch for now.
->> >
->> > You mean the NMI nesting change below, correct?  One approach would be
->> > to include the branch rcu/dev from my -rcu tree.  Would that work for you?
->>
->> That would work.
->>
->> The problem is that, if you rebase again and I don't notice, then
->> it'll generate a pile of conflicts.  Is there someway that I can flag
->> my next tree as depending on a certain commi existing in another tree
->> so that the scripts that generate linux-next will ignore it if the
->> base commit goes away?
->
-> The commits would still stick around because I keep date-encoded branches.
-> But just to make things easier, I created a andy.2014.11.21a branch that
-> points to the current commit and will stay there.  Please let me know how
-> it goes.
->
+On Sun, 14 Dec 2014 17:29:28 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-That's the same commit that's in rcu/dev and was in luto/next, I
-think.  Is the issue just that you pulled the whole thing from
-whichever linux-rcu branch is in -next, but I still had it, so it
-caused a problem?
+> Given that your reason for having this RCU-specific logic in tracepoint.c
+> rather than within call_rcu*() is not slowing down a fast-path, how about
+> creating a new call_rcu_early() and call_rcu_sched_early() which can be
+> called in normal operation and at early boot ?
 
-In any case, I'll wait for 3.19-rc1 before re-adding any of this.
+That's a possibility.
 
---Andy
+> 
+> This would allow us to keep the RCU logic within the RCU implementation
+> rather than strongly coupling it with the tracepoint code.
+> 
 
->                                                         Thanx, Paul
->
+It's not that strong of a coupling to RCU. It's more coupled to being
+called really early (which needs special care).
 
+It just happened that RCU failed for being called that early. Other
+things could possible fail too (if added to the tracepoint logic).
+Maybe I should rename the variable to "tracepoint_earlyboot" instead.
 
+But as RCU is the only thing that failed (so far in my testing), I'll
+think about adding a call_rcu_sched_early(). But then, this does make
+things more complex, and me more nervous about adding it.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+-- Steve
