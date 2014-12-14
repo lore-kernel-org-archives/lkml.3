@@ -1,337 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277AbaLNP6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 10:58:37 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62732 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaLNP6f (ORCPT
+	id S1751268AbaLNQJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:09:26 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:48824 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaLNQJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 10:58:35 -0500
-Message-ID: <548DB542.7000400@gmail.com>
-Date: Mon, 15 Dec 2014 00:05:22 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 14 Dec 2014 11:09:23 -0500
+Message-ID: <548DB62E.7060504@linux.vnet.ibm.com>
+Date: Sun, 14 Dec 2014 11:09:18 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: megaraidlinux@lsi.com, JBottomley@parallels.com,
-        Sumit Saxena <sumit.saxena@avagotech.com>
-CC: linux-scsi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] drivers: scsi: megaraid: Add "megaraid_sas_internal.h"
- for internal shared functions using
-Content-Type: text/plain; charset=utf-8
+To: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
+CC: Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com, linux-api@vger.kernel.org,
+        trousers-tech@lists.sourceforge.net,
+        Will Arthur <will.c.arthur@intel.com>
+Subject: Re: [PATCH v10 8/8] tpm: TPM 2.0 FIFO Interface
+References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1418413600-5400-9-git-send-email-jarkko.sakkinen@linux.intel.com> <548DA33A.4010300@linux.vnet.ibm.com> <20141214154003.GA13338@intel.com>
+In-Reply-To: <20141214154003.GA13338@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121416-0005-0000-0000-00000722F094
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For shared inline functions crossed source files, better to let it as
-"static inline" in a header file. For extern functions, better to
-declare them in header file.
+On 12/14/2014 10:40 AM, Jarkko Sakkinen wrote:
+> On Sun, Dec 14, 2014 at 09:48:26AM -0500, Stefan Berger wrote:
+>> On 12/12/2014 02:46 PM, Jarkko Sakkinen wrote:
+>>> Detect TPM 2.0 by sending idempotent TPM 2.x command. Ordinals for
+>>> TPM 2.0 are higher than TPM 1.x commands so this should be fail-safe.
+>>> Using STS3 is unreliable because some chips just report 0xff and not
+>>> what the spec says.
+>> TPM TIS 1.2 can report either 0xff or 0x00 for sts3 since that part of
+>> register was not defined for this version but only for a later version. So,
+>> unless the TIS 1.3 for TPM 2.0 is broken, it should report a bit _pattern_
+>> (not plain 0x00 or 0xff) that you could apply the suggested mask to and
+>> check then.
+> I propose this: lets keep the bit ugly but approach for now and when
+> there are TPM2 FIFOs available in the market move to your workaround.
+> I think that would be the most reasonable middle road here.
 
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- drivers/scsi/megaraid/megaraid_sas_base.c     |  76 +----------------
- drivers/scsi/megaraid/megaraid_sas_fusion.c   |  42 +---------
- drivers/scsi/megaraid/megaraid_sas_internal.h | 116 ++++++++++++++++++++++++++
- 3 files changed, 118 insertions(+), 116 deletions(-)
- create mode 100644 drivers/scsi/megaraid/megaraid_sas_internal.h
+You are now calling tpm2_gen_interrupt and are looking at the rc, which 
+is the rc from tpm_transmit_cmd, which seems to make sure that the 
+sending of the command went alright and the reception of the response. 
+Is this good enough to distinguish between a TPM 2 and a TPM 1.2? If you 
+send a valid TPM 2 command to a TPM 1.2 this will at least transmit the 
+data ok, but the TPM will respond with a TPM 1.2 tag in the response. 
+The way I understand the code, the rc does not include whether the 
+response packet is a valid TPM 2 response packet and lets you conclude 
+to a TPM2. I do something similar in upcoming QEMU patches where I send 
+a valid TPM2 command for probing and if the tag(!) in the response is a 
+TPM2 tag (0x8001 = TPM_ST_NO_SESSIONS), then it's a TPM 2, otherwise a 
+TPM 1.2.
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index dc27598..474c39b 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -57,6 +57,7 @@
- #include <scsi/scsi_tcq.h>
- #include "megaraid_sas_fusion.h"
- #include "megaraid_sas.h"
-+#include "megaraid_sas_internal.h"
- 
- /*
-  * Number of sectors per IO command
-@@ -127,9 +128,6 @@ static u32 support_device_change;
- /* define lock for aen poll */
- spinlock_t poll_aen_lock;
- 
--void
--megasas_complete_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd,
--		     u8 alt_status);
- static u32
- megasas_read_fw_status_reg_gen2(struct megasas_register_set __iomem *regs);
- static int
-@@ -142,23 +140,6 @@ u32
- megasas_build_and_issue_cmd(struct megasas_instance *instance,
- 			    struct scsi_cmnd *scmd);
- static void megasas_complete_cmd_dpc(unsigned long instance_addr);
--void
--megasas_release_fusion(struct megasas_instance *instance);
--int
--megasas_ioc_init_fusion(struct megasas_instance *instance);
--void
--megasas_free_cmds_fusion(struct megasas_instance *instance);
--u8
--megasas_get_map_info(struct megasas_instance *instance);
--int
--megasas_sync_map_info(struct megasas_instance *instance);
--int
--wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd);
--void megasas_reset_reply_desc(struct megasas_instance *instance);
--u8 MR_ValidateMapInfo(struct MR_FW_RAID_MAP_ALL *map,
--		      struct LD_LOAD_BALANCE_INFO *lbInfo);
--int megasas_reset_fusion(struct Scsi_Host *shost);
--void megasas_fusion_ocr_wq(struct work_struct *work);
- 
- void
- megasas_issue_dcmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
-@@ -194,30 +175,6 @@ struct megasas_cmd *megasas_get_cmd(struct megasas_instance
- }
- 
- /**
-- * megasas_return_cmd -	Return a cmd to free command pool
-- * @instance:		Adapter soft state
-- * @cmd:		Command packet to be returned to free command pool
-- */
--inline void
--megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
--{
--	unsigned long flags;
--
--	spin_lock_irqsave(&instance->cmd_pool_lock, flags);
--
--	cmd->scmd = NULL;
--	cmd->frame_count = 0;
--	if ((instance->pdev->device != PCI_DEVICE_ID_LSI_FUSION) &&
--	    (instance->pdev->device != PCI_DEVICE_ID_LSI_INVADER) &&
--	    (reset_devices))
--		cmd->frame->hdr.cmd = MFI_CMD_INVALID;
--	list_add_tail(&cmd->list, &instance->cmd_pool);
--
--	spin_unlock_irqrestore(&instance->cmd_pool_lock, flags);
--}
--
--
--/**
- *	The following functions are defined for xscale
- *	(deviceid : 1064R, PERC5) controllers
- */
-@@ -830,11 +787,6 @@ static struct megasas_instance_template megasas_instance_template_gen2 = {
- *       specific to gen2 (deviceid : 0x78, 0x79) controllers
- */
- 
--/*
-- * Template added for TB (Fusion)
-- */
--extern struct megasas_instance_template megasas_instance_template_fusion;
--
- /**
-  * megasas_issue_polled -	Issues a polling command
-  * @instance:			Adapter soft state
-@@ -1311,32 +1263,6 @@ megasas_build_ldio(struct megasas_instance *instance, struct scsi_cmnd *scp,
- }
- 
- /**
-- * megasas_is_ldio -		Checks if the cmd is for logical drive
-- * @scmd:			SCSI command
-- *
-- * Called by megasas_queue_command to find out if the command to be queued
-- * is a logical drive command
-- */
--inline int megasas_is_ldio(struct scsi_cmnd *cmd)
--{
--	if (!MEGASAS_IS_LOGICAL(cmd))
--		return 0;
--	switch (cmd->cmnd[0]) {
--	case READ_10:
--	case WRITE_10:
--	case READ_12:
--	case WRITE_12:
--	case READ_6:
--	case WRITE_6:
--	case READ_16:
--	case WRITE_16:
--		return 1;
--	default:
--		return 0;
--	}
--}
--
-- /**
-  * megasas_dump_pending_frames -	Dumps the frame address of all pending cmds
-  *                              	in FW
-  * @instance:				Adapter soft state
-diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-index a610cf1..7760ad2 100644
---- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
-@@ -53,47 +53,7 @@
- 
- #include "megaraid_sas_fusion.h"
- #include "megaraid_sas.h"
--
--extern void megasas_free_cmds(struct megasas_instance *instance);
--extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
--					   *instance);
--extern void
--megasas_complete_cmd(struct megasas_instance *instance,
--		     struct megasas_cmd *cmd, u8 alt_status);
--int megasas_is_ldio(struct scsi_cmnd *cmd);
--int
--wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd);
--
--void
--megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd);
--int megasas_alloc_cmds(struct megasas_instance *instance);
--int
--megasas_clear_intr_fusion(struct megasas_register_set __iomem *regs);
--int
--megasas_issue_polled(struct megasas_instance *instance,
--		     struct megasas_cmd *cmd);
--
--u8
--MR_BuildRaidContext(struct megasas_instance *instance,
--		    struct IO_REQUEST_INFO *io_info,
--		    struct RAID_CONTEXT *pRAID_Context,
--		    struct MR_FW_RAID_MAP_ALL *map);
--u16 MR_TargetIdToLdGet(u32 ldTgtId, struct MR_FW_RAID_MAP_ALL *map);
--struct MR_LD_RAID *MR_LdRaidGet(u32 ld, struct MR_FW_RAID_MAP_ALL *map);
--
--u16 MR_GetLDTgtId(u32 ld, struct MR_FW_RAID_MAP_ALL *map);
--
--void
--megasas_check_and_restore_queue_depth(struct megasas_instance *instance);
--
--u8 MR_ValidateMapInfo(struct MR_FW_RAID_MAP_ALL *map,
--		      struct LD_LOAD_BALANCE_INFO *lbInfo);
--u16 get_updated_dev_handle(struct LD_LOAD_BALANCE_INFO *lbInfo,
--			   struct IO_REQUEST_INFO *in_info);
--int megasas_transition_to_ready(struct megasas_instance *instance, int ocr);
--void megaraid_sas_kill_hba(struct megasas_instance *instance);
--
--extern u32 megasas_dbg_lvl;
-+#include "megaraid_sas_internal.h"
- 
- /**
-  * megasas_enable_intr_fusion -	Enables interrupts
-diff --git a/drivers/scsi/megaraid/megaraid_sas_internal.h b/drivers/scsi/megaraid/megaraid_sas_internal.h
-new file mode 100644
-index 0000000..b780f82
---- /dev/null
-+++ b/drivers/scsi/megaraid/megaraid_sas_internal.h
-@@ -0,0 +1,116 @@
-+#ifndef LSI_MEGARAID_SAS_INTERNAL_H
-+#define LSI_MEGARAID_SAS_INTERNAL_H
-+
-+/***
-+ * From base.
-+ */
-+
-+extern void megasas_free_cmds(struct megasas_instance *instance);
-+extern struct megasas_cmd *megasas_get_cmd(struct megasas_instance
-+					   *instance);
-+extern void
-+megasas_complete_cmd(struct megasas_instance *instance,
-+		     struct megasas_cmd *cmd, u8 alt_status);
-+
-+/**
-+ * megasas_is_ldio -		Checks if the cmd is for logical drive
-+ * @scmd:			SCSI command
-+ *
-+ * Called by megasas_queue_command to find out if the command to be queued
-+ * is a logical drive command
-+ */
-+static inline int megasas_is_ldio(struct scsi_cmnd *cmd)
-+{
-+	if (!MEGASAS_IS_LOGICAL(cmd))
-+		return 0;
-+	switch (cmd->cmnd[0]) {
-+	case READ_10:
-+	case WRITE_10:
-+	case READ_12:
-+	case WRITE_12:
-+	case READ_6:
-+	case WRITE_6:
-+	case READ_16:
-+	case WRITE_16:
-+		return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+/**
-+ * megasas_return_cmd -	Return a cmd to free command pool
-+ * @instance:		Adapter soft state
-+ * @cmd:		Command packet to be returned to free command pool
-+ */
-+static inline void
-+megasas_return_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&instance->cmd_pool_lock, flags);
-+
-+	cmd->scmd = NULL;
-+	cmd->frame_count = 0;
-+	if ((instance->pdev->device != PCI_DEVICE_ID_LSI_FUSION) &&
-+	    (instance->pdev->device != PCI_DEVICE_ID_LSI_INVADER) &&
-+	    (reset_devices))
-+		cmd->frame->hdr.cmd = MFI_CMD_INVALID;
-+	list_add_tail(&cmd->list, &instance->cmd_pool);
-+
-+	spin_unlock_irqrestore(&instance->cmd_pool_lock, flags);
-+}
-+
-+extern int megasas_alloc_cmds(struct megasas_instance *instance);
-+
-+extern int
-+megasas_issue_polled(struct megasas_instance *instance,
-+		     struct megasas_cmd *cmd);
-+extern void
-+megasas_check_and_restore_queue_depth(struct megasas_instance *instance);
-+
-+extern int megasas_transition_to_ready(struct megasas_instance *instance,
-+				       int ocr);
-+extern void megaraid_sas_kill_hba(struct megasas_instance *instance);
-+
-+extern u32 megasas_dbg_lvl;
-+
-+/***
-+ * From fusion.
-+ */
-+
-+extern int
-+wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd);
-+extern void megasas_release_fusion(struct megasas_instance *instance);
-+extern int megasas_ioc_init_fusion(struct megasas_instance *instance);
-+extern void megasas_free_cmds_fusion(struct megasas_instance *instance);
-+extern u8 megasas_get_map_info(struct megasas_instance *instance);
-+extern int megasas_sync_map_info(struct megasas_instance *instance);
-+extern void megasas_reset_reply_desc(struct megasas_instance *instance);
-+extern int megasas_reset_fusion(struct Scsi_Host *shost);
-+extern void megasas_fusion_ocr_wq(struct work_struct *work);
-+/*
-+ * Template added for TB (Fusion)
-+ */
-+extern struct megasas_instance_template megasas_instance_template_fusion;
-+
-+
-+/***
-+ * From fp.
-+ */
-+
-+extern struct MR_LD_RAID *MR_LdRaidGet(u32 ld, struct MR_FW_RAID_MAP_ALL *map);
-+extern u16 MR_GetLDTgtId(u32 ld, struct MR_FW_RAID_MAP_ALL *map);
-+extern u16 MR_TargetIdToLdGet(u32 ldTgtId, struct MR_FW_RAID_MAP_ALL *map);
-+extern u8 MR_ValidateMapInfo(struct MR_FW_RAID_MAP_ALL *map,
-+			     struct LD_LOAD_BALANCE_INFO *lbInfo);
-+extern u8
-+MR_BuildRaidContext(struct megasas_instance *instance,
-+		    struct IO_REQUEST_INFO *io_info,
-+		    struct RAID_CONTEXT *pRAID_Context,
-+		    struct MR_FW_RAID_MAP_ALL *map);
-+extern u16
-+get_updated_dev_handle(struct LD_LOAD_BALANCE_INFO *lbInfo,
-+		       struct IO_REQUEST_INFO *in_info);
-+
-+#endif /* LSI_MEGARAID_SAS_INTERNAL_H */
--- 
-1.9.3
+Did you test this with a TPM 1.2 ?
+
+    Stefan
+
+>
+>>      Stefan
+> /Jarkko
+>
+
