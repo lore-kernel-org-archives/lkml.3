@@ -1,205 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463AbaLNWWA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 17:22:00 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42897 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaLNWVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 17:21:51 -0500
-Date: Sun, 14 Dec 2014 14:21:43 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH 1/2 v2] tracing: Move enabling tracepoints to just after
- rcu_init()
-Message-ID: <20141214222143.GJ5310@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20141214201609.126831471@goodmis.org>
- <20141214202054.691391454@goodmis.org>
+	id S1751483AbaLNW0P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 17:26:15 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaLNW0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 17:26:08 -0500
+Message-ID: <548E0E7B.1000008@nod.at>
+Date: Sun, 14 Dec 2014 23:26:03 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141214202054.691391454@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121422-0033-0000-0000-000003046A22
+To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
+CC: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: UBI: Add support for scatter gather and blk-mq
+References: <1416845080-16663-1-git-send-email-richard@nod.at> <548D85F1.5080606@vanguardiasur.com.ar>
+In-Reply-To: <548D85F1.5080606@vanguardiasur.com.ar>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 03:16:10PM -0500, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Am 14.12.2014 um 13:43 schrieb Ezequiel Garcia:
+> Hey Richard,
 > 
-> Enabling tracepoints at boot up can be very useful. The tracepoint
-> can be initialized right after RCU has been. There's no need to
-> wait for the early_initcall() to be called. That's too late for some
-> things that can use tracepoints for debugging. Move the logic to
-> enable tracepoints out of the initcalls and into init/main.c to
-> right after rcu_init().
+> On 11/24/2014 01:04 PM, Richard Weinberger wrote:
+>> This two patches implement blk-mq support for the UBI block driver.
+>> As the scatter gather part is rather generic I've moved it directl
+>> into UBI such that it can be reused later.
+>> So far only reading data into a scatter gather list is possible.
+>> After implementing  ubi_eba_read_leb_sg() we could slowly start
+>> removing a bunch of vmalloc() from the UBI core code and use scatter gather.
+>> This should lower the memory footprint of UBI.
+>>
+>> [PATCH 1/2] UBI: Add initial support for scatter gather
+>> [PATCH 2/2] UBI: Block: Add blk-mq support
+>>
 > 
-> This also allows trace_printk() to be used early too.
-> 
-> Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
-> Link: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
-> 
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
->From an RCU perspective:
-
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> ---
->  include/linux/ftrace.h        |  6 ++++++
->  init/main.c                   |  4 ++++
->  kernel/trace/trace.c          |  8 +++++++-
->  kernel/trace/trace.h          | 13 +++++++++++++
->  kernel/trace/trace_events.c   | 10 ++++++++--
->  kernel/trace/trace_syscalls.c |  7 ++-----
->  6 files changed, 40 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index ed501953f0b2..f4bc14b7d444 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -39,6 +39,12 @@
->  # define FTRACE_FORCE_LIST_FUNC 0
->  #endif
-> 
-> +/* Main tracing buffer and events set up */
-> +#ifdef CONFIG_TRACING
-> +void trace_init(void);
-> +#else
-> +static inline void trace_init(void) { }
-> +#endif
-> 
->  struct module;
->  struct ftrace_hash;
-> diff --git a/init/main.c b/init/main.c
-> index 800a0daede7e..70687069f8e2 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -577,6 +577,10 @@ asmlinkage __visible void __init start_kernel(void)
->  		local_irq_disable();
->  	idr_init_cache();
->  	rcu_init();
-> +
-> +	/* trace_printk() and trace points may be used after this */
-> +	trace_init();
-> +
->  	context_tracking_init();
->  	radix_tree_init();
->  	/* init some links before init_ISA_irqs() */
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 4ceb2546c7ef..ec3ca694665f 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -6876,6 +6876,13 @@ out:
->  	return ret;
->  }
-> 
-> +void __init trace_init(void)
-> +{
-> +	tracer_alloc_buffers();
-> +	init_ftrace_syscalls();
-> +	trace_event_init();	
-> +}
-> +
->  __init static int clear_boot_tracer(void)
->  {
->  	/*
-> @@ -6895,6 +6902,5 @@ __init static int clear_boot_tracer(void)
->  	return 0;
->  }
-> 
-> -early_initcall(tracer_alloc_buffers);
->  fs_initcall(tracer_init_debugfs);
->  late_initcall(clear_boot_tracer);
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 3255dfb054a0..c138c149d6ef 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -1301,4 +1301,17 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
->  #define perf_ftrace_event_register NULL
->  #endif
-> 
-> +#ifdef CONFIG_FTRACE_SYSCALLS
-> +void init_ftrace_syscalls(void);
-> +#else
-> +static inline void init_ftrace_syscalls(void) { }
-> +#endif
-> +
-> +#ifdef CONFIG_EVENT_TRACING
-> +void trace_event_init(void);
-> +#else
-> +static inline void __init trace_event_init(void) { }
-> +#endif
-> +
-> +
->  #endif /* _LINUX_KERNEL_TRACE_H */
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index f9d0cbe014b7..fd9deb0e03f0 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -2477,8 +2477,14 @@ static __init int event_trace_init(void)
->  #endif
->  	return 0;
->  }
-> -early_initcall(event_trace_memsetup);
-> -core_initcall(event_trace_enable);
-> +
-> +void __init trace_event_init(void)
-> +{
-> +	event_trace_memsetup();
-> +	init_ftrace_syscalls();
-> +	event_trace_enable();
-> +}
-> +
->  fs_initcall(event_trace_init);
-> 
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index a72f3d8d813e..ec239771c175 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -514,7 +514,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
->  	return (unsigned long)sys_call_table[nr];
->  }
-> 
-> -static int __init init_ftrace_syscalls(void)
-> +void __init init_ftrace_syscalls(void)
->  {
->  	struct syscall_metadata *meta;
->  	unsigned long addr;
-> @@ -524,7 +524,7 @@ static int __init init_ftrace_syscalls(void)
->  				    GFP_KERNEL);
->  	if (!syscalls_metadata) {
->  		WARN_ON(1);
-> -		return -ENOMEM;
-> +		return;
->  	}
-> 
->  	for (i = 0; i < NR_syscalls; i++) {
-> @@ -536,10 +536,7 @@ static int __init init_ftrace_syscalls(void)
->  		meta->syscall_nr = i;
->  		syscalls_metadata[i] = meta;
->  	}
-> -
-> -	return 0;
->  }
-> -early_initcall(init_ftrace_syscalls);
-> 
->  #ifdef CONFIG_PERF_EVENTS
-> 
-> -- 
-> 2.1.3
-> 
+> Tried to apply these to take a look and run some tests, but 2/2 got
+> rejected. Which tag did you base them?
 > 
 
+As discussed on IRC, blk-mq saw an update in -next.
+The interface as changed bit, I've adopted my patches and pushed them to:
+git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git ubiblock-mq
+This tree is linux-ubifs.git plus linux-block.git for-next.
+
+I'll resend this updated patches after the merge window has closed.
+Happy testing. :-)
+
+Thanks,
+//richard
