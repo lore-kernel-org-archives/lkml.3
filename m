@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaLNUuG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:50:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
+	id S1753019AbaLNUuN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:50:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaLNUVo (ORCPT
+	with ESMTP id S1751368AbaLNUVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.10 09/24] media: smiapp: Only some selection targets are settable
-Date: Sun, 14 Dec 2014 12:20:29 -0800
-Message-Id: <20141214201800.937535239@linuxfoundation.org>
+        Alexey Orishko <alexey.orishko@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Francois Tigeot <ftigeot@wolfpond.org>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.10 08/24] drm/i915: Unlock panel even when LVDS is disabled
+Date: Sun, 14 Dec 2014 12:20:28 -0800
+Message-Id: <20141214201800.901149867@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -29,33 +32,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sakari Ailus <sakari.ailus@iki.fi>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit b31eb901c4e5eeef4c83c43dfbc7fe0d4348cb21 upstream.
+commit b0616c5306b342ceca07044dbc4f917d95c4f825 upstream.
 
-Setting a non-settable selection target caused BUG() to be called. The check
-for valid selections only takes the selection target into account, but does
-not tell whether it may be set, or only get. Fix the issue by simply
-returning an error to the user.
+Otherwise we'll have backtraces in assert_panel_unlocked because the
+BIOS locks the register. In the reporter's case this regression was
+introduced in
 
-Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+commit c31407a3672aaebb4acddf90944a114fa5c8af7b
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Thu Oct 18 21:07:01 2012 +0100
+
+    drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+
+Reported-by: Alexey Orishko <alexey.orishko@gmail.com>
+Cc: Alexey Orishko <alexey.orishko@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Francois Tigeot <ftigeot@wolfpond.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+Tested-by: Alexey Orishko <alexey.orishko@gmail.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/smiapp/smiapp-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_lvds.c |   22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2139,7 +2139,7 @@ static int smiapp_set_selection(struct v
- 		ret = smiapp_set_compose(subdev, fh, sel);
- 		break;
- 	default:
--		BUG();
-+		ret = -EINVAL;
- 	}
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -1097,6 +1097,17 @@ bool intel_lvds_init(struct drm_device *
+ 	int pipe;
+ 	u8 pin;
  
- 	mutex_unlock(&sensor->mutex);
++	/*
++	 * Unlock registers and just leave them unlocked. Do this before
++	 * checking quirk lists to avoid bogus WARNINGs.
++	 */
++	if (HAS_PCH_SPLIT(dev)) {
++		I915_WRITE(PCH_PP_CONTROL,
++			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
++	} else {
++		I915_WRITE(PP_CONTROL,
++			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
++	}
+ 	if (!intel_lvds_supported(dev))
+ 		return false;
+ 
+@@ -1280,17 +1291,6 @@ out:
+ 	DRM_DEBUG_KMS("detected %s-link lvds configuration\n",
+ 		      lvds_encoder->is_dual_link ? "dual" : "single");
+ 
+-	/*
+-	 * Unlock registers and just
+-	 * leave them unlocked
+-	 */
+-	if (HAS_PCH_SPLIT(dev)) {
+-		I915_WRITE(PCH_PP_CONTROL,
+-			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
+-	} else {
+-		I915_WRITE(PP_CONTROL,
+-			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
+-	}
+ 	lvds_connector->lid_notifier.notifier_call = intel_lid_notify;
+ 	if (acpi_lid_notifier_register(&lvds_connector->lid_notifier)) {
+ 		DRM_DEBUG_KMS("lid notifier registration failed\n");
 
 
