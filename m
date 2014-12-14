@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaLNUeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:34:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52956 "EHLO
+	id S1753801AbaLNUeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:34:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbaLNUV5 (ORCPT
+	with ESMTP id S1751491AbaLNUV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 06/34] i2c: omap: fix NACK and Arbitration Lost irq handling
-Date: Sun, 14 Dec 2014 12:20:44 -0800
-Message-Id: <20141214201803.977492179@linuxfoundation.org>
+        Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.14 07/34] i2c: omap: fix i207 errata handling
+Date: Sun, 14 Dec 2014 12:20:45 -0800
+Message-Id: <20141214201804.005539904@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -31,68 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Kochetkov <al.kochet@gmail.com>
 
-commit 27caca9d2e01c92b26d0690f065aad093fea01c7 upstream.
+commit ccfc866356674cb3a61829d239c685af6e85f197 upstream.
 
-commit 1d7afc95946487945cc7f5019b41255b72224b70 (i2c: omap: ack IRQ in parts)
-changed the interrupt handler to complete transfers without clearing
-XRDY (AL case) and ARDY (NACK case) flags. XRDY or ARDY interrupts will be
-fired again. As a result, ISR keep processing transfer after it was already
-complete (from the driver code point of view).
+commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
+and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
+Set) get handled. 6d9939f6514 code doesn't correspond to workaround provided by
+errata.
 
-A didn't see real impacts of the 1d7afc9, but it is really bad idea to
-have ISR running on user data after transfer was complete.
+According to errata ISR must filter out spurious RDR before data read not after.
+ISR must read RXSTAT to get number of bytes available to read. Because RDR
+could be set while there could no data in the receive FIFO.
 
-It looks, what 1d7afc9 violate TI specs in what how AL and NACK should be
-handled (see Note 1, sprugn4r, Figure 17-31 and Figure 17-32).
+Restored pre 6d9939f6514 way of handling errata.
 
-According to specs (if I understood correctly), in case of NACK and AL driver
-must reset NACK, AL, ARDY, RDR, and RRDY (Master Receive Mode), and
-NACK, AL, ARDY, and XDR (Master Transmitter Mode).
-
-All that is done down the code under the if condition:
-if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) ...
-
-The patch restore pre 1d7afc9 logic of handling NACK and AL interrupts, so
-no interrupts is fired after ISR informs the rest of driver what transfer
-complete.
-
-Note: instead of removing break under NACK case, we could just replace 'break'
-with 'continue' and allow NACK transfer to finish using ARDY event. I found
-that NACK and ARDY bits usually set together. That case confirm TI wiki:
-http://processors.wiki.ti.com/index.php/I2C_Tips#Detecting_and_handling_NACK
-
-In order if someone interested in the event traces for NACK and AL cases,
-I sent them to mailing list.
-
+Found by code review. Real impact haven't seen.
 Tested on Beagleboard XM C.
 
 Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
-Acked-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Fixes: 6d9939f651419a63e09110 i2c: omap: split out [XR]DR and [XR]RDY
+Tested-by: Felipe Balbi <balbi@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-omap.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/i2c/busses/i2c-omap.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
 --- a/drivers/i2c/busses/i2c-omap.c
 +++ b/drivers/i2c/busses/i2c-omap.c
-@@ -926,14 +926,12 @@ omap_i2c_isr_thread(int this_irq, void *
- 		if (stat & OMAP_I2C_STAT_NACK) {
- 			err |= OMAP_I2C_STAT_NACK;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
--			break;
- 		}
+@@ -956,11 +956,13 @@ omap_i2c_isr_thread(int this_irq, void *
+ 			if (dev->fifo_size)
+ 				num_bytes = dev->buf_len;
  
- 		if (stat & OMAP_I2C_STAT_AL) {
- 			dev_err(dev->dev, "Arbitration lost\n");
- 			err |= OMAP_I2C_STAT_AL;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
--			break;
- 		}
+-			omap_i2c_receive_data(dev, num_bytes, true);
+-
+-			if (dev->errata & I2C_OMAP_ERRATA_I207)
++			if (dev->errata & I2C_OMAP_ERRATA_I207) {
+ 				i2c_omap_errata_i207(dev, stat);
++				num_bytes = (omap_i2c_read_reg(dev,
++					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
++			}
  
- 		/*
++			omap_i2c_receive_data(dev, num_bytes, true);
+ 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
+ 			continue;
+ 		}
 
 
