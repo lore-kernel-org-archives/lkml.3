@@ -1,175 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750761AbaLNSEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 13:04:16 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:38454 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701AbaLNSEP (ORCPT
+	id S1750796AbaLNSJE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 13:09:04 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:45686 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750701AbaLNSJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 13:04:15 -0500
-Date: Sun, 14 Dec 2014 19:04:11 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Fix lost reschedule in __cond_resched()
-Message-ID: <20141214180409.GB12622@lerouge>
-References: <CA+55aFzLprvtdLGDXgRr=k3QqO824uQSzbxT-b4vu_4pryMtSA@mail.gmail.com>
- <20141205171501.GA1320@redhat.com>
- <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
- <1417806247.4845.1@mail.thefacebook.com>
- <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
- <20141211145408.GB16800@redhat.com>
- <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
- <20141212185454.GB4716@redhat.com>
- <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213073634.GD32572@gmail.com>
+	Sun, 14 Dec 2014 13:09:00 -0500
+Date: Sun, 14 Dec 2014 10:08:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
+ early_initcall()
+Message-ID: <20141214180854.GC5310@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141214164104.307127356@goodmis.org>
+ <20141214164803.991954802@goodmis.org>
+ <20141214115332.76be1b8b@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141213073634.GD32572@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141214115332.76be1b8b@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121418-0013-0000-0000-0000070F6935
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 08:36:34AM +0100, Ingo Molnar wrote:
+On Sun, Dec 14, 2014 at 11:53:32AM -0500, Steven Rostedt wrote:
+> On Sun, 14 Dec 2014 11:41:05 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > I'm also not sure if the bug ever happens with preemption 
-> > disabled. Sasha, was that you who reported that you cannot 
-> > reproduce it without preemption? It strikes me that there's a 
-> > race condition in __cond_resched() wrt preemption, for example: 
-> > we do
+> > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > > 
-> >         __preempt_count_add(PREEMPT_ACTIVE);
-> >         __schedule();
-> >         __preempt_count_sub(PREEMPT_ACTIVE);
+> > In order to move enabling of trace events to just after mm_init(), the
+> > tracepoint enable code can not use call_rcu_sched() because rcu isn't
+> > even initialized yet.  Since this can only happen before SMP is set up
+> > (and even before interrupts are set up), there's no reason to use
+> > call_rcu_sched() at this point.
 > > 
-> > and in between the __schedule() and __preempt_count_sub(), if 
-> > an interrupt comes in and wakes up some important process, it 
-> > won't reschedule (because preemption is active), but then we 
-> > enable preemption again and don't check whether we should 
-> > reschedule (again), and we just go on our merry ways.
-> 
-> Indeed, that's a really good find regardless of whether it's the 
-> source of these lockups - the (untested) patch below ought to 
-> cure that.
-> 
-> > Now, I don't see how that could really matter for a long time - 
-> > returning to user space will check need_resched, and sleeping 
-> > will obviously force a reschedule anyway, so these kinds of 
-> > races should at most delay things by just a tiny amount, but 
-> > maybe there is some case where we screw up in a bigger way. So 
-> > I do *not* believe that the one in __cond_resched() matters, 
-> > but I'm giving it as an example of the kind of things that 
-> > could go wrong.
-> 
-> (as you later note) NOHZ is somewhat special in this regard, 
-> because there we try really hard not to run anything 
-> periodically, so a lost reschedule will matter more.
-> 
-> But ... I'd be surprised if this patch made a difference: it 
-> should normally not be possible to go idle with tasks on the 
-> runqueue (even with this bug present), and with at least one busy 
-> task on the CPU we get the regular scheduler tick which ought to 
-> hide such latencies.
-> 
-> It's nevertheless a good thing to fix, I'm just not sure it's the 
-> root cause of the observed lockup here.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> --
-> 
-> Reported-by: Linus Torvalds <torvalds@linux-foundation.org> 
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index bb398c0c5f08..532809aa0544 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4207,6 +4207,8 @@ static void __cond_resched(void)
->  	__preempt_count_add(PREEMPT_ACTIVE);
->  	__schedule();
->  	__preempt_count_sub(PREEMPT_ACTIVE);
-> +	if (need_resched())
-> +		__schedule();
->  }
+> > Instead, create a variable called tracepoint_rcu_safe that gets enabled
+> > via early_initcall() and if that is not set, free the code directly
+> > instead of using call_rcu_sched().
+> > 
+> > This allows us to enable tracepoints early without issues.
+> > 
+> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Nice catch! This indeed matters a lot for full nohz where a lost reschedule
-interrupt might be ignored and not fixed with a near tick. Although even if
-it is fixed by a tick, a missed reschedule delayed by HZ involves latency issue.
+With the addition of read_mostly, and given that I am not going to mess
+with call_rcu() this late in the 3.19 process without a blazingly good
+reason:
 
-Anyway, probably the above __schedule() should stay as a preemption point
-to make sure that a TASK_[UN]INTERRUPTIBLE is handled as expected and avoids
-early task deactivation.
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Such as:
+Please note that you can use call_rcu() and friends as soon as rcu_init()
+returns.  The callbacks won't be invoked until early_initcall() time,
+but they will be properly queued.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 240157c..6e942f3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2922,6 +2922,21 @@ void __sched schedule_preempt_disabled(void)
- 	preempt_disable();
- }
- 
-+static void __preempt_schedule(void)
-+{
-+	do {
-+		__preempt_count_add(PREEMPT_ACTIVE);
-+		__schedule();
-+		__preempt_count_sub(PREEMPT_ACTIVE);
-+
-+		/*
-+		 * Check again in case we missed a preemption opportunity
-+		 * between schedule and now.
-+		 */
-+		barrier();
-+	} while (need_resched());
-+}
-+
- #ifdef CONFIG_PREEMPT
- /*
-  * this is the entry point to schedule() from in-kernel preemption
-@@ -2937,17 +2952,7 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
- 	if (likely(!preemptible()))
- 		return;
- 
--	do {
--		__preempt_count_add(PREEMPT_ACTIVE);
--		__schedule();
--		__preempt_count_sub(PREEMPT_ACTIVE);
--
--		/*
--		 * Check again in case we missed a preemption opportunity
--		 * between schedule and now.
--		 */
--		barrier();
--	} while (need_resched());
-+	__preempt_schedule();
- }
- NOKPROBE_SYMBOL(preempt_schedule);
- EXPORT_SYMBOL(preempt_schedule);
-@@ -4249,9 +4254,7 @@ SYSCALL_DEFINE0(sched_yield)
- 
- static void __cond_resched(void)
- {
--	__preempt_count_add(PREEMPT_ACTIVE);
--	__schedule();
--	__preempt_count_sub(PREEMPT_ACTIVE);
-+	__preempt_schedule();
- }
- 
- int __sched _cond_resched(void)
+Please note also that there are places where turning a call_rcu() into
+a direct function call don't work, even at times when preemption is
+disabled and there is only one CPU.  One example is where single-threaded
+code uses call_rcu() on a list element of a list that it is traversing
+within an RCU read-side critical section.  A direct call to the RCU
+callback could potentially destroy the pointers that the traversal was
+going to use to find the next element.  This means that we cannot make
+call_rcu() do direct calls to the callback, as that would break quite
+a bit of existing code.
+
+Is there some definite point during boot before which you won't need to
+invoke call_rcu_sched() for tracing?  I am guessing "no", but have to ask.
+I can probably make call_rcu_sched() work arbitrarily early, but it is a
+bit uglier.  And this assumes that irqs_disabled_flags(local_irq_save())
+returns true during early boot.  I would -hope- this would be true!  ;-)
+
+							Thanx, Paul
+
+> > ---
+> >  kernel/tracepoint.c | 27 ++++++++++++++++++++++++++-
+> >  1 file changed, 26 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> > index 3490407dc7b7..9b90ef0ac731 100644
+> > --- a/kernel/tracepoint.c
+> > +++ b/kernel/tracepoint.c
+> > @@ -33,6 +33,15 @@ extern struct tracepoint * const __stop___tracepoints_ptrs[];
+> >  /* Set to 1 to enable tracepoint debug output */
+> >  static const int tracepoint_debug;
+> >  
+> > +/*
+> > + * traceoint_rcu_is_safe is set to true at early_initcall().
+> > + * Tracepoints can be enabled before rcu is initialized.
+> > + * When that happens, there's no reason to free via call_rcu()
+> > + * because the system isn't even in SMP mode yet, and rcu isn't
+> > + * initialized. Just directly free the old tracepoints instead.
+> > + */
+> > +static bool tracepoint_rcu_is_safe;
+> 
+> Hmm, I probably should make this read_mostly.
+> 
+> Although, it's not a hot path. Still, it gets set once at boot up and
+> never touched again. Yeah, that deserves a read_mostly.
+> 
+> -- Steve
+> 
+> > +
+> >  #ifdef CONFIG_MODULES
+> >  /*
+> >   * Tracepoint module list mutex protects the local module list.
+> > @@ -76,7 +85,16 @@ static inline void release_probes(struct tracepoint_func *old)
+> >  	if (old) {
+> >  		struct tp_probes *tp_probes = container_of(old,
+> >  			struct tp_probes, probes[0]);
+> > -		call_rcu_sched(&tp_probes->rcu, rcu_free_old_probes);
+> > +		/*
+> > +		 * Tracepoints can be enabled before RCU is initialized
+> > +		 * at boot up. If that is the case, do not bother using
+> > +		 * call_rcu() (because that will fail), but instead just
+> > +		 * free directly.
+> > +		 */
+> > +		if (likely(tracepoint_rcu_is_safe))
+> > +			call_rcu_sched(&tp_probes->rcu, rcu_free_old_probes);
+> > +		else
+> > +			rcu_free_old_probes(&tp_probes->rcu);
+> >  	}
+> >  }
+> >  
+> > @@ -518,3 +536,10 @@ void syscall_unregfunc(void)
+> >  	}
+> >  }
+> >  #endif
+> > +
+> > +static __init int init_tracepoint_rcu(void)
+> > +{
+> > +	tracepoint_rcu_is_safe = true;
+> > +	return 0;
+> > +}
+> > +early_initcall(init_tracepoint_rcu);
+> 
+
