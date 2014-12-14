@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaLNBHW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 20:07:22 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:57057 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaLNBHV (ORCPT
+	id S1752239AbaLNBfU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 20:35:20 -0500
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:54882 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381AbaLNBfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 20:07:21 -0500
+	Sat, 13 Dec 2014 20:35:19 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+i8gKKGBviLBaS8b=swqv2OWgh2Uc+m-TT8LVYcPehcYd903A@mail.gmail.com>
-References: <CA+i8gKK0sj55s-Gk8Y36KM4yBFLvLotffbSodjH5Gsd_yxd5Sg@mail.gmail.com>
-	<CAKMK7uGa_dHnie8EACcX0mQvc-uGpsgQHjWGN_obxPa3O6SJbw@mail.gmail.com>
-	<CA+i8gKKGBviLBaS8b=swqv2OWgh2Uc+m-TT8LVYcPehcYd903A@mail.gmail.com>
-Date: Sun, 14 Dec 2014 02:07:19 +0100
-Message-ID: <CA+i8gKJPPPUXrxY5q+81xZG91azygoUb27R_Wid3GTpb3-1-rw@mail.gmail.com>
-Subject: Re: [Regression] 83f45fc turns machine's screen off
-From: Emmanuel Benisty <benisty.e@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
+In-Reply-To: <20141214003332.GQ22149@ZenIV.linux.org.uk>
+References: <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+	<20141213165915.GA12756@redhat.com>
+	<20141213223616.GA22559@redhat.com>
+	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
+	<CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
+	<CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
+	<20141213233508.GN22149@ZenIV.linux.org.uk>
+	<CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
+	<20141213234730.GP22149@ZenIV.linux.org.uk>
+	<CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
+	<20141214003332.GQ22149@ZenIV.linux.org.uk>
+Date: Sat, 13 Dec 2014 17:35:17 -0800
+X-Google-Sender-Auth: ddRv0H_HfgRyRUlXeUSKHu1wW3c
+Message-ID: <CA+55aFxdsYMuUzdEhGThdtDJA+f1jeKn-rEH+Zrxk5=-KnsSRw@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-> On Mon, Nov 10, 2014 at 10:19 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> Adding relevant mailing lists.
->>
->>
->> On Sat, Nov 8, 2014 at 7:34 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
->>> Hi,
->>>
->>> The following commit permanently turns my screen off when x server is
->>> started (i3 330M Ironlake):
->>>
->>>     [83f45fc360c8e16a330474860ebda872d1384c8c] drm: Don't grab an fb
->>> reference for the idr
->>>
->>> Reverting this commit fixed the issue.
->>
->> This is definitely unexpected. I think we need a bit more data to
->> figure out what's going on here:
->> - Please boot with drm.debug=0xe added to your kernel cmdline and grab
->> the dmesg right after boot-up for both a working or broken kernel.
+On Sat, Dec 13, 2014 at 4:33 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> Please see attached files.
->
->> - Are you using any special i915 cmdline options?
->
-> Nope.
+> So does SMP - this_cpu_dec() relies on preemption being disabled.
 
-Is there anything else I could provide to help fixing this issue? It's
-still in Linus' tree.
+No. really. It very much does not. Not on x86, not elsewhere. It's
+part of the whole point of "this_cpu_p()". They are preemption and
+interrupt safe.
 
-Thanks in advance.
+It's the "__this_cpu_op()" ones that need external protection.
+
+                     Linus
