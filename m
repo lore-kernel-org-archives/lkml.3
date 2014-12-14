@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908AbaLNUad (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:30:33 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:43582 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962AbaLNUaZ (ORCPT
+	id S1753050AbaLNUbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:31:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52893 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654AbaLNUWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:30:25 -0500
-Date: Sun, 14 Dec 2014 21:30:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Dave Jones <davej@redhat.com>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched: Fix lost reschedule in __cond_resched()
-Message-ID: <20141214203011.GC12622@lerouge>
-References: <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
- <1417806247.4845.1@mail.thefacebook.com>
- <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
- <20141211145408.GB16800@redhat.com>
- <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
- <20141212185454.GB4716@redhat.com>
- <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213073634.GD32572@gmail.com>
- <20141214180409.GB12622@lerouge>
- <CA+55aFzOHwkMSEMN7v6THmx1U3YPPTy9B=zeLx96Rt2_Er=yBA@mail.gmail.com>
+	Sun, 14 Dec 2014 15:22:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chris Clayton <chris2553@googlemail.com>,
+        Kees Cook <keescook@chromium.org>, Borislav Petkov <bp@suse.de>,
+        Junjie Mao <eternal.n08@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.17 20/47] x86: Use $(OBJDUMP) instead of plain objdump
+Date: Sun, 14 Dec 2014 12:20:55 -0800
+Message-Id: <20141214201819.265645679@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzOHwkMSEMN7v6THmx1U3YPPTy9B=zeLx96Rt2_Er=yBA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 11:50:20AM -0800, Linus Torvalds wrote:
-> On Sun, Dec 14, 2014 at 10:04 AM, Frederic Weisbecker
-> <fweisbec@gmail.com> wrote:
-> >
-> > Such as:
-> 
-> So I like your patch, but quite frankly, can we go one step further?
-> 
-> Look at the callers of __schedule().
-> 
-> EVERY SINGLE ONE now has that loop around it that goes along the lines of
-> 
->    do {
->       .. disable preemption somehow ..
->       __schedule();
->       ...enable preemption without scheduling ..
->    } while (need_resced());
-> 
-> except for one - the regular "schedule()" function.
-> 
-> Furthermore, look inside __schedule() itself: it has the same loop,
-> except with a count of one.
-> 
-> So I would suggest going the extra mile, and
->  - remove the loop from __schedule() itself
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-That sounds like a good idea. Unless the loop inside __schedule()
-is very frequent and sensitive enough to show visible overhead if we
-force it to pass through the preemp_count_add/sub() and local_irq_*()
-operations in the preempt_schedule_*() functions.
+------------------
 
-I suspect it's not, so I'm cooking that patch.
+From: Chris Clayton <chris2553@googlemail.com>
 
->  - add the same loop as everywhere else to "schedule()"
+commit e2e68ae688b0a3766cd75aedf4ed4e39be402009 upstream.
 
-Right. I'm doing that too.
+commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
+broke the cross compile of x86. It added a objdump invocation, which
+invokes the host native objdump and ignores an active cross tool
+chain.
 
-> IOW, just make this "you have to loop and disable preemption" thing be
-> a rule that __schedule() can depend on.
+Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
+account.
 
-Ok. It would be nice if we could have a common function that does the loop
-and PREEMPT_ACTIVE increments. But the variable code is inside that loop
-so that's only factorizable with a function pointer (no-go in that fast-path)
-or a macro that would make things even worse and ugly.
+[ tglx: Massage changelog and use $(OBJDUMP) ]
 
-So I think I'll just keep all those loops explicit.
+Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
+Signed-off-by: Chris Clayton <chris2553@googlemail.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Junjie Mao <eternal.n08@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks.
+---
+ arch/x86/boot/compressed/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->                  Linus
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -75,7 +75,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+ 
+-RUN_SIZE = $(shell objdump -h vmlinux | \
++RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
+ 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+
+
