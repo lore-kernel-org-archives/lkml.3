@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaLNUZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:25:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52832 "EHLO
+	id S1752415AbaLNUZb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:25:31 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaLNUWS (ORCPT
+	with ESMTP id S1751681AbaLNUWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:22:18 -0500
+	Sun, 14 Dec 2014 15:22:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Devin Ryles <devin.ryles@intel.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.17 24/47] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
-Date: Sun, 14 Dec 2014 12:20:59 -0800
-Message-Id: <20141214201819.381434014@linuxfoundation.org>
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.17 23/47] media: smiapp: Only some selection targets are settable
+Date: Sun, 14 Dec 2014 12:20:58 -0800
+Message-Id: <20141214201819.352703395@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -28,31 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Devin Ryles <devin.ryles@intel.com>
+From: Sakari Ailus <sakari.ailus@iki.fi>
 
-commit 249cd0a187ed4ef1d0af7f74362cc2791ec5581b upstream.
+commit b31eb901c4e5eeef4c83c43dfbc7fe0d4348cb21 upstream.
 
-This patch adds DeviceIDs for Sunrise Point-LP.
+Setting a non-settable selection target caused BUG() to be called. The check
+for valid selections only takes the selection target into account, but does
+not tell whether it may be set, or only get. Fix the issue by simply
+returning an error to the user.
 
-Signed-off-by: Devin Ryles <devin.ryles@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/media/i2c/smiapp/smiapp-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -321,6 +321,9 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
- 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
- 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
+--- a/drivers/media/i2c/smiapp/smiapp-core.c
++++ b/drivers/media/i2c/smiapp/smiapp-core.c
+@@ -2133,7 +2133,7 @@ static int smiapp_set_selection(struct v
+ 		ret = smiapp_set_compose(subdev, fh, sel);
+ 		break;
+ 	default:
+-		BUG();
++		ret = -EINVAL;
+ 	}
+ 
+ 	mutex_unlock(&sensor->mutex);
 
 
