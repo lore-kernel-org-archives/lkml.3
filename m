@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590AbaLNQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:53:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52177 "EHLO mx1.redhat.com"
+	id S1752730AbaLNQxW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:53:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752147AbaLNQxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:53:05 -0500
-Date: Sun, 14 Dec 2014 18:52:47 +0200
+	id S1752532AbaLNQxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:53:14 -0500
+Date: Sun, 14 Dec 2014 18:52:59 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
-Subject: [PATCH 12/18] parisc/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-13-git-send-email-mst@redhat.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>, sparclinux@vger.kernel.org
+Subject: [PATCH 15/18] sparc/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-16-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,22 +32,49 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/parisc/include/asm/uaccess.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/include/asm/uaccess_32.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/parisc/include/asm/uaccess.h b/arch/parisc/include/asm/uaccess.h
-index a5cb070..3a20da6 100644
---- a/arch/parisc/include/asm/uaccess.h
-+++ b/arch/parisc/include/asm/uaccess.h
-@@ -104,7 +104,7 @@ struct exception_data {
- 	    }                                           \
- 	}                                               \
- 							\
--	(x) = (__typeof__(*(ptr))) __gu_val;            \
-+	(x) = (__force __typeof__(*(ptr))) __gu_val;            \
- 	__gu_err;                                       \
- })
+diff --git a/arch/sparc/include/asm/uaccess_32.h b/arch/sparc/include/asm/uaccess_32.h
+index 9634d08..8b571a0 100644
+--- a/arch/sparc/include/asm/uaccess_32.h
++++ b/arch/sparc/include/asm/uaccess_32.h
+@@ -164,7 +164,7 @@ case 2: __get_user_asm(__gu_val,uh,addr,__gu_ret); break; \
+ case 4: __get_user_asm(__gu_val,,addr,__gu_ret); break; \
+ case 8: __get_user_asm(__gu_val,d,addr,__gu_ret); break; \
+ default: __gu_val = 0; __gu_ret = __get_user_bad(); break; \
+-} } else { __gu_val = 0; __gu_ret = -EFAULT; } x = (type) __gu_val; __gu_ret; })
++} } else { __gu_val = 0; __gu_ret = -EFAULT; } x = (__force type) __gu_val; __gu_ret; })
  
+ #define __get_user_check_ret(x,addr,size,type,retval) ({ \
+ register unsigned long __gu_val __asm__ ("l1"); \
+@@ -175,7 +175,7 @@ case 2: __get_user_asm_ret(__gu_val,uh,addr,retval); break; \
+ case 4: __get_user_asm_ret(__gu_val,,addr,retval); break; \
+ case 8: __get_user_asm_ret(__gu_val,d,addr,retval); break; \
+ default: if (__get_user_bad()) return retval; \
+-} x = (type) __gu_val; } else return retval; })
++} x = (__force type) __gu_val; } else return retval; })
+ 
+ #define __get_user_nocheck(x,addr,size,type) ({ \
+ register int __gu_ret; \
+@@ -186,7 +186,7 @@ case 2: __get_user_asm(__gu_val,uh,addr,__gu_ret); break; \
+ case 4: __get_user_asm(__gu_val,,addr,__gu_ret); break; \
+ case 8: __get_user_asm(__gu_val,d,addr,__gu_ret); break; \
+ default: __gu_val = 0; __gu_ret = __get_user_bad(); break; \
+-} x = (type) __gu_val; __gu_ret; })
++} x = (__force type) __gu_val; __gu_ret; })
+ 
+ #define __get_user_nocheck_ret(x,addr,size,type,retval) ({ \
+ register unsigned long __gu_val __asm__ ("l1"); \
+@@ -196,7 +196,7 @@ case 2: __get_user_asm_ret(__gu_val,uh,addr,retval); break; \
+ case 4: __get_user_asm_ret(__gu_val,,addr,retval); break; \
+ case 8: __get_user_asm_ret(__gu_val,d,addr,retval); break; \
+ default: if (__get_user_bad()) return retval; \
+-} x = (type) __gu_val; })
++} x = (__force type) __gu_val; })
+ 
+ #define __get_user_asm(x,size,addr,ret)					\
+ __asm__ __volatile__(							\
 -- 
 MST
 
