@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaLNW0P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 17:26:15 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751023AbaLNW0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 17:26:08 -0500
-Message-ID: <548E0E7B.1000008@nod.at>
-Date: Sun, 14 Dec 2014 23:26:03 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	id S1751620AbaLNW0s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 17:26:48 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:41807 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaLNW0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 17:26:41 -0500
+X-Auth-Info: 5q8ePZdQ52bbzt1NGrkvZkEKvIra27g/z1ZW3i1EJO0=
+From: Marek Vasut <marex@denx.de>
+To: Stefan Wahren <stefan.wahren@i2se.com>
+Subject: Re: [PATCH RFC] clk: mxs: Fix invalid 32-bit access to frac registers
+Date: Sun, 14 Dec 2014 20:19:49 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, festevam@gmail.com, shawn.guo@linaro.org,
+        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
+References: <1418570933-21585-1-git-send-email-stefan.wahren@i2se.com> <201412141712.12589.marex@denx.de> <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de>
+In-Reply-To: <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>, dedekind1@gmail.com
-CC: dwmw2@infradead.org, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: UBI: Add support for scatter gather and blk-mq
-References: <1416845080-16663-1-git-send-email-richard@nod.at> <548D85F1.5080606@vanguardiasur.com.ar>
-In-Reply-To: <548D85F1.5080606@vanguardiasur.com.ar>
-Content-Type: text/plain; charset=windows-1252
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201412142019.50047.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 14.12.2014 um 13:43 schrieb Ezequiel Garcia:
-> Hey Richard,
+On Sunday, December 14, 2014 at 06:16:17 PM, Stefan Wahren wrote:
+> Hi Marek,
 > 
-> On 11/24/2014 01:04 PM, Richard Weinberger wrote:
->> This two patches implement blk-mq support for the UBI block driver.
->> As the scatter gather part is rather generic I've moved it directl
->> into UBI such that it can be reused later.
->> So far only reading data into a scatter gather list is possible.
->> After implementing  ubi_eba_read_leb_sg() we could slowly start
->> removing a bunch of vmalloc() from the UBI core code and use scatter gather.
->> This should lower the memory footprint of UBI.
->>
->> [PATCH 1/2] UBI: Add initial support for scatter gather
->> [PATCH 2/2] UBI: Block: Add blk-mq support
->>
+> > Marek Vasut <marex@denx.de> hat am 14. Dezember 2014 um 17:12 geschrieben:
+> > > static void __iomem *digctrl;
+> > > #define DIGCTRL digctrl
+> > > @@ -118,11 +119,12 @@ static void __init clk_misc_init(void)
+> > > /*
+> > > * 480 MHz seems too high to be ssp clock source directly,
+> > > * so set frac0 to get a 288 MHz ref_io0 and ref_io1.
+> > > + * According to reference manual we must access frac0 bytewise.
+> > > */
+> > > - val = readl_relaxed(FRAC0);
+> > > - val &= ~((0x3f << BP_FRAC0_IO0FRAC) | (0x3f << BP_FRAC0_IO1FRAC));
+> > > - val |= (30 << BP_FRAC0_IO0FRAC) | (30 << BP_FRAC0_IO1FRAC);
+> > > - writel_relaxed(val, FRAC0);
+> > > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO0 + CLR);
+> > > + writeb_relaxed(30, FRAC0 + FRAC0_IO0 + SET);
+> > > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO1 + CLR);
+> > > + writeb_relaxed(30, FRAC0 + FRAC0_IO1 + SET);
+> > 
+> > This used to be a R-M-W sequence, but now it's changed to multiple
+> > writes. This
+> > changes the behavior and seeing you use the CLR register, I am worried
+> > this might be prone to clock glitches. What do you think please ?
 > 
-> Tried to apply these to take a look and run some tests, but 2/2 got
-> rejected. Which tag did you base them?
+> you are right. I adapt the imx23 init to the imx28 to make code simple. But
+> it would be better to avoid glitches.
+> I hope it's okay for this bugfix to introduce a R-M-W sequence for the
+> imx23 init. So it's consequent.
+
+It should be OK. Make sure to document it in the commit message.
+
+> > [...]
+> > 
+> > Also, it might be a good idea to zap the 0x3f mask and use HEX and DEC
+> > numbers consistently, but this is an idea for another patch.
 > 
+> Yes.
+> 
+> Btw i hope this patch also fixes a SPI communication issue with our
+> hardware which forces us to bypass ref_io1 for ssp2.
+> But i will have access to that hardware tomorrow.
 
-As discussed on IRC, blk-mq saw an update in -next.
-The interface as changed bit, I've adopted my patches and pushed them to:
-git://git.kernel.org/pub/scm/linux/kernel/git/rw/misc.git ubiblock-mq
-This tree is linux-ubifs.git plus linux-block.git for-next.
+Which issue would that be please ? What are the symptoms ?
 
-I'll resend this updated patches after the merge window has closed.
-Happy testing. :-)
-
-Thanks,
-//richard
+Best regards,
+Marek Vasut
