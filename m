@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbaLNUrX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:47:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52973 "EHLO
+	id S1754384AbaLNUrd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:47:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418AbaLNUVr (ORCPT
+	with ESMTP id S1751411AbaLNUVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.14 13/34] media: smiapp: Only some selection targets are settable
-Date: Sun, 14 Dec 2014 12:20:51 -0800
-Message-Id: <20141214201804.176706489@linuxfoundation.org>
+        Daniel Vetter <daniel.vetter@intel.com>, lu hua <huax.lu@intel.com>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.14 10/34] drm/i915: More cautious with pch fifo underruns
+Date: Sun, 14 Dec 2014 12:20:48 -0800
+Message-Id: <20141214201804.090759807@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -29,33 +30,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sakari Ailus <sakari.ailus@iki.fi>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit b31eb901c4e5eeef4c83c43dfbc7fe0d4348cb21 upstream.
+commit b68362278af94e1171f5be9d4e44988601fb0439 upstream.
 
-Setting a non-settable selection target caused BUG() to be called. The check
-for valid selections only takes the selection target into account, but does
-not tell whether it may be set, or only get. Fix the issue by simply
-returning an error to the user.
+Apparently PCH fifo underruns are tricky, we have plenty reports that
+we see the occasional underrun (especially at boot-up).
 
-Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+So for a change let's see what happens when we don't re-enable pch
+fifo underrun reporting when the pipe is disabled. This means that the
+kernel can't catch pch fifo underruns when they happen (except when
+all pipes are on on the pch). But we'll still catch underruns when
+disabling the pipe again. So not a terrible reduction in test
+coverage.
+
+Since the DRM_ERROR is new and hence a regression plan B would be to
+revert it back to a debug output. Which would be a lot worse than this
+hack for underrun test coverage in the wild. See the referenced
+discussions for more.
+
+References: http://mid.gmane.org/CA+gsUGRfGe3t4NcjdeA=qXysrhLY3r4CEu7z4bjTwxi1uOfy+g@mail.gmail.com
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=85898
+References: https://bugs.freedesktop.org/show_bug.cgi?id=85898
+References: https://bugs.freedesktop.org/show_bug.cgi?id=86233
+References: https://bugs.freedesktop.org/show_bug.cgi?id=86478
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+Tested-by: lu hua <huax.lu@intel.com>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/smiapp/smiapp-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2138,7 +2138,7 @@ static int smiapp_set_selection(struct v
- 		ret = smiapp_set_compose(subdev, fh, sel);
- 		break;
- 	default:
--		BUG();
-+		ret = -EINVAL;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3817,7 +3817,6 @@ static void ironlake_crtc_disable(struct
+ 		ironlake_fdi_disable(crtc);
+ 
+ 		ironlake_disable_pch_transcoder(dev_priv, pipe);
+-		intel_set_pch_fifo_underrun_reporting(dev, pipe, true);
+ 
+ 		if (HAS_PCH_CPT(dev)) {
+ 			/* disable TRANS_DP_CTL */
+@@ -3883,7 +3882,6 @@ static void haswell_crtc_disable(struct
+ 
+ 	if (intel_crtc->config.has_pch_encoder) {
+ 		lpt_disable_pch_transcoder(dev_priv);
+-		intel_set_pch_fifo_underrun_reporting(dev, TRANSCODER_A, true);
+ 		intel_ddi_fdi_disable(crtc);
  	}
  
- 	mutex_unlock(&sensor->mutex);
 
 
