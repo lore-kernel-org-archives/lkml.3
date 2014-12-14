@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110AbaLNUls (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:41:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53369 "EHLO
+	id S1751863AbaLNUmy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:42:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbaLNUbr (ORCPT
+	with ESMTP id S1753162AbaLNUbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:31:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Catalin Iacob <iacobcatalin@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.18 14/19] rtlwifi: rtl8192ce: Fix missing interrupt ready flag
-Date: Sun, 14 Dec 2014 12:21:25 -0800
-Message-Id: <20141214201823.950211816@linuxfoundation.org>
+        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
+        Eric Dumazet <edumazet@google.com>,
+        John Fastabend <john.r.fastabend@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 10/19] net: fix suspicious rcu_dereference_check in net/sched/sch_fq_codel.c
+Date: Sun, 14 Dec 2014 12:21:21 -0800
+Message-Id: <20141214201823.837896625@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
 References: <20141214201823.543296369@linuxfoundation.org>
@@ -30,43 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
 
-commit 87141db0848aa20c43d453f5545efc8f390d4372 upstream.
+[ Upstream commit 69204cf7eb9c5a72067ce6922d4699378251d053 ]
 
-Proper operation with the rewritten PCI mini driver requires that a flag be set
-when interrupts are enabled. This flag was missed.  This patch is one of three needed to
-fix the kernel regression reported at https://bugzilla.kernel.org/show_bug.cgi?id=88951.
+commit 46e5da40ae (net: qdisc: use rcu prefix and silence
+ sparse warnings) triggers a spurious warning:
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: Catalin Iacob <iacobcatalin@gmail.com>
-Tested-by: Catalin Iacob <iacobcatalin@gmail.com>
-Cc: Catalin Iacob <iacobcatalin@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+net/sched/sch_fq_codel.c:97 suspicious rcu_dereference_check() usage!
+
+The code should be using the _bh variant of rcu_dereference.
+
+Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Acked-by: John Fastabend <john.r.fastabend@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/sched/sch_fq_codel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -1287,6 +1287,7 @@ void rtl92ce_enable_interrupt(struct iee
+--- a/net/sched/sch_fq_codel.c
++++ b/net/sched/sch_fq_codel.c
+@@ -94,7 +94,7 @@ static unsigned int fq_codel_classify(st
+ 	    TC_H_MIN(skb->priority) <= q->flows_cnt)
+ 		return TC_H_MIN(skb->priority);
  
- 	rtl_write_dword(rtlpriv, REG_HIMR, rtlpci->irq_mask[0] & 0xFFFFFFFF);
- 	rtl_write_dword(rtlpriv, REG_HIMRE, rtlpci->irq_mask[1] & 0xFFFFFFFF);
-+	rtlpci->irq_enabled = true;
- }
+-	filter = rcu_dereference(q->filter_list);
++	filter = rcu_dereference_bh(q->filter_list);
+ 	if (!filter)
+ 		return fq_codel_hash(q, skb) + 1;
  
- void rtl92ce_disable_interrupt(struct ieee80211_hw *hw)
-@@ -1296,7 +1297,7 @@ void rtl92ce_disable_interrupt(struct ie
- 
- 	rtl_write_dword(rtlpriv, REG_HIMR, IMR8190_DISABLED);
- 	rtl_write_dword(rtlpriv, REG_HIMRE, IMR8190_DISABLED);
--	synchronize_irq(rtlpci->pdev->irq);
-+	rtlpci->irq_enabled = false;
- }
- 
- static void _rtl92ce_poweroff_adapter(struct ieee80211_hw *hw)
 
 
