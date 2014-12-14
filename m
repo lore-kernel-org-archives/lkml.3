@@ -1,117 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750819AbaLNTVd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 14:21:33 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48226 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLNTV1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 14:21:27 -0500
-Date: Sun, 14 Dec 2014 20:21:24 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: bluetooth: Add hci_h4p driver
-Message-ID: <20141214192124.GA22392@amd>
-References: <20141213223727.GA13894@amd>
- <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
+	id S1751018AbaLNTVy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 14:21:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38179 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750702AbaLNTVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 14:21:47 -0500
+Date: Sun, 14 Dec 2014 20:20:48 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
+        borntraeger@de.ibm.com, rafael.j.wysocki@intel.com,
+        paulmck@linux.vnet.ibm.com, peterz@infradead.org, bp@suse.de,
+        jkosina@suse.cz
+Subject: Re: [PATCH v4] CPU hotplug: active_writer not woken up in some
+	cases - deadlock
+Message-ID: <20141214192048.GA6372@redhat.com>
+References: <1418217721-42919-1-git-send-email-dahi@linux.vnet.ibm.com> <20141210175055.GA11802@redhat.com> <20141212094636.754ab1f8@thinkpad-w530>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141212094636.754ab1f8@thinkpad-w530>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 12/12, David Hildenbrand wrote:
+>
+> > This is subjective, but how about
+> >
+> > 	static bool xxx(void)
+> > 	{
+> > 		mutex_lock(&cpu_hotplug.lock);
+> > 		if (atomic_read(&cpu_hotplug.refcount) == 0)
+> > 			return true;
+> > 		mutex_unlock(&cpu_hotplug.lock);
+> > 		return false;
+> > 	}
+> >
+> > 	void cpu_hotplug_begin(void)
+> > 	{
+> > 		cpu_hotplug.active_writer = current;
+> >
+> > 		cpuhp_lock_acquire();
+> > 		wait_event(&cpu_hotplug.wq, xxx());
+> > 	}
+> >
+> > instead?
+> >
+> > Oleg.
+> >
+>
+> [   50.662459] do not call blocking ops when !TASK_RUNNING; state=2 set at [<000000000017340e>] prepare_to_wait_event+0x7a/0x124
+> [   50.662472] ------------[ cut here ]------------
+> [   50.662475] WARNING: at kernel/sched/core.c:7301
+> [   50.662477] Modules linked in:
+> [   50.662482] CPU: 5 PID: 225 Comm: cpu_start_stop. Not tainted 3.18.0+ #59
+> [   50.662485] task: 0000000001f94b20 ti: 0000000001ffc000 task.ti: 0000000001ffc000
+> ...
+>
+> Looks like your suggestion won't work. We can only set the task to
+> TASK_UNINTERRUPTIBLE after taking the lock.
 
+Yeees, this warning (and wait_woken() helpers) was specially added
+to catch/fix the problem like this, sorry for confusion.
 
-> > Hacks surrounding bluetooth address were removed; this results in
-> > working driver with address that is probably not unique.
-> 
-> Just set HCI_QUIRK_INVALID_BDADDR and let someone deal with that in userspace. You can use the btmgmt public-addr command for testing.
-> 
+Easy to fix, just
 
-Ok, it took me a while to figure out that --enable-experimental is
-needed.
+	-	mutex_lock(&cpu_hotplug.lock);
+	+	if (!mutex_trylock(&cpu_hotplug.lock))
+	+		return false;
 
-Then help was playing tricks with me:
+If .lock is locked then it is hold by get_online_cpus(), and it is going
+to increment the counter.
 
-For more information on the usage of each command use:
-    btmgmt <command> --help
-root@n900:/my/bluez-5.26/tools# ./btmgmt public-addr --help
-Set Public Address for hci0 failed with status 0x0b (Rejected)
-root@n900:/my/bluez-5.26/tools# ./btmgmt public-addr
-Usage: btmgmt public-addr <address>
+I would like to say that this is what I actually meant but now I can not
+recall if this is true ;)
 
+But please ignore. Your next version looks simple/clear enough.
 
-root@n900:/my/bluez-5.26/tools# ./btmgmt public-addr 01:02:03:04:05:06
-Set Public Address for hci0 failed with status 0x0b (Rejected)
+Oleg.
 
-Hmm. Since setting public address only works when interface is down,
-and we lose all the settings during up, this does not work at all,
-right?
-
-Anyway, you might want to apply this to lessen the confusion.
-
-diff -ur bluez-5.26.ofic/tools/btmgmt.c bluez-5.26/tools/btmgmt.c
---- bluez-5.26.ofic/tools/btmgmt.c	2014-12-14 12:32:19.742595000 +0100
-+++ bluez-5.26/tools/btmgmt.c	2014-12-14 20:06:40.432497000 +0100
-@@ -2603,7 +2603,7 @@
- 
- static void static_addr_usage(void)
- {
--	printf("Usage: btmgmt static-addr <address>\n");
-+	printf("Usage: btmgmt static-addr ??:??:??:??:??:??\n");
- }
- 
- static void cmd_static_addr(struct mgmt *mgmt, uint16_t index,
-@@ -2660,7 +2660,8 @@
- 	struct mgmt_cp_set_public_address cp;
- 
- 	if (argc < 2) {
--		printf("Usage: btmgmt public-addr <address>\n");
-+		printf("Usage: btmgmt public-addr ??:??:??:??:??:??\n"
-+		       "Note: interface must be down for this to work\n");
- 		exit(EXIT_FAILURE);
- 	}
- 
-@@ -2934,7 +2935,7 @@
- 
- static void add_device_usage(void)
- {
--	printf("Usage: btmgmt add-device [-a action] [-t type] <address>\n");
-+	printf("Usage: btmgmt add-device [-a action] [-t type] ??:??:??:??:??:??\n");
- }
- 
- static struct option add_device_options[] = {
-@@ -3007,7 +3008,7 @@
- 
- static void del_device_usage(void)
- {
--	printf("Usage: btmgmt del-device [-t type] <address>\n");
-+	printf("Usage: btmgmt del-device [-t type] ??:??:??:??:??:??\n");
- }
- 
- static struct option del_device_options[] = {
-@@ -3153,7 +3154,7 @@
- 
- 	printf("\n"
- 		"For more information on the usage of each command use:\n"
--		"\tbtmgmt <command> --help\n" );
-+		"\tbtmgmt <command>\n" );
- }
- 
- static struct option main_options[] = {
-Only in bluez-5.26/tools: btmgmt.c~
-
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
