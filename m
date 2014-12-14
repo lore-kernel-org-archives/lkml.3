@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbaLNQw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:52:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33451 "EHLO mx1.redhat.com"
+	id S1752296AbaLNQwp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:52:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751623AbaLNQwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:52:50 -0500
-Date: Sun, 14 Dec 2014 18:52:38 +0200
+	id S1751004AbaLNQwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:52:41 -0500
+Date: Sun, 14 Dec 2014 18:52:32 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Chen Gang <gang.chen.5i5j@gmail.com>
-Subject: [PATCH 10/18] microblaze/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-11-git-send-email-mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Subject: [PATCH 08/18] m32r/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-9-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,28 +30,28 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/microblaze/include/asm/uaccess.h | 4 ++--
+ arch/m32r/include/asm/uaccess.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/uaccess.h b/arch/microblaze/include/asm/uaccess.h
-index 59a89a6..57acf04 100644
---- a/arch/microblaze/include/asm/uaccess.h
-+++ b/arch/microblaze/include/asm/uaccess.h
-@@ -220,7 +220,7 @@ extern long __user_bad(void);
- 	} else {							\
- 		__gu_err = -EFAULT;					\
- 	}								\
--	x = (typeof(*(ptr)))__gu_val;					\
-+	x = (__force typeof(*(ptr)))__gu_val;					\
+diff --git a/arch/m32r/include/asm/uaccess.h b/arch/m32r/include/asm/uaccess.h
+index 84fe7ba..ee4a212 100644
+--- a/arch/m32r/include/asm/uaccess.h
++++ b/arch/m32r/include/asm/uaccess.h
+@@ -218,7 +218,7 @@ extern int fixup_exception(struct pt_regs *regs);
+ 	unsigned long __gu_val;						\
+ 	might_fault();							\
+ 	__get_user_size(__gu_val,(ptr),(size),__gu_err);		\
+-	(x) = (__typeof__(*(ptr)))__gu_val;				\
++	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
  	__gu_err;							\
  })
  
-@@ -242,7 +242,7 @@ extern long __user_bad(void);
- 	default:							\
- 		/* __gu_val = 0; __gu_err = -EINVAL;*/ __gu_err = __user_bad();\
- 	}								\
--	x = (__typeof__(*(ptr))) __gu_val;				\
-+	x = (__force __typeof__(*(ptr))) __gu_val;				\
+@@ -230,7 +230,7 @@ extern int fixup_exception(struct pt_regs *regs);
+ 	might_fault();							\
+ 	if (access_ok(VERIFY_READ,__gu_addr,size))			\
+ 		__get_user_size(__gu_val,__gu_addr,(size),__gu_err);	\
+-	(x) = (__typeof__(*(ptr)))__gu_val;				\
++	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
  	__gu_err;							\
  })
  
