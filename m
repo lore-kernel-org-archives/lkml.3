@@ -1,79 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751468AbaLNRPC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 12:15:02 -0500
-Received: from smtprelay0045.hostedemail.com ([216.40.44.45]:34561 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751018AbaLNRPA (ORCPT
+	id S1751582AbaLNRQu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 12:16:50 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:65307 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaLNRQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 12:15:00 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4385:5007:6119:6261:7875:7903:8660:9010:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13069:13148:13161:13229:13230:13255:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: sheet88_2b7dc476be750
-X-Filterd-Recvd-Size: 2911
-Date: Sun, 14 Dec 2014 12:14:57 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
- early_initcall()
-Message-ID: <20141214121457.59b22354@gandalf.local.home>
-In-Reply-To: <1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com>
-References: <20141214164104.307127356@goodmis.org>
-	<20141214164803.991954802@goodmis.org>
-	<1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Sun, 14 Dec 2014 12:16:47 -0500
+Date: Sun, 14 Dec 2014 18:16:17 +0100 (CET)
+From: Stefan Wahren <stefan.wahren@i2se.com>
+Reply-To: Stefan Wahren <stefan.wahren@i2se.com>
+To: Marek Vasut <marex@denx.de>
+Cc: linux-kernel@vger.kernel.org, festevam@gmail.com, shawn.guo@linaro.org,
+        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de>
+In-Reply-To: <201412141712.12589.marex@denx.de>
+References: <1418570933-21585-1-git-send-email-stefan.wahren@i2se.com> <201412141712.12589.marex@denx.de>
+Subject: Re: [PATCH RFC] clk: mxs: Fix invalid 32-bit access to frac
+ registers
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.6.0-Rev33
+X-Originating-Client: com.openexchange.ox.gui.dhtml
+X-Provags-ID: V03:K0:w/lfozQUZETGol6cAFjrotimQHE9JiFBb5VBsI5m6VCV/GjChYj
+ p2gal/Ia3ne9OHN/zXi9LfIA+uc8e08Kdr4b5ANSR7U7B6woQPJGxgGholDCccTj2Vaoauk
+ h7ySt4MuGd9JyMRE8YRhe5tk40ORVc5W8nc4zN0EthU1jPI0Q6/uA+UcO6WveTokKewX38Y
+ EW5BYMvbY5Qbxyq0eg4Rg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Dec 2014 17:05:49 +0000 (UTC)
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+Hi Marek,
 
+> Marek Vasut <marex@denx.de> hat am 14. Dezember 2014 um 17:12 geschrieben:
+>
+> >
+> > static void __iomem *digctrl;
+> > #define DIGCTRL digctrl
+> > @@ -118,11 +119,12 @@ static void __init clk_misc_init(void)
+> > /*
+> > * 480 MHz seems too high to be ssp clock source directly,
+> > * so set frac0 to get a 288 MHz ref_io0 and ref_io1.
+> > + * According to reference manual we must access frac0 bytewise.
+> > */
+> > - val = readl_relaxed(FRAC0);
+> > - val &= ~((0x3f << BP_FRAC0_IO0FRAC) | (0x3f << BP_FRAC0_IO1FRAC));
+> > - val |= (30 << BP_FRAC0_IO0FRAC) | (30 << BP_FRAC0_IO1FRAC);
+> > - writel_relaxed(val, FRAC0);
+> > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO0 + CLR);
+> > + writeb_relaxed(30, FRAC0 + FRAC0_IO0 + SET);
+> > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO1 + CLR);
+> > + writeb_relaxed(30, FRAC0 + FRAC0_IO1 + SET);
+>
+> This used to be a R-M-W sequence, but now it's changed to multiple writes.
+> This
+> changes the behavior and seeing you use the CLR register, I am worried this
+> might be prone to clock glitches. What do you think please ?
 
-> >  #ifdef CONFIG_MODULES
-> >  /*
-> >   * Tracepoint module list mutex protects the local module list.
-> > @@ -76,7 +85,16 @@ static inline void release_probes(struct tracepoint_func
-> > *old)
-> >  	if (old) {
-> >  		struct tp_probes *tp_probes = container_of(old,
-> >  			struct tp_probes, probes[0]);
-> > -		call_rcu_sched(&tp_probes->rcu, rcu_free_old_probes);
-> > +		/*
-> > +		 * Tracepoints can be enabled before RCU is initialized
-> > +		 * at boot up. If that is the case, do not bother using
-> > +		 * call_rcu() (because that will fail), but instead just
-> > +		 * free directly.
-> > +		 */
-> > +		if (likely(tracepoint_rcu_is_safe))
-> > +			call_rcu_sched(&tp_probes->rcu, rcu_free_old_probes);
-> > +		else
-> > +			rcu_free_old_probes(&tp_probes->rcu);
-> 
-> Would it makes sense to have call_rcu() and call_rcu_sched()
-> provide this "direct call" fallback at early boot instead
-> of having this in the caller ?
-> 
+you are right. I adapt the imx23 init to the imx28 to make code simple. But it
+would be better to avoid glitches.
+I hope it's okay for this bugfix to introduce a R-M-W sequence for the imx23
+init. So it's consequent.
 
-That was my original thought, and I even started down that path. But
-then I realized that tracepoints are very unique, and this is really
-special for tracepoints. Then I thought, why touch a complex system like
-RCU for the one off case of tracepoints? I don't really see any other
-user needing this feature (well, maybe lockdep, perf or ftrace, but
-still they too are special). I decided the simplest and safest approach
-was to just touch the tracepoint code. Other users shouldn't need this.
+>
+> [...]
+>
+> Also, it might be a good idea to zap the 0x3f mask and use HEX and DEC numbers
+> consistently, but this is an idea for another patch.
 
-If IRQ setup, or other core pieces of code can use this, then I would
-agree that rcu should be changed. But until then, I rather not add
-another conditional to the core RCU code.
+Yes.
 
--- Steve
+Btw i hope this patch also fixes a SPI communication issue with our hardware
+which forces us to bypass ref_io1 for ssp2.
+But i will have access to that hardware tomorrow.
+
+Thanks
+
+Stefan
+
+>
+> Best regards,
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
