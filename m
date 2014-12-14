@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaLNW0s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 17:26:48 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:41807 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaLNW0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 17:26:41 -0500
-X-Auth-Info: 5q8ePZdQ52bbzt1NGrkvZkEKvIra27g/z1ZW3i1EJO0=
-From: Marek Vasut <marex@denx.de>
-To: Stefan Wahren <stefan.wahren@i2se.com>
-Subject: Re: [PATCH RFC] clk: mxs: Fix invalid 32-bit access to frac registers
-Date: Sun, 14 Dec 2014 20:19:49 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.13.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, festevam@gmail.com, shawn.guo@linaro.org,
-        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
-References: <1418570933-21585-1-git-send-email-stefan.wahren@i2se.com> <201412141712.12589.marex@denx.de> <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de>
-In-Reply-To: <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de>
+	id S1751665AbaLNWaI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 17:30:08 -0500
+Received: from ozlabs.org ([103.22.144.67]:34317 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751023AbaLNWaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 17:30:05 -0500
+Date: Mon, 15 Dec 2014 09:29:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: question about the commits in the vhost tree
+Message-ID: <20141215092955.024e334b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412142019.50047.marex@denx.de>
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Ea2zNz.dvatB3O+dDoexb.x"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 14, 2014 at 06:16:17 PM, Stefan Wahren wrote:
-> Hi Marek,
-> 
-> > Marek Vasut <marex@denx.de> hat am 14. Dezember 2014 um 17:12 geschrieben:
-> > > static void __iomem *digctrl;
-> > > #define DIGCTRL digctrl
-> > > @@ -118,11 +119,12 @@ static void __init clk_misc_init(void)
-> > > /*
-> > > * 480 MHz seems too high to be ssp clock source directly,
-> > > * so set frac0 to get a 288 MHz ref_io0 and ref_io1.
-> > > + * According to reference manual we must access frac0 bytewise.
-> > > */
-> > > - val = readl_relaxed(FRAC0);
-> > > - val &= ~((0x3f << BP_FRAC0_IO0FRAC) | (0x3f << BP_FRAC0_IO1FRAC));
-> > > - val |= (30 << BP_FRAC0_IO0FRAC) | (30 << BP_FRAC0_IO1FRAC);
-> > > - writel_relaxed(val, FRAC0);
-> > > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO0 + CLR);
-> > > + writeb_relaxed(30, FRAC0 + FRAC0_IO0 + SET);
-> > > + writeb_relaxed(0x3f, FRAC0 + FRAC0_IO1 + CLR);
-> > > + writeb_relaxed(30, FRAC0 + FRAC0_IO1 + SET);
-> > 
-> > This used to be a R-M-W sequence, but now it's changed to multiple
-> > writes. This
-> > changes the behavior and seeing you use the CLR register, I am worried
-> > this might be prone to clock glitches. What do you think please ?
-> 
-> you are right. I adapt the imx23 init to the imx28 to make code simple. But
-> it would be better to avoid glitches.
-> I hope it's okay for this bugfix to introduce a R-M-W sequence for the
-> imx23 init. So it's consequent.
+--Sig_/Ea2zNz.dvatB3O+dDoexb.x
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It should be OK. Make sure to document it in the commit message.
+Hi Michael,
 
-> > [...]
-> > 
-> > Also, it might be a good idea to zap the 0x3f mask and use HEX and DEC
-> > numbers consistently, but this is an idea for another patch.
-> 
-> Yes.
-> 
-> Btw i hope this patch also fixes a SPI communication issue with our
-> hardware which forces us to bypass ref_io1 for ssp2.
-> But i will have access to that hardware tomorrow.
+Just wondering if all those commits added to the vhost
+(git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git#linux-next)
+tree today are really destined for v3.19.
 
-Which issue would that be please ? What are the symptoms ?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Best regards,
-Marek Vasut
+--Sig_/Ea2zNz.dvatB3O+dDoexb.x
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUjg9nAAoJEMDTa8Ir7ZwVgf4P/i84fSEdBuA3smG6Qt+3/bWx
+P1PUHM9XMIwRBOB+WF34B9zsF/1Yo1+RZsa0pGkBsCspB9oXvxC88Zb+noSCikX8
+8sRpgoQiG9xVxBAyLh39vmruKl9Mm3WZJY1W1YLyJOsyKMLMWBCUycxA2WBAppIT
+5Kv3JEQJTgwKCItafUxsXbHH5SnPglxZCUlqEXL21Gm6elSF1F3UIBp3FDKgM+IV
+/krUl4oAm67JCWftLeQlyzD27XF2o5zG9ZW1IJquWsCalwpSRU0638F5iUWci4ZY
+VozodCy3uz+ft6q8Jft/t2LpeX3r21YVoPGC+MYW0HEuEdIY8VAKIqvflteaIf3l
+6FMZM4ByOLdbO4WB4r5VoaPtI6Yr2Ktl45bMCc9BZTTJW0vAnRsOThsXaLJK55dL
+XI3Ez8zfn11kLdLLna4IYH0KePQTxDko7Te/VM5LTY640C34x0LfeP0M45g0FU+f
+XROstjwHyXacs+4SlVnMOwUA50hHS62+ysA2o5Mj8h7cmjRGSiyCczJZBTjwR4Ci
+7w++tDO+ioYKRCnzM0+icppEAqQtzBGfI78IgX2cFrRsO1c3v4m/pKUXwkKW+Ee9
+M3RBeVmF23+v1qyIYomwOluzyq1/XpwxehcEup0dbQsl1b441bwkHoUhpiSCD8Gq
+C2KE3TrsNTAJseTmO/rU
+=6beM
+-----END PGP SIGNATURE-----
+
+--Sig_/Ea2zNz.dvatB3O+dDoexb.x--
