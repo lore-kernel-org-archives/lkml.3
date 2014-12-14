@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936AbaLNKGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 05:06:03 -0500
-Received: from ozlabs.org ([103.22.144.67]:46632 "EHLO ozlabs.org"
+	id S1753251AbaLNKGY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 05:06:24 -0500
+Received: from ozlabs.org ([103.22.144.67]:57742 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894AbaLNKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 05:06:00 -0500
-In-Reply-To: <1417678103-32571-3-git-send-email-shreyas@linux.vnet.ibm.com>
+	id S1750998AbaLNKGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 05:06:01 -0500
+In-Reply-To: <1418151413-6141-5-git-send-email-shreyas@linux.vnet.ibm.com>
 To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
 From: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linux-pm@vger.kernel.org, "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Paul Mackerras <paulus@samba.org>,
-        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: [v3, 2/4] powerpc/powernv: Enable Offline CPUs to enter deep idle states
-Message-Id: <20141214100558.B40551400B7@ozlabs.org>
-Date: Sun, 14 Dec 2014 21:05:58 +1100 (AEDT)
+Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>
+Subject: Re: [v4,4/4] powernv: powerpc: Add winkle support for offline cpus
+Message-Id: <20141214100600.3446B140119@ozlabs.org>
+Date: Sun, 14 Dec 2014 21:05:59 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-12 at 07:28:21 UTC, "Shreyas B. Prabhu" wrote:
-> From: "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>
-> 
-> The secondary threads should enter deep idle states so as to gain maximum
-> powersavings when the entire core is offline. To do so the offline path
-> must be made aware of the available deepest idle state. Hence probe the
-> device tree for the possible idle states in powernv core code and
-> expose the deepest idle state through flags.
-> 
-> Since the  device tree is probed by the cpuidle driver as well, move
-> the parameters required to discover the idle states into an appropriate
-> common place to both the driver and the powernv core code.
-> 
-> Another point is that fastsleep idle state may require workarounds in
-> the kernel to function properly. This workaround is introduced in the
-> subsequent patches. However neither the cpuidle driver or the hotplug
-> path need be bothered about this workaround.
-> 
-> They will be taken care of by the core powernv code.
- 
- ...
+On Tue, 2014-09-12 at 18:56:53 UTC, "Shreyas B. Prabhu" wrote:
+> Winkle is a deep idle state supported in power8 chips. A core enters
+> winkle when all the threads of the core enter winkle. In this state
+> power supply to the entire chiplet i.e core, private L2 and private L3
+> is turned off. As a result it gives higher powersavings compared to
+> sleep.
+...
 
-> diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-> index 4753958..3dc4cec 100644
-> --- a/arch/powerpc/platforms/powernv/smp.c
-> +++ b/arch/powerpc/platforms/powernv/smp.c
-> @@ -159,13 +160,17 @@ static void pnv_smp_cpu_kill_self(void)
->  	generic_set_cpu_dead(cpu);
->  	smp_wmb();
+> diff --git a/arch/powerpc/platforms/powernv/subcore.h b/arch/powerpc/platforms/powernv/subcore.h
+> index 148abc9..604eb40 100644
+> --- a/arch/powerpc/platforms/powernv/subcore.h
+> +++ b/arch/powerpc/platforms/powernv/subcore.h
+> @@ -15,4 +15,5 @@
 >  
-> +	idle_states = pnv_get_supported_cpuidle_states();
->  	/* We don't want to take decrementer interrupts while we are offline,
->  	 * so clear LPCR:PECE1. We keep PECE2 enabled.
->  	 */
->  	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
->  	while (!generic_check_cpu_restart(cpu)) {
->  		ppc64_runlatch_off();
-> -		power7_nap(1);
-> +		if (idle_states & OPAL_PM_SLEEP_ENABLED)
-> +			power7_sleep();
-> +		else
-> +			power7_nap(1);
+>  #ifndef __ASSEMBLY__
+>  void split_core_secondary_loop(u8 *state);
+> +extern void update_subcore_sibling_mask(void);
+>  #endif
 
-So I might be missing something subtle here, but aren't we potentially enabling
-sleep here, prior to your next patch which makes it safe to actually use sleep?
+subcore.c isn't built for CONFIG_SMP=n, resulting in:
 
-Shouldn't we only allow sleep after patch 3? Or in other words shouldn't this
-be patch 3 (or 4)?
+  setup.c:(.init.text+0x34b0): undefined reference to `.update_subcore_sibling_mask'
+
+I needed to add:
+
++#else
++static inline void update_subcore_sibling_mask(void) { };
++#endif /* CONFIG_SMP */
+
+
+I also got quite a few conflicts, with this and the previous patch, mainly in
+the paca and asm-offsets. Please check I resolved them correctly:
+
+  https://github.com/mpe/powerpc-merge/commits/test
 
 cheers
