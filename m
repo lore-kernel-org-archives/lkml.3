@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753703AbaLNUpS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:45:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53046 "EHLO
+	id S1754167AbaLNUpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:45:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53040 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaLNUVy (ORCPT
+	with ESMTP id S1750952AbaLNUVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:54 -0500
+	Sun, 14 Dec 2014 15:21:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        Marcelo Ricardo Leitner <mleitner@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 22/34] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-Date: Sun, 14 Dec 2014 12:21:00 -0800
-Message-Id: <20141214201804.437897987@linuxfoundation.org>
+Subject: [PATCH 3.14 20/34] Fix race condition between vxlan_sock_add and vxlan_sock_release
+Date: Sun, 14 Dec 2014 12:20:58 -0800
+Message-Id: <20141214201804.382183768@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -30,40 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Marcelo Leitner <mleitner@redhat.com>
 
-[ Upstream commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c ]
+[ Upstream commit 00c83b01d58068dfeb2e1351cca6fccf2a83fa8f ]
 
-Some VF drivers use the upper byte of "param1" (the qp count field)
-in mlx4_qp_reserve_range() to pass flags which are used to optimize
-the range allocation.
+Currently, when trying to reuse a socket, vxlan_sock_add will grab
+vn->sock_lock, locate a reusable socket, inc refcount and release
+vn->sock_lock.
 
-Under the current code, if any of these flags are set, the 32-bit
-count field yields a count greater than 2^24, which is out of range,
-and this VF fails.
+But vxlan_sock_release() will first decrement refcount, and then grab
+that lock. refcnt operations are atomic but as currently we have
+deferred works which hold vs->refcnt each, this might happen, leading to
+a use after free (specially after vxlan_igmp_leave):
 
-As these flags represent a "best-effort" allocation hint anyway, they may
-safely be ignored. Therefore, the PF driver may simply mask out the bits.
+  CPU 1                            CPU 2
 
-Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+deferred work                    vxlan_sock_add
+  ...                              ...
+                                   spin_lock(&vn->sock_lock)
+                                   vs = vxlan_find_sock();
+  vxlan_sock_release
+    dec vs->refcnt, reaches 0
+    spin_lock(&vn->sock_lock)
+                                   vxlan_sock_hold(vs), refcnt=1
+                                   spin_unlock(&vn->sock_lock)
+    hlist_del_rcu(&vs->hlist);
+    vxlan_notify_del_rx_port(vs)
+    spin_unlock(&vn->sock_lock)
+
+So when we look for a reusable socket, we check if it wasn't freed
+already before reusing it.
+
+Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
+Fixes: 7c47cedf43a8b3 ("vxlan: move IGMP join/leave to work queue")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/vxlan.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1456,7 +1456,7 @@ static int qp_alloc_res(struct mlx4_dev
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -2106,9 +2106,8 @@ static int vxlan_init(struct net_device
+ 	spin_lock(&vn->sock_lock);
+ 	vs = vxlan_find_sock(dev_net(dev), ipv6 ? AF_INET6 : AF_INET,
+ 			     vxlan->dst_port);
+-	if (vs) {
++	if (vs && atomic_add_unless(&vs->refcnt, 1, 0)) {
+ 		/* If we have a socket with same port already, reuse it */
+-		atomic_inc(&vs->refcnt);
+ 		vxlan_vs_add_dev(vs, vxlan);
+ 	} else {
+ 		/* otherwise make new socket outside of RTNL */
+@@ -2574,12 +2573,9 @@ struct vxlan_sock *vxlan_sock_add(struct
  
- 	switch (op) {
- 	case RES_OP_RESERVE:
--		count = get_param_l(&in_param);
-+		count = get_param_l(&in_param) & 0xffffff;
- 		align = get_param_h(&in_param);
- 		err = mlx4_grant_resource(dev, slave, RES_QP, count, 0);
- 		if (err)
+ 	spin_lock(&vn->sock_lock);
+ 	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
+-	if (vs) {
+-		if (vs->rcv == rcv)
+-			atomic_inc(&vs->refcnt);
+-		else
++	if (vs && ((vs->rcv != rcv) ||
++		   !atomic_add_unless(&vs->refcnt, 1, 0)))
+ 			vs = ERR_PTR(-EBUSY);
+-	}
+ 	spin_unlock(&vn->sock_lock);
+ 
+ 	if (!vs)
 
 
