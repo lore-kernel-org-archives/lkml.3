@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625AbaLNMmP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 07:42:15 -0500
-Received: from mout.gmx.com ([74.208.4.201]:51817 "EHLO mout.gmx.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948AbaLNMmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 07:42:13 -0500
+	id S1753654AbaLNMpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 07:45:23 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63220 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368AbaLNMpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 07:45:22 -0500
+Message-ID: <548D85F1.5080606@vanguardiasur.com.ar>
+Date: Sun, 14 Dec 2014 09:43:29 -0300
+From: Ezequiel Garcia <ezequiel@vanguardiasur.com.ar>
+Organization: VanguardiaSur
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Message-ID: <trinity-c63336bb-4abe-4c54-b362-890e7d3a359a-1418560901390@3capp-mailcom-lxa05>
-From: "Lookingglass Sun" <lookingglasssun@accountant.com>
-To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org
-Subject: Through the peridot forest: a contemplation of the systemd debacle
-Content-Type: text/plain; charset=UTF-8
-Date: Sun, 14 Dec 2014 13:41:58 +0100
-Importance: normal
-Sensitivity: Normal
-X-Priority: 3
-X-Provags-ID: V03:K0:WoLiBAX2S7iBByc86Hv/RuJ3+CGnhpiLXnwmreNm398
- JE3H43AdUdBKITS1DpDE33oh1athd4OCIlKL9DG5QFUcoihmH5
- CBnY78b5ozUtrOQl6StjRpqorSEHa5qZK2Gg4w/N+suLryaZ03
- nMtzpUKVMvLJ6PCfKJzLqYyzLfQEzJZ8ICFdun+DCwmfh8+yIB
- 1oFy4YT8t3KNZD/BIwqyzE8apcnb9OMKqnQdwTQ/h+1OtiAgBp
- BBze7pn9VDPkO/P/FoeaqsHNs8G47PkvDYDxCifizcHM0QHdzt
- X8G8ph+492LMwjH4GKdEphDruTv
-X-UI-Out-Filterresults: notjunk:1;
+To: Richard Weinberger <richard@nod.at>, dedekind1@gmail.com
+CC: dwmw2@infradead.org, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: UBI: Add support for scatter gather and blk-mq
+References: <1416845080-16663-1-git-send-email-richard@nod.at>
+In-Reply-To: <1416845080-16663-1-git-send-email-richard@nod.at>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remeber the past, before our refuge that was linux?
-The chaos of the Microsoft era that we ran away from.
-Now that chaos, the forced marches, all of it, has
-found us again.
+Hey Richard,
 
-Here is a soundscape that explores that history:
-http://youtu.be/L50h6UoBC5c
+On 11/24/2014 01:04 PM, Richard Weinberger wrote:
+> This two patches implement blk-mq support for the UBI block driver.
+> As the scatter gather part is rather generic I've moved it directl
+> into UBI such that it can be reused later.
+> So far only reading data into a scatter gather list is possible.
+> After implementing  ubi_eba_read_leb_sg() we could slowly start
+> removing a bunch of vmalloc() from the UBI core code and use scatter gather.
+> This should lower the memory footprint of UBI.
+> 
+> [PATCH 1/2] UBI: Add initial support for scatter gather
+> [PATCH 2/2] UBI: Block: Add blk-mq support
+> 
 
-A temporary trip through a wonderful self contained place,
-a place divorced from the storm around it, peaceful, correct,
-... and then back to what was and is again (none of that)
+Tried to apply these to take a look and run some tests, but 2/2 got
+rejected. Which tag did you base them?
 
-(C) Gnu GPL v2
+-- 
+Ezequiel Garcia, VanguardiaSur
+www.vanguardiasur.com.ar
