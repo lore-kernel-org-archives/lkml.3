@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650AbaLNR31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 12:29:27 -0500
-Received: from mail.efficios.com ([78.47.125.74]:47730 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018AbaLNR30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 12:29:26 -0500
-Date: Sun, 14 Dec 2014 17:29:28 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Message-ID: <759389895.27358.1418578168225.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20141214122136.1664e104@gandalf.local.home>
-References: <20141214164104.307127356@goodmis.org> <20141214164803.991954802@goodmis.org> <1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com> <20141214121457.59b22354@gandalf.local.home> <20141214122136.1664e104@gandalf.local.home>
-Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
- early_initcall()
+	id S1751729AbaLNRhY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 12:37:24 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38949 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaLNRhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 12:37:22 -0500
+Date: Sun, 14 Dec 2014 09:37:15 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: question about the luto-misc tree
+Message-ID: <20141214173715.GB5310@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141214175747.2e6c506e@canb.auug.org.au>
+ <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
+ <20141214120318.GA5310@linux.vnet.ibm.com>
+ <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF34 (Linux)/8.0.7_GA_6021)
-Thread-Topic: tracepoints: Do not use call_rcu_sched() before early_initcall()
-Thread-Index: YVnvAxA4FoliblRTyQIxKyjuiypHNA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121417-0013-0000-0000-0000070F4BAC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: linux-kernel@vger.kernel.org, "Linus Torvalds" <torvalds@linux-foundation.org>, "Ingo Molnar" <mingo@kernel.org>,
-> "Andrew Morton" <akpm@linux-foundation.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Paul E. McKenney"
-> <paulmck@linux.vnet.ibm.com>
-> Sent: Sunday, December 14, 2014 12:21:36 PM
-> Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before early_initcall()
+On Sun, Dec 14, 2014 at 08:29:33AM -0800, Andy Lutomirski wrote:
+> On Sun, Dec 14, 2014 at 4:03 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Sat, Dec 13, 2014 at 11:26:36PM -0800, Andy Lutomirski wrote:
+> >> On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+> >> >
+> >> > Hi Andy,
+> >> >
+> >> > The luto-misc tree seems to have a whole series of commits in it that
+> >> > have just bee removed from the rcu tree ...  You really have to be very
+> >> > careful if you base your work on a tree that is regularly rebased.
+> >>
+> >> Hmm.  They were there a couple days ago.  Paul, what should I do about
+> >> this?  I only need the one NMI nesting change for the stuff in
+> >> luto/next.
+> >>
+> >> > I also wonder if the other commits in that tree are destined for
+> >> > v3.19?  If they are for v3.20, then they should not be in linux-next
+> >> > until after v3.19-rc1 has been released.
+> >>
+> >> They're for 3.20.  I'll drop the whole series from the next branch for now.
+> >
+> > You mean the NMI nesting change below, correct?  One approach would be
+> > to include the branch rcu/dev from my -rcu tree.  Would that work for you?
 > 
-> On Sun, 14 Dec 2014 12:14:57 -0500
-> Steven Rostedt <rostedt@goodmis.org> wrote:
+> That would work.
 > 
-> > If IRQ setup, or other core pieces of code can use this, then I would
-> > agree that rcu should be changed. But until then, I rather not add
-> > another conditional to the core RCU code.
-> 
-> Also, call_rcu*() is called from several hot paths. This location is
-> not a hot path, and actually, it is in fact rather slow. That's another
-> reason not to add the logic into the RCU code if just adding it to
-> tracepoints is sufficient.
+> The problem is that, if you rebase again and I don't notice, then
+> it'll generate a pile of conflicts.  Is there someway that I can flag
+> my next tree as depending on a certain commi existing in another tree
+> so that the scripts that generate linux-next will ignore it if the
+> base commit goes away?
 
-Given that your reason for having this RCU-specific logic in tracepoint.c
-rather than within call_rcu*() is not slowing down a fast-path, how about
-creating a new call_rcu_early() and call_rcu_sched_early() which can be
-called in normal operation and at early boot ?
+The commits would still stick around because I keep date-encoded branches.
+But just to make things easier, I created a andy.2014.11.21a branch that
+points to the current commit and will stay there.  Please let me know how
+it goes.
 
-This would allow us to keep the RCU logic within the RCU implementation
-rather than strongly coupling it with the tracepoint code.
+							Thanx, Paul
 
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
