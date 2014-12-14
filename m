@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaLNVw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 16:52:57 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:36730 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaLNVwr (ORCPT
+	id S1751481AbaLNVzL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 16:55:11 -0500
+Received: from mdfmta009.mxout.tbr.inty.net ([91.221.168.50]:59751 "EHLO
+	smtp.demon.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750704AbaLNVzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 16:52:47 -0500
-Date: Sun, 14 Dec 2014 22:52:43 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        linux-bluetooth@vger.kernel.org
-Subject: Re: bluetooth: Add hci_h4p driver
-Message-ID: <20141214215243.GA22749@amd>
-References: <20141213223727.GA13894@amd>
- <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
+	Sun, 14 Dec 2014 16:55:07 -0500
+Message-ID: <548E0723.1070505@lougher.demon.co.uk>
+Date: Sun, 14 Dec 2014 21:54:43 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Squashfs updates for 3.19
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-MDF-HostID: 4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Linus,
 
-> > Firmware load was converted to hci_cmd_sync(). Unfortunately, the
-> > firmware is needed after every open/close, so the setup mechanism does
-> > not quite fit. (But code is now way cleaner).
-> 
-> What is the reason for that? Does it mean that the device will always loose all its settings when powering it down. Do we know why that is that way and can we maybe change it?
->
+Please pull the following Squashfs updates...
 
-Well, on hci_close(), original code asserts reset GPIO. I guess that
-clears everything... I got it working with that removed, and it means
-I can set the address the normal way. What are implications for power
-consumption... I'm not sure at this point. Lets worry about that
-later.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Thanks
+
+Phillip
+
+
+The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
+
+   Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
+
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-next.git tags/squashfs-updates
+
+for you to fetch changes up to 62421645bb702c077ee5a462815525106cb53bcf:
+
+   Squashfs: Add LZ4 compression configuration option (2014-11-27 18:48:44 +0000)
+
+----------------------------------------------------------------
+These patches optionally add LZ4 compression support to Squashfs.
+LZ4 is a lightweight compression algorithm which can be used
+on embedded systems to reduce CPU and memory overhead (in comparison
+to the standard zlib compression).
+
+These patches add the wrapper code to allow Squashfs to use
+the existing LZ4 decompression code, and the necessary configuration
+option.
+
+----------------------------------------------------------------
+Phillip Lougher (2):
+       Squashfs: add LZ4 compression support
+       Squashfs: Add LZ4 compression configuration option
+
+  Documentation/filesystems/squashfs.txt |    8 +-
+  fs/squashfs/Kconfig                    |   15 ++++
+  fs/squashfs/Makefile                   |    1 +
+  fs/squashfs/decompressor.c             |    7 ++
+  fs/squashfs/decompressor.h             |    4 +
+  fs/squashfs/lz4_wrapper.c              |  142 ++++++++++++++++++++++++++++++++
+  fs/squashfs/squashfs_fs.h              |    1 +
+  7 files changed, 174 insertions(+), 4 deletions(-)
+  create mode 100644 fs/squashfs/lz4_wrapper.c
