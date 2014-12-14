@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaLNMhG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 07:37:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50531 "EHLO mx1.redhat.com"
+	id S1753625AbaLNMmP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 07:42:15 -0500
+Received: from mout.gmx.com ([74.208.4.201]:51817 "EHLO mout.gmx.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752948AbaLNMhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 07:37:01 -0500
-From: Michal Privoznik <mprivozn@redhat.com>
-To: trenn@suse.de
-Cc: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cpupower: Correctly detect if running as root
-Date: Sun, 14 Dec 2014 13:36:52 +0100
-Message-Id: <b03faaf6b63a9175da0ce7ab8e0fc3da0cba4a86.1418560562.git.mprivozn@redhat.com>
+	id S1752948AbaLNMmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 07:42:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Message-ID: <trinity-c63336bb-4abe-4c54-b362-890e7d3a359a-1418560901390@3capp-mailcom-lxa05>
+From: "Lookingglass Sun" <lookingglasssun@accountant.com>
+To: linux-kernel@vger.kernel.org, debian-user@lists.debian.org
+Subject: Through the peridot forest: a contemplation of the systemd debacle
+Content-Type: text/plain; charset=UTF-8
+Date: Sun, 14 Dec 2014 13:41:58 +0100
+Importance: normal
+Sensitivity: Normal
+X-Priority: 3
+X-Provags-ID: V03:K0:WoLiBAX2S7iBByc86Hv/RuJ3+CGnhpiLXnwmreNm398
+ JE3H43AdUdBKITS1DpDE33oh1athd4OCIlKL9DG5QFUcoihmH5
+ CBnY78b5ozUtrOQl6StjRpqorSEHa5qZK2Gg4w/N+suLryaZ03
+ nMtzpUKVMvLJ6PCfKJzLqYyzLfQEzJZ8ICFdun+DCwmfh8+yIB
+ 1oFy4YT8t3KNZD/BIwqyzE8apcnb9OMKqnQdwTQ/h+1OtiAgBp
+ BBze7pn9VDPkO/P/FoeaqsHNs8G47PkvDYDxCifizcHM0QHdzt
+ X8G8ph+492LMwjH4GKdEphDruTv
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some operations, like frequency-set, need root privileges. However,
-the way that this is detected is not correct. The getuid() is called,
-while in fact geteuid() should be. This way we can allow
-distributions or users to set SETUID flags on the cpupower binary if
-they want to and let regular users change the cpu frequency governor.
+Remeber the past, before our refuge that was linux?
+The chaos of the Microsoft era that we ran away from.
+Now that chaos, the forced marches, all of it, has
+found us again.
 
-Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
----
- tools/power/cpupower/utils/cpupower.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Here is a soundscape that explores that history:
+http://youtu.be/L50h6UoBC5c
 
-diff --git a/tools/power/cpupower/utils/cpupower.c b/tools/power/cpupower/utils/cpupower.c
-index 7cdcf88..9ea9143 100644
---- a/tools/power/cpupower/utils/cpupower.c
-+++ b/tools/power/cpupower/utils/cpupower.c
-@@ -199,7 +199,7 @@ int main(int argc, const char *argv[])
- 	}
- 
- 	get_cpu_info(0, &cpupower_cpu_info);
--	run_as_root = !getuid();
-+	run_as_root = !geteuid();
- 	if (run_as_root) {
- 		ret = uname(&uts);
- 		if (!ret && !strcmp(uts.machine, "x86_64") &&
--- 
-2.0.4
+A temporary trip through a wonderful self contained place,
+a place divorced from the storm around it, peaceful, correct,
+... and then back to what was and is again (none of that)
 
+(C) Gnu GPL v2
