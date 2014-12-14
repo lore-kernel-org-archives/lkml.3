@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024AbaLNJsO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 04:48:14 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:8387 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936AbaLNJsH (ORCPT
+	id S1753094AbaLNJ4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 04:56:47 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:64244 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaLNJ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 04:48:07 -0500
-X-IronPort-AV: E=Sophos;i="5.07,574,1413270000"; 
-   d="scan'208";a="53020093"
-Message-ID: <548D5CD1.10801@broadcom.com>
-Date: Sun, 14 Dec 2014 10:48:01 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Scott Branden <sbranden@broadcom.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Ray Jui <rjui@broadcom.com>, Christian Daudt <bcm@fixthebug.org>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Kumar Gala <galak@codeaurora.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH v2 1/4] pci: iProc: define Broadcom iProc PCIe binding
-References: <1418351817-14898-2-git-send-email-rjui@broadcom.com> <3907917.zNo7yttzkh@wuerfel> <548C0F80.2090300@broadcom.com> <3383252.Ad6Qf0H2fa@wuerfel>
-In-Reply-To: <3383252.Ad6Qf0H2fa@wuerfel>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Sun, 14 Dec 2014 04:56:46 -0500
+Message-ID: <1418551001.14250.25.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched/fair: change where we report sched stats
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Josef Bacik <jbacik@fb.com>
+Cc: bmaurer@fb.com, rkroll@fb.com, kernel-team@fb.com, mingo@redhat.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org
+Date: Sun, 14 Dec 2014 10:56:41 +0100
+In-Reply-To: <5489B07E.9000200@fb.com>
+References: <1418149315-30173-1-git-send-email-jbacik@fb.com>
+	 <1418192604.5312.28.camel@marge.simpson.net> <5488BFC5.3080001@fb.com>
+	 <1418268856.5263.46.camel@marge.simpson.net> <5489B07E.9000200@fb.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/14 20:46, Arnd Bergmann wrote:
-> On Saturday 13 December 2014 11:05:52 Arend van Spriel wrote:
->>
->> Makes sense. I think that is what Hauke meant by "adding
->> additional support for registering to bcma". So the discovery info is a
->> piece of read-only memory in the chip. Its address is stored in the
->> chipcommon core register space. BCMA parses that memory blob resulting
->> in a list of cores which register address info. We could add DT support
->> in BCMA matching the compatible string and register a core for it.
->
-> Ah, interesting idea. That would mirror what we do for drivers/amba,
-> I like the idea.
+On Thu, 2014-12-11 at 09:55 -0500, Josef Bacik wrote:
 
-+ Rafal
+> How did you do it?  I had one latency spike in a 90 minute test that 
+> runs across 30 boxes that could have been caused by anything, so if 
+> there is a way I could have easily found that without moving these 
+> tracepoints around I'd love to hear it.  Thanks,
 
-Let's explore this. Although I don't have the iProc hardware to verify it.
+If I have a target, I tend to set tracing_off() traps.
 
->> However, apart from the discovery info a "discoverable ARM AXI" chip has
->> a register space per core that provides common procedures like
->> enable/disable, reset, core status, which are implemented in BCMA. I am
->> not seeing that register space in the DT examples so I guess this IP
->> block is not there for iProc chips.
->
-> I wouldn't draw conclusions from the absence of some node. Maybe these
-> registers are present but just not used by the original BSP.
+Seems you want an ftrace tracer that tracks sched_switch sleeping to
+sched_switch running in addition to the wakeup latency tracer.
 
-I do not intend to. We have raised the question internally to iProc chip 
-designers.
+-Mike
 
-Regards,
-Arend
