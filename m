@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752781AbaLNQx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:53:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33002 "EHLO mx1.redhat.com"
+	id S1752830AbaLNQxt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:53:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33519 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752532AbaLNQxY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:53:24 -0500
-Date: Sun, 14 Dec 2014 18:53:14 +0200
+	id S1752712AbaLNQxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:53:22 -0500
+Date: Sun, 14 Dec 2014 18:53:04 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: [PATCH 18/18] m68k/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-19-git-send-email-mst@redhat.com>
+        "David S. Miller" <davem@davemloft.net>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>, sparclinux@vger.kernel.org
+Subject: [PATCH 16/18] sparc/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-17-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,31 +33,31 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/m68k/include/asm/uaccess_mm.h | 4 ++--
+ arch/sparc/include/asm/uaccess_64.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/m68k/include/asm/uaccess_mm.h b/arch/m68k/include/asm/uaccess_mm.h
-index 15901db..c31f53f 100644
---- a/arch/m68k/include/asm/uaccess_mm.h
-+++ b/arch/m68k/include/asm/uaccess_mm.h
-@@ -146,7 +146,7 @@ asm volatile ("\n"					\
- 		"	.previous"				\
- 		: "+d" (res), "=&" #reg (__gu_val)		\
- 		: "m" (*(ptr)), "i" (err));			\
--	(x) = (typeof(*(ptr)))(unsigned long)__gu_val;		\
-+	(x) = (__force typeof(*(ptr)))(__force unsigned long)__gu_val;		\
- })
+diff --git a/arch/sparc/include/asm/uaccess_64.h b/arch/sparc/include/asm/uaccess_64.h
+index c990a5e..b80866d 100644
+--- a/arch/sparc/include/asm/uaccess_64.h
++++ b/arch/sparc/include/asm/uaccess_64.h
+@@ -145,7 +145,7 @@ case 2: __get_user_asm(__gu_val,uh,addr,__gu_ret); break; \
+ case 4: __get_user_asm(__gu_val,uw,addr,__gu_ret); break; \
+ case 8: __get_user_asm(__gu_val,x,addr,__gu_ret); break; \
+ default: __gu_val = 0; __gu_ret = __get_user_bad(); break; \
+-} data = (type) __gu_val; __gu_ret; })
++} data = (__force type) __gu_val; __gu_ret; })
  
- #define __get_user(x, ptr)						\
-@@ -188,7 +188,7 @@ asm volatile ("\n"					\
- 			  "+a" (__gu_ptr)				\
- 			: "i" (-EFAULT)					\
- 			: "memory");					\
--		(x) = (typeof(*(ptr)))__gu_val;				\
-+		(x) = (__force typeof(*(ptr)))__gu_val;				\
- 		break;							\
- 	    }	*/							\
- 	default:							\
+ #define __get_user_nocheck_ret(data,addr,size,type,retval) ({ \
+ register unsigned long __gu_val __asm__ ("l1"); \
+@@ -155,7 +155,7 @@ case 2: __get_user_asm_ret(__gu_val,uh,addr,retval); break; \
+ case 4: __get_user_asm_ret(__gu_val,uw,addr,retval); break; \
+ case 8: __get_user_asm_ret(__gu_val,x,addr,retval); break; \
+ default: if (__get_user_bad()) return retval; \
+-} data = (type) __gu_val; })
++} data = (__force type) __gu_val; })
+ 
+ #define __get_user_asm(x,size,addr,ret)					\
+ __asm__ __volatile__(							\
 -- 
 MST
 
