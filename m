@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaLNUcb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:32:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53040 "EHLO
+	id S1753341AbaLNUcj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:32:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588AbaLNUWF (ORCPT
+	with ESMTP id S1751578AbaLNUWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:22:05 -0500
+	Sun, 14 Dec 2014 15:22:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ji_ang <ji_ang@163.com>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 02/47] mm/vmpressure.c: fix race in vmpressure_work_fn()
-Date: Sun, 14 Dec 2014 12:20:37 -0800
-Message-Id: <20141214201818.625367563@linuxfoundation.org>
+        Wolfgang Walter <linux@stwm.de>, Tom Herbert <therbert@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 24/34] gre: Set inner mac header in gro complete
+Date: Sun, 14 Dec 2014 12:21:02 -0800
+Message-Id: <20141214201804.495790049@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
-References: <20141214201818.552715149@linuxfoundation.org>
+In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
+References: <20141214201803.791392744@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,55 +25,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Tom Herbert <therbert@google.com>
 
-commit 91b57191cfd152c02ded0745250167d0263084f8 upstream.
+[ Upstream commit 6fb2a756739aa507c1fd5b8126f0bfc2f070dc46 ]
 
-In some android devices, there will be a "divide by zero" exception.
-vmpr->scanned could be zero before spin_lock(&vmpr->sr_lock).
+Set the inner mac header to point to the GRE payload when
+doing GRO. This is needed if we proceed to send the packet
+through GRE GSO which now uses the inner mac header instead
+of inner network header to determine the length of encapsulation
+headers.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=88051
-
-[akpm@linux-foundation.org: neaten]
-Reported-by: ji_ang <ji_ang@163.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 14051f0452a2 ("gre: Use inner mac length when computing tunnel length")
+Reported-by: Wolfgang Walter <linux@stwm.de>
+Signed-off-by: Tom Herbert <therbert@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/vmpressure.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv4/gre_offload.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -165,6 +165,7 @@ static void vmpressure_work_fn(struct wo
- 	unsigned long scanned;
- 	unsigned long reclaimed;
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -271,6 +271,9 @@ static int gre_gro_complete(struct sk_bu
+ 		err = ptype->callbacks.gro_complete(skb, nhoff + grehlen);
  
-+	spin_lock(&vmpr->sr_lock);
- 	/*
- 	 * Several contexts might be calling vmpressure(), so it is
- 	 * possible that the work was rescheduled again before the old
-@@ -173,11 +174,12 @@ static void vmpressure_work_fn(struct wo
- 	 * here. No need for any locks here since we don't care if
- 	 * vmpr->reclaimed is in sync.
- 	 */
--	if (!vmpr->scanned)
-+	scanned = vmpr->scanned;
-+	if (!scanned) {
-+		spin_unlock(&vmpr->sr_lock);
- 		return;
-+	}
+ 	rcu_read_unlock();
++
++	skb_set_inner_mac_header(skb, nhoff + grehlen);
++
+ 	return err;
+ }
  
--	spin_lock(&vmpr->sr_lock);
--	scanned = vmpr->scanned;
- 	reclaimed = vmpr->reclaimed;
- 	vmpr->scanned = 0;
- 	vmpr->reclaimed = 0;
 
 
