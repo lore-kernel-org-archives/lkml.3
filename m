@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128AbaLNUbg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:31:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52881 "EHLO
+	id S1753156AbaLNUbn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:31:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLNUWP (ORCPT
+	with ESMTP id S1751644AbaLNUWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:22:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexey Orishko <alexey.orishko@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Francois Tigeot <ftigeot@wolfpond.org>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.17 19/47] drm/i915: Unlock panel even when LVDS is disabled
-Date: Sun, 14 Dec 2014 12:20:54 -0800
-Message-Id: <20141214201819.208437379@linuxfoundation.org>
+        Ian Campbell <ian.campbell@citrix.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: [PATCH 3.17 17/47] of/fdt: memblock_reserve /memreserve/ regions in the case of partial overlap
+Date: Sun, 14 Dec 2014 12:20:52 -0800
+Message-Id: <20141214201819.119208665@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -32,70 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit b0616c5306b342ceca07044dbc4f917d95c4f825 upstream.
+commit 094cb98179f19b75acf9ff471daabf3948ce98e6 upstream.
 
-Otherwise we'll have backtraces in assert_panel_unlocked because the
-BIOS locks the register. In the reporter's case this regression was
-introduced in
+memblock_is_region_reserved() returns true in the case of a partial
+overlap, meaning that the current code fails to reserve the
+non-overlapping portion.
 
-commit c31407a3672aaebb4acddf90944a114fa5c8af7b
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Thu Oct 18 21:07:01 2012 +0100
+This call was introduced as part of d1552ce449eb "of/fdt: move
+memreserve and dtb memory reservations into core" which went into
+v3.16.
 
-    drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+I observed this causing a Midway system with a buggy fdt (the header
+declares itself to be larger than it really is) failing to boot
+because the over-inflated size of the fdt was causing it to seem to
+run into the swapper_pg_dir region, meaning the DT wasn't reserved.
+The symptoms were failing to find an disks or network and failing to
+boot.
 
-Reported-by: Alexey Orishko <alexey.orishko@gmail.com>
-Cc: Alexey Orishko <alexey.orishko@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Francois Tigeot <ftigeot@wolfpond.org>
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-Tested-by: Alexey Orishko <alexey.orishko@gmail.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+However given the ambiguity of whether things like the initrd are
+covered by /memreserve/ and similar I think it is best to also
+register the region rather than just ignoring it.
+
+Since memblock_reserve() handles overlaps just fine lets just warn and
+carry on.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |   22 +++++++++++-----------
- 1 file changed, 11 insertions(+), 11 deletions(-)
+ drivers/of/fdt.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -900,6 +900,17 @@ void intel_lvds_init(struct drm_device *
- 	int pipe;
- 	u8 pin;
- 
-+	/*
-+	 * Unlock registers and just leave them unlocked. Do this before
-+	 * checking quirk lists to avoid bogus WARNINGs.
-+	 */
-+	if (HAS_PCH_SPLIT(dev)) {
-+		I915_WRITE(PCH_PP_CONTROL,
-+			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
-+	} else {
-+		I915_WRITE(PP_CONTROL,
-+			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
-+	}
- 	if (!intel_lvds_supported(dev))
- 		return;
- 
-@@ -1098,17 +1109,6 @@ out:
- 	lvds_encoder->a3_power = I915_READ(lvds_encoder->reg) &
- 				 LVDS_A3_POWER_MASK;
- 
--	/*
--	 * Unlock registers and just
--	 * leave them unlocked
--	 */
--	if (HAS_PCH_SPLIT(dev)) {
--		I915_WRITE(PCH_PP_CONTROL,
--			   I915_READ(PCH_PP_CONTROL) | PANEL_UNLOCK_REGS);
--	} else {
--		I915_WRITE(PP_CONTROL,
--			   I915_READ(PP_CONTROL) | PANEL_UNLOCK_REGS);
--	}
- 	lvds_connector->lid_notifier.notifier_call = intel_lid_notify;
- 	if (acpi_lid_notifier_register(&lvds_connector->lid_notifier)) {
- 		DRM_DEBUG_KMS("lid notifier registration failed\n");
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -964,8 +964,6 @@ void __init __weak early_init_dt_add_mem
+ int __init __weak early_init_dt_reserve_memory_arch(phys_addr_t base,
+ 					phys_addr_t size, bool nomap)
+ {
+-	if (memblock_is_region_reserved(base, size))
+-		return -EBUSY;
+ 	if (nomap)
+ 		return memblock_remove(base, size);
+ 	return memblock_reserve(base, size);
 
 
