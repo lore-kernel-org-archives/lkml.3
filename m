@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753498AbaLNUkf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:40:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53389 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215AbaLNUbv (ORCPT
+	id S1752895AbaLNUlO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:41:14 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58354 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaLNUkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:51 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Walter <linux@stwm.de>, Tom Herbert <therbert@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 02/19] gre: Set inner mac header in gro complete
-Date: Sun, 14 Dec 2014 12:21:13 -0800
-Message-Id: <20141214201823.613548593@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
-References: <20141214201823.543296369@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sun, 14 Dec 2014 15:40:15 -0500
+Message-ID: <548DF5A5.2080500@linux.vnet.ibm.com>
+Date: Sun, 14 Dec 2014 15:40:05 -0500
+From: Stefan Berger <stefanb@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: Scot Doyle <lkml14@scotdoyle.com>
+CC: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
+        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
+        Marcel Selhorst <tpmdd@selhorst.net>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, christophe.ricard@gmail.com,
+        jason.gunthorpe@obsidianresearch.com,
+        Will Arthur <will.c.arthur@intel.com>
+Subject: Re: [PATCH v10 8/8] tpm: TPM 2.0 FIFO Interface
+References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1418413600-5400-9-git-send-email-jarkko.sakkinen@linux.intel.com> <548DA33A.4010300@linux.vnet.ibm.com> <20141214154003.GA13338@intel.com> <548DB62E.7060504@linux.vnet.ibm.com> <alpine.DEB.2.11.1412141817550.1716@localhost.localdomain>
+In-Reply-To: <alpine.DEB.2.11.1412141817550.1716@localhost.localdomain>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121420-0021-0000-0000-000006F1BDF1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+On 12/14/2014 01:27 PM, Scot Doyle wrote:
+> On Sun, 14 Dec 2014, Stefan Berger wrote:
+>> On 12/14/2014 10:40 AM, Jarkko Sakkinen wrote:
+>>> On Sun, Dec 14, 2014 at 09:48:26AM -0500, Stefan Berger wrote:
+>>>> On 12/12/2014 02:46 PM, Jarkko Sakkinen wrote:
+>>>>> Detect TPM 2.0 by sending idempotent TPM 2.x command. Ordinals for
+>>>>> TPM 2.0 are higher than TPM 1.x commands so this should be fail-safe.
+>>>>> Using STS3 is unreliable because some chips just report 0xff and not
+>>>>> what the spec says.
+>>>> TPM TIS 1.2 can report either 0xff or 0x00 for sts3 since that part of
+>>>> register was not defined for this version but only for a later version.
+>>>> So,
+>>>> unless the TIS 1.3 for TPM 2.0 is broken, it should report a bit _pattern_
+>>>> (not plain 0x00 or 0xff) that you could apply the suggested mask to and
+>>>> check then.
+>>> I propose this: lets keep the bit ugly but approach for now and when
+>>> there are TPM2 FIFOs available in the market move to your workaround.
+>>> I think that would be the most reasonable middle road here.
+>> You are now calling tpm2_gen_interrupt and are looking at the rc, which is the
+>> rc from tpm_transmit_cmd, which seems to make sure that the sending of the
+>> command went alright and the reception of the response. Is this good enough to
+>> distinguish between a TPM 2 and a TPM 1.2? If you send a valid TPM 2 command
+>> to a TPM 1.2 this will at least transmit the data ok, but the TPM will respond
+>> with a TPM 1.2 tag in the response. The way I understand the code, the rc does
+>> not include whether the response packet is a valid TPM 2 response packet and
+>> lets you conclude to a TPM2. I do something similar in upcoming QEMU patches
+>> where I send a valid TPM2 command for probing and if the tag(!) in the
+>> response is a TPM2 tag (0x8001 = TPM_ST_NO_SESSIONS), then it's a TPM 2,
+>> otherwise a TPM 1.2.
+>>
+>> Did you test this with a TPM 1.2 ?
+>>
+>>     Stefan
+> One system's output, with a dev_info call to show the value of rc:
+> [ 0.223837] tpm_tis 00:08: tpm2_gen_interrupt(chip, true) -> 0xa
+> [ 0.223847] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> [ 0.280468] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
+>
 
-------------------
+Ok, good.
 
-From: Tom Herbert <therbert@google.com>
+[We won't be able to use STS3 if the TIS of Jarkko's TPM2 is broken...]
 
-[ Upstream commit 6fb2a756739aa507c1fd5b8126f0bfc2f070dc46 ]
+     Stefan
 
-Set the inner mac header to point to the GRE payload when
-doing GRO. This is needed if we proceed to send the packet
-through GRE GSO which now uses the inner mac header instead
-of inner network header to determine the length of encapsulation
-headers.
 
-Fixes: 14051f0452a2 ("gre: Use inner mac length when computing tunnel length")
-Reported-by: Wolfgang Walter <linux@stwm.de>
-Signed-off-by: Tom Herbert <therbert@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/gre_offload.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/ipv4/gre_offload.c
-+++ b/net/ipv4/gre_offload.c
-@@ -247,6 +247,9 @@ static int gre_gro_complete(struct sk_bu
- 		err = ptype->callbacks.gro_complete(skb, nhoff + grehlen);
- 
- 	rcu_read_unlock();
-+
-+	skb_set_inner_mac_header(skb, nhoff + grehlen);
-+
- 	return err;
- }
- 
-
+    Stefan
 
