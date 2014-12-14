@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbaLNAHt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 19:07:49 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:51879 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaLNAHs convert rfc822-to-8bit (ORCPT
+	id S1752172AbaLNAPA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 19:15:00 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:49076 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaLNAO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 19:07:48 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: bluetooth: Add hci_h4p driver
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <20141213235131.GA23566@amd>
-Date: Sun, 14 Dec 2014 01:07:42 +0100
-Cc: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
-        linux-bluetooth@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <ED6FB9B5-7BD5-4398-ACA4-C5D1547B91A4@holtmann.org>
-References: <20141213223727.GA13894@amd> <570BAC61-3137-42E5-B4F8-A61AEED380DE@holtmann.org> <20141213235131.GA23566@amd>
-To: Pavel Machek <pavel@ucw.cz>
-X-Mailer: Apple Mail (2.1993)
+	Sat, 13 Dec 2014 19:14:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141213234730.GP22149@ZenIV.linux.org.uk>
+References: <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+	<20141212185454.GB4716@redhat.com>
+	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+	<20141213165915.GA12756@redhat.com>
+	<20141213223616.GA22559@redhat.com>
+	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
+	<CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
+	<CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
+	<20141213233508.GN22149@ZenIV.linux.org.uk>
+	<CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
+	<20141213234730.GP22149@ZenIV.linux.org.uk>
+Date: Sat, 13 Dec 2014 16:14:58 -0800
+X-Google-Sender-Auth: HVzTMdUhW3T8C40OLkYhQdAqEcQ
+Message-ID: <CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+On Sat, Dec 13, 2014 at 3:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> static inline void mnt_dec_writers(struct mount *mnt)
+> {
+> #ifdef CONFIG_SMP
+>         this_cpu_dec(mnt->mnt_pcp->mnt_writers);
+> #else
+>         mnt->mnt_writers--;
+> #endif
+> }
+> It's load/modify/store, without any kind of atomicity; get preempted in the
+> middle of that sequence by another caller of mnt_dec_writers() and obvious bad
+> things will happen...
 
->>> My notes say that Marcel wanted different filenames, but I'd need
->>> advice exactly what filenames. I guess platform data supprort should
->>> be removed altogether, rather than renamed.
->> 
->> Yes, the platform support should go away. This should be purely based on DT.
->> 
->> Can you also start using git format-patch so that patches get a diffstat.
-> 
-> So the rest of filenames look ok?
+Ugh, yes ok, the UP case needs it for the actual counter itself. Ugh.
+What an ugly mess. I'd rather have the preemption disable where it is
+actually *needed*, in that function itself for the UP case (or just
+make it "atomic_t", which would likely be better still.
 
-I have not looked at the patch or the filenames at all.
-
-Regards
-
-Marcel
-
-
+                     Linus
