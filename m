@@ -1,185 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaLNVrv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 16:47:51 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:43396 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaLNVrf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 16:47:35 -0500
-MIME-Version: 1.0
-Date: Sun, 14 Dec 2014 22:47:34 +0100
-Message-ID: <CACRpkdZnHSwRZZqgOS+i3U-fEoBZVNJrj-rS5FUiy1Niuyjtgg@mail.gmail.com>
-Subject: [GIT PULL] bulk GPIO changes for v3.19, take two
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751393AbaLNVw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 16:52:29 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:56716 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727AbaLNVwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 16:52:22 -0500
+Date: Sun, 14 Dec 2014 16:52:21 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-aio@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [GIT PULL] aio: changes for 3.19
+Message-ID: <20141214215221.GI2672@kvack.org>
+References: <20141214202224.GH2672@kvack.org> <CA+55aFxV2h1NrE87Zt7U8bsrXgeO=Tf-DyQO8wBYZ=M7WEjxKg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxV2h1NrE87Zt7U8bsrXgeO=Tf-DyQO8wBYZ=M7WEjxKg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Dec 14, 2014 at 01:47:32PM -0800, Linus Torvalds wrote:
+> On Sun, Dec 14, 2014 at 12:22 PM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+> >
+> > Pavel Emelyanov (1):
+> >       aio: Make it possible to remap aio ring
+> 
+> So quite frankly, I think this should have had more acks from VM
+> people. The patch looks ok to me, but it took me by surprise, and I
+> don't see much any discussion about it on linux-mm either..
 
-same stuff as last time, now with a fixup patch for the previous
-compile error plus I ran a few extra rounds of compile-testing.
+Sadly, nobody responded.  Maybe akpm can chime in on this change (included 
+below for ease of review and akpm added to the To:)?
 
-Please pull this in for v3.19!
+		-ben
+-- 
+"Thought is the essence of where you are now."
 
-Yours,
-Linus Walleij
+commit e4a0d3e720e7e508749c1439b5ba3aff56c92976
+Author: Pavel Emelyanov <xemul@parallels.com>
+Date:   Thu Sep 18 19:56:17 2014 +0400
 
+    aio: Make it possible to remap aio ring
+    
+    There are actually two issues this patch addresses. Let me start with
+    the one I tried to solve in the beginning.
+    
+    So, in the checkpoint-restore project (criu) we try to dump tasks'
+    state and restore one back exactly as it was. One of the tasks' state
+    bits is rings set up with io_setup() call. There's (almost) no problems
+    in dumping them, there's a problem restoring them -- if I dump a task
+    with aio ring originally mapped at address A, I want to restore one
+    back at exactly the same address A. Unfortunately, the io_setup() does
+    not allow for that -- it mmaps the ring at whatever place mm finds
+    appropriate (it calls do_mmap_pgoff() with zero address and without
+    the MAP_FIXED flag).
+    
+    To make restore possible I'm going to mremap() the freshly created ring
+    into the address A (under which it was seen before dump). The problem is
+    that the ring's virtual address is passed back to the user-space as the
+    context ID and this ID is then used as search key by all the other io_foo()
+    calls. Reworking this ID to be just some integer doesn't seem to work, as
+    this value is already used by libaio as a pointer using which this library
+    accesses memory for aio meta-data.
+    
+    So, to make restore work we need to make sure that
+    
+    a) ring is mapped at desired virtual address
+    b) kioctx->user_id matches this value
+    
+    Having said that, the patch makes mremap() on aio region update the
+    kioctx's user_id and mmap_base values.
+    
+    Here appears the 2nd issue I mentioned in the beginning of this mail.
+    If (regardless of the C/R dances I do) someone creates an io context
+    with io_setup(), then mremap()-s the ring and then destroys the context,
+    the kill_ioctx() routine will call munmap() on wrong (old) address.
+    This will result in a) aio ring remaining in memory and b) some other
+    vma get unexpectedly unmapped.
+    
+    What do you think?
+    
+    Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+    Acked-by: Dmitry Monakhov <dmonakhov@openvz.org>
+    Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 
-The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
-
-  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.19-2
-
-for you to fetch changes up to 170680abd1eb98a9773ed068435fef9a6402a10f:
-
-  gpio: mcp23s08: fix up compilation error (2014-12-12 11:22:11 +0100)
-
-----------------------------------------------------------------
-This is the bulk of GPIO changes for the v3.19 series:
-
-- A new API that allows setting more than one GPIO at the
-  time. This is implemented for the new descriptor-based
-  API only and makes it possible to e.g. toggle a clock and
-  data line at the same time, if the hardware can do this
-  with a single register write. Both consumers and drivers
-  need new calls, and the core will fall back to driving
-  individual lines where needed. Implemented for the MPC8xxx
-  driver initially.
-- Patched the mdio-mux-gpio and the serial mctrl driver
-  that drives modems to use the new multiple-setting API
-  to set several signals simultaneously.
-- Get rid of the global GPIO descriptor array, and instead
-  allocate descriptors dynamically for each GPIO on a certain
-  GPIO chip. This moves us closer to getting rid of the
-  limitation of using the global, static GPIO numberspace.
-- New driver and device tree bindings for 74xx ICs.
-- New driver and device tree bindings for the VF610 Vybrid.
-- Support the RCAR r8a7793 and r8a7794.
-- Guidelines for GPIO device tree bindings trying to get
-  things a bit more strict with the advent of combined
-  device properties.
-- Suspend/resume support for the MVEBU driver.
-- A slew of minor fixes and improvements.
-
-----------------------------------------------------------------
-Alexander Shiyan (2):
-      GPIO: Add driver for 74xx-ICs with MMIO access
-      GPIO: 74xx-mmio: Add DT bindings documentation
-
-Alexander Stein (4):
-      gpio: mcp23s08: Do not free unrequested interrupt
-      gpio: mcp23s08: request a shared interrupt
-      gpio: mcp23s08: Add simple IRQ support for SPI devices
-      gpio: mcp23s08: Add option to configure IRQ output polarity as active high
-
-Alexandre Courbot (5):
-      gpio: rename gpio_lock_as_irq to gpiochip_lock_as_irq
-      Documentation: gpio: guidelines for bindings
-      gpio: remove gpio_descs global array
-      gpio: remove const modifier from gpiod_get_direction()
-      gpio: fix deferred probe detection for legacy API
-
-Daniel Thompson (1):
-      gpio: msm-v1: Fix typo in function argument
-
-Geert Uytterhoeven (2):
-      gpio: Check if base is positive before calling gpio_is_valid()
-      gpio: em: Use dynamic allocation of GPIOs
-
-Hisashi Nakamura (1):
-      gpio: rcar: Add r8a7793 and r8a7794 support
-
-Janusz Uzycki (1):
-      gpio: mxs: implement get_direction callback
-
-Linus Walleij (2):
-      gpio: dwapb: fix compile errors
-      gpio: mcp23s08: fix up compilation error
-
-Pramod Gurav (3):
-      gpio: cs5535: Switch to using managed resources with devm_
-      gpio: amd8111: unmap ioport on failure case
-      gpio: grgpio: remove irq_domain resources on failure
-
-Rojhalat Ibrahim (4):
-      gpiolib: allow simultaneous setting of multiple GPIO outputs
-      gpio-mpc8xxx: add mpc8xxx_gpio_set_multiple function
-      mdio-mux-gpio: Use GPIO descriptor interface and new
-gpiod_set_array function
-      serial: mctrl_gpio: use gpiod_set_array function
-
-Stefan Agner (2):
-      gpio: vf610: add gpiolib/IRQ chip driver for Vybrid
-      Documentation: dts: add bindings for Vybrid GPIO/PORT module
-
-Thomas Petazzoni (1):
-      gpio: mvebu: add suspend/resume support
-
-Varka Bhadram (3):
-      gpio: gpio-stp-xway: remove duplicate check on resource
-      gpio: gpio-tb10x: remove duplicate check on resource
-      gpio: gpio-davinci: remove duplicate check on resource
-
-Yunlei He (2):
-      gpio: pl061: hook request if gpio-ranges avaiable
-      gpio: pl061: document gpio-ranges property for bindings file
-
- .../devicetree/bindings/gpio/gpio-74xx-mmio.txt    |  30 +++
- .../devicetree/bindings/gpio/gpio-mcp23s08.txt     |   2 +
- .../devicetree/bindings/gpio/gpio-vf610.txt        |  55 ++++
- Documentation/devicetree/bindings/gpio/gpio.txt    |  40 ++-
- .../devicetree/bindings/gpio/pl061-gpio.txt        |   2 +-
- .../devicetree/bindings/gpio/renesas,gpio-rcar.txt |   4 +-
- Documentation/gpio/consumer.txt                    |  27 ++
- Documentation/gpio/driver.txt                      |   4 +-
- drivers/gpio/Kconfig                               |  23 ++
- drivers/gpio/Makefile                              |   2 +
- drivers/gpio/gpio-74xx-mmio.c                      | 170 ++++++++++++
- drivers/gpio/gpio-amd8111.c                        |   1 +
- drivers/gpio/gpio-bcm-kona.c                       |   4 +-
- drivers/gpio/gpio-cs5535.c                         |  11 +-
- drivers/gpio/gpio-davinci.c                        |   5 -
- drivers/gpio/gpio-dwapb.c                          |   4 +-
- drivers/gpio/gpio-em.c                             |  11 +-
- drivers/gpio/gpio-grgpio.c                         |   1 +
- drivers/gpio/gpio-mcp23s08.c                       |  41 ++-
- drivers/gpio/gpio-mpc8xxx.c                        |  27 ++
- drivers/gpio/gpio-msm-v1.c                         |   2 +-
- drivers/gpio/gpio-mvebu.c                          |  99 +++++++
- drivers/gpio/gpio-mxs.c                            |  13 +
- drivers/gpio/gpio-omap.c                           |   2 +-
- drivers/gpio/gpio-pl061.c                          |  20 +-
- drivers/gpio/gpio-rcar.c                           |  27 +-
- drivers/gpio/gpio-stp-xway.c                       |   8 +-
- drivers/gpio/gpio-tb10x.c                          |   7 +-
- drivers/gpio/gpio-tegra.c                          |   4 +-
- drivers/gpio/gpio-vf610.c                          | 295 +++++++++++++++++++++
- drivers/gpio/gpio-vr41xx.c                         |   4 +-
- drivers/gpio/gpiolib-acpi.c                        |   6 +-
- drivers/gpio/gpiolib-legacy.c                      |  12 +-
- drivers/gpio/gpiolib-sysfs.c                       |   6 +-
- drivers/gpio/gpiolib.c                             | 241 +++++++++++++++--
- drivers/net/phy/mdio-mux-gpio.c                    |  37 +--
- drivers/pinctrl/pinctrl-at91.c                     |   4 +-
- drivers/pinctrl/samsung/pinctrl-exynos.c           |   4 +-
- drivers/pinctrl/sunxi/pinctrl-sunxi.c              |   6 +-
- drivers/tty/serial/serial_mctrl_gpio.c             |  12 +-
- include/linux/gpio.h                               |   7 +-
- include/linux/gpio/consumer.h                      |  40 ++-
- include/linux/gpio/driver.h                        |   8 +-
- 43 files changed, 1166 insertions(+), 162 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-74xx-mmio.txt
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-vf610.txt
- create mode 100644 drivers/gpio/gpio-74xx-mmio.c
- create mode 100644 drivers/gpio/gpio-vf610.c
+diff --git a/fs/aio.c b/fs/aio.c
+index 14b9315..bfab556 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -286,12 +286,37 @@ static void aio_free_ring(struct kioctx *ctx)
+ 
+ static int aio_ring_mmap(struct file *file, struct vm_area_struct *vma)
+ {
++	vma->vm_flags |= VM_DONTEXPAND;
+ 	vma->vm_ops = &generic_file_vm_ops;
+ 	return 0;
+ }
+ 
++static void aio_ring_remap(struct file *file, struct vm_area_struct *vma)
++{
++	struct mm_struct *mm = vma->vm_mm;
++	struct kioctx_table *table;
++	int i;
++
++	spin_lock(&mm->ioctx_lock);
++	rcu_read_lock();
++	table = rcu_dereference(mm->ioctx_table);
++	for (i = 0; i < table->nr; i++) {
++		struct kioctx *ctx;
++
++		ctx = table->table[i];
++		if (ctx && ctx->aio_ring_file == file) {
++			ctx->user_id = ctx->mmap_base = vma->vm_start;
++			break;
++		}
++	}
++
++	rcu_read_unlock();
++	spin_unlock(&mm->ioctx_lock);
++}
++
+ static const struct file_operations aio_ring_fops = {
+ 	.mmap = aio_ring_mmap,
++	.mremap = aio_ring_remap,
+ };
+ 
+ #if IS_ENABLED(CONFIG_MIGRATION)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 9ab779e..85f378c 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1497,6 +1497,7 @@ struct file_operations {
+ 	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+ 	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+ 	int (*mmap) (struct file *, struct vm_area_struct *);
++	void (*mremap)(struct file *, struct vm_area_struct *);
+ 	int (*open) (struct inode *, struct file *);
+ 	int (*flush) (struct file *, fl_owner_t id);
+ 	int (*release) (struct inode *, struct file *);
+diff --git a/mm/mremap.c b/mm/mremap.c
+index b147f66..c855922 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -288,7 +288,8 @@ static unsigned long move_vma(struct vm_area_struct *vma,
+ 		old_len = new_len;
+ 		old_addr = new_addr;
+ 		new_addr = -ENOMEM;
+-	}
++	} else if (vma->vm_file && vma->vm_file->f_op->mremap)
++		vma->vm_file->f_op->mremap(vma->vm_file, new_vma);
+ 
+ 	/* Conceal VM_ACCOUNT so old reservation is not undone */
+ 	if (vm_flags & VM_ACCOUNT) {
