@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaLNUer (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:34:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53332 "EHLO
+	id S1752050AbaLNUfA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:35:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753159AbaLNUbp (ORCPT
+	with ESMTP id S1753210AbaLNUbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:45 -0500
+	Sun, 14 Dec 2014 15:31:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.17 12/47] i2c: omap: fix i207 errata handling
-Date: Sun, 14 Dec 2014 12:20:47 -0800
-Message-Id: <20141214201818.972456018@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 19/19] ALSA: usb-audio: Dont resubmit pending URBs at MIDI error recovery
+Date: Sun, 14 Dec 2014 12:21:30 -0800
+Message-Id: <20141214201824.089974476@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
-References: <20141214201818.552715149@linuxfoundation.org>
+In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
+References: <20141214201823.543296369@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,57 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alexander Kochetkov <al.kochet@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit ccfc866356674cb3a61829d239c685af6e85f197 upstream.
+commit 66139a48cee1530c91f37c145384b4ee7043f0b7 upstream.
 
-commit 6d9939f651419a63e091105663821f9c7d3fec37 (i2c: omap: split out [XR]DR
-and [XR]RDY) changed the way how errata i207 (I2C: RDR Flag May Be Incorrectly
-Set) get handled. 6d9939f6514 code doesn't correspond to workaround provided by
-errata.
+In snd_usbmidi_error_timer(), the driver tries to resubmit MIDI input
+URBs to reactivate the MIDI stream, but this causes the error when
+some of URBs are still pending like:
 
-According to errata ISR must filter out spurious RDR before data read not after.
-ISR must read RXSTAT to get number of bytes available to read. Because RDR
-could be set while there could no data in the receive FIFO.
+ WARNING: CPU: 0 PID: 0 at ../drivers/usb/core/urb.c:339 usb_submit_urb+0x5f/0x70()
+ URB ef705c40 submitted while active
+ CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.6-2-desktop #1
+ Hardware name: FOXCONN TPS01/TPS01, BIOS 080015  03/23/2010
+  c0984bfa f4009ed4 c078deaf f4009ee4 c024c884 c09a135c f4009f00 00000000
+  c0984bfa 00000153 c061ac4f c061ac4f 00000009 00000001 ef705c40 e854d1c0
+  f4009eec c024c8d3 00000009 f4009ee4 c09a135c f4009f00 f4009f04 c061ac4f
+ Call Trace:
+  [<c0205df6>] try_stack_unwind+0x156/0x170
+  [<c020482a>] dump_trace+0x5a/0x1b0
+  [<c0205e56>] show_trace_log_lvl+0x46/0x50
+  [<c02049d1>] show_stack_log_lvl+0x51/0xe0
+  [<c0205eb7>] show_stack+0x27/0x50
+  [<c078deaf>] dump_stack+0x45/0x65
+  [<c024c884>] warn_slowpath_common+0x84/0xa0
+  [<c024c8d3>] warn_slowpath_fmt+0x33/0x40
+  [<c061ac4f>] usb_submit_urb+0x5f/0x70
+  [<f7974104>] snd_usbmidi_submit_urb+0x14/0x60 [snd_usbmidi_lib]
+  [<f797483a>] snd_usbmidi_error_timer+0x6a/0xa0 [snd_usbmidi_lib]
+  [<c02570c0>] call_timer_fn+0x30/0x130
+  [<c0257442>] run_timer_softirq+0x1c2/0x260
+  [<c0251493>] __do_softirq+0xc3/0x270
+  [<c0204732>] do_softirq_own_stack+0x22/0x30
+  [<c025186d>] irq_exit+0x8d/0xa0
+  [<c0795228>] smp_apic_timer_interrupt+0x38/0x50
+  [<c0794a3c>] apic_timer_interrupt+0x34/0x3c
+  [<c0673d9e>] cpuidle_enter_state+0x3e/0xd0
+  [<c028bb8d>] cpu_idle_loop+0x29d/0x3e0
+  [<c028bd23>] cpu_startup_entry+0x53/0x60
+  [<c0bfac1e>] start_kernel+0x415/0x41a
 
-Restored pre 6d9939f6514 way of handling errata.
+For avoiding these errors, check the pending URBs and skip
+resubmitting such ones.
 
-Found by code review. Real impact haven't seen.
-Tested on Beagleboard XM C.
-
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 6d9939f651419a63e09110 i2c: omap: split out [XR]DR and [XR]RDY
-Tested-by: Felipe Balbi <balbi@ti.com>
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/i2c-omap.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ sound/usb/midi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -956,11 +956,13 @@ omap_i2c_isr_thread(int this_irq, void *
- 			if (dev->fifo_size)
- 				num_bytes = dev->buf_len;
- 
--			omap_i2c_receive_data(dev, num_bytes, true);
--
--			if (dev->errata & I2C_OMAP_ERRATA_I207)
-+			if (dev->errata & I2C_OMAP_ERRATA_I207) {
- 				i2c_omap_errata_i207(dev, stat);
-+				num_bytes = (omap_i2c_read_reg(dev,
-+					OMAP_I2C_BUFSTAT_REG) >> 8) & 0x3F;
-+			}
- 
-+			omap_i2c_receive_data(dev, num_bytes, true);
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_RDR);
- 			continue;
- 		}
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -365,6 +365,8 @@ static void snd_usbmidi_error_timer(unsi
+ 		if (in && in->error_resubmit) {
+ 			in->error_resubmit = 0;
+ 			for (j = 0; j < INPUT_URBS; ++j) {
++				if (atomic_read(&in->urbs[j]->use_count))
++					continue;
+ 				in->urbs[j]->dev = umidi->dev;
+ 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
+ 			}
 
 
