@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190AbaLNUVK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:21:10 -0500
+	id S1751266AbaLNUVS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:21:18 -0500
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:22792 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750704AbaLNUVA (ORCPT
+	by vger.kernel.org with ESMTP id S1750727AbaLNUVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:00 -0500
-Message-Id: <20141214201609.126831471@goodmis.org>
+	Sun, 14 Dec 2014 15:21:01 -0500
+Message-Id: <20141214202054.691391454@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Sun, 14 Dec 2014 15:16:09 -0500
+Date: Sun, 14 Dec 2014 15:16:10 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,65 +18,176 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 0/2 v2] tracing: Enable tracepoints early and allow printk to use them
+Subject: [PATCH 1/2 v2] tracing: Move enabling tracepoints to just after rcu_init()
+References: <20141214201609.126831471@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0001-tracing-Move-enabling-tracepoints-to-just-after-rcu_.patch
 X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Version 2:
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-  Removed the update to tracepoint.c code and just call trace_init()
-  after rcu_init() where call_rcu_sched() can be used.
+Enabling tracepoints at boot up can be very useful. The tracepoint
+can be initialized right after RCU has been. There's no need to
+wait for the early_initcall() to be called. That's too late for some
+things that can use tracepoints for debugging. Move the logic to
+enable tracepoints out of the initcalls and into init/main.c to
+right after rcu_init().
 
-Version 1 at: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
+This also allows trace_printk() to be used early too.
 
-This adds two new features:
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
+Link: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
 
-1) Allow traceopoints to be enabled right after mm_init(). By passing
-in the trace_event= kernel command line parameter, tracepoints can be
-enabled at boot up. For debugging things like the initialization of
-interrupts, it is needed to have tracepoints enabled very early. People
-have asked about this before and this has been on my todo list. As it
-can be helpful for Thomas to debug his upcoming 3.20 IRQ work, I'm
-pushing this now. This way he can add tracepoints into the IRQ set up
-and have have users enable them when things go wrong.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h        |  6 ++++++
+ init/main.c                   |  4 ++++
+ kernel/trace/trace.c          |  8 +++++++-
+ kernel/trace/trace.h          | 13 +++++++++++++
+ kernel/trace/trace_events.c   | 10 ++++++++--
+ kernel/trace/trace_syscalls.c |  7 ++-----
+ 6 files changed, 40 insertions(+), 8 deletions(-)
 
-2) Have the tracepoints printed via printk() (the console) when they
-are triggered. If the irq code locks up or reboots the box, having the
-tracepoint output go into the kernel ring buffer is useless for
-debugging. But being able to add the tp_printk kernel command line
-option along with the trace_event= option will have these tracepoints
-printed as they occur, and that can be really useful for debugging
-early lock up or reboot problems.
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index ed501953f0b2..f4bc14b7d444 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -39,6 +39,12 @@
+ # define FTRACE_FORCE_LIST_FUNC 0
+ #endif
+ 
++/* Main tracing buffer and events set up */
++#ifdef CONFIG_TRACING
++void trace_init(void);
++#else
++static inline void trace_init(void) { }
++#endif
+ 
+ struct module;
+ struct ftrace_hash;
+diff --git a/init/main.c b/init/main.c
+index 800a0daede7e..70687069f8e2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -577,6 +577,10 @@ asmlinkage __visible void __init start_kernel(void)
+ 		local_irq_disable();
+ 	idr_init_cache();
+ 	rcu_init();
++
++	/* trace_printk() and trace points may be used after this */
++	trace_init();
++
+ 	context_tracking_init();
+ 	radix_tree_init();
+ 	/* init some links before init_ISA_irqs() */
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4ceb2546c7ef..ec3ca694665f 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -6876,6 +6876,13 @@ out:
+ 	return ret;
+ }
+ 
++void __init trace_init(void)
++{
++	tracer_alloc_buffers();
++	init_ftrace_syscalls();
++	trace_event_init();	
++}
++
+ __init static int clear_boot_tracer(void)
+ {
+ 	/*
+@@ -6895,6 +6902,5 @@ __init static int clear_boot_tracer(void)
+ 	return 0;
+ }
+ 
+-early_initcall(tracer_alloc_buffers);
+ fs_initcall(tracer_init_debugfs);
+ late_initcall(clear_boot_tracer);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 3255dfb054a0..c138c149d6ef 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1301,4 +1301,17 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ #define perf_ftrace_event_register NULL
+ #endif
+ 
++#ifdef CONFIG_FTRACE_SYSCALLS
++void init_ftrace_syscalls(void);
++#else
++static inline void init_ftrace_syscalls(void) { }
++#endif
++
++#ifdef CONFIG_EVENT_TRACING
++void trace_event_init(void);
++#else
++static inline void __init trace_event_init(void) { }
++#endif
++
++
+ #endif /* _LINUX_KERNEL_TRACE_H */
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index f9d0cbe014b7..fd9deb0e03f0 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -2477,8 +2477,14 @@ static __init int event_trace_init(void)
+ #endif
+ 	return 0;
+ }
+-early_initcall(event_trace_memsetup);
+-core_initcall(event_trace_enable);
++
++void __init trace_event_init(void)
++{
++	event_trace_memsetup();
++	init_ftrace_syscalls();
++	event_trace_enable();
++}
++
+ fs_initcall(event_trace_init);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index a72f3d8d813e..ec239771c175 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -514,7 +514,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
+ 	return (unsigned long)sys_call_table[nr];
+ }
+ 
+-static int __init init_ftrace_syscalls(void)
++void __init init_ftrace_syscalls(void)
+ {
+ 	struct syscall_metadata *meta;
+ 	unsigned long addr;
+@@ -524,7 +524,7 @@ static int __init init_ftrace_syscalls(void)
+ 				    GFP_KERNEL);
+ 	if (!syscalls_metadata) {
+ 		WARN_ON(1);
+-		return -ENOMEM;
++		return;
+ 	}
+ 
+ 	for (i = 0; i < NR_syscalls; i++) {
+@@ -536,10 +536,7 @@ static int __init init_ftrace_syscalls(void)
+ 		meta->syscall_nr = i;
+ 		syscalls_metadata[i] = meta;
+ 	}
+-
+-	return 0;
+ }
+-early_initcall(init_ftrace_syscalls);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
+-- 
+2.1.3
 
 
-As the merge window is still open, and this code was not as complex
-as I thought it might be. I'm thinking of pushing this in now.
-
-This will allow Thomas to debug his irq work for 3.20.
-
-This code is not that intrusive and I'm currently running it through
-all my tests. But I like to have some more eyes on this, as I don't
-like to push something into mainline this quickly. I'm doing this only
-because the code is simple enough and is useful for work coming in 3.20.
-
-I also feel that I could handle the fall out of this work over the
-holidays if need be.
-
-
-Steven Rostedt (Red Hat) (2):
-      tracing: Move enabling tracepoints to just after rcu_init()
-      tracing: Add tp_printk cmdline to have tracepoints go to printk()
-
-----
- Documentation/kernel-parameters.txt | 18 ++++++++++++++++
- include/linux/ftrace.h              |  7 +++++++
- init/main.c                         |  4 ++++
- kernel/sysctl.c                     |  7 +++++++
- kernel/trace/trace.c                | 25 +++++++++++++++++++++-
- kernel/trace/trace.h                | 14 +++++++++++++
- kernel/trace/trace_events.c         | 42 +++++++++++++++++++++++++++++++++++--
- kernel/trace/trace_syscalls.c       |  7 ++-----
- 8 files changed, 116 insertions(+), 8 deletions(-)
