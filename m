@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbaLNUrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:47:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52881 "EHLO
+	id S1754357AbaLNUr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:47:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaLNUVs (ORCPT
+	with ESMTP id S1751412AbaLNUVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:48 -0500
+	Sun, 14 Dec 2014 15:21:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.14 14/34] USB: xhci: Reset a halted endpoint immediately when we encounter a stall.
-Date: Sun, 14 Dec 2014 12:20:52 -0800
-Message-Id: <20141214201804.204644999@linuxfoundation.org>
+        Chris Clayton <chris2553@googlemail.com>,
+        Kees Cook <keescook@chromium.org>, Borislav Petkov <bp@suse.de>,
+        Junjie Mao <eternal.n08@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.14 12/34] x86: Use $(OBJDUMP) instead of plain objdump
+Date: Sun, 14 Dec 2014 12:20:50 -0800
+Message-Id: <20141214201804.147653883@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -29,176 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Chris Clayton <chris2553@googlemail.com>
 
-commit 8e71a322fdb127814bcba423a512914ca5bc6cf5 upstream.
+commit e2e68ae688b0a3766cd75aedf4ed4e39be402009 upstream.
 
-If a device is halted and reuturns a STALL, then the halted endpoint
-needs to be cleared both on the host and device side. The host
-side halt is cleared by issueing a xhci reset endpoint command. The device side
-is cleared with a ClearFeature(ENDPOINT_HALT) request, which should
-be issued by the device driver if a URB reruen -EPIPE.
+commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
+broke the cross compile of x86. It added a objdump invocation, which
+invokes the host native objdump and ignores an active cross tool
+chain.
 
-Previously we cleared the host side halt after the device side was cleared.
-To make sure the host side halt is cleared in time we want to issue the
-reset endpoint command immedialtely when a STALL status is encountered.
+Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
+account.
 
-Otherwise we end up not following the specs and not returning -EPIPE
-several times in a row when trying to transfer data to a halted endpoint.
+[ tglx: Massage changelog and use $(OBJDUMP) ]
 
-Fixes: bcef3fd (USB: xhci: Handle errors that cause endpoint halts.)
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
+Signed-off-by: Chris Clayton <chris2553@googlemail.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Acked-by: Borislav Petkov <bp@suse.de>
+Cc: Junjie Mao <eternal.n08@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-ring.c |   40 +++++++---------------------
- drivers/usb/host/xhci.c      |   60 ++++++++++---------------------------------
- 2 files changed, 25 insertions(+), 75 deletions(-)
+ arch/x86/boot/compressed/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1998,22 +1998,13 @@ static int finish_td(struct xhci_hcd *xh
- 		ep->stopped_td = td;
- 		return 0;
- 	} else {
--		if (trb_comp_code == COMP_STALL) {
--			/* The transfer is completed from the driver's
--			 * perspective, but we need to issue a set dequeue
--			 * command for this stalled endpoint to move the dequeue
--			 * pointer past the TD.  We can't do that here because
--			 * the halt condition must be cleared first.  Let the
--			 * USB class driver clear the stall later.
--			 */
--			ep->stopped_td = td;
--			ep->stopped_stream = ep_ring->stream_id;
--		} else if (xhci_requires_manual_halt_cleanup(xhci,
--					ep_ctx, trb_comp_code)) {
--			/* Other types of errors halt the endpoint, but the
--			 * class driver doesn't call usb_reset_endpoint() unless
--			 * the error is -EPIPE.  Clear the halted status in the
--			 * xHCI hardware manually.
-+		if (trb_comp_code == COMP_STALL ||
-+		    xhci_requires_manual_halt_cleanup(xhci, ep_ctx,
-+						      trb_comp_code)) {
-+			/* Issue a reset endpoint command to clear the host side
-+			 * halt, followed by a set dequeue command to move the
-+			 * dequeue pointer past the TD.
-+			 * The class driver clears the device side halt later.
- 			 */
- 			xhci_cleanup_halted_endpoint(xhci,
- 					slot_id, ep_index, ep_ring->stream_id,
-@@ -2133,9 +2124,7 @@ static int process_ctrl_td(struct xhci_h
- 		else
- 			td->urb->actual_length = 0;
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -75,7 +75,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
+ suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
+ suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
  
--		xhci_cleanup_halted_endpoint(xhci,
--			slot_id, ep_index, 0, td, event_trb);
--		return finish_td(xhci, td, event_trb, event, ep, status, true);
-+		return finish_td(xhci, td, event_trb, event, ep, status, false);
- 	}
- 	/*
- 	 * Did we transfer any data, despite the errors that might have
-@@ -2689,17 +2678,8 @@ cleanup:
- 		if (ret) {
- 			urb = td->urb;
- 			urb_priv = urb->hcpriv;
--			/* Leave the TD around for the reset endpoint function
--			 * to use(but only if it's not a control endpoint,
--			 * since we already queued the Set TR dequeue pointer
--			 * command for stalled control endpoints).
--			 */
--			if (usb_endpoint_xfer_control(&urb->ep->desc) ||
--				(trb_comp_code != COMP_STALL &&
--					trb_comp_code != COMP_BABBLE))
--				xhci_urb_free_priv(xhci, urb_priv);
--			else
--				kfree(urb_priv);
-+
-+			xhci_urb_free_priv(xhci, urb_priv);
- 
- 			usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
- 			if ((urb->actual_length != urb->transfer_buffer_length &&
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2925,63 +2925,33 @@ void xhci_cleanup_stalled_ring(struct xh
- 	}
- }
- 
--/* Deal with stalled endpoints.  The core should have sent the control message
-- * to clear the halt condition.  However, we need to make the xHCI hardware
-- * reset its sequence number, since a device will expect a sequence number of
-- * zero after the halt condition is cleared.
-+/* Called when clearing halted device. The core should have sent the control
-+ * message to clear the device halt condition. The host side of the halt should
-+ * already be cleared with a reset endpoint command issued when the STALL tx
-+ * event was received.
-+ *
-  * Context: in_interrupt
-  */
-+
- void xhci_endpoint_reset(struct usb_hcd *hcd,
- 		struct usb_host_endpoint *ep)
- {
- 	struct xhci_hcd *xhci;
--	struct usb_device *udev;
--	unsigned int ep_index;
--	unsigned long flags;
--	int ret;
--	struct xhci_virt_ep *virt_ep;
- 
- 	xhci = hcd_to_xhci(hcd);
--	udev = (struct usb_device *) ep->hcpriv;
--	/* Called with a root hub endpoint (or an endpoint that wasn't added
--	 * with xhci_add_endpoint()
--	 */
--	if (!ep->hcpriv)
--		return;
--	ep_index = xhci_get_endpoint_index(&ep->desc);
--	virt_ep = &xhci->devs[udev->slot_id]->eps[ep_index];
--	if (!virt_ep->stopped_td) {
--		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--			"Endpoint 0x%x not halted, refusing to reset.",
--			ep->desc.bEndpointAddress);
--		return;
--	}
--	if (usb_endpoint_xfer_control(&ep->desc)) {
--		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--				"Control endpoint stall already handled.");
--		return;
--	}
- 
--	xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--			"Queueing reset endpoint command");
--	spin_lock_irqsave(&xhci->lock, flags);
--	ret = xhci_queue_reset_ep(xhci, udev->slot_id, ep_index);
- 	/*
--	 * Can't change the ring dequeue pointer until it's transitioned to the
--	 * stopped state, which is only upon a successful reset endpoint
--	 * command.  Better hope that last command worked!
-+	 * We might need to implement the config ep cmd in xhci 4.8.1 note:
-+	 * The Reset Endpoint Command may only be issued to endpoints in the
-+	 * Halted state. If software wishes reset the Data Toggle or Sequence
-+	 * Number of an endpoint that isn't in the Halted state, then software
-+	 * may issue a Configure Endpoint Command with the Drop and Add bits set
-+	 * for the target endpoint. that is in the Stopped state.
- 	 */
--	if (!ret) {
--		xhci_cleanup_stalled_ring(xhci, udev, ep_index);
--		kfree(virt_ep->stopped_td);
--		xhci_ring_cmd_db(xhci);
--	}
--	virt_ep->stopped_td = NULL;
--	virt_ep->stopped_stream = 0;
--	spin_unlock_irqrestore(&xhci->lock, flags);
- 
--	if (ret)
--		xhci_warn(xhci, "FIXME allocate a new ring segment\n");
-+	/* For now just print debug to follow the situation */
-+	xhci_dbg(xhci, "Endpoint 0x%x ep reset callback called\n",
-+		 ep->desc.bEndpointAddress);
- }
- 
- static int xhci_check_streams_endpoint(struct xhci_hcd *xhci,
+-RUN_SIZE = $(shell objdump -h vmlinux | \
++RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
+ 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
+ quiet_cmd_mkpiggy = MKPIGGY $@
+       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
 
 
