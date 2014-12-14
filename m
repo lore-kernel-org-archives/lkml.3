@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaLNUpX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:45:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53040 "EHLO
+	id S1754187AbaLNUpa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:45:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952AbaLNUVx (ORCPT
+	with ESMTP id S1751317AbaLNUVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 20/34] Fix race condition between vxlan_sock_add and vxlan_sock_release
-Date: Sun, 14 Dec 2014 12:20:58 -0800
-Message-Id: <20141214201804.382183768@linuxfoundation.org>
+Subject: [PATCH 3.14 21/34] tg3: fix ring init when there are more TX than RX channels
+Date: Sun, 14 Dec 2014 12:20:59 -0800
+Message-Id: <20141214201804.410353138@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -29,72 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Leitner <mleitner@redhat.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-[ Upstream commit 00c83b01d58068dfeb2e1351cca6fccf2a83fa8f ]
+[ Upstream commit a620a6bc1c94c22d6c312892be1e0ae171523125 ]
 
-Currently, when trying to reuse a socket, vxlan_sock_add will grab
-vn->sock_lock, locate a reusable socket, inc refcount and release
-vn->sock_lock.
+If TX channels are set to 4 and RX channels are set to less than 4,
+using ethtool -L, the driver will try to initialize more RX channels
+than it has allocated, causing an oops.
 
-But vxlan_sock_release() will first decrement refcount, and then grab
-that lock. refcnt operations are atomic but as currently we have
-deferred works which hold vs->refcnt each, this might happen, leading to
-a use after free (specially after vxlan_igmp_leave):
+This fix only initializes the RX ring if it has been allocated.
 
-  CPU 1                            CPU 2
-
-deferred work                    vxlan_sock_add
-  ...                              ...
-                                   spin_lock(&vn->sock_lock)
-                                   vs = vxlan_find_sock();
-  vxlan_sock_release
-    dec vs->refcnt, reaches 0
-    spin_lock(&vn->sock_lock)
-                                   vxlan_sock_hold(vs), refcnt=1
-                                   spin_unlock(&vn->sock_lock)
-    hlist_del_rcu(&vs->hlist);
-    vxlan_notify_del_rx_port(vs)
-    spin_unlock(&vn->sock_lock)
-
-So when we look for a reusable socket, we check if it wasn't freed
-already before reusing it.
-
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Fixes: 7c47cedf43a8b3 ("vxlan: move IGMP join/leave to work queue")
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -2106,9 +2106,8 @@ static int vxlan_init(struct net_device
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(dev_net(dev), ipv6 ? AF_INET6 : AF_INET,
- 			     vxlan->dst_port);
--	if (vs) {
-+	if (vs && atomic_add_unless(&vs->refcnt, 1, 0)) {
- 		/* If we have a socket with same port already, reuse it */
--		atomic_inc(&vs->refcnt);
- 		vxlan_vs_add_dev(vs, vxlan);
- 	} else {
- 		/* otherwise make new socket outside of RTNL */
-@@ -2574,12 +2573,9 @@ struct vxlan_sock *vxlan_sock_add(struct
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8548,7 +8548,8 @@ static int tg3_init_rings(struct tg3 *tp
+ 		if (tnapi->rx_rcb)
+ 			memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
  
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
--	if (vs) {
--		if (vs->rcv == rcv)
--			atomic_inc(&vs->refcnt);
--		else
-+	if (vs && ((vs->rcv != rcv) ||
-+		   !atomic_add_unless(&vs->refcnt, 1, 0)))
- 			vs = ERR_PTR(-EBUSY);
--	}
- 	spin_unlock(&vn->sock_lock);
- 
- 	if (!vs)
+-		if (tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
++		if (tnapi->prodring.rx_std &&
++		    tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
+ 			tg3_free_rings(tp);
+ 			return -ENOMEM;
+ 		}
 
 
