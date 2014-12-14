@@ -1,125 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841AbaLNU33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:29:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53234 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284AbaLNUZR (ORCPT
+	id S1752920AbaLNU3s (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:29:48 -0500
+Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:48092 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752836AbaLNU33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:25:17 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	Sun, 14 Dec 2014 15:29:29 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4250:5007:6261:7875:7886:7903:9010:9040:10007:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: cow71_8cbf5ee7ad52e
+X-Filterd-Recvd-Size: 1745
+Date: Sun, 14 Dec 2014 15:29:15 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Michal Hocko <mhocko@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 06/47] mm: fix anon_vma_clone() error treatment
-Date: Sun, 14 Dec 2014 12:20:41 -0800
-Message-Id: <20141214201818.747811505@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
-References: <20141214201818.552715149@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 0/2 v2] tracing: Enable tracepoints early and allow
+ printk to use them
+Message-ID: <20141214152915.431f7aa8@gandalf.local.home>
+In-Reply-To: <20141214201609.126831471@goodmis.org>
+References: <20141214201609.126831471@goodmis.org>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Sun, 14 Dec 2014 15:16:09 -0500
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-------------------
+> 1) Allow traceopoints to be enabled right after mm_init(). By passing
+> in the trace_event= kernel command line parameter, tracepoints can be
+> enabled at boot up. For debugging things like the initialization of
+> interrupts, it is needed to have tracepoints enabled very early. People
+> have asked about this before and this has been on my todo list. As it
+> can be helpful for Thomas to debug his upcoming 3.20 IRQ work, I'm
+> pushing this now. This way he can add tracepoints into the IRQ set up
+> and have have users enable them when things go wrong.
 
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+Cut and paste is a bitch!
 
-commit c4ea95d7cd08d9ffd7fa75e6c5e0332d596dd11e upstream.
+s/mm_init/rcu_init/
 
-Andrew Morton noticed that the error return from anon_vma_clone() was
-being dropped and replaced with -ENOMEM (which is not itself a bug
-because the only error return value from anon_vma_clone() is -ENOMEM).
-
-I did an audit of callers of anon_vma_clone() and discovered an actual
-bug where the error return was being lost.  In __split_vma(), between
-Linux 3.11 and 3.12 the code was changed so the err variable is used
-before the call to anon_vma_clone() and the default initial value of
--ENOMEM is overwritten.  So a failure of anon_vma_clone() will return
-success since err at this point is now zero.
-
-Below is a patch which fixes this bug and also propagates the error
-return value from anon_vma_clone() in all cases.
-
-Fixes: ef0855d334e1 ("mm: mempolicy: turn vma_set_policy() into vma_dup_policy()")
-Signed-off-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Tim Hartrick <tim@edgecast.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/mmap.c |   10 +++++++---
- mm/rmap.c |    6 ++++--
- 2 files changed, 11 insertions(+), 5 deletions(-)
-
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -752,8 +752,11 @@ again:			remove_next = 1 + (end > next->
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
--			if (anon_vma_clone(importer, exporter))
--				return -ENOMEM;
-+			int error;
-+
-+			error = anon_vma_clone(importer, exporter);
-+			if (error)
-+				return error;
- 			importer->anon_vma = exporter->anon_vma;
- 		}
- 	}
-@@ -2453,7 +2456,8 @@ static int __split_vma(struct mm_struct
- 	if (err)
- 		goto out_free_vma;
- 
--	if (anon_vma_clone(new, vma))
-+	err = anon_vma_clone(new, vma);
-+	if (err)
- 		goto out_free_mpol;
- 
- 	if (new->vm_file)
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -274,6 +274,7 @@ int anon_vma_fork(struct vm_area_struct
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
-+	int error;
- 
- 	/* Don't bother if the parent process has no anon_vma here. */
- 	if (!pvma->anon_vma)
-@@ -283,8 +284,9 @@ int anon_vma_fork(struct vm_area_struct
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
- 	 */
--	if (anon_vma_clone(vma, pvma))
--		return -ENOMEM;
-+	error = anon_vma_clone(vma, pvma);
-+	if (error)
-+		return error;
- 
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
-
-
+-- Steve
