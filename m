@@ -1,94 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458AbaLNUsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:48:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52926 "EHLO
+	id S1754508AbaLNUuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:50:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52921 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaLNUVp (ORCPT
+	with ESMTP id S1751376AbaLNUVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:45 -0500
+	Sun, 14 Dec 2014 15:21:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 24/24] ALSA: usb-audio: Dont resubmit pending URBs at MIDI error recovery
-Date: Sun, 14 Dec 2014 12:20:44 -0800
-Message-Id: <20141214201801.413954555@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/24] 3.10.63-stable review
+Date: Sun, 14 Dec 2014 12:20:20 -0800
+Message-Id: <20141214201800.613573495@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
-References: <20141214201800.613573495@linuxfoundation.org>
 User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.63 release.
+There are 24 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Tue Dec 16 20:17:48 UTC 2014.
+Anything received after that time might be too late.
 
-From: Takashi Iwai <tiwai@suse.de>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.63-rc1.gz
+and the diffstat can be found below.
 
-commit 66139a48cee1530c91f37c145384b4ee7043f0b7 upstream.
+thanks,
 
-In snd_usbmidi_error_timer(), the driver tries to resubmit MIDI input
-URBs to reactivate the MIDI stream, but this causes the error when
-some of URBs are still pending like:
+greg k-h
 
- WARNING: CPU: 0 PID: 0 at ../drivers/usb/core/urb.c:339 usb_submit_urb+0x5f/0x70()
- URB ef705c40 submitted while active
- CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.6-2-desktop #1
- Hardware name: FOXCONN TPS01/TPS01, BIOS 080015  03/23/2010
-  c0984bfa f4009ed4 c078deaf f4009ee4 c024c884 c09a135c f4009f00 00000000
-  c0984bfa 00000153 c061ac4f c061ac4f 00000009 00000001 ef705c40 e854d1c0
-  f4009eec c024c8d3 00000009 f4009ee4 c09a135c f4009f00 f4009f04 c061ac4f
- Call Trace:
-  [<c0205df6>] try_stack_unwind+0x156/0x170
-  [<c020482a>] dump_trace+0x5a/0x1b0
-  [<c0205e56>] show_trace_log_lvl+0x46/0x50
-  [<c02049d1>] show_stack_log_lvl+0x51/0xe0
-  [<c0205eb7>] show_stack+0x27/0x50
-  [<c078deaf>] dump_stack+0x45/0x65
-  [<c024c884>] warn_slowpath_common+0x84/0xa0
-  [<c024c8d3>] warn_slowpath_fmt+0x33/0x40
-  [<c061ac4f>] usb_submit_urb+0x5f/0x70
-  [<f7974104>] snd_usbmidi_submit_urb+0x14/0x60 [snd_usbmidi_lib]
-  [<f797483a>] snd_usbmidi_error_timer+0x6a/0xa0 [snd_usbmidi_lib]
-  [<c02570c0>] call_timer_fn+0x30/0x130
-  [<c0257442>] run_timer_softirq+0x1c2/0x260
-  [<c0251493>] __do_softirq+0xc3/0x270
-  [<c0204732>] do_softirq_own_stack+0x22/0x30
-  [<c025186d>] irq_exit+0x8d/0xa0
-  [<c0795228>] smp_apic_timer_interrupt+0x38/0x50
-  [<c0794a3c>] apic_timer_interrupt+0x34/0x3c
-  [<c0673d9e>] cpuidle_enter_state+0x3e/0xd0
-  [<c028bb8d>] cpu_idle_loop+0x29d/0x3e0
-  [<c028bd23>] cpu_startup_entry+0x53/0x60
-  [<c0bfac1e>] start_kernel+0x415/0x41a
+-------------
+Pseudo-Shortlog of commits:
 
-For avoiding these errors, check the pending URBs and skip
-resubmitting such ones.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.63-rc1
 
-Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Takashi Iwai <tiwai@suse.de>
+    ALSA: usb-audio: Don't resubmit pending URBs at MIDI error recovery
 
----
- sound/usb/midi.c |    2 ++
- 1 file changed, 2 insertions(+)
+Anton Blanchard <anton@samba.org>
+    powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -364,6 +364,8 @@ static void snd_usbmidi_error_timer(unsi
- 		if (in && in->error_resubmit) {
- 			in->error_resubmit = 0;
- 			for (j = 0; j < INPUT_URBS; ++j) {
-+				if (atomic_read(&in->urbs[j]->use_count))
-+					continue;
- 				in->urbs[j]->dev = umidi->dev;
- 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
- 			}
+Stephen Boyd <sboyd@codeaurora.org>
+    ARM: sched_clock: Load cycle count after epoch stabilizes
+
+Todd Fujinaka <todd.fujinaka@intel.com>
+    igb: bring link up when PHY is powered up
+
+Jan Kara <jack@suse.cz>
+    ext2: Fix oops in ext2_get_block() called from ext2_quota_write()
+
+Nadav Har'El <nyh@il.ibm.com>
+    nEPT: Nested INVEPT
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: use MAX_HEADER for headroom reserve in output path
+
+willy tarreau <w@1wt.eu>
+    net: mvneta: fix Tx interrupt delay
+
+Nicolas Dichtel <nicolas.dichtel@6wind.com>
+    rtnetlink: release net refcnt on error in do_setlink()
+
+Jack Morgenstein <jackm@dev.mellanox.co.il>
+    net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
+
+Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+    tg3: fix ring init when there are more TX than RX channels
+
+Yuri Chislov <yuri.chislov@gmail.com>
+    ipv6: gre: fix wrong skb->protocol in WCCP
+
+Dmitry Torokhov <dtor@chromium.org>
+    sata_fsl: fix error handling of irq_of_parse_and_map
+
+Tejun Heo <tj@kernel.org>
+    ahci: disable MSI on SAMSUNG 0xa800 SSD
+
+Devin Ryles <devin.ryles@intel.com>
+    AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
+
+Sakari Ailus <sakari.ailus@iki.fi>
+    media: smiapp: Only some selection targets are settable
+
+Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: Unlock panel even when LVDS is disabled
+
+Petr Mladek <pmladek@suse.cz>
+    drm/radeon: kernel panic in drm_calc_vbltimestamp_from_scanoutpos with 3.18.0-rc6
+
+Grygorii Strashko <grygorii.strashko@ti.com>
+    i2c: davinci: generate STP always when NACK is received
+
+Alexander Kochetkov <al.kochet@gmail.com>
+    i2c: omap: fix i207 errata handling
+
+Alexander Kochetkov <al.kochet@gmail.com>
+    i2c: omap: fix NACK and Arbitration Lost irq handling
+
+Seth Forshee <seth.forshee@canonical.com>
+    xen-netfront: Remove BUGs on paged skb data which crosses a page boundary
+
+Hugh Dickins <hughd@google.com>
+    mm: fix swapoff hang after page migration and fork
+
+Weijie Yang <weijie.yang@samsung.com>
+    mm: frontswap: invalidate expired data on a dup-store failure
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                           |  4 ++--
+ arch/arm/kernel/sched_clock.c                      | 13 +++++------
+ arch/powerpc/kernel/vdso32/getcpu.S                |  4 ++--
+ arch/x86/include/uapi/asm/vmx.h                    |  1 +
+ arch/x86/kvm/vmx.c                                 |  8 +++++++
+ drivers/ata/ahci.c                                 |  4 ++++
+ drivers/ata/sata_fsl.c                             |  2 +-
+ drivers/gpu/drm/i915/intel_lvds.c                  | 22 +++++++++---------
+ drivers/gpu/drm/radeon/radeon_kms.c                |  2 ++
+ drivers/i2c/busses/i2c-davinci.c                   |  8 +++----
+ drivers/i2c/busses/i2c-omap.c                      | 10 ++++-----
+ drivers/media/i2c/smiapp/smiapp-core.c             |  2 +-
+ drivers/net/ethernet/broadcom/tg3.c                |  3 ++-
+ drivers/net/ethernet/intel/igb/igb_main.c          |  2 ++
+ drivers/net/ethernet/marvell/mvneta.c              |  2 +-
+ .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  2 +-
+ drivers/net/xen-netfront.c                         |  5 -----
+ fs/ext2/super.c                                    |  1 +
+ mm/frontswap.c                                     |  4 +++-
+ mm/memory.c                                        | 26 +++++++++++-----------
+ net/core/rtnetlink.c                               |  1 +
+ net/ipv6/ip6_gre.c                                 |  4 ++--
+ net/sctp/output.c                                  |  4 ++--
+ sound/usb/midi.c                                   |  2 ++
+ 24 files changed, 75 insertions(+), 61 deletions(-)
 
 
