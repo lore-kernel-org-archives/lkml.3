@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741AbaLNU2w (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:28:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53279 "EHLO
+	id S1752761AbaLNU3E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:29:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53244 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302AbaLNUZU (ORCPT
+	with ESMTP id S1752289AbaLNUZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:25:20 -0500
+	Sun, 14 Dec 2014 15:25:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Denis Kirjanov <kda@linux-powerpc.org>,
-        Markos Chandras <markos.chandras@imgtec.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        Scott Feldman <sfeldma@cumulusnetworks.com>,
+        Thomas Graf <tgraf@suug.ch>,
+        John Fastabend <john.r.fastabend@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 37/47] mips: bpf: Fix broken BPF_MOD
-Date: Sun, 14 Dec 2014 12:21:12 -0800
-Message-Id: <20141214201819.984162945@linuxfoundation.org>
+Subject: [PATCH 3.17 34/47] bond: Check length of IFLA_BOND_ARP_IP_TARGET attributes
+Date: Sun, 14 Dec 2014 12:21:09 -0800
+Message-Id: <20141214201819.859954161@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -30,41 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Kirjanov <kda@linux-powerpc.org>
+From: Thomas Graf <tgraf@suug.ch>
 
-[ Upstream commit 2e46477a12f6fd273e31a220b155d66e8352198c ]
+[ Upstream commit f6c6fda4c9e17940b0a2ba206b0408babfdc930c ]
 
-Remove optimize_div() from BPF_MOD | BPF_K case
-since we don't know the dividend and fix the
-emit_mod() by reading the mod operation result from HI register
-
-Signed-off-by: Denis Kirjanov <kda@linux-powerpc.org>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+Fixes: 7f28fa10 ("bonding: add arp_ip_target netlink support")
+Reported-by: John Fastabend <john.fastabend@gmail.com>
+Cc: Scott Feldman <sfeldma@cumulusnetworks.com>
+Signed-off-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: John Fastabend <john.r.fastabend@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/mips/net/bpf_jit.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/bonding/bond_netlink.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/arch/mips/net/bpf_jit.c
-+++ b/arch/mips/net/bpf_jit.c
-@@ -430,7 +430,7 @@ static inline void emit_mod(unsigned int
- 		u32 *p = &ctx->target[ctx->idx];
- 		uasm_i_divu(&p, dst, src);
- 		p = &ctx->target[ctx->idx + 1];
--		uasm_i_mflo(&p, dst);
-+		uasm_i_mfhi(&p, dst);
- 	}
- 	ctx->idx += 2; /* 2 insts */
- }
-@@ -1006,7 +1006,7 @@ load_ind:
- 			break;
- 		case BPF_ALU | BPF_MOD | BPF_K:
- 			/* A %= k */
--			if (k == 1 || optimize_div(&k)) {
-+			if (k == 1) {
- 				ctx->flags |= SEEN_A;
- 				emit_jit_reg_move(r_A, r_zero, ctx);
- 			} else {
+--- a/drivers/net/bonding/bond_netlink.c
++++ b/drivers/net/bonding/bond_netlink.c
+@@ -194,7 +194,12 @@ static int bond_changelink(struct net_de
+ 
+ 		bond_option_arp_ip_targets_clear(bond);
+ 		nla_for_each_nested(attr, data[IFLA_BOND_ARP_IP_TARGET], rem) {
+-			__be32 target = nla_get_be32(attr);
++			__be32 target;
++
++			if (nla_len(attr) < sizeof(target))
++				return -EINVAL;
++
++			target = nla_get_be32(attr);
+ 
+ 			bond_opt_initval(&newval, (__force u64)target);
+ 			err = __bond_opt_set(bond, BOND_OPT_ARP_TARGETS,
 
 
