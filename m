@@ -1,206 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750936AbaLNSOv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 13:14:51 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49336 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaLNSOu (ORCPT
+	id S1751069AbaLNSPm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 13:15:42 -0500
+Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:40596 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750785AbaLNSPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 13:14:50 -0500
-Date: Sun, 14 Dec 2014 10:14:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	Sun, 14 Dec 2014 13:15:41 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2196:2198:2199:2200:2201:2393:2553:2559:2562:2693:2731:2895:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4362:4385:4398:5007:6119:6261:7576:7875:8660:8957:9010:9040:10004:10400:10450:10455:10462:10464:10848:10967:11026:11232:11658:11914:12043:12296:12517:12519:12663:12740:13148:13230:13255:14096:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: sleet87_88c2772ab804c
+X-Filterd-Recvd-Size: 4048
+Date: Sun, 14 Dec 2014 13:15:38 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH 2/3] tracing: Move enabling tracepoints to just after
- mm_init()
-Message-ID: <20141214181444.GE5310@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
+ early_initcall()
+Message-ID: <20141214131538.7a6c1438@gandalf.local.home>
+In-Reply-To: <20141214180854.GC5310@linux.vnet.ibm.com>
 References: <20141214164104.307127356@goodmis.org>
- <20141214164804.150181588@goodmis.org>
+	<20141214164803.991954802@goodmis.org>
+	<20141214115332.76be1b8b@gandalf.local.home>
+	<20141214180854.GC5310@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141214164804.150181588@goodmis.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121418-0005-0000-0000-000007235E63
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 11:41:06AM -0500, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> Enabling tracepoints at boot up can be very useful. The tracepoint
-> can be initialized right after memory has been. There's no need to
-> wait for the early_initcall() to be called. That's too late for some
-> things that can use tracepoints for debugging. Move the logic to
-> enable tracepoints out of the initcalls and into init/main.c to
-> right after mm_init().
-> 
-> This also allows trace_printk() to be used early too.
-> 
-> Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
-> 
-> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/ftrace.h        |  6 ++++++
->  init/main.c                   |  3 +++
->  kernel/trace/trace.c          |  8 +++++++-
->  kernel/trace/trace.h          | 13 +++++++++++++
->  kernel/trace/trace_events.c   | 10 ++++++++--
->  kernel/trace/trace_syscalls.c |  7 ++-----
->  6 files changed, 39 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index ed501953f0b2..f4bc14b7d444 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -39,6 +39,12 @@
->  # define FTRACE_FORCE_LIST_FUNC 0
->  #endif
-> 
-> +/* Main tracing buffer and events set up */
-> +#ifdef CONFIG_TRACING
-> +void trace_init(void);
-> +#else
-> +static inline void trace_init(void) { }
-> +#endif
-> 
->  struct module;
->  struct ftrace_hash;
-> diff --git a/init/main.c b/init/main.c
-> index 800a0daede7e..060e60b6aa59 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -561,6 +561,9 @@ asmlinkage __visible void __init start_kernel(void)
->  	trap_init();
->  	mm_init();
-> 
-> +	/* trace_printk() and trace points may be used after this */
-> +	trace_init();
+On Sun, 14 Dec 2014 10:08:54 -0800
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-Or if you aren't going to use call_rcu_sched() before this point, I could
-move the call_rcu_sched()-relevant initialization to this point.  Or make
-the compiler do it -- I am pretty sure that the per-CPU variables are in
-place at this point.
+> On Sun, Dec 14, 2014 at 11:53:32AM -0500, Steven Rostedt wrote:
+> > On Sun, 14 Dec 2014 11:41:05 -0500
+> > Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+> > > 
+> > > In order to move enabling of trace events to just after mm_init(), the
+> > > tracepoint enable code can not use call_rcu_sched() because rcu isn't
+> > > even initialized yet.  Since this can only happen before SMP is set up
+> > > (and even before interrupts are set up), there's no reason to use
+> > > call_rcu_sched() at this point.
+> > > 
+> > > Instead, create a variable called tracepoint_rcu_safe that gets enabled
+> > > via early_initcall() and if that is not set, free the code directly
+> > > instead of using call_rcu_sched().
+> > > 
+> > > This allows us to enable tracepoints early without issues.
+> > > 
+> > > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> With the addition of read_mostly, and given that I am not going to mess
+> with call_rcu() this late in the 3.19 process without a blazingly good
+> reason:
+> 
+> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-							Thanx, Paul
+Thanks!
 
-> +
->  	/*
->  	 * Set up the scheduler prior starting any interrupts (such as the
->  	 * timer interrupt). Full topology setup happens at smp_init()
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 4ceb2546c7ef..ec3ca694665f 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -6876,6 +6876,13 @@ out:
->  	return ret;
->  }
 > 
-> +void __init trace_init(void)
-> +{
-> +	tracer_alloc_buffers();
-> +	init_ftrace_syscalls();
-> +	trace_event_init();	
-> +}
-> +
->  __init static int clear_boot_tracer(void)
->  {
->  	/*
-> @@ -6895,6 +6902,5 @@ __init static int clear_boot_tracer(void)
->  	return 0;
->  }
+> Please note that you can use call_rcu() and friends as soon as rcu_init()
+> returns.  The callbacks won't be invoked until early_initcall() time,
+> but they will be properly queued.
 > 
-> -early_initcall(tracer_alloc_buffers);
->  fs_initcall(tracer_init_debugfs);
->  late_initcall(clear_boot_tracer);
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 3255dfb054a0..c138c149d6ef 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -1301,4 +1301,17 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
->  #define perf_ftrace_event_register NULL
->  #endif
+> Please note also that there are places where turning a call_rcu() into
+> a direct function call don't work, even at times when preemption is
+> disabled and there is only one CPU.  One example is where single-threaded
+> code uses call_rcu() on a list element of a list that it is traversing
+> within an RCU read-side critical section.  A direct call to the RCU
+> callback could potentially destroy the pointers that the traversal was
+> going to use to find the next element.  This means that we cannot make
+> call_rcu() do direct calls to the callback, as that would break quite
+> a bit of existing code.
 > 
-> +#ifdef CONFIG_FTRACE_SYSCALLS
-> +void init_ftrace_syscalls(void);
-> +#else
-> +static inline void init_ftrace_syscalls(void) { }
-> +#endif
-> +
-> +#ifdef CONFIG_EVENT_TRACING
-> +void trace_event_init(void);
-> +#else
-> +static inline void __init trace_event_init(void) { }
-> +#endif
-> +
-> +
->  #endif /* _LINUX_KERNEL_TRACE_H */
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index f9d0cbe014b7..fd9deb0e03f0 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -2477,8 +2477,14 @@ static __init int event_trace_init(void)
->  #endif
->  	return 0;
->  }
-> -early_initcall(event_trace_memsetup);
-> -core_initcall(event_trace_enable);
-> +
-> +void __init trace_event_init(void)
-> +{
-> +	event_trace_memsetup();
-> +	init_ftrace_syscalls();
-> +	event_trace_enable();
-> +}
-> +
->  fs_initcall(event_trace_init);
-> 
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
-> diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-> index a72f3d8d813e..ec239771c175 100644
-> --- a/kernel/trace/trace_syscalls.c
-> +++ b/kernel/trace/trace_syscalls.c
-> @@ -514,7 +514,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
->  	return (unsigned long)sys_call_table[nr];
->  }
-> 
-> -static int __init init_ftrace_syscalls(void)
-> +void __init init_ftrace_syscalls(void)
->  {
->  	struct syscall_metadata *meta;
->  	unsigned long addr;
-> @@ -524,7 +524,7 @@ static int __init init_ftrace_syscalls(void)
->  				    GFP_KERNEL);
->  	if (!syscalls_metadata) {
->  		WARN_ON(1);
-> -		return -ENOMEM;
-> +		return;
->  	}
-> 
->  	for (i = 0; i < NR_syscalls; i++) {
-> @@ -536,10 +536,7 @@ static int __init init_ftrace_syscalls(void)
->  		meta->syscall_nr = i;
->  		syscalls_metadata[i] = meta;
->  	}
-> -
-> -	return 0;
->  }
-> -early_initcall(init_ftrace_syscalls);
-> 
->  #ifdef CONFIG_PERF_EVENTS
-> 
-> -- 
-> 2.1.3
-> 
+> Is there some definite point during boot before which you won't need to
+> invoke call_rcu_sched() for tracing?  I am guessing "no", but have to ask.
+> I can probably make call_rcu_sched() work arbitrarily early, but it is a
+> bit uglier.  And this assumes that irqs_disabled_flags(local_irq_save())
+> returns true during early boot.  I would -hope- this would be true!  ;-)
 > 
 
+With your feed back, and because I would like this to go into 3.19, I
+would like to keep the current patch as is (with the read_mostly
+update, which I'm currently testing). We can always change it later
+after call_rcu() has been changed.
+
+-- Steve
