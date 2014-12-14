@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaLNUva (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:51:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
+	id S1754629AbaLNUve (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:51:34 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351AbaLNUVl (ORCPT
+	with ESMTP id S1751347AbaLNUVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Todd Fujinaka <todd.fujinaka@intel.com>,
-        Jeff Westfahl <jeff.westfahl@ni.com>,
-        Aaron Brown <aaron.f.brown@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Vincent Donnefort <vdonnefort@gmail.com>
-Subject: [PATCH 3.10 21/24] igb: bring link up when PHY is powered up
-Date: Sun, 14 Dec 2014 12:20:41 -0800
-Message-Id: <20141214201801.315822683@linuxfoundation.org>
+        "Theodore Tso" <tytso@mit.edu>, Christoph Hellwig <hch@lst.de>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 3.10 20/24] ext2: Fix oops in ext2_get_block() called from ext2_quota_write()
+Date: Sun, 14 Dec 2014 12:20:40 -0800
+Message-Id: <20141214201801.286709991@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -32,33 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Fujinaka <todd.fujinaka@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit aec653c43b0c55667355e26d7de1236bda9fb4e3 upstream.
+commit df4e7ac0bb70abc97fbfd9ef09671fc084b3f9db upstream.
 
-Call igb_setup_link() when the PHY is powered up.
+ext2_quota_write() doesn't properly setup bh it passes to
+ext2_get_block() and thus we hit assertion BUG_ON(maxblocks == 0) in
+ext2_get_blocks() (or we could actually ask for mapping arbitrary number
+of blocks depending on whatever value was on stack).
 
-Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
-Reported-by: Jeff Westfahl <jeff.westfahl@ni.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Vincent Donnefort <vdonnefort@gmail.com>
+Fix ext2_quota_write() to properly fill in number of blocks to map.
+
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Christoph Hellwig <hch@infradead.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/igb/igb_main.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/ext2/super.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -1584,6 +1584,8 @@ void igb_power_up_link(struct igb_adapte
- 		igb_power_up_phy_copper(&adapter->hw);
- 	else
- 		igb_power_up_serdes_link_82575(&adapter->hw);
-+
-+	igb_setup_link(&adapter->hw);
- }
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1493,6 +1493,7 @@ static ssize_t ext2_quota_write(struct s
+ 				sb->s_blocksize - offset : towrite;
  
- /**
+ 		tmp_bh.b_state = 0;
++		tmp_bh.b_size = sb->s_blocksize;
+ 		err = ext2_get_block(inode, blk, &tmp_bh, 1);
+ 		if (err < 0)
+ 			goto out;
 
 
