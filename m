@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751846AbaLNUWo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:22:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52832 "EHLO
+	id S1751911AbaLNUXC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:23:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaLNUVj (ORCPT
+	with ESMTP id S1751333AbaLNUVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:39 -0500
+	Sun, 14 Dec 2014 15:21:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 15/24] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-Date: Sun, 14 Dec 2014 12:20:35 -0800
-Message-Id: <20141214201801.131334584@linuxfoundation.org>
+Subject: [PATCH 3.10 16/24] rtnetlink: release net refcnt on error in do_setlink()
+Date: Sun, 14 Dec 2014 12:20:36 -0800
+Message-Id: <20141214201801.163912452@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -30,40 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c ]
+[ Upstream commit e0ebde0e131b529fd721b24f62872def5ec3718c ]
 
-Some VF drivers use the upper byte of "param1" (the qp count field)
-in mlx4_qp_reserve_range() to pass flags which are used to optimize
-the range allocation.
+rtnl_link_get_net() holds a reference on the 'struct net', we need to release
+it in case of error.
 
-Under the current code, if any of these flags are set, the 32-bit
-count field yields a count greater than 2^24, which is out of range,
-and this VF fails.
-
-As these flags represent a "best-effort" allocation hint anyway, they may
-safely be ignored. Therefore, the PF driver may simply mask out the bits.
-
-Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+Fixes: b51642f6d77b ("net: Enable a userns root rtnl calls that are safe for unprivilged users")
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/core/rtnetlink.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1207,7 +1207,7 @@ static int qp_alloc_res(struct mlx4_dev
- 
- 	switch (op) {
- 	case RES_OP_RESERVE:
--		count = get_param_l(&in_param);
-+		count = get_param_l(&in_param) & 0xffffff;
- 		align = get_param_h(&in_param);
- 		err = __mlx4_qp_reserve_range(dev, count, align, &base);
- 		if (err)
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1318,6 +1318,7 @@ static int do_setlink(const struct sk_bu
+ 			goto errout;
+ 		}
+ 		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
++			put_net(net);
+ 			err = -EPERM;
+ 			goto errout;
+ 		}
 
 
