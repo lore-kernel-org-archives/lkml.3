@@ -1,42 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753094AbaLNJ4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 04:56:47 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:64244 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaLNJ4q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 04:56:46 -0500
-Message-ID: <1418551001.14250.25.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched/fair: change where we report sched stats
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Josef Bacik <jbacik@fb.com>
-Cc: bmaurer@fb.com, rkroll@fb.com, kernel-team@fb.com, mingo@redhat.com,
-        peterz@infradead.org, linux-kernel@vger.kernel.org
-Date: Sun, 14 Dec 2014 10:56:41 +0100
-In-Reply-To: <5489B07E.9000200@fb.com>
-References: <1418149315-30173-1-git-send-email-jbacik@fb.com>
-	 <1418192604.5312.28.camel@marge.simpson.net> <5488BFC5.3080001@fb.com>
-	 <1418268856.5263.46.camel@marge.simpson.net> <5489B07E.9000200@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752936AbaLNKGD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 05:06:03 -0500
+Received: from ozlabs.org ([103.22.144.67]:46632 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894AbaLNKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 05:06:00 -0500
+In-Reply-To: <1417678103-32571-3-git-send-email-shreyas@linux.vnet.ibm.com>
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linux-pm@vger.kernel.org, "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Paul Mackerras <paulus@samba.org>,
+        "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [v3, 2/4] powerpc/powernv: Enable Offline CPUs to enter deep idle states
+Message-Id: <20141214100558.B40551400B7@ozlabs.org>
+Date: Sun, 14 Dec 2014 21:05:58 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 09:55 -0500, Josef Bacik wrote:
+On Thu, 2014-04-12 at 07:28:21 UTC, "Shreyas B. Prabhu" wrote:
+> From: "Preeti U. Murthy" <preeti@linux.vnet.ibm.com>
+> 
+> The secondary threads should enter deep idle states so as to gain maximum
+> powersavings when the entire core is offline. To do so the offline path
+> must be made aware of the available deepest idle state. Hence probe the
+> device tree for the possible idle states in powernv core code and
+> expose the deepest idle state through flags.
+> 
+> Since the  device tree is probed by the cpuidle driver as well, move
+> the parameters required to discover the idle states into an appropriate
+> common place to both the driver and the powernv core code.
+> 
+> Another point is that fastsleep idle state may require workarounds in
+> the kernel to function properly. This workaround is introduced in the
+> subsequent patches. However neither the cpuidle driver or the hotplug
+> path need be bothered about this workaround.
+> 
+> They will be taken care of by the core powernv code.
+ 
+ ...
 
-> How did you do it?  I had one latency spike in a 90 minute test that 
-> runs across 30 boxes that could have been caused by anything, so if 
-> there is a way I could have easily found that without moving these 
-> tracepoints around I'd love to hear it.  Thanks,
+> diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
+> index 4753958..3dc4cec 100644
+> --- a/arch/powerpc/platforms/powernv/smp.c
+> +++ b/arch/powerpc/platforms/powernv/smp.c
+> @@ -159,13 +160,17 @@ static void pnv_smp_cpu_kill_self(void)
+>  	generic_set_cpu_dead(cpu);
+>  	smp_wmb();
+>  
+> +	idle_states = pnv_get_supported_cpuidle_states();
+>  	/* We don't want to take decrementer interrupts while we are offline,
+>  	 * so clear LPCR:PECE1. We keep PECE2 enabled.
+>  	 */
+>  	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
+>  	while (!generic_check_cpu_restart(cpu)) {
+>  		ppc64_runlatch_off();
+> -		power7_nap(1);
+> +		if (idle_states & OPAL_PM_SLEEP_ENABLED)
+> +			power7_sleep();
+> +		else
+> +			power7_nap(1);
 
-If I have a target, I tend to set tracing_off() traps.
+So I might be missing something subtle here, but aren't we potentially enabling
+sleep here, prior to your next patch which makes it safe to actually use sleep?
 
-Seems you want an ftrace tracer that tracks sched_switch sleeping to
-sched_switch running in addition to the wakeup latency tracer.
+Shouldn't we only allow sleep after patch 3? Or in other words shouldn't this
+be patch 3 (or 4)?
 
--Mike
-
+cheers
