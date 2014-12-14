@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877AbaLNU3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:29:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53248 "EHLO
+	id S1752800AbaLNU3R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:29:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53238 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287AbaLNUZR (ORCPT
+	with ESMTP id S1752285AbaLNUZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:25:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Willem de Bruijn <willemb@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 35/47] rtnetlink: release net refcnt on error in do_setlink()
-Date: Sun, 14 Dec 2014 12:21:10 -0800
-Message-Id: <20141214201819.889495676@linuxfoundation.org>
+Subject: [PATCH 3.17 33/47] net-timestamp: make tcp_recvmsg call ipv6_recv_error for AF_INET6 socks
+Date: Sun, 14 Dec 2014 12:21:08 -0800
+Message-Id: <20141214201819.828416257@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -30,32 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Willem de Bruijn <willemb@google.com>
 
-[ Upstream commit e0ebde0e131b529fd721b24f62872def5ec3718c ]
+[ Upstream commit f4713a3dfad045d46afcb9c2a7d0bba288920ed4 ]
 
-rtnl_link_get_net() holds a reference on the 'struct net', we need to release
-it in case of error.
+TCP timestamping introduced MSG_ERRQUEUE handling for TCP sockets.
+If the socket is of family AF_INET6, call ipv6_recv_error instead
+of ip_recv_error.
 
-CC: Eric W. Biederman <ebiederm@xmission.com>
-Fixes: b51642f6d77b ("net: Enable a userns root rtnl calls that are safe for unprivilged users")
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+This change is more complex than a single branch due to the loadable
+ipv6 module. It reuses a pre-existing indirect function call from
+ping. The ping code is safe to call, because it is part of the core
+ipv6 module and always present when AF_INET6 sockets are active.
+
+Fixes: 4ed2d765 (net-timestamp: TCP timestamping)
+Signed-off-by: Willem de Bruijn <willemb@google.com>
+
+----
+
+It may also be worthwhile to add WARN_ON_ONCE(sk->family == AF_INET6)
+to ip_recv_error.
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/net/inet_common.h |    2 ++
+ net/ipv4/af_inet.c        |   11 +++++++++++
+ net/ipv4/ping.c           |   12 ++----------
+ net/ipv4/tcp.c            |    2 +-
+ 4 files changed, 16 insertions(+), 11 deletions(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1495,6 +1495,7 @@ static int do_setlink(const struct sk_bu
- 			goto errout;
- 		}
- 		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
-+			put_net(net);
- 			err = -EPERM;
- 			goto errout;
- 		}
+--- a/include/net/inet_common.h
++++ b/include/net/inet_common.h
+@@ -37,6 +37,8 @@ int inet_ioctl(struct socket *sock, unsi
+ int inet_ctl_sock_create(struct sock **sk, unsigned short family,
+ 			 unsigned short type, unsigned char protocol,
+ 			 struct net *net);
++int inet_recv_error(struct sock *sk, struct msghdr *msg, int len,
++		    int *addr_len);
+ 
+ static inline void inet_ctl_sock_destroy(struct sock *sk)
+ {
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -1421,6 +1421,17 @@ out:
+ 	return pp;
+ }
+ 
++int inet_recv_error(struct sock *sk, struct msghdr *msg, int len, int *addr_len)
++{
++	if (sk->sk_family == AF_INET)
++		return ip_recv_error(sk, msg, len, addr_len);
++#if IS_ENABLED(CONFIG_IPV6)
++	if (sk->sk_family == AF_INET6)
++		return pingv6_ops.ipv6_recv_error(sk, msg, len, addr_len);
++#endif
++	return -EINVAL;
++}
++
+ static int inet_gro_complete(struct sk_buff *skb, int nhoff)
+ {
+ 	__be16 newlen = htons(skb->len - nhoff);
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -855,16 +855,8 @@ int ping_recvmsg(struct kiocb *iocb, str
+ 	if (flags & MSG_OOB)
+ 		goto out;
+ 
+-	if (flags & MSG_ERRQUEUE) {
+-		if (family == AF_INET) {
+-			return ip_recv_error(sk, msg, len, addr_len);
+-#if IS_ENABLED(CONFIG_IPV6)
+-		} else if (family == AF_INET6) {
+-			return pingv6_ops.ipv6_recv_error(sk, msg, len,
+-							  addr_len);
+-#endif
+-		}
+-	}
++	if (flags & MSG_ERRQUEUE)
++		return inet_recv_error(sk, msg, len, addr_len);
+ 
+ 	skb = skb_recv_datagram(sk, flags, noblock, &err);
+ 	if (!skb)
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1633,7 +1633,7 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 	u32 urg_hole = 0;
+ 
+ 	if (unlikely(flags & MSG_ERRQUEUE))
+-		return ip_recv_error(sk, msg, len, addr_len);
++		return inet_recv_error(sk, msg, len, addr_len);
+ 
+ 	if (sk_can_busy_loop(sk) && skb_queue_empty(&sk->sk_receive_queue) &&
+ 	    (sk->sk_state == TCP_ESTABLISHED))
 
 
