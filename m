@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaLNQwf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:52:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32915 "EHLO mx1.redhat.com"
+	id S1752376AbaLNQwk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:52:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52953 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719AbaLNQwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:52:31 -0500
-Date: Sun, 14 Dec 2014 18:52:14 +0200
+	id S1751719AbaLNQwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:52:35 -0500
+Date: Sun, 14 Dec 2014 18:52:18 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>
-Subject: [PATCH 04/18] avr32/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-5-git-send-email-mst@redhat.com>
+        Steven Miao <realmz6@gmail.com>,
+        adi-buildroot-devel@lists.sourceforge.net
+Subject: [PATCH 05/18] blackfin/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-6-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -32,29 +32,20 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/avr32/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/blackfin/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/avr32/include/asm/uaccess.h b/arch/avr32/include/asm/uaccess.h
-index 245b2ee..ec6ce63 100644
---- a/arch/avr32/include/asm/uaccess.h
-+++ b/arch/avr32/include/asm/uaccess.h
-@@ -191,7 +191,7 @@ extern int __put_user_bad(void);
- 	default: __gu_err = __get_user_bad(); break;			\
- 	}								\
- 									\
--	x = (typeof(*(ptr)))__gu_val;					\
-+	x = (__force typeof(*(ptr)))__gu_val;					\
- 	__gu_err;							\
- })
- 
-@@ -222,7 +222,7 @@ extern int __put_user_bad(void);
- 	} else {							\
- 		__gu_err = -EFAULT;					\
- 	}								\
--	x = (typeof(*(ptr)))__gu_val;					\
-+	x = (__force typeof(*(ptr)))__gu_val;					\
- 	__gu_err;							\
+diff --git a/arch/blackfin/include/asm/uaccess.h b/arch/blackfin/include/asm/uaccess.h
+index 57701c3..6a46e7d 100644
+--- a/arch/blackfin/include/asm/uaccess.h
++++ b/arch/blackfin/include/asm/uaccess.h
+@@ -147,7 +147,7 @@ static inline int bad_user_access_length(void)
+ 		}						\
+ 	} else							\
+ 		_err = -EFAULT;					\
+-	x = (typeof(*(ptr)))_val;				\
++	x = (__force typeof(*(ptr)))_val;				\
+ 	_err;							\
  })
  
 -- 
