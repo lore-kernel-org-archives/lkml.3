@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaLNUWU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:22:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
+	id S1751547AbaLNUWB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:22:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52808 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaLNUVi (ORCPT
+	with ESMTP id S1751312AbaLNUVi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Kozlov <xeb@mail.ru>, Yuri Chislov <yuri.chislov@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 13/24] ipv6: gre: fix wrong skb->protocol in WCCP
-Date: Sun, 14 Dec 2014 12:20:33 -0800
-Message-Id: <20141214201801.058866623@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>,
+        Dominik Mierzejewski <dominik@greysector.net>
+Subject: [PATCH 3.10 11/24] ahci: disable MSI on SAMSUNG 0xa800 SSD
+Date: Sun, 14 Dec 2014 12:20:31 -0800
+Message-Id: <20141214201800.998571531@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -30,39 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuri Chislov <yuri.chislov@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-[ Upstream commit be6572fdb1bfbe23b2624d477de50af50b02f5d6 ]
+commit 2b21ef0aae65f22f5ba86b13c4588f6f0c2dbefb upstream.
 
-When using GRE redirection in WCCP, it sets the wrong skb->protocol,
-that is, ETH_P_IP instead of ETH_P_IPV6 for the encapuslated traffic.
+Just like 0x1600 which got blacklisted by 66a7cbc303f4 ("ahci: disable
+MSI instead of NCQ on Samsung pci-e SSDs on macbooks"), 0xa800 chokes
+on NCQ commands if MSI is enabled.  Disable MSI.
 
-Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Yuri Chislov <yuri.chislov@gmail.com>
-Tested-by: Yuri Chislov <yuri.chislov@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Dominik Mierzejewski <dominik@greysector.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=89171
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_gre.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -512,11 +512,11 @@ static int ip6gre_rcv(struct sk_buff *sk
+---
+ drivers/ata/ahci.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -494,6 +494,7 @@ static const struct pci_device_id ahci_p
+ 	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
+ 	 */
+ 	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
++	{ PCI_VDEVICE(SAMSUNG, 0xa800), board_ahci_nomsi },
  
- 		skb->protocol = gre_proto;
- 		/* WCCP version 1 and 2 protocol decoding.
--		 * - Change protocol to IP
-+		 * - Change protocol to IPv6
- 		 * - When dealing with WCCPv2, Skip extra 4 bytes in GRE header
- 		 */
- 		if (flags == 0 && gre_proto == htons(ETH_P_WCCP)) {
--			skb->protocol = htons(ETH_P_IP);
-+			skb->protocol = htons(ETH_P_IPV6);
- 			if ((*(h + offset) & 0xF0) != 0x40)
- 				offset += 4;
- 		}
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
 
 
