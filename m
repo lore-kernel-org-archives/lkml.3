@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaLNU3k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:29:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53224 "EHLO
+	id S1752978AbaLNUaD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:30:03 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584AbaLNUZQ (ORCPT
+	with ESMTP id S1752870AbaLNU3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:25:16 -0500
+	Sun, 14 Dec 2014 15:29:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        David Vrabel <david.vrabel@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 32/47] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-Date: Sun, 14 Dec 2014 12:21:07 -0800
-Message-Id: <20141214201819.787523841@linuxfoundation.org>
+Subject: [PATCH 3.17 08/47] xen-netfront: Remove BUGs on paged skb data which crosses a page boundary
+Date: Sun, 14 Dec 2014 12:20:43 -0800
+Message-Id: <20141214201818.816491840@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -30,40 +30,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-[ Upstream commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c ]
+commit 8d609725d4357f499e2103e46011308b32f53513 upstream.
 
-Some VF drivers use the upper byte of "param1" (the qp count field)
-in mlx4_qp_reserve_range() to pass flags which are used to optimize
-the range allocation.
+These BUGs can be erroneously triggered by frags which refer to
+tail pages within a compound page. The data in these pages may
+overrun the hardware page while still being contained within the
+compound page, but since compound_order() evaluates to 0 for tail
+pages the assertion fails. The code already iterates through
+subsequent pages correctly in this scenario, so the BUGs are
+unnecessary and can be removed.
 
-Under the current code, if any of these flags are set, the 32-bit
-count field yields a count greater than 2^24, which is out of range,
-and this VF fails.
-
-As these flags represent a "best-effort" allocation hint anyway, they may
-safely be ignored. Therefore, the PF driver may simply mask out the bits.
-
-Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Fixes: f36c374782e4 ("xen/netfront: handle compound page fragments on transmit")
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1546,7 +1546,7 @@ static int qp_alloc_res(struct mlx4_dev
+---
+ drivers/net/xen-netfront.c |    5 -----
+ 1 file changed, 5 deletions(-)
+
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -496,9 +496,6 @@ static void xennet_make_frags(struct sk_
+ 		len = skb_frag_size(frag);
+ 		offset = frag->page_offset;
  
- 	switch (op) {
- 	case RES_OP_RESERVE:
--		count = get_param_l(&in_param);
-+		count = get_param_l(&in_param) & 0xffffff;
- 		align = get_param_h(&in_param);
- 		err = mlx4_grant_resource(dev, slave, RES_QP, count, 0);
- 		if (err)
+-		/* Data must not cross a page boundary. */
+-		BUG_ON(len + offset > PAGE_SIZE<<compound_order(page));
+-
+ 		/* Skip unused frames from start of page */
+ 		page += offset >> PAGE_SHIFT;
+ 		offset &= ~PAGE_MASK;
+@@ -506,8 +503,6 @@ static void xennet_make_frags(struct sk_
+ 		while (len > 0) {
+ 			unsigned long bytes;
+ 
+-			BUG_ON(offset >= PAGE_SIZE);
+-
+ 			bytes = PAGE_SIZE - offset;
+ 			if (bytes > len)
+ 				bytes = len;
 
 
