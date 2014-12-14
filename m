@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594AbaLNDJW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 22:09:22 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:57104 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752419AbaLNDJU convert rfc822-to-8bit (ORCPT
+	id S1752588AbaLNDOp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 22:14:45 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59566 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361AbaLNDOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 22:09:20 -0500
+	Sat, 13 Dec 2014 22:14:44 -0500
+Date: Sun, 14 Dec 2014 03:14:29 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141214031429.GR22149@ZenIV.linux.org.uk>
+References: <20141213223616.GA22559@redhat.com>
+ <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
+ <CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
+ <CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
+ <20141213233508.GN22149@ZenIV.linux.org.uk>
+ <CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
+ <20141213234730.GP22149@ZenIV.linux.org.uk>
+ <CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
+ <20141214003332.GQ22149@ZenIV.linux.org.uk>
+ <CA+55aFxdsYMuUzdEhGThdtDJA+f1jeKn-rEH+Zrxk5=-KnsSRw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
-References: <CALHRZuotPpSoX9bnQin=93k0Hr7tEp_HZDaaBvfKaPfmoi_EBQ@mail.gmail.com>
-	<A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
-Date: Sun, 14 Dec 2014 08:39:18 +0530
-Message-ID: <CALHRZupFbTxTn9KiUCmvcmgYxUUcNfvAoMqOq=Drq0gZ+H246w@mail.gmail.com>
-Subject: Re: query on DWC3
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-Cc: "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxdsYMuUzdEhGThdtDJA+f1jeKn-rEH+Zrxk5=-KnsSRw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Sat, Dec 13, 2014 at 05:35:17PM -0800, Linus Torvalds wrote:
+> On Sat, Dec 13, 2014 at 4:33 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > So does SMP - this_cpu_dec() relies on preemption being disabled.
+> 
+> No. really. It very much does not. Not on x86, not elsewhere. It's
+> part of the whole point of "this_cpu_p()". They are preemption and
+> interrupt safe.
+> 
+> It's the "__this_cpu_op()" ones that need external protection.
 
-As per my understanding, for BULK OUT we do queue a request with 512
-bytes length since we do not
-know the length of the transfer Host is going to send. For Control OUT
-we know the length in wLength of
-Setup packet, hence I assumed there is no difference in programming
-model of Control IN and OUT.
-Now it is clear for me. Thanks for the clarification :)
+Right you are - I really need to get some coffee...  Sorry...
 
-Sundeep
-
-On Sun, Dec 14, 2014 at 5:21 AM, Paul Zimmerman
-<Paul.Zimmerman@synopsys.com> wrote:
->> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of sundeep subbaraya
->> Sent: Friday, December 12, 2014 9:13 PM
->>
->> Hi Felipe,
->>
->> In DWC3 driver, for three stage Control OUT transfer there is a check:
->>
->>    else if (!IS_ALIGNED(req->request.length, dep->endpoint.maxpacket)
->>
->>              && (dep->number == 0)) {.
->>     }
->>
->> I understand that we check for alignment of sizes and if not we
->> prepare trb with maxpacket and enable interrupt on short packet. In
->> databook I could not find anything related to this, it talks only
->> about addresses should be aligned. In Control transfer programming
->> model there is no difference between Control OUT or IN transfer, if
->> three stage transfer - prepare trb with length wLength. Initially I
->> followed this and not able to receive data on EP0 OUT.:( .After adding
->> the above check it is working. Please help me to understand why we do
->> this?
->
-> Hi Sundeep,
->
-> Please see section 8.2.3.3 "Buffer Size Rules and Zero-Length Packets"
-> in the databook:
->
->         For OUT endpoints, the following rules apply:
->
->         - The total size of a Buffer Descriptor must be a multiple of
->           MaxPacketSize
->
-> The wording may be a little confusing, it actually means that the size
-> of the data buffer for OUT endpoints must be a multiple of MaxPacketSize.
-> Section 8.2.5 states it more clearly:
->
->         - An OUT transfer’s transfer size (Total TRB buffer allocation)
->           must be a multiple of MaxPacketSize even if software is expecting
->         a fixed non-multiple of MaxPacketSize transfer from the Host.
->
-> This rule applies to all OUT endpoint types, including Control endpoints.
->
-> --
-> Paul
->
+FWIW, do we need to disable interrupts there?  After all, mnt_want_write()
+and mnt_drop_write() shouldn't be done from interrupt context - they can
+happen via schedule_delayed_work(), but that's it...
