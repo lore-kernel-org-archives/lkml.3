@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaLNUr0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:47:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
+	id S1754338AbaLNUrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:47:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52973 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751412AbaLNUVr (ORCPT
+	with ESMTP id S1751418AbaLNUVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Clayton <chris2553@googlemail.com>,
-        Kees Cook <keescook@chromium.org>, Borislav Petkov <bp@suse.de>,
-        Junjie Mao <eternal.n08@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 12/34] x86: Use $(OBJDUMP) instead of plain objdump
-Date: Sun, 14 Dec 2014 12:20:50 -0800
-Message-Id: <20141214201804.147653883@linuxfoundation.org>
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.14 13/34] media: smiapp: Only some selection targets are settable
+Date: Sun, 14 Dec 2014 12:20:51 -0800
+Message-Id: <20141214201804.176706489@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -32,45 +29,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Clayton <chris2553@googlemail.com>
+From: Sakari Ailus <sakari.ailus@iki.fi>
 
-commit e2e68ae688b0a3766cd75aedf4ed4e39be402009 upstream.
+commit b31eb901c4e5eeef4c83c43dfbc7fe0d4348cb21 upstream.
 
-commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-broke the cross compile of x86. It added a objdump invocation, which
-invokes the host native objdump and ignores an active cross tool
-chain.
+Setting a non-settable selection target caused BUG() to be called. The check
+for valid selections only takes the selection target into account, but does
+not tell whether it may be set, or only get. Fix the issue by simply
+returning an error to the user.
 
-Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
-account.
-
-[ tglx: Massage changelog and use $(OBJDUMP) ]
-
-Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-Signed-off-by: Chris Clayton <chris2553@googlemail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/Makefile |    2 +-
+ drivers/media/i2c/smiapp/smiapp-core.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -75,7 +75,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
+--- a/drivers/media/i2c/smiapp/smiapp-core.c
++++ b/drivers/media/i2c/smiapp/smiapp-core.c
+@@ -2138,7 +2138,7 @@ static int smiapp_set_selection(struct v
+ 		ret = smiapp_set_compose(subdev, fh, sel);
+ 		break;
+ 	default:
+-		BUG();
++		ret = -EINVAL;
+ 	}
  
--RUN_SIZE = $(shell objdump -h vmlinux | \
-+RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
- 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+ 	mutex_unlock(&sensor->mutex);
 
 
