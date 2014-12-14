@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaLNW4N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 17:56:13 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:47423 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828AbaLNW4F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 17:56:05 -0500
+	id S1751518AbaLNXCf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 18:02:35 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:34186 "EHLO jenni1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751119AbaLNXC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 18:02:28 -0500
+Date: Mon, 15 Dec 2014 01:02:08 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Benjamin LaHaise <bcrl@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-aio@kvack.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Pavel Emelyanov <xemul@parallels.com>,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: Re: [GIT PULL] aio: changes for 3.19
+Message-ID: <20141214230208.GA9217@node.dhcp.inet.fi>
+References: <20141214202224.GH2672@kvack.org>
+ <CA+55aFxV2h1NrE87Zt7U8bsrXgeO=Tf-DyQO8wBYZ=M7WEjxKg@mail.gmail.com>
+ <20141214215221.GI2672@kvack.org>
+ <20141214141336.a0267e95.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1418597564.2674.1.camel@perches.com>
-References: <1418596940-24915-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1418597564.2674.1.camel@perches.com>
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Date: Sun, 14 Dec 2014 23:55:43 +0100
-Message-ID: <CAFo99gaZ52cbLGPT6=fPYydZjm5Jx3KNbwKWoKsgep2DTR8b5Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: vt6655: wmgr.c: Fix for possible null pointer dereference
-To: Joe Perches <joe@perches.com>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Guillaume Clement <gclement@baobob.org>,
-        =?UTF-8?Q?Guido_Mart=C3=ADnez?= <guido@vanguardiasur.com.ar>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Himangi Saraogi <himangi774@gmail.com>, devel@driverdev.osuosl.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141214141336.a0267e95.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sun, Dec 14, 2014 at 02:13:36PM -0800, Andrew Morton wrote:
+> On Sun, 14 Dec 2014 16:52:21 -0500 Benjamin LaHaise <bcrl@kvack.org> wrote:
+> 
+> > On Sun, Dec 14, 2014 at 01:47:32PM -0800, Linus Torvalds wrote:
+> > > On Sun, Dec 14, 2014 at 12:22 PM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+> > > >
+> > > > Pavel Emelyanov (1):
+> > > >       aio: Make it possible to remap aio ring
+> > > 
+> > > So quite frankly, I think this should have had more acks from VM
+> > > people. The patch looks ok to me, but it took me by surprise, and I
+> > > don't see much any discussion about it on linux-mm either..
+> > 
+> > Sadly, nobody responded.  Maybe akpm can chime in on this change (included 
+> > below for ease of review and akpm added to the To:)?
+> > 
+> > 		-ben
+> > -- 
+> > "Thought is the essence of where you are now."
+> > 
+> > commit e4a0d3e720e7e508749c1439b5ba3aff56c92976
+> > Author: Pavel Emelyanov <xemul@parallels.com>
+> > Date:   Thu Sep 18 19:56:17 2014 +0400
+> > 
+> >     aio: Make it possible to remap aio ring
+> 
+> The patch appears to be a bugfix which coincidentally helps CRIU?
+> 
+> If it weren't for the bugfix part, I'd be asking "why not pass the
+> desired virtual address into io_setup()?".
 
-Ok, if you want, otherwise we can put it after the NULL check?
+But it seems the problem is bigger than what the patch fixes. To me we are
+too permisive on what vma can be remapped.
 
-Kind regards
-Rickard Strandqvist
+How can we know that it's okay to move vma around for random driver which
+provide .mmap? Or I miss something obvious?
 
-
-2014-12-14 23:52 GMT+01:00 Joe Perches <joe@perches.com>:
-> On Sun, 2014-12-14 at 23:42 +0100, Rickard Strandqvist wrote:
->> There is otherwise a risk of a possible null pointer dereference.
->> Was largely found by using a static code analysis program called cppcheck.
-> []
->> diff --git a/drivers/staging/vt6655/wmgr.c b/drivers/staging/vt6655/wmgr.c
-> []
->> @@ -4391,7 +4391,7 @@ bAdd_PMKID_Candidate(
->>       unsigned int ii = 0;
->>
->>       pr_debug("bAdd_PMKID_Candidate START: (%d)\n",
->> -              (int)pDevice->gsPMKIDCandidate.NumCandidates);
->> +             (int)(pDevice ? pDevice->gsPMKIDCandidate.NumCandidates : 0));
->
-> This is a function tracing printk.
-> I think it's better to just remove it.
->
->
->
+-- 
+ Kirill A. Shutemov
