@@ -1,52 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaLNBfU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 20:35:20 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:54882 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381AbaLNBfT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 20:35:19 -0500
+	id S1752613AbaLNBiL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 20:38:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39787 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733AbaLNBiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 20:38:10 -0500
+Date: Sun, 14 Dec 2014 12:37:58 +1100
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        Henry Cai <henryplusplus@gmail.com>
+Subject: [GIT PULL REQUEST] md updates for 3.19
+Message-ID: <20141214123758.2a737915@notabene.brown>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20141214003332.GQ22149@ZenIV.linux.org.uk>
-References: <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
-	<20141213165915.GA12756@redhat.com>
-	<20141213223616.GA22559@redhat.com>
-	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
-	<CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
-	<CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
-	<20141213233508.GN22149@ZenIV.linux.org.uk>
-	<CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
-	<20141213234730.GP22149@ZenIV.linux.org.uk>
-	<CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
-	<20141214003332.GQ22149@ZenIV.linux.org.uk>
-Date: Sat, 13 Dec 2014 17:35:17 -0800
-X-Google-Sender-Auth: ddRv0H_HfgRyRUlXeUSKHu1wW3c
-Message-ID: <CA+55aFxdsYMuUzdEhGThdtDJA+f1jeKn-rEH+Zrxk5=-KnsSRw@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/5mrRlp2ZMSuJxhPC1h6nvdK"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 4:33 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> So does SMP - this_cpu_dec() relies on preemption being disabled.
+--Sig_/5mrRlp2ZMSuJxhPC1h6nvdK
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-No. really. It very much does not. Not on x86, not elsewhere. It's
-part of the whole point of "this_cpu_p()". They are preemption and
-interrupt safe.
 
-It's the "__this_cpu_op()" ones that need external protection.
+hi Linus,
+ please pull these three patches.
 
-                     Linus
+ I did have a largish set of locking changes queued, but late testing showed
+ they weren't quite as stable as I thought and while I fixed what I found, I
+ decided it safer to delay them a release ... particularly as I'll be AFK f=
+or
+ a few weeks.  So expect a larger batch next time :-)
+
+Thanks,
+NeilBrow
+
+The following changes since commit 3a18ca061311f2f1ee9c44012f89c7436d392117:
+
+  Merge tag 'ext4_for_linus_urgent' of git://git.kernel.org/pub/scm/linux/k=
+ernel/git/tytso/ext4 (2014-12-01 20:11:49 -0800)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md/3.19
+
+for you to fetch changes up to f851b60db0fd83a10034c5cc9d9e58c758457b1c:
+
+  md: Check MD_RECOVERY_RUNNING as well as ->sync_thread. (2014-12-11 10:02=
+:10 +1100)
+
+----------------------------------------------------------------
+Three fixes for md
+
+----------------------------------------------------------------
+NeilBrown (2):
+      md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtyin=
+g wants.
+      md: Check MD_RECOVERY_RUNNING as well as ->sync_thread.
+
+kbuild test robot (1):
+      md: fix semicolon.cocci warnings
+
+ drivers/md/md.c    | 38 +++++++++++++++++++++++++++-----------
+ drivers/md/raid5.c |  7 +++++--
+ 2 files changed, 32 insertions(+), 13 deletions(-)
+
+--Sig_/5mrRlp2ZMSuJxhPC1h6nvdK
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVIzp9jnsnt1WYoG5AQKSmA/+LpzBMEOzL7hL/jPKMdYg3mCk/DMsuDQp
+1XjirEjMQGtPMNxVhsJ8JLm7jToUpg9khM7W9ZS7A4Zc96Skb4hj19W7rTT975L5
+UKJqVIppURnISMCElftOxXnb/n/0vctbrKGQibOzxTQRds/HOPJbEVpHGwgb14jG
+RJENsEZ+Rbe3n7CbtUV6T8b2bpFCeFABcHrRRj9pE0LsJDPPNTt9RyxN2hqZV+XT
+ieGXMXdL9otxEYBYxAK9Yh7bcAreRXuEuB7C295jaqiKBo+mfGqVLZMBTE8acYvc
+u6FcqXh4DvOd7BPF3a/VjXooUAEBGFe85o3NL+bi5c03YsopzNTCFGsUO7mfOSGV
+90Mij/VYwDaatiwBtooC0jbQFxGb1Y/1Kk33101Z/JsaJI1fVYFvS3t91rin+PZ9
+joucxxtixAvVlYTAt3khhflCZeYFhaOHtQXbBu3PF8/wN44vQUNX9H1jqhYlD9/N
+jsM8J9Qx/X8B4RBSJJjn09286eE+e1YuahAmO0I7BKozIMNVxYtuycsiifGnC9hL
+iR0HQMHMps+lAjlZUP8qyrY4sTTqg1F9tie0qDfln1y+UrWWDyaI6J9+FhVp/KYp
+Re94hFMCeiP+euuCbj60SskeD8hTLNfEJFzZ9zlPAc4Hkcqc1qmzi171hj41hIOe
+harxNSLHx9w=
+=kWCD
+-----END PGP SIGNATURE-----
+
+--Sig_/5mrRlp2ZMSuJxhPC1h6nvdK--
