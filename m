@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955AbaLNUpl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:45:41 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52903 "EHLO
+	id S1753307AbaLNUql (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:46:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472AbaLNUVx (ORCPT
+	with ESMTP id S1751329AbaLNUVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:53 -0500
+	Sun, 14 Dec 2014 15:21:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ji_ang <ji_ang@163.com>, Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 02/34] mm/vmpressure.c: fix race in vmpressure_work_fn()
-Date: Sun, 14 Dec 2014 12:20:40 -0800
-Message-Id: <20141214201803.863278780@linuxfoundation.org>
+        Dmitry Kozlov <xeb@mail.ru>, Yuri Chislov <yuri.chislov@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 19/34] ipv6: gre: fix wrong skb->protocol in WCCP
+Date: Sun, 14 Dec 2014 12:20:57 -0800
+Message-Id: <20141214201804.346837716@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -30,51 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Morton <akpm@linux-foundation.org>
+From: Yuri Chislov <yuri.chislov@gmail.com>
 
-commit 91b57191cfd152c02ded0745250167d0263084f8 upstream.
+[ Upstream commit be6572fdb1bfbe23b2624d477de50af50b02f5d6 ]
 
-In some android devices, there will be a "divide by zero" exception.
-vmpr->scanned could be zero before spin_lock(&vmpr->sr_lock).
+When using GRE redirection in WCCP, it sets the wrong skb->protocol,
+that is, ETH_P_IP instead of ETH_P_IPV6 for the encapuslated traffic.
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=88051
-
-[akpm@linux-foundation.org: neaten]
-Reported-by: ji_ang <ji_ang@163.com>
-Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
+Cc: Dmitry Kozlov <xeb@mail.ru>
+Signed-off-by: Yuri Chislov <yuri.chislov@gmail.com>
+Tested-by: Yuri Chislov <yuri.chislov@gmail.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/vmpressure.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ net/ipv6/ip6_gre.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/vmpressure.c
-+++ b/mm/vmpressure.c
-@@ -165,6 +165,7 @@ static void vmpressure_work_fn(struct wo
- 	unsigned long scanned;
- 	unsigned long reclaimed;
+--- a/net/ipv6/ip6_gre.c
++++ b/net/ipv6/ip6_gre.c
+@@ -508,11 +508,11 @@ static int ip6gre_rcv(struct sk_buff *sk
  
-+	spin_lock(&vmpr->sr_lock);
- 	/*
- 	 * Several contexts might be calling vmpressure(), so it is
- 	 * possible that the work was rescheduled again before the old
-@@ -173,11 +174,12 @@ static void vmpressure_work_fn(struct wo
- 	 * here. No need for any locks here since we don't care if
- 	 * vmpr->reclaimed is in sync.
- 	 */
--	if (!vmpr->scanned)
-+	scanned = vmpr->scanned;
-+	if (!scanned) {
-+		spin_unlock(&vmpr->sr_lock);
- 		return;
-+	}
- 
--	spin_lock(&vmpr->sr_lock);
--	scanned = vmpr->scanned;
- 	reclaimed = vmpr->reclaimed;
- 	vmpr->scanned = 0;
- 	vmpr->reclaimed = 0;
+ 		skb->protocol = gre_proto;
+ 		/* WCCP version 1 and 2 protocol decoding.
+-		 * - Change protocol to IP
++		 * - Change protocol to IPv6
+ 		 * - When dealing with WCCPv2, Skip extra 4 bytes in GRE header
+ 		 */
+ 		if (flags == 0 && gre_proto == htons(ETH_P_WCCP)) {
+-			skb->protocol = htons(ETH_P_IP);
++			skb->protocol = htons(ETH_P_IPV6);
+ 			if ((*(h + offset) & 0xF0) != 0x40)
+ 				offset += 4;
+ 		}
 
 
