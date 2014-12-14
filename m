@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaLNUvR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:51:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
+	id S1754592AbaLNUvY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:51:24 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaLNUVm (ORCPT
+	with ESMTP id S1751352AbaLNUVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:42 -0500
+	Sun, 14 Dec 2014 15:21:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.10 04/24] i2c: omap: fix NACK and Arbitration Lost irq handling
-Date: Sun, 14 Dec 2014 12:20:24 -0800
-Message-Id: <20141214201800.764807037@linuxfoundation.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 3.10 22/24] ARM: sched_clock: Load cycle count after epoch stabilizes
+Date: Sun, 14 Dec 2014 12:20:42 -0800
+Message-Id: <20141214201801.348507443@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -29,70 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Kochetkov <al.kochet@gmail.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 27caca9d2e01c92b26d0690f065aad093fea01c7 upstream.
+commit 336ae1180df5f69b9e0fb6561bec01c5f64361cf upstream.
 
-commit 1d7afc95946487945cc7f5019b41255b72224b70 (i2c: omap: ack IRQ in parts)
-changed the interrupt handler to complete transfers without clearing
-XRDY (AL case) and ARDY (NACK case) flags. XRDY or ARDY interrupts will be
-fired again. As a result, ISR keep processing transfer after it was already
-complete (from the driver code point of view).
+There is a small race between when the cycle count is read from
+the hardware and when the epoch stabilizes. Consider this
+scenario:
 
-A didn't see real impacts of the 1d7afc9, but it is really bad idea to
-have ISR running on user data after transfer was complete.
+ CPU0                           CPU1
+ ----                           ----
+ cyc = read_sched_clock()
+ cyc_to_sched_clock()
+                                 update_sched_clock()
+                                  ...
+                                  cd.epoch_cyc = cyc;
+  epoch_cyc = cd.epoch_cyc;
+  ...
+  epoch_ns + cyc_to_ns((cyc - epoch_cyc)
 
-It looks, what 1d7afc9 violate TI specs in what how AL and NACK should be
-handled (see Note 1, sprugn4r, Figure 17-31 and Figure 17-32).
+The cyc on cpu0 was read before the epoch changed. But we
+calculate the nanoseconds based on the new epoch by subtracting
+the new epoch from the old cycle count. Since epoch is most likely
+larger than the old cycle count we calculate a large number that
+will be converted to nanoseconds and added to epoch_ns, causing
+time to jump forward too much.
 
-According to specs (if I understood correctly), in case of NACK and AL driver
-must reset NACK, AL, ARDY, RDR, and RRDY (Master Receive Mode), and
-NACK, AL, ARDY, and XDR (Master Transmitter Mode).
+Fix this problem by reading the hardware after the epoch has
+stabilized.
 
-All that is done down the code under the if condition:
-if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) ...
-
-The patch restore pre 1d7afc9 logic of handling NACK and AL interrupts, so
-no interrupts is fired after ISR informs the rest of driver what transfer
-complete.
-
-Note: instead of removing break under NACK case, we could just replace 'break'
-with 'continue' and allow NACK transfer to finish using ARDY event. I found
-that NACK and ARDY bits usually set together. That case confirm TI wiki:
-http://processors.wiki.ti.com/index.php/I2C_Tips#Detecting_and_handling_NACK
-
-In order if someone interested in the event traces for NACK and AL cases,
-I sent them to mailing list.
-
-Tested on Beagleboard XM C.
-
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
-Acked-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/i2c/busses/i2c-omap.c |    2 --
- 1 file changed, 2 deletions(-)
 
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -928,14 +928,12 @@ omap_i2c_isr_thread(int this_irq, void *
- 		if (stat & OMAP_I2C_STAT_NACK) {
- 			err |= OMAP_I2C_STAT_NACK;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
--			break;
- 		}
+---
+ arch/arm/kernel/sched_clock.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+--- a/arch/arm/kernel/sched_clock.c
++++ b/arch/arm/kernel/sched_clock.c
+@@ -51,10 +51,11 @@ static inline u64 notrace cyc_to_ns(u64
+ 	return (cyc * mult) >> shift;
+ }
  
- 		if (stat & OMAP_I2C_STAT_AL) {
- 			dev_err(dev->dev, "Arbitration lost\n");
- 			err |= OMAP_I2C_STAT_AL;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
--			break;
- 		}
+-static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
++static unsigned long long notrace sched_clock_32(void)
+ {
+ 	u64 epoch_ns;
+ 	u32 epoch_cyc;
++	u32 cyc;
  
- 		/*
+ 	if (cd.suspended)
+ 		return cd.epoch_ns;
+@@ -73,7 +74,9 @@ static unsigned long long notrace cyc_to
+ 		smp_rmb();
+ 	} while (epoch_cyc != cd.epoch_cyc_copy);
+ 
+-	return epoch_ns + cyc_to_ns((cyc - epoch_cyc) & mask, cd.mult, cd.shift);
++	cyc = read_sched_clock();
++	cyc = (cyc - epoch_cyc) & sched_clock_mask;
++	return epoch_ns + cyc_to_ns(cyc, cd.mult, cd.shift);
+ }
+ 
+ /*
+@@ -165,12 +168,6 @@ void __init setup_sched_clock(u32 (*read
+ 	pr_debug("Registered %pF as sched_clock source\n", read);
+ }
+ 
+-static unsigned long long notrace sched_clock_32(void)
+-{
+-	u32 cyc = read_sched_clock();
+-	return cyc_to_sched_clock(cyc, sched_clock_mask);
+-}
+-
+ unsigned long long __read_mostly (*sched_clock_func)(void) = sched_clock_32;
+ 
+ unsigned long long notrace sched_clock(void)
 
 
