@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaLNUXC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:23:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
+	id S1751882AbaLNUWw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:22:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaLNUVk (ORCPT
+	with ESMTP id S1751331AbaLNUVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:40 -0500
+	Sun, 14 Dec 2014 15:21:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/24] rtnetlink: release net refcnt on error in do_setlink()
-Date: Sun, 14 Dec 2014 12:20:36 -0800
-Message-Id: <20141214201801.163912452@linuxfoundation.org>
+        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 17/24] net: mvneta: fix Tx interrupt delay
+Date: Sun, 14 Dec 2014 12:20:37 -0800
+Message-Id: <20141214201801.193473379@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -30,32 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: willy tarreau <w@1wt.eu>
 
-[ Upstream commit e0ebde0e131b529fd721b24f62872def5ec3718c ]
+[ Upstream commit aebea2ba0f7495e1a1c9ea5e753d146cb2f6b845 ]
 
-rtnl_link_get_net() holds a reference on the 'struct net', we need to release
-it in case of error.
+The mvneta driver sets the amount of Tx coalesce packets to 16 by
+default. Normally that does not cause any trouble since the driver
+uses a much larger Tx ring size (532 packets). But some sockets
+might run with very small buffers, much smaller than the equivalent
+of 16 packets. This is what ping is doing for example, by setting
+SNDBUF to 324 bytes rounded up to 2kB by the kernel.
 
-CC: Eric W. Biederman <ebiederm@xmission.com>
-Fixes: b51642f6d77b ("net: Enable a userns root rtnl calls that are safe for unprivilged users")
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+The problem is that there is no documented method to force a specific
+packet to emit an interrupt (eg: the last of the ring) nor is it
+possible to make the NIC emit an interrupt after a given delay.
+
+In this case, it causes trouble, because when ping sends packets over
+its raw socket, the few first packets leave the system, and the first
+15 packets will be emitted without an IRQ being generated, so without
+the skbs being freed. And since the socket's buffer is small, there's
+no way to reach that amount of packets, and the ping ends up with
+"send: no buffer available" after sending 6 packets. Running with 3
+instances of ping in parallel is enough to hide the problem, because
+with 6 packets per instance, that's 18 packets total, which is enough
+to grant a Tx interrupt before all are sent.
+
+The original driver in the LSP kernel worked around this design flaw
+by using a software timer to clean up the Tx descriptors. This timer
+was slow and caused terrible network performance on some Tx-bound
+workloads (such as routing) but was enough to make tools like ping
+work correctly.
+
+Instead here, we simply set the packet counts before interrupt to 1.
+This ensures that each packet sent will produce an interrupt. NAPI
+takes care of coalescing interrupts since the interrupt is disabled
+once generated.
+
+No measurable performance impact nor CPU usage were observed on small
+nor large packets, including when saturating the link on Tx, and this
+fixes tools like ping which rely on too small a send buffer. If one
+wants to increase this value for certain workloads where it is safe
+to do so, "ethtool -C $dev tx-frames" will override this default
+setting.
+
+This fix needs to be applied to stable kernels starting with 3.10.
+
+Tested-By: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/rtnetlink.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/marvell/mvneta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1318,6 +1318,7 @@ static int do_setlink(const struct sk_bu
- 			goto errout;
- 		}
- 		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
-+			put_net(net);
- 			err = -EPERM;
- 			goto errout;
- 		}
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -210,7 +210,7 @@
+ /* Various constants */
+ 
+ /* Coalescing */
+-#define MVNETA_TXDONE_COAL_PKTS		16
++#define MVNETA_TXDONE_COAL_PKTS		1
+ #define MVNETA_RX_COAL_PKTS		32
+ #define MVNETA_RX_COAL_USEC		100
+ 
 
 
