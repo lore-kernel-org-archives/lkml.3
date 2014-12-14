@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaLNQwy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:52:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52157 "EHLO mx1.redhat.com"
+	id S1753410AbaLNQ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:56:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49325 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021AbaLNQws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:52:48 -0500
-Date: Sun, 14 Dec 2014 18:52:35 +0200
+	id S1751935AbaLNQwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:52:39 -0500
+Date: Sun, 14 Dec 2014 18:52:27 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
-Subject: [PATCH 09/18] metag/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-10-git-send-email-mst@redhat.com>
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH 07/18] ia64/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-8-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,29 +32,20 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/metag/include/asm/uaccess.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/ia64/include/asm/uaccess.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/metag/include/asm/uaccess.h b/arch/metag/include/asm/uaccess.h
-index 0748b0a..c314b45 100644
---- a/arch/metag/include/asm/uaccess.h
-+++ b/arch/metag/include/asm/uaccess.h
-@@ -135,7 +135,7 @@ extern long __get_user_bad(void);
- ({                                                              \
- 	long __gu_err, __gu_val;                                \
- 	__get_user_size(__gu_val, (ptr), (size), __gu_err);	\
--	(x) = (__typeof__(*(ptr)))__gu_val;                     \
-+	(x) = (__force __typeof__(*(ptr)))__gu_val;                     \
- 	__gu_err;                                               \
- })
- 
-@@ -145,7 +145,7 @@ extern long __get_user_bad(void);
- 	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);		\
- 	if (access_ok(VERIFY_READ, __gu_addr, size))			\
- 		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
--	(x) = (__typeof__(*(ptr)))__gu_val;                             \
-+	(x) = (__force __typeof__(*(ptr)))__gu_val;                             \
- 	__gu_err;                                                       \
+diff --git a/arch/ia64/include/asm/uaccess.h b/arch/ia64/include/asm/uaccess.h
+index 449c8c0..d818ae4 100644
+--- a/arch/ia64/include/asm/uaccess.h
++++ b/arch/ia64/include/asm/uaccess.h
+@@ -197,7 +197,7 @@ extern void __get_user_unknown (void);
+ 		      case 8: __get_user_size(__gu_val, __gu_ptr, 8, __gu_err); break;	\
+ 		      default: __get_user_unknown(); break;				\
+ 		}									\
+-	(x) = (__typeof__(*(__gu_ptr))) __gu_val;					\
++	(x) = (__force __typeof__(*(__gu_ptr))) __gu_val;					\
+ 	__gu_err;									\
  })
  
 -- 
