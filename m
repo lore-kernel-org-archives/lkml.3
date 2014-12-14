@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801AbaLNUeb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:34:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
+	id S1752522AbaLNUer (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:34:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53332 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaLNUV5 (ORCPT
+	with ESMTP id S1753159AbaLNUbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:57 -0500
+	Sun, 14 Dec 2014 15:31:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
         Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.14 07/34] i2c: omap: fix i207 errata handling
-Date: Sun, 14 Dec 2014 12:20:45 -0800
-Message-Id: <20141214201804.005539904@linuxfoundation.org>
+Subject: [PATCH 3.17 12/47] i2c: omap: fix i207 errata handling
+Date: Sun, 14 Dec 2014 12:20:47 -0800
+Message-Id: <20141214201818.972456018@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
-References: <20141214201803.791392744@linuxfoundation.org>
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
