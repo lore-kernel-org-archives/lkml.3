@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaLNUZg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:25:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52903 "EHLO
+	id S1752478AbaLNUZm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:25:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52981 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaLNUWR (ORCPT
+	with ESMTP id S1751674AbaLNUWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:22:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.17 05/47] mm: fix swapoff hang after page migration and fork
-Date: Sun, 14 Dec 2014 12:20:40 -0800
-Message-Id: <20141214201818.712275215@linuxfoundation.org>
+        Dean Anderson <linux-dev@sensoray.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Subject: [PATCH 3.17 22/47] media: s2255drv: fix payload size for JPG, MJPEG
+Date: Sun, 14 Dec 2014 12:20:57 -0800
+Message-Id: <20141214201819.324790947@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -30,70 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: sensoray-dev <linux-dev@sensoray.com>
 
-commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
+commit 1f391217ad8d7cd7b1e48e6e2abf49970cd91d18 upstream.
 
-I've been seeing swapoff hangs in recent testing: it's cycling around
-trying unsuccessfully to find an mm for some remaining pages of swap.
+length is the size of the buffer, not the payload. That's set using
+vb2_set_plane_payload().
 
-I have been exercising swap and page migration more heavily recently,
-and now notice a long-standing error in copy_one_pte(): it's trying to
-add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
-so even when it's a migration entry or an hwpoison entry.
-
-Which wouldn't matter much, except it adds dst_mm next to src_mm,
-assuming src_mm is already on the mmlist: which may not be so.  Then if
-pages are later swapped out from dst_mm, swapoff won't be able to find
-where to replace them.
-
-There's already a !non_swap_entry() test for stats: move that up before
-the swap_duplicate() and the addition to mmlist.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Kelley Nielsen <kelleynnn@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Dean Anderson <linux-dev@sensoray.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/media/usb/s2255/s2255drv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -815,20 +815,20 @@ copy_one_pte(struct mm_struct *dst_mm, s
- 		if (!pte_file(pte)) {
- 			swp_entry_t entry = pte_to_swp_entry(pte);
- 
--			if (swap_duplicate(entry) < 0)
--				return entry.val;
-+			if (likely(!non_swap_entry(entry))) {
-+				if (swap_duplicate(entry) < 0)
-+					return entry.val;
- 
--			/* make sure dst_mm is on swapoff's mmlist. */
--			if (unlikely(list_empty(&dst_mm->mmlist))) {
--				spin_lock(&mmlist_lock);
--				if (list_empty(&dst_mm->mmlist))
--					list_add(&dst_mm->mmlist,
--						 &src_mm->mmlist);
--				spin_unlock(&mmlist_lock);
--			}
--			if (likely(!non_swap_entry(entry)))
-+				/* make sure dst_mm is on swapoff's mmlist. */
-+				if (unlikely(list_empty(&dst_mm->mmlist))) {
-+					spin_lock(&mmlist_lock);
-+					if (list_empty(&dst_mm->mmlist))
-+						list_add(&dst_mm->mmlist,
-+							 &src_mm->mmlist);
-+					spin_unlock(&mmlist_lock);
-+				}
- 				rss[MM_SWAPENTS]++;
--			else if (is_migration_entry(entry)) {
-+			} else if (is_migration_entry(entry)) {
- 				page = migration_entry_to_page(entry);
- 
- 				if (PageAnon(page))
+--- a/drivers/media/usb/s2255/s2255drv.c
++++ b/drivers/media/usb/s2255/s2255drv.c
+@@ -632,7 +632,7 @@ static void s2255_fillbuff(struct s2255_
+ 			break;
+ 		case V4L2_PIX_FMT_JPEG:
+ 		case V4L2_PIX_FMT_MJPEG:
+-			buf->vb.v4l2_buf.length = jpgsize;
++			vb2_set_plane_payload(&buf->vb, 0, jpgsize);
+ 			memcpy(vbuf, tmpbuf, jpgsize);
+ 			break;
+ 		case V4L2_PIX_FMT_YUV422P:
 
 
