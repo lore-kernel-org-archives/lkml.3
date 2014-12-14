@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbaLNDIR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 22:08:17 -0500
-Received: from smtp2.provo.novell.com ([137.65.250.81]:44684 "EHLO
-	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaLNDIQ (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
-	Sat, 13 Dec 2014 22:08:16 -0500
-Message-ID: <1418526487.1928.1.camel@stgolabs.net>
-Subject: Re: [patch 45/99] mm: unmapped page migration avoid unmap+remap
- overhead
-From: Davidlohr Bueso <dave@stgolabs.net>
-To: akpm@linux-foundation.org
-Cc: torvalds@linux-foundation.org, hughd@google.com, mel@csn.ul.ie,
-        riel@redhat.com, linux-kernel@vger.kernel.org
-Date: Sat, 13 Dec 2014 19:08:07 -0800
-In-Reply-To: <548b8eb3.mP5dt9zrTrZO7rLj%akpm@linux-foundation.org>
-References: <548b8eb3.mP5dt9zrTrZO7rLj%akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752594AbaLNDJW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 22:09:22 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:57104 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419AbaLNDJU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 22:09:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
+References: <CALHRZuotPpSoX9bnQin=93k0Hr7tEp_HZDaaBvfKaPfmoi_EBQ@mail.gmail.com>
+	<A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
+Date: Sun, 14 Dec 2014 08:39:18 +0530
+Message-ID: <CALHRZupFbTxTn9KiUCmvcmgYxUUcNfvAoMqOq=Drq0gZ+H246w@mail.gmail.com>
+Subject: Re: query on DWC3
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-12 at 16:56 -0800, akpm@linux-foundation.org wrote:
-> From: Hugh Dickins <hughd@google.com>
-> Subject: mm: unmapped page migration avoid unmap+remap overhead
-> 
-> Page migration's __unmap_and_move(), and rmap's try_to_unmap(), were
-> created for use on pages almost certainly mapped into userspace.  But
-> nowadays compaction often applies them to unmapped page cache pages: which
-> may exacerbate contention on i_mmap_rwsem quite unnecessarily, since
-> try_to_unmap_file() makes no preliminary page_mapped() check.
-> 
-> Now check page_mapped() in __unmap_and_move(); and avoid repeating the
-> same overhead in rmap_walk_file() - don't remove_migration_ptes() when we
-> never inserted any.
-> 
-> (The PageAnon(page) comment blocks now look even sillier than before, but
-> clean that up on some other occasion.  And note in passing that
-> try_to_unmap_one() does not use a migration entry when PageSwapCache, so
-> remove_migration_ptes() will then not update that swap entry to newpage
-> pte: not a big deal, but something else to clean up later.)
-> 
-> Davidlohr remarked in "mm,fs: introduce helpers around the i_mmap_mutex"
-> conversion to i_mmap_rwsem, that "The biggest winner of these changes is
-> migration": a part of the reason might be all of that unnecessary taking
-> of i_mmap_mutex in page migration; 
+Hi Paul,
 
-Yeah, this is making a lot of sense.
+As per my understanding, for BULK OUT we do queue a request with 512
+bytes length since we do not
+know the length of the transfer Host is going to send. For Control OUT
+we know the length in wLength of
+Setup packet, hence I assumed there is no difference in programming
+model of Control IN and OUT.
+Now it is clear for me. Thanks for the clarification :)
 
-> and it's rather a shame that I didn't
-> get around to sending this patch in before his - this one is much less
-> useful after Davidlohr's conversion to rwsem, but still good.
+Sundeep
 
-Now that I have some free hardware, I did some testing to consider this
-patch for some SLE kernels (which still has the i_mmap mutex), and it
-sure relieves a lot of the overhead/contention. On a 60-core box with a
-file server benchmark we increase throughput by up to 60-70%:
-
-new_fserver-61     21456.59 (  0.00%)    35875.59 ( 67.20%)
-new_fserver-121    22335.16 (  0.00%)    38037.28 ( 70.30%)
-new_fserver-181    23280.22 (  0.00%)    39518.54 ( 69.75%)
-new_fserver-241    23194.88 (  0.00%)    39065.85 ( 68.42%)
-new_fserver-301    23135.30 (  0.00%)    38464.88 ( 66.26%)
-new_fserver-361    22922.97 (  0.00%)    38115.74 ( 66.28%)
-new_fserver-421    22841.84 (  0.00%)    37859.06 ( 65.74%)
-new_fserver-481    22643.83 (  0.00%)    37751.59 ( 66.72%)
-new_fserver-541    22620.21 (  0.00%)    37036.09 ( 63.73%)
-new_fserver-601    22593.85 (  0.00%)    36959.11 ( 63.58%)
-new_fserver-661    22434.81 (  0.00%)    36629.28 ( 63.27%)
-new_fserver-721    22219.68 (  0.00%)    36128.16 ( 62.60%)
-new_fserver-781    22134.90 (  0.00%)    35893.50 ( 62.16%)
-new_fserver-841    21901.59 (  0.00%)    35826.33 ( 63.58%)
-new_fserver-901    21911.80 (  0.00%)    35285.66 ( 61.03%)
-new_fserver-961    21810.72 (  0.00%)    35253.62 ( 61.63%)
-
-Anyway, it's already picked up by Linus, but thought it would be nice to
-have actual data.
-
-Thanks,
-Davidlohr
-
-
+On Sun, Dec 14, 2014 at 5:21 AM, Paul Zimmerman
+<Paul.Zimmerman@synopsys.com> wrote:
+>> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of sundeep subbaraya
+>> Sent: Friday, December 12, 2014 9:13 PM
+>>
+>> Hi Felipe,
+>>
+>> In DWC3 driver, for three stage Control OUT transfer there is a check:
+>>
+>>    else if (!IS_ALIGNED(req->request.length, dep->endpoint.maxpacket)
+>>
+>>              && (dep->number == 0)) {.
+>>     }
+>>
+>> I understand that we check for alignment of sizes and if not we
+>> prepare trb with maxpacket and enable interrupt on short packet. In
+>> databook I could not find anything related to this, it talks only
+>> about addresses should be aligned. In Control transfer programming
+>> model there is no difference between Control OUT or IN transfer, if
+>> three stage transfer - prepare trb with length wLength. Initially I
+>> followed this and not able to receive data on EP0 OUT.:( .After adding
+>> the above check it is working. Please help me to understand why we do
+>> this?
+>
+> Hi Sundeep,
+>
+> Please see section 8.2.3.3 "Buffer Size Rules and Zero-Length Packets"
+> in the databook:
+>
+>         For OUT endpoints, the following rules apply:
+>
+>         - The total size of a Buffer Descriptor must be a multiple of
+>           MaxPacketSize
+>
+> The wording may be a little confusing, it actually means that the size
+> of the data buffer for OUT endpoints must be a multiple of MaxPacketSize.
+> Section 8.2.5 states it more clearly:
+>
+>         - An OUT transfer’s transfer size (Total TRB buffer allocation)
+>           must be a multiple of MaxPacketSize even if software is expecting
+>         a fixed non-multiple of MaxPacketSize transfer from the Host.
+>
+> This rule applies to all OUT endpoint types, including Control endpoints.
+>
+> --
+> Paul
+>
