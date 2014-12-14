@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638AbaLNU1c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:27:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53301 "EHLO
+	id S1751779AbaLNU1r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:27:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53295 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752318AbaLNUZV (ORCPT
+	with ESMTP id S1752311AbaLNUZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:25:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony Wright <anthony@overnetdata.com>,
-        David Vrabel <david.vrabel@citrix.com>,
+        Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 41/47] xen-netfront: use correct linear area after linearizing an skb
-Date: Sun, 14 Dec 2014 12:21:16 -0800
-Message-Id: <20141214201820.117196570@linuxfoundation.org>
+Subject: [PATCH 3.17 39/47] net: mvneta: fix race condition in mvneta_tx()
+Date: Sun, 14 Dec 2014 12:21:14 -0800
+Message-Id: <20141214201820.044152013@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -30,45 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 11d3d2a16cc1f05c6ece69a4392e99efb85666a6 ]
+[ Upstream commit 5f478b41033606d325e420df693162e2524c2b94 ]
 
-Commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d (xen-netfront: Fix
-handling packets on compound pages with skb_linearize) attempted to
-fix a problem where an skb that would have required too many slots
-would be dropped causing TCP connections to stall.
+mvneta_tx() dereferences skb to get skb->len too late,
+as hardware might have completed the transmit and TX completion
+could have freed the skb from another cpu.
 
-However, it filled in the first slot using the original buffer and not
-the new one and would use the wrong offset and grant access to the
-wrong page.
-
-Netback would notice the malformed request and stop all traffic on the
-VIF, reporting:
-
-    vif vif-3-0 vif3.0: txreq.offset: 85e, size: 4002, end: 6144
-    vif vif-3-0 vif3.0: fatal error; disabling device
-
-Reported-by: Anthony Wright <anthony@overnetdata.com>
-Tested-by: Anthony Wright <anthony@overnetdata.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Fixes: 71f6d1b31fb1 ("net: mvneta: replace Tx timer with a real interrupt")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netfront.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/marvell/mvneta.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -627,6 +627,9 @@ static int xennet_start_xmit(struct sk_b
- 				    slots, skb->len);
- 		if (skb_linearize(skb))
- 			goto drop;
-+		data = skb->data;
-+		offset = offset_in_page(data);
-+		len = skb_headlen(skb);
- 	}
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -1721,6 +1721,7 @@ static int mvneta_tx(struct sk_buff *skb
+ 	u16 txq_id = skb_get_queue_mapping(skb);
+ 	struct mvneta_tx_queue *txq = &pp->txqs[txq_id];
+ 	struct mvneta_tx_desc *tx_desc;
++	int len = skb->len;
+ 	int frags = 0;
+ 	u32 tx_cmd;
  
- 	spin_lock_irqsave(&queue->tx_lock, flags);
+@@ -1788,7 +1789,7 @@ out:
+ 
+ 		u64_stats_update_begin(&stats->syncp);
+ 		stats->tx_packets++;
+-		stats->tx_bytes  += skb->len;
++		stats->tx_bytes  += len;
+ 		u64_stats_update_end(&stats->syncp);
+ 	} else {
+ 		dev->stats.tx_dropped++;
 
 
