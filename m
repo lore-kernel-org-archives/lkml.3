@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaLNUWw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:22:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
+	id S1751935AbaLNUXR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:23:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331AbaLNUVj (ORCPT
+	with ESMTP id S1751339AbaLNUVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:39 -0500
+	Sun, 14 Dec 2014 15:21:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 17/24] net: mvneta: fix Tx interrupt delay
-Date: Sun, 14 Dec 2014 12:20:37 -0800
-Message-Id: <20141214201801.193473379@linuxfoundation.org>
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Nadav HarEl <nyh@il.ibm.com>, Jun Nakajima <jun.nakajima@intel.com>,
+        Xinhao Xu <xinhao.xu@intel.com>, Yang Zhang <yang.z.zhang@intel.com>,
+        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Vinson Lee <vlee@twopensource.com>
+Subject: [PATCH 3.10 19/24] nEPT: Nested INVEPT
+Date: Sun, 14 Dec 2014 12:20:39 -0800
+Message-Id: <20141214201801.253573095@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -29,69 +33,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: willy tarreau <w@1wt.eu>
+From: Nadav Har'El <nyh@il.ibm.com>
 
-[ Upstream commit aebea2ba0f7495e1a1c9ea5e753d146cb2f6b845 ]
+commit bfd0a56b90005f8c8a004baf407ad90045c2b11e upstream.
 
-The mvneta driver sets the amount of Tx coalesce packets to 16 by
-default. Normally that does not cause any trouble since the driver
-uses a much larger Tx ring size (532 packets). But some sockets
-might run with very small buffers, much smaller than the equivalent
-of 16 packets. This is what ping is doing for example, by setting
-SNDBUF to 324 bytes rounded up to 2kB by the kernel.
+If we let L1 use EPT, we should probably also support the INVEPT instruction.
 
-The problem is that there is no documented method to force a specific
-packet to emit an interrupt (eg: the last of the ring) nor is it
-possible to make the NIC emit an interrupt after a given delay.
+In our current nested EPT implementation, when L1 changes its EPT table
+for L2 (i.e., EPT12), L0 modifies the shadow EPT table (EPT02), and in
+the course of this modification already calls INVEPT. But if last level
+of shadow page is unsync not all L1's changes to EPT12 are intercepted,
+which means roots need to be synced when L1 calls INVEPT. Global INVEPT
+should not be different since roots are synced by kvm_mmu_load() each
+time EPTP02 changes.
 
-In this case, it causes trouble, because when ping sends packets over
-its raw socket, the few first packets leave the system, and the first
-15 packets will be emitted without an IRQ being generated, so without
-the skbs being freed. And since the socket's buffer is small, there's
-no way to reach that amount of packets, and the ping ends up with
-"send: no buffer available" after sending 6 packets. Running with 3
-instances of ping in parallel is enough to hide the problem, because
-with 6 packets per instance, that's 18 packets total, which is enough
-to grant a Tx interrupt before all are sent.
-
-The original driver in the LSP kernel worked around this design flaw
-by using a software timer to clean up the Tx descriptors. This timer
-was slow and caused terrible network performance on some Tx-bound
-workloads (such as routing) but was enough to make tools like ping
-work correctly.
-
-Instead here, we simply set the packet counts before interrupt to 1.
-This ensures that each packet sent will produce an interrupt. NAPI
-takes care of coalescing interrupts since the interrupt is disabled
-once generated.
-
-No measurable performance impact nor CPU usage were observed on small
-nor large packets, including when saturating the link on Tx, and this
-fixes tools like ping which rely on too small a send buffer. If one
-wants to increase this value for certain workloads where it is safe
-to do so, "ethtool -C $dev tx-frames" will override this default
-setting.
-
-This fix needs to be applied to stable kernels starting with 3.10.
-
-Tested-By: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
+Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
+Signed-off-by: Xinhao Xu <xinhao.xu@intel.com>
+Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context, filename
+ - Simplify handle_invept() as recommended by Paolo - nEPT is not
+   supported so we always raise #UD]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Vinson Lee <vlee@twopensource.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/marvell/mvneta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -210,7 +210,7 @@
- /* Various constants */
+---
+ arch/x86/include/uapi/asm/vmx.h |    1 +
+ arch/x86/kvm/vmx.c              |    8 ++++++++
+ 2 files changed, 9 insertions(+)
+
+--- a/arch/x86/include/uapi/asm/vmx.h
++++ b/arch/x86/include/uapi/asm/vmx.h
+@@ -65,6 +65,7 @@
+ #define EXIT_REASON_EOI_INDUCED         45
+ #define EXIT_REASON_EPT_VIOLATION       48
+ #define EXIT_REASON_EPT_MISCONFIG       49
++#define EXIT_REASON_INVEPT              50
+ #define EXIT_REASON_PREEMPTION_TIMER    52
+ #define EXIT_REASON_WBINVD              54
+ #define EXIT_REASON_XSETBV              55
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6242,6 +6242,12 @@ static int handle_vmptrst(struct kvm_vcp
+ 	return 1;
+ }
  
- /* Coalescing */
--#define MVNETA_TXDONE_COAL_PKTS		16
-+#define MVNETA_TXDONE_COAL_PKTS		1
- #define MVNETA_RX_COAL_PKTS		32
- #define MVNETA_RX_COAL_USEC		100
++static int handle_invept(struct kvm_vcpu *vcpu)
++{
++	kvm_queue_exception(vcpu, UD_VECTOR);
++	return 1;
++}
++
+ /*
+  * The exit handlers return 1 if the exit was handled fully and guest execution
+  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
+@@ -6286,6 +6292,7 @@ static int (*const kvm_vmx_exit_handlers
+ 	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
+ 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
+ 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
++	[EXIT_REASON_INVEPT]                  = handle_invept,
+ };
  
+ static const int kvm_vmx_max_exit_handlers =
+@@ -6512,6 +6519,7 @@ static bool nested_vmx_exit_handled(stru
+ 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
+ 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
+ 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
++	case EXIT_REASON_INVEPT:
+ 		/*
+ 		 * VMX instructions trap unconditionally. This allows L1 to
+ 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
 
 
