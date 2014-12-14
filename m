@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402AbaLNVHx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 16:07:53 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:58860 "HELO
+	id S1751623AbaLNVIn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 16:08:43 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56862 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750986AbaLNVHn (ORCPT
+	with SMTP id S1750986AbaLNVIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 16:07:43 -0500
+	Sun, 14 Dec 2014 16:08:36 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Michal Privoznik <mprivozn@redhat.com>
-Cc: trenn@suse.de, rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpupower: Correctly detect if running as root
-Date: Sun, 14 Dec 2014 22:29:24 +0100
-Message-ID: <1660884.y6rjWabQcf@vostro.rjw.lan>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Renninger <trenn@suse.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 0/2] Properly fix sysfs_get_idlestate_count()
+Date: Sun, 14 Dec 2014 22:30:17 +0100
+Message-ID: <4068135.ExVigq9HJY@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <b03faaf6b63a9175da0ce7ab8e0fc3da0cba4a86.1418560562.git.mprivozn@redhat.com>
-References: <b03faaf6b63a9175da0ce7ab8e0fc3da0cba4a86.1418560562.git.mprivozn@redhat.com>
+In-Reply-To: <1418565998-3701-1-git-send-email-prarit@redhat.com>
+References: <1418565998-3701-1-git-send-email-prarit@redhat.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -24,35 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 14, 2014 01:36:52 PM Michal Privoznik wrote:
-> Some operations, like frequency-set, need root privileges. However,
-> the way that this is detected is not correct. The getuid() is called,
-> while in fact geteuid() should be. This way we can allow
-> distributions or users to set SETUID flags on the cpupower binary if
-> they want to and let regular users change the cpu frequency governor.
+On Sunday, December 14, 2014 09:06:36 AM Prarit Bhargava wrote:
+> My previous commit 16b7c275c055 ("tools: cpupower: fix return checks for
+> sysfs_get_idlestate_count()") was not correct.  After looking
+> at the changelog for cpupower I noticed that Thomas had changed the return of
+> sysfs_get_idlestate_count() to an unsigned int to simplify the code.  The
+> problem is really that both he (in his original change) and I (in my new
+> change) missed the obvious that sysfs_get_idlestate_count()
+> can't return -ENODEV.  It should just return 0 for "no c-states".
 > 
-> Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
+> Patch 1 reverts my recent change and patch 2 fixes the problem correctly.
+> 
+> Sorry 'bout that Thomas.  I should have caught that the the first time.
+> 
+> Cc: Thomas Renninger <trenn@suse.de>
+> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> 
+> Prarit Bhargava (2):
+>   Revert "tools: cpupower: fix return checks for
+>     sysfs_get_idlestate_count()"
+>   Fix no idle state information return value
+> 
+>  tools/power/cpupower/utils/cpuidle-info.c  |    8 ++++----
+>  tools/power/cpupower/utils/helpers/sysfs.c |    2 +-
+>  2 files changed, 5 insertions(+), 5 deletions(-)
 
-An ACK from Thomas is needed.
+I'll queue up the revert, but I need an ACK from Thomas for the second patch.
 
-> ---
->  tools/power/cpupower/utils/cpupower.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/power/cpupower/utils/cpupower.c b/tools/power/cpupower/utils/cpupower.c
-> index 7cdcf88..9ea9143 100644
-> --- a/tools/power/cpupower/utils/cpupower.c
-> +++ b/tools/power/cpupower/utils/cpupower.c
-> @@ -199,7 +199,7 @@ int main(int argc, const char *argv[])
->  	}
->  
->  	get_cpu_info(0, &cpupower_cpu_info);
-> -	run_as_root = !getuid();
-> +	run_as_root = !geteuid();
->  	if (run_as_root) {
->  		ret = uname(&uts);
->  		if (!ret && !strcmp(uts.machine, "x86_64") &&
-> 
 
 -- 
 I speak only for myself.
