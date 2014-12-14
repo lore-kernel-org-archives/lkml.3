@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750942AbaLNUnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:43:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53340 "EHLO
+	id S1753152AbaLNUnd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:43:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53325 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161AbaLNUbp (ORCPT
+	with ESMTP id S1752102AbaLNUbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:45 -0500
+	Sun, 14 Dec 2014 15:31:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Ricardo Leitner <mleitner@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 01/19] Fix race condition between vxlan_sock_add and vxlan_sock_release
-Date: Sun, 14 Dec 2014 12:21:12 -0800
-Message-Id: <20141214201823.585861102@linuxfoundation.org>
+        Alexander Kochetkov <al.kochet@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.17 11/47] i2c: omap: fix NACK and Arbitration Lost irq handling
+Date: Sun, 14 Dec 2014 12:20:46 -0800
+Message-Id: <20141214201818.943651077@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
-References: <20141214201823.543296369@linuxfoundation.org>
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,76 +25,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Marcelo Leitner <mleitner@redhat.com>
+From: Alexander Kochetkov <al.kochet@gmail.com>
 
-[ Upstream commit 00c83b01d58068dfeb2e1351cca6fccf2a83fa8f ]
+commit 27caca9d2e01c92b26d0690f065aad093fea01c7 upstream.
 
-Currently, when trying to reuse a socket, vxlan_sock_add will grab
-vn->sock_lock, locate a reusable socket, inc refcount and release
-vn->sock_lock.
+commit 1d7afc95946487945cc7f5019b41255b72224b70 (i2c: omap: ack IRQ in parts)
+changed the interrupt handler to complete transfers without clearing
+XRDY (AL case) and ARDY (NACK case) flags. XRDY or ARDY interrupts will be
+fired again. As a result, ISR keep processing transfer after it was already
+complete (from the driver code point of view).
 
-But vxlan_sock_release() will first decrement refcount, and then grab
-that lock. refcnt operations are atomic but as currently we have
-deferred works which hold vs->refcnt each, this might happen, leading to
-a use after free (specially after vxlan_igmp_leave):
+A didn't see real impacts of the 1d7afc9, but it is really bad idea to
+have ISR running on user data after transfer was complete.
 
-  CPU 1                            CPU 2
+It looks, what 1d7afc9 violate TI specs in what how AL and NACK should be
+handled (see Note 1, sprugn4r, Figure 17-31 and Figure 17-32).
 
-deferred work                    vxlan_sock_add
-  ...                              ...
-                                   spin_lock(&vn->sock_lock)
-                                   vs = vxlan_find_sock();
-  vxlan_sock_release
-    dec vs->refcnt, reaches 0
-    spin_lock(&vn->sock_lock)
-                                   vxlan_sock_hold(vs), refcnt=1
-                                   spin_unlock(&vn->sock_lock)
-    hlist_del_rcu(&vs->hlist);
-    vxlan_notify_del_rx_port(vs)
-    spin_unlock(&vn->sock_lock)
+According to specs (if I understood correctly), in case of NACK and AL driver
+must reset NACK, AL, ARDY, RDR, and RRDY (Master Receive Mode), and
+NACK, AL, ARDY, and XDR (Master Transmitter Mode).
 
-So when we look for a reusable socket, we check if it wasn't freed
-already before reusing it.
+All that is done down the code under the if condition:
+if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) ...
 
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Fixes: 7c47cedf43a8b3 ("vxlan: move IGMP join/leave to work queue")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The patch restore pre 1d7afc9 logic of handling NACK and AL interrupts, so
+no interrupts is fired after ISR informs the rest of driver what transfer
+complete.
+
+Note: instead of removing break under NACK case, we could just replace 'break'
+with 'continue' and allow NACK transfer to finish using ARDY event. I found
+that NACK and ARDY bits usually set together. That case confirm TI wiki:
+http://processors.wiki.ti.com/index.php/I2C_Tips#Detecting_and_handling_NACK
+
+In order if someone interested in the event traces for NACK and AL cases,
+I sent them to mailing list.
+
+Tested on Beagleboard XM C.
+
+Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
+Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
+Acked-by: Felipe Balbi <balbi@ti.com>
+Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1995,9 +1995,8 @@ static int vxlan_init(struct net_device
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(vxlan->net, ipv6 ? AF_INET6 : AF_INET,
- 			     vxlan->dst_port);
--	if (vs) {
-+	if (vs && atomic_add_unless(&vs->refcnt, 1, 0)) {
- 		/* If we have a socket with same port already, reuse it */
--		atomic_inc(&vs->refcnt);
- 		vxlan_vs_add_dev(vs, vxlan);
- 	} else {
- 		/* otherwise make new socket outside of RTNL */
-@@ -2396,12 +2395,9 @@ struct vxlan_sock *vxlan_sock_add(struct
+---
+ drivers/i2c/busses/i2c-omap.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -926,14 +926,12 @@ omap_i2c_isr_thread(int this_irq, void *
+ 		if (stat & OMAP_I2C_STAT_NACK) {
+ 			err |= OMAP_I2C_STAT_NACK;
+ 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
+-			break;
+ 		}
  
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
--	if (vs) {
--		if (vs->rcv == rcv)
--			atomic_inc(&vs->refcnt);
--		else
-+	if (vs && ((vs->rcv != rcv) ||
-+		   !atomic_add_unless(&vs->refcnt, 1, 0)))
- 			vs = ERR_PTR(-EBUSY);
--	}
- 	spin_unlock(&vn->sock_lock);
+ 		if (stat & OMAP_I2C_STAT_AL) {
+ 			dev_err(dev->dev, "Arbitration lost\n");
+ 			err |= OMAP_I2C_STAT_AL;
+ 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
+-			break;
+ 		}
  
- 	if (!vs)
+ 		/*
 
 
