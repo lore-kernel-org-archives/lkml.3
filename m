@@ -1,94 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900AbaLNXNR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 18:13:17 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52662 "EHLO mga01.intel.com"
+	id S1752058AbaLNXSV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 18:18:21 -0500
+Received: from ozlabs.org ([103.22.144.67]:45451 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363AbaLNXNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 18:13:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,576,1413270000"; 
-   d="scan'208";a="637490601"
-Date: Mon, 15 Dec 2014 01:13:02 +0200
-From: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-Cc: Scot Doyle <lkml14@scotdoyle.com>, Peter Huewe <peterhuewe@gmx.de>,
-        Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com,
-        Will Arthur <will.c.arthur@intel.com>
-Subject: Re: [PATCH v10 8/8] tpm: TPM 2.0 FIFO Interface
-Message-ID: <20141214231302.GA4539@intel.com>
-References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com>
- <1418413600-5400-9-git-send-email-jarkko.sakkinen@linux.intel.com>
- <548DA33A.4010300@linux.vnet.ibm.com>
- <20141214154003.GA13338@intel.com>
- <548DB62E.7060504@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1412141817550.1716@localhost.localdomain>
- <548DF5A5.2080500@linux.vnet.ibm.com>
+	id S1751316AbaLNXSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 18:18:09 -0500
+Date: Mon, 15 Dec 2014 10:17:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Christoph Hellwig <hch@lst.de>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB driver patches for 3.19-rc1
+Message-ID: <20141215101754.31e2ae56@canb.auug.org.au>
+In-Reply-To: <CA+55aFx4V9urJ=_Ai0-zuQmQvzpz-t250bgDZBEDhWUbfe3oBQ@mail.gmail.com>
+References: <20141214223523.GA3802@kroah.com>
+	<CA+55aFx4V9urJ=_Ai0-zuQmQvzpz-t250bgDZBEDhWUbfe3oBQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548DF5A5.2080500@linux.vnet.ibm.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Ss5UMrkMWuR2zZKS6IXdLbS"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 03:40:05PM -0500, Stefan Berger wrote:
-> On 12/14/2014 01:27 PM, Scot Doyle wrote:
-> >On Sun, 14 Dec 2014, Stefan Berger wrote:
-> >>On 12/14/2014 10:40 AM, Jarkko Sakkinen wrote:
-> >>>On Sun, Dec 14, 2014 at 09:48:26AM -0500, Stefan Berger wrote:
-> >>>>On 12/12/2014 02:46 PM, Jarkko Sakkinen wrote:
-> >>>>>Detect TPM 2.0 by sending idempotent TPM 2.x command. Ordinals for
-> >>>>>TPM 2.0 are higher than TPM 1.x commands so this should be fail-safe.
-> >>>>>Using STS3 is unreliable because some chips just report 0xff and not
-> >>>>>what the spec says.
-> >>>>TPM TIS 1.2 can report either 0xff or 0x00 for sts3 since that part of
-> >>>>register was not defined for this version but only for a later version.
-> >>>>So,
-> >>>>unless the TIS 1.3 for TPM 2.0 is broken, it should report a bit _pattern_
-> >>>>(not plain 0x00 or 0xff) that you could apply the suggested mask to and
-> >>>>check then.
-> >>>I propose this: lets keep the bit ugly but approach for now and when
-> >>>there are TPM2 FIFOs available in the market move to your workaround.
-> >>>I think that would be the most reasonable middle road here.
-> >>You are now calling tpm2_gen_interrupt and are looking at the rc, which is the
-> >>rc from tpm_transmit_cmd, which seems to make sure that the sending of the
-> >>command went alright and the reception of the response. Is this good enough to
-> >>distinguish between a TPM 2 and a TPM 1.2? If you send a valid TPM 2 command
-> >>to a TPM 1.2 this will at least transmit the data ok, but the TPM will respond
-> >>with a TPM 1.2 tag in the response. The way I understand the code, the rc does
-> >>not include whether the response packet is a valid TPM 2 response packet and
-> >>lets you conclude to a TPM2. I do something similar in upcoming QEMU patches
-> >>where I send a valid TPM2 command for probing and if the tag(!) in the
-> >>response is a TPM2 tag (0x8001 = TPM_ST_NO_SESSIONS), then it's a TPM 2,
-> >>otherwise a TPM 1.2.
-> >>
-> >>Did you test this with a TPM 1.2 ?
-> >>
-> >>    Stefan
-> >One system's output, with a dev_info call to show the value of rc:
-> >[ 0.223837] tpm_tis 00:08: tpm2_gen_interrupt(chip, true) -> 0xa
-> >[ 0.223847] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> >[ 0.280468] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
+--Sig_/Ss5UMrkMWuR2zZKS6IXdLbS
+Content-Type: multipart/mixed; boundary="MP_/b3TjX=+Y9T8858GCZXolPPT"
+
+--MP_/b3TjX=+Y9T8858GCZXolPPT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
+
+Hi Linus,
+
+On Sun, 14 Dec 2014 15:06:07 -0800 Linus Torvalds <torvalds@linux-foundatio=
+n.org> wrote:
+>
+> On Sun, Dec 14, 2014 at 2:35 PM, Greg KH <gregkh@linuxfoundation.org> wro=
+te:
 > >
-> 
-> Ok, good.
-> 
-> [We won't be able to use STS3 if the TIS of Jarkko's TPM2 is broken...]
+> > Hans de Goede (1):
+> >       uas: Make uas work with blk-mq
+>=20
+> So I got some fairly trivial conflicts on this one (conflicting with
+> the scsi cleanups mainly by Christoph Hellwig.
+>=20
+> I resolved the conflict easily, and it all *looks* fine, but quite
+> frankly, I'd be a lot happier about it if somebody who has the
+> hardware were to actually test the end result.   The whole interaction
+> with ".use_blk_tags" etc should be verified by somebody who knows the
+> code.
+>=20
+> Hans? Christoph?
 
-Yes, the prototype module that I had to use had the same problem as TPM
-1.2 chips.
+Attached is the message I sent about this on Nov 24 to which I received
+no response and so assumed it was ok ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I think your idea of using tag is much cleaner than using the error
-code. I'll probably submit a separate patch for that later on but since
-this code is now verified to work on two TPM 1.2 chips (my own and
-Scots) and one dTPM2 module, lets keep it that way until this patch
-set is pulled at least...
+--MP_/b3TjX=+Y9T8858GCZXolPPT
+Content-Type: message/rfc822
+Content-Transfer-Encoding: binary
+Content-Disposition: inline
 
-/Jarkko
+AF: 
+NF: 0
+PS: 10
+SRH: 1
+SFN: 
+DSR: 
+MID: 
+CFG: 
+PT: 0
+S: sfr@canb.auug.org.au
+RQ: 
+SSV: ozlabs.org
+NSV: 
+SSH: 
+R: <James.Bottomley@HansenPartnership.com>,<linux-next@vger.kernel.org>,<linux-kernel@vger.kernel.org>,<hdegoede@redhat.com>,<greg@kroah.com>,<hch@lst.de>
+MAID: 2
+X-Claws-Privacy-System: pgpmime
+X-Claws-Sign: 1
+SCF: #imap/ozlabs.org/Sent
+X-Claws-Auto-Wrapping: 0
+X-Claws-Auto-Indent: 0
+X-Claws-End-Special-Headers: 1
+Date: Fri, 14 Nov 2014 18:00:54 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>, Greg KH
+ <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org, Hans de Goede
+ <hdegoede@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the scsi tree with the usb tree
+Message-ID: <20141114180054.77fbbc7b@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/RLU61p/c5uqQ3RrTNO04.PU"; protocol="application/pgp-signature"
+
+--Sig_/RLU61p/c5uqQ3RrTNO04.PU
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi James,
+
+Today's linux-next merge of the scsi tree got a conflict in
+drivers/usb/storage/uas.c between commit e28e2f2f7c42 ("uas: Make uas
+work with blk-mq") from the usb tree and commits 125c99bc8b6b ("scsi:
+add new scsi-command flag for tagged commands"), abd0c533e377
+("scsi: remove ordered_tag host template field") and 2ecb204d07ac
+("scsi: always assign block layer tags if enabled") from the scsi tree.
+
+I fixed it up (maybe, please check - see below) and can carry the fix
+as necessary (no action is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/usb/storage/uas.c
+index 004ebc12bc21,33f211b56a42..000000000000
+--- a/drivers/usb/storage/uas.c
++++ b/drivers/usb/storage/uas.c
+@@@ -806,7 -816,14 +805,7 @@@ static struct scsi_host_template uas_ho
+  	.sg_tablesize =3D SG_NONE,
+  	.cmd_per_lun =3D 1,	/* until we override it */
+  	.skip_settle_delay =3D 1,
+- 	.ordered_tag =3D 1,
+ -
+ -	/*
+ -	 * The uas drivers expects tags not to be bigger than the maximum
+ -	 * per-device queue depth, which is not true with the blk-mq tag
+ -	 * allocator.
+ -	 */
+ -	.disable_blk_mq =3D true,
++ 	.use_blk_tags =3D 1,
+  };
+ =20
+  #define UNUSUAL_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
+
+--Sig_/RLU61p/c5uqQ3RrTNO04.PU
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUZaitAAoJEMDTa8Ir7ZwVfhAQAIXnmGYFDuRRNsA1By3WaWpW
+coUAbNQd54Avb8EAh0IuPkVNeL1G+wVwZmBP03KWrV9onKvlYJ3UCWD+VFKEuwAX
+jJL4GC2nHKRebH4CRVYIa1BFjjJ3wYILVozqIrhmkZ9nwD0VHtx7T6gfOxbXuSvX
+DChYNYQ7Kvzh7X64nnAdcZr/zv+RCTeRVfbdHwwxrQ83fTORkLKC6aW1E5oym7gR
+dzEHU4yPTYiF3tnbRy8pDrgtnTcEaju7dcNdWYzoCaoJPfk6DhrgW2ez6Do33bju
+1Vnv9KkSyhi6/H0s/AD9C/kZOv1LB/yE4GPhfPHR6pnSgrlqKPfkiAQYTA5pfkL2
+snMphZtZYRfz6dGCHccTLaIN3N3O5Mnk6N0K7TfPsmvuNUAx060E+H1VPO0skc5s
+rX89UgPi1BSG7IJFCjjwVijdfdAKMe4AKUGU7XpM7fWUBI5epHjfyPgHPlZ4enMV
+zsZuC9ouudVzTTwYlPjxL4Q/eqbs5A5hpUDAB4dnw2181ledYC3zuT4JXAgJ2AMn
+j2N+0QfnUwcw1MVH1cm34VdZ8Ja9uaOTHacCkygi5q/iIQIx7ZwMSDv+L12vxMqb
+wlsC5a90tqpYsyn6p757FvICfb3ulg22HFLB1l8FlOCsDdV0GkMcIzFzU5H/+nqa
+bk9RYxKVXDid9Fxajx9x
+=49dI
+-----END PGP SIGNATURE-----
+
+--Sig_/RLU61p/c5uqQ3RrTNO04.PU--
+
+--MP_/b3TjX=+Y9T8858GCZXolPPT--
+
+--Sig_/Ss5UMrkMWuR2zZKS6IXdLbS
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUjhqrAAoJEMDTa8Ir7ZwVJeIQAIMbGYhVPTCWoXQE+nv7vVru
+juQRvBAFjuzn6++y84KzdYLr5u8B4r6YDjjt4rfd0TqTeVnmGhgA+DDdgxWpQO50
+vBJBaogbXWaDMujuMA2l8/XnzKlVgDYpvKwAyAdu8IZCwIShNFUUW1OzAlnb9GPY
+k237TlnQH57mSPR9HKdw8TUvN+jM6Npw8BVAqv7dtVc6l9qhIg8VT6DIvbUPgWNk
+mg5nyowOgrP3sq+e71BaTp91+3ZF29GrR60HDZZNo8lYA6PCgQvtRBSAqrNQci+B
+7yF6nqLnfaHGGjBuVLBALcV9z5DABXUkfdQ5hjE7ewUr/loJZa3KLCm83MRs7YMH
+UVPTWW8JEKMPYUZnGJ3hyxXneUMnBUzBq5KLJOE8p7gLbnLyYuf8G+ylh8d65PO6
+Lwm7z/di/jm6sA1/T1T5YIcN9lqjobNHxJKSGOtsguyKYKwLfk+MC3uehR4jEXNw
+MHmBbXChOXYfn3/sm/aYLbKwVP94d/2WG4PamuQljXF+4tGrbQGj1AQ0FiVXv5V7
+9AWc+OtbCuek42WI+BsWebN+JCwfKA+1YVKAVHrhvxtUp2khz9HK3Tf5+E9Dp1za
+keZn1jElRXg/2tUlIINyjNMWONNelN+3Ug8lLwqYPX9jEkQYn1bLJJUVexvrWbfD
+HRqDlJVknAS9AhEuQkvf
+=PR1c
+-----END PGP SIGNATURE-----
+
+--Sig_/Ss5UMrkMWuR2zZKS6IXdLbS--
