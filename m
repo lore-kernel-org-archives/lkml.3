@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaLNUoz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:44:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52926 "EHLO
+	id S1752903AbaLNUpG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:45:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52921 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751487AbaLNUV4 (ORCPT
+	with ESMTP id S1751484AbaLNUV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Michal Hocko <mhocko@suse.cz>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
+        Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 04/34] mm: fix anon_vma_clone() error treatment
-Date: Sun, 14 Dec 2014 12:20:42 -0800
-Message-Id: <20141214201803.920330965@linuxfoundation.org>
+Subject: [PATCH 3.14 03/34] mm: fix swapoff hang after page migration and fork
+Date: Sun, 14 Dec 2014 12:20:41 -0800
+Message-Id: <20141214201803.892279510@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -36,90 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+From: Hugh Dickins <hughd@google.com>
 
-commit c4ea95d7cd08d9ffd7fa75e6c5e0332d596dd11e upstream.
+commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
 
-Andrew Morton noticed that the error return from anon_vma_clone() was
-being dropped and replaced with -ENOMEM (which is not itself a bug
-because the only error return value from anon_vma_clone() is -ENOMEM).
+I've been seeing swapoff hangs in recent testing: it's cycling around
+trying unsuccessfully to find an mm for some remaining pages of swap.
 
-I did an audit of callers of anon_vma_clone() and discovered an actual
-bug where the error return was being lost.  In __split_vma(), between
-Linux 3.11 and 3.12 the code was changed so the err variable is used
-before the call to anon_vma_clone() and the default initial value of
--ENOMEM is overwritten.  So a failure of anon_vma_clone() will return
-success since err at this point is now zero.
+I have been exercising swap and page migration more heavily recently,
+and now notice a long-standing error in copy_one_pte(): it's trying to
+add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
+so even when it's a migration entry or an hwpoison entry.
 
-Below is a patch which fixes this bug and also propagates the error
-return value from anon_vma_clone() in all cases.
+Which wouldn't matter much, except it adds dst_mm next to src_mm,
+assuming src_mm is already on the mmlist: which may not be so.  Then if
+pages are later swapped out from dst_mm, swapoff won't be able to find
+where to replace them.
 
-Fixes: ef0855d334e1 ("mm: mempolicy: turn vma_set_policy() into vma_dup_policy()")
-Signed-off-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Tim Hartrick <tim@edgecast.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
+There's already a !non_swap_entry() test for stats: move that up before
+the swap_duplicate() and the addition to mmlist.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Kelley Nielsen <kelleynnn@gmail.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |   10 +++++++---
- mm/rmap.c |    6 ++++--
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ mm/memory.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -745,8 +745,11 @@ again:			remove_next = 1 + (end > next->
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
--			if (anon_vma_clone(importer, exporter))
--				return -ENOMEM;
-+			int error;
-+
-+			error = anon_vma_clone(importer, exporter);
-+			if (error)
-+				return error;
- 			importer->anon_vma = exporter->anon_vma;
- 		}
- 	}
-@@ -2428,7 +2431,8 @@ static int __split_vma(struct mm_struct
- 	if (err)
- 		goto out_free_vma;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -808,20 +808,20 @@ copy_one_pte(struct mm_struct *dst_mm, s
+ 		if (!pte_file(pte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(pte);
  
--	if (anon_vma_clone(new, vma))
-+	err = anon_vma_clone(new, vma);
-+	if (err)
- 		goto out_free_mpol;
+-			if (swap_duplicate(entry) < 0)
+-				return entry.val;
++			if (likely(!non_swap_entry(entry))) {
++				if (swap_duplicate(entry) < 0)
++					return entry.val;
  
- 	if (new->vm_file)
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -274,6 +274,7 @@ int anon_vma_fork(struct vm_area_struct
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
-+	int error;
+-			/* make sure dst_mm is on swapoff's mmlist. */
+-			if (unlikely(list_empty(&dst_mm->mmlist))) {
+-				spin_lock(&mmlist_lock);
+-				if (list_empty(&dst_mm->mmlist))
+-					list_add(&dst_mm->mmlist,
+-						 &src_mm->mmlist);
+-				spin_unlock(&mmlist_lock);
+-			}
+-			if (likely(!non_swap_entry(entry)))
++				/* make sure dst_mm is on swapoff's mmlist. */
++				if (unlikely(list_empty(&dst_mm->mmlist))) {
++					spin_lock(&mmlist_lock);
++					if (list_empty(&dst_mm->mmlist))
++						list_add(&dst_mm->mmlist,
++							 &src_mm->mmlist);
++					spin_unlock(&mmlist_lock);
++				}
+ 				rss[MM_SWAPENTS]++;
+-			else if (is_migration_entry(entry)) {
++			} else if (is_migration_entry(entry)) {
+ 				page = migration_entry_to_page(entry);
  
- 	/* Don't bother if the parent process has no anon_vma here. */
- 	if (!pvma->anon_vma)
-@@ -283,8 +284,9 @@ int anon_vma_fork(struct vm_area_struct
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
- 	 */
--	if (anon_vma_clone(vma, pvma))
--		return -ENOMEM;
-+	error = anon_vma_clone(vma, pvma);
-+	if (error)
-+		return error;
- 
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
+ 				if (PageAnon(page))
 
 
