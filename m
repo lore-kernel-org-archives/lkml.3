@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbaLNUfp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:35:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53431 "EHLO
+	id S1754040AbaLNUfu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:35:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53442 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541AbaLNUdK (ORCPT
+	with ESMTP id S1751533AbaLNUdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:33:10 -0500
+	Sun, 14 Dec 2014 15:33:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.17 31/47] tg3: fix ring init when there are more TX than RX channels
-Date: Sun, 14 Dec 2014 12:21:06 -0800
-Message-Id: <20141214201819.756162584@linuxfoundation.org>
+        Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 3.17 09/47] drm/nouveau/gf116: remove copy1 engine
+Date: Sun, 14 Dec 2014 12:20:44 -0800
+Message-Id: <20141214201818.883450486@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -29,34 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-[ Upstream commit a620a6bc1c94c22d6c312892be1e0ae171523125 ]
+commit 226d63a1addea8cbe8fc671978e62dc84927b046 upstream.
 
-If TX channels are set to 4 and RX channels are set to less than 4,
-using ethtool -L, the driver will try to initialize more RX channels
-than it has allocated, causing an oops.
+Indications are that no GF116's actually have a copy engine there, but
+actually have the decompression engine. This engine can be made to do
+copies, but that should be done separately.
 
-This fix only initializes the RX ring if it has been allocated.
+Unclear why this didn't turn up on all GF116's, but perhaps the
+non-mobile ones came with enough VRAM to not trigger ttm migrations in
+test scenarios.
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=85465
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=59168
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8561,7 +8561,8 @@ static int tg3_init_rings(struct tg3 *tp
- 		if (tnapi->rx_rcb)
- 			memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
- 
--		if (tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
-+		if (tnapi->prodring.rx_std &&
-+		    tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
- 			tg3_free_rings(tp);
- 			return -ENOMEM;
- 		}
+---
+ drivers/gpu/drm/nouveau/core/engine/device/nvc0.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
+@@ -212,7 +212,6 @@ nvc0_identify(struct nouveau_device *dev
+ 		device->oclass[NVDEV_ENGINE_BSP    ] = &nvc0_bsp_oclass;
+ 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
+ 		device->oclass[NVDEV_ENGINE_COPY0  ] = &nvc0_copy0_oclass;
+-		device->oclass[NVDEV_ENGINE_COPY1  ] = &nvc0_copy1_oclass;
+ 		device->oclass[NVDEV_ENGINE_DISP   ] =  nva3_disp_oclass;
+ 		device->oclass[NVDEV_ENGINE_PERFMON] = &nvc0_perfmon_oclass;
+ 		break;
 
 
