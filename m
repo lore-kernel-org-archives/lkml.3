@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaLNUfh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:35:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53435 "EHLO
+	id S1753860AbaLNUev (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:34:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448AbaLNUdK (ORCPT
+	with ESMTP id S1753214AbaLNUbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:33:10 -0500
+	Sun, 14 Dec 2014 15:31:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 46/47] ALSA: hda - Fix built-in mic at resume on Lenovo Ideapad S210
-Date: Sun, 14 Dec 2014 12:21:21 -0800
-Message-Id: <20141214201820.308370814@linuxfoundation.org>
+        Pravin B Shelar <pshelar@nicira.com>, Thomas Graf <tgraf@suug.ch>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 03/19] openvswitch: Fix flow mask validation.
+Date: Sun, 14 Dec 2014 12:21:14 -0800
+Message-Id: <20141214201823.641863978@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
-References: <20141214201818.552715149@linuxfoundation.org>
+In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
+References: <20141214201823.543296369@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,35 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Pravin B Shelar <pshelar@nicira.com>
 
-commit fedb2245cbb8d823e449ebdd48ba9bb35c071ce0 upstream.
+[ Upstream commit f2a01517f2a1040a0b156f171a7cefd748f2fd03 ]
 
-The built-in mic boost volume gets almost muted after suspend/resume
-on Lenovo Ideapad S210.
+Following patch fixes typo in the flow validation. This prevented
+installation of ARP and IPv6 flows.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=88121
-Reported-and-tested-by: Roman Kagan <rkagan@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 19e7a3df72 ("openvswitch: Fix NDP flow mask validation")
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Reviewed-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/openvswitch/flow_netlink.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5087,6 +5087,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
-+	SND_PCI_QUIRK(0x17aa, 0x3977, "IdeaPad S210", ALC283_FIXUP_INT_MIC),
- 	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
- 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
+--- a/net/openvswitch/flow_netlink.c
++++ b/net/openvswitch/flow_netlink.c
+@@ -145,7 +145,7 @@ static bool match_validate(const struct
+ 	if (match->key->eth.type == htons(ETH_P_ARP)
+ 			|| match->key->eth.type == htons(ETH_P_RARP)) {
+ 		key_expected |= 1 << OVS_KEY_ATTR_ARP;
+-		if (match->mask && (match->mask->key.tp.src == htons(0xff)))
++		if (match->mask && (match->mask->key.eth.type == htons(0xffff)))
+ 			mask_allowed |= 1 << OVS_KEY_ATTR_ARP;
+ 	}
+ 
+@@ -220,7 +220,7 @@ static bool match_validate(const struct
+ 						htons(NDISC_NEIGHBOUR_SOLICITATION) ||
+ 				    match->key->tp.src == htons(NDISC_NEIGHBOUR_ADVERTISEMENT)) {
+ 					key_expected |= 1 << OVS_KEY_ATTR_ND;
+-					if (match->mask && (match->mask->key.tp.src == htons(0xffff)))
++					if (match->mask && (match->mask->key.tp.src == htons(0xff)))
+ 						mask_allowed |= 1 << OVS_KEY_ATTR_ND;
+ 				}
+ 			}
 
 
