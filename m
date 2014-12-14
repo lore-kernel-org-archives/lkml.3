@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597AbaLNOGu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 09:06:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44207 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753432AbaLNOGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 09:06:48 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>, Thomas Renninger <trenn@suse.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 0/2] Properly fix sysfs_get_idlestate_count()
-Date: Sun, 14 Dec 2014 09:06:36 -0500
-Message-Id: <1418565998-3701-1-git-send-email-prarit@redhat.com>
+	id S1752986AbaLNOVU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 09:21:20 -0500
+Received: from mail2.tiolive.com ([94.23.229.207]:45790 "EHLO
+	mail2.tiolive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894AbaLNOVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 09:21:19 -0500
+Date: Sun, 14 Dec 2014 17:21:48 +0300
+From: Kirill Smelkov <kirr@nexedi.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tools/liblockdep: Fix debug_check thinko in mutex destroy
+Message-ID: <20141214142148.GA2679@teco.navytux.spb.ru>
+References: <1418036879-31944-1-git-send-email-kirr@nexedi.com>
+ <5485BCEA.30207@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5485BCEA.30207@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My previous commit 16b7c275c055 ("tools: cpupower: fix return checks for
-sysfs_get_idlestate_count()") was not correct.  After looking
-at the changelog for cpupower I noticed that Thomas had changed the return of
-sysfs_get_idlestate_count() to an unsigned int to simplify the code.  The
-problem is really that both he (in his original change) and I (in my new
-change) missed the obvious that sysfs_get_idlestate_count()
-can't return -ENODEV.  It should just return 0 for "no c-states".
+On Mon, Dec 08, 2014 at 09:59:54AM -0500, Sasha Levin wrote:
+> On 12/08/2014 06:07 AM, Kirill Smelkov wrote:
+> > In mutex destroy code currently we pass to debug_check_no_locks_freed()
+> > 
+> >     [mem_from, mem_end)
+> > 
+> > address region. But debug_check_no_locks_freed() accepts
+> > 
+> >     mem_from, mem_*len*
+> > 
+> > i.e. second parameter is region length, not end address. And it was
+> > always so, starting from 2006 (fbb9ce95 "lockdep: core").
+> > 
+> > Fix it, or else on a mutex destroy we wrongly check
+> > much-wider-than-mutex region and can find not-yet-released other locks
+> > there and wrongly report BUGs on them.
+> 
+> Great catch, thanks!
 
-Patch 1 reverts my recent change and patch 2 fixes the problem correctly.
+Thanks, where is this patch is/will-be applied?
 
-Sorry 'bout that Thomas.  I should have caught that the the first time.
+I mean I could not find it neither in
 
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+    git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux.git
 
-Prarit Bhargava (2):
-  Revert "tools: cpupower: fix return checks for
-    sysfs_get_idlestate_count()"
-  Fix no idle state information return value
+nor anywhere in linux-next nor in Linus's tree.
 
- tools/power/cpupower/utils/cpuidle-info.c  |    8 ++++----
- tools/power/cpupower/utils/helpers/sysfs.c |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
--- 
-1.7.9.3
-
+Thanks,
+Kirill
