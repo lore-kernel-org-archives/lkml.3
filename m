@@ -1,112 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaLNUXR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:23:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaLNUVl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:41 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Nadav HarEl <nyh@il.ibm.com>, Jun Nakajima <jun.nakajima@intel.com>,
-        Xinhao Xu <xinhao.xu@intel.com>, Yang Zhang <yang.z.zhang@intel.com>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Vinson Lee <vlee@twopensource.com>
-Subject: [PATCH 3.10 19/24] nEPT: Nested INVEPT
-Date: Sun, 14 Dec 2014 12:20:39 -0800
-Message-Id: <20141214201801.253573095@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
-References: <20141214201800.613573495@linuxfoundation.org>
-User-Agent: quilt/0.63-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S1751977AbaLNUXq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:23:46 -0500
+Received: from kanga.kvack.org ([205.233.56.17]:56272 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751752AbaLNUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 15:22:25 -0500
+Date: Sun, 14 Dec 2014 15:22:24 -0500
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-aio@kvack.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: [GIT PULL] aio: changes for 3.19
+Message-ID: <20141214202224.GH2672@kvack.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hello Linus & everyone,
 
-------------------
+The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
 
-From: Nadav Har'El <nyh@il.ibm.com>
+  Linux 3.18 (2014-12-07 14:21:05 -0800)
 
-commit bfd0a56b90005f8c8a004baf407ad90045c2b11e upstream.
+are available in the git repository at:
 
-If we let L1 use EPT, we should probably also support the INVEPT instruction.
+  git://git.kvack.org/~bcrl/aio-next.git master
 
-In our current nested EPT implementation, when L1 changes its EPT table
-for L2 (i.e., EPT12), L0 modifies the shadow EPT table (EPT02), and in
-the course of this modification already calls INVEPT. But if last level
-of shadow page is unsync not all L1's changes to EPT12 are intercepted,
-which means roots need to be synced when L1 calls INVEPT. Global INVEPT
-should not be different since roots are synced by kvm_mmu_load() each
-time EPTP02 changes.
+for you to fetch changes up to 5f785de588735306ec4d7c875caf9d28481c8b21:
 
-Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-Signed-off-by: Xinhao Xu <xinhao.xu@intel.com>
-Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context, filename
- - Simplify handle_invept() as recommended by Paolo - nEPT is not
-   supported so we always raise #UD]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Vinson Lee <vlee@twopensource.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+  aio: Skip timer for io_getevents if timeout=0 (2014-12-13 17:50:20 -0500)
 
----
- arch/x86/include/uapi/asm/vmx.h |    1 +
- arch/x86/kvm/vmx.c              |    8 ++++++++
- 2 files changed, 9 insertions(+)
+----------------------------------------------------------------
+Fam Zheng (1):
+      aio: Skip timer for io_getevents if timeout=0
 
---- a/arch/x86/include/uapi/asm/vmx.h
-+++ b/arch/x86/include/uapi/asm/vmx.h
-@@ -65,6 +65,7 @@
- #define EXIT_REASON_EOI_INDUCED         45
- #define EXIT_REASON_EPT_VIOLATION       48
- #define EXIT_REASON_EPT_MISCONFIG       49
-+#define EXIT_REASON_INVEPT              50
- #define EXIT_REASON_PREEMPTION_TIMER    52
- #define EXIT_REASON_WBINVD              54
- #define EXIT_REASON_XSETBV              55
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -6242,6 +6242,12 @@ static int handle_vmptrst(struct kvm_vcp
- 	return 1;
- }
- 
-+static int handle_invept(struct kvm_vcpu *vcpu)
-+{
-+	kvm_queue_exception(vcpu, UD_VECTOR);
-+	return 1;
-+}
-+
- /*
-  * The exit handlers return 1 if the exit was handled fully and guest execution
-  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-@@ -6286,6 +6292,7 @@ static int (*const kvm_vmx_exit_handlers
- 	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
- 	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
- 	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
-+	[EXIT_REASON_INVEPT]                  = handle_invept,
- };
- 
- static const int kvm_vmx_max_exit_handlers =
-@@ -6512,6 +6519,7 @@ static bool nested_vmx_exit_handled(stru
- 	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
- 	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
- 	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
-+	case EXIT_REASON_INVEPT:
- 		/*
- 		 * VMX instructions trap unconditionally. This allows L1 to
- 		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
+Pavel Emelyanov (1):
+      aio: Make it possible to remap aio ring
 
+ fs/aio.c           | 33 +++++++++++++++++++++++++++++++--
+ include/linux/fs.h |  1 +
+ mm/mremap.c        |  3 ++-
+ 3 files changed, 34 insertions(+), 3 deletions(-)
 
+Regards,
+
+		-ben
+-- 
+"Thought is the essence of where you are now."
