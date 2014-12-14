@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaLNUfV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:35:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53364 "EHLO
+	id S1753969AbaLNUf2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:35:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbaLNUbw (ORCPT
+	with ESMTP id S1751623AbaLNUby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:52 -0500
+	Sun, 14 Dec 2014 15:31:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 05/19] net: mvneta: fix Tx interrupt delay
-Date: Sun, 14 Dec 2014 12:21:16 -0800
-Message-Id: <20141214201823.697566508@linuxfoundation.org>
+        Anthony Wright <anthony@overnetdata.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 09/19] xen-netfront: use correct linear area after linearizing an skb
+Date: Sun, 14 Dec 2014 12:21:20 -0800
+Message-Id: <20141214201823.809864581@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
 References: <20141214201823.543296369@linuxfoundation.org>
@@ -29,69 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: willy tarreau <w@1wt.eu>
+From: David Vrabel <david.vrabel@citrix.com>
 
-[ Upstream commit aebea2ba0f7495e1a1c9ea5e753d146cb2f6b845 ]
+[ Upstream commit 11d3d2a16cc1f05c6ece69a4392e99efb85666a6 ]
 
-The mvneta driver sets the amount of Tx coalesce packets to 16 by
-default. Normally that does not cause any trouble since the driver
-uses a much larger Tx ring size (532 packets). But some sockets
-might run with very small buffers, much smaller than the equivalent
-of 16 packets. This is what ping is doing for example, by setting
-SNDBUF to 324 bytes rounded up to 2kB by the kernel.
+Commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d (xen-netfront: Fix
+handling packets on compound pages with skb_linearize) attempted to
+fix a problem where an skb that would have required too many slots
+would be dropped causing TCP connections to stall.
 
-The problem is that there is no documented method to force a specific
-packet to emit an interrupt (eg: the last of the ring) nor is it
-possible to make the NIC emit an interrupt after a given delay.
+However, it filled in the first slot using the original buffer and not
+the new one and would use the wrong offset and grant access to the
+wrong page.
 
-In this case, it causes trouble, because when ping sends packets over
-its raw socket, the few first packets leave the system, and the first
-15 packets will be emitted without an IRQ being generated, so without
-the skbs being freed. And since the socket's buffer is small, there's
-no way to reach that amount of packets, and the ping ends up with
-"send: no buffer available" after sending 6 packets. Running with 3
-instances of ping in parallel is enough to hide the problem, because
-with 6 packets per instance, that's 18 packets total, which is enough
-to grant a Tx interrupt before all are sent.
+Netback would notice the malformed request and stop all traffic on the
+VIF, reporting:
 
-The original driver in the LSP kernel worked around this design flaw
-by using a software timer to clean up the Tx descriptors. This timer
-was slow and caused terrible network performance on some Tx-bound
-workloads (such as routing) but was enough to make tools like ping
-work correctly.
+    vif vif-3-0 vif3.0: txreq.offset: 85e, size: 4002, end: 6144
+    vif vif-3-0 vif3.0: fatal error; disabling device
 
-Instead here, we simply set the packet counts before interrupt to 1.
-This ensures that each packet sent will produce an interrupt. NAPI
-takes care of coalescing interrupts since the interrupt is disabled
-once generated.
-
-No measurable performance impact nor CPU usage were observed on small
-nor large packets, including when saturating the link on Tx, and this
-fixes tools like ping which rely on too small a send buffer. If one
-wants to increase this value for certain workloads where it is safe
-to do so, "ethtool -C $dev tx-frames" will override this default
-setting.
-
-This fix needs to be applied to stable kernels starting with 3.10.
-
-Tested-By: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
+Reported-by: Anthony Wright <anthony@overnetdata.com>
+Tested-by: Anthony Wright <anthony@overnetdata.com>
+Signed-off-by: David Vrabel <david.vrabel@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/marvell/mvneta.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netfront.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -216,7 +216,7 @@
- /* Various constants */
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -627,6 +627,9 @@ static int xennet_start_xmit(struct sk_b
+ 				    slots, skb->len);
+ 		if (skb_linearize(skb))
+ 			goto drop;
++		data = skb->data;
++		offset = offset_in_page(data);
++		len = skb_headlen(skb);
+ 	}
  
- /* Coalescing */
--#define MVNETA_TXDONE_COAL_PKTS		16
-+#define MVNETA_TXDONE_COAL_PKTS		1
- #define MVNETA_RX_COAL_PKTS		32
- #define MVNETA_RX_COAL_USEC		100
- 
+ 	spin_lock_irqsave(&queue->tx_lock, flags);
 
 
