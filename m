@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863AbaLNUmy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:42:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53352 "EHLO
+	id S1752401AbaLNUnB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:43:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53354 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaLNUbr (ORCPT
+	with ESMTP id S1752174AbaLNUbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:31:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        Eric Dumazet <edumazet@google.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 10/19] net: fix suspicious rcu_dereference_check in net/sched/sch_fq_codel.c
-Date: Sun, 14 Dec 2014 12:21:21 -0800
-Message-Id: <20141214201823.837896625@linuxfoundation.org>
+Subject: [PATCH 3.18 11/19] netlink: use jhash as hashfn for rhashtable
+Date: Sun, 14 Dec 2014 12:21:22 -0800
+Message-Id: <20141214201823.865902905@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
 References: <20141214201823.543296369@linuxfoundation.org>
@@ -31,36 +31,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Valdis.Kletnieks@vt.edu" <Valdis.Kletnieks@vt.edu>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-[ Upstream commit 69204cf7eb9c5a72067ce6922d4699378251d053 ]
+[ Upstream commit 7f19fc5e0b617593dcda0d9956adc78b559ef1f5 ]
 
-commit 46e5da40ae (net: qdisc: use rcu prefix and silence
- sparse warnings) triggers a spurious warning:
+For netlink, we shouldn't be using arch_fast_hash() as a hashing
+discipline, but rather jhash() instead.
 
-net/sched/sch_fq_codel.c:97 suspicious rcu_dereference_check() usage!
+Since netlink sockets can be opened by any user, a local attacker
+would be able to easily create collisions with the DPDK-derived
+arch_fast_hash(), which trades off performance for security by
+using crc32 CPU instructions on x86_64.
 
-The code should be using the _bh variant of rcu_dereference.
+While it might have a legimite use case in other places, it should
+be avoided in netlink context, though. As rhashtable's API is very
+flexible, we could later on still decide on other hashing disciplines,
+if legitimate.
 
-Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Acked-by: John Fastabend <john.r.fastabend@intel.com>
+Reference: http://thread.gmane.org/gmane.linux.kernel/1844123
+Fixes: e341694e3eb5 ("netlink: Convert netlink_lookup() to use RCU protected hash table")
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_fq_codel.c |    2 +-
+ net/netlink/af_netlink.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sched/sch_fq_codel.c
-+++ b/net/sched/sch_fq_codel.c
-@@ -94,7 +94,7 @@ static unsigned int fq_codel_classify(st
- 	    TC_H_MIN(skb->priority) <= q->flows_cnt)
- 		return TC_H_MIN(skb->priority);
- 
--	filter = rcu_dereference(q->filter_list);
-+	filter = rcu_dereference_bh(q->filter_list);
- 	if (!filter)
- 		return fq_codel_hash(q, skb) + 1;
- 
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -3130,7 +3130,7 @@ static int __init netlink_proto_init(voi
+ 		.head_offset = offsetof(struct netlink_sock, node),
+ 		.key_offset = offsetof(struct netlink_sock, portid),
+ 		.key_len = sizeof(u32), /* portid */
+-		.hashfn = arch_fast_hash,
++		.hashfn = jhash,
+ 		.max_shift = 16, /* 64K */
+ 		.grow_decision = rht_grow_above_75,
+ 		.shrink_decision = rht_shrink_below_30,
 
 
