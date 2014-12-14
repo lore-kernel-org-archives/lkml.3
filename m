@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaLNUpG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:45:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52921 "EHLO
+	id S1753021AbaLNUpL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:45:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52821 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbaLNUV4 (ORCPT
+	with ESMTP id S1751483AbaLNUVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:56 -0500
+	Sun, 14 Dec 2014 15:21:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 03/34] mm: fix swapoff hang after page migration and fork
-Date: Sun, 14 Dec 2014 12:20:41 -0800
-Message-Id: <20141214201803.892279510@linuxfoundation.org>
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 23/34] rtnetlink: release net refcnt on error in do_setlink()
+Date: Sun, 14 Dec 2014 12:21:01 -0800
+Message-Id: <20141214201804.467561060@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -30,70 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
+[ Upstream commit e0ebde0e131b529fd721b24f62872def5ec3718c ]
 
-I've been seeing swapoff hangs in recent testing: it's cycling around
-trying unsuccessfully to find an mm for some remaining pages of swap.
+rtnl_link_get_net() holds a reference on the 'struct net', we need to release
+it in case of error.
 
-I have been exercising swap and page migration more heavily recently,
-and now notice a long-standing error in copy_one_pte(): it's trying to
-add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
-so even when it's a migration entry or an hwpoison entry.
-
-Which wouldn't matter much, except it adds dst_mm next to src_mm,
-assuming src_mm is already on the mmlist: which may not be so.  Then if
-pages are later swapped out from dst_mm, swapoff won't be able to find
-where to replace them.
-
-There's already a !non_swap_entry() test for stats: move that up before
-the swap_duplicate() and the addition to mmlist.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Kelley Nielsen <kelleynnn@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+Fixes: b51642f6d77b ("net: Enable a userns root rtnl calls that are safe for unprivilged users")
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/memory.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ net/core/rtnetlink.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -808,20 +808,20 @@ copy_one_pte(struct mm_struct *dst_mm, s
- 		if (!pte_file(pte)) {
- 			swp_entry_t entry = pte_to_swp_entry(pte);
- 
--			if (swap_duplicate(entry) < 0)
--				return entry.val;
-+			if (likely(!non_swap_entry(entry))) {
-+				if (swap_duplicate(entry) < 0)
-+					return entry.val;
- 
--			/* make sure dst_mm is on swapoff's mmlist. */
--			if (unlikely(list_empty(&dst_mm->mmlist))) {
--				spin_lock(&mmlist_lock);
--				if (list_empty(&dst_mm->mmlist))
--					list_add(&dst_mm->mmlist,
--						 &src_mm->mmlist);
--				spin_unlock(&mmlist_lock);
--			}
--			if (likely(!non_swap_entry(entry)))
-+				/* make sure dst_mm is on swapoff's mmlist. */
-+				if (unlikely(list_empty(&dst_mm->mmlist))) {
-+					spin_lock(&mmlist_lock);
-+					if (list_empty(&dst_mm->mmlist))
-+						list_add(&dst_mm->mmlist,
-+							 &src_mm->mmlist);
-+					spin_unlock(&mmlist_lock);
-+				}
- 				rss[MM_SWAPENTS]++;
--			else if (is_migration_entry(entry)) {
-+			} else if (is_migration_entry(entry)) {
- 				page = migration_entry_to_page(entry);
- 
- 				if (PageAnon(page))
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1453,6 +1453,7 @@ static int do_setlink(const struct sk_bu
+ 			goto errout;
+ 		}
+ 		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
++			put_net(net);
+ 			err = -EPERM;
+ 			goto errout;
+ 		}
 
 
