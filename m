@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaLNUdg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:33:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52981 "EHLO
+	id S1753554AbaLNUd1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:33:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbaLNUWE (ORCPT
+	with ESMTP id S1751568AbaLNUWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:22:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 26/34] net: mvneta: fix race condition in mvneta_tx()
-Date: Sun, 14 Dec 2014 12:21:04 -0800
-Message-Id: <20141214201804.553946746@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.14 30/34] powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
+Date: Sun, 14 Dec 2014 12:21:08 -0800
+Message-Id: <20141214201804.675252761@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -29,40 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Anton Blanchard <anton@samba.org>
 
-[ Upstream commit 5f478b41033606d325e420df693162e2524c2b94 ]
+commit 152d44a853e42952f6c8a504fb1f8eefd21fd5fd upstream.
 
-mvneta_tx() dereferences skb to get skb->len too late,
-as hardware might have completed the transmit and TX completion
-could have freed the skb from another cpu.
+I used some 64 bit instructions when adding the 32 bit getcpu VDSO
+function. Fix it.
 
-Fixes: 71f6d1b31fb1 ("net: mvneta: replace Tx timer with a real interrupt")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 18ad51dd342a ("powerpc: Add VDSO version of getcpu")
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/marvell/mvneta.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/marvell/mvneta.c
-+++ b/drivers/net/ethernet/marvell/mvneta.c
-@@ -1612,6 +1612,7 @@ static int mvneta_tx(struct sk_buff *skb
- 	u16 txq_id = skb_get_queue_mapping(skb);
- 	struct mvneta_tx_queue *txq = &pp->txqs[txq_id];
- 	struct mvneta_tx_desc *tx_desc;
-+	int len = skb->len;
- 	struct netdev_queue *nq;
- 	int frags = 0;
- 	u32 tx_cmd;
-@@ -1675,7 +1676,7 @@ out:
- 
- 		u64_stats_update_begin(&stats->syncp);
- 		stats->tx_packets++;
--		stats->tx_bytes  += skb->len;
-+		stats->tx_bytes  += len;
- 		u64_stats_update_end(&stats->syncp);
- 	} else {
- 		dev->stats.tx_dropped++;
+---
+ arch/powerpc/kernel/vdso32/getcpu.S |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/powerpc/kernel/vdso32/getcpu.S
++++ b/arch/powerpc/kernel/vdso32/getcpu.S
+@@ -30,8 +30,8 @@
+ V_FUNCTION_BEGIN(__kernel_getcpu)
+   .cfi_startproc
+ 	mfspr	r5,SPRN_USPRG3
+-	cmpdi	cr0,r3,0
+-	cmpdi	cr1,r4,0
++	cmpwi	cr0,r3,0
++	cmpwi	cr1,r4,0
+ 	clrlwi  r6,r5,16
+ 	rlwinm  r7,r5,16,31-15,31-0
+ 	beq	cr0,1f
 
 
