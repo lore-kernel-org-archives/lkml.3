@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930AbaLNUfM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:35:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53380 "EHLO
+	id S1753953AbaLNUfV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:35:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53364 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203AbaLNUbu (ORCPT
+	with ESMTP id S1753221AbaLNUbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:50 -0500
+	Sun, 14 Dec 2014 15:31:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 17/19] ALSA: hda - Add EAPD fixup for ASUS Z99He laptop
-Date: Sun, 14 Dec 2014 12:21:28 -0800
-Message-Id: <20141214201824.034010122@linuxfoundation.org>
+        Maggie Mae Roxas <maggie.mae.roxas@gmail.com>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.18 05/19] net: mvneta: fix Tx interrupt delay
+Date: Sun, 14 Dec 2014 12:21:16 -0800
+Message-Id: <20141214201823.697566508@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
 References: <20141214201823.543296369@linuxfoundation.org>
@@ -28,30 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: willy tarreau <w@1wt.eu>
 
-commit f62f5eff3d40a56ad1cf0d81a6cac8dd8743e8a1 upstream.
+[ Upstream commit aebea2ba0f7495e1a1c9ea5e753d146cb2f6b845 ]
 
-The same fixup to enable EAPD is needed for ASUS Z99He with AD1986A
-codec like another ASUS machine.
+The mvneta driver sets the amount of Tx coalesce packets to 16 by
+default. Normally that does not cause any trouble since the driver
+uses a much larger Tx ring size (532 packets). But some sockets
+might run with very small buffers, much smaller than the equivalent
+of 16 packets. This is what ping is doing for example, by setting
+SNDBUF to 324 bytes rounded up to 2kB by the kernel.
 
-Reported-and-tested-by: Dmitry V. Zimin <pfzim@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The problem is that there is no documented method to force a specific
+packet to emit an interrupt (eg: the last of the ring) nor is it
+possible to make the NIC emit an interrupt after a given delay.
+
+In this case, it causes trouble, because when ping sends packets over
+its raw socket, the few first packets leave the system, and the first
+15 packets will be emitted without an IRQ being generated, so without
+the skbs being freed. And since the socket's buffer is small, there's
+no way to reach that amount of packets, and the ping ends up with
+"send: no buffer available" after sending 6 packets. Running with 3
+instances of ping in parallel is enough to hide the problem, because
+with 6 packets per instance, that's 18 packets total, which is enough
+to grant a Tx interrupt before all are sent.
+
+The original driver in the LSP kernel worked around this design flaw
+by using a software timer to clean up the Tx descriptors. This timer
+was slow and caused terrible network performance on some Tx-bound
+workloads (such as routing) but was enough to make tools like ping
+work correctly.
+
+Instead here, we simply set the packet counts before interrupt to 1.
+This ensures that each packet sent will produce an interrupt. NAPI
+takes care of coalescing interrupts since the interrupt is disabled
+once generated.
+
+No measurable performance impact nor CPU usage were observed on small
+nor large packets, including when saturating the link on Tx, and this
+fixes tools like ping which rely on too small a send buffer. If one
+wants to increase this value for certain workloads where it is safe
+to do so, "ethtool -C $dev tx-frames" will override this default
+setting.
+
+This fix needs to be applied to stable kernels starting with 3.10.
+
+Tested-By: Maggie Mae Roxas <maggie.mae.roxas@gmail.com>
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/marvell/mvneta.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -332,6 +332,7 @@ static const struct hda_fixup ad1986a_fi
+--- a/drivers/net/ethernet/marvell/mvneta.c
++++ b/drivers/net/ethernet/marvell/mvneta.c
+@@ -216,7 +216,7 @@
+ /* Various constants */
  
- static const struct snd_pci_quirk ad1986a_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x103c, 0x30af, "HP B2800", AD1986A_FIXUP_LAPTOP_IMIC),
-+	SND_PCI_QUIRK(0x1043, 0x1443, "ASUS Z99He", AD1986A_FIXUP_EAPD),
- 	SND_PCI_QUIRK(0x1043, 0x1447, "ASUS A8JN", AD1986A_FIXUP_EAPD),
- 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8100, "ASUS P5", AD1986A_FIXUP_3STACK),
- 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8200, "ASUS M2", AD1986A_FIXUP_3STACK),
+ /* Coalescing */
+-#define MVNETA_TXDONE_COAL_PKTS		16
++#define MVNETA_TXDONE_COAL_PKTS		1
+ #define MVNETA_RX_COAL_PKTS		32
+ #define MVNETA_RX_COAL_USEC		100
+ 
 
 
