@@ -1,94 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613AbaLNBiL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 20:38:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39787 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750733AbaLNBiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 20:38:10 -0500
-Date: Sun, 14 Dec 2014 12:37:58 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux RAID <linux-raid@vger.kernel.org>,
-        Henry Cai <henryplusplus@gmail.com>
-Subject: [GIT PULL REQUEST] md updates for 3.19
-Message-ID: <20141214123758.2a737915@notabene.brown>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1751526AbaLNCMl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 21:12:41 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:52639 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaLNCMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Dec 2014 21:12:39 -0500
+Message-ID: <548CF210.2000805@gmail.com>
+Date: Sun, 14 Dec 2014 11:12:32 +0900
+From: Akira Hayakawa <ruby.wktk@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/5mrRlp2ZMSuJxhPC1h6nvdK"; protocol="application/pgp-signature"
+To: samuel.huo@gmail.com
+CC: dm-devel@redhat.com, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, thornber@redhat.com,
+        linux-kernel@vger.kernel.org, snitzer@redhat.com
+Subject: Re: [dm-devel] [PATCH v2] staging: writeboost: Add dm-writeboost
+References: <54883195.1060304@gmail.com> <20141211152626.GA8196@redhat.com>	<548A39E7.80508@gmail.com> <20141212142447.GA30315@debian>	<548B0517.6070603@gmail.com> <CAB=cV2Rvp95xuKNd0WzfLpMGrwdSCPxGt6npo+FH0H1y_5kY9Q@mail.gmail.com> <548C483E.4020501@gmail.com>
+In-Reply-To: <548C483E.4020501@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5mrRlp2ZMSuJxhPC1h6nvdK
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
+> The major reason is, it needs to read full 512KB segment to calculate checksum to
+> know if the log isn't half written.
+> (Read 500GB SSD that performs 500MB/sec seqread spends 1000secs)
+I've just measured how long the cache resuming is.
 
-hi Linus,
- please pull these three patches.
+I use 2GB SSD for the cache device.
 
- I did have a largish set of locking changes queued, but late testing showed
- they weren't quite as stable as I thought and while I fixed what I found, I
- decided it safer to delay them a release ... particularly as I'll be AFK f=
-or
- a few weeks.  So expect a larger batch next time :-)
+512KB seqread over the cache device:
+8.252sec (242MB/sec)
 
-Thanks,
-NeilBrow
+Resume when all caches are dirty:
+10.339sec
 
-The following changes since commit 3a18ca061311f2f1ee9c44012f89c7436d392117:
+Typically, if you use 128GB SSD it will be 5-10 minutes.
 
-  Merge tag 'ext4_for_linus_urgent' of git://git.kernel.org/pub/scm/linux/k=
-ernel/git/tytso/ext4 (2014-12-01 20:11:49 -0800)
+As I predicted, resuming time is close to seqread.
+In other words, it's fully IO-bound.
+(If you read the code you will notice that it first searchs for the
+ oldest log as the starting point. It's 4KB metadata reads but spends to some extent.
+ The other 2 sec is thought to be spent by this)
 
-are available in the git repository at:
+- Akira
 
-  git://neil.brown.name/md/ tags/md/3.19
+On 12/13/14 11:07 PM, Akira Hayakawa wrote:
+> Hi,
+> 
+> Jianjian, You really get a point at the fundamental design.
+> 
+>> If I understand it correctly, the whole idea indeed is very simple,
+>> the consumer/provider and circular buffer model. use SSD as a circular
+>> write buffer, write flush thread stores incoming writes to this buffer
+>> sequentially as provider, and writeback thread write those data logs
+>> sequentially into backing device as consumer.
+>>
+>> If writeboost can do that without any random writes, then probably it
+>> can save SSD/FTL of doing a lot of dirty jobs, and utilize the faster
+>> sequential read/write performance from SSD. That'll be awesome.
+>> However, I saw every data log segment in its design has meta data
+>> header, like dirty_bits, so I guess writeboost has to randomly write
+>> those data headers of stored data logs in SSD; also, splitting all bio
+>> into 4KB will hurt its ability to get max raw SSD throughput, modern
+>> NAND Flash has pages much bigger than 4KB; so overall I think the
+>> actual benefits writeboost gets from this design will be discounted.
+> You understand *almost* correctly.
+> 
+> Writeboost has two circular buffers, not one; RAM buffers and SSD.
+> The incoming bio is split into 4KB chunks at the virtual make_request
+> and are NOT directly remapped to the SSD.
+> As you mentioned, if I designed so, many update on the metadata happens.
+> That's really bad since SSD is very bad at small update.
+> 
+> Actually, the 4KB bio is first stored in RAM buffer, which is 512KB large.
+> There are (512-4)/4=127 4KB bio data stored in the RAM buffer and 4KB metadata
+> section at the head is made after that.
+> 
+> The RAM buffer is now called "log" and as you mentioned, flushed to the SSD
+> as 512KB sequential write. This definitely maximizes throughput and lifetime.
+> 
+> Unfortunately, this is not always the case because of barrier request handlings.
+> But, when the writes is really heavy (e.g. massive dirty page writeback),
+> Writeboost works as above.
+> 
+>> The good thing is that it seems writeboost doesn't use garbage
+>> collection to clean old invalid logs, this will avoid the double
+>> garage collection effect other caching module has, which essentially
+>> both caching module and internal SSD will perform garbage collections
+>> twice.
+> Yes. And I believe SSDs can remove wear-leveling if I used it as fairly sequential.
+> Am I right? Indeed, Writeboost is really SSD frinedly.
+> 
+>> And one question, how long will be data logs replay time during init,
+>> if SSD is almost full of dirty data logs?
+> Sorry, I don't have a data now but it's slow as you may imagine.
+> I will measure the time on later.
+> 
+> The major reason is, it needs to read full 512KB segment to calculate checksum to
+> know if the log isn't half written.
+> (Read 500GB SSD that performs 500MB/sec seqread spends 1000secs)
+> I think making the procedure done in parallel to exploit the full internal parallelism
+> inside SSD may improve performance but it's just the matter of coefficient down from 1 to 1/n.
+> Definitely, Writeboost isn't fit for a machine that needs reboot frequently (e.g. desktop).
+> 
+> There is a way to reduce the init time. We can dump "what is the latest log written back"
+> on the superblock. This can skip readings that aren't essential.
+> 
+> The corresponding code is replay_log_on_cache() function. Please read if you are
+> interested.
+> 
+> Thanks,
+> 
+> - Akira
+> 
+> On 12/13/14 3:45 PM, Jianjian Huo wrote:
+>> If I understand it correctly, the whole idea indeed is very simple,
+>> the consumer/provider and circular buffer model. use SSD as a circular
+>> write buffer, write flush thread stores incoming writes to this buffer
+>> sequentially as provider, and writeback thread write those data logs
+>> sequentially into backing device as consumer.
+>>
+>> If writeboost can do that without any random writes, then probably it
+>> can save SSD/FTL of doing a lot of dirty jobs, and utilize the faster
+>> sequential read/write performance from SSD. That'll be awesome.
+>> However, I saw every data log segment in its design has meta data
+>> header, like dirty_bits, so I guess writeboost has to randomly write
+>> those data headers of stored data logs in SSD; also, splitting all bio
+>> into 4KB will hurt its ability to get max raw SSD throughput, modern
+>> NAND Flash has pages much bigger than 4KB; so overall I think the
+>> actual benefits writeboost gets from this design will be discounted.
+>>
+>> The good thing is that it seems writeboost doesn't use garbage
+>> collection to clean old invalid logs, this will avoid the double
+>> garage collection effect other caching module has, which essentially
+>> both caching module and internal SSD will perform garbage collections
+>> twice.
+>>
+>> And one question, how long will be data logs replay time during init,
+>> if SSD is almost full of dirty data logs?
+>>
+>> Jianjian
+>>
+>> On Fri, Dec 12, 2014 at 7:09 AM, Akira Hayakawa <ruby.wktk@gmail.com> wrote:
+>>>> However, after looking at the current code, and using it I think it's
+>>>> a long, long way from being ready for production.  As we've already
+>>>> discussed there are some very naive design decisions in there, such as
+>>>> copying every bio payload to another memory buffer, splitting all io
+>>>> down to 4k.  Think about the cpu overhead and memory consumption!
+>>>> Think about how it will perform when memory is constrained and it
+>>>> can't allocate many of those rambufs!  I'm sure more issues will be
+>>>> found if I read further.
+>>> These decisions are made based on measurement. They are not naive.
+>>> I am a man who dislikes performance optimization without measurement.
+>>> As a result, I regard things brought by the simplicity much important
+>>> than what's from other design decisions possible.
+>>>
+>>> About the CPU consumption,
+>>> the average CPU consumption while performing random write fio
+>>> with consumer level SSD is only 3% or so,
+>>> which is 5 times efficient than bcache per iops.
+>>>
+>>> With RAM-backed cache device, it reaches about 1.5GB/sec throughput.
+>>> Even in this case the CPU consumption is only 12%.
+>>> Please see this post,
+>>> http://www.redhat.com/archives/dm-devel/2014-February/msg00000.html
+>>>
+>>> I don't think the CPU consumption is small enough to ignore.
+>>>
+>>> About the memory consumption,
+>>> you seem to misunderstand the fact.
+>>> The rambufs are not dynamically allocated but statically.
+>>> The default amount is 8MB and this is usually not to argue.
+>>>
+>>>> Mike raised the question of why you want this in the kernel so much?
+>>>> You'd find none of the distros would support it; so it doesn't widen
+>>>> your audience much.  It's far better for you to maintain it outside of
+>>>> the kernel at this point.  Any users will be bold, adventurous people,
+>>>> who will be quite capable of building a kernel module.
+>>> Some people deploy Writeboost in their daily use.
+>>> The sound of "log-structured" seems to easily attract storage guys' attention.
+>>> If this driver is merged into upstream, I think it gains many audience and
+>>> thus feedback.
+>>> When my driver was introduced by Phoronix before, it actually drew attentions.
+>>> They must wait for Writeboost become available in upstream.
+>>> http://www.phoronix.com/scan.php?page=news_item&px=MTQ1Mjg
+>>>
+>>>> I'm sorry to have disappointed you so, but if I let this go upstream
+>>>> it would mean a massive amount of support work for me, not to mention
+>>>> a damaged reputation for dm.
+>>> If you read the code further, you will find how simple the mechanism is.
+>>> Not to mention the code itself is.
+>>>
+>>> - Akira
+>>>
+>>> On 12/12/14 11:24 PM, Joe Thornber wrote:
+>>>> On Fri, Dec 12, 2014 at 09:42:15AM +0900, Akira Hayakawa wrote:
+>>>>> The SSD-caching should be log-structured.
+>>>>
+>>>> No argument there, and this is why I've supported you with
+>>>> dm-writeboost over the last couple of years.
+>>>>
+>>>> However, after looking at the current code, and using it I think it's
+>>>> a long, long way from being ready for production.  As we've already
+>>>> discussed there are some very naive design decisions in there, such as
+>>>> copying every bio payload to another memory buffer, splitting all io
+>>>> down to 4k.  Think about the cpu overhead and memory consumption!
+>>>> Think about how it will perform when memory is constrained and it
+>>>> can't allocate many of those rambufs!  I'm sure more issues will be
+>>>> found if I read further.
+>>>>
+>>>> I'm sorry to have disappointed you so, but if I let this go upstream
+>>>> it would mean a massive amount of support work for me, not to mention
+>>>> a damaged reputation for dm.
+>>>>
+>>>> Mike raised the question of why you want this in the kernel so much?
+>>>> You'd find none of the distros would support it; so it doesn't widen
+>>>> your audience much.  It's far better for you to maintain it outside of
+>>>> the kernel at this point.  Any users will be bold, adventurous people,
+>>>> who will be quite capable of building a kernel module.
+>>>>
+>>>> - Joe
+>>>>
+>>>
+>>> --
+>>> dm-devel mailing list
+>>> dm-devel@redhat.com
+>>> https://www.redhat.com/mailman/listinfo/dm-devel
+>>
+>> --
+>> dm-devel mailing list
+>> dm-devel@redhat.com
+>> https://www.redhat.com/mailman/listinfo/dm-devel
+>>
+> 
 
-for you to fetch changes up to f851b60db0fd83a10034c5cc9d9e58c758457b1c:
-
-  md: Check MD_RECOVERY_RUNNING as well as ->sync_thread. (2014-12-11 10:02=
-:10 +1100)
-
-----------------------------------------------------------------
-Three fixes for md
-
-----------------------------------------------------------------
-NeilBrown (2):
-      md/raid5: fetch_block must fetch all the blocks handle_stripe_dirtyin=
-g wants.
-      md: Check MD_RECOVERY_RUNNING as well as ->sync_thread.
-
-kbuild test robot (1):
-      md: fix semicolon.cocci warnings
-
- drivers/md/md.c    | 38 +++++++++++++++++++++++++++-----------
- drivers/md/raid5.c |  7 +++++--
- 2 files changed, 32 insertions(+), 13 deletions(-)
-
---Sig_/5mrRlp2ZMSuJxhPC1h6nvdK
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVIzp9jnsnt1WYoG5AQKSmA/+LpzBMEOzL7hL/jPKMdYg3mCk/DMsuDQp
-1XjirEjMQGtPMNxVhsJ8JLm7jToUpg9khM7W9ZS7A4Zc96Skb4hj19W7rTT975L5
-UKJqVIppURnISMCElftOxXnb/n/0vctbrKGQibOzxTQRds/HOPJbEVpHGwgb14jG
-RJENsEZ+Rbe3n7CbtUV6T8b2bpFCeFABcHrRRj9pE0LsJDPPNTt9RyxN2hqZV+XT
-ieGXMXdL9otxEYBYxAK9Yh7bcAreRXuEuB7C295jaqiKBo+mfGqVLZMBTE8acYvc
-u6FcqXh4DvOd7BPF3a/VjXooUAEBGFe85o3NL+bi5c03YsopzNTCFGsUO7mfOSGV
-90Mij/VYwDaatiwBtooC0jbQFxGb1Y/1Kk33101Z/JsaJI1fVYFvS3t91rin+PZ9
-joucxxtixAvVlYTAt3khhflCZeYFhaOHtQXbBu3PF8/wN44vQUNX9H1jqhYlD9/N
-jsM8J9Qx/X8B4RBSJJjn09286eE+e1YuahAmO0I7BKozIMNVxYtuycsiifGnC9hL
-iR0HQMHMps+lAjlZUP8qyrY4sTTqg1F9tie0qDfln1y+UrWWDyaI6J9+FhVp/KYp
-Re94hFMCeiP+euuCbj60SskeD8hTLNfEJFzZ9zlPAc4Hkcqc1qmzi171hj41hIOe
-harxNSLHx9w=
-=kWCD
------END PGP SIGNATURE-----
-
---Sig_/5mrRlp2ZMSuJxhPC1h6nvdK--
