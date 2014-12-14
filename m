@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969AbaLNUf2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:35:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53374 "EHLO
+	id S1753987AbaLNUfc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:35:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53438 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623AbaLNUby (ORCPT
+	with ESMTP id S1753456AbaLNUdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:31:54 -0500
+	Sun, 14 Dec 2014 15:33:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anthony Wright <anthony@overnetdata.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.18 09/19] xen-netfront: use correct linear area after linearizing an skb
-Date: Sun, 14 Dec 2014 12:21:20 -0800
-Message-Id: <20141214201823.809864581@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.17 47/47] ALSA: usb-audio: Dont resubmit pending URBs at MIDI error recovery
+Date: Sun, 14 Dec 2014 12:21:22 -0800
+Message-Id: <20141214201820.343725982@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201823.543296369@linuxfoundation.org>
-References: <20141214201823.543296369@linuxfoundation.org>
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,49 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Vrabel <david.vrabel@citrix.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 11d3d2a16cc1f05c6ece69a4392e99efb85666a6 ]
+commit 66139a48cee1530c91f37c145384b4ee7043f0b7 upstream.
 
-Commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d (xen-netfront: Fix
-handling packets on compound pages with skb_linearize) attempted to
-fix a problem where an skb that would have required too many slots
-would be dropped causing TCP connections to stall.
+In snd_usbmidi_error_timer(), the driver tries to resubmit MIDI input
+URBs to reactivate the MIDI stream, but this causes the error when
+some of URBs are still pending like:
 
-However, it filled in the first slot using the original buffer and not
-the new one and would use the wrong offset and grant access to the
-wrong page.
+ WARNING: CPU: 0 PID: 0 at ../drivers/usb/core/urb.c:339 usb_submit_urb+0x5f/0x70()
+ URB ef705c40 submitted while active
+ CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.16.6-2-desktop #1
+ Hardware name: FOXCONN TPS01/TPS01, BIOS 080015  03/23/2010
+  c0984bfa f4009ed4 c078deaf f4009ee4 c024c884 c09a135c f4009f00 00000000
+  c0984bfa 00000153 c061ac4f c061ac4f 00000009 00000001 ef705c40 e854d1c0
+  f4009eec c024c8d3 00000009 f4009ee4 c09a135c f4009f00 f4009f04 c061ac4f
+ Call Trace:
+  [<c0205df6>] try_stack_unwind+0x156/0x170
+  [<c020482a>] dump_trace+0x5a/0x1b0
+  [<c0205e56>] show_trace_log_lvl+0x46/0x50
+  [<c02049d1>] show_stack_log_lvl+0x51/0xe0
+  [<c0205eb7>] show_stack+0x27/0x50
+  [<c078deaf>] dump_stack+0x45/0x65
+  [<c024c884>] warn_slowpath_common+0x84/0xa0
+  [<c024c8d3>] warn_slowpath_fmt+0x33/0x40
+  [<c061ac4f>] usb_submit_urb+0x5f/0x70
+  [<f7974104>] snd_usbmidi_submit_urb+0x14/0x60 [snd_usbmidi_lib]
+  [<f797483a>] snd_usbmidi_error_timer+0x6a/0xa0 [snd_usbmidi_lib]
+  [<c02570c0>] call_timer_fn+0x30/0x130
+  [<c0257442>] run_timer_softirq+0x1c2/0x260
+  [<c0251493>] __do_softirq+0xc3/0x270
+  [<c0204732>] do_softirq_own_stack+0x22/0x30
+  [<c025186d>] irq_exit+0x8d/0xa0
+  [<c0795228>] smp_apic_timer_interrupt+0x38/0x50
+  [<c0794a3c>] apic_timer_interrupt+0x34/0x3c
+  [<c0673d9e>] cpuidle_enter_state+0x3e/0xd0
+  [<c028bb8d>] cpu_idle_loop+0x29d/0x3e0
+  [<c028bd23>] cpu_startup_entry+0x53/0x60
+  [<c0bfac1e>] start_kernel+0x415/0x41a
 
-Netback would notice the malformed request and stop all traffic on the
-VIF, reporting:
+For avoiding these errors, check the pending URBs and skip
+resubmitting such ones.
 
-    vif vif-3-0 vif3.0: txreq.offset: 85e, size: 4002, end: 6144
-    vif vif-3-0 vif3.0: fatal error; disabling device
-
-Reported-by: Anthony Wright <anthony@overnetdata.com>
-Tested-by: Anthony Wright <anthony@overnetdata.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netfront.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -627,6 +627,9 @@ static int xennet_start_xmit(struct sk_b
- 				    slots, skb->len);
- 		if (skb_linearize(skb))
- 			goto drop;
-+		data = skb->data;
-+		offset = offset_in_page(data);
-+		len = skb_headlen(skb);
- 	}
- 
- 	spin_lock_irqsave(&queue->tx_lock, flags);
+---
+ sound/usb/midi.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -365,6 +365,8 @@ static void snd_usbmidi_error_timer(unsi
+ 		if (in && in->error_resubmit) {
+ 			in->error_resubmit = 0;
+ 			for (j = 0; j < INPUT_URBS; ++j) {
++				if (atomic_read(&in->urbs[j]->use_count))
++					continue;
+ 				in->urbs[j]->dev = umidi->dev;
+ 				snd_usbmidi_submit_urb(in->urbs[j], GFP_ATOMIC);
+ 			}
 
 
