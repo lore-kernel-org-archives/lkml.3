@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452AbaLNUdK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:33:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52832 "EHLO
+	id S1753489AbaLNUdV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:33:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbaLNUWE (ORCPT
+	with ESMTP id S1751572AbaLNUWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:22:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kan Liang <kan.liang@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>,
-        Mark Davies <junk@eslaf.co.uk>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Dongsu Park <dongsu.park@profitbricks.com>
-Subject: [PATCH 3.14 28/34] perf/x86/intel: Protect LBR and extra_regs against KVM lying
-Date: Sun, 14 Dec 2014 12:21:06 -0800
-Message-Id: <20141214201804.617954122@linuxfoundation.org>
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Ronald Wahl <ronald.wahl@raritan.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.14 31/34] mac80211: Fix regression that triggers a kernel BUG with CCMP
+Date: Sun, 14 Dec 2014 12:21:09 -0800
+Message-Id: <20141214201804.704127042@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
 References: <20141214201803.791392744@linuxfoundation.org>
@@ -36,171 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kan Liang <kan.liang@intel.com>
+From: Ronald Wahl <ronald.wahl@raritan.com>
 
-commit 338b522ca43cfd32d11a370f4203bcd089c6c877 upstream.
+commit 4f031fa9f188b2b0641ac20087d9e16bcfb4e49d upstream.
 
-With -cpu host, KVM reports LBR and extra_regs support, if the host has
-support.
+Commit 7ec7c4a9a686c608315739ab6a2b0527a240883c (mac80211: port CCMP to
+cryptoapi's CCM driver) introduced a regression when decrypting empty
+packets (data_len == 0). This will lead to backtraces like:
 
-When the guest perf driver tries to access LBR or extra_regs MSR,
-it #GPs all MSR accesses,since KVM doesn't handle LBR and extra_regs support.
-So check the related MSRs access right once at initialization time to avoid
-the error access at runtime.
+(scatterwalk_start) from [<c01312f4>] (scatterwalk_map_and_copy+0x2c/0xa8)
+(scatterwalk_map_and_copy) from [<c013a5a0>] (crypto_ccm_decrypt+0x7c/0x25c)
+(crypto_ccm_decrypt) from [<c032886c>] (ieee80211_aes_ccm_decrypt+0x160/0x170)
+(ieee80211_aes_ccm_decrypt) from [<c031c628>] (ieee80211_crypto_ccmp_decrypt+0x1ac/0x238)
+(ieee80211_crypto_ccmp_decrypt) from [<c032ef28>] (ieee80211_rx_handlers+0x870/0x1d24)
+(ieee80211_rx_handlers) from [<c0330c7c>] (ieee80211_prepare_and_rx_handle+0x8a0/0x91c)
+(ieee80211_prepare_and_rx_handle) from [<c0331260>] (ieee80211_rx+0x568/0x730)
+(ieee80211_rx) from [<c01d3054>] (__carl9170_rx+0x94c/0xa20)
+(__carl9170_rx) from [<c01d3324>] (carl9170_rx_stream+0x1fc/0x320)
+(carl9170_rx_stream) from [<c01cbccc>] (carl9170_usb_tasklet+0x80/0xc8)
+(carl9170_usb_tasklet) from [<c00199dc>] (tasklet_hi_action+0x88/0xcc)
+(tasklet_hi_action) from [<c00193c8>] (__do_softirq+0xcc/0x200)
+(__do_softirq) from [<c0019734>] (irq_exit+0x80/0xe0)
+(irq_exit) from [<c0009c10>] (handle_IRQ+0x64/0x80)
+(handle_IRQ) from [<c000c3a0>] (__irq_svc+0x40/0x4c)
+(__irq_svc) from [<c0009d44>] (arch_cpu_idle+0x2c/0x34)
 
-For reproducing the issue, please build the kernel with CONFIG_KVM_INTEL = y
-(for host kernel).
-And CONFIG_PARAVIRT = n and CONFIG_KVM_GUEST = n (for guest kernel).
-Start the guest with -cpu host.
-Run perf record with --branch-any or --branch-filter in guest to trigger LBR
-Run perf stat offcore events (E.g. LLC-loads/LLC-load-misses ...) in guest to
-trigger offcore_rsp #GP
+Such packets can appear for example when using the carl9170 wireless driver
+because hardware sometimes generates garbage when the internal FIFO overruns.
 
-Signed-off-by: Kan Liang <kan.liang@intel.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Maria Dimakopoulou <maria.n.dimakopoulou@gmail.com>
-Cc: Mark Davies <junk@eslaf.co.uk>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1405365957-20202-1-git-send-email-kan.liang@intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Cc: Dongsu Park <dongsu.park@profitbricks.com>
+This patch adds an additional length check.
+
+Fixes: 7ec7c4a9a686 ("mac80211: port CCMP to cryptoapi's CCM driver")
+Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- arch/x86/kernel/cpu/perf_event.c       |    3 +
- arch/x86/kernel/cpu/perf_event.h       |   12 +++---
- arch/x86/kernel/cpu/perf_event_intel.c |   66 ++++++++++++++++++++++++++++++++-
- 3 files changed, 75 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -118,6 +118,9 @@ static int x86_pmu_extra_regs(u64 config
- 			continue;
- 		if (event->attr.config1 & ~er->valid_mask)
- 			return -EINVAL;
-+		/* Check if the extra msrs can be safely accessed*/
-+		if (!er->extra_msr_access)
-+			return -ENXIO;
+---
+ net/mac80211/aes_ccm.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/net/mac80211/aes_ccm.c
++++ b/net/mac80211/aes_ccm.c
+@@ -54,6 +54,9 @@ int ieee80211_aes_ccm_decrypt(struct cry
  
- 		reg->idx = er->idx;
- 		reg->config = event->attr.config1;
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -293,14 +293,16 @@ struct extra_reg {
- 	u64			config_mask;
- 	u64			valid_mask;
- 	int			idx;  /* per_xxx->regs[] reg index */
-+	bool			extra_msr_access;
- };
+ 	memset(&aead_req, 0, sizeof(aead_req));
  
- #define EVENT_EXTRA_REG(e, ms, m, vm, i) {	\
--	.event = (e),		\
--	.msr = (ms),		\
--	.config_mask = (m),	\
--	.valid_mask = (vm),	\
--	.idx = EXTRA_REG_##i,	\
-+	.event = (e),			\
-+	.msr = (ms),			\
-+	.config_mask = (m),		\
-+	.valid_mask = (vm),		\
-+	.idx = EXTRA_REG_##i,		\
-+	.extra_msr_access = true,	\
- 	}
- 
- #define INTEL_EVENT_EXTRA_REG(event, msr, vm, idx)	\
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -2183,6 +2183,41 @@ static void intel_snb_check_microcode(vo
- 	}
- }
- 
-+/*
-+ * Under certain circumstances, access certain MSR may cause #GP.
-+ * The function tests if the input MSR can be safely accessed.
-+ */
-+static bool check_msr(unsigned long msr, u64 mask)
-+{
-+	u64 val_old, val_new, val_tmp;
++	if (data_len == 0)
++		return -EINVAL;
 +
-+	/*
-+	 * Read the current value, change it and read it back to see if it
-+	 * matches, this is needed to detect certain hardware emulators
-+	 * (qemu/kvm) that don't trap on the MSR access and always return 0s.
-+	 */
-+	if (rdmsrl_safe(msr, &val_old))
-+		return false;
-+
-+	/*
-+	 * Only change the bits which can be updated by wrmsrl.
-+	 */
-+	val_tmp = val_old ^ mask;
-+	if (wrmsrl_safe(msr, val_tmp) ||
-+	    rdmsrl_safe(msr, &val_new))
-+		return false;
-+
-+	if (val_new != val_tmp)
-+		return false;
-+
-+	/* Here it's sure that the MSR can be safely accessed.
-+	 * Restore the old value and return.
-+	 */
-+	wrmsrl(msr, val_old);
-+
-+	return true;
-+}
-+
- static __init void intel_sandybridge_quirk(void)
- {
- 	x86_pmu.check_microcode = intel_snb_check_microcode;
-@@ -2272,7 +2307,8 @@ __init int intel_pmu_init(void)
- 	union cpuid10_ebx ebx;
- 	struct event_constraint *c;
- 	unsigned int unused;
--	int version;
-+	struct extra_reg *er;
-+	int version, i;
- 
- 	if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
- 		switch (boot_cpu_data.x86) {
-@@ -2578,6 +2614,34 @@ __init int intel_pmu_init(void)
- 		}
- 	}
- 
-+	/*
-+	 * Access LBR MSR may cause #GP under certain circumstances.
-+	 * E.g. KVM doesn't support LBR MSR
-+	 * Check all LBT MSR here.
-+	 * Disable LBR access if any LBR MSRs can not be accessed.
-+	 */
-+	if (x86_pmu.lbr_nr && !check_msr(x86_pmu.lbr_tos, 0x3UL))
-+		x86_pmu.lbr_nr = 0;
-+	for (i = 0; i < x86_pmu.lbr_nr; i++) {
-+		if (!(check_msr(x86_pmu.lbr_from + i, 0xffffUL) &&
-+		      check_msr(x86_pmu.lbr_to + i, 0xffffUL)))
-+			x86_pmu.lbr_nr = 0;
-+	}
-+
-+	/*
-+	 * Access extra MSR may cause #GP under certain circumstances.
-+	 * E.g. KVM doesn't support offcore event
-+	 * Check all extra_regs here.
-+	 */
-+	if (x86_pmu.extra_regs) {
-+		for (er = x86_pmu.extra_regs; er->msr; er++) {
-+			er->extra_msr_access = check_msr(er->msr, 0x1ffUL);
-+			/* Disable LBR select mapping */
-+			if ((er->idx == EXTRA_REG_LBR) && !er->extra_msr_access)
-+				x86_pmu.lbr_sel_map = NULL;
-+		}
-+	}
-+
- 	/* Support full width counters using alternative MSR range */
- 	if (x86_pmu.intel_cap.full_width_write) {
- 		x86_pmu.max_period = x86_pmu.cntval_mask;
+ 	sg_init_one(&pt, data, data_len);
+ 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
+ 	sg_init_table(ct, 2);
 
 
