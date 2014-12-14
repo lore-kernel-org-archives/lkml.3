@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaLNUWb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:22:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52816 "EHLO
+	id S1751811AbaLNUWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:22:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323AbaLNUVi (ORCPT
+	with ESMTP id S1751328AbaLNUVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:38 -0500
+	Sun, 14 Dec 2014 15:21:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Torokhov <dtor@chromium.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 12/24] sata_fsl: fix error handling of irq_of_parse_and_map
-Date: Sun, 14 Dec 2014 12:20:32 -0800
-Message-Id: <20141214201801.028617227@linuxfoundation.org>
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 14/24] tg3: fix ring init when there are more TX than RX channels
+Date: Sun, 14 Dec 2014 12:20:34 -0800
+Message-Id: <20141214201801.101704102@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -28,31 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <dtor@chromium.org>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit aad0b624129709c94c2e19e583b6053520353fa8 upstream.
+[ Upstream commit a620a6bc1c94c22d6c312892be1e0ae171523125 ]
 
-irq_of_parse_and_map() returns 0 on error (the result is unsigned int),
-so testing for negative result never works.
+If TX channels are set to 4 and RX channels are set to less than 4,
+using ethtool -L, the driver will try to initialize more RX channels
+than it has allocated, causing an oops.
 
-Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+This fix only initializes the RX ring if it has been allocated.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/ata/sata_fsl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/sata_fsl.c
-+++ b/drivers/ata/sata_fsl.c
-@@ -1501,7 +1501,7 @@ static int sata_fsl_probe(struct platfor
- 	host_priv->csr_base = csr_base;
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8392,7 +8392,8 @@ static int tg3_init_rings(struct tg3 *tp
+ 		if (tnapi->rx_rcb)
+ 			memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
  
- 	irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
--	if (irq < 0) {
-+	if (!irq) {
- 		dev_err(&ofdev->dev, "invalid irq from platform\n");
- 		goto error_exit_with_cleanup;
- 	}
+-		if (tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
++		if (tnapi->prodring.rx_std &&
++		    tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
+ 			tg3_free_rings(tp);
+ 			return -ENOMEM;
+ 		}
 
 
