@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaLNH1A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 02:27:00 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44777 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaLNH06 (ORCPT
+	id S1751994AbaLNHzL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 02:55:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35646 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaLNHzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 02:26:58 -0500
+	Sun, 14 Dec 2014 02:55:07 -0500
+Date: Sat, 13 Dec 2014 23:54:44 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-f0905c5a32ce6e9b743b4d9c70e53d1ce447852d@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        luto@amacapital.net, tglx@linutronix.de
+Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        luto@amacapital.net, hpa@zytor.com
+In-Reply-To: <1042001e502f8e0deb0edfeeac209b68378650cf.1418430292.git.luto@amacapital.net>
+References: <1042001e502f8e0deb0edfeeac209b68378650cf.1418430292.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] MAINTAINERS: Add me as x86 VDSO submaintainer
+Git-Commit-ID: f0905c5a32ce6e9b743b4d9c70e53d1ce447852d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <20141214175747.2e6c506e@canb.auug.org.au>
-References: <20141214175747.2e6c506e@canb.auug.org.au>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sat, 13 Dec 2014 23:26:36 -0800
-Message-ID: <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
-Subject: Re: linux-next: question about the luto-misc tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
->
-> Hi Andy,
->
-> The luto-misc tree seems to have a whole series of commits in it that
-> have just bee removed from the rcu tree ...  You really have to be very
-> careful if you base your work on a tree that is regularly rebased.
+Commit-ID:  f0905c5a32ce6e9b743b4d9c70e53d1ce447852d
+Gitweb:     http://git.kernel.org/tip/f0905c5a32ce6e9b743b4d9c70e53d1ce447852d
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Fri, 12 Dec 2014 16:25:47 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 14 Dec 2014 08:47:22 +0100
 
-Hmm.  They were there a couple days ago.  Paul, what should I do about
-this?  I only need the one NMI nesting change for the stuff in
-luto/next.
+MAINTAINERS: Add me as x86 VDSO submaintainer
 
->
-> I also wonder if the other commits in that tree are destined for
-> v3.19?  If they are for v3.20, then they should not be in linux-next
-> until after v3.19-rc1 has been released.
+Here goes... :)
 
-They're for 3.20.  I'll drop the whole series from the next branch for now.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1042001e502f8e0deb0edfeeac209b68378650cf.1418430292.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
---Andy
-
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c444907..7a54fa8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -10295,6 +10295,13 @@ L:	linux-edac@vger.kernel.org
+ S:	Maintained
+ F:	arch/x86/kernel/cpu/mcheck/*
+ 
++X86 VDSO
++M:	Andy Lutomirski <luto@amacapital.net>
++L:	linux-kernel@vger.kernel.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/vdso
++S:	Maintained
++F:	arch/x86/vdso/
++
+ XC2028/3028 TUNER DRIVER
+ M:	Mauro Carvalho Chehab <m.chehab@samsung.com>
+ L:	linux-media@vger.kernel.org
