@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116AbaLNUVs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:21:48 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52799 "EHLO
+	id S1751473AbaLNUVx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:21:53 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52803 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaLNUVi (ORCPT
+	with ESMTP id S1750952AbaLNUVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:21:38 -0500
+	Sun, 14 Dec 2014 15:21:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
-        Bob Liu <bob.liu@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 01/24] mm: frontswap: invalidate expired data on a dup-store failure
-Date: Sun, 14 Dec 2014 12:20:21 -0800
-Message-Id: <20141214201800.664383585@linuxfoundation.org>
+        Devin Ryles <devin.ryles@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.10 10/24] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
+Date: Sun, 14 Dec 2014 12:20:30 -0800
+Message-Id: <20141214201800.967753840@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -34,50 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Devin Ryles <devin.ryles@intel.com>
 
-commit fb993fa1a2f669215fa03a09eed7848f2663e336 upstream.
+commit 249cd0a187ed4ef1d0af7f74362cc2791ec5581b upstream.
 
-If a frontswap dup-store failed, it should invalidate the expired page
-in the backend, or it could trigger some data corruption issue.
-Such as:
- 1. use zswap as the frontswap backend with writeback feature
- 2. store a swap page(version_1) to entry A, success
- 3. dup-store a newer page(version_2) to the same entry A, fail
- 4. use __swap_writepage() write version_2 page to swapfile, success
- 5. zswap do shrink, writeback version_1 page to swapfile
- 6. version_2 page is overwrited by version_1, data corrupt.
+This patch adds DeviceIDs for Sunrise Point-LP.
 
-This patch fixes this issue by invalidating expired data immediately
-when meet a dup-store failure.
-
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Seth Jennings <sjennings@variantweb.net>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <bob.liu@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/frontswap.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/ata/ahci.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
- 		  the (older) page from frontswap
- 		 */
- 		inc_frontswap_failed_stores();
--		if (dup)
-+		if (dup) {
- 			__frontswap_clear(sis, offset);
-+			frontswap_ops->invalidate_page(type, offset);
-+		}
- 	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -320,6 +320,9 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
 
 
