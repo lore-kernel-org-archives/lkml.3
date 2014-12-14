@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaLNU3s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:29:48 -0500
-Received: from smtprelay0133.hostedemail.com ([216.40.44.133]:48092 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752836AbaLNU33 (ORCPT
+	id S1752879AbaLNU3k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:29:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53224 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584AbaLNUZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:29:29 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4250:5007:6261:7875:7886:7903:9010:9040:10007:10400:10848:10967:11232:11658:11914:12517:12519:12663:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
-X-HE-Tag: cow71_8cbf5ee7ad52e
-X-Filterd-Recvd-Size: 1745
-Date: Sun, 14 Dec 2014 15:29:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
+	Sun, 14 Dec 2014 15:25:16 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 0/2 v2] tracing: Enable tracepoints early and allow
- printk to use them
-Message-ID: <20141214152915.431f7aa8@gandalf.local.home>
-In-Reply-To: <20141214201609.126831471@goodmis.org>
-References: <20141214201609.126831471@goodmis.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jack Morgenstein <jackm@dev.mellanox.co.il>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.17 32/47] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
+Date: Sun, 14 Dec 2014 12:21:07 -0800
+Message-Id: <20141214201819.787523841@linuxfoundation.org>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
+References: <20141214201818.552715149@linuxfoundation.org>
+User-Agent: quilt/0.63-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Dec 2014 15:16:09 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+3.17-stable review patch.  If anyone has any objections, please let me know.
 
-> 1) Allow traceopoints to be enabled right after mm_init(). By passing
-> in the trace_event= kernel command line parameter, tracepoints can be
-> enabled at boot up. For debugging things like the initialization of
-> interrupts, it is needed to have tracepoints enabled very early. People
-> have asked about this before and this has been on my todo list. As it
-> can be helpful for Thomas to debug his upcoming 3.20 IRQ work, I'm
-> pushing this now. This way he can add tracepoints into the IRQ set up
-> and have have users enable them when things go wrong.
+------------------
 
-Cut and paste is a bitch!
+From: Jack Morgenstein <jackm@dev.mellanox.co.il>
 
-s/mm_init/rcu_init/
+[ Upstream commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c ]
 
--- Steve
+Some VF drivers use the upper byte of "param1" (the qp count field)
+in mlx4_qp_reserve_range() to pass flags which are used to optimize
+the range allocation.
+
+Under the current code, if any of these flags are set, the 32-bit
+count field yields a count greater than 2^24, which is out of range,
+and this VF fails.
+
+As these flags represent a "best-effort" allocation hint anyway, they may
+safely be ignored. Therefore, the PF driver may simply mask out the bits.
+
+Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
+Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
+Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/mellanox/mlx4/resource_tracker.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
++++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
+@@ -1546,7 +1546,7 @@ static int qp_alloc_res(struct mlx4_dev
+ 
+ 	switch (op) {
+ 	case RES_OP_RESERVE:
+-		count = get_param_l(&in_param);
++		count = get_param_l(&in_param) & 0xffffff;
+ 		align = get_param_h(&in_param);
+ 		err = mlx4_grant_resource(dev, slave, RES_QP, count, 0);
+ 		if (err)
+
+
