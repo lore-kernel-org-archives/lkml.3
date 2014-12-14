@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaLNU0A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:26:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53278 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329AbaLNUZW (ORCPT
+	id S1751782AbaLNU1B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:27:01 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:44514 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245AbaLNU0v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:25:22 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.17 45/47] ALSA: hda - Add EAPD fixup for ASUS Z99He laptop
-Date: Sun, 14 Dec 2014 12:21:20 -0800
-Message-Id: <20141214201820.271657215@linuxfoundation.org>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
-References: <20141214201818.552715149@linuxfoundation.org>
-User-Agent: quilt/0.63-1
+	Sun, 14 Dec 2014 15:26:51 -0500
+Date: Sun, 14 Dec 2014 12:26:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH 2/3] tracing: Move enabling tracepoints to just after
+ mm_init()
+Message-ID: <20141214202644.GI5310@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20141214164104.307127356@goodmis.org>
+ <20141214164804.150181588@goodmis.org>
+ <20141214181444.GE5310@linux.vnet.ibm.com>
+ <20141214132020.4ddf323b@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141214132020.4ddf323b@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121420-0017-0000-0000-0000071B844E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.17-stable review patch.  If anyone has any objections, please let me know.
+On Sun, Dec 14, 2014 at 01:20:20PM -0500, Steven Rostedt wrote:
+> On Sun, 14 Dec 2014 10:14:44 -0800
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> 
+> > > diff --git a/init/main.c b/init/main.c
+> > > index 800a0daede7e..060e60b6aa59 100644
+> > > --- a/init/main.c
+> > > +++ b/init/main.c
+> > > @@ -561,6 +561,9 @@ asmlinkage __visible void __init start_kernel(void)
+> > >  	trap_init();
+> > >  	mm_init();
+> > > 
+> > > +	/* trace_printk() and trace points may be used after this */
+> > > +	trace_init();
+> > 
+> > Or if you aren't going to use call_rcu_sched() before this point, I could
+> > move the call_rcu_sched()-relevant initialization to this point.  Or make
+> > the compiler do it -- I am pretty sure that the per-CPU variables are in
+> > place at this point.
+> 
+> Well, we could move trace_init() after rcu_init() for now too, and
+> remove my tracepoint patch. But I'd like to have trace_init() go before
+> sched_init() since that could possibly use debugging tracepoints as
+> well.
+> 
+> So if you could add a rcu_partial_init() that makes calling
+> call_rcu_sched() work, that would be great. That could be for 3.20
+> then, and for now, I just move trace_init() after rcu_init() which is
+> still before irq_init() that Thomas needs for his work.
 
-------------------
+Sounds like a good approach.  I also need to check up on documentation of
+which RCU primitives can be used where, I suspect.
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit f62f5eff3d40a56ad1cf0d81a6cac8dd8743e8a1 upstream.
-
-The same fixup to enable EAPD is needed for ASUS Z99He with AD1986A
-codec like another ASUS machine.
-
-Reported-and-tested-by: Dmitry V. Zimin <pfzim@mail.ru>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_analog.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/sound/pci/hda/patch_analog.c
-+++ b/sound/pci/hda/patch_analog.c
-@@ -332,6 +332,7 @@ static const struct hda_fixup ad1986a_fi
- 
- static const struct snd_pci_quirk ad1986a_fixup_tbl[] = {
- 	SND_PCI_QUIRK(0x103c, 0x30af, "HP B2800", AD1986A_FIXUP_LAPTOP_IMIC),
-+	SND_PCI_QUIRK(0x1043, 0x1443, "ASUS Z99He", AD1986A_FIXUP_EAPD),
- 	SND_PCI_QUIRK(0x1043, 0x1447, "ASUS A8JN", AD1986A_FIXUP_EAPD),
- 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8100, "ASUS P5", AD1986A_FIXUP_3STACK),
- 	SND_PCI_QUIRK_MASK(0x1043, 0xff00, 0x8200, "ASUS M2", AD1986A_FIXUP_3STACK),
-
+							Thanx, Paul
 
