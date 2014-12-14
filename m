@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaLNRVm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 12:21:42 -0500
-Received: from smtprelay0154.hostedemail.com ([216.40.44.154]:34832 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751190AbaLNRVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 12:21:40 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3351:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:5007:6261:7875:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: tax35_65ac21a82be61
-X-Filterd-Recvd-Size: 1712
-Date: Sun, 14 Dec 2014 12:21:36 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+	id S1751650AbaLNR31 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 12:29:27 -0500
+Received: from mail.efficios.com ([78.47.125.74]:47730 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751018AbaLNR30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 12:29:26 -0500
+Date: Sun, 14 Dec 2014 17:29:28 +0000 (UTC)
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Message-ID: <759389895.27358.1418578168225.JavaMail.zimbra@efficios.com>
+In-Reply-To: <20141214122136.1664e104@gandalf.local.home>
+References: <20141214164104.307127356@goodmis.org> <20141214164803.991954802@goodmis.org> <1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com> <20141214121457.59b22354@gandalf.local.home> <20141214122136.1664e104@gandalf.local.home>
 Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before
  early_initcall()
-Message-ID: <20141214122136.1664e104@gandalf.local.home>
-In-Reply-To: <20141214121457.59b22354@gandalf.local.home>
-References: <20141214164104.307127356@goodmis.org>
-	<20141214164803.991954802@goodmis.org>
-	<1556965801.27338.1418576749817.JavaMail.zimbra@efficios.com>
-	<20141214121457.59b22354@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [206.248.138.119]
+X-Mailer: Zimbra 8.0.7_GA_6021 (ZimbraWebClient - FF34 (Linux)/8.0.7_GA_6021)
+Thread-Topic: tracepoints: Do not use call_rcu_sched() before early_initcall()
+Thread-Index: YVnvAxA4FoliblRTyQIxKyjuiypHNA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Dec 2014 12:14:57 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+----- Original Message -----
+> From: "Steven Rostedt" <rostedt@goodmis.org>
+> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
+> Cc: linux-kernel@vger.kernel.org, "Linus Torvalds" <torvalds@linux-foundation.org>, "Ingo Molnar" <mingo@kernel.org>,
+> "Andrew Morton" <akpm@linux-foundation.org>, "Thomas Gleixner" <tglx@linutronix.de>, "Paul E. McKenney"
+> <paulmck@linux.vnet.ibm.com>
+> Sent: Sunday, December 14, 2014 12:21:36 PM
+> Subject: Re: [PATCH 1/3] tracepoints: Do not use call_rcu_sched() before early_initcall()
+> 
+> On Sun, 14 Dec 2014 12:14:57 -0500
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > If IRQ setup, or other core pieces of code can use this, then I would
+> > agree that rcu should be changed. But until then, I rather not add
+> > another conditional to the core RCU code.
+> 
+> Also, call_rcu*() is called from several hot paths. This location is
+> not a hot path, and actually, it is in fact rather slow. That's another
+> reason not to add the logic into the RCU code if just adding it to
+> tracepoints is sufficient.
 
-> If IRQ setup, or other core pieces of code can use this, then I would
-> agree that rcu should be changed. But until then, I rather not add
-> another conditional to the core RCU code.
+Given that your reason for having this RCU-specific logic in tracepoint.c
+rather than within call_rcu*() is not slowing down a fast-path, how about
+creating a new call_rcu_early() and call_rcu_sched_early() which can be
+called in normal operation and at early boot ?
 
-Also, call_rcu*() is called from several hot paths. This location is
-not a hot path, and actually, it is in fact rather slow. That's another
-reason not to add the logic into the RCU code if just adding it to
-tracepoints is sufficient.
+This would allow us to keep the RCU logic within the RCU implementation
+rather than strongly coupling it with the tracepoint code.
 
--- Steve
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
