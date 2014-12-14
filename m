@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816AbaLNG55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 01:57:57 -0500
-Received: from ozlabs.org ([103.22.144.67]:36878 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752AbaLNG5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 01:57:55 -0500
-Date: Sun, 14 Dec 2014 17:57:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: linux-next: question about the luto-misc tree
-Message-ID: <20141214175747.2e6c506e@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1752146AbaLNHXC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 02:23:02 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:62370 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaLNHW7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 02:22:59 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/w6AATFtADn6hH_l_/ISlrhw"; protocol="application/pgp-signature"
+In-Reply-To: <CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+References: <54584260.8030602@nvidia.com>
+	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+	<545895B2.2000101@nvidia.com>
+	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+Date: Sat, 13 Dec 2014 23:22:57 -0800
+Message-ID: <CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Tim Kryger <tim.kryger@gmail.com>, Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/w6AATFtADn6hH_l_/ISlrhw
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, Nov 4, 2014 at 7:31 AM, Tim Kryger <tim.kryger@gmail.com> wrote:
+> On Tue, Nov 4, 2014 at 1:00 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Hi Tim, thanks for your reply!
+>>
+>> On 11/04/2014 02:28 PM, Tim Kryger wrote:
+>>>
+>>> On Mon, Nov 3, 2014 at 7:05 PM, Alexandre Courbot <acourbot@nvidia.com>
+[..]
+>>>> After bisecting I tracked commit 52221610dd84dc3e9196554f0292ca9e8ab3541d
+>>>> ("mmc: sdhci: Improve external VDD regulator support") as the one that
+>>>> introduced this issue, which seems somehow surprising to me since it has
+>>>> been around for a while and nobody else complained about this AFAICT.
 
-Hi Andy,
+After some hunting it seems like the recent Qualcomm platforms are
+suffering from this as well.
 
-The luto-misc tree seems to have a whole series of commits in it that
-have just bee removed from the rcu tree ...  You really have to be very
-careful if you base your work on a tree that is regularly rebased.
+[..]
+> In a nutshell, the issue here is that the SDHCI spec demands that VMMC
+> be supplied by the controller itself with the specific voltage
+> configured using the SDHCI_POWER_CONTROL register but almost nobody
+> does this.  Many SoCs omit this capability from their controllers and
+> instead rely upon external regulators.  In such cases there isn't
+> normally any need to update the voltage bits of the power control
+> register.  It sounds like you are saying this isn't true for the
+> Tegra114.
 
-I also wonder if the other commits in that tree are destined for
-v3.19?  If they are for v3.20, then they should not be in linux-next
-until after v3.19-rc1 has been released.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Should one interpret your answer as that iff the SDHCI controller
+actually follows the specification (and provides the power control)
+then as of the introduction of 52221610dd vmmc should no longer be
+used for specifying the supply of power to the controller?
 
---Sig_/w6AATFtADn6hH_l_/ISlrhw
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+Or simply; what is vmmc (in the code) supposed to represent?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUjTTwAAoJEMDTa8Ir7ZwV2hgP/RDe30vZNeQxzUK34JgmUIg1
-STd0dIxwEcjBRmIp931W59wvreRk5Pn/1LdT1fXHq6M78SyUG7ozhE9k0PTFYqeX
-lT29/ZF0tmSdjIOJlHtaZ1OTib01oGURXnk8Wtlv52ocsLXp8rS2T5cfaF4ds0nN
-VQXSPfqPHNxripkBvRQMgtyO6D4JTqKbzPVFT6gWVPGfwS4MfKqFYs3RvaJBqRbm
-JzZCPd2XHRDzE+vUEqIWZQ6xvxuzlVu353HitO/9NZfABSD05tILcgG+peCXYugy
-sH4OrzVsu6Ng87XBASa6toyD8YI0bT0MKmTz5cGDqweFKvfm7pa6G/0OPfwjv13d
-86Pwtm9Ik4RbPkrrmFQv5RA8OZRV3OVV8dcvDLIMWq+gtv/8xgHeMNVbx59J+X35
-iRvrLtRcOmcZlUtDPn5qKXAPBthpbHOr8+SxsabuezMRg0jFnjvx+X97xECI79CH
-ZfKCOAPUcB+0r0svDniquDbVNTwg6M9a7Z4w0hzWHRaqQIdYbgpAB1kNE7hmdU/A
-LhhbqljEi40EkqbmrIpt8LVVHD3hJ8/B500XuW2nMlHm1ejdVlfTlwZBUIVHo+Jk
-EtYdXDhAl70LzidocTnIFgXQhseHFyP7Nxg6JePXvdwDIkArq+42DDGNJ7JZuFG2
-48lpHXZ9lGU+za8/YBzN
-=vpIo
------END PGP SIGNATURE-----
-
---Sig_/w6AATFtADn6hH_l_/ISlrhw--
+Regards,
+Bjorn
