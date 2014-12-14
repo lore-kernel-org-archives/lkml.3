@@ -1,72 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaLNQag (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:30:36 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:64660 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaLNQad (ORCPT
+	id S1751964AbaLNQsP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:48:15 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:52056 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751023AbaLNQsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:30:33 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-arm-kernel@lists.infradead.org, Mark Rutland <mark.rutland@arm.com>,
-        devicetree@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Scott Branden <sbranden@broadcom.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Ray Jui <rjui@broadcom.com>, Christian Daudt <bcm@fixthebug.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com,
-        Hauke Mehrtens <hauke@hauke-m.de>, Kumar Gala <galak@codeaurora.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-Subject: Re: [PATCH v2 1/4] pci: iProc: define Broadcom iProc PCIe binding
-Date: Sun, 14 Dec 2014 17:29:25 +0100
-Message-ID: <3622321.f8bfUffhzH@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <548D5CD1.10801@broadcom.com>
-References: <1418351817-14898-2-git-send-email-rjui@broadcom.com> <3383252.Ad6Qf0H2fa@wuerfel> <548D5CD1.10801@broadcom.com>
+	Sun, 14 Dec 2014 11:48:13 -0500
+Message-Id: <20141214164804.150181588@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Sun, 14 Dec 2014 11:41:06 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] tracing: Move enabling tracepoints to just after mm_init()
+References: <20141214164104.307127356@goodmis.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:PHk1Zr7a0vRDQEFc/oiHqW6RZG+y48J1B0bxktwI5WE9sqFiTMF
- 8/9gi51FzkBaqivtKpnOCVSG5CdzWkaCfMRm0LM75QfMJD//HYxeb0OzoJiMtCKZQwws3aB
- Qz3aGXkMX92Bd7K/UPLC4gQeLdIt+CFKcqy4hKKn0Y0s0VzrWIow5LY0Bhn/aLAro33xMZ0
- Bzx+/L2zZo7uKlld/XZNw==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline; filename=0002-tracing-Move-enabling-tracepoints-to-just-after-mm_i.patch
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 14 December 2014 10:48:01 Arend van Spriel wrote:
-> On 12/13/14 20:46, Arnd Bergmann wrote:
-> > On Saturday 13 December 2014 11:05:52 Arend van Spriel wrote:
-> >>
-> >> Makes sense. I think that is what Hauke meant by "adding
-> >> additional support for registering to bcma". So the discovery info is a
-> >> piece of read-only memory in the chip. Its address is stored in the
-> >> chipcommon core register space. BCMA parses that memory blob resulting
-> >> in a list of cores which register address info. We could add DT support
-> >> in BCMA matching the compatible string and register a core for it.
-> >
-> > Ah, interesting idea. That would mirror what we do for drivers/amba,
-> > I like the idea.
-> 
-> + Rafal
-> 
-> Let's explore this. Although I don't have the iProc hardware to verify it.
-> 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-If we can make this work nicely, you won't even need iProc hardware,
-but instead provide all the data for the bcma devices on an older
-machine through DT and get the probing to work with that. For AMBA,
-we actually allow mixing amba and platform devices on the same parent.
-You could do this here as well, but it would be simpler to have a
-a special bcma device node as the parent that does the probing, in order
-to avoid adding bcma specific code to drivers/of/platform.c
+Enabling tracepoints at boot up can be very useful. The tracepoint
+can be initialized right after memory has been. There's no need to
+wait for the early_initcall() to be called. That's too late for some
+things that can use tracepoints for debugging. Move the logic to
+enable tracepoints out of the initcalls and into init/main.c to
+right after mm_init().
 
-	Arnd
+This also allows trace_printk() to be used early too.
+
+Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
+
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ftrace.h        |  6 ++++++
+ init/main.c                   |  3 +++
+ kernel/trace/trace.c          |  8 +++++++-
+ kernel/trace/trace.h          | 13 +++++++++++++
+ kernel/trace/trace_events.c   | 10 ++++++++--
+ kernel/trace/trace_syscalls.c |  7 ++-----
+ 6 files changed, 39 insertions(+), 8 deletions(-)
+
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index ed501953f0b2..f4bc14b7d444 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -39,6 +39,12 @@
+ # define FTRACE_FORCE_LIST_FUNC 0
+ #endif
+ 
++/* Main tracing buffer and events set up */
++#ifdef CONFIG_TRACING
++void trace_init(void);
++#else
++static inline void trace_init(void) { }
++#endif
+ 
+ struct module;
+ struct ftrace_hash;
+diff --git a/init/main.c b/init/main.c
+index 800a0daede7e..060e60b6aa59 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -561,6 +561,9 @@ asmlinkage __visible void __init start_kernel(void)
+ 	trap_init();
+ 	mm_init();
+ 
++	/* trace_printk() and trace points may be used after this */
++	trace_init();
++
+ 	/*
+ 	 * Set up the scheduler prior starting any interrupts (such as the
+ 	 * timer interrupt). Full topology setup happens at smp_init()
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 4ceb2546c7ef..ec3ca694665f 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -6876,6 +6876,13 @@ out:
+ 	return ret;
+ }
+ 
++void __init trace_init(void)
++{
++	tracer_alloc_buffers();
++	init_ftrace_syscalls();
++	trace_event_init();	
++}
++
+ __init static int clear_boot_tracer(void)
+ {
+ 	/*
+@@ -6895,6 +6902,5 @@ __init static int clear_boot_tracer(void)
+ 	return 0;
+ }
+ 
+-early_initcall(tracer_alloc_buffers);
+ fs_initcall(tracer_init_debugfs);
+ late_initcall(clear_boot_tracer);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 3255dfb054a0..c138c149d6ef 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1301,4 +1301,17 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ #define perf_ftrace_event_register NULL
+ #endif
+ 
++#ifdef CONFIG_FTRACE_SYSCALLS
++void init_ftrace_syscalls(void);
++#else
++static inline void init_ftrace_syscalls(void) { }
++#endif
++
++#ifdef CONFIG_EVENT_TRACING
++void trace_event_init(void);
++#else
++static inline void __init trace_event_init(void) { }
++#endif
++
++
+ #endif /* _LINUX_KERNEL_TRACE_H */
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index f9d0cbe014b7..fd9deb0e03f0 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -2477,8 +2477,14 @@ static __init int event_trace_init(void)
+ #endif
+ 	return 0;
+ }
+-early_initcall(event_trace_memsetup);
+-core_initcall(event_trace_enable);
++
++void __init trace_event_init(void)
++{
++	event_trace_memsetup();
++	init_ftrace_syscalls();
++	event_trace_enable();
++}
++
+ fs_initcall(event_trace_init);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index a72f3d8d813e..ec239771c175 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -514,7 +514,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
+ 	return (unsigned long)sys_call_table[nr];
+ }
+ 
+-static int __init init_ftrace_syscalls(void)
++void __init init_ftrace_syscalls(void)
+ {
+ 	struct syscall_metadata *meta;
+ 	unsigned long addr;
+@@ -524,7 +524,7 @@ static int __init init_ftrace_syscalls(void)
+ 				    GFP_KERNEL);
+ 	if (!syscalls_metadata) {
+ 		WARN_ON(1);
+-		return -ENOMEM;
++		return;
+ 	}
+ 
+ 	for (i = 0; i < NR_syscalls; i++) {
+@@ -536,10 +536,7 @@ static int __init init_ftrace_syscalls(void)
+ 		meta->syscall_nr = i;
+ 		syscalls_metadata[i] = meta;
+ 	}
+-
+-	return 0;
+ }
+-early_initcall(init_ftrace_syscalls);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
+-- 
+2.1.3
+
+
