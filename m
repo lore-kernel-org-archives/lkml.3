@@ -1,69 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066AbaLNS3R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 13:29:17 -0500
-Received: from mx1.scotdoyle.com ([23.226.141.211]:45847 "EHLO
-	mx1.scotdoyle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702AbaLNS3O (ORCPT
+	id S1750841AbaLNSpY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 13:45:24 -0500
+Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:50880
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750702AbaLNSpW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 13:29:14 -0500
-Date: Sun, 14 Dec 2014 18:27:50 +0000 (UTC)
-From: Scot Doyle <lkml14@scotdoyle.com>
-To: Stefan Berger <stefanb@linux.vnet.ibm.com>
-cc: Jarkko Sakkinen <jarkko.sakkinen@linux.intel.com>,
-        Peter Huewe <peterhuewe@gmx.de>, Ashley Lai <ashley@ashleylai.com>,
-        Marcel Selhorst <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com,
-        Will Arthur <will.c.arthur@intel.com>
-Subject: Re: [PATCH v10 8/8] tpm: TPM 2.0 FIFO Interface
-In-Reply-To: <548DB62E.7060504@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.11.1412141817550.1716@localhost.localdomain>
-References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com> <1418413600-5400-9-git-send-email-jarkko.sakkinen@linux.intel.com> <548DA33A.4010300@linux.vnet.ibm.com> <20141214154003.GA13338@intel.com> <548DB62E.7060504@linux.vnet.ibm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Sun, 14 Dec 2014 13:45:22 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
+ memory hot-add code
+Thread-Topic: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
+ memory hot-add code
+Thread-Index: AQHQEOOmuVgs+XxEC0aWqcTs3cVwiZyFztOAgACs+YCAAIHigIAAFYwAgAAITACAAnA0MIAA1tCAgAUV2FA=
+Date: Sun, 14 Dec 2014 18:45:17 +0000
+Message-ID: <BY2PR0301MB07116E6E7D337FD68A7FD14DA06E0@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1417826471-21131-1-git-send-email-kys@microsoft.com>
+ <1417826498-21172-1-git-send-email-kys@microsoft.com>
+ <1417826498-21172-2-git-send-email-kys@microsoft.com>
+ <20141208150445.GB29102@dhcp22.suse.cz> <54864F27.8010008@jp.fujitsu.com>
+ <20141209090843.GA11373@dhcp22.suse.cz> <5486CE2E.4070409@jp.fujitsu.com>
+ <20141209105532.GB11373@dhcp22.suse.cz>
+ <BY2PR0301MB07118CFD9B32FEBE4E0C9921A0630@BY2PR0301MB0711.namprd03.prod.outlook.com>
+ <20141211125829.GA19435@dhcp22.suse.cz>
+In-Reply-To: <20141211125829.GA19435@dhcp22.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [50.135.110.52]
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0709;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0709;
+x-forefront-prvs: 0425A67DEF
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(479174003)(13464003)(51704005)(24454002)(189002)(377454003)(199003)(377424004)(102836002)(97736003)(99286002)(21056001)(15975445007)(62966003)(76576001)(19580405001)(106356001)(110136001)(64706001)(31966008)(93886004)(107046002)(2656002)(68736005)(46102003)(106116001)(20776003)(33656002)(74316001)(4396001)(101416001)(54206007)(122556002)(86612001)(66066001)(77156002)(105586002)(19580395003)(87936001)(99396003)(54356999)(50986999)(54606007)(92566001)(86362001)(76176999)(120916001)(40100003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0709;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0631;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-MS-Exchange-CrossTenant-originalarrivaltime: 14 Dec 2014 18:45:17.2853
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0631
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Dec 2014, Stefan Berger wrote:
-> On 12/14/2014 10:40 AM, Jarkko Sakkinen wrote:
-> > On Sun, Dec 14, 2014 at 09:48:26AM -0500, Stefan Berger wrote:
-> > > On 12/12/2014 02:46 PM, Jarkko Sakkinen wrote:
-> > > > Detect TPM 2.0 by sending idempotent TPM 2.x command. Ordinals for
-> > > > TPM 2.0 are higher than TPM 1.x commands so this should be fail-safe.
-> > > > Using STS3 is unreliable because some chips just report 0xff and not
-> > > > what the spec says.
-> > > TPM TIS 1.2 can report either 0xff or 0x00 for sts3 since that part of
-> > > register was not defined for this version but only for a later version.
-> > > So,
-> > > unless the TIS 1.3 for TPM 2.0 is broken, it should report a bit _pattern_
-> > > (not plain 0x00 or 0xff) that you could apply the suggested mask to and
-> > > check then.
-> > I propose this: lets keep the bit ugly but approach for now and when
-> > there are TPM2 FIFOs available in the market move to your workaround.
-> > I think that would be the most reasonable middle road here.
-> 
-> You are now calling tpm2_gen_interrupt and are looking at the rc, which is the
-> rc from tpm_transmit_cmd, which seems to make sure that the sending of the
-> command went alright and the reception of the response. Is this good enough to
-> distinguish between a TPM 2 and a TPM 1.2? If you send a valid TPM 2 command
-> to a TPM 1.2 this will at least transmit the data ok, but the TPM will respond
-> with a TPM 1.2 tag in the response. The way I understand the code, the rc does
-> not include whether the response packet is a valid TPM 2 response packet and
-> lets you conclude to a TPM2. I do something similar in upcoming QEMU patches
-> where I send a valid TPM2 command for probing and if the tag(!) in the
-> response is a TPM2 tag (0x8001 = TPM_ST_NO_SESSIONS), then it's a TPM 2,
-> otherwise a TPM 1.2.
-> 
-> Did you test this with a TPM 1.2 ?
-> 
->    Stefan
 
-One system's output, with a dev_info call to show the value of rc:
-[ 0.223837] tpm_tis 00:08: tpm2_gen_interrupt(chip, true) -> 0xa
-[ 0.223847] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-[ 0.280468] tpm_tis 00:08: [Firmware Bug]: TPM interrupt not working, polling instead
 
+> -----Original Message-----
+> From: Michal Hocko [mailto:mhocko@suse.cz]
+> Sent: Thursday, December 11, 2014 4:58 AM
+> To: KY Srinivasan
+> Cc: Yasuaki Ishimatsu; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; linux-mm@kvack.org
+> Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock issue in the
+> memory hot-add code
+> 
+> On Thu 11-12-14 00:21:09, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Michal Hocko [mailto:mhocko@suse.cz]
+> > > Sent: Tuesday, December 9, 2014 2:56 AM
+> > > To: Yasuaki Ishimatsu
+> > > Cc: KY Srinivasan; gregkh@linuxfoundation.org; linux-
+> > > kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> > > olaf@aepfle.de; apw@canonical.com; linux-mm@kvack.org
+> > > Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Fix the deadlock
+> > > issue in the memory hot-add code
+> > >
+> > > On Tue 09-12-14 19:25:50, Yasuaki Ishimatsu wrote:
+> > > > (2014/12/09 18:08), Michal Hocko wrote:
+> > > [...]
+> > > > >Doesn't udev retry the operation if it gets EBUSY or EAGAIN?
+> > > >
+> > > > It depend on implementation of udev.rules. So we can retry
+> > > > online/offline operation in udev.rules.
+> > > [...]
+> > >
+> > > # Memory hotadd request
+> > > SUBSYSTEM=="memory", ACTION=="add",
+> > > DEVPATH=="/devices/system/memory/memory*[0-9]",
+> > > TEST=="/sys$devpath/state", RUN+="/bin/sh -c 'echo online >
+> > > /sys$devpath/state'"
+> > >
+> > > OK so this is not prepared for a temporary failures and retries.
+> > >
+> > > > >And again, why cannot we simply make the onlining fail or
+> > > > >try_lock and retry internally if the event consumer cannot cope with
+> errors?
+> > > >
+> > > > Did you mean the following Srinivasan's first patch looks good to you?
+> > > >   https://lkml.org/lkml/2014/12/2/662
+> > >
+> > > Heh, I was just about to post this. Because I haven't noticed the
+> > > previous patch yet. Yeah, Something like that. Except that I would
+> > > expect EAGAIN or EBUSY rather than ERESTARTSYS which should never
+> > > leak into userspace. And that would happen here AFAICS because
+> > > signal_pending will not be true usually.
+> > Michal,
+> >
+> > I agree that the fix to this problem must be outside the clients of
+> > add_memory() and that is the reason I had sent that patch:
+> > https://lkml.org/lkml/2014/12/2/662. Let me know if you want me to
+> > resend this patch with the correct return value.
+> 
+> Please think about the other suggested options as well.
+
+Thanks Michal. I will look at the other options you have listed as well.
+
+K. Y
+> 
+> > Regards,
+> >
+> > K. Y
+> > >
+> > > So there are two options. Either make the udev rule more robust and
+> > > retry within RUN section or do the retry withing online_pages
+> > > (try_lock and go into interruptible sleep which gets signaled by
+> > > finished add_memory()). The later option is safer wrt. the userspace
+> > > because the operation wouldn't fail unexpectedly.
+> > > Another option would be generating the sysfs file after all the
+> > > internal initialization is done and call it outside of the memory hotplug
+> lock.
+> > >
+> > > --
+> > > Michal Hocko
+> > > SUSE Labs
+> 
+> --
+> Michal Hocko
+> SUSE Labs
