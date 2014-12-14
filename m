@@ -1,193 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701AbaLNUeF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:34:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52828 "EHLO
+	id S1753728AbaLNUeL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:34:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52947 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522AbaLNUWA (ORCPT
+	with ESMTP id S1751511AbaLNUV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 15:22:00 -0500
+	Sun, 14 Dec 2014 15:21:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 00/34] 3.14.27-stable review
-Date: Sun, 14 Dec 2014 12:20:38 -0800
-Message-Id: <20141214201803.791392744@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Helge Deller <deller@gmx.de>, Petr Mladek <pmladek@suse.cz>,
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.14 09/34] drm/radeon: kernel panic in drm_calc_vbltimestamp_from_scanoutpos with 3.18.0-rc6
+Date: Sun, 14 Dec 2014 12:20:47 -0800
+Message-Id: <20141214201804.062135712@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <20141214201803.791392744@linuxfoundation.org>
+References: <20141214201803.791392744@linuxfoundation.org>
 User-Agent: quilt/0.63-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.27 release.
-There are 34 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Tue Dec 16 20:17:55 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.27-rc1.gz
-and the diffstat can be found below.
+From: Petr Mladek <pmladek@suse.cz>
 
-thanks,
+commit f5475cc43c899e33098d4db44b7c5e710f16589d upstream.
 
-greg k-h
+I was unable too boot 3.18.0-rc6 because of the following kernel
+panic in drm_calc_vbltimestamp_from_scanoutpos():
 
--------------
-Pseudo-Shortlog of commits:
+    [drm] Initialized drm 1.1.0 20060810
+    [drm] radeon kernel modesetting enabled.
+    [drm] initializing kernel modesetting (RV100 0x1002:0x515E 0x15D9:0x8080).
+    [drm] register mmio base: 0xC8400000
+    [drm] register mmio size: 65536
+    radeon 0000:0b:01.0: VRAM: 128M 0x00000000D0000000 - 0x00000000D7FFFFFF (16M used)
+    radeon 0000:0b:01.0: GTT: 512M 0x00000000B0000000 - 0x00000000CFFFFFFF
+    [drm] Detected VRAM RAM=128M, BAR=128M
+    [drm] RAM width 16bits DDR
+    [TTM] Zone  kernel: Available graphics memory: 3829346 kiB
+    [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
+    [TTM] Initializing pool allocator
+    [TTM] Initializing DMA pool allocator
+    [drm] radeon: 16M of VRAM memory ready
+    [drm] radeon: 512M of GTT memory ready.
+    [drm] GART: num cpu pages 131072, num gpu pages 131072
+    [drm] PCI GART of 512M enabled (table at 0x0000000037880000).
+    radeon 0000:0b:01.0: WB disabled
+    radeon 0000:0b:01.0: fence driver on ring 0 use gpu addr 0x00000000b0000000 and cpu addr 0xffff8800bbbfa000
+    [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+    [drm] Driver supports precise vblank timestamp query.
+    [drm] radeon: irq initialized.
+    [drm] Loading R100 Microcode
+    radeon 0000:0b:01.0: Direct firmware load for radeon/R100_cp.bin failed with error -2
+    radeon_cp: Failed to load firmware "radeon/R100_cp.bin"
+    [drm:r100_cp_init] *ERROR* Failed to load firmware!
+    radeon 0000:0b:01.0: failed initializing CP (-2).
+    radeon 0000:0b:01.0: Disabling GPU acceleration
+    [drm] radeon: cp finalized
+    BUG: unable to handle kernel NULL pointer dereference at 000000000000025c
+    IP: [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
+    PGD 0
+    Oops: 0000 [#1] SMP
+    Modules linked in:
+    CPU: 1 PID: 1 Comm: swapper/0 Not tainted 3.18.0-rc6-4-default #2649
+    Hardware name: Supermicro X7DB8/X7DB8, BIOS 6.00 07/26/2006
+    task: ffff880234da2010 ti: ffff880234da4000 task.ti: ffff880234da4000
+    RIP: 0010:[<ffffffff8150423b>]  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
+    RSP: 0000:ffff880234da7918  EFLAGS: 00010086
+    RAX: ffffffff81557890 RBX: 0000000000000000 RCX: ffff880234da7a48
+    RDX: ffff880234da79f4 RSI: 0000000000000000 RDI: ffff880232e15000
+    RBP: ffff880234da79b8 R08: 0000000000000000 R09: 0000000000000000
+    R10: 000000000000000a R11: 0000000000000001 R12: ffff880232dda1c0
+    R13: ffff880232e1518c R14: 0000000000000292 R15: ffff880232e15000
+    FS:  0000000000000000(0000) GS:ffff88023fc40000(0000) knlGS:0000000000000000
+    CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+    CR2: 000000000000025c CR3: 0000000002014000 CR4: 00000000000007e0
+    Stack:
+     ffff880234da79d8 0000000000000286 ffff880232dcbc00 0000000000002480
+     ffff880234da7958 0000000000000296 ffff880234da7998 ffffffff8151b51d
+     ffff880234da7a48 0000000032dcbeb0 ffff880232dcbc00 ffff880232dcbc58
+    Call Trace:
+     [<ffffffff8151b51d>] ? drm_vma_offset_remove+0x1d/0x110
+     [<ffffffff8152dc98>] radeon_get_vblank_timestamp_kms+0x38/0x60
+     [<ffffffff8152076a>] ? ttm_bo_release_list+0xba/0x180
+     [<ffffffff81503751>] drm_get_last_vbltimestamp+0x41/0x70
+     [<ffffffff81503933>] vblank_disable_and_save+0x73/0x1d0
+     [<ffffffff81106b2f>] ? try_to_del_timer_sync+0x4f/0x70
+     [<ffffffff81505245>] drm_vblank_cleanup+0x65/0xa0
+     [<ffffffff815604fa>] radeon_irq_kms_fini+0x1a/0x70
+     [<ffffffff8156c07e>] r100_init+0x26e/0x410
+     [<ffffffff8152ae3e>] radeon_device_init+0x7ae/0xb50
+     [<ffffffff8152d57f>] radeon_driver_load_kms+0x8f/0x210
+     [<ffffffff81506965>] drm_dev_register+0xb5/0x110
+     [<ffffffff8150998f>] drm_get_pci_dev+0x8f/0x200
+     [<ffffffff815291cd>] radeon_pci_probe+0xad/0xe0
+     [<ffffffff8141a365>] local_pci_probe+0x45/0xa0
+     [<ffffffff8141b741>] pci_device_probe+0xd1/0x130
+     [<ffffffff81633dad>] driver_probe_device+0x12d/0x3e0
+     [<ffffffff8163413b>] __driver_attach+0x9b/0xa0
+     [<ffffffff816340a0>] ? __device_attach+0x40/0x40
+     [<ffffffff81631cd3>] bus_for_each_dev+0x63/0xa0
+     [<ffffffff8163378e>] driver_attach+0x1e/0x20
+     [<ffffffff81633390>] bus_add_driver+0x180/0x240
+     [<ffffffff81634914>] driver_register+0x64/0xf0
+     [<ffffffff81419cac>] __pci_register_driver+0x4c/0x50
+     [<ffffffff81509bf5>] drm_pci_init+0xf5/0x120
+     [<ffffffff821dc871>] ? ttm_init+0x6a/0x6a
+     [<ffffffff821dc908>] radeon_init+0x97/0xb5
+     [<ffffffff810002fc>] do_one_initcall+0xbc/0x1f0
+     [<ffffffff810e3278>] ? __wake_up+0x48/0x60
+     [<ffffffff8218e256>] kernel_init_freeable+0x18a/0x215
+     [<ffffffff8218d983>] ? initcall_blacklist+0xc0/0xc0
+     [<ffffffff818a78f0>] ? rest_init+0x80/0x80
+     [<ffffffff818a78fe>] kernel_init+0xe/0xf0
+     [<ffffffff818c0c3c>] ret_from_fork+0x7c/0xb0
+     [<ffffffff818a78f0>] ? rest_init+0x80/0x80
+    Code: 45 ac 0f 88 a8 01 00 00 3b b7 d0 01 00 00 49 89 ff 0f 83 99 01 00 00 48 8b 47 20 48 8b 80 88 00 00 00 48 85 c0 0f 84 cd 01 00 00 <41> 8b b1 5c 02 00 00 41 8b 89 58 02 00 00 89 75 98 41 8b b1 60
+    RIP  [<ffffffff8150423b>] drm_calc_vbltimestamp_from_scanoutpos+0x4b/0x320
+     RSP <ffff880234da7918>
+    CR2: 000000000000025c
+    ---[ end trace ad2c0aadf48e2032 ]---
+    Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.27-rc1
+It has helped me to add a NULL pointer check that was suggested at
+http://lists.freedesktop.org/archives/dri-devel/2014-October/070663.html
 
-Takashi Iwai <tiwai@suse.de>
-    ALSA: usb-audio: Don't resubmit pending URBs at MIDI error recovery
+I am not familiar with the code. But the change looks sane
+and we need something fast at this stage of 3.18 development.
 
-Takashi Iwai <tiwai@suse.de>
-    ALSA: hda - Fix built-in mic at resume on Lenovo Ideapad S210
+Suggested-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Petr Mladek <pmladek@suse.cz>
+Tested-by: Petr Mladek <pmladek@suse.cz>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Takashi Iwai <tiwai@suse.de>
-    ALSA: hda - Add EAPD fixup for ASUS Z99He laptop
+---
+ drivers/gpu/drm/radeon/radeon_kms.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Ronald Wahl <ronald.wahl@raritan.com>
-    mac80211: Fix regression that triggers a kernel BUG with CCMP
-
-Anton Blanchard <anton@samba.org>
-    powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
-
-Todd Fujinaka <todd.fujinaka@intel.com>
-    igb: bring link up when PHY is powered up
-
-Kan Liang <kan.liang@intel.com>
-    perf/x86/intel: Protect LBR and extra_regs against KVM lying
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: use MAX_HEADER for headroom reserve in output path
-
-Eric Dumazet <edumazet@google.com>
-    net: mvneta: fix race condition in mvneta_tx()
-
-willy tarreau <w@1wt.eu>
-    net: mvneta: fix Tx interrupt delay
-
-Tom Herbert <therbert@google.com>
-    gre: Set inner mac header in gro complete
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    rtnetlink: release net refcnt on error in do_setlink()
-
-Jack Morgenstein <jackm@dev.mellanox.co.il>
-    net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-
-Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-    tg3: fix ring init when there are more TX than RX channels
-
-Marcelo Leitner <mleitner@redhat.com>
-    Fix race condition between vxlan_sock_add and vxlan_sock_release
-
-Yuri Chislov <yuri.chislov@gmail.com>
-    ipv6: gre: fix wrong skb->protocol in WCCP
-
-lucien <lucien.xin@gmail.com>
-    ip_tunnel: the lack of vti_link_ops' dellink() cause kernel panic
-
-Dmitry Torokhov <dtor@chromium.org>
-    sata_fsl: fix error handling of irq_of_parse_and_map
-
-Tejun Heo <tj@kernel.org>
-    ahci: disable MSI on SAMSUNG 0xa800 SSD
-
-Devin Ryles <devin.ryles@intel.com>
-    AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
-
-Mathias Nyman <mathias.nyman@linux.intel.com>
-    USB: xhci: Reset a halted endpoint immediately when we encounter a stall.
-
-Sakari Ailus <sakari.ailus@iki.fi>
-    media: smiapp: Only some selection targets are settable
-
-Chris Clayton <chris2553@googlemail.com>
-    x86: Use $(OBJDUMP) instead of plain objdump
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: Unlock panel even when LVDS is disabled
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: More cautious with pch fifo underruns
-
-Petr Mladek <pmladek@suse.cz>
-    drm/radeon: kernel panic in drm_calc_vbltimestamp_from_scanoutpos with 3.18.0-rc6
-
-Grygorii Strashko <grygorii.strashko@ti.com>
-    i2c: davinci: generate STP always when NACK is received
-
-Alexander Kochetkov <al.kochet@gmail.com>
-    i2c: omap: fix i207 errata handling
-
-Alexander Kochetkov <al.kochet@gmail.com>
-    i2c: omap: fix NACK and Arbitration Lost irq handling
-
-Seth Forshee <seth.forshee@canonical.com>
-    xen-netfront: Remove BUGs on paged skb data which crosses a page boundary
-
-Daniel Forrest <dan.forrest@ssec.wisc.edu>
-    mm: fix anon_vma_clone() error treatment
-
-Hugh Dickins <hughd@google.com>
-    mm: fix swapoff hang after page migration and fork
-
-Andrew Morton <akpm@linux-foundation.org>
-    mm/vmpressure.c: fix race in vmpressure_work_fn()
-
-Weijie Yang <weijie.yang@samsung.com>
-    mm: frontswap: invalidate expired data on a dup-store failure
-
-
--------------
-
-Diffstat:
-
- Makefile                                           |  4 +-
- arch/powerpc/kernel/vdso32/getcpu.S                |  4 +-
- arch/x86/boot/compressed/Makefile                  |  2 +-
- arch/x86/kernel/cpu/perf_event.c                   |  3 +
- arch/x86/kernel/cpu/perf_event.h                   | 12 ++--
- arch/x86/kernel/cpu/perf_event_intel.c             | 66 +++++++++++++++++++++-
- drivers/ata/ahci.c                                 |  4 ++
- drivers/ata/sata_fsl.c                             |  2 +-
- drivers/gpu/drm/i915/intel_display.c               |  2 -
- drivers/gpu/drm/i915/intel_lvds.c                  | 22 ++++----
- drivers/gpu/drm/radeon/radeon_kms.c                |  2 +
- drivers/i2c/busses/i2c-davinci.c                   |  8 +--
- drivers/i2c/busses/i2c-omap.c                      | 10 ++--
- drivers/media/i2c/smiapp/smiapp-core.c             |  2 +-
- drivers/net/ethernet/broadcom/tg3.c                |  3 +-
- drivers/net/ethernet/intel/igb/igb_main.c          |  2 +
- drivers/net/ethernet/marvell/mvneta.c              |  5 +-
- .../net/ethernet/mellanox/mlx4/resource_tracker.c  |  2 +-
- drivers/net/vxlan.c                                | 10 +---
- drivers/net/xen-netfront.c                         |  5 --
- drivers/usb/host/xhci-ring.c                       | 40 ++++---------
- drivers/usb/host/xhci.c                            | 60 +++++---------------
- mm/frontswap.c                                     |  4 +-
- mm/memory.c                                        | 26 ++++-----
- mm/mmap.c                                          | 10 +++-
- mm/rmap.c                                          |  6 +-
- mm/vmpressure.c                                    |  8 ++-
- net/core/rtnetlink.c                               |  1 +
- net/ipv4/gre_offload.c                             |  3 +
- net/ipv4/ip_vti.c                                  |  1 +
- net/ipv6/ip6_gre.c                                 |  4 +-
- net/ipv6/ip6_vti.c                                 | 11 ++++
- net/mac80211/aes_ccm.c                             |  3 +
- net/sctp/output.c                                  |  4 +-
- sound/pci/hda/patch_analog.c                       |  1 +
- sound/pci/hda/patch_realtek.c                      |  1 +
- sound/usb/midi.c                                   |  2 +
- 37 files changed, 202 insertions(+), 153 deletions(-)
+--- a/drivers/gpu/drm/radeon/radeon_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_kms.c
+@@ -740,6 +740,8 @@ int radeon_get_vblank_timestamp_kms(stru
+ 
+ 	/* Get associated drm_crtc: */
+ 	drmcrtc = &rdev->mode_info.crtcs[crtc]->base;
++	if (!drmcrtc)
++		return -EINVAL;
+ 
+ 	/* Helper routine in DRM core does all the work: */
+ 	return drm_calc_vbltimestamp_from_scanoutpos(dev, crtc, max_error,
 
 
