@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbaLNUZb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:25:31 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53003 "EHLO
+	id S1752442AbaLNUZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:25:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52903 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681AbaLNUWR (ORCPT
+	with ESMTP id S1751680AbaLNUWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:22:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Subject: [PATCH 3.17 23/47] media: smiapp: Only some selection targets are settable
-Date: Sun, 14 Dec 2014 12:20:58 -0800
-Message-Id: <20141214201819.352703395@linuxfoundation.org>
+        Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.17 05/47] mm: fix swapoff hang after page migration and fork
+Date: Sun, 14 Dec 2014 12:20:40 -0800
+Message-Id: <20141214201818.712275215@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201818.552715149@linuxfoundation.org>
 References: <20141214201818.552715149@linuxfoundation.org>
@@ -29,33 +30,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sakari Ailus <sakari.ailus@iki.fi>
+From: Hugh Dickins <hughd@google.com>
 
-commit b31eb901c4e5eeef4c83c43dfbc7fe0d4348cb21 upstream.
+commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
 
-Setting a non-settable selection target caused BUG() to be called. The check
-for valid selections only takes the selection target into account, but does
-not tell whether it may be set, or only get. Fix the issue by simply
-returning an error to the user.
+I've been seeing swapoff hangs in recent testing: it's cycling around
+trying unsuccessfully to find an mm for some remaining pages of swap.
 
-Signed-off-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+I have been exercising swap and page migration more heavily recently,
+and now notice a long-standing error in copy_one_pte(): it's trying to
+add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
+so even when it's a migration entry or an hwpoison entry.
+
+Which wouldn't matter much, except it adds dst_mm next to src_mm,
+assuming src_mm is already on the mmlist: which may not be so.  Then if
+pages are later swapped out from dst_mm, swapoff won't be able to find
+where to replace them.
+
+There's already a !non_swap_entry() test for stats: move that up before
+the swap_duplicate() and the addition to mmlist.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: Kelley Nielsen <kelleynnn@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/i2c/smiapp/smiapp-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/media/i2c/smiapp/smiapp-core.c
-+++ b/drivers/media/i2c/smiapp/smiapp-core.c
-@@ -2133,7 +2133,7 @@ static int smiapp_set_selection(struct v
- 		ret = smiapp_set_compose(subdev, fh, sel);
- 		break;
- 	default:
--		BUG();
-+		ret = -EINVAL;
- 	}
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -815,20 +815,20 @@ copy_one_pte(struct mm_struct *dst_mm, s
+ 		if (!pte_file(pte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(pte);
  
- 	mutex_unlock(&sensor->mutex);
+-			if (swap_duplicate(entry) < 0)
+-				return entry.val;
++			if (likely(!non_swap_entry(entry))) {
++				if (swap_duplicate(entry) < 0)
++					return entry.val;
+ 
+-			/* make sure dst_mm is on swapoff's mmlist. */
+-			if (unlikely(list_empty(&dst_mm->mmlist))) {
+-				spin_lock(&mmlist_lock);
+-				if (list_empty(&dst_mm->mmlist))
+-					list_add(&dst_mm->mmlist,
+-						 &src_mm->mmlist);
+-				spin_unlock(&mmlist_lock);
+-			}
+-			if (likely(!non_swap_entry(entry)))
++				/* make sure dst_mm is on swapoff's mmlist. */
++				if (unlikely(list_empty(&dst_mm->mmlist))) {
++					spin_lock(&mmlist_lock);
++					if (list_empty(&dst_mm->mmlist))
++						list_add(&dst_mm->mmlist,
++							 &src_mm->mmlist);
++					spin_unlock(&mmlist_lock);
++				}
+ 				rss[MM_SWAPENTS]++;
+-			else if (is_migration_entry(entry)) {
++			} else if (is_migration_entry(entry)) {
+ 				page = migration_entry_to_page(entry);
+ 
+ 				if (PageAnon(page))
 
 
