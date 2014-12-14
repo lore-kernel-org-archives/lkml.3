@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaLNQZV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:25:21 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:32825 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750927AbaLNQZT (ORCPT
+	id S1751445AbaLNQ37 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:29:59 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64190 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaLNQ3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:25:19 -0500
+	Sun, 14 Dec 2014 11:29:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <tip-f0905c5a32ce6e9b743b4d9c70e53d1ce447852d@git.kernel.org>
-References: <1042001e502f8e0deb0edfeeac209b68378650cf.1418430292.git.luto@amacapital.net>
- <tip-f0905c5a32ce6e9b743b4d9c70e53d1ce447852d@git.kernel.org>
+In-Reply-To: <20141214120318.GA5310@linux.vnet.ibm.com>
+References: <20141214175747.2e6c506e@canb.auug.org.au> <CALCETrXu19aHhudTfPAr5PM05FR0xKBiSHgbubVhh6QUrHCADw@mail.gmail.com>
+ <20141214120318.GA5310@linux.vnet.ibm.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 14 Dec 2014 08:24:57 -0800
-Message-ID: <CALCETrV4RD=aDD0b8x=ta9jVpRi4OEi6ThuEtpGpRVaweab=VQ@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] MAINTAINERS: Add me as x86 VDSO submaintainer
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Date: Sun, 14 Dec 2014 08:29:33 -0800
+Message-ID: <CALCETrWsy5sxVTmjNu7t+o-QvEVY-csQHkP-PXT1aMFiXnzzhQ@mail.gmail.com>
+Subject: Re: linux-next: question about the luto-misc tree
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 13, 2014 11:54 PM, "tip-bot for Andy Lutomirski"
-<tipbot@zytor.com> wrote:
+On Sun, Dec 14, 2014 at 4:03 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Sat, Dec 13, 2014 at 11:26:36PM -0800, Andy Lutomirski wrote:
+>> On Dec 13, 2014 10:58 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+>> >
+>> > Hi Andy,
+>> >
+>> > The luto-misc tree seems to have a whole series of commits in it that
+>> > have just bee removed from the rcu tree ...  You really have to be very
+>> > careful if you base your work on a tree that is regularly rebased.
+>>
+>> Hmm.  They were there a couple days ago.  Paul, what should I do about
+>> this?  I only need the one NMI nesting change for the stuff in
+>> luto/next.
+>>
+>> > I also wonder if the other commits in that tree are destined for
+>> > v3.19?  If they are for v3.20, then they should not be in linux-next
+>> > until after v3.19-rc1 has been released.
+>>
+>> They're for 3.20.  I'll drop the whole series from the next branch for now.
 >
-> Commit-ID:  f0905c5a32ce6e9b743b4d9c70e53d1ce447852d
-> Gitweb:     http://git.kernel.org/tip/f0905c5a32ce6e9b743b4d9c70e53d1ce447852d
-> Author:     Andy Lutomirski <luto@amacapital.net>
-> AuthorDate: Fri, 12 Dec 2014 16:25:47 -0800
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Sun, 14 Dec 2014 08:47:22 +0100
+> You mean the NMI nesting change below, correct?  One approach would be
+> to include the branch rcu/dev from my -rcu tree.  Would that work for you?
 >
-> MAINTAINERS: Add me as x86 VDSO submaintainer
->
-> Here goes... :)
->
-> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> Link: http://lkml.kernel.org/r/1042001e502f8e0deb0edfeeac209b68378650cf.1418430292.git.luto@amacapital.net
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  MAINTAINERS | 7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index c444907..7a54fa8 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -10295,6 +10295,13 @@ L:     linux-edac@vger.kernel.org
->  S:     Maintained
->  F:     arch/x86/kernel/cpu/mcheck/*
->
-> +X86 VDSO
-> +M:     Andy Lutomirski <luto@amacapital.net>
-> +L:     linux-kernel@vger.kernel.org
-> +T:     git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/vdso
 
-Unless this choice of git tree is actually sensible, v2 of this patch has:
+That would work.
 
-git git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git x86/vdso
-
-which makes more sense, I think.
+The problem is that, if you rebase again and I don't notice, then
+it'll generate a pile of conflicts.  Is there someway that I can flag
+my next tree as depending on a certain commi existing in another tree
+so that the scripts that generate linux-next will ignore it if the
+base commit goes away?
 
 --Andy
-
-> +S:     Maintained
-> +F:     arch/x86/vdso/
-> +
->  XC2028/3028 TUNER DRIVER
->  M:     Mauro Carvalho Chehab <m.chehab@samsung.com>
->  L:     linux-media@vger.kernel.org
