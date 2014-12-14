@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592AbaLNUvY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 15:51:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52847 "EHLO
+	id S1754607AbaLNUva (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 15:51:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaLNUVl (ORCPT
+	with ESMTP id S1751351AbaLNUVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Dec 2014 15:21:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 3.10 22/24] ARM: sched_clock: Load cycle count after epoch stabilizes
-Date: Sun, 14 Dec 2014 12:20:42 -0800
-Message-Id: <20141214201801.348507443@linuxfoundation.org>
+        Todd Fujinaka <todd.fujinaka@intel.com>,
+        Jeff Westfahl <jeff.westfahl@ni.com>,
+        Aaron Brown <aaron.f.brown@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Vincent Donnefort <vdonnefort@gmail.com>
+Subject: [PATCH 3.10 21/24] igb: bring link up when PHY is powered up
+Date: Sun, 14 Dec 2014 12:20:41 -0800
+Message-Id: <20141214201801.315822683@linuxfoundation.org>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
 References: <20141214201800.613573495@linuxfoundation.org>
@@ -30,83 +32,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-commit 336ae1180df5f69b9e0fb6561bec01c5f64361cf upstream.
+commit aec653c43b0c55667355e26d7de1236bda9fb4e3 upstream.
 
-There is a small race between when the cycle count is read from
-the hardware and when the epoch stabilizes. Consider this
-scenario:
+Call igb_setup_link() when the PHY is powered up.
 
- CPU0                           CPU1
- ----                           ----
- cyc = read_sched_clock()
- cyc_to_sched_clock()
-                                 update_sched_clock()
-                                  ...
-                                  cd.epoch_cyc = cyc;
-  epoch_cyc = cd.epoch_cyc;
-  ...
-  epoch_ns + cyc_to_ns((cyc - epoch_cyc)
-
-The cyc on cpu0 was read before the epoch changed. But we
-calculate the nanoseconds based on the new epoch by subtracting
-the new epoch from the old cycle count. Since epoch is most likely
-larger than the old cycle count we calculate a large number that
-will be converted to nanoseconds and added to epoch_ns, causing
-time to jump forward too much.
-
-Fix this problem by reading the hardware after the epoch has
-stabilized.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Reported-by: Jeff Westfahl <jeff.westfahl@ni.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Vincent Donnefort <vdonnefort@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/kernel/sched_clock.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/arm/kernel/sched_clock.c
-+++ b/arch/arm/kernel/sched_clock.c
-@@ -51,10 +51,11 @@ static inline u64 notrace cyc_to_ns(u64
- 	return (cyc * mult) >> shift;
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1584,6 +1584,8 @@ void igb_power_up_link(struct igb_adapte
+ 		igb_power_up_phy_copper(&adapter->hw);
+ 	else
+ 		igb_power_up_serdes_link_82575(&adapter->hw);
++
++	igb_setup_link(&adapter->hw);
  }
  
--static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
-+static unsigned long long notrace sched_clock_32(void)
- {
- 	u64 epoch_ns;
- 	u32 epoch_cyc;
-+	u32 cyc;
- 
- 	if (cd.suspended)
- 		return cd.epoch_ns;
-@@ -73,7 +74,9 @@ static unsigned long long notrace cyc_to
- 		smp_rmb();
- 	} while (epoch_cyc != cd.epoch_cyc_copy);
- 
--	return epoch_ns + cyc_to_ns((cyc - epoch_cyc) & mask, cd.mult, cd.shift);
-+	cyc = read_sched_clock();
-+	cyc = (cyc - epoch_cyc) & sched_clock_mask;
-+	return epoch_ns + cyc_to_ns(cyc, cd.mult, cd.shift);
- }
- 
- /*
-@@ -165,12 +168,6 @@ void __init setup_sched_clock(u32 (*read
- 	pr_debug("Registered %pF as sched_clock source\n", read);
- }
- 
--static unsigned long long notrace sched_clock_32(void)
--{
--	u32 cyc = read_sched_clock();
--	return cyc_to_sched_clock(cyc, sched_clock_mask);
--}
--
- unsigned long long __read_mostly (*sched_clock_func)(void) = sched_clock_32;
- 
- unsigned long long notrace sched_clock(void)
+ /**
 
 
