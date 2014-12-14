@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752369AbaLNAdr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Dec 2014 19:33:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58613 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaLNAdq (ORCPT
+	id S1751935AbaLNBHW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Dec 2014 20:07:22 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:57057 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaLNBHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Dec 2014 19:33:46 -0500
-Date: Sun, 14 Dec 2014 00:33:32 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141214003332.GQ22149@ZenIV.linux.org.uk>
-References: <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213165915.GA12756@redhat.com>
- <20141213223616.GA22559@redhat.com>
- <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
- <CA+55aFydeGFQs+HZkqC1ecyh=MxOow-hw817e1q4DUrAX7uqWw@mail.gmail.com>
- <CA+55aFzuRCJDWQcBBET6x1OHThLrtJmnn=hS40tE7hNXfmfm6g@mail.gmail.com>
- <20141213233508.GN22149@ZenIV.linux.org.uk>
- <CA+55aFw5pb7g+k1EOGj6t2xqibGGUBmZMuA_YAgtyejiv76omg@mail.gmail.com>
- <20141213234730.GP22149@ZenIV.linux.org.uk>
- <CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
+	Sat, 13 Dec 2014 20:07:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxZWPP+wCDbwB-n=z5z_8isqdJ_4Ka6+P+KaBAY4ihw1Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+i8gKKGBviLBaS8b=swqv2OWgh2Uc+m-TT8LVYcPehcYd903A@mail.gmail.com>
+References: <CA+i8gKK0sj55s-Gk8Y36KM4yBFLvLotffbSodjH5Gsd_yxd5Sg@mail.gmail.com>
+	<CAKMK7uGa_dHnie8EACcX0mQvc-uGpsgQHjWGN_obxPa3O6SJbw@mail.gmail.com>
+	<CA+i8gKKGBviLBaS8b=swqv2OWgh2Uc+m-TT8LVYcPehcYd903A@mail.gmail.com>
+Date: Sun, 14 Dec 2014 02:07:19 +0100
+Message-ID: <CA+i8gKJPPPUXrxY5q+81xZG91azygoUb27R_Wid3GTpb3-1-rw@mail.gmail.com>
+Subject: Re: [Regression] 83f45fc turns machine's screen off
+From: Emmanuel Benisty <benisty.e@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 04:14:58PM -0800, Linus Torvalds wrote:
-> On Sat, Dec 13, 2014 at 3:47 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > static inline void mnt_dec_writers(struct mount *mnt)
-> > {
-> > #ifdef CONFIG_SMP
-> >         this_cpu_dec(mnt->mnt_pcp->mnt_writers);
-> > #else
-> >         mnt->mnt_writers--;
-> > #endif
-> > }
-> > It's load/modify/store, without any kind of atomicity; get preempted in the
-> > middle of that sequence by another caller of mnt_dec_writers() and obvious bad
-> > things will happen...
-> 
-> Ugh, yes ok, the UP case needs it for the actual counter itself. Ugh.
-> What an ugly mess. I'd rather have the preemption disable where it is
-> actually *needed*, in that function itself for the UP case (or just
-> make it "atomic_t", which would likely be better still.
+Hi Daniel,
 
-So does SMP - this_cpu_dec() relies on preemption being disabled.  On x86
-we might get away with that, what with having it compiled into decl %gs:const,
-but on generic it turns into
-	*raw_cpu_ptr(&pcp) -= 1;
-and compiler has every right to turn it into
-	p = raw_cpu_ptr(&pcp);
-	(*p)--;
-again, with no locking.  Lose the timeslice in the middle of that and you
-are risking to get a different CPU when you are scheduled again, with
-another process doing this_cpu_dec() on your old CPU.  Have fun - two
-non-atomic decrements of the same variable by different CPUs in parallel...
+> On Mon, Nov 10, 2014 at 10:19 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>> Adding relevant mailing lists.
+>>
+>>
+>> On Sat, Nov 8, 2014 at 7:34 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
+>>> Hi,
+>>>
+>>> The following commit permanently turns my screen off when x server is
+>>> started (i3 330M Ironlake):
+>>>
+>>>     [83f45fc360c8e16a330474860ebda872d1384c8c] drm: Don't grab an fb
+>>> reference for the idr
+>>>
+>>> Reverting this commit fixed the issue.
+>>
+>> This is definitely unexpected. I think we need a bit more data to
+>> figure out what's going on here:
+>> - Please boot with drm.debug=0xe added to your kernel cmdline and grab
+>> the dmesg right after boot-up for both a working or broken kernel.
+>
+> Please see attached files.
+>
+>> - Are you using any special i915 cmdline options?
+>
+> Nope.
 
-We really need preemtion disabled there, UP or no UP.
+Is there anything else I could provide to help fixing this issue? It's
+still in Linus' tree.
+
+Thanks in advance.
