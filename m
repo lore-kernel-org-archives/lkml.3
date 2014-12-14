@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaLNQw3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 11:52:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48310 "EHLO mx1.redhat.com"
+	id S1752314AbaLNQwf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 11:52:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751719AbaLNQwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 11:52:25 -0500
-Date: Sun, 14 Dec 2014 18:52:01 +0200
+	id S1751719AbaLNQwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 11:52:31 -0500
+Date: Sun, 14 Dec 2014 18:52:14 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
-Subject: [PATCH 02/18] alpha/uaccess: fix sparse errors
-Message-ID: <1418575877-21488-3-git-send-email-mst@redhat.com>
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: [PATCH 04/18] avr32/uaccess: fix sparse errors
+Message-ID: <1418575877-21488-5-git-send-email-mst@redhat.com>
 References: <1418575877-21488-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,28 +32,28 @@ Fix that up using __force.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- arch/alpha/include/asm/uaccess.h | 4 ++--
+ arch/avr32/include/asm/uaccess.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/alpha/include/asm/uaccess.h b/arch/alpha/include/asm/uaccess.h
-index 766fdfd..fbe1d1e 100644
---- a/arch/alpha/include/asm/uaccess.h
-+++ b/arch/alpha/include/asm/uaccess.h
-@@ -96,7 +96,7 @@ extern void __get_user_unknown(void);
- 	  case 8: __get_user_64(ptr); break;			\
- 	  default: __get_user_unknown(); break;			\
- 	}							\
--	(x) = (__typeof__(*(ptr))) __gu_val;			\
-+	(x) = (__force __typeof__(*(ptr))) __gu_val;			\
- 	__gu_err;						\
+diff --git a/arch/avr32/include/asm/uaccess.h b/arch/avr32/include/asm/uaccess.h
+index 245b2ee..ec6ce63 100644
+--- a/arch/avr32/include/asm/uaccess.h
++++ b/arch/avr32/include/asm/uaccess.h
+@@ -191,7 +191,7 @@ extern int __put_user_bad(void);
+ 	default: __gu_err = __get_user_bad(); break;			\
+ 	}								\
+ 									\
+-	x = (typeof(*(ptr)))__gu_val;					\
++	x = (__force typeof(*(ptr)))__gu_val;					\
+ 	__gu_err;							\
  })
  
-@@ -115,7 +115,7 @@ extern void __get_user_unknown(void);
- 		  default: __get_user_unknown(); break;			\
- 		}							\
+@@ -222,7 +222,7 @@ extern int __put_user_bad(void);
+ 	} else {							\
+ 		__gu_err = -EFAULT;					\
  	}								\
--	(x) = (__typeof__(*(ptr))) __gu_val;				\
-+	(x) = (__force __typeof__(*(ptr))) __gu_val;				\
+-	x = (typeof(*(ptr)))__gu_val;					\
++	x = (__force typeof(*(ptr)))__gu_val;					\
  	__gu_err;							\
  })
  
