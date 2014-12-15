@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaLOLcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:32:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750820AbaLOLcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:32:32 -0500
-Message-ID: <548EC6C3.9060902@redhat.com>
-Date: Mon, 15 Dec 2014 12:32:19 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752054AbaLOLdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:33:22 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:42689 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339AbaLOLdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 06:33:21 -0500
+Subject: [PATCH] doubletalk: probe failure causes OOPS
+From: Alan Cox <alan@linux.intel.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Date: Mon, 15 Dec 2014 11:33:08 +0000
+Message-ID: <20141215113246.25566.52447.stgit@localhost.localdomain>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Christoph Hellwig <hch@lst.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB driver patches for 3.19-rc1
-References: <20141214223523.GA3802@kroah.com> <CA+55aFx4V9urJ=_Ai0-zuQmQvzpz-t250bgDZBEDhWUbfe3oBQ@mail.gmail.com>
-In-Reply-To: <CA+55aFx4V9urJ=_Ai0-zuQmQvzpz-t250bgDZBEDhWUbfe3oBQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+The code bothers to probe for the device, but on failing to find it proceeds
+to try and release a NULL resource, thereby ruining it's prior good
+behaviour
 
-On 15-12-14 00:06, Linus Torvalds wrote:
-> On Sun, Dec 14, 2014 at 2:35 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->>
->> Hans de Goede (1):
->>        uas: Make uas work with blk-mq
->
-> So I got some fairly trivial conflicts on this one (conflicting with
-> the scsi cleanups mainly by Christoph Hellwig.
->
-> I resolved the conflict easily, and it all *looks* fine, but quite
-> frankly, I'd be a lot happier about it if somebody who has the
-> hardware were to actually test the end result.   The whole interaction
-> with ".use_blk_tags" etc should be verified by somebody who knows the
-> code.
+Resolves-Bug: https://bugzilla.kernel.org/show_bug.cgi?id=88581
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/staging/speakup/speakup_dtlk.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-Code wise this looks good and I've just given:
+diff --git a/drivers/staging/speakup/speakup_dtlk.c b/drivers/staging/speakup/speakup_dtlk.c
+index d7d5152..ffd85e1 100644
+--- a/drivers/staging/speakup/speakup_dtlk.c
++++ b/drivers/staging/speakup/speakup_dtlk.c
+@@ -325,7 +325,7 @@ static struct synth_settings *synth_interrogate(struct spk_synth *synth)
+ 
+ static int synth_probe(struct spk_synth *synth)
+ {
+-		unsigned int port_val = 0;
++	unsigned int port_val = 0;
+ 	int i = 0;
+ 	struct synth_settings *sp;
+ 
+@@ -361,7 +361,8 @@ static int synth_probe(struct spk_synth *synth)
+ 	port_val &= 0xfbff;
+ 	if (port_val != 0x107f) {
+ 		pr_info("DoubleTalk PC: not found\n");
+-		synth_release_region(synth_lpc, SYNTH_IO_EXTENT);
++		if (synth_lpc)
++			synth_release_region(synth_lpc, SYNTH_IO_EXTENT);
+ 		return -ENODEV;
+ 	}
+ 	while (inw_p(synth_lpc) != 0x147f)
+@@ -369,7 +370,7 @@ static int synth_probe(struct spk_synth *synth)
+ 	sp = synth_interrogate(synth);
+ 	pr_info("%s: %03x-%03x, ROM ver %s, s/n %u, driver: %s\n",
+ 		synth->long_name, synth_lpc, synth_lpc+SYNTH_IO_EXTENT - 1,
+-	 sp->rom_version, sp->serial_number, synth->version);
++		sp->rom_version, sp->serial_number, synth->version);
+ 	synth->alive = 1;
+ 	return 0;
+ }
 
-git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
-
-a spin with an uas disk enclosure, and verified that tcq is being used,
-and everything works fine.
-
-Regards,
-
-Hans
