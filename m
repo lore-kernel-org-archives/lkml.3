@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaLOTcU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:32:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40908 "EHLO
+	id S1752362AbaLOTcb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:32:31 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40914 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312AbaLOTcQ (ORCPT
+	with ESMTP id S1752313AbaLOTc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:32:16 -0500
+	Mon, 15 Dec 2014 14:32:26 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Andy Whitcroft <apw@canonical.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 91/96] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-Date: Mon, 15 Dec 2014 11:26:51 -0800
-Message-Id: <1418671616-25482-92-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 96/96] mm: Remove false WARN_ON from pagecache_isize_extended()
+Date: Mon, 15 Dec 2014 11:26:56 -0800
+Message-Id: <1418671616-25482-97-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -29,43 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c ]
+commit f55fefd1a5a339b1bd08c120b93312d6eb64a9fb upstream.
 
-Some VF drivers use the upper byte of "param1" (the qp count field)
-in mlx4_qp_reserve_range() to pass flags which are used to optimize
-the range allocation.
+The WARN_ON checking whether i_mutex is held in
+pagecache_isize_extended() was wrong because some filesystems (e.g.
+XFS) use different locks for serialization of truncates / writes. So
+just remove the check.
 
-Under the current code, if any of these flags are set, the 32-bit
-count field yields a count greater than 2^24, which is out of range,
-and this VF fails.
-
-As these flags represent a "best-effort" allocation hint anyway, they may
-safely be ignored. Therefore, the PF driver may simply mask out the bits.
-
-Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+Buglink: http://bugs.launchpad.net/bugs/1402764
+Cc: Stefan Bader <stefan.bader@canonical.com>
+Cc: Andy Whitcroft <apw@canonical.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/truncate.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-index 2f3f2bc..2a2e17c 100644
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1484,7 +1484,7 @@ static int qp_alloc_res(struct mlx4_dev *dev, int slave, int op, int cmd,
+diff --git a/mm/truncate.c b/mm/truncate.c
+index 855c38c..ac18edc 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -649,7 +649,6 @@ void pagecache_isize_extended(struct inode *inode, loff_t from, loff_t to)
+ 	struct page *page;
+ 	pgoff_t index;
  
- 	switch (op) {
- 	case RES_OP_RESERVE:
--		count = get_param_l(&in_param);
-+		count = get_param_l(&in_param) & 0xffffff;
- 		align = get_param_h(&in_param);
- 		err = mlx4_grant_resource(dev, slave, RES_QP, count, 0);
- 		if (err)
+-	WARN_ON(!mutex_is_locked(&inode->i_mutex));
+ 	WARN_ON(to > inode->i_size);
+ 
+ 	if (from >= to || bsize == PAGE_CACHE_SIZE)
 -- 
 1.9.1
 
