@@ -1,137 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaLOS4P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:56:15 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:61061 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaLOS4N (ORCPT
+	id S1751129AbaLOS4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:56:40 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38923 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaLOS4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:56:13 -0500
+	Mon, 15 Dec 2014 13:56:39 -0500
+Date: Mon, 15 Dec 2014 10:56:38 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [GIT PULL] Staging driver patches for 3.19-rc1
+Message-ID: <20141215185638.GA8036@kroah.com>
+References: <20141215175535.GA4665@kroah.com>
+ <CAFLxGvwvj_ihWQQV3yY8Czxt0F2ieP=CRBrPMKqUatpjj9zdvQ@mail.gmail.com>
+ <20141215183915.GA15554@infradead.org>
+ <20141215184103.GA6761@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1418668613.4200.4@mail.thefacebook.com>
-References: <f0f3eab5f68f74bfabf42d745ccf1e2ecf642683.1418006970.git.shli@fb.com>
- <862cbb2ab71a9f71d1123b5512605350a4b61846.1418006970.git.shli@fb.com>
- <CALCETrUU-vb34550mbE-yqoWYrzVNarVf++Logt0gmSTh_Cg2w@mail.gmail.com>
- <20141210215713.GA30230@devbig257.prn2.facebook.com> <CALCETrUi--fmZLBUB=tjmGt_D3y+HJ+MtJTRZ0=JUKFgAvxyuA@mail.gmail.com>
- <20141210225627.GA11754@devbig257.prn2.facebook.com> <CALCETrXpVUVY6paKJq0Uq8VeHG2A0E3qc4b_H+5ZT-QJApkaJw@mail.gmail.com>
- <20141211063621.GC5059@gmail.com> <1418668613.4200.4@mail.thefacebook.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 15 Dec 2014 10:55:51 -0800
-Message-ID: <CALCETrUaeujfu4oPNaNThy5ERkb7e-DxLYNdR5suLD=FYq8PAA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] X86: Add a thread cpu time implementation to vDSO
-To: Chris Mason <clm@fb.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Shaohua Li <shli@fb.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, kernel-team@fb.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215184103.GA6761@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 10:36 AM, Chris Mason <clm@fb.com> wrote:
->
->
-> On Thu, Dec 11, 2014 at 1:36 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>
->>
->> * Andy Lutomirski <luto@amacapital.net> wrote:
->>
->>>  On Wed, Dec 10, 2014 at 2:56 PM, Shaohua Li <shli@fb.com> wrote:
->>>  > On Wed, Dec 10, 2014 at 02:13:23PM -0800, Andy Lutomirski wrote:
->>>  >> On Wed, Dec 10, 2014 at 1:57 PM, Shaohua Li <shli@fb.com> wrote:
->>>  >> > On Wed, Dec 10, 2014 at 11:10:52AM -0800, Andy Lutomirski wrote:
->>>  >> >> On Sun, Dec 7, 2014 at 7:03 PM, Shaohua Li <shli@fb.com> wrote:
->>>  >> >> > This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID,
->>> ..). We
->>>  >> >> > use the following method to compute the thread cpu time:
->>>  >> >>
->>>  >> >> I like the idea, and I like making this type of profiling fast.  I
->>>  >> >> don't love the implementation because it's an information leak
->>> (maybe
->>>  >> >> we don't care) and it's ugly.
->>>  >> >>
->>>  >> >> The info leak could be fixed completely by having a per-process
->>> array
->>>  >> >> instead of a global array.  That's currently tricky without
->>> wasting
->>>  >> >> memory, but it could be created on demand if we wanted to do that,
->>>  >> >> once my vvar .fault patches go in (assuming they do -- I need to
->>> ping
->>>  >> >> the linux-mm people).
->>>  >> >
->>>  >> > those info leak really doesn't matter.
->>>  >>
->>>  >> Why not?
->>>  >
->>>  > Ofcourse I can't make sure completely, but how could this
->>>  > info be used as attack?
->>>
->>>  It may leak interesting timing info, even from cpus that are
->>>  outside your affinity mask / cpuset.  I don't know how much
->>>  anyone actually cares.
->>
->>
->> Finegraned timing information has been successfully used to
->> recover secret keys (and sometimes even coarse timing
->> information), so it can be a security issue in certain setups.
->
->
-> Trying to nail this down a little more clearly.  Are you worried about the
-> context switch count being exported or the clock_gettime data?
->
+On Mon, Dec 15, 2014 at 10:41:03AM -0800, Greg KH wrote:
+> On Mon, Dec 15, 2014 at 10:39:15AM -0800, Christoph Hellwig wrote:
+> > On Mon, Dec 15, 2014 at 07:23:35PM +0100, Richard Weinberger wrote:
+> > > I don't understand this kind of logic.
+> > > a) Binder is considered a piece of shite.
+> > > b) Google is working on a (hopefully sane) replacement.
+> > > 
+> > > Why moving it out of staging then? What is the benefit?
+> > 
+> > There is none, and Greg didn't even bother addressing the various
+> > comments when this first came up.
+> 
+> I thought I did, it was a long thread at the time, and I was on the road
+> for 3 weeks, sorry if I missed something.
+> 
+> > So a clear NAK from me on this one.
+> 
+> You don't have to maintain it, I do, so why does it concern you?
 
-The context switch count is unnecessary.  Here's an IMO better
-algorithm that relies on the context switch code storing the TSC at
-last context switch for each CPU in a user-accessible location:
+Ok, that was a bit snotty on my part, I apologize.
 
-clock_gettime does
+But really, this is self-contained, doesn't touch any core
+infrastructure, and is really just like any other driver for hardware
+that people don't use.  It shouldn't affect anything elsewhere in the
+kernel, so objecting to it seems odd to me.
 
-cpu, tsc = rdtscp;  /* NB: HW orders rdtscp as a load */
-barrier();
-read scale_factor[cpu], sum_exec_runtime[cpu], etc;
-barrier();
-if (last_context_switch_tsc[cpu] >= tsc)
-  repeat (or fall back to a syscall)
-return tsc * whatever + whatever_else;
+thanks,
 
-This should be faster, as it avoids two uses of LSL, which take 7-10
-cycles each, IIRC.
-
-With that improvement, the context switch count becomes unavailable.
-That leaves sum_exec_runtime (which ought to be totally uninteresting
-for attackers) and the time of the last context switch.
-
-The time of the last context switch *on the current cpu* is mostly
-available to attackers anyway -- just call clock_gettime in a loop and
-watch for jumps.  Some of those are interrupts, but the long ones are
-likely to be context switches.
-
-The time of the last context switch on other CPUs is potentially
-important.  We could fix that by having a per-process array of per-cpu
-values instead of a global array of per-cpu values.  We could
-alternatively have a per-process array of per-thread values.
-
-If we did that, we'd probably want to create the array on demand,
-which will be a mess without my special_mapping fault rework that no
-one has commented on.  I'll ping people after the merge window.
-
-We could also shove all the timing parameters into magic segment
-limits in the GDT.  The problem with that is that we only get 20 bits
-per descriptor, which isn't enough to make it palatable.
-
-For 32-bit programs, we could do evil things with segmentation to make
-this all work cleanly and without leaks, but for 64-bit programs this
-is a non-starter.
-
-I *really really* want per-cpu memory mappings for this and other
-things.  Pretty please, Intel or AMD?  (We can have them today by
-using per-cpu pgds, giving a speedup for system calls (no more swapgs)
-and faults but a possibly unacceptable slowdown for switch_mm.  The
-slowdown would only be there for programs that either use enormous
-amounts of virtual memory or use their address space very sparsely,
-though.  It could be done for free on an EPT guest, I think, as long
-as the hypervisor were willing to play along and give us a per-vcpu
-guest physical "page".)
-
---Andy
+greg k-h
