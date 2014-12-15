@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbaLOL1v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:27:51 -0500
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:51960 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796AbaLOLZ4 (ORCPT
+	id S1752260AbaLOL2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:28:10 -0500
+Received: from xavier.telenet-ops.be ([195.130.132.52]:51442 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564AbaLOLZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:25:56 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, a.zummo@towertech.it,
-        rtc-linux@googlegroups.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 3/8] mfd: bindings: Provide ST bindings for ST's LPC device
-Date: Mon, 15 Dec 2014 11:25:33 +0000
-Message-Id: <1418642738-17407-4-git-send-email-lee.jones@linaro.org>
+	Mon, 15 Dec 2014 06:25:52 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] net: stmmac: sti: Fix uninitialized pointer dereference if !OF
+Date: Mon, 15 Dec 2014 12:25:51 +0100
+Message-Id: <1418642751-23308-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
-References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On current ST platforms the LPC controls a number of functions including
-Watchdog and Real Time Clock.  This patch provides the bindings used to
-choose and configure the devices.
+If CONFIG_OF is not set:
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c: In function ‘sti_dwmac_parse_data’:
+drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c:318: warning: ‘rs’ is used uninitialized in this function
+
+of_property_read_string() will return -ENOSYS in this case, and rs will
+be an uninitialized pointer.
+
+While the fallback clock selection is already selected correctly in this
+case, the string comparisons should be skipped too, else the system will
+crash while dereferencing the uninitialized pointer.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- Documentation/devicetree/bindings/mfd/st-lpc.txt | 36 ++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/st-lpc.txt
+ drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/st-lpc.txt b/Documentation/devicetree/bindings/mfd/st-lpc.txt
-new file mode 100644
-index 0000000..b13f143
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/st-lpc.txt
-@@ -0,0 +1,36 @@
-+STMicroelectronics Low Power Controller (LPC)
-+=============================================
-+
-+Currently supports Watchdog OR Real Time Clock functionality.
-+
-+Required properties [common]
-+
-+- compatible 	: Must be one of: "st,stih407-lpc" "st,stih416-lpc"
-+				  "st,stih415-lpc" "st,stid127-lpc"
-+- reg		: LPC registers base address + size
-+- interrupts    : LPC interrupt line number and associated flags
-+- clocks	: Clock used by LPC device (See: ../clock/clock-bindings.txt)
-+- st,lpc-mode	: The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
-+		  ST_LPC_MODE_WDT [1].  One (and only one) mode must be
-+		  selected.
-+
-+Required properties [watchdog mode]
-+
-+- st,syscfg	: Phandle to syscfg node used to enable watchdog and configure
-+		  CPU reset type.
-+- timeout-sec	: Watchdog timeout in seconds
-+
-+Optional properties [watchdog mode]
-+
-+- st,warm-reset	: If present reset type will be 'warm' - if not it will be cold
-+
-+Example:
-+	lpc@fde05000 {
-+		compatible	= "st,stih416-lpc-watchdog";
-+		reg		= <0xfde05000 0x1000>;
-+		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-+		st,syscfg	= <&syscfg_core>;
-+		timeout-sec	= <600>;
-+		st,lpc-mode	= <ST_LPC_MODE_WDT>;
-+		st,warm-reset;
-+	};
+diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+index 0e137751e76e45b4..056b358b4a72441d 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sti.c
+@@ -309,16 +309,16 @@ static int sti_dwmac_parse_data(struct sti_dwmac *dwmac,
+ 
+ 	if (IS_PHY_IF_MODE_GBIT(dwmac->interface)) {
+ 		const char *rs;
+-		dwmac->tx_retime_src = TX_RETIME_SRC_CLKGEN;
+ 
+ 		err = of_property_read_string(np, "st,tx-retime-src", &rs);
+-		if (err < 0)
++		if (err < 0) {
+ 			dev_warn(dev, "Use internal clock source\n");
+-
+-		if (!strcasecmp(rs, "clk_125"))
++			dwmac->tx_retime_src = TX_RETIME_SRC_CLKGEN;
++		} else if (!strcasecmp(rs, "clk_125")) {
+ 			dwmac->tx_retime_src = TX_RETIME_SRC_CLK_125;
+-		else if (!strcasecmp(rs, "txclk"))
++		} else if (!strcasecmp(rs, "txclk")) {
+ 			dwmac->tx_retime_src = TX_RETIME_SRC_TXCLK;
++		}
+ 
+ 		dwmac->speed = SPEED_1000;
+ 	}
 -- 
 1.9.1
 
