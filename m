@@ -1,85 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaLOOZq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:25:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44375 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaLOOZn (ORCPT
+	id S1752109AbaLOO1I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:27:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38138 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785AbaLOO1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:25:43 -0500
-Date: Mon, 15 Dec 2014 15:25:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Huang Ying <ying.huang@intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>,
-        Rick Jones <netperf-feedback@netperf.org>,
-        Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org
-Subject: Re: [LKP] [genirq] c291ee62216:
-In-Reply-To: <1418627248.5745.186.camel@intel.com>
-Message-ID: <alpine.DEB.2.11.1412151220330.16494@nanos>
-References: <1418627248.5745.186.camel@intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 15 Dec 2014 09:27:02 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 002/168] sparc64: Fix constraints on swab helpers.
+Date: Mon, 15 Dec 2014 14:24:16 +0000
+Message-Id: <1418653622-21105-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Dec 2014, Huang Ying wrote:
-> FYI, we noticed the below changes on
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq/urgent
-> commit c291ee622165cb2c8d4e7af63fffd499354a23be ("genirq: Prevent proc race against freeing of irq descriptors")
-> 
-> testbox/testcase/testparams: lkp-nex04/netperf/performance-300s-200%-SCTP_STREAM
+3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
 
->                            time.voluntary_context_switches
-> 
->   100500 ++-----------------------------------------------------------------+
->          O       O                    O          O                          |
->          |  O                            O          O                       |
->   100000 ++           O  O  O O     O          O                            |
->          |    O                  O          O          O                    |
->          |          O                                                       |
->    99500 ++                                                                 |
->          |                                                                  |
->    99000 ++                                                                 |
->          |                                                                  |
->          |                                                                  |
->    98500 ++        .*.*..                          .*.. .*..    .*..*..     |
->          *..*.*..*.      *..*.*..*..*.*..*..*..*.*.    *    *..*       *.*..*
->          |                                                                  |
->    98000 ++-----------------------------------------------------------------+
-> 
-> 
-> 	[*] bisect-good sample
-> 	[O] bisect-bad  sample
+------------------
 
-Cute. Looking at netperf source it seems to do a high frequency
-readout of /proc/stat from all involved threads. Which of course
-explains that the number of context switches is going up as the stuff
-is going to content on the sparse_irq_mutex.
+From: "David S. Miller" <davem@davemloft.net>
 
-While its possible to fix^W band aid that case, I'm really not too
-happy to do so just to please a wreckaged use case. High frequency
-polling of /proc/stat is just asking for trouble and on larger
-machines it's a complete scalability fail. Especially the interrupt
-part is amazingly horrible
+commit 5a2b59d3993e8ca4f7788a48a23e5cb303f26954 upstream.
 
-      for_each_irq_nr()
-	for_each_possible_cpu()
+We are reading the memory location, so we have to have a memory
+constraint in there purely for the sake of showing the data flow
+to the compiler.
 
-Is it really required for netperf to do that stat poll in a loop or
-can it be made smarter?
+Reported-by: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/sparc/include/uapi/asm/swab.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Btw, in that test scenario runs netserver and the test threads on the
-same machine. So the utilization data is pretty useless anyway because
-all threads will read more or less the same data which cannot be
-correlated to a particular instance.
-
-Thanks,
-
-	tglx
+diff --git a/arch/sparc/include/uapi/asm/swab.h b/arch/sparc/include/uapi/asm/swab.h
+index a34ad079487e..4c7c12d69bea 100644
+--- a/arch/sparc/include/uapi/asm/swab.h
++++ b/arch/sparc/include/uapi/asm/swab.h
+@@ -9,9 +9,9 @@ static inline __u16 __arch_swab16p(const __u16 *addr)
+ {
+ 	__u16 ret;
+ 
+-	__asm__ __volatile__ ("lduha [%1] %2, %0"
++	__asm__ __volatile__ ("lduha [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab16p __arch_swab16p
+@@ -20,9 +20,9 @@ static inline __u32 __arch_swab32p(const __u32 *addr)
+ {
+ 	__u32 ret;
+ 
+-	__asm__ __volatile__ ("lduwa [%1] %2, %0"
++	__asm__ __volatile__ ("lduwa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab32p __arch_swab32p
+@@ -31,9 +31,9 @@ static inline __u64 __arch_swab64p(const __u64 *addr)
+ {
+ 	__u64 ret;
+ 
+-	__asm__ __volatile__ ("ldxa [%1] %2, %0"
++	__asm__ __volatile__ ("ldxa [%2] %3, %0"
+ 			      : "=r" (ret)
+-			      : "r" (addr), "i" (ASI_PL));
++			      : "m" (*addr), "r" (addr), "i" (ASI_PL));
+ 	return ret;
+ }
+ #define __arch_swab64p __arch_swab64p
+-- 
+2.1.3
 
