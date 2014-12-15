@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752012AbaLOT3w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:29:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40794 "EHLO
+	id S1751344AbaLOTaK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:30:10 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40798 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaLOT3t (ORCPT
+	with ESMTP id S1750970AbaLOT3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:29:49 -0500
+	Mon, 15 Dec 2014 14:29:51 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 63/96] powerpc/pseries: Fix endiannes issue in RTAS call from xmon
-Date: Mon, 15 Dec 2014 11:26:23 -0800
-Message-Id: <1418671616-25482-64-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 55/96] gpu/radeon: Set flag to indicate broken 64-bit MSI
+Date: Mon, 15 Dec 2014 11:26:15 -0800
+Message-Id: <1418671616-25482-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,67 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 3b8a3c01096925a824ed3272601082289d9c23a5 upstream.
+commit 91ed6fd2c383bb8f02d66e98b4a4d2f7207249dc upstream.
 
-On pseries system (LPAR) xmon failed to enter when running in LE mode,
-system is hunging. Inititating xmon will lead to such an output on the
-console:
+Some radeon ASICs don't support all 64 address bits of MSIs despite
+advertising support for 64-bit MSIs in their configuration space.
 
-SysRq : Entering xmon
-cpu 0x15: Vector: 0  at [c0000003f39ffb10]
-    pc: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
-    lr: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
-    sp: c0000003f39ffc70
-   msr: 8000000000009033
-  current = 0xc0000003fafa7180
-  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
-    pid   = 14617, comm = bash
-Bad kernel stack pointer fafb4b0 at eca7cc4
-cpu 0x15: Vector: 300 (Data Access) at [c000000007f07d40]
-    pc: 000000000eca7cc4
-    lr: 000000000eca7c44
-    sp: fafb4b0
-   msr: 8000000000001000
-   dar: 10000000
- dsisr: 42000000
-  current = 0xc0000003fafa7180
-  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
-    pid   = 14617, comm = bash
-cpu 0x15: Exception 300 (Data Access) in xmon, returning to main loop
-xmon: WARNING: bad recursive fault on cpu 0x15
+This breaks on systems such as IBM POWER7/8, where 64-bit MSIs can
+be assigned with some of the high address bits set.
 
-The root cause is that xmon is calling RTAS to turn off the surveillance
-when entering xmon, and RTAS is requiring big endian parameters.
+This makes use of the newly introduced "no_64bit_msi" flag in structure
+pci_dev to allow the MSI allocation code to fallback to 32-bit MSIs
+on those adapters.
 
-This patch is byte swapping the RTAS arguments when running in LE mode.
-
-Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/xmon/xmon.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
-index af9d346..4898203 100644
---- a/arch/powerpc/xmon/xmon.c
-+++ b/arch/powerpc/xmon/xmon.c
-@@ -288,10 +288,10 @@ static inline void disable_surveillance(void)
- 	args.token = rtas_token("set-indicator");
- 	if (args.token == RTAS_UNKNOWN_SERVICE)
- 		return;
--	args.nargs = 3;
--	args.nret = 1;
-+	args.nargs = cpu_to_be32(3);
-+	args.nret = cpu_to_be32(1);
- 	args.rets = &args.args[3];
--	args.args[0] = SURVEILLANCE_TOKEN;
-+	args.args[0] = cpu_to_be32(SURVEILLANCE_TOKEN);
- 	args.args[1] = 0;
- 	args.args[2] = 0;
- 	enter_rtas(__pa(&args));
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index ec6240b..2c83be9 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -202,6 +202,16 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
+ 	if (rdev->flags & RADEON_IS_AGP)
+ 		return false;
+ 
++	/*
++	 * Older chips have a HW limitation, they can only generate 40 bits
++	 * of address for "64-bit" MSIs which breaks on some platforms, notably
++	 * IBM POWER servers, so we limit them
++	 */
++	if (rdev->family < CHIP_BONAIRE) {
++		dev_info(rdev->dev, "radeon: MSI limited to 32-bit\n");
++		rdev->pdev->no_64bit_msi = 1;
++	}
++
+ 	/* force MSI on */
+ 	if (radeon_msi == 1)
+ 		return true;
 -- 
 1.9.1
 
