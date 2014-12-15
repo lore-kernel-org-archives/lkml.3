@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687AbaLOH4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:56:02 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:47137 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaLOHz7 convert rfc822-to-8bit (ORCPT
+	id S1751777AbaLOH5B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:57:01 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45910 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaLOH5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:55:59 -0500
+	Mon, 15 Dec 2014 02:57:00 -0500
+Date: Mon, 15 Dec 2014 08:57:34 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, airlied@linux.ie,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Regression] 3.18 black screen after boot (bisected)
+Message-ID: <20141215075734.GR27182@phenom.ffwll.local>
+Mail-Followup-To: linux-kernel@vger.kernel.org, airlied@linux.ie,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
+References: <20141214115831.GA1634@fritha.org>
 MIME-Version: 1.0
-In-Reply-To: <912A29987EAE174BA6CF187D7CDFA9CE26FA135A@DLEE08.ent.ti.com>
-References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
-	<20141124115116.GA14997@linutronix.de>
-	<547C3A95.30605@ti.com>
-	<547C3C19.5090501@linutronix.de>
-	<547C42FF.5010700@ti.com>
-	<CAH=tA9FO5MCzE274thc-NugCNte6WdyC-Rxc6yfnuR=+6_qMbA@mail.gmail.com>
-	<548A0125.6040708@linutronix.de>
-	<CABH3fy8zCjsxARsqBf9JXOHBkzySdiqifA1KtjnGpJdBY2EikA@mail.gmail.com>
-	<912A29987EAE174BA6CF187D7CDFA9CE26FA135A@DLEE08.ent.ti.com>
-Date: Mon, 15 Dec 2014 09:55:56 +0200
-Message-ID: <CABH3fy8PqbC3DZkFLcoaaXqFAex+oCh7=1a=-cymhXU_ayDNcg@mail.gmail.com>
-Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
-From: Catalin Crenguta <catalin.crenguta@gmail.com>
-To: "Griffis, Brad" <bgriffis@ti.com>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Nicolae Rosia <nicolae.rosia@gmail.com>,
-        "R, Vignesh" <vigneshr@ti.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        "richardcochran@gmail.com" <richardcochran@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Samuel Ortiz <sameo@linux.intel.com>, "Balbi, Felipe" <balbi@ti.com>,
-        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jan Kardell <jan.kardell@telliq.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141214115831.GA1634@fritha.org>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 4:16 PM, Griffis, Brad <bgriffis@ti.com> wrote:
+On Sun, Dec 14, 2014 at 12:58:31PM +0100, Heinz Diehl wrote:
+> Hi,
+> 
+> since kernel 3.18 I'm no longer able to run X on my machine. While
+> 3.17.6 is fine, 3.18 leaves me with a black screen when starting
+> X. Booting into runlevel 1/3 is fine.
+> 
+> I did a "git bisect", and the offending commit is this one:
+> 
+> [root@kiera linux-git]# git bisect bad
+> 83f45fc360c8e16a330474860ebda872d1384c8c is the first bad commit
+> commit 83f45fc360c8e16a330474860ebda872d1384c8c
+> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Date:   Wed Aug 6 09:10:18 2014 +0200
+> 
+>     drm: Don't grab an fb reference for the idr
+> 
+> [....]
+> 
+> I double-checked, and 3.18 is fine with this commit reverted.
+> 
+> My machine is an Asus U45JC laptop, and the CPU is an Intel i450M
+> (Ironlake). Please contact me if I can help in any way (I'm subscribed
+> to lkml, but not to other X or kernel related lists).
 
-> How are you configuring ti,charge-delay in your dts?  I've seen this behavior on some custom boards where we were using a smaller charge delay (0x400) to begin with, and by upping it to 0xb000 we resolved the issue.  These patches however already specified ti,charge-delay = 0xb000 by default so this would surprise me that it's still seeing that issue.  Was the touchscreen working as expected before these new patches, or does it have issues both ways?
+Can you please boot with drm.debug=0xf on both good and bad kernels and
+then grab dmesg from each?
 
-Initially I had set the charge-delay to 0x400 and I was seeing many
-false pen-down/pen-up events With 0xb000, I was still getting many of
-them but less than with 0x400.
+To make sure we don't forget this please file the above summary plus dmesg
+files as a new bug against dri -> drm(intel) on bugs.freedesktop.org.
+Please add "[ilk bisected]" to the bug summary so it shows up in all the
+right searches for us.
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
