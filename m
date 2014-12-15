@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751120AbaLOF11 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 00:27:27 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51979 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaLOF1Y (ORCPT
+	id S1751609AbaLOF15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 00:27:57 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:62353 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389AbaLOF1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 00:27:24 -0500
+	Mon, 15 Dec 2014 00:27:35 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,76 +14,77 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH 0/8] clean up and generalize swap-over-NFS
-Date: Sun, 14 Dec 2014 21:26:54 -0800
-Message-Id: <cover.1418618044.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>, Ming Lei <ming.lei@canonical.com>
+Subject: [PATCH 5/8] direct-io: don't dirty ITER_BVEC pages on read
+Date: Sun, 14 Dec 2014 21:26:59 -0800
+Message-Id: <30fbe8cf9f564f9ddbc7038935a25c1db9a3fd58.1418618044.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <cover.1418618044.git.osandov@osandov.com>
+References: <cover.1418618044.git.osandov@osandov.com>
+In-Reply-To: <cover.1418618044.git.osandov@osandov.com>
+References: <cover.1418618044.git.osandov@osandov.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, everyone,
+Reads through the iov_iter infrastructure for kernel pages shouldn't be
+dirtied by the direct I/O code.
 
-This patch series contains all of the non-BTRFS changes that I've made
-as a part of implementing swap file support on BTRFS. The BTRFS parts of
-that series (https://lkml.org/lkml/2014/12/9/718) are still undergoing
-development, and the non-BTRFS changes now outnumber those within BTRFS,
-so it'll probably work best to get these in separately.
+This is based on Dave Kleikamp's and Ming Lei's previously posted
+patches.
 
-Long story short, the generic swap file infrastructure introduced for
-swap-over-NFS isn't quite ready for other clients without making some
-changes.
+Cc: Ming Lei <ming.lei@canonical.com>
+Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+ fs/direct-io.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-Before I forget, this patch series was built against cbfe0de in Linus'
-tree (to avoid conflicts with the recent iov_iter work).
-
-Patches 1 and 2 fix an issue with NFS and the swap file infrastructure
-not following the direct_IO locking conventions, leading to locking
-issues for anyone else trying to use the interface (discussed here:
-https://lkml.org/lkml/2014/12/12/677).
-
-Patch 3 removes the ITER_BVEC flag from the rw argument passed to
-direct_IO, as many, but not all, direct_IO implementations expect either
-rw == READ or rw == WRITE. The lack of documentation about what's
-correct here is probably going to break something at some point, but
-that's another conversation.
-
-Patch 4 adds iov_iter_bvec for swap_writepage, the upcoming
-swap_readpage change, and splice.
-
-Patches 5 and 6 are preparation for patch 7, teaching the VFS and NFS to
-handle ITER_BVEC reads.
-
-Patch 7 is the biggest change in the series: it changes swap_readpage to
-proxy through ->direct_IO rather than ->readpage. Using readpage for a
-swapcache page requires all sorts of messy workarounds (see here for
-context: https://lkml.org/lkml/2014/11/19/46). Patch 8 updates the
-documentation accordingly.
-
-Thanks!
-
-Omar Sandoval (8):
-  nfs: follow direct I/O write locking convention
-  swap: lock i_mutex for swap_writepage direct_IO
-  swap: don't add ITER_BVEC flag to direct_IO rw
-  iov_iter: add iov_iter_bvec and convert callers
-  direct-io: don't dirty ITER_BVEC pages on read
-  nfs: don't dirty ITER_BVEC pages read through direct I/O
-  swap: use direct I/O for SWP_FILE swap_readpage
-  vfs: update swap_{,de}activate documentation
-
- Documentation/filesystems/Locking |  7 +++---
- Documentation/filesystems/vfs.txt |  7 +++---
- fs/direct-io.c                    |  8 ++++---
- fs/nfs/direct.c                   | 17 ++++++++-------
- fs/nfs/file.c                     |  8 +++++--
- fs/splice.c                       |  7 ++----
- include/linux/uio.h               |  2 ++
- mm/iov_iter.c                     | 12 +++++++++++
- mm/page_io.c                      | 45 ++++++++++++++++++++++++++++-----------
- 9 files changed, 76 insertions(+), 37 deletions(-)
-
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index e181b6b..e542ce4 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -120,6 +120,7 @@ struct dio {
+ 	spinlock_t bio_lock;		/* protects BIO fields below */
+ 	int page_errors;		/* errno from get_user_pages() */
+ 	int is_async;			/* is IO async ? */
++	int should_dirty;		/* should we mark read pages dirty? */
+ 	bool defer_completion;		/* defer AIO completion to workqueue? */
+ 	int io_error;			/* IO error in completion path */
+ 	unsigned long refcount;		/* direct_io_worker() and bios */
+@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
+ 	dio->refcount++;
+ 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+ 
+-	if (dio->is_async && dio->rw == READ)
++	if (dio->is_async && dio->rw == READ && dio->should_dirty)
+ 		bio_set_pages_dirty(bio);
+ 
+ 	if (sdio->submit_io)
+@@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 	if (!uptodate)
+ 		dio->io_error = -EIO;
+ 
+-	if (dio->is_async && dio->rw == READ) {
++	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
+ 		bio_check_pages_dirty(bio);	/* transfers ownership */
+ 	} else {
+ 		bio_for_each_segment_all(bvec, bio, i) {
+ 			struct page *page = bvec->bv_page;
+ 
+-			if (dio->rw == READ && !PageCompound(page))
++			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
+ 				set_page_dirty_lock(page);
+ 			page_cache_release(page);
+ 		}
+@@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 
+ 	dio->inode = inode;
+ 	dio->rw = rw;
++	dio->should_dirty = !(iter->type & ITER_BVEC);
+ 
+ 	/*
+ 	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
 -- 
 2.1.3
 
