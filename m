@@ -1,148 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175AbaLOLLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:11:44 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57426 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750704AbaLOLLl (ORCPT
+	id S1751357AbaLOLME (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:12:04 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60267 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaLOLMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:11:41 -0500
-Date: Mon, 15 Dec 2014 11:07:06 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Howard Chen <howard.chen@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] ARM: dts: mt8173: Add psci cpuidle support
-Message-ID: <20141215110706.GD462@leverpostej>
-References: <1418633948-2513-1-git-send-email-howard.chen@linaro.org>
+	Mon, 15 Dec 2014 06:12:00 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <548EC1E2.1010101@jp.fujitsu.com>
+Date: Mon, 15 Dec 2014 20:11:30 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418633948-2513-1-git-send-email-howard.chen@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 0/4] workqueue: fix memory allocation after numa mapping is
+ changed v3
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com>
+In-Reply-To: <548C68DA.20507@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 08:59:08AM +0000, Howard Chen wrote:
-> add device tree for psci-0.2 on mt8173 platform
-> add device tree for cupidle-arm64 on mt8173 platform
-> 
-> Signed-off-by: Howard Chen <howard.chen@linaro.org>
-> ---
->  arch/arm64/boot/dts/mt8173.dtsi | 51 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 51 insertions(+)
-> 
-> diff --git a/arch/arm64/boot/dts/mt8173.dtsi b/arch/arm64/boot/dts/mt8173.dtsi
-> index 79b7e46..c5e1127 100644
-> --- a/arch/arm64/boot/dts/mt8173.dtsi
-> +++ b/arch/arm64/boot/dts/mt8173.dtsi
-> @@ -44,6 +44,11 @@
->  		};
->  	};
->  
-> +	psci {
-> +		compatible = "arm,psci-0.2";
-> +		method = "smc";
-> +	};
-> +
->  	cpus {
->  		#address-cells = <1>;
->  		#size-cells = <0>;
-> @@ -54,6 +59,7 @@
->  			reg = <0x000>;
->  			enable-method = "mt-boot";
+Lai-san, Tejun-san,
 
-What is "mt-boot", and why is this not "psci"?
+Thank you for review, this a fix v3. This has been tested on NUMA node hotplug
+machine and seems work well.
 
-What tree is this based on?
+The probelm is memory allocation failure because pool->node information can be stale
+after node hotplug. This patch(1,2) tries to fix pool->node calculation.
+Patch (3,4) tries to update cpumask calculation.
+(Fixing memory allocation bug just requires patch 1,2. But cpumask should be update
+ I think.)
 
-The additions for idle look fine as of themselves, but we shouldn't
-require non-standard enable method code with PSCI.
+Changelog since v2.
+- reordered patch and split for each problem cases.
+- removed unnecessary calls pointed out by Lai-san.
+- restore node/cpu relationship when a new node comes online.
+- handle corner case at CPU_ONLINE.
 
-Mark.
+1/4 .... fix unbound workqueue's memory node affinity calculation.
+2/4 ...  update percpu workqueue's memory node affinity at online/offline
+3/4 ...  update workqueue's possible cpumask when a new node onlined.
+4/4 ...  handle cpu-node affinity change at CPU_ONLINE.
 
->  			cpu-release-addr = <0x0 0x40000200>;
-> +			cpu-idle-states = <&CPU_SLEEP_1_0 &CLUSTER_SLEEP_1>;
->  		};
->  
->  		cpu1: cpu@1 {
-> @@ -62,6 +68,7 @@
->  			reg = <0x001>;
->  			enable-method = "mt-boot";
->  			cpu-release-addr = <0x0 0x40000200>;
-> +			cpu-idle-states = <&CPU_SLEEP_1_0 &CLUSTER_SLEEP_1>;
->  		};
->  
->  		cpu2: cpu@2 {
-> @@ -70,6 +77,7 @@
->  			reg = <0x100>;
->  			enable-method = "mt-boot";
->  			cpu-release-addr = <0x0 0x40000200>;
-> +			cpu-idle-states = <&CPU_SLEEP_0_0 &CLUSTER_SLEEP_0>;
->  		};
->  
->  		cpu3: cpu@3 {
-> @@ -78,8 +86,51 @@
->  			reg = <0x101>;
->  			enable-method = "mt-boot";
->  			cpu-release-addr = <0x0 0x40000200>;
-> +			cpu-idle-states = <&CPU_SLEEP_0_0 &CLUSTER_SLEEP_0>;
->  		};
->  
-> +		idle-states {
-> +			entry-method = "arm,psci-0.2";
-> +
-> +			CPU_SLEEP_0_0: cpu-sleep-0-0 {
-> +				compatible = "arm,idle-state";
-> +				local-timer-stop;
-> +				arm,psci-suspend-param = <0x0010000>;
-> +				entry-latency-us = <250>;
-> +				exit-latency-us = <500>;
-> +				min-residency-us = <950>;
-> +			};
-> +
-> +			CLUSTER_SLEEP_0: cluster-sleep-0 {
-> +				compatible = "arm,idle-state";
-> +				local-timer-stop;
-> +				arm,psci-suspend-param = <0x1010000>;
-> +				entry-latency-us = <600>;
-> +				exit-latency-us = <1100>;
-> +				min-residency-us = <2700>;
-> +				wakeup-latency-us = <1500>;
-> +			};
-> +
-> +			CPU_SLEEP_1_0: cpu-sleep-1-0 {
-> +				compatible = "arm,idle-state";
-> +				local-timer-stop;
-> +				arm,psci-suspend-param = <0x0010000>;
-> +				entry-latency-us = <70>;
-> +				exit-latency-us = <100>;
-> +				min-residency-us = <300>;
-> +				wakeup-latency-us = <150>;
-> +			};
-> +
-> +			CLUSTER_SLEEP_1: cluster-sleep-1 {
-> +				compatible = "arm,idle-state";
-> +				local-timer-stop;
-> +				arm,psci-suspend-param = <0x1010000>;
-> +				entry-latency-us = <500>;
-> +				exit-latency-us = <1200>;
-> +				min-residency-us = <3500>;
-> +				wakeup-latency-us = <1300>;
-> +			};
-> +		};
->  	};
->  
->  	clocks {
-> -- 
-> 1.9.1
-> 
-> 
+Thanks,
+-Kame
+
