@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaLOL0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:26:14 -0500
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:36536 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaLOL0H (ORCPT
+	id S1751752AbaLOL05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:26:57 -0500
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:39902 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaLOL0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:26:07 -0500
+	Mon, 15 Dec 2014 06:26:04 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, a.zummo@towertech.it,
         rtc-linux@googlegroups.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 7/8] rtc: st: add new driver for ST's LPC RTC
-Date: Mon, 15 Dec 2014 11:25:37 +0000
-Message-Id: <1418642738-17407-8-git-send-email-lee.jones@linaro.org>
+        linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
+        David Paris <david.paris@st.com>
+Subject: [PATCH 6/8] watchdog: st_wdt: Add new driver for ST's LPC Watchdog
+Date: Mon, 15 Dec 2014 11:25:36 +0000
+Message-Id: <1418642738-17407-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
 References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
@@ -22,73 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's Low Power Controller (LPC) controls two devices; watchdog and RTC.
-Only one of the devices can be used at any one time.  This is enforced
-by the correlating MFD driver.  This portion of the driver-set controls
-the Real Time Clock.
-
+Signed-off-by: David Paris <david.paris@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/rtc/Kconfig      |  13 ++
- drivers/rtc/Makefile     |   1 +
- drivers/rtc/rtc-st-lpc.c | 330 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 344 insertions(+)
- create mode 100644 drivers/rtc/rtc-st-lpc.c
+ drivers/watchdog/Kconfig  |  13 ++
+ drivers/watchdog/Makefile |   1 +
+ drivers/watchdog/st_wdt.c | 312 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 326 insertions(+)
+ create mode 100644 drivers/watchdog/st_wdt.c
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index a168e96..aa4bd90 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -1355,6 +1355,18 @@ config RTC_DRV_SIRFSOC
- 	  Say "yes" here to support the real time clock on SiRF SOC chips.
- 	  This driver can also be built as a module called rtc-sirfsoc.
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index f57312f..5a538af 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -432,6 +432,19 @@ config SIRFSOC_WATCHDOG
+ 	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+ 	  the watchdog triggers the system will be reset.
  
-+config RTC_DRV_ST_LPC
-+	tristate "STMicroelectronics LPC RTC"
++config ST_WATCHDOG
++	tristate "STMicroelectronics LPC Watchdog"
 +	depends on ARCH_STI
 +	depends on OF
++	select WATCHDOG_CORE
 +	select MFD_ST_LPC
 +	help
 +	  Say Y here to include STMicroelectronics Low Power Controller
-+	  (LPC) based RTC support.
++	  (LPC) based Watchdog timer support.
 +
 +	  To compile this driver as a module, choose M here: the
-+	  module will be called rtc-st-lpc.
++	  module will be called st_wdt.
 +
- config RTC_DRV_MOXART
- 	tristate "MOXA ART RTC"
- 	depends on ARCH_MOXART || COMPILE_TEST
-@@ -1390,4 +1402,5 @@ config RTC_DRV_HID_SENSOR_TIME
- 	  rtc-hid-sensor-time.
+ config TEGRA_WATCHDOG
+ 	tristate "Tegra watchdog"
+ 	depends on ARCH_TEGRA || COMPILE_TEST
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 468c320..eb19937 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -57,6 +57,7 @@ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+ obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
++obj-$(CONFIG_ST_WATCHDOG) += st_wdt.o
+ obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+ obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
  
- 
-+
- endif # RTC_CLASS
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 56f061c..ce5860b 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -145,4 +145,5 @@ obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
- obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
- obj-$(CONFIG_RTC_DRV_XGENE)	+= rtc-xgene.o
- obj-$(CONFIG_RTC_DRV_SIRFSOC)	+= rtc-sirfsoc.o
-+obj-$(CONFIG_RTC_DRV_ST_LPC)	+= rtc-st-lpc.o
- obj-$(CONFIG_RTC_DRV_MOXART)	+= rtc-moxart.o
-diff --git a/drivers/rtc/rtc-st-lpc.c b/drivers/rtc/rtc-st-lpc.c
+diff --git a/drivers/watchdog/st_wdt.c b/drivers/watchdog/st_wdt.c
 new file mode 100644
-index 0000000..60b1ab4
+index 0000000..7e06f15
 --- /dev/null
-+++ b/drivers/rtc/rtc-st-lpc.c
-@@ -0,0 +1,330 @@
++++ b/drivers/watchdog/st_wdt.c
+@@ -0,0 +1,312 @@
 +/*
-+ * rtc-st-lpc.c - ST's LPC RTC, powered by the Low Power Timer
++ * st-wdt.c - ST's LPC Watchdog
 + *
-+ * Copyright (C) 2014 STMicroelectronics Limited
++ * Copyright (C) 2014 STMicroelectronics -- All Rights Reserved
 + *
 + * Author: David Paris <david.paris@st.com> for STMicroelectronics
 + *         Lee Jones <lee.jones@linaro.org> for STMicroelectronics
-+ *
-+ * Based on the original driver written by Stuart Menefy.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public Licence
@@ -97,319 +89,303 @@ index 0000000..60b1ab4
 + */
 +
 +#include <linux/clk.h>
-+#include <linux/delay.h>
 +#include <linux/init.h>
 +#include <linux/io.h>
-+#include <linux/irq.h>
 +#include <linux/kernel.h>
++#include <linux/mfd/syscon.h>
 +#include <linux/module.h>
 +#include <linux/of.h>
-+#include <linux/of_irq.h>
++#include <linux/of_platform.h>
 +#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+
-+/* Low Power Timer */
-+#define LPC_LPT_LSB_OFF		0x400
-+#define LPC_LPT_MSB_OFF		0x404
-+#define LPC_LPT_START_OFF	0x408
++#include <linux/regmap.h>
++#include <linux/watchdog.h>
 +
 +/* Low Power Alarm */
-+#define LPC_LPA_LSB_OFF		0x410
-+#define LPC_LPA_MSB_OFF		0x414
-+#define LPC_LPA_START_OFF	0x418
++#define LPC_LPA_LSB_OFF			0x410
++#define LPC_LPA_START_OFF		0x418
 +
 +/* LPC as WDT */
-+#define LPC_WDT_OFF		0x510
-+#define LPC_WDT_FLAG_OFF	0x514
++#define LPC_WDT_OFF			0x510
 +
-+struct st_rtc {
-+	struct rtc_device *rtc_dev;
-+	struct rtc_wkalrm alarm;
++struct st_wdog_syscfg {
++	struct regmap *regmap;
++	unsigned int reset_type_reg;
++	unsigned int reset_type_mask;
++	unsigned int enable_reg;
++	unsigned int enable_mask;
++};
++
++struct st_wdog {
++	void __iomem *base;
++	struct device *dev;
++	struct st_wdog_syscfg *syscfg;
++	struct clk *clk;
++	int warm_reset;
++};
++
++static struct st_wdog_syscfg stid127_syscfg = {
++	.reset_type_reg		= 0x004,
++	.reset_type_mask	= BIT(2),
++	.enable_reg		= 0x000,
++	.enable_mask		= BIT(2),
++};
++
++static struct st_wdog_syscfg stih415_syscfg = {
++	.reset_type_reg		= 0x0B8,
++	.reset_type_mask	= BIT(6),
++	.enable_reg		= 0x0B4,
++	.enable_mask		= BIT(7),
++};
++
++static struct st_wdog_syscfg stih416_syscfg = {
++	.reset_type_reg		= 0x88C,
++	.reset_type_mask	= BIT(6),
++	.enable_reg		= 0x888,
++	.enable_mask		= BIT(7),
++};
++
++static struct st_wdog_syscfg stih407_syscfg = {
++	.enable_reg		= 0x204,
++	.enable_mask		= BIT(19),
++};
++
++static struct of_device_id st_wdog_match[] = {
++	{
++		.compatible = "st,stih407-lpc",
++		.data = (void *)&stih407_syscfg,
++	},
++	{
++		.compatible = "st,stih416-lpc",
++		.data = (void *)&stih416_syscfg,
++	},
++	{
++		.compatible = "st,stih415-lpc",
++		.data = (void *)&stih415_syscfg,
++	},
++	{
++		.compatible = "st,stid127-lpc",
++		.data = (void *)&stid127_syscfg,
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, st_wdog_match);
++
++static void st_wdog_setup(struct st_wdog *st_wdog, bool enable)
++{
++	/* Type of watchdog reset - 0: Cold 1: Warm */
++	if (st_wdog->syscfg->reset_type_reg)
++		regmap_update_bits(st_wdog->syscfg->regmap,
++				   st_wdog->syscfg->reset_type_reg,
++				   st_wdog->syscfg->reset_type_mask,
++				   st_wdog->warm_reset);
++
++	/* Mask/unmask watchdog reset */
++	regmap_update_bits(st_wdog->syscfg->regmap,
++			   st_wdog->syscfg->enable_reg,
++			   st_wdog->syscfg->enable_mask,
++			   enable ? 0 : st_wdog->syscfg->enable_mask);
++}
++
++static void st_wdog_load_timer(struct st_wdog *st_wdog, unsigned int timeout)
++{
++	unsigned long clkrate = clk_get_rate(st_wdog->clk);
++	unsigned int maxtimeout = 0xFFFFFFFF / clkrate;
++
++	if (timeout > maxtimeout) {
++		dev_warn(st_wdog->dev,
++			 "timer overrun detected at current freq (%luHz)\n"
++			 "wdog timeout set for %ds instead of requested %uis",
++			 clkrate, maxtimeout, timeout);
++		timeout = maxtimeout;
++	}
++	timeout *= clkrate;
++
++	writel_relaxed(timeout, st_wdog->base + LPC_LPA_LSB_OFF);
++	writel_relaxed(1, st_wdog->base + LPC_LPA_START_OFF);
++}
++
++static int st_wdog_start(struct watchdog_device *wdd)
++{
++	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
++
++	writel_relaxed(1, st_wdog->base + LPC_WDT_OFF);
++
++	return 0;
++}
++
++static int st_wdog_stop(struct watchdog_device *wdd)
++{
++	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
++
++	writel_relaxed(0, st_wdog->base + LPC_WDT_OFF);
++
++	return 0;
++}
++
++static int st_wdog_set_timeout(struct watchdog_device *wdd,
++			       unsigned int timeout)
++{
++	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
++
++	wdd->timeout = timeout;
++	st_wdog_load_timer(st_wdog, timeout);
++
++	return 0;
++}
++
++static int st_wdog_keepalive(struct watchdog_device *wdd)
++{
++	struct st_wdog *st_wdog = watchdog_get_drvdata(wdd);
++
++	st_wdog_load_timer(st_wdog, wdd->timeout);
++
++	return 0;
++}
++
++static const struct watchdog_info st_wdog_info = {
++	.options = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING | WDIOF_MAGICCLOSE,
++	.identity = "ST LPC WDT",
++};
++
++static const struct watchdog_ops st_wdog_ops = {
++	.owner		= THIS_MODULE,
++	.start		= st_wdog_start,
++	.stop		= st_wdog_stop,
++	.ping		= st_wdog_keepalive,
++	.set_timeout	= st_wdog_set_timeout,
++};
++
++static struct watchdog_device st_wdog_dev = {
++	.info		= &st_wdog_info,
++	.ops		= &st_wdog_ops,
++};
++
++static int st_wdog_probe(struct platform_device *pdev)
++{
++	const struct of_device_id *match;
++	struct device_node *np;
++	struct st_wdog *st_wdog;
++	struct regmap *regmap;
 +	struct resource *res;
 +	struct clk *clk;
-+	void __iomem *ioaddr;
-+	bool irq_enabled:1;
-+	spinlock_t lock;
-+	short irq;
-+};
-+
-+static void st_rtc_set_hw_alarm(struct st_rtc *rtc,
-+				unsigned long msb, unsigned long  lsb)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&rtc->lock, flags);
-+
-+	writel(1, rtc->ioaddr + LPC_WDT_OFF);
-+
-+	writel(msb, rtc->ioaddr + LPC_LPA_MSB_OFF);
-+	writel(lsb, rtc->ioaddr + LPC_LPA_LSB_OFF);
-+	writel(1, rtc->ioaddr + LPC_LPA_START_OFF);
-+
-+	writel(0, rtc->ioaddr + LPC_WDT_OFF);
-+
-+	spin_unlock_irqrestore(&rtc->lock, flags);
-+}
-+
-+static irqreturn_t st_rtc_handler(int this_irq, void *data)
-+{
-+	struct st_rtc *rtc = (struct st_rtc *)data;
-+
-+	rtc_update_irq(rtc->rtc_dev, 1, RTC_AF);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int st_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+	unsigned long lpt_lsb, lpt_msb;
-+	unsigned long long lpt;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&rtc->lock, flags);
-+
-+	do {
-+		lpt_msb = readl(rtc->ioaddr + LPC_LPT_MSB_OFF);
-+		lpt_lsb = readl(rtc->ioaddr + LPC_LPT_LSB_OFF);
-+	} while (readl(rtc->ioaddr + LPC_LPT_MSB_OFF) != lpt_msb);
-+
-+	spin_unlock_irqrestore(&rtc->lock, flags);
-+
-+	lpt = ((unsigned long long)lpt_msb << 32) | lpt_lsb;
-+	do_div(lpt, clk_get_rate(rtc->clk));
-+	rtc_time_to_tm(lpt, tm);
-+
-+	return 0;
-+}
-+
-+static int st_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+	unsigned long long lpt;
-+	unsigned long secs, flags;
++	void __iomem *base;
 +	int ret;
 +
-+	ret = rtc_tm_to_time(tm, &secs);
-+	if (ret)
-+		return ret;
-+
-+	lpt = (unsigned long long)secs * clk_get_rate(rtc->clk);
-+
-+	spin_lock_irqsave(&rtc->lock, flags);
-+
-+	writel(lpt >> 32, rtc->ioaddr + LPC_LPT_MSB_OFF);
-+	writel(lpt, rtc->ioaddr + LPC_LPT_LSB_OFF);
-+	writel(1, rtc->ioaddr + LPC_LPT_START_OFF);
-+
-+	spin_unlock_irqrestore(&rtc->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int st_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
-+{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&rtc->lock, flags);
-+
-+	memcpy(wkalrm, &rtc->alarm, sizeof(struct rtc_wkalrm));
-+
-+	spin_unlock_irqrestore(&rtc->lock, flags);
-+
-+	return 0;
-+}
-+
-+static int st_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
-+{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+
-+	if (enabled && !rtc->irq_enabled) {
-+		enable_irq(rtc->irq);
-+		rtc->irq_enabled = true;
-+	} else if (!enabled && rtc->irq_enabled) {
-+		disable_irq(rtc->irq);
-+		rtc->irq_enabled = false;
-+	}
-+
-+	return 0;
-+}
-+
-+static int st_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *t)
-+{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+	struct rtc_time now;
-+	unsigned long now_secs;
-+	unsigned long alarm_secs;
-+	unsigned long long lpa;
-+
-+	st_rtc_read_time(dev, &now);
-+	rtc_tm_to_time(&now, &now_secs);
-+	rtc_tm_to_time(&t->time, &alarm_secs);
-+
-+	/* Invalid alarm time */
-+	if (now_secs > alarm_secs)
-+		return -EINVAL;
-+
-+	memcpy(&rtc->alarm, t, sizeof(struct rtc_wkalrm));
-+
-+	/* Now many secs to fire */
-+	alarm_secs -= now_secs;
-+	lpa = (unsigned long long)alarm_secs * clk_get_rate(rtc->clk);
-+
-+	st_rtc_set_hw_alarm(rtc, lpa >> 32, lpa);
-+	st_rtc_alarm_irq_enable(dev, t->enabled);
-+
-+	return 0;
-+}
-+
-+static struct rtc_class_ops st_rtc_ops = {
-+	.read_time		= st_rtc_read_time,
-+	.set_time		= st_rtc_set_time,
-+	.read_alarm		= st_rtc_read_alarm,
-+	.set_alarm		= st_rtc_set_alarm,
-+	.alarm_irq_enable	= st_rtc_alarm_irq_enable,
-+};
-+
-+static int st_rtc_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np;
-+	struct st_rtc *rtc;
-+	struct resource *res;
-+	struct rtc_time tm_check;
-+	int ret = 0;
-+
-+	/* This is a single [shared] node MFD device. */
++	/* This is a single node MFD device. */
 +	np = pdev->dev.of_node = pdev->dev.parent->of_node;
 +
-+	rtc = devm_kzalloc(&pdev->dev, sizeof(struct st_rtc), GFP_KERNEL);
-+	if (!rtc)
++	st_wdog = devm_kzalloc(&pdev->dev, sizeof(*st_wdog), GFP_KERNEL);
++	if (!st_wdog)
 +		return -ENOMEM;
 +
-+	spin_lock_init(&rtc->lock);
++	match = of_match_device(st_wdog_match, &pdev->dev);
++	if (!match) {
++		dev_err(&pdev->dev, "Couldn't match device\n");
++		return -ENODEV;
++	}
++	st_wdog->syscfg	= (struct st_wdog_syscfg *)match->data;
 +
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	rtc->ioaddr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(rtc->ioaddr))
-+		return PTR_ERR(rtc->ioaddr);
-+
-+	rtc->irq = irq_of_parse_and_map(np, 0);
-+	if (!rtc->irq) {
-+		dev_err(&pdev->dev, "IRQ missing or invalid\n");
-+		return -EINVAL;
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base)) {
++		dev_err(&pdev->dev, "Failed to ioremap base\n");
++		return PTR_ERR(base);
 +	}
 +
-+	ret = devm_request_irq(&pdev->dev, rtc->irq, st_rtc_handler, 0,
-+			       pdev->name, rtc);
++	regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
++	if (IS_ERR(regmap)) {
++		dev_err(&pdev->dev, "No syscfg phandle specified\n");
++		return PTR_ERR(regmap);
++	}
++
++	clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(clk)) {
++		dev_err(&pdev->dev, "Unable to request clock\n");
++		return PTR_ERR(clk);
++	}
++	clk_prepare_enable(st_wdog->clk);
++
++	st_wdog->dev		= &pdev->dev;
++	st_wdog->base		= base;
++	st_wdog->clk		= clk;
++	st_wdog->syscfg->regmap = regmap;
++	st_wdog->warm_reset	= of_property_read_bool(np, "st,warm_reset");
++
++	watchdog_set_drvdata(&st_wdog_dev, st_wdog);
++	watchdog_set_nowayout(&st_wdog_dev, WATCHDOG_NOWAYOUT);
++
++	/* Init Watchdog timeout with value in DT */
++	ret = watchdog_init_timeout(&st_wdog_dev, 0, &pdev->dev);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request irq %i\n", rtc->irq);
++		dev_err(&pdev->dev, "Unable to initialise watchdog timeout\n");
 +		return ret;
 +	}
 +
-+	enable_irq_wake(rtc->irq);
-+	disable_irq(rtc->irq);
-+
-+	rtc->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(rtc->clk)) {
-+		dev_err(&pdev->dev, "Unable to request clock\n");
-+		return PTR_ERR(rtc->clk);
++	ret = watchdog_register_device(&st_wdog_dev);
++	if (ret) {
++		dev_err(&pdev->dev, "Unable to register watchdog\n");
++		clk_disable_unprepare(clk);
++		return ret;
 +	}
 +
-+	clk_prepare_enable(rtc->clk);
++	st_wdog_setup(st_wdog, true);
 +
-+	device_set_wakeup_capable(&pdev->dev, 1);
++	dev_info(&pdev->dev, "LPC Watchdog driver registered, reset type is %s",
++		 st_wdog->warm_reset ? "warm" : "cold");
 +
-+	platform_set_drvdata(pdev, rtc);
-+
-+	/*
-+	 * The RTC-LPC is able to manage date.year > 2038
-+	 * but currently the kernel can not manage this date!
-+	 * If the RTC-LPC has a date.year > 2038 then
-+	 * it's set to the epoch "Jan 1st 2000"
-+	 */
-+	st_rtc_read_time(&pdev->dev, &tm_check);
-+
-+	if (tm_check.tm_year >=  (2038 - 1900)) {
-+		memset(&tm_check, 0, sizeof(tm_check));
-+		tm_check.tm_year = 100;
-+		tm_check.tm_mday = 1;
-+		st_rtc_set_time(&pdev->dev, &tm_check);
-+	}
-+
-+	rtc->rtc_dev = rtc_device_register("st-lpc-rtc", &pdev->dev,
-+					   &st_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc->rtc_dev)) {
-+		clk_disable_unprepare(rtc->clk);
-+		return PTR_ERR(rtc->rtc_dev);
-+	}
-+
-+	return 0;
++	return ret;
 +}
 +
-+static int st_rtc_remove(struct platform_device *pdev)
++static int st_wdog_remove(struct platform_device *pdev)
 +{
-+	struct st_rtc *rtc = platform_get_drvdata(pdev);
++	struct st_wdog *st_wdog = watchdog_get_drvdata(&st_wdog_dev);
 +
-+	if (likely(rtc->rtc_dev))
-+		rtc_device_unregister(rtc->rtc_dev);
++	st_wdog_setup(st_wdog, false);
++	watchdog_unregister_device(&st_wdog_dev);
++	clk_disable_unprepare(st_wdog->clk);
 +
 +	return 0;
 +}
 +
 +#ifdef CONFIG_PM
-+static int st_rtc_suspend(struct device *dev)
++static int st_wdog_suspend(struct device *dev)
 +{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		return 0;
-+
-+	writel(1, rtc->ioaddr + LPC_WDT_OFF);
-+	writel(0, rtc->ioaddr + LPC_LPA_START_OFF);
-+	writel(0, rtc->ioaddr + LPC_WDT_OFF);
++	if (watchdog_active(&st_wdog_dev))
++		st_wdog_stop(&st_wdog_dev);
 +
 +	return 0;
 +}
 +
-+static int st_rtc_resume(struct device *dev)
++static int st_wdog_resume(struct device *dev)
 +{
-+	struct st_rtc *rtc = dev_get_drvdata(dev);
++	struct st_wdog *st_wdog = watchdog_get_drvdata(&st_wdog_dev);
 +
-+	rtc_alarm_irq_enable(rtc->rtc_dev, 0);
-+
-+	/*
-+	 * clean 'rtc->alarm' to allow a new
-+	 * a new .set_alarm to the upper RTC layer
-+	 */
-+	memset(&rtc->alarm, 0, sizeof(struct rtc_wkalrm));
-+
-+	writel(0, rtc->ioaddr + LPC_LPA_MSB_OFF);
-+	writel(0, rtc->ioaddr + LPC_LPA_LSB_OFF);
-+	writel(1, rtc->ioaddr + LPC_WDT_OFF);
-+	writel(1, rtc->ioaddr + LPC_LPA_START_OFF);
-+	writel(0, rtc->ioaddr + LPC_WDT_OFF);
++	if (watchdog_active(&st_wdog_dev)) {
++		st_wdog_load_timer(st_wdog, st_wdog_dev.timeout);
++		st_wdog_start(&st_wdog_dev);
++	}
 +
 +	return 0;
 +}
 +#endif
 +
-+static SIMPLE_DEV_PM_OPS(st_rtc_pm_ops, st_rtc_suspend, st_rtc_resume);
++static SIMPLE_DEV_PM_OPS(st_wdog_pm_ops,
++			 st_wdog_suspend,
++			 st_wdog_resume);
 +
-+static struct platform_driver st_rtc_platform_driver = {
-+	.driver = {
-+		.name = "st-lpc-rtc",
-+		.pm = &st_rtc_pm_ops,
++static struct platform_driver st_wdog_driver = {
++	.driver	= {
++		.name = "st-lpc-wdt",
++		.pm = &st_wdog_pm_ops,
 +	},
-+	.probe = st_rtc_probe,
-+	.remove = st_rtc_remove,
++	.probe = st_wdog_probe,
++	.remove = st_wdog_remove,
 +};
++module_platform_driver(st_wdog_driver);
 +
-+module_platform_driver(st_rtc_platform_driver);
-+
-+MODULE_DESCRIPTION("STMicroelectronics LPC RTC driver");
 +MODULE_AUTHOR("David Paris <david.paris@st.com>");
-+MODULE_LICENSE("GPLv2");
++MODULE_DESCRIPTION("ST LPC Watchdog Driver");
++MODULE_LICENSE("GPL v2");
 -- 
 1.9.1
 
