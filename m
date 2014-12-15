@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaLOO3i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:29:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39087 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaLOO33 (ORCPT
+	id S1753194AbaLOO3t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:29:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:65467 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753176AbaLOO3o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:29 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Todd Fujinaka <todd.fujinaka@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Vincent Donnefort <vdonnefort@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 168/168] igb: bring link up when PHY is powered up
-Date: Mon, 15 Dec 2014 14:27:02 +0000
-Message-Id: <1418653622-21105-169-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Mon, 15 Dec 2014 09:29:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,580,1413270000"; 
+   d="scan'208";a="637764780"
+From: "Varlese, Marco" <marco.varlese@intel.com>
+To: Thomas Graf <tgraf@suug.ch>
+CC: John Fastabend <john.fastabend@gmail.com>, Jiri Pirko <jiri@resnulli.us>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Topic: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Thread-Index: AQHQGHCBGtfGamc6R3Ssf+89G79LD5yQsvhQ
+Date: Mon, 15 Dec 2014 14:29:12 +0000
+Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AC5DCF@IRSMSX108.ger.corp.intel.com>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+ <20141215140749.GB21952@casper.infradead.org>
+In-Reply-To: <20141215140749.GB21952@casper.infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.180]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+> -----Original Message-----
+> From: Thomas Graf [mailto:tgr@infradead.org] On Behalf Of Thomas Graf
+> Sent: Monday, December 15, 2014 2:08 PM
+> To: Varlese, Marco
+> Cc: John Fastabend; Jiri Pirko; netdev@vger.kernel.org;
+> stephen@networkplumber.org; Fastabend, John R;
+> roopa@cumulusnetworks.com; sfeldma@gmail.com; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+> configuration
+> 
+> On 12/11/14 at 09:59am, Varlese, Marco wrote:
+> > An example of attributes are:
+> > * enabling/disabling of learning of source addresses on a given port
+> > (you can imagine the attribute called LEARNING for example);
+> > * internal loopback control (i.e. LOOPBACK) which will control how the
+> > flow of traffic behaves from the switch fabric towards an egress port;
+> > * flooding for broadcast/multicast/unicast type of packets (i.e.
+> > BFLOODING, MFLOODING, UFLOODING);
+> 
+> All of these are highly generic and should *not* be passed through from user
+> space to the driver directly but rather be properly abstracted as Roopa
+> proposed. The value of this API is abstraction.
+How would you let the user enable/disable features then? For instance, how would the user enable/disable flooding for broadcast packets (BFLOODING) on a given port? What I was proposing is to have a list of attributes (to be added in if_link.h) which can be tuned by the user using a tool like iproute2. What do you propose? 
+I think I have seen Roopa posting his updated ndo patch and getting some feedback by few people already and as long as I will be able to accomplish the use case described here I am happy with his way.
 
-------------------
-
-From: Todd Fujinaka <todd.fujinaka@intel.com>
-
-commit aec653c43b0c55667355e26d7de1236bda9fb4e3 upstream.
-
-Call igb_setup_link() when the PHY is powered up.
-
-Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
-Reported-by: Jeff Westfahl <jeff.westfahl@ni.com>
-Tested-by: Aaron Brown <aaron.f.brown@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: Vincent Donnefort <vdonnefort@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/ethernet/intel/igb/igb_main.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index a9537ba7a5a0..4d2dc17fd31b 100644
---- a/drivers/net/ethernet/intel/igb/igb_main.c
-+++ b/drivers/net/ethernet/intel/igb/igb_main.c
-@@ -1630,6 +1630,8 @@ void igb_power_up_link(struct igb_adapter *adapter)
- 		igb_power_up_phy_copper(&adapter->hw);
- 	else
- 		igb_power_up_serdes_link_82575(&adapter->hw);
-+
-+	igb_setup_link(&adapter->hw);
- }
- 
- /**
--- 
-2.1.3
-
+> If we introduce per device attributes for generic functions we lose large
+> portions of the value gained.
+> You mentioned you have additional attributes in mind, maybe you can give a
+> few examples which are not generic, i.e. do not apply to multiple vendors.
+I do not have an example right now of a vendor specific attribute but I was just saying that might happen (i.e. someone will have a feature not implemented by others?).
