@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751342AbaLOT1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:27:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40636 "EHLO
+	id S1751387AbaLOT2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:28:06 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40648 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaLOT1q (ORCPT
+	with ESMTP id S1750809AbaLOT2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:46 -0500
+	Mon, 15 Dec 2014 14:28:02 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Troy Clark <tclark@matrixorbital.ca>, Johan Hovold <johan@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 29/96] inetdevice: fixed signed integer overflow
-Date: Mon, 15 Dec 2014 11:25:49 -0800
-Message-Id: <1418671616-25482-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 39/96] usb: serial: ftdi_sio: add PIDs for Matrix Orbital products
+Date: Mon, 15 Dec 2014 11:25:59 -0800
+Message-Id: <1418671616-25482-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
+From: Troy Clark <tclark@matrixorbital.ca>
 
-[ Upstream commit 84bc88688e3f6ef843aa8803dbcd90168bb89faf ]
+commit 204ec6e07ea7aff863df0f7c53301f9cbbfbb9d3 upstream.
 
-There could be a signed overflow in the following code.
+Add PIDs for new Matrix Orbital GTT series products.
 
-The expression, (32-logmask) is comprised between 0 and 31 included.
-It may be equal to 31.
-In such a case the left shift will produce a signed integer overflow.
-According to the C99 Standard, this is an undefined behavior.
-A simple fix is to replace the signed int 1 with the unsigned int 1U.
-
-Signed-off-by: Vincent BENAYOUN <vincent.benayoun@trust-in-soft.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Troy Clark <tclark@matrixorbital.ca>
+[johan: shorten commit message ]
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/inetdevice.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h | 39 +++++++++++++++++++++++++++++++++++----
+ 2 files changed, 68 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/inetdevice.h b/include/linux/inetdevice.h
-index 0d678ae..27f5dee 100644
---- a/include/linux/inetdevice.h
-+++ b/include/linux/inetdevice.h
-@@ -236,7 +236,7 @@ static inline void in_dev_put(struct in_device *idev)
- static __inline__ __be32 inet_make_mask(int logmask)
- {
- 	if (logmask)
--		return htonl(~((1<<(32-logmask))-1));
-+		return htonl(~((1U<<(32-logmask))-1));
- 	return 0;
- }
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 9e0e29f..0274262 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -484,6 +484,39 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FD_PID) },
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FE_PID) },
+ 	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_01FF_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_4701_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9300_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9301_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9302_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9303_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9304_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9305_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9306_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9307_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9308_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9309_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930A_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930B_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930C_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930D_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930E_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_930F_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9310_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9311_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9312_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9313_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9314_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9315_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9316_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9317_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9318_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_9319_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931A_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931B_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931C_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931D_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931E_PID) },
++	{ USB_DEVICE(MTXORB_VID, MTXORB_FTDI_RANGE_931F_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PERLE_ULTRAPORT_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PIEGROUP_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_TNC_X_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 6786b70..e52409c9 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -926,8 +926,8 @@
+ #define BAYER_CONTOUR_CABLE_PID        0x6001
  
+ /*
+- * The following are the values for the Matrix Orbital FTDI Range
+- * Anything in this range will use an FT232RL.
++ * Matrix Orbital Intelligent USB displays.
++ * http://www.matrixorbital.com
+  */
+ #define MTXORB_VID			0x1B3D
+ #define MTXORB_FTDI_RANGE_0100_PID	0x0100
+@@ -1186,8 +1186,39 @@
+ #define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
+ #define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
+ #define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
+-
+-
++#define MTXORB_FTDI_RANGE_4701_PID	0x4701
++#define MTXORB_FTDI_RANGE_9300_PID	0x9300
++#define MTXORB_FTDI_RANGE_9301_PID	0x9301
++#define MTXORB_FTDI_RANGE_9302_PID	0x9302
++#define MTXORB_FTDI_RANGE_9303_PID	0x9303
++#define MTXORB_FTDI_RANGE_9304_PID	0x9304
++#define MTXORB_FTDI_RANGE_9305_PID	0x9305
++#define MTXORB_FTDI_RANGE_9306_PID	0x9306
++#define MTXORB_FTDI_RANGE_9307_PID	0x9307
++#define MTXORB_FTDI_RANGE_9308_PID	0x9308
++#define MTXORB_FTDI_RANGE_9309_PID	0x9309
++#define MTXORB_FTDI_RANGE_930A_PID	0x930A
++#define MTXORB_FTDI_RANGE_930B_PID	0x930B
++#define MTXORB_FTDI_RANGE_930C_PID	0x930C
++#define MTXORB_FTDI_RANGE_930D_PID	0x930D
++#define MTXORB_FTDI_RANGE_930E_PID	0x930E
++#define MTXORB_FTDI_RANGE_930F_PID	0x930F
++#define MTXORB_FTDI_RANGE_9310_PID	0x9310
++#define MTXORB_FTDI_RANGE_9311_PID	0x9311
++#define MTXORB_FTDI_RANGE_9312_PID	0x9312
++#define MTXORB_FTDI_RANGE_9313_PID	0x9313
++#define MTXORB_FTDI_RANGE_9314_PID	0x9314
++#define MTXORB_FTDI_RANGE_9315_PID	0x9315
++#define MTXORB_FTDI_RANGE_9316_PID	0x9316
++#define MTXORB_FTDI_RANGE_9317_PID	0x9317
++#define MTXORB_FTDI_RANGE_9318_PID	0x9318
++#define MTXORB_FTDI_RANGE_9319_PID	0x9319
++#define MTXORB_FTDI_RANGE_931A_PID	0x931A
++#define MTXORB_FTDI_RANGE_931B_PID	0x931B
++#define MTXORB_FTDI_RANGE_931C_PID	0x931C
++#define MTXORB_FTDI_RANGE_931D_PID	0x931D
++#define MTXORB_FTDI_RANGE_931E_PID	0x931E
++#define MTXORB_FTDI_RANGE_931F_PID	0x931F
+ 
+ /*
+  * The Mobility Lab (TML)
 -- 
 1.9.1
 
