@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaLOVpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:45:12 -0500
-Received: from mail-bl2on0067.outbound.protection.outlook.com ([65.55.169.67]:60032
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751105AbaLOVpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:45:10 -0500
-Message-ID: <548F52B8.7030606@caviumnetworks.com>
-Date: Mon, 15 Dec 2014 13:29:28 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1750883AbaLOVqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:46:38 -0500
+Received: from libra.uberspace.de ([95.143.172.171]:37856 "EHLO
+	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaLOVqg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:46:36 -0500
+Date: Mon, 15 Dec 2014 22:46:30 +0100
+From: Matthias Beyer <mail@beyermatthias.de>
+To: Jack Wilson <jackwilson128@gmail.com>
+Cc: gregkh@linuxfoundation.org, davej@redhat.com, ebru.akagunduz@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: bcm: fix spaces before commas in Bcmchar.c
+Message-ID: <20141215214630.GA3151@fu>
+Reply-To: Matthias Beyer <mail@beyermatthias.de>
+References: <1418671349-4014-1-git-send-email-jackwilson128@gmail.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Aleksey Makarov <feumilieu@gmail.com>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 14/14] MIPS: OCTEON: Handle OCTEON III in csrc-octeon.
-References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com> <1418666603-15159-15-git-send-email-aleksey.makarov@auriga.com> <20141215212422.GD10323@fuloong-minipc.musicnaut.iki.fi>
-In-Reply-To: <20141215212422.GD10323@fuloong-minipc.musicnaut.iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.194]
-X-ClientProxiedBy: BLUPR07CA073.namprd07.prod.outlook.com (25.160.24.28) To
- BY1PR0701MB1111.namprd07.prod.outlook.com (25.160.104.21)
-Authentication-Results: iki.fi; dkim=none (message not signed) header.d=none;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0701MB1111;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BY1PR0701MB1111;
-X-Forefront-PRVS: 04267075BD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(479174004)(377454003)(199003)(51704005)(24454002)(47776003)(54356999)(64706001)(80316001)(87976001)(33656002)(87266999)(92566001)(42186005)(120916001)(50986999)(110136001)(66066001)(106356001)(97736003)(105586002)(81156004)(107046002)(23756003)(122386002)(36756003)(62966003)(69596002)(99396003)(76176999)(68736005)(31966008)(77156002)(101416001)(83506001)(20776003)(46102003)(50466002)(40100003)(21056001)(64126003)(4396001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0701MB1111;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0701MB1111;
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+In-Reply-To: <1418671349-4014-1-git-send-email-jackwilson128@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 01:24 PM, Aaro Koskinen wrote:
-> Hi,
->
-> On Mon, Dec 15, 2014 at 09:03:20PM +0300, Aleksey Makarov wrote:
->>   	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
->>   		union cvmx_mio_rst_boot rst_boot;
->> +
->>   		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
->>   		rdiv = rst_boot.s.c_mul;	/* CPU clock */
->>   		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
->>   		f = (0x8000000000000000ull / sdiv) * 2;
->> +	} else if (current_cpu_type() == CPU_CAVIUM_OCTEON3) {
->> +		union cvmx_rst_boot rst_boot;
->> +
->> +		rst_boot.u64 = cvmx_read_csr(CVMX_RST_BOOT);
->> +		rdiv = rst_boot.s.c_mul;	/* CPU clock */
->> +		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
->> +		f = (0x8000000000000000ull / sdiv) * 2;
->>   	}
->
-> The f = ... part could be moved outside the if blocks to avoid copy paste.
->
 
-No, If you look at the rest of the file, you will find that there are 
-checks in the form:
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-   if (f != 0) ...
+Hi Jack,
 
-There is a reason that we leave f with its default value of zero in some 
-of the cases.
+bcm is removed from the linux kernel. You are working against the
+wrong tree!
 
-David Daney
+Please work against staging-next of gregkh for staging drivers!
 
+Ask me if you do not understand what the problem is!
+Feel free to ask me other questions as well!
+
+On 15-12-2014 11:22:29, Jack Wilson wrote:
+> This is a patch to the Bcmchar.c file that fixes a space before comma war=
+ning found by checkpatch.pl.
+> Signed-off-by: Jack Wilson <jackwilson128@gmail.com>
+
+--=20
+Mit freundlichen Gr=FC=DFen,
+Kind regards,
+Matthias Beyer
+
+Proudly sent with mutt.
+Happily signed with gnupg.
+
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUj1a2AAoJEJi+S08gyg+UNycP/2aze2zbzs+idTi35/rPqzIu
+Ph7kLJLdqRmmIxAkM5DZdFRHeq3JQQtbucFIZ63GScaEM8CQkULaAyADGYEc133p
+Y+qp9Pp+nZKd6eJFS2KHEHjrp9Z/+WWtXUNDc5Fge0XaQkbNuTi3ZHxnnr+rMQBs
+HjqebG0l5yBrA3xVVmNTzJiFYr0ls4u/Hn2YblI3dUXf7lSxUAu+NaYMssyoqVlW
+ij7fIYl6T/RUCODzh9DMGUjPf9/5l84OaUEgs5CyuJ9blWOSbxh9AhNRZNO3Y1/T
+dp1hFgcp8OpX68bZQNHLmrruplVBzjNpggV2CUG7uEbApeUGWlWNAP7oP3mdqFQb
+aPABMi/BfB3fIgRANv4C51hlncBQx5Q3Cp1VGqBafnDd2pxlSLI7xLaeI5m7JOP0
+membrwnPzMN2TEjpvsD1NheB2U/frr0/9YNKedx68TEc8wi0p6j+PfMdixJd3M9d
+jj2l3SP/3vJGlHPgur2jc5OlxkBtoMw9u1WataW9Mv8b4tMEppUEIQ2ZAz1zjzJA
+UpLj6hRpNu4AjsC6dSizYwfP5lp2r5694ZkYLI17UZHw/XNYJS+iair8kJJLzqY1
+ypQ02sG/FpnXs1+ypw4kmlILI0EQABghTfS765vhKytq8RiJCCeqNZLx7FR9JXWN
+GyWHDiykRkgL968ZphCM
+=dvYL
+-----END PGP SIGNATURE-----
+
+--xHFwDpU9dbj6ez1V--
