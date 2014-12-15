@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaLOWps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 17:45:48 -0500
-Received: from mail-oi0-f51.google.com ([209.85.218.51]:38156 "EHLO
-	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaLOWpr (ORCPT
+	id S1751142AbaLOXBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:01:44 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:41585 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750819AbaLOXBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 17:45:47 -0500
+	Mon, 15 Dec 2014 18:01:42 -0500
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <20141215220150.GP9845@kernel.org>
-References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
-	<20141215220150.GP9845@kernel.org>
-Date: Mon, 15 Dec 2014 23:45:46 +0100
-Message-ID: <CAMsRxfJ7EnA1DTXMK-UZtua8jLdn84C=Oc4yUkjqgL9tb5sTsQ@mail.gmail.com>
-Subject: Re: [perf tool] cgroup support broken on Debian?
-From: Stephane Eranian <eranian@googlemail.com>
-To: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>
+In-Reply-To: <wrfjbnn4vrqa.fsf@redhat.com>
+References: <1418596754-24735-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <20141215103117.GC4856@mwanda> <wrfjbnn4vrqa.fsf@redhat.com>
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Date: Tue, 16 Dec 2014 00:01:20 +0100
+Message-ID: <CAFo99gZOr=1z8J_gNNRLXnKNBEiPCE_G3=ryaN5hAHvewHf0_w@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8723au: os_dep: usb_intf.c: Fix for possible
+ null pointer dereference
+To: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vince,
+Hi
 
-On Mon, Dec 15, 2014 at 11:01 PM, Arnaldo Carvalho de Melo
-<arnaldo.melo@gmail.com> wrote:
-> Em Mon, Dec 15, 2014 at 04:07:46PM -0500, Vince Weaver escreveu:
->> Hello
->>
->> has anyone tested the perf tool cgroup support recently?
->>
->> I was trying to get it working with a command like
->>       sudo perf stat -a -e cycles:u,cycles:u,cycles:u -G systemd -- sleep 1
->>
-It fails for me on Ubuntu Trusty as well. I think they have changed
-the way cgroup
-fs is visible. The cgroup file system type is not there anymore. They are using
-tmpfs which is not ideal to detect just cgroup. Looks like now, we have to look
-at the mount point which is flaky.
+No the rtw_hw_resume23a() is not used anywhere.
+I also do a check of all functions that are not used, but not in the
+drivers/staging, I suspected that these might be under development and
+used in the future.
+
+What do you want to do, who decides?
 
 
->> and it just failed by unhelfully dumping the "-G" help text.
->> Once I added a lot of extra debug printfs to tools/perf/util/cgroup.c
->> things became a little clearer.
+Kind regards
+Rickard Strandqvist
+
+
+2014-12-15 16:48 GMT+01:00 Jes Sorensen <Jes.Sorensen@redhat.com>:
+> Dan Carpenter <dan.carpenter@oracle.com> writes:
+>> On Sun, Dec 14, 2014 at 11:39:14PM +0100, Rickard Strandqvist wrote:
+>>> There is otherwise a risk of a possible null pointer dereference.
+>>>
+>>> Was largely found by using a static code analysis program called cppcheck.
+>>>
+>>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>>> ---
+>>>  drivers/staging/rtl8723au/os_dep/usb_intf.c |    3 ++-
+>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>>> b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>>> index 865743e..71a6330 100644
+>>> --- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>>> +++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>>> @@ -351,10 +351,11 @@ error_exit:
+>>>  int rtw_hw_resume23a(struct rtw_adapter *padapter)
 >>
->> First, you apparently need "perf_event" passed as a mount option to the
->> cgroup or you cannot attach perf to it (should perf be modified to
->> print a warning in this case rather than just printing the unhelpful
->> helf text?)
+>> That's weird.  Is this function even called?
 >
-> yes, please
+> [jes@ultrasam jes.git]$ find drivers/staging/rtl8723au -name \*.[ch] |xargs grep rtw_hw_resume
+> drivers/staging/rtl8723au/include/osdep_intf.h:int rtw_hw_resume23a(struct rtw_adapter *padapter);
+> drivers/staging/rtl8723au/os_dep/usb_intf.c:int rtw_hw_resume23a(struct rtw_adapter *padapter)
+> drivers/staging/rtl8723au/os_dep/usb_intf.c:            DBG_8723A("==> rtw_hw_resume23a\n");
+> [jes@ultrasam jes.git]$ find drivers/staging/rtl8723au -name \*.[ch] |xargs grep rtw_hw_suspend
+> drivers/staging/rtl8723au/include/osdep_intf.h:int rtw_hw_suspend23a(struct rtw_adapter *padapter);
+> drivers/staging/rtl8723au/os_dep/usb_intf.c:int rtw_hw_suspend23a(struct rtw_adapter *padapter)
+> drivers/staging/rtl8723au/os_dep/usb_intf.c:            DBG_8723A("==> rtw_hw_suspend23a\n");
 >
-Yes, the error needs to be improved or even added. The following common
-errors are encountered:
-
-- -G option requires -a (system-wide), otherwise it does not work at all
-- -G option must always be specified AFTER the ALL event list
-- -G and explicit event groups is not well supported by the tool yet.
-An event group must have the same cgroup.
-- Cgroups are specified per event
-- -G cgroup order follows the event order: -e e1, e2, e3 -G g1,g2,g3:
-g1->e1, g2->e2, g3->e3
-- It is possible to indicate no cgroup with -G: -e e1,e2,e3 -G g1,,g3
-using empty group (,,)
-
-
->> Secondly, the cgroup mount point detection completely fails on my debian
->> box.  On my machine /proc/mounts has this:
->>
->>   ...
->>   none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
-
-Yes, my Ubuntu system too.
-
->>   systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
->>
->> The current perf code looks for "cgroup" in the type field to find the
->> root cgroupfs tree.  This fails because as seen above on my machine the
->> cgroup mount has type tmpfs.  And when it finds
->> /sys/fs/cgroup/systemd as the root it tacks the name onto the end
->> (/sys/fs/cgroup/systemd/systemd) which obviously doesn't exist.
->>
->> Once I hack the code to avoid that I do finally get some cgroup readings.
->>
->> I was checking if this was a known problem, a Debian issue, or what...
+> A more useful patch would be one removing those two functions IMHO.
 >
-Obviously, the way cgroups are exposed has changed since I wrote the code
-an it needs to update. Thanks for looking into this.
-
-> Its just that the cgroup support is rough, patches are welcome to
-> improve the situation.
->
-> BTW, here its fedora20, same problem:
->
-> [root@zoo ~]# mount | grep cgroup
-> tmpfs on /sys/fs/cgroup type tmpfs
-> (rw,nosuid,nodev,noexec,seclabel,mode=755)
-> cgroup on /sys/fs/cgroup/systemd type cgroup
-> (rw,nosuid,nodev,noexec,relatime,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd)
->
-> - Arnaldo
+> Jes
