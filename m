@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752588AbaLOTtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:49:18 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40654 "EHLO
+	id S1751265AbaLOT1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:27:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40605 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaLOT2F (ORCPT
+	with ESMTP id S1751089AbaLOT1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:05 -0500
+	Mon, 15 Dec 2014 14:27:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Cong Wang <xiyou.wangcong@gmail.com>, Li RongQing <roy.qing.li@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 45/96] nfsd: Fix slot wake up race in the nfsv4.1 callback code
-Date: Mon, 15 Dec 2014 11:26:05 -0800
-Message-Id: <1418671616-25482-46-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 05/96] vxlan: using pskb_may_pull as early as possible
+Date: Mon, 15 Dec 2014 11:25:25 -0800
+Message-Id: <1418671616-25482-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,52 +28,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-commit c6c15e1ed303ffc47e696ea1c9a9df1761c1f603 upstream.
+[ Upstream commit 91269e390d062b526432f2ef1352b8df82e0e0bc ]
 
-The currect code for nfsd41_cb_get_slot() and nfsd4_cb_done() has no
-locking in order to guarantee atomicity, and so allows for races of
-the form.
+pskb_may_pull should be used to check if skb->data has enough space,
+skb->len can not ensure that.
 
-Task 1                                  Task 2
-======                                  ======
-if (test_and_set_bit(0) != 0) {
-                                        clear_bit(0)
-                                        rpc_wake_up_next(queue)
-        rpc_sleep_on(queue)
-        return false;
-}
-
-This patch breaks the race condition by adding a retest of the bit
-after the call to rpc_sleep_on().
-
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4callback.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/net/vxlan.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
-index 3eaa6e3..b2038c9 100644
---- a/fs/nfsd/nfs4callback.c
-+++ b/fs/nfsd/nfs4callback.c
-@@ -783,8 +783,12 @@ static bool nfsd41_cb_get_slot(struct nfs4_client *clp, struct rpc_task *task)
- {
- 	if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
- 		rpc_sleep_on(&clp->cl_cb_waitq, task, NULL);
--		dprintk("%s slot is busy\n", __func__);
--		return false;
-+		/* Race breaker */
-+		if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
-+			dprintk("%s slot is busy\n", __func__);
-+			return false;
-+		}
-+		rpc_wake_up_queued_task(&clp->cl_cb_waitq, task);
- 	}
- 	return true;
- }
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 311d63d..0969176 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1337,9 +1337,6 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
+ 	if (!in6_dev)
+ 		goto out;
+ 
+-	if (!pskb_may_pull(skb, skb->len))
+-		goto out;
+-
+ 	iphdr = ipv6_hdr(skb);
+ 	saddr = &iphdr->saddr;
+ 	daddr = &iphdr->daddr;
+@@ -1886,7 +1883,8 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
+ 			return arp_reduce(dev, skb);
+ #if IS_ENABLED(CONFIG_IPV6)
+ 		else if (ntohs(eth->h_proto) == ETH_P_IPV6 &&
+-			 skb->len >= sizeof(struct ipv6hdr) + sizeof(struct nd_msg) &&
++			 pskb_may_pull(skb, sizeof(struct ipv6hdr)
++				       + sizeof(struct nd_msg)) &&
+ 			 ipv6_hdr(skb)->nexthdr == IPPROTO_ICMPV6) {
+ 				struct nd_msg *msg;
+ 
 -- 
 1.9.1
 
