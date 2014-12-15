@@ -1,189 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaLOTxY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:53:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40585 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaLOT1K (ORCPT
+	id S1752476AbaLOTyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:54:37 -0500
+Received: from www.linutronix.de ([62.245.132.108]:46759 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441AbaLOTyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:10 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 02/96] x86_64, traps: Rework bad_iret
-Date: Mon, 15 Dec 2014 11:25:22 -0800
-Message-Id: <1418671616-25482-3-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Dec 2014 14:54:35 -0500
+Date: Mon, 15 Dec 2014 20:54:10 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, x86@kernel.org, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/5] Fix Intel IRQ remapping initialization order
+In-Reply-To: <548EFE88.3000307@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1412152012000.17382@nanos>
+References: <1418656404-28575-1-git-send-email-joro@8bytes.org> <548EFE88.3000307@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 15 Dec 2014, Jiang Liu wrote:
+> On 2014/12/15 23:13, Joerg Roedel wrote:
+> > Hi,
+> > 
+> > here is a patch-set against tip/x86/apic to fix an initialization order
+> > problem with the IRQ remapping code.  The problem is in the ordering of
+> > the irq_remapping_prepare and irq_remapping_supported functions.
+> > 
+> > Currently the call-order is irq_remapping_prepare ->
+> > irq_remapping_supported, so that 'prepare' can succeed but 'supported'
+> > fails, so that interrupt remapping gets initialized but not enabled.
+> > This causes a broken interrupt setup on affected systems (machines with
+> > an Intel IOMMU without, or broken, IRQ remapping support). The result
+> > are lost interrupts and a non-bootable system.
+> > 
+> > Both functions do checks whether IRQ remapping can be enabled on the
+> > machine.  The reason for this is that some checks rely on
+> > dmar_table_init() and thus have to be done in irq_remapping_prepare().
+> > 
+> > This patch-set moves all these checks into the irq_remapping_prepare()
+> > path with the right ordering and removes the irq_remapping_supported()
+> > function and its call-backs. This fixes the initializion order problem
+> > and simplifies the exported API from the IOMMU code.
+> > 
+> > Please review.
+> Hi Joerg,
+> 	I have posted a patch set for the same purpose at:
+> https://lkml.org/lkml/2014/12/10/20
+> 	Seems we need to combine these two patch sets:)
 
-------------------
+Actually you want to combine it also with these patches:
 
-From: Andy Lutomirski <luto@amacapital.net>
+326c2bb2c526: iommu/vt-d: Convert allocations to GFP_KERNEL
+e9220e591375: iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+e88edbd316ea: iommu, x86: Restructure setup of the irq remapping feature
+dd60143c04f2: x86, smpboot: Remove pointless preempt_disable() in native_smp_prepare_cpus()
 
-commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
+against 3.19 independent of the irqdomain stuff.
 
-It's possible for iretq to userspace to fail.  This can happen because
-of a bad CS, SS, or RIP.
+So that would be a clean base to put the rest of the irqdomain and
+hotplug stuff on top.
 
-Historically, we've handled it by fixing up an exception from iretq to
-land at bad_iret, which pretends that the failed iret frame was really
-the hardware part of #GP(0) from userspace.  To make this work, there's
-an extra fixup to fudge the gs base into a usable state.
+So the ordering of the patches for 3.20 would become:
 
-This is suboptimal because it loses the original exception.  It's also
-buggy because there's no guarantee that we were on the kernel stack to
-begin with.  For example, if the failing iret happened on return from an
-NMI, then we'll end up executing general_protection on the NMI stack.
-This is bad for several reasons, the most immediate of which is that
-general_protection, as a non-paranoid idtentry, will try to deliver
-signals and/or schedule from the wrong stack.
+   iommu cleanup (init and allocations)
+   acpi cleanup and parser extensions
+   ioapic hotplug
+   irqdomain conversion
 
-This patch throws out bad_iret entirely.  As a replacement, it augments
-the existing swapgs fudge into a full-blown iret fixup, mostly written
-in C.  It's should be clearer and more correct.
+I will route dd60143c04f2 "x86, smpboot: Remove pointless
+preempt_disable() in native_smp_prepare_cpus()" into -rc1.  I'm going
+to do so for a few other cherry-picks from x86/apic.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/entry_64.S | 45 +++++++++++++++++++--------------------------
- arch/x86/kernel/traps.c    | 29 +++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+), 26 deletions(-)
+So can you please create a combined series, which just deals with the
+init cleanup and the allocation conversion (ATOMIC -> GFP) based on
+current Linus tree should be fine.
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 29e2ff3..02553d6 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1055,8 +1055,13 @@ ENTRY(native_iret)
- 
- .global native_irq_return_iret
- native_irq_return_iret:
-+	/*
-+	 * This may fault.  Non-paranoid faults on return to userspace are
-+	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
-+	 * Double-faults due to espfix64 are handled in do_double_fault.
-+	 * Other faults here are fatal.
-+	 */
- 	iretq
--	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
- 
- #ifdef CONFIG_X86_ESPFIX64
- native_irq_return_ldt:
-@@ -1084,25 +1089,6 @@ native_irq_return_ldt:
- 	jmp native_irq_return_iret
- #endif
- 
--	.section .fixup,"ax"
--bad_iret:
--	/*
--	 * The iret traps when the %cs or %ss being restored is bogus.
--	 * We've lost the original trap vector and error code.
--	 * #GPF is the most likely one to get for an invalid selector.
--	 * So pretend we completed the iret and took the #GPF in user mode.
--	 *
--	 * We are now running with the kernel GS after exception recovery.
--	 * But error_entry expects us to have user GS to match the user %cs,
--	 * so swap back.
--	 */
--	pushq $0
--
--	SWAPGS
--	jmp general_protection
--
--	.previous
--
- 	/* edi: workmask, edx: work */
- retint_careful:
- 	CFI_RESTORE_STATE
-@@ -1629,16 +1615,15 @@ error_sti:
- 
- /*
-  * There are two places in the kernel that can potentially fault with
-- * usergs. Handle them here. The exception handlers after iret run with
-- * kernel gs again, so don't set the user space flag. B stepping K8s
-- * sometimes report an truncated RIP for IRET exceptions returning to
-- * compat mode. Check for these here too.
-+ * usergs. Handle them here.  B stepping K8s sometimes report a
-+ * truncated RIP for IRET exceptions returning to compat mode. Check
-+ * for these here too.
-  */
- error_kernelspace:
- 	incl %ebx
- 	leaq native_irq_return_iret(%rip),%rcx
- 	cmpq %rcx,RIP+8(%rsp)
--	je error_swapgs
-+	je error_bad_iret
- 	movl %ecx,%eax	/* zero extend */
- 	cmpq %rax,RIP+8(%rsp)
- 	je bstep_iret
-@@ -1649,7 +1634,15 @@ error_kernelspace:
- bstep_iret:
- 	/* Fix truncated RIP */
- 	movq %rcx,RIP+8(%rsp)
--	jmp error_swapgs
-+	/* fall through */
-+
-+error_bad_iret:
-+	SWAPGS
-+	mov %rsp,%rdi
-+	call fixup_bad_iret
-+	mov %rax,%rsp
-+	decl %ebx	/* Return to usergs */
-+	jmp error_sti
- 	CFI_ENDPROC
- END(error_entry)
- 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index d2451ad..574b356 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -388,6 +388,35 @@ asmlinkage __kprobes struct pt_regs *sync_regs(struct pt_regs *eregs)
- 		*regs = *eregs;
- 	return regs;
- }
-+
-+struct bad_iret_stack {
-+	void *error_entry_ret;
-+	struct pt_regs regs;
-+};
-+
-+asmlinkage __visible
-+struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
-+{
-+	/*
-+	 * This is called from entry_64.S early in handling a fault
-+	 * caused by a bad iret to user mode.  To handle the fault
-+	 * correctly, we want move our stack frame to task_pt_regs
-+	 * and we want to pretend that the exception came from the
-+	 * iret target.
-+	 */
-+	struct bad_iret_stack *new_stack =
-+		container_of(task_pt_regs(current),
-+			     struct bad_iret_stack, regs);
-+
-+	/* Copy the IRET target to the new stack. */
-+	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
-+
-+	/* Copy the remainder of the stack from the current stack. */
-+	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
-+
-+	BUG_ON(!user_mode_vm(&new_stack->regs));
-+	return new_stack;
-+}
- #endif
- 
- /*
--- 
-1.9.1
+Thanks,
 
+	tglx
