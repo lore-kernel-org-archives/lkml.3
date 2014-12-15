@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750755AbaLODLa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 22:11:30 -0500
-Received: from ozlabs.org ([103.22.144.67]:47169 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750868AbaLODLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 22:11:21 -0500
-Date: Mon, 15 Dec 2014 14:11:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xiubo Li <Li.Xiubo@freescale.com>, Wolfram Sang <wsa@the-dreams.de>
-Subject: linux-next: manual merge of the driver-core tree with the watchdog
- tree
-Message-ID: <20141215141114.575b8767@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751394AbaLODM5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 22:12:57 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63851 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaLODMs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 22:12:48 -0500
+Message-ID: <548E51AB.1030506@gmail.com>
+Date: Mon, 15 Dec 2014 11:12:43 +0800
+From: Charles Chiou <ch1102chiou@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/4w2V10G0Tnc1fQNEYD4vbfu"; protocol="application/pgp-signature"
+To: Oliver Neukum <oneukum@suse.de>
+CC: JBottomley@parallels.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, grace.chang@tw.promise.com,
+        victor.p@promise.com, ed.lin@promise.com
+Subject: Re: [V3 PATCH 4/4] scsi:stex.c Add S3/S4 support
+References: <5487A406.8060902@gmail.com> <1418202153.7241.6.camel@linux-0dmf.site>
+In-Reply-To: <1418202153.7241.6.camel@linux-0dmf.site>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/4w2V10G0Tnc1fQNEYD4vbfu
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-Hi Greg,
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/watchdog/imx2_wdt.c between commit 6dc21678dbd9 ("watchdog:
-imx2_wdt: Add power management support") from the watchdog tree and
-commit fa21a580dea4 ("watchdog: drop owner assignment from
-platform_drivers") from the driver-core tree.
+On 12/10/2014 05:02 PM, Oliver Neukum wrote:
+> On Wed, 2014-12-10 at 09:38 +0800, Charles Chiou wrote:
+>>   From 91868d4afe10533b8a4496075109e411100217bb Mon Sep 17 00:00:00 2001
+>> From: Charles Chiou <charles.chiou@tw.promise.com>
+>> Date: Fri, 7 Nov 2014 10:15:18 +0800
+>> Subject: [PATCH 4/4] scsi:stex.c Add S3/S4 support
+>>
+>> Add S3/S4 support, add .suspend and .resume function in pci_driver.
+>>
+>> Pegasus need 30~40 seconds to boot up. We don't want to OS wait
+>> in .resume function. Create a thread to handle device boot up.
+>>
+>
+>> +static int stex_resume(struct pci_dev *pdev)
+>> +{
+>> +	struct st_hba *hba = pci_get_drvdata(pdev);
+>> +	struct hba_handshake_workstruct *hswork;
+>> +	int sts;
+>> +
+>> +	hba->mu_status = MU_STATE_STARTING;
+>> +	hswork = kzalloc(sizeof(struct hba_handshake_workstruct), GFP_KERNEL);
+>
+> The system is coming back from sleep. You cannot swap or page out
+> as disks may still be asleep. GFP_KERNEL is automatically changed
+> to GFP_NOIO. It would be nice to outright use GFP_NOIO.
+>
+>> +	INIT_WORK(&hswork->handshake_work, resume_handshake);
+>
+> Memory allocations can fail.
+> I suggest you allocate the memory in suspend(). There you can just
+> return -ENOMEM in the error case.
+>
+>
+Hi Oliver, sorry for the late reply.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Good point, could we move kzalloc function from suspend to probe and 
+return -ENOMEM when allocation fail? We can avoid to allocate memory
+again and again in suspend/resume cycles.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/watchdog/imx2_wdt.c
-index b333283b24a7,65b84d8c0b93..000000000000
---- a/drivers/watchdog/imx2_wdt.c
-+++ b/drivers/watchdog/imx2_wdt.c
-@@@ -383,8 -337,6 +383,7 @@@ static struct platform_driver imx2_wdt_
-  	.shutdown	=3D imx2_wdt_shutdown,
-  	.driver		=3D {
-  		.name	=3D DRIVER_NAME,
-- 		.owner	=3D THIS_MODULE,
- +		.pm     =3D &imx2_wdt_pm_ops,
-  		.of_match_table =3D imx2_wdt_dt_ids,
-  	},
-  };
-
---Sig_/4w2V10G0Tnc1fQNEYD4vbfu
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUjlFXAAoJEMDTa8Ir7ZwV7HkP/39HDUeUT70ina7o0gj9Nt6u
-0+sdnm/QHTLYGwCmOFUmS+zgCeRaM4H7GANeMLGKt+0oIBpcaGmncOjfVyXi9hwH
-4iNZ7yShMxw6V1PeqDTsipwjRkAHytZC+3pIWI13iZFqZlodLqnOEYQ5kPlZNA6P
-Vp7FNfXi5YDelQC98BUhUjpIVcFUnOAie/mdERL+OiyVywuw7HUcXgMKakvuD/uL
-J2AzXozvVBxs+hFnM6v0PinlBqXGjle7eAENMKO+fqxp2mLVn6/nG+6UgCdLJ7TY
-scaQGrezJdqUZJM8ElmUzjhKbi/i8KeLTFjzFFCyDhB6LELLfmoI31w6RTFVF8HQ
-7UXMah2Hr+y+0kTQrYU56UNESrU3HsXzpQEBmGd66NvNs7mx7ICuJlo1qBcKc+ZW
-aaKKfNnApFpKuhlY+WaljJCSf2EB+ll82db5kl/G6SLHvv62WKRzpP1wac/9QuM2
-X38g6KNX5BI1dReTXvDkhNwi/AEwy9ZulM8r25USYkq7KeRwgmT1BauyJB8EWCRu
-w41GNwRJeg7oXrNVyH8CvAoIoewGOej6Vd9BpGnG6bsqeEiVPAjqLAG32Ugvv3F1
-WlnhF/DWHIUxBGGrXVAXvO2fWXfEhEum+FnkAB6VPLVjwwzI8BHPUoL2OQ4itwpT
-6mvLGfv+HxtNv/yCslMt
-=6YFO
------END PGP SIGNATURE-----
-
---Sig_/4w2V10G0Tnc1fQNEYD4vbfu--
+BRS
+Charles
