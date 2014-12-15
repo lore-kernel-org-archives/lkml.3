@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaLOPTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:19:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38190 "EHLO
+	id S1754489AbaLOPUZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:20:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38185 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbaLOO1K (ORCPT
+	with ESMTP id S1750967AbaLOO1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:10 -0500
+	Mon, 15 Dec 2014 09:27:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 010/168] net/mlx4_en: Add VXLAN ndo calls to the PF net device ops too
-Date: Mon, 15 Dec 2014 14:24:24 +0000
-Message-Id: <1418653622-21105-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 009/168] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
+Date: Mon, 15 Dec 2014 14:24:23 +0000
+Message-Id: <1418653622-21105-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Or Gerlitz <ogerlitz@mellanox.com>
+From: Jiri Bohac <jbohac@suse.cz>
 
-commit 9737c6ab7afbc950e997ef80cba2c40dbbd16ea4 upstream.
+commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf upstream.
 
-This is currently missing, which results in a crash when one attempts
-to set VXLAN tunnel over the mlx4_en when acting as PF.
+This fixes an old regression introduced by commit
+b0d0d915 (ipx: remove the BKL).
 
-	[ 2408.785472] BUG: unable to handle kernel NULL pointer dereference at (null)
-	[...]
-	[ 2408.994104] Call Trace:
-	[ 2408.996584]  [<ffffffffa021f7f5>] ? vxlan_get_rx_port+0xd6/0x103 [vxlan]
-	[ 2409.003316]  [<ffffffffa021f71f>] ? vxlan_lowerdev_event+0xf2/0xf2 [vxlan]
-	[ 2409.010225]  [<ffffffffa0630358>] mlx4_en_start_port+0x862/0x96a [mlx4_en]
-	[ 2409.017132]  [<ffffffffa063070f>] mlx4_en_open+0x17f/0x1b8 [mlx4_en]
+When a recvmsg syscall blocks waiting for new data, no data can be sent on the
+same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
 
-While here, make sure to invoke vxlan_get_rx_port() only when VXLAN
-offloads are actually enabled and not when they are only supported.
+This breaks mars-nwe (NetWare emulator):
+- the ncpserv process reads the request using recvmsg
+- ncpserv forks and spawns nwconn
+- ncpserv calls a (blocking) recvmsg and waits for new requests
+- nwconn deadlocks in sendmsg on the same socket
 
-Reported-by: Ido Shamay <idos@mellanox.com>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
+Commit b0d0d915 has simply replaced BKL locking with
+lock_sock/release_sock. Unlike now, BKL got unlocked while
+sleeping, so a blocking recvmsg did not block a concurrent
+sendmsg.
+
+Only keep the socket locked while actually working with the socket data and
+release it prior to calling skb_recv_datagram().
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.16: used davem's backport to 3.17 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 6 +++++-
+ net/ipx/af_ipx.c | 6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-index 7345c43b019e..128f0728d97d 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1724,7 +1724,7 @@ int mlx4_en_start_port(struct net_device *dev)
- 	mlx4_set_stats_bitmap(mdev->dev, &priv->stats_bitmap);
+diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
+index 91729b807c7d..1b095ca37aa4 100644
+--- a/net/ipx/af_ipx.c
++++ b/net/ipx/af_ipx.c
+@@ -1764,6 +1764,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct ipxhdr *ipx = NULL;
+ 	struct sk_buff *skb;
+ 	int copied, rc;
++	bool locked = true;
  
- #ifdef CONFIG_MLX4_EN_VXLAN
--	if (priv->mdev->dev->caps.flags2 & MLX4_DEV_CAP_FLAG2_VXLAN_OFFLOADS)
-+	if (priv->mdev->dev->caps.tunnel_offload_mode == MLX4_TUNNEL_OFFLOAD_MODE_VXLAN)
- 		vxlan_get_rx_port(dev);
- #endif
- 	priv->port_up = true;
-@@ -2434,6 +2434,10 @@ static const struct net_device_ops mlx4_netdev_ops_master = {
- 	.ndo_rx_flow_steer	= mlx4_en_filter_rfs,
- #endif
- 	.ndo_get_phys_port_id	= mlx4_en_get_phys_port_id,
-+#ifdef CONFIG_MLX4_EN_VXLAN
-+	.ndo_add_vxlan_port	= mlx4_en_add_vxlan_port,
-+	.ndo_del_vxlan_port	= mlx4_en_del_vxlan_port,
-+#endif
- };
+ 	lock_sock(sk);
+ 	/* put the autobinding in */
+@@ -1790,6 +1791,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	if (sock_flag(sk, SOCK_ZAPPED))
+ 		goto out;
  
- int mlx4_en_init_netdev(struct mlx4_en_dev *mdev, int port,
++	release_sock(sk);
++	locked = false;
+ 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
+ 				flags & MSG_DONTWAIT, &rc);
+ 	if (!skb) {
+@@ -1826,7 +1829,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
+ out_free:
+ 	skb_free_datagram(sk, skb);
+ out:
+-	release_sock(sk);
++	if (locked)
++		release_sock(sk);
+ 	return rc;
+ }
+ 
 -- 
 2.1.3
 
