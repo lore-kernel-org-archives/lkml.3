@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaLOTuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:50:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40620 "EHLO
+	id S1752841AbaLOTuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:50:54 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaLOT1M (ORCPT
+	with ESMTP id S1751127AbaLOT1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 14:27:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 13/96] ip6_tunnel: Use ip6_tnl_dev_init as the ndo_init function.
-Date: Mon, 15 Dec 2014 11:25:33 -0800
-Message-Id: <1418671616-25482-14-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 12/96] drivers/net: macvtap and tun depend on INET
+Date: Mon, 15 Dec 2014 11:25:32 -0800
+Message-Id: <1418671616-25482-13-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,63 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-[ Upstream commit 6c6151daaf2d8dc2046d9926539feed5f66bf74e ]
+[ Upstream commit de11b0e8c569b96c2cf6a811e3805b7aeef498a3 ]
 
-ip6_tnl_dev_init() sets the dev->iflink via a call to
-ip6_tnl_link_config(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ip6_tnl_dev_init() as the
-ndo_init function. Then ip6_tnl_dev_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+These drivers now call ipv6_proxy_select_ident(), which is defined
+only if CONFIG_INET is enabled.  However, they have really depended
+on CONFIG_INET for as long as they have allowed sending GSO packets
+from userland.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: f43798c27684 ("tun: Allow GSO using virtio_net_hdr")
+Fixes: b9fb9ee07e67 ("macvtap: add GSO/csum offload support")
+Fixes: 5188cd44c55d ("drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets")
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_tunnel.c | 10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/net/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/ipv6/ip6_tunnel.c b/net/ipv6/ip6_tunnel.c
-index 5d686b3..29ecff5 100644
---- a/net/ipv6/ip6_tunnel.c
-+++ b/net/ipv6/ip6_tunnel.c
-@@ -275,9 +275,6 @@ static int ip6_tnl_create2(struct net_device *dev)
- 	int err;
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index b45b240..367aabc 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -135,6 +135,7 @@ config MACVLAN
+ config MACVTAP
+ 	tristate "MAC-VLAN based tap driver"
+ 	depends on MACVLAN
++	depends on INET
+ 	help
+ 	  This adds a specialized tap character device driver that is based
+ 	  on the MAC-VLAN network interface, called macvtap. A macvtap device
+@@ -205,6 +206,7 @@ config RIONET_RX_SIZE
  
- 	t = netdev_priv(dev);
--	err = ip6_tnl_dev_init(dev);
--	if (err < 0)
--		goto out;
- 
- 	err = register_netdevice(dev);
- 	if (err < 0)
-@@ -1459,6 +1456,7 @@ ip6_tnl_change_mtu(struct net_device *dev, int new_mtu)
- 
- 
- static const struct net_device_ops ip6_tnl_netdev_ops = {
-+	.ndo_init	= ip6_tnl_dev_init,
- 	.ndo_uninit	= ip6_tnl_dev_uninit,
- 	.ndo_start_xmit = ip6_tnl_xmit,
- 	.ndo_do_ioctl	= ip6_tnl_ioctl,
-@@ -1550,16 +1548,10 @@ static int __net_init ip6_fb_tnl_dev_init(struct net_device *dev)
- 	struct ip6_tnl *t = netdev_priv(dev);
- 	struct net *net = dev_net(dev);
- 	struct ip6_tnl_net *ip6n = net_generic(net, ip6_tnl_net_id);
--	int err = ip6_tnl_dev_init_gen(dev);
--
--	if (err)
--		return err;
- 
- 	t->parms.proto = IPPROTO_IPV6;
- 	dev_hold(dev);
- 
--	ip6_tnl_link_config(t);
--
- 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
- 	return 0;
- }
+ config TUN
+ 	tristate "Universal TUN/TAP device driver support"
++	depends on INET
+ 	select CRC32
+ 	---help---
+ 	  TUN/TAP provides packet reception and transmission for user space
 -- 
 1.9.1
 
