@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaLOXm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 18:42:26 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:56434 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaLOXmY (ORCPT
+	id S1751382AbaLOXo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:44:27 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:37079 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaLOXoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 18:42:24 -0500
+	Mon, 15 Dec 2014 18:44:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418685929-13096-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1418685929-13096-2-git-send-email-dianders@chromium.org>
 References: <1418685929-13096-1-git-send-email-dianders@chromium.org>
-Date: Mon, 15 Dec 2014 15:42:23 -0800
-X-Google-Sender-Auth: Y6-lYy2v9miELwd3-L71JcgfgNg
-Message-ID: <CAL1qeaEGYwTCf0xasMZhGHEDWYhddLAS9jYjdgrccSwnFOc+7A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] mmc: core: Add mmc_regulator_set_vqmmc()
+	<1418685929-13096-2-git-send-email-dianders@chromium.org>
+Date: Mon, 15 Dec 2014 15:44:24 -0800
+X-Google-Sender-Auth: 2jjzvL5p6b7GdxVgxlcnfKeL2U4
+Message-ID: <CAL1qeaHfsq1xOOBMQc58uSvV4unuEWHjqVpiZrpu2bQD36LbXg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mmc: dw_mmc: Use mmc_regulator_set_vqmmc in start_signal_voltage_switch
 From: Andrew Bresticker <abrestic@chromium.org>
 To: Doug Anderson <dianders@chromium.org>
 Cc: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
@@ -25,9 +26,7 @@ Cc: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
         "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Chris Ball <chris@printf.net>, johan.rudholm@axis.com,
-        tim.kryger@gmail.com, andrew_gabbasov@mentor.com,
-        Adrian Hunter <adrian.hunter@intel.com>,
+        Chris Ball <chris@printf.net>,
         "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
@@ -38,29 +37,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Doug,
 
 On Mon, Dec 15, 2014 at 3:25 PM, Doug Anderson <dianders@chromium.org> wrote:
-> This adds logic to the MMC core to set VQMMC.  This is expected to be
-> called by MMC drivers like dw_mmc as part of (or instead of) their
-> start_signal_voltage_switch() callback.
+> We've introduced a new helper in the MMC core:
+> mmc_regulator_set_vqmmc().  Let's use this in dw_mmc.  Using this new
+> helper has some advantages:
 >
-> A few notes:
+> 1. We get the mmc_regulator_set_vqmmc() behavior of trying to match
+>    VQMMC and VMMC when the signal voltage is 3.3V.  This ensures max
+>    compatibility.
 >
-> * When setting the signal voltage to 3.3V we do our best to make VQMMC
->   and VMMC match.  It's been reported that this makes some old cards
->   happy since they were tested back in the day before UHS when VQMMC
->   and VMMC were provided by the same regulator.  A nice side effect of
->   this is that we don't end up on the hairy edge of VQMMC (2.7V),
->   which some EEs claim is a little too close to the minimum for
->   comfort.
+> 2. We get rid of a few more warnings when probing unsupported
+>    voltages.
 >
-> * When setting the signal voltage to 1.8V or 1.2V we aim for that
->   specific voltage instead of picking the lowest one in the range.
->
-> * We very purposely don't print errors in mmc_regulator_set_vqmmc().
->   There are cases where the MMC core will try several different
->   voltages and we don't want to pollute the logs.
+> 3. We get rid of some non-dw_mmc specific code in dw_mmc.
 >
 > Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Looks good to me.
+One small comment below...
 
-Reviewed-by: Andrew Bresticker <abrestic@chromium.org>
+> @@ -1170,24 +1168,11 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+>          */
+>         uhs = mci_readl(host, UHS_REG);
+>         if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
+> -               min_uv = 2700000;
+> -               max_uv = 3600000;
+>                 uhs &= ~v18;
+>         } else {
+> -               min_uv = 1700000;
+> -               max_uv = 1950000;
+>                 uhs |= v18;
+>         }
+> -       if (!IS_ERR(mmc->supply.vqmmc)) {
+> -               ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
+> -
+> -               if (ret) {
+> -                       dev_dbg(&mmc->class_dev,
+> -                                        "Regulator set error %d: %d - %d\n",
+> -                                        ret, min_uv, max_uv);
+> -                       return ret;
+> -               }
+> -       }
+> +       mmc_regulator_set_vqmmc(mmc, ios);
+
+Shouldn't we check the return value here and bail out of the voltage
+switch procedure if it fails?
