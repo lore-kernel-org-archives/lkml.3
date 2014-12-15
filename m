@@ -1,111 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021AbaLOUaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 15:30:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38576 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaLOUav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 15:30:51 -0500
-Date: Tue, 16 Dec 2014 07:30:37 +1100
-From: NeilBrown <neilb@suse.de>
-To: Loic Pefferkorn <loic@loicp.eu>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Update CONFIG_DM_CRYPT help-text link
-Message-ID: <20141216073037.75ec447b@notabene.brown>
-In-Reply-To: <81c1a7329d2146d37b22d7efa96b3a449cb66d14.1418674665.git.loic@loicp.eu>
-References: <81c1a7329d2146d37b22d7efa96b3a449cb66d14.1418674665.git.loic@loicp.eu>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1750878AbaLOUqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 15:46:31 -0500
+Received: from h1943130.stratoserver.net ([81.169.133.216]:48475 "EHLO
+	studio-punkt.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaLOUq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 15:46:28 -0500
+Date: Mon, 15 Dec 2014 21:38:55 +0100
+From: Evgeni Dobrev <evgeni@studio-punkt.com>
+To: devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 2/2] ARM: dts: kirkwood: add dts support for Seagate
+ BlackArmor NAS220
+Message-ID: <20141215203855.GA28940@anne>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/PSNNyqS95fGcNo.RmLegE32"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/PSNNyqS95fGcNo.RmLegE32
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+This patch adds support for Seagate BlackArmor NAS220.
 
-On Mon, 15 Dec 2014 21:23:35 +0100 Loic Pefferkorn <loic@loicp.eu> wrote:
+The Seagate BlackArmor NAS 220 is a NAS system based on Marvell 88f6192. It has 32MB NAND and 128MB DRAM. It has two SATA slots, one Gigabit Ethernet port, two USB 2.0 ports, two buttons and three LEDs. There is a serial port available on the CN5 connector on the board (1 - TX, 4 - RX, 6 - GND).
 
-> Hello,
->=20
-> This patch fixes the obsolete help-text link of CONFIG_DM_CRYPT.
-> Applies against next-20141215.
+The only functionality still not implemented is the bi-color led on the front panel (status). Pins mpp22 and mpp23 control this led. Setting mpp22 to high and mpp23 to low results in orange color. Setting mpp22 to low and mpp23 to high results in blue color.
 
-Please direct this according to:
+The third led is wired to show the SATA activity on the two drives.
 
-DEVICE-MAPPER  (LVM)
-M:	Alasdair Kergon <agk@redhat.com>
-M:	Mike Snitzer <snitzer@redhat.com>
-M:	dm-devel@redhat.com
-L:	dm-devel@redhat.com
-W:	http://sources.redhat.com/dm
-Q:	http://patchwork.kernel.org/project/dm-devel/list/
-T:	git git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm=
-.git
-T:	quilt http://people.redhat.com/agk/patches/linux/editing/
-S:	Maintained
-F:	Documentation/device-mapper/
-F:	drivers/md/dm*
-F:	drivers/md/persistent-data/
-F:	include/linux/device-mapper.h
-F:	include/linux/dm-*.h
-F:	include/uapi/linux/dm-*.h
+Signed-off-by: Evgeni Dobrev <evgeni@studio-punkt.com>
+---
+ arch/arm/boot/dts/Makefile            |    1 +
+ arch/arm/boot/dts/kirkwood-nas220.dts |  182 +++++++++++++++++++++++++++++++++
+ 2 files changed, 183 insertions(+)
+ create mode 100644 arch/arm/boot/dts/kirkwood-nas220.dts
 
-I guess get-maintainer.pl doesn't cope when when on file has separate parts
-which are separately maintained.
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 38c89ca..8b9ad1d 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -132,6 +132,7 @@ dtb-$(CONFIG_MACH_KIRKWOOD) += kirkwood-b3.dtb \
+ 	kirkwood-lsxhl.dtb \
+ 	kirkwood-mplcec4.dtb \
+ 	kirkwood-mv88f6281gtw-ge.dtb \
++	kirkwood-nas220.dtb \
+ 	kirkwood-net2big.dtb \
+ 	kirkwood-net5big.dtb \
+ 	kirkwood-netgear_readynas_duo_v2.dtb \
+diff --git a/arch/arm/boot/dts/kirkwood-nas220.dts b/arch/arm/boot/dts/kirkwood-nas220.dts
+new file mode 100644
+index 0000000..1de2ac3
+--- /dev/null
++++ b/arch/arm/boot/dts/kirkwood-nas220.dts
+@@ -0,0 +1,182 @@
++/*
++ * Device Tree file for Seagate BlackArmor NAS220
++ *
++ * Copyright (C) 2014 Evgeni Dobrev <evgeni@studio-punkt.com>
++ *
++ * Licensed under GPLv2 or later.
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++#include "kirkwood.dtsi"
++#include "kirkwood-6192.dtsi"
++
++/ {
++	model = "Seagate NAS 220";
++	compatible = "seagate,nas220", "marvell,kirkwood-88f6192", "marvell,kirkwood";
++
++	memory { /* 128 MB */
++		device_type = "memory";
++		reg = <0x00000000 0x8000000>;
++	};
++
++        chosen {
++                bootargs = "console=ttyS0,115200n8";
++		stdout-path = &uart0;
++        };
++
++	ocp@f1000000 {
++		pinctrl: pin-controller@10000 {
++			pinctrl-0 = < &pmx_uart0
++				&pmx_button_reset
++				&pmx_button_power
++				>;
++			pinctrl-names = "default";
++
++                        pmx_act_sata0: pmx-act-sata0 {
++                                marvell,pins = "mpp15";
++                                marvell,function = "sata0";
++                        };
++                        pmx_act_sata1: pmx-act-sata1 {
++                                marvell,pins = "mpp16";
++                                marvell,function = "sata1";
++                        };
++                        pmx_power_sata0: pmx-power-sata0 {
++                                marvell,pins = "mpp24";
++                                marvell,function = "gpio";
++                        };
++                        pmx_power_sata1: pmx-power-sata1 {
++                                marvell,pins = "mpp28";
++                                marvell,function = "gpio";
++                        };
++                        pmx_button_reset: pmx-button-reset {
++                                marvell,pins = "mpp29";
++                                marvell,function = "gpio";
++                        };
++                        pmx_button_power: pmx-button-power {
++                                marvell,pins = "mpp26";
++                                marvell,function = "gpio";
++                        };
++		};
++
++		serial@12000 {
++			status = "okay";
++		};
++
++                sata@80000 {
++                        nr-ports = <2>;
++                        status = "okay";
++                };
++
++		i2c@11000 {
++			status = "okay";
++			adt7476: adt7476a@2e {
++				compatible = "adi,adt7476";
++				reg = <0x2e>;
++			};
++		};
++	};
++
++	gpio_poweroff {
++		compatible = "gpio-poweroff";
++		gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
++	};
++
++	gpio_keys {
++		compatible = "gpio-keys";
++
++		button@1{
++			label = "Reset push button";
++			linux,code = <KEY_POWER>;
++			gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
++		};
++		button@2{
++			label = "Power push button";
++			linux,code = <KEY_SLEEP>;
++			gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
++		};
++	};
++
++	gpio-leds {
++		compatible = "gpio-leds";
++
++		blue-power {
++			label = "nas220:blue:power";
++			gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "default-on";
++		};
++	};
++
++        regulators {
++                compatible = "simple-bus";
++                #address-cells = <1>;
++                #size-cells = <0>;
++                pinctrl-0 = <&pmx_power_sata0 &pmx_power_sata1>;
++                pinctrl-names = "default";
++
++                sata0_power: regulator@1 {
++                        compatible = "regulator-fixed";
++                        reg = <1>;
++                        regulator-name = "SATA0 Power";
++                        regulator-min-microvolt = <5000000>;
++                        regulator-max-microvolt = <5000000>;
++                        enable-active-high;
++                        regulator-always-on;
++                        regulator-boot-on;
++                        gpio = <&gpio0 24 0>;
++                };
++
++                sata1_power: regulator@2 {
++                        compatible = "regulator-fixed";
++                        reg = <2>;
++                        regulator-name = "SATA1 Power";
++                        regulator-min-microvolt = <5000000>;
++                        regulator-max-microvolt = <5000000>;
++                        enable-active-high;
++                        regulator-always-on;
++                        regulator-boot-on;
++                        gpio = <&gpio0 28 0>;
++                };
++        };
++};
++
++&nand {
++	status = "okay";
++	partition@0 {
++		label = "uboot";
++		reg = <0x0 0xa0000>;
++		read-only;
++	};
++
++	partition@a0000 {
++		label = "env";
++		reg = <0xa0000 0x010000>;
++	};
++
++	partition@c0000 {
++		label = "uimage";
++		reg = <0xc0000 0x500000>;
++	};
++
++	partition@5c0000 {
++		label = "rootfs";
++		reg = <0x5c0000 0x1a40000>;
++	};
++};
++
++&mdio {
++        status = "okay";
++        ethphy0: ethernet-phy@8 {
++                reg = <8>;
++        };
++};
++
++&eth0 {
++        status = "okay";
++        ethernet0-port@0 {
++                phy-handle = <&ethphy0>;
++        };
++};
++
+-- 
+1.7.10.4
 
-Thanks,
-NeilBrown
-
-
->=20
-> Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=3D75111
->=20
-> Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
-> ---
->  drivers/md/Kconfig | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/md/Kconfig b/drivers/md/Kconfig
-> index 5bdedf6..09c89a4b 100644
-> --- a/drivers/md/Kconfig
-> +++ b/drivers/md/Kconfig
-> @@ -230,9 +230,8 @@ config DM_CRYPT
->  	  transparently encrypts the data on it. You'll need to activate
->  	  the ciphers you're going to use in the cryptoapi configuration.
-> =20
-> -	  Information on how to use dm-crypt can be found on
-> -
-> -	  <http://www.saout.de/misc/dm-crypt/>
-> +	  For further information on dm-crypt and userspace tools see:
-> +	  <http://code.google.com/p/cryptsetup/wiki/DMCrypt>
-> =20
->  	  To compile this code as a module, choose M here: the module will
->  	  be called dm-crypt.
-
-
---Sig_/PSNNyqS95fGcNo.RmLegE32
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIVAwUBVI9E7jnsnt1WYoG5AQIxwg//W+tyRJc+PWN6C0W5/GN1BcriN2aVxtat
-UGhPUGRPTQmxfIbWGwIEjZCAX1ZqQKBbUJOlhJ45E0UFcoPLAWqDYC7ffcJ55xu+
-MaSXvqfsEgtkfgOHrdy97jtJHTFHy6HoSFIILHZoeNfWwhHnSdS2gQncWelpDSHB
-Ehom4/x2EPY1w9YaY47BKj3j6rLIkM1hLdU2+Nv/p285MjJ1LVDY78PToWhcn+4e
-LsewtLWYJCA1aisy6Iam3Ymt3uds0TJ9I1Stgjx4SEvJMCv0znyWgyKAMI+VsDv3
-SfIiMV+GxW7KaxHxaPa6Yfy7rW/8vahaa/Sts1I884VGAOdWWj7Gq4OPfmSi1l68
-HgdEmREIngC9ldngN6Az6UcIjVgi+xGUbZhc8MBCv507d5dVNrJSGAzWlcqzKuGe
-41QTE7ZNU16LPyVWxAdfCqTrxiJVKDH6KnF2rUcSJ+s1p4FtaoEVYiKOwhHaxCPb
-yp1Ut9ShOLBVRAeJfeMiJJsF7gCMhV8oJme3y21nn23hD56In+xWw8s3dUAuFAXt
-QeFguqrRDutzLv6sT5GGWCUmS+UzW7P6v22Ueb0N2JmDZfBuwJvr/DqPRsUf0HH5
-zlkJWZ020KFgobFrpNgQJbT8HGPBjgJOAnna8lI1e/0GChXTMJMzp5vLv46oX1b1
-z0Spt64PsqY=
-=XoF6
------END PGP SIGNATURE-----
-
---Sig_/PSNNyqS95fGcNo.RmLegE32--
