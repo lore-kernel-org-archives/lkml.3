@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaLOTxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:53:21 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40613 "EHLO
+	id S1752860AbaLOTx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:53:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40575 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaLOT1L (ORCPT
+	with ESMTP id S1751092AbaLOT1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:11 -0500
+	Mon, 15 Dec 2014 14:27:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 15/96] sit: Use ipip6_tunnel_init as the ndo_init function.
-Date: Mon, 15 Dec 2014 11:25:35 -0800
-Message-Id: <1418671616-25482-16-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 01/96] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
+Date: Mon, 15 Dec 2014 11:25:21 -0800
+Message-Id: <1418671616-25482-2-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,78 +28,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Klassert <steffen.klassert@secunet.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-[ Upstream commit ebe084aafb7e93adf210e80043c9f69adf56820d ]
+commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
 
-ipip6_tunnel_init() sets the dev->iflink via a call to
-ipip6_tunnel_bind_dev(). After that, register_netdevice()
-sets dev->iflink = -1. So we loose the iflink configuration
-for ipv6 tunnels. Fix this by using ipip6_tunnel_init() as the
-ndo_init function. Then ipip6_tunnel_init() is called after
-dev->iflink is set to -1 from register_netdevice().
+There's nothing special enough about the espfix64 double fault fixup to
+justify writing it in assembly.  Move it to C.
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This also fixes a bug: if the double fault came from an IST stack, the
+old asm code would return to a partially uninitialized stack frame.
+
+Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/sit.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ arch/x86/kernel/entry_64.S | 34 ++--------------------------------
+ arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
+ 2 files changed, 26 insertions(+), 32 deletions(-)
 
-diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
-index 9568c1f..25ed067 100644
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -195,10 +195,8 @@ static int ipip6_tunnel_create(struct net_device *dev)
- 	struct sit_net *sitn = net_generic(net, sit_net_id);
- 	int err;
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index d414188..29e2ff3 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1053,6 +1053,7 @@ ENTRY(native_iret)
+ 	jnz native_irq_return_ldt
+ #endif
  
--	err = ipip6_tunnel_init(dev);
--	if (err < 0)
--		goto out;
--	ipip6_tunnel_clone_6rd(dev, sitn);
-+	memcpy(dev->dev_addr, &t->parms.iph.saddr, 4);
-+	memcpy(dev->broadcast, &t->parms.iph.daddr, 4);
++.global native_irq_return_iret
+ native_irq_return_iret:
+ 	iretq
+ 	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
+@@ -1147,37 +1148,6 @@ ENTRY(retint_kernel)
+ 	CFI_ENDPROC
+ END(common_interrupt)
  
- 	if ((__force u16)t->parms.i_flags & SIT_ISATAP)
- 		dev->priv_flags |= IFF_ISATAP;
-@@ -207,7 +205,8 @@ static int ipip6_tunnel_create(struct net_device *dev)
- 	if (err < 0)
- 		goto out;
- 
--	strcpy(t->parms.name, dev->name);
-+	ipip6_tunnel_clone_6rd(dev, sitn);
-+
- 	dev->rtnl_link_ops = &sit_link_ops;
- 
- 	dev_hold(dev);
-@@ -1317,6 +1316,7 @@ static int ipip6_tunnel_change_mtu(struct net_device *dev, int new_mtu)
- }
- 
- static const struct net_device_ops ipip6_netdev_ops = {
-+	.ndo_init	= ipip6_tunnel_init,
- 	.ndo_uninit	= ipip6_tunnel_uninit,
- 	.ndo_start_xmit	= sit_tunnel_xmit,
- 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
-@@ -1360,9 +1360,7 @@ static int ipip6_tunnel_init(struct net_device *dev)
- 
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
+-	/*
+-	 * If IRET takes a fault on the espfix stack, then we
+-	 * end up promoting it to a doublefault.  In that case,
+-	 * modify the stack to make it look like we just entered
+-	 * the #GP handler from user space, similar to bad_iret.
+-	 */
+-#ifdef CONFIG_X86_ESPFIX64
+-	ALIGN
+-__do_double_fault:
+-	XCPT_FRAME 1 RDI+8
+-	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
+-	sarq $PGDIR_SHIFT,%rax
+-	cmpl $ESPFIX_PGD_ENTRY,%eax
+-	jne do_double_fault		/* No, just deliver the fault */
+-	cmpl $__KERNEL_CS,CS(%rdi)
+-	jne do_double_fault
+-	movq RIP(%rdi),%rax
+-	cmpq $native_irq_return_iret,%rax
+-	jne do_double_fault		/* This shouldn't happen... */
+-	movq PER_CPU_VAR(kernel_stack),%rax
+-	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
+-	movq %rax,RSP(%rdi)
+-	movq $0,(%rax)			/* Missing (lost) #GP error code */
+-	movq $general_protection,RIP(%rdi)
+-	retq
+-	CFI_ENDPROC
+-END(__do_double_fault)
+-#else
+-# define __do_double_fault do_double_fault
+-#endif
 -
--	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
--	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
-+	strcpy(tunnel->parms.name, dev->name);
+ /*
+  * End of kprobes section
+  */
+@@ -1379,7 +1349,7 @@ zeroentry overflow do_overflow
+ zeroentry bounds do_bounds
+ zeroentry invalid_op do_invalid_op
+ zeroentry device_not_available do_device_not_available
+-paranoiderrorentry double_fault __do_double_fault
++paranoiderrorentry double_fault do_double_fault
+ zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
+ errorentry invalid_TSS do_invalid_TSS
+ errorentry segment_not_present do_segment_not_present
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 43eac01..d2451ad 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -232,6 +232,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ 	static const char str[] = "double fault";
+ 	struct task_struct *tsk = current;
  
- 	ipip6_tunnel_bind_dev(dev);
- 	dev->tstats = alloc_percpu(struct pcpu_tstats);
-@@ -1388,7 +1386,6 @@ static int __net_init ipip6_fb_tunnel_init(struct net_device *dev)
- 
- 	tunnel->dev = dev;
- 	tunnel->net = dev_net(dev);
--	strcpy(tunnel->parms.name, dev->name);
- 
- 	iph->version		= 4;
- 	iph->protocol		= IPPROTO_IPV6;
++#ifdef CONFIG_X86_ESPFIX64
++	extern unsigned char native_irq_return_iret[];
++
++	/*
++	 * If IRET takes a non-IST fault on the espfix64 stack, then we
++	 * end up promoting it to a doublefault.  In that case, modify
++	 * the stack to make it look like we just entered the #GP
++	 * handler from user space, similar to bad_iret.
++	 */
++	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
++		regs->cs == __KERNEL_CS &&
++		regs->ip == (unsigned long)native_irq_return_iret)
++	{
++		struct pt_regs *normal_regs = task_pt_regs(current);
++
++		/* Fake a #GP(0) from userspace. */
++		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
++		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
++		regs->ip = (unsigned long)general_protection;
++		regs->sp = (unsigned long)&normal_regs->orig_ax;
++		return;
++	}
++#endif
++
+ 	exception_enter();
+ 	/* Return not checked because double check cannot be ignored */
+ 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
 -- 
 1.9.1
 
