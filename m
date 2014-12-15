@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368AbaLOKX2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:23:28 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:44651 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaLOKXZ (ORCPT
+	id S1752113AbaLOKZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:25:29 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:32418 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaLOKZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:23:25 -0500
-Date: Mon, 15 Dec 2014 11:23:21 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>,
+	Mon, 15 Dec 2014 05:25:27 -0500
+Date: Mon, 15 Dec 2014 13:25:02 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>, devel@driverdev.osuosl.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] usb: serial: handle -ENODEV and -EPROTO quietly
-Message-ID: <20141215102321.GD6778@localhost>
-References: <1418340594-30469-1-git-send-email-jmmahler@gmail.com>
+        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>,
+        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org,
+        Greg Donald <gdonald@gmail.com>
+Subject: Re: [PATCH] staging: lustre: lustre: osc: lproc_osc.c: Fix for
+ possible null pointer dereference
+Message-ID: <20141215102502.GB4856@mwanda>
+References: <1418596638-24646-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418340594-30469-1-git-send-email-jmmahler@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1418596638-24646-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 03:29:52PM -0800, Jeremiah Mahler wrote:
-> If a USB serial device (e.g. /dev/ttyUSB0) with an active program is
-> unplugged, a bunch of -ENODEV and -EPROTO errors will be produced in the
-> logs.  This patch set quiets these messages without changing the
-> original behavior.
+On Sun, Dec 14, 2014 at 11:37:18PM +0100, Rickard Strandqvist wrote:
+> There is otherwise a risk of a possible null pointer dereference.
+> 
+> Was largely found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/staging/lustre/lustre/osc/lproc_osc.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+> index 9f719bc..9ba6293 100644
+> --- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
+> +++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+> @@ -237,13 +237,15 @@ static ssize_t osc_cur_grant_bytes_seq_write(struct file *file, const char *buff
+>  				  size_t count, loff_t *off)
+>  {
+>  	struct obd_device *obd = ((struct seq_file *)file->private_data)->private;
+> -	struct client_obd *cli = &obd->u.cli;
+> +	struct client_obd *cli;
 
-Don't unplug devices that are in use then. ;)
+This isn't really a dereference.  You're just getting the address of
+obd->u.cli.  So if obd is NULL then it won't crash.
 
-> This change is beneficial when using daemons such as slcand, which is
-> similar to pppd or slip, that cannot determine whether they should exit
-> until after the USB serial device is unplugged.  Producing these error
-> messages for a normal use case is not helpful.
+regards,
+dan carpenter
 
-Your patches would hide these errors when they occur during normal use
-(e.g. EPROTO).
-
-Receiving an error message when unplugging an active device should not
-surprise anyone. And at least you know where it came from (and it's
-right there in the logs as well).
-
-Johan
