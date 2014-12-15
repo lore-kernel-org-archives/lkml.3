@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaLOTd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:33:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41004 "EHLO
+	id S1752703AbaLOTeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:34:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41028 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752603AbaLOTdt (ORCPT
+	with ESMTP id S1752667AbaLOTeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:49 -0500
+	Mon, 15 Dec 2014 14:34:02 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hugh Dickins <hughd@google.com>, Kelley Nielsen <kelleynnn@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Devin Ryles <devin.ryles@intel.com>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 81/96] mm: fix swapoff hang after page migration and fork
-Date: Mon, 15 Dec 2014 11:26:41 -0800
-Message-Id: <1418671616-25482-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 74/96] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
+Date: Mon, 15 Dec 2014 11:26:34 -0800
+Message-Id: <1418671616-25482-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -29,73 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Devin Ryles <devin.ryles@intel.com>
 
-commit 2022b4d18a491a578218ce7a4eca8666db895a73 upstream.
+commit 249cd0a187ed4ef1d0af7f74362cc2791ec5581b upstream.
 
-I've been seeing swapoff hangs in recent testing: it's cycling around
-trying unsuccessfully to find an mm for some remaining pages of swap.
+This patch adds DeviceIDs for Sunrise Point-LP.
 
-I have been exercising swap and page migration more heavily recently,
-and now notice a long-standing error in copy_one_pte(): it's trying to
-add dst_mm to swapoff's mmlist when it finds a swap entry, but is doing
-so even when it's a migration entry or an hwpoison entry.
-
-Which wouldn't matter much, except it adds dst_mm next to src_mm,
-assuming src_mm is already on the mmlist: which may not be so.  Then if
-pages are later swapped out from dst_mm, swapoff won't be able to find
-where to replace them.
-
-There's already a !non_swap_entry() test for stats: move that up before
-the swap_duplicate() and the addition to mmlist.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: Kelley Nielsen <kelleynnn@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/memory.c | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/ata/ahci.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index e3c11e4..806477d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -807,20 +807,20 @@ copy_one_pte(struct mm_struct *dst_mm, struct mm_struct *src_mm,
- 		if (!pte_file(pte)) {
- 			swp_entry_t entry = pte_to_swp_entry(pte);
- 
--			if (swap_duplicate(entry) < 0)
--				return entry.val;
--
--			/* make sure dst_mm is on swapoff's mmlist. */
--			if (unlikely(list_empty(&dst_mm->mmlist))) {
--				spin_lock(&mmlist_lock);
--				if (list_empty(&dst_mm->mmlist))
--					list_add(&dst_mm->mmlist,
--						 &src_mm->mmlist);
--				spin_unlock(&mmlist_lock);
--			}
--			if (likely(!non_swap_entry(entry)))
-+			if (likely(!non_swap_entry(entry))) {
-+				if (swap_duplicate(entry) < 0)
-+					return entry.val;
-+
-+				/* make sure dst_mm is on swapoff's mmlist. */
-+				if (unlikely(list_empty(&dst_mm->mmlist))) {
-+					spin_lock(&mmlist_lock);
-+					if (list_empty(&dst_mm->mmlist))
-+						list_add(&dst_mm->mmlist,
-+							 &src_mm->mmlist);
-+					spin_unlock(&mmlist_lock);
-+				}
- 				rss[MM_SWAPENTS]++;
--			else if (is_migration_entry(entry)) {
-+			} else if (is_migration_entry(entry)) {
- 				page = migration_entry_to_page(entry);
- 
- 				if (PageAnon(page))
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 12fc8d7..ccb972e 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -320,6 +320,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
 -- 
 1.9.1
 
