@@ -1,131 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaLODre (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 22:47:34 -0500
-Received: from mail-by2on0115.outbound.protection.outlook.com ([207.46.100.115]:60640
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751220AbaLODrc convert rfc822-to-8bit (ORCPT
+	id S1751271AbaLODxc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 22:53:32 -0500
+Received: from relmlor2.renesas.com ([210.160.252.172]:11308 "EHLO
+	relmlie1.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750889AbaLODx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 22:47:32 -0500
-From: Dudley Du <dudl@cypress.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>, Dudley Du <dudley.dulixin@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v14 00/12] input: cyapa: instruction of cyapa patches
-Thread-Topic: [PATCH v14 00/12] input: cyapa: instruction of cyapa patches
-Thread-Index: AQHQFbNUBWvnsWuXMEGk2Gsm9ivjwZyNULWAgAKgv9A=
-Date: Mon, 15 Dec 2014 03:47:27 +0000
-Message-ID: <BN1PR06MB070AB76B648BF8E314E7969D16F0@BN1PR06MB070.namprd06.prod.outlook.com>
-References: <1418351262-8163-1-git-send-email-dudley.dulixin@gmail.com>
- <20141213101753.GA9290@newt.localdomain>
-In-Reply-To: <20141213101753.GA9290@newt.localdomain>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.95.211.187]
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB072;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB072;
-x-forefront-prvs: 04267075BD
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(24454002)(51164003)(51704005)(13464003)(199003)(189002)(4396001)(76576001)(87936001)(46102003)(74316001)(31966008)(99396003)(120916001)(86362001)(122556002)(105586002)(106356001)(68736005)(99286002)(106116001)(101416001)(97736003)(33656002)(62966003)(66066001)(102836002)(77156002)(19580395003)(2656002)(54206007)(20776003)(64706001)(40100003)(15975445007)(107046002)(54606007)(50986999)(92566001)(19580405001)(54356999)(21056001)(76176999);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB072;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: cypress.com
+	Sun, 14 Dec 2014 22:53:28 -0500
+X-IronPort-AV: E=Sophos;i="5.07,577,1413212400"; 
+   d="scan'208";a="176814564"
+Message-ID: <87zjaptvp8.wl%kuninori.morimoto.gx@renesas.com>
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+To: Matthias Brugger <matthias.bgg@gmail.com>, Rob Herring <robh@kernel.org>,
+        Mark Brown <broonie@kernel.org>
+CC: Jason Cooper <jason@lakedaemon.net>, Heiko Stuebner <heiko@sntech.de>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        ALSA Development Mailing List <alsa-devel@alsa-project.org>,
+        <linux-tegra@vger.kernel.org>, Stephen Warren <swarren@wwwdotorg.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        Magnus <magnus.damm@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Joe Perches <joe@perches.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: [PATCH v5][resend v2] of: replace Asahi Kasei Corp vendor prefix
+In-Reply-To: <87d282sl6w.wl%kuninori.morimoto.gx@renesas.com>
+References: <878ulzx6hr.wl%kuninori.morimoto.gx@gmail.com>
+	<20140922130026.GK3290@leverpostej>
+	<CAMuHMdX22z97SbGS1HDiYfJ1PXxyEN2S8D7w4sr+4bUwD+mJZw@mail.gmail.com>
+	<20140922132743.GM3290@leverpostej>
+	<87y4rfhmgl.wl%kuninori.morimoto.gx@renesas.com>
+	<1415845309.4269.6.camel@perches.com>
+	<20141113025105.GA16652@verge.net.au>
+	<87vbmjhj00.wl%kuninori.morimoto.gx@renesas.com>
+	<20141113110740.GE3815@sirena.org.uk>
+	<87k32yd0bd.wl%kuninori.morimoto.gx@renesas.com>
+	<20141114093554.GC3810@ulmo>
+	<87y4ra8xac.wl%kuninori.morimoto.gx@renesas.com>
+	<5469CD47.3040409@cogentembedded.com>
+	<877fytxsde.wl%kuninori.morimoto.gx@renesas.com>
+	<87egsob2cl.wl%kuninori.morimoto.gx@renesas.com>
+	<5478603D.1080404@cogentembedded.com>
+	<87d282sl6w.wl%kuninori.morimoto.gx@renesas.com>
+User-Agent: Wanderlust/2.14.0 Emacs/23.3 Mule/6.0
+MIME-Version: 1.0 (generated by SEMI 1.14.6 - "Maruoka")
+Content-Type: text/plain; charset="US-ASCII"
+Date: Mon, 15 Dec 2014 03:53:21 +0000
+X-Originating-IP: [211.11.155.132]
+X-ClientProxiedBy: SINPR01CA0032.apcprd01.prod.exchangelabs.com
+ (10.141.109.32) To HKNPR06MB162.apcprd06.prod.outlook.com (10.242.104.19)
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:HKNPR06MB162;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:HKNPR06MB162;
+X-Forefront-PRVS: 04267075BD
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(54356999)(50986999)(46102003)(106356001)(23726002)(21056001)(31966008)(36756003)(105586002)(120916001)(76176999)(99396003)(69596002)(68736005)(81156004)(87976001)(229853001)(92566001)(62966003)(107046002)(77156002)(40100003)(86362001)(77096005)(122386002)(66066001)(83506001)(42186005)(33646002)(97736003)(64706001)(101416001)(47776003)(20776003)(93886004)(19580405001)(53416004)(19580395003)(50466002)(4396001)(46406003)(7059030);DIR:OUT;SFP:1102;SCL:1;SRVR:HKNPR06MB162;H:remon.renesas.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:HKNPR06MB162;
+X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremiah,
+From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
 
-Thanks for your information.
-I will fix the space check warnning.
+Current vendor-prefixes.txt already has "ak" prefix for Asahi Kasei Corp
+by ae8c4209af2c(of: Add vendor prefix for Asahi Kasei Corp.)
 
-Are there any other driver check tools that need to be run?
+It went through the appropriate review process. But, almost all
+Asahi Kasei chip drivers are using "asahi-kasei" prefix today.
+(arch/arm/boot/dts/tegra20-seaboard.dts only is using "ak,ak8975",
+ but there are instances of "asahi-kasei,ak8975" in other dts files.
+ And drivers/iio/magnetometer/ak8975.c doesn't support "ak,ak8975" prefix)
+So, we made a mistake there.
 
-Thanks.
-Dudley
+In addition, checkpatch.pl reports WARNING if it is using "asahi-kasei"
+prerfix in DT file.
+(DT compatible string vendor "asahi-kasei" appears un-documented)
 
-> -----Original Message-----
-> From: linux-input-owner@vger.kernel.org
-> [mailto:linux-input-owner@vger.kernel.org] On Behalf Of Jeremiah Mahler
-> Sent: 2014?12?13? 18:18
-> To: Dudley Du
-> Cc: linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v14 00/12] input: cyapa: instruction of cyapa patches
->
-> Dudley,
->
-> On Fri, Dec 12, 2014 at 10:27:30AM +0800, Dudley Du wrote:
-> > V14 patches have below updates, details of other updates see history list:
-> > 1) Correct 9 miss spelling issues of "bufferred" to "buffered".
-> > 2) Fix the upgrade issue of removing MOUSE_CYAPA config when make oldconfig
-> >    by replase "depends on I2C && CRC_ITU_T" with
-> > "depends on I2C"
-> > "select CRC_ITU_T"
-> >    in patch 9.
-> >
-> [...]
->
-> I found some sparse warnings that should be fixed.
->
->   jeri@newt:~/linux-next$ touch drivers/input/mouse/*.c
->   jeri@newt:~/linux-next$ touch drivers/input/mouse/*.h
->   jeri@newt:~/linux-next$ make C=1
->     CHK     include/config/kernel.release
->     CHK     include/generated/uapi/linux/version.h
->     CHK     include/generated/utsrelease.h
->     CALL    scripts/checksyscalls.sh
->     CHK     include/generated/compile.h
->     CHK     kernel/config_data.h
->     CHECK   drivers/input/mouse/cyapa.c
->   drivers/input/mouse/cyapa.c:43:9: warning: symbol 'cyapa_i2c_read' was
->   not declared. Should it be static?
->   drivers/input/mouse/cyapa.c:80:9: warning: symbol 'cyapa_i2c_write' was
->   not declared. Should it be static?
->   drivers/input/mouse/cyapa.c:289:5: warning: symbol 'cyapa_detect' was
->   not declared. Should it be static?
->     CC [M]  drivers/input/mouse/cyapa.o
->     CHECK   drivers/input/mouse/cyapa_gen3.c
->   drivers/input/mouse/cyapa_gen3.c:299:5: warning: symbol
->   'cyapa_read_byte' was not declared. Should it be static?
->   drivers/input/mouse/cyapa_gen3.c:312:5: warning: symbol
->   'cyapa_write_byte' was not declared. Should it be static?
->   drivers/input/mouse/cyapa_gen3.c:331:9: warning: symbol
->   'cyapa_i2c_reg_write_block' was not declared. Should it be static?
->     CC [M]  drivers/input/mouse/cyapa_gen3.o
->     CHECK   drivers/input/mouse/cyapa_gen5.c
->   drivers/input/mouse/cyapa_gen5.c:334:5: warning: symbol
->   'cyapa_empty_pip_output_data' was not declared. Should it be static?
->   drivers/input/mouse/cyapa_gen5.c:553:6: warning: symbol
->   'cyapa_gen5_sort_tsg_pip_bl_resp_data' was not declared. Should it be
->   static?
->   drivers/input/mouse/cyapa_gen5.c:568:6: warning: symbol
->   'cyapa_gen5_sort_tsg_pip_app_resp_data' was not declared. Should it be
->   static?
->   drivers/input/mouse/cyapa_gen5.c:595:6: warning: symbol
->   'cyapa_gen5_sort_application_launch_data' was not declared. Should it be
->   static?
->   drivers/input/mouse/cyapa_gen5.c:995:6: warning: symbol
->   'cyapa_gen5_sort_bl_exit_data' was not declared. Should it be static?
->   drivers/input/mouse/cyapa_gen5.c:1112:72: warning: Using plain integer
->   as NULL pointer
->     CC [M]  drivers/input/mouse/cyapa_gen5.o
->     LD [M]  drivers/input/mouse/cyapatp.o
->   Kernel: arch/x86/boot/bzImage is ready  (#127)
->     Building modules, stage 2.
->     MODPOST 187 modules
->     CC      drivers/input/mouse/cyapatp.mod.o
->     LDFINAL [M]  drivers/input/mouse/cyapatp.ko
->   jeri@newt:~/linux-next
->
-> --
-> - Jeremiah Mahler
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Marking it deprecated and warning with checkpatch is certainly
+preferable. So, this patch replace "ak" to "asahi-kasei" in
+vendor-prefixes.txt. (and fixup tegra20-seaboard)
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+OTOH, Asahi Kasei is usually referred to as "AKM", but this patch
+doesn't care about it. Because no DT is using that today.
+
+Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Acked-by: Thierry Reding <treding@nvidia.com>
+Acked-by: Alexandre Courbot <acourbot@nvidia.com>
+---
+Rob, Mark
+
+There is no response about this patch.
+Mark, is it possible to care about this patch ?
+It has relationship to ASoC.
+
+ .../devicetree/bindings/vendor-prefixes.txt        |    2 +-
+ arch/arm/boot/dts/tegra20-seaboard.dts             |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 723999d..ddcb4cd 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -9,7 +9,6 @@ ad	Avionic Design GmbH
+ adapteva	Adapteva, Inc.
+ adi	Analog Devices, Inc.
+ aeroflexgaisler	Aeroflex Gaisler AB
+-ak	Asahi Kasei Corp.
+ allwinner	Allwinner Technology Co., Ltd.
+ altr	Altera Corp.
+ amcc	Applied Micro Circuits Corporation (APM, formally AMCC)
+@@ -20,6 +19,7 @@ amstaos	AMS-Taos Inc.
+ apm	Applied Micro Circuits Corporation (APM)
+ arm	ARM Ltd.
+ armadeus	ARMadeus Systems SARL
++asahi-kasei	Asahi Kasei Corp.
+ atmel	Atmel Corporation
+ auo	AU Optronics Corporation
+ avago	Avago Technologies
+diff --git a/arch/arm/boot/dts/tegra20-seaboard.dts b/arch/arm/boot/dts/tegra20-seaboard.dts
+index a1d4bf9..7f5cf80 100644
+--- a/arch/arm/boot/dts/tegra20-seaboard.dts
++++ b/arch/arm/boot/dts/tegra20-seaboard.dts
+@@ -405,7 +405,7 @@
+ 		clock-frequency = <400000>;
+ 
+ 		magnetometer@c {
+-			compatible = "ak,ak8975";
++			compatible = "asahi-kasei,ak8975";
+ 			reg = <0xc>;
+ 			interrupt-parent = <&gpio>;
+ 			interrupts = <TEGRA_GPIO(N, 5) IRQ_TYPE_LEVEL_HIGH>;
+-- 
+1.7.9.5
+
