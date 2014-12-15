@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662AbaLOOhg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:37:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38897 "EHLO
+	id S1753606AbaLOOh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:37:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38914 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339AbaLOO3B (ORCPT
+	with ESMTP id S1753027AbaLOO3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:01 -0500
+	Mon, 15 Dec 2014 09:29:03 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Devin Ryles <devin.ryles@intel.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 136/168] drm/i915: More cautious with pch fifo underruns
-Date: Mon, 15 Dec 2014 14:26:30 +0000
-Message-Id: <1418653622-21105-137-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 138/168] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
+Date: Mon, 15 Dec 2014 14:26:32 +0000
+Message-Id: <1418653622-21105-139-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,59 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Devin Ryles <devin.ryles@intel.com>
 
-commit b68362278af94e1171f5be9d4e44988601fb0439 upstream.
+commit 249cd0a187ed4ef1d0af7f74362cc2791ec5581b upstream.
 
-Apparently PCH fifo underruns are tricky, we have plenty reports that
-we see the occasional underrun (especially at boot-up).
+This patch adds DeviceIDs for Sunrise Point-LP.
 
-So for a change let's see what happens when we don't re-enable pch
-fifo underrun reporting when the pipe is disabled. This means that the
-kernel can't catch pch fifo underruns when they happen (except when
-all pipes are on on the pch). But we'll still catch underruns when
-disabling the pipe again. So not a terrible reduction in test
-coverage.
-
-Since the DRM_ERROR is new and hence a regression plan B would be to
-revert it back to a debug output. Which would be a lot worse than this
-hack for underrun test coverage in the wild. See the referenced
-discussions for more.
-
-References: http://mid.gmane.org/CA+gsUGRfGe3t4NcjdeA=qXysrhLY3r4CEu7z4bjTwxi1uOfy+g@mail.gmail.com
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=85898
-References: https://bugs.freedesktop.org/show_bug.cgi?id=85898
-References: https://bugs.freedesktop.org/show_bug.cgi?id=86233
-References: https://bugs.freedesktop.org/show_bug.cgi?id=86478
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-Tested-by: lu hua <huax.lu@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/ata/ahci.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 6b835b86fbfd..abed8ee8e2d7 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4183,7 +4183,6 @@ static void ironlake_crtc_disable(struct drm_crtc *crtc)
- 		ironlake_fdi_disable(crtc);
- 
- 		ironlake_disable_pch_transcoder(dev_priv, pipe);
--		intel_set_pch_fifo_underrun_reporting(dev, pipe, true);
- 
- 		if (HAS_PCH_CPT(dev)) {
- 			/* disable TRANS_DP_CTL */
-@@ -4250,7 +4249,6 @@ static void haswell_crtc_disable(struct drm_crtc *crtc)
- 
- 	if (intel_crtc->config.has_pch_encoder) {
- 		lpt_disable_pch_transcoder(dev_priv);
--		intel_set_pch_fifo_underrun_reporting(dev, TRANSCODER_A, true);
- 		intel_ddi_fdi_disable(crtc);
- 	}
- 
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 99c9a2b5f377..5fc11a616a7a 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -321,6 +321,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
+ 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI */
++	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
++	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
+ 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
+ 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
 -- 
 2.1.3
 
