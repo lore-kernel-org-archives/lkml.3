@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaLOVdd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:33:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48708 "EHLO mx1.redhat.com"
+	id S1751456AbaLOVdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:33:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36520 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaLOVd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:33:27 -0500
-Date: Mon, 15 Dec 2014 23:33:09 +0200
+	id S1751418AbaLOVdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:33:33 -0500
+Date: Mon, 15 Dec 2014 23:33:24 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
-        cornelia.huck@de.ibm.com, Michael S Tsirkin <mst@redhat.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
-Subject: [PATCH RFC 1/5] pci: add pci_iomap_range
-Message-ID: <1418679168-1011-2-git-send-email-mst@redhat.com>
+        cornelia.huck@de.ibm.com, linux-api@vger.kernel.org
+Subject: [PATCH RFC 5/5] virtio_pci: macros for PCI layout offsets.
+Message-ID: <1418679168-1011-6-git-send-email-mst@redhat.com>
 References: <1418679168-1011-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,115 +24,136 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael S Tsirkin <mst@redhat.com>
+QEMU wants it, so why not?  Trust, but verify.
 
-Virtio drivers should map the part of the BAR they need, not necessarily
-all of it.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 ---
- include/asm-generic/pci_iomap.h | 10 ++++++++++
- lib/pci_iomap.c                 | 35 ++++++++++++++++++++++++++++++-----
- 2 files changed, 40 insertions(+), 5 deletions(-)
+ include/uapi/linux/virtio_pci.h    | 30 ++++++++++++++++++
+ drivers/virtio/virtio_pci_modern.c | 63 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 93 insertions(+)
 
-diff --git a/include/asm-generic/pci_iomap.h b/include/asm-generic/pci_iomap.h
-index ce37349..7389c87 100644
---- a/include/asm-generic/pci_iomap.h
-+++ b/include/asm-generic/pci_iomap.h
-@@ -15,6 +15,9 @@ struct pci_dev;
- #ifdef CONFIG_PCI
- /* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
- extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
-+extern void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+				     unsigned long offset,
-+				     unsigned long maxlen);
- /* Create a virtual mapping cookie for a port on a given PCI device.
-  * Do not call this directly, it exists to make it easier for architectures
-  * to override */
-@@ -30,6 +33,13 @@ static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned lon
- {
- 	return NULL;
- }
+diff --git a/include/uapi/linux/virtio_pci.h b/include/uapi/linux/virtio_pci.h
+index 28c2ce0..5d546c6 100644
+--- a/include/uapi/linux/virtio_pci.h
++++ b/include/uapi/linux/virtio_pci.h
+@@ -159,6 +159,36 @@ struct virtio_pci_common_cfg {
+ 	__le32 queue_used_hi;		/* read-write */
+ };
+ 
++/* Macro versions of offsets for the Old Timers! */
++#define VIRTIO_PCI_CAP_VNDR		0
++#define VIRTIO_PCI_CAP_NEXT		1
++#define VIRTIO_PCI_CAP_LEN		2
++#define VIRTIO_PCI_CAP_TYPE_AND_BAR	3
++#define VIRTIO_PCI_CAP_OFFSET		4
++#define VIRTIO_PCI_CAP_LENGTH		8
 +
-+static inline void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+					    unsigned long offset,
-+					    unsigned long maxlen)
-+{
-+	return NULL;
-+}
++#define VIRTIO_PCI_NOTIFY_CAP_MULT	12
++
++#define VIRTIO_PCI_COMMON_DFSELECT	0
++#define VIRTIO_PCI_COMMON_DF		4
++#define VIRTIO_PCI_COMMON_GFSELECT	8
++#define VIRTIO_PCI_COMMON_GF		12
++#define VIRTIO_PCI_COMMON_MSIX		16
++#define VIRTIO_PCI_COMMON_NUMQ		18
++#define VIRTIO_PCI_COMMON_STATUS	20
++#define VIRTIO_PCI_COMMON_CFGGENERATION	21
++#define VIRTIO_PCI_COMMON_Q_SELECT	22
++#define VIRTIO_PCI_COMMON_Q_SIZE	24
++#define VIRTIO_PCI_COMMON_Q_MSIX	26
++#define VIRTIO_PCI_COMMON_Q_ENABLE	28
++#define VIRTIO_PCI_COMMON_Q_NOFF	30
++#define VIRTIO_PCI_COMMON_Q_DESCLO	32
++#define VIRTIO_PCI_COMMON_Q_DESCHI	36
++#define VIRTIO_PCI_COMMON_Q_AVAILLO	40
++#define VIRTIO_PCI_COMMON_Q_AVAILHI	44
++#define VIRTIO_PCI_COMMON_Q_USEDLO	48
++#define VIRTIO_PCI_COMMON_Q_USEDHI	52
++
+ #endif /* VIRTIO_PCI_NO_MODERN */
+ 
  #endif
- 
- #endif /* __ASM_GENERIC_IO_H */
-diff --git a/lib/pci_iomap.c b/lib/pci_iomap.c
-index 0d83ea8..bcce5f1 100644
---- a/lib/pci_iomap.c
-+++ b/lib/pci_iomap.c
-@@ -10,10 +10,11 @@
- 
- #ifdef CONFIG_PCI
- /**
-- * pci_iomap - create a virtual mapping cookie for a PCI BAR
-+ * pci_iomap_range - create a virtual mapping cookie for a PCI BAR
-  * @dev: PCI device that owns the BAR
-  * @bar: BAR number
-- * @maxlen: length of the memory to map
-+ * @offset: map memory at the given offset in BAR
-+ * @maxlen: max length of the memory to map
-  *
-  * Using this function you will get a __iomem address to your device BAR.
-  * You can access it using ioread*() and iowrite*(). These functions hide
-@@ -21,16 +22,21 @@
-  * you expect from them in the correct way.
-  *
-  * @maxlen specifies the maximum length to map. If you want to get access to
-- * the complete BAR without checking for its length first, pass %0 here.
-+ * the complete BAR from offset to the end, pass %0 here.
-  * */
--void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-+void __iomem *pci_iomap_range(struct pci_dev *dev,
-+			      int bar,
-+			      unsigned long offset,
-+			      unsigned long maxlen)
- {
- 	resource_size_t start = pci_resource_start(dev, bar);
- 	resource_size_t len = pci_resource_len(dev, bar);
- 	unsigned long flags = pci_resource_flags(dev, bar);
- 
--	if (!len || !start)
-+	if (len <= offset || !start)
- 		return NULL;
-+	len -= offset;
-+	start += offset;
- 	if (maxlen && len > maxlen)
- 		len = maxlen;
- 	if (flags & IORESOURCE_IO)
-@@ -43,6 +49,25 @@ void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
- 	/* What? */
- 	return NULL;
+diff --git a/drivers/virtio/virtio_pci_modern.c b/drivers/virtio/virtio_pci_modern.c
+index 636666c..5b0c012 100644
+--- a/drivers/virtio/virtio_pci_modern.c
++++ b/drivers/virtio/virtio_pci_modern.c
+@@ -446,6 +446,67 @@ static inline int virtio_pci_find_capability(struct pci_dev *dev, u8 cfg_type,
+ 	return 0;
  }
-+EXPORT_SYMBOL(pci_iomap_range);
  
-+/**
-+ * pci_iomap - create a virtual mapping cookie for a PCI BAR
-+ * @dev: PCI device that owns the BAR
-+ * @bar: BAR number
-+ * @maxlen: length of the memory to map
-+ *
-+ * Using this function you will get a __iomem address to your device BAR.
-+ * You can access it using ioread*() and iowrite*(). These functions hide
-+ * the details if this is a MMIO or PIO address space and will just do what
-+ * you expect from them in the correct way.
-+ *
-+ * @maxlen specifies the maximum length to map. If you want to get access to
-+ * the complete BAR without checking for its length first, pass %0 here.
-+ * */
-+void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
++/* This is part of the ABI.  Don't screw with it. */
++static inline void check_offsets(void)
 +{
-+	return pci_iomap_range(dev, bar, 0, maxlen);
++	/* Note: disk space was harmed in compilation of this function. */
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_VNDR !=
++		     offsetof(struct virtio_pci_cap, cap_vndr));
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_NEXT !=
++		     offsetof(struct virtio_pci_cap, cap_next));
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_LEN !=
++		     offsetof(struct virtio_pci_cap, cap_len));
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_TYPE_AND_BAR !=
++		     offsetof(struct virtio_pci_cap, type_and_bar));
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_OFFSET !=
++		     offsetof(struct virtio_pci_cap, offset));
++	BUILD_BUG_ON(VIRTIO_PCI_CAP_LENGTH !=
++		     offsetof(struct virtio_pci_cap, length));
++	BUILD_BUG_ON(VIRTIO_PCI_NOTIFY_CAP_MULT !=
++		     offsetof(struct virtio_pci_notify_cap,
++			      notify_off_multiplier));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_DFSELECT !=
++		     offsetof(struct virtio_pci_common_cfg,
++			      device_feature_select));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_DF !=
++		     offsetof(struct virtio_pci_common_cfg, device_feature));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_GFSELECT !=
++		     offsetof(struct virtio_pci_common_cfg,
++			      guest_feature_select));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_GF !=
++		     offsetof(struct virtio_pci_common_cfg, guest_feature));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_MSIX !=
++		     offsetof(struct virtio_pci_common_cfg, msix_config));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_NUMQ !=
++		     offsetof(struct virtio_pci_common_cfg, num_queues));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_STATUS !=
++		     offsetof(struct virtio_pci_common_cfg, device_status));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_CFGGENERATION !=
++		     offsetof(struct virtio_pci_common_cfg, config_generation));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_SELECT !=
++		     offsetof(struct virtio_pci_common_cfg, queue_select));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_SIZE !=
++		     offsetof(struct virtio_pci_common_cfg, queue_size));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_MSIX !=
++		     offsetof(struct virtio_pci_common_cfg, queue_msix_vector));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_ENABLE !=
++		     offsetof(struct virtio_pci_common_cfg, queue_enable));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_NOFF !=
++		     offsetof(struct virtio_pci_common_cfg, queue_notify_off));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_DESCLO !=
++		     offsetof(struct virtio_pci_common_cfg, queue_desc_lo));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_DESCHI !=
++		     offsetof(struct virtio_pci_common_cfg, queue_desc_hi));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_AVAILLO !=
++		     offsetof(struct virtio_pci_common_cfg, queue_avail_lo));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_AVAILHI !=
++		     offsetof(struct virtio_pci_common_cfg, queue_avail_hi));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_USEDLO !=
++		     offsetof(struct virtio_pci_common_cfg, queue_used_lo));
++	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_USEDHI !=
++		     offsetof(struct virtio_pci_common_cfg, queue_used_hi));
 +}
- EXPORT_SYMBOL(pci_iomap);
- #endif /* CONFIG_PCI */
++
+ /* the PCI probing function */
+ int virtio_pci_modern_probe(struct pci_dev *pci_dev,
+ 			    const struct pci_device_id *id)
+@@ -455,6 +516,8 @@ int virtio_pci_modern_probe(struct pci_dev *pci_dev,
+ 	struct virtio_device_id virtio_id;
+ 	u32 notify_length;
+ 
++	check_offsets();
++
+ 	/* We only own devices >= 0x1000 and <= 0x107f: leave the rest. */
+ 	if (pci_dev->device < 0x1000 || pci_dev->device > 0x107f)
+ 		return -ENODEV;
 -- 
 MST
 
