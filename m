@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237AbaLOMDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:03:01 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:55353 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaLOL7d (ORCPT
+	id S1752308AbaLOMDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:03:14 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60047 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256AbaLOMDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:59:33 -0500
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com, linux-mtd@lists.infradead.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com
-Subject: [PATCH v3 02/13] mtd: st_spi_fsm: Obtain and use EMI clock
-Date: Mon, 15 Dec 2014 11:59:09 +0000
-Message-Id: <1418644760-18773-3-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
-References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+	Mon, 15 Dec 2014 07:03:08 -0500
+Date: Mon, 15 Dec 2014 12:02:05 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Yakir Yang <ykk@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?utf-8?B?U3Tvv73vv71waGFuZQ==?= Marchesin <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Jyri Sarha <jsarha@ti.com>
+Message-ID: <20141215120205.GZ11764@sirena.org.uk>
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
+ <1418612114-19692-1-git-send-email-ykk@rock-chips.com>
+ <20141215104029.GE11285@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eVN8q1r3v0Uw6/qa"
+Content-Disposition: inline
+In-Reply-To: <20141215104029.GE11285@n2100.arm.linux.org.uk>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip
+ hdmi-audio
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's Common Clk Framework is now available. This patch ensures the FSM
-makes use of it by obtaining and enabling the EMI clock. If system fails
-to provide the EMI clock, we bomb out.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 38 insertions(+), 2 deletions(-)
+--eVN8q1r3v0Uw6/qa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 6e4d3bfe..fac0fe9 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -24,6 +24,7 @@
- #include <linux/delay.h>
- #include <linux/io.h>
- #include <linux/of.h>
-+#include <linux/clk.h>
- 
- #include "serial_flash_cmds.h"
- 
-@@ -262,6 +263,7 @@ struct stfsm {
- 	struct mtd_info		mtd;
- 	struct mutex		lock;
- 	struct flash_info       *info;
-+	struct clk              *clk;
- 
- 	uint32_t                configuration;
- 	uint32_t                fifo_dir_delay;
-@@ -1906,8 +1908,7 @@ static void stfsm_set_freq(struct stfsm *fsm, uint32_t spi_freq)
- 	uint32_t emi_freq;
- 	uint32_t clk_div;
- 
--	/* TODO: Make this dynamic */
--	emi_freq = STFSM_DEFAULT_EMI_FREQ;
-+	emi_freq = clk_get_rate(fsm->clk);
- 
- 	/*
- 	 * Calculate clk_div - values between 2 and 128
-@@ -2057,6 +2058,18 @@ static int stfsm_probe(struct platform_device *pdev)
- 		return PTR_ERR(fsm->base);
- 	}
- 
-+	fsm->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(fsm->clk)) {
-+		dev_err(fsm->dev, "Couldn't find EMI clock.\n");
-+		return PTR_ERR(fsm->clk);
-+	}
-+
-+	ret = clk_prepare_enable(fsm->clk);
-+	if (ret) {
-+		dev_err(fsm->dev, "Failed to enable EMI clock.\n");
-+		return ret;
-+	}
-+
- 	mutex_init(&fsm->lock);
- 
- 	ret = stfsm_init(fsm);
-@@ -2121,6 +2134,28 @@ static int stfsm_remove(struct platform_device *pdev)
- 	return mtd_device_unregister(&fsm->mtd);
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int stfsmfsm_suspend(struct device *dev)
-+{
-+	struct stfsm *fsm = dev_get_drvdata(dev);
-+
-+	clk_disable_unprepare(fsm->clk);
-+
-+	return 0;
-+}
-+
-+static int stfsmfsm_resume(struct device *dev)
-+{
-+	struct stfsm *fsm = dev_get_drvdata(dev);
-+
-+	clk_prepare_enable(fsm->clk);
-+
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(stfsm_pm_ops, stfsmfsm_suspend, stfsmfsm_resume);
-+
- static const struct of_device_id stfsm_match[] = {
- 	{ .compatible = "st,spi-fsm", },
- 	{},
-@@ -2134,6 +2169,7 @@ static struct platform_driver stfsm_driver = {
- 		.name	= "st-spi-fsm",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = stfsm_match,
-+		.pm     = &stfsm_pm_ops,
- 	},
- };
- module_platform_driver(stfsm_driver);
--- 
-1.9.1
+On Mon, Dec 15, 2014 at 10:40:29AM +0000, Russell King - ARM Linux wrote:
 
+> Including details like this (because ASoC needs a separate DT node) is
+> the wrong approach.
+
+And indeed there should be no Linux-internal reason for that - we should
+be able to use whatever DT node makes sense, if there's some reason
+that's not possible we should fix that (we do have several drivers doing
+this sort of thing already though).
+
+--eVN8q1r3v0Uw6/qa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUjs28AAoJECTWi3JdVIfQyuIIAIJDD10SCDDvHTyH/jpnvSpZ
+g7ObS21UKrw3LuBbQkIPqAow0ixm6c3NudWxv8C1QX74osQgpWMFljUlUUDWYARm
+Qbul4Sz49ab0HgNjV3848OQV0NmMGJLmEqCuAoCy0ayoHsUi3jJzgTFlQnfIvxr7
+3y1OGXiZ+BTJLntRbpGbuUHZe36Q7/9YaN8lC+PPQo1MuE26Iz+66SucWT1iYvpb
+i8KgkW5GATtGpWDSTZX/1SfE2kwwx5J9mWZs84MRe319mHHiL44CL6JboCnFt/Ev
+45v15Sba3caEFqwxZB5NwhTlPINfstYG2ZeO11gTScAHgF3jY6VSiD0keOcK4rQ=
+=9XaR
+-----END PGP SIGNATURE-----
+
+--eVN8q1r3v0Uw6/qa--
