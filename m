@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaLOL7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:59:55 -0500
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:49191 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaLOL7t (ORCPT
+	id S1751791AbaLOMAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:00:06 -0500
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:59280 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532AbaLOL76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:59:49 -0500
+	Mon, 15 Dec 2014 06:59:58 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com, linux-mtd@lists.infradead.org
-Cc: lee.jones@linaro.org, kernel@stlinux.com, Angus Clark <angus.clark@st.com>,
-        Carmelo Amoroso <carmelo.amoroso@st.com>
-Subject: [PATCH v3 09/13] mtd: st_spi_fsm: Update Spansion device entries
-Date: Mon, 15 Dec 2014 11:59:16 +0000
-Message-Id: <1418644760-18773-10-git-send-email-lee.jones@linaro.org>
+Cc: lee.jones@linaro.org, kernel@stlinux.com
+Subject: [PATCH v3 13/13] ARM: STi: stih416: Supply EMI clock reference to FSM SPI NOR
+Date: Mon, 15 Dec 2014 11:59:20 +0000
+Message-Id: <1418644760-18773-14-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
 References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
@@ -22,69 +21,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Angus Clark <angus.clark@st.com>
+While we're at it we're also adding a new human readable define for the
+aforementioned clock.
 
-This patch updates various Spansion device entries in the flash_types[] table:
-  - Define full 6-byte READIDs for S25FL128Sx devices (and fix the 4th
-    byte). This allows us to differentiate between S25FL129P and S25FL128S
-    devices.
-  - Add S25FL128Px device entries.
-
-Signed-off-by: Angus Clark <angus.clark@st.com>
-Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ arch/arm/boot/dts/stih416.dtsi           | 2 +-
+ include/dt-bindings/clock/stih416-clks.h | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 949745a..7c024ec 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -483,6 +483,7 @@ static struct flash_info flash_types[] = {
- 	/*
- 	 * Spansion S25FLxxxP
- 	 *     - 256KiB and 64KiB sector variants (identified by ext. JEDEC)
-+	 *     - S25FL128Px devices do not support DUAL or QUAD I/O
- 	 */
- #define S25FLXXXP_FLAG (FLASH_FLAG_READ_WRITE  |	\
- 			FLASH_FLAG_READ_1_1_2   |	\
-@@ -493,6 +494,12 @@ static struct flash_info flash_types[] = {
- 			FLASH_FLAG_READ_FAST)
- 	RDID_INFO("s25fl032p", RDID({0x01, 0x02, 0x15, 0x4d, 0x00}), 5,
- 		  64 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
-+	RDID_INFO("s25fl128p1", RDID({0x01, 0x20, 0x18, 0x03, 0x00}), 5,
-+		  256 * 1024, 64,
-+		  (FLASH_FLAG_READ_WRITE | FLASH_FLAG_READ_FAST), 104, NULL),
-+	RDID_INFO("s25fl128p0", RDID({0x01, 0x20, 0x18, 0x03, 0x01}), 5,
-+		  64 * 1024, 256,
-+		  (FLASH_FLAG_READ_WRITE | FLASH_FLAG_READ_FAST), 104, NULL),
- 	RDID_INFO("s25fl129p0", RDID({0x01, 0x20, 0x18, 0x4d, 0x00}), 5,
- 		  256 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
- 	RDID_INFO("s25fl129p1", RDID({0x01, 0x20, 0x18, 0x4d, 0x01}), 5,
-@@ -506,17 +513,18 @@ static struct flash_info flash_types[] = {
- 	 *       so this information is captured in the board's flags.
- 	 *     - Supports 'DYB' sector protection. Depending on variant, sectors
- 	 *       may default to locked state on power-on.
-+	 *     - S25FL127Sx handled as S25FL128Sx
- 	 */
- #define S25FLXXXS_FLAG (S25FLXXXP_FLAG         |	\
- 			FLASH_FLAG_RESET        |	\
- 			FLASH_FLAG_DYB_LOCKING)
--	RDID_INFO("s25fl128s0", RDID({0x01, 0x20, 0x18, 0x03, 0x00}), 5,
-+	RDID_INFO("s25fl128s0", RDID({0x01, 0x20, 0x18, 0x4d, 0x00, 0x80}), 6,
- 		  256 * 1024, 64, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
--	RDID_INFO("s25fl128s1", RDID({0x01, 0x20, 0x18, 0x03, 0x01}), 5,
-+	RDID_INFO("s25fl128s1", RDID({0x01, 0x20, 0x18, 0x4d, 0x01, 0x80}), 6,
- 		  64 * 1024, 256, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
--	RDID_INFO("s25fl256s0", RDID({0x01, 0x02, 0x19, 0x4d, 0x00}), 5,
-+	RDID_INFO("s25fl256s0", RDID({0x01, 0x02, 0x19, 0x4d, 0x00, 0x80}), 6,
- 		  256 * 1024, 128, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
--	RDID_INFO("s25fl256s1", RDID({0x01, 0x02, 0x19, 0x4d, 0x01}), 5,
-+	RDID_INFO("s25fl256s1", RDID({0x01, 0x02, 0x19, 0x4d, 0x01, 0x80}), 6,
- 		  64 * 1024, 512, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index dec546e..663e93b 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -217,7 +217,7 @@
+ 			compatible	   = "st,stih416-spi-fsm";
+ 			reg		   = <0xfe902000 0x1000>;
+ 			pinctrl-0	   = <&pinctrl_fsm>;
+-
++			clocks		   = <&clk_s_a0_ls CLK_EMISS>;
+ 			st,syscfg	   = <&syscfg_rear>;
  
- #define W25X_FLAG (FLASH_FLAG_READ_WRITE       |	\
+ 			status = "disabled";
+diff --git a/include/dt-bindings/clock/stih416-clks.h b/include/dt-bindings/clock/stih416-clks.h
+index f9bdbd1..4a46a47e 100644
+--- a/include/dt-bindings/clock/stih416-clks.h
++++ b/include/dt-bindings/clock/stih416-clks.h
+@@ -7,6 +7,7 @@
+ 
+ /* CLOCKGEN A0 */
+ #define CLK_ICN_REG		0
++#define CLK_EMISS		3
+ #define CLK_ETH1_PHY		4
+ 
+ /* CLOCKGEN A1 */
 -- 
 1.9.1
 
