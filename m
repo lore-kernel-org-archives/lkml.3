@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaLOKUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:20:34 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:54684 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbaLOKU3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:20:29 -0500
-Date: Mon, 15 Dec 2014 11:22:23 +0100
-From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Michael Welling <mwelling@ieee.org>,
-        Philippe Reynes <tremyfr@yahoo.fr>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [PATCH v2 2/2] iio: add driver for the TI DAC8554
-Message-ID: <20141215102223.GB6159@avionic-0071.adnet.avionic-design.de>
-References: <1416858614-32265-1-git-send-email-nikolaus.schulz@avionic-design.de>
- <1416858614-32265-2-git-send-email-nikolaus.schulz@avionic-design.de>
- <548C2335.7080301@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <548C2335.7080301@metafoo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:sA+FA2gAKmUu8CGwVeo5FU5CpgGIEQzXMqNucyKEyLbJxHlFG2e
- 2+M5jDn1zLvy9bA2H2ykNN7FDCukwwybmUAenOcEiHb0ZhxbZnuyl0bto+zqsxNlAGikQLm
- xwDO7vzzS2KM5m9DtT49KoDMEMN4tnCzWelpoW5smjptRc5Fx9GMXwJrIF1kEfTqLI2gVTC
- AfDgRrPHN/kP9DYHHWOiw==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1752238AbaLOKUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:20:53 -0500
+Received: from mga02.intel.com ([134.134.136.20]:50242 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751903AbaLOKUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 05:20:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,579,1413270000"; 
+   d="scan'208";a="654039627"
+Message-ID: <1418638849.17201.65.camel@linux.intel.com>
+Subject: Re: [PATCH 2/2] Input: gpio_keys - replace timer and workqueue with
+ delayed workqueue
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Laxman Dewangan <ldewangan@nvidia.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 15 Dec 2014 12:20:49 +0200
+In-Reply-To: <20141213190926.GD22702@dtor-ws>
+References: <20141208071930.GA20802@dtor-ws>
+	 <20141208072124.GA21031@dtor-ws>
+	 <1418236376.17201.57.camel@linux.intel.com>
+	 <20141213190926.GD22702@dtor-ws>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 12:29:57PM +0100, Lars-Peter Clausen wrote:
-> On 11/24/2014 08:50 PM, Nikolaus Schulz wrote:
-> [...]
-> >+const struct iio_chan_spec dac8554_channels[] = {
+On Sat, 2014-12-13 at 11:09 -0800, Dmitry Torokhov wrote:
+> Hi Andy,
 > 
-> static
+> On Wed, Dec 10, 2014 at 08:32:56PM +0200, Andy Shevchenko wrote:
+> > On Sun, 2014-12-07 at 23:21 -0800, Dmitry Torokhov wrote:
+> > > We do not need to roll our own implementation of delayed work now that we
+> > > have proper implementation of mod_delayed_work.
+> > > 
+> > > For interrupt-only driven buttons we retain the timer, but we rename
+> > > it to release_timer to better reflect its purpose.
+> > 
+> > At least it doesn't break the driver on Intel Medfield device.
+> > 
+> > Tested-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 > 
-> [...]
-> >+	ret = of_property_read_u32(spi->dev.of_node, "address", &addr);
-> 
-> This should probably have vendor prefix.
+> Thank you for testing it. Assume it is for both patches, right?
 
-Both fixed in v3, thanks!
+Right.
 
 -- 
-Avionic Design GmbH
-Nikolaus Schulz
-Wragekamp 10
-D-22397 Hamburg
-Germany
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
-Tel.:  +49 40 88187-163
-Fax:   +49 40 88187-150
-Email: nikolaus.schulz@avionic-design.de
-
-Avionic Design GmbH
-Amtsgericht Hamburg HRB 82598
-Geschäftsführung: Cornelis Broers
-Ust.-Ident-Nr.: DE813378254
