@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180AbaLOLwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:52:32 -0500
-Received: from regular1.263xmail.com ([211.150.99.137]:58311 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629AbaLOLw0 (ORCPT
+	id S1750805AbaLOL5G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:57:06 -0500
+Received: from relay.parallels.com ([195.214.232.42]:48950 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbaLOL5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:52:26 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: ykk@rock-chips.com
-X-FST-TO: jsarha@ti.com
-X-SENDER-IP: 104.167.231.7
-X-LOGIN-NAME: ykk@rock-chips.com
-X-UNIQUE-TAG: <24045990696865e737fc0cb66f454cb8>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <548ECB66.70004@rock-chips.com>
-Date: Mon, 15 Dec 2014 19:52:06 +0800
-From: "Kuankuan.Yang" <ykk@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 06:57:02 -0500
+Message-ID: <1418644618.6074.13.camel@tkhai>
+Subject: [PATCH] sched/fair: Fix sched_entity::avg::decay_count
+ initialization
+From: Kirill Tkhai <ktkhai@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Kirill Tkhai <tkhai@yandex.ru>
+Date: Mon, 15 Dec 2014 14:56:58 +0300
+Organization: Parallels
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, David Airlie <airlied@linux.ie>,
-        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
-        linux-rockchip@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Zhang <benzh@chromium.org>, devicetree@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Mark Rutland <mark.rutland@arm.com>, Jyri Sarha <jsarha@ti.com>
-Subject: Re: [RFC PATCH 0/6] Those patches is used for dw_hdmi audio.
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <20141215103830.GD11285@n2100.arm.linux.org.uk> <548EC9E1.5040206@rock-chips.com>
-In-Reply-To: <548EC9E1.5040206@rock-chips.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.26.172]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Russell:
 
-      thks for your replay, actually you also have send me those 
-dw-hdmi-audio.c patches, and I also agree it's an beautiful way to make 
-hdmi-audio works. Beside,
-  I try to reuse it into our platform, and actually the system have 
-created the DW_HDMI sound card successfully, but i cannot play any 
-sound  with this sound card.
-      After dump the registers, I found the part of "Audio DMA 
-Registers" cannot write and always read with 0x00.  So I searching the 
-document  "Designware Core
-  HDMI Transmitter Controller Databook", and found that  "Audio DMA 
-Registers" only present when the hardware configuration parameter 
-AUDIO_IF is set to
-  AHBAUDDMA. Than I communicate with our IC colleagues, they told me 
-that our cpu rk3288 only support two way to  transmit audio data( I2S & 
-SPDIF ), in that
-way we do not support AHB_DMA, it's very sad, and this it why i give up 
-this way, also it's my bad that i should replay to u first in the before 
-mail.
+Child has the same decay_count as parent. If it's not zero,
+we add it to parent's cfs_rq->removed_load:
 
+wake_up_new_task()->set_task_cpu()->migrate_task_rq_fair().
 
-Best Regards.
-> 在 2014年12月15日 18:38, Russell King - ARM Linux 写道:
->> On Mon, Dec 15, 2014 at 10:11:28AM +0800, Yakir Yang wrote:
->>> rk3288 use Designware HDMI IP, Designware HDMI supports four interfaces to
->>> config hdmi audio(I2S, S/PDIF, Generic Parallel Audio, AHB Audio DMA), but
->>> rk3288 only support two ways to config hdmi audio(I2S, S/PDIF), So we take
->>> I2S as hdmi audio operation interfaces, and then treat hdmi audio as an
->>> standard ALSA devices(only got platback function).
->> There is no need for dw-hdmi audio to be implemented as an ASoC
->> device - as I've already sent patches to Andy with my ALSA driver
->> which has been around for the last two years, and works well, and
->> doesn't require any additional DT description.
->>
->
+Child's load is a just garbade after copying of parent,
+it hasn't been on cfs_rq yet, and it must not be added to
+cfs_rq::removed_load in migrate_task_rq_fair().
+
+The patch moves sched_entity::avg::decay_count intialization
+in sched_fork(). So, migrate_task_rq_fair() does not change
+removed_load.
+
+Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+---
+ kernel/sched/core.c |    1 +
+ kernel/sched/fair.c |    1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index bb398c0..2894b69 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1832,6 +1832,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+ 	p->se.prev_sum_exec_runtime	= 0;
+ 	p->se.nr_migrations		= 0;
+ 	p->se.vruntime			= 0;
++	p->se.avg.decay_count		= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df2cdf7..5f3b5a7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -676,7 +676,6 @@ void init_task_runnable_average(struct task_struct *p)
+ {
+ 	u32 slice;
+ 
+-	p->se.avg.decay_count = 0;
+ 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
+ 	p->se.avg.runnable_avg_sum = slice;
+ 	p->se.avg.runnable_avg_period = slice;
+
 
 
