@@ -1,124 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbaLOJn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:43:56 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60095 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaLOJnv (ORCPT
+	id S1752079AbaLOJoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:44:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48637 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaLOJoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:43:51 -0500
-Message-ID: <548EAD4A.6070506@linux.vnet.ibm.com>
-Date: Mon, 15 Dec 2014 15:13:38 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fengguang Wu <fengguang.wu@intel.com>
-CC: Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Dec 2014 04:44:12 -0500
+Message-ID: <1418636633.3193.3.camel@pengutronix.de>
+Subject: Re: [PATCH RESEND v2] mfd: syscon: add child device support
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Flora Fu <flora.fu@mediatek.com>,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kernel@pengutronix.de
+Date: Mon, 15 Dec 2014 10:43:53 +0100
+In-Reply-To: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
+References: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121509-0033-0000-0000-000003055E46
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 03:02 PM, Viresh Kumar wrote:
-> On 15 December 2014 at 12:55, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->> Hi Viresh,
->>
->> Let me explain why I think this is happening.
->>
->> 1. tick_nohz_irq_enter/exit() both get called *only if the cpu is idle*
->> and receives an interrupt.
-> 
-> Bang on target. Yeah that's the part we missed while writing this patch :)
-> 
->> 2. Commit 2a16fc93d2c9568e1, cancels programming of tick_sched timer
->> in its handler, assuming that tick_nohz_irq_exit() will take care of
->> programming the clock event device appropriately, and hence it would
->> requeue or cancel the tick_sched timer.
-> 
-> Correct.
-> 
->> 3. But the intel_powerclamp driver injects an idle period only.
->> *The CPU however is not idle*. It has work on its runqueue and the
->> rq->curr != idle. This means that *tick_nohz_irq_enter()/exit() will not
->> get called on any interrupt*.
-> 
-> Still good..
-> 
->> 4. As a consequence, when we get a hrtimer interrupt during the period
->> that the powerclamp driver is mimicking idle, the exit path of the
->> interrupt never calls tick_nohz_irq_exit(). Hence the tick_sched timer
->> that would have got removed due to the above commit will not get
->> enqueued back on for any pending timers that there might be. Besides
->> this, *jiffies never gets updated*.
-> 
-> Jiffies can be updated by any CPU and there is something called a control
-> cpu with powerclamp driver. BUT we may have got interrupted before the
-> powerclamp timer expired and so we are stuck in the
-> 
-> while (time_before(jiffies, target_jiffies))
-> 
-> loop for ever.
-> 
->> Hope the above explanation makes sense.
-> 
-> Mostly good. Thanks for helping out.
-> 
-> Now, what's the right solution going forward ?
-> 
-> - Revert the offending commit ..
-> - Or still try to avoid reprogramming if we can ..
-> 
-> This is what I could come up with to still avoid reprogramming of tick:
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index cc0a5b6f741b..49f4278f69e2 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -1100,7 +1100,7 @@ static enum hrtimer_restart
-> tick_sched_timer(struct hrtimer *timer)
->                 tick_sched_handle(ts, regs);
-> 
->         /* No need to reprogram if we are in idle or full dynticks mode */
-> -       if (unlikely(ts->tick_stopped))
-> +       if (unlikely(ts->tick_stopped && (is_idle_task(current) ||
-> !ts->inidle)))
->                 return HRTIMER_NORESTART;
-> 
->         hrtimer_forward(timer, now, tick_period);
-> 
-> 
+Hi,
 
-Looks good to me. You can add my Reviewed-by to the above patch.
+Am Montag, den 01.12.2014, 17:25 +0100 schrieb Philipp Zabel:
+> For devices which have a complete register for themselves, it is possible to
+> place them next to the syscon device with overlapping reg ranges. The same is
+> not possible for devices which only occupy bitfields in registers shared with
+> other users.
+> For devices that are completely controlled by bitfields in the syscon address
+> range, such as multiplexers or voltage regulators, allow to put child devices
+> into the syscon device node.
 
-> 
-> Above change checks why we have stopped tick..
-> - The cpu has gone idle (really): is_idle_task(current)
-> - The cpu isn't in idle mode, i.e. its in nohz-full mode: !ts->inidle
-> 
-> This fixed the issues with powerclamp in my case.
-> 
-> @Fengguang: Can you please check if this fixes it for you as well?
-> 
-> @Thomas: Please let me know if you want me to send this fix
-> or you want to revert the original commit itself.
+What is the status of this patch?
+Is this ok to be applied after the merge window closes?
 
-Regards
-Preeti U Murthy
+For reference, these are the previous threads:
+https://lkml.org/lkml/2014/5/27/422
+https://lkml.org/lkml/2014/11/3/134
+
+regards
+Philipp
+
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+> Changes since v1:
+>  - Reworded binding documentation to allow #size-cells = <1>, which is useful
+>    for syscon children that are controlled through a (possibly shared) register
+>    range.
+> ---
+>  Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
+>  drivers/mfd/syscon.c                             |  3 +++
+>  2 files changed, 16 insertions(+)
 > 
-> Thanks.
-> 
-> --
-> Viresh
-> 
+> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+> index fe8150b..0c6b497 100644
+> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
+> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+> @@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
+>  OS driver) to determine the location of the registers, and access the
+>  registers directly.
+>  
+> +Optionally, devices that are controlled exclusively through syscon registers,
+> +or even bitfields in shared syscon registers, can also be added as child nodes
+> +to the syscon device node. These devices can implicitly assume their parent
+> +node is a syscon provider without referencing it explicitly via phandle.
+> +In this case, the syscon node should have #address-cells = <1> and
+> +#size-cells = <0> or <1> and no ranges property.
+> +
+>  Required properties:
+>  - compatible: Should contain "syscon".
+>  - reg: the register region can be accessed from syscon
+>  
+> +Optional properties:
+> +- #address-cells: Should be 1.
+> +- #size-cells: Should be 0 or 1.
+> +
+>  Examples:
+>  gpr: iomuxc-gpr@020e0000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+>  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+>  	reg = <0x020e0000 0x38>;
+>  };
+> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> index ca15878..38da178 100644
+> --- a/drivers/mfd/syscon.c
+> +++ b/drivers/mfd/syscon.c
+> @@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
+>  
+>  	dev_dbg(dev, "regmap %pR registered\n", res);
+>  
+> +	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
+> +		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> +
+>  	return 0;
+>  }
+>  
+
 
