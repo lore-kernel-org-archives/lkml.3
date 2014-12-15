@@ -1,135 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaLOHz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:55:26 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:49303 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaLOHzW (ORCPT
+	id S1751687AbaLOH4C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:56:02 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:47137 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaLOHz7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:55:22 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 15 Dec 2014 16:59:33 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, penberg@kernel.org, iamjoonsoo@lge.com,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 0/7] slub: Fastpath optimization (especially for RT) V1
-Message-ID: <20141215075933.GD4898@js1304-P5Q-DELUXE>
-References: <20141210163017.092096069@linux.com>
+	Mon, 15 Dec 2014 02:55:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141210163017.092096069@linux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <912A29987EAE174BA6CF187D7CDFA9CE26FA135A@DLEE08.ent.ti.com>
+References: <1415941651-28962-1-git-send-email-vigneshr@ti.com>
+	<20141124115116.GA14997@linutronix.de>
+	<547C3A95.30605@ti.com>
+	<547C3C19.5090501@linutronix.de>
+	<547C42FF.5010700@ti.com>
+	<CAH=tA9FO5MCzE274thc-NugCNte6WdyC-Rxc6yfnuR=+6_qMbA@mail.gmail.com>
+	<548A0125.6040708@linutronix.de>
+	<CABH3fy8zCjsxARsqBf9JXOHBkzySdiqifA1KtjnGpJdBY2EikA@mail.gmail.com>
+	<912A29987EAE174BA6CF187D7CDFA9CE26FA135A@DLEE08.ent.ti.com>
+Date: Mon, 15 Dec 2014 09:55:56 +0200
+Message-ID: <CABH3fy8PqbC3DZkFLcoaaXqFAex+oCh7=1a=-cymhXU_ayDNcg@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] Touchscreen performance related fixes
+From: Catalin Crenguta <catalin.crenguta@gmail.com>
+To: "Griffis, Brad" <bgriffis@ti.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Nicolae Rosia <nicolae.rosia@gmail.com>,
+        "R, Vignesh" <vigneshr@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        "richardcochran@gmail.com" <richardcochran@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Lee Jones <lee.jones@linaro.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, "Balbi, Felipe" <balbi@ti.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jan Kardell <jan.kardell@telliq.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 10, 2014 at 10:30:17AM -0600, Christoph Lameter wrote:
-> We had to insert a preempt enable/disable in the fastpath a while ago. This
-> was mainly due to a lot of state that is kept to be allocating from the per
-> cpu freelist. In particular the page field is not covered by
-> this_cpu_cmpxchg used in the fastpath to do the necessary atomic state
-> change for fast path allocation and freeing.
-> 
-> This patch removes the need for the page field to describe the state of the
-> per cpu list. The freelist pointer can be used to determine the page struct
-> address if necessary.
-> 
-> However, currently this does not work for the termination value of a list
-> which is NULL and the same for all slab pages. If we use a valid pointer
-> into the page as well as set the last bit then all freelist pointers can
-> always be used to determine the address of the page struct and we will not
-> need the page field anymore in the per cpu are for a slab. Testing for the
-> end of the list is a test if the first bit is set.
-> 
-> So the first patch changes the termination pointer for freelists to do just
-> that. The second removes the page field and then third can then remove the
-> preempt enable/disable.
-> 
-> Removing the ->page field reduces the cache footprint of the fastpath so hopefully overall
-> allocator effectiveness will increase further. Also RT uses full preemption which means
-> that currently pretty expensive code has to be inserted into the fastpath. This approach
-> allows the removal of that code and a corresponding performance increase.
-> 
-> For V1 a number of changes were made to avoid the overhead of virt_to_page
-> and page_address from the RFC.
-> 
-> Slab Benchmarks on a kernel with CONFIG_PREEMPT show an improvement of
-> 20%-50% of fastpath latency:
-> 
-> Before:
-> 
-> Single thread testing
-> 1. Kmalloc: Repeatedly allocate then free test
-> 10000 times kmalloc(8) -> 68 cycles kfree -> 107 cycles
-> 10000 times kmalloc(16) -> 69 cycles kfree -> 108 cycles
-> 10000 times kmalloc(32) -> 78 cycles kfree -> 112 cycles
-> 10000 times kmalloc(64) -> 97 cycles kfree -> 112 cycles
-> 10000 times kmalloc(128) -> 111 cycles kfree -> 119 cycles
-> 10000 times kmalloc(256) -> 114 cycles kfree -> 139 cycles
-> 10000 times kmalloc(512) -> 110 cycles kfree -> 142 cycles
-> 10000 times kmalloc(1024) -> 114 cycles kfree -> 156 cycles
-> 10000 times kmalloc(2048) -> 155 cycles kfree -> 174 cycles
-> 10000 times kmalloc(4096) -> 203 cycles kfree -> 209 cycles
-> 10000 times kmalloc(8192) -> 361 cycles kfree -> 265 cycles
-> 10000 times kmalloc(16384) -> 597 cycles kfree -> 286 cycles
-> 
-> 2. Kmalloc: alloc/free test
-> 10000 times kmalloc(8)/kfree -> 114 cycles
-> 10000 times kmalloc(16)/kfree -> 115 cycles
-> 10000 times kmalloc(32)/kfree -> 117 cycles
-> 10000 times kmalloc(64)/kfree -> 115 cycles
-> 10000 times kmalloc(128)/kfree -> 111 cycles
-> 10000 times kmalloc(256)/kfree -> 116 cycles
-> 10000 times kmalloc(512)/kfree -> 110 cycles
-> 10000 times kmalloc(1024)/kfree -> 114 cycles
-> 10000 times kmalloc(2048)/kfree -> 110 cycles
-> 10000 times kmalloc(4096)/kfree -> 107 cycles
-> 10000 times kmalloc(8192)/kfree -> 108 cycles
-> 10000 times kmalloc(16384)/kfree -> 706 cycles
-> 
-> 
-> After:
-> 
-> 
-> Single thread testing
-> 1. Kmalloc: Repeatedly allocate then free test
-> 10000 times kmalloc(8) -> 41 cycles kfree -> 81 cycles
-> 10000 times kmalloc(16) -> 47 cycles kfree -> 88 cycles
-> 10000 times kmalloc(32) -> 48 cycles kfree -> 93 cycles
-> 10000 times kmalloc(64) -> 58 cycles kfree -> 89 cycles
-> 10000 times kmalloc(128) -> 84 cycles kfree -> 104 cycles
-> 10000 times kmalloc(256) -> 92 cycles kfree -> 125 cycles
-> 10000 times kmalloc(512) -> 86 cycles kfree -> 129 cycles
-> 10000 times kmalloc(1024) -> 88 cycles kfree -> 125 cycles
-> 10000 times kmalloc(2048) -> 120 cycles kfree -> 159 cycles
-> 10000 times kmalloc(4096) -> 176 cycles kfree -> 183 cycles
-> 10000 times kmalloc(8192) -> 294 cycles kfree -> 233 cycles
-> 10000 times kmalloc(16384) -> 585 cycles kfree -> 291 cycles
-> 
-> 2. Kmalloc: alloc/free test
-> 10000 times kmalloc(8)/kfree -> 100 cycles
-> 10000 times kmalloc(16)/kfree -> 108 cycles
-> 10000 times kmalloc(32)/kfree -> 101 cycles
-> 10000 times kmalloc(64)/kfree -> 109 cycles
-> 10000 times kmalloc(128)/kfree -> 125 cycles
-> 10000 times kmalloc(256)/kfree -> 60 cycles
-> 10000 times kmalloc(512)/kfree -> 60 cycles
-> 10000 times kmalloc(1024)/kfree -> 67 cycles
-> 10000 times kmalloc(2048)/kfree -> 60 cycles
-> 10000 times kmalloc(4096)/kfree -> 65 cycles
-> 10000 times kmalloc(8192)/kfree -> 60 cycles
+On Fri, Dec 12, 2014 at 4:16 PM, Griffis, Brad <bgriffis@ti.com> wrote:
 
-Hello, Christoph.
+> How are you configuring ti,charge-delay in your dts?  I've seen this behavior on some custom boards where we were using a smaller charge delay (0x400) to begin with, and by upping it to 0xb000 we resolved the issue.  These patches however already specified ti,charge-delay = 0xb000 by default so this would surprise me that it's still seeing that issue.  Was the touchscreen working as expected before these new patches, or does it have issues both ways?
 
-I don't review in detail, but, at a glance, overall patchset looks good.
-But, above result looks odd. Improvement is beyond what we can expect.
-Do you have any idea why allocating object more than 256 bytes is so
-fast?
-
-Thanks.
-
+Initially I had set the charge-delay to 0x400 and I was seeing many
+false pen-down/pen-up events With 0xb000, I was still getting many of
+them but less than with 0x400.
