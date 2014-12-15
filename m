@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127AbaLOPLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:11:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38343 "EHLO
+	id S1754143AbaLOPLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:11:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38337 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427AbaLOO1d (ORCPT
+	with ESMTP id S1752426AbaLOO1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:27:33 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+Cc: Kees Cook <keescook@chromium.org>, Junjie Mao <eternal.n08@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 037/168] of/irq: Drop obsolete 'interrupts' vs 'interrupts-extended' text
-Date: Mon, 15 Dec 2014 14:24:51 +0000
-Message-Id: <1418653622-21105-38-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 036/168] x86, kaslr: Handle Gold linker for finding bss/brk
+Date: Mon, 15 Dec 2014 14:24:50 +0000
+Message-Id: <1418653622-21105-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,48 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 66865de4314caca30598244b86817e774c188afa upstream.
+commit 70b61e362187b5fccac206506d402f3424e3e749 upstream.
 
-a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property
-first") updated the description to say that:
+When building with the Gold linker, the .bss and .brk areas of vmlinux
+are shown as consecutive instead of having the same file offset. Allow
+for either state, as long as things add up correctly.
 
-  - Both 'interrupts' and 'interrupts-extended' may be present
-  - Software should prefer 'interrupts-extended'
-  - Software that doesn't comprehend 'interrupts-extended' may use
-    'interrupts'
-
-But there is still a paragraph at the end that prohibits having both and
-says 'interrupts' should be preferred.
-
-Remove the contradictory text.
-
-Fixes: a9ecdc0fdc54 ("of/irq: Fix lookup to use 'interrupts-extended' property first")
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Brian Norris <computersforpeace@gmail.com>
-Acked-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Rob Herring <robh@kernel.org>
+Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Junjie Mao <eternal.n08@gmail.com>
+Link: http://lkml.kernel.org/r/20141118001604.GA25045@www.outflux.net
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/devicetree/bindings/interrupt-controller/interrupts.txt | 4 ----
- 1 file changed, 4 deletions(-)
+ arch/x86/tools/calc_run_size.pl | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-index ce6a1a072028..8a3c40829899 100644
---- a/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+++ b/Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-@@ -30,10 +30,6 @@ should only be used when a device has multiple interrupt parents.
-   Example:
- 	interrupts-extended = <&intc1 5 1>, <&intc2 1 0>;
- 
--A device node may contain either "interrupts" or "interrupts-extended", but not
--both. If both properties are present, then the operating system should log an
--error and use only the data in "interrupts".
--
- 2) Interrupt controller nodes
- -----------------------------
- 
+diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
+index 0b0b124d3ece..23210baade2d 100644
+--- a/arch/x86/tools/calc_run_size.pl
++++ b/arch/x86/tools/calc_run_size.pl
+@@ -19,7 +19,16 @@ while (<>) {
+ 		if ($file_offset == 0) {
+ 			$file_offset = $offset;
+ 		} elsif ($file_offset != $offset) {
+-			die ".bss and .brk lack common file offset\n";
++			# BFD linker shows the same file offset in ELF.
++			# Gold linker shows them as consecutive.
++			next if ($file_offset + $mem_size == $offset + $size);
++
++			printf STDERR "file_offset: 0x%lx\n", $file_offset;
++			printf STDERR "mem_size: 0x%lx\n", $mem_size;
++			printf STDERR "offset: 0x%lx\n", $offset;
++			printf STDERR "size: 0x%lx\n", $size;
++
++			die ".bss and .brk are non-contiguous\n";
+ 		}
+ 	}
+ }
 -- 
 2.1.3
 
