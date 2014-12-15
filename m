@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628AbaLOOsO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:48:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38709 "EHLO
+	id S1751416AbaLOOsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:48:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38712 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840AbaLOO2b (ORCPT
+	with ESMTP id S1752842AbaLOO2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:28:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mark Rustad <mark.d.rustad@intel.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 100/168] ixgbe: fix use after free adapter->state test in ixgbe_remove/ixgbe_probe
-Date: Mon, 15 Dec 2014 14:25:54 +0000
-Message-Id: <1418653622-21105-101-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 103/168] gpu/radeon: Set flag to indicate broken 64-bit MSI
+Date: Mon, 15 Dec 2014 14:25:57 +0000
+Message-Id: <1418653622-21105-104-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -30,116 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit b5b2ffc0574e1f271d79b6b992ee382dc9d5eaa8 upstream.
+commit 91ed6fd2c383bb8f02d66e98b4a4d2f7207249dc upstream.
 
-While working on a different issue, I noticed an annoying use
-after free bug on my machine when unloading the ixgbe driver:
+Some radeon ASICs don't support all 64 address bits of MSIs despite
+advertising support for 64-bit MSIs in their configuration space.
 
-[ 8642.318797] ixgbe 0000:02:00.1: removed PHC on p2p2
-[ 8642.742716] ixgbe 0000:02:00.1: complete
-[ 8642.743784] BUG: unable to handle kernel paging request at ffff8807d3740a90
-[ 8642.744828] IP: [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
-[ 8642.745886] PGD 20c6067 PUD 81c1f6067 PMD 81c15a067 PTE 80000007d3740060
-[ 8642.746956] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-[ 8642.748039] Modules linked in: [...]
-[ 8642.752929] CPU: 1 PID: 1225 Comm: rmmod Not tainted 3.18.0-rc2+ #49
-[ 8642.754203] Hardware name: Supermicro X10SLM-F/X10SLM-F, BIOS 1.1b 11/01/2013
-[ 8642.755505] task: ffff8807e34d3fe0 ti: ffff8807b7204000 task.ti: ffff8807b7204000
-[ 8642.756831] RIP: 0010:[<ffffffffa01c77dc>]  [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
-[...]
-[ 8642.774335] Stack:
-[ 8642.775805]  ffff8807ee824098 ffff8807ee824098 ffffffffa01f3000 ffff8807ee824000
-[ 8642.777326]  ffff8807b7207e18 ffffffff8137720f ffff8807ee824098 ffff8807ee824098
-[ 8642.778848]  ffffffffa01f3068 ffff8807ee8240f8 ffff8807b7207e38 ffffffff8144180f
-[ 8642.780365] Call Trace:
-[ 8642.781869]  [<ffffffff8137720f>] pci_device_remove+0x3f/0xc0
-[ 8642.783395]  [<ffffffff8144180f>] __device_release_driver+0x7f/0xf0
-[ 8642.784876]  [<ffffffff814421f8>] driver_detach+0xb8/0xc0
-[ 8642.786352]  [<ffffffff814414a9>] bus_remove_driver+0x59/0xe0
-[ 8642.787783]  [<ffffffff814429d0>] driver_unregister+0x30/0x70
-[ 8642.789202]  [<ffffffff81375c65>] pci_unregister_driver+0x25/0xa0
-[ 8642.790657]  [<ffffffffa01eb38e>] ixgbe_exit_module+0x1c/0xc8e [ixgbe]
-[ 8642.792064]  [<ffffffff810f93a2>] SyS_delete_module+0x132/0x1c0
-[ 8642.793450]  [<ffffffff81012c61>] ? do_notify_resume+0x61/0xa0
-[ 8642.794837]  [<ffffffff816d2029>] system_call_fastpath+0x12/0x17
+This breaks on systems such as IBM POWER7/8, where 64-bit MSIs can
+be assigned with some of the high address bits set.
 
-The issue is that test_and_set_bit() done on adapter->state is being
-performed *after* the netdevice has been freed via free_netdev().
+This makes use of the newly introduced "no_64bit_msi" flag in structure
+pci_dev to allow the MSI allocation code to fallback to 32-bit MSIs
+on those adapters.
 
-When netdev is being allocated on initialization time, it allocates
-a private area, here struct ixgbe_adapter, that resides after the
-net_device structure. In ixgbe_probe(), the device init routine,
-we set up the adapter after alloc_etherdev_mq() on the private area
-and add a reference for the pci_dev as well via pci_set_drvdata().
-
-Both in the error path of ixgbe_probe(), but also on module unload
-when ixgbe_remove() is being called, commit 41c62843eb6a ("ixgbe:
-Fix rcu warnings induced by LER") accesses adapter after free_netdev().
-The patch stores the result in a bool and thus fixes above oops on my
-side.
-
-Fixes: 41c62843eb6a ("ixgbe: Fix rcu warnings induced by LER")
-Cc: Mark Rustad <mark.d.rustad@intel.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/radeon_irq_kms.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index c4d560d7dabb..a125d3c35856 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -8081,6 +8081,7 @@ static int ixgbe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	int i, err, pci_using_dac, expected_gts;
- 	unsigned int indices = MAX_TX_QUEUES;
- 	u8 part_str[IXGBE_PBANUM_LENGTH];
-+	bool disable_dev = false;
- #ifdef IXGBE_FCOE
- 	u16 device_caps;
- #endif
-@@ -8471,13 +8472,14 @@ err_sw_init:
- 	iounmap(adapter->io_addr);
- 	kfree(adapter->mac_table);
- err_ioremap:
-+	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
- 	free_netdev(netdev);
- err_alloc_etherdev:
- 	pci_release_selected_regions(pdev,
- 				     pci_select_bars(pdev, IORESOURCE_MEM));
- err_pci_reg:
- err_dma:
--	if (!adapter || !test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
-+	if (!adapter || disable_dev)
- 		pci_disable_device(pdev);
- 	return err;
- }
-@@ -8495,6 +8497,7 @@ static void ixgbe_remove(struct pci_dev *pdev)
- {
- 	struct ixgbe_adapter *adapter = pci_get_drvdata(pdev);
- 	struct net_device *netdev = adapter->netdev;
-+	bool disable_dev;
+diff --git a/drivers/gpu/drm/radeon/radeon_irq_kms.c b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+index 16807afab362..c74f12d125f7 100644
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -202,6 +202,16 @@ static bool radeon_msi_ok(struct radeon_device *rdev)
+ 	if (rdev->flags & RADEON_IS_AGP)
+ 		return false;
  
- 	ixgbe_dbg_adapter_exit(adapter);
- 
-@@ -8544,11 +8547,12 @@ static void ixgbe_remove(struct pci_dev *pdev)
- 	e_dev_info("complete\n");
- 
- 	kfree(adapter->mac_table);
-+	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
- 	free_netdev(netdev);
- 
- 	pci_disable_pcie_error_reporting(pdev);
- 
--	if (!test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
-+	if (disable_dev)
- 		pci_disable_device(pdev);
- }
- 
++	/*
++	 * Older chips have a HW limitation, they can only generate 40 bits
++	 * of address for "64-bit" MSIs which breaks on some platforms, notably
++	 * IBM POWER servers, so we limit them
++	 */
++	if (rdev->family < CHIP_BONAIRE) {
++		dev_info(rdev->dev, "radeon: MSI limited to 32-bit\n");
++		rdev->pdev->no_64bit_msi = 1;
++	}
++
+ 	/* force MSI on */
+ 	if (radeon_msi == 1)
+ 		return true;
 -- 
 2.1.3
 
