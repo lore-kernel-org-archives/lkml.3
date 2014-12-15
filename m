@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbaLOPIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:08:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38405 "EHLO
+	id S1754059AbaLOPIs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:08:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38403 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528AbaLOO1m (ORCPT
+	with ESMTP id S1752431AbaLOO1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:27:42 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Maxime Coquelin <maxime.coquelin@st.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        linux@rasmusvillemoes.dk, gong.chen@linux.intel.com,
+        John Sullivan <jsrhbz@kanargh.force9.co.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 046/168] PCI: Support 64-bit bridge windows if we have 64-bit dma_addr_t
-Date: Mon, 15 Dec 2014 14:25:00 +0000
-Message-Id: <1418653622-21105-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 027/168] bitops: Fix shift overflow in GENMASK macros
+Date: Mon, 15 Dec 2014 14:24:41 +0000
+Message-Id: <1418653622-21105-28-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,100 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Maxime COQUELIN <maxime.coquelin@st.com>
 
-commit 7fc986d8a9727e5d40da3c2c1c343da6142e82a9 upstream.
+commit 00b4d9a14125f1e51874def2b9de6092e007412d upstream.
 
-Aaron reported that a 32-bit x86 kernel with Physical Address Extension
-(PAE) support complains about bridge prefetchable memory windows above 4GB:
+On some 32 bits architectures, including x86, GENMASK(31, 0) returns 0
+instead of the expected ~0UL.
 
-  pci_bus 0000:00: root bus resource [mem 0x380000000000-0x383fffffffff]
-  ...
-  pci 0000:03:00.0: reg 0x10: [mem 0x383fffc00000-0x383fffdfffff 64bit pref]
-  pci 0000:03:00.0: reg 0x20: [mem 0x383fffe04000-0x383fffe07fff 64bit pref]
-  pci 0000:03:00.1: reg 0x10: [mem 0x383fffa00000-0x383fffbfffff 64bit pref]
-  pci 0000:03:00.1: reg 0x20: [mem 0x383fffe00000-0x383fffe03fff 64bit pref]
-  pci 0000:00:02.2: PCI bridge to [bus 03-04]
-  pci 0000:00:02.2:   bridge window [io  0x1000-0x1fff]
-  pci 0000:00:02.2:   bridge window [mem 0x91900000-0x91cfffff]
-  pci 0000:00:02.2: can't handle 64-bit address space for bridge
+This is the same on some 64 bits architectures with GENMASK_ULL(63, 0).
 
-In this kernel, unsigned long is 32 bits and dma_addr_t is 64 bits.
-Previously we used "unsigned long" to hold the bridge window address.  But
-this is a bus address, so we should use dma_addr_t instead.
+This is due to an overflow in the shift operand, 1 << 32 for GENMASK,
+1 << 64 for GENMASK_ULL.
 
-Use dma_addr_t to hold the bridge window base and limit.
-
-The question of whether the CPU can actually *address* the window is
-separate and depends on what the physical address space of the CPU is and
-whether the host bridge does any address translation.
-
-[bhelgaas: fix "shift count > width of type", changelog, stable tag]
-Fixes: d56dbf5bab8c ("PCI: Allocate 64-bit BARs above 4G when possible")
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=88131
-Reported-by: Aaron Ma <mapengyu@gmail.com>
-Tested-by: Aaron Ma <mapengyu@gmail.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported-by: Eric Paire <eric.paire@st.com>
+Suggested-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: linux@rasmusvillemoes.dk
+Cc: gong.chen@linux.intel.com
+Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Fixes: 10ef6b0dffe4 ("bitops: Introduce a more generic BITMASK macro")
+Link: http://lkml.kernel.org/r/1415267659-10563-1-git-send-email-maxime.coquelin@st.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/probe.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+ include/linux/bitops.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 4170113cde61..9cce960029aa 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -406,15 +406,16 @@ static void pci_read_bridge_mmio_pref(struct pci_bus *child)
- {
- 	struct pci_dev *dev = child->self;
- 	u16 mem_base_lo, mem_limit_lo;
--	unsigned long base, limit;
-+	u64 base64, limit64;
-+	dma_addr_t base, limit;
- 	struct pci_bus_region region;
- 	struct resource *res;
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index cbc5833fb221..38b5f5c88c18 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -18,8 +18,11 @@
+  * position @h. For example
+  * GENMASK_ULL(39, 21) gives us the 64bit vector 0x000000ffffe00000.
+  */
+-#define GENMASK(h, l)		(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
+-#define GENMASK_ULL(h, l)	(((U64_C(1) << ((h) - (l) + 1)) - 1) << (l))
++#define GENMASK(h, l) \
++	(((~0UL) << (l)) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
++
++#define GENMASK_ULL(h, l) \
++	(((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
  
- 	res = child->resource[2];
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
- 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
--	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
--	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
-+	base64 = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
-+	limit64 = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
- 
- 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
- 		u32 mem_base_hi, mem_limit_hi;
-@@ -428,17 +429,20 @@ static void pci_read_bridge_mmio_pref(struct pci_bus *child)
- 		 * this, just assume they are not being used.
- 		 */
- 		if (mem_base_hi <= mem_limit_hi) {
--#if BITS_PER_LONG == 64
--			base |= ((unsigned long) mem_base_hi) << 32;
--			limit |= ((unsigned long) mem_limit_hi) << 32;
--#else
--			if (mem_base_hi || mem_limit_hi) {
--				dev_err(&dev->dev, "can't handle 64-bit address space for bridge\n");
--				return;
--			}
--#endif
-+			base64 |= (u64) mem_base_hi << 32;
-+			limit64 |= (u64) mem_limit_hi << 32;
- 		}
- 	}
-+
-+	base = (dma_addr_t) base64;
-+	limit = (dma_addr_t) limit64;
-+
-+	if (base != base64) {
-+		dev_err(&dev->dev, "can't handle bridge window above 4GB (bus address %#010llx)\n",
-+			(unsigned long long) base64);
-+		return;
-+	}
-+
- 	if (base <= limit) {
- 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
- 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
+ extern unsigned int __sw_hweight8(unsigned int w);
+ extern unsigned int __sw_hweight16(unsigned int w);
 -- 
 2.1.3
 
