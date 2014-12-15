@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990AbaLOPGK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:06:10 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38442 "EHLO
+	id S1753983AbaLOPGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:06:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38427 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaLOO1s (ORCPT
+	with ESMTP id S1752432AbaLOO1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:48 -0500
+	Mon, 15 Dec 2014 09:27:46 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Ralston <james.d.ralston@intel.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 054/168] ALSA: hda_intel: Add Device IDs for Intel Sunrise Point PCH
-Date: Mon, 15 Dec 2014 14:25:08 +0000
-Message-Id: <1418653622-21105-55-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 051/168] fold swapping ->d_name.hash into switch_names()
+Date: Mon, 15 Dec 2014 14:25:05 +0000
+Message-Id: <1418653622-21105-52-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit c8b00fd2f4c504a564adcad5b8bd6952ab850b02 upstream.
+commit a28ddb87cdddb0db57466ba7f59f831002f4340c upstream.
 
-This patch adds the HD Audio Device IDs for the Intel Sunrise Point PCH.
+and do it along with ->d_name.len there
 
-[the item position rearranged by tiwai]
-
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+[ luis: used Stefan's backport to 3.16 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/dcache.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 007849b443d9..050033e2ef9b 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -173,6 +173,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
- 			 "{Intel, LPT},"
- 			 "{Intel, LPT_LP},"
- 			 "{Intel, WPT_LP},"
-+			 "{Intel, SPT},"
- 			 "{Intel, HPT},"
- 			 "{Intel, PBG},"
- 			 "{Intel, SCH},"
-@@ -1784,6 +1785,9 @@ static const struct pci_device_id azx_ids[] = {
- 	/* Wildcat Point-LP */
- 	{ PCI_DEVICE(0x8086, 0x9ca0),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
-+	/* Sunrise Point */
-+	{ PCI_DEVICE(0x8086, 0xa170),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
- 	/* Haswell */
- 	{ PCI_DEVICE(0x8086, 0x0a0c),
- 	  .driver_data = AZX_DRIVER_HDMI | AZX_DCAPS_INTEL_HASWELL },
+diff --git a/fs/dcache.c b/fs/dcache.c
+index f9cec9d4dbe0..8a7dcc895d99 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2441,7 +2441,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
+ 			}
+ 		}
+ 	}
+-	swap(dentry->d_name.len, target->d_name.len);
++	swap(dentry->d_name.hash_len, target->d_name.hash_len);
+ }
+ 
+ static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
+@@ -2540,7 +2540,6 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+ 
+ 	/* Switch the names.. */
+ 	switch_names(dentry, target);
+-	swap(dentry->d_name.hash, target->d_name.hash);
+ 
+ 	/* ... and switch the parents */
+ 	if (IS_ROOT(dentry)) {
+@@ -2679,7 +2678,6 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
+ 	dparent = dentry->d_parent;
+ 
+ 	switch_names(dentry, anon);
+-	swap(dentry->d_name.hash, anon->d_name.hash);
+ 
+ 	dentry->d_parent = dentry;
+ 	list_del_init(&dentry->d_u.d_child);
 -- 
 2.1.3
 
