@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaLOPP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:15:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38276 "EHLO
+	id S1752813AbaLOPPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:15:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38277 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303AbaLOO1X (ORCPT
+	with ESMTP id S1752316AbaLOO1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:27:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Miaoqing Pan <miaoqing@qca.qualcomm.com>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jurgen Kramer <gtmkramer@xs4all.nl>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 023/168] ath9k: Fix RTC_DERIVED_CLK usage
-Date: Mon, 15 Dec 2014 14:24:37 +0000
-Message-Id: <1418653622-21105-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 026/168] ALSA: usb-audio: Add ctrl message delay quirk for Marantz/Denon devices
+Date: Mon, 15 Dec 2014 14:24:40 +0000
+Message-Id: <1418653622-21105-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miaoqing Pan <miaoqing@qca.qualcomm.com>
+From: Jurgen Kramer <gtmkramer@xs4all.nl>
 
-commit 4e6ce4dc7ce71d0886908d55129d5d6482a27ff9 upstream.
+commit 6e84a8d7ac3ba246ef44e313e92bc16a1da1b04a upstream.
 
-Based on the reference clock, which could be 25MHz or 40MHz,
-AR_RTC_DERIVED_CLK is programmed differently for AR9340 and AR9550.
-But, when a chip reset is done, processing the initvals
-sets the register back to the default value.
+This patch adds a USB control message delay quirk for a few specific Marantz/Denon
+devices. Without the delay the DACs will not work properly and produces the
+following type of messages:
 
-Fix this by moving the code in ath9k_hw_init_pll() to
-ar9003_hw_override_ini(). Also, do this override for AR9531.
+Nov 15 10:09:21 orwell kernel: [   91.342880] usb 3-13: clock source 41 is not valid, cannot use
+Nov 15 10:09:21 orwell kernel: [   91.343775] usb 3-13: clock source 41 is not valid, cannot use
 
-Signed-off-by: Miaoqing Pan <miaoqing@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+There are likely other Marantz/Denon devices using the same USB module which exhibit the
+same problems. But as this cannot be verified I limited the patch to the devices
+I could test.
+
+The following two devices are covered by this path:
+- Marantz SA-14S1
+- Marantz HD-DAC1
+
+Signed-off-by: Jurgen Kramer <gtmkramer@xs4all.nl>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.c | 13 +++++++++++++
- drivers/net/wireless/ath/ath9k/hw.c         | 13 -------------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ sound/usb/quirks.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_phy.c b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-index 8927fc34d84c..b81f885aa68c 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -647,6 +647,19 @@ static void ar9003_hw_override_ini(struct ath_hw *ah)
- 		ah->enabled_cals |= TX_CL_CAL;
- 	else
- 		ah->enabled_cals &= ~TX_CL_CAL;
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index 19a921eb75f1..337067cce251 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -1146,6 +1146,20 @@ void snd_usb_ctl_msg_quirk(struct usb_device *dev, unsigned int pipe,
+ 	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x23ba) &&
+ 	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS)
+ 		mdelay(20);
 +
-+	if (AR_SREV_9340(ah) || AR_SREV_9531(ah) || AR_SREV_9550(ah)) {
-+		if (ah->is_clk_25mhz) {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e7ae);
-+		} else {
-+			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
-+			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
-+			REG_WRITE(ah, AR_SLP32_INC, 0x0001e800);
++	/* Marantz/Denon devices with USB DAC functionality need a delay
++	 * after each class compliant request
++	 */
++	if ((le16_to_cpu(dev->descriptor.idVendor) == 0x154e) &&
++	    (requesttype & USB_TYPE_MASK) == USB_TYPE_CLASS) {
++
++		switch (le16_to_cpu(dev->descriptor.idProduct)) {
++		case 0x3005: /* Marantz HD-DAC1 */
++		case 0x3006: /* Marantz SA-14S1 */
++			mdelay(20);
++			break;
 +		}
-+		udelay(100);
 +	}
  }
  
- static void ar9003_hw_prog_ini(struct ath_hw *ah,
-diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
-index 2a8ed8375ec0..e1e2bf3b0051 100644
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -858,19 +858,6 @@ static void ath9k_hw_init_pll(struct ath_hw *ah,
- 	udelay(RTC_PLL_SETTLE_DELAY);
- 
- 	REG_WRITE(ah, AR_RTC_SLEEP_CLK, AR_RTC_FORCE_DERIVED_CLK);
--
--	if (AR_SREV_9340(ah) || AR_SREV_9550(ah)) {
--		if (ah->is_clk_25mhz) {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x17c << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f3d7);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e7ae);
--		} else {
--			REG_WRITE(ah, AR_RTC_DERIVED_CLK, 0x261 << 1);
--			REG_WRITE(ah, AR_SLP32_MODE, 0x0010f400);
--			REG_WRITE(ah,  AR_SLP32_INC, 0x0001e800);
--		}
--		udelay(100);
--	}
- }
- 
- static void ath9k_hw_init_interrupt_masks(struct ath_hw *ah,
+ /*
 -- 
 2.1.3
 
