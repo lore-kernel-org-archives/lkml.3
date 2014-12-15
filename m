@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751089AbaLOCau (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:30:50 -0500
-Received: from ozlabs.org ([103.22.144.67]:49041 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804AbaLOCam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:30:42 -0500
-Date: Mon, 15 Dec 2014 13:30:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the tip tree with the pm tree
-Message-ID: <20141215133020.3de254a5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751088AbaLOCja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:39:30 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56294 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaLOCjX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 21:39:23 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/+qAL1XUsYPYAiO0TSiwQzwk"; protocol="application/pgp-signature"
+In-Reply-To: <1508486.LLFuttrbI2@avalon>
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
+ <1576771.dIVCOxU0se@vostro.rjw.lan> <CAAFQd5B28WiWUqmbmROJUa3H25R=Y774NuemTZDvkoa=CvZUsw@mail.gmail.com>
+ <1508486.LLFuttrbI2@avalon>
+From: Tomasz Figa <tfiga@chromium.org>
+Date: Mon, 15 Dec 2014 11:39:01 +0900
+Message-ID: <CAAFQd5A5UAYpV6Z3ii+TTuPOxJF8VFJmnUnHZWkc9dZN04qxYA@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Heiko Stuebner <heiko@sntech.de>,
+        Joerg Roedel <joro@8bytes.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+qAL1XUsYPYAiO0TSiwQzwk
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, Dec 13, 2014 at 5:47 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hello,
+>
+> On Friday 12 December 2014 13:15:51 Tomasz Figa wrote:
+>> On Fri, Dec 12, 2014 at 5:48 AM, Rafael J. Wysocki wrote:
+>> > On Thursday, December 11, 2014 04:51:37 PM Ulf Hansson wrote:
+>> >> On 11 December 2014 at 16:31, Kevin Hilman <khilman@kernel.org> wrote:
+>> >> > [+ Laurent Pinchart]
+>> >> >
+>> >> > Tomasz Figa <tfiga@chromium.org> writes:
+>> >> >> On Thu, Dec 11, 2014 at 8:58 PM, Ulf Hansson wrote:
+>> >> > [...]
+>> >> >
+>> >> >>>> @@ -988,11 +1107,28 @@ static int rk_iommu_probe(struct
+>> >> >>>> platform_device *pdev)>> >>>>
+>> >> >>>>                 return -ENXIO;
+>> >> >>>>
+>> >> >>>>         }
+>> >> >>>>
+>> >> >>>> +       pm_runtime_no_callbacks(dev);
+>> >> >>>> +       pm_runtime_enable(dev);
+>> >> >>>> +
+>> >> >>>> +       /* Synchronize state of the domain with driver data. */
+>> >> >>>> +       pm_runtime_get_sync(dev);
+>> >> >>>> +       iommu->is_powered = true;
+>> >> >>>
+>> >> >>> Doesn't the runtime PM status reflect the value of "is_powered", thus
+>> >> >>> why do you need to have a copy of it? Could it perpahps be that you
+>> >> >>> try to cope with the case when CONFIG_PM is unset?
+>> >> >>
+>> >> >> It's worth noting that this driver fully relies on status of other
+>> >> >> devices in the power domain the IOMMU is in and does not enforce the
+>> >> >> status on its own. So in general, as far as my understanding of PM
+>> >> >> runtime subsystem, the status of the IOMMU device will be always
+>> >> >> suspended, because nobody will call pm_runtime_get() on it (except the
+>> >> >> get and put pair in probe). So is_powered is here to track status of
+>> >> >> the domain, not the device. Feel free to suggest a better way, though.
+>> >> >
+>> >> > I still don't like these notifiers.  I think they add ways to bypass
+>> >> > having proper runtime PM implemented for devices/subsystems.
+>> >>
+>> >> I do agree, but I haven't found another good solution to the problem.
+>> >
+>> > For the record, I'm not liking this mostly because it "fixes" a generic
+>> > problem in a way that's hidden in the genpd code and very indirect.
+>>
+>> Well, that's true. This is indeed a generic problem of PM dependencies
+>> between devices (other than those represented by parent-child
+>> relation), which in fact doesn't have much to do with genpd, but
+>> rather with those devices directly. It is just that genpd is the most
+>> convenient location to solve this in current code and in a simple way.
+>> In other words, I see this solution as a reasonable way to get the
+>> problem solved quickly for now, so that we can start thinking about a
+>> more elegant solution.
+>>
+>> >> > From a high-level, the IOMMU is just another device inside the PM
+>> >> > domain, so ideally it should be doing it's own _get() and _put() calls
+>> >> > so the PM domain code would just do the right thing without the need
+>> >> > for notifiers.
+>> >>
+>> >> As I understand it, the IOMMU (or for other similar cases) shouldn't
+>> >> be doing any get() and put() at all because there are no IO API to
+>> >> serve request from.
+>
+> Speaking purely from an IOMMU point of view that's not entirely tree. IOMMU
+> drivers expose map and unmap operations, so they can track whether any memory
+> is mapped. From a bus master point of view the IOMMU map and unmap operations
+> are hidden by the DMA mapping API. The IOMMU can thus track the existence of
+> mappings without any IOMMU awareness in the bus master driver.
+>
+> If no mapping exist the IOMMU shouldn't receive any translation request. An
+> IOMMU driver could thus call pm_runtime_get_sync() in the map handler when
+> creating the first mapping, and pm_runtime_put() in the unmap handler when
+> tearing the last mapping down.
+>
+> One could argue that the IOMMU would end up being powered more often than
+> strictly needed, as bus masters drivers, even when written properly, could
+> keep mappings around at times they don't perform bus access. This is true, and
+> that's an argument I've raised during the last kernel summit. The general
+> response (including Linus Torvald's) was that micro-optimizing power
+> management might not be worth it, and that measurements proving that the gain
+> is worth it are required before introducing new APIs to solve the problem. I
+> can't disagree with that argument.
+>
 
-Hi all,
+This would be a micro optimization if the IOMMU was located in its own
+power domain. Unfortunately in most cases it is not, so keeping all
+the devices in the domain powered on, because one of them have a
+mapping created doesn't sound like a good idea.
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/kernel/apic/io_apic.c between commit 16394fd03114 ("x86 / PM:
-Replace CONFIG_PM_RUNTIME in io_apic.c") from the pm tree and various
-commits from the tip tree.
+Moreover, most of the drivers will keep the mapping for much longer
+than one run cycle. Please take a look at V4L2's videobuf2 subsystem
+(which I guess you are more familiar with than me;)), which will keep
+MMAP buffers mapped in IOMMU address space for their whole lifetime. I
+believe similar is the case for DRM drivers.
 
-I fixed it up (the tip tree seems to have made extensive changes to
-this file and there are no longer any references to CONFIG_PM_RUNTIME,
-so I used the tip tree version) and can carry the fix as necessary (no
-action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/+qAL1XUsYPYAiO0TSiwQzwk
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUjkfDAAoJEMDTa8Ir7ZwV0aYQAI5NyQYBvdsfVOO7TnBQxWg3
-SonW6U8aHDvVq6oNRt0UQ5ewXaPxY2wht0qvkK/ZbDyqaxaRK1Gbyp0tLppjjNfj
-/EZVnr+nT0yuMbqYGfYapk3f4G2FxmMTKDA0N9JNZa/6tvyBwmWjCFwN0lS1iJzP
-w0zThL/Bahgimkwf3ghRiKuo7wdLtzL1/e5ZCG2/ovfx8QsUXrKmfiFcw8CLTY+Z
-E5CLzIhUBGygWPm/s3SjU/jAtDHfhHTVsgkAjuGDaM/OQjvWdRvZvXRv07nCYqhs
-MASxQP5uOFAtRRS+232hNsxOlF8CwhAlJCTdtX4OhiWKqw7ofeWbOLW+AuoW84oH
-TuakxDS/WGZVgSSgsbDxqUNkxUHp4+u6bx1PYZIUVhonRsMMfb9PKnh31gmnL5vX
-Y8tl81J+huK4D+DPmpGdOYfp9UKt6Jerw6vzk5SrzG42mom4uWnKDZq1UhVt7KuQ
-LEPe2igieRerffeosn+v+/tVqPFE7Xg7UI7dyaKDEFH+J2cdBNLeYtNiiSvGklAu
-1GbhPtHH6qJfM+xtuC1yCFtXG4UmmFAAlen354Qn+CB5CSIXAVKRKWbUdaNLhP2j
-Su6FiCXKtNCCyOZMjSuwr6XD9EcLuEVJF3JgbL5clhACUoEJ8xcSoXJN5ev8Li+S
-SQXxZY5sBZLdmcI1EkGT
-=n4b5
------END PGP SIGNATURE-----
-
---Sig_/+qAL1XUsYPYAiO0TSiwQzwk--
+Best regards,
+Tomasz
