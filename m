@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaLORAV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:00:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:40649 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaLORAR (ORCPT
+	id S1751494AbaLORBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:01:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36790 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaLORBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:00:17 -0500
-Message-ID: <548F139D.4090901@infradead.org>
-Date: Mon, 15 Dec 2014 09:00:13 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
+	Mon, 15 Dec 2014 12:01:01 -0500
+Date: Mon, 15 Dec 2014 09:01:01 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Andreas Werner <andreas.werner@men.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mcb: mcb-pci: Only remap the 1st 0x200 bytes of BAR 0
+Message-ID: <20141215170101.GB2155@kroah.com>
+References: <1414512692-1433-1-git-send-email-johannes.thumshirn@men.de>
+ <20141215132335.GA3439@jtlinux>
 MIME-Version: 1.0
-To: Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Darren Hart <dvhart@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Feuerer <peter@piie.net>
-Subject: [PATCH -next] platform/x86/acerhdf: still depends on THERMAL
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215132335.GA3439@jtlinux>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Mon, Dec 15, 2014 at 02:23:37PM +0100, Johannes Thumshirn wrote:
+> On Tue, Oct 28, 2014 at 05:11:32PM +0100, Johannes Thumshirn wrote:
+> > Currently it is not possible to have a kernel with built-in MCB attached
+> > devices. This results out of the fact that mcb-pci requests PCI BAR 0, then
+> > parses the chameleon table and calls the driver's probe function before
+> > releasing BAR 0 again. When building the kernel with modules this is not a
+> > problem (and therefore it wasn't detected by my tests yet).
+> > 
+> > A solution is to only remap the 1st 0x200 bytes of a Chameleon PCI device.
+> > 0x200 bytes is the maximum size of a Chameleon v2 Table.
+> > 
+> > Also this patch stops disabling the PCI device on successful registration of MCB
+> > devices.
+> > 
+> > Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+> > Suggested-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Hi Greg,
+> 
+> Is there any specific reason why you didn't pick this one up for 3.19? Or did it
+> just got lost in your queue?
+> 
 
-acerhdf uses thermal interfaces so it should depend on THERMAL.
-It also should not select a thermal driver without checking that
-THERMAL is enabled.
+Hm, I didn't realize I was supposed to pick it up, sorry, I'm not listed
+as the "mcb" maintainer, you are :)
 
-This fixes the following build errors when THERMAL=m and
-ACERHDF=y.
+Please resend and I'll pick it up after 3.19-rc1 is out.
 
-drivers/built-in.o: In function `acerhdf_set_mode':
-acerhdf.c:(.text+0x3e02e1): undefined reference to `thermal_zone_device_update'
-drivers/built-in.o: In function `acerhdf_unbind':
-acerhdf.c:(.text+0x3e052d): undefined reference to `thermal_zone_unbind_cooling_device'
-drivers/built-in.o: In function `acerhdf_bind':
-acerhdf.c:(.text+0x3e0593): undefined reference to `thermal_zone_bind_cooling_device'
-drivers/built-in.o: In function `acerhdf_init':
-acerhdf.c:(.init.text+0x1c2f5): undefined reference to `thermal_cooling_device_register'
-acerhdf.c:(.init.text+0x1c360): undefined reference to `thermal_zone_device_register'
-drivers/built-in.o: In function `acerhdf_unregister_thermal':
-acerhdf.c:(.text.unlikely+0x3c67): undefined reference to `thermal_cooling_device_unregister'
-acerhdf.c:(.text.unlikely+0x3c91): undefined reference to `thermal_zone_device_unregister'
+thanks,
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Peter Feuerer <peter@piie.net>
-Cc: Darren Hart <dvhart@infradead.org>
----
- drivers/platform/x86/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20141215.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20141215/drivers/platform/x86/Kconfig
-@@ -38,8 +38,8 @@ config ACER_WMI
- 
- config ACERHDF
- 	tristate "Acer Aspire One temperature and fan driver"
-+	depends on ACPI && THERMAL
- 	select THERMAL_GOV_BANG_BANG
--	depends on ACPI
- 	---help---
- 	  This is a driver for Acer Aspire One netbooks. It allows to access
- 	  the temperature sensor and to control the fan.
+greg k-h
