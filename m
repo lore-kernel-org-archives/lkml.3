@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750953AbaLOR1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:27:17 -0500
-Received: from smtprelay0219.hostedemail.com ([216.40.44.219]:49284 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750774AbaLOR1Q (ORCPT
+	id S1750918AbaLORah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:30:37 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:56594 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaLORag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:27:16 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:968:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2915:3138:3139:3140:3141:3142:3352:3622:3865:3867:3870:3871:3873:3874:4321:5007:6261:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13095:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wire62_3f1e53c5c0d31
-X-Filterd-Recvd-Size: 1503
-Message-ID: <1418664431.2674.19.camel@perches.com>
-Subject: Re: [PATCH] Staging: rtl8712: removed an unnecessary else statement
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Karthik Nayak <karthik.188@gmail.com>, trivial@kernel.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-Date: Mon, 15 Dec 2014 09:27:11 -0800
-In-Reply-To: <548F1686.4080507@lwfinger.net>
-References: <1418657154-10481-1-git-send-email-karthik.188@gmail.com>
-	 <1418661543.2674.17.camel@perches.com> <548F1686.4080507@lwfinger.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Dec 2014 12:30:36 -0500
+Date: Mon, 15 Dec 2014 18:30:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Josef Bacik <jbacik@fb.com>
+Cc: bmaurer@fb.com, rkroll@fb.com, kernel-team@fb.com, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, umgwanakikbuti@gmail.com,
+        avagin@openvz.org, rostedt@goodmis.org
+Subject: Re: [PATCH] sched/fair: change where we report sched stats V2
+Message-ID: <20141215173016.GN10476@twins.programming.kicks-ass.net>
+References: <1418313595-14286-1-git-send-email-jbacik@fb.com>
+ <20141215101625.GW29390@twins.programming.kicks-ass.net>
+ <548F0025.4040203@fb.com>
+ <20141215172129.GS3337@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215172129.GS3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-15 at 11:12 -0600, Larry Finger wrote:
-> On 12/15/2014 10:39 AM, Joe Perches wrote:
-> > On Mon, 2014-12-15 at 20:55 +0530, Karthik Nayak wrote:
-> >> As per checkpatch warning, removed an unnecessary else statement
-> >> proceeding an if statement with a return.
-> >
-> > This is not a correct change.
-> > The checkpatch message said "generally".
-> > You still have to verify the code.
-[]
-> Perhaps checkpatch should ignore setting this warning when there is an "else if" 
-> in the flow.
+On Mon, Dec 15, 2014 at 06:21:29PM +0100, Peter Zijlstra wrote:
+> On Mon, Dec 15, 2014 at 10:37:09AM -0500, Josef Bacik wrote:
+> 
+> > >Yeah, so I don't like this, it adds overhead for everyone.
+> > >
+> > 
+> > Only if SCHEDSTATS is enabled tho, and it's no more overhead in the
+> > SCHEDSTATS case than before.  Would it be more acceptable to move the entire
+> > callback under SCHEDSTATS?
+> 
+> Nah, doesn't work. Distros need to enable the world and then some so
+> .config is a false choice.
+> 
+> > This is fine for discrete problems, but when trying to find a random latency
+> > spike in a production workload it's impossible. If I do
+> > 
+> > trace-cmd record -e sched:sched_switch -T sleep 5
+> > 
+> > on just one of our random web servers I end up with this
+> > 
+> > du -h trace.dat
+> > 62M     trace.dat
+> > 
+> > thats 62 megs in 5 seconds.  I ran the following command for almost 2 hours
+> > when searching for a latency spike
+> > 
+> > trace-cmd record -B latency -e sched:sched_stat_blocked -f \"delay >=
+> > 100000\" -T -o /root/latency.dat
+> > 
+> > and got the following .dat file
+> > 
+> > du -h latency.dat
+> > 48M     latency.dat
+> 
+> Ah, regardless what I think of our filter implementation, that actually
+> makes sense, let me ponder this a bit.
 
-In a patch, that's not possible as the
-context may not show the flow.
+Oh, I just remembered we 'fixed' this for perf, see commit:
 
+  e6dab5ffab59 ("perf/trace: Add ability to set a target task for events")
 
+I'm not sure how to do the same thing with ftrace though, maybe steve
+knows.
+
+The thing is, at wakeup time we know the task we're waking, so we pass
+that task along and provide a trace for that instead of current. Andrew
+(who implemented it might have some userspace to share).
