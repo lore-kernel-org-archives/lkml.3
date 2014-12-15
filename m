@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbaLOPhJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:37:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60632 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952AbaLOPhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:37:06 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Krzysztof Konopko <kris@konagma.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com>
-	<548A2E7A.4010303@lwfinger.net> <548AD2F1.3080200@konagma.com>
-	<548B2752.7030607@lwfinger.net> <wrfjwq5wwvik.fsf@redhat.com>
-	<548B7249.1060602@konagma.com>
-Date: Mon, 15 Dec 2014 10:36:52 -0500
-In-Reply-To: <548B7249.1060602@konagma.com> (Krzysztof Konopko's message of
-	"Fri, 12 Dec 2014 23:55:05 +0100")
-Message-ID: <wrfjoar4vsa3.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	id S1752180AbaLOPhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:37:46 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11331 "EHLO
+	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750911AbaLOPho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 10:37:44 -0500
+Message-ID: <548F0025.4040203@fb.com>
+Date: Mon, 15 Dec 2014 10:37:09 -0500
+From: Josef Bacik <jbacik@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <bmaurer@fb.com>, <rkroll@fb.com>, <kernel-team@fb.com>,
+        <mingo@redhat.com>, <linux-kernel@vger.kernel.org>,
+        <umgwanakikbuti@gmail.com>
+Subject: Re: [PATCH] sched/fair: change where we report sched stats V2
+References: <1418313595-14286-1-git-send-email-jbacik@fb.com> <20141215101625.GW29390@twins.programming.kicks-ass.net>
+In-Reply-To: <20141215101625.GW29390@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-15_03:2014-12-15,2014-12-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=142.157825103555
+ compositescore=0.140620555742602 urlsuspect_oldscore=0.140620555742602
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.140620555742602 spamscore=0
+ recipient_to_sender_domain_totalscore=8 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412150149
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Konopko <kris@konagma.com> writes:
-> On 12/12/14 19:52, Jes Sorensen wrote:
->> Larry Finger <Larry.Finger@lwfinger.net> writes:
->>> On 12/12/2014 05:35 AM, Krzysztof Konopko wrote:
->>>> I was hunting particularly for inconsistencies with `sparse` and came
->>>> across this one.  But I dug a bit further and I wonder why the driver is
->>>> not using standard stuff like the one in `include/linux/ieee80211.h`
->>>> where any data wider than one byte is clearly declared as __le<nn>?
->>>
->>> That is a good question. One possibility is that those definitions do
->>> not exist on some of the older kernels that Realtek supports. They
->>> generally work with 2.6.18 and newer.
->> 
->> The reason the 8723au driver doesn't use the defines from there is that
->> in ieee80211.h they are part of struct ieee80211_mgmt, while the 8723au
->> driver access the addba etc. elements without the full struct in place.
->> 
+On 12/15/2014 05:16 AM, Peter Zijlstra wrote:
+> On Thu, Dec 11, 2014 at 10:59:55AM -0500, Josef Bacik wrote:
+>> The schedule stats currently spit out once the entity is being queued, which
+>> means if we have stack traces enabled we will get the stack trace of the waker,
+>> not of the task being woken.  This makes the backtrace completely useless when
+>> trying to track down latency spikes, as we want to know why we were put to sleep
+>> for as long as we were.
+>>
+>> This patch moves the trace_sched_stat* calls to after the task has been put back
+>> on the CPU so that the backtrace we get is the one that put us to sleep.  Mike
+>> Galbraith suggested that I leave the actual stat collection stuff where it is so
+>> that we don't add the scheduler latency to the sleep stats, so I've added 3 new
+>> fields in the scheduler stats to keep track of the last sleep time so that if
+>> any of these are set we know to trigger the trace points.  Thanks,
+>>
 >
-> And why is that the case?
-> (I'm trying to understand, not debunk)
+> Yeah, so I don't like this, it adds overhead for everyone.
 >
-> Looks to me that this driver has been kept out of the tree for quite a
-> while (by Realtek) and now suffers from locally invented stuff.  I
-> understand this is a lot of work to unify the codebase with ieee80211.h,
-> but are there any technical hurdles?  I'm just curious.
 
-The main issue is that the RTL driver maintains a partial copy of the
-management frame, ie. without the front block containing the MAC
-addresses. Switching this over to carry a full copy of the frame is
-extremely intrusive as it's mixed in pretty much everywhere in the
-driver.
+Only if SCHEDSTATS is enabled tho, and it's no more overhead in the 
+SCHEDSTATS case than before.  Would it be more acceptable to move the 
+entire callback under SCHEDSTATS?
 
-The driver is derived from Realtek's multi-OS vendor driver, which
-included code for pretty much every OS on the planet. If you want to see
-how it looked initially, check out Larry's github tree and go back to
-the initial checkins .... Realtek seem to copy it into a new tree and
-devel from there whenever they do a new chip, so the legacy in this
-codebase is huge.
+> Also, I'm very sure this issue has been raised before, and I'm pretty
+> sure the answer back then was why don't you look at the
+> trace_sched_switch() site matching this wakeup?
+>
 
-Cheers,
-Jes
+This is fine for discrete problems, but when trying to find a random 
+latency spike in a production workload it's impossible. If I do
+
+trace-cmd record -e sched:sched_switch -T sleep 5
+
+on just one of our random web servers I end up with this
+
+du -h trace.dat
+62M     trace.dat
+
+thats 62 megs in 5 seconds.  I ran the following command for almost 2 
+hours when searching for a latency spike
+
+trace-cmd record -B latency -e sched:sched_stat_blocked -f \"delay >= 
+100000\" -T -o /root/latency.dat
+
+and got the following .dat file
+
+du -h latency.dat
+48M     latency.dat
+
+That right there is a huge reason for this change, so I'd really like to 
+do whatever it takes to get this fixed.  I'd be happy to move the 
+callback under CONFIG_SCHEDSTATS to reduce any possible overhead you 
+would be concerned about.  Thanks,
+
+Josef
