@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751015AbaLOVLU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:11:20 -0500
-Received: from syn.loicp.eu ([176.31.96.212]:34694 "EHLO mx0.loicp.eu"
+	id S1751121AbaLOVOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:14:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57785 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbaLOVLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:11:19 -0500
-Date: Mon, 15 Dec 2014 22:11:15 +0100
-From: Loic Pefferkorn <loic@loicp.eu>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Update CONFIG_DM_CRYPT help-text link
-Message-ID: <20141215211114.GA1388@iron>
-References: <81c1a7329d2146d37b22d7efa96b3a449cb66d14.1418674665.git.loic@loicp.eu>
- <20141216073037.75ec447b@notabene.brown>
+	id S1750723AbaLOVOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:14:08 -0500
+Date: Mon, 15 Dec 2014 23:14:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/3] vringh: 64 bit features
+Message-ID: <1418678019-31629-2-git-send-email-mst@redhat.com>
+References: <1418678019-31629-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141216073037.75ec447b@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418678019-31629-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 07:30:37AM +1100, NeilBrown wrote:
-> 
-> Please direct this according to:
-> 
-> DEVICE-MAPPER  (LVM)
-> M:	Alasdair Kergon <agk@redhat.com>
-> M:	Mike Snitzer <snitzer@redhat.com>
-> M:	dm-devel@redhat.com
-> L:	dm-devel@redhat.com
-> W:	http://sources.redhat.com/dm
-> Q:	http://patchwork.kernel.org/project/dm-devel/list/
-> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git
-> T:	quilt http://people.redhat.com/agk/patches/linux/editing/
-> S:	Maintained
-> F:	Documentation/device-mapper/
-> F:	drivers/md/dm*
-> F:	drivers/md/persistent-data/
-> F:	include/linux/device-mapper.h
-> F:	include/linux/dm-*.h
-> F:	include/uapi/linux/dm-*.h
-> 
-> I guess get-maintainer.pl doesn't cope when when on file has separate parts
-> which are separately maintained.
-> 
-> Thanks,
-> NeilBrown
+Pass u64 everywhere.
 
-I will do that, thanks for the info!
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ include/linux/vringh.h | 4 ++--
+ drivers/vhost/vringh.c | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/vringh.h b/include/linux/vringh.h
+index 749cde2..f696dd0 100644
+--- a/include/linux/vringh.h
++++ b/include/linux/vringh.h
+@@ -105,7 +105,7 @@ struct vringh_kiov {
+ #define VRINGH_IOV_ALLOCATED 0x8000000
+ 
+ /* Helpers for userspace vrings. */
+-int vringh_init_user(struct vringh *vrh, u32 features,
++int vringh_init_user(struct vringh *vrh, u64 features,
+ 		     unsigned int num, bool weak_barriers,
+ 		     struct vring_desc __user *desc,
+ 		     struct vring_avail __user *avail,
+@@ -167,7 +167,7 @@ bool vringh_notify_enable_user(struct vringh *vrh);
+ void vringh_notify_disable_user(struct vringh *vrh);
+ 
+ /* Helpers for kernelspace vrings. */
+-int vringh_init_kern(struct vringh *vrh, u32 features,
++int vringh_init_kern(struct vringh *vrh, u64 features,
+ 		     unsigned int num, bool weak_barriers,
+ 		     struct vring_desc *desc,
+ 		     struct vring_avail *avail,
+diff --git a/drivers/vhost/vringh.c b/drivers/vhost/vringh.c
+index 5174eba..ac3fe27 100644
+--- a/drivers/vhost/vringh.c
++++ b/drivers/vhost/vringh.c
+@@ -577,7 +577,7 @@ static inline int xfer_to_user(void *dst, void *src, size_t len)
+  * Returns an error if num is invalid: you should check pointers
+  * yourself!
+  */
+-int vringh_init_user(struct vringh *vrh, u32 features,
++int vringh_init_user(struct vringh *vrh, u64 features,
+ 		     unsigned int num, bool weak_barriers,
+ 		     struct vring_desc __user *desc,
+ 		     struct vring_avail __user *avail,
+@@ -836,7 +836,7 @@ static inline int xfer_kern(void *src, void *dst, size_t len)
+  *
+  * Returns an error if num is invalid.
+  */
+-int vringh_init_kern(struct vringh *vrh, u32 features,
++int vringh_init_kern(struct vringh *vrh, u64 features,
+ 		     unsigned int num, bool weak_barriers,
+ 		     struct vring_desc *desc,
+ 		     struct vring_avail *avail,
 -- 
-Cheers,
-Loïc
+MST
 
