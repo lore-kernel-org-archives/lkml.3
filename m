@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbaLOTos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:44:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40762 "EHLO
+	id S1751821AbaLOT3N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:29:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40736 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaLOT30 (ORCPT
+	with ESMTP id S1751749AbaLOT3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:29:26 -0500
+	Mon, 15 Dec 2014 14:29:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 44/96] SUNRPC: Fix locking around callback channel reply receive
-Date: Mon, 15 Dec 2014 11:26:04 -0800
-Message-Id: <1418671616-25482-45-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 25/96] sparc64: Fix crashes in schizo_pcierr_intr_other().
+Date: Mon, 15 Dec 2014 11:25:45 -0800
+Message-Id: <1418671616-25482-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,72 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 093a1468b6edb0e568be7311b8d2228d205702db upstream.
+[ Upstream commit 7da89a2a3776442a57e918ca0b8678d1b16a7072 ]
 
-Both xprt_lookup_rqst() and xprt_complete_rqst() require that you
-take the transport lock in order to avoid races with xprt_transmit().
+Meelis Roos reports crashes during bootup on a V480 that look like
+this:
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Reviewed-by: Jeff Layton <jlayton@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ kamal: backport to 3.13-stable: context ]
+====================
+[   61.300577] PCI: Scanning PBM /pci@9,600000
+[   61.304867] schizo f009b070: PCI host bridge to bus 0003:00
+[   61.310385] pci_bus 0003:00: root bus resource [io  0x7ffe9000000-0x7ffe9ffffff] (bus address [0x0000-0xffffff])
+[   61.320515] pci_bus 0003:00: root bus resource [mem 0x7fb00000000-0x7fbffffffff] (bus address [0x00000000-0xffffffff])
+[   61.331173] pci_bus 0003:00: root bus resource [bus 00]
+[   61.385344] Unable to handle kernel NULL pointer dereference
+[   61.390970] tsk->{mm,active_mm}->context = 0000000000000000
+[   61.396515] tsk->{mm,active_mm}->pgd = fff000b000002000
+[   61.401716]               \|/ ____ \|/
+[   61.401716]               "@'/ .. \`@"
+[   61.401716]               /_| \__/ |_\
+[   61.401716]                  \__U_/
+[   61.416362] swapper/0(0): Oops [#1]
+[   61.419837] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1-00422-g2cc9188-dirty #24
+[   61.427975] task: fff000b0fd8e9c40 ti: fff000b0fd928000 task.ti: fff000b0fd928000
+[   61.435426] TSTATE: 0000004480e01602 TPC: 00000000004455e4 TNPC: 00000000004455e8 Y: 00000000    Not tainted
+[   61.445230] TPC: <schizo_pcierr_intr+0x104/0x560>
+[   61.449897] g0: 0000000000000000 g1: 0000000000000000 g2: 0000000000a10f78 g3: 000000000000000a
+[   61.458563] g4: fff000b0fd8e9c40 g5: fff000b0fdd82000 g6: fff000b0fd928000 g7: 000000000000000a
+[   61.467229] o0: 000000000000003d o1: 0000000000000000 o2: 0000000000000006 o3: fff000b0ffa5fc7e
+[   61.475894] o4: 0000000000060000 o5: c000000000000000 sp: fff000b0ffa5f3c1 ret_pc: 00000000004455cc
+[   61.484909] RPC: <schizo_pcierr_intr+0xec/0x560>
+[   61.489500] l0: fff000b0fd8e9c40 l1: 0000000000a20800 l2: 0000000000000000 l3: 000000000119a430
+[   61.498164] l4: 0000000001742400 l5: 00000000011cfbe0 l6: 00000000011319c0 l7: fff000b0fd8ea348
+[   61.506830] i0: 0000000000000000 i1: fff000b0fdb34000 i2: 0000000320000000 i3: 0000000000000000
+[   61.515497] i4: 00060002010b003f i5: 0000040004e02000 i6: fff000b0ffa5f481 i7: 00000000004a9920
+[   61.524175] I7: <handle_irq_event_percpu+0x40/0x140>
+[   61.529099] Call Trace:
+[   61.531531]  [00000000004a9920] handle_irq_event_percpu+0x40/0x140
+[   61.537681]  [00000000004a9a58] handle_irq_event+0x38/0x80
+[   61.543145]  [00000000004ac77c] handle_fasteoi_irq+0xbc/0x200
+[   61.548860]  [00000000004a9084] generic_handle_irq+0x24/0x40
+[   61.554500]  [000000000042be0c] handler_irq+0xac/0x100
+====================
+
+The problem is that pbm->pci_bus->self is NULL.
+
+This code is trying to go through the standard PCI config space
+interfaces to read the PCI controller's PCI_STATUS register.
+
+This doesn't work, because we more often than not do not enumerate
+the PCI controller as a bonafide PCI device during the OF device
+node scan.  Therefore bus->self remains NULL.
+
+Existing common code for PSYCHO and PSYCHO-like PCI controllers
+handles this properly, by doing the config space access directly.
+
+Do the same here, pbm->pci_ops->{read,write}().
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sunrpc/svcsock.c | 27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ arch/sparc/kernel/pci_schizo.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index d06cb87..d4d2a2d 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -989,17 +989,12 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
- 	xid = *p++;
- 	calldir = *p;
+diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
+index 8f76f23..f9c6813 100644
+--- a/arch/sparc/kernel/pci_schizo.c
++++ b/arch/sparc/kernel/pci_schizo.c
+@@ -581,7 +581,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ {
+ 	unsigned long csr_reg, csr, csr_error_bits;
+ 	irqreturn_t ret = IRQ_NONE;
+-	u16 stat;
++	u32 stat;
  
--	if (bc_xprt)
--		req = xprt_lookup_rqst(bc_xprt, xid);
--
--	if (!req) {
--		printk(KERN_NOTICE
--			"%s: Got unrecognized reply: "
--			"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
--			__func__, ntohl(calldir),
--			bc_xprt, xid);
-+	if (!bc_xprt)
- 		return -EAGAIN;
--	}
-+	spin_lock_bh(&bc_xprt->transport_lock);
-+	req = xprt_lookup_rqst(bc_xprt, xid);
-+	if (!req)
-+		goto unlock_notfound;
- 
- 	memcpy(&req->rq_private_buf, &req->rq_rcv_buf, sizeof(struct xdr_buf));
- 	/*
-@@ -1010,11 +1005,21 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
- 	dst = &req->rq_private_buf.head[0];
- 	src = &rqstp->rq_arg.head[0];
- 	if (dst->iov_len < src->iov_len)
--		return -EAGAIN; /* whatever; just giving up. */
-+		goto unlock_eagain; /* whatever; just giving up. */
- 	memcpy(dst->iov_base, src->iov_base, src->iov_len);
- 	xprt_complete_rqst(req->rq_task, rqstp->rq_arg.len);
- 	rqstp->rq_arg.len = 0;
-+	spin_unlock_bh(&bc_xprt->transport_lock);
- 	return 0;
-+unlock_notfound:
-+	printk(KERN_NOTICE
-+		"%s: Got unrecognized reply: "
-+		"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
-+		__func__, ntohl(calldir),
-+		bc_xprt, ntohl(xid));
-+unlock_eagain:
-+	spin_unlock_bh(&bc_xprt->transport_lock);
-+	return -EAGAIN;
- }
- 
- static int copy_pages_to_kvecs(struct kvec *vec, struct page **pages, int len)
+ 	csr_reg = pbm->pbm_regs + SCHIZO_PCI_CTRL;
+ 	csr = upa_readq(csr_reg);
+@@ -617,7 +617,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 			       pbm->name);
+ 		ret = IRQ_HANDLED;
+ 	}
+-	pci_read_config_word(pbm->pci_bus->self, PCI_STATUS, &stat);
++	pbm->pci_ops->read(pbm->pci_bus, 0, PCI_STATUS, 2, &stat);
+ 	if (stat & (PCI_STATUS_PARITY |
+ 		    PCI_STATUS_SIG_TARGET_ABORT |
+ 		    PCI_STATUS_REC_TARGET_ABORT |
+@@ -625,7 +625,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
+ 		    PCI_STATUS_SIG_SYSTEM_ERROR)) {
+ 		printk("%s: PCI bus error, PCI_STATUS[%04x]\n",
+ 		       pbm->name, stat);
+-		pci_write_config_word(pbm->pci_bus->self, PCI_STATUS, 0xffff);
++		pbm->pci_ops->write(pbm->pci_bus, 0, PCI_STATUS, 2, 0xffff);
+ 		ret = IRQ_HANDLED;
+ 	}
+ 	return ret;
 -- 
 1.9.1
 
