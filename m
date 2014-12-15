@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaLOAlO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 19:41:14 -0500
-Received: from ozlabs.org ([103.22.144.67]:57405 "EHLO ozlabs.org"
+	id S1753267AbaLOAnK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 19:43:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39779 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752728AbaLOAlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 19:41:03 -0500
-Message-ID: <1418604052.19970.6.camel@ellerman.id.au>
-Subject: Re: [PATCH 00/18] uaccess: fix sparse warning on get_user for
- bitwise types
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org
-Date: Mon, 15 Dec 2014 11:40:52 +1100
-In-Reply-To: <1418575877-21488-1-git-send-email-mst@redhat.com>
-References: <1418575877-21488-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752004AbaLOAnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 19:43:01 -0500
+Date: Sun, 14 Dec 2014 19:42:20 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141215004220.GA671@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Peter Zijlstra <peterz@infradead.org>,
+	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
+	Sasha Levin <sasha.levin@oracle.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+	Peter Anvin <hpa@linux.intel.com>
+References: <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+ <20141211145408.GB16800@redhat.com>
+ <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+ <20141212185454.GB4716@redhat.com>
+ <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+ <20141213165915.GA12756@redhat.com>
+ <20141213223616.GA22559@redhat.com>
+ <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
+ <20141214234654.GA396@redhat.com>
+ <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-12-14 at 18:51 +0200, Michael S. Tsirkin wrote:
-> At the moment, if p and x are both tagged as bitwise types,
-> get_user(x, p) produces a sparse warning on many architectures.
-> This is because *p on these architectures is loaded into long
-> (typically using asm), then cast back to typeof(*p).
-> 
-> When typeof(*p) is a bitwise type (which is uncommon), such a cast needs
-> __force, otherwise sparse produces a warning.
+On Sun, Dec 14, 2014 at 04:38:00PM -0800, Linus Torvalds wrote:
+ > On Sun, Dec 14, 2014 at 3:46 PM, Dave Jones <davej@redhat.com> wrote:
+ > > On Sat, Dec 13, 2014 at 02:40:51PM -0800, Linus Torvalds wrote:
+ > >  > On Sat, Dec 13, 2014 at 2:36 PM, Dave Jones <davej@redhat.com> wrote:
+ > >  > >
+ > >  > > Ok, I think we can rule out preemption. I just checked on it, and
+ > >  > > found it wedged.
+ > >  >
+ > >  > Ok, one more. Mind checking what happens without CONFIG_DEBUG_PAGEALLOC?
+ > >
+ > > Crap. Looks like it wedged. It's stuck that way until I get back to it
+ > > on Wednesday.
+ > 
+ > Hey, this is not "crap" at all. Quite the reverse.
 
-What does __force actually mean? Force the cast even though it's a bitfield? Or
-does it mean more than that?
+It was more a "Crap it's wedged and I can't do anything about it for days".
+I didn't look closely at the actual traces this time.
 
-ie. are we loosing the ability to detect any actual errors by adding force?
+ > DaveJ, do you have the kernel image for this? I'd love to see what the
+ > code is around that "save_xstate_sig+0x81" or around those
+ > __clear_user+0x17/0x36 points...
+ 
+Not until I get back on Wednesday and reboot it.
 
-cheers
-
-
+	Dave
