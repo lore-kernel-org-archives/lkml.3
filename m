@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbaLOOIu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:08:50 -0500
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:61627 "EHLO
+	id S1751619AbaLOOKd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:10:33 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:46367 "EHLO
 	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaLOOIs (ORCPT
+	with ESMTP id S1750711AbaLOOK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:08:48 -0500
-Date: Mon, 15 Dec 2014 06:08:43 -0800
+	Mon, 15 Dec 2014 09:10:28 -0500
+Date: Mon, 15 Dec 2014 06:10:23 -0800
 From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Loic Pefferkorn <loic@loicp.eu>, gregkh@linuxfoundation.org,
-        alan@linux.intel.com, jun.j.tian@intel.com, octavian.purdila@intel.com,
-        nnk@google.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, apw@canonical.com, joe@perches.com
-Subject: Re: [PATCH] checkpatch giving bogus advice (was staging: goldfish:
- Fix minor coding style)
-Message-ID: <20141215140843.GA918@newt.localdomain>
+To: Dudley Du <dudley.dulixin@gmail.com>
+Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, bleung@google.com,
+        dso@cypress.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v15 00/12] input: cyapa: instruction of cyapa patches
+Message-ID: <20141215141023.GB918@newt.localdomain>
 Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	Loic Pefferkorn <loic@loicp.eu>, gregkh@linuxfoundation.org,
-	alan@linux.intel.com, jun.j.tian@intel.com,
-	octavian.purdila@intel.com, nnk@google.com,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	apw@canonical.com, joe@perches.com
-References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
- <20141213175518.GA28616@hudson.localdomain>
- <20141213182238.GA6979@iron>
- <20141213194647.GA30065@hudson.localdomain>
- <20141215114421.7389d32a@lxorguk.ukuu.org.uk>
- <20141215130346.GB18251@hudson.localdomain>
- <20141215134334.GE4856@mwanda>
+	Dudley Du <dudley.dulixin@gmail.com>, dmitry.torokhov@gmail.com,
+	rydberg@euromail.se, bleung@google.com, dso@cypress.com,
+	linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1418624603-19054-1-git-send-email-dudley.dulixin@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141215134334.GE4856@mwanda>
+In-Reply-To: <1418624603-19054-1-git-send-email-dudley.dulixin@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan,
+Dudley,
 
-On Mon, Dec 15, 2014 at 04:43:34PM +0300, Dan Carpenter wrote:
-> On Mon, Dec 15, 2014 at 05:03:46AM -0800, Jeremiah Mahler wrote:
-> > 
-> > Or another way mentioned in K&R that produces a compile error
-> > 
-> >             if (NULL = x) 
-> > 
+On Mon, Dec 15, 2014 at 02:23:11PM +0800, Dudley Du wrote:
+> V15 patches have below updates, details of other updates see history list:
+> 1) Fix all warning errors of sparse tool when running with "make C=1".
+> 2) Change variable name "unique_str" to "product_id" for clearer meanings.
 > 
-> Yes.  People used to write Yoda code back in the day.  Don't ever do
-> this in the kernel.
 > 
-> 1) It looks stupid.
+> This patch series is aimed to re-design the cyapa driver to support
+> old gen3 trackpad devices and new gen5 trackpad devices in one
+[...]
 
-Agreed :-)
+The patch set still tests fine on my Acer C720.
 
-> 2) GCC will catch most == vs = bugs as Alan pointed out.
-> 3) There are still some that sneak through because people put double
->    parenthesis around everything like "if ((foo = NULL) || (...)) {",
->    but checkpatch.pl and Smatch will catch those.
-> 
-> regards,
-> dan carpenter
-> 
+I went through all the patches and found lots of minor things to fix
+as you would expect from this large amount of code.
+
+I hope you don't get discouraged :-)
 
 -- 
 - Jeremiah Mahler
