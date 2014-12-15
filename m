@@ -1,142 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaLOI1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 03:27:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36783 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751632AbaLOI1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 03:27:20 -0500
-Date: Mon, 15 Dec 2014 00:27:17 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [f2fs-dev][PATCH] f2fs: merge two uchar variable in struct
- nat_entry to reduce memory cost
-Message-ID: <20141215082717.GA83773@jaegeuk-mac02.mot-mobility.com>
-References: <001c01d012b6$a0fbaaa0$e2f2ffe0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001c01d012b6$a0fbaaa0$e2f2ffe0$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751834AbaLOI24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 03:28:56 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:59855 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966AbaLOI2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 03:28:53 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-77-548e9bc262a1
+Message-id: <548E9BB9.806@samsung.com>
+Date: Mon, 15 Dec 2014 09:28:41 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Mark Brown <broonie@kernel.org>
+Cc: open list <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "moderated list:ARM/CLKDEV SUPPORT" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:GPIO SUBSYSTEM" <linux-gpio@vger.kernel.org>,
+        "open list:DRM PANEL DRIVERS" <dri-devel@lists.freedesktop.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        boris.brezillon@free-electrons.com
+Subject: Re: [RFC 02/15] drivers/base: add restrack framework
+References: <1418226513-14105-1-git-send-email-a.hajda@samsung.com>
+ <1418226513-14105-3-git-send-email-a.hajda@samsung.com>
+ <20141212165230.GP11764@sirena.org.uk>
+In-reply-to: <20141212165230.GP11764@sirena.org.uk>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t/xy7qHZveFGJzrNbU48GIhi8XUh0/Y
+	LOYfOcdqceXrezaLc68esVgc+LOD0aJ58Xo2i0n3J7BYXHjaw2bx7UoHk8WUP8uZLDY9vsZq
+	sXn+H0aLy7vmsFnMOL+PyeL2ZV6LtUfusls8nXCRzaJ17xF2i5+75rE4iHi0NPeweTzZdJHR
+	Y+esu+wem1Z1snncubaHzWP/3DXsHve7jzN5bF5S79G3ZRWjx/Eb25k8Pm+SC+CO4rJJSc3J
+	LEst0rdL4MpomdnOWNDAX/Hh5lW2BsY/3F2MnBwSAiYSB089ZYewxSQu3FvP1sXIxSEksJRR
+	Ys73zUwQzidGif+rrzCDVPEKqEnM+XIVKMHBwSKgKvFmZQpImE1AU+Lv5ptsILaoQITEh1Vf
+	2SDKBSV+TL7HAmKLCChLXP2+F8xmFpjDLrF5lzmILSxgKzGj4yULxK5ljBJ/tjWB7eIUMJbY
+	umQzC8guZgE9ifsXtSB65SU2r3nLPIFRYBaSFbMQqmYhqVrAyLyKUTS1NLmgOCk910ivODG3
+	uDQvXS85P3cTIyQ6v+5gXHrM6hCjAAejEg/vj8TeECHWxLLiytxDjBIczEoivN3xfSFCvCmJ
+	lVWpRfnxRaU5qcWHGJk4OKUaGNMkup1mLRWKtEoQ3HS8+tE5t8VV6ffm35aa2rn5YD/DN8YX
+	Nku2OOy76rmpZfnnw5N7tf4dWHfqjlnl7AssanO36zXLxfB47t1msLtjd9HJiw69oVo9Ob46
+	f9hn5P2V/X3ENuy5/SX1QzOTUnaZrBXdxsS0afPKZnmplmDdTLsjT1xrV+v9fqTEUpyRaKjF
+	XFScCAAb4hBXrAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+On 12/12/2014 05:52 PM, Mark Brown wrote:
+> On Wed, Dec 10, 2014 at 04:48:20PM +0100, Andrzej Hajda wrote:
+>> restrack framework allows tracking presence of resources with dynamic life
+>> time. Typical example of such resources are all resources provided by device
+> I don't know about anyone else but I'm having a hard time reading the
+> restrack name, it looks like a misspelling of restack to me.
 
-I found a bug in this patch.
+Any alternative names?
 
-In set_node_addr,
+>
+> At a high level my biggest questions here are the relationship between
+> this and the component code and usability.  The usability concern I have
+> is that I see no diagnostics or trace here at all.  This means that if a
+> user looks at their system, sees that the device model claims the driver
+> for a device bound to the device but can't see any sign of the device
+> doing anything they don't have any way of telling why that is other than
+> to look in the driver code, see what resources it was trying to depend
+> on and then go back to the running system to try to understand which of
+> those resources hasn't appeared.
 
- 	down_write(&nm_i->nat_tree_lock);
-	e = __lookup_nat_cache(nm_i, ni->nid);
-	if (!e) {
-		e = grab_nat_entry(nm_i, ni->nid);
-		e->ni = *ni;
-		^^^^^^^^^^^^
-		this line should not copy ni.flag.
-		
-		f2fs_bug_on(sbi, ni->blk_addr == NEW_ADDR);
-	} else if (new_blkaddr == NEW_ADDR) {
-		/*
-		 * when nid is reallocated,
-		 * previous nat entry can be remained in nat cache.
-		 * So, reinitialize it with new information.
-		 */
-		e->ni = *ni;
-		^^^^^^^^^^^^
-		ditto.
+I will move the code for provider matching to frameworks,
+so it will be easy to add just dev_info after every failed attempt
+of getting resource, including deferring. This is the simplest solution
+and it should be similar in verbosity to deferred probing.
 
-		f2fs_bug_on(sbi, ni->blk_addr != NULL_ADDR);
-	}
+Maybe other solution is to provide debug_fs (or device) attribute showing
+restrack status per device.
 
-So, please add inline function in node.h like:
+>
+>> +int restrack_up(unsigned long type, const void *id, void *data)
+>> +int restrack_down(unsigned long type, const void *id, void *data)
+> Again I'm not sure that the up and down naming is meaningful in the
+> context of this interface.
+>
+>> +static void restrack_itb_cb(struct track_block *itb, void *data, bool on)
+>> +{
+> itb_cb?
 
-static inline void copy_node_info(dst, src)
-{
-	dst->nid = src->nid;
-	dst->ino = src->ino;
-	dst->blk_addr = src->blk_addr;
-	dst->version = src->version;
-	/* should not copy flag here */
-}
+Ups I forgot to rename few variables from my previous attempt.
+itb - stayed for interface tracker block.
 
-Then let's use this function.
+Regards
+Andrzej
 
-Thanks,
 
-On Mon, Dec 08, 2014 at 03:13:49PM +0800, Chao Yu wrote:
-> This patch moves one member of struct nat_entry: _flag_ to struct node_info,
-> so _version_ in struct node_info and _flag_ with unsigned char type will merge
-> to one 32-bit space in register/memory. Then the size of nat_entry will reduce
-> its size from 28 bytes to 24 bytes and slab memory using by f2fs will be
-> reduced.
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/node.h | 23 ++++++++++++-----------
->  1 file changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
-> index d10b644..27a7318 100644
-> --- a/fs/f2fs/node.h
-> +++ b/fs/f2fs/node.h
-> @@ -29,6 +29,14 @@
->  /* return value for read_node_page */
->  #define LOCKED_PAGE	1
->  
-> +/* For flag in struct node_info */
-> +enum {
-> +	IS_CHECKPOINTED,	/* is it checkpointed before? */
-> +	HAS_FSYNCED_INODE,	/* is the inode fsynced before? */
-> +	HAS_LAST_FSYNC,		/* has the latest node fsync mark? */
-> +	IS_DIRTY,		/* this nat entry is dirty? */
-> +};
-> +
->  /*
->   * For node information
->   */
-> @@ -37,18 +45,11 @@ struct node_info {
->  	nid_t ino;		/* inode number of the node's owner */
->  	block_t	blk_addr;	/* block address of the node */
->  	unsigned char version;	/* version of the node */
-> -};
-> -
-> -enum {
-> -	IS_CHECKPOINTED,	/* is it checkpointed before? */
-> -	HAS_FSYNCED_INODE,	/* is the inode fsynced before? */
-> -	HAS_LAST_FSYNC,		/* has the latest node fsync mark? */
-> -	IS_DIRTY,		/* this nat entry is dirty? */
-> +	unsigned char flag;	/* for node information bits */
->  };
->  
->  struct nat_entry {
->  	struct list_head list;	/* for clean or dirty nat list */
-> -	unsigned char flag;	/* for node information bits */
->  	struct node_info ni;	/* in-memory node information */
->  };
->  
-> @@ -68,15 +69,15 @@ static inline void set_nat_flag(struct nat_entry *ne,
->  {
->  	unsigned char mask = 0x01 << type;
->  	if (set)
-> -		ne->flag |= mask;
-> +		ne->ni.flag |= mask;
->  	else
-> -		ne->flag &= ~mask;
-> +		ne->ni.flag &= ~mask;
->  }
->  
->  static inline bool get_nat_flag(struct nat_entry *ne, unsigned int type)
->  {
->  	unsigned char mask = 0x01 << type;
-> -	return ne->flag & mask;
-> +	return ne->ni.flag & mask;
->  }
->  
->  static inline void nat_reset_flag(struct nat_entry *ne)
-> -- 
-> 2.1.2
