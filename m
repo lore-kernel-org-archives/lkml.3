@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaLOQTw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:19:52 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60554 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359AbaLOQTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:19:47 -0500
-Date: Mon, 15 Dec 2014 16:18:27 +0000
-From: Mark Brown <broonie@kernel.org>
-To: "Kuankuan.Yang" <ykk@rock-chips.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?utf-8?B?U3Tvv73vv71waGFuZQ==?= Marchesin <marcheu@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
-        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jyri Sarha <jsarha@ti.com>
-Message-ID: <20141215161827.GE11764@sirena.org.uk>
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
- <1418612114-19692-1-git-send-email-ykk@rock-chips.com>
- <20141215104029.GE11285@n2100.arm.linux.org.uk>
- <20141215120205.GZ11764@sirena.org.uk>
- <548EDDC2.9050104@rock-chips.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C64opeEuicNVb5KK"
-Content-Disposition: inline
-In-Reply-To: <548EDDC2.9050104@rock-chips.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip
- hdmi-audio
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1752461AbaLOQUp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:20:45 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:32939 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751856AbaLOQTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 11:19:14 -0500
+From: Martin Kepplinger <martink@posteo.de>
+To: peterz@infradead.org
+Cc: mingo@kernel.org, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        Martin Kepplinger <martink@posteo.de>
+Subject: [PATCH 6/6] media: stb0899: use sign_extend8 instead of manual work
+Date: Mon, 15 Dec 2014 17:18:37 +0100
+Message-Id: <1418660317-21750-7-git-send-email-martink@posteo.de>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418660317-21750-1-git-send-email-martink@posteo.de>
+References: <1418660317-21750-1-git-send-email-martink@posteo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+---
+ drivers/media/dvb-frontends/stb0899_algo.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---C64opeEuicNVb5KK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/drivers/media/dvb-frontends/stb0899_algo.c b/drivers/media/dvb-frontends/stb0899_algo.c
+index 93596e0..7bbcfde 100644
+--- a/drivers/media/dvb-frontends/stb0899_algo.c
++++ b/drivers/media/dvb-frontends/stb0899_algo.c
+@@ -19,6 +19,7 @@
+ 	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+ 
++#include <linux/bitops.h>
+ #include "stb0899_drv.h"
+ #include "stb0899_priv.h"
+ #include "stb0899_reg.h"
+@@ -1490,9 +1491,7 @@ enum stb0899_status stb0899_dvbs2_algo(struct stb0899_state *state)
+ 		/* Store signal parameters	*/
+ 		offsetfreq = STB0899_READ_S2REG(STB0899_S2DEMOD, CRL_FREQ);
+ 
+-		/* sign extend 30 bit value before using it in calculations */
+-		if (offsetfreq & (1 << 29))
+-			offsetfreq |= -1 << 30;
++		offsetfreq = sign_extend32(offset_freq, 29);
+ 
+ 		offsetfreq = offsetfreq / ((1 << 30) / 1000);
+ 		offsetfreq *= (internal->master_clk / 1000000);
+-- 
+2.1.3
 
-On Mon, Dec 15, 2014 at 09:10:26PM +0800, Kuankuan.Yang wrote:
-> Hi Mark & Russell:
-
-Please don't top post, that way people have some context for what you're
-saying - look at how people normally format their mails on thelist.
-
-> In that way, dt will only need compatible for creating sound device. is it
-> ok  ?
-> sound {
->     compatible = "rockchip,rk3288-hdmi-audio";
->     status = "okay";
-> }
-> could you give me some advises.
-
-That'd be good, though the other question is if this can be made to use
-simple-card so we can avoid having a custom driver for this.
-
---C64opeEuicNVb5KK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUjwnSAAoJECTWi3JdVIfQmAwH/0hdq6BjZ9xYACE0CunvAQcQ
-sBdvJEB0SF8PplZgNYZo+I3FR9J/DgW5cWdO3hyNZtWzgQaQbhUwmbPy5lAfkVqU
-sUhCYsXgGJorvFVdmF2/hUOt4fjwJ/+DwmbLmf7x075P+BecgL27DxIF5PoJKOzT
-PCGxqlnnpcEyyULR7h6ZITB7LpakyvFq9ZVvvdKqZgBhPYAp16EWk6Dn+LmYVFXC
-vXDST0SMgbWAylzHEPQMpmQQbU9ahF4m3nb2PR+9RF09EopV1hM/NMWPXWyn04+7
-RfWoJIYqNavnIXptNKnAwXF1nCqjx/D4kKBBdobCyXaD1R7eOrv1y+ZF20yjLiY=
-=ZeYG
------END PGP SIGNATURE-----
-
---C64opeEuicNVb5KK--
