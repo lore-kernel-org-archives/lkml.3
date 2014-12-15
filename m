@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908AbaLOOkH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:40:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38811 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbaLOO2v (ORCPT
+	id S1753921AbaLOOke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:40:34 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39509 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164AbaLOOkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:51 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 120/168] staging: r8188eu: Add new device ID for DLink GO-USB-N150
-Date: Mon, 15 Dec 2014 14:26:14 +0000
-Message-Id: <1418653622-21105-121-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Mon, 15 Dec 2014 09:40:31 -0500
+Date: Mon, 15 Dec 2014 14:40:27 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: John Fastabend <john.fastabend@gmail.com>, Jiri Pirko <jiri@resnulli.us>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141215144027.GA21262@casper.infradead.org>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion>
+ <54887CF7.70708@gmail.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+ <20141215140749.GB21952@casper.infradead.org>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC5DCF@IRSMSX108.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC5DCF@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+On 12/15/14 at 02:29pm, Varlese, Marco wrote:
+> > All of these are highly generic and should *not* be passed through from user
+> > space to the driver directly but rather be properly abstracted as Roopa
+> > proposed. The value of this API is abstraction.
+> How would you let the user enable/disable features then? For instance, how would the user enable/disable flooding for broadcast packets (BFLOODING) on a given port? What I was proposing is to have a list of attributes (to be added in if_link.h) which can be tuned by the user using a tool like iproute2. What do you propose? 
 
-------------------
+Excellent, I agree with what you are saying. What set me off is that
+the patch does not reflect that yet. Instead, the patch introduces
+a pure Netlink pass-through API to the driver.
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+I would expect the patch to:
+ 1. Parse the Netlink messages and be aware of individual attributes
+ 2. Validate them
+ 3. Pass the configuration to the driver using an API that can also
+    be consumed from in-kernel users.
 
-commit 6d4556fc0309608f760f1d329df56d77fdd0c31a upstream.
+> I think I have seen Roopa posting his updated ndo patch and getting some feedback by few people already and as long as I will be able to accomplish the use case described here I am happy with his way.
 
-The DLink GO-USB-N150 with revision B1 uses this driver.
+I think Roopa's patches are supplementary. Not all switchdev users
+will be backed with a Linux Bridge. I therefore welcome your patches
+very much.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/rtl8188eu/os_dep/usb_intf.c | 1 +
- 1 file changed, 1 insertion(+)
+The overlap is in the ndo. I think both the API you propose and
+Roopa's bridge code should use the same NDO.
 
-diff --git a/drivers/staging/rtl8188eu/os_dep/usb_intf.c b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-index c4273cd5f7ed..db785c05f01c 100644
---- a/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8188eu/os_dep/usb_intf.c
-@@ -58,6 +58,7 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
- 	{USB_DEVICE(0x07b8, 0x8179)}, /* Abocom - Abocom */
- 	{USB_DEVICE(0x2001, 0x330F)}, /* DLink DWA-125 REV D1 */
- 	{USB_DEVICE(0x2001, 0x3310)}, /* Dlink DWA-123 REV D1 */
-+	{USB_DEVICE(0x2001, 0x3311)}, /* DLink GO-USB-N150 REV B1 */
- 	{USB_DEVICE(0x0df6, 0x0076)}, /* Sitecom N150 v2 */
- 	{}	/* Terminating entry */
- };
--- 
-2.1.3
+> I do not have an example right now of a vendor specific attribute but I was just saying that might happen (i.e. someone will have a feature not implemented by others?).
 
+That's fine. Once we have them we can consider adding vendor specific
+extensions.
