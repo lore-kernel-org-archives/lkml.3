@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaLOTfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:35:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41040 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752682AbaLOTeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752688AbaLOTeE (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Dec 2014 14:34:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41026 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666AbaLOTeA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 14:34:00 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Chris J Arges <chris.j.arges@canonical.com>,
+Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 86/96] drm/radeon: initialize sadb to NULL in the audio code
-Date: Mon, 15 Dec 2014 11:26:46 -0800
-Message-Id: <1418671616-25482-87-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 90/96] tg3: fix ring init when there are more TX than RX channels
+Date: Mon, 15 Dec 2014 11:26:50 -0800
+Message-Id: <1418671616-25482-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,62 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
 
-commit 83d04c39f9048807a8500e575ae3f1718a3f45bb upstream.
+[ Upstream commit a620a6bc1c94c22d6c312892be1e0ae171523125 ]
 
-Fixes kfree of the sadb buffer when it's NULL.
+If TX channels are set to 4 and RX channels are set to less than 4,
+using ethtool -L, the driver will try to initialize more RX channels
+than it has allocated, causing an oops.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-BugLink: http://bugs.launchpad.net/bugs/1402714
-(backported from commit 83d04c39f9048807a8500e575ae3f1718a3f45bb)
-Signed-off-by: Chris J Arges <chris.j.arges@canonical.com>
+This fix only initializes the RX ring if it has been allocated.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/dce6_afmt.c      | 2 +-
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 2 +-
- drivers/gpu/drm/radeon/r600_hdmi.c      | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/dce6_afmt.c b/drivers/gpu/drm/radeon/dce6_afmt.c
-index 3483828..a6e5151 100644
---- a/drivers/gpu/drm/radeon/dce6_afmt.c
-+++ b/drivers/gpu/drm/radeon/dce6_afmt.c
-@@ -155,7 +155,7 @@ void dce6_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 offset, tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
+diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
+index 1b84139..bbb9bd9 100644
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -8532,7 +8532,8 @@ static int tg3_init_rings(struct tg3 *tp)
+ 		if (tnapi->rx_rcb)
+ 			memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
  
- 	if (!dig || !dig->afmt || !dig->afmt->pin)
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index 738c1ec..a10879d 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -102,7 +102,7 @@ static void dce4_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
- 
- 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index b7d3ecb..bae30c6 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -326,7 +326,7 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector = NULL;
- 	u32 tmp;
--	u8 *sadb;
-+	u8 *sadb = NULL;
- 	int sad_count;
- 
- 	/* XXX: setting this register causes hangs on some asics */
+-		if (tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
++		if (tnapi->prodring.rx_std &&
++		    tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
+ 			tg3_free_rings(tp);
+ 			return -ENOMEM;
+ 		}
 -- 
 1.9.1
 
