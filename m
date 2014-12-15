@@ -1,111 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751103AbaLOLNZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:13:25 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:50928 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaLOLNV (ORCPT
+	id S1751430AbaLOLOs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:14:48 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53682 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989AbaLOLOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:13:21 -0500
+	Mon, 15 Dec 2014 06:14:45 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <548EC29A.5080008@jp.fujitsu.com>
+Date: Mon, 15 Dec 2014 20:14:34 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <20141214230628.85EB7660D3D@gitolite.kernel.org>
-References: <20141214230628.85EB7660D3D@gitolite.kernel.org>
-Date: Mon, 15 Dec 2014 12:13:19 +0100
-X-Google-Sender-Auth: n4yKOXYbiaS0zkrsduRe2wM6cvo
-Message-ID: <CAMuHMdWYqCDpceft22AT0dFkuw877JiHA1NkToFzehARu+fL6Q@mail.gmail.com>
-Subject: Re: usb: gadget: hid: add configfs support
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, Felipe Balbi <balbi@ti.com>
-Cc: USB list <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>
+Subject: [PATCH 1/4] workqueue:Fix unbound workqueue's node affinity detection
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548EC1E2.1010101@jp.fujitsu.com>
+In-Reply-To: <548EC1E2.1010101@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 12:06 AM, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/;a=commit;h=21a9476a7ba847e413bf1c144d7c614532aed6dd
-> Commit:     21a9476a7ba847e413bf1c144d7c614532aed6dd
-> Parent:     5ca8d3ec9970f4798e68bd21a9d44db3d0ff4da7
-> Refname:    refs/heads/master
-> Author:     Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-> AuthorDate: Thu Nov 6 11:12:03 2014 +0100
-> Committer:  Felipe Balbi <balbi@ti.com>
-> CommitDate: Thu Nov 6 16:18:19 2014 -0600
->
->     usb: gadget: hid: add configfs support
->
->     Make the hid function available for gadgets composed with configfs.
->
+Unbound wq pool's node attribute is calculated at its allocation.
+But it's now calculated based on possible cpu<->node information
+which can be wrong after cpu hotplug/unplug.
 
-> --- a/drivers/usb/gadget/function/f_hid.c
-> +++ b/drivers/usb/gadget/function/f_hid.c
+If wrong pool->node is set, following allocation error will happen.
+==
+ SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
+  cache: kmalloc-192, object size: 192, buffer size: 192, default order:
+1, min order: 0
+  node 0: slabs: 6172, objs: 259224, free: 245741
+  node 1: slabs: 3261, objs: 136962, free: 127656
+==
 
-> +
-> +#define F_HID_OPT(name, prec, limit)                                   \
-> +static ssize_t f_hid_opts_##name##_show(struct f_hid_opts *opts, char *page)\
-> +{                                                                      \
-> +       int result;                                                     \
-> +                                                                       \
-> +       mutex_lock(&opts->lock);                                        \
-> +       result = sprintf(page, "%d\n", opts->name);                     \
-> +       mutex_unlock(&opts->lock);                                      \
-> +                                                                       \
-> +       return result;                                                  \
-> +}                                                                      \
-> +                                                                       \
-> +static ssize_t f_hid_opts_##name##_store(struct f_hid_opts *opts,      \
-> +                                        const char *page, size_t len)  \
-> +{                                                                      \
-> +       int ret;                                                        \
-> +       u##prec num;                                                    \
-> +                                                                       \
-> +       mutex_lock(&opts->lock);                                        \
-> +       if (opts->refcnt) {                                             \
-> +               ret = -EBUSY;                                           \
-> +               goto end;                                               \
-> +       }                                                               \
-> +                                                                       \
-> +       ret = kstrtou##prec(page, 0, &num);                             \
-> +       if (ret)                                                        \
-> +               goto end;                                               \
-> +                                                                       \
-> +       if (num > limit) {                                              \
-> +               ret = -EINVAL;                                          \
-> +               goto end;                                               \
-> +       }                                                               \
-> +       opts->name = num;                                               \
-> +       ret = len;                                                      \
-> +                                                                       \
-> +end:                                                                   \
-> +       mutex_unlock(&opts->lock);                                      \
-> +       return ret;                                                     \
-> +}                                                                      \
-> +                                                                       \
-> +static struct f_hid_opts_attribute f_hid_opts_##name =                 \
-> +       __CONFIGFS_ATTR(name, S_IRUGO | S_IWUSR, f_hid_opts_##name##_show,\
-> +                       f_hid_opts_##name##_store)
-> +
-> +F_HID_OPT(subclass, 8, 255);
-> +F_HID_OPT(protocol, 8, 255);
-> +F_HID_OPT(report_length, 16, 65536);
+This patch fixes the node detection by making use of online cpu info.
+Unlike cpumask, the best node can be calculated by degree of overlap
+between attr->cpumask and numanode->online_cpumask.
+This change doesn't corrupt original purpose of the old calculation.
 
-While all three of the above lines trigger a (false positive) compiler warning:
+Note: it's expected that this function is called as
+      pool_detect_best_node
+      get_unbound_pool
+      alloc_unbound_pwq
+      wq_update_unbound_numa
+      called at CPU_ONLINE/CPU_DOWN_PREPARE
+and the latest online cpu info can be applied to a new wq pool,
+which replaces old one.
 
-warning: comparison is always false due to limited range of data type
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ kernel/workqueue.c | 38 ++++++++++++++++++++++++++------------
+ 1 file changed, 26 insertions(+), 12 deletions(-)
 
-it's a bit sloppy to use "2^8-1" for the first two limits, and "2^16"
-(without -1) for
-the third limit.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 09b685d..7809154 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3440,6 +3440,31 @@ static void put_unbound_pool(struct worker_pool *pool)
+ }
+ 
+ /**
++ * pool_detect_best_node - detect a node which contains specified cpumask.
++ * Should be called with wq_pool_mutex held.
++ * Returns a online node where the most of given cpus are tied to. 
++ */
++static int pool_detect_best_node(const struct cpumask *cpumask)
++{
++	int node, best, match, selected = NUMA_NO_NODE;
++	static struct cpumask andmask; /* under wq_pool_mutex */
++
++	if (!wq_numa_enabled ||
++		cpumask_subset(cpu_online_mask, cpumask))
++		goto out;
++	best = 0;
++	/* select a node which contains the most number of cpu */
++	for_each_node_state(node, N_ONLINE) {
++		cpumask_and(&andmask, cpumask, cpumask_of_node(node));
++		match = cpumask_weight(&andmask);
++		if (match > best)
++			selected = best;
++	}
++out:
++	return selected;
++}
++
++/**
+  * get_unbound_pool - get a worker_pool with the specified attributes
+  * @attrs: the attributes of the worker_pool to get
+  *
+@@ -3457,7 +3482,6 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ {
+ 	u32 hash = wqattrs_hash(attrs);
+ 	struct worker_pool *pool;
+-	int node;
+ 
+ 	lockdep_assert_held(&wq_pool_mutex);
+ 
+@@ -3482,17 +3506,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+ 	 * 'struct workqueue_attrs' comments for detail.
+ 	 */
+ 	pool->attrs->no_numa = false;
+-
+-	/* if cpumask is contained inside a NUMA node, we belong to that node */
+-	if (wq_numa_enabled) {
+-		for_each_node(node) {
+-			if (cpumask_subset(pool->attrs->cpumask,
+-					   wq_numa_possible_cpumask[node])) {
+-				pool->node = node;
+-				break;
+-			}
+-		}
+-	}
++	pool->node = pool_detect_best_node(pool->attrs->cpumask);
+ 
+ 	if (worker_pool_assign_id(pool) < 0)
+ 		goto fail;
+-- 
+1.8.3.1
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
