@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbaLOIil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 03:38:41 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.140]:43721 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750836AbaLOIij (ORCPT
+	id S1751503AbaLOIsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 03:48:17 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:36250 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaLOIsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 03:38:39 -0500
-Message-ID: <548E9DE0.7050502@arm.com>
-Date: Mon, 15 Dec 2014 08:37:52 +0000
-From: Andrew Jackson <Andrew.Jackson@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Rajeev Kumar <rajeevkumar.linux@gmail.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/6] ASoC: dwc: Ensure FIFOs are flushed to prevent
- channel swap
-References: <cover.1418372910.git.Andrew.Jackson@arm.com> <a3b4a11dfe1688eea07471c6cfa27676cc9a58a8.1418372910.git.Andrew.Jackson@arm.com> <548AB75E.9030302@metafoo.de>
-In-Reply-To: <548AB75E.9030302@metafoo.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Dec 2014 03:48:13 -0500
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH 0/1] arm: Fix fallout from the access_once tree
+Date: Mon, 15 Dec 2014 09:48:06 +0100
+Message-Id: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com>
+X-Mailer: git-send-email 1.8.5.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121508-0013-0000-0000-00000236CBCB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/14 09:37, Lars-Peter Clausen wrote:
-> On 12/12/2014 10:25 AM, Andrew Jackson wrote:
->> From: Andrew Jackson <Andrew.Jackson@arm.com>
->>
->> If the FIFOs aren't flushed, the left/right channels may be swapped:
->> this may occur if the FIFOs are not empty when the streams start.
->>
->> Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
->> ---
->>   sound/soc/dwc/designware_i2s.c |    2 ++
->>   1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/sound/soc/dwc/designware_i2s.c b/sound/soc/dwc/designware_i2s.c
->> index ef771ea..b9d6a25 100644
->> --- a/sound/soc/dwc/designware_i2s.c
->> +++ b/sound/soc/dwc/designware_i2s.c
->> @@ -228,12 +228,14 @@ static int dw_i2s_hw_params(struct snd_pcm_substream *substream,
->>   	i2s_disable_channels(dev, substream->stream);
->>
->>   	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
->> +		i2s_write_reg(dev->i2s_base, TXFFR, 1);
->>   		i2s_write_reg(dev->i2s_base, TCR(ch_reg), xfer_resolution);
->>   		i2s_write_reg(dev->i2s_base, TFCR(ch_reg), 0x02);
->>   		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
->>   		i2s_write_reg(dev->i2s_base, IMR(ch_reg), irq & ~0x30);
->>   		i2s_write_reg(dev->i2s_base, TER(ch_reg), 1);
->>   	} else {
->> +		i2s_write_reg(dev->i2s_base, RXFFR, 1);
->>   		i2s_write_reg(dev->i2s_base, RCR(ch_reg), xfer_resolution);
->>   		i2s_write_reg(dev->i2s_base, RFCR(ch_reg), 0x07);
->>   		irq = i2s_read_reg(dev->i2s_base, IMR(ch_reg));
->>
-> 
-> This should probably go into the prepare callback. prepare is for example 
-> also called when recovering from a underrun/overrun. Whereas hwparams is 
-> only called during initial setup of the stream.
+Russell,
 
-That's a good idea: thank you.  I'll rework the patch with this in mind.
+the access_once tree in Linux next addresses an issue discussed in
+http://marc.info/?i=54611D86.4040306%40de.ibm.com and
+http://lwn.net/Articles/624126/
 
-	Andrew
+There is one small fallout left for the arm tree with rpc_defconfig:
+http://kisskb.ellerman.id.au/kisskb/buildresult/12322985/
+
+font.c:(.text+0x34): undefined reference to `data_access_exceeds_word_size'
+font.c:(.text+0x9c): undefined reference to `data_access_exceeds_word_size'
+make[3]: *** [arch/arm/boot/compressed/vmlinux] Error 1
+make[2]: *** [arch/arm/boot/compressed/vmlinux] Error 2
+make[1]: *** [zImage] Error 2
+make: *** [sub-make] Error 2
+
+Turns out that arch/arm/boot/compressed/Makefile does use
+-Dstatic= which breaks compiler.h (which gets somehow included)
+
+Can you Ack this change (or propose an alternative)
+Thanks
+
+Christian
+
+
+Christian Borntraeger (1):
+  arm/rpc: avoid static keyword removal via define
+
+ arch/arm/boot/compressed/Makefile | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+-- 
+1.8.5.5
 
