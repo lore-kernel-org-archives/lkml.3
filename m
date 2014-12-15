@@ -1,107 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaLOPfV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:35:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60329 "EHLO mx2.suse.de"
+	id S1752158AbaLOPhJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:37:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60632 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245AbaLOPfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:35:20 -0500
-Date: Mon, 15 Dec 2014 16:35:15 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        ming.lei@canonical.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq oops with today's Linus' kernel
-Message-ID: <20141215153515.GB22895@quack.suse.cz>
-References: <20141215151907.GA22895@quack.suse.cz>
- <548EFC4B.4010307@kernel.dk>
- <548EFE7D.4020400@kernel.dk>
+	id S1750952AbaLOPhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 10:37:06 -0500
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Krzysztof Konopko <kris@konagma.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
+References: <1418336609-10191-1-git-send-email-kris@konagma.com>
+	<548A2E7A.4010303@lwfinger.net> <548AD2F1.3080200@konagma.com>
+	<548B2752.7030607@lwfinger.net> <wrfjwq5wwvik.fsf@redhat.com>
+	<548B7249.1060602@konagma.com>
+Date: Mon, 15 Dec 2014 10:36:52 -0500
+In-Reply-To: <548B7249.1060602@konagma.com> (Krzysztof Konopko's message of
+	"Fri, 12 Dec 2014 23:55:05 +0100")
+Message-ID: <wrfjoar4vsa3.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548EFE7D.4020400@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-12-14 08:30:05, Jens Axboe wrote:
-> On 12/15/2014 08:20 AM, Jens Axboe wrote:
-> >On 12/15/2014 08:19 AM, Jan Kara wrote:
-> >>   Hello,
-> >>
-> >>   when running xfstests with today's Linus' kernel I've got the
-> >>following
-> >>oops:
-> >>BUG: unable to handle kernel paging request at 0000001000000a28
-> >>IP: [<ffffffff810ad9f3>] autoremove_wake_function+0x23/0x40
-> >>PGD 7f566067 PUD 0
-> >>Oops: 0002 [#1] SMP
-> >>Modules linked in: ext4 jbd2 crc16 netconsole loop raid6_pq
-> >>zlib_deflate lzo_compress xor
-> >>CPU: 4 PID: 0 Comm: swapper/4 Not tainted 3.18.0-xen+ #19
-> >>Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> >>task: ffff88007e8fa310 ti: ffff88007e900000 task.ti: ffff88007e900000
-> >>RIP: 0010:[<ffffffff810ad9f3>]  [<ffffffff810ad9f3>]
-> >>autoremove_wake_function+0x23/0x40
-> >>RSP: 0018:ffff88007f103d78  EFLAGS: 00010002
-> >>RAX: 0000000000000000 RBX: ffff88005140f948 RCX: ffff88005140f960
-> >>RDX: 0000001000000a20 RSI: 0000000000000001 RDI: ffffffff813c2e1f
-> >>RBP: ffff88007f103d88 R08: 0000000000000001 R09: 0000000000000000
-> >>R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
-> >>R13: 0000000000000001 R14: ffff88007a3bd640 R15: 0000000000000000
-> >>FS:  00007ff3b5dc8700(0000) GS:ffff88007f100000(0000)
-> >>knlGS:0000000000000000
-> >>CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >>CR2: 0000001000000a28 CR3: 000000007a580000 CR4: 00000000000006e0
-> >>Stack:
-> >>  ffff880000000000 ffff88007a3bd628 ffff88007f103dc8 ffffffff810ad8d2
-> >>  0000000300000000 ffff88007a3bd608 0000000000000000 0000000000000001
-> >>  0000000000000082 0000000000000003 ffff88007f103e08 ffffffff810adf73
-> >>Call Trace:
-> >>  <IRQ>
-> >>  [<ffffffff810ad8d2>] __wake_up_common+0x52/0x80
-> >>  [<ffffffff810adf73>] __wake_up+0x43/0x70
-> >>  [<ffffffff8121d94e>] bt_clear_tag+0xae/0xc0
-> >>  [<ffffffff8121d98b>] blk_mq_put_tag+0x2b/0x50
-> >>  [<ffffffff8121ab10>] __blk_mq_free_request+0x40/0xc0
-> >>  [<ffffffff8121abc1>] blk_mq_free_hctx_request+0x31/0x40
-> >>  [<ffffffff8121abff>] blk_mq_free_request+0x2f/0x40
-> >>  [<ffffffff8121b047>] blk_mq_end_request+0x57/0x60
-> >>  [<ffffffff81214f73>] blk_flush_complete_seq+0x293/0x2d0
-> >>  [<ffffffff81215373>] flush_end_io+0x113/0x210
-> >>  [<ffffffff8121b029>] blk_mq_end_request+0x39/0x60
-> >>  [<ffffffff812d3f46>] virtblk_request_done+0x36/0x80
-> >>  [<ffffffff81219d1e>] __blk_mq_complete_request_remote+0xe/0x10
-> >>  [<ffffffff810e1d82>]
-> >>generic_smp_call_function_single_interrupt+0x72/0x120
-> >>  [<ffffffff810657d2>] smp_call_function_single_interrupt+0x22/0x30
-> >>  [<ffffffff813c4462>] call_function_single_interrupt+0x72/0x80
-> >>  <EOI>
-> >>  [<ffffffff8106e606>] ? native_safe_halt+0x6/0x10
-> >>  [<ffffffff810b65bd>] ? trace_hardirqs_on+0xd/0x10
-> >>  [<ffffffff8104520e>] default_idle+0xe/0x20
-> >>  [<ffffffff8104509a>] arch_cpu_idle+0xa/0x10
-> >>  [<ffffffff810ae64f>] cpu_startup_entry+0x2af/0x310
-> >>  [<ffffffff81066c8d>] start_secondary+0x15d/0x180
-> >>Code: 64 4a ff ff c9 c3 66 90 55 48 89 e5 53 48 89 fb 48 83
-> >>ec 08 e8 4f 4a ff ff 85 c0 89 c6 74 1b 48 8b 53 18 48 8b 43 20 48 8d
-> >>4b 18
-> >><48> 89 42 08 48 89 10 48 89 4b 18 48 89 4b 20 48 83 c4 08 89 f0
-> >>RIP  [<ffffffff810ad9f3>] autoremove_wake_function+0x23/0x40
-> >>  RSP <ffff88007f103d78>
-> >>CR2: 0000001000000a28
-> >>---[ end trace d4dc64619e0b4713 ]---
-> >
-> >Is this easily reproducible? If so, could you try and revert
-> >52f7eb945f2ba62b324bb9ae16d945326a961dcf and see if that helps?
-> 
-> Re-checking that patch, it is broken. Reverting that should fix it
-> up for you, I'll send that in in a bit...
-  I'm running a test with that patch reverted. I'll see whether it fixes
-the problem in about 20 minutes.
+Krzysztof Konopko <kris@konagma.com> writes:
+> On 12/12/14 19:52, Jes Sorensen wrote:
+>> Larry Finger <Larry.Finger@lwfinger.net> writes:
+>>> On 12/12/2014 05:35 AM, Krzysztof Konopko wrote:
+>>>> I was hunting particularly for inconsistencies with `sparse` and came
+>>>> across this one.  But I dug a bit further and I wonder why the driver is
+>>>> not using standard stuff like the one in `include/linux/ieee80211.h`
+>>>> where any data wider than one byte is clearly declared as __le<nn>?
+>>>
+>>> That is a good question. One possibility is that those definitions do
+>>> not exist on some of the older kernels that Realtek supports. They
+>>> generally work with 2.6.18 and newer.
+>> 
+>> The reason the 8723au driver doesn't use the defines from there is that
+>> in ieee80211.h they are part of struct ieee80211_mgmt, while the 8723au
+>> driver access the addba etc. elements without the full struct in place.
+>> 
+>
+> And why is that the case?
+> (I'm trying to understand, not debunk)
+>
+> Looks to me that this driver has been kept out of the tree for quite a
+> while (by Realtek) and now suffers from locally invented stuff.  I
+> understand this is a lot of work to unify the codebase with ieee80211.h,
+> but are there any technical hurdles?  I'm just curious.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The main issue is that the RTL driver maintains a partial copy of the
+management frame, ie. without the front block containing the MAC
+addresses. Switching this over to carry a full copy of the frame is
+extremely intrusive as it's mixed in pretty much everywhere in the
+driver.
+
+The driver is derived from Realtek's multi-OS vendor driver, which
+included code for pretty much every OS on the planet. If you want to see
+how it looked initially, check out Larry's github tree and go back to
+the initial checkins .... Realtek seem to copy it into a new tree and
+devel from there whenever they do a new chip, so the legacy in this
+codebase is huge.
+
+Cheers,
+Jes
