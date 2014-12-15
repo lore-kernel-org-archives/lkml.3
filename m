@@ -1,109 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750913AbaLOTDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:03:30 -0500
-Received: from ozlabs.org ([103.22.144.67]:51798 "EHLO ozlabs.org"
+	id S1750840AbaLOTDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:03:16 -0500
+Received: from ozlabs.org ([103.22.144.67]:37289 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750765AbaLOTDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750745AbaLOTDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 14:03:14 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
-Cc: virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 9/9] virtio_pci: update file descriptions and copyright
-In-Reply-To: <1418043812-25753-10-git-send-email-mst@redhat.com>
-References: <1418043812-25753-1-git-send-email-mst@redhat.com> <1418043812-25753-10-git-send-email-mst@redhat.com>
+To: George Spelvin <linux@horizon.com>, akpm@linux-foundation.org,
+        linux@horizon.com
+Cc: linux-kernel@vger.kernel.org, rdunlap@infradead.org
+Subject: Re: [PATCH v2] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h> where it belongs
+In-Reply-To: <20141206032310.27123.qmail@ns.horizon.com>
+References: <20141206032310.27123.qmail@ns.horizon.com>
 User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 15 Dec 2014 14:42:00 +1030
-Message-ID: <878ui9d01b.fsf@rustcorp.com.au>
+Date: Mon, 15 Dec 2014 14:26:15 +1030
+Message-ID: <87egs1d0rk.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> There's been a lot of changes since 2007.
-> List main authors, add Red Hat copyright.
+George Spelvin <linux@horizon.com> writes:
+> It's the only user of <linux/bug.h> in kernel.h, so that reduces
+> the compile-time cost of #include <linux/kernel.h>
+>
+> Only one user has to change: <linux/moduleparam.h>.  The <linux/types.h>
+> there is needed for one function prototype that passes s16 parameters.
+> My first reaction is to wonder if that can be gotten rid of, too.
+>
+> Some other extraneous header files pruned while I was at it.
+> Tested with allyesconfig & allmodconfig on x86-64, just to
+> be sure.
+>
+> Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: George Spelvin <linux@horizon.com>
 
 Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Cheers,
+Thanks,
 Rusty.
 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+
 > ---
->  drivers/virtio/virtio_pci.h        | 5 ++++-
->  drivers/virtio/virtio_pci.c        | 5 ++++-
->  drivers/virtio/virtio_pci_legacy.c | 5 ++++-
->  3 files changed, 12 insertions(+), 3 deletions(-)
+> Look, even more header pruning.
 >
-> diff --git a/drivers/virtio/virtio_pci.h b/drivers/virtio/virtio_pci.h
-> index a3b1259..fba383c 100644
-> --- a/drivers/virtio/virtio_pci.h
-> +++ b/drivers/virtio/virtio_pci.h
-> @@ -1,15 +1,18 @@
->  #ifndef _DRIVERS_VIRTIO_VIRTIO_PCI_H
->  #define _DRIVERS_VIRTIO_VIRTIO_PCI_H
->  /*
-> - * Virtio PCI driver
-> + * Virtio PCI driver - APIs for common functionality for all device versions
->   *
->   * This module allows virtio devices to be used over a virtual PCI device.
->   * This can be used with QEMU based VMMs like KVM or Xen.
->   *
->   * Copyright IBM Corp. 2007
-> + * Copyright Red Hat, Inc. 2014
->   *
->   * Authors:
->   *  Anthony Liguori  <aliguori@us.ibm.com>
-> + *  Rusty Russell <rusty@rustcorp.com.au>
-> + *  Michael S. Tsirkin <mst@redhat.com>
->   *
->   * This work is licensed under the terms of the GNU GPL, version 2 or later.
->   * See the COPYING file in the top-level directory.
-> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
-> index 6c7e186..c263f67 100644
-> --- a/drivers/virtio/virtio_pci.c
-> +++ b/drivers/virtio/virtio_pci.c
-> @@ -1,13 +1,16 @@
->  /*
-> - * Virtio PCI driver
-> + * Virtio PCI driver - common functionality for all device versions
->   *
->   * This module allows virtio devices to be used over a virtual PCI device.
->   * This can be used with QEMU based VMMs like KVM or Xen.
->   *
->   * Copyright IBM Corp. 2007
-> + * Copyright Red Hat, Inc. 2014
->   *
->   * Authors:
->   *  Anthony Liguori  <aliguori@us.ibm.com>
-> + *  Rusty Russell <rusty@rustcorp.com.au>
-> + *  Michael S. Tsirkin <mst@redhat.com>
->   *
->   * This work is licensed under the terms of the GNU GPL, version 2 or later.
->   * See the COPYING file in the top-level directory.
-> diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
-> index 9fdec9a..1ca4422 100644
-> --- a/drivers/virtio/virtio_pci_legacy.c
-> +++ b/drivers/virtio/virtio_pci_legacy.c
-> @@ -1,13 +1,16 @@
->  /*
-> - * Virtio PCI driver
-> + * Virtio PCI driver - legacy device support
->   *
->   * This module allows virtio devices to be used over a virtual PCI device.
->   * This can be used with QEMU based VMMs like KVM or Xen.
->   *
->   * Copyright IBM Corp. 2007
-> + * Copyright Red Hat, Inc. 2014
->   *
->   * Authors:
->   *  Anthony Liguori  <aliguori@us.ibm.com>
-> + *  Rusty Russell <rusty@rustcorp.com.au>
-> + *  Michael S. Tsirkin <mst@redhat.com>
->   *
->   * This work is licensed under the terms of the GNU GPL, version 2 or later.
->   * See the COPYING file in the top-level directory.
+>  include/linux/kernel.h      | 10 ----------
+>  include/linux/moduleparam.h |  4 ++--
+>  include/linux/sysfs.h       | 15 ++++++++++++---
+>  3 files changed, 14 insertions(+), 15 deletions(-)
+>
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 3d770f55..07080aa2 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -804,14 +804,4 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+>  # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+>  #endif
+>  
+> -/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
+> -#define VERIFY_OCTAL_PERMISSIONS(perms)					\
+> -	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
+> -	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
+> -	 /* User perms >= group perms >= other perms */			\
+> -	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
+> -	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
+> -	 /* Other writable?  Generally considered a bad idea. */	\
+> -	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
+> -	 (perms))
+>  #endif
+> diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+> index 1c9effa2..974097df 100644
+> --- a/include/linux/moduleparam.h
+> +++ b/include/linux/moduleparam.h
+> @@ -1,9 +1,9 @@
+>  #ifndef _LINUX_MODULE_PARAMS_H
+>  #define _LINUX_MODULE_PARAMS_H
+>  /* (C) Copyright 2001, 2002 Rusty Russell IBM Corporation */
+> -#include <linux/init.h>
+>  #include <linux/stringify.h>
+> -#include <linux/kernel.h>
+> +#include <linux/sysfs.h>
+> +#include <linux/types.h>
+>  
+>  /* You can override this manually, but generally this should match the
+>     module name. */
+> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+> index f97d0dbb..3562f331 100644
+> --- a/include/linux/sysfs.h
+> +++ b/include/linux/sysfs.h
+> @@ -14,12 +14,10 @@
+>  
+>  #include <linux/kernfs.h>
+>  #include <linux/compiler.h>
+> -#include <linux/errno.h>
+> -#include <linux/list.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/kobject_ns.h>
+>  #include <linux/stat.h>
+> -#include <linux/atomic.h>
+> +#include <linux/bug.h>
+>  
+>  struct kobject;
+>  struct module;
+> @@ -70,6 +68,17 @@ struct attribute_group {
+>   * for examples..
+>   */
+>  
+> +/* Permissions on a sysfs file: you didn't miss the 0 prefix did you? */
+> +#define VERIFY_OCTAL_PERMISSIONS(perms)					\
+> +	(BUILD_BUG_ON_ZERO((perms) < 0) +				\
+> +	 BUILD_BUG_ON_ZERO((perms) > 0777) +				\
+> +	 /* User perms >= group perms >= other perms */			\
+> +	 BUILD_BUG_ON_ZERO(((perms) >> 6) < (((perms) >> 3) & 7)) +	\
+> +	 BUILD_BUG_ON_ZERO((((perms) >> 3) & 7) < ((perms) & 7)) +	\
+> +	 /* Other writable?  Generally considered a bad idea. */	\
+> +	 BUILD_BUG_ON_ZERO((perms) & 2) +				\
+> +	 (perms))
+> +
+>  #define __ATTR(_name, _mode, _show, _store) {				\
+>  	.attr = {.name = __stringify(_name),				\
+>  		 .mode = VERIFY_OCTAL_PERMISSIONS(_mode) },		\
 > -- 
-> MST
+> 2.1.3
