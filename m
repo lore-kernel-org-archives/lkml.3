@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaLOO5Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:57:24 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:27914 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594AbaLOO5O (ORCPT
+	id S1753431AbaLOO5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:57:18 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27069 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaLOO5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:57:14 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-bc-548ef6c76a13
+	Mon, 15 Dec 2014 09:57:12 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-b5-548ef6c6badf
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
@@ -19,95 +19,105 @@ To: MyungJoo Ham <myungjoo.ham@samsung.com>,
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 3/3] ARM: dts: Add devfreq to Exynos3250 and Rinato board
-Date: Mon, 15 Dec 2014 15:56:53 +0100
-Message-id: <1418655413-25410-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 1/3] devfreq: dt-bindings: Document bindings for Exynos3250
+ bus DVFS driver
+Date: Mon, 15 Dec 2014 15:56:51 +0100
+Message-id: <1418655413-25410-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1418655413-25410-1-git-send-email-k.kozlowski@samsung.com>
 References: <1418655413-25410-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xq7rHv/WFGCw/JG2xccZ6VovrX56z
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCLMWRmVeSWpSXmKPExsVy+t/xq7rHvvWFGNz+ym+xccZ6VovrX56z
 	Wsw/co7V4vULQ4v+x6+ZLc42vWG32PT4GqvF5V1z2Cw+9x5htJhxfh+Txdojd9ktll6/yGRx
-	u3EFmwOvx5p5axg9Nq3qZPPYvKTeo2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDJ+bV7GXHCI
-	v6Lv2EemBsYLPF2MnBwSAiYSrdtPMEPYYhIX7q1n62Lk4hASWMoocXjqLyinj0liweXP7CBV
-	bALGEpuXLwFLiAg8Z5LYOesNC4jDLDCDUeLewl0sIFXCAj4Sy05sBJvLIqAqsfLYQrBuXgF3
-	iSuzLzNB7JOTOHlsMiuIzSngIXHldSNYjRBQzfrTS9kmMPIuYGRYxSiaWppcUJyUnmuoV5yY
-	W1yal66XnJ+7iRESkl92MC4+ZnWIUYCDUYmHN2Fvb4gQa2JZcWXuIUYJDmYlEd5Z7/pChHhT
-	EiurUovy44tKc1KLDzEycXBKNTDyT79iLxW3daWs4QbX/2Wr9Zx2VS6rE1pp7b3xUdpc3tgo
-	Voesuy0H3y8Qffbb0Urcm+X//jVWfYKCV92LOsKWCH39ve+Dk99jhXnff/k+iT3z0mrnh2wn
-	rZwQG6cb7qtPHFvzN3PCrHp2/fd7o7cqPXkhbZJWtm2brevrvKtTtj34e+rwid4YJZbijERD
-	Leai4kQAYGF04ScCAAA=
+	u3EFmwOvx5p5axg9Nq3qZPPYvKTeo2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDJ2HvrEXnBK
+	rKLnYBNbA+NvoS5GTg4JAROJa41djBC2mMSFe+vZuhi5OIQEljJKHHswnR3C6WOSWH7sAztI
+	FZuAscTm5UvAqkQEnjNJ7Jz1hgXEYRaYwShxb+EuFpAqYYEEiUnXfoPNZRFQlXh4tpsJxOYV
+	cJe4fegzE8Q+OYmTxyazgticAh4SV143gm0QAqpZf3op2wRG3gWMDKsYRVNLkwuKk9JzDfWK
+	E3OLS/PS9ZLzczcxQkLyyw7GxcesDjEKcDAq8fAm7O0NEWJNLCuuzD3EKMHBrCTCO+tdX4gQ
+	b0piZVVqUX58UWlOavEhRiYOTqkGxqaZ2Z+/nZep3C8597NQ7IrlC2/d+xer/eZ14ypOM6u1
+	yttmWF9Q4fK/Nz11W+hblyM6PXXStjfXyR7Zfrr5wNTmphnb1HvmSe98LHy96+DpvWybUs5v
+	3x54Z2Jb+LFN2n/3TjidZLLhn0Fd8hyTKS+Lngk/fzVlwTbLyW9Xi/xb9+WgW5b0l1Y+JZbi
+	jERDLeai4kQAmNLbxScCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add devfreq to Exynos3250 common file and enable it for Rinato board.
+Add documentation for bindings used by Exynos3250 Dynamic Voltage
+and Frequency Scaling (DVFS) driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- arch/arm/boot/dts/exynos3250-rinato.dts | 12 ++++++++++++
- arch/arm/boot/dts/exynos3250.dtsi       | 26 ++++++++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+ .../bindings/arm/samsung/exynos3250-devfreq.txt    | 62 ++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
 
-diff --git a/arch/arm/boot/dts/exynos3250-rinato.dts b/arch/arm/boot/dts/exynos3250-rinato.dts
-index 7970b8e91ab2..6def01c61742 100644
---- a/arch/arm/boot/dts/exynos3250-rinato.dts
-+++ b/arch/arm/boot/dts/exynos3250-rinato.dts
-@@ -567,6 +567,18 @@
- 	clock-frequency = <24000000>;
- };
- 
-+&busfreq_mif {
-+	vdd-mif-supply = <&buck1_reg>;
-+	devfreq-events = <&ppmu_dmc0_3>, <&ppmu_dmc1_3>;
-+	status = "okay";
-+};
+diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
+new file mode 100644
+index 000000000000..162498ec0da8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/samsung/exynos3250-devfreq.txt
+@@ -0,0 +1,62 @@
++Samsung Exynos3250 bus frequency scaling driver
++===============================================
 +
-+&busfreq_int {
-+	vdd-int-supply = <&buck3_reg>;
-+	devfreq-events = <&ppmu_leftbus_3>, <&ppmu_rightbus_3>;
-+	status = "okay";
-+};
++The Exynos3250 SoC allows Dynamic Voltage and Frequency Scaling (DVFS)
++for certain system buses:
++ - memory controller and bus,
++ - peripheral buses (leftbus, rightbus).
 +
- &pinctrl_0 {
- 	pinctrl-names = "default";
- 	pinctrl-0 = <&sleep0>;
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index 51e3e7111e59..cc0e30768ec2 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -175,6 +175,32 @@
- 			#clock-cells = <1>;
- 		};
- 
-+		busfreq_mif: busfreq@106A0000 {
-+			compatible = "samsung,exynos3250-busfreq-mif";
-+			clocks = <&cmu_dmc CLK_DIV_DMC>;
-+			clock-names = "dmc";
-+			status = "disabled";
-+		};
++DVFS for memory controller and bus
++==================================
++Required properties:
++ - compatible : should be "samsung,exynos3250-busfreq-mif"
++ - clock-names : one clock of name "dmc" to manage frequency
++ - clocks : phandle and specifier for clock listed in clock-names property
++ - vdd-mif-supply : phandle to MIF voltage regulator
++ - devfreq-events : two phandles to devfreq event devices providing
++	raw data for bus utilization
 +
-+		busfreq_int: busfreq@116A0000 {
-+			compatible = "samsung,exynos3250-busfreq-int";
-+			clocks = <&cmu CLK_DIV_ACLK_400_MCUISP>,
-+				<&cmu CLK_DIV_ACLK_266>,
-+				<&cmu CLK_DIV_ACLK_200>,
-+				<&cmu CLK_DIV_ACLK_160>,
-+				<&cmu CLK_DIV_GDL>,
-+				<&cmu CLK_DIV_GDR>,
-+				<&cmu CLK_DIV_MFC>;
-+			clock-names = "aclk_400",
-+				"aclk_266",
-+				"aclk_200",
-+				"aclk_160",
-+				"aclk_gdl",
-+				"aclk_gdr",
-+				"mfc";
-+			status = "disabled";
-+		};
++DVFS for peripheral buses
++=========================
++Required properties:
++ - compatible : should be "samsung,exynos3250-busfreq-int"
++ - clock-names : names for bus clocks to manage frequencies;
++	All following clock names (and corresponding phandles) must be
++	provided: "aclk_400", "aclk_266", "aclk_200", "aclk_160", "aclk_gdl",
++	"aclk_gdr", "mfc";
++ - clocks : phandles and specifiers for clocks listed in clock-names property
++ - vdd-int-supply : phandle to INT voltage regulator
++ - devfreq-events : two phandles to devfreq event devices providing
++	raw data for bus utilization
 +
- 		rtc: rtc@10070000 {
- 			compatible = "samsung,exynos3250-rtc";
- 			reg = <0x10070000 0x100>;
++Example
++=======
++	busfreq_mif: busfreq@106A0000 {
++		compatible = "samsung,exynos3250-busfreq-mif";
++		clocks = <&cmu_dmc CLK_DIV_DMC>;
++		clock-names = "dmc";
++		vdd-mif-supply = <&buck1_reg>;
++		devfreq-events = <&ppmu_dmc0_3>, <&ppmu_dmc1_3>;
++		status = "okay";
++	};
++
++	busfreq_int: busfreq@116A0000 {
++		compatible = "samsung,exynos3250-busfreq-int";
++		clocks = <&cmu CLK_DIV_ACLK_400_MCUISP>,
++			<&cmu CLK_DIV_ACLK_266>,
++			<&cmu CLK_DIV_ACLK_200>,
++			<&cmu CLK_DIV_ACLK_160>,
++			<&cmu CLK_DIV_GDL>,
++			<&cmu CLK_DIV_GDR>,
++			<&cmu CLK_DIV_MFC>;
++		clock-names = "aclk_400",
++			"aclk_266",
++			"aclk_200",
++			"aclk_160",
++			"aclk_gdl",
++			"aclk_gdr",
++			"mfc";
++		vdd-int-supply = <&buck3_reg>;
++		devfreq-events = <&ppmu_leftbus_3>, <&ppmu_rightbus_3>;
++		status = "okay";
++	};
 -- 
 1.9.1
 
