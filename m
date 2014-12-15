@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaLOO2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:28:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38433 "EHLO
+	id S1753532AbaLOO67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:58:59 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38548 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563AbaLOO1r (ORCPT
+	with ESMTP id S1752700AbaLOO2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:47 -0500
+	Mon, 15 Dec 2014 09:28:05 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Mikhail Efremov <sem@altlinux.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 052/168] vfs: Don't exchange "short" filenames unconditionally.
-Date: Mon, 15 Dec 2014 14:25:06 +0000
-Message-Id: <1418653622-21105-53-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 073/168] aio: fix uncorrent dirty pages accouting when truncating AIO ring buffer
+Date: Mon, 15 Dec 2014 14:25:27 +0000
+Message-Id: <1418653622-21105-74-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,121 +30,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikhail Efremov <sem@altlinux.org>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-commit d2fa4a8476b911782f7e5167db18770222ac40c3 upstream.
+commit 835f252c6debd204fcd607c79975089b1ecd3472 upstream.
 
-Only exchange source and destination filenames
-if flags contain RENAME_EXCHANGE.
-In case if executable file was running and replaced by
-other file /proc/PID/exe should still show correct file name,
-not the old name of the file by which it was replaced.
+https://bugzilla.kernel.org/show_bug.cgi?id=86831
 
-The scenario when this bug manifests itself was like this:
-* ALT Linux uses rpm and start-stop-daemon;
-* during a package upgrade rpm creates a temporary file
-  for an executable to rename it upon successful unpacking;
-* start-stop-daemon is run subsequently and it obtains
-  the (nonexistant) temporary filename via /proc/PID/exe
-  thus failing to identify the running process.
+Markus reported that when shutting down mysqld (with AIO support,
+on a ext3 formatted Harddrive) leads to a negative number of dirty pages
+(underrun to the counter). The negative number results in a drastic reduction
+of the write performance because the page cache is not used, because the kernel
+thinks it is still 2 ^ 32 dirty pages open.
 
-Note that "long" filenames (> DNAiME_INLINE_LEN) are still
-exchanged without RENAME_EXCHANGE and this behaviour exists
-long enough (should be fixed too apparently).
-So this patch is just an interim workaround that restores
-behavior for "short" names as it was before changes
-introduced by commit da1ce0670c14 ("vfs: add cross-rename").
+Add a warn trace in __dec_zone_state will catch this easily:
 
-See https://lkml.org/lkml/2014/9/7/6 for details.
+static inline void __dec_zone_state(struct zone *zone, enum
+	zone_stat_item item)
+{
+     atomic_long_dec(&zone->vm_stat[item]);
++    WARN_ON_ONCE(item == NR_FILE_DIRTY &&
+	atomic_long_read(&zone->vm_stat[item]) < 0);
+     atomic_long_dec(&vm_stat[item]);
+}
 
-AV: the comments about being more careful with ->d_name.hash
-than with ->d_name.name are from back in 2.3.40s; they
-became obsolete by 2.3.60s, when we started to unhash the
-target instead of swapping hash chain positions followed
-by d_delete() as we used to do when dcache was first
-introduced.
+[   21.341632] ------------[ cut here ]------------
+[   21.346294] WARNING: CPU: 0 PID: 309 at include/linux/vmstat.h:242
+cancel_dirty_page+0x164/0x224()
+[   21.355296] Modules linked in: wutbox_cp sata_mv
+[   21.359968] CPU: 0 PID: 309 Comm: kworker/0:1 Not tainted 3.14.21-WuT #80
+[   21.366793] Workqueue: events free_ioctx
+[   21.370760] [<c0016a64>] (unwind_backtrace) from [<c0012f88>]
+(show_stack+0x20/0x24)
+[   21.378562] [<c0012f88>] (show_stack) from [<c03f8ccc>]
+(dump_stack+0x24/0x28)
+[   21.385840] [<c03f8ccc>] (dump_stack) from [<c0023ae4>]
+(warn_slowpath_common+0x84/0x9c)
+[   21.393976] [<c0023ae4>] (warn_slowpath_common) from [<c0023bb8>]
+(warn_slowpath_null+0x2c/0x34)
+[   21.402800] [<c0023bb8>] (warn_slowpath_null) from [<c00c0688>]
+(cancel_dirty_page+0x164/0x224)
+[   21.411524] [<c00c0688>] (cancel_dirty_page) from [<c00c080c>]
+(truncate_inode_page+0x8c/0x158)
+[   21.420272] [<c00c080c>] (truncate_inode_page) from [<c00c0a94>]
+(truncate_inode_pages_range+0x11c/0x53c)
+[   21.429890] [<c00c0a94>] (truncate_inode_pages_range) from
+[<c00c0f6c>] (truncate_pagecache+0x88/0xac)
+[   21.439252] [<c00c0f6c>] (truncate_pagecache) from [<c00c0fec>]
+(truncate_setsize+0x5c/0x74)
+[   21.447731] [<c00c0fec>] (truncate_setsize) from [<c013b3a8>]
+(put_aio_ring_file.isra.14+0x34/0x90)
+[   21.456826] [<c013b3a8>] (put_aio_ring_file.isra.14) from
+[<c013b424>] (aio_free_ring+0x20/0xcc)
+[   21.465660] [<c013b424>] (aio_free_ring) from [<c013b4f4>]
+(free_ioctx+0x24/0x44)
+[   21.473190] [<c013b4f4>] (free_ioctx) from [<c003d8d8>]
+(process_one_work+0x134/0x47c)
+[   21.481132] [<c003d8d8>] (process_one_work) from [<c003e988>]
+(worker_thread+0x130/0x414)
+[   21.489350] [<c003e988>] (worker_thread) from [<c00448ac>]
+(kthread+0xd4/0xec)
+[   21.496621] [<c00448ac>] (kthread) from [<c000ec18>]
+(ret_from_fork+0x14/0x20)
+[   21.503884] ---[ end trace 79c4bf42c038c9a1 ]---
 
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
-Fixes: da1ce0670c14 "vfs: add cross-rename"
-Signed-off-by: Mikhail Efremov <sem@altlinux.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-[ luis: used Stefan's backport to 3.16 ]
+The cause is that we set the aio ring file pages as *DIRTY* via SetPageDirty
+(bypasses the VFS dirty pages increment) when init, and aio fs uses
+*default_backing_dev_info* as the backing dev, which does not disable
+the dirty pages accounting capability.
+So truncating aio ring file will contribute to accounting dirty pages (VFS
+dirty pages decrement), then error occurs.
+
+The original goal is keeping these pages in memory (can not be reclaimed
+or swapped) in life-time via marking it dirty. But thinking more, we have
+already pinned pages via elevating the page's refcount, which can already
+achieve the goal, so the SetPageDirty seems unnecessary.
+
+In order to fix the issue, using the __set_page_dirty_no_writeback instead
+of the nop .set_page_dirty, and dropped the SetPageDirty (don't manually
+set the dirty flags, don't disable set_page_dirty(), rely on default behaviour).
+
+With the above change, the dirty pages accounting can work well. But as we
+known, aio fs is an anonymous one, which should never cause any real write-back,
+we can ignore the dirty pages (write back) accounting by disabling the dirty
+pages (write back) accounting capability. So we introduce an aio private
+backing dev info (disabled the ACCT_DIRTY/WRITEBACK/ACCT_WB capabilities) to
+replace the default one.
+
+Reported-by: Markus Königshaus <m.koenigshaus@wut.de>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Acked-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/dcache.c | 28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ fs/aio.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 8a7dcc895d99..1d8b6a310822 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2401,7 +2401,8 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
- }
- EXPORT_SYMBOL(dentry_update_name_case);
+diff --git a/fs/aio.c b/fs/aio.c
+index d72588a4c935..b645387b6d57 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -165,6 +165,15 @@ static struct vfsmount *aio_mnt;
+ static const struct file_operations aio_ring_fops;
+ static const struct address_space_operations aio_ctx_aops;
  
--static void switch_names(struct dentry *dentry, struct dentry *target)
-+static void switch_names(struct dentry *dentry, struct dentry *target,
-+			 bool exchange)
++/* Backing dev info for aio fs.
++ * -no dirty page accounting or writeback happens
++ */
++static struct backing_dev_info aio_fs_backing_dev_info = {
++	.name           = "aiofs",
++	.state          = 0,
++	.capabilities   = BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_MAP_COPY,
++};
++
+ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
  {
- 	if (dname_external(target)) {
- 		if (dname_external(dentry)) {
-@@ -2435,6 +2436,12 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
- 			 */
- 			unsigned int i;
- 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
-+			if (!exchange) {
-+				memcpy(dentry->d_iname, target->d_name.name,
-+						target->d_name.len + 1);
-+				dentry->d_name.hash_len = target->d_name.hash_len;
-+				return;
-+			}
- 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
- 				swap(((long *) &dentry->d_iname)[i],
- 				     ((long *) &target->d_iname)[i]);
-@@ -2484,12 +2491,15 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
-  * When switching names, the actual string doesn't strictly have to
-  * be preserved in the target - because we're dropping the target
-  * anyway. As such, we can just do a simple memcpy() to copy over
-- * the new name before we switch.
-- *
-- * Note that we have to be a lot more careful about getting the hash
-- * switched - we have to switch the hash value properly even if it
-- * then no longer matches the actual (corrupted) string of the target.
-- * The hash value has to match the hash queue that the dentry is on..
-+ * the new name before we switch, unless we are going to rehash
-+ * it.  Note that if we *do* unhash the target, we are not allowed
-+ * to rehash it without giving it a new name/hash key - whether
-+ * we swap or overwrite the names here, resulting name won't match
-+ * the reality in filesystem; it's only there for d_path() purposes.
-+ * Note that all of this is happening under rename_lock, so the
-+ * any hash lookup seeing it in the middle of manipulations will
-+ * be discarded anyway.  So we do not care what happens to the hash
-+ * key in that case.
-  */
- /*
-  * __d_move - move a dentry
-@@ -2539,7 +2549,7 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
- 	list_del(&target->d_u.d_child);
+ 	struct qstr this = QSTR_INIT("[aio]", 5);
+@@ -176,6 +185,7 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
  
- 	/* Switch the names.. */
--	switch_names(dentry, target);
-+	switch_names(dentry, target, exchange);
+ 	inode->i_mapping->a_ops = &aio_ctx_aops;
+ 	inode->i_mapping->private_data = ctx;
++	inode->i_mapping->backing_dev_info = &aio_fs_backing_dev_info;
+ 	inode->i_size = PAGE_SIZE * nr_pages;
  
- 	/* ... and switch the parents */
- 	if (IS_ROOT(dentry)) {
-@@ -2677,7 +2687,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
+ 	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
+@@ -221,6 +231,9 @@ static int __init aio_setup(void)
+ 	if (IS_ERR(aio_mnt))
+ 		panic("Failed to create aio fs mount.");
  
- 	dparent = dentry->d_parent;
++	if (bdi_init(&aio_fs_backing_dev_info))
++		panic("Failed to init aio fs backing dev info.");
++
+ 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
  
--	switch_names(dentry, anon);
-+	switch_names(dentry, anon, false);
+@@ -282,11 +295,6 @@ static const struct file_operations aio_ring_fops = {
+ 	.mmap = aio_ring_mmap,
+ };
  
- 	dentry->d_parent = dentry;
- 	list_del_init(&dentry->d_u.d_child);
+-static int aio_set_page_dirty(struct page *page)
+-{
+-	return 0;
+-}
+-
+ #if IS_ENABLED(CONFIG_MIGRATION)
+ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 			struct page *old, enum migrate_mode mode)
+@@ -358,7 +366,7 @@ out:
+ #endif
+ 
+ static const struct address_space_operations aio_ctx_aops = {
+-	.set_page_dirty = aio_set_page_dirty,
++	.set_page_dirty = __set_page_dirty_no_writeback,
+ #if IS_ENABLED(CONFIG_MIGRATION)
+ 	.migratepage	= aio_migratepage,
+ #endif
+@@ -413,7 +421,6 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 		pr_debug("pid(%d) page[%d]->count=%d\n",
+ 			 current->pid, i, page_count(page));
+ 		SetPageUptodate(page);
+-		SetPageDirty(page);
+ 		unlock_page(page);
+ 
+ 		ctx->ring_pages[i] = page;
 -- 
 2.1.3
 
