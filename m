@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbaLOO2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:28:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38735 "EHLO
+	id S1753044AbaLOO3F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:29:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaLOO2g (ORCPT
+	with ESMTP id S1752982AbaLOO2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:36 -0500
+	Mon, 15 Dec 2014 09:28:50 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Burton <paul.burton@imgtec.com>, linux-mips@linux-mips.org,
-        Ralf Baechle <ralf@linux-mips.org>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 108/168] MIPS: fix EVA & non-SMP non-FPU FP context signal handling
-Date: Mon, 15 Dec 2014 14:26:02 +0000
-Message-Id: <1418653622-21105-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 123/168] powerpc/powernv: Honor the generic "no_64bit_msi" flag
+Date: Mon, 15 Dec 2014 14:26:17 +0000
+Message-Id: <1418653622-21105-124-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,57 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Burton <paul.burton@imgtec.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 14fa12df1d6bc1d3389a0fa842e0ebd8e8a9af26 upstream.
+commit 360743814c4082515581aa23ab1d8e699e1fbe88 upstream.
 
-The save_fp_context & restore_fp_context pointers were being assigned
-to the wrong variables if either:
+Instead of the arch specific quirk which we are deprecating
+and that drivers don't understand.
 
-  - The kernel is configured for UP & runs on a system without an FPU,
-    since b2ead5282885 "MIPS: Move & rename
-    fpu_emulator_{save,restore}_context".
-
-  - The kernel is configured for EVA, since ca750649e08c "MIPS: kernel:
-    signal: Prevent save/restore FPU context in user memory".
-
-This would lead to FP context being clobbered incorrectly when setting
-up a sigcontext, then the garbage values being saved uselessly when
-returning from the signal.
-
-Fix by swapping the pointer assignments appropriately.
-
-Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/8230/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/kernel/signal.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/powerpc/platforms/powernv/pci-ioda.c | 3 +--
+ arch/powerpc/platforms/powernv/pci.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/mips/kernel/signal.c b/arch/mips/kernel/signal.c
-index 9e60d117e41e..394e2b12a3ba 100644
---- a/arch/mips/kernel/signal.c
-+++ b/arch/mips/kernel/signal.c
-@@ -676,13 +676,13 @@ static int signal_setup(void)
- 		save_fp_context = _save_fp_context;
- 		restore_fp_context = _restore_fp_context;
- 	} else {
--		save_fp_context = copy_fp_from_sigcontext;
--		restore_fp_context = copy_fp_to_sigcontext;
-+		save_fp_context = copy_fp_to_sigcontext;
-+		restore_fp_context = copy_fp_from_sigcontext;
- 	}
- #endif /* CONFIG_SMP */
- #else
--	save_fp_context = copy_fp_from_sigcontext;;
--	restore_fp_context = copy_fp_to_sigcontext;
-+	save_fp_context = copy_fp_to_sigcontext;
-+	restore_fp_context = copy_fp_from_sigcontext;
- #endif
+diff --git a/arch/powerpc/platforms/powernv/pci-ioda.c b/arch/powerpc/platforms/powernv/pci-ioda.c
+index c339a2fbdf0b..34bd00be8018 100644
+--- a/arch/powerpc/platforms/powernv/pci-ioda.c
++++ b/arch/powerpc/platforms/powernv/pci-ioda.c
+@@ -901,7 +901,6 @@ static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
+ 				  unsigned int is_64, struct msi_msg *msg)
+ {
+ 	struct pnv_ioda_pe *pe = pnv_ioda_get_pe(dev);
+-	struct pci_dn *pdn = pci_get_pdn(dev);
+ 	struct irq_data *idata;
+ 	struct irq_chip *ichip;
+ 	unsigned int xive_num = hwirq - phb->msi_base;
+@@ -917,7 +916,7 @@ static int pnv_pci_ioda_msi_setup(struct pnv_phb *phb, struct pci_dev *dev,
+ 		return -ENXIO;
  
- 	return 0;
+ 	/* Force 32-bit MSI on some broken devices */
+-	if (pdn && pdn->force_32bit_msi)
++	if (dev->no_64bit_msi)
+ 		is_64 = 0;
+ 
+ 	/* Assign XIVE to PE */
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index f91a4e5d872e..8326838ab6f6 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -50,9 +50,8 @@ static int pnv_msi_check_device(struct pci_dev* pdev, int nvec, int type)
+ {
+ 	struct pci_controller *hose = pci_bus_to_host(pdev->bus);
+ 	struct pnv_phb *phb = hose->private_data;
+-	struct pci_dn *pdn = pci_get_pdn(pdev);
+ 
+-	if (pdn && pdn->force_32bit_msi && !phb->msi32_support)
++	if (pdev->no_64bit_msi && !phb->msi32_support)
+ 		return -ENODEV;
+ 
+ 	return (phb && phb->msi_bmp.bitmap) ? 0 : -ENODEV;
 -- 
 2.1.3
 
