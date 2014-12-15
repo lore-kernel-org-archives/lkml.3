@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751678AbaLOQJZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:09:25 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:53909 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaLOQJX (ORCPT
+	id S1751504AbaLOQLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:11:55 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:58556 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaLOQLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:09:23 -0500
+	Mon, 15 Dec 2014 11:11:52 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141215095238.GB6778@localhost>
-References: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
-	<20141210130412.GJ14346@localhost>
-	<CAFSKS=PnDa+_2eBk0M7xiE5me-7muo2ddVzhk=gHWMYoXhZtmw@mail.gmail.com>
-	<CAFSKS=MH0CU=t-TyHgcOun050EBQawkaDXfSN2OoC6MpZKgjmw@mail.gmail.com>
-	<20141215095238.GB6778@localhost>
-Date: Mon, 15 Dec 2014 10:09:22 -0600
-Message-ID: <CAFSKS=P2TdK08m-pCY-WadBrMjXQj2ue-AxOujuKBaFFqvokaQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: serial: add nt124 usb to serial driver
-From: George McCollister <george.mccollister@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: linux-usb@vger.kernel.org, open list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+In-Reply-To: <548E155A.7050000@gmx.de>
+References: <1417613513-28285-1-git-send-email-daniel.baluta@intel.com>
+	<1417613513-28285-4-git-send-email-daniel.baluta@intel.com>
+	<548E155A.7050000@gmx.de>
+Date: Mon, 15 Dec 2014 18:11:50 +0200
+X-Google-Sender-Auth: 6dGFFCpZvZK7NlBF5E1w3lrxHoE
+Message-ID: <CAEnQRZA6Y9bZJ=ukBYD3dKgVisVxj5cDu7BsP1mGuz+rK7Swvw@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] iio: imu: kmx61: Add PM runtime support
+From: Daniel Baluta <daniel.baluta@intel.com>
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: Daniel Baluta <daniel.baluta@intel.com>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 3:52 AM, Johan Hovold <johan@kernel.org> wrote:
-> On Sun, Dec 14, 2014 at 11:51:11AM -0600, George McCollister wrote:
->> Johan,
+On Mon, Dec 15, 2014 at 12:55 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
+> Daniel Baluta schrieb am 03.12.2014 um 14:31:
+>> By default both sensors are ACTIVE, in this way the driver
+>> will work even if CONFIG_PM_RUNTIME is not selected.
 >>
->> While working on the tx_empty changes you suggested it occurred to me
->> that it might not be obvious to others that the firmware doesn't send
->> a packet with the NT124_CTRL_TXEMPTY flag cleared when it begins
->> transmitting. The practical implication is that if the driver sets
->> tx_empty = true when it sees NT124_CTRL_TXEMPTY, tx_empty must be
->> reset to false somewhere when more data is transmitted. Perhaps I
->> could add prepare_write_buffer and do it in there before calling
->> usb_serial_generic_prepare_write_buffer(). Does that sound acceptable?
->
-> Hmm. There's no way to query that flag? And the status is sent (as bulk
-> in data) periodically or only when data has been received? And not when
-> the actual status changes?
-The bulk in packets are not sent periodically only on TXEMPTY, other
-line change or received data. There's no way to query the flag, though
-we're still at the stage we can make modifications to the firmware if
-there's justification. One of the design goals is to minimize
-unnecessary USB traffic so if there's a place to clear the flag in the
-driver without querying it would be preferable.
->
-> A potential problem with using prepare_write_buffer would be on failures
-> to submit the write urb, in which case this flag might never be cleared.
-Yes, this could be a problem though I wonder how many (if any)
-recoverable situations this would happen in that didn't eventually
-lead to a transmission. Adding a timer with a long timeout that set
-tx_empty  = true crossed my mind but that doesn't really seem any less
-error prone than the original issue. I could of course duplicate a
-bunch of code from generic.c and make a few minor changes to set
-tx_empty = true but that obviously isn't desirable either.
+> Since kmx61_set_power_state() can return error codes, wouldn't it be better to
+> handle them (as long as you are not using it in an error handler)?
+> Thanks,
 
-If none of the above solutions sound acceptable, let me know I and I
-guess I'll change the firmware to allow polling of TXEMPTY with a
-control message and remove it from the bulk in packet.
+That's correct I will send a patch asap.
 
-Thanks again,
-George
-
-> Johan
+Daniel.
