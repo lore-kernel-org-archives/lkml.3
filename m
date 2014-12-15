@@ -1,103 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042AbaLOJmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:42:12 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:56103 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaLOJmK (ORCPT
+	id S1752065AbaLOJn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:43:56 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:60095 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaLOJnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:42:10 -0500
-Date: Mon, 15 Dec 2014 10:42:06 +0100
-From: Johan Hovold <johan@kernel.org>
-To: George McCollister <george.mccollister@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] USB: serial: add nt124 usb to serial driver
-Message-ID: <20141215094206.GA6778@localhost>
-References: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
- <20141210130412.GJ14346@localhost>
- <CAFSKS=PnDa+_2eBk0M7xiE5me-7muo2ddVzhk=gHWMYoXhZtmw@mail.gmail.com>
+	Mon, 15 Dec 2014 04:43:51 -0500
+Message-ID: <548EAD4A.6070506@linux.vnet.ibm.com>
+Date: Mon, 15 Dec 2014 15:13:38 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFSKS=PnDa+_2eBk0M7xiE5me-7muo2ddVzhk=gHWMYoXhZtmw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fengguang Wu <fengguang.wu@intel.com>
+CC: Frederic Weisbecker <frederic@kernel.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
+Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
+References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121509-0033-0000-0000-000003055E46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 09:01:03AM -0600, George McCollister wrote:
-> On Wed, Dec 10, 2014 at 7:04 AM, Johan Hovold <johan@kernel.org> wrote:
-> > On Mon, Dec 08, 2014 at 05:24:17PM -0600, George McCollister wrote:
+On 12/15/2014 03:02 PM, Viresh Kumar wrote:
+> On 15 December 2014 at 12:55, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+>> Hi Viresh,
+>>
+>> Let me explain why I think this is happening.
+>>
+>> 1. tick_nohz_irq_enter/exit() both get called *only if the cpu is idle*
+>> and receives an interrupt.
+> 
+> Bang on target. Yeah that's the part we missed while writing this patch :)
+> 
+>> 2. Commit 2a16fc93d2c9568e1, cancels programming of tick_sched timer
+>> in its handler, assuming that tick_nohz_irq_exit() will take care of
+>> programming the clock event device appropriately, and hence it would
+>> requeue or cancel the tick_sched timer.
+> 
+> Correct.
+> 
+>> 3. But the intel_powerclamp driver injects an idle period only.
+>> *The CPU however is not idle*. It has work on its runqueue and the
+>> rq->curr != idle. This means that *tick_nohz_irq_enter()/exit() will not
+>> get called on any interrupt*.
+> 
+> Still good..
+> 
+>> 4. As a consequence, when we get a hrtimer interrupt during the period
+>> that the powerclamp driver is mimicking idle, the exit path of the
+>> interrupt never calls tick_nohz_irq_exit(). Hence the tick_sched timer
+>> that would have got removed due to the above commit will not get
+>> enqueued back on for any pending timers that there might be. Besides
+>> this, *jiffies never gets updated*.
+> 
+> Jiffies can be updated by any CPU and there is something called a control
+> cpu with powerclamp driver. BUT we may have got interrupted before the
+> powerclamp timer expired and so we are stuck in the
+> 
+> while (time_before(jiffies, target_jiffies))
+> 
+> loop for ever.
+> 
+>> Hope the above explanation makes sense.
+> 
+> Mostly good. Thanks for helping out.
+> 
+> Now, what's the right solution going forward ?
+> 
+> - Revert the offending commit ..
+> - Or still try to avoid reprogramming if we can ..
+> 
+> This is what I could come up with to still avoid reprogramming of tick:
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index cc0a5b6f741b..49f4278f69e2 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -1100,7 +1100,7 @@ static enum hrtimer_restart
+> tick_sched_timer(struct hrtimer *timer)
+>                 tick_sched_handle(ts, regs);
+> 
+>         /* No need to reprogram if we are in idle or full dynticks mode */
+> -       if (unlikely(ts->tick_stopped))
+> +       if (unlikely(ts->tick_stopped && (is_idle_task(current) ||
+> !ts->inidle)))
+>                 return HRTIMER_NORESTART;
+> 
+>         hrtimer_forward(timer, now, tick_period);
+> 
+> 
 
-> >> +     switch (termios->c_cflag & CSIZE) {
-> >
-> > C_CSIZE(tty)
-> Okay
-> >
-> >> +     case CS5:
-> >> +             newline.bDataBits = 5;
-> >> +             break;
-> >> +     case CS6:
-> >> +             newline.bDataBits = 6;
-> >> +             break;
-> I should probably just remove CS5 and CS6 since I don't think they
-> will work anyway.
+Looks good to me. You can add my Reviewed-by to the above patch.
 
-Ok. Remember to update the passed termios with the settings that you
-actually end up using (i.e. settings from old_termios).
+> 
+> Above change checks why we have stopped tick..
+> - The cpu has gone idle (really): is_idle_task(current)
+> - The cpu isn't in idle mode, i.e. its in nohz-full mode: !ts->inidle
+> 
+> This fixed the issues with powerclamp in my case.
+> 
+> @Fengguang: Can you please check if this fixes it for you as well?
+> 
+> @Thomas: Please let me know if you want me to send this fix
+> or you want to revert the original commit itself.
 
-> >> +static int nt124_open(struct tty_struct *tty,
-> >> +                   struct usb_serial_port *port)
-> >> +{
-> >> +     struct nt124_private *priv = usb_get_serial_port_data(port);
-> >> +     int result = 0;
-> >> +     unsigned long flags;
-> >> +
-> >> +     spin_lock_irqsave(&port->lock, flags);
-> >> +     port->throttled = 0;
-> >> +     port->throttle_req = 0;
-> >> +     spin_unlock_irqrestore(&port->lock, flags);
-> >> +
-> >> +     priv->flowctrl = 0;
-> >
-> > Drop this and keep the current settings.
-> Okay
-> >
-> >> +     nt124_set_termios(tty, port, NULL);
-> >> +     nt124_set_flowctrl(port, priv->flowctrl);
-> >
-> > Drop this. This is handled by tty and dtr_rts().
-> Okay
-> >
-> >> +
-> >> +     if (port->bulk_in_size)
-> >> +             result = usb_serial_generic_submit_read_urbs(port, GFP_KERNEL);
-> >
-> > Call usb_serial_generic_open() instead (and skip the throttle-flags bit
-> > above).
-> Okay, so looks like the only thing I will do in this function is call
-> nt124_set_termios() followed by usb_serial_generic_open().
+Regards
+Preeti U Murthy
+> 
+> Thanks.
+> 
+> --
+> Viresh
+> 
 
-Yes, that should do it.
-
-> >> +static struct usb_serial_driver nt124_device = {
-> >> +     .driver = {
-> >> +             .owner =        THIS_MODULE,
-> >> +             .name =         "nt124",
-> >> +     },
-> >> +     .id_table =             id_table,
-> >> +     .num_ports =            1,
-> >> +     .bulk_in_size =         32,
-> >> +     .bulk_out_size =        32,
-> >
-> > Why do you reduce these buffer sizes? They can be bigger than the
-> > endpoint size for increased throughput.
-> I'll leave them out like most of the other drivers (and retest) unless
-> you have another suggestion.
-
-That's perfectly fine, and means that the buffer sizes will match the
-endpoint sizes (they will in fact never be smaller than that).
-
-Johan
