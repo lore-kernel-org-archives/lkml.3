@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaLOT2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:28:14 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40665 "EHLO
+	id S1751412AbaLOT2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:28:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40659 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbaLOT2K (ORCPT
+	with ESMTP id S1750809AbaLOT2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:10 -0500
+	Mon, 15 Dec 2014 14:28:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Maurizio Lombardi <mlombard@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 46/96] bnx2fc: do not add shared skbs to the fcoe_rx_list
-Date: Mon, 15 Dec 2014 11:26:06 -0800
-Message-Id: <1418671616-25482-47-git-send-email-kamal@canonical.com>
+Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 42/96] USB: ssu100: fix overrun-error reporting
+Date: Mon, 15 Dec 2014 11:26:02 -0800
+Message-Id: <1418671616-25482-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,74 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 01a4cc4d0cd6a836c7b923760e8eb1cbb6a47258 upstream.
+commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
 
-In some cases, the fcoe_rx_list may contains multiple instances
-of the same skb (the so called "shared skbs").
+Fix reporting of overrun errors, which should only be reported once
+using the inserted null character.
 
-the bnx2fc_l2_rcv thread is a loop that extracts a skb from the list,
-modifies (and destroys) its content and then proceed to the next one.
-The problem is that if the skb is shared, the remaining instances will
-be corrupted.
-
-The solution is to use skb_share_check() before adding the skb to the
-fcoe_rx_list.
-
-[ 6286.808725] ------------[ cut here ]------------
-[ 6286.808729] WARNING: at include/scsi/fc_frame.h:173 bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]()
-[ 6286.808748] Modules linked in: bnx2x(-) mdio dm_service_time bnx2fc cnic uio fcoe libfcoe 8021q garp stp mrp libfc llc scsi_transport_fc scsi_tgt sg iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel e1000e ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper ptp cryptd hpilo serio_raw hpwdt lpc_ich pps_core ipmi_si pcspkr mfd_core ipmi_msghandler shpchp pcc_cpufreq mperf nfsd auth_rpcgss nfs_acl lockd sunrpc dm_multipath xfs libcrc32c ata_generic pata_acpi sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit ata_piix drm_kms_helper ttm drm libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod [last unloaded: mdio]
-[ 6286.808750] CPU: 3 PID: 1304 Comm: bnx2fc_l2_threa Not tainted 3.10.0-121.el7.x86_64 #1
-[ 6286.808750] Hardware name: HP ProLiant DL120 G7, BIOS J01 07/01/2013
-[ 6286.808752]  0000000000000000 000000000b36e715 ffff8800deba1e00 ffffffff815ec0ba
-[ 6286.808753]  ffff8800deba1e38 ffffffff8105dee1 ffffffffa05618c0 ffff8801e4c81888
-[ 6286.808754]  ffffe8ffff663868 ffff8801f402b180 ffff8801f56bc000 ffff8800deba1e48
-[ 6286.808754] Call Trace:
-[ 6286.808759]  [<ffffffff815ec0ba>] dump_stack+0x19/0x1b
-[ 6286.808762]  [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
-[ 6286.808763]  [<ffffffff8105e00a>] warn_slowpath_null+0x1a/0x20
-[ 6286.808765]  [<ffffffffa054f415>] bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]
-[ 6286.808767]  [<ffffffffa054eff0>] ? bnx2fc_disable+0x90/0x90 [bnx2fc]
-[ 6286.808769]  [<ffffffff81085aef>] kthread+0xcf/0xe0
-[ 6286.808770]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
-[ 6286.808772]  [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
-[ 6286.808773]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
-[ 6286.808774] ---[ end trace c6cdb939184ccb4e ]---
-
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/usb/serial/ssu100.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-index 9b94850..cc6b13b 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-@@ -411,6 +411,7 @@ static int bnx2fc_rcv(struct sk_buff *skb, struct net_device *dev,
- 	struct fc_frame_header *fh;
- 	struct fcoe_rcv_info *fr;
- 	struct fcoe_percpu_s *bg;
-+	struct sk_buff *tmp_skb;
- 	unsigned short oxid;
- 
- 	interface = container_of(ptype, struct bnx2fc_interface,
-@@ -423,6 +424,12 @@ static int bnx2fc_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto err;
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index e5750be..d667ff9 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -495,10 +495,9 @@ static void ssu100_update_lsr(struct usb_serial_port *port, u8 lsr,
+ 			if (*tty_flag == TTY_NORMAL)
+ 				*tty_flag = TTY_FRAME;
+ 		}
+-		if (lsr & UART_LSR_OE){
++		if (lsr & UART_LSR_OE) {
+ 			port->icount.overrun++;
+-			if (*tty_flag == TTY_NORMAL)
+-				*tty_flag = TTY_OVERRUN;
++			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
+ 		}
  	}
  
-+	tmp_skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (!tmp_skb)
-+		goto err;
-+
-+	skb = tmp_skb;
-+
- 	if (unlikely(eth_hdr(skb)->h_proto != htons(ETH_P_FCOE))) {
- 		printk(KERN_ERR PFX "bnx2fc_rcv: Wrong FC type frame\n");
- 		goto err;
+@@ -516,12 +515,8 @@ static void ssu100_process_read_urb(struct urb *urb)
+ 	if ((len >= 4) &&
+ 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
+ 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
+-		if (packet[2] == 0x00) {
++		if (packet[2] == 0x00)
+ 			ssu100_update_lsr(port, packet[3], &flag);
+-			if (flag == TTY_OVERRUN)
+-				tty_insert_flip_char(&port->port, 0,
+-						TTY_OVERRUN);
+-		}
+ 		if (packet[2] == 0x01)
+ 			ssu100_update_msr(port, packet[3]);
+ 
 -- 
 1.9.1
 
