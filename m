@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522AbaLOOep (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:34:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38959 "EHLO
+	id S1753564AbaLOOew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:34:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38946 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058AbaLOO3L (ORCPT
+	with ESMTP id S1753052AbaLOO3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:11 -0500
+	Mon, 15 Dec 2014 09:29:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 148/168] ahci: disable MSI on SAMSUNG 0xa800 SSD
-Date: Mon, 15 Dec 2014 14:26:42 +0000
-Message-Id: <1418653622-21105-149-git-send-email-luis.henriques@canonical.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 144/168] drivers/input/evdev.c: don't kfree() a vmalloc address
+Date: Mon, 15 Dec 2014 14:26:38 +0000
+Message-Id: <1418653622-21105-145-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -26,34 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 2b21ef0aae65f22f5ba86b13c4588f6f0c2dbefb upstream.
+commit 92788ac1eb06e69a822de45e2a8a63fa45eb5be2 upstream.
 
-Just like 0x1600 which got blacklisted by 66a7cbc303f4 ("ahci: disable
-MSI instead of NCQ on Samsung pci-e SSDs on macbooks"), 0xa800 chokes
-on NCQ commands if MSI is enabled.  Disable MSI.
+If kzalloc() failed and then evdev_open_device() fails, evdev_open()
+will pass a vmalloc'ed pointer to kfree.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Dominik Mierzejewski <dominik@greysector.net>
-Link: https://bugzilla.kernel.org/show_bug.cgi?id=89171
+This might fix https://bugzilla.kernel.org/show_bug.cgi?id=88401, where
+there was a crash in kfree().
+
+Reported-by: Christian Casteyde <casteyde.christian@free.fr>
+Belatedly-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/ahci.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/input/evdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 5fc11a616a7a..3b18399290b3 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -495,6 +495,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
- 	 */
- 	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
-+	{ PCI_VDEVICE(SAMSUNG, 0xa800), board_ahci_nomsi },
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index fd325ec9f064..b51970d1e9ee 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -422,7 +422,7 @@ static int evdev_open(struct inode *inode, struct file *file)
  
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+  err_free_client:
+ 	evdev_detach_client(evdev, client);
+-	kfree(client);
++	kvfree(client);
+ 	return error;
+ }
+ 
 -- 
 2.1.3
 
