@@ -1,378 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbaLOJ7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:59:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:49614 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752216AbaLOJ7e (ORCPT
+	id S1752309AbaLOKAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:00:19 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:52024 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbaLOKAP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:59:34 -0500
-Message-ID: <548EB0FD.3030206@arm.com>
-Date: Mon, 15 Dec 2014 09:59:25 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Mon, 15 Dec 2014 05:00:15 -0500
+Date: Mon, 15 Dec 2014 11:02:13 +0100
+From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
+To: Hartmut Knaack <knaack.h@gmx.de>
+Cc: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Michael Welling <mwelling@ieee.org>,
+        Philippe Reynes <tremyfr@yahoo.fr>, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree@vger.kernel.org,
+        Alban Bedel <alban.bedel@avionic-design.de>
+Subject: Re: [PATCH v2 2/2] iio: add driver for the TI DAC8554
+Message-ID: <20141215100213.GA6159@avionic-0071.adnet.avionic-design.de>
+References: <1416858614-32265-1-git-send-email-nikolaus.schulz@avionic-design.de>
+ <1416858614-32265-2-git-send-email-nikolaus.schulz@avionic-design.de>
+ <5482EA33.7020305@gmx.de>
+ <20141212155804.GA1142@avionic-0071.adnet.avionic-design.de>
+ <548C209A.7000904@gmx.de>
 MIME-Version: 1.0
-To: Stefan Agner <stefan@agner.ch>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>
-CC: "u.kleine-koenig@pengutronix.de" <u.kleine-koenig@pengutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/3] irqchip: vf610-mscm: add support for MSCM interrupt
- router
-References: <1418594998-2361-1-git-send-email-stefan@agner.ch> <1418594998-2361-2-git-send-email-stefan@agner.ch>
-In-Reply-To: <1418594998-2361-2-git-send-email-stefan@agner.ch>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <548C209A.7000904@gmx.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V03:K0:MDC/pwoJNscaEb7pbNhmXTAtQrTfR/kSBEEW49wwo4athVzWSF/
+ qCuicTxVHcPgDBZQNlljkN/NbiNFytfZOXpqmJUpis55mn7CtQtUbzkwzpLe2mlR7w0ToJa
+ QhZ6LH6N02l0HHPPpoE22aenMhgnNo+p37B6D6Cp6M0FOYfnRloow9xh5xuKkn1ZZkfQGdu
+ B+NWVsGsjuMFgVegmxBlA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Sat, Dec 13, 2014 at 12:18:50PM +0100, Hartmut Knaack wrote:
+> Nikolaus Schulz schrieb am 12.12.2014 um 16:58:
+> > On Sat, Dec 06, 2014 at 12:36:19PM +0100, Hartmut Knaack wrote:
+> >> Nikolaus Schulz schrieb am 24.11.2014 um 20:50:
+> >>> The TI DAC8554 is a quad-channel Digital-to-Analog Converter with an SPI
+> >>> interface.
+[dac8554_probe:]
+> >>> +	st->vref_mv =oltage_uv / 1000;
+> >> How hard do you want to depend on a voltage regulator? Doing regulator_get_voltage()
+> >> could even be called dynamically in _read_raw(), making a real regulator optional.
+> > 
+> > Hmm. I understand that the DAC voltage input may not be provided by a
+> > regulator, but is that a common scenario?  No other DAC driver I looked
+> > at handles that case, they all consider it an error if the regulator is
+> > absent.
+> > 
+> I had people in mind, who might want to use such DAC with one of the popular
+> embedded boards like Raspberry Pi - people who would just like to "plug and
+> play" without the need or ability to build a kernel (or would prefer to go
+> with the convenience of a distribution kernel). But since you've put a
+> dependency on OF, I don't see a way to use this device with a stock distribution
+> kernel anyway.
 
-On 14/12/14 22:09, Stefan Agner wrote:
-> This adds support for Vybrid's interrupt router. On VF6xx models,
-> almost all peripherals can be accessed from either of the two
-> CPU's, from the Cortex-A5 or from the Cortex-M4. The interrupt
-> router routes the peripheral interrupts to the configured CPU.
-> 
-> The driver makes use of the irqdomain hierarchy support. The
-> parent is either the ARM GIC or the ARM NVIC interrupt controller
-> depending on which CPU the kernel is executed on. Currently only
-> ARM GIC is supported because the NVIC driver lacks hierarchical
-> irqdomain support as of now.
-> 
-> Currently, there is no resource control mechnism implemented to
-> avoid concurrent access of the same peripheral. The user needs
-> to make sure to use device trees which assign the peripherals
-> orthogonally. However, this driver warns the user in case the
-> interrupt is already configured for the other CPU. This provides
-> a poor man's resource controller.
-> 
-> Signed-off-by: Stefan Agner <stefan@agner.ch>
-> ---
-> Thanks for the feedback on the initial driver, I'm quite happy
-> with the outcome using the hierarchic irqdomain support.
+As long as the kernel supports devicetree, compiling the module and a
+new DT blob should be enough to enable support for the DAC8554.
 
-Great stuff, pleased to see the stacked domain proving to be useful.
+And, as Jonathan has pointed out, if there is no real regulator
+providing the input current, a fixed regulator can be added to the DT.
 
-> The driver is tested on Vybrid running on the Cortex-A5 CPU.
-> However, to properly support Cortex-M4, some more work will be
-> needed. Beside the hierarchic irqdomain support for NVIC, the
-> different IRQ cell layout need to be solved: NVIC uses only
-> one cell, whereas GIC uses three. I see two possible solutions:
-> - Support two layouts in this driver. Maybe by using IS_ENABLED,
->   since it is not possible to compile a kernel for the A5 and
->   M4.
-> - Define a 3 cell layout as GIC uses it for the MSCM, and pass
->   a syntetic one cell layout to the parent when calling
->   irq_domain_alloc_irqs_parent. This driver would then still
->   need to know what type of interrupt controller the parent is...
-> 
-> Ideas/advice welcome...
+> But I still think that calculating the actual voltage during _read_raw() would
+> be a good idea, as there is support for regulators providing different voltages,
+> which can be changed during runtime.
 
-You shouldn't use the GIC format for the MSCM, as it doesn't mean
-anything for it. Yes, I know that everybody did that, but that's just
-wrong (MSCM itself shouldn't care about SPIs, except when it is actually
-talking to a GIC). The only reason I didn't clean that up in my ongoing
-series is to avoid having to rewrite all the DTs entirely.
+Agreed.
 
-My hunch is that you should have a MSCM-specific interrupt description
-(I guess two cells should be enough, one for the interrupt number and
-one for the trigger if necessary), and translate this to the format that
-the backing interrupt controller is using (only the map function should
-be affected).
-
-That would also make your DT binding a lot less ambiguous.
-
-Other than that, it looks pretty good to me. Just a few cosmetic remarks
-below:
-
-> 
->  arch/arm/mach-imx/Kconfig        |   1 +
->  drivers/irqchip/Kconfig          |  11 +++
->  drivers/irqchip/Makefile         |   1 +
->  drivers/irqchip/irq-vf610-mscm.c | 198 +++++++++++++++++++++++++++++++++++++++
->  4 files changed, 211 insertions(+)
->  create mode 100644 drivers/irqchip/irq-vf610-mscm.c
-> 
-> diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-> index e8627e0..3c5859e 100644
-> --- a/arch/arm/mach-imx/Kconfig
-> +++ b/arch/arm/mach-imx/Kconfig
-> @@ -631,6 +631,7 @@ config SOC_IMX6SX
->  
->  config SOC_VF610
->  	bool "Vybrid Family VF610 support"
-> +	select VF610_MSCM
->  	select ARM_GIC
->  	select PINCTRL_VF610
->  	select PL310_ERRATA_769419 if CACHE_L2X0
-> diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-> index cc79d2a..af5e72a 100644
-> --- a/drivers/irqchip/Kconfig
-> +++ b/drivers/irqchip/Kconfig
-> @@ -136,6 +136,17 @@ config IRQ_CROSSBAR
->  	  a free irq and configures the IP. Thus the peripheral interrupts are
->  	  routed to one of the free irqchip interrupt lines.
->  
-> +config VF610_MSCM
-> +	bool
-> +	help
-> +	  Support for MSCM interrupt router available on Vybrid SoC's. The
-> +	  interrupt router is between the CPU's interrupt controller and the
-> +	  peripheral. The router allows to route the peripheral interrupts to
-> +	  one of the two available CPU's on Vybrid VF6xx SoC's (Cortex-A5 or
-> +	  Cortex-M4). The router will be configured transparently on a IRQ
-> +	  request.
-> +	select IRQ_DOMAIN_HIERARCHY
-> +
->  config KEYSTONE_IRQ
->  	tristate "Keystone 2 IRQ controller IP"
->  	depends on ARCH_KEYSTONE
-> diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-> index 9516a32..85651be 100644
-> --- a/drivers/irqchip/Makefile
-> +++ b/drivers/irqchip/Makefile
-> @@ -37,6 +37,7 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
->  obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
->  obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
->  obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-> +obj-$(CONFIG_VF610_MSCM)		+= irq-vf610-mscm.o
->  obj-$(CONFIG_BCM7120_L2_IRQ)		+= irq-bcm7120-l2.o
->  obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
->  obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
-> diff --git a/drivers/irqchip/irq-vf610-mscm.c b/drivers/irqchip/irq-vf610-mscm.c
-> new file mode 100644
-> index 0000000..1597185
-> --- /dev/null
-> +++ b/drivers/irqchip/irq-vf610-mscm.c
-> @@ -0,0 +1,198 @@
-> +/*
-> + * Copyright 2014 Stefan Agner
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +
-> +#include <linux/cpu_pm.h>
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-> +#include <linux/irqdomain.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/slab.h>
-> +
-> +#include "irqchip.h"
-> +
-> +#define MSCM_CPxNUM		0x4
-> +#define MSCM_IRSPRC(n)		(0x880 + 2 * (n))
-> +#define MSCM_IRSPRC_CPEN_MASK	0x3
-> +
-> +#define MSCM_IRSPRC_NUM		112
-> +
-> +struct vf610_mscm_chip_data {
-> +	void __iomem *mscm_base;
-> +	u16 cpu_mask;
-> +	u16 mscm_saved_irsprc[MSCM_IRSPRC_NUM];
-> +};
-> +
-> +static struct vf610_mscm_chip_data *chip_data;
-> +
-> +static int vf610_mscm_notifier(struct notifier_block *self, unsigned long cmd,
-> +			       void *v)
-> +{
-> +	int i;
-> +
-> +	switch (cmd) {
-> +	case CPU_CLUSTER_PM_ENTER:
-> +		for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-> +			chip_data->mscm_saved_irsprc[i] = readw_relaxed(
-> +					chip_data->mscm_base + MSCM_IRSPRC(i));
-
-Please keep the argument to readw_relaxed on the same line as the
-function call. Makes it easier to read.
-
-> +		break;
-> +	case CPU_CLUSTER_PM_ENTER_FAILED:
-> +	case CPU_CLUSTER_PM_EXIT:
-> +		for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-> +			writew_relaxed(chip_data->mscm_saved_irsprc[i],
-> +				       chip_data->mscm_base + MSCM_IRSPRC(i));
-> +		break;
-> +	}
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block mscm_notifier_block = {
-> +	.notifier_call = vf610_mscm_notifier,
-> +};
-> +
-> +static void vf610_mscm_enable(struct irq_data *data)
-> +{
-> +	irq_hw_number_t hwirq = data->hwirq;
-> +	struct vf610_mscm_chip_data *chip_data = data->chip_data;
-> +	u16 irsprc;
-> +
-> +	irsprc = readw_relaxed(chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-> +	irsprc &= MSCM_IRSPRC_CPEN_MASK;
-> +
-> +	WARN_ON(irsprc);
-
-Does this read have an influence on the interrupt routing?
-
-> +
-> +	writew_relaxed(chip_data->cpu_mask,
-> +		       chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-> +
-> +	irq_chip_unmask_parent(data);
-> +}
-> +
-> +static void vf610_mscm_disable(struct irq_data *data)
-> +{
-> +	irq_hw_number_t hwirq = data->hwirq;
-> +	struct vf610_mscm_chip_data *chip_data = data->chip_data;
-> +	u16 irsprc;
-> +
-> +	irsprc = readw_relaxed(chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-> +	irsprc &= MSCM_IRSPRC_CPEN_MASK;
-
-And this one?
-
-> +	writew_relaxed(0x0, chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-> +
-> +	irq_chip_mask_parent(data);
-> +}
-> +
-> +static struct irq_chip vf610_mscm_irq_chip = {
-> +	.name			= "MSCM_IR",
-> +	.irq_mask		= irq_chip_mask_parent,
-> +	.irq_unmask		= irq_chip_unmask_parent,
-> +	.irq_eoi		= irq_chip_eoi_parent,
-> +	.irq_enable		= vf610_mscm_enable,
-> +	.irq_disable		= vf610_mscm_disable,
-> +	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-> +	.irq_set_affinity	= irq_chip_set_affinity_parent,
-> +};
-> +
-> +static int vf610_mscm_domain_xlate(struct irq_domain *d,
-> +				struct device_node *controller,
-> +				const u32 *intspec, unsigned int intsize,
-> +				unsigned long *out_hwirq,
-> +				unsigned int *out_type)
-> +{
-> +	if (intsize != 3)
-> +		return -EINVAL;
-> +
-> +	/* MSCM doesn't handle PPI */
-> +	if (intspec[0])
-> +		return -EINVAL;
-> +
-> +	*out_hwirq = intspec[1];
-> +	*out_type = intspec[2] & IRQ_TYPE_SENSE_MASK;
-> +	return 0;
-> +}
-> +
-> +static int vf610_mscm_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> +				   unsigned int nr_irqs, void *arg)
-> +{
-> +	int i;
-> +	irq_hw_number_t hwirq;
-> +	struct of_phandle_args *irq_data = arg;
-> +	struct of_phandle_args gic_data = *irq_data;
-> +
-> +	if (irq_data->args_count != 3)
-> +		return -EINVAL;
-> +
-> +	/* MSCM doesn't handle PPI */
-> +	if (irq_data->args[0])
-> +		return -EINVAL;
-> +
-> +	hwirq = irq_data->args[1];
-> +	for (i = 0; i < nr_irqs; i++)
-> +		irq_domain_set_hwirq_and_chip(domain, virq + i, hwirq + i,
-> +					      &vf610_mscm_irq_chip,
-> +					      domain->host_data);
-> +
-> +	gic_data.np = domain->parent->of_node;
-> +	return irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, &gic_data);
-> +}
-> +
-> +static const struct irq_domain_ops mscm_irq_domain_ops = {
-> +	.xlate = vf610_mscm_domain_xlate,
-> +	.alloc = vf610_mscm_domain_alloc,
-> +	.free = irq_domain_free_irqs_common,
-> +};
-> +
-> +static int __init vf610_mscm_of_init(struct device_node *node,
-> +			       struct device_node *parent)
-> +{
-> +	struct irq_domain *domain, *domain_parent;
-> +	int ret;
-> +
-> +	domain_parent = irq_find_host(parent);
-> +	if (!domain_parent) {
-> +		pr_err("vf610_mscm: interrupt-parent not found\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	chip_data = kzalloc(sizeof(*chip_data), GFP_KERNEL);
-> +	if (!chip_data)
-> +		return -ENOMEM;
-> +
-> +	chip_data->mscm_base = of_io_request_and_map(node, 0, "mscm");
-> +
-> +	if (!chip_data->mscm_base) {
-> +		pr_err("vf610_mscm: unable to map mscm register\n");
-> +		ret = -ENOMEM;
-> +		goto out_free;
-> +	}
-> +
-> +	domain = irq_domain_add_hierarchy(domain_parent, 0,
-> +					  MSCM_IRSPRC_NUM, node,
-> +					  &mscm_irq_domain_ops, chip_data);
-> +	if (!domain) {
-> +		ret = -ENOMEM;
-> +		goto out_unmap;
-> +	}
-> +
-> +	chip_data->cpu_mask = 0x1 <<
-> +		readl_relaxed(chip_data->mscm_base + MSCM_CPxNUM);
-
-That's a bit hard to read. Put it on the same line.
-
-> +
-> +	cpu_pm_register_notifier(&mscm_notifier_block);
-> +
-> +	return 0;
-> +
-> +out_unmap:
-> +	iounmap(chip_data->mscm_base);
-> +out_free:
-> +	kfree(chip_data);
-> +	return ret;
-> +}
-> +IRQCHIP_DECLARE(vf610_mscm, "fsl,vf610-mscm", vf610_mscm_of_init);
-> 
-
-Otherwise, looks pretty good to me.
-
-Thanks,
-
-	M.
 -- 
-Jazz is not dead. It just smells funny...
+Avionic Design GmbH
+Nikolaus Schulz
+Wragekamp 10
+D-22397 Hamburg
+Germany
+
+Tel.:  +49 40 88187-163
+Fax:   +49 40 88187-150
+Email: nikolaus.schulz@avionic-design.de
+
+Avionic Design GmbH
+Amtsgericht Hamburg HRB 82598
+Geschäftsführung: Cornelis Broers
+Ust.-Ident-Nr.: DE813378254
