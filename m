@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719AbaLOTeM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:34:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41050 "EHLO
+	id S1751665AbaLOTfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:35:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41058 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705AbaLOTeI (ORCPT
+	with ESMTP id S1751055AbaLOTeK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:34:08 -0500
+	Mon, 15 Dec 2014 14:34:10 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Seth Forshee <seth.forshee@canonical.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 79/96] xen-netfront: Remove BUGs on paged skb data which crosses a page boundary
-Date: Mon, 15 Dec 2014 11:26:39 -0800
-Message-Id: <1418671616-25482-80-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 78/96] mm/vmpressure.c: fix race in vmpressure_work_fn()
+Date: Mon, 15 Dec 2014 11:26:38 -0800
+Message-Id: <1418671616-25482-79-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,50 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 8d609725d4357f499e2103e46011308b32f53513 upstream.
+commit 91b57191cfd152c02ded0745250167d0263084f8 upstream.
 
-These BUGs can be erroneously triggered by frags which refer to
-tail pages within a compound page. The data in these pages may
-overrun the hardware page while still being contained within the
-compound page, but since compound_order() evaluates to 0 for tail
-pages the assertion fails. The code already iterates through
-subsequent pages correctly in this scenario, so the BUGs are
-unnecessary and can be removed.
+In some android devices, there will be a "divide by zero" exception.
+vmpr->scanned could be zero before spin_lock(&vmpr->sr_lock).
 
-Fixes: f36c374782e4 ("xen/netfront: handle compound page fragments on transmit")
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=88051
+
+[akpm@linux-foundation.org: neaten]
+Reported-by: ji_ang <ji_ang@163.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/xen-netfront.c | 5 -----
- 1 file changed, 5 deletions(-)
+ mm/vmpressure.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index 3c67863..d58830b 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -469,9 +469,6 @@ static void xennet_make_frags(struct sk_buff *skb, struct net_device *dev,
- 		len = skb_frag_size(frag);
- 		offset = frag->page_offset;
+diff --git a/mm/vmpressure.c b/mm/vmpressure.c
+index e0f6283..c98b14e 100644
+--- a/mm/vmpressure.c
++++ b/mm/vmpressure.c
+@@ -164,6 +164,7 @@ static void vmpressure_work_fn(struct work_struct *work)
+ 	unsigned long scanned;
+ 	unsigned long reclaimed;
  
--		/* Data must not cross a page boundary. */
--		BUG_ON(len + offset > PAGE_SIZE<<compound_order(page));
--
- 		/* Skip unused frames from start of page */
- 		page += offset >> PAGE_SHIFT;
- 		offset &= ~PAGE_MASK;
-@@ -479,8 +476,6 @@ static void xennet_make_frags(struct sk_buff *skb, struct net_device *dev,
- 		while (len > 0) {
- 			unsigned long bytes;
++	spin_lock(&vmpr->sr_lock);
+ 	/*
+ 	 * Several contexts might be calling vmpressure(), so it is
+ 	 * possible that the work was rescheduled again before the old
+@@ -172,11 +173,12 @@ static void vmpressure_work_fn(struct work_struct *work)
+ 	 * here. No need for any locks here since we don't care if
+ 	 * vmpr->reclaimed is in sync.
+ 	 */
+-	if (!vmpr->scanned)
++	scanned = vmpr->scanned;
++	if (!scanned) {
++		spin_unlock(&vmpr->sr_lock);
+ 		return;
++	}
  
--			BUG_ON(offset >= PAGE_SIZE);
--
- 			bytes = PAGE_SIZE - offset;
- 			if (bytes > len)
- 				bytes = len;
+-	spin_lock(&vmpr->sr_lock);
+-	scanned = vmpr->scanned;
+ 	reclaimed = vmpr->reclaimed;
+ 	vmpr->scanned = 0;
+ 	vmpr->reclaimed = 0;
 -- 
 1.9.1
 
