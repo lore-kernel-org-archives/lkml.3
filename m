@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaLOObn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:31:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39063 "EHLO
+	id S1753374AbaLOOdq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:33:46 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39033 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753106AbaLOO30 (ORCPT
+	with ESMTP id S1753068AbaLOO3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:26 -0500
+	Mon, 15 Dec 2014 09:29:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Tom Herbert <therbert@google.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 163/168] net: sctp: use MAX_HEADER for headroom reserve in output path
-Date: Mon, 15 Dec 2014 14:26:57 +0000
-Message-Id: <1418653622-21105-164-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 159/168] gre: Set inner mac header in gro complete
+Date: Mon, 15 Dec 2014 14:26:53 +0000
+Message-Id: <1418653622-21105-160-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,52 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Tom Herbert <therbert@google.com>
 
-commit 9772b54c55266ce80c639a80aa68eeb908f8ecf5 upstream.
+commit 6fb2a756739aa507c1fd5b8126f0bfc2f070dc46 upstream.
 
-To accomodate for enough headroom for tunnels, use MAX_HEADER instead
-of LL_MAX_HEADER. Robert reported that he has hit after roughly 40hrs
-of trinity an skb_under_panic() via SCTP output path (see reference).
-I couldn't reproduce it from here, but not using MAX_HEADER as elsewhere
-in other protocols might be one possible cause for this.
+Set the inner mac header to point to the GRE payload when
+doing GRO. This is needed if we proceed to send the packet
+through GRE GSO which now uses the inner mac header instead
+of inner network header to determine the length of encapsulation
+headers.
 
-In any case, it looks like accounting on chunks themself seems to look
-good as the skb already passed the SCTP output path and did not hit
-any skb_over_panic(). Given tunneling was enabled in his .config, the
-headroom would have been expanded by MAX_HEADER in this case.
-
-Reported-by: Robert Święcki <robert@swiecki.net>
-Reference: https://lkml.org/lkml/2014/12/1/507
-Fixes: 594ccc14dfe4d ("[SCTP] Replace incorrect use of dev_alloc_skb with alloc_skb in sctp_packet_transmit().")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Fixes: 14051f0452a2 ("gre: Use inner mac length when computing tunnel length")
+Reported-by: Wolfgang Walter <linux@stwm.de>
+Signed-off-by: Tom Herbert <therbert@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sctp/output.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/gre_offload.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/sctp/output.c b/net/sctp/output.c
-index 407ae2bf97b0..3f5b7221dda3 100644
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -401,12 +401,12 @@ int sctp_packet_transmit(struct sctp_packet *packet)
- 	sk = chunk->skb->sk;
+diff --git a/net/ipv4/gre_offload.c b/net/ipv4/gre_offload.c
+index 32041ecbeafb..4ae6b52751e9 100644
+--- a/net/ipv4/gre_offload.c
++++ b/net/ipv4/gre_offload.c
+@@ -279,6 +279,9 @@ static int gre_gro_complete(struct sk_buff *skb, int nhoff)
+ 		err = ptype->callbacks.gro_complete(skb, nhoff + grehlen);
  
- 	/* Allocate the new skb.  */
--	nskb = alloc_skb(packet->size + LL_MAX_HEADER, GFP_ATOMIC);
-+	nskb = alloc_skb(packet->size + MAX_HEADER, GFP_ATOMIC);
- 	if (!nskb)
- 		goto nomem;
+ 	rcu_read_unlock();
++
++	skb_set_inner_mac_header(skb, nhoff + grehlen);
++
+ 	return err;
+ }
  
- 	/* Make sure the outbound skb has enough header room reserved. */
--	skb_reserve(nskb, packet->overhead + LL_MAX_HEADER);
-+	skb_reserve(nskb, packet->overhead + MAX_HEADER);
- 
- 	/* Set the owning socket so that we know where to get the
- 	 * destination IP address.
 -- 
 2.1.3
 
