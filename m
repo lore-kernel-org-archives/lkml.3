@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaLOJrJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:47:09 -0500
-Received: from regular1.263xmail.com ([211.150.99.138]:48184 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaLOJrG (ORCPT
+	id S1751769AbaLOJwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:52:46 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:56445 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaLOJwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:47:06 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: ykk@rock-chips.com
-X-FST-TO: jsarha@ti.com
-X-SENDER-IP: 104.167.231.7
-X-LOGIN-NAME: ykk@rock-chips.com
-X-UNIQUE-TAG: <99e6c404e4f96a36eae5aa8b81eed6fd>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <548EADFB.6020903@rock-chips.com>
-Date: Mon, 15 Dec 2014 17:46:35 +0800
-From: "Kuankuan.Yang" <ykk@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 04:52:42 -0500
+Date: Mon, 15 Dec 2014 10:52:38 +0100
+From: Johan Hovold <johan@kernel.org>
+To: George McCollister <george.mccollister@gmail.com>
+Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] USB: serial: add nt124 usb to serial driver
+Message-ID: <20141215095238.GB6778@localhost>
+References: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
+ <20141210130412.GJ14346@localhost>
+ <CAFSKS=PnDa+_2eBk0M7xiE5me-7muo2ddVzhk=gHWMYoXhZtmw@mail.gmail.com>
+ <CAFSKS=MH0CU=t-TyHgcOun050EBQawkaDXfSN2OoC6MpZKgjmw@mail.gmail.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?UTF-8?B?U3Tvv73vv71waGFuZSBNYXJjaGVzaW4=?= <marcheu@chromium.org>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
-        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Mark Brown <broonie@kernel.org>,
-        Takashi Iwai <tiwai@suse.de>, Jyri Sarha <jsarha@ti.com>
-Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <1418612114-19692-1-git-send-email-ykk@rock-chips.com> <548EA3B9.5080407@metafoo.de>
-In-Reply-To: <548EA3B9.5080407@metafoo.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFSKS=MH0CU=t-TyHgcOun050EBQawkaDXfSN2OoC6MpZKgjmw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi lars:
+On Sun, Dec 14, 2014 at 11:51:11AM -0600, George McCollister wrote:
+> Johan,
+> 
+> While working on the tx_empty changes you suggested it occurred to me
+> that it might not be obvious to others that the firmware doesn't send
+> a packet with the NT124_CTRL_TXEMPTY flag cleared when it begins
+> transmitting. The practical implication is that if the driver sets
+> tx_empty = true when it sees NT124_CTRL_TXEMPTY, tx_empty must be
+> reset to false somewhere when more data is transmitted. Perhaps I
+> could add prepare_write_buffer and do it in there before calling
+> usb_serial_generic_prepare_write_buffer(). Does that sound acceptable?
 
-thks for your review, I will move it to hdmi audio driver, give the 
-codec_name & codec_dai_name an const string.
+Hmm. There's no way to query that flag? And the status is sent (as bulk
+in data) periodically or only when data has been received? And not when
+the actual status changes?
 
-Best Regards.
+A potential problem with using prepare_write_buffer would be on failures
+to submit the write urb, in which case this flag might never be cleared.
 
-在 2014年12月15日 17:02, Lars-Peter Clausen 写道:
-> On 12/15/2014 03:55 AM, Yakir Yang wrote:
-> [...]
->> +- codec-name: the dw-hdmi codec's device name
->> +- codec-dai-name: the dw-hdmi codec's dai name
->
-> Please you phandles for this, the names are Linux driver and framework 
-> specific details. That should not leak into the DT bindings.
->
-> [..]
->
->
->
-
-
+Johan
