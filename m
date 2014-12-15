@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaLOF3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 00:29:45 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:42139 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430AbaLOF1j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 00:27:39 -0500
-From: Omar Sandoval <osandov@osandov.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>
-Subject: [PATCH 7/8] swap: use direct I/O for SWP_FILE swap_readpage
-Date: Sun, 14 Dec 2014 21:27:01 -0800
-Message-Id: <d3fed803654ace449a61aefb37792ae5647e1cf3.1418618044.git.osandov@osandov.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <cover.1418618044.git.osandov@osandov.com>
-References: <cover.1418618044.git.osandov@osandov.com>
-In-Reply-To: <cover.1418618044.git.osandov@osandov.com>
-References: <cover.1418618044.git.osandov@osandov.com>
+	id S1751897AbaLOFaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 00:30:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115AbaLOFaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 00:30:04 -0500
+From: WANG Chao <chaowang@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Anderson <anderson@redhat.com>, Baoquan He <bhe@redhat.com>,
+        rwright@hp.com, Vivek Goyal <vgoyal@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        Vitaly Kuznetsov <vkuznets@redhat.com>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Greg Pearson <greg.pearson@hp.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] vmcore: fix PT_NOTE n_namesz, n_descsz overflow issue
+Date: Mon, 15 Dec 2014 13:29:36 +0800
+Message-Id: <1418621378-8266-1-git-send-email-chaowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 17, 2014 at 07:48:17AM -0800, Christoph Hellwig wrote:
-> With the new iov_iter infrastructure that supprots direct I/O to kernel
-> pages please get rid of the ->readpage hack first.  I'm still utterly
-> disapoined that this crap ever got merged.
+When updating PT_NOTE header size (ie. p_memsz), an overflow issue
+happens with the following bogus note entry:
 
-Signed-off-by: Omar Sandoval <osandov@osandov.com>
+n_namesz = 0xFFFFFFFF
+n_descsz = 0x0
+n_type   = 0x0
+
+This kind of note entry should be dropped during updating p_memsz. But
+because n_namesz is 32bit, after (n_namesz + 3) & (~3), it's overflow to
+0x0, the note entry size looks sane and reserved.
+
+When user space (eg. crash utility) is trying to access such bogus note,
+it could lead to an unexpected behavior (eg. crash utility segment
+fault because it's reading bogus address).
+
+The source of bogus note hasn't been identified yet. At least we could
+drop the bogus note so user space wouldn't be surprised.
+
+Signed-off-by: WANG Chao <chaowang@redhat.com>
 ---
- mm/page_io.c | 25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+ fs/proc/vmcore.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/mm/page_io.c b/mm/page_io.c
-index 4741248..956307c 100644
---- a/mm/page_io.c
-+++ b/mm/page_io.c
-@@ -346,12 +346,33 @@ int swap_readpage(struct page *page)
- 	}
- 
- 	if (sis->flags & SWP_FILE) {
-+		struct kiocb kiocb;
- 		struct file *swap_file = sis->swap_file;
- 		struct address_space *mapping = swap_file->f_mapping;
-+		struct iov_iter to;
-+		struct bio_vec bv = {
-+			.bv_page = page,
-+			.bv_len = PAGE_SIZE,
-+			.bv_offset = 0,
-+		};
-+
-+		iov_iter_bvec(&to, ITER_BVEC | READ, &bv, 1, PAGE_SIZE);
- 
--		ret = mapping->a_ops->readpage(swap_file, page);
--		if (!ret)
-+		init_sync_kiocb(&kiocb, swap_file);
-+		kiocb.ki_pos = page_file_offset(page);
-+		kiocb.ki_nbytes = PAGE_SIZE;
-+
-+		ret = mapping->a_ops->direct_IO(READ, &kiocb, &to,
-+						kiocb.ki_pos);
-+		if (ret == PAGE_SIZE) {
-+			SetPageUptodate(page);
- 			count_vm_event(PSWPIN);
-+			ret = 0;
-+		} else {
-+			ClearPageUptodate(page);
-+			SetPageError(page);
-+		}
-+		unlock_page(page);
- 		return ret;
- 	}
- 
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index a90d6d35..4e61388 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -546,8 +546,8 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
+ 		nhdr_ptr = notes_section;
+ 		while (nhdr_ptr->n_namesz != 0) {
+ 			sz = sizeof(Elf64_Nhdr) +
+-				((nhdr_ptr->n_namesz + 3) & ~3) +
+-				((nhdr_ptr->n_descsz + 3) & ~3);
++				(((u64)nhdr_ptr->n_namesz + 3) & ~3) +
++				(((u64)nhdr_ptr->n_descsz + 3) & ~3);
+ 			if ((real_sz + sz) > max_sz) {
+ 				pr_warn("Warning: Exceeded p_memsz, dropping PT_NOTE entry n_namesz=0x%x, n_descsz=0x%x\n",
+ 					nhdr_ptr->n_namesz, nhdr_ptr->n_descsz);
+@@ -732,8 +732,8 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
+ 		nhdr_ptr = notes_section;
+ 		while (nhdr_ptr->n_namesz != 0) {
+ 			sz = sizeof(Elf32_Nhdr) +
+-				((nhdr_ptr->n_namesz + 3) & ~3) +
+-				((nhdr_ptr->n_descsz + 3) & ~3);
++				(((u64)nhdr_ptr->n_namesz + 3) & ~3) +
++				(((u64)nhdr_ptr->n_descsz + 3) & ~3);
+ 			if ((real_sz + sz) > max_sz) {
+ 				pr_warn("Warning: Exceeded p_memsz, dropping PT_NOTE entry n_namesz=0x%x, n_descsz=0x%x\n",
+ 					nhdr_ptr->n_namesz, nhdr_ptr->n_descsz);
 -- 
-2.1.3
+1.9.3
 
