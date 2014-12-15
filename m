@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750882AbaLOSvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:51:12 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:32983 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaLOSvI (ORCPT
+	id S1750987AbaLOSwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:52:13 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:38080 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaLOSwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:51:08 -0500
-Date: Mon, 15 Dec 2014 10:51:04 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "mcb30@ipxe.org" <mcb30@ipxe.org>
-Subject: Re: [PATCH V3 1/1] Drivers: hv: vmbus: Fix a bug in
- vmbus_establish_gpadl()
-Message-ID: <20141215185104.GA25345@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Andy Whitcroft <apw@canonical.com>,
-	KY Srinivasan <kys@microsoft.com>,
-	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-	"olaf@aepfle.de" <olaf@aepfle.de>,
-	"jasowang@redhat.com" <jasowang@redhat.com>,
-	"mcb30@ipxe.org" <mcb30@ipxe.org>
-References: <1418260380-8774-1-git-send-email-kys@microsoft.com>
- <20141211021019.GA5648@hudson.localdomain>
- <BY2PR0301MB0711EC29782DB872564AB81AA06F0@BY2PR0301MB0711.namprd03.prod.outlook.com>
- <20141215075919.GA12088@newt.localdomain>
- <20141215154704.GA5259@bark>
+	Mon, 15 Dec 2014 13:52:12 -0500
+Message-ID: <548F2DD6.70805@collabora.com>
+Date: Mon, 15 Dec 2014 13:52:06 -0500
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215154704.GA5259@bark>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Steve Longerbeam <slongerbeam@gmail.com>,
+        Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: =?UTF-8?B?RnLDqWTDqXJpYyBTdXJlYXU=?= <frederic.sureau@vodalys.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: i.MX6 CSC and scaler
+References: <CAL8zT=hAVi2-io3POmj9Lp1AF11ovg6bqCMPRp_w_QySAgFGtw@mail.gmail.com> <548F272E.3040808@gmail.com>
+In-Reply-To: <548F272E.3040808@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy,
 
-On Mon, Dec 15, 2014 at 03:47:04PM +0000, Andy Whitcroft wrote:
-> On Sun, Dec 14, 2014 at 11:59:19PM -0800, Jeremiah Mahler wrote:
-[...]
-> 
-> The calculation appears identical to my reading, the original form was:
-> 
->   next_gpadl_handle = atomic_read(&vmbus_connection.next_gpadl_handle);
->   atomic_inc(&vmbus_connection.next_gpadl_handle);
-> 
-> or:
-> 
->   y = x;
->   x++;
-> 
-> so y == x' (x before incrementing)
-> 
-> the new code is:
-> 
->   next_gpadl_handle = (atomic_inc_return(&vmbus_connection.next_gpadl_handle) - 1);
-> 
-> or:
-> 
->   y = ++x - 1;
-> 
-> Also making y = x' (x before incrementing)
-> 
-> -apw
 
-Ah, you are right.  The increment before/after messed me up.
+Le 12/15/2014 01:23 PM, Steve Longerbeam a écrit :
+> You would need to write a gstreamer plugin to make use of the
+> mem2mem device for h/w CSC and scaling.
 
-Thanks for clearing that up for me :-)
+There is an element already (v4l2transform), though it currently only
+handle color conversion. I'd like to see scaling in that too instead of
+having a separate element that only do scaling like:
 
--- 
-- Jeremiah Mahler
+https://bugzilla.gnome.org/show_bug.cgi?id=726104
+
+I think Michael and Philipp idea was that scaling could be done directly
+out of the decoder, something supported by CODA driver. There is some
+work require to get that in GStreamer, see:
+
+https://bugzilla.gnome.org/show_bug.cgi?id=733827 (pixel format nego)
+https://bugzilla.gnome.org/show_bug.cgi?id=733828 (display size nego)
+
+cheers,
+Nicolas
