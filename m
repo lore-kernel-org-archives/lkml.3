@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaLOT2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:28:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40659 "EHLO
+	id S1751475AbaLOT2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:28:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40669 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbaLOT2I (ORCPT
+	with ESMTP id S1750810AbaLOT2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:08 -0500
+	Mon, 15 Dec 2014 14:28:25 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johan Hovold <johan@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 42/96] USB: ssu100: fix overrun-error reporting
-Date: Mon, 15 Dec 2014 11:26:02 -0800
-Message-Id: <1418671616-25482-43-git-send-email-kamal@canonical.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 26/96] sparc64: Do irq_{enter,exit}() around generic_smp_call_function*().
+Date: Mon, 15 Dec 2014 11:25:46 -0800
+Message-Id: <1418671616-25482-27-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -26,51 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <johan@kernel.org>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
+[ Upstream commit ab5c780913bca0a5763ca05dd5c2cb5cb08ccb26 ]
 
-Fix reporting of overrun errors, which should only be reported once
-using the inserted null character.
+Otherwise rcu_irq_{enter,exit}() do not happen and we get dumps like:
 
-Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
-Signed-off-by: Johan Hovold <johan@kernel.org>
+====================
+[  188.275021] ===============================
+[  188.309351] [ INFO: suspicious RCU usage. ]
+[  188.343737] 3.18.0-rc3-00068-g20f3963-dirty #54 Not tainted
+[  188.394786] -------------------------------
+[  188.429170] include/linux/rcupdate.h:883 rcu_read_lock() used
+illegally while idle!
+[  188.505235]
+other info that might help us debug this:
+
+[  188.554230]
+RCU used illegally from idle CPU!
+rcu_scheduler_active = 1, debug_locks = 0
+[  188.637587] RCU used illegally from extended quiescent state!
+[  188.690684] 3 locks held by swapper/7/0:
+[  188.721932]  #0:  (&x->wait#11){......}, at: [<0000000000495de8>] complete+0x8/0x60
+[  188.797994]  #1:  (&p->pi_lock){-.-.-.}, at: [<000000000048510c>] try_to_wake_up+0xc/0x400
+[  188.881343]  #2:  (rcu_read_lock){......}, at: [<000000000048a910>] select_task_rq_fair+0x90/0xb40
+[  188.973043]stack backtrace:
+[  188.993879] CPU: 7 PID: 0 Comm: swapper/7 Not tainted 3.18.0-rc3-00068-g20f3963-dirty #54
+[  189.076187] Call Trace:
+[  189.089719]  [0000000000499360] lockdep_rcu_suspicious+0xe0/0x100
+[  189.147035]  [000000000048a99c] select_task_rq_fair+0x11c/0xb40
+[  189.202253]  [00000000004852d8] try_to_wake_up+0x1d8/0x400
+[  189.252258]  [000000000048554c] default_wake_function+0xc/0x20
+[  189.306435]  [0000000000495554] __wake_up_common+0x34/0x80
+[  189.356448]  [00000000004955b4] __wake_up_locked+0x14/0x40
+[  189.406456]  [0000000000495e08] complete+0x28/0x60
+[  189.448142]  [0000000000636e28] blk_end_sync_rq+0x8/0x20
+[  189.496057]  [0000000000639898] __blk_mq_end_request+0x18/0x60
+[  189.550249]  [00000000006ee014] scsi_end_request+0x94/0x180
+[  189.601286]  [00000000006ee334] scsi_io_completion+0x1d4/0x600
+[  189.655463]  [00000000006e51c4] scsi_finish_command+0xc4/0xe0
+[  189.708598]  [00000000006ed958] scsi_softirq_done+0x118/0x140
+[  189.761735]  [00000000006398ec] __blk_mq_complete_request_remote+0xc/0x20
+[  189.827383]  [00000000004c75d0] generic_smp_call_function_single_interrupt+0x150/0x1c0
+[  189.906581]  [000000000043e514] smp_call_function_single_client+0x14/0x40
+====================
+
+Based almost entirely upon a patch by Paul E. McKenney.
+
+Reported-by: Meelis Roos <mroos@linux.ee>
+Tested-by: Meelis Roos <mroos@linux.ee>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ssu100.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ arch/sparc/kernel/smp_64.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
-index e5750be..d667ff9 100644
---- a/drivers/usb/serial/ssu100.c
-+++ b/drivers/usb/serial/ssu100.c
-@@ -495,10 +495,9 @@ static void ssu100_update_lsr(struct usb_serial_port *port, u8 lsr,
- 			if (*tty_flag == TTY_NORMAL)
- 				*tty_flag = TTY_FRAME;
- 		}
--		if (lsr & UART_LSR_OE){
-+		if (lsr & UART_LSR_OE) {
- 			port->icount.overrun++;
--			if (*tty_flag == TTY_NORMAL)
--				*tty_flag = TTY_OVERRUN;
-+			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
- 		}
- 	}
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 50c3dd03..9af0a5d 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -823,13 +823,17 @@ void arch_send_call_function_single_ipi(int cpu)
+ void __irq_entry smp_call_function_client(int irq, struct pt_regs *regs)
+ {
+ 	clear_softint(1 << irq);
++	irq_enter();
+ 	generic_smp_call_function_interrupt();
++	irq_exit();
+ }
  
-@@ -516,12 +515,8 @@ static void ssu100_process_read_urb(struct urb *urb)
- 	if ((len >= 4) &&
- 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
- 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
--		if (packet[2] == 0x00) {
-+		if (packet[2] == 0x00)
- 			ssu100_update_lsr(port, packet[3], &flag);
--			if (flag == TTY_OVERRUN)
--				tty_insert_flip_char(&port->port, 0,
--						TTY_OVERRUN);
--		}
- 		if (packet[2] == 0x01)
- 			ssu100_update_msr(port, packet[3]);
+ void __irq_entry smp_call_function_single_client(int irq, struct pt_regs *regs)
+ {
+ 	clear_softint(1 << irq);
++	irq_enter();
+ 	generic_smp_call_function_single_interrupt();
++	irq_exit();
+ }
  
+ static void tsb_sync(void *info)
 -- 
 1.9.1
 
