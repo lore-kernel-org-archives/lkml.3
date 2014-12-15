@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbaLOTum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:50:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40629 "EHLO
+	id S1752069AbaLOTxV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:53:21 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaLOT1N (ORCPT
+	with ESMTP id S1751125AbaLOT1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:13 -0500
+	Mon, 15 Dec 2014 14:27:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vasily Averin <vvs@parallels.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 10/96] ipv4: dst_entry leak in ip_send_unicast_reply()
-Date: Mon, 15 Dec 2014 11:25:30 -0800
-Message-Id: <1418671616-25482-11-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 15/96] sit: Use ipip6_tunnel_init as the ndo_init function.
+Date: Mon, 15 Dec 2014 11:25:35 -0800
+Message-Id: <1418671616-25482-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,59 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vasily Averin <vvs@parallels.com>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 4062090e3e5caaf55bed4523a69f26c3265cc1d2 ]
+[ Upstream commit ebe084aafb7e93adf210e80043c9f69adf56820d ]
 
-ip_setup_cork() called inside ip_append_data() steals dst entry from rt to cork
-and in case errors in __ip_append_data() nobody frees stolen dst entry
+ipip6_tunnel_init() sets the dev->iflink via a call to
+ipip6_tunnel_bind_dev(). After that, register_netdevice()
+sets dev->iflink = -1. So we loose the iflink configuration
+for ipv6 tunnels. Fix this by using ipip6_tunnel_init() as the
+ndo_init function. Then ipip6_tunnel_init() is called after
+dev->iflink is set to -1 from register_netdevice().
 
-Fixes: 2e77d89b2fa8 ("net: avoid a pair of dst_hold()/dst_release() in ip_append_data()")
-Signed-off-by: Vasily Averin <vvs@parallels.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ip_output.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ net/ipv6/sit.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 5352214..444d7f3 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -1488,6 +1488,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	struct sk_buff *nskb;
- 	struct sock *sk;
- 	struct inet_sock *inet;
-+	int err;
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index 9568c1f..25ed067 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -195,10 +195,8 @@ static int ipip6_tunnel_create(struct net_device *dev)
+ 	struct sit_net *sitn = net_generic(net, sit_net_id);
+ 	int err;
  
- 	if (ip_options_echo(&replyopts.opt.opt, skb))
- 		return;
-@@ -1526,8 +1527,13 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 	sock_net_set(sk, net);
- 	__skb_queue_head_init(&sk->sk_write_queue);
- 	sk->sk_sndbuf = sysctl_wmem_default;
--	ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base, len, 0,
--		       &ipc, &rt, MSG_DONTWAIT);
-+	err = ip_append_data(sk, &fl4, ip_reply_glue_bits, arg->iov->iov_base,
-+			     len, 0, &ipc, &rt, MSG_DONTWAIT);
-+	if (unlikely(err)) {
-+		ip_flush_pending_frames(sk);
-+		goto out;
-+	}
+-	err = ipip6_tunnel_init(dev);
+-	if (err < 0)
+-		goto out;
+-	ipip6_tunnel_clone_6rd(dev, sitn);
++	memcpy(dev->dev_addr, &t->parms.iph.saddr, 4);
++	memcpy(dev->broadcast, &t->parms.iph.daddr, 4);
+ 
+ 	if ((__force u16)t->parms.i_flags & SIT_ISATAP)
+ 		dev->priv_flags |= IFF_ISATAP;
+@@ -207,7 +205,8 @@ static int ipip6_tunnel_create(struct net_device *dev)
+ 	if (err < 0)
+ 		goto out;
+ 
+-	strcpy(t->parms.name, dev->name);
++	ipip6_tunnel_clone_6rd(dev, sitn);
 +
- 	nskb = skb_peek(&sk->sk_write_queue);
- 	if (nskb) {
- 		if (arg->csumoffset >= 0)
-@@ -1539,7 +1545,7 @@ void ip_send_unicast_reply(struct net *net, struct sk_buff *skb, __be32 daddr,
- 		skb_set_queue_mapping(nskb, skb_get_queue_mapping(skb));
- 		ip_push_pending_frames(sk, &fl4);
- 	}
--
-+out:
- 	put_cpu_var(unicast_sock);
+ 	dev->rtnl_link_ops = &sit_link_ops;
  
- 	ip_rt_put(rt);
+ 	dev_hold(dev);
+@@ -1317,6 +1316,7 @@ static int ipip6_tunnel_change_mtu(struct net_device *dev, int new_mtu)
+ }
+ 
+ static const struct net_device_ops ipip6_netdev_ops = {
++	.ndo_init	= ipip6_tunnel_init,
+ 	.ndo_uninit	= ipip6_tunnel_uninit,
+ 	.ndo_start_xmit	= sit_tunnel_xmit,
+ 	.ndo_do_ioctl	= ipip6_tunnel_ioctl,
+@@ -1360,9 +1360,7 @@ static int ipip6_tunnel_init(struct net_device *dev)
+ 
+ 	tunnel->dev = dev;
+ 	tunnel->net = dev_net(dev);
+-
+-	memcpy(dev->dev_addr, &tunnel->parms.iph.saddr, 4);
+-	memcpy(dev->broadcast, &tunnel->parms.iph.daddr, 4);
++	strcpy(tunnel->parms.name, dev->name);
+ 
+ 	ipip6_tunnel_bind_dev(dev);
+ 	dev->tstats = alloc_percpu(struct pcpu_tstats);
+@@ -1388,7 +1386,6 @@ static int __net_init ipip6_fb_tunnel_init(struct net_device *dev)
+ 
+ 	tunnel->dev = dev;
+ 	tunnel->net = dev_net(dev);
+-	strcpy(tunnel->parms.name, dev->name);
+ 
+ 	iph->version		= 4;
+ 	iph->protocol		= IPPROTO_IPV6;
 -- 
 1.9.1
 
