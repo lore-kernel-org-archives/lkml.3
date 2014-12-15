@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaLOO1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:27:44 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38312 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392AbaLOO1a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752423AbaLOO1a (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Dec 2014 09:27:30 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38289 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350AbaLOO10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 09:27:26 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 032/168] ASoC: wm_adsp: Avoid attempt to free buffers that might still be in use
-Date: Mon, 15 Dec 2014 14:24:46 +0000
-Message-Id: <1418653622-21105-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 022/168] rt2x00: do not align payload on modern H/W
+Date: Mon, 15 Dec 2014 14:24:36 +0000
+Message-Id: <1418653622-21105-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 9da7a5a9fdeeb76b2243f6b473363a7e6147ab6f upstream.
+commit cfd9167af14eb4ec21517a32911d460083ee3d59 upstream.
 
-We should not free any buffers associated with writing out coefficients
-to the DSP until all the async writes have completed. This patch updates
-the out of memory path when allocating a new buffer to include a call to
-regmap_async_complete.
+RT2800 and newer hardware require padding between header and payload if
+header length is not multiple of 4.
 
-Reported-by: JS Park <aitdark.park@samsung.com>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+For historical reasons we also align payload to to 4 bytes boundary, but
+such alignment is not needed on modern H/W.
+
+Patch fixes skb_under_panic problems reported from time to time:
+
+https://bugzilla.kernel.org/show_bug.cgi?id=84911
+https://bugzilla.kernel.org/show_bug.cgi?id=72471
+http://marc.info/?l=linux-wireless&m=139108549530402&w=2
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1087591
+
+Panic happened because we eat 4 bytes of skb headroom on each
+(re)transmission when sending frame without the payload and the header
+length not being multiple of 4 (i.e. QoS header has 26 bytes). On such
+case because paylad_aling=2 is bigger than header_align=0 we increase
+header_align by 4 bytes. To prevent that we could change the check to:
+
+	if (payload_length && payload_align > header_align)
+		header_align += 4;
+
+but not aligning payload at all is more effective and alignment is not
+really needed by H/W (that has been tested on OpenWrt project for few
+years now).
+
+Reported-and-tested-by: Antti S. Lankila <alankila@bel.fi>
+Debugged-by: Antti S. Lankila <alankila@bel.fi>
+Reported-by: Henrik Asp <solenskiner@gmail.com>
+Originally-From: Helmut Schaa <helmut.schaa@googlemail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm_adsp.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rt2x00/rt2x00queue.c | 50 ++++++++-----------------------
+ 1 file changed, 12 insertions(+), 38 deletions(-)
 
-diff --git a/sound/soc/codecs/wm_adsp.c b/sound/soc/codecs/wm_adsp.c
-index 2537725dd53f..051350052d62 100644
---- a/sound/soc/codecs/wm_adsp.c
-+++ b/sound/soc/codecs/wm_adsp.c
-@@ -1355,6 +1355,7 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
- 			  file, blocks, pos - firmware->size);
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.c b/drivers/net/wireless/rt2x00/rt2x00queue.c
+index 5642ccceca7c..22d49d575d3f 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.c
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.c
+@@ -158,55 +158,29 @@ void rt2x00queue_align_frame(struct sk_buff *skb)
+ 	skb_trim(skb, frame_length);
+ }
  
- out_fw:
-+	regmap_async_complete(regmap);
- 	release_firmware(firmware);
- 	wm_adsp_buf_free(&buf_list);
- out:
+-void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int header_length)
++/*
++ * H/W needs L2 padding between the header and the paylod if header size
++ * is not 4 bytes aligned.
++ */
++void rt2x00queue_insert_l2pad(struct sk_buff *skb, unsigned int hdr_len)
+ {
+-	unsigned int payload_length = skb->len - header_length;
+-	unsigned int header_align = ALIGN_SIZE(skb, 0);
+-	unsigned int payload_align = ALIGN_SIZE(skb, header_length);
+-	unsigned int l2pad = payload_length ? L2PAD_SIZE(header_length) : 0;
++	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 
+-	/*
+-	 * Adjust the header alignment if the payload needs to be moved more
+-	 * than the header.
+-	 */
+-	if (payload_align > header_align)
+-		header_align += 4;
+-
+-	/* There is nothing to do if no alignment is needed */
+-	if (!header_align)
++	if (!l2pad)
+ 		return;
+ 
+-	/* Reserve the amount of space needed in front of the frame */
+-	skb_push(skb, header_align);
+-
+-	/*
+-	 * Move the header.
+-	 */
+-	memmove(skb->data, skb->data + header_align, header_length);
+-
+-	/* Move the payload, if present and if required */
+-	if (payload_length && payload_align)
+-		memmove(skb->data + header_length + l2pad,
+-			skb->data + header_length + l2pad + payload_align,
+-			payload_length);
+-
+-	/* Trim the skb to the correct size */
+-	skb_trim(skb, header_length + l2pad + payload_length);
++	skb_push(skb, l2pad);
++	memmove(skb->data, skb->data + l2pad, hdr_len);
+ }
+ 
+-void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length)
++void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int hdr_len)
+ {
+-	/*
+-	 * L2 padding is only present if the skb contains more than just the
+-	 * IEEE 802.11 header.
+-	 */
+-	unsigned int l2pad = (skb->len > header_length) ?
+-				L2PAD_SIZE(header_length) : 0;
++	unsigned int l2pad = (skb->len > hdr_len) ? L2PAD_SIZE(hdr_len) : 0;
+ 
+ 	if (!l2pad)
+ 		return;
+ 
+-	memmove(skb->data + l2pad, skb->data, header_length);
++	memmove(skb->data + l2pad, skb->data, hdr_len);
+ 	skb_pull(skb, l2pad);
+ }
+ 
 -- 
 2.1.3
 
