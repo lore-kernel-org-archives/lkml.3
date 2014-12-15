@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaLOPU2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:20:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38184 "EHLO
+	id S1754519AbaLOPUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:20:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38178 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbaLOO1J (ORCPT
+	with ESMTP id S1752107AbaLOO1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:27:09 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kozlov <xeb@mail.ru>, Mathias Krause <minipli@googlemail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Chris J Arges <chris.j.arges@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 008/168] pptp: fix stack info leak in pptp_getname()
-Date: Mon, 15 Dec 2014 14:24:22 +0000
-Message-Id: <1418653622-21105-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 001/168] x86: kvm: use alternatives for VMCALL vs. VMMCALL if kernel text is read-only
+Date: Mon, 15 Dec 2014 14:24:15 +0000
+Message-Id: <1418653622-21105-2-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit a5f6fc28d6e6cc379c6839f21820e62262419584 upstream.
+commit c1118b3602c2329671ad5ec8bdf8e374323d6343 upstream.
 
-pptp_getname() only partially initializes the stack variable sa,
-particularly only fills the pptp part of the sa_addr union. The code
-thereby discloses 16 bytes of kernel stack memory via getsockname().
+On x86_64, kernel text mappings are mapped read-only with CONFIG_DEBUG_RODATA.
+In that case, KVM will fail to patch VMCALL instructions to VMMCALL
+as required on AMD processors.
 
-Fix this by memset(0)'ing the union before.
+The failure mode is currently a divide-by-zero exception, which obviously
+is a KVM bug that has to be fixed.  However, picking the right instruction
+between VMCALL and VMMCALL will be faster and will help if you cannot upgrade
+the hypervisor.
 
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Chris Webb <chris@arachsys.com>
+Tested-by: Chris Webb <chris@arachsys.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Chris J Arges <chris.j.arges@canonical.com>
+[ luis: used Chris backport to 3.16 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ppp/pptp.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/cpufeature.h |  1 +
+ arch/x86/include/asm/kvm_para.h   | 10 ++++++++--
+ arch/x86/kernel/cpu/amd.c         |  7 +++++++
+ 3 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ppp/pptp.c b/drivers/net/ppp/pptp.c
-index 1aff970be33e..1dc628ffce2b 100644
---- a/drivers/net/ppp/pptp.c
-+++ b/drivers/net/ppp/pptp.c
-@@ -506,7 +506,9 @@ static int pptp_getname(struct socket *sock, struct sockaddr *uaddr,
- 	int len = sizeof(struct sockaddr_pppox);
- 	struct sockaddr_pppox sp;
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index e265ff95d16d..51f75503541d 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -203,6 +203,7 @@
+ #define X86_FEATURE_DECODEASSISTS (8*32+12) /* AMD Decode Assists support */
+ #define X86_FEATURE_PAUSEFILTER (8*32+13) /* AMD filtered pause intercept */
+ #define X86_FEATURE_PFTHRESHOLD (8*32+14) /* AMD pause filter threshold */
++#define X86_FEATURE_VMMCALL     ( 8*32+15) /* Prefer vmmcall to vmcall */
  
--	sp.sa_family	  = AF_PPPOX;
-+	memset(&sp.sa_addr, 0, sizeof(sp.sa_addr));
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index c7678e43465b..e62cf897f781 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -2,6 +2,7 @@
+ #define _ASM_X86_KVM_PARA_H
+ 
+ #include <asm/processor.h>
++#include <asm/alternative.h>
+ #include <uapi/asm/kvm_para.h>
+ 
+ extern void kvmclock_init(void);
+@@ -16,10 +17,15 @@ static inline bool kvm_check_and_clear_guest_paused(void)
+ }
+ #endif /* CONFIG_KVM_GUEST */
+ 
+-/* This instruction is vmcall.  On non-VT architectures, it will generate a
+- * trap that we will then rewrite to the appropriate instruction.
++#ifdef CONFIG_DEBUG_RODATA
++#define KVM_HYPERCALL \
++        ALTERNATIVE(".byte 0x0f,0x01,0xc1", ".byte 0x0f,0x01,0xd9", X86_FEATURE_VMMCALL)
++#else
++/* On AMD processors, vmcall will generate a trap that we will
++ * then rewrite to the appropriate instruction.
+  */
+ #define KVM_HYPERCALL ".byte 0x0f,0x01,0xc1"
++#endif
+ 
+ /* For KVM hypercalls, a three-byte sequence of either the vmcall or the vmmcall
+  * instruction.  The hypervisor may replace it with something else but only the
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index ce8b8ff0e0ef..edefacacc2cc 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -506,6 +506,13 @@ static void early_init_amd(struct cpuinfo_x86 *c)
+ 	}
+ #endif
+ 
++	/*
++	 * This is only needed to tell the kernel whether to use VMCALL
++	 * and VMMCALL.  VMMCALL is never executed except under virt, so
++	 * we can set it unconditionally.
++	 */
++	set_cpu_cap(c, X86_FEATURE_VMMCALL);
 +
-+	sp.sa_family    = AF_PPPOX;
- 	sp.sa_protocol  = PX_PROTO_PPTP;
- 	sp.sa_addr.pptp = pppox_sk(sock->sk)->proto.pptp.src_addr;
- 
+ 	/* F16h erratum 793, CVE-2013-6885 */
+ 	if (c->x86 == 0x16 && c->x86_model <= 0xf)
+ 		msr_set_bit(MSR_AMD64_LS_CFG, 15);
 -- 
 2.1.3
 
