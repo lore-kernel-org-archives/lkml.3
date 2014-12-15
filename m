@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaLOO4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:56:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38587 "EHLO
+	id S1752710AbaLOO2F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:28:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38433 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752735AbaLOO2K (ORCPT
+	with ESMTP id S1752563AbaLOO1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:10 -0500
+	Mon, 15 Dec 2014 09:27:47 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steve Capper <steve.capper@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Hou Pengyang <houpengyang@huawei.com>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Mikhail Efremov <sem@altlinux.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 072/168] ARM: 8109/1: mm: Modify pte_write and pmd_write logic for LPAE
-Date: Mon, 15 Dec 2014 14:25:26 +0000
-Message-Id: <1418653622-21105-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 052/168] vfs: Don't exchange "short" filenames unconditionally.
+Date: Mon, 15 Dec 2014 14:25:06 +0000
+Message-Id: <1418653622-21105-53-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,193 +30,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Capper <steve.capper@linaro.org>
+From: Mikhail Efremov <sem@altlinux.org>
 
-commit ded9477984690d026e46dd75e8157392cea3f13f upstream.
+commit d2fa4a8476b911782f7e5167db18770222ac40c3 upstream.
 
-For LPAE, we have the following means for encoding writable or dirty
-ptes:
-                              L_PTE_DIRTY       L_PTE_RDONLY
-    !pte_dirty && !pte_write        0               1
-    !pte_dirty && pte_write         0               1
-    pte_dirty && !pte_write         1               1
-    pte_dirty && pte_write          1               0
+Only exchange source and destination filenames
+if flags contain RENAME_EXCHANGE.
+In case if executable file was running and replaced by
+other file /proc/PID/exe should still show correct file name,
+not the old name of the file by which it was replaced.
 
-So we can't distinguish between writeable clean ptes and read only
-ptes. This can cause problems with ptes being incorrectly flagged as
-read only when they are writeable but not dirty.
+The scenario when this bug manifests itself was like this:
+* ALT Linux uses rpm and start-stop-daemon;
+* during a package upgrade rpm creates a temporary file
+  for an executable to rename it upon successful unpacking;
+* start-stop-daemon is run subsequently and it obtains
+  the (nonexistant) temporary filename via /proc/PID/exe
+  thus failing to identify the running process.
 
-This patch renumbers L_PTE_RDONLY from AP[2] to a software bit #58,
-and adds additional logic to set AP[2] whenever the pte is read only
-or not dirty. That way we can distinguish between clean writeable ptes
-and read only ptes.
+Note that "long" filenames (> DNAiME_INLINE_LEN) are still
+exchanged without RENAME_EXCHANGE and this behaviour exists
+long enough (should be fixed too apparently).
+So this patch is just an interim workaround that restores
+behavior for "short" names as it was before changes
+introduced by commit da1ce0670c14 ("vfs: add cross-rename").
 
-HugeTLB pages will use this new logic automatically.
+See https://lkml.org/lkml/2014/9/7/6 for details.
 
-We need to add some logic to Transparent HugePages to ensure that they
-correctly interpret the revised pgprot permissions (L_PTE_RDONLY has
-moved and no longer matches PMD_SECT_AP2). In the process of revising
-THP, the names of the PMD software bits have been prefixed with L_ to
-make them easier to distinguish from their hardware bit counterparts.
+AV: the comments about being more careful with ->d_name.hash
+than with ->d_name.name are from back in 2.3.40s; they
+became obsolete by 2.3.60s, when we started to unhash the
+target instead of swapping hash chain positions followed
+by d_delete() as we used to do when dcache was first
+introduced.
 
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
-Reviewed-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Hou Pengyang <houpengyang@huawei.com>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
+Fixes: da1ce0670c14 "vfs: add cross-rename"
+Signed-off-by: Mikhail Efremov <sem@altlinux.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+[ luis: used Stefan's backport to 3.16 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/include/asm/pgtable-3level-hwdef.h |  3 ++-
- arch/arm/include/asm/pgtable-3level.h       | 41 +++++++++++++++++------------
- arch/arm/mm/dump.c                          |  4 +--
- arch/arm/mm/proc-v7-3level.S                |  9 +++++--
- 4 files changed, 35 insertions(+), 22 deletions(-)
+ fs/dcache.c | 28 +++++++++++++++++++---------
+ 1 file changed, 19 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/include/asm/pgtable-3level-hwdef.h b/arch/arm/include/asm/pgtable-3level-hwdef.h
-index 626989fec4d3..9fd61c72a33a 100644
---- a/arch/arm/include/asm/pgtable-3level-hwdef.h
-+++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
-@@ -43,7 +43,7 @@
- #define PMD_SECT_BUFFERABLE	(_AT(pmdval_t, 1) << 2)
- #define PMD_SECT_CACHEABLE	(_AT(pmdval_t, 1) << 3)
- #define PMD_SECT_USER		(_AT(pmdval_t, 1) << 6)		/* AP[1] */
--#define PMD_SECT_RDONLY		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
-+#define PMD_SECT_AP2		(_AT(pmdval_t, 1) << 7)		/* read only */
- #define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
- #define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
- #define PMD_SECT_nG		(_AT(pmdval_t, 1) << 11)
-@@ -72,6 +72,7 @@
- #define PTE_TABLE_BIT		(_AT(pteval_t, 1) << 1)
- #define PTE_BUFFERABLE		(_AT(pteval_t, 1) << 2)		/* AttrIndx[0] */
- #define PTE_CACHEABLE		(_AT(pteval_t, 1) << 3)		/* AttrIndx[1] */
-+#define PTE_AP2			(_AT(pteval_t, 1) << 7)		/* AP[2] */
- #define PTE_EXT_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
- #define PTE_EXT_AF		(_AT(pteval_t, 1) << 10)	/* Access Flag */
- #define PTE_EXT_NG		(_AT(pteval_t, 1) << 11)	/* nG */
-diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-index 34f371c4bbb2..06e0bc0f8b00 100644
---- a/arch/arm/include/asm/pgtable-3level.h
-+++ b/arch/arm/include/asm/pgtable-3level.h
-@@ -79,18 +79,19 @@
- #define L_PTE_PRESENT		(_AT(pteval_t, 3) << 0)		/* Present */
- #define L_PTE_FILE		(_AT(pteval_t, 1) << 2)		/* only when !PRESENT */
- #define L_PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
--#define L_PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
- #define L_PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
- #define L_PTE_YOUNG		(_AT(pteval_t, 1) << 10)	/* AF */
- #define L_PTE_XN		(_AT(pteval_t, 1) << 54)	/* XN */
--#define L_PTE_DIRTY		(_AT(pteval_t, 1) << 55)	/* unused */
--#define L_PTE_SPECIAL		(_AT(pteval_t, 1) << 56)	/* unused */
-+#define L_PTE_DIRTY		(_AT(pteval_t, 1) << 55)
-+#define L_PTE_SPECIAL		(_AT(pteval_t, 1) << 56)
- #define L_PTE_NONE		(_AT(pteval_t, 1) << 57)	/* PROT_NONE */
-+#define L_PTE_RDONLY		(_AT(pteval_t, 1) << 58)	/* READ ONLY */
- 
--#define PMD_SECT_VALID		(_AT(pmdval_t, 1) << 0)
--#define PMD_SECT_DIRTY		(_AT(pmdval_t, 1) << 55)
--#define PMD_SECT_SPLITTING	(_AT(pmdval_t, 1) << 56)
--#define PMD_SECT_NONE		(_AT(pmdval_t, 1) << 57)
-+#define L_PMD_SECT_VALID	(_AT(pmdval_t, 1) << 0)
-+#define L_PMD_SECT_DIRTY	(_AT(pmdval_t, 1) << 55)
-+#define L_PMD_SECT_SPLITTING	(_AT(pmdval_t, 1) << 56)
-+#define L_PMD_SECT_NONE		(_AT(pmdval_t, 1) << 57)
-+#define L_PMD_SECT_RDONLY	(_AT(pteval_t, 1) << 58)
- 
- /*
-  * To be used in assembly code with the upper page attributes.
-@@ -214,24 +215,25 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
- #define pmd_young(pmd)		(pmd_isset((pmd), PMD_SECT_AF))
- 
- #define __HAVE_ARCH_PMD_WRITE
--#define pmd_write(pmd)		(pmd_isclear((pmd), PMD_SECT_RDONLY))
-+#define pmd_write(pmd)		(pmd_isclear((pmd), L_PMD_SECT_RDONLY))
-+#define pmd_dirty(pmd)		(pmd_isset((pmd), L_PMD_SECT_DIRTY))
- 
- #define pmd_hugewillfault(pmd)	(!pmd_young(pmd) || !pmd_write(pmd))
- #define pmd_thp_or_huge(pmd)	(pmd_huge(pmd) || pmd_trans_huge(pmd))
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
- #define pmd_trans_huge(pmd)	(pmd_val(pmd) && !pmd_table(pmd))
--#define pmd_trans_splitting(pmd) (pmd_isset((pmd), PMD_SECT_SPLITTING))
-+#define pmd_trans_splitting(pmd) (pmd_isset((pmd), L_PMD_SECT_SPLITTING))
- #endif
- 
- #define PMD_BIT_FUNC(fn,op) \
- static inline pmd_t pmd_##fn(pmd_t pmd) { pmd_val(pmd) op; return pmd; }
- 
--PMD_BIT_FUNC(wrprotect,	|= PMD_SECT_RDONLY);
-+PMD_BIT_FUNC(wrprotect,	|= L_PMD_SECT_RDONLY);
- PMD_BIT_FUNC(mkold,	&= ~PMD_SECT_AF);
--PMD_BIT_FUNC(mksplitting, |= PMD_SECT_SPLITTING);
--PMD_BIT_FUNC(mkwrite,   &= ~PMD_SECT_RDONLY);
--PMD_BIT_FUNC(mkdirty,   |= PMD_SECT_DIRTY);
-+PMD_BIT_FUNC(mksplitting, |= L_PMD_SECT_SPLITTING);
-+PMD_BIT_FUNC(mkwrite,   &= ~L_PMD_SECT_RDONLY);
-+PMD_BIT_FUNC(mkdirty,   |= L_PMD_SECT_DIRTY);
- PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
- 
- #define pmd_mkhuge(pmd)		(__pmd(pmd_val(pmd) & ~PMD_TABLE_BIT))
-@@ -245,8 +247,8 @@ PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
- 
- static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
- {
--	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | PMD_SECT_RDONLY |
--				PMD_SECT_VALID | PMD_SECT_NONE;
-+	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | L_PMD_SECT_RDONLY |
-+				L_PMD_SECT_VALID | L_PMD_SECT_NONE;
- 	pmd_val(pmd) = (pmd_val(pmd) & ~mask) | (pgprot_val(newprot) & mask);
- 	return pmd;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 8a7dcc895d99..1d8b6a310822 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2401,7 +2401,8 @@ void dentry_update_name_case(struct dentry *dentry, struct qstr *name)
  }
-@@ -257,8 +259,13 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 	BUG_ON(addr >= TASK_SIZE);
+ EXPORT_SYMBOL(dentry_update_name_case);
  
- 	/* create a faulting entry if PROT_NONE protected */
--	if (pmd_val(pmd) & PMD_SECT_NONE)
--		pmd_val(pmd) &= ~PMD_SECT_VALID;
-+	if (pmd_val(pmd) & L_PMD_SECT_NONE)
-+		pmd_val(pmd) &= ~L_PMD_SECT_VALID;
-+
-+	if (pmd_write(pmd) && pmd_dirty(pmd))
-+		pmd_val(pmd) &= ~PMD_SECT_AP2;
-+	else
-+		pmd_val(pmd) |= PMD_SECT_AP2;
+-static void switch_names(struct dentry *dentry, struct dentry *target)
++static void switch_names(struct dentry *dentry, struct dentry *target,
++			 bool exchange)
+ {
+ 	if (dname_external(target)) {
+ 		if (dname_external(dentry)) {
+@@ -2435,6 +2436,12 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
+ 			 */
+ 			unsigned int i;
+ 			BUILD_BUG_ON(!IS_ALIGNED(DNAME_INLINE_LEN, sizeof(long)));
++			if (!exchange) {
++				memcpy(dentry->d_iname, target->d_name.name,
++						target->d_name.len + 1);
++				dentry->d_name.hash_len = target->d_name.hash_len;
++				return;
++			}
+ 			for (i = 0; i < DNAME_INLINE_LEN / sizeof(long); i++) {
+ 				swap(((long *) &dentry->d_iname)[i],
+ 				     ((long *) &target->d_iname)[i]);
+@@ -2484,12 +2491,15 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
+  * When switching names, the actual string doesn't strictly have to
+  * be preserved in the target - because we're dropping the target
+  * anyway. As such, we can just do a simple memcpy() to copy over
+- * the new name before we switch.
+- *
+- * Note that we have to be a lot more careful about getting the hash
+- * switched - we have to switch the hash value properly even if it
+- * then no longer matches the actual (corrupted) string of the target.
+- * The hash value has to match the hash queue that the dentry is on..
++ * the new name before we switch, unless we are going to rehash
++ * it.  Note that if we *do* unhash the target, we are not allowed
++ * to rehash it without giving it a new name/hash key - whether
++ * we swap or overwrite the names here, resulting name won't match
++ * the reality in filesystem; it's only there for d_path() purposes.
++ * Note that all of this is happening under rename_lock, so the
++ * any hash lookup seeing it in the middle of manipulations will
++ * be discarded anyway.  So we do not care what happens to the hash
++ * key in that case.
+  */
+ /*
+  * __d_move - move a dentry
+@@ -2539,7 +2549,7 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+ 	list_del(&target->d_u.d_child);
  
- 	*pmdp = __pmd(pmd_val(pmd) | PMD_SECT_nG);
- 	flush_pmd_entry(pmdp);
-diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
-index c508f41a43bc..59424937e52b 100644
---- a/arch/arm/mm/dump.c
-+++ b/arch/arm/mm/dump.c
-@@ -126,8 +126,8 @@ static const struct prot_bits section_bits[] = {
- 		.val	= PMD_SECT_USER,
- 		.set	= "USR",
- 	}, {
--		.mask	= PMD_SECT_RDONLY,
--		.val	= PMD_SECT_RDONLY,
-+		.mask	= L_PMD_SECT_RDONLY,
-+		.val	= L_PMD_SECT_RDONLY,
- 		.set	= "ro",
- 		.clear	= "RW",
- #elif __LINUX_ARM_ARCH__ >= 6
-diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-index 22e3ad63500c..eb81123a845d 100644
---- a/arch/arm/mm/proc-v7-3level.S
-+++ b/arch/arm/mm/proc-v7-3level.S
-@@ -86,8 +86,13 @@ ENTRY(cpu_v7_set_pte_ext)
- 	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
- 	bicne	rl, #L_PTE_VALID
- 	bne	1f
--	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
--	orreq	rl, #L_PTE_RDONLY
-+
-+	eor	ip, rh, #1 << (55 - 32)	@ toggle L_PTE_DIRTY in temp reg to
-+					@ test for !L_PTE_DIRTY || L_PTE_RDONLY
-+	tst	ip, #1 << (55 - 32) | 1 << (58 - 32)
-+	orrne	rl, #PTE_AP2
-+	biceq	rl, #PTE_AP2
-+
- 1:	strd	r2, r3, [r0]
- 	ALT_SMP(W(nop))
- 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
+ 	/* Switch the names.. */
+-	switch_names(dentry, target);
++	switch_names(dentry, target, exchange);
+ 
+ 	/* ... and switch the parents */
+ 	if (IS_ROOT(dentry)) {
+@@ -2677,7 +2687,7 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
+ 
+ 	dparent = dentry->d_parent;
+ 
+-	switch_names(dentry, anon);
++	switch_names(dentry, anon, false);
+ 
+ 	dentry->d_parent = dentry;
+ 	list_del_init(&dentry->d_u.d_child);
 -- 
 2.1.3
 
