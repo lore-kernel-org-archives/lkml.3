@@ -1,982 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaLOO6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:58:09 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:27069 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbaLOO5O (ORCPT
+	id S1753320AbaLOO4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:56:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38587 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735AbaLOO2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:57:14 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-b9-548ef6c6352b
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene@kernel.org>, Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/3] devfreq: exynos: Add driver for Exynos3250
-Date: Mon, 15 Dec 2014 15:56:52 +0100
-Message-id: <1418655413-25410-3-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1418655413-25410-1-git-send-email-k.kozlowski@samsung.com>
-References: <1418655413-25410-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xq7rHvvWFGGzcZ2axccZ6VovrX56z
-	Wsw/co7V4vULQ4v+x6+ZLc42vWG32PT4GqvF5V1z2Cw+9x5htJhxfh+Txdojd9ktll6/yGRx
-	u3EFmwOvx5p5axg9Nq3qZPPYvKTeo2/LKkaPz5vkAlijuGxSUnMyy1KL9O0SuDJOH13FXjDv
-	AmPFrYO72BsYn65g7GLk5JAQMJGY1jCPBcIWk7hwbz1bFyMXh5DAUkaJhx/+skA4fUwSy499
-	YAepYhMwlti8fAlYlYjAcyaJnbPegFUxC8xglLi3cBfYLGEBJ4lNy7vAOlgEVCWmHb0Oto9X
-	wF3i3aoJUPvkJE4em8wKYnMKeEhced0IVi8EVLP+9FK2CYy8CxgZVjGKppYmFxQnpeca6hUn
-	5haX5qXrJefnbmKEhOWXHYyLj1kdYhTgYFTi4U3Y2xsixJpYVlyZe4hRgoNZSYR31ru+ECHe
-	lMTKqtSi/Pii0pzU4kOMTBycUg2M7K2a5xYebE107Ir60csXMX37Xt1Fizz+njfXubxky7/3
-	WUpzbNk1v15qXinq0an7QHnK+w65M1YRWYt3sDEvejKrmWWW7pPOo2fdOfSm/vbN/K9gYbhj
-	0dOf7z59OiuS/7y4/5FB0ZqDej5tX5qYXJrDijRmvUpxiQ/7cKJy/zqRzxL3GjdaK7EUZyQa
-	ajEXFScCAJ8eYTwpAgAA
+	Mon, 15 Dec 2014 09:28:10 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Steve Capper <steve.capper@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Hou Pengyang <houpengyang@huawei.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 072/168] ARM: 8109/1: mm: Modify pte_write and pmd_write logic for LPAE
+Date: Mon, 15 Dec 2014 14:25:26 +0000
+Message-Id: <1418653622-21105-73-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new devfreq driver for Exynos3250. The driver utilizes devfreq event
-class for bus utilization data is multiplatform safe. Currently it does
-not support ASV (Adaptive Supply Voltage).
+3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
 
-Driver creates two devices:
- - Dynamic Memory Controller (DMC) and memory bus,
- - peripheral (left/right) buses.
+------------------
 
-For memory it changes the DMC clock from 50 MHz to 400 MHz and MIF
-voltage regulator from 800 mV to 875 mV.
-As for peripheral it changes the frequencies of multiple bus clocks and
-INT voltage regulator from 850 mV to 950 mV.
+From: Steven Capper <steve.capper@linaro.org>
 
-Impact on performance (Rinato/Gear 2 board) calculated with:
-$ perf bench mem memcpy -l 256MB -i 10
-$ perf bench mem memset -l 256MB -i 10
-$ dd if=/dev/mmcblk0p15 of=/opt/file iflag=direct oflag=direct count=128 bs=1M
+commit ded9477984690d026e46dd75e8157392cea3f13f upstream.
 
- type           | no devfreq [MB/s] | devfreq [MB/s] |   diff
-=============================================================
-memcpy          | 152.016           | 151.590        |  -0.3%
-memcpy prefault | 166.636           | 166.598        |   0.0%
-memset          | 126.832           | 112.814        | -11.0%
-memset prefault | 168.349           | 168.287        |  -0.0%
-MMC transfer    |  19.0             |  18.5          |  -2.6%
+For LPAE, we have the following means for encoding writable or dirty
+ptes:
+                              L_PTE_DIRTY       L_PTE_RDONLY
+    !pte_dirty && !pte_write        0               1
+    !pte_dirty && pte_write         0               1
+    pte_dirty && !pte_write         1               1
+    pte_dirty && pte_write          1               0
 
-Impact on energy consumption, system in idle (WFI), mA:
- no devfreq [mA] | devfreq [mA] |   diff
-========================================
- 29.0            | 19.2         | -33.8%
+So we can't distinguish between writeable clean ptes and read only
+ptes. This can cause problems with ptes being incorrectly flagged as
+read only when they are writeable but not dirty.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+This patch renumbers L_PTE_RDONLY from AP[2] to a software bit #58,
+and adds additional logic to set AP[2] whenever the pte is read only
+or not dirty. That way we can distinguish between clean writeable ptes
+and read only ptes.
+
+HugeTLB pages will use this new logic automatically.
+
+We need to add some logic to Transparent HugePages to ensure that they
+correctly interpret the revised pgprot permissions (L_PTE_RDONLY has
+moved and no longer matches PMD_SECT_AP2). In the process of revising
+THP, the names of the PMD software bits have been prefixed with L_ to
+make them easier to distinguish from their hardware bit counterparts.
+
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Hou Pengyang <houpengyang@huawei.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/devfreq/Kconfig              |  12 +
- drivers/devfreq/Makefile             |   1 +
- drivers/devfreq/exynos/Makefile      |   1 +
- drivers/devfreq/exynos/exynos3_bus.c | 847 +++++++++++++++++++++++++++++++++++
- 4 files changed, 861 insertions(+)
- create mode 100644 drivers/devfreq/exynos/exynos3_bus.c
+ arch/arm/include/asm/pgtable-3level-hwdef.h |  3 ++-
+ arch/arm/include/asm/pgtable-3level.h       | 41 +++++++++++++++++------------
+ arch/arm/mm/dump.c                          |  4 +--
+ arch/arm/mm/proc-v7-3level.S                |  9 +++++--
+ 4 files changed, 35 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index d4559f7866d6..ed4718bad8c9 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -65,6 +65,18 @@ config DEVFREQ_GOV_USERSPACE
+diff --git a/arch/arm/include/asm/pgtable-3level-hwdef.h b/arch/arm/include/asm/pgtable-3level-hwdef.h
+index 626989fec4d3..9fd61c72a33a 100644
+--- a/arch/arm/include/asm/pgtable-3level-hwdef.h
++++ b/arch/arm/include/asm/pgtable-3level-hwdef.h
+@@ -43,7 +43,7 @@
+ #define PMD_SECT_BUFFERABLE	(_AT(pmdval_t, 1) << 2)
+ #define PMD_SECT_CACHEABLE	(_AT(pmdval_t, 1) << 3)
+ #define PMD_SECT_USER		(_AT(pmdval_t, 1) << 6)		/* AP[1] */
+-#define PMD_SECT_RDONLY		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
++#define PMD_SECT_AP2		(_AT(pmdval_t, 1) << 7)		/* read only */
+ #define PMD_SECT_S		(_AT(pmdval_t, 3) << 8)
+ #define PMD_SECT_AF		(_AT(pmdval_t, 1) << 10)
+ #define PMD_SECT_nG		(_AT(pmdval_t, 1) << 11)
+@@ -72,6 +72,7 @@
+ #define PTE_TABLE_BIT		(_AT(pteval_t, 1) << 1)
+ #define PTE_BUFFERABLE		(_AT(pteval_t, 1) << 2)		/* AttrIndx[0] */
+ #define PTE_CACHEABLE		(_AT(pteval_t, 1) << 3)		/* AttrIndx[1] */
++#define PTE_AP2			(_AT(pteval_t, 1) << 7)		/* AP[2] */
+ #define PTE_EXT_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
+ #define PTE_EXT_AF		(_AT(pteval_t, 1) << 10)	/* Access Flag */
+ #define PTE_EXT_NG		(_AT(pteval_t, 1) << 11)	/* nG */
+diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
+index 34f371c4bbb2..06e0bc0f8b00 100644
+--- a/arch/arm/include/asm/pgtable-3level.h
++++ b/arch/arm/include/asm/pgtable-3level.h
+@@ -79,18 +79,19 @@
+ #define L_PTE_PRESENT		(_AT(pteval_t, 3) << 0)		/* Present */
+ #define L_PTE_FILE		(_AT(pteval_t, 1) << 2)		/* only when !PRESENT */
+ #define L_PTE_USER		(_AT(pteval_t, 1) << 6)		/* AP[1] */
+-#define L_PTE_RDONLY		(_AT(pteval_t, 1) << 7)		/* AP[2] */
+ #define L_PTE_SHARED		(_AT(pteval_t, 3) << 8)		/* SH[1:0], inner shareable */
+ #define L_PTE_YOUNG		(_AT(pteval_t, 1) << 10)	/* AF */
+ #define L_PTE_XN		(_AT(pteval_t, 1) << 54)	/* XN */
+-#define L_PTE_DIRTY		(_AT(pteval_t, 1) << 55)	/* unused */
+-#define L_PTE_SPECIAL		(_AT(pteval_t, 1) << 56)	/* unused */
++#define L_PTE_DIRTY		(_AT(pteval_t, 1) << 55)
++#define L_PTE_SPECIAL		(_AT(pteval_t, 1) << 56)
+ #define L_PTE_NONE		(_AT(pteval_t, 1) << 57)	/* PROT_NONE */
++#define L_PTE_RDONLY		(_AT(pteval_t, 1) << 58)	/* READ ONLY */
  
- comment "DEVFREQ Drivers"
+-#define PMD_SECT_VALID		(_AT(pmdval_t, 1) << 0)
+-#define PMD_SECT_DIRTY		(_AT(pmdval_t, 1) << 55)
+-#define PMD_SECT_SPLITTING	(_AT(pmdval_t, 1) << 56)
+-#define PMD_SECT_NONE		(_AT(pmdval_t, 1) << 57)
++#define L_PMD_SECT_VALID	(_AT(pmdval_t, 1) << 0)
++#define L_PMD_SECT_DIRTY	(_AT(pmdval_t, 1) << 55)
++#define L_PMD_SECT_SPLITTING	(_AT(pmdval_t, 1) << 56)
++#define L_PMD_SECT_NONE		(_AT(pmdval_t, 1) << 57)
++#define L_PMD_SECT_RDONLY	(_AT(pteval_t, 1) << 58)
  
-+config ARM_EXYNOS3_BUS_DEVFREQ
-+	bool "ARM Exynos3250 Memory and peripheral bus DEVFREQ Driver"
-+	depends on SOC_EXYNOS3250
-+	select DEVFREQ_GOV_SIMPLE_ONDEMAND
-+	select PM_OPP
-+	help
-+	  This adds the DEVFREQ driver for Exynos3250 memory interface
-+	  and peripheral bus (vdd_mif + vdd_int).
-+	  It reads PPMU counters of memory controllers and adjusts
-+	  the operating frequencies and voltages with OPP support.
-+	  This does not yet operate with optimal voltages.
-+
- config ARM_EXYNOS4_BUS_DEVFREQ
- 	bool "ARM Exynos4210/4212/4412 Memory Bus DEVFREQ Driver"
- 	depends on (CPU_EXYNOS4210 || SOC_EXYNOS4212 || SOC_EXYNOS4412) && !ARCH_MULTIPLATFORM
-diff --git a/drivers/devfreq/Makefile b/drivers/devfreq/Makefile
-index a1ffabe90a14..780f1c4724ea 100644
---- a/drivers/devfreq/Makefile
-+++ b/drivers/devfreq/Makefile
-@@ -5,6 +5,7 @@ obj-$(CONFIG_DEVFREQ_GOV_POWERSAVE)	+= governor_powersave.o
- obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)	+= governor_userspace.o
+ /*
+  * To be used in assembly code with the upper page attributes.
+@@ -214,24 +215,25 @@ static inline pmd_t *pmd_offset(pud_t *pud, unsigned long addr)
+ #define pmd_young(pmd)		(pmd_isset((pmd), PMD_SECT_AF))
  
- # DEVFREQ Drivers
-+obj-$(CONFIG_ARM_EXYNOS3_BUS_DEVFREQ)	+= exynos/
- obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos/
- obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)	+= exynos/
+ #define __HAVE_ARCH_PMD_WRITE
+-#define pmd_write(pmd)		(pmd_isclear((pmd), PMD_SECT_RDONLY))
++#define pmd_write(pmd)		(pmd_isclear((pmd), L_PMD_SECT_RDONLY))
++#define pmd_dirty(pmd)		(pmd_isset((pmd), L_PMD_SECT_DIRTY))
  
-diff --git a/drivers/devfreq/exynos/Makefile b/drivers/devfreq/exynos/Makefile
-index 49bc9175f923..a4aa1ed474c9 100644
---- a/drivers/devfreq/exynos/Makefile
-+++ b/drivers/devfreq/exynos/Makefile
-@@ -1,3 +1,4 @@
- # Exynos DEVFREQ Drivers
-+obj-$(CONFIG_ARM_EXYNOS3_BUS_DEVFREQ)	+= exynos_ppmu.o exynos3_bus.o
- obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos_ppmu.o exynos4_bus.o
- obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)	+= exynos_ppmu.o exynos5_bus.o
-diff --git a/drivers/devfreq/exynos/exynos3_bus.c b/drivers/devfreq/exynos/exynos3_bus.c
-new file mode 100644
-index 000000000000..e01c3d90d2b8
---- /dev/null
-+++ b/drivers/devfreq/exynos/exynos3_bus.c
-@@ -0,0 +1,847 @@
-+/*
-+ * drivers/devfreq/exynos/exynos3_bus.c
-+ *
-+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
-+ *
-+ * based on drivers/devfreqw/exynos/exynos4_bus.c
-+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-+ *
-+ * EXYNOS3250 - Memory/Bus clock frequency scaling support in DEVFREQ framework
-+ * This version supports EXYNOS3250 only.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/clk.h>
-+#include <linux/devfreq.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/mutex.h>
-+#include <linux/pm_opp.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/suspend.h>
-+
-+
-+/*#include "exynos_ppmu.h"*/
-+
-+/*
-+ * Assume that the bus is saturated if the utilization is 30%.
-+ *
-+ * Saturation ratio is less than that in exynos4_bus.c (40%) to boost
-+ * ondemand governor early.
-+ * Memory tests (memcpy, memory alloc, dmatest) shown that ratio of 40%
-+ * triggers frequency increase sporadically.
-+ */
-+#define EXYNOS3_BUS_SATURATION_RATIO	30
-+#define EXYNOS3_BUS_INT_REGULATOR_NAME	"vdd-int"
-+#define EXYNOS3_BUS_MIF_REGULATOR_NAME	"vdd-mif"
-+
-+#define EXYNOS3_BUS_PPMU_NUM		2
-+
-+#define EXYNOS3_BUS_INTERVAL_SAFEVOLT	25000	/* 25mV */
-+
-+enum exynos3_busfreq_type {
-+	TYPE_BUSFREQ_UNKNOWN = 0,
-+	TYPE_BUSFREQ_EXYNOS3250_MIF,
-+	TYPE_BUSFREQ_EXYNOS3250_INT,
-+};
-+
-+enum exynos3_busfreq_level {
-+	LV_0,
-+	LV_1,
-+	LV_2,
-+	LV_3,
-+	LV_4,
-+	LV_5,
-+
-+	LV_END,
-+};
-+
-+enum exynos3_bus_mif_clk {
-+	DMC,
-+	EXYNOS3_BUS_MIF_CLK_END,
-+};
-+
-+enum exynos3_bus_int_clk {
-+	ACLK_400,
-+	ACLK_266,
-+	ACLK_200,
-+	ACLK_160,
-+	ACLK_GDL,
-+	ACLK_GDR,
-+	MFC,
-+	EXYNOS3_BUS_INT_CLK_END,
-+};
-+
-+static const char * const exynos3_bus_mif_clk_name[] = {
-+	[DMC]		= "dmc",
-+};
-+
-+static const char * const exynos3_bus_int_clk_name[] = {
-+	[ACLK_400]	= "aclk_400",
-+	[ACLK_266]	= "aclk_266",
-+	[ACLK_200]	= "aclk_200",
-+	[ACLK_160]	= "aclk_160",
-+	[ACLK_GDL]	= "aclk_gdl",
-+	[ACLK_GDR]	= "aclk_gdr",
-+	[MFC]		= "mfc",
-+};
-+
-+/**
-+ * struct busfreq_opp_info - opp information for bus
-+ * @rate:	Frequency in hertz
-+ * @volt:	Voltage in microvolts corresponding to this OPP
-+ */
-+struct busfreq_opp_info {
-+	unsigned long rate;
-+	unsigned long volt;
-+};
-+
-+struct busfreq_opp_table {
-+	unsigned int idx;
-+	unsigned long clk;
-+	unsigned long volt;
-+};
-+
-+struct busfreq_data {
-+	struct devfreq_dev_profile *profile;
-+	enum exynos3_busfreq_type type;
-+	struct device *dev;
-+	struct devfreq *devfreq;
-+	bool disabled;
-+
-+	struct busfreq_opp_info curr_opp_info;
-+
-+	struct regulator *regulator_vdd;
-+	struct devfreq_event_dev *edevs[EXYNOS3_BUS_PPMU_NUM];
-+	struct clk **clk_bus;
-+	unsigned int clk_bus_num;
-+
-+	const struct busfreq_opp_table *opp_table;
-+	int opp_table_end;
-+
-+	struct notifier_block pm_notifier;
-+	struct mutex lock;
-+};
-+
-+static const struct busfreq_opp_table exynos3_bus_mif_clk_table[] = {
-+	/*   DMC clock, MIF voltage */
-+	{LV_0,	400000,	875000},
-+	{LV_1,	200000,	800000},
-+	{LV_2,	133000,	800000},
-+	{LV_3,	100000,	800000},
-+	{LV_4,	 50000,	800000},
-+};
-+
-+/*
-+ * The frequency for INT is an abstract clock, without real representation
-+ * because INT actually changes multiple clocks. Values for this frequency
-+ * match MIF/DMC clock (except one additional level: 80000).
-+ */
-+static const struct busfreq_opp_table exynos3_bus_int_clk_table[] = {
-+	/* abstract clock, INT voltage */
-+	{LV_0,	400000,	950000},
-+	{LV_1,	200000,	950000},
-+	{LV_2,	133000, 925000},
-+	{LV_3,	100000, 850000},
-+	{LV_4,	80000,  850000},
-+	{LV_5,	50000,  850000},
-+};
-+
-+static const unsigned int exynos3_bus_mif_clk_freq[][EXYNOS3_BUS_MIF_CLK_END] = {
-+		/* DMC */
-+	[LV_0] = { 400000000, },
-+	[LV_1] = { 200000000, },
-+	[LV_2] = { 133333334, },
-+	[LV_3] = { 100000000, },
-+	[LV_4] = {  50000000, },
-+};
-+
-+static const unsigned int exynos3_bus_int_clk_freq[][EXYNOS3_BUS_INT_CLK_END] = {
-+		/*  ACLK_400,  ACLK_266,  ACLK_200,  ACLK_160,  ACLK_GDL,  ACLK_GDR, MFC */
-+	[LV_0] = { 400000000, 300000000, 200000000, 200000000, 200000000, 200000000, 200000000, },
-+	[LV_1] = { 200000000, 200000000, 200000000, 133333334, 200000000, 200000000, 200000000, },
-+	[LV_2] = {  50000000, 133333334, 100000000, 100000000, 133333334, 133333334, 200000000, },
-+	[LV_3] = {  50000000,  50000000,  80000000,  80000000, 100000000, 100000000, 133333334, },
-+	[LV_4] = {  50000000,  50000000,  50000000,  50000000, 100000000, 100000000, 100000000, },
-+	[LV_5] = {  50000000,  50000000,  50000000,  50000000, 100000000, 100000000,  80000000, },
-+};
-+
-+static int round_set_clk(struct device *dev, int id, struct clk *clk,
-+		unsigned long rate)
-+{
-+	int ret;
-+	long real_rate;
-+
-+	real_rate = clk_round_rate(clk, rate);
-+	if (real_rate <= 0) {
-+		dev_err(dev, "Cannot round clock rate %d to %lu: %ld\n",
-+				id, rate, real_rate);
-+		return -EINVAL;
-+	}
-+
-+	ret = clk_set_rate(clk, real_rate);
-+	if (ret) {
-+		dev_err(dev, "Cannot set clock rate %d to %lu: %d",
-+				id, real_rate, ret);
-+		return ret;
-+	}
-+
-+	dev_dbg(dev, "Clock %d to %lu/%lu\n", id, rate, real_rate);
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_set_clk(struct busfreq_data *data,
-+				  struct busfreq_opp_info *new_opp_info)
-+{
-+	int index, i, clk_num;
-+	const unsigned int *clk_freq;
-+
-+	for (index = 0; index < data->opp_table_end; index++)
-+		if (new_opp_info->rate == data->opp_table[index].clk)
-+			break;
-+
-+	if (index == data->opp_table_end)
-+		return -EINVAL;
-+
-+	switch (data->type) {
-+	case TYPE_BUSFREQ_EXYNOS3250_MIF:
-+		clk_num = EXYNOS3_BUS_MIF_CLK_END;
-+		clk_freq = exynos3_bus_mif_clk_freq[index];
-+		break;
-+	case TYPE_BUSFREQ_EXYNOS3250_INT:
-+		clk_num = EXYNOS3_BUS_INT_CLK_END;
-+		clk_freq = exynos3_bus_int_clk_freq[index];
-+		break;
-+	default:
-+		dev_err(data->dev, "Unknown device type %d\n", data->type);
-+		return -EINVAL;
-+	};
-+
-+	for (i = 0; i < clk_num; i++) {
-+		int ret;
-+
-+		ret = round_set_clk(data->dev, i, data->clk_bus[i],
-+				clk_freq[i]);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_set_volt(struct busfreq_data *data,
-+				struct busfreq_opp_info *new_opp_info,
-+				struct busfreq_opp_info *old_opp_info)
-+{
-+	int ret;
-+
-+	ret = regulator_set_voltage(data->regulator_vdd, new_opp_info->volt,
-+			new_opp_info->volt + EXYNOS3_BUS_INTERVAL_SAFEVOLT);
-+	if (ret < 0) {
-+		dev_err(data->dev, "Failed to set voltage %d\n", data->type);
-+		regulator_set_voltage(data->regulator_vdd, old_opp_info->volt,
-+			old_opp_info->volt + EXYNOS3_BUS_INTERVAL_SAFEVOLT);
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Define internal function of structure devfreq_dev_profile
-+ */
-+static int exynos3_bus_target(struct device *dev, unsigned long *_freq,
-+			      u32 flags)
-+{
-+	struct busfreq_data *data = dev_get_drvdata(dev);
-+	struct busfreq_opp_info	new_opp_info;
-+	unsigned long old_freq, new_freq;
-+	struct dev_pm_opp *opp;
-+	int ret = 0;
-+
-+	if (data->disabled)
-+		goto out;
-+
-+	/* Get new opp-info instance according to new busfreq clock */
-+	rcu_read_lock();
-+	opp = devfreq_recommended_opp(dev, _freq, flags);
-+	if (IS_ERR_OR_NULL(opp)) {
-+		dev_err(dev, "Failed to get recommed opp instance\n");
-+		rcu_read_unlock();
-+		return PTR_ERR(opp);
-+	}
-+	new_opp_info.rate = dev_pm_opp_get_freq(opp);
-+	new_opp_info.volt = dev_pm_opp_get_voltage(opp);
-+	rcu_read_unlock();
-+
-+	old_freq = data->curr_opp_info.rate;
-+	new_freq = new_opp_info.rate;
-+	if (old_freq == new_freq)
-+		return 0;
-+
-+	dev_dbg(dev, "%lu MHz, %ld mV --> %lu MHz, %ld mV\n",
-+		old_freq / 1000, data->curr_opp_info.volt / 1000,
-+		new_freq / 1000, new_opp_info.volt / 1000);
-+
-+	/* Change voltage/clock according to new busfreq level */
-+	mutex_lock(&data->lock);
-+
-+	if (old_freq < new_freq) {
-+		ret = exynos3_bus_set_volt(data, &new_opp_info,
-+					   &data->curr_opp_info);
-+		if (ret < 0) {
-+			dev_err(dev, "Failed to set voltage %d\n", data->type);
-+			goto out;
-+		}
-+	}
-+
-+	ret = exynos3_bus_set_clk(data, &new_opp_info);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to set bus clock %d\n", data->type);
-+		goto out;
-+	}
-+
-+	if (old_freq > new_freq) {
-+		ret = exynos3_bus_set_volt(data, &new_opp_info,
-+					   &data->curr_opp_info);
-+		if (ret < 0) {
-+			dev_err(dev, "Failed to set voltage %d\n", data->type);
-+			goto out;
-+		}
-+	}
-+
-+	data->curr_opp_info = new_opp_info;
-+out:
-+	mutex_unlock(&data->lock);
-+
-+	return ret;
-+}
-+
-+static int exynos3_bus_edev_set_event(struct busfreq_data *data)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		ret = devfreq_event_set_event(data->edevs[i],
-+				DEVFREQ_EVENT_TYPE_RAW_DATA);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_edev_enable(struct busfreq_data *data)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		ret = devfreq_event_enable_edev(data->edevs[i]);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_edev_disable(struct busfreq_data *data)
-+{
-+	int i, ret;
-+
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		ret = devfreq_event_disable_edev(data->edevs[i]);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_get_dev_status(struct device *dev,
-+				      struct devfreq_dev_status *stat)
-+{
-+	struct busfreq_data *data = dev_get_drvdata(dev);
-+	u64 cnt[EXYNOS3_BUS_PPMU_NUM], total[EXYNOS3_BUS_PPMU_NUM], max_cnt = 0;
-+	int busier, ret, i;
-+
-+	/* Read PPMU total cycle count and Read/Write count */
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		cnt[i] = devfreq_event_get_event(data->edevs[i],
-+				DEVFREQ_EVENT_TYPE_RAW_DATA, &total[i]);
-+		/*
-+		 * FIXME: devfreq_event_get_event should return 0/err, not
-+		 * counter value.
-+		 */
-+		if (cnt[i] == (u64)-EINVAL)
-+			return -EINVAL;
-+	}
-+
-+	/* Re-enable after reading data */
-+	ret = exynos3_bus_edev_set_event(data);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Find the busiest PPMU */
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		if (cnt[i] >= max_cnt) {
-+			max_cnt = cnt[i];
-+			busier = i;
-+		}
-+	}
-+
-+	if (total[busier] == 0) {
-+		WARN_ONCE(true, "Empty data returned by PPMU\n");
-+		return -EIO;
-+	}
-+
-+	stat->current_frequency = data->curr_opp_info.rate;
-+
-+	/* Number of cycles spent on memory access */
-+	stat->busy_time = cnt[busier];
-+	stat->busy_time *= 100 / EXYNOS3_BUS_SATURATION_RATIO;
-+	stat->total_time = total[busier];
-+
-+	return 0;
-+}
-+
-+static void exynos3_bus_cleanup_clocks(struct busfreq_data *data)
-+{
-+	int i;
-+
-+	for (i = 0; i < data->clk_bus_num; i++) {
-+		if (data->clk_bus[i])
-+			clk_disable_unprepare(data->clk_bus[i]);
-+	}
-+}
-+
-+static void exynos3_bus_exit(struct device *dev)
-+{
-+	struct busfreq_data *data = dev_get_drvdata(dev);
-+
-+	regulator_disable(data->regulator_vdd);
-+	/*
-+	 * FIXME: Reverse the devfreq_event_get_edev_by_phandle
-+	 *   -> of_node_put.
-+	 */
-+	exynos3_bus_cleanup_clocks(data);
-+}
-+
-+/* Define devfreq_dev_profile for MIF block */
-+static struct devfreq_dev_profile exynos3_busfreq_mif_profile = {
-+	.initial_freq	= 400000,
-+	.polling_ms	= 100,
-+	.target		= exynos3_bus_target,
-+	.get_dev_status	= exynos3_bus_get_dev_status,
-+	.exit		= exynos3_bus_exit,
-+};
-+
-+/* Define devfreq_dev_profile for INT block */
-+static struct devfreq_dev_profile exynos3_busfreq_int_profile = {
-+	.initial_freq	= 400000,
-+	.polling_ms	= 100,
-+	.target		= exynos3_bus_target,
-+	.get_dev_status	= exynos3_bus_get_dev_status,
-+	.exit		= exynos3_bus_exit,
-+};
-+
-+static int exynos3_bus_pm_notifier_event(struct notifier_block *this,
-+					     unsigned long event, void *ptr)
-+{
-+	struct busfreq_data *data = container_of(this, struct busfreq_data,
-+						 pm_notifier);
-+	struct dev_pm_opp *opp;
-+	struct busfreq_opp_info	new_opp_info;
-+	unsigned long maxfreq = ULONG_MAX;
-+	int err = 0;
-+
-+	switch (event) {
-+	case PM_SUSPEND_PREPARE:
-+		mutex_lock(&data->lock);
-+
-+		data->disabled = true;
-+
-+		rcu_read_lock();
-+		opp = dev_pm_opp_find_freq_floor(data->dev, &maxfreq);
-+		if (IS_ERR(opp)) {
-+			rcu_read_unlock();
-+			dev_err(data->dev, "%s: unable to find a min freq\n",
-+				__func__);
-+			mutex_unlock(&data->lock);
-+			return PTR_ERR(opp);
-+		}
-+		new_opp_info.rate = dev_pm_opp_get_freq(opp);
-+		new_opp_info.volt = dev_pm_opp_get_voltage(opp);
-+		rcu_read_unlock();
-+
-+		err = exynos3_bus_set_volt(data, &new_opp_info,
-+					   &data->curr_opp_info);
-+		if (err) {
-+			mutex_unlock(&data->lock);
-+			return err;
-+		}
-+
-+		err = exynos3_bus_set_clk(data, &new_opp_info);
-+		if (err) {
-+			mutex_unlock(&data->lock);
-+			return err;
-+		}
-+
-+		data->curr_opp_info = new_opp_info;
-+
-+		mutex_unlock(&data->lock);
-+		if (err)
-+			return err;
-+		return NOTIFY_OK;
-+	case PM_POST_RESTORE:
-+	case PM_POST_SUSPEND:
-+		/* Reactivate */
-+		mutex_lock(&data->lock);
-+		data->disabled = false;
-+		mutex_unlock(&data->lock);
-+		return NOTIFY_OK;
-+	}
-+
-+	return NOTIFY_DONE;
-+}
-+
-+static int exynos3_bus_init_table(struct busfreq_data *data)
-+{
-+	int i, ret;
-+
-+	/* Add OPP entry including the voltage/clock of busfreq level */
-+	for (i = 0; i < data->opp_table_end; i++) {
-+		ret = dev_pm_opp_add(data->dev,
-+			      data->opp_table[i].clk,
-+			      data->opp_table[i].volt);
-+		if (ret < 0) {
-+			dev_err(data->dev, "Failed to add opp entry(%ld,%ld)\n",
-+				data->opp_table[i].clk,
-+				data->opp_table[i].volt);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_bus_parse_dt(struct busfreq_data *data)
-+{
-+	struct device *dev = data->dev;
-+	char regulator_name[DEVFREQ_NAME_LEN];
-+	const char * const *bus_clk_name;
-+	int i, ret = 0;
-+
-+	switch (data->type) {
-+	case TYPE_BUSFREQ_EXYNOS3250_MIF:
-+		data->profile		= &exynos3_busfreq_mif_profile;
-+		data->opp_table		= exynos3_bus_mif_clk_table;
-+		data->opp_table_end	= ARRAY_SIZE(exynos3_bus_mif_clk_table);
-+
-+		bus_clk_name		= exynos3_bus_mif_clk_name;
-+		data->clk_bus_num	= ARRAY_SIZE(exynos3_bus_mif_clk_name);
-+		strcpy(regulator_name,	EXYNOS3_BUS_MIF_REGULATOR_NAME);
-+		break;
-+	case TYPE_BUSFREQ_EXYNOS3250_INT:
-+		data->profile		= &exynos3_busfreq_int_profile;
-+		data->opp_table		= exynos3_bus_int_clk_table;
-+		data->opp_table_end	= ARRAY_SIZE(exynos3_bus_int_clk_table);
-+
-+		bus_clk_name		= exynos3_bus_int_clk_name;
-+		data->clk_bus_num	= ARRAY_SIZE(exynos3_bus_int_clk_name);
-+		strcpy(regulator_name,	EXYNOS3_BUS_INT_REGULATOR_NAME);
-+
-+		break;
-+	default:
-+		dev_err(dev, "Unknown device id %d\n", data->type);
-+		return -EINVAL;
-+	};
-+
-+	data->clk_bus = devm_kzalloc(dev,
-+				sizeof(struct clk *) * data->clk_bus_num,
-+				GFP_KERNEL);
-+	if (!data->clk_bus)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < data->clk_bus_num; i++) {
-+		data->clk_bus[i] = devm_clk_get(dev, bus_clk_name[i]);
-+		if (IS_ERR_OR_NULL(data->clk_bus[i])) {
-+			dev_err(dev, "Cannot get %s clock: %ld\n",
-+					bus_clk_name[i],
-+					PTR_ERR(data->clk_bus[i]));
-+			goto err_clocks;
-+		}
-+
-+		ret = clk_prepare_enable(data->clk_bus[i]);
-+		if (ret < 0) {
-+			dev_err(dev, "Cannot enable %s clock: %d\n",
-+						bus_clk_name[i], ret);
-+			data->clk_bus[i] = NULL;
-+			goto err_clocks;
-+		}
-+	}
-+
-+	for (i = 0; i < EXYNOS3_BUS_PPMU_NUM; i++) {
-+		data->edevs[i] = devfreq_event_get_edev_by_phandle(dev, i);
-+		if (IS_ERR(data->edevs[i])) {
-+			ret = PTR_ERR(data->edevs[i]);
-+			/*
-+			 * FIXME: Reverse the devfreq_event_get_edev_by_phandle
-+			 *   -> of_node_put.
-+			 */
-+			goto err_clocks;
-+		}
-+	}
-+
-+	/* Get regulators to control voltage of int/mif block */
-+	data->regulator_vdd = devm_regulator_get(dev, regulator_name);
-+	if (IS_ERR(data->regulator_vdd)) {
-+		dev_err(dev, "Failed to get the regulator \"%s\": %ld\n",
-+			regulator_name, PTR_ERR(data->regulator_vdd));
-+		ret = -EINVAL;
-+		goto err_clocks;
-+	}
-+
-+	ret = regulator_enable(data->regulator_vdd);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to enable regulator: %d\n", ret);
-+		goto err_clocks;
-+	}
-+
-+	return 0;
-+
-+err_clocks:
-+	/*
-+	 * FIXME: Reverse the devfreq_event_get_edev_by_phandle
-+	 *   -> of_node_put.
-+	 */
-+	exynos3_bus_cleanup_clocks(data);
-+
-+	return ret;
-+}
-+
-+static struct of_device_id exynos3_busfreq_id_match[] = {
-+	{
-+		.compatible = "samsung,exynos3250-busfreq-mif",
-+		.data = (void *)TYPE_BUSFREQ_EXYNOS3250_MIF,
-+	}, {
-+		.compatible = "samsung,exynos3250-busfreq-int",
-+		.data = (void *)TYPE_BUSFREQ_EXYNOS3250_INT,
-+	},
-+	{},
-+};
-+
-+static int exynos3_busfreq_get_driver_data(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	const struct of_device_id *match;
-+
-+	match = of_match_node(exynos3_busfreq_id_match, dev->of_node);
-+	if (!match)
-+		return -ENODEV;
-+
-+	return (int)match->data;
-+}
-+
-+static int exynos3_busfreq_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct busfreq_data *data;
-+	struct dev_pm_opp *opp;
-+	int ret = 0;
-+
-+	if (!dev->of_node)
-+		return -EINVAL;
-+
-+	data = devm_kzalloc(dev, sizeof(struct busfreq_data), GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->type = exynos3_busfreq_get_driver_data(pdev);
-+	data->dev = dev;
-+	mutex_init(&data->lock);
-+	platform_set_drvdata(pdev, data);
-+
-+	switch (data->type) {
-+	case TYPE_BUSFREQ_EXYNOS3250_MIF:
-+	case TYPE_BUSFREQ_EXYNOS3250_INT:
-+		/* Parse dt data to get register/clock/regulator */
-+		ret = exynos3_bus_parse_dt(data);
-+		if (ret < 0) {
-+			dev_err(dev, "Failed to parse dt for resource %d\n",
-+				data->type);
-+			return ret;
-+		}
-+
-+		/* Initialize Memory Bus Voltage/Frequency table */
-+		ret = exynos3_bus_init_table(data);
-+		if (ret < 0) {
-+			dev_err(dev, "Failed to initialze volt/freq table %d\n",
-+				data->type);
-+			return ret;
-+		}
-+		break;
-+	default:
-+		dev_err(dev, "Unknown device id %d\n", data->type);
-+		return -EINVAL;
-+	}
-+
-+	/* Find the proper opp instance according to initial bus frequency */
-+	rcu_read_lock();
-+	opp = dev_pm_opp_find_freq_floor(dev, &data->profile->initial_freq);
-+	if (IS_ERR_OR_NULL(opp)) {
-+		rcu_read_unlock();
-+		dev_err(dev, "Failed to find initial frequency %lu kHz, %d\n",
-+			      data->profile->initial_freq, data->type);
-+		ret = PTR_ERR(opp);
-+		goto err_opp;
-+	}
-+	data->curr_opp_info.rate = dev_pm_opp_get_freq(opp);
-+	data->curr_opp_info.volt = dev_pm_opp_get_voltage(opp);
-+	rcu_read_unlock();
-+
-+	ret = exynos3_bus_edev_enable(data);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to enable devfreq event device: %d\n", ret);
-+		goto err_opp;
-+	}
-+
-+	ret = exynos3_bus_edev_set_event(data);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to set devfreq events: %d\n", ret);
-+		goto err_event_set;
-+	}
-+
-+	/* Reigster Exynos3250's devfreq instance with 'simple_ondemand' gov */
-+	data->devfreq = devfreq_add_device(dev, data->profile,
-+					   "simple_ondemand", NULL);
-+	if (IS_ERR_OR_NULL(data->devfreq)) {
-+		dev_err(dev, "Failed to add devfreq device\n");
-+		ret = PTR_ERR(data->devfreq);
-+		goto err_event_set;
-+	}
-+
-+	/* Register opp_notifier for Exynos3 busfreq */
-+	ret = devfreq_register_opp_notifier(dev, data->devfreq);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to register opp notifier\n");
-+		goto err_notifier_opp;
-+	}
-+
-+	/* Register pm_notifier for Exynos3 busfreq */
-+	data->pm_notifier.notifier_call = exynos3_bus_pm_notifier_event;
-+	ret = register_pm_notifier(&data->pm_notifier);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to register pm notifier\n");
-+		goto err_notifier_pm;
-+	}
-+
-+	return 0;
-+
-+err_notifier_pm:
-+	devfreq_unregister_opp_notifier(dev, data->devfreq);
-+err_notifier_opp:
-+	devfreq_remove_device(data->devfreq);
-+err_event_set:
-+	exynos3_bus_edev_disable(data);
-+err_opp:
-+	regulator_disable(data->regulator_vdd);
-+	/*
-+	 * FIXME: Reverse the devfreq_event_get_edev_by_phandle
-+	 *   -> of_node_put.
-+	 */
-+	exynos3_bus_cleanup_clocks(data);
-+
-+	return ret;
-+}
-+
-+static int exynos3_busfreq_remove(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct busfreq_data *data = platform_get_drvdata(pdev);
-+
-+	/*
-+	 * devfreq_dev_profile.exit() will disable regulator, unprepare
-+	 * clocks and unmap memory.
-+	 */
-+
-+	/* Unregister all of notifier chain */
-+	unregister_pm_notifier(&data->pm_notifier);
-+	devfreq_unregister_opp_notifier(dev, data->devfreq);
-+
-+	exynos3_bus_edev_disable(data);
-+	devfreq_remove_device(data->devfreq);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int exynos3_busfreq_resume(struct device *dev)
-+{
-+	struct busfreq_data *data = dev_get_drvdata(dev);
-+	int ret;
-+
-+	/* Reset PPMU to check utilization again */
-+	ret = exynos3_bus_edev_set_event(data);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to set devfreq events: %d\n", ret);
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int exynos3_busfreq_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops exynos3_busfreq_pm = {
-+	SET_SYSTEM_SLEEP_PM_OPS(exynos3_busfreq_suspend, exynos3_busfreq_resume)
-+};
-+
-+static const struct platform_device_id exynos3_busfreq_id[] = {
-+	{ "exynos3250-busf-mif", TYPE_BUSFREQ_EXYNOS3250_MIF },
-+	{ "exynos3250-busf-int", TYPE_BUSFREQ_EXYNOS3250_INT },
-+	{},
-+};
-+
-+static struct platform_driver exynos3_busfreq_driver = {
-+	.probe		= exynos3_busfreq_probe,
-+	.remove		= exynos3_busfreq_remove,
-+	.id_table	= exynos3_busfreq_id,
-+	.driver		= {
-+		.name		= "exynos3250-busfreq",
-+		.owner		= THIS_MODULE,
-+		.pm		= &exynos3_busfreq_pm,
-+		.of_match_table	= exynos3_busfreq_id_match,
-+	},
-+};
-+
-+static int __init exynos3_busfreq_init(void)
-+{
-+	BUILD_BUG_ON(ARRAY_SIZE(exynos3_bus_mif_clk_name) !=
-+					EXYNOS3_BUS_MIF_CLK_END);
-+	BUILD_BUG_ON(ARRAY_SIZE(exynos3_bus_int_clk_name) !=
-+					EXYNOS3_BUS_INT_CLK_END);
-+
-+	return platform_driver_register(&exynos3_busfreq_driver);
-+}
-+late_initcall(exynos3_busfreq_init);
-+
-+static void __exit exynos3_busfreq_exit(void)
-+{
-+	platform_driver_unregister(&exynos3_busfreq_driver);
-+}
-+module_exit(exynos3_busfreq_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("EXYNOS3250 INT/MIF busfreq driver with devfreq framework");
-+MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
-+MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+ #define pmd_hugewillfault(pmd)	(!pmd_young(pmd) || !pmd_write(pmd))
+ #define pmd_thp_or_huge(pmd)	(pmd_huge(pmd) || pmd_trans_huge(pmd))
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ #define pmd_trans_huge(pmd)	(pmd_val(pmd) && !pmd_table(pmd))
+-#define pmd_trans_splitting(pmd) (pmd_isset((pmd), PMD_SECT_SPLITTING))
++#define pmd_trans_splitting(pmd) (pmd_isset((pmd), L_PMD_SECT_SPLITTING))
+ #endif
+ 
+ #define PMD_BIT_FUNC(fn,op) \
+ static inline pmd_t pmd_##fn(pmd_t pmd) { pmd_val(pmd) op; return pmd; }
+ 
+-PMD_BIT_FUNC(wrprotect,	|= PMD_SECT_RDONLY);
++PMD_BIT_FUNC(wrprotect,	|= L_PMD_SECT_RDONLY);
+ PMD_BIT_FUNC(mkold,	&= ~PMD_SECT_AF);
+-PMD_BIT_FUNC(mksplitting, |= PMD_SECT_SPLITTING);
+-PMD_BIT_FUNC(mkwrite,   &= ~PMD_SECT_RDONLY);
+-PMD_BIT_FUNC(mkdirty,   |= PMD_SECT_DIRTY);
++PMD_BIT_FUNC(mksplitting, |= L_PMD_SECT_SPLITTING);
++PMD_BIT_FUNC(mkwrite,   &= ~L_PMD_SECT_RDONLY);
++PMD_BIT_FUNC(mkdirty,   |= L_PMD_SECT_DIRTY);
+ PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
+ 
+ #define pmd_mkhuge(pmd)		(__pmd(pmd_val(pmd) & ~PMD_TABLE_BIT))
+@@ -245,8 +247,8 @@ PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
+ 
+ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
+ {
+-	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | PMD_SECT_RDONLY |
+-				PMD_SECT_VALID | PMD_SECT_NONE;
++	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | L_PMD_SECT_RDONLY |
++				L_PMD_SECT_VALID | L_PMD_SECT_NONE;
+ 	pmd_val(pmd) = (pmd_val(pmd) & ~mask) | (pgprot_val(newprot) & mask);
+ 	return pmd;
+ }
+@@ -257,8 +259,13 @@ static inline void set_pmd_at(struct mm_struct *mm, unsigned long addr,
+ 	BUG_ON(addr >= TASK_SIZE);
+ 
+ 	/* create a faulting entry if PROT_NONE protected */
+-	if (pmd_val(pmd) & PMD_SECT_NONE)
+-		pmd_val(pmd) &= ~PMD_SECT_VALID;
++	if (pmd_val(pmd) & L_PMD_SECT_NONE)
++		pmd_val(pmd) &= ~L_PMD_SECT_VALID;
++
++	if (pmd_write(pmd) && pmd_dirty(pmd))
++		pmd_val(pmd) &= ~PMD_SECT_AP2;
++	else
++		pmd_val(pmd) |= PMD_SECT_AP2;
+ 
+ 	*pmdp = __pmd(pmd_val(pmd) | PMD_SECT_nG);
+ 	flush_pmd_entry(pmdp);
+diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+index c508f41a43bc..59424937e52b 100644
+--- a/arch/arm/mm/dump.c
++++ b/arch/arm/mm/dump.c
+@@ -126,8 +126,8 @@ static const struct prot_bits section_bits[] = {
+ 		.val	= PMD_SECT_USER,
+ 		.set	= "USR",
+ 	}, {
+-		.mask	= PMD_SECT_RDONLY,
+-		.val	= PMD_SECT_RDONLY,
++		.mask	= L_PMD_SECT_RDONLY,
++		.val	= L_PMD_SECT_RDONLY,
+ 		.set	= "ro",
+ 		.clear	= "RW",
+ #elif __LINUX_ARM_ARCH__ >= 6
+diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
+index 22e3ad63500c..eb81123a845d 100644
+--- a/arch/arm/mm/proc-v7-3level.S
++++ b/arch/arm/mm/proc-v7-3level.S
+@@ -86,8 +86,13 @@ ENTRY(cpu_v7_set_pte_ext)
+ 	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
+ 	bicne	rl, #L_PTE_VALID
+ 	bne	1f
+-	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
+-	orreq	rl, #L_PTE_RDONLY
++
++	eor	ip, rh, #1 << (55 - 32)	@ toggle L_PTE_DIRTY in temp reg to
++					@ test for !L_PTE_DIRTY || L_PTE_RDONLY
++	tst	ip, #1 << (55 - 32) | 1 << (58 - 32)
++	orrne	rl, #PTE_AP2
++	biceq	rl, #PTE_AP2
++
+ 1:	strd	r2, r3, [r0]
+ 	ALT_SMP(W(nop))
+ 	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
 -- 
-1.9.1
+2.1.3
 
