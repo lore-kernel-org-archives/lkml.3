@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381AbaLOD3g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 22:29:36 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:41391 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaLOD32 (ORCPT
+	id S1751275AbaLOD36 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 22:29:58 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:55105 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765AbaLOD3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 22:29:28 -0500
-Message-ID: <548E558D.4000808@roeck-us.net>
-Date: Sun, 14 Dec 2014 19:29:17 -0800
-From: Guenter Roeck <linux@roeck-us.net>
+	Sun, 14 Dec 2014 22:29:49 -0500
+Message-ID: <548E5554.6050900@atmel.com>
+Date: Mon, 15 Dec 2014 11:28:20 +0800
+From: Bo Shen <voice.shen@atmel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/24] 3.10.63-stable review
-References: <20141214201800.613573495@linuxfoundation.org>
-In-Reply-To: <20141214201800.613573495@linuxfoundation.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
+        "Alexander Morozov" <linux@meltdown.ru>
+Subject: Re: [PATCH 1/3] ASoC: codecs: wm8904: add dt ids table
+References: <1418267681-4091-1-git-send-email-voice.shen@atmel.com> <20141212132321.GI11764@sirena.org.uk>
+In-Reply-To: <20141212132321.GI11764@sirena.org.uk>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010202.548E5598.002E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 6
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2014 12:20 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.63 release.
-> There are 24 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Hi Mark,
+
+On 12/12/2014 09:23 PM, Mark Brown wrote:
+> On Thu, Dec 11, 2014 at 11:14:39AM +0800, Bo Shen wrote:
 >
-> Responses should be made by Tue Dec 16 20:17:48 UTC 2014.
-> Anything received after that time might be too late.
+>> +static const struct of_device_id wm8904_of_match[] = {
+>> +	{ .compatible = "wlf,wm8904", },
+>> +	{ .compatible = "wlf,wm8912", },
+>> +	{ .compatible = "wlf,wm8918", },
+>> +	{ }
+>> +};
+>> +MODULE_DEVICE_TABLE(of, wm8904_of_match);
+>> +
+>>   static struct i2c_driver wm8904_i2c_driver = {
+>>   	.driver = {
+>>   		.name = "wm8904",
+>>   		.owner = THIS_MODULE,
+>> +		.of_match_table = wm8904_of_match,
+>
+> I'm not seeing anything here that ensures that devtype is set correctly
+> when probing using the OF IDs - currently we rely on i2c->driver_data.
 >
 
-Build results:
-	total: 137 pass: 137 fail: 0
+I will add it in v2 patch.
+Thanks.
 
-Qemu tests:
-	total: 27 pass: 27 fail: 0
-
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
+Best Regards,
+Bo Shen
