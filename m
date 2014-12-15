@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaLOV3g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:29:36 -0500
-Received: from mail-db3on0099.outbound.protection.outlook.com ([157.55.234.99]:38528
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751035AbaLOV3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:29:34 -0500
-X-Greylist: delayed 17515 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 16:29:34 EST
-Message-ID: <548F52AA.7060207@ezchip.com>
-Date: Mon, 15 Dec 2014 16:29:14 -0500
-From: Chris Metcalf <cmetcalf@ezchip.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751217AbaLOVa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:30:26 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38124 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaLOVaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:30:25 -0500
+Date: Mon, 15 Dec 2014 13:29:48 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Martin Kepplinger <martink@posteo.de>
+Cc: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
+Message-ID: <20141215212948.GA23765@roeck-us.net>
+References: <1418660317-21750-1-git-send-email-martink@posteo.de>
+ <1418660317-21750-4-git-send-email-martink@posteo.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/tile changes for 3.19
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [12.216.194.146]
-X-ClientProxiedBy: BLUPR07CA0104.namprd07.prod.outlook.com (10.255.223.175) To
- AM3PR02MB0535.eurprd02.prod.outlook.com (25.160.6.141)
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:AM3PR02MB0535;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:AM3PR02MB0535;
-X-Forefront-PRVS: 04267075BD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6049001)(6009001)(189002)(199003)(65956001)(107886001)(65806001)(36756003)(106356001)(120916001)(107046002)(59896002)(4396001)(66066001)(64706001)(20776003)(101416001)(47776003)(33656002)(86362001)(50986999)(87266999)(65816999)(23756003)(54356999)(229853001)(46102003)(99396003)(31966008)(122386002)(64126003)(87976001)(50466002)(15975445007)(77096005)(68736005)(83506001)(42186005)(21056001)(80316001)(92566001)(19580405001)(62966003)(19580395003)(97736003)(77156002)(40100003)(105586002)(18886065003);DIR:OUT;SFP:1101;SCL:1;SRVR:AM3PR02MB0535;H:[10.7.0.239];FPR:;SPF:None;MLV:nov;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:AM3PR02MB0535;
-X-OriginatorOrg: ezchip.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 15 Dec 2014 21:29:26.1000 (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: AM3PR02MB0535
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418660317-21750-4-git-send-email-martink@posteo.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A010201.548F52F0.05C7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 5
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
+> ---
 
-Please pull the following changes for 3.19 from:
+Some description would be nice. Also, please consider adding
+relevant subsystem mailing lists and maintainers to your patches.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git master
+>  drivers/hwmon/jc42.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
+> index 388f8bc..335a2de 100644
+> --- a/drivers/hwmon/jc42.c
+> +++ b/drivers/hwmon/jc42.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/hwmon-sysfs.h>
+>  #include <linux/err.h>
+>  #include <linux/mutex.h>
+> +#include <linux/bitops.h>
+>  
+>  /* Addresses to scan */
+>  static const unsigned short normal_i2c[] = {
+> @@ -215,9 +216,7 @@ static int jc42_temp_from_reg(s16 reg)
+>  {
+>  	reg &= 0x1fff;
+>  
+If I understand the code in sign_extend16 correctly, the above mask
+should no longer be necessary.
 
-Note that one of the changes converts my old cmetcalf@tilera.com email in
-MAINTAINERS to the cmetcalf@ezchip.com email that you see on this email.
+Thanks,
+Guenter
 
-Chen Gang (3):
-       arch: tile: kernel: signal.c: Use __copy_from/to_user() instead of __get/put_user()
-       arch: tile: gxio: Export symbols for module using in 'mpipe.c'
-       arch: tile: kernel: kgdb.c: Use memcpy() instead of pointer copy one by one
-
-Chris Metcalf (2):
-       tile: avoid undefined behavior with regs[TREG_TP] etc
-       arch/tile: update MAINTAINERS email to EZchip
-
-Joe Perches (1):
-       tile: Use the more common pr_warn instead of pr_warning
-
-  MAINTAINERS                             |  2 +-
-  arch/tile/gxio/mpipe.c                  |  4 ++
-  arch/tile/include/asm/io.h              |  5 +-
-  arch/tile/include/asm/pgtable.h         |  4 +-
-  arch/tile/include/asm/pgtable_64.h      |  2 +-
-  arch/tile/include/uapi/asm/ptrace.h     | 16 +++---
-  arch/tile/include/uapi/asm/sigcontext.h | 14 +++--
-  arch/tile/kernel/hardwall.c             |  6 +--
-  arch/tile/kernel/irq.c                  |  5 +-
-  arch/tile/kernel/kgdb.c                 |  6 +--
-  arch/tile/kernel/kprobes.c              |  3 +-
-  arch/tile/kernel/machine_kexec.c        | 28 ++++------
-  arch/tile/kernel/messaging.c            |  5 +-
-  arch/tile/kernel/module.c               | 12 ++---
-  arch/tile/kernel/pci.c                  |  7 ++-
-  arch/tile/kernel/pci_gx.c               | 95 ++++++++++++++-------------------
-  arch/tile/kernel/process.c              | 16 +++---
-  arch/tile/kernel/setup.c                | 36 ++++++-------
-  arch/tile/kernel/signal.c               | 20 ++-----
-  arch/tile/kernel/single_step.c          |  6 +--
-  arch/tile/kernel/smpboot.c              |  5 +-
-  arch/tile/kernel/stack.c                |  7 +--
-  arch/tile/kernel/time.c                 |  4 +-
-  arch/tile/kernel/traps.c                | 10 ++--
-  arch/tile/kernel/unaligned.c            | 22 ++++----
-  arch/tile/mm/fault.c                    | 34 ++++++------
-  arch/tile/mm/homecache.c                |  6 +--
-  arch/tile/mm/hugetlbpage.c              | 18 +++----
-  arch/tile/mm/init.c                     | 32 +++++------
-  arch/tile/mm/pgtable.c                  |  4 +-
-  30 files changed, 187 insertions(+), 247 deletions(-)
-
--- 
-Chris Metcalf, EZChip Semiconductor
-http://www.ezchip.com
+> -	/* sign extend register */
+> -	if (reg & 0x1000)
+> -		reg |= 0xf000;
+> +	reg = sign_extend16(reg, 12);
+>  
+>  	/* convert from 0.0625 to 0.001 resolution */
+>  	return reg * 125 / 2;
+> -- 
+> 2.1.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
