@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750840AbaLOL6o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:58:44 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:54443 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaLOL6l (ORCPT
+	id S1750873AbaLOL7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:59:31 -0500
+Received: from mail-yk0-f182.google.com ([209.85.160.182]:65335 "EHLO
+	mail-yk0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaLOL73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:58:41 -0500
-Message-ID: <548ECCEA.5040500@linaro.org>
-Date: Mon, 15 Dec 2014 11:58:34 +0000
-From: Julien Grall <julien.grall@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, hpa@zytor.com,
-        josh@joshtriplett.org, sam@ravnborg.org
-CC: Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>, kvm@vger.kernel.org,
-        "Luis R. Rodriguez" <mcgrof@suse.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        Pekka Enberg <penberg@kernel.org>, fengguang.wu@intel.com,
-        levinsasha928@gmail.com, David Rientjes <rientjes@google.com>,
-        xen-devel@lists.xenproject.org, Borislav Petkov <bp@suse.de>,
-        David Vrabel <david.vrabel@citrix.com>, bpoirier@suse.de
-Subject: Re: [Xen-devel] [PATCH v2 2/2] x86, arm, platform, xen, kconfig:
- add xen defconfig helper
-References: <1418168138-6425-1-git-send-email-mcgrof@do-not-panic.com> <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com>
-In-Reply-To: <1418168138-6425-3-git-send-email-mcgrof@do-not-panic.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Dec 2014 06:59:29 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com
+Subject: [PATCH v3 00/13] mtd: st_spi_fsm: Align with ST's internal development
+Date: Mon, 15 Dec 2014 11:59:07 +0000
+Message-Id: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Luis,
+Hi Brian, all,
+ 
+ [x] Bulid test
+ [x] Bisectable
+ [x] Smatch
+ [x] Sparse
 
-On 09/12/14 23:35, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
-> 
-> This lets you build a kernel which can support xen dom0
-> or xen guests by just using:
-> 
->    make xenconfig
-> 
-> on both x86 and arm64 kernels. This also splits out the
-> options which are available currently to be built with x86
-> and 'make ARCH=arm64' under a shared config.
+v3:
+  Further aligned with upstream changes as suggested by Peter Griffin.
+  The clk_ignore_unused kernel command line parameter is due to be turned
+  off on STiH4* platforms, so we no longer give the driver the chance to
+  opt-out of fetching the EMI clock.  We also now provide syscfg offsets
+  inside the driver, as it's simpler and reduces the cost of having lots
+  of extra DT properties.
+ 
+v2:
+  These are the last remaining patches in the set, all rebased and
+  with the DT documentation requested after the last submission.
+ 
+v1:
+  This patch-set updates ST's FSM SPI-NOR driver with all the internal
+  goodness which has happened since the initial (now upstreamed) snapshot
+  was taken. It covers just over 6 months worth of internal development
+  and bug-fixes. A final whitespace clean-up is also appended to the set
+  - to make it look pretty and stuff. :)
 
-I guess this is also working for arm (32bits)?
+Angus Clark (3):
+  mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
+  mtd: st_spi_fsm: Update Spansion device entries
+  mtd: st_spi_fsm: Improve busy wait handling
 
-> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
-> new file mode 100644
-> index 0000000..d2ec010
-> --- /dev/null
-> +++ b/kernel/configs/xen.config
-> @@ -0,0 +1,30 @@
-> +# generic config
-> +CONFIG_XEN=y
-> +CONFIG_XEN_DOM0=y
-> +CONFIG_PCI_XEN=y
-> +CONFIG_XEN_PCIDEV_FRONTEND=m
-> +CONFIG_XEN_BLKDEV_FRONTEND=m
-> +CONFIG_XEN_BLKDEV_BACKEND=m
-> +CONFIG_XEN_NETDEV_FRONTEND=m
-> +CONFIG_XEN_NETDEV_BACKEND=m
-> +CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
-> +CONFIG_HVC_XEN=y
-> +CONFIG_HVC_XEN_FRONTEND=y
-> +CONFIG_TCG_XEN=m
-> +CONFIG_XEN_WDT=m
-> +CONFIG_XEN_FBDEV_FRONTEND=y
-> +CONFIG_XEN_BALLOON=y
-> +CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
-> +CONFIG_XEN_SCRUB_PAGES=y
-> +CONFIG_XEN_DEV_EVTCHN=m
-> +CONFIG_XEN_BACKEND=y
-> +CONFIG_XENFS=m
-> +CONFIG_XEN_COMPAT_XENFS=y
-> +CONFIG_XEN_SYS_HYPERVISOR=y
-> +CONFIG_XEN_XENBUS_FRONTEND=y
-> +CONFIG_XEN_GNTDEV=m
-> +CONFIG_XEN_GRANT_DEV_ALLOC=m
-> +CONFIG_SWIOTLB_XEN=y
-> +CONFIG_XEN_PCIDEV_BACKEND=m
-> +CONFIG_XEN_PRIVCMD=m
-> +CONFIG_XEN_ACPI_PROCESSOR=m
+Lee Jones (9):
+  mtd: st_spi_fsm: Extend fsm_clear_fifo to handle unwanted bytes
+  mtd: st_spi_fsm: Obtain and use EMI clock
+  mtd: st_spi_fsm: dt-bindings: Deprecate generic compatible string
+  mtd: st_spi_fsm: Fetch boot device locations from DT match tables
+  mtd: st_spi_fsm: Fix [-Wsign-compare] build warning
+  mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
+  mtd: st_spi_fsm: General tidy-up
+  ARM: STi: stih416: Use new platform specific compatible string
+  ARM: STi: stih416: Supply EMI clock reference to FSM SPI NOR
 
-The common fragment config looks good for both ARM32 and ARM64:
+Nunzio Raciti (1):
+  mtd: st_spi_fsm: Add support for Micron N25Q512A
 
-Acked-by: Julien Grall <julien.grall@linaro.org>
-
-Regards,
+ Documentation/devicetree/bindings/mtd/st-fsm.txt |  20 +-
+ arch/arm/boot/dts/stih416.dtsi                   |   6 +-
+ drivers/mtd/devices/st_spi_fsm.c                 | 747 +++++++++++++++--------
+ include/dt-bindings/clock/stih416-clks.h         |   1 +
+ 4 files changed, 519 insertions(+), 255 deletions(-)
 
 -- 
-Julien Grall
+1.9.1
+
