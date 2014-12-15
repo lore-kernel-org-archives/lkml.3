@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751078AbaLOTbT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:31:19 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40854 "EHLO
+	id S1752185AbaLOTbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:31:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40867 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940AbaLOTbQ (ORCPT
+	with ESMTP id S1751089AbaLOTba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:31:16 -0500
+	Mon, 15 Dec 2014 14:31:30 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lu Baolu <baolu.lu@linux.intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-mips@linux-mips.org,
+        Huacai Chen <chenhc@lemote.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 50/96] Revert "xhci: clear root port wake on bits if controller isn't wake-up capable"
-Date: Mon, 15 Dec 2014 11:26:10 -0800
-Message-Id: <1418671616-25482-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 59/96] MIPS: Loongson: Make platform serial setup always built-in.
+Date: Mon, 15 Dec 2014 11:26:19 -0800
+Message-Id: <1418671616-25482-60-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -29,48 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lu Baolu <baolu.lu@linux.intel.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit ff8cbf250b44 ("xhci: clear root port wake on bits if controller isn't")
-can cause device detection error if runtime PM is enabled, and S3 wake
-is disabled. Revert it.
-https://bugzilla.kernel.org/show_bug.cgi?id=85701
+commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
 
-This commit got into stable and should be reverted from there as well.
+If SERIAL_8250 is compiled as a module, the platform specific setup
+for Loongson will be a module too, and it will not work very well.
+At least on Loongson 3 it will trigger a build failure,
+since loongson_sysconf is not exported to modules.
 
-Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
-Reported-by: Dmitry Nezhevenko <dion@inhex.net>
-[Mathias Nyman: reword commit message]
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fix by making the platform specific serial code always built-in.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8533/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/xhci-hub.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/mips/loongson/common/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
-index e44be08..44f152d 100644
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -21,7 +21,6 @@
-  */
+diff --git a/arch/mips/loongson/common/Makefile b/arch/mips/loongson/common/Makefile
+index 9e4484c..9005a8d6 100644
+--- a/arch/mips/loongson/common/Makefile
++++ b/arch/mips/loongson/common/Makefile
+@@ -11,7 +11,8 @@ obj-$(CONFIG_PCI) += pci.o
+ # Serial port support
+ #
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-obj-$(CONFIG_SERIAL_8250) += serial.o
++loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
++obj-y += $(loongson-serial-m) $(loongson-serial-y)
+ obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
+ obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
  
- #include <linux/gfp.h>
--#include <linux/device.h>
- #include <asm/unaligned.h>
- 
- #include "xhci.h"
-@@ -1147,9 +1146,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
- 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
- 		 * is enabled, so also enable remote wake here.
- 		 */
--		if (hcd->self.root_hub->do_remote_wakeup
--				&& device_may_wakeup(hcd->self.controller)) {
--
-+		if (hcd->self.root_hub->do_remote_wakeup) {
- 			if (t1 & PORT_CONNECT) {
- 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
- 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.9.1
 
