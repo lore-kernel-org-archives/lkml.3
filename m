@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaLOQku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:40:50 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:39577 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaLOQks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:40:48 -0500
-Date: Mon, 15 Dec 2014 12:21:27 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
-        borntraeger@de.ibm.com, mst@redhat.com, tglx@linutronix.de,
-        David.Laight@ACULAB.COM, hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v2 0/5] Reenable might_sleep() checks for might_fault()
-Message-ID: <20141215122127.5fd6f5ae@thinkpad-w530>
-In-Reply-To: <20141215104549.GY29390@twins.programming.kicks-ass.net>
-References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<20141215104549.GY29390@twins.programming.kicks-ass.net>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	id S1751380AbaLOQmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:42:23 -0500
+Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:55259 "EHLO
+	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750755AbaLOQmW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 11:42:22 -0500
+From: "Young, David" <dayoung@akamai.com>
+To: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "Shuah Khan (shuahkhan@gmail.com)" <shuahkhan@gmail.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 15 Dec 2014 11:42:12 -0500
+Subject: selftests: standardized results output?
+Thread-Topic: selftests: standardized results output?
+Thread-Index: AdAYhhLiR9kJBNa8RRu7UNdiydnNNQ==
+Message-ID: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121511-0021-0000-0000-000002227239
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Dec 10, 2014 at 03:23:29PM +0100, David Hildenbrand wrote:
-> 
-> Did you look at the -rt patches where this comes from?
-> 
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=b389ced19ab649438196d132768fe6522d2f052b
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=4fb7f9d416f7b34036d9d1b209e77c462ac0ee10
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=c730a4aade9e5c9b84f65de01d6612bf70c577e3
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=d365f5bf933e988a39874b33302f02ff6c7989b7
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=93eb18f43dfa5d49d99e2b8ad236eea2c35dd539
-> https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=8947442e896921e1b645f9e1fd0f2beee103bba0
-> 
-> 
+Hi,  I'm looking into what sorts of tools can consume the selftest output, and
+found this on the wikipage:
 
-Thanks for the links - haven't seen these patches so far (somebody on the list
-just mentioned that someone tried to demangle that stuff some time ago). But
-good to know that somebody is working on that pagefault_disable() thing.
+https://kselftest.wiki.kernel.org/standardize_the_test_output
 
-Do you know what the plans for this series are? So I can base my patches
-(might_sleep() checks for might_fault()) on that queue.
+The current suggestion (as of the last-modified date on that wiki page for
+October) is to use the Test Anything Protocol [TAP] for standard output.  I
+notice that there is at least one test that conforms to TAP output, but
+the majority of the tests are not using it.
 
-David
+There's also the kselftest.h file that suggests exit codes for the individual
+test applications.
 
+I'm interested in knowing what is the intention of this standardization, so
+that I can put some work into a "glue" layer for a tool like buildbot,
+autotest, or Jenkins for executing and consuming the results of these
+selftests.
+
+1) Is this output standard a "nice to have" that won't be much enforced?
+2) Will the exit codes be utilized outside of the current makefile-based
+   approach for executing the tests?  The current make target just runs all the
+   tests without really concerning itself with the exit values of the
+   individual tests.  It's simple, which isn't a bad thing, but it lacks a
+   summarized result.  Is the intention to use a different harness to consume
+   and report results?
+3) Are the TAP results intended to be the exclusive (std)output of the tests,
+   or will the tests report in a hybrid fashion?
+   Such an example would be a test that produces some verbose stdout to the
+   console, while simultaneously creating a TAP-compliant results.tap file as
+   well... or vice versa with the stdout being TAP and a more verbose but
+   free-form log.txt 
+
+Thanks,
+
+- David Young
