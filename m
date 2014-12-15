@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaLOJoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:44:16 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48637 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaLOJoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:44:12 -0500
-Message-ID: <1418636633.3193.3.camel@pengutronix.de>
-Subject: Re: [PATCH RESEND v2] mfd: syscon: add child device support
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Rob Herring <robh+dt@kernel.org>, Lee Jones <lee.jones@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Flora Fu <flora.fu@mediatek.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kernel@pengutronix.de
-Date: Mon, 15 Dec 2014 10:43:53 +0100
-In-Reply-To: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
-References: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1751443AbaLOJoi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:44:38 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:50976 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751819AbaLOJoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 04:44:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1418422034-17099-14-git-send-email-cernekee@gmail.com>
+References: <1418422034-17099-1-git-send-email-cernekee@gmail.com> <1418422034-17099-14-git-send-email-cernekee@gmail.com>
+From: Jonas Gorski <jogo@openwrt.org>
+Date: Mon, 15 Dec 2014 10:43:58 +0100
+Message-ID: <CAOiHx=nX9jJEFZmkA-1fWj47whq85wj-ZgUxnZBwpAYDUfAO4w@mail.gmail.com>
+Subject: Re: [PATCH V5 13/23] MIPS: BMIPS: Flush the readahead cache after DMA
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Brian Norris <computersforpeace@gmail.com>,
+        MIPS Mailing List <linux-mips@linux-mips.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 12, 2014 at 11:07 PM, Kevin Cernekee <cernekee@gmail.com> wrote:
+> BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
+> the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
+> may cause parts of the DMA buffer to be prefetched into the RAC.  To
+> avoid possible coherency problems, flush the RAC upon DMA completion.
 
-Am Montag, den 01.12.2014, 17:25 +0100 schrieb Philipp Zabel:
-> For devices which have a complete register for themselves, it is possible to
-> place them next to the syscon device with overlapping reg ranges. The same is
-> not possible for devices which only occupy bitfields in registers shared with
-> other users.
-> For devices that are completely controlled by bitfields in the syscon address
-> range, such as multiplexers or voltage regulators, allow to put child devices
-> into the syscon device node.
+According to what I have, any cpu [d-]cache invalidate operation
+should already flush the full RAC unless explicitly disabled in the
+RAC configuration - is this intended as an optimization/shortcut?
 
-What is the status of this patch?
-Is this ok to be applied after the merge window closes?
-
-For reference, these are the previous threads:
-https://lkml.org/lkml/2014/5/27/422
-https://lkml.org/lkml/2014/11/3/134
-
-regards
-Philipp
-
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 > ---
-> Changes since v1:
->  - Reworded binding documentation to allow #size-cells = <1>, which is useful
->    for syscon children that are controlled through a (possibly shared) register
->    range.
-> ---
->  Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
->  drivers/mfd/syscon.c                             |  3 +++
->  2 files changed, 16 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-> index fe8150b..0c6b497 100644
-> --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> @@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
->  OS driver) to determine the location of the registers, and access the
->  registers directly.
->  
-> +Optionally, devices that are controlled exclusively through syscon registers,
-> +or even bitfields in shared syscon registers, can also be added as child nodes
-> +to the syscon device node. These devices can implicitly assume their parent
-> +node is a syscon provider without referencing it explicitly via phandle.
-> +In this case, the syscon node should have #address-cells = <1> and
-> +#size-cells = <0> or <1> and no ranges property.
+>  arch/mips/mm/dma-default.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+> index af5f046..ee6d12c 100644
+> --- a/arch/mips/mm/dma-default.c
+> +++ b/arch/mips/mm/dma-default.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/dma-contiguous.h>
+>
+> +#include <asm/bmips.h>
+>  #include <asm/cache.h>
+>  #include <asm/cpu-type.h>
+>  #include <asm/io.h>
+> @@ -69,6 +70,18 @@ static inline struct page *dma_addr_to_page(struct device *dev,
+>   */
+>  static inline int cpu_needs_post_dma_flush(struct device *dev)
+>  {
+
+The place for it seems a bit misplaced; I would not expect
+cpu_needs_post_dma_flush() to have any side effects.
+
+> +       if (boot_cpu_type() == CPU_BMIPS3300 ||
+> +           boot_cpu_type() == CPU_BMIPS4350 ||
+> +           boot_cpu_type() == CPU_BMIPS4380) {
+> +               void __iomem *cbr = BMIPS_GET_CBR();
 > +
->  Required properties:
->  - compatible: Should contain "syscon".
->  - reg: the register region can be accessed from syscon
->  
-> +Optional properties:
-> +- #address-cells: Should be 1.
-> +- #size-cells: Should be 0 or 1.
+> +               /* Flush stale data out of the readahead cache */
+> +               __raw_writel(0x100, cbr + BMIPS_RAC_CONFIG);
+
+Hm, according to what I have, bits [6:0] of RAC_CONFIG are R/W
+configuration bits, and this will overwrite them:
+
+CFE> dm 0xff400000 4
+ff400000: 02a07015                                        ..p.
+CFE> sm 0xff400000 0x100 4
+ff400000: 02a00000                                        ....
+
+(As far as I can tell, RAC was previously enabled for instruction
+cache misses , and now isn't any more for anything, so effectively
+disabled?)
+
+Also for BMIPS4350 (and I guess 4380) there seems to be a second
+RAC_CONFIG register at 0x8, I guess for the second thread? Does it
+need flushing, too?
+
+> +               __raw_readl(cbr + BMIPS_RAC_CONFIG);
 > +
->  Examples:
->  gpr: iomuxc-gpr@020e0000 {
-> +	#address-cells = <1>;
-> +	#size-cells = <0>;
->  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
->  	reg = <0x020e0000 0x38>;
->  };
-> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> index ca15878..38da178 100644
-> --- a/drivers/mfd/syscon.c
-> +++ b/drivers/mfd/syscon.c
-> @@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
->  
->  	dev_dbg(dev, "regmap %pR registered\n", res);
->  
-> +	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
-> +		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> +               return 0;
+> +       }
 > +
->  	return 0;
->  }
->  
+>         return !plat_device_is_coherent(dev) &&
+>                (boot_cpu_type() == CPU_R10000 ||
+>                 boot_cpu_type() == CPU_R12000 ||
+> --
+> 2.1.1
 
 
+Jonas
