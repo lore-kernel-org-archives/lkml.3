@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaLOTdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:33:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40980 "EHLO
+	id S1752609AbaLOTds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:33:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549AbaLOTdj (ORCPT
+	with ESMTP id S1752579AbaLOTdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:39 -0500
+	Mon, 15 Dec 2014 14:33:46 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcelo Ricardo Leitner <mleitner@redhat.com>,
+Cc: Xin Long <lucien.xin@gmail.com>, Cong Wang <cwang@twopensource.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 89/96] Fix race condition between vxlan_sock_add and vxlan_sock_release
-Date: Mon, 15 Dec 2014 11:26:49 -0800
-Message-Id: <1418671616-25482-90-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 87/96] ip_tunnel: the lack of vti_link_ops' dellink() cause kernel panic
+Date: Mon, 15 Dec 2014 11:26:47 -0800
+Message-Id: <1418671616-25482-88-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,75 +28,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Leitner <mleitner@redhat.com>
+From: lucien <lucien.xin@gmail.com>
 
-[ Upstream commit 00c83b01d58068dfeb2e1351cca6fccf2a83fa8f ]
+[ Upstream commit 20ea60ca9952bd19d4b0d74719daba305aef5178 ]
 
-Currently, when trying to reuse a socket, vxlan_sock_add will grab
-vn->sock_lock, locate a reusable socket, inc refcount and release
-vn->sock_lock.
+Now the vti_link_ops do not point the .dellink, for fb tunnel device
+(ip_vti0), the net_device will be removed as the default .dellink is
+unregister_netdevice_queue,but the tunnel still in the tunnel list,
+then if we add a new vti tunnel, in ip_tunnel_find():
 
-But vxlan_sock_release() will first decrement refcount, and then grab
-that lock. refcnt operations are atomic but as currently we have
-deferred works which hold vs->refcnt each, this might happen, leading to
-a use after free (specially after vxlan_igmp_leave):
+        hlist_for_each_entry_rcu(t, head, hash_node) {
+                if (local == t->parms.iph.saddr &&
+                    remote == t->parms.iph.daddr &&
+                    link == t->parms.link &&
+==>                 type == t->dev->type &&
+                    ip_tunnel_key_match(&t->parms, flags, key))
+                        break;
+        }
 
-  CPU 1                            CPU 2
+the panic will happen, cause dev of ip_tunnel *t is null:
+[ 3835.072977] IP: [<ffffffffa04103fd>] ip_tunnel_find+0x9d/0xc0 [ip_tunnel]
+[ 3835.073008] PGD b2c21067 PUD b7277067 PMD 0
+[ 3835.073008] Oops: 0000 [#1] SMP
+.....
+[ 3835.073008] Stack:
+[ 3835.073008]  ffff8800b72d77f0 ffffffffa0411924 ffff8800bb956000 ffff8800b72d78e0
+[ 3835.073008]  ffff8800b72d78a0 0000000000000000 ffffffffa040d100 ffff8800b72d7858
+[ 3835.073008]  ffffffffa040b2e3 0000000000000000 0000000000000000 0000000000000000
+[ 3835.073008] Call Trace:
+[ 3835.073008]  [<ffffffffa0411924>] ip_tunnel_newlink+0x64/0x160 [ip_tunnel]
+[ 3835.073008]  [<ffffffffa040b2e3>] vti_newlink+0x43/0x70 [ip_vti]
+[ 3835.073008]  [<ffffffff8150d4da>] rtnl_newlink+0x4fa/0x5f0
+[ 3835.073008]  [<ffffffff812f68bb>] ? nla_strlcpy+0x5b/0x70
+[ 3835.073008]  [<ffffffff81508fb0>] ? rtnl_link_ops_get+0x40/0x60
+[ 3835.073008]  [<ffffffff8150d11f>] ? rtnl_newlink+0x13f/0x5f0
+[ 3835.073008]  [<ffffffff81509cf4>] rtnetlink_rcv_msg+0xa4/0x270
+[ 3835.073008]  [<ffffffff8126adf5>] ? sock_has_perm+0x75/0x90
+[ 3835.073008]  [<ffffffff81509c50>] ? rtnetlink_rcv+0x30/0x30
+[ 3835.073008]  [<ffffffff81529e39>] netlink_rcv_skb+0xa9/0xc0
+[ 3835.073008]  [<ffffffff81509c48>] rtnetlink_rcv+0x28/0x30
+....
 
-deferred work                    vxlan_sock_add
-  ...                              ...
-                                   spin_lock(&vn->sock_lock)
-                                   vs = vxlan_find_sock();
-  vxlan_sock_release
-    dec vs->refcnt, reaches 0
-    spin_lock(&vn->sock_lock)
-                                   vxlan_sock_hold(vs), refcnt=1
-                                   spin_unlock(&vn->sock_lock)
-    hlist_del_rcu(&vs->hlist);
-    vxlan_notify_del_rx_port(vs)
-    spin_unlock(&vn->sock_lock)
+modprobe ip_vti
+ip link del ip_vti0 type vti
+ip link add ip_vti0 type vti
+rmmod ip_vti
 
-So when we look for a reusable socket, we check if it wasn't freed
-already before reusing it.
+do that one or more times, kernel will panic.
 
-Signed-off-by: Marcelo Ricardo Leitner <mleitner@redhat.com>
-Fixes: 7c47cedf43a8b3 ("vxlan: move IGMP join/leave to work queue")
+fix it by assigning ip_tunnel_dellink to vti_link_ops' dellink, in
+which we skip the unregister of fb tunnel device. do the same on ip6_vti.
+
+Signed-off-by: Xin Long <lucien.xin@gmail.com>
+Signed-off-by: Cong Wang <cwang@twopensource.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/vxlan.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ net/ipv4/ip_vti.c  |  1 +
+ net/ipv6/ip6_vti.c | 11 +++++++++++
+ 2 files changed, 12 insertions(+)
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index e7da1c4..045876f 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -2006,9 +2006,8 @@ static int vxlan_init(struct net_device *dev)
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(dev_net(dev), ipv6 ? AF_INET6 : AF_INET,
- 			     vxlan->dst_port);
--	if (vs) {
-+	if (vs && atomic_add_unless(&vs->refcnt, 1, 0)) {
- 		/* If we have a socket with same port already, reuse it */
--		atomic_inc(&vs->refcnt);
- 		vxlan_vs_add_dev(vs, vxlan);
- 	} else {
- 		/* otherwise make new socket outside of RTNL */
-@@ -2448,12 +2447,9 @@ struct vxlan_sock *vxlan_sock_add(struct net *net, __be16 port,
+diff --git a/net/ipv4/ip_vti.c b/net/ipv4/ip_vti.c
+index 2a89e3f..25d2f2d 100644
+--- a/net/ipv4/ip_vti.c
++++ b/net/ipv4/ip_vti.c
+@@ -369,6 +369,7 @@ static struct rtnl_link_ops vti_link_ops __read_mostly = {
+ 	.validate	= vti_tunnel_validate,
+ 	.newlink	= vti_newlink,
+ 	.changelink	= vti_changelink,
++	.dellink        = ip_tunnel_dellink,
+ 	.get_size	= vti_get_size,
+ 	.fill_info	= vti_fill_info,
+ };
+diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
+index bcf7d17..5c19980 100644
+--- a/net/ipv6/ip6_vti.c
++++ b/net/ipv6/ip6_vti.c
+@@ -826,6 +826,15 @@ static int vti6_newlink(struct net *src_net, struct net_device *dev,
+ 	return vti6_tnl_create2(dev);
+ }
  
- 	spin_lock(&vn->sock_lock);
- 	vs = vxlan_find_sock(net, ipv6 ? AF_INET6 : AF_INET, port);
--	if (vs) {
--		if (vs->rcv == rcv)
--			atomic_inc(&vs->refcnt);
--		else
-+	if (vs && ((vs->rcv != rcv) ||
-+		   !atomic_add_unless(&vs->refcnt, 1, 0)))
- 			vs = ERR_PTR(-EBUSY);
--	}
- 	spin_unlock(&vn->sock_lock);
++static void vti6_dellink(struct net_device *dev, struct list_head *head)
++{
++	struct net *net = dev_net(dev);
++	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
++
++	if (dev != ip6n->fb_tnl_dev)
++		unregister_netdevice_queue(dev, head);
++}
++
+ static int vti6_changelink(struct net_device *dev, struct nlattr *tb[],
+ 			   struct nlattr *data[])
+ {
+@@ -901,6 +910,7 @@ static struct rtnl_link_ops vti6_link_ops __read_mostly = {
+ 	.setup		= vti6_dev_setup,
+ 	.validate	= vti6_validate,
+ 	.newlink	= vti6_newlink,
++	.dellink	= vti6_dellink,
+ 	.changelink	= vti6_changelink,
+ 	.get_size	= vti6_get_size,
+ 	.fill_info	= vti6_fill_info,
+@@ -946,6 +956,7 @@ static int __net_init vti6_init_net(struct net *net)
+ 	if (!ip6n->fb_tnl_dev)
+ 		goto err_alloc_dev;
+ 	dev_net_set(ip6n->fb_tnl_dev, net);
++	ip6n->fb_tnl_dev->rtnl_link_ops = &vti6_link_ops;
  
- 	if (!vs)
+ 	err = vti6_fb_tnl_dev_init(ip6n->fb_tnl_dev);
+ 	if (err < 0)
 -- 
 1.9.1
 
