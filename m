@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057AbaLOVbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:31:38 -0500
-Received: from mail-bn1bon0094.outbound.protection.outlook.com ([157.56.111.94]:64928
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750764AbaLOVbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:31:37 -0500
-Message-ID: <548F5330.6090508@caviumnetworks.com>
-Date: Mon, 15 Dec 2014 13:31:28 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751220AbaLOVdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:33:17 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45273 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750861AbaLOVdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:33:15 -0500
+Date: Mon, 15 Dec 2014 21:33:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 15/19] move d_rcu from overlapping d_child to
+ overlapping d_alias
+Message-ID: <20141215213312.GV22149@ZenIV.linux.org.uk>
+References: <20141214201823.543296369@linuxfoundation.org>
+ <20141214201823.978185416@linuxfoundation.org>
+ <20141215154650.GA6542@vader>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Aleksey Makarov <feumilieu@gmail.com>, <linux-mips@linux-mips.org>,
-        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
-        "Aleksey Makarov" <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH 13/14] MIPS: OCTEON: Add register definitions for OCTEON
- III reset unit.
-References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com> <1418666603-15159-14-git-send-email-aleksey.makarov@auriga.com> <20141215210942.GC10323@fuloong-minipc.musicnaut.iki.fi>
-In-Reply-To: <20141215210942.GC10323@fuloong-minipc.musicnaut.iki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [64.2.3.194]
-X-ClientProxiedBy: BLUPR07CA092.namprd07.prod.outlook.com (25.160.24.47) To
- BN3PR0701MB1105.namprd07.prod.outlook.com (25.160.114.143)
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BN3PR0701MB1105;
-X-Forefront-PRVS: 04267075BD
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(51704005)(377454003)(189002)(199003)(479174004)(62966003)(64126003)(110136001)(92566001)(46102003)(20776003)(47776003)(97736003)(77156002)(4396001)(36756003)(50466002)(69596002)(81156004)(87266999)(23756003)(76176999)(107046002)(40100003)(31966008)(19580395003)(80316001)(33656002)(54356999)(83506001)(66066001)(105586002)(50986999)(106356001)(64706001)(19580405001)(120916001)(101416001)(99396003)(87976001)(68736005)(42186005)(122386002)(21056001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0701MB1105;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1089;
-X-OriginatorOrg: caviumnetworks.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 15 Dec 2014 21:31:32.6628
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-CrossTenant-Id: 711e4ccf-2e9b-4bcf-a551-4094005b6194
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0701MB1089
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215154650.GA6542@vader>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 01:09 PM, Aaro Koskinen wrote:
-> Hi,
->
-> On Mon, Dec 15, 2014 at 09:03:19PM +0300, Aleksey Makarov wrote:
->> From: David Daney <david.daney@cavium.com>
->>
->> Needed by follow-on patches.
->
-> Looks like only one of the unions was needed (cvmx_rst_boot)...?
->
+On Mon, Dec 15, 2014 at 10:46:50AM -0500, Josh Boyer wrote:
+> On Sun, Dec 14, 2014 at 12:21:26PM -0800, Greg Kroah-Hartman wrote:
+> >3.18-stable review patch.  If anyone has any objections, please let me know.
+> >
+> >------------------
+> >
+> >From: Al Viro <viro@zeniv.linux.org.uk>
+> >
+> >commit 946e51f2bf37f1656916eb75bd0742ba33983c28 upstream.
+> >
+> >Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> I noticed you don't have this (and the child commit) queued for 3.17.y.
+> The backport wasn't exactly straight-forward because of the d_external
+> stuff, but I took a swing at it.  After that, the other commit was a
+> quick cherry-pick.
+> 
+> Al, does the below look correct for a backport on top of 3.17.6?  It
+> builds, but I haven't tested it yet.
 
-This follows the form of the other register definition files.
+-       WARN_ON(!hlist_unhashed(&dentry->d_alias));
++       WARN_ON(!hlist_unhashed(&dentry->d_u.d_alias));
+i
 
-If Ralf requests it, we would consider deleting some of the currently 
-unused definitions.
-
-David Daney
-
-
+in __d_free() is definitely *not* correct - where do you think has __d_free
+address come from?  Right, dentry->d_u.d_rcu.func...  Those checks belong
+in dentry_free(), before call_rcu() is called...
