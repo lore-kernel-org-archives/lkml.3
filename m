@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245AbaLOMsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:48:41 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38825 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaLOMsi (ORCPT
+	id S1751377AbaLOMtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:49:24 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:61824 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753AbaLOMtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:48:38 -0500
-Date: Mon, 15 Dec 2014 13:48:22 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Hildenbrand <dahi@linux.vnet.ibm.com>
-Cc: "LF.Tan" <lftan.linux@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
-        schwidefsky@de.ibm.com, borntraeger@de.ibm.com,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, David.Laight@aculab.com,
-        hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v2 1/5] uaccess: add pagefault_count to thread_info
-Message-ID: <20141215124822.GH21343@twins.programming.kicks-ass.net>
-References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
- <1418221414-60110-2-git-send-email-dahi@linux.vnet.ibm.com>
- <CAFiDJ59Y9y4VrcVfyo8rrQV-NtM=1G=kQScBtEvnuC3MpXt0KA@mail.gmail.com>
- <20141215122301.0eac5f19@thinkpad-w530>
+	Mon, 15 Dec 2014 07:49:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215122301.0eac5f19@thinkpad-w530>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <7561c096c7de603ac39fcfcff7bd2ec80589cae1.1418618044.git.osandov@osandov.com>
+References: <cover.1418618044.git.osandov@osandov.com>
+	<7561c096c7de603ac39fcfcff7bd2ec80589cae1.1418618044.git.osandov@osandov.com>
+Date: Mon, 15 Dec 2014 07:49:20 -0500
+X-Google-Sender-Auth: 4XsMfnUD_WmZZXHKouRlmX7tOaI
+Message-ID: <CAABAsM4jMcox1emR1nSxORUOPNMDYmCcmMD4YymJ9R_BM_UU4w@mail.gmail.com>
+Subject: Re: [PATCH 1/8] nfs: follow direct I/O write locking convention
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+To: Omar Sandoval <osandov@osandov.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 12:23:01PM +0100, David Hildenbrand wrote:
-> Peter just showed my that there is some work ongoing on that
-> pagefault_disable() topic. So I am not sure if the arch-specific part of this
-> series is still relevant.
+On Mon, Dec 15, 2014 at 12:26 AM, Omar Sandoval <osandov@osandov.com> wrote:
+> The generic callers of direct_IO lock i_mutex before doing a write. NFS
+> doesn't use the generic write code, so it doesn't follow this
+> convention. This is now a problem because the interface introduced for
+> swap-over-NFS calls direct_IO for a write without holding i_mutex, but
+> other implementations of direct_IO will expect to have it locked.
 
-Well 'on-going' would be over stating it. We did those bits in -rt many
-years ago, but never really made a strong enough effort to get them
-upstream.
+I really don't care much about swap-over-NFS performance; that's a
+niche usage at best. I _do_ care about O_DIRECT performance, and the
+ability to run multiple WRITE calls in parallel.
 
-If there now is a 'semi' sane use-case for upstreaming them we should
-indeed look at that.
+IOW: Patch NACKed... Please find another solution.
+
+Trond
