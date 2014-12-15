@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaLOQmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:42:23 -0500
-Received: from prod-mail-xrelay06.akamai.com ([96.6.114.98]:55259 "EHLO
-	prod-mail-xrelay06.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750755AbaLOQmW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:42:22 -0500
-From: "Young, David" <dayoung@akamai.com>
-To: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "Shuah Khan (shuahkhan@gmail.com)" <shuahkhan@gmail.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Dec 2014 11:42:12 -0500
-Subject: selftests: standardized results output?
-Thread-Topic: selftests: standardized results output?
-Thread-Index: AdAYhhLiR9kJBNa8RRu7UNdiydnNNQ==
-Message-ID: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751846AbaLOQmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:42:32 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:50432 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750755AbaLOQm3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 11:42:29 -0500
+Date: Mon, 15 Dec 2014 09:42:21 -0700
+From: Jens Axboe <axboe@fb.com>
+To: <torvalds@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, <jack@suse.cz>
+Subject: [GIT PULL] Single revert/fix for core block bits for 3.19
+Message-ID: <20141215164221.GA9270@kernel.dk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-15_03:2014-12-15,2014-12-15,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=3 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412150161
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,  I'm looking into what sorts of tools can consume the selftest output, and
-found this on the wikipage:
+Hi Linus,
 
-https://kselftest.wiki.kernel.org/standardize_the_test_output
+Jan reported a problem this morning with a crash in blk-mq, and after
+looking over the recent changes, it's obvious that the blk-mq-tag
+waitqueue handling change is buggy. We could end up _not_ doing
+finish_wait() before switching to a new waitqueue, thus corrupting the
+wait task list.
 
-The current suggestion (as of the last-modified date on that wiki page for
-October) is to use the Test Anything Protocol [TAP] for standard output.  I
-notice that there is at least one test that conforms to TAP output, but
-the majority of the tests are not using it.
+Please pull this one revert of the problematic change, thanks!
 
-There's also the kselftest.h file that suggests exit codes for the individual
-test applications.
+  git://git.kernel.dk/linux-block.git for-linus
 
-I'm interested in knowing what is the intention of this standardization, so
-that I can put some work into a "glue" layer for a tool like buildbot,
-autotest, or Jenkins for executing and consuming the results of these
-selftests.
+for you to fetch changes up to 35d37c66356eed46700e0d5db87211844d43a241:
 
-1) Is this output standard a "nice to have" that won't be much enforced?
-2) Will the exit codes be utilized outside of the current makefile-based
-   approach for executing the tests?  The current make target just runs all the
-   tests without really concerning itself with the exit values of the
-   individual tests.  It's simple, which isn't a bad thing, but it lacks a
-   summarized result.  Is the intention to use a different harness to consume
-   and report results?
-3) Are the TAP results intended to be the exclusive (std)output of the tests,
-   or will the tests report in a hybrid fashion?
-   Such an example would be a test that produces some verbose stdout to the
-   console, while simultaneously creating a TAP-compliant results.tap file as
-   well... or vice versa with the stdout being TAP and a more verbose but
-   free-form log.txt 
+  Revert "blk-mq: Micro-optimize bt_get()" (2014-12-15 08:30:26 -0700)
 
-Thanks,
+----------------------------------------------------------------
+Jens Axboe (1):
+      Revert "blk-mq: Micro-optimize bt_get()"
 
-- David Young
+ block/blk-mq-tag.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+-- 
+Jens Axboe
+
