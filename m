@@ -1,142 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaLOTdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:33:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39436 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612AbaLOTdv (ORCPT
+	id S1752389AbaLOThh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:37:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41013 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615AbaLOTdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:51 -0500
-Date: Mon, 15 Dec 2014 11:33:51 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Support a vmbus API for
- efficiently sending page arrays
-Message-ID: <20141215193351.GC9842@kroah.com>
-References: <1418675627-15213-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418675627-15213-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 15 Dec 2014 14:33:54 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 80/96] drivers/input/evdev.c: don't kfree() a vmalloc address
+Date: Mon, 15 Dec 2014 11:26:40 -0800
+Message-Id: <1418671616-25482-81-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
+References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 12:33:47PM -0800, K. Y. Srinivasan wrote:
-> Currently, the API for sending a multi-page buffer over VMBUS is limited to
-> a maximum pfn array of MAX_MULTIPAGE_BUFFER_COUNT. This limitation is
-> not imposed by the host and unnecessarily limits the maximum payload
-> that can be sent. Implement an API that does not have this restriction.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/hv/channel.c   |   44 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/hyperv.h |   31 +++++++++++++++++++++++++++++++
->  2 files changed, 75 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
-> index c76ffbe..18c4f23 100644
-> --- a/drivers/hv/channel.c
-> +++ b/drivers/hv/channel.c
-> @@ -686,6 +686,50 @@ EXPORT_SYMBOL_GPL(vmbus_sendpacket_pagebuffer);
->  /*
->   * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
->   * using a GPADL Direct packet type.
-> + * The buffer includes the vmbus descriptor.
-> + */
-> +int vmbus_sendpacket_mpb_desc(struct vmbus_channel *channel,
-> +			      struct vmbus_packet_mpb_array *desc,
-> +			      u32 desc_size,
-> +			      void *buffer, u32 bufferlen, u64 requestid)
-> +{
-> +	int ret;
-> +	u32 packetlen;
-> +	u32 packetlen_aligned;
-> +	struct kvec bufferlist[3];
-> +	u64 aligned_data = 0;
-> +	bool signal = false;
-> +
-> +	packetlen = desc_size + bufferlen;
-> +	packetlen_aligned = ALIGN(packetlen, sizeof(u64));
-> +
-> +	/* Setup the descriptor */
-> +	desc->type = VM_PKT_DATA_USING_GPA_DIRECT;
-> +	desc->flags = VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED;
-> +	desc->dataoffset8 = desc_size >> 3; /* in 8-bytes grandularity */
-> +	desc->length8 = (u16)(packetlen_aligned >> 3);
-> +	desc->transactionid = requestid;
-> +	desc->rangecount = 1;
-> +
-> +	bufferlist[0].iov_base = desc;
-> +	bufferlist[0].iov_len = desc_size;
-> +	bufferlist[1].iov_base = buffer;
-> +	bufferlist[1].iov_len = bufferlen;
-> +	bufferlist[2].iov_base = &aligned_data;
-> +	bufferlist[2].iov_len = (packetlen_aligned - packetlen);
-> +
-> +	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3, &signal);
-> +
-> +	if (ret == 0 && signal)
-> +		vmbus_setevent(channel);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(vmbus_sendpacket_mpb_desc);
-> +
-> +/*
-> + * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
-> + * using a GPADL Direct packet type.
->   */
->  int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
->  				struct hv_multipage_buffer *multi_pagebuffer,
-> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-> index 08cfaff..8615b0d 100644
-> --- a/include/linux/hyperv.h
-> +++ b/include/linux/hyperv.h
-> @@ -57,6 +57,18 @@ struct hv_multipage_buffer {
->  	u64 pfn_array[MAX_MULTIPAGE_BUFFER_COUNT];
->  };
->  
-> +/*
-> + * Multiple-page buffer array; the pfn array is variable size:
-> + * The number of entries in the PFN array is determined by
-> + * "len" and "offset".
-> + */
-> +struct hv_mpb_array {
-> +	/* Length and Offset determines the # of pfns in the array */
-> +	u32 len;
-> +	u32 offset;
-> +	u64 pfn_array[];
-> +};
+3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
 
-Does this cross the user/kernel boundry?  If so, they need to be __u32
-and __u64 variables.
+------------------
 
-> +
->  /* 0x18 includes the proprietary packet header */
->  #define MAX_PAGE_BUFFER_PACKET		(0x18 +			\
->  					(sizeof(struct hv_page_buffer) * \
-> @@ -812,6 +824,18 @@ struct vmbus_channel_packet_multipage_buffer {
->  	struct hv_multipage_buffer range;
->  } __packed;
->  
-> +/* The format must be the same as struct vmdata_gpa_direct */
-> +struct vmbus_packet_mpb_array {
-> +	u16 type;
-> +	u16 dataoffset8;
-> +	u16 length8;
-> +	u16 flags;
-> +	u64 transactionid;
-> +	u32 reserved;
-> +	u32 rangecount;         /* Always 1 in this case */
-> +	struct hv_mpb_array range;
-> +} __packed;
+From: Andrew Morton <akpm@linux-foundation.org>
 
-Same here.
+commit 92788ac1eb06e69a822de45e2a8a63fa45eb5be2 upstream.
 
-thanks,
+If kzalloc() failed and then evdev_open_device() fails, evdev_open()
+will pass a vmalloc'ed pointer to kfree.
 
-greg k-h
+This might fix https://bugzilla.kernel.org/show_bug.cgi?id=88401, where
+there was a crash in kfree().
+
+Reported-by: Christian Casteyde <casteyde.christian@free.fr>
+Belatedly-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/input/evdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index a06e125..c33c8ff 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -422,7 +422,7 @@ static int evdev_open(struct inode *inode, struct file *file)
+ 
+  err_free_client:
+ 	evdev_detach_client(evdev, client);
+-	kfree(client);
++	kvfree(client);
+ 	return error;
+ }
+ 
+-- 
+1.9.1
+
