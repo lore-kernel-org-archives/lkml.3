@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaLOO32 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:29:28 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39020 "EHLO
+	id S1753204AbaLOOa2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:30:28 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39084 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753084AbaLOO3T (ORCPT
+	with ESMTP id S1753125AbaLOO32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:19 -0500
+	Mon, 15 Dec 2014 09:29:28 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 155/168] tg3: fix ring init when there are more TX than RX channels
-Date: Mon, 15 Dec 2014 14:26:49 +0000
-Message-Id: <1418653622-21105-156-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 165/168] x86/asm/traps: Disable tracing and kprobes in fixup_bad_iret and sync_regs
+Date: Mon, 15 Dec 2014 14:26:59 +0000
+Message-Id: <1418653622-21105-166-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a620a6bc1c94c22d6c312892be1e0ae171523125 upstream.
+commit 7ddc6a2199f1da405a2fb68c40db8899b1a8cd87 upstream.
 
-If TX channels are set to 4 and RX channels are set to less than 4,
-using ethtool -L, the driver will try to initialize more RX channels
-than it has allocated, causing an oops.
+These functions can be executed on the int3 stack, so kprobes
+are dangerous. Tracing is probably a bad idea, too.
 
-This fix only initializes the RX ring if it has been allocated.
-
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: b645af2d5905 ("x86_64, traps: Rework bad_iret")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/50e33d26adca60816f3ba968875801652507d0c4.1416870125.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/x86/kernel/traps.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 8345c6523799..2a1adec84d0e 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8561,7 +8561,8 @@ static int tg3_init_rings(struct tg3 *tp)
- 		if (tnapi->rx_rcb)
- 			memset(tnapi->rx_rcb, 0, TG3_RX_RCB_RING_BYTES(tp));
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index de801f22128a..07ab8e9733c5 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -387,7 +387,7 @@ NOKPROBE_SYMBOL(do_int3);
+  * for scheduling or signal handling. The actual stack switch is done in
+  * entry.S
+  */
+-asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
++asmlinkage __visible notrace struct pt_regs *sync_regs(struct pt_regs *eregs)
+ {
+ 	struct pt_regs *regs = eregs;
+ 	/* Did already sync */
+@@ -413,7 +413,7 @@ struct bad_iret_stack {
+ 	struct pt_regs regs;
+ };
  
--		if (tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
-+		if (tnapi->prodring.rx_std &&
-+		    tg3_rx_prodring_alloc(tp, &tnapi->prodring)) {
- 			tg3_free_rings(tp);
- 			return -ENOMEM;
- 		}
+-asmlinkage __visible
++asmlinkage __visible notrace
+ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ {
+ 	/*
+@@ -436,6 +436,7 @@ struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
+ 	BUG_ON(!user_mode_vm(&new_stack->regs));
+ 	return new_stack;
+ }
++NOKPROBE_SYMBOL(fixup_bad_iret);
+ #endif
+ 
+ /*
 -- 
 2.1.3
 
