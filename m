@@ -1,99 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751008AbaLOScm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:32:42 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:50232 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750774AbaLOScl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:32:41 -0500
-Date: Mon, 15 Dec 2014 18:32:44 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: psci: Fix build breakage without PM_SLEEP
-Message-ID: <20141215183244.GA721@red-moon>
-References: <1418125716-18528-1-git-send-email-k.kozlowski@samsung.com>
- <2290734.BRljGaICu4@wuerfel>
- <1418128689.19339.3.camel@AMDC1943>
- <20141209161511.GI31129@e104818-lin.cambridge.arm.com>
- <20141212150608.GA4853@e102568-lin.cambridge.arm.com>
- <20141215174622.GE14631@e104818-lin.cambridge.arm.com>
+	id S1750971AbaLOSgI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:36:08 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaLOSgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 13:36:06 -0500
+Message-ID: <548F2A10.5070601@nod.at>
+Date: Mon, 15 Dec 2014 19:36:00 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215174622.GE14631@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [GIT PULL] Staging driver patches for 3.19-rc1
+References: <20141215175535.GA4665@kroah.com> <CAFLxGvwvj_ihWQQV3yY8Czxt0F2ieP=CRBrPMKqUatpjj9zdvQ@mail.gmail.com> <20141215183038.GA6120@kroah.com>
+In-Reply-To: <20141215183038.GA6120@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 05:46:22PM +0000, Catalin Marinas wrote:
-> On Fri, Dec 12, 2014 at 03:06:08PM +0000, Lorenzo Pieralisi wrote:
-> > On Tue, Dec 09, 2014 at 04:15:11PM +0000, Catalin Marinas wrote:
-> > > On Tue, Dec 09, 2014 at 12:38:09PM +0000, Krzysztof Kozlowski wrote:
-> > > > On wto, 2014-12-09 at 13:29 +0100, Arnd Bergmann wrote:
-> > > > > On Tuesday 09 December 2014 12:48:36 Krzysztof Kozlowski wrote:
-> > > > > > Fix build failure of defconfig when PM_SLEEP is disabled (e.g. by
-> > > > > > disabling SUSPEND) and CPU_IDLE enabled:
-> > > > > > 
-> > > > > > arch/arm64/kernel/psci.c:543:2: error: unknown field 'cpu_suspend' specified in initializer
-> > > > > >   .cpu_suspend = cpu_psci_cpu_suspend,
-> > > > > >   ^
-> > > > > > arch/arm64/kernel/psci.c:543:2: warning: initialization from incompatible pointer type [enabled by default]
-> > > > > > arch/arm64/kernel/psci.c:543:2: warning: (near initialization for 'cpu_psci_ops.cpu_prepare') [enabled by default]
-> > > > > > make[1]: *** [arch/arm64/kernel/psci.o] Error 1
-> > > > > > 
-> > > > > > The cpu_operations.cpu_suspend field exists only if ARM64_CPU_SUSPEND is
-> > > > > > defined, not CPU_IDLE.
-> > > > > > 
-> > > > > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > > > > 
-> > > > > 
-> > > > > No objection to fixing this obvious build bug, but why do we even have
-> > > > > an ARM64_CPU_SUSPEND option? On ARM32 we only have the respective option
-> > > > > because we have a random collection of platform specific drivers that
-> > > > > use the symbols, but that's not the case on ARM64.
-> > > > 
-> > > > I believe because of cpuidle. It's the same as on ARM32: the cpu_suspend
-> > > > is used by both PM_SLEEP and CPU_IDLE.
-> > > 
-> > > I guess at some point we can replace (as a separate patch)
-> > > ARM64_CPU_SUSPEND with PM_SLEEP.
-> > > 
-> > > But what I don't fully understand, we can enable CPU_IDLE without
-> > > ARM64_CPU_SUSPEND. However, the cpuidle-arm64.c driver will fail to
-> > > link since it calls cpu_suspend(). Wouldn't it be better if
-> > > ARM64_CPU_SUSPEND depends on CPU_PM (or replaced by it) rather than
-> > > PM_SLEEP?
-> > 
-> > I think that ARM64_CPU_SUSPEND should depend on PM_SLEEP || CPU_IDLE,
-> 
-> That's what we do with CPU_PM, we select it if SUSPEND || CPU_IDLE
-> (PM_SLEEP is default yes if SUSPEND).
-> 
-> > if CPU_IDLE is enabled it is certainly because some idle states are
-> > expected to be present, true, not all of them lose context (which is
-> > why ARM64_CPU_SUSPEND is needed, to save/restore context and clean
-> > it to RAM), but I think that's too fine grain, making it depend on
-> > CPU_IDLE should be ok.
-> > 
-> > Having CPU_IDLE enabled without arm64 cpuidle driver enabled (which
-> > selects ARM64_CPU_SUSPEND) is useless at the moment.
-> 
-> Ah, so we can force a selection even if it doesn't meet its
-> dependencies like PM_SLEEP (which depends on SUSPEND).
-> 
-> Can we just get rid of ARM64_CPU_SUSPEND altogether and use CPU_PM
-> instead?
 
-Yes, it looks like the best option to me, I will put together a
-patch shortly.
+Am 15.12.2014 um 19:30 schrieb Greg KH:
+> On Mon, Dec 15, 2014 at 07:23:35PM +0100, Richard Weinberger wrote:
+>> On Mon, Dec 15, 2014 at 6:55 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>>> The following changes since commit 009d0431c3914de64666bec0d350e54fdd59df6a:
+>>>
+>>>   Linux 3.18-rc7 (2014-11-30 16:42:27 -0800)
+>>>
+>>> are available in the git repository at:
+>>>
+>>>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ tags/staging-3.19-rc1
+>>>
+>>> for you to fetch changes up to 17d2c6439be65777245914be354c5a97c76ad246:
+>>>
+>>>   Staging: slicoss: Fix long line issues in slicoss.c (2014-12-02 16:54:43 -0800)
+>>>
+>>> ----------------------------------------------------------------
+>>> Staging patches for 3.19-rc1
+>>>
+>>> Here's the big staging tree pull request for 3.19-rc1.
+>>>
+>>> We continued to delete more lines than were added, always a good thing,
+>>> but not at a huge rate this release, only about 70k lines removed
+>>> overall mostly from removing the horrid bcm driver.
+>>>
+>>> Lots of normal staging driver cleanups and fixes all over the place,
+>>> well over a thousand of them, the shortlog shows all the horrid details.
+>>>
+>>> The "contentious" thing here is the movement of the Android binder code
+>>> out of staging into the "real" part of the kernel.  This is code that
+>>> has been stable for a few years now and is working as-is in the tens of
+>>> millions of devices with no issues.  Yes, the code is horrid, and the
+>>> userspace api leaves a lot to be desired, but it's not going to change
+>>> due to legacy issues that we have no control over.  Because so many
+>>> devices and companies rely on this, and the code is stable, might as
+>>> well promote it out of staging.
+>>>
+>>> This was all discussed at the Linux Plumbers conference, and everyone
+>>> participating agreed that this was the best way forward.
+>>>
+>>> There is work happening to replace the binder code with something new
+>>> that is happening right now, but I don't expect to see the results of
+>>> that work for another year at the earliest.  If that ever happens, and
+>>> Android switches over to it, I'll gladly remove this version
+>>
+>> I don't understand this kind of logic.
+>> a) Binder is considered a piece of shite.
+> 
+> A piece of "shite" that works for the domain it is in, and people rely
+> on it.
+
+Using this argument we could merge every singe vendor tree too.
+The crap they carry works for their domain too... ;-)
+
+>> b) Google is working on a (hopefully sane) replacement.
+> 
+> I never said that Google was the one working on a replacement.
+
+Okay. Who is working on it?
+Is there a change that Android will pick it up?
+
+>> Why moving it out of staging then? What is the benefit?
+>> Keep it there for more 2-3 years and then remove it.
+> 
+> Because code in staging either has to progress forward to be merged out
+> of staging, or it gets deleted.  Just leaving it in staging for 2-4 more
+> years doesn't mean anything different from moving it to
+> drivers/android/, if I'm still maintaining it, right?  What it does say
+> is that people rely on this thing, probably you do as well, so let's
+> mark it as such.
+> 
+>> If you move it now out of staging into the core kernel it will be considered ABI
+>> and getting rid of it can be hard...
+> 
+> It's already considered an "ABI" and removing it is hard, nothing has
+> changed there.
+
+Since when is stuff in staging considered ABI?
 
 Thanks,
-Lorenzo
+//richard
