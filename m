@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751920AbaLOLwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:52:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55509 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaLOLwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:52:17 -0500
-Message-ID: <548ECB6E.5060104@suse.com>
-Date: Mon, 15 Dec 2014 12:52:14 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752180AbaLOLwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:52:32 -0500
+Received: from regular1.263xmail.com ([211.150.99.137]:58311 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629AbaLOLw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 06:52:26 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: ykk@rock-chips.com
+X-FST-TO: jsarha@ti.com
+X-SENDER-IP: 104.167.231.7
+X-LOGIN-NAME: ykk@rock-chips.com
+X-UNIQUE-TAG: <24045990696865e737fc0cb66f454cb8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <548ECB66.70004@rock-chips.com>
+Date: Mon, 15 Dec 2014 19:52:06 +0800
+From: "Kuankuan.Yang" <ykk@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: jongman.heo@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to
- use cache mode translation tables")
-References: <1915005366.124751418629936574.JavaMail.weblogic@epmlwas02b>
-In-Reply-To: <1915005366.124751418629936574.JavaMail.weblogic@epmlwas02b>
-Content-Type: multipart/mixed;
- boundary="------------030402060105020507030906"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?UTF-8?B?U3TDqXBoYW5lIE1hcmNoZXNpbg==?= <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, Arnd Bergmann <arnd@arndb.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        linux-rockchip@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, devicetree@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
+        Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Mark Rutland <mark.rutland@arm.com>, Jyri Sarha <jsarha@ti.com>
+Subject: Re: [RFC PATCH 0/6] Those patches is used for dw_hdmi audio.
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <20141215103830.GD11285@n2100.arm.linux.org.uk> <548EC9E1.5040206@rock-chips.com>
+In-Reply-To: <548EC9E1.5040206@rock-chips.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030402060105020507030906
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
+  Hi Russell:
 
-On 12/15/2014 08:52 AM, Jongman Heo wrote:
->> ------- Original Message -------
->> Sender : Juergen Gross
->> Date : 2014-12-15 14:04 (GMT+09:00)
->> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
+      thks for your replay, actually you also have send me those 
+dw-hdmi-audio.c patches, and I also agree it's an beautiful way to make 
+hdmi-audio works. Beside,
+  I try to reuse it into our platform, and actually the system have 
+created the DW_HDMI sound card successfully, but i cannot play any 
+sound  with this sound card.
+      After dump the registers, I found the part of "Audio DMA 
+Registers" cannot write and always read with 0x00.  So I searching the 
+document  "Designware Core
+  HDMI Transmitter Controller Databook", and found that  "Audio DMA 
+Registers" only present when the hardware configuration parameter 
+AUDIO_IF is set to
+  AHBAUDDMA. Than I communicate with our IC colleagues, they told me 
+that our cpu rk3288 only support two way to  transmit audio data( I2S & 
+SPDIF ), in that
+way we do not support AHB_DMA, it's very sad, and this it why i give up 
+this way, also it's my bad that i should replay to u first in the before 
+mail.
+
+
+Best Regards.
+> åœ¨ 2014å¹´12æœˆ15æ—¥ 18:38, Russell King - ARM Linux å†™é“:
+>> On Mon, Dec 15, 2014 at 10:11:28AM +0800, Yakir Yang wrote:
+>>> rk3288 use Designware HDMI IP, Designware HDMI supports four interfaces to
+>>> config hdmi audio(I2S, S/PDIF, Generic Parallel Audio, AHB Audio DMA), but
+>>> rk3288 only support two ways to config hdmi audio(I2S, S/PDIF), So we take
+>>> I2S as hdmi audio operation interfaces, and then treat hdmi audio as an
+>>> standard ALSA devices(only got platback function).
+>> There is no need for dw-hdmi audio to be implemented as an ASoC
+>> device - as I've already sent patches to Andy with my ALSA driver
+>> which has been around for the last two years, and works well, and
+>> doesn't require any additional DT description.
 >>
->> On 12/14/2014 06:07 AM, ÇãÁ¾¸¸ wrote:
->>>
->>> Hi,
->>>
->>> My Linux virtual machine on (Windows) VMWare workstation 10 can't boot with following commit.
->>>
->>> commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
->>> Author: Juergen Gross
->>> Date:   Mon Nov 3 14:02:03 2014 +0100
->>>
->>>       x86: Enable PAT to use cache mode translation tables
->>>
->>> Unfortunately I can't see any console log.
->>
->> Hmm, weird. Could you provide some more information?
->>
->> Kernel config, hardware used, /proc/cpuinfo of working kernel?
->> Anything you see with earlyprintk enabled?
->>
->>
->> Juergen
-> 
-> (Sorry for resending this email, previous one bounced from mailing list due to HTML format)
-> 
-> Hi,
-> 
-> I'm using Fedora 21, with custom built kernel.
-> Host PC is windows 7 64-bit, and running VMWare workstation 10 for guest Fedora Linux.
-> 
-> With earlyprintk, just following message is printed.
-> 
->    early console in setup code
-> 
-> and nothing more...
-
-Can you try attached diagnostic patch, please? I suspect a problem
-regarding VMWares PAT emulation...
+>
 
 
-Juergen
-
---------------030402060105020507030906
-Content-Type: text/x-patch;
- name="diag.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="diag.patch"
-
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index edf299c..d77d6a8 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -182,6 +182,7 @@ void pat_init_cache_modes(void)
- 	u64 pat;
- 
- 	rdmsrl(MSR_IA32_CR_PAT, pat);
-+	pr_info("read pat %0llx\n", pat);
- 	pat_msg[32] = 0;
- 	for (i = 7; i >= 0; i--) {
- 		cache = pat_get_cache_mode((pat >> (i * 8)) & 7,
-@@ -237,6 +238,8 @@ void pat_init(void)
- 	if (!boot_pat_state)
- 		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
- 
-+	pr_info("about to write pat %0llx\n", pat);
-+
- 	wrmsrl(MSR_IA32_CR_PAT, pat);
- 
- 	if (boot_cpu)
-
---------------030402060105020507030906--
