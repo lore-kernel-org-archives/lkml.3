@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539AbaLOPVN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:21:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751710AbaLOPVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:21:07 -0500
-Message-ID: <548EFA9F.4080208@redhat.com>
-Date: Mon, 15 Dec 2014 16:13:35 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754548AbaLOPVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:21:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38163 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaLOO1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 09:27:07 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Martin Hauke <mardnh@gmx.de>, "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 006/168] qmi_wwan: Add support for HP lt4112 LTE/HSPA+ Gobi 4G Modem
+Date: Mon, 15 Dec 2014 14:24:20 +0000
+Message-Id: <1418653622-21105-7-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-To: Vishnu Patekar <vishnupatekar0510@gmail.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>,
-        "jdelvare@suse.de" <jdelvare@suse.de>
-Subject: Re: [PATCHv3 0/5] ARM:sunxi:ps2 Added support for A10/A20 ps2 controller.
-References: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>	<548C1E7D.1000005@redhat.com>	<CAEzqOZtyeAnG660AKf_0_gCa-+BT_pAzHk0HYYSCdm4y89GFJA@mail.gmail.com>	<548D5207.8030004@redhat.com> <CAEzqOZsWSpd_r3Oc=PBVw3NQH-_1V9JXtC2H4tZ3U6nCN_Z7aA@mail.gmail.com>
-In-Reply-To: <CAEzqOZsWSpd_r3Oc=PBVw3NQH-_1V9JXtC2H4tZ3U6nCN_Z7aA@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
 
-On 15-12-14 15:13, Vishnu Patekar wrote:
-> Hi,
->
-> On Sun, Dec 14, 2014 at 2:31 PM, Hans de Goede <hdegoede@redhat.com> wrote:
->> Hi,
->>
->> On 13-12-14 21:01, Vishnu Patekar wrote:
->>>
->>> Hello Hans,
->>> Please find my comments inlined.
->>>
->>> On 12/13/14, Hans de Goede <hdegoede@redhat.com> wrote:
->>>>
->>>> Hi VishnuPatekar,
->>>>
->>>> The patch mangling for this set seems to have gone a bit wrong I'm afraid
->>>
->>>
->>> No, this time I've corrected it. Infact, last version of patch did not
->>> used the status bit error macros.
->>>
->>>> a lot of the patches have my fixup commit messages (which should have
->>>> disappeared when squashing in the patches), please replace those by
->>>> proper
->>>> commit messages describing what the patch actually does.
->>>
->>> Yes, [PATCHv3 3/5] uses fixup. I'll correct it.
->>>>
->>>>
->>>> Also the adding of the commented nodes for the lime2 seems to be gone
->>>> entirely
->>>> from the set, instead now only a comment about the conflict with the hdmi
->>>> pins is added, but it is above the i2c node instead of above a ps2 node.
->>>>
->>> Maxime's suggested that we should not add commented nodes specially
->>> when its trivial to apply. And just note saying ps20 pins conflict
->>> with HDMI.
->>
->>
->> Ah, I see.
->>
->>> Should I remove the this comment as well?
->>> Or
->>> Put this note in start of DTS file?
->>
->>
->> The comment should be added to where the pinctrl bits are, not to the lime2
->> file, ps0 will conflict with hdmi on all boards.
->
-> Well, In that case,PS2_0 pins conflicts with HDMI, PS2_1 pins
-> conflicts with LCD. Every pin has multiplexing.
+------------------
 
-Almost every A10 board has a hdmi connector, and only the hdmi ddc pins
-are multiplexed, so this is sort of special, but yes if we do not have
-the commented nodes in the dts file, then this comment can be dropped too
-I guess.
+From: Martin Hauke <mardnh@gmx.de>
 
-Regards,
+commit bb2bdeb83fb125c95e47fc7eca2a3e8f868e2a74 upstream.
 
-Hans
+Added the USB VID/PID for the HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e)
+
+Signed-off-by: Martin Hauke <mardnh@gmx.de>
+Acked-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/usb/qmi_wwan.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/net/usb/qmi_wwan.c b/drivers/net/usb/qmi_wwan.c
+index 22756db53dca..b8a82b86f909 100644
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -780,6 +780,7 @@ static const struct usb_device_id products[] = {
+ 	{QMI_FIXED_INTF(0x413c, 0x81a4, 8)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
+ 	{QMI_FIXED_INTF(0x413c, 0x81a8, 8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
+ 	{QMI_FIXED_INTF(0x413c, 0x81a9, 8)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
++	{QMI_FIXED_INTF(0x03f0, 0x581d, 4)},	/* HP lt4112 LTE/HSPA+ Gobi 4G Module (Huawei me906e) */
+ 
+ 	/* 4. Gobi 1000 devices */
+ 	{QMI_GOBI1K_DEVICE(0x05c6, 0x9212)},	/* Acer Gobi Modem Device */
+-- 
+2.1.3
+
