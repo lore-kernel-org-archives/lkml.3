@@ -1,137 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751206AbaLOM7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:59:44 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59928 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722AbaLOM7l (ORCPT
+	id S1751516AbaLONDv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 08:03:51 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43317 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbaLONDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:59:41 -0500
-Date: Mon, 15 Dec 2014 12:59:32 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        "yh.chen@mediatek.com" <yh.chen@mediatek.com>
-Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
- board dts and Makefile
-Message-ID: <20141215125932.GF462@leverpostej>
-References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
- <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
- <20141211180245.GE28150@leverpostej>
- <1418371705.423.31.camel@mtksdaap41>
+	Mon, 15 Dec 2014 08:03:50 -0500
+Date: Mon, 15 Dec 2014 05:03:46 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Loic Pefferkorn <loic@loicp.eu>, gregkh@linuxfoundation.org,
+        alan@linux.intel.com, jun.j.tian@intel.com, octavian.purdila@intel.com,
+        nnk@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, apw@canonical.com, joe@perches.com
+Subject: Re: [PATCH] checkpatch giving bogus advice (was staging: goldfish:
+ Fix minor coding style)
+Message-ID: <20141215130346.GB18251@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+	Loic Pefferkorn <loic@loicp.eu>, gregkh@linuxfoundation.org,
+	alan@linux.intel.com, jun.j.tian@intel.com,
+	octavian.purdila@intel.com, nnk@google.com,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	apw@canonical.com, joe@perches.com
+References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
+ <20141213175518.GA28616@hudson.localdomain>
+ <20141213182238.GA6979@iron>
+ <20141213194647.GA30065@hudson.localdomain>
+ <20141215114421.7389d32a@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1418371705.423.31.camel@mtksdaap41>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141215114421.7389d32a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 08:08:25AM +0000, Eddie Huang wrote:
-> Hi Mark,
+On Mon, Dec 15, 2014 at 11:44:21AM +0000, One Thousand Gnomes wrote:
+> On Sat, 13 Dec 2014 11:46:47 -0800
+> Jeremiah Mahler <jmmahler@gmail.com> wrote:
 > 
-> On Thu, 2014-12-11 at 18:02 +0000, Mark Rutland wrote:
-> > Hi,
+> > Loïc,
 > > 
-> > On Wed, Dec 10, 2014 at 10:50:01AM +0000, Eddie Huang wrote:
-> > > Add device tree support for MT8173 SoC and evalutaion board based on it.
+> > On Sat, Dec 13, 2014 at 07:22:38PM +0100, Loic Pefferkorn wrote:
+> > > > Whose convention is this?  I can't find any mention in
+> > > > Documention/CodingStyle. checkpatch.pl doesn't complain about them.
+> > > > And there are almost three thousand examples in staging which don't
+> > > > use this convention.
+> > > > 
+> > > >   linux-next$ grep -r "== NULL" drivers/staging/* | wc -l
+> > > >   2844
 > > > 
-> > > +/ {
-> > > +	model = "mediatek,mt8173-evb";
-> > > +
-> > > +	aliases {
-> > > +		serial0 = &uart0;
-> > > +		serial1 = &uart1;
-> > > +		serial2 = &uart2;
-> > > +		serial3 = &uart3;
-> > 
-> > Do any of these support earlycon?
+> > > Hi Jeremiah,
+> > > 
+> > > Thanks for your feedback.
+> > > 
+> > > I have used checkpatch.pl with the --strict flag:
 > 
-> Not yet
+> checkpatch.pl is a bit dubious at the best of times - you can't automate
+> taste without an AI ;). With --strict it's a positive hazard.
 > 
-> > 
-> > > +	};
-> > > +
-> > > +	memory {
-> > 
-> > Nit: should be memory@40000000 (and you'll need to add device_type =
-> > "memory").
-> > 
-> > > +		reg = <0 0x40000000 0 0x40000000>;
-> > > +	};
+> Those kind of small cleanups really only make sense if you are doing big
+> changes to the code itself anyway and are doing testing and all the rest.
 > 
-> skeleton.dtsi already has /memory node with address-cells=2,
-> size-cells=1, which will cause build warning if I change to use
-> memory@40000000, because we use size-cells=2. I will not include
-> skeleton.dtsi and follow your suggestion in next version.
-
-That sounds fine to me.
-
+> In this case I'd say checkpatch.pl is actually wrong because in the
+> general case it's better to compare with NULL in C
 > 
-> > > +
-> > > +#include "skeleton.dtsi"
-> > > +
-> > > +/ {
-> > > +	compatible = "mediatek,mt8173";
-> > > +	interrupt-parent = <&sysirq>;
-> > > +	#address-cells = <2>;
-> > > +	#size-cells = <2>;
-> > > +
-> > > +	cpu-map {
-> > 
-> > This should live under /cpus, as documented in
-> > Documentation/devicetree/bindings/arm/topology.txt.
+> If you write
 > 
-> Got it, fix next version
+>           if (!x)
 > 
-> > > +
-> > > +	psci {
-> > > +		compatible = "arm,psci-0.2";
-> > > +		method = "smc";
-> > > +	};
-> > 
-> > What are you using as your PSCI 0.2 implementation?
-> > 
-> > Is it fully compliant? (e.g. are the reset and power off functions
-> > implemented, may CPU0 be hotplugged)?
-> > 
-> > Given only portions of the GIC seem to be described below, what
-> > exception level is your kernel entered at? Per the spec it should be
-> > EL2, but given the brokenness below with the GIC I'm suspicious.
-> > 
+> and accidentally use a non-pointer type you don't get a warning. If you
+> try and compare a non pointer type to NULL you usually do. So the NULL
+> comparison avoids accidents.
 > 
-> Currently we only implement CPU boot, no power off, no CPU0 hotplug
-> either. And enter kernel at EL2. Actually, we run ATF in EL3, then
-> switch to EL2 to run lk and kernel.
+> The historical reason for it being done in C was I think to avoid the
+> 
+>           if (x = NULL) 
+> 
+> bug, but gcc will shout at you for that these days.
+> 
 
-Ok. In the absence of CPU_OFF, this is not yet a conforming PSCI 0.2
-implementation, so I'm wary of marking this as PSCI 0.2 until that is
-the case. Any attempt to power of CPUs will hit a BUG() in cpu_die(),
-and we don't want that.
+Or another way mentioned in K&R that produces a compile error
 
-Is CPU0 hotplug planned?
+            if (NULL = x) 
 
-If not, does your PSCI implementation report CPU0 as
-non-hotpluggable via MIGRATE_INFO_TYPE reporting a UP not migratable
-trusted OS (and MIGRATE_INFO_UP_CPU reporting CPU0 as the resident CPU)?
+> Alan
+> 
+> 
+> 
 
-Are SYSTEM_OFF and SYSTEM_RESET available?
-
-Thanks,
-Mark.
+-- 
+- Jeremiah Mahler
