@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaLOEJf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 23:09:35 -0500
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:45199 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaLOEJa (ORCPT
+	id S1751318AbaLOEUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 23:20:00 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:49931 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaLOET6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 23:09:30 -0500
+	Sun, 14 Dec 2014 23:19:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <557b9b23d0313dede22786d9550c7867d9f22837.1418434448.git.silvio.fricke@gmail.com>
-References: <cover.1418434448.git.silvio.fricke@gmail.com>
-	<557b9b23d0313dede22786d9550c7867d9f22837.1418434448.git.silvio.fricke@gmail.com>
-Date: Mon, 15 Dec 2014 09:39:29 +0530
-X-Google-Sender-Auth: x_dEy9DzBaPOcrvb8ycb_IioNjA
-Message-ID: <CAOh2x=nhH--HPxzN+rq_LZTwBQYTXFb9N562X_rbZkLsr+N7zA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: SPEAr: dts: remove unused irq-trigger, id and
- block entries
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Silvio Fricke <silvio.fricke@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CA+i0qc5MF9_siN05VEOtOdPQfByt1UHEpbwVkYQ5+EObF6H4nQ@mail.gmail.com>
+References: <CA+i0qc5MF9_siN05VEOtOdPQfByt1UHEpbwVkYQ5+EObF6H4nQ@mail.gmail.com>
+Date: Mon, 15 Dec 2014 13:19:56 +0900
+Message-ID: <CAP2JTQLouqV-xCPugy4uK_J1gRpa78VKeaVy2AdDiXR4MO3dwQ@mail.gmail.com>
+Subject: Re: UFS RPMB
+From: Kyuho Choi <chlrbgh0@gmail.com>
+To: Tomas Winkler <tomasw@gmail.com>
+Cc: Vinayak Holikatti <vinholikatti@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 7:16 AM, Silvio Fricke <silvio.fricke@gmail.com> wrote:
-> Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: Jason Cooper <jason@lakedaemon.net>
-> CC: Marc Zyngier <marc.zyngier@arm.com>
-> ---
->  arch/arm/boot/dts/spear1310-evb.dts | 1 -
->  arch/arm/boot/dts/spear1340-evb.dts | 2 --
->  arch/arm/boot/dts/spear320-hmi.dts  | 3 ---
->  3 files changed, 6 deletions(-)
+As i know, SECURITY PROTOCOL IN/OUT are support RPMB access for UFS.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+On 12/14/14, Tomas Winkler <tomasw@gmail.com> wrote:
+> Hi, sorry fore a newbie question.
+> What is the current interface for accessing rpmb LUN in a UFS devices.
+> For emmc one need to issue a raw mmc ioctl command  MMC_IOC_CMD.
+>
+> Thanks
+> Tomas
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
