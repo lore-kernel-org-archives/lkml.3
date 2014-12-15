@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214AbaLODEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 22:04:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881AbaLODEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 22:04:35 -0500
-From: Masatake YAMATO <yamato@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org, yamato@redhat.com
-Subject: [PATCH] dynamic_debug: Fix a typo in comment
-Date: Mon, 15 Dec 2014 12:04:16 +0900
-Message-Id: <1418612656-14823-1-git-send-email-yamato@redhat.com>
+	id S1751238AbaLODIV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 22:08:21 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53183 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaLODIN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 22:08:13 -0500
+From: Chris Zhong <zyw@rock-chips.com>
+To: heiko@sntech.de, dianders@chromium.org, broonie@kernel.org
+Cc: linux-rockchip@lists.infradead.org, Chris Zhong <zyw@rock-chips.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        Zhang Qing <zhangqing@rock-chips.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v3 0/2] add the dvs support for rk808
+Date: Mon, 15 Dec 2014 11:07:56 +0800
+Message-Id: <1418612879-16094-1-git-send-email-zyw@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Masatake YAMATO <yamato@redhat.com>
----
- lib/dynamic_debug.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+rk808 has a dvs function, there are 3 pins for dvs, dvs1 & dvs2 & dvsok.
+Normally, the voltage of DCDC1/DCDC2 are controlled by BUCKn_ON_VSEL, when
+we pull dvs1/dvs2 pin to active, they would be controlled by BUCKn_DVS_VSEL.
+And the dvsok pin is used to indicate whether regulating has been completed.
+When dvs1/dvs2 pin change, dvsok would be pull down, and it would be pull up
+once the regulating is complete.
 
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 527799d..d8f3d31 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -641,7 +641,7 @@ static __init int ddebug_setup_query(char *str)
- __setup("ddebug_query=", ddebug_setup_query);
- 
- /*
-- * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
-+ * File_ops->write method for <debugfs>/dynamic_debug/control.  Gathers the
-  * command text from userspace, parses and executes it.
-  */
- #define USER_BUF_PAGE 4096
+Changes in v3:
+- Modify the syntax error
+
+Changes in v2:
+- increase description about dvs pins
+- modify the multiline commenting
+
+Chris Zhong (2):
+  mfd: dt-bindings: add the description about dvs gpio for rk808
+  regulator: rk808: add dvs support
+
+ Documentation/devicetree/bindings/mfd/rk808.txt |  13 +-
+ drivers/regulator/rk808-regulator.c             | 192 ++++++++++++++++++++++--
+ 2 files changed, 192 insertions(+), 13 deletions(-)
+
 -- 
-1.9.3
+1.9.1
 
