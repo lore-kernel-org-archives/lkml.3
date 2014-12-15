@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbaLOOb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:31:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39043 "EHLO
+	id S1753337AbaLOOb4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:31:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39044 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473AbaLOO3W (ORCPT
+	with ESMTP id S1753096AbaLOO3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:22 -0500
+	Mon, 15 Dec 2014 09:29:23 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Denis Kirjanov <kda@linux-powerpc.org>,
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 160/168] mips: bpf: Fix broken BPF_MOD
-Date: Mon, 15 Dec 2014 14:26:54 +0000
-Message-Id: <1418653622-21105-161-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 158/168] rtnetlink: release net refcnt on error in do_setlink()
+Date: Mon, 15 Dec 2014 14:26:52 +0000
+Message-Id: <1418653622-21105-159-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Denis Kirjanov <kda@linux-powerpc.org>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 2e46477a12f6fd273e31a220b155d66e8352198c upstream.
+commit e0ebde0e131b529fd721b24f62872def5ec3718c upstream.
 
-Remove optimize_div() from BPF_MOD | BPF_K case
-since we don't know the dividend and fix the
-emit_mod() by reading the mod operation result from HI register
+rtnl_link_get_net() holds a reference on the 'struct net', we need to release
+it in case of error.
 
-Signed-off-by: Denis Kirjanov <kda@linux-powerpc.org>
-Reviewed-by: Markos Chandras <markos.chandras@imgtec.com>
+CC: Eric W. Biederman <ebiederm@xmission.com>
+Fixes: b51642f6d77b ("net: Enable a userns root rtnl calls that are safe for unprivilged users")
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/mips/net/bpf_jit.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/rtnetlink.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/mips/net/bpf_jit.c b/arch/mips/net/bpf_jit.c
-index b87390a56a2f..965f1c116cc5 100644
---- a/arch/mips/net/bpf_jit.c
-+++ b/arch/mips/net/bpf_jit.c
-@@ -430,7 +430,7 @@ static inline void emit_mod(unsigned int dst, unsigned int src,
- 		u32 *p = &ctx->target[ctx->idx];
- 		uasm_i_divu(&p, dst, src);
- 		p = &ctx->target[ctx->idx + 1];
--		uasm_i_mflo(&p, dst);
-+		uasm_i_mfhi(&p, dst);
- 	}
- 	ctx->idx += 2; /* 2 insts */
- }
-@@ -1005,7 +1005,7 @@ load_ind:
- 			break;
- 		case BPF_ALU | BPF_MOD | BPF_K:
- 			/* A %= k */
--			if (k == 1 || optimize_div(&k)) {
-+			if (k == 1) {
- 				ctx->flags |= SEEN_A;
- 				emit_jit_reg_move(r_A, r_zero, ctx);
- 			} else {
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index e0b5ca349049..48c2be43f856 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1490,6 +1490,7 @@ static int do_setlink(const struct sk_buff *skb,
+ 			goto errout;
+ 		}
+ 		if (!netlink_ns_capable(skb, net->user_ns, CAP_NET_ADMIN)) {
++			put_net(net);
+ 			err = -EPERM;
+ 			goto errout;
+ 		}
 -- 
 2.1.3
 
