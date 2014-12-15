@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751021AbaLOWP4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 17:15:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:54926 "EHLO mail.kernel.org"
+	id S1751223AbaLOWQI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 17:16:08 -0500
+Received: from mga03.intel.com ([134.134.136.65]:7782 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaLOWPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 17:15:55 -0500
-Date: Mon, 15 Dec 2014 19:01:50 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [perf tool] cgroup support broken on Debian?
-Message-ID: <20141215220150.GP9845@kernel.org>
-References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751090AbaLOWQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 17:16:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,582,1413270000"; 
+   d="scan'208";a="624219256"
+From: Imre Deak <imre.deak@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Peter Hurley <peter@hurleysoftware.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 1/3] vt: fix check for system/busy console drivers when unregistering them
+Date: Tue, 16 Dec 2014 00:15:59 +0200
+Message-Id: <1418681761-3709-1-git-send-email-imre.deak@intel.com>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Dec 15, 2014 at 04:07:46PM -0500, Vince Weaver escreveu:
-> Hello
-> 
-> has anyone tested the perf tool cgroup support recently?
-> 
-> I was trying to get it working with a command like
-> 	sudo perf stat -a -e cycles:u,cycles:u,cycles:u -G systemd -- sleep 1
-> 
-> and it just failed by unhelfully dumping the "-G" help text.
-> Once I added a lot of extra debug printfs to tools/perf/util/cgroup.c 
-> things became a little clearer.
-> 
-> First, you apparently need "perf_event" passed as a mount option to the 
-> cgroup or you cannot attach perf to it (should perf be modified to 
-> print a warning in this case rather than just printing the unhelpful
-> helf text?)
+The default console driver (conswitchp) and busy drivers bound to a
+console (as reported by con_is_bound()) shouldn't be unregistered.
+System console drivers (without the CON_DRIVER_FLAG_MODULE flag) can be
+unregistered, provided they are neither default nor busy. The current
+code checks for the CON_DRIVER_FLAG_INIT flag but this doesn't make
+sense: this flag is set for a driver whenever its associated console's
+con_startup() function is called, which first happens when the console
+driver is registered (so before the console gets bound) and gets cleared
+when the console gets unbound. The purpose of this flag is to show if we
+need to call con_startup() on a console before we use it.
 
-yes, please
+Based on the above, do_unregister_con_driver() in its current form will
+allow unregistering a console driver only if it was never bound, but
+will refuse to unregister one that was bound and later unbound.
+
+Fix this by dropping the CON_DRIVER_FLAG_INIT check, allowing
+unregistering of any console driver provided that it's not the default
+one and it's not busy.
+
+v2:
+- reword the third paragraph to clarify how the fix works (Peter Hurley)
+v3:
+- unchanged
+v4:
+- Allow unregistering a system console driver too, needed by i915 to
+  unregister vgacon. Update commit description accordingly. (Daniel)
+
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+---
+ drivers/tty/vt/vt.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index f3fbbbc..9c046fb 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3665,8 +3665,7 @@ int do_unregister_con_driver(const struct consw *csw)
+ 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
+ 		struct con_driver *con_driver = &registered_con_driver[i];
  
-> Secondly, the cgroup mount point detection completely fails on my debian 
-> box.  On my machine /proc/mounts has this:
-> 
->   ...
->   none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
->   systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
-> 
-> The current perf code looks for "cgroup" in the type field to find the 
-> root cgroupfs tree.  This fails because as seen above on my machine the
-> cgroup mount has type tmpfs.  And when it finds
-> /sys/fs/cgroup/systemd as the root it tacks the name onto the end
-> (/sys/fs/cgroup/systemd/systemd) which obviously doesn't exist.
-> 
-> Once I hack the code to avoid that I do finally get some cgroup readings.
-> 
-> I was checking if this was a known problem, a Debian issue, or what...
+-		if (con_driver->con == csw &&
+-		    con_driver->flag & CON_DRIVER_FLAG_INIT) {
++		if (con_driver->con == csw) {
+ 			vtconsole_deinit_device(con_driver);
+ 			device_destroy(vtconsole_class,
+ 				       MKDEV(0, con_driver->node));
+-- 
+1.8.4
 
-Its just that the cgroup support is rough, patches are welcome to
-improve the situation.
-
-BTW, here its fedora20, same problem:
-
-[root@zoo ~]# mount | grep cgroup
-tmpfs on /sys/fs/cgroup type tmpfs
-(rw,nosuid,nodev,noexec,seclabel,mode=755)
-cgroup on /sys/fs/cgroup/systemd type cgroup
-(rw,nosuid,nodev,noexec,relatime,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd)
-
-- Arnaldo
