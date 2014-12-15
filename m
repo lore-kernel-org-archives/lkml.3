@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213AbaLOPNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:13:33 -0500
-Received: from 8bytes.org ([81.169.241.247]:48619 "EHLO theia.8bytes.org"
+	id S1754198AbaLOPNb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:13:31 -0500
+Received: from 8bytes.org ([81.169.241.247]:48633 "EHLO theia.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752328AbaLOPN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752363AbaLOPN3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 10:13:29 -0500
 From: Joerg Roedel <joro@8bytes.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         hpa@zytor.com, x86@kernel.org, Joerg Roedel <joro@8bytes.org>,
         Jiang Liu <jiang.liu@linux.intel.com>, Borislav Petkov <bp@alien8.de>
-Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH 0/5] Fix Intel IRQ remapping initialization order
-Date: Mon, 15 Dec 2014 16:13:19 +0100
-Message-Id: <1418656404-28575-1-git-send-email-joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 4/5] iommu/amd: Check for irq-remap support amd_iommu_prepare()
+Date: Mon, 15 Dec 2014 16:13:23 +0100
+Message-Id: <1418656404-28575-5-git-send-email-joro@8bytes.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418656404-28575-1-git-send-email-joro@8bytes.org>
+References: <1418656404-28575-1-git-send-email-joro@8bytes.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Joerg Roedel <jroedel@suse.de>
 
-here is a patch-set against tip/x86/apic to fix an initialization order
-problem with the IRQ remapping code.  The problem is in the ordering of
-the irq_remapping_prepare and irq_remapping_supported functions.
+This allows to get rid of the irq_remapping_supported()
+function and all its call-backs into the Intel and AMD
+IOMMU drivers.
 
-Currently the call-order is irq_remapping_prepare ->
-irq_remapping_supported, so that 'prepare' can succeed but 'supported'
-fails, so that interrupt remapping gets initialized but not enabled.
-This causes a broken interrupt setup on affected systems (machines with
-an Intel IOMMU without, or broken, IRQ remapping support). The result
-are lost interrupts and a non-bootable system.
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/amd_iommu_init.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Both functions do checks whether IRQ remapping can be enabled on the
-machine.  The reason for this is that some checks rely on
-dmar_table_init() and thus have to be done in irq_remapping_prepare().
-
-This patch-set moves all these checks into the irq_remapping_prepare()
-path with the right ordering and removes the irq_remapping_supported()
-function and its call-backs. This fixes the initializion order problem
-and simplifies the exported API from the IOMMU code.
-
-Please review.
-
-Thanks,
-
-	Joerg
-
-Joerg Roedel (5):
-  iommu/vt-d: Allocate IRQ remapping data structures only for all IOMMUs
-  iommu/vt-d: Don't check for ecap_ir_support in
-    intel_irq_remapping_supported
-  iommu/vt-d: Move supported-checks to intel_prepare_irq_remapping()
-  iommu/amd: Check for irq-remap support amd_iommu_prepare()
-  iommu, x86, apic: Remove irq_remapping_supported()
-
- arch/x86/kernel/apic/apic.c         |  5 ---
- drivers/iommu/amd_iommu.c           |  1 -
- drivers/iommu/amd_iommu_init.c      |  8 ++---
- drivers/iommu/amd_iommu_proto.h     |  1 -
- drivers/iommu/intel_irq_remapping.c | 62 +++++++++++++++++--------------------
- drivers/iommu/irq_remapping.c       | 11 -------
- drivers/iommu/irq_remapping.h       |  3 --
- 7 files changed, 31 insertions(+), 60 deletions(-)
-
+diff --git a/drivers/iommu/amd_iommu_init.c b/drivers/iommu/amd_iommu_init.c
+index de3390a..fa63016 100644
+--- a/drivers/iommu/amd_iommu_init.c
++++ b/drivers/iommu/amd_iommu_init.c
+@@ -2127,6 +2127,9 @@ static int __init iommu_go_to_state(enum iommu_init_state state)
+ #ifdef CONFIG_IRQ_REMAP
+ int __init amd_iommu_prepare(void)
+ {
++	if (!amd_iommu_irq_remap)
++		return -1;
++
+ 	return iommu_go_to_state(IOMMU_ACPI_FINISHED);
+ }
+ 
 -- 
 1.9.1
 
