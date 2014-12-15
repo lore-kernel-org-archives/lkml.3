@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaLOSHY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:07:24 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:54018 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaLOSHC (ORCPT
+	id S1751579AbaLOSHv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:07:51 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55978 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153AbaLOSG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:07:02 -0500
-From: Aleksey Makarov <feumilieu@gmail.com>
-X-Google-Original-From: Aleksey Makarov <aleksey.makarov@auriga.com>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 14/14] MIPS: OCTEON: Handle OCTEON III in csrc-octeon.
-Date: Mon, 15 Dec 2014 21:03:20 +0300
-Message-Id: <1418666603-15159-15-git-send-email-aleksey.makarov@auriga.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
-References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
+	Mon, 15 Dec 2014 13:06:57 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Tomasz Figa <tfiga@chromium.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "open list\:ARM\/Rockchip SoC..." 
+	<linux-rockchip@lists.infradead.org>,
+        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Heiko Stuebner <heiko@sntech.de>,
+        Joerg Roedel <joro@8bytes.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Daniel Kurtz <djkurtz@chromium.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
+	<7h8uiemce7.fsf@deeprootsystems.com>
+	<CAPDyKFo6zH4__Odm+RiJCbvXquAQqaLyCAiXrSN6s3KfQhok=A@mail.gmail.com>
+	<1576771.dIVCOxU0se@vostro.rjw.lan>
+	<CAAFQd5B28WiWUqmbmROJUa3H25R=Y774NuemTZDvkoa=CvZUsw@mail.gmail.com>
+	<7ha92sk533.fsf@deeprootsystems.com>
+	<CAMuHMdVpCgK-hNqZ=JWjFGS53g+ZUQ5t=uBxtN1qGXJhoRg8BQ@mail.gmail.com>
+Date: Mon, 15 Dec 2014 10:06:51 -0800
+In-Reply-To: <CAMuHMdVpCgK-hNqZ=JWjFGS53g+ZUQ5t=uBxtN1qGXJhoRg8BQ@mail.gmail.com>
+	(Geert Uytterhoeven's message of "Mon, 15 Dec 2014 09:35:09 +0100")
+Message-ID: <7hr3w0iy84.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-The clock divisors are kept in different registers on OCTEON III.
+> On Fri, Dec 12, 2014 at 9:04 PM, Kevin Hilman <khilman@kernel.org> wrote:
+>> An even more exciting problem exists when a CPU is in the same domain as
+>> other peripherals, those peripherals are all idle and the power domain
+>> is gated. :)
+>
+> We do have pm_genpd_attach_cpuidle() and pm_genpd_name_attach_cpuidle()?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
----
- arch/mips/cavium-octeon/csrc-octeon.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+Exactly.  
 
-diff --git a/arch/mips/cavium-octeon/csrc-octeon.c b/arch/mips/cavium-octeon/csrc-octeon.c
-index b752c4e..d270082 100644
---- a/arch/mips/cavium-octeon/csrc-octeon.c
-+++ b/arch/mips/cavium-octeon/csrc-octeon.c
-@@ -18,6 +18,7 @@
- #include <asm/octeon/octeon.h>
- #include <asm/octeon/cvmx-ipd-defs.h>
- #include <asm/octeon/cvmx-mio-defs.h>
-+#include <asm/octeon/cvmx-rst-defs.h>
- 
- 
- static u64 f;
-@@ -39,11 +40,20 @@ void __init octeon_setup_delays(void)
- 
- 	if (current_cpu_type() == CPU_CAVIUM_OCTEON2) {
- 		union cvmx_mio_rst_boot rst_boot;
-+
- 		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
- 		rdiv = rst_boot.s.c_mul;	/* CPU clock */
- 		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
- 		f = (0x8000000000000000ull / sdiv) * 2;
-+	} else if (current_cpu_type() == CPU_CAVIUM_OCTEON3) {
-+		union cvmx_rst_boot rst_boot;
-+
-+		rst_boot.u64 = cvmx_read_csr(CVMX_RST_BOOT);
-+		rdiv = rst_boot.s.c_mul;	/* CPU clock */
-+		sdiv = rst_boot.s.pnr_mul;	/* I/O clock */
-+		f = (0x8000000000000000ull / sdiv) * 2;
- 	}
-+
- }
- 
- /*
--- 
-2.1.3
+And I think to solve this problem, we need to generalize the attaching
+of dependent devices to a PM domain.
 
+Kevin
