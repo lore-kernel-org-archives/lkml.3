@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaLOVXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:23:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750856AbaLOVX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:23:28 -0500
-Date: Mon, 15 Dec 2014 23:23:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 6/6] virtio: core support for config generation
-Message-ID: <1418678575-31755-7-git-send-email-mst@redhat.com>
-References: <1418678575-31755-1-git-send-email-mst@redhat.com>
+	id S1751323AbaLOVXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:23:54 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64982 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750722AbaLOVXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:23:52 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] genirq: Support mixing IRQF_NO_SUSPEND/IRQF_SUSPEND on shared irqs
+Date: Mon, 15 Dec 2014 22:45:35 +0100
+Message-ID: <2845526.bsrmWSBaOD@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418660152-17185-2-git-send-email-boris.brezillon@free-electrons.com>
+References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com> <1418660152-17185-2-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418678575-31755-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio 1.0 spec says:
+On Monday, December 15, 2014 05:15:48 PM Boris Brezillon wrote:
+> The current implementation forbid sharing an irq line on devices that do
+> not request the same behavior on suspend/resume (controlled via the
+> IRQF_NO_SUSPEND/IRQF_FORCE_RESUME flags).
 
-Drivers MUST NOT assume reads from fields greater than 32 bits wide are
-atomic, nor are reads from multiple fields: drivers SHOULD read device
-configuration space fields like so:
-	u32 before, after;
-	do {
-		before = get_config_generation(device);
-		// read config entry/entries.
-		after = get_config_generation(device);
-	} while (after != before);
+IRQF_NO_SUSPEND is practically only for timers and IPIs now.  Any other
+usages are strongly discouraged.
 
-Do exactly this, for transports that support it.
+> Add a flag (IRQF_SUSPEND_NOACTION) to specify that you don't want to be
+> called in suspend mode, and that you already took care of disabling the
+> interrupt on the device side.
+> 
+> The suspend_device_irq will now move actions specifying the
+> IRQF_SUSPEND_NOACTION into a temporary list so that they won't be called
+> when the interrupt is triggered, and resume_irq_actions restores the
+> suspended actions into the active action list.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- include/linux/virtio_config.h | 32 ++++++++++++++++++++++++++++----
- 1 file changed, 28 insertions(+), 4 deletions(-)
+Why is the current way of handling wakeup interrupts not sufficient?
 
-diff --git a/include/linux/virtio_config.h b/include/linux/virtio_config.h
-index a61cd37..ca3ed78 100644
---- a/include/linux/virtio_config.h
-+++ b/include/linux/virtio_config.h
-@@ -19,6 +19,9 @@
-  *	offset: the offset of the configuration field
-  *	buf: the buffer to read the field value from.
-  *	len: the length of the buffer
-+ * @generation: config generation counter
-+ *	vdev: the virtio_device
-+ *	Returns the config generation counter
-  * @get_status: read the status byte
-  *	vdev: the virtio_device
-  *	Returns the status byte
-@@ -60,6 +63,7 @@ struct virtio_config_ops {
- 		    void *buf, unsigned len);
- 	void (*set)(struct virtio_device *vdev, unsigned offset,
- 		    const void *buf, unsigned len);
-+	u32 (*generation)(struct virtio_device *vdev);
- 	u8 (*get_status)(struct virtio_device *vdev);
- 	void (*set_status)(struct virtio_device *vdev, u8 status);
- 	void (*reset)(struct virtio_device *vdev);
-@@ -301,14 +305,33 @@ static inline u8 virtio_cread8(struct virtio_device *vdev, unsigned int offset)
- 	return ret;
- }
- 
-+/* Read @count fields, @bytes each. */
-+static inline void __virtio_cread_many(struct virtio_device *vdev,
-+				       unsigned int offset,
-+				       void *buf, size_t count, size_t bytes)
-+{
-+	u32 old, gen = vdev->config->generation ?
-+		vdev->config->generation(vdev) : 0;
-+	int i;
-+
-+	do {
-+		old = gen;
-+
-+		for (i = 0; i < count; i++)
-+			vdev->config->get(vdev, offset + bytes * i,
-+					  buf + i * bytes, bytes);
-+
-+		gen = vdev->config->generation ?
-+			vdev->config->generation(vdev) : 0;
-+	} while (gen != old);
-+}
-+
-+
- static inline void virtio_cread_bytes(struct virtio_device *vdev,
- 				      unsigned int offset,
- 				      void *buf, size_t len)
- {
--	int i;
--
--	for (i = 0; i < len; i++)
--		vdev->config->get(vdev, offset + i, buf + i, 1);
-+	__virtio_cread_many(vdev, offset, buf, len, 1);
- }
- 
- static inline void virtio_cwrite8(struct virtio_device *vdev,
-@@ -352,6 +375,7 @@ static inline u64 virtio_cread64(struct virtio_device *vdev,
- {
- 	u64 ret;
- 	vdev->config->get(vdev, offset, &ret, sizeof(ret));
-+	__virtio_cread_many(vdev, offset, &ret, 1, sizeof(ret));
- 	return virtio64_to_cpu(vdev, (__force __virtio64)ret);
- }
- 
+
 -- 
-MST
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
