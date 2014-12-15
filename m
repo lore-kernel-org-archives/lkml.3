@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaLOMAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:00:54 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59544 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751499AbaLOMAu (ORCPT
+	id S1752013AbaLOMBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:01:37 -0500
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:53812 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338AbaLOL7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:00:50 -0500
-Date: Mon, 15 Dec 2014 12:00:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Kuankuan.Yang" <ykk@rock-chips.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, Arnd Bergmann <arnd@arndb.de>,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, David Airlie <airlied@linux.ie>,
-        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
-        linux-rockchip@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Zhang <benzh@chromium.org>, devicetree@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
-        Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Mark Rutland <mark.rutland@arm.com>, Jyri Sarha <jsarha@ti.com>
-Subject: Re: [RFC PATCH 0/6] Those patches is used for dw_hdmi audio.
-Message-ID: <20141215120013.GH11285@n2100.arm.linux.org.uk>
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
- <20141215103830.GD11285@n2100.arm.linux.org.uk>
- <548EC9E1.5040206@rock-chips.com>
- <548ECB66.70004@rock-chips.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548ECB66.70004@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 15 Dec 2014 06:59:51 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        computersforpeace@gmail.com, linux-mtd@lists.infradead.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, Angus Clark <angus.clark@st.com>
+Subject: [PATCH v3 10/13] mtd: st_spi_fsm: Improve busy wait handling
+Date: Mon, 15 Dec 2014 11:59:17 +0000
+Message-Id: <1418644760-18773-11-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 07:52:06PM +0800, Kuankuan.Yang wrote:
->  Hi Russell:
-> 
->      thks for your replay, actually you also have send me those
-> dw-hdmi-audio.c patches, and I also agree it's an beautiful way to make
-> hdmi-audio works. Beside,
->  I try to reuse it into our platform, and actually the system have created
-> the DW_HDMI sound card successfully, but i cannot play any sound  with this
-> sound card.
->      After dump the registers, I found the part of "Audio DMA Registers"
-> cannot write and always read with 0x00.  So I searching the document
-> "Designware Core
->  HDMI Transmitter Controller Databook", and found that  "Audio DMA
-> Registers" only present when the hardware configuration parameter AUDIO_IF
-> is set to
->  AHBAUDDMA. Than I communicate with our IC colleagues, they told me that our
-> cpu rk3288 only support two way to  transmit audio data( I2S & SPDIF ), in
-> that
-> way we do not support AHB_DMA, it's very sad, and this it why i give up this
-> way, also it's my bad that i should replay to u first in the before mail.
+From: Angus Clark <angus.clark@st.com>
 
-Okay, that means there is some work to be done to figure out how to
-support this correctly so that both the iMX and Rockchip code can
-co-exist together in the mainline kernel - that means we _both_ need
-to work together on this problem _before_ this code gets merged, so
-that we have a common approach between the two code bases.
+In this patch, the fsm_wait_busy() function is updated to a take a timeout
+parameter.  This allows us to specify different timeout delays depending on
+the operation being performed.  Previously, a fixed, worst-case delay
+(corresponding to the Chip Erase operation, ~300s!) was used. For the moment,
+we have defined conservative delays for each relevant operation, which should
+accommodate all existing devices.  In principle, one could set the delays
+according the device probed, but there is probably little to be gained.
 
-I really don't want to end up in another cocked up situation like
-what happened with the Dove audio, where it became politically
-impossible for the SolidRun platform to be properly supported by
-mainline kernels.
+Signed-off-by: Angus Clark <angus.clark@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
 
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 7c024ec..3424574 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -267,7 +267,12 @@
+ 
+ #define FLASH_PAGESIZE         256			/* In Bytes    */
+ #define FLASH_PAGESIZE_32      (FLASH_PAGESIZE / 4)	/* In uint32_t */
+-#define FLASH_MAX_BUSY_WAIT    (300 * HZ)	/* Maximum 'CHIPERASE' time */
++/* Maximum operation times (in ms) */
++#define FLASH_MAX_CHIP_ERASE_MS 500000          /* Chip Erase time */
++#define FLASH_MAX_SEC_ERASE_MS  30000           /* Sector Erase time */
++#define FLASH_MAX_PAGE_WRITE_MS 100             /* Write Page time */
++#define FLASH_MAX_STA_WRITE_MS  4000            /* Write status reg time */
++#define FSM_MAX_WAIT_SEQ_MS     1000            /* FSM execution time */
+ 
+ /*
+  * Flags to tweak operation of default read/write/erase routines
+@@ -1003,7 +1008,7 @@ static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
+ 	return 0;
+ }
+ 
+-static uint8_t stfsm_wait_busy(struct stfsm *fsm)
++static uint8_t stfsm_wait_busy(struct stfsm *fsm, unsigned int max_time_ms)
+ {
+ 	struct stfsm_seq *seq = &stfsm_seq_read_status_fifo;
+ 	unsigned long deadline;
+@@ -1021,7 +1026,7 @@ static uint8_t stfsm_wait_busy(struct stfsm *fsm)
+ 	/*
+ 	 * Repeat until busy bit is deasserted, or timeout, or error (S25FLxxxS)
+ 	 */
+-	deadline = jiffies + FLASH_MAX_BUSY_WAIT;
++	deadline = jiffies + msecs_to_jiffies(max_time_ms);
+ 	while (!timeout) {
+ 		if (time_after_eq(jiffies, deadline))
+ 			timeout = 1;
+@@ -1100,7 +1105,7 @@ static int stfsm_write_status(struct stfsm *fsm, uint8_t cmd,
+ 	stfsm_wait_seq(fsm);
+ 
+ 	if (wait_busy)
+-		stfsm_wait_busy(fsm);
++		stfsm_wait_busy(fsm, FLASH_MAX_STA_WRITE_MS);
+ 
+ 	return 0;
+ }
+@@ -1497,7 +1502,7 @@ static void stfsm_s25fl_write_dyb(struct stfsm *fsm, uint32_t offs, uint8_t dby)
+ 	stfsm_load_seq(fsm, &seq);
+ 	stfsm_wait_seq(fsm);
+ 
+-	stfsm_wait_busy(fsm);
++	stfsm_wait_busy(fsm, FLASH_MAX_STA_WRITE_MS);
+ }
+ 
+ static int stfsm_s25fl_clear_status_reg(struct stfsm *fsm)
+@@ -1800,7 +1805,7 @@ static int stfsm_write(struct stfsm *fsm, const uint8_t *buf,
+ 	stfsm_wait_seq(fsm);
+ 
+ 	/* Wait for completion */
+-	ret = stfsm_wait_busy(fsm);
++	ret = stfsm_wait_busy(fsm, FLASH_MAX_PAGE_WRITE_MS);
+ 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
+ 		stfsm_s25fl_clear_status_reg(fsm);
+ 
+@@ -1872,7 +1877,7 @@ static int stfsm_erase_sector(struct stfsm *fsm, uint32_t offset)
+ 	stfsm_wait_seq(fsm);
+ 
+ 	/* Wait for completion */
+-	ret = stfsm_wait_busy(fsm);
++	ret = stfsm_wait_busy(fsm, FLASH_MAX_SEC_ERASE_MS);
+ 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
+ 		stfsm_s25fl_clear_status_reg(fsm);
+ 
+@@ -1902,7 +1907,7 @@ static int stfsm_erase_chip(struct stfsm *fsm)
+ 
+ 	stfsm_wait_seq(fsm);
+ 
+-	return stfsm_wait_busy(fsm);
++	return stfsm_wait_busy(fsm, FLASH_MAX_CHIP_ERASE_MS);
+ }
+ 
+ /*
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
