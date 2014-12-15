@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482AbaLOO1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:27:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38325 "EHLO
+	id S1754062AbaLOPLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:11:07 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38347 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbaLOO1b (ORCPT
+	with ESMTP id S1752439AbaLOO1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:31 -0500
+	Mon, 15 Dec 2014 09:27:35 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dave Hansen <dave.hansen@linux.intel.com>, Dave Hansen <dave@sr71.net>,
-        Fenghua Yu <fenghua.yu@intel.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Kevin Cernekee <cernekee@gmail.com>, Rob Herring <robh@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 028/168] x86: Require exact match for 'noxsave' command line option
-Date: Mon, 15 Dec 2014 14:24:42 +0000
-Message-Id: <1418653622-21105-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 038/168] of: Fix crash if an earlycon driver is not found
+Date: Mon, 15 Dec 2014 14:24:52 +0000
+Message-Id: <1418653622-21105-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,56 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+From: Kevin Cernekee <cernekee@gmail.com>
 
-commit 2cd3949f702692cf4c5d05b463f19cd706a92dd3 upstream.
+commit ab74d00a39f70e1bc34a01322bb59f3750ca7a8c upstream.
 
-We have some very similarly named command-line options:
+__earlycon_of_table_sentinel.compatible is a char[128], not a pointer, so
+it will never be NULL.  Checking it against NULL causes the match loop to
+run past the end of the array, and eventually match a bogus entry, under
+the following conditions:
 
-arch/x86/kernel/cpu/common.c:__setup("noxsave", x86_xsave_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaveopt", x86_xsaveopt_setup);
-arch/x86/kernel/cpu/common.c:__setup("noxsaves", x86_xsaves_setup);
+ - Kernel command line specifies "earlycon" with no parameters
+ - DT has a stdout-path pointing to a UART node
+ - The UART driver doesn't use OF_EARLYCON_DECLARE (or maybe the console
+   driver is compiled out)
 
-__setup() is designed to match options that take arguments, like
-"foo=bar" where you would have:
+Fix this by checking to see if match->compatible is a non-empty string.
 
-	__setup("foo", x86_foo_func...);
-
-The problem is that "noxsave" actually _matches_ "noxsaves" in
-the same way that "foo" matches "foo=bar".  If you boot an old
-kernel that does not know about "noxsaves" with "noxsaves" on the
-command line, it will interpret the argument as "noxsave", which
-is not what you want at all.
-
-This makes the "noxsave" handler only return success when it finds
-an *exact* match.
-
-[ tglx: We really need to make __setup() more robust. ]
-
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20141111220133.FE053984@viggo.jf.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/cpu/common.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/of/fdt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index ae52a082a01c..1f3a8885f836 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -146,6 +146,8 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 379ad4fa9665..f2da1750a597 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -773,7 +773,7 @@ int __init early_init_dt_scan_chosen_serial(void)
+ 	if (offset < 0)
+ 		return -ENODEV;
  
- static int __init x86_xsave_setup(char *s)
- {
-+	if (strlen(s))
-+		return 0;
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	setup_clear_cpu_cap(X86_FEATURE_AVX);
+-	while (match->compatible) {
++	while (match->compatible[0]) {
+ 		unsigned long addr;
+ 		if (fdt_node_check_compatible(fdt, offset, match->compatible)) {
+ 			match++;
 -- 
 2.1.3
 
