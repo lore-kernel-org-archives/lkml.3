@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaLOTbN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:31:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40844 "EHLO
+	id S1751078AbaLOTbT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:31:19 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40854 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089AbaLOTbK (ORCPT
+	with ESMTP id S1750940AbaLOTbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:31:10 -0500
+	Mon, 15 Dec 2014 14:31:16 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Mason <clm@fb.com>, Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Lu Baolu <baolu.lu@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 68/96] btrfs: zero out left over bytes after processing compression streams
-Date: Mon, 15 Dec 2014 11:26:28 -0800
-Message-Id: <1418671616-25482-69-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 50/96] Revert "xhci: clear root port wake on bits if controller isn't wake-up capable"
+Date: Mon, 15 Dec 2014 11:26:10 -0800
+Message-Id: <1418671616-25482-51-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,182 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Lu Baolu <baolu.lu@linux.intel.com>
 
-commit 2f19cad94cee3c9bd52d0c9ca584ef506302fb7c upstream.
+commit ff8cbf250b44 ("xhci: clear root port wake on bits if controller isn't")
+can cause device detection error if runtime PM is enabled, and S3 wake
+is disabled. Revert it.
+https://bugzilla.kernel.org/show_bug.cgi?id=85701
 
-Don Bailey noticed that our page zeroing for compression at end-io time
-isn't complete.  This reworks a patch from Linus to push the zeroing
-into the zlib and lzo specific functions instead of trying to handle the
-corners inside btrfs_decompress_buf2page
+This commit got into stable and should be reverted from there as well.
 
-Signed-off-by: Chris Mason <clm@fb.com>
-Reviewed-by: Josef Bacik <jbacik@fb.com>
-Reported-by: Don A. Bailey <donb@securitymouse.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lu Baolu <baolu.lu@linux.intel.com>
+Reported-by: Dmitry Nezhevenko <dion@inhex.net>
+[Mathias Nyman: reword commit message]
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/compression.c | 33 +++++++++++++++++++++++++++++++--
- fs/btrfs/compression.h |  4 +++-
- fs/btrfs/lzo.c         | 15 +++++++++++++++
- fs/btrfs/zlib.c        | 20 ++++++++++++++++++--
- 4 files changed, 67 insertions(+), 5 deletions(-)
+ drivers/usb/host/xhci-hub.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index 09fb579..34f8582 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -1011,8 +1011,6 @@ int btrfs_decompress_buf2page(char *buf, unsigned long buf_start,
- 		bytes = min(bytes, working_bytes);
- 		kaddr = kmap_atomic(page_out);
- 		memcpy(kaddr + *pg_offset, buf + buf_offset, bytes);
--		if (*pg_index == (vcnt - 1) && *pg_offset == 0)
--			memset(kaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
- 		kunmap_atomic(kaddr);
- 		flush_dcache_page(page_out);
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index e44be08..44f152d 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -21,7 +21,6 @@
+  */
  
-@@ -1054,3 +1052,34 @@ int btrfs_decompress_buf2page(char *buf, unsigned long buf_start,
+ #include <linux/gfp.h>
+-#include <linux/device.h>
+ #include <asm/unaligned.h>
  
- 	return 1;
- }
-+
-+/*
-+ * When uncompressing data, we need to make sure and zero any parts of
-+ * the biovec that were not filled in by the decompression code.  pg_index
-+ * and pg_offset indicate the last page and the last offset of that page
-+ * that have been filled in.  This will zero everything remaining in the
-+ * biovec.
-+ */
-+void btrfs_clear_biovec_end(struct bio_vec *bvec, int vcnt,
-+				   unsigned long pg_index,
-+				   unsigned long pg_offset)
-+{
-+	while (pg_index < vcnt) {
-+		struct page *page = bvec[pg_index].bv_page;
-+		unsigned long off = bvec[pg_index].bv_offset;
-+		unsigned long len = bvec[pg_index].bv_len;
-+
-+		if (pg_offset < off)
-+			pg_offset = off;
-+		if (pg_offset < off + len) {
-+			unsigned long bytes = off + len - pg_offset;
-+			char *kaddr;
-+
-+			kaddr = kmap_atomic(page);
-+			memset(kaddr + pg_offset, 0, bytes);
-+			kunmap_atomic(kaddr);
-+		}
-+		pg_index++;
-+		pg_offset = 0;
-+	}
-+}
-diff --git a/fs/btrfs/compression.h b/fs/btrfs/compression.h
-index 0c803b4..d181f70 100644
---- a/fs/btrfs/compression.h
-+++ b/fs/btrfs/compression.h
-@@ -45,7 +45,9 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
- 				  unsigned long nr_pages);
- int btrfs_submit_compressed_read(struct inode *inode, struct bio *bio,
- 				 int mirror_num, unsigned long bio_flags);
+ #include "xhci.h"
+@@ -1147,9 +1146,7 @@ int xhci_bus_suspend(struct usb_hcd *hcd)
+ 		 * including the USB 3.0 roothub, but only if CONFIG_PM_RUNTIME
+ 		 * is enabled, so also enable remote wake here.
+ 		 */
+-		if (hcd->self.root_hub->do_remote_wakeup
+-				&& device_may_wakeup(hcd->self.controller)) {
 -
-+void btrfs_clear_biovec_end(struct bio_vec *bvec, int vcnt,
-+				   unsigned long pg_index,
-+				   unsigned long pg_offset);
- struct btrfs_compress_op {
- 	struct list_head *(*alloc_workspace)(void);
- 
-diff --git a/fs/btrfs/lzo.c b/fs/btrfs/lzo.c
-index b6a6f07..39efa37 100644
---- a/fs/btrfs/lzo.c
-+++ b/fs/btrfs/lzo.c
-@@ -374,6 +374,8 @@ cont:
- 	}
- done:
- 	kunmap(pages_in[page_in_index]);
-+	if (!ret)
-+		btrfs_clear_biovec_end(bvec, vcnt, page_out_index, pg_offset);
- 	return ret;
- }
- 
-@@ -411,10 +413,23 @@ static int lzo_decompress(struct list_head *ws, unsigned char *data_in,
- 		goto out;
- 	}
- 
-+	/*
-+	 * the caller is already checking against PAGE_SIZE, but lets
-+	 * move this check closer to the memcpy/memset
-+	 */
-+	destlen = min_t(unsigned long, destlen, PAGE_SIZE);
- 	bytes = min_t(unsigned long, destlen, out_len - start_byte);
- 
- 	kaddr = kmap_atomic(dest_page);
- 	memcpy(kaddr, workspace->buf + start_byte, bytes);
-+
-+	/*
-+	 * btrfs_getblock is doing a zero on the tail of the page too,
-+	 * but this will cover anything missing from the decompressed
-+	 * data.
-+	 */
-+	if (bytes < destlen)
-+		memset(kaddr+bytes, 0, destlen-bytes);
- 	kunmap_atomic(kaddr);
- out:
- 	return ret;
-diff --git a/fs/btrfs/zlib.c b/fs/btrfs/zlib.c
-index 9acb846..4a14144 100644
---- a/fs/btrfs/zlib.c
-+++ b/fs/btrfs/zlib.c
-@@ -302,6 +302,8 @@ done:
- 	zlib_inflateEnd(&workspace->inf_strm);
- 	if (data_in)
- 		kunmap(pages_in[page_in_index]);
-+	if (!ret)
-+		btrfs_clear_biovec_end(bvec, vcnt, page_out_index, pg_offset);
- 	return ret;
- }
- 
-@@ -313,10 +315,14 @@ static int zlib_decompress(struct list_head *ws, unsigned char *data_in,
- 	struct workspace *workspace = list_entry(ws, struct workspace, list);
- 	int ret = 0;
- 	int wbits = MAX_WBITS;
--	unsigned long bytes_left = destlen;
-+	unsigned long bytes_left;
- 	unsigned long total_out = 0;
-+	unsigned long pg_offset = 0;
- 	char *kaddr;
- 
-+	destlen = min_t(unsigned long, destlen, PAGE_SIZE);
-+	bytes_left = destlen;
-+
- 	workspace->inf_strm.next_in = data_in;
- 	workspace->inf_strm.avail_in = srclen;
- 	workspace->inf_strm.total_in = 0;
-@@ -344,7 +350,6 @@ static int zlib_decompress(struct list_head *ws, unsigned char *data_in,
- 		unsigned long buf_start;
- 		unsigned long buf_offset;
- 		unsigned long bytes;
--		unsigned long pg_offset = 0;
- 
- 		ret = zlib_inflate(&workspace->inf_strm, Z_NO_FLUSH);
- 		if (ret != Z_OK && ret != Z_STREAM_END)
-@@ -387,6 +392,17 @@ next:
- 		ret = 0;
- 
- 	zlib_inflateEnd(&workspace->inf_strm);
-+
-+	/*
-+	 * this should only happen if zlib returned fewer bytes than we
-+	 * expected.  btrfs_get_block is responsible for zeroing from the
-+	 * end of the inline extent (destlen) to the end of the page
-+	 */
-+	if (pg_offset < destlen) {
-+		kaddr = kmap_atomic(dest_page);
-+		memset(kaddr + pg_offset, 0, destlen - pg_offset);
-+		kunmap_atomic(kaddr);
-+	}
- 	return ret;
- }
- 
++		if (hcd->self.root_hub->do_remote_wakeup) {
+ 			if (t1 & PORT_CONNECT) {
+ 				t2 |= PORT_WKOC_E | PORT_WKDISC_E;
+ 				t2 &= ~PORT_WKCONN_E;
 -- 
 1.9.1
 
