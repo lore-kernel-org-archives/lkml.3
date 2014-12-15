@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765AbaLOTup (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:50:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40624 "EHLO
+	id S1752727AbaLOTun (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:50:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40628 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaLOT1M (ORCPT
+	with ESMTP id S1751142AbaLOT1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:12 -0500
+	Mon, 15 Dec 2014 14:27:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Borkmann <dborkman@redhat.com>, Vlad Yasevich <vyasevich@gmail.com>,
+Cc: Dwight Engen <dwight.engen@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 18/96] net: sctp: fix memory leak in auth key management
-Date: Mon, 15 Dec 2014 11:25:38 -0800
-Message-Id: <1418671616-25482-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 20/96] sunvdc: add cdrom and v1.1 protocol support
+Date: Mon, 15 Dec 2014 11:25:40 -0800
+Message-Id: <1418671616-25482-21-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,60 +28,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Allen Pais <allen.pais@oracle.com>
 
-[ Upstream commit 4184b2a79a7612a9272ce20d639934584a1f3786 ]
+[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
 
-A very minimal and simple user space application allocating an SCTP
-socket, setting SCTP_AUTH_KEY setsockopt(2) on it and then closing
-the socket again will leak the memory containing the authentication
-key from user space:
+Interpret the media type from v1.1 protocol to support CDROM/DVD.
 
-unreferenced object 0xffff8800837047c0 (size 16):
-  comm "a.out", pid 2789, jiffies 4296954322 (age 192.258s)
-  hex dump (first 16 bytes):
-    01 00 00 00 04 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff816d7e8e>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff811c88d8>] __kmalloc+0xe8/0x270
-    [<ffffffffa0870c23>] sctp_auth_create_key+0x23/0x50 [sctp]
-    [<ffffffffa08718b1>] sctp_auth_set_key+0xa1/0x140 [sctp]
-    [<ffffffffa086b383>] sctp_setsockopt+0xd03/0x1180 [sctp]
-    [<ffffffff815bfd94>] sock_common_setsockopt+0x14/0x20
-    [<ffffffff815beb61>] SyS_setsockopt+0x71/0xd0
-    [<ffffffff816e58a9>] system_call_fastpath+0x12/0x17
-    [<ffffffffffffffff>] 0xffffffffffffffff
+For v1.0 protocol, a disk's size continues to be calculated from the
+geometry returned by the vdisk server. The geometry returned by the server
+can be less than the actual number of sectors available in the backing
+image/device due to the rounding in the division used to compute the
+geometry in the vdisk server.
 
-This is bad because of two things, we can bring down a machine from
-user space when auth_enable=1, but also we would leave security sensitive
-keying material in memory without clearing it after use. The issue is
-that sctp_auth_create_key() already sets the refcount to 1, but after
-allocation sctp_auth_set_key() does an additional refcount on it, and
-thus leaving it around when we free the socket.
+In v1.1 protocol a disk's actual size in sectors is returned during the
+handshake. Use this size when v1.1 protocol is negotiated. Since this size
+will always be larger than the former geometry computed size, disks created
+under v1.0 will be forwards compatible to v1.1, but not vice versa.
 
-Fixes: 65b07e5d0d0 ("[SCTP]: API updates to suport SCTP-AUTH extensions.")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/sctp/auth.c | 2 --
- 1 file changed, 2 deletions(-)
+ arch/sparc/include/asm/vio.h |  12 +++--
+ drivers/block/sunvdc.c       | 109 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 101 insertions(+), 20 deletions(-)
 
-diff --git a/net/sctp/auth.c b/net/sctp/auth.c
-index 0a719f0..9f29e1c 100644
---- a/net/sctp/auth.c
-+++ b/net/sctp/auth.c
-@@ -864,8 +864,6 @@ int sctp_auth_set_key(struct sctp_endpoint *ep,
- 		list_add(&cur_key->key_list, sh_keys);
+diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
+index 432afa8..a8210c5 100644
+--- a/arch/sparc/include/asm/vio.h
++++ b/arch/sparc/include/asm/vio.h
+@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
+ 	u8			vdisk_type;
+ #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
+ #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
+-	u16			resv1;
++	u8			vdisk_mtype;		/* v1.1 */
++#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
++#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
++#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
++	u8			resv1;
+ 	u32			vdisk_block_size;
+ 	u64			operations;
+-	u64			vdisk_size;
++	u64			vdisk_size;		/* v1.1 */
+ 	u64			max_xfer_size;
+-	u64			resv2[2];
++	u32			phys_block_size;	/* v1.2 */
++	u32			resv2;
++	u64			resv3[1];
+ };
  
- 	cur_key->key = key;
--	sctp_auth_key_hold(key);
--
+ struct vio_disk_desc {
+diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
+index 5814deb..66ddf70 100644
+--- a/drivers/block/sunvdc.c
++++ b/drivers/block/sunvdc.c
+@@ -9,6 +9,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/hdreg.h>
+ #include <linux/genhd.h>
++#include <linux/cdrom.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/completion.h>
+@@ -22,8 +23,8 @@
+ 
+ #define DRV_MODULE_NAME		"sunvdc"
+ #define PFX DRV_MODULE_NAME	": "
+-#define DRV_MODULE_VERSION	"1.0"
+-#define DRV_MODULE_RELDATE	"June 25, 2007"
++#define DRV_MODULE_VERSION	"1.1"
++#define DRV_MODULE_RELDATE	"February 13, 2013"
+ 
+ static char version[] =
+ 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
+@@ -65,6 +66,7 @@ struct vdc_port {
+ 	u64			operations;
+ 	u32			vdisk_size;
+ 	u8			vdisk_type;
++	u8			vdisk_mtype;
+ 
+ 	char			disk_name[32];
+ 
+@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
+ 
+ /* Ordered from largest major to lowest */
+ static struct vio_version vdc_versions[] = {
++	{ .major = 1, .minor = 1 },
+ 	{ .major = 1, .minor = 0 },
+ };
+ 
++static inline int vdc_version_supported(struct vdc_port *port,
++					u16 major, u16 minor)
++{
++	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
++}
++
+ #define VDCBLK_NAME	"vdisk"
+ static int vdc_major;
+ #define PARTITION_SHIFT	3
+@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
  	return 0;
- nomem:
- 	if (!replace)
+ }
+ 
++/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
++ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
++ * Needed to be able to install inside an ldom from an iso image.
++ */
++static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
++		     unsigned command, unsigned long argument)
++{
++	int i;
++	struct gendisk *disk;
++
++	switch (command) {
++	case CDROMMULTISESSION:
++		pr_debug(PFX "Multisession CDs not supported\n");
++		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
++			if (put_user(0, (char __user *)(argument + i)))
++				return -EFAULT;
++		return 0;
++
++	case CDROM_GET_CAPABILITY:
++		disk = bdev->bd_disk;
++
++		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
++			return 0;
++		return -EINVAL;
++
++	default:
++		pr_debug(PFX "ioctl %08x not supported\n", command);
++		return -EINVAL;
++	}
++}
++
+ static const struct block_device_operations vdc_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.getgeo		= vdc_getgeo,
++	.ioctl		= vdc_ioctl,
+ };
+ 
+ static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
+@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 	struct vio_disk_attr_info *pkt = arg;
+ 
+ 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
+-	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
++	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
+ 	       pkt->tag.stype, pkt->operations,
+-	       pkt->vdisk_size, pkt->vdisk_type,
++	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
+ 	       pkt->xfer_mode, pkt->vdisk_block_size,
+ 	       pkt->max_xfer_size);
+ 
+@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
+ 		}
+ 
+ 		port->operations = pkt->operations;
+-		port->vdisk_size = pkt->vdisk_size;
+ 		port->vdisk_type = pkt->vdisk_type;
++		if (vdc_version_supported(port, 1, 1)) {
++			port->vdisk_size = pkt->vdisk_size;
++			port->vdisk_mtype = pkt->vdisk_mtype;
++		}
+ 		if (pkt->max_xfer_size < port->max_xfer_size)
+ 			port->max_xfer_size = pkt->max_xfer_size;
+ 		port->vdisk_block_size = pkt->vdisk_block_size;
+@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *port)
+ 		return err;
+ 	}
+ 
+-	err = generic_request(port, VD_OP_GET_DISKGEOM,
+-			      &port->geom, sizeof(port->geom));
+-	if (err < 0) {
+-		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
+-		       "error %d\n", err);
+-		return err;
++	if (vdc_version_supported(port, 1, 1)) {
++		/* vdisk_size should be set during the handshake, if it wasn't
++		 * then the underlying disk is reserved by another system
++		 */
++		if (port->vdisk_size == -1)
++			return -ENODEV;
++	} else {
++		err = generic_request(port, VD_OP_GET_DISKGEOM,
++				      &port->geom, sizeof(port->geom));
++		if (err < 0) {
++			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
++			       "error %d\n", err);
++			return err;
++		}
++		port->vdisk_size = ((u64)port->geom.num_cyl *
++				    (u64)port->geom.num_hd *
++				    (u64)port->geom.num_sec);
+ 	}
+ 
+-	port->vdisk_size = ((u64)port->geom.num_cyl *
+-			    (u64)port->geom.num_hd *
+-			    (u64)port->geom.num_sec);
+-
+ 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
+ 	if (!q) {
+ 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
+@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *port)
+ 
+ 	set_capacity(g, port->vdisk_size);
+ 
+-	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
++	if (vdc_version_supported(port, 1, 1)) {
++		switch (port->vdisk_mtype) {
++		case VD_MEDIA_TYPE_CD:
++			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_DVD:
++			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
++			g->flags |= GENHD_FL_CD;
++			g->flags |= GENHD_FL_REMOVABLE;
++			set_disk_ro(g, 1);
++			break;
++
++		case VD_MEDIA_TYPE_FIXED:
++			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
++			break;
++		}
++	}
++
++	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
+ 	       g->disk_name,
+-	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
++	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
++	       port->vio.ver.major, port->vio.ver.minor);
+ 
+ 	add_disk(g);
+ 
+@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev *vdev, const struct vio_device_id *id)
+ 	else
+ 		snprintf(port->disk_name, sizeof(port->disk_name),
+ 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
++	port->vdisk_size = -1;
+ 
+ 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
+ 			      vdc_versions, ARRAY_SIZE(vdc_versions),
 -- 
 1.9.1
 
