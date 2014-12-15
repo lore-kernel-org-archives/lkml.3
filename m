@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216AbaLOLi3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:38:29 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:58885 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772AbaLOLi1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:38:27 -0500
-From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-To: linux-iio@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Nikolaus Schulz <nikolaus.schulz@avionic-design.de>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alban Bedel <alban.bedel@avionic-design.de>
-Subject: [PATCH v3 1/2] iio: document ti-dac8554 devicetree bindings
-Date: Mon, 15 Dec 2014 12:39:56 +0100
-Message-Id: <1418643605-15554-1-git-send-email-nikolaus.schulz@avionic-design.de>
-X-Mailer: git-send-email 2.1.3
-X-Provags-ID: V03:K0:9RX+SGHcooXRycOCiO5rTCGAGqG0CDW6xlHEwrk+eHoBlh+Al2O
- ZbYJ+B74PJ5hfzy7mKSEm9jS6c3jmqhathgzMB/vbDgU6ILeqlVToWMcTim4dAeNKxbZJGB
- Ur79PnYEYTUzsZGXP+0Wk5zoLgC4b2zP0u+8UwBngZU/Ktu2yNJpeEhFiqzYOlZPryuzcVy
- H3ch5YDg/KTy2rsppJ/1A==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1751751AbaLOLis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:38:48 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:11079 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751418AbaLOLiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 06:38:46 -0500
+X-IronPort-AV: E=Sophos;i="5.07,579,1413244800"; 
+   d="scan'208";a="204394282"
+Message-ID: <548EC841.2000107@citrix.com>
+Date: Mon, 15 Dec 2014 11:38:41 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+MIME-Version: 1.0
+To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
+        <x86@kernel.org>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <david.vrabel@citrix.com>,
+        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <hpa@zytor.com>, <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/4] xen: build infrastructure for generating
+ hypercall depending symbols
+References: <1418321065-10212-1-git-send-email-jgross@suse.com> <1418321065-10212-2-git-send-email-jgross@suse.com>
+In-Reply-To: <1418321065-10212-2-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
----
- .../devicetree/bindings/iio/dac/ti-dac8554.txt     | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
+On 11/12/14 18:04, Juergen Gross wrote:
+> Today there are several places in the kernel which build tables
+> containing one entry for each possible Xen hypercall. Create an
+> infrastructure to be able to generate these tables at build time.
 
-diff --git a/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-new file mode 100644
-index 0000000..32e96859
---- /dev/null
-+++ b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-@@ -0,0 +1,22 @@
-+TI DAC8554 Digital to Analog Converter
-+
-+This driver supports the SPI bus.
-+
-+Required properties:
-+	- compatible: must be "ti,dac8554"
-+	- vref-supply: the vref power supply
-+	- ti,address: the additional 2-bit chip address
-+
-+For required properties on SPI, please consult
-+Documentation/devicetree/bindings/spi/spi-bus.txt
-+
-+Example:
-+
-+	dac8554@0 {
-+		compatible = "ti,dac8554";
-+		reg = <0>;
-+		spi-max-frequency = <50000000>;
-+
-+		vref-supply = <&vdd_vref>;
-+		ti,address = <0>;
-+	};
--- 
-2.1.3
+Does arm and arm64 need something similar?  If so are the tools here
+suitable for them?
+
+> --- a/arch/x86/syscalls/Makefile
+> +++ b/arch/x86/syscalls/Makefile
+
+Why are these changes here and not in arch/x86/xen/Makefile?
+
+> @@ -19,6 +19,9 @@ quiet_cmd_syshdr = SYSHDR  $@
+>  quiet_cmd_systbl = SYSTBL  $@
+>        cmd_systbl = $(CONFIG_SHELL) '$(systbl)' $< $@
+>  
+> +quiet_cmd_hypercalls = HYPERCALLS $@
+> +      cmd_hypercalls = $(CONFIG_SHELL) '$<' $@ $(filter-out $<,$^)
+> +
+>  syshdr_abi_unistd_32 := i386
+>  $(uapi)/unistd_32.h: $(syscall32) $(syshdr)
+>  	$(call if_changed,syshdr)
+> @@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
+>  $(out)/syscalls_64.h: $(syscall64) $(systbl)
+>  	$(call if_changed,systbl)
+>  
+> +$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
+> +	$(call if_changed,hypercalls)
+> +
+> +$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
+
+The generated header should end up in asm/xen/
+
+> --- /dev/null
+> +++ b/scripts/xen-hypercalls.sh
+> @@ -0,0 +1,11 @@
+> +#!/bin/sh
+> +out="$1"
+> +shift
+> +in="$@"
+> +
+> +for i in $in; do
+> +	eval $CPP $LINUXINCLUDE -dD -imacros "$i" -x c /dev/null
+> +done | \
+> +awk '$1 == "#define" && $2 ~ /__HYPERVISOR_[a-z][a-z_0-9]*/ { v[$3] = $2 }
+> +	END {for (i in v) if (!(v[i] in v))
+> +		print "HYPERCALL("substr(v[i], 14)")"}' | sort -u >$out
+
+Include a comment in the generated output saying what generated it. e.g.,
+
+/* auto-generated by scripts/xen-hypercall.sh */
+
+David
 
