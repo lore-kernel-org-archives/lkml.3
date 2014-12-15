@@ -1,278 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727AbaLOTun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:50:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40628 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142AbaLOT1N (ORCPT
+	id S1751443AbaLOTwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:52:41 -0500
+Received: from mail-bn1bbn0104.outbound.protection.outlook.com ([157.56.111.104]:64798
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751156AbaLOTwj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:13 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 20/96] sunvdc: add cdrom and v1.1 protocol support
-Date: Mon, 15 Dec 2014 11:25:40 -0800
-Message-Id: <1418671616-25482-21-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Dec 2014 14:52:39 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Support a vmbus API for
+ efficiently sending page arrays
+Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Support a vmbus API for
+ efficiently sending page arrays
+Thread-Index: AQHQGJyW6lv/ko7zRkCZwFtBiFhboZyRCuKAgAAEyEA=
+Date: Mon, 15 Dec 2014 19:52:36 +0000
+Message-ID: <BY2PR0301MB0711EE39793F0016994F6230A06F0@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <1418675627-15213-1-git-send-email-kys@microsoft.com>
+ <20141215193351.GC9842@kroah.com>
+In-Reply-To: <20141215193351.GC9842@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.192.71]
+authentication-results: linuxfoundation.org; dkim=none (message not signed)
+ header.d=none;
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0710;
+x-forefront-prvs: 04267075BD
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(13464003)(51704005)(377454003)(24454002)(97736003)(40100003)(77156002)(62966003)(31966008)(54606007)(74316001)(50986999)(2656002)(110136001)(21056001)(76576001)(87936001)(76176999)(107046002)(54356999)(4396001)(122556002)(46102003)(54206007)(120916001)(19580395003)(105586002)(19580405001)(106116001)(92566001)(86362001)(66066001)(106356001)(101416001)(68736005)(64706001)(102836002)(99396003)(86612001)(20776003)(99286002)(575784001)(33656002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0710;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Allen Pais <allen.pais@oracle.com>
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Monday, December 15, 2014 11:34 AM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> olaf@aepfle.de; apw@canonical.com; jasowang@redhat.com
+> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Support a vmbus API for
+> efficiently sending page arrays
+> 
+> On Mon, Dec 15, 2014 at 12:33:47PM -0800, K. Y. Srinivasan wrote:
+> > Currently, the API for sending a multi-page buffer over VMBUS is
+> > limited to a maximum pfn array of MAX_MULTIPAGE_BUFFER_COUNT.
+> This
+> > limitation is not imposed by the host and unnecessarily limits the
+> > maximum payload that can be sent. Implement an API that does not have
+> this restriction.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > ---
+> >  drivers/hv/channel.c   |   44
+> ++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/hyperv.h |   31 +++++++++++++++++++++++++++++++
+> >  2 files changed, 75 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c index
+> > c76ffbe..18c4f23 100644
+> > --- a/drivers/hv/channel.c
+> > +++ b/drivers/hv/channel.c
+> > @@ -686,6 +686,50 @@
+> EXPORT_SYMBOL_GPL(vmbus_sendpacket_pagebuffer);
+> >  /*
+> >   * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
+> >   * using a GPADL Direct packet type.
+> > + * The buffer includes the vmbus descriptor.
+> > + */
+> > +int vmbus_sendpacket_mpb_desc(struct vmbus_channel *channel,
+> > +			      struct vmbus_packet_mpb_array *desc,
+> > +			      u32 desc_size,
+> > +			      void *buffer, u32 bufferlen, u64 requestid) {
+> > +	int ret;
+> > +	u32 packetlen;
+> > +	u32 packetlen_aligned;
+> > +	struct kvec bufferlist[3];
+> > +	u64 aligned_data = 0;
+> > +	bool signal = false;
+> > +
+> > +	packetlen = desc_size + bufferlen;
+> > +	packetlen_aligned = ALIGN(packetlen, sizeof(u64));
+> > +
+> > +	/* Setup the descriptor */
+> > +	desc->type = VM_PKT_DATA_USING_GPA_DIRECT;
+> > +	desc->flags =
+> VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED;
+> > +	desc->dataoffset8 = desc_size >> 3; /* in 8-bytes grandularity */
+> > +	desc->length8 = (u16)(packetlen_aligned >> 3);
+> > +	desc->transactionid = requestid;
+> > +	desc->rangecount = 1;
+> > +
+> > +	bufferlist[0].iov_base = desc;
+> > +	bufferlist[0].iov_len = desc_size;
+> > +	bufferlist[1].iov_base = buffer;
+> > +	bufferlist[1].iov_len = bufferlen;
+> > +	bufferlist[2].iov_base = &aligned_data;
+> > +	bufferlist[2].iov_len = (packetlen_aligned - packetlen);
+> > +
+> > +	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3,
+> > +&signal);
+> > +
+> > +	if (ret == 0 && signal)
+> > +		vmbus_setevent(channel);
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(vmbus_sendpacket_mpb_desc);
+> > +
+> > +/*
+> > + * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
+> > + * using a GPADL Direct packet type.
+> >   */
+> >  int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
+> >  				struct hv_multipage_buffer
+> *multi_pagebuffer, diff --git
+> > a/include/linux/hyperv.h b/include/linux/hyperv.h index
+> > 08cfaff..8615b0d 100644
+> > --- a/include/linux/hyperv.h
+> > +++ b/include/linux/hyperv.h
+> > @@ -57,6 +57,18 @@ struct hv_multipage_buffer {
+> >  	u64 pfn_array[MAX_MULTIPAGE_BUFFER_COUNT];
+> >  };
+> >
+> > +/*
+> > + * Multiple-page buffer array; the pfn array is variable size:
+> > + * The number of entries in the PFN array is determined by
+> > + * "len" and "offset".
+> > + */
+> > +struct hv_mpb_array {
+> > +	/* Length and Offset determines the # of pfns in the array */
+> > +	u32 len;
+> > +	u32 offset;
+> > +	u64 pfn_array[];
+> > +};
+> 
+> Does this cross the user/kernel boundry?  If so, they need to be __u32 and
+> __u64 variables.
 
-[ Upstream commit 9bce21828d54a95143f1b74619705c2dd8e88b92 ]
+This does not cross user/kernel boundry. 
+> 
+> > +
+> >  /* 0x18 includes the proprietary packet header */
+> >  #define MAX_PAGE_BUFFER_PACKET		(0x18 +
+> 	\
+> >  					(sizeof(struct hv_page_buffer) * \
+> @@ -812,6 +824,18 @@ struct
+> > vmbus_channel_packet_multipage_buffer {
+> >  	struct hv_multipage_buffer range;
+> >  } __packed;
+> >
+> > +/* The format must be the same as struct vmdata_gpa_direct */ struct
+> > +vmbus_packet_mpb_array {
+> > +	u16 type;
+> > +	u16 dataoffset8;
+> > +	u16 length8;
+> > +	u16 flags;
+> > +	u64 transactionid;
+> > +	u32 reserved;
+> > +	u32 rangecount;         /* Always 1 in this case */
+> > +	struct hv_mpb_array range;
+> > +} __packed;
+> 
+> Same here.
+This is completely internal to the kernel.
 
-Interpret the media type from v1.1 protocol to support CDROM/DVD.
+Regards,
 
-For v1.0 protocol, a disk's size continues to be calculated from the
-geometry returned by the vdisk server. The geometry returned by the server
-can be less than the actual number of sectors available in the backing
-image/device due to the rounding in the division used to compute the
-geometry in the vdisk server.
-
-In v1.1 protocol a disk's actual size in sectors is returned during the
-handshake. Use this size when v1.1 protocol is negotiated. Since this size
-will always be larger than the former geometry computed size, disks created
-under v1.0 will be forwards compatible to v1.1, but not vice versa.
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/sparc/include/asm/vio.h |  12 +++--
- drivers/block/sunvdc.c       | 109 ++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 101 insertions(+), 20 deletions(-)
-
-diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
-index 432afa8..a8210c5 100644
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -118,12 +118,18 @@ struct vio_disk_attr_info {
- 	u8			vdisk_type;
- #define VD_DISK_TYPE_SLICE	0x01 /* Slice in block device	*/
- #define VD_DISK_TYPE_DISK	0x02 /* Entire block device	*/
--	u16			resv1;
-+	u8			vdisk_mtype;		/* v1.1 */
-+#define VD_MEDIA_TYPE_FIXED	0x01 /* Fixed device */
-+#define VD_MEDIA_TYPE_CD	0x02 /* CD Device    */
-+#define VD_MEDIA_TYPE_DVD	0x03 /* DVD Device   */
-+	u8			resv1;
- 	u32			vdisk_block_size;
- 	u64			operations;
--	u64			vdisk_size;
-+	u64			vdisk_size;		/* v1.1 */
- 	u64			max_xfer_size;
--	u64			resv2[2];
-+	u32			phys_block_size;	/* v1.2 */
-+	u32			resv2;
-+	u64			resv3[1];
- };
- 
- struct vio_disk_desc {
-diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
-index 5814deb..66ddf70 100644
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -9,6 +9,7 @@
- #include <linux/blkdev.h>
- #include <linux/hdreg.h>
- #include <linux/genhd.h>
-+#include <linux/cdrom.h>
- #include <linux/slab.h>
- #include <linux/spinlock.h>
- #include <linux/completion.h>
-@@ -22,8 +23,8 @@
- 
- #define DRV_MODULE_NAME		"sunvdc"
- #define PFX DRV_MODULE_NAME	": "
--#define DRV_MODULE_VERSION	"1.0"
--#define DRV_MODULE_RELDATE	"June 25, 2007"
-+#define DRV_MODULE_VERSION	"1.1"
-+#define DRV_MODULE_RELDATE	"February 13, 2013"
- 
- static char version[] =
- 	DRV_MODULE_NAME ".c:v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
-@@ -65,6 +66,7 @@ struct vdc_port {
- 	u64			operations;
- 	u32			vdisk_size;
- 	u8			vdisk_type;
-+	u8			vdisk_mtype;
- 
- 	char			disk_name[32];
- 
-@@ -79,9 +81,16 @@ static inline struct vdc_port *to_vdc_port(struct vio_driver_state *vio)
- 
- /* Ordered from largest major to lowest */
- static struct vio_version vdc_versions[] = {
-+	{ .major = 1, .minor = 1 },
- 	{ .major = 1, .minor = 0 },
- };
- 
-+static inline int vdc_version_supported(struct vdc_port *port,
-+					u16 major, u16 minor)
-+{
-+	return port->vio.ver.major == major && port->vio.ver.minor >= minor;
-+}
-+
- #define VDCBLK_NAME	"vdisk"
- static int vdc_major;
- #define PARTITION_SHIFT	3
-@@ -103,9 +112,41 @@ static int vdc_getgeo(struct block_device *bdev, struct hd_geometry *geo)
- 	return 0;
- }
- 
-+/* Add ioctl/CDROM_GET_CAPABILITY to support cdrom_id in udev
-+ * when vdisk_mtype is VD_MEDIA_TYPE_CD or VD_MEDIA_TYPE_DVD.
-+ * Needed to be able to install inside an ldom from an iso image.
-+ */
-+static int vdc_ioctl(struct block_device *bdev, fmode_t mode,
-+		     unsigned command, unsigned long argument)
-+{
-+	int i;
-+	struct gendisk *disk;
-+
-+	switch (command) {
-+	case CDROMMULTISESSION:
-+		pr_debug(PFX "Multisession CDs not supported\n");
-+		for (i = 0; i < sizeof(struct cdrom_multisession); i++)
-+			if (put_user(0, (char __user *)(argument + i)))
-+				return -EFAULT;
-+		return 0;
-+
-+	case CDROM_GET_CAPABILITY:
-+		disk = bdev->bd_disk;
-+
-+		if (bdev->bd_disk && (disk->flags & GENHD_FL_CD))
-+			return 0;
-+		return -EINVAL;
-+
-+	default:
-+		pr_debug(PFX "ioctl %08x not supported\n", command);
-+		return -EINVAL;
-+	}
-+}
-+
- static const struct block_device_operations vdc_fops = {
- 	.owner		= THIS_MODULE,
- 	.getgeo		= vdc_getgeo,
-+	.ioctl		= vdc_ioctl,
- };
- 
- static void vdc_finish(struct vio_driver_state *vio, int err, int waiting_for)
-@@ -165,9 +206,9 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
- 	struct vio_disk_attr_info *pkt = arg;
- 
- 	viodbg(HS, "GOT ATTR stype[0x%x] ops[%llx] disk_size[%llu] disk_type[%x] "
--	       "xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
-+	       "mtype[0x%x] xfer_mode[0x%x] blksz[%u] max_xfer[%llu]\n",
- 	       pkt->tag.stype, pkt->operations,
--	       pkt->vdisk_size, pkt->vdisk_type,
-+	       pkt->vdisk_size, pkt->vdisk_type, pkt->vdisk_mtype,
- 	       pkt->xfer_mode, pkt->vdisk_block_size,
- 	       pkt->max_xfer_size);
- 
-@@ -192,8 +233,11 @@ static int vdc_handle_attr(struct vio_driver_state *vio, void *arg)
- 		}
- 
- 		port->operations = pkt->operations;
--		port->vdisk_size = pkt->vdisk_size;
- 		port->vdisk_type = pkt->vdisk_type;
-+		if (vdc_version_supported(port, 1, 1)) {
-+			port->vdisk_size = pkt->vdisk_size;
-+			port->vdisk_mtype = pkt->vdisk_mtype;
-+		}
- 		if (pkt->max_xfer_size < port->max_xfer_size)
- 			port->max_xfer_size = pkt->max_xfer_size;
- 		port->vdisk_block_size = pkt->vdisk_block_size;
-@@ -663,18 +707,25 @@ static int probe_disk(struct vdc_port *port)
- 		return err;
- 	}
- 
--	err = generic_request(port, VD_OP_GET_DISKGEOM,
--			      &port->geom, sizeof(port->geom));
--	if (err < 0) {
--		printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
--		       "error %d\n", err);
--		return err;
-+	if (vdc_version_supported(port, 1, 1)) {
-+		/* vdisk_size should be set during the handshake, if it wasn't
-+		 * then the underlying disk is reserved by another system
-+		 */
-+		if (port->vdisk_size == -1)
-+			return -ENODEV;
-+	} else {
-+		err = generic_request(port, VD_OP_GET_DISKGEOM,
-+				      &port->geom, sizeof(port->geom));
-+		if (err < 0) {
-+			printk(KERN_ERR PFX "VD_OP_GET_DISKGEOM returns "
-+			       "error %d\n", err);
-+			return err;
-+		}
-+		port->vdisk_size = ((u64)port->geom.num_cyl *
-+				    (u64)port->geom.num_hd *
-+				    (u64)port->geom.num_sec);
- 	}
- 
--	port->vdisk_size = ((u64)port->geom.num_cyl *
--			    (u64)port->geom.num_hd *
--			    (u64)port->geom.num_sec);
--
- 	q = blk_init_queue(do_vdc_request, &port->vio.lock);
- 	if (!q) {
- 		printk(KERN_ERR PFX "%s: Could not allocate queue.\n",
-@@ -704,9 +755,32 @@ static int probe_disk(struct vdc_port *port)
- 
- 	set_capacity(g, port->vdisk_size);
- 
--	printk(KERN_INFO PFX "%s: %u sectors (%u MB)\n",
-+	if (vdc_version_supported(port, 1, 1)) {
-+		switch (port->vdisk_mtype) {
-+		case VD_MEDIA_TYPE_CD:
-+			pr_info(PFX "Virtual CDROM %s\n", port->disk_name);
-+			g->flags |= GENHD_FL_CD;
-+			g->flags |= GENHD_FL_REMOVABLE;
-+			set_disk_ro(g, 1);
-+			break;
-+
-+		case VD_MEDIA_TYPE_DVD:
-+			pr_info(PFX "Virtual DVD %s\n", port->disk_name);
-+			g->flags |= GENHD_FL_CD;
-+			g->flags |= GENHD_FL_REMOVABLE;
-+			set_disk_ro(g, 1);
-+			break;
-+
-+		case VD_MEDIA_TYPE_FIXED:
-+			pr_info(PFX "Virtual Hard disk %s\n", port->disk_name);
-+			break;
-+		}
-+	}
-+
-+	pr_info(PFX "%s: %u sectors (%u MB) protocol %d.%d\n",
- 	       g->disk_name,
--	       port->vdisk_size, (port->vdisk_size >> (20 - 9)));
-+	       port->vdisk_size, (port->vdisk_size >> (20 - 9)),
-+	       port->vio.ver.major, port->vio.ver.minor);
- 
- 	add_disk(g);
- 
-@@ -765,6 +839,7 @@ static int vdc_port_probe(struct vio_dev *vdev, const struct vio_device_id *id)
- 	else
- 		snprintf(port->disk_name, sizeof(port->disk_name),
- 			 VDCBLK_NAME "%c", 'a' + ((int)vdev->dev_no % 26));
-+	port->vdisk_size = -1;
- 
- 	err = vio_driver_init(&port->vio, vdev, VDEV_DISK,
- 			      vdc_versions, ARRAY_SIZE(vdc_versions),
--- 
-1.9.1
-
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
