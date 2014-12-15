@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750883AbaLOVqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:46:38 -0500
-Received: from libra.uberspace.de ([95.143.172.171]:37856 "EHLO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaLOVqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:46:36 -0500
-Date: Mon, 15 Dec 2014 22:46:30 +0100
-From: Matthias Beyer <mail@beyermatthias.de>
-To: Jack Wilson <jackwilson128@gmail.com>
-Cc: gregkh@linuxfoundation.org, davej@redhat.com, ebru.akagunduz@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: bcm: fix spaces before commas in Bcmchar.c
-Message-ID: <20141215214630.GA3151@fu>
-Reply-To: Matthias Beyer <mail@beyermatthias.de>
-References: <1418671349-4014-1-git-send-email-jackwilson128@gmail.com>
+	id S1750949AbaLOVvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:51:25 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:40298 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772AbaLOVvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:51:23 -0500
+Message-ID: <548F57D8.4080809@osg.samsung.com>
+Date: Mon, 15 Dec 2014 14:51:20 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
-Content-Disposition: inline
-In-Reply-To: <1418671349-4014-1-git-send-email-jackwilson128@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>,
+        Shuah Khan <shuahkh@osg.samsung.com>
+Subject: [GIT PULL RESEND] kselftest-3.19-rc1
+References: <548750AD.6090201@osg.samsung.com> <CA+55aFx2DSXuikfd-RyEN3V+OaLSYhWub92=NJsNXGUhVnKKFQ@mail.gmail.com> <548EEA88.2060206@osg.samsung.com>
+In-Reply-To: <548EEA88.2060206@osg.samsung.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Please pull the following Kselftest updates for 3.19-rc1. Hope
+I have this right this time. Sorry again for the messed up
+first request.
 
-Hi Jack,
+thanks,
+-- Shuah
 
-bcm is removed from the linux kernel. You are working against the
-wrong tree!
+The following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
 
-Please work against staging-next of gregkh for staging drivers!
+  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
 
-Ask me if you do not understand what the problem is!
-Feel free to ask me other questions as well!
+are available in the git repository at:
 
-On 15-12-2014 11:22:29, Jack Wilson wrote:
-> This is a patch to the Bcmchar.c file that fixes a space before comma war=
-ning found by checkpatch.pl.
-> Signed-off-by: Jack Wilson <jackwilson128@gmail.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/shuah/linux-kselftest
+tags/linux-kselftest-3.19-rc1
 
---=20
-Mit freundlichen Gr=FC=DFen,
-Kind regards,
-Matthias Beyer
+for you to fetch changes up to 3ce51050fadd63737c03627293ca2dc4be238891:
 
-Proudly sent with mutt.
-Happily signed with gnupg.
+  selftest: size: Add size test for Linux kernel (2014-12-03 19:27:47 -0700)
 
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature
+----------------------------------------------------------------
+kselftest updates for 3.19-rc1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+----------------------------------------------------------------
+Michael Ellerman (3):
+      kcmp: Move kcmp.h into uapi
+      selftests/kcmp: Don't include kernel headers
+      selftests/kcmp: Always try to build the test
 
-iQIcBAEBCAAGBQJUj1a2AAoJEJi+S08gyg+UNycP/2aze2zbzs+idTi35/rPqzIu
-Ph7kLJLdqRmmIxAkM5DZdFRHeq3JQQtbucFIZ63GScaEM8CQkULaAyADGYEc133p
-Y+qp9Pp+nZKd6eJFS2KHEHjrp9Z/+WWtXUNDc5Fge0XaQkbNuTi3ZHxnnr+rMQBs
-HjqebG0l5yBrA3xVVmNTzJiFYr0ls4u/Hn2YblI3dUXf7lSxUAu+NaYMssyoqVlW
-ij7fIYl6T/RUCODzh9DMGUjPf9/5l84OaUEgs5CyuJ9blWOSbxh9AhNRZNO3Y1/T
-dp1hFgcp8OpX68bZQNHLmrruplVBzjNpggV2CUG7uEbApeUGWlWNAP7oP3mdqFQb
-aPABMi/BfB3fIgRANv4C51hlncBQx5Q3Cp1VGqBafnDd2pxlSLI7xLaeI5m7JOP0
-membrwnPzMN2TEjpvsD1NheB2U/frr0/9YNKedx68TEc8wi0p6j+PfMdixJd3M9d
-jj2l3SP/3vJGlHPgur2jc5OlxkBtoMw9u1WataW9Mv8b4tMEppUEIQ2ZAz1zjzJA
-UpLj6hRpNu4AjsC6dSizYwfP5lp2r5694ZkYLI17UZHw/XNYJS+iair8kJJLzqY1
-ypQ02sG/FpnXs1+ypw4kmlILI0EQABghTfS765vhKytq8RiJCCeqNZLx7FR9JXWN
-GyWHDiykRkgL968ZphCM
-=dvYL
------END PGP SIGNATURE-----
+Shuah Khan (7):
+      selftests/net: move test out of Makefile into a shell script
+      selftests/user: move test out of Makefile into a shell script
+      selftests: add kselftest framework for uniform test reporting
+      selftests/breakpoints: change test to use ksft framework
+      selftests/ipc: change test to use ksft framework
+      selftests/kcmp: change test to use ksft framework
+      selftests/timers: change test to use ksft framework
 
---xHFwDpU9dbj6ez1V--
+Tim Bird (1):
+      selftest: size: Add size test for Linux kernel
+
+ include/uapi/linux/Kbuild                          |   1 +
+ include/{ => uapi}/linux/kcmp.h                    |   6 +-
+ tools/testing/selftests/Makefile                   |   1 +
+ .../selftests/breakpoints/breakpoint_test.c        |  10 ++-
+ tools/testing/selftests/ipc/msgque.c               |  26 +++---
+ tools/testing/selftests/kcmp/Makefile              |  22 +----
+ tools/testing/selftests/kcmp/kcmp_test.c           |  27 ++++--
+ tools/testing/selftests/kselftest.h                |  62 +++++++++++++
+ tools/testing/selftests/net/Makefile               |   8 +-
+ tools/testing/selftests/net/test_bpf.sh            |  10 +++
+ tools/testing/selftests/size/.gitignore            |   1 +
+ tools/testing/selftests/size/Makefile              |  12 +++
+ tools/testing/selftests/size/get_size.c            | 100
++++++++++++++++++++++
+ tools/testing/selftests/timers/posix_timers.c      |  14 +--
+ tools/testing/selftests/user/Makefile              |   8 +-
+ tools/testing/selftests/user/test_user_copy.sh     |  10 +++
+ 16 files changed, 252 insertions(+), 66 deletions(-)
+ rename include/{ => uapi}/linux/kcmp.h (62%)
+ create mode 100644 tools/testing/selftests/kselftest.h
+tools/testing/selftests/net/Makefile               |   8 +-
+ tools/testing/selftests/net/test_bpf.sh            |  10 +++
+ tools/testing/selftests/size/.gitignore            |   1 +
+ tools/testing/selftests/size/Makefile              |  12 +++
+ tools/testing/selftests/size/get_size.c            | 100
++++++++++++++++++++++
+ tools/testing/selftests/timers/posix_timers.c      |  14 +--
+ tools/testing/selftests/user/Makefile              |   8 +-
+ tools/testing/selftests/user/test_user_copy.sh     |  10 +++
+ 16 files changed, 252 insertions(+), 66 deletions(-)
+ rename include/{ => uapi}/linux/kcmp.h (62%)
+ create mode 100644 tools/testing/selftests/kselftest.h
+ create mode 100755 tools/testing/selftests/net/test_bpf.sh
+ create mode 100644 tools/testing/selftests/size/.gitignore
+ create mode 100644 tools/testing/selftests/size/Makefile
+ create mode 100644 tools/testing/selftests/size/get_size.c
+ create mode 100755 tools/testing/selftests/user/test_user_copy.sh
+
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Samsung Open Source Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
