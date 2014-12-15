@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaLOO3a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:29:30 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39015 "EHLO
+	id S1753173AbaLOO3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:29:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39087 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaLOO3S (ORCPT
+	with ESMTP id S1753084AbaLOO33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:18 -0500
+	Mon, 15 Dec 2014 09:29:29 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dmitry Kozlov <xeb@mail.ru>, Yuri Chislov <yuri.chislov@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Todd Fujinaka <todd.fujinaka@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Vincent Donnefort <vdonnefort@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 153/168] ipv6: gre: fix wrong skb->protocol in WCCP
-Date: Mon, 15 Dec 2014 14:26:47 +0000
-Message-Id: <1418653622-21105-154-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 168/168] igb: bring link up when PHY is powered up
+Date: Mon, 15 Dec 2014 14:27:02 +0000
+Message-Id: <1418653622-21105-169-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,42 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yuri Chislov <yuri.chislov@gmail.com>
+From: Todd Fujinaka <todd.fujinaka@intel.com>
 
-commit be6572fdb1bfbe23b2624d477de50af50b02f5d6 upstream.
+commit aec653c43b0c55667355e26d7de1236bda9fb4e3 upstream.
 
-When using GRE redirection in WCCP, it sets the wrong skb->protocol,
-that is, ETH_P_IP instead of ETH_P_IPV6 for the encapuslated traffic.
+Call igb_setup_link() when the PHY is powered up.
 
-Fixes: c12b395a4664 ("gre: Support GRE over IPv6")
-Cc: Dmitry Kozlov <xeb@mail.ru>
-Signed-off-by: Yuri Chislov <yuri.chislov@gmail.com>
-Tested-by: Yuri Chislov <yuri.chislov@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Todd Fujinaka <todd.fujinaka@intel.com>
+Reported-by: Jeff Westfahl <jeff.westfahl@ni.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Vincent Donnefort <vdonnefort@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_gre.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/igb/igb_main.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/net/ipv6/ip6_gre.c b/net/ipv6/ip6_gre.c
-index c3ba41cef1df..0baac7127c57 100644
---- a/net/ipv6/ip6_gre.c
-+++ b/net/ipv6/ip6_gre.c
-@@ -499,11 +499,11 @@ static int ip6gre_rcv(struct sk_buff *skb)
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index a9537ba7a5a0..4d2dc17fd31b 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -1630,6 +1630,8 @@ void igb_power_up_link(struct igb_adapter *adapter)
+ 		igb_power_up_phy_copper(&adapter->hw);
+ 	else
+ 		igb_power_up_serdes_link_82575(&adapter->hw);
++
++	igb_setup_link(&adapter->hw);
+ }
  
- 		skb->protocol = gre_proto;
- 		/* WCCP version 1 and 2 protocol decoding.
--		 * - Change protocol to IP
-+		 * - Change protocol to IPv6
- 		 * - When dealing with WCCPv2, Skip extra 4 bytes in GRE header
- 		 */
- 		if (flags == 0 && gre_proto == htons(ETH_P_WCCP)) {
--			skb->protocol = htons(ETH_P_IP);
-+			skb->protocol = htons(ETH_P_IPV6);
- 			if ((*(h + offset) & 0xF0) != 0x40)
- 				offset += 4;
- 		}
+ /**
 -- 
 2.1.3
 
