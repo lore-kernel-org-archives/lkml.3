@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaLOOds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:33:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39024 "EHLO
+	id S1753414AbaLOOeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:34:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091AbaLOO3U (ORCPT
+	with ESMTP id S1752557AbaLOO3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:20 -0500
+	Mon, 15 Dec 2014 09:29:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jack Morgenstein <jackm@dev.mellanox.co.il>,
-        Or Gerlitz <ogerlitz@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 156/168] net/mlx4_core: Limit count field to 24 bits in qp_alloc_res
-Date: Mon, 15 Dec 2014 14:26:50 +0000
-Message-Id: <1418653622-21105-157-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 147/168] slab: fix nodeid bounds check for non-contiguous node IDs
+Date: Mon, 15 Dec 2014 14:26:41 +0000
+Message-Id: <1418653622-21105-148-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,43 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jack Morgenstein <jackm@dev.mellanox.co.il>
+From: Paul Mackerras <paulus@samba.org>
 
-commit 2d5c57d7fbfaa642fb7f0673df24f32b83d9066c upstream.
+commit 7c3fbbdd04a681a1992ad6a3d7a36a63ff668753 upstream.
 
-Some VF drivers use the upper byte of "param1" (the qp count field)
-in mlx4_qp_reserve_range() to pass flags which are used to optimize
-the range allocation.
+The bounds check for nodeid in ____cache_alloc_node gives false
+positives on machines where the node IDs are not contiguous, leading to
+a panic at boot time.  For example, on a POWER8 machine the node IDs are
+typically 0, 1, 16 and 17.  This means that num_online_nodes() returns
+4, so when ____cache_alloc_node is called with nodeid = 16 the VM_BUG_ON
+triggers, like this:
 
-Under the current code, if any of these flags are set, the 32-bit
-count field yields a count greater than 2^24, which is out of range,
-and this VF fails.
+  kernel BUG at /home/paulus/kernel/kvm/mm/slab.c:3079!
+  Call Trace:
+    .____cache_alloc_node+0x5c/0x270 (unreliable)
+    .kmem_cache_alloc_node_trace+0xdc/0x360
+    .init_list+0x3c/0x128
+    .kmem_cache_init+0x1dc/0x258
+    .start_kernel+0x2a0/0x568
+    start_here_common+0x20/0xa8
 
-As these flags represent a "best-effort" allocation hint anyway, they may
-safely be ignored. Therefore, the PF driver may simply mask out the bits.
+To fix this, we instead compare the nodeid with MAX_NUMNODES, and
+additionally make sure it isn't negative (since nodeid is an int).  The
+check is there mainly to protect the array dereference in the get_node()
+call in the next line, and the array being dereferenced is of size
+MAX_NUMNODES.  If the nodeid is in range but invalid (for example if the
+node is off-line), the BUG_ON in the next line will catch that.
 
-Fixes: c82e9aa0a8 "mlx4_core: resource tracking for HCA resources used by guests"
-Signed-off-by: Jack Morgenstein <jackm@dev.mellanox.co.il>
-Signed-off-by: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 14e50c6a9bc2 ("mm: slab: Verify the nodeid passed to ____cache_alloc_node")
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/resource_tracker.c | 2 +-
+ mm/slab.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-index 0efc1368e5a8..9d14ed372c44 100644
---- a/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/resource_tracker.c
-@@ -1532,7 +1532,7 @@ static int qp_alloc_res(struct mlx4_dev *dev, int slave, int op, int cmd,
+diff --git a/mm/slab.c b/mm/slab.c
+index c9103e4cf2c2..92dbea7e7132 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -3225,7 +3225,7 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
+ 	void *obj;
+ 	int x;
  
- 	switch (op) {
- 	case RES_OP_RESERVE:
--		count = get_param_l(&in_param);
-+		count = get_param_l(&in_param) & 0xffffff;
- 		align = get_param_h(&in_param);
- 		err = mlx4_grant_resource(dev, slave, RES_QP, count, 0);
- 		if (err)
+-	VM_BUG_ON(nodeid > num_online_nodes());
++	VM_BUG_ON(nodeid < 0 || nodeid >= MAX_NUMNODES);
+ 	n = cachep->node[nodeid];
+ 	BUG_ON(!n);
+ 
 -- 
 2.1.3
 
