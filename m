@@ -1,113 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030AbaLOJ61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:58:27 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:64649 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaLOJ6Z (ORCPT
+	id S1752445AbaLOJ7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:59:22 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:51130 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389AbaLOJ7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:58:25 -0500
-Date: Mon, 15 Dec 2014 09:58:19 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Flora Fu <flora.fu@mediatek.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH RESEND v2] mfd: syscon: add child device support
-Message-ID: <20141215095819.GB7972@x1>
-References: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
- <1418636633.3193.3.camel@pengutronix.de>
+	Mon, 15 Dec 2014 04:59:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: ralf@linux-mips.org, f.fainelli@gmail.com, tglx@linutronix.de,
+        jason@lakedaemon.net, jogo@openwrt.org, computersforpeace@gmail.com,
+        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V5 00/23] Generic BMIPS kernel
+Date: Mon, 15 Dec 2014 10:58:57 +0100
+Message-ID: <3160456.oe6LURFJHs@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
+References: <1418422034-17099-1-git-send-email-cernekee@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418636633.3193.3.camel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:8yLCd7pcVWC1jdffW4Y5ri8o42Ope7ujtVR/RNdm+YUOwoW0m0Z
+ Rl9nPAm55X+dKpApsl8KS6hQjtU+ovrzklQ02yoqsRlUaSSSmKXWz9tj6/28Jbzl/3ostYN
+ SkYlrAFNl8nBJhkYeUYo7EyLb4bInkphhHf2SnbEvxLY2eZ9Nn/+nWiqNyMFOpYRxQAmzmz
+ paPtcEsexj6xY1oPMWICQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Dec 2014, Philipp Zabel wrote:
-> Am Montag, den 01.12.2014, 17:25 +0100 schrieb Philipp Zabel:
-> > For devices which have a complete register for themselves, it is possible to
-> > place them next to the syscon device with overlapping reg ranges. The same is
-> > not possible for devices which only occupy bitfields in registers shared with
-> > other users.
-> > For devices that are completely controlled by bitfields in the syscon address
-> > range, such as multiplexers or voltage regulators, allow to put child devices
-> > into the syscon device node.
+On Friday 12 December 2014 14:06:51 Kevin Cernekee wrote:
+> V4->V5:
 > 
-> What is the status of this patch?
-> Is this ok to be applied after the merge window closes?
+>  - Rebase on top of Linus' head of tree, converting BCM3384 platform code
+>    to Generic BMIPS platform code.
 > 
-> For reference, these are the previous threads:
-> https://lkml.org/lkml/2014/5/27/422
-> https://lkml.org/lkml/2014/11/3/134
-
-As this is such an important driver I need more Acks for users/testers
-and senior reviewers before applying.
-
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> > Changes since v1:
-> >  - Reworded binding documentation to allow #size-cells = <1>, which is useful
-> >    for syscon children that are controlled through a (possibly shared) register
-> >    range.
-> > ---
-> >  Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
-> >  drivers/mfd/syscon.c                             |  3 +++
-> >  2 files changed, 16 insertions(+)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
-> > index fe8150b..0c6b497 100644
-> > --- a/Documentation/devicetree/bindings/mfd/syscon.txt
-> > +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
-> > @@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
-> >  OS driver) to determine the location of the registers, and access the
-> >  registers directly.
-> >  
-> > +Optionally, devices that are controlled exclusively through syscon registers,
-> > +or even bitfields in shared syscon registers, can also be added as child nodes
-> > +to the syscon device node. These devices can implicitly assume their parent
-> > +node is a syscon provider without referencing it explicitly via phandle.
-> > +In this case, the syscon node should have #address-cells = <1> and
-> > +#size-cells = <0> or <1> and no ranges property.
-> > +
-> >  Required properties:
-> >  - compatible: Should contain "syscon".
-> >  - reg: the register region can be accessed from syscon
-> >  
-> > +Optional properties:
-> > +- #address-cells: Should be 1.
-> > +- #size-cells: Should be 0 or 1.
-> > +
-> >  Examples:
-> >  gpr: iomuxc-gpr@020e0000 {
-> > +	#address-cells = <1>;
-> > +	#size-cells = <0>;
-> >  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
-> >  	reg = <0x020e0000 0x38>;
-> >  };
-> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
-> > index ca15878..38da178 100644
-> > --- a/drivers/mfd/syscon.c
-> > +++ b/drivers/mfd/syscon.c
-> > @@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
-> >  
-> >  	dev_dbg(dev, "regmap %pR registered\n", res);
-> >  
-> > +	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
-> > +		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-> > +
-> >  	return 0;
-> >  }
-> >  
+>  - Fix a couple of #include's
 > 
+>  - Remove a couple of bogus entries from bmips_be_defconfig
+> 
+> Compile-tested only.  Some BMIPS platforms may require acked-but-unmerged
+> changes in other subsystems (like the native-endian serial8250/DT patches).
+> 
+> For 3.19 you'll want the first patch at the minimum (because the build is
+> currently broken).
 > 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Since I commented on some of these patches before, I now took another
+(not very thorough) look at all of them. Looks very nice overall, I
+have no further comments.
+
+Acked-by: Arnd Bergmann <arnd@arndb.de>
