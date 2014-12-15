@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750774AbaLOMMp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:12:45 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:34547 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaLOMMn (ORCPT
+	id S1750804AbaLOMUq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:20:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60123 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaLOMUn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:12:43 -0500
-Date: Mon, 15 Dec 2014 13:12:27 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Sasha Levin <levinsasha928@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: sched: odd values for effective load calculations
-Message-ID: <20141215121227.GZ29390@twins.programming.kicks-ass.net>
-References: <547E42F7.5070105@gmail.com>
- <20141213083012.GH32572@gmail.com>
+	Mon, 15 Dec 2014 07:20:43 -0500
+Date: Mon, 15 Dec 2014 12:20:22 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ben Zhang <benzh@google.com>
+Cc: alsa-devel <alsa-devel@alsa-project.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Bard Liao <bardliao@realtek.com>,
+        Oder Chiou <oder_chiou@realtek.com>,
+        Anatol Pomozov <anatol@google.com>, Dylan Reid <dgreid@chromium.org>,
+        Albert Chen <albertchen@realtek.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20141215122022.GA11764@sirena.org.uk>
+References: <1418271327-14710-1-git-send-email-benzh@chromium.org>
+ <1418271327-14710-2-git-send-email-benzh@chromium.org>
+ <20141212132732.GK11764@sirena.org.uk>
+ <CAOV7By+GVAZiqwO9NW3DB87uOzx003K_RPqKhX4+vvf=oB=99A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZjlDoLon7m/fln42"
 Content-Disposition: inline
-In-Reply-To: <20141213083012.GH32572@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAOV7By+GVAZiqwO9NW3DB87uOzx003K_RPqKhX4+vvf=oB=99A@mail.gmail.com>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] ASoC: rt5677: add a platform config option for
+ MICBIAS voltage
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Sorry for the long delay, I was out for a few weeks due to having become
-a dad for the second time.
+--ZjlDoLon7m/fln42
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Sat, Dec 13, 2014 at 09:30:12AM +0100, Ingo Molnar wrote:
-> * Sasha Levin <levinsasha928@gmail.com> wrote:
-> 
-> > Hi all,
-> > 
-> > I was fuzzing with trinity inside a KVM tools guest, running the latest -next
-> > kernel along with the undefined behaviour sanitizer patch, and hit the following:
-> > 
-> > [  787.894288] ================================================================================
-> > [  787.897074] UBSan: Undefined behaviour in kernel/sched/fair.c:4541:17
-> > [  787.898981] signed integer overflow:
-> > [  787.900066] 361516561629678 * 101500 cannot be represented in type 'long long int'
+On Fri, Dec 12, 2014 at 03:48:51PM -0800, Ben Zhang wrote:
+> On Fri, Dec 12, 2014 at 5:27 AM, Mark Brown <broonie@kernel.org> wrote:
+> > On Wed, Dec 10, 2014 at 08:15:26PM -0800, Ben Zhang wrote:
 
-So that's:
+> > Why is this being specified as some magic number rather than using the
+> > voltage (or at least providing defines for the voltage) - this is going
+> > to do little to make the DT legible and...
 
-	this_eff_load *= this_load +
-		effective_load(tg, this_cpu, weight, weight);
+> >> +enum rt5677_micbias {
+> >> +     RT5677_MICBIAS_1_476V = 0,
+> >> +     RT5677_MICBIAS_2_970V = 1,
+> >> +     RT5677_MICBIAS_1_242V = 2,
+> >> +     RT5677_MICBIAS_2_475V = 3,
+> >> +};
 
-Going by the numbers the 101500 must be 'this_eff_load', 100 * ~1024
-makes that. Which makes the rhs 'large'. Do you have
-CONFIG_FAIR_GROUP_SCHED enabled? If so, what kind of cgroup hierarchy
-are you using?
+> > ...I see there are defined for platform data.
 
-In any case, bit sad this doesn't have a register dump included :/
+> This patch adds both an entry to the platform data and a DT binding
+> for MICBIAS level selection. The 4 voltage options
+> (1.476V/2.970V/1.242V/2.475V) are the only ones supported by the codec
+> hardware, so it seems an enum is better than specifying the exact
 
-Is this easy to reproduce or something that happened once?
+It's not that clear that an enum *is* better, and a magic numbers enum
+is definitely worse for anyone who has to read the resulting DT.
 
-> > The values for effective load seem a bit off (and are overflowing!).
-> 
-> It definitely looks like a bug in SMP load balancing!
+> voltage directly. I was following the two examples below:
+> Documentation/devicetree/bindings/sound/cs42l52.txt (cirrus,micbias-lvl)
+> Documentation/devicetree/bindings/sound/tlv320aic3x.txt (ai3x-micbias-vg)
 
-Yeah, although theoretically (and somewhat practical) this can be
-triggered in more places if you manage to run up the 'weight' with
-enough tasks.
+Old DT bindings are old and often not best practice.
 
-That said, it should at worst result in 'funny' balancing behaviour, not
-anything else.
+> I'm new to devicetree bindings. Is there something like an enum in DT?
+
+include/dt-bindings
+
+--ZjlDoLon7m/fln42
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUjtIFAAoJECTWi3JdVIfQkugIAIK3ofI8Ws8h1SoG9i4yZULp
+QBMy07YzvtxEiLvSWsiYwCyr8UyIWMbj9oJRlrmDoDdaVawgK11RrvVl69GdKSgv
+LzPydSDtud4ztvBrgzcTGu1dmrZfwecu8rnYcZmHh5B6EH2FivBukhwn9QJow9t1
+38brUBUHWt2bzMrkpoZi1+d2g9DfxNSe6dRgr0Ozl45Hjt3uXqqvFxfzBxvBJbW2
+Zs0tK6ONuC+o4RFgg6Xjh+hTLKvZfUSAMNGqfskjQHzsd/EByp70fp5V/NdShsB5
+kroEwjveyMez42dpst9X9BBhJCzc34pjPxI/f3cxST7BkzVcRt2pq2+Ifo2bBSM=
+=y7/8
+-----END PGP SIGNATURE-----
+
+--ZjlDoLon7m/fln42--
