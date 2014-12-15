@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaLOPM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:12:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38287 "EHLO
+	id S1754181AbaLOPNP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:13:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38280 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341AbaLOO10 (ORCPT
+	with ESMTP id S1752328AbaLOO1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:26 -0500
+	Mon, 15 Dec 2014 09:27:25 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 029/168] drm/i915: drop WaSetupGtModeTdRowDispatch:snb
-Date: Mon, 15 Dec 2014 14:24:43 +0000
-Message-Id: <1418653622-21105-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 025/168] ASoC: sgtl5000: Fix SMALL_POP bit definition
+Date: Mon, 15 Dec 2014 14:24:39 +0000
+Message-Id: <1418653622-21105-26-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 2208d655a91f9879bd9a39ff9df05dd668b3512c upstream.
+commit c251ea7bd7a04f1f2575467e0de76e803cf59149 upstream.
 
-This reverts the regressing
+On a mx28evk with a sgtl5000 codec we notice a loud 'click' sound  to happen
+5 seconds after the end of a playback.
 
-commit 6547fbdbfff62c99e4f7b4f985ff8b3454f33b0f
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Dec 14 23:38:29 2012 +0100
+The SMALL_POP bit should fix this, but its definition is incorrect:
+according to the sgtl5000 manual it is bit 0 of CHIP_REF_CTRL register, not
+bit 1.
 
-    drm/i915: Implement WaSetupGtModeTdRowDispatch
+Fix the definition accordingly and enable the bit as intended per the code
+comment.
 
-that causes GPU hangs immediately on boot.
+After applying this change, no loud 'click' sound is heard after playback
 
-Reported-by: Leo Wolf <jclw@ymail.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=79996
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-[Jani: amended the commit message slightly.]
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_pm.c | 5 -----
- 1 file changed, 5 deletions(-)
+ sound/soc/codecs/sgtl5000.c | 3 +--
+ sound/soc/codecs/sgtl5000.h | 2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index ee72807069e4..e6f131db18cc 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4942,11 +4942,6 @@ static void gen6_init_clock_gating(struct drm_device *dev)
- 	I915_WRITE(_3D_CHICKEN,
- 		   _MASKED_BIT_ENABLE(_3D_CHICKEN_HIZ_PLANE_DISABLE_MSAA_4X_SNB));
+diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
+index 3d39f0b5b4a8..f039d668266e 100644
+--- a/sound/soc/codecs/sgtl5000.c
++++ b/sound/soc/codecs/sgtl5000.c
+@@ -1315,8 +1315,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
  
--	/* WaSetupGtModeTdRowDispatch:snb */
--	if (IS_SNB_GT1(dev))
--		I915_WRITE(GEN6_GT_MODE,
--			   _MASKED_BIT_ENABLE(GEN6_TD_FOUR_ROW_DISPATCH_DISABLE));
--
- 	/* WaDisable_RenderCache_OperationalFlush:snb */
- 	I915_WRITE(CACHE_MODE_0, _MASKED_BIT_DISABLE(RC_OP_FLUSH_ENABLE));
+ 	/* enable small pop, introduce 400ms delay in turning off */
+ 	snd_soc_update_bits(codec, SGTL5000_CHIP_REF_CTRL,
+-				SGTL5000_SMALL_POP,
+-				SGTL5000_SMALL_POP);
++				SGTL5000_SMALL_POP, 1);
  
+ 	/* disable short cut detector */
+ 	snd_soc_write(codec, SGTL5000_CHIP_SHORT_CTRL, 0);
+diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
+index 2f8c88931f69..bd7a344bf8c5 100644
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -275,7 +275,7 @@
+ #define SGTL5000_BIAS_CTRL_MASK			0x000e
+ #define SGTL5000_BIAS_CTRL_SHIFT		1
+ #define SGTL5000_BIAS_CTRL_WIDTH		3
+-#define SGTL5000_SMALL_POP			0x0001
++#define SGTL5000_SMALL_POP			0
+ 
+ /*
+  * SGTL5000_CHIP_MIC_CTRL
 -- 
 2.1.3
 
