@@ -1,227 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaLOXrc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 18:47:32 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:55354 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaLOXrb (ORCPT
+	id S1751400AbaLOXv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:51:28 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:45688 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaLOXv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 18:47:31 -0500
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        iommu@lists.linux-foundation.org,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Elliott <elliott@hp.com>
-Cc: Matt Wagantall <mattw@codeaurora.org>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH v10] iopoll: Introduce memory-mapped IO polling macros
-Date: Mon, 15 Dec 2014 15:47:23 -0800
-Message-Id: <1418687243-16395-1-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 2.1.3
+	Mon, 15 Dec 2014 18:51:27 -0500
+Date: Mon, 15 Dec 2014 23:51:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git pile 2
+Message-ID: <20141215235124.GX22149@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Wagantall <mattw@codeaurora.org>
+Next pile (and there'll be one or two more).  The large piece in this one is
+getting rid of /proc/*/ns/* weirdness; among other things, it allows to
+(finally) make nameidata completely opaque outside of fs/namei.c, making for
+easier further cleanups in there.
 
-It is sometimes necessary to poll a memory-mapped register until its value
-satisfies some condition. Introduce a family of convenience macros that do
-this. Tight-looping, sleeping, and timing out can all be accomplished using
-these macros.
+I have _not_ included removal of unshare_fs_struct() into that pile; I think
+it'll turn out to be OK, but it's clearly the next cycle fodder.
 
-Cc: Thierry Reding <thierry.reding@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robert Elliott <elliott@hp.com>
-Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
----
-v9..10:
-  - Actually added the comments mentioned in v8..v9 (doh!)
+Please, pull from the usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-v8..v9:
-  - Added note in comments about max sleep time (Rob Elliott)
+Shortlog:
+Al Viro (20):
+      common object embedded into various struct ....ns
+      make mntns ->get()/->put()/->install()/->inum() work with &mnt_ns->ns
+      netns: switch ->get()/->put()/->install()/->inum() to working with &net->ns
+      switch the rest of proc_ns_operations to working with &...->ns
+      make proc_ns_operations work with struct ns_common * instead of void *
+      new helpers: ns_alloc_inum/ns_free_inum
+      copy address of proc_ns_ops into ns_common
+      bury struct proc_ns in fs/proc
+      take the targets of /proc/*/ns/* symlinks to separate fs
+      kill proc_ns completely
+      make nameidata completely opaque outside of fs/namei.c
+      make default ->i_fop have ->open() fail with ENXIO
+      path_init(): store the "base" pointer to file in nameidata itself
+      fs/namei.c: new helper (path_cleanup())
+      path_init(): don't bother with LOOKUP_PARENT in argument
+      fs/namei.c: fold link_path_walk() call into path_init()
+      coda_venus_readdir(): use file_inode()
+      spawn PID 1 without CLONE_FS, give kernel threads zero umask
+      lustre: get rid of playing with ->fs
+      btrfs: filp_open() returns ERR_PTR() on failure, not NULL...
 
-v7..v8:
-  - sorted helper macros by size (b, w, l, q)
-  - removed some of the more esoteric (or flat-out bogus) helper macros
-
-This patch was originally part of a series [1] for adding support for IOMMU
-address translations through an ARM SMMU hardware register.  The other
-patch in the series (the one that actually uses these macros and implements
-said hardware address translations) was Ack'd by the driver maintainer
-there (Will Deacon) so I've pulled this patch out to avoid resending an
-already Ack'd patch over and over again.
-
-In short, please see [1] for previous discussion and the first user of
-these macros.
-
-Will also acked this patch in [2].  I didn't retain his Ack here because I
-added to the macro comments.
-
-[1] http://thread.gmane.org/gmane.linux.kernel.iommu/7140
-[2] http://thread.gmane.org/gmane.linux.kernel.iommu/7449
-
----
- include/linux/iopoll.h | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 144 insertions(+)
- create mode 100644 include/linux/iopoll.h
-
-diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
-new file mode 100644
-index 000000000000..08fd52cdb5a0
---- /dev/null
-+++ b/include/linux/iopoll.h
-@@ -0,0 +1,144 @@
-+/*
-+ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#ifndef _LINUX_IOPOLL_H
-+#define _LINUX_IOPOLL_H
-+
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/hrtimer.h>
-+#include <linux/delay.h>
-+#include <linux/errno.h>
-+#include <linux/io.h>
-+
-+/**
-+ * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @sleep_us: Maximum time to sleep between reads in us (0
-+ *            tight-loops).  Should be less than ~20ms since usleep_range
-+ *            is used (see Documentation/timers/timers-howto.txt).
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val. Must not
-+ * be called from atomic context if sleep_us or timeout_us are used.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	might_sleep_if(sleep_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (sleep_us) \
-+			usleep_range((sleep_us >> 2) + 1, sleep_us); \
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+/**
-+ * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
-+ * @op: accessor function (takes @addr as its only argument)
-+ * @addr: Address to poll
-+ * @val: Variable to read the value into
-+ * @cond: Break condition (usually involving @val)
-+ * @delay_us: Time to udelay between reads in us (0 tight-loops).  Should
-+ *            be less than ~10us since udelay is used (see
-+ *            Documentation/timers/timers-howto.txt).
-+ * @timeout_us: Timeout in us, 0 means never timeout
-+ *
-+ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
-+ * case, the last read value at @addr is stored in @val.
-+ *
-+ * When available, you'll probably want to use one of the specialized
-+ * macros defined below rather than this macro directly.
-+ */
-+#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
-+({ \
-+	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
-+	for (;;) { \
-+		(val) = op(addr); \
-+		if (cond) \
-+			break; \
-+		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
-+			(val) = op(addr); \
-+			break; \
-+		} \
-+		if (delay_us) \
-+			udelay(delay_us);	\
-+	} \
-+	(cond) ? 0 : -ETIMEDOUT; \
-+})
-+
-+
-+#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
-+	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
-+
-+#endif /* _LINUX_IOPOLL_H */
--- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Diffstat:
+ arch/ia64/kernel/perfmon.c                         |  10 --
+ .../lustre/lustre/include/linux/lustre_compat25.h  |  24 ---
+ drivers/staging/lustre/lustre/llite/dir.c          |   2 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |  17 +--
+ fs/Makefile                                        |   2 +-
+ fs/btrfs/volumes.c                                 |   2 +-
+ fs/coda/dir.c                                      |   4 +-
+ fs/fs_struct.c                                     |   2 +-
+ fs/inode.c                                         |  11 +-
+ fs/internal.h                                      |   5 +
+ fs/mount.h                                         |   3 +-
+ fs/namei.c                                         |  98 +++++++------
+ fs/namespace.c                                     |  51 +++----
+ fs/nsfs.c                                          | 161 +++++++++++++++++++++
+ fs/proc/inode.c                                    |  10 +-
+ fs/proc/internal.h                                 |   2 +-
+ fs/proc/namespaces.c                               | 153 ++------------------
+ include/linux/fs.h                                 |   1 -
+ include/linux/ipc_namespace.h                      |   3 +-
+ include/linux/namei.h                              |  25 +---
+ include/linux/ns_common.h                          |  12 ++
+ include/linux/pid_namespace.h                      |   3 +-
+ include/linux/proc_ns.h                            |  43 +++---
+ include/linux/user_namespace.h                     |   3 +-
+ include/linux/utsname.h                            |   3 +-
+ include/net/net_namespace.h                        |   3 +-
+ include/uapi/linux/magic.h                         |   1 +
+ init/main.c                                        |   6 +-
+ init/version.c                                     |   5 +-
+ ipc/msgutil.c                                      |   5 +-
+ ipc/namespace.c                                    |  32 ++--
+ kernel/kmod.c                                      |   2 +
+ kernel/nsproxy.c                                   |  10 +-
+ kernel/pid.c                                       |   5 +-
+ kernel/pid_namespace.c                             |  29 ++--
+ kernel/user.c                                      |   5 +-
+ kernel/user_namespace.c                            |  29 ++--
+ kernel/utsname.c                                   |  31 ++--
+ net/Makefile                                       |   2 -
+ net/core/net_namespace.c                           |  39 ++---
+ net/nonet.c                                        |  26 ----
+ net/socket.c                                       |  19 ---
+ 42 files changed, 425 insertions(+), 474 deletions(-)
+ create mode 100644 fs/nsfs.c
+ create mode 100644 include/linux/ns_common.h
+ delete mode 100644 net/nonet.c
