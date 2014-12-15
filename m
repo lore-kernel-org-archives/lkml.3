@@ -1,151 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750939AbaLOCUQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:20:16 -0500
-Received: from regular3.263xmail.com ([211.157.153.2]:57996 "EHLO
-	regular3.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaLOCUI (ORCPT
+	id S1751172AbaLOCVC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:21:02 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38133 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaLOCUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:20:08 -0500
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Dec 2014 21:20:06 EST
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: ykk@rock-chips.com
-X-SENDER-IP: 104.167.231.7
-X-LOGIN-NAME: ykk@rock-chips.com
-X-UNIQUE-TAG: <d9e931c6bb69ac6b72d5c747086bc13e>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Yakir Yang <ykk@rock-chips.com>
-To: Yakir Yang <ykk@rock-chips.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, David Airlie <airlied@linux.ie>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/6] drm: bridge/dw_hdmi: add hdmi audio config interfaces
-Date: Mon, 15 Dec 2014 10:11:29 +0800
-Message-Id: <1418609494-15820-2-git-send-email-ykk@rock-chips.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
+	Sun, 14 Dec 2014 21:20:55 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <548E4578.3070209@jp.fujitsu.com>
+Date: Mon, 15 Dec 2014 11:20:40 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH 4/4] workqueue: handle change in cpu-node relationship.
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548C6B72.5080302@jp.fujitsu.com> <548E4388.5090308@cn.fujitsu.com>
+In-Reply-To: <548E4388.5090308@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-creat dw-hdmi-audio device in probe function, and support
-some interfaces to dw-hdmi-audio driver for setting hdmi
-audio format.
+(2014/12/15 11:12), Lai Jiangshan wrote:
+> On 12/14/2014 12:38 AM, Kamezawa Hiroyuki wrote:
+>> Although workqueue detects relationship between cpu<->node at boot,
+>> it is finally determined in cpu_up().
+>> This patch tries to update pool->node using online status of cpus.
+>>
+>> 1. When a node goes down, clear per-cpu pool's node attr.
+>> 2. When a cpu comes up, update per-cpu pool's node attr.
+>> 3. When a cpu comes up, update possinle node cpumask workqueue is using for sched.
+>> 4. Detect the best node for unbound pool's cpumask using the latest info.
+>>
+>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> ---
+>>   kernel/workqueue.c | 67 ++++++++++++++++++++++++++++++++++++++++++------------
+>>   1 file changed, 53 insertions(+), 14 deletions(-)
+>>
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index 07b4eb5..259b3ba 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -266,7 +266,8 @@ struct workqueue_struct {
+>>   static struct kmem_cache *pwq_cache;
+>>
+>>   static cpumask_var_t *wq_numa_possible_cpumask;
+>> -					/* possible CPUs of each node */
+>> +	/* possible CPUs of each node initialized with possible info at boot.
+>> +           but modified at cpu hotplug to be adjusted to real info.  */
+>>
+>>   static bool wq_disable_numa;
+>>   module_param_named(disable_numa, wq_disable_numa, bool, 0444);
+>> @@ -3449,6 +3450,31 @@ static void put_unbound_pool(struct worker_pool *pool)
+>>   	call_rcu_sched(&pool->rcu, rcu_free_pool);
+>>   }
+>>
+>> +/*
+>> + * detect best node for given cpumask.
+>> + */
+>> +static int pool_detect_best_node(const struct cpumask *cpumask)
+>> +{
+>> +	int node, best, match, selected;
+>> +	static struct cpumask andmask; /* we're under mutex */
+>> +
+>> +	/* Is any node okay ? */
+>> +	if (!wq_numa_enabled ||
+>> +	    cpumask_subset(cpu_online_mask, cpumask))
+>> +		return NUMA_NO_NODE;
+>> +	best = 0;
+>> +	selected = NUMA_NO_NODE;
+>> +	/* select a node which contains the most cpu of cpumask */
+>> +	for_each_node_state(node, N_ONLINE) {
+>> +		cpumask_and(&andmask, cpumask, cpumask_of_node(node));
+>> +		match = cpumask_weight(&andmask);
+>> +		if (match > best)
+>> +			selected = node;
+>> +	}
+>> +	return selected;
+>> +}
+>> +
+>> +
+>>   /**
+>>    * get_unbound_pool - get a worker_pool with the specified attributes
+>>    * @attrs: the attributes of the worker_pool to get
+>> @@ -3467,7 +3493,6 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+>>   {
+>>   	u32 hash = wqattrs_hash(attrs);
+>>   	struct worker_pool *pool;
+>> -	int node;
+>>
+>>   	lockdep_assert_held(&wq_pool_mutex);
+>>
+>> @@ -3492,17 +3517,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
+>>   	 * 'struct workqueue_attrs' comments for detail.
+>>   	 */
+>>   	pool->attrs->no_numa = false;
+>> -
+>> -	/* if cpumask is contained inside a NUMA node, we belong to that node */
+>> -	if (wq_numa_enabled) {
+>> -		for_each_node(node) {
+>> -			if (cpumask_subset(pool->attrs->cpumask,
+>> -					   wq_numa_possible_cpumask[node])) {
+>> -				pool->node = node;
+>> -				break;
+>> -			}
+>> -		}
+>> -	}
+>> +	pool->node = pool_detect_best_node(pool->attrs->cpumask);
+>>
+>>   	if (worker_pool_assign_id(pool) < 0)
+>>   		goto fail;
+>> @@ -4567,7 +4582,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+>>   	int cpu = (unsigned long)hcpu;
+>>   	struct worker_pool *pool;
+>>   	struct workqueue_struct *wq;
+>> -	int pi;
+>> +	int pi, node;
+>>
+>>   	switch (action & ~CPU_TASKS_FROZEN) {
+>>   	case CPU_UP_PREPARE:
+>> @@ -4583,6 +4598,16 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+>>   	case CPU_ONLINE:
+>>   		mutex_lock(&wq_pool_mutex);
+>>
+>> +		/* now cpu <-> node info is established, update the info. */
+>> +		if (!wq_disable_numa) {
+>
+>
+>
+>> +			for_each_node_state(node, N_POSSIBLE)
+>> +				cpumask_clear_cpu(cpu,
+>> +					wq_numa_possible_cpumask[node]);
+>
+> The wq code try to reuse the origin pwqs/pools when the node still have cpu online.
+> these 3 lines of code will cause the origin pwqs/pools be on the road of dying, and
+> create a new set of pwqs/pools.
 
-Signed-off-by: Yakir Yang <ykk@rock-chips.com>
----
+because the result of wq_calc_node_cpumask() changes ?
+Do you mean some comment should be added here ? or explaination for your reply for [3/4] ?
 
- drivers/gpu/drm/bridge/dw_hdmi.c | 28 ++++++++++++++++++++++++++++
- include/drm/bridge/dw_hdmi.h     | 12 ++++++++++++
- 2 files changed, 40 insertions(+)
+Thanks,
+-Kame
 
-diff --git a/drivers/gpu/drm/bridge/dw_hdmi.c b/drivers/gpu/drm/bridge/dw_hdmi.c
-index 01c95a8..9ba96de 100644
---- a/drivers/gpu/drm/bridge/dw_hdmi.c
-+++ b/drivers/gpu/drm/bridge/dw_hdmi.c
-@@ -106,6 +106,7 @@ struct dw_hdmi {
- 	struct drm_encoder *encoder;
- 	struct drm_bridge *bridge;
- 
-+	struct platform_device *audio_pdev;
- 	enum dw_hdmi_devtype dev_type;
- 	struct device *dev;
- 	struct clk *isfr_clk;
-@@ -369,6 +370,11 @@ static void hdmi_clk_regenerator_update_pixel_clock(struct dw_hdmi *hdmi)
- 	hdmi_set_clk_regenerator(hdmi, hdmi->hdmi_data.video_mode.mpixelclock);
- }
- 
-+static void hdmi_set_sample_rate(struct dw_hdmi *hdmi, unsigned int sample_rate)
-+{
-+	hdmi->sample_rate = sample_rate;
-+	hdmi_set_clk_regenerator(hdmi, hdmi->hdmi_data.video_mode.mpixelclock);
-+}
- /*
-  * this submodule is responsible for the video data synchronization.
-  * for example, for RGB 4:4:4 input, the data map is defined as
-@@ -1558,6 +1564,8 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 		 struct resource *iores, int irq,
- 		 const struct dw_hdmi_plat_data *plat_data)
- {
-+	struct platform_device_info pdevinfo;
-+	struct dw_hdmi_audio_data audio;
- 	struct drm_device *drm = data;
- 	struct device_node *np = dev->of_node;
- 	struct device_node *ddc_node;
-@@ -1679,6 +1687,23 @@ int dw_hdmi_bind(struct device *dev, struct device *master,
- 
- 	dev_set_drvdata(dev, hdmi);
- 
-+	memset(&pdevinfo, 0, sizeof(pdevinfo));
-+	pdevinfo.parent = dev;
-+	pdevinfo.id = PLATFORM_DEVID_NONE;
-+
-+	audio.irq = irq;
-+	audio.dw = hdmi;
-+	audio.mod = hdmi_modb;
-+	audio.read = hdmi_readb;
-+	audio.write = hdmi_writeb;
-+	audio.set_sample_rate = hdmi_set_sample_rate;
-+
-+	pdevinfo.name = "dw-hdmi-audio";
-+	pdevinfo.data = &audio;
-+	pdevinfo.size_data = sizeof(audio);
-+	pdevinfo.dma_mask = DMA_BIT_MASK(32);
-+	hdmi->audio_pdev = platform_device_register_full(&pdevinfo);
-+
- 	return 0;
- 
- err_iahb:
-@@ -1694,6 +1719,9 @@ void dw_hdmi_unbind(struct device *dev, struct device *master, void *data)
- {
- 	struct dw_hdmi *hdmi = dev_get_drvdata(dev);
- 
-+	if (!IS_ERR(hdmi->audio_pdev))
-+		platform_device_unregister(hdmi->audio_pdev);
-+
- 	/* Disable all interrupts */
- 	hdmi_writeb(hdmi, ~0, HDMI_IH_MUTE_PHY_STAT0);
- 
-diff --git a/include/drm/bridge/dw_hdmi.h b/include/drm/bridge/dw_hdmi.h
-index 5a4f490..82750f6 100644
---- a/include/drm/bridge/dw_hdmi.h
-+++ b/include/drm/bridge/dw_hdmi.h
-@@ -19,6 +19,18 @@ enum {
- 	DW_HDMI_RES_MAX,
- };
- 
-+struct dw_hdmi;
-+
-+struct dw_hdmi_audio_data {
-+	int irq;
-+	struct dw_hdmi *dw;
-+
-+	u8 (*read)(struct dw_hdmi *hdmi, int offset);
-+	void (*write)(struct dw_hdmi *hdmi, u8 val, int offset);
-+	void (*mod)(struct dw_hdmi *hdmi, u8 data, u8 mask, unsigned reg);
-+	void (*set_sample_rate)(struct dw_hdmi *hdmi, unsigned int rate);
-+};
-+
- enum dw_hdmi_devtype {
- 	IMX6Q_HDMI,
- 	IMX6DL_HDMI,
--- 
-2.1.2
+
+
+
+
+>
+>> +			node = cpu_to_node(cpu);
+>> +			cpumask_set_cpu(cpu, wq_numa_possible_cpumask[node]);
+>> +		}
+>> +		for_each_cpu_worker_pool(pool, cpu)
+>> +			pool->node = cpu_to_node(cpu);
+>>   		for_each_pool(pool, pi) {
+>>   			mutex_lock(&pool->attach_mutex);
+>>
+>> @@ -4951,7 +4976,21 @@ void workqueue_register_numanode(int nid)
+>>   void workqueue_unregister_numanode(int nid)
+>>   {
+>>   	struct workqueue_struct *wq;
+>> +	const struct cpumask *nodecpumask;
+>> +	struct worker_pool *pool;
+>> +	int cpu;
+>>
+>> +	/* at this point, cpu-to-node relationship is not lost */
+>> +	nodecpumask = cpumask_of_node(nid);
+>> +	for_each_cpu(cpu, nodecpumask) {
+>> +		/*
+>> +		 * pool is allcated at boot and assumed to be persistent,
+>> +		 * we cannot free this.
+>> +		 * Update to be NUMA_NO_NODE. This will be fixed at ONLINE
+>> +		 */
+>> +		for_each_cpu_worker_pool(pool, cpu)
+>> +			pool->node = NUMA_NO_NODE;
+>> +	}
+>>   	mutex_lock(&wq_pool_mutex);
+>>   	list_for_each_entry(wq, &workqueues, list)
+>>   		wq_release_unbound_numa(wq, nid);
+>
 
 
