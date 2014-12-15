@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaLOTbn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:31:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40883 "EHLO
+	id S1752273AbaLOTbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:31:53 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40892 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193AbaLOTbj (ORCPT
+	with ESMTP id S1752250AbaLOTbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:31:39 -0500
+	Mon, 15 Dec 2014 14:31:51 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 61/96] usb-quirks: Add reset-resume quirk for MS Wireless Laser Mouse 6000
-Date: Mon, 15 Dec 2014 11:26:21 -0800
-Message-Id: <1418671616-25482-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 60/96] net/ping: handle protocol mismatching scenario
+Date: Mon, 15 Dec 2014 11:26:20 -0800
+Message-Id: <1418671616-25482-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,35 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Jane Zhou <a17711@motorola.com>
 
-commit 263e80b43559a6103e178a9176938ce171b23872 upstream.
+commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
 
-This wireless mouse receiver needs a reset-resume quirk to properly come
-out of reset.
+ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
+dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
+sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
+sock will be returned.
+the fix is to "continue" the searching, if no matching, return NULL.
 
-BugLink: https://bugzilla.redhat.com/show_bug.cgi?id=1165206
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Jane Zhou <a17711@motorola.com>
+Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/core/quirks.c | 3 +++
- 1 file changed, 3 insertions(+)
+ net/ipv4/ping.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 519d5bb..12d51e5 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -44,6 +44,9 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	/* Creative SB Audigy 2 NX */
- 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index 3ef2919..8e0f65c 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -213,6 +213,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
+ 					     &ipv6_hdr(skb)->daddr))
+ 				continue;
+ #endif
++		} else {
++			continue;
+ 		}
  
-+	/* Microsoft Wireless Laser Mouse 6000 Receiver */
-+	{ USB_DEVICE(0x045e, 0x00e1), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* Microsoft LifeCam-VX700 v2.0 */
- 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+ 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
 -- 
 1.9.1
 
