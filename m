@@ -1,82 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaLOXqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 18:46:43 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58338 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaLOXqm (ORCPT
+	id S1751496AbaLOXrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:47:32 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:55354 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaLOXrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 18:46:42 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-References: <20141211145408.GB16800@redhat.com>
-	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-	<20141212185454.GB4716@redhat.com>
-	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
-	<20141213165915.GA12756@redhat.com>
-	<20141213223616.GA22559@redhat.com>
-	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
-	<20141214234654.GA396@redhat.com>
-	<CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
-	<CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
-	<20141215055707.GA26225@redhat.com>
-	<CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-Date: Mon, 15 Dec 2014 15:46:41 -0800
-X-Google-Sender-Auth: nMLlx-GaqOJ-Ma_7Z6YbsWdnG74
-Message-ID: <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 15 Dec 2014 18:47:31 -0500
+From: Mitchel Humpherys <mitchelh@codeaurora.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        iommu@lists.linux-foundation.org,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Robert Elliott <elliott@hp.com>
+Cc: Matt Wagantall <mattw@codeaurora.org>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>
+Subject: [PATCH v10] iopoll: Introduce memory-mapped IO polling macros
+Date: Mon, 15 Dec 2014 15:47:23 -0800
+Message-Id: <1418687243-16395-1-git-send-email-mitchelh@codeaurora.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 10:21 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So let's just fix it. Here's a completely untested patch.
+From: Matt Wagantall <mattw@codeaurora.org>
 
-So after looking at this more, I'm actually really convinced that this
-was a pretty nasty bug.
+It is sometimes necessary to poll a memory-mapped register until its value
+satisfies some condition. Introduce a family of convenience macros that do
+this. Tight-looping, sleeping, and timing out can all be accomplished using
+these macros.
 
-I'm *not* convinced that it's necessarily *your* bug, but I still
-think it could be.
+Cc: Thierry Reding <thierry.reding@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robert Elliott <elliott@hp.com>
+Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
+Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+---
+v9..10:
+  - Actually added the comments mentioned in v8..v9 (doh!)
 
-I cleaned up the patch a bit, split it up into two to clarify it, and
-have committed it to my tree. I'm not marking the patches for stable,
-because while I'm convinced it's a bug, I'm also not sure why even if
-it triggers it doesn't eventually recover when the IO completes. So
-I'd mark them for stable only if they are actually confirmed to fix
-anything in the wild, and after they've gotten some testing in
-general. The patches *look* straightforward, they remove more lines
-than they add, and I think the code is more understandable too, but
-maybe I just screwed up. Whatever. Some care is warranted, but this is
-the first time I feel like I actually fixed something that matched at
-least one of your lockup symptoms.
+v8..v9:
+  - Added note in comments about max sleep time (Rob Elliott)
 
-Anyway, it's there as
+v7..v8:
+  - sorted helper macros by size (b, w, l, q)
+  - removed some of the more esoteric (or flat-out bogus) helper macros
 
-  26178ec11ef3 ("x86: mm: consolidate VM_FAULT_RETRY handling")
-  7fb08eca4527 ("x86: mm: move mmap_sem unlock from mm_fault_error() to caller")
+This patch was originally part of a series [1] for adding support for IOMMU
+address translations through an ARM SMMU hardware register.  The other
+patch in the series (the one that actually uses these macros and implements
+said hardware address translations) was Ack'd by the driver maintainer
+there (Will Deacon) so I've pulled this patch out to avoid resending an
+already Ack'd patch over and over again.
 
-and I'll continue to look at the page fault patch. I still have a
-slight worry that it's something along the lines of corrupted page
-tables or some core VM issue, but I apart from my general nervousness
-about the auto-numa code (which will be cleaned up eventually though
-the pte_protnone patches), I can't actually see how you'd get into
-endless page faults any other way. So I'm really hoping that the buggy
-VM_FAULT_RETRY handling explains it.
+In short, please see [1] for previous discussion and the first user of
+these macros.
 
-But me not seeing any other bug clearly doesn't mean it doesn't exist.
+Will also acked this patch in [2].  I didn't retain his Ack here because I
+added to the macro comments.
 
-                    Linus
+[1] http://thread.gmane.org/gmane.linux.kernel.iommu/7140
+[2] http://thread.gmane.org/gmane.linux.kernel.iommu/7449
+
+---
+ include/linux/iopoll.h | 144 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 144 insertions(+)
+ create mode 100644 include/linux/iopoll.h
+
+diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
+new file mode 100644
+index 000000000000..08fd52cdb5a0
+--- /dev/null
++++ b/include/linux/iopoll.h
+@@ -0,0 +1,144 @@
++/*
++ * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _LINUX_IOPOLL_H
++#define _LINUX_IOPOLL_H
++
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/hrtimer.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/io.h>
++
++/**
++ * readx_poll_timeout - Periodically poll an address until a condition is met or a timeout occurs
++ * @op: accessor function (takes @addr as its only argument)
++ * @addr: Address to poll
++ * @val: Variable to read the value into
++ * @cond: Break condition (usually involving @val)
++ * @sleep_us: Maximum time to sleep between reads in us (0
++ *            tight-loops).  Should be less than ~20ms since usleep_range
++ *            is used (see Documentation/timers/timers-howto.txt).
++ * @timeout_us: Timeout in us, 0 means never timeout
++ *
++ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
++ * case, the last read value at @addr is stored in @val. Must not
++ * be called from atomic context if sleep_us or timeout_us are used.
++ *
++ * When available, you'll probably want to use one of the specialized
++ * macros defined below rather than this macro directly.
++ */
++#define readx_poll_timeout(op, addr, val, cond, sleep_us, timeout_us)	\
++({ \
++	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
++	might_sleep_if(sleep_us); \
++	for (;;) { \
++		(val) = op(addr); \
++		if (cond) \
++			break; \
++		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
++			(val) = op(addr); \
++			break; \
++		} \
++		if (sleep_us) \
++			usleep_range((sleep_us >> 2) + 1, sleep_us); \
++	} \
++	(cond) ? 0 : -ETIMEDOUT; \
++})
++
++/**
++ * readx_poll_timeout_atomic - Periodically poll an address until a condition is met or a timeout occurs
++ * @op: accessor function (takes @addr as its only argument)
++ * @addr: Address to poll
++ * @val: Variable to read the value into
++ * @cond: Break condition (usually involving @val)
++ * @delay_us: Time to udelay between reads in us (0 tight-loops).  Should
++ *            be less than ~10us since udelay is used (see
++ *            Documentation/timers/timers-howto.txt).
++ * @timeout_us: Timeout in us, 0 means never timeout
++ *
++ * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
++ * case, the last read value at @addr is stored in @val.
++ *
++ * When available, you'll probably want to use one of the specialized
++ * macros defined below rather than this macro directly.
++ */
++#define readx_poll_timeout_atomic(op, addr, val, cond, delay_us, timeout_us) \
++({ \
++	ktime_t timeout = ktime_add_us(ktime_get(), timeout_us); \
++	for (;;) { \
++		(val) = op(addr); \
++		if (cond) \
++			break; \
++		if (timeout_us && ktime_compare(ktime_get(), timeout) > 0) { \
++			(val) = op(addr); \
++			break; \
++		} \
++		if (delay_us) \
++			udelay(delay_us);	\
++	} \
++	(cond) ? 0 : -ETIMEDOUT; \
++})
++
++
++#define readb_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readb, addr, val, cond, delay_us, timeout_us)
++
++#define readb_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readb, addr, val, cond, delay_us, timeout_us)
++
++#define readw_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readw, addr, val, cond, delay_us, timeout_us)
++
++#define readw_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readw, addr, val, cond, delay_us, timeout_us)
++
++#define readl_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readl, addr, val, cond, delay_us, timeout_us)
++
++#define readl_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readl, addr, val, cond, delay_us, timeout_us)
++
++#define readq_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readq, addr, val, cond, delay_us, timeout_us)
++
++#define readq_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readq, addr, val, cond, delay_us, timeout_us)
++
++#define readb_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readb_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readb_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readb_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readw_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readw_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readw_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readw_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readl_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readl_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readl_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readl_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readq_relaxed_poll_timeout(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout(readq_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#define readq_relaxed_poll_timeout_atomic(addr, val, cond, delay_us, timeout_us) \
++	readx_poll_timeout_atomic(readq_relaxed, addr, val, cond, delay_us, timeout_us)
++
++#endif /* _LINUX_IOPOLL_H */
+-- 
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
