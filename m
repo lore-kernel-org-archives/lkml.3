@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaLOJ20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:28:26 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:40163 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaLOJ2Y (ORCPT
+	id S1751929AbaLOJcV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:32:21 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:33270 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448AbaLOJcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:28:24 -0500
-Message-ID: <548EA9B5.70602@suse.cz>
-Date: Mon, 15 Dec 2014 10:28:21 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 04:32:17 -0500
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Richard Farthing <rfarthing@iee.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Kernel boot panic 3.12-34 > 3.12.35
-References: <548DAFA0.1090700@iee.org> <20141214182518.GA607@pd.tnic>
-In-Reply-To: <20141214182518.GA607@pd.tnic>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <548E8D01.9050707@linux.vnet.ibm.com>
+References: <20141211194204.GA19083@wfg-t540p.sh.intel.com>
+	<CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com>
+	<548E8D01.9050707@linux.vnet.ibm.com>
+Date: Mon, 15 Dec 2014 15:02:17 +0530
+Message-ID: <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
+Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Cc: Frederic Weisbecker <frederic@kernel.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2014, 07:25 PM, Borislav Petkov wrote:
-> On Sun, Dec 14, 2014 at 03:41:20PM +0000, Richard Farthing wrote:
->> I patched 3.12.34 to 3.12.35 and the attached now happens at boot.
->> Sorry I don't have better than a photo, cannot get past this.
->>
->> The root FS is EXT2.  It's admittedly an old test machine that I'm using to
->> build up a new configuration, so the  BIOS is a bit old, but it's at least
->> dual core, not totally ancient.
->>
->> Let me know if you need more diagnostic
-> 
-> That happens very early and the first oops which is the most
-> relevant one is cut off and one cannot see what the bug actually is,
-> unfortunately.
-> 
-> Can you catch dmesg of that boot over serial or netconsole or so? Ask if
-> you don't know how.
-> 
-> You could send your .config, maybe it is reproducible in kvm. Also, can
-> you send a full dmesg of the successful boot with 3.12.34?
+On 15 December 2014 at 12:55, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Viresh,
+>
+> Let me explain why I think this is happening.
+>
+> 1. tick_nohz_irq_enter/exit() both get called *only if the cpu is idle*
+> and receives an interrupt.
 
-Hmm...
+Bang on target. Yeah that's the part we missed while writing this patch :)
 
-panic from mount_block_root?
+> 2. Commit 2a16fc93d2c9568e1, cancels programming of tick_sched timer
+> in its handler, assuming that tick_nohz_irq_exit() will take care of
+> programming the clock event device appropriately, and hence it would
+> requeue or cancel the tick_sched timer.
 
-That would be:
-"VFS: Unable to mount root fs on %s"
+Correct.
 
-Did you use proper root= kernel parameter? Do you have initrd properly
-created and installed?
+> 3. But the intel_powerclamp driver injects an idle period only.
+> *The CPU however is not idle*. It has work on its runqueue and the
+> rq->curr != idle. This means that *tick_nohz_irq_enter()/exit() will not
+> get called on any interrupt*.
 
-thanks,
--- 
-js
-suse labs
+Still good..
+
+> 4. As a consequence, when we get a hrtimer interrupt during the period
+> that the powerclamp driver is mimicking idle, the exit path of the
+> interrupt never calls tick_nohz_irq_exit(). Hence the tick_sched timer
+> that would have got removed due to the above commit will not get
+> enqueued back on for any pending timers that there might be. Besides
+> this, *jiffies never gets updated*.
+
+Jiffies can be updated by any CPU and there is something called a control
+cpu with powerclamp driver. BUT we may have got interrupted before the
+powerclamp timer expired and so we are stuck in the
+
+while (time_before(jiffies, target_jiffies))
+
+loop for ever.
+
+> Hope the above explanation makes sense.
+
+Mostly good. Thanks for helping out.
+
+Now, what's the right solution going forward ?
+
+- Revert the offending commit ..
+- Or still try to avoid reprogramming if we can ..
+
+This is what I could come up with to still avoid reprogramming of tick:
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index cc0a5b6f741b..49f4278f69e2 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -1100,7 +1100,7 @@ static enum hrtimer_restart
+tick_sched_timer(struct hrtimer *timer)
+                tick_sched_handle(ts, regs);
+
+        /* No need to reprogram if we are in idle or full dynticks mode */
+-       if (unlikely(ts->tick_stopped))
++       if (unlikely(ts->tick_stopped && (is_idle_task(current) ||
+!ts->inidle)))
+                return HRTIMER_NORESTART;
+
+        hrtimer_forward(timer, now, tick_period);
+
+
+
+Above change checks why we have stopped tick..
+- The cpu has gone idle (really): is_idle_task(current)
+- The cpu isn't in idle mode, i.e. its in nohz-full mode: !ts->inidle
+
+This fixed the issues with powerclamp in my case.
+
+@Fengguang: Can you please check if this fixes it for you as well?
+
+@Thomas: Please let me know if you want me to send this fix
+or you want to revert the original commit itself.
+
+Thanks.
+
+--
+Viresh
