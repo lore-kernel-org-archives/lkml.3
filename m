@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaLONGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 08:06:52 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60056 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750711AbaLONGu (ORCPT
+	id S1751832AbaLONIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 08:08:19 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:47025 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711AbaLONIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 08:06:50 -0500
-Date: Mon, 15 Dec 2014 13:02:48 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [PATCH v3 1/2] iio: document ti-dac8554 devicetree bindings
-Message-ID: <20141215130248.GA8264@leverpostej>
-References: <1418643605-15554-1-git-send-email-nikolaus.schulz@avionic-design.de>
+	Mon, 15 Dec 2014 08:08:17 -0500
+Date: Mon, 15 Dec 2014 14:08:08 +0100
+From: David Hildenbrand <dahi@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org, akpm@linux-foundation.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com,
+        borntraeger@de.ibm.com, mst@redhat.com, tglx@linutronix.de,
+        David.Laight@ACULAB.COM, hughd@google.com, hocko@suse.cz
+Subject: Re: [PATCH v2 0/5] Reenable might_sleep() checks for might_fault()
+Message-ID: <20141215140808.7a165f00@thinkpad-w530>
+In-Reply-To: <20141215125014.GI21343@twins.programming.kicks-ass.net>
+References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<20141215104549.GY29390@twins.programming.kicks-ass.net>
+	<20141215122127.5fd6f5ae@thinkpad-w530>
+	<20141215125014.GI21343@twins.programming.kicks-ass.net>
+Organization: IBM Deutschland GmbH
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418643605-15554-1-git-send-email-nikolaus.schulz@avionic-design.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121513-0009-0000-0000-00000261C847
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 11:39:56AM +0000, Nikolaus Schulz wrote:
-> Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-> ---
->  .../devicetree/bindings/iio/dac/ti-dac8554.txt     | 22 ++++++++++++++++++++++
->  1 file changed, 22 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
+> On Mon, Dec 15, 2014 at 12:21:27PM +0100, David Hildenbrand wrote:
+> > > On Wed, Dec 10, 2014 at 03:23:29PM +0100, David Hildenbrand wrote:
+> > > 
+> > > Did you look at the -rt patches where this comes from?
+> > > 
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=b389ced19ab649438196d132768fe6522d2f052b
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=4fb7f9d416f7b34036d9d1b209e77c462ac0ee10
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=c730a4aade9e5c9b84f65de01d6612bf70c577e3
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=d365f5bf933e988a39874b33302f02ff6c7989b7
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=93eb18f43dfa5d49d99e2b8ad236eea2c35dd539
+> > > https://git.kernel.org/cgit/linux/kernel/git/clrkwllms/rt-linux.git/commit/?h=v3.14.21-rt9&id=8947442e896921e1b645f9e1fd0f2beee103bba0
+> > > 
+> > > 
+> > 
+> > Thanks for the links - haven't seen these patches so far (somebody on the list
+> > just mentioned that someone tried to demangle that stuff some time ago). But
+> > good to know that somebody is working on that pagefault_disable() thing.
+> > 
+> > Do you know what the plans for this series are? So I can base my patches
+> > (might_sleep() checks for might_fault()) on that queue.
 > 
-> diff --git a/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-> new file mode 100644
-> index 0000000..32e96859
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-> @@ -0,0 +1,22 @@
-> +TI DAC8554 Digital to Analog Converter
-> +
-> +This driver supports the SPI bus.
+> As stated in that other email, there's no active work on this atm. Its
+> just what -rt needed the pagefault_{en,dis}able() bits for. I think we
+> should try and merge some of that upstream now that there is a stronger
+> use case.
+> 
 
-The binding need not refer to the driver, this sentence can go. It might
-be worth adding "(SPI)" to the first line.
+Ah, now I get it. So the main question is which approach is better:
 
-> +
-> +Required properties:
-> +	- compatible: must be "ti,dac8554"
-> +	- vref-supply: the vref power supply
-> +	- ti,address: the additional 2-bit chip address
-> +
-> +For required properties on SPI, please consult
-> +Documentation/devicetree/bindings/spi/spi-bus.txt
-> +
-> +Example:
-> +
-> +	dac8554@0 {
-> +		compatible = "ti,dac8554";
-> +		reg = <0>;
-> +		spi-max-frequency = <50000000>;
-> +
-> +		vref-supply = <&vdd_vref>;
-> +		ti,address = <0>;
+a) -rt version: Store the pagefault_count in struct task_struct()
+b) my version: Storing it in thread_info
 
-What's this property used for?
+IOW: My series first and the -rt part (pagefault handlers, preempt fixup) on
+top or -rt version first and my work (patch 3 + 4 ) on top.
 
-> +	};
+Getting rid of that whole preemption handling in pagefault_disable() / fixing up
+the pagefault handlers is something I would have addressed in future patches,
+but that part seems to be just fine in the -rt code.
 
-Otherwise this looks sane to me.
+Thanks for having a look!
 
-Mark.
+David
+
