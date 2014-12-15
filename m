@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaLOOtp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:49:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38666 "EHLO
+	id S1751150AbaLOOuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:50:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38651 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773AbaLOO2X (ORCPT
+	with ESMTP id S1752795AbaLOO2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:23 -0500
+	Mon, 15 Dec 2014 09:28:21 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: =?UTF-8?q?Christian=20S=C3=BCnkenberg?= 
+	<christian.suenkenberg@hfg-karlsruhe.de>,
+        Christoph Hellwig <hch@lst.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 093/168] USB: uas: Add no-uas quirk for Hitachi usb-3 enclosures 4971:1012
-Date: Mon, 15 Dec 2014 14:25:47 +0000
-Message-Id: <1418653622-21105-94-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 091/168] scsi: add Intel Multi-Flex to scsi scan blacklist
+Date: Mon, 15 Dec 2014 14:25:45 +0000
+Message-Id: <1418653622-21105-92-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +32,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: =?UTF-8?q?Christian=20S=C3=BCnkenberg?=
 
-commit 8daee1352d51a32676b84bddcc0e3252d1caa833 upstream.
+commit 1899045510ff109980d9cc34e330fd8ca3631871 upstream.
 
-These disks have a broken uas implementation, the tag field of the status
-iu-s is not set properly, so we need to fall-back to usb-storage for these.
+Intel Multi-Flex LUNs choke on REPORT SUPPORTED OPERATION CODES
+resulting in sd_mod hanging for several minutes on startup.
+The issue was introduced with WRITE SAME discovery heuristics.
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: 5db44863b6eb ("[SCSI] sd: Implement support for WRITE SAME")
+Signed-off-by: Christian Sünkenberg <christian.suenkenberg@hfg-karlsruhe.de>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/storage/unusual_uas.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/scsi/scsi_devinfo.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/storage/unusual_uas.h b/drivers/usb/storage/unusual_uas.h
-index 2fefaf923e4a..18a283d6de1c 100644
---- a/drivers/usb/storage/unusual_uas.h
-+++ b/drivers/usb/storage/unusual_uas.h
-@@ -103,3 +103,10 @@ UNUSUAL_DEV(0x2109, 0x0711, 0x0000, 0x9999,
- 		"VL711",
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_NO_ATA_1X),
-+
-+/* Reported-by: Hans de Goede <hdegoede@redhat.com> */
-+UNUSUAL_DEV(0x4971, 0x1012, 0x0000, 0x9999,
-+		"Hitachi",
-+		"External HDD",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_IGNORE_UAS),
+diff --git a/drivers/scsi/scsi_devinfo.c b/drivers/scsi/scsi_devinfo.c
+index 49014a143c6a..c1d04d4d3c6c 100644
+--- a/drivers/scsi/scsi_devinfo.c
++++ b/drivers/scsi/scsi_devinfo.c
+@@ -202,6 +202,7 @@ static struct {
+ 	{"IOMEGA", "Io20S         *F", NULL, BLIST_KEY},
+ 	{"INSITE", "Floptical   F*8I", NULL, BLIST_KEY},
+ 	{"INSITE", "I325VM", NULL, BLIST_KEY},
++	{"Intel", "Multi-Flex", NULL, BLIST_NO_RSOC},
+ 	{"iRiver", "iFP Mass Driver", NULL, BLIST_NOT_LOCKABLE | BLIST_INQUIRY_36},
+ 	{"LASOUND", "CDX7405", "3.10", BLIST_MAX5LUN | BLIST_SINGLELUN},
+ 	{"MATSHITA", "PD-1", NULL, BLIST_FORCELUN | BLIST_SINGLELUN},
 -- 
 2.1.3
 
