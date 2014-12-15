@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252AbaLOPiC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:38:02 -0500
+	id S1752339AbaLOPiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:38:05 -0500
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:11840 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750735AbaLOPhy (ORCPT
+	by vger.kernel.org with ESMTP id S1750952AbaLOPh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:37:54 -0500
-Message-Id: <20141215153743.594740148@goodmis.org>
+	Mon, 15 Dec 2014 10:37:56 -0500
+Message-Id: <20141215153743.427704960@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Mon, 15 Dec 2014 10:36:40 -0500
+Date: Mon, 15 Dec 2014 10:36:39 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
@@ -17,11 +17,11 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 2/2] tracing: Add tp_printk cmdline to have tracepoints go to printk()
+Subject: [PATCH 1/2] tracing: Move enabling tracepoints to just after rcu_init()
 References: <20141215153638.563024114@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-tracing-Add-tp_printk-cmdline-to-have-tracepoints-go.patch
+Content-Disposition: inline; filename=0001-tracing-Move-enabling-tracepoints-to-just-after-rcu_.patch
 X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,190 +30,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Add the kernel command line tp_printk option that will have tracepoints
-that are active sent to printk() as well as to the trace buffer.
+Enabling tracepoints at boot up can be very useful. The tracepoint
+can be initialized right after RCU has been. There's no need to
+wait for the early_initcall() to be called. That's too late for some
+things that can use tracepoints for debugging. Move the logic to
+enable tracepoints out of the initcalls and into init/main.c to
+right after rcu_init().
 
-Passing "tp_printk" will activate this. To turn it off, the sysctl
-/proc/sys/kernel/tracepoint_printk can have '0' echoed into it. Note,
-this only works if the cmdline option is used. Echoing 1 into the sysctl
-file without the cmdline option will have no affect.
-
-Note, this is a dangerous option. Having high frequency tracepoints send
-their data to printk() can possibly cause a live lock. This is another
-reason why this is only active if the command line option is used.
+This also allows trace_printk() to be used early too.
 
 Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
+Link: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
 
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Suggested-by: Thomas Gleixner <tglx@linutronix.de>
 Tested-by: Thomas Gleixner <tglx@linutronix.de>
 Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- Documentation/kernel-parameters.txt | 18 ++++++++++++++++++
- include/linux/ftrace.h              |  1 +
- kernel/sysctl.c                     |  7 +++++++
- kernel/trace/trace.c                | 17 +++++++++++++++++
- kernel/trace/trace.h                |  1 +
- kernel/trace/trace_events.c         | 32 ++++++++++++++++++++++++++++++++
- 6 files changed, 76 insertions(+)
+ include/linux/ftrace.h        |  6 ++++++
+ init/main.c                   |  4 ++++
+ kernel/trace/trace.c          |  8 +++++++-
+ kernel/trace/trace.h          | 13 +++++++++++++
+ kernel/trace/trace_events.c   | 10 ++++++++--
+ kernel/trace/trace_syscalls.c |  7 ++-----
+ 6 files changed, 40 insertions(+), 8 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 1d09eb37c562..ae41f1181e9a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -3500,6 +3500,24 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			See also Documentation/trace/ftrace.txt "trace options"
- 			section.
- 
-+	tp_printk[FTRACE]
-+			Have the tracepoints sent to printk as well as the
-+			tracing ring buffer. This is useful for early boot up
-+			where the system hangs or reboots and does not give the
-+			option for reading the tracing buffer or performing a
-+			ftrace_dump_on_oops.
-+
-+			To turn off having tracepoints sent to printk,
-+			 echo 0 > /proc/sys/kernel/tracepoint_printk
-+			Note, echoing 1 into this file without the
-+			tracepoint_printk kernel cmdline option has no effect.
-+
-+			** CAUTION **
-+
-+			Having tracepoints sent to printk() and activating high
-+			frequency tracepoints such as irq or sched, can cause
-+			the system to live lock.
-+
- 	traceoff_on_warning
- 			[FTRACE] enable this option to disable tracing when a
- 			warning is hit. This turns off "tracing_on". Tracing can
 diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index f4bc14b7d444..1da602982cf9 100644
+index ed501953f0b2..f4bc14b7d444 100644
 --- a/include/linux/ftrace.h
 +++ b/include/linux/ftrace.h
-@@ -879,6 +879,7 @@ static inline int test_tsk_trace_graph(struct task_struct *tsk)
- enum ftrace_dump_mode;
- 
- extern enum ftrace_dump_mode ftrace_dump_on_oops;
-+extern int tracepoint_printk;
- 
- extern void disable_trace_on_warning(void);
- extern int __disable_trace_on_warning;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 4aada6d9fe74..bb50c2187194 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -622,6 +622,13 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+	{
-+		.procname	= "tracepoint_printk",
-+		.data		= &tracepoint_printk,
-+		.maxlen		= sizeof(tracepoint_printk),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
+@@ -39,6 +39,12 @@
+ # define FTRACE_FORCE_LIST_FUNC 0
  #endif
- #ifdef CONFIG_KEXEC
- 	{
+ 
++/* Main tracing buffer and events set up */
++#ifdef CONFIG_TRACING
++void trace_init(void);
++#else
++static inline void trace_init(void) { }
++#endif
+ 
+ struct module;
+ struct ftrace_hash;
+diff --git a/init/main.c b/init/main.c
+index 800a0daede7e..70687069f8e2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -577,6 +577,10 @@ asmlinkage __visible void __init start_kernel(void)
+ 		local_irq_disable();
+ 	idr_init_cache();
+ 	rcu_init();
++
++	/* trace_printk() and trace points may be used after this */
++	trace_init();
++
+ 	context_tracking_init();
+ 	radix_tree_init();
+ 	/* init some links before init_ISA_irqs() */
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ec3ca694665f..e890d2d4ec89 100644
+index 4ceb2546c7ef..ec3ca694665f 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -63,6 +63,10 @@ static bool __read_mostly tracing_selftest_running;
-  */
- bool __read_mostly tracing_selftest_disabled;
- 
-+/* Pipe tracepoints to printk */
-+struct trace_iterator *tracepoint_print_iter;
-+int tracepoint_printk;
-+
- /* For tracers that don't implement custom flags */
- static struct tracer_opt dummy_tracer_opt[] = {
- 	{ }
-@@ -193,6 +197,13 @@ static int __init set_trace_boot_clock(char *str)
+@@ -6876,6 +6876,13 @@ out:
+ 	return ret;
  }
- __setup("trace_clock=", set_trace_boot_clock);
  
-+static int __init set_tracepoint_printk(char *str)
++void __init trace_init(void)
 +{
-+	if ((strcmp(str, "=0") != 0 && strcmp(str, "=off") != 0))
-+		tracepoint_printk = 1;
-+	return 1;
++	tracer_alloc_buffers();
++	init_ftrace_syscalls();
++	trace_event_init();	
 +}
-+__setup("tp_printk", set_tracepoint_printk);
- 
- unsigned long long ns2usecs(cycle_t nsec)
++
+ __init static int clear_boot_tracer(void)
  {
-@@ -6878,6 +6889,12 @@ out:
+ 	/*
+@@ -6895,6 +6902,5 @@ __init static int clear_boot_tracer(void)
+ 	return 0;
+ }
  
- void __init trace_init(void)
- {
-+	if (tracepoint_printk) {
-+		tracepoint_print_iter =
-+			kmalloc(sizeof(*tracepoint_print_iter), GFP_KERNEL);
-+		if (WARN_ON(!tracepoint_print_iter))
-+			tracepoint_printk = 0;
-+	}
- 	tracer_alloc_buffers();
- 	init_ftrace_syscalls();
- 	trace_event_init();	
+-early_initcall(tracer_alloc_buffers);
+ fs_initcall(tracer_init_debugfs);
+ late_initcall(clear_boot_tracer);
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index c138c149d6ef..8de48bac1ce2 100644
+index 3255dfb054a0..c138c149d6ef 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -1313,5 +1313,6 @@ void trace_event_init(void);
- static inline void __init trace_event_init(void) { }
+@@ -1301,4 +1301,17 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
+ #define perf_ftrace_event_register NULL
  #endif
  
-+extern struct trace_iterator *tracepoint_print_iter;
- 
++#ifdef CONFIG_FTRACE_SYSCALLS
++void init_ftrace_syscalls(void);
++#else
++static inline void init_ftrace_syscalls(void) { }
++#endif
++
++#ifdef CONFIG_EVENT_TRACING
++void trace_event_init(void);
++#else
++static inline void __init trace_event_init(void) { }
++#endif
++
++
  #endif /* _LINUX_KERNEL_TRACE_H */
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index fd9deb0e03f0..9f7175a3df71 100644
+index f9d0cbe014b7..fd9deb0e03f0 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -212,8 +212,40 @@ void *ftrace_event_buffer_reserve(struct ftrace_event_buffer *fbuffer,
+@@ -2477,8 +2477,14 @@ static __init int event_trace_init(void)
+ #endif
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(ftrace_event_buffer_reserve);
- 
-+static DEFINE_SPINLOCK(tracepoint_iter_lock);
+-early_initcall(event_trace_memsetup);
+-core_initcall(event_trace_enable);
 +
-+static void output_printk(struct ftrace_event_buffer *fbuffer)
++void __init trace_event_init(void)
 +{
-+	struct ftrace_event_call *event_call;
-+	struct trace_event *event;
-+	unsigned long flags;
-+	struct trace_iterator *iter = tracepoint_print_iter;
-+
-+	if (!iter)
-+		return;
-+
-+	event_call = fbuffer->ftrace_file->event_call;
-+	if (!event_call || !event_call->event.funcs ||
-+	    !event_call->event.funcs->trace)
-+		return;
-+
-+	event = &fbuffer->ftrace_file->event_call->event;
-+
-+	spin_lock_irqsave(&tracepoint_iter_lock, flags);
-+	trace_seq_init(&iter->seq);
-+	iter->ent = fbuffer->entry;
-+	event_call->event.funcs->trace(iter, 0, event);
-+	trace_seq_putc(&iter->seq, 0);
-+	printk("%s", iter->seq.buffer);
-+
-+	spin_unlock_irqrestore(&tracepoint_iter_lock, flags);
++	event_trace_memsetup();
++	init_ftrace_syscalls();
++	event_trace_enable();
 +}
 +
- void ftrace_event_buffer_commit(struct ftrace_event_buffer *fbuffer)
+ fs_initcall(event_trace_init);
+ 
+ #ifdef CONFIG_FTRACE_STARTUP_TEST
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index a72f3d8d813e..ec239771c175 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -514,7 +514,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
+ 	return (unsigned long)sys_call_table[nr];
+ }
+ 
+-static int __init init_ftrace_syscalls(void)
++void __init init_ftrace_syscalls(void)
  {
-+	if (tracepoint_printk)
-+		output_printk(fbuffer);
-+
- 	event_trigger_unlock_commit(fbuffer->ftrace_file, fbuffer->buffer,
- 				    fbuffer->event, fbuffer->entry,
- 				    fbuffer->flags, fbuffer->pc);
+ 	struct syscall_metadata *meta;
+ 	unsigned long addr;
+@@ -524,7 +524,7 @@ static int __init init_ftrace_syscalls(void)
+ 				    GFP_KERNEL);
+ 	if (!syscalls_metadata) {
+ 		WARN_ON(1);
+-		return -ENOMEM;
++		return;
+ 	}
+ 
+ 	for (i = 0; i < NR_syscalls; i++) {
+@@ -536,10 +536,7 @@ static int __init init_ftrace_syscalls(void)
+ 		meta->syscall_nr = i;
+ 		syscalls_metadata[i] = meta;
+ 	}
+-
+-	return 0;
+ }
+-early_initcall(init_ftrace_syscalls);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ 
 -- 
 2.1.3
 
