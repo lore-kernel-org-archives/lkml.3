@@ -1,99 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaLOCZA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:25:00 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:38843 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751009AbaLOCYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:24:43 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/2] sched: Pull resched loop to __schedule() callers
-Date: Mon, 15 Dec 2014 03:24:32 +0100
-Message-Id: <1418610272-21518-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418610272-21518-1-git-send-email-fweisbec@gmail.com>
-References: <1418610272-21518-1-git-send-email-fweisbec@gmail.com>
+	id S1751089AbaLOCau (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:30:50 -0500
+Received: from ozlabs.org ([103.22.144.67]:49041 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750804AbaLOCam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Dec 2014 21:30:42 -0500
+Date: Mon, 15 Dec 2014 13:30:20 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the tip tree with the pm tree
+Message-ID: <20141215133020.3de254a5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/+qAL1XUsYPYAiO0TSiwQzwk"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__schedule() disables preemption during its job and re-enables it
-afterward without doing a preemption check to avoid recursion.
+--Sig_/+qAL1XUsYPYAiO0TSiwQzwk
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-But if an event happens after the context switch which requires
-rescheduling, we need to check again if a task of a higher priority
-needs the CPU. A preempt irq can raise such a situation. To handle that,
-__schedule() loops on need_resched().
+Hi all,
 
-But preempt_schedule_*() functions, which call __schedule(), also loop
-on need_resched() to handle missed preempt irqs. Hence we end up with
-the same loop happening twice.
+Today's linux-next merge of the tip tree got a conflict in
+arch/x86/kernel/apic/io_apic.c between commit 16394fd03114 ("x86 / PM:
+Replace CONFIG_PM_RUNTIME in io_apic.c") from the pm tree and various
+commits from the tip tree.
 
-Lets simplify that by attributing the need_resched() loop responsability
-to all __schedule() callers.
+I fixed it up (the tip tree seems to have made extensive changes to
+this file and there are no longer any references to CONFIG_PM_RUNTIME,
+so I used the tip tree version) and can carry the fix as necessary (no
+action is required).
 
-There is a risk that the outer loop now handles reschedules that used
-to be handled by the inner loop with the added overhead of caller details
-(inc/dec of PREEMPT_ACTIVE, irq save/restore) but assuming those inner
-rescheduling loop weren't too frequent, this shouldn't matter. Especially
-since the whole preemption path is now loosing one loop in any case.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/sched/core.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+--Sig_/+qAL1XUsYPYAiO0TSiwQzwk
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 069a2d8..368c8f3 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2748,6 +2748,10 @@ again:
-  *          - explicit schedule() call
-  *          - return from syscall or exception to user-space
-  *          - return from interrupt-handler to user-space
-+ *
-+ * WARNING: all callers must re-check need_resched() afterward and reschedule
-+ * accordingly in case an event triggered the need for rescheduling (such as
-+ * an interrupt waking up a task) while preemption was disabled in __schedule().
-  */
- static void __sched __schedule(void)
- {
-@@ -2756,7 +2760,6 @@ static void __sched __schedule(void)
- 	struct rq *rq;
- 	int cpu;
- 
--need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
- 	rq = cpu_rq(cpu);
-@@ -2821,8 +2824,6 @@ need_resched:
- 	post_schedule(rq);
- 
- 	sched_preempt_enable_no_resched();
--	if (need_resched())
--		goto need_resched;
- }
- 
- static inline void sched_submit_work(struct task_struct *tsk)
-@@ -2842,7 +2843,9 @@ asmlinkage __visible void __sched schedule(void)
- 	struct task_struct *tsk = current;
- 
- 	sched_submit_work(tsk);
--	__schedule();
-+	do {
-+		__schedule();
-+	} while (need_resched());
- }
- EXPORT_SYMBOL(schedule);
- 
--- 
-2.1.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUjkfDAAoJEMDTa8Ir7ZwV0aYQAI5NyQYBvdsfVOO7TnBQxWg3
+SonW6U8aHDvVq6oNRt0UQ5ewXaPxY2wht0qvkK/ZbDyqaxaRK1Gbyp0tLppjjNfj
+/EZVnr+nT0yuMbqYGfYapk3f4G2FxmMTKDA0N9JNZa/6tvyBwmWjCFwN0lS1iJzP
+w0zThL/Bahgimkwf3ghRiKuo7wdLtzL1/e5ZCG2/ovfx8QsUXrKmfiFcw8CLTY+Z
+E5CLzIhUBGygWPm/s3SjU/jAtDHfhHTVsgkAjuGDaM/OQjvWdRvZvXRv07nCYqhs
+MASxQP5uOFAtRRS+232hNsxOlF8CwhAlJCTdtX4OhiWKqw7ofeWbOLW+AuoW84oH
+TuakxDS/WGZVgSSgsbDxqUNkxUHp4+u6bx1PYZIUVhonRsMMfb9PKnh31gmnL5vX
+Y8tl81J+huK4D+DPmpGdOYfp9UKt6Jerw6vzk5SrzG42mom4uWnKDZq1UhVt7KuQ
+LEPe2igieRerffeosn+v+/tVqPFE7Xg7UI7dyaKDEFH+J2cdBNLeYtNiiSvGklAu
+1GbhPtHH6qJfM+xtuC1yCFtXG4UmmFAAlen354Qn+CB5CSIXAVKRKWbUdaNLhP2j
+Su6FiCXKtNCCyOZMjSuwr6XD9EcLuEVJF3JgbL5clhACUoEJ8xcSoXJN5ev8Li+S
+SQXxZY5sBZLdmcI1EkGT
+=n4b5
+-----END PGP SIGNATURE-----
+
+--Sig_/+qAL1XUsYPYAiO0TSiwQzwk--
