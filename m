@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751737AbaLOT3B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:29:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40720 "EHLO
+	id S1751844AbaLOT3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:29:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40725 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097AbaLOT25 (ORCPT
+	with ESMTP id S1751719AbaLOT3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:57 -0500
+	Mon, 15 Dec 2014 14:29:00 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Panu Matilainen <pmatilai@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 30/96] ipv4: Fix incorrect error code when adding an unreachable route
-Date: Mon, 15 Dec 2014 11:25:50 -0800
-Message-Id: <1418671616-25482-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 48/96] ARM: 8216/1: xscale: correct auxiliary register in suspend/resume
+Date: Mon, 15 Dec 2014 11:26:08 -0800
+Message-Id: <1418671616-25482-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,53 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Panu Matilainen <pmatilai@redhat.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-[ Upstream commit 49dd18ba4615eaa72f15c9087dea1c2ab4744cf5 ]
+commit ef59a20ba375aeb97b3150a118318884743452a8 upstream.
 
-Trying to add an unreachable route incorrectly returns -ESRCH if
-if custom FIB rules are present:
+According to the manuals I have, XScale auxiliary register should be
+reached with opc_2 = 1 instead of crn = 1. cpu_xscale_proc_init
+correctly uses c1, c0, 1 arguments, but cpu_xscale_do_suspend and
+cpu_xscale_do_resume use c1, c1, 0. Correct suspend/resume functions to
+also use c1, c0, 1.
 
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: Network is unreachable
-[root@localhost ~]# ip rule add to 55.66.77.88 table 200
-[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
-RTNETLINK answers: No such process
-[root@localhost ~]#
+The issue was primarily noticed thanks to qemu reporing "unsupported
+instruction" on the pxa suspend path. Confirmed in PXA210/250 and PXA255
+XScale Core manuals and in PXA270 and PXA320 Developers Guides.
 
-Commit 83886b6b636173b206f475929e58fac75c6f2446 ("[NET]: Change "not found"
-return value for rule lookup") changed fib_rules_lookup()
-to use -ESRCH as a "not found" code internally, but for user space it
-should be translated into -ENETUNREACH. Handle the translation centrally in
-ipv4-specific fib_lookup(), leaving the DECnet case alone.
+Harware tested by me on tosa (pxa255). Robert confirmed on pxa270 board.
 
-On a related note, commit b7a71b51ee37d919e4098cd961d59a883fd272d8
-("ipv4: removed redundant conditional") removed a similar translation from
-ip_route_input_slow() prematurely AIUI.
-
-Fixes: b7a71b51ee37 ("ipv4: removed redundant conditional")
-Signed-off-by: Panu Matilainen <pmatilai@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/fib_rules.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/mm/proc-xscale.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/fib_rules.c b/net/ipv4/fib_rules.c
-index f2e1573..8f7bd56 100644
---- a/net/ipv4/fib_rules.c
-+++ b/net/ipv4/fib_rules.c
-@@ -62,6 +62,10 @@ int __fib_lookup(struct net *net, struct flowi4 *flp, struct fib_result *res)
- 	else
- 		res->tclassid = 0;
- #endif
-+
-+	if (err == -ESRCH)
-+		err = -ENETUNREACH;
-+
- 	return err;
- }
- EXPORT_SYMBOL_GPL(__fib_lookup);
+diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
+index d19b1cf..b34b95f 100644
+--- a/arch/arm/mm/proc-xscale.S
++++ b/arch/arm/mm/proc-xscale.S
+@@ -535,7 +535,7 @@ ENTRY(cpu_xscale_do_suspend)
+ 	mrc	p15, 0, r5, c15, c1, 0	@ CP access reg
+ 	mrc	p15, 0, r6, c13, c0, 0	@ PID
+ 	mrc	p15, 0, r7, c3, c0, 0	@ domain ID
+-	mrc	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mrc	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mrc	p15, 0, r9, c1, c0, 0	@ control reg
+ 	bic	r4, r4, #2		@ clear frequency change bit
+ 	stmia	r0, {r4 - r9}		@ store cp regs
+@@ -552,7 +552,7 @@ ENTRY(cpu_xscale_do_resume)
+ 	mcr	p15, 0, r6, c13, c0, 0	@ PID
+ 	mcr	p15, 0, r7, c3, c0, 0	@ domain ID
+ 	mcr	p15, 0, r1, c2, c0, 0	@ translation table base addr
+-	mcr	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mcr	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mov	r0, r9			@ control register
+ 	b	cpu_resume_mmu
+ ENDPROC(cpu_xscale_do_resume)
 -- 
 1.9.1
 
