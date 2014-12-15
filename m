@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaLOVa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:30:26 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:38124 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794AbaLOVaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:30:25 -0500
-Date: Mon, 15 Dec 2014 13:29:48 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Martin Kepplinger <martink@posteo.de>
-Cc: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
-Message-ID: <20141215212948.GA23765@roeck-us.net>
-References: <1418660317-21750-1-git-send-email-martink@posteo.de>
- <1418660317-21750-4-git-send-email-martink@posteo.de>
+	id S1751057AbaLOVbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:31:38 -0500
+Received: from mail-bn1bon0094.outbound.protection.outlook.com ([157.56.111.94]:64928
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750764AbaLOVbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:31:37 -0500
+Message-ID: <548F5330.6090508@caviumnetworks.com>
+Date: Mon, 15 Dec 2014 13:31:28 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418660317-21750-4-git-send-email-martink@posteo.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010201.548F52F0.05C7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Aleksey Makarov <feumilieu@gmail.com>, <linux-mips@linux-mips.org>,
+        <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
+        "Aleksey Makarov" <aleksey.makarov@auriga.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 13/14] MIPS: OCTEON: Add register definitions for OCTEON
+ III reset unit.
+References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com> <1418666603-15159-14-git-send-email-aleksey.makarov@auriga.com> <20141215210942.GC10323@fuloong-minipc.musicnaut.iki.fi>
+In-Reply-To: <20141215210942.GC10323@fuloong-minipc.musicnaut.iki.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.194]
+X-ClientProxiedBy: BLUPR07CA092.namprd07.prod.outlook.com (25.160.24.47) To
+ BN3PR0701MB1105.namprd07.prod.outlook.com (25.160.114.143)
+X-Microsoft-Antispam: UriScan:;UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601003);SRVR:BN3PR0701MB1105;
+X-Forefront-PRVS: 04267075BD
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(24454002)(51704005)(377454003)(189002)(199003)(479174004)(62966003)(64126003)(110136001)(92566001)(46102003)(20776003)(47776003)(97736003)(77156002)(4396001)(36756003)(50466002)(69596002)(81156004)(87266999)(23756003)(76176999)(107046002)(40100003)(31966008)(19580395003)(80316001)(33656002)(54356999)(83506001)(66066001)(105586002)(50986999)(106356001)(64706001)(19580405001)(120916001)(101416001)(99396003)(87976001)(68736005)(42186005)(122386002)(21056001)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0701MB1105;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1105;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0701MB1089;
+X-OriginatorOrg: caviumnetworks.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 15 Dec 2014 21:31:32.6628
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 711e4ccf-2e9b-4bcf-a551-4094005b6194
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0701MB1089
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
-> ---
+On 12/15/2014 01:09 PM, Aaro Koskinen wrote:
+> Hi,
+>
+> On Mon, Dec 15, 2014 at 09:03:19PM +0300, Aleksey Makarov wrote:
+>> From: David Daney <david.daney@cavium.com>
+>>
+>> Needed by follow-on patches.
+>
+> Looks like only one of the unions was needed (cvmx_rst_boot)...?
+>
 
-Some description would be nice. Also, please consider adding
-relevant subsystem mailing lists and maintainers to your patches.
+This follows the form of the other register definition files.
 
->  drivers/hwmon/jc42.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
-> index 388f8bc..335a2de 100644
-> --- a/drivers/hwmon/jc42.c
-> +++ b/drivers/hwmon/jc42.c
-> @@ -31,6 +31,7 @@
->  #include <linux/hwmon-sysfs.h>
->  #include <linux/err.h>
->  #include <linux/mutex.h>
-> +#include <linux/bitops.h>
->  
->  /* Addresses to scan */
->  static const unsigned short normal_i2c[] = {
-> @@ -215,9 +216,7 @@ static int jc42_temp_from_reg(s16 reg)
->  {
->  	reg &= 0x1fff;
->  
-If I understand the code in sign_extend16 correctly, the above mask
-should no longer be necessary.
+If Ralf requests it, we would consider deleting some of the currently 
+unused definitions.
 
-Thanks,
-Guenter
+David Daney
 
-> -	/* sign extend register */
-> -	if (reg & 0x1000)
-> -		reg |= 0xf000;
-> +	reg = sign_extend16(reg, 12);
->  
->  	/* convert from 0.0625 to 0.001 resolution */
->  	return reg * 125 / 2;
-> -- 
-> 2.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+
