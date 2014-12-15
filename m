@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLOLZt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:25:49 -0500
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:58896 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaLOLZq (ORCPT
+	id S1751937AbaLOL0B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:26:01 -0500
+Received: from mail-yk0-f176.google.com ([209.85.160.176]:43911 "EHLO
+	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaLOLZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:25:46 -0500
+	Mon, 15 Dec 2014 06:25:53 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, a.zummo@towertech.it,
         rtc-linux@googlegroups.com, wim@iguana.be,
         linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 0/8] mfd: watchdog: rtc: New driver for ST's LPC IP
-Date: Mon, 15 Dec 2014 11:25:30 +0000
-Message-Id: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 2/8] ARM: multi_v7_defconfig: Enable support for ST's LPC RTC
+Date: Mon, 15 Dec 2014 11:25:32 +0000
+Message-Id: <1418642738-17407-3-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
+References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's Low Power Controller (LPC) controls two devices; watchdog and RTC.
-Only one of the devices can be used at any one time, which is enforced
-by the correlating MFD driver.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-This driver set provides everything you need to choose one (and only
-one) of the LPC devices to run per I/P block, of which there are two
-on the enabled STiH407 h/w.
-
-Lee Jones (8):
-  ARM: multi_v7_defconfig: Enable support for ST's LPC Watchdog
-  ARM: multi_v7_defconfig: Enable support for ST's LPC RTC
-  mfd: bindings: Provide ST bindings for ST's LPC device
-  mfd: dt-bindings: Provide human readable defines for LPC mode choosing
-  mfd: Add ST's Low Power Controller driver
-  watchdog: st_wdt: Add new driver for ST's LPC Watchdog
-  rtc: st: add new driver for ST's LPC RTC
-  ARM: STi: DT: STiH407: Add Device Tree node for the LPC
-
- Documentation/devicetree/bindings/mfd/st-lpc.txt |  36 +++
- arch/arm/boot/dts/stih407.dtsi                   |  20 ++
- arch/arm/configs/multi_v7_defconfig              |   2 +
- drivers/mfd/Kconfig                              |   8 +
- drivers/mfd/Makefile                             |   1 +
- drivers/mfd/st-lpc.c                             |  88 ++++++
- drivers/rtc/Kconfig                              |  13 +
- drivers/rtc/Makefile                             |   1 +
- drivers/rtc/rtc-st-lpc.c                         | 330 +++++++++++++++++++++++
- drivers/watchdog/Kconfig                         |  13 +
- drivers/watchdog/Makefile                        |   1 +
- drivers/watchdog/st_wdt.c                        | 312 +++++++++++++++++++++
- include/dt-bindings/mfd/st-lpc.h                 |  15 ++
- 13 files changed, 840 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/st-lpc.txt
- create mode 100644 drivers/mfd/st-lpc.c
- create mode 100644 drivers/rtc/rtc-st-lpc.c
- create mode 100644 drivers/watchdog/st_wdt.c
- create mode 100644 include/dt-bindings/mfd/st-lpc.h
-
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index e34d5c6..09b8bce 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -344,6 +344,7 @@ CONFIG_RTC_DRV_AS3722=y
+ CONFIG_RTC_DRV_DS1307=y
+ CONFIG_RTC_DRV_MAX8907=y
+ CONFIG_RTC_DRV_PALMAS=y
++CONFIG_RTC_DRV_ST_LPC=y
+ CONFIG_RTC_DRV_TWL4030=y
+ CONFIG_RTC_DRV_TPS6586X=y
+ CONFIG_RTC_DRV_TPS65910=y
 -- 
 1.9.1
 
