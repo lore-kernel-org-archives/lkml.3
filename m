@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752942AbaLOO2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:28:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38681 "EHLO
+	id S1751977AbaLOOoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:44:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38787 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaLOO20 (ORCPT
+	with ESMTP id S1752933AbaLOO2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:26 -0500
+	Mon, 15 Dec 2014 09:28:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-mips@linux-mips.org,
+        Huacai Chen <chenhc@lemote.com>,
+        Markos Chandras <Markos.Chandras@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 096/168] USB: xhci: Reset a halted endpoint immediately when we encounter a stall.
-Date: Mon, 15 Dec 2014 14:25:50 +0000
-Message-Id: <1418653622-21105-97-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 109/168] MIPS: Loongson: Make platform serial setup always built-in.
+Date: Mon, 15 Dec 2014 14:26:03 +0000
+Message-Id: <1418653622-21105-110-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,186 +30,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
 
-commit 8e71a322fdb127814bcba423a512914ca5bc6cf5 upstream.
+commit 26927f76499849e095714452b8a4e09350f6a3b9 upstream.
 
-If a device is halted and reuturns a STALL, then the halted endpoint
-needs to be cleared both on the host and device side. The host
-side halt is cleared by issueing a xhci reset endpoint command. The device side
-is cleared with a ClearFeature(ENDPOINT_HALT) request, which should
-be issued by the device driver if a URB reruen -EPIPE.
+If SERIAL_8250 is compiled as a module, the platform specific setup
+for Loongson will be a module too, and it will not work very well.
+At least on Loongson 3 it will trigger a build failure,
+since loongson_sysconf is not exported to modules.
 
-Previously we cleared the host side halt after the device side was cleared.
-To make sure the host side halt is cleared in time we want to issue the
-reset endpoint command immedialtely when a STALL status is encountered.
+Fix by making the platform specific serial code always built-in.
 
-Otherwise we end up not following the specs and not returning -EPIPE
-several times in a row when trying to transfer data to a halted endpoint.
-
-Fixes: bcef3fd (USB: xhci: Handle errors that cause endpoint halts.)
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Reported-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-mips@linux-mips.org
+Cc: Huacai Chen <chenhc@lemote.com>
+Cc: Markos Chandras <Markos.Chandras@imgtec.com>
+Patchwork: https://patchwork.linux-mips.org/patch/8533/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 40 +++++++--------------------
- drivers/usb/host/xhci.c      | 65 ++++++++++----------------------------------
- 2 files changed, 25 insertions(+), 80 deletions(-)
+ arch/mips/loongson/common/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 5188a6bded0e..17df04a2d18b 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1846,22 +1846,13 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 		ep->stopped_td = td;
- 		return 0;
- 	} else {
--		if (trb_comp_code == COMP_STALL) {
--			/* The transfer is completed from the driver's
--			 * perspective, but we need to issue a set dequeue
--			 * command for this stalled endpoint to move the dequeue
--			 * pointer past the TD.  We can't do that here because
--			 * the halt condition must be cleared first.  Let the
--			 * USB class driver clear the stall later.
--			 */
--			ep->stopped_td = td;
--			ep->stopped_stream = ep_ring->stream_id;
--		} else if (xhci_requires_manual_halt_cleanup(xhci,
--					ep_ctx, trb_comp_code)) {
--			/* Other types of errors halt the endpoint, but the
--			 * class driver doesn't call usb_reset_endpoint() unless
--			 * the error is -EPIPE.  Clear the halted status in the
--			 * xHCI hardware manually.
-+		if (trb_comp_code == COMP_STALL ||
-+		    xhci_requires_manual_halt_cleanup(xhci, ep_ctx,
-+						      trb_comp_code)) {
-+			/* Issue a reset endpoint command to clear the host side
-+			 * halt, followed by a set dequeue command to move the
-+			 * dequeue pointer past the TD.
-+			 * The class driver clears the device side halt later.
- 			 */
- 			xhci_cleanup_halted_endpoint(xhci,
- 					slot_id, ep_index, ep_ring->stream_id,
-@@ -1981,9 +1972,7 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 		else
- 			td->urb->actual_length = 0;
+diff --git a/arch/mips/loongson/common/Makefile b/arch/mips/loongson/common/Makefile
+index 0bb9cc9dc621..d87e03330b29 100644
+--- a/arch/mips/loongson/common/Makefile
++++ b/arch/mips/loongson/common/Makefile
+@@ -11,7 +11,8 @@ obj-$(CONFIG_PCI) += pci.o
+ # Serial port support
+ #
+ obj-$(CONFIG_EARLY_PRINTK) += early_printk.o
+-obj-$(CONFIG_SERIAL_8250) += serial.o
++loongson-serial-$(CONFIG_SERIAL_8250) := serial.o
++obj-y += $(loongson-serial-m) $(loongson-serial-y)
+ obj-$(CONFIG_LOONGSON_UART_BASE) += uart_base.o
+ obj-$(CONFIG_LOONGSON_MC146818) += rtc.o
  
--		xhci_cleanup_halted_endpoint(xhci,
--			slot_id, ep_index, 0, td, event_trb);
--		return finish_td(xhci, td, event_trb, event, ep, status, true);
-+		return finish_td(xhci, td, event_trb, event, ep, status, false);
- 	}
- 	/*
- 	 * Did we transfer any data, despite the errors that might have
-@@ -2537,17 +2526,8 @@ cleanup:
- 		if (ret) {
- 			urb = td->urb;
- 			urb_priv = urb->hcpriv;
--			/* Leave the TD around for the reset endpoint function
--			 * to use(but only if it's not a control endpoint,
--			 * since we already queued the Set TR dequeue pointer
--			 * command for stalled control endpoints).
--			 */
--			if (usb_endpoint_xfer_control(&urb->ep->desc) ||
--				(trb_comp_code != COMP_STALL &&
--					trb_comp_code != COMP_BABBLE))
--				xhci_urb_free_priv(xhci, urb_priv);
--			else
--				kfree(urb_priv);
-+
-+			xhci_urb_free_priv(xhci, urb_priv);
- 
- 			usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
- 			if ((urb->actual_length != urb->transfer_buffer_length &&
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2d1284adc987..502580e172e9 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2921,68 +2921,33 @@ void xhci_cleanup_stalled_ring(struct xhci_hcd *xhci,
- 	}
- }
- 
--/* Deal with stalled endpoints.  The core should have sent the control message
-- * to clear the halt condition.  However, we need to make the xHCI hardware
-- * reset its sequence number, since a device will expect a sequence number of
-- * zero after the halt condition is cleared.
-+/* Called when clearing halted device. The core should have sent the control
-+ * message to clear the device halt condition. The host side of the halt should
-+ * already be cleared with a reset endpoint command issued when the STALL tx
-+ * event was received.
-+ *
-  * Context: in_interrupt
-  */
-+
- void xhci_endpoint_reset(struct usb_hcd *hcd,
- 		struct usb_host_endpoint *ep)
- {
- 	struct xhci_hcd *xhci;
--	struct usb_device *udev;
--	unsigned int ep_index;
--	unsigned long flags;
--	int ret;
--	struct xhci_virt_ep *virt_ep;
--	struct xhci_command *command;
- 
- 	xhci = hcd_to_xhci(hcd);
--	udev = (struct usb_device *) ep->hcpriv;
--	/* Called with a root hub endpoint (or an endpoint that wasn't added
--	 * with xhci_add_endpoint()
--	 */
--	if (!ep->hcpriv)
--		return;
--	ep_index = xhci_get_endpoint_index(&ep->desc);
--	virt_ep = &xhci->devs[udev->slot_id]->eps[ep_index];
--	if (!virt_ep->stopped_td) {
--		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--			"Endpoint 0x%x not halted, refusing to reset.",
--			ep->desc.bEndpointAddress);
--		return;
--	}
--	if (usb_endpoint_xfer_control(&ep->desc)) {
--		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--				"Control endpoint stall already handled.");
--		return;
--	}
--
--	command = xhci_alloc_command(xhci, false, false, GFP_ATOMIC);
--	if (!command)
--		return;
- 
--	xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
--			"Queueing reset endpoint command");
--	spin_lock_irqsave(&xhci->lock, flags);
--	ret = xhci_queue_reset_ep(xhci, command, udev->slot_id, ep_index);
- 	/*
--	 * Can't change the ring dequeue pointer until it's transitioned to the
--	 * stopped state, which is only upon a successful reset endpoint
--	 * command.  Better hope that last command worked!
-+	 * We might need to implement the config ep cmd in xhci 4.8.1 note:
-+	 * The Reset Endpoint Command may only be issued to endpoints in the
-+	 * Halted state. If software wishes reset the Data Toggle or Sequence
-+	 * Number of an endpoint that isn't in the Halted state, then software
-+	 * may issue a Configure Endpoint Command with the Drop and Add bits set
-+	 * for the target endpoint. that is in the Stopped state.
- 	 */
--	if (!ret) {
--		xhci_cleanup_stalled_ring(xhci, udev, ep_index);
--		kfree(virt_ep->stopped_td);
--		xhci_ring_cmd_db(xhci);
--	}
--	virt_ep->stopped_td = NULL;
--	virt_ep->stopped_stream = 0;
--	spin_unlock_irqrestore(&xhci->lock, flags);
- 
--	if (ret)
--		xhci_warn(xhci, "FIXME allocate a new ring segment\n");
-+	/* For now just print debug to follow the situation */
-+	xhci_dbg(xhci, "Endpoint 0x%x ep reset callback called\n",
-+		 ep->desc.bEndpointAddress);
- }
- 
- static int xhci_check_streams_endpoint(struct xhci_hcd *xhci,
 -- 
 2.1.3
 
