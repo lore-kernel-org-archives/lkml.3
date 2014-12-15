@@ -1,247 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaLOBad (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 20:30:33 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:34375 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750770AbaLOBaX (ORCPT
+	id S1752004AbaLOBh5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 20:37:57 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:2623 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaLOBhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 20:30:23 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="45140739"
-Message-ID: <548E3A9F.1050607@cn.fujitsu.com>
-Date: Mon, 15 Dec 2014 09:34:23 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Sun, 14 Dec 2014 20:37:47 -0500
+Message-ID: <548E3B5E.6050805@huawei.com>
+Date: Mon, 15 Dec 2014 09:37:34 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/5] workqueue: fix bug when numa mapping is changed
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548B221C.40909@jp.fujitsu.com>
-In-Reply-To: <548B221C.40909@jp.fujitsu.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, <m.szyprowski@samsung.com>,
+        <aneesh.kumar@linux.vnet.ibm.com>, <iamjoonsoo.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] CMA: add the amount of cma memory in meminfo
+References: <547FCCE9.2020600@huawei.com> <xa1ty4qm9eq7.fsf@mina86.com>
+In-Reply-To: <xa1ty4qm9eq7.fsf@mina86.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.25.179]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A010204.548E3B66.0194,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 197117483506bb982b23242041fb9583
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2014 01:13 AM, Yasuaki Ishimatsu wrote:
-> Hi Lai,
+On 2014/12/6 1:41, Michal Nazarewicz wrote:
+
+> On Thu, Dec 04 2014, Xishi Qiu <qiuxishi@huawei.com> wrote:
+>> Add the amount of cma memory in the following meminfo.
+>> /proc/meminfo
+>> /sys/devices/system/node/nodeXX/meminfo
+>>
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
 > 
-> Thank you for posting the patches. I tried your patches.
-> But the following kernel panic occurred.
+> No second look:
+> 
+> Acked-by: Michal Nazarewicz <mina86@mina86.com>
+> 
+>> ---
+>>  drivers/base/node.c | 16 ++++++++++------
+>>  fs/proc/meminfo.c   | 12 +++++++++---
+>>  2 files changed, 19 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/base/node.c b/drivers/base/node.c
+>> index 472168c..a27e4e0 100644
+>> --- a/drivers/base/node.c
+>> +++ b/drivers/base/node.c
+>> @@ -120,6 +120,9 @@ static ssize_t node_read_meminfo(struct device *dev,
+>>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>>  		       "Node %d AnonHugePages:  %8lu kB\n"
+>>  #endif
+>> +#ifdef CONFIG_CMA
+>> +		       "Node %d FreeCMAPages:   %8lu kB\n"
+>> +#endif
+>>  			,
+>>  		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+>>  		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+>> @@ -136,14 +139,15 @@ static ssize_t node_read_meminfo(struct device *dev,
+>>  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE) +
+>>  				node_page_state(nid, NR_SLAB_UNRECLAIMABLE)),
+>>  		       nid, K(node_page_state(nid, NR_SLAB_RECLAIMABLE)),
+>> -#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>>  		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE))
+>> -			, nid,
+>> -			K(node_page_state(nid, NR_ANON_TRANSPARENT_HUGEPAGES) *
+>> -			HPAGE_PMD_NR));
+>> -#else
+>> -		       nid, K(node_page_state(nid, NR_SLAB_UNRECLAIMABLE)));
+>> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>> +		       , nid, K(node_page_state(nid,
+>> +				NR_ANON_TRANSPARENT_HUGEPAGES) * HPAGE_PMD_NR)
 
-Hi, Yasuaki,
+Hi Michal，
 
-Thanks for testing.  Would you like to use GDB to print the code of
-"workqueue_cpu_up_callback+0x510" ?
+The "mere white-space change" you said a few days ago，how about change like this
+", nid, K(...)" -> ",nid, K(xxx)"?
 
 Thanks,
-Lai
+Xishi Qiu
 
-> 
-> [  889.394087] BUG: unable to handle kernel paging request at 000000020000f3f1
-> [  889.395005] IP: [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-> [  889.395005] PGD 17a83067 PUD 0
-> [  889.395005] Oops: 0000 [#1] SMP
-> [  889.395005] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-> ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-> iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-> e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-> [  889.395005] CPU: 8 PID: 13595 Comm: udev_dp_bridge. Not tainted 3.18.0Lai+ #26
-> [  889.395005] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-> [  889.395005] task: ffff8a074a145160 ti: ffff8a077a6ec000 task.ti: ffff8a077a6ec000
-> [  889.395005] RIP: 0010:[<ffffffff8108fe90>]  [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-> [  889.395005] RSP: 0018:ffff8a077a6efca8  EFLAGS: 00010202
-> [  889.395005] RAX: 0000000000000001 RBX: 000000000000edf1 RCX: 000000000000edf1
-> [  889.395005] RDX: 0000000000000100 RSI: 000000020000f3f1 RDI: 0000000000000001
-> [  889.395005] RBP: ffff8a077a6efd08 R08: ffffffff81ac6de0 R09: ffff880874610000
-> [  889.395005] R10: 00000000ffffffff R11: 0000000000000001 R12: 000000000000f3f0
-> [  889.395005] R13: 000000000000001f R14: 00000000ffffffff R15: ffffffff81ac6de0
-> [  889.395005] FS:  00007f6b20c67740(0000) GS:ffff88087fd00000(0000) knlGS:0000000000000000
-> [  889.395005] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  889.395005] CR2: 000000020000f3f1 CR3: 000000004534c000 CR4: 00000000001407e0
-> [  889.395005] Stack:
-> [  889.395005]  ffffffffffffffff 0000000000000020 fffffffffffffff8 00000004810a192d
-> [  889.395005]  ffff8a0700000204 0000000052f5b32d ffffffff81994fc0 00000000fffffff6
-> [  889.395005]  ffffffff81a13840 0000000000000002 000000000000001f 0000000000000000
-> [  889.395005] Call Trace:
-> [  889.395005]  [<ffffffff81094f6c>] notifier_call_chain+0x4c/0x70
-> [  889.395005]  [<ffffffff8109507e>] __raw_notifier_call_chain+0xe/0x10
-> [  889.395005]  [<ffffffff810750b3>] cpu_notify+0x23/0x50
-> [  889.395005]  [<ffffffff81075408>] _cpu_up+0x188/0x1a0
-> [  889.395005]  [<ffffffff810754a9>] cpu_up+0x89/0xb0
-> [  889.395005]  [<ffffffff8164f960>] cpu_subsys_online+0x40/0x90
-> [  889.395005]  [<ffffffff8140f10d>] device_online+0x6d/0xa0
-> [  889.395005]  [<ffffffff8140f1d5>] online_store+0x95/0xa0
-> [  889.395005]  [<ffffffff8140c2e8>] dev_attr_store+0x18/0x30
-> [  889.395005]  [<ffffffff8126210d>] sysfs_kf_write+0x3d/0x50
-> [  889.395005]  [<ffffffff81261624>] kernfs_fop_write+0xe4/0x160
-> [  889.395005]  [<ffffffff811e90d7>] vfs_write+0xb7/0x1f0
-> [  889.395005]  [<ffffffff81021dcc>] ? do_audit_syscall_entry+0x6c/0x70
-> [  889.395005]  [<ffffffff811e9bc5>] SyS_write+0x55/0xd0
-> [  889.395005]  [<ffffffff816646a9>] system_call_fastpath+0x12/0x17
-> [  889.395005] Code: 44 00 00 83 c7 01 48 63 d7 4c 89 ff e8 3a 2a 28 00 8b 15 78 84 a3 00 89 c7 39 d0 7d 70 48 63 cb 4c 89 e6 48 03 34 cd e0 3a ab 81 <8b> 1e 39 5d bc 74 36 41 39 de 74 0c 48 63 f2 eb c7 0f 1f 80 00
-> [  889.395005] RIP  [<ffffffff8108fe90>] workqueue_cpu_up_callback+0x510/0x740
-> [  889.395005]  RSP <ffff8a077a6efca8>
-> [  889.395005] CR2: 000000020000f3f1
-> [  889.785760] ---[ end trace 39abbfc9f93402f2 ]---
-> [  889.790931] Kernel panic - not syncing: Fatal exception
-> [  889.791931] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-> [  889.791931] drm_kms_helper: panic occurred, switching back to text console
-> [  889.815947] ------------[ cut here ]------------
-> [  889.815947] WARNING: CPU: 8 PID: 64 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x5d/0x60()
-> [  889.815947] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-> ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-> iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-> e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-> [  889.815947] CPU: 8 PID: 64 Comm: migration/8 Tainted: G      D        3.18.0Lai+ #26
-> [  889.815947] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-> [  889.815947]  0000000000000000 00000000f7f40529 ffff88087fd03d38 ffffffff8165c8d4
-> [  889.815947]  0000000000000000 0000000000000000 ffff88087fd03d78 ffffffff81074eb1
-> [  889.815947]  ffff88087fd03d78 0000000000000000 ffff88087fc13840 0000000000000008
-> [  889.815947] Call Trace:
-> [  889.815947]  <IRQ>  [<ffffffff8165c8d4>] dump_stack+0x46/0x58
-> [  889.815947]  [<ffffffff81074eb1>] warn_slowpath_common+0x81/0xa0
-> [  889.815947]  [<ffffffff81074fca>] warn_slowpath_null+0x1a/0x20
-> [  889.815947]  [<ffffffff810489bd>] native_smp_send_reschedule+0x5d/0x60
-> [  889.815947]  [<ffffffff810b0ad4>] trigger_load_balance+0x144/0x1b0
-> [  889.815947]  [<ffffffff810a009f>] scheduler_tick+0x9f/0xe0
-> [  889.815947]  [<ffffffff810daef4>] update_process_times+0x64/0x80
-> [  889.815947]  [<ffffffff810eab05>] tick_sched_handle.isra.19+0x25/0x60
-> [  889.815947]  [<ffffffff810eab85>] tick_sched_timer+0x45/0x80
-> [  889.815947]  [<ffffffff810dbbe7>] __run_hrtimer+0x77/0x1d0
-> [  889.815947]  [<ffffffff810eab40>] ? tick_sched_handle.isra.19+0x60/0x60
-> [  889.815947]  [<ffffffff810dbfd7>] hrtimer_interrupt+0xf7/0x240
-> [  889.815947]  [<ffffffff8104b85b>] local_apic_timer_interrupt+0x3b/0x70
-> [  889.815947]  [<ffffffff81667465>] smp_apic_timer_interrupt+0x45/0x60
-> [  889.815947]  [<ffffffff8166553d>] apic_timer_interrupt+0x6d/0x80
-> [  889.815947]  <EOI>  [<ffffffff810a79c7>] ? set_next_entity+0x67/0x80
-> [  889.815947]  [<ffffffffa011d1d7>] ? __drm_modeset_lock_all+0x37/0x120 [drm]
-> [  889.815947]  [<ffffffff8109c727>] ? finish_task_switch+0x57/0x180
-> [  889.815947]  [<ffffffff8165fba8>] __schedule+0x2e8/0x7e0
-> [  889.815947]  [<ffffffff816600c9>] schedule+0x29/0x70
-> [  889.815947]  [<ffffffff81097d43>] smpboot_thread_fn+0xd3/0x1b0
-> [  889.815947]  [<ffffffff81097c70>] ? SyS_setgroups+0x1a0/0x1a0
-> [  889.815947]  [<ffffffff81093df1>] kthread+0xe1/0x100
-> [  889.815947]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-> [  889.815947]  [<ffffffff816645fc>] ret_from_fork+0x7c/0xb0
-> [  889.815947]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-> [  889.815947] ---[ end trace 39abbfc9f93402f3 ]---
-> [  890.156187] ------------[ cut here ]------------
-> [  890.156187] WARNING: CPU: 8 PID: 64 at arch/x86/kernel/smp.c:124 native_smp_send_reschedule+0x5d/0x60()
-> [  890.156187] Modules linked in: xt_CHECKSUM ip6t_rpfilter ip6t_REJECT nf_reject_ipv6 nf_conntrack_ipv6 nf_defrag_ipv6 ipt_REJECT nf_reject_ipv4 nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack cfg80211 rfkill ebtable_nat ebtable_broute bridge stp llc ebtable_filter ebtables
-> ip6table_mangle ip6table_security ip6table_raw ip6table_filter ip6_tables iptable_mangle iptable_security iptable_raw iptable_filter ip_tables sg vfat fat x86_pkg_temp_thermal coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel aesni_intel iTCO_wdt sb_edac
-> iTCO_vendor_support i2c_i801 lrw gf128mul lpc_ich edac_core glue_helper mfd_core ablk_helper cryptd pcspkr shpchp ipmi_devintf ipmi_si ipmi_msghandler tpm_infineon nfsd auth_rpcgss nfs_acl lockd grace sunrpc uinput xfs libcrc32c sd_mod mgag200 syscopyarea sysfillrect sysimgblt drm_kms_helper igb ttm
-> e1000e lpfc drm dca ptp i2c_algo_bit megaraid_sas scsi_transport_fc pps_core i2c_core dm_mirror dm_region_hash dm_log dm_mod
-> [  890.156187] CPU: 8 PID: 64 Comm: migration/8 Tainted: G      D W      3.18.0Lai+ #26
-> [  890.156187] Hardware name: FUJITSU PRIMEQUEST2800E/SB, BIOS PRIMEQUEST 2000 Series BIOS Version 01.81 12/03/2014
-> [  890.156187]  0000000000000000 00000000f7f40529 ffff88087366bc08 ffffffff8165c8d4
-> [  890.156187]  0000000000000000 0000000000000000 ffff88087366bc48 ffffffff81074eb1
-> [  890.156187]  ffff88087fd142c0 0000000000000044 ffff8a074a145160 ffff8a074a145160
-> [  890.156187] Call Trace:
-> [  890.156187]  [<ffffffff8165c8d4>] dump_stack+0x46/0x58
-> [  890.156187]  [<ffffffff81074eb1>] warn_slowpath_common+0x81/0xa0
-> [  890.156187]  [<ffffffff81074fca>] warn_slowpath_null+0x1a/0x20
-> [  890.156187]  [<ffffffff810489bd>] native_smp_send_reschedule+0x5d/0x60
-> [  890.156187]  [<ffffffff8109ddd8>] resched_curr+0xa8/0xd0
-> [  890.156187]  [<ffffffff8109eac0>] check_preempt_curr+0x80/0xa0
-> [  890.156187]  [<ffffffff810a78c8>] attach_task+0x48/0x50
-> [  890.156187]  [<ffffffff810a7ae5>] active_load_balance_cpu_stop+0x105/0x250
-> [  890.156187]  [<ffffffff810a79e0>] ? set_next_entity+0x80/0x80
-> [  890.156187]  [<ffffffff8110cab8>] cpu_stopper_thread+0x78/0x150
-> [  890.156187]  [<ffffffff8165fba8>] ? __schedule+0x2e8/0x7e0
-> [  890.156187]  [<ffffffff81097d6f>] smpboot_thread_fn+0xff/0x1b0
-> [  890.156187]  [<ffffffff81097c70>] ? SyS_setgroups+0x1a0/0x1a0
-> [  890.156187]  [<ffffffff81093df1>] kthread+0xe1/0x100
-> [  890.156187]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-> [  890.156187]  [<ffffffff816645fc>] ret_from_fork+0x7c/0xb0
-> [  890.156187]  [<ffffffff81093d10>] ? kthread_create_on_node+0x1b0/0x1b0
-> [  890.156187] ---[ end trace 39abbfc9f93402f4 ]---
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> (2014/12/12 19:19), Lai Jiangshan wrote:
->> Workqueue code has an assumption that the numa mapping is stable
->> after system booted.  It is incorrectly currently.
+>> +#endif
+>> +#ifdef CONFIG_CMA
+>> +		       , nid, K(node_page_state(nid, NR_FREE_CMA_PAGES))
+>>  #endif
+>> +			);
+>>  	n += hugetlb_report_node_meminfo(nid, buf + n);
+>>  	return n;
+>>  }
+>> diff --git a/fs/proc/meminfo.c b/fs/proc/meminfo.c
+>> index aa1eee0..d42e082 100644
+>> --- a/fs/proc/meminfo.c
+>> +++ b/fs/proc/meminfo.c
+>> @@ -138,6 +138,9 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>>  		"AnonHugePages:  %8lu kB\n"
+>>  #endif
+>> +#ifdef CONFIG_CMA
+>> +		"FreeCMAPages:   %8lu kB\n"
+>> +#endif
+>>  		,
+>>  		K(i.totalram),
+>>  		K(i.freeram),
+>> @@ -187,11 +190,14 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
+>>  		vmi.used >> 10,
+>>  		vmi.largest_chunk >> 10
+>>  #ifdef CONFIG_MEMORY_FAILURE
+>> -		,atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+>> +		, atomic_long_read(&num_poisoned_pages) << (PAGE_SHIFT - 10)
+>>  #endif
+>>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>> -		,K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>> -		   HPAGE_PMD_NR)
+>> +		, K(global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
+>> +				HPAGE_PMD_NR)
+>> +#endif
+>> +#ifdef CONFIG_CMA
+>> +		, K(global_page_state(NR_FREE_CMA_PAGES))
+>>  #endif
+>>  		);
+>>  
+>> -- 
+>> 2.0.0
 >>
->> Yasuaki Ishimatsu hit a allocation failure bug when the numa mapping
->> between CPU and node is changed. This was the last scene:
->>   SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
->>    cache: kmalloc-192, object size: 192, buffer size: 192, default order: 1, min order: 0
->>    node 0: slabs: 6172, objs: 259224, free: 245741
->>    node 1: slabs: 3261, objs: 136962, free: 127656
->>
->> Yasuaki Ishimatsu investigated that it happened in the following situation:
->>
->> 1) System Node/CPU before offline/online:
->> 	       | CPU
->> 	------------------------
->> 	node 0 |  0-14, 60-74
->> 	node 1 | 15-29, 75-89
->> 	node 2 | 30-44, 90-104
->> 	node 3 | 45-59, 105-119
->>
->> 2) A system-board (contains node2 and node3) is offline:
->> 	       | CPU
->> 	------------------------
->> 	node 0 |  0-14, 60-74
->> 	node 1 | 15-29, 75-89
->>
->> 3) A new system-board is online, two new node IDs are allocated
->>     for the two node of the SB, but the old CPU IDs are allocated for
->>     the SB, here the NUMA mapping between node and CPU is changed.
->>     (the node of CPU#30 is changed from node#2 to node#4, for example)
->> 	       | CPU
->> 	------------------------
->> 	node 0 |  0-14, 60-74
->> 	node 1 | 15-29, 75-89
->> 	node 4 | 30-59
->> 	node 5 | 90-119
->>
->> 4) now, the NUMA mapping is changed, but wq_numa_possible_cpumask
->>     which is the convenient NUMA mapping cache in workqueue.c is still outdated.
->>     thus pool->node calculated by get_unbound_pool() is incorrect.
->>
->> 5) when the create_worker() is called with the incorrect offlined
->>      pool->node, it is failed and the pool can't make any progress.
->>
->> To fix this bug, we need to fixup the wq_numa_possible_cpumask and the
->> pool->node, it is done in patch2 and patch3.
->>
->> patch1 fixes memory leak related wq_numa_possible_cpumask.
->> patch4 kill another assumption about how the numa mapping changed.
->> patch5 reduces the allocation fails when the node is offline or the node
->> is lack of memory.
->>
->> The patchset is untested. It is sent for earlier review.
->>
->> Thanks,
->> Lai.
->>
->> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Cc: Tejun Heo <tj@kernel.org>
->> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
->> Cc: tangchen <tangchen@cn.fujitsu.com>
->> Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
->> Lai Jiangshan (5):
->>    workqueue: fix memory leak in wq_numa_init()
->>    workqueue: update wq_numa_possible_cpumask
->>    workqueue: fixup existing pool->node
->>    workqueue: update NUMA affinity for the node lost CPU
->>    workqueue: retry on NUMA_NO_NODE when create_worker() fails
->>
->>   kernel/workqueue.c |  129 ++++++++++++++++++++++++++++++++++++++++++++--------
->>   1 files changed, 109 insertions(+), 20 deletions(-)
 >>
 > 
-> 
-> .
-> 
+
+
 
