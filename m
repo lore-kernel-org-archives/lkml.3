@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaLOOyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:54:09 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38627 "EHLO
+	id S1753061AbaLOOyE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:54:04 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38634 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbaLOO2R (ORCPT
+	with ESMTP id S1751842AbaLOO2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:17 -0500
+	Mon, 15 Dec 2014 09:28:18 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: James Hogan <james.hogan@imgtec.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Max Schwarz <max.schwarz@online.de>,
-        Michael Turquette <mturquette@linaro.org>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 081/168] clk-divider: Fix READ_ONLY when divider > 1
-Date: Mon, 15 Dec 2014 14:25:35 +0000
-Message-Id: <1418653622-21105-82-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 088/168] SUNRPC: Fix locking around callback channel reply receive
+Date: Mon, 15 Dec 2014 14:25:42 +0000
+Message-Id: <1418653622-21105-89-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -30,101 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Hogan <james.hogan@imgtec.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e6d5e7d90be92cee626d7ec16ca9b06f1eed710b upstream.
+commit 093a1468b6edb0e568be7311b8d2228d205702db upstream.
 
-Commit 79c6ab509558 (clk: divider: add CLK_DIVIDER_READ_ONLY flag) in
-v3.16 introduced the CLK_DIVIDER_READ_ONLY flag which caused the
-recalc_rate() and round_rate() clock callbacks to be omitted.
+Both xprt_lookup_rqst() and xprt_complete_rqst() require that you
+take the transport lock in order to avoid races with xprt_transmit().
 
-However using this flag has the unfortunate side effect of causing the
-clock recalculation code when a clock rate change is attempted to always
-treat it as a pass-through clock, i.e. with a fixed divide of 1, which
-may not be the case. Child clock rates are then recalculated using the
-wrong parent rate.
-
-Therefore instead of dropping the recalc_rate() and round_rate()
-callbacks, alter clk_divider_bestdiv() to always report the current
-divider as the best divider so that it is never altered.
-
-For me the read only clock was the system clock, which divided the PLL
-rate by 2, from which both the UART and the SPI clocks were divided.
-Initial setting of the UART rate set it correctly, but when the SPI
-clock was set, the other child clocks were miscalculated. The UART clock
-was recalculated using the PLL rate as the parent rate, resulting in a
-UART new_rate of double what it should be, and a UART which spewed forth
-garbage when the rate changes were propagated.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Abraham <thomas.ab@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: Max Schwarz <max.schwarz@online.de>
-Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-Signed-off-by: Michael Turquette <mturquette@linaro.org>
-[ luis: backported to 3.16:
-  - drop changes to drivers/clk/rockchip/clk.c ]
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Reviewed-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/clk/clk-divider.c    | 18 +++++++++---------
- include/linux/clk-provider.h |  1 -
- 2 files changed, 9 insertions(+), 10 deletions(-)
+ net/sunrpc/svcsock.c | 27 ++++++++++++++++-----------
+ 1 file changed, 16 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-index 18a9de29df0e..c0a842b335c5 100644
---- a/drivers/clk/clk-divider.c
-+++ b/drivers/clk/clk-divider.c
-@@ -263,6 +263,14 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
- 	if (!rate)
- 		rate = 1;
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index b2437ee93657..89a4db5be155 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1000,17 +1000,12 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
+ 	xid = *p++;
+ 	calldir = *p;
  
-+	/* if read only, just return current value */
-+	if (divider->flags & CLK_DIVIDER_READ_ONLY) {
-+		bestdiv = readl(divider->reg) >> divider->shift;
-+		bestdiv &= div_mask(divider);
-+		bestdiv = _get_div(divider, bestdiv);
-+		return bestdiv;
-+	}
-+
- 	maxdiv = _get_maxdiv(divider);
- 
- 	if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
-@@ -361,11 +369,6 @@ const struct clk_ops clk_divider_ops = {
- };
- EXPORT_SYMBOL_GPL(clk_divider_ops);
- 
--const struct clk_ops clk_divider_ro_ops = {
--	.recalc_rate = clk_divider_recalc_rate,
--};
--EXPORT_SYMBOL_GPL(clk_divider_ro_ops);
+-	if (bc_xprt)
+-		req = xprt_lookup_rqst(bc_xprt, xid);
 -
- static struct clk *_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
-@@ -391,10 +394,7 @@ static struct clk *_register_divider(struct device *dev, const char *name,
- 	}
+-	if (!req) {
+-		printk(KERN_NOTICE
+-			"%s: Got unrecognized reply: "
+-			"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
+-			__func__, ntohl(calldir),
+-			bc_xprt, xid);
++	if (!bc_xprt)
+ 		return -EAGAIN;
+-	}
++	spin_lock_bh(&bc_xprt->transport_lock);
++	req = xprt_lookup_rqst(bc_xprt, xid);
++	if (!req)
++		goto unlock_notfound;
  
- 	init.name = name;
--	if (clk_divider_flags & CLK_DIVIDER_READ_ONLY)
--		init.ops = &clk_divider_ro_ops;
--	else
--		init.ops = &clk_divider_ops;
-+	init.ops = &clk_divider_ops;
- 	init.flags = flags | CLK_IS_BASIC;
- 	init.parent_names = (parent_name ? &parent_name: NULL);
- 	init.num_parents = (parent_name ? 1 : 0);
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 0c287dbbb144..a4ebe5b78e74 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -341,7 +341,6 @@ struct clk_divider {
- #define CLK_DIVIDER_READ_ONLY		BIT(5)
+ 	memcpy(&req->rq_private_buf, &req->rq_rcv_buf, sizeof(struct xdr_buf));
+ 	/*
+@@ -1021,11 +1016,21 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
+ 	dst = &req->rq_private_buf.head[0];
+ 	src = &rqstp->rq_arg.head[0];
+ 	if (dst->iov_len < src->iov_len)
+-		return -EAGAIN; /* whatever; just giving up. */
++		goto unlock_eagain; /* whatever; just giving up. */
+ 	memcpy(dst->iov_base, src->iov_base, src->iov_len);
+ 	xprt_complete_rqst(req->rq_task, rqstp->rq_arg.len);
+ 	rqstp->rq_arg.len = 0;
++	spin_unlock_bh(&bc_xprt->transport_lock);
+ 	return 0;
++unlock_notfound:
++	printk(KERN_NOTICE
++		"%s: Got unrecognized reply: "
++		"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
++		__func__, ntohl(calldir),
++		bc_xprt, ntohl(xid));
++unlock_eagain:
++	spin_unlock_bh(&bc_xprt->transport_lock);
++	return -EAGAIN;
+ }
  
- extern const struct clk_ops clk_divider_ops;
--extern const struct clk_ops clk_divider_ro_ops;
- struct clk *clk_register_divider(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		void __iomem *reg, u8 shift, u8 width,
+ static int copy_pages_to_kvecs(struct kvec *vec, struct page **pages, int len)
 -- 
 2.1.3
 
