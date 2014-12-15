@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837AbaLOOjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:39:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38880 "EHLO
+	id S1753816AbaLOOjn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:39:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38884 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006AbaLOO26 (ORCPT
+	with ESMTP id S1753007AbaLOO27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:58 -0500
+	Mon, 15 Dec 2014 09:28:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Clayton <chris2553@googlemail.com>,
-        Junjie Mao <eternal.n08@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Ian Campbell <ian.campbell@citrix.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 131/168] x86: Use $(OBJDUMP) instead of plain objdump
-Date: Mon, 15 Dec 2014 14:26:25 +0000
-Message-Id: <1418653622-21105-132-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 132/168] of/fdt: memblock_reserve /memreserve/ regions in the case of partial overlap
+Date: Mon, 15 Dec 2014 14:26:26 +0000
+Message-Id: <1418653622-21105-133-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -30,47 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Clayton <chris2553@googlemail.com>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit e2e68ae688b0a3766cd75aedf4ed4e39be402009 upstream.
+commit 094cb98179f19b75acf9ff471daabf3948ce98e6 upstream.
 
-commit e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-broke the cross compile of x86. It added a objdump invocation, which
-invokes the host native objdump and ignores an active cross tool
-chain.
+memblock_is_region_reserved() returns true in the case of a partial
+overlap, meaning that the current code fails to reserve the
+non-overlapping portion.
 
-Use $(OBJDUMP) instead which takes the CROSS_COMPILE prefix into
-account.
+This call was introduced as part of d1552ce449eb "of/fdt: move
+memreserve and dtb memory reservations into core" which went into
+v3.16.
 
-[ tglx: Massage changelog and use $(OBJDUMP) ]
+I observed this causing a Midway system with a buggy fdt (the header
+declares itself to be larger than it really is) failing to boot
+because the over-inflated size of the fdt was causing it to seem to
+run into the swapper_pg_dir region, meaning the DT wasn't reserved.
+The symptoms were failing to find an disks or network and failing to
+boot.
 
-Fixes: e6023367d779 'x86, kaslr: Prevent .bss from overlaping initrd'
-Signed-off-by: Chris Clayton <chris2553@googlemail.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Acked-by: Borislav Petkov <bp@suse.de>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/54705C8E.1080400@googlemail.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+However given the ambiguity of whether things like the initrd are
+covered by /memreserve/ and similar I think it is best to also
+register the region rather than just ignoring it.
+
+Since memblock_reserve() handles overlaps just fine lets just warn and
+carry on.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/boot/compressed/Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/of/fdt.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 14fe7cba21d1..b5bb49866bcc 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -75,7 +75,7 @@ suffix-$(CONFIG_KERNEL_XZ)	:= xz
- suffix-$(CONFIG_KERNEL_LZO) 	:= lzo
- suffix-$(CONFIG_KERNEL_LZ4) 	:= lz4
- 
--RUN_SIZE = $(shell objdump -h vmlinux | \
-+RUN_SIZE = $(shell $(OBJDUMP) -h vmlinux | \
- 	     perl $(srctree)/arch/x86/tools/calc_run_size.pl)
- quiet_cmd_mkpiggy = MKPIGGY $@
-       cmd_mkpiggy = $(obj)/mkpiggy $< $(RUN_SIZE) > $@ || ( rm -f $@ ; false )
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index f2da1750a597..5c437ca532b3 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -960,8 +960,6 @@ void __init __weak early_init_dt_add_memory_arch(u64 base, u64 size)
+ int __init __weak early_init_dt_reserve_memory_arch(phys_addr_t base,
+ 					phys_addr_t size, bool nomap)
+ {
+-	if (memblock_is_region_reserved(base, size))
+-		return -EBUSY;
+ 	if (nomap)
+ 		return memblock_remove(base, size);
+ 	return memblock_reserve(base, size);
 -- 
 2.1.3
 
