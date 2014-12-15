@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993AbaLOOmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:42:38 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38804 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961AbaLOO2s (ORCPT
+	id S1754001AbaLOOm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:42:58 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:39628 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921AbaLOOmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:48 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 111/168] net/ping: handle protocol mismatching scenario
-Date: Mon, 15 Dec 2014 14:26:05 +0000
-Message-Id: <1418653622-21105-112-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Mon, 15 Dec 2014 09:42:53 -0500
+Date: Mon, 15 Dec 2014 14:42:47 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, tglx@linutronix.de, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 0/8] irqchip: New driver for ST's SysCfg controlled
+ IRQs
+Message-ID: <20141215144247.GE13885@x1>
+References: <1416932705-16880-1-git-send-email-lee.jones@linaro.org>
+ <20141215122826.GB13885@x1>
+ <20141215141050.GD967@titan.lakedaemon.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141215141050.GD967@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, 15 Dec 2014, Jason Cooper wrote:
 
-------------------
+> On Mon, Dec 15, 2014 at 12:28:26PM +0000, Lee Jones wrote:
+> > Jason, would you like me to send this set again?
+> 
+> Please wait for -rc1 to land, then rebase on that.
 
-From: Jane Zhou <a17711@motorola.com>
+Can do.  Thanks Jason.
 
-commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
-
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
-
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv4/ping.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 044a0ddf6a79..620e8ffa62e8 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -217,6 +217,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
- 
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
 -- 
-2.1.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
