@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaLOObL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:31:11 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39073 "EHLO
+	id S1753237AbaLOObI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:31:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39078 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110AbaLOO31 (ORCPT
+	with ESMTP id S1753113AbaLOO31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:29:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Scott Feldman <sfeldma@cumulusnetworks.com>, Thomas Graf <tgraf@suug.ch>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Joonyoung Shim <jy0922.shim@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 157/168] bond: Check length of IFLA_BOND_ARP_IP_TARGET attributes
-Date: Mon, 15 Dec 2014 14:26:51 +0000
-Message-Id: <1418653622-21105-158-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 166/168] USB: add reset resume quirk for usb3503
+Date: Mon, 15 Dec 2014 14:27:00 +0000
+Message-Id: <1418653622-21105-167-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,39 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: Joonyoung Shim <jy0922.shim@samsung.com>
 
-commit f6c6fda4c9e17940b0a2ba206b0408babfdc930c upstream.
+commit 526a4045c60fbaede88ec95a69a73059dff02160 upstream.
 
-Fixes: 7f28fa10 ("bonding: add arp_ip_target netlink support")
-Reported-by: John Fastabend <john.fastabend@gmail.com>
-Cc: Scott Feldman <sfeldma@cumulusnetworks.com>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Acked-by: John Fastabend <john.r.fastabend@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The usb device will autoresume from choose_wakeup() if it is
+autosuspended with the wrong wakeup setting, but below errors occur
+because usb3503 misc driver will switch to standby mode when suspended.
+
+As add USB_QUIRK_RESET_RESUME, it can stop setting wrong wakeup from
+autosuspend_check().
+
+[    7.734717] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    7.854658] usb 1-3: device descriptor read/64, error -71
+[    8.079657] usb 1-3: device descriptor read/64, error -71
+[    8.294664] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    8.414658] usb 1-3: device descriptor read/64, error -71
+[    8.639657] usb 1-3: device descriptor read/64, error -71
+[    8.854667] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    9.264598] usb 1-3: device not accepting address 3, error -71
+[    9.374655] usb 1-3: reset high-speed USB device number 3 using exynos-ehci
+[    9.784601] usb 1-3: device not accepting address 3, error -71
+[    9.784838] usb usb1-port3: device 1-3 not suspended yet
+
+Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/bonding/bond_netlink.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/core/quirks.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/bonding/bond_netlink.c b/drivers/net/bonding/bond_netlink.c
-index 5ab3c1847e67..8626bc0cb2af 100644
---- a/drivers/net/bonding/bond_netlink.c
-+++ b/drivers/net/bonding/bond_netlink.c
-@@ -197,7 +197,12 @@ static int bond_changelink(struct net_device *bond_dev,
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index b195fdb1effc..7f4a4412b2fc 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -165,6 +165,9 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	/* INTEL VALUE SSD */
+ 	{ USB_DEVICE(0x8086, 0xf1a5), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 		bond_option_arp_ip_targets_clear(bond);
- 		nla_for_each_nested(attr, data[IFLA_BOND_ARP_IP_TARGET], rem) {
--			__be32 target = nla_get_be32(attr);
-+			__be32 target;
++	/* USB3503 */
++	{ USB_DEVICE(0x0424, 0x3503), .driver_info = USB_QUIRK_RESET_RESUME },
 +
-+			if (nla_len(attr) < sizeof(target))
-+				return -EINVAL;
-+
-+			target = nla_get_be32(attr);
+ 	{ }  /* terminating entry must be last */
+ };
  
- 			bond_opt_initval(&newval, (__force u64)target);
- 			err = __bond_opt_set(bond, BOND_OPT_ARP_TARGETS,
 -- 
 2.1.3
 
