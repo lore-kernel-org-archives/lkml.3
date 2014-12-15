@@ -1,153 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaLOHXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:23:46 -0500
-Received: from smtprelay.synopsys.com ([198.182.47.9]:56618 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaLOHXm convert rfc822-to-8bit (ORCPT
+	id S1751805AbaLOHYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:24:00 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:49513 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaLOHXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:23:42 -0500
-X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 02:23:42 EST
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
-        "acme@redhat.com" <acme@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Borislav Petkov" <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
-        Cody P Schafer <dev@codyps.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2] perf tools: fix type mismatch - long vs __statfs_word
-Thread-Topic: [PATCH v2] perf tools: fix type mismatch - long vs
- __statfs_word
-Thread-Index: AQHP0cE90s97Czxu0U+QrQNTDF42fw==
-Date: Mon, 15 Dec 2014 07:14:39 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BC6671@IN01WEMBXA.internal.synopsys.com>
-References: <1410880589-22531-1-git-send-email-abrodkin@synopsys.com>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.182]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Dec 2014 02:23:55 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 15 Dec 2014 16:28:05 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        lkp@01.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [LKP] [mm] INFO: rcu_sched detected stalls on CPUs/tasks: { 1}
+ (detected by 0, t=10002 jiffies, g=945, c=944, q=0)
+Message-ID: <20141215072804.GA4898@js1304-P5Q-DELUXE>
+References: <1418284830.5745.72.camel@intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418284830.5745.72.camel@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 September 2014 08:46 PM, Alexey Brodkin wrote:
-> In case of compilation with "-Wextra" following breakage happens:
-> --->---
-> fs.c: In function ‘fs__valid_mount’:
-> fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
->   else if (st_fs.f_type != magic)
->                         ^
-> cc1: all warnings being treated as errors
-> --->---
->
-> Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
-> CFLAGS has hard-coded "-Wextra" this is inevitable even if one builds "perf"
-> with "WERROR=0".
->
-> Even though "debugfs.c" gets compiled successfully because DEBUGFS_MAGIC is
-> definitely positive (MSB bit is not set, so compiler doesn't care about
-> explisit cast to "long") it's good to cast "st_fs.f_type" to "long" as well.
->
-> And here's an explanation of observed issue.
->
-> Perf tools use libc headers instead of ones from kernel source tree.
-> This is because "perf" is just a user-space tool even thought its sources are
-> merged in Linux kernel source tree.
-> And so "statfs.h" comes from either uClibc, glibc or musl.
->
-> In case of uClibc most of architectures use "legacy" version from here:
-> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/statfs.h
->
-> New UAPI compliant architectures (looks like for now it's only ARC) uses UAPI
-> version of "statfs.h" from here:
-> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
->
-> In this particular situation most interesting difference is in data type used
-> for "struct statfs" member "f_type".
->
-> In "legacy" version it's:
-> --->---
-> __SWORD_TYPE f_type;
-> --->---
->
-> In UAPI version it's:
-> --->---
-> __U32_TYPE f_type;
-> --->---
->
-> In its turn mentioned types are defined in
-> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/types.h
-> this way:
-> --->---
-> ...
-> --->---
->
-> And for 32-bit architectures "int" is of the same length as "long" so compiler
-> is happy on data type check.
->
-> But if "f_type" is "unsigned int" it's definitely not an unsigned "long".
->
-> Essential fix is explicit casting of "f_type" to "long".
->
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
->
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: Cody P Schafer <dev@codyps.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->
-> Changes in v2:
->
->  * Added type cast to DEBUGFS_MAGIC in "debugfs.c"
->  * Added verbose explanation of root cause
->
-> Thanks a lot to Arnaldo for mention of another instance of hidden missing
-> cast in "debugfs.c".
->
-> ---
->  tools/lib/api/fs/debugfs.c | 2 +-
->  tools/lib/api/fs/fs.c      | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-> index a74fba6..93aa4cd 100644
-> --- a/tools/lib/api/fs/debugfs.c
-> +++ b/tools/lib/api/fs/debugfs.c
-> @@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
->  
->  	if (statfs(debugfs, &st_fs) < 0)
->  		return -ENOENT;
-> -	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-> +	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
+On Thu, Dec 11, 2014 at 04:00:30PM +0800, Huang Ying wrote:
+> FYI, we noticed the below changes on
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
+> commit 6a7d22008b2294f1dacbc77632a26f2142f2d4b0 ("mm: Fix boot crash with f7426b983a6a ("mm: cma: adjust address limit to avoid hitting low/high memory boundary")")
+> 
+> The original boot failures are fixed, but there are some boot hang now.
+> Sometimes because of OOM for trinity test.
 
-Hi Arnaldo,
+CCing relevant people.
 
-Does this fix look good to you. We need something like this to enable upstream ARC
-kernels to build perf.
-OTOH do we really need the cast on both sides for this 2nd hunk ?
+Hmm... My fix is just work-around to avoid validation when VA to PA
+conversion. So, it would be irrelevant to this problem. Blaming
+original patch makes more sense to me.
 
-Thx,
--Vineet
+Anyway, I looked at the original commit f7426b983a6a and found that
+it doesn't have any effect after reserving CMA region. Attached dmesg
+say that reservation is successful. So I wonder what cause this stall.
+Could you share your config to help debug?
 
->  		return -ENOENT;
->  
->  	return 0;
-> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-> index c1b49c3..a9fd78b 100644
-> --- a/tools/lib/api/fs/fs.c
-> +++ b/tools/lib/api/fs/fs.c
-> @@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
->  
->  	if (statfs(fs, &st_fs) < 0)
->  		return -ENOENT;
-> -	else if (st_fs.f_type != magic)
-> +	else if ((long) st_fs.f_type != magic)
->  		return -ENOENT;
->  
->  	return 0;
+And, dmesg log also say that 16 MB is reserved for CMA. Is there any
+possibility this memory reservation cause this stall? Possibly, your
+OOM report is related to this reservation.
+
+Thanks.
 
