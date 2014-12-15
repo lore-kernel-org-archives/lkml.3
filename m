@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaLOOt3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:49:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38671 "EHLO
+	id S1752031AbaLOOtr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:49:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38660 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaLOO2Y (ORCPT
+	with ESMTP id S1752808AbaLOO2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:24 -0500
+	Mon, 15 Dec 2014 09:28:22 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 094/168] USB: xhci: don't start a halted endpoint before its new dequeue is set
-Date: Mon, 15 Dec 2014 14:25:48 +0000
-Message-Id: <1418653622-21105-95-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 092/168] ARM: 8216/1: xscale: correct auxiliary register in suspend/resume
+Date: Mon, 15 Dec 2014 14:25:46 +0000
+Message-Id: <1418653622-21105-93-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 
-commit c3492dbfa1050debf23a5b5cd2bc7514c5b37896 upstream.
+commit ef59a20ba375aeb97b3150a118318884743452a8 upstream.
 
-A halted endpoint ring must first be reset, then move the ring
-dequeue pointer past the problematic TRB. If we start the ring too
-early after reset, but before moving the dequeue pointer we
-will end up executing the same problematic TRB again.
+According to the manuals I have, XScale auxiliary register should be
+reached with opc_2 = 1 instead of crn = 1. cpu_xscale_proc_init
+correctly uses c1, c0, 1 arguments, but cpu_xscale_do_suspend and
+cpu_xscale_do_resume use c1, c1, 0. Correct suspend/resume functions to
+also use c1, c0, 1.
 
-As we always issue a set transfer dequeue command after a reset
-endpoint command we can skip starting endpoint rings at reset endpoint
-command completion.
+The issue was primarily noticed thanks to qemu reporing "unsupported
+instruction" on the pxa suspend path. Confirmed in PXA210/250 and PXA255
+XScale Core manuals and in PXA270 and PXA320 Developers Guides.
 
-Without this fix we end up trying to handle the same faulty TD for
-contol endpoints. causing timeout, and failing testusb ctrl_out write
-tests.
+Harware tested by me on tosa (pxa255). Robert confirmed on pxa270 board.
 
-Fixes: e9df17e (USB: xhci: Correct assumptions about number of rings per endpoint.)
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Tested-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Acked-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-ring.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/arm/mm/proc-xscale.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 28a929d45cfe..5188a6bded0e 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -1102,9 +1102,8 @@ static void xhci_handle_cmd_reset_ep(struct xhci_hcd *xhci, int slot_id,
- 				false);
- 		xhci_ring_cmd_db(xhci);
- 	} else {
--		/* Clear our internal halted state and restart the ring(s) */
-+		/* Clear our internal halted state */
- 		xhci->devs[slot_id]->eps[ep_index].ep_state &= ~EP_HALTED;
--		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
- }
- 
+diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
+index d19b1cfcad91..b34b95f45cb3 100644
+--- a/arch/arm/mm/proc-xscale.S
++++ b/arch/arm/mm/proc-xscale.S
+@@ -535,7 +535,7 @@ ENTRY(cpu_xscale_do_suspend)
+ 	mrc	p15, 0, r5, c15, c1, 0	@ CP access reg
+ 	mrc	p15, 0, r6, c13, c0, 0	@ PID
+ 	mrc	p15, 0, r7, c3, c0, 0	@ domain ID
+-	mrc	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mrc	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mrc	p15, 0, r9, c1, c0, 0	@ control reg
+ 	bic	r4, r4, #2		@ clear frequency change bit
+ 	stmia	r0, {r4 - r9}		@ store cp regs
+@@ -552,7 +552,7 @@ ENTRY(cpu_xscale_do_resume)
+ 	mcr	p15, 0, r6, c13, c0, 0	@ PID
+ 	mcr	p15, 0, r7, c3, c0, 0	@ domain ID
+ 	mcr	p15, 0, r1, c2, c0, 0	@ translation table base addr
+-	mcr	p15, 0, r8, c1, c1, 0	@ auxiliary control reg
++	mcr	p15, 0, r8, c1, c0, 1	@ auxiliary control reg
+ 	mov	r0, r9			@ control register
+ 	b	cpu_resume_mmu
+ ENDPROC(cpu_xscale_do_resume)
 -- 
 2.1.3
 
