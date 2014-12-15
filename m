@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682AbaLOOhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:37:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38889 "EHLO
+	id S1753724AbaLOOhs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:37:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38886 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaLOO27 (ORCPT
+	with ESMTP id S1753008AbaLOO27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:28:59 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Ilia Mirkin <imirkin@alum.mit.edu>, Ben Skeggs <bskeggs@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 134/168] nouveau: move the hotplug ignore to correct place.
-Date: Mon, 15 Dec 2014 14:26:28 +0000
-Message-Id: <1418653622-21105-135-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 133/168] drm/nouveau/gf116: remove copy1 engine
+Date: Mon, 15 Dec 2014 14:26:27 +0000
+Message-Id: <1418653622-21105-134-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,41 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Ilia Mirkin <imirkin@alum.mit.edu>
 
-commit 8b62c8c6df08ca567c78afa51aa7bbc554cede06 upstream.
+commit 226d63a1addea8cbe8fc671978e62dc84927b046 upstream.
 
-Introduced in b440bde74f, however it was added to
-the wrong function in nouveau.
+Indications are that no GF116's actually have a copy engine there, but
+actually have the decompression engine. This engine can be made to do
+copies, but that should be done separately.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=86011
-Cc: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Unclear why this didn't turn up on all GF116's, but perhaps the
+non-mobile ones came with enough VRAM to not trigger ttm migrations in
+test scenarios.
+
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=85465
+Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=59168
+Signed-off-by: Ilia Mirkin <imirkin@alum.mit.edu>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/nouveau/nouveau_drm.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/engine/device/nvc0.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-index 0f7addae60d7..84a8b9fb20c8 100644
---- a/drivers/gpu/drm/nouveau/nouveau_drm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
-@@ -595,7 +595,6 @@ int nouveau_pmops_suspend(struct device *dev)
- 
- 	pci_save_state(pdev);
- 	pci_disable_device(pdev);
--	pci_ignore_hotplug(pdev);
- 	pci_set_power_state(pdev, PCI_D3hot);
- 	return 0;
- }
-@@ -887,6 +886,7 @@ static int nouveau_pmops_runtime_suspend(struct device *dev)
- 	ret = nouveau_do_suspend(drm_dev, true);
- 	pci_save_state(pdev);
- 	pci_disable_device(pdev);
-+	pci_ignore_hotplug(pdev);
- 	pci_set_power_state(pdev, PCI_D3cold);
- 	drm_dev->switch_power_state = DRM_SWITCH_POWER_DYNAMIC_OFF;
- 	return ret;
+diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
+index 01e5e5545de2..d8cec47c75b2 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/engine/device/nvc0.c
+@@ -212,7 +212,6 @@ nvc0_identify(struct nouveau_device *device)
+ 		device->oclass[NVDEV_ENGINE_BSP    ] = &nvc0_bsp_oclass;
+ 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
+ 		device->oclass[NVDEV_ENGINE_COPY0  ] = &nvc0_copy0_oclass;
+-		device->oclass[NVDEV_ENGINE_COPY1  ] = &nvc0_copy1_oclass;
+ 		device->oclass[NVDEV_ENGINE_DISP   ] =  nva3_disp_oclass;
+ 		device->oclass[NVDEV_ENGINE_PERFMON] = &nvc0_perfmon_oclass;
+ 		break;
 -- 
 2.1.3
 
