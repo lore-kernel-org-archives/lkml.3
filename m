@@ -1,60 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579AbaLOSHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:07:51 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:55978 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153AbaLOSG5 (ORCPT
+	id S1751629AbaLOSIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:08:19 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:48568 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbaLOSGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:06:57 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Tomasz Figa <tfiga@chromium.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "open list\:ARM\/Rockchip SoC..." 
-	<linux-rockchip@lists.infradead.org>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        iommu@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Heiko Stuebner <heiko@sntech.de>,
-        Joerg Roedel <joro@8bytes.org>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
-References: <1418286387-9663-1-git-send-email-tfiga@chromium.org>
-	<7h8uiemce7.fsf@deeprootsystems.com>
-	<CAPDyKFo6zH4__Odm+RiJCbvXquAQqaLyCAiXrSN6s3KfQhok=A@mail.gmail.com>
-	<1576771.dIVCOxU0se@vostro.rjw.lan>
-	<CAAFQd5B28WiWUqmbmROJUa3H25R=Y774NuemTZDvkoa=CvZUsw@mail.gmail.com>
-	<7ha92sk533.fsf@deeprootsystems.com>
-	<CAMuHMdVpCgK-hNqZ=JWjFGS53g+ZUQ5t=uBxtN1qGXJhoRg8BQ@mail.gmail.com>
-Date: Mon, 15 Dec 2014 10:06:51 -0800
-In-Reply-To: <CAMuHMdVpCgK-hNqZ=JWjFGS53g+ZUQ5t=uBxtN1qGXJhoRg8BQ@mail.gmail.com>
-	(Geert Uytterhoeven's message of "Mon, 15 Dec 2014 09:35:09 +0100")
-Message-ID: <7hr3w0iy84.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 15 Dec 2014 13:06:45 -0500
+From: Aleksey Makarov <feumilieu@gmail.com>
+X-Google-Original-From: Aleksey Makarov <aleksey.makarov@auriga.com>
+To: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Leonid Rosenboim <lrosenboim@caviumnetworks.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH 09/14] MIPS: OCTEON: Add ability to used an initrd from a named memory block.
+Date: Mon, 15 Dec 2014 21:03:15 +0300
+Message-Id: <1418666603-15159-10-git-send-email-aleksey.makarov@auriga.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
+References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+From: David Daney <david.daney@cavium.com>
 
-> On Fri, Dec 12, 2014 at 9:04 PM, Kevin Hilman <khilman@kernel.org> wrote:
->> An even more exciting problem exists when a CPU is in the same domain as
->> other peripherals, those peripherals are all idle and the power domain
->> is gated. :)
->
-> We do have pm_genpd_attach_cpuidle() and pm_genpd_name_attach_cpuidle()?
+If 'rd_name=xxx' is passed to the kernel, the named block with name
+'xxx' is used for the initrd.
 
-Exactly.  
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Leonid Rosenboim <lrosenboim@caviumnetworks.com>
+[aleksey.makarov@auriga.com: conflict resolution]
+Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
+---
+ arch/mips/cavium-octeon/setup.c  | 37 +++++++++++++++++++++++++++++++++----
+ arch/mips/include/asm/bootinfo.h |  1 +
+ arch/mips/kernel/setup.c         | 19 ++++++++++++++++---
+ 3 files changed, 50 insertions(+), 7 deletions(-)
 
-And I think to solve this problem, we need to generalize the attaching
-of dependent devices to a PM domain.
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index 627f9e8..8bba56f 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -28,6 +28,7 @@
+ #include <linux/of_fdt.h>
+ #include <linux/libfdt.h>
+ #include <linux/kexec.h>
++#include <linux/initrd.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/reboot.h>
+@@ -264,6 +265,9 @@ static int octeon_uart;
+ 
+ extern asmlinkage void handle_int(void);
+ 
++/* If an initrd named block is specified, its name goes here. */
++static char rd_name[64] __initdata;
++
+ /**
+  * Return non zero if we are currently running in the Octeon simulator
+  *
+@@ -812,6 +816,10 @@ void __init prom_init(void)
+ 				MAX_MEMORY = 32ull << 30;
+ 			if (*p == '@')
+ 				RESERVE_LOW_MEM = memparse(p + 1, &p);
++		} else if (strncmp(arg, "rd_name=", 8) == 0) {
++			strncpy(rd_name, arg + 8, sizeof(rd_name));
++			rd_name[sizeof(rd_name) - 1] = 0;
++			goto append_arg;
+ #ifdef CONFIG_KEXEC
+ 		} else if (strncmp(arg, "crashkernel=", 12) == 0) {
+ 			crashk_size = memparse(arg+12, &p);
+@@ -824,11 +832,15 @@ void __init prom_init(void)
+ 			 * parse_crashkernel(arg, sysinfo->system_dram_size,
+ 			 *		  &crashk_size, &crashk_base);
+ 			 */
++			goto append_arg;
+ #endif
+-		} else if (strlen(arcs_cmdline) + strlen(arg) + 1 <
+-			   sizeof(arcs_cmdline) - 1) {
+-			strcat(arcs_cmdline, " ");
+-			strcat(arcs_cmdline, arg);
++		} else {
++append_arg:
++			if (strlen(arcs_cmdline) + strlen(arg) + 1
++				< sizeof(arcs_cmdline) - 1) {
++				strcat(arcs_cmdline, " ");
++				strcat(arcs_cmdline, arg);
++			}
+ 		}
+ 	}
+ 
+@@ -892,6 +904,23 @@ void __init plat_mem_setup(void)
+ 	total = 0;
+ 	crashk_end = 0;
+ 
++#ifdef CONFIG_BLK_DEV_INITRD
++
++	if (rd_name[0]) {
++		const struct cvmx_bootmem_named_block_desc *initrd_block;
++
++		initrd_block = cvmx_bootmem_find_named_block(rd_name);
++		if (initrd_block != NULL) {
++			initrd_start = initrd_block->base_addr + PAGE_OFFSET;
++			initrd_end = initrd_start + initrd_block->size;
++			add_memory_region(initrd_block->base_addr,
++				initrd_block->size, BOOT_MEM_INIT_RAM);
++			initrd_in_reserved = 1;
++			total += initrd_block->size;
++		}
++	}
++#endif
++
+ 	/*
+ 	 * The Mips memory init uses the first memory location for
+ 	 * some memory vectors. When SPARSEMEM is in use, it doesn't
+diff --git a/arch/mips/include/asm/bootinfo.h b/arch/mips/include/asm/bootinfo.h
+index 1f7ca8b..0720562 100644
+--- a/arch/mips/include/asm/bootinfo.h
++++ b/arch/mips/include/asm/bootinfo.h
+@@ -108,6 +108,7 @@ struct boot_mem_map {
+ };
+ 
+ extern struct boot_mem_map boot_mem_map;
++extern bool initrd_in_reserved;
+ 
+ extern void add_memory_region(phys_t start, phys_t size, long type);
+ extern void detect_memory_region(phys_t start, phys_t sz_min,  phys_t sz_max);
+diff --git a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
+index f3b635f..b9adfc06 100644
+--- a/arch/mips/kernel/setup.c
++++ b/arch/mips/kernel/setup.c
+@@ -62,6 +62,7 @@ unsigned long mips_machtype __read_mostly = MACH_UNKNOWN;
+ EXPORT_SYMBOL(mips_machtype);
+ 
+ struct boot_mem_map boot_mem_map;
++bool initrd_in_reserved;
+ 
+ static char __initdata command_line[COMMAND_LINE_SIZE];
+ char __initdata arcs_cmdline[COMMAND_LINE_SIZE];
+@@ -307,8 +308,14 @@ static void __init bootmem_init(void)
+ 	 * as our memory range starting point. Once bootmem is inited we
+ 	 * will reserve the area used for the initrd.
+ 	 */
+-	init_initrd();
+-	reserved_end = (unsigned long) PFN_UP(__pa_symbol(&_end));
++
++	if (initrd_in_reserved) {
++		init_initrd();
++		reserved_end = (unsigned long) PFN_UP(__pa_symbol(&_end));
++	} else {
++		reserved_end = max_t(unsigned long, init_initrd(),
++				     PFN_UP(__pa_symbol(&_end)));
++	}
+ 
+ 	/*
+ 	 * max_low_pfn is not a number of pages. The number of pages
+@@ -323,8 +330,14 @@ static void __init bootmem_init(void)
+ 	for (i = 0; i < boot_mem_map.nr_map; i++) {
+ 		unsigned long start, end;
+ 
+-		if (boot_mem_map.map[i].type != BOOT_MEM_RAM)
++		switch (boot_mem_map.map[i].type) {
++		case BOOT_MEM_RAM:
++		case BOOT_MEM_INIT_RAM:
++			break;
++		default:
++			/* Not usable memory */
+ 			continue;
++		}
+ 
+ 		start = PFN_UP(boot_mem_map.map[i].addr);
+ 		end = PFN_DOWN(boot_mem_map.map[i].addr
+-- 
+2.1.3
 
-Kevin
