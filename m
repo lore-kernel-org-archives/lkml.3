@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaLONvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 08:51:03 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:50078 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaLONu7 (ORCPT
+	id S1751778AbaLONzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 08:55:38 -0500
+Received: from laurent.telenet-ops.be ([195.130.137.89]:58390 "EHLO
+	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070AbaLONzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 08:50:59 -0500
-Date: Mon, 15 Dec 2014 13:50:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 5/8] mfd: Add ST's Low Power Controller driver
-Message-ID: <20141215135052.GC13885@x1>
-References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
- <1418642738-17407-6-git-send-email-lee.jones@linaro.org>
- <2928949.OKYp272uiY@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2928949.OKYp272uiY@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 15 Dec 2014 08:55:37 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jonathan Corbet <corbet@lwn.net>,
+        Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH/RESEND] [media] VIDEO_CAFE_CCIC should select VIDEOBUF2_DMA_SG
+Date: Mon, 15 Dec 2014 14:55:37 +0100
+Message-Id: <1418651737-10016-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Dec 2014, Arnd Bergmann wrote:
+If VIDEO_CAFE_CCIC=y, but VIDEOBUF2_DMA_SG=m:
 
-> On Monday 15 December 2014 11:25:35 Lee Jones wrote:
-> > +       ret = of_property_read_u32(np, "st,lpc-mode", &mode);
-> > +       if (ret) {
-> > +               dev_err(&pdev->dev, "An LPC mode must be selected\n");
-> > +               return ret;
-> > +       }
-> > +
-> > +       switch (mode) {
-> > +       case ST_LPC_MODE_RTC:
-> > +               cell->name = "st-lpc-rtc";
-> > +               break;
-> > +       case ST_LPC_MODE_WDT:
-> > +               cell->name = "st-lpc-wdt";
-> > +               break;
-> > +       default:
-> > +               dev_err(&pdev->dev, "Unsupported mode: %d\n", mode);
-> > +               return ret;
-> > +       }
-> > +
-> > +       /* Pass resources though to selected child device. */
-> > +       cell->resources = pdev->resource;
-> > +       cell->num_resources = pdev->num_resources;
-> > +
-> > +       ret = mfd_add_devices(&pdev->dev, PLATFORM_DEVID_AUTO,
-> > +                             cell, 1, NULL, 0, NULL);
-> > 
-> 
-> I don't think it's necessary to have the MFD node if only one of the
-> two modes can be used based on a DT property. It should be enough
-> to have both the rtc and the wdt driver list the same compatible
-> string and check the property in the probe function to decide if
-> they want to drive the device or not:
+drivers/built-in.o: In function `mcam_v4l_open':
+mcam-core.c:(.text+0x1c2e81): undefined reference to `vb2_dma_sg_memops'
+mcam-core.c:(.text+0x1c2eb0): undefined reference to `vb2_dma_sg_init_ctx'
+drivers/built-in.o: In function `mcam_v4l_release':
+mcam-core.c:(.text+0x1c34bf): undefined reference to `vb2_dma_sg_cleanup_ctx'
 
-I tried that and it didn't work.  Only one driver probed.
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+This is a resend of a patch from 2013-09-30. It's still valid.
 
-> 	ret = of_property_read_u32(np, "st,lpc-mode", &mode);
-> 	if (!ret && mode != ST_LPC_MODE_RTC)
-> 		return -ENXIO
-> 
-> 
-> 	Arnd
+ drivers/media/platform/marvell-ccic/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
+diff --git a/drivers/media/platform/marvell-ccic/Kconfig b/drivers/media/platform/marvell-ccic/Kconfig
+index 6265d36adcebcb89..3d166568bd6955bd 100644
+--- a/drivers/media/platform/marvell-ccic/Kconfig
++++ b/drivers/media/platform/marvell-ccic/Kconfig
+@@ -5,6 +5,7 @@ config VIDEO_CAFE_CCIC
+ 	select VIDEO_OV7670
+ 	select VIDEOBUF2_VMALLOC
+ 	select VIDEOBUF2_DMA_CONTIG
++	select VIDEOBUF2_DMA_SG
+ 	---help---
+ 	  This is a video4linux2 driver for the Marvell 88ALP01 integrated
+ 	  CMOS camera controller.  This is the controller found on first-
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
