@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750959AbaLOMVs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:21:48 -0500
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:37168 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711AbaLOMVq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:21:46 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>, "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] rds: Fix min() warning in rds_message_inc_copy_to_user()
-Date: Mon, 15 Dec 2014 13:21:42 +0100
-Message-Id: <1418646102-32415-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	id S1751131AbaLOM0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:26:25 -0500
+Received: from syn.loicp.eu ([176.31.96.212]:60437 "EHLO mx0.loicp.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711AbaLOM0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 07:26:23 -0500
+Date: Mon, 15 Dec 2014 13:26:18 +0100
+From: Loic Pefferkorn <loic@loicp.eu>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: staging: goldfish: Fix minor coding style
+Message-ID: <20141215122618.GA1382@iron>
+References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
+ <20141213190705.0faaf119@lxorguk.ukuu.org.uk>
+ <20141213212051.GB6979@iron>
+ <20141215115147.3d4333e5@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141215115147.3d4333e5@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-net/rds/message.c: In function ‘rds_message_inc_copy_to_user’:
-net/rds/message.c:328: warning: comparison of distinct pointer types lacks a cast
+On Mon, Dec 15, 2014 at 11:51:47AM +0000, One Thousand Gnomes wrote:
+> 
+> Depends what you feel confident tackling. An interesting but
+> challenging one to look at as a newcomer might be
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=87951
+> 
+> because it provides you with an example .iso file you can loopback mount
+> to see the crash, and the same fixes were done for a similar bug so can
+> be seen in the git log to work from.
+> 
+> commit 410dd3cf4c9b36f27ed4542ee18b1af5e68645a4
+> 
+> It's predictable, it's repeatable and it can be done crashing a virtual
+> machine not a real one. That usually makes things eaiser to fix.
+> 
+> For something easier perhaps
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=75111
+> 
+> which just needs the configuration help fixing
+> 
+> Alan
+> 
 
-Use min_t(unsigned long, ...) like is done in
-rds_message_copy_from_user().
+Hi Alan,
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- net/rds/message.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Your answer is greatly appreciated, I'm going to do my best!
 
-diff --git a/net/rds/message.c b/net/rds/message.c
-index ff22022181875303..5a21e6f5986f1b82 100644
---- a/net/rds/message.c
-+++ b/net/rds/message.c
-@@ -325,7 +325,8 @@ int rds_message_inc_copy_to_user(struct rds_incoming *inc, struct iov_iter *to)
- 	copied = 0;
- 
- 	while (iov_iter_count(to) && copied < len) {
--		to_copy = min(iov_iter_count(to), sg->length - vec_off);
-+		to_copy = min_t(unsigned long, iov_iter_count(to),
-+				sg->length - vec_off);
- 		to_copy = min_t(unsigned long, to_copy, len - copied);
- 
- 		rds_stats_add(s_copy_to_user, to_copy);
 -- 
-1.9.1
-
+Cheers,
+Loïc
