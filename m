@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141AbaLOKHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:07:41 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:52712 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751309AbaLOKHi (ORCPT
+	id S1752244AbaLOKIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:08:01 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:48106 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063AbaLOKH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:07:38 -0500
-Date: Mon, 15 Dec 2014 11:07:33 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Muthu Mani <muth@cypress.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, gregkh@linuxfoundation.org,
-        Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-gpio@vger.kernel.org, Rajaram Regupathy <rera@cypress.com>
-Subject: Re: [PATCH v5 1/3] mfd: add support for Cypress CYUSBS234 USB Serial
- Bridge controller
-Message-ID: <20141215100733.GC6778@localhost>
-References: <1418471264-31896-1-git-send-email-muth@cypress.com>
+	Mon, 15 Dec 2014 05:07:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418471264-31896-1-git-send-email-muth@cypress.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1418221414-60110-2-git-send-email-dahi@linux.vnet.ibm.com>
+References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
+	<1418221414-60110-2-git-send-email-dahi@linux.vnet.ibm.com>
+Date: Mon, 15 Dec 2014 18:07:56 +0800
+Message-ID: <CAFiDJ59Y9y4VrcVfyo8rrQV-NtM=1G=kQScBtEvnuC3MpXt0KA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/5] uaccess: add pagefault_count to thread_info
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: David Hildenbrand <dahi@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>, benh@kernel.crashing.org,
+        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
+        schwidefsky@de.ibm.com, borntraeger@de.ibm.com,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, David.Laight@aculab.com,
+        peterz@infradead.org, hughd@google.com, hocko@suse.cz
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 05:17:42PM +0530, Muthu Mani wrote:
-> Adds support for USB-I2C/GPIO interfaces of Cypress Semiconductor
-> CYUSBS234 USB-Serial Bridge controller.
-> 
-> Details about the device can be found at:
-> http://www.cypress.com/?rID=84126
-> 
-> Separate cell drivers are available for I2C and GPIO. SPI and UART
-> are not supported yet.
-> 
-> Signed-off-by: Muthu Mani <muth@cypress.com>
-> Signed-off-by: Rajaram Regupathy <rera@cypress.com>
-> ---
+On Wed, Dec 10, 2014 at 10:23 PM, David Hildenbrand
+<dahi@linux.vnet.ibm.com> wrote:
+> This patch adds the pagefault_count to the thread_info of all
+> architectures. It will be used to count the pagefault_disable() levels
+> on a per-thread basis.
+>
+> We are not reusing the preempt_count as this is per cpu on x86 and we want to
+> demangle pagefault_disable() from preemption in the future.
+>
+> The new counter is added directly below the preempt_count, except for archs
+> relying on a manual calculation of asm offsets - to minimize the changes.
+>
+Hi David
 
-The patches in this series are still white-space damaged.
-
-Try sending it to yourself before reposting to the mailings lists again.
-
-And as I already asked you, make sure to remove your corporate
-confidentiality footers from mails you post to the lists.
-
-Johan
+Is this patchset targeted for 3.19? If yes, then we need this for
+arch/nios2 as well (new arch in 3.19).
