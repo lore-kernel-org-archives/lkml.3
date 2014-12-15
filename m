@@ -1,124 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaLOM4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 07:56:38 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60213 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaLOM4e (ORCPT
+	id S1751206AbaLOM7o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 07:59:44 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59928 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750722AbaLOM7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 07:56:34 -0500
-Date: Mon, 15 Dec 2014 12:55:57 +0000
-From: Mark Brown <broonie@kernel.org>
-To: AH <najdrozszy@gmail.com>
-Cc: Andrzej Hajda <a.hajda@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        ARM/CLKDEV SUPPORT <linux-arm-kernel@lists.infradead.org>,
-        GPIO SUBSYSTEM <linux-gpio@vger.kernel.org>,
-        DRM PANEL DRIVERS <dri-devel@lists.freedesktop.org>,
-        "ARM/S5P EXYNOS AR..." <linux-samsung-soc@vger.kernel.org>,
-        "OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-Message-ID: <20141215125557.GB11764@sirena.org.uk>
-References: <548B7653.7020004@gmail.com>
+	Mon, 15 Dec 2014 07:59:41 -0500
+Date: Mon, 15 Dec 2014 12:59:32 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        "yh.chen@mediatek.com" <yh.chen@mediatek.com>
+Subject: Re: [PATCH 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
+ board dts and Makefile
+Message-ID: <20141215125932.GF462@leverpostej>
+References: <1418208602-35584-1-git-send-email-eddie.huang@mediatek.com>
+ <1418208602-35584-4-git-send-email-eddie.huang@mediatek.com>
+ <20141211180245.GE28150@leverpostej>
+ <1418371705.423.31.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jmbcokH0GrqI2Ucc"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <548B7653.7020004@gmail.com>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 01/15] drivers/base: add track framework
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1418371705.423.31.camel@mtksdaap41>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 12, 2014 at 08:08:25AM +0000, Eddie Huang wrote:
+> Hi Mark,
+> 
+> On Thu, 2014-12-11 at 18:02 +0000, Mark Rutland wrote:
+> > Hi,
+> > 
+> > On Wed, Dec 10, 2014 at 10:50:01AM +0000, Eddie Huang wrote:
+> > > Add device tree support for MT8173 SoC and evalutaion board based on it.
+> > > 
+> > > +/ {
+> > > +	model = "mediatek,mt8173-evb";
+> > > +
+> > > +	aliases {
+> > > +		serial0 = &uart0;
+> > > +		serial1 = &uart1;
+> > > +		serial2 = &uart2;
+> > > +		serial3 = &uart3;
+> > 
+> > Do any of these support earlycon?
+> 
+> Not yet
+> 
+> > 
+> > > +	};
+> > > +
+> > > +	memory {
+> > 
+> > Nit: should be memory@40000000 (and you'll need to add device_type =
+> > "memory").
+> > 
+> > > +		reg = <0 0x40000000 0 0x40000000>;
+> > > +	};
+> 
+> skeleton.dtsi already has /memory node with address-cells=2,
+> size-cells=1, which will cause build warning if I change to use
+> memory@40000000, because we use size-cells=2. I will not include
+> skeleton.dtsi and follow your suggestion in next version.
 
---jmbcokH0GrqI2Ucc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That sounds fine to me.
 
-On Sat, Dec 13, 2014 at 12:12:19AM +0100, AH wrote:
-> Mark Brown wrote on 12.12.2014 17:36:
-> >On Wed, Dec 10, 2014 at 04:48:19PM +0100, Andrzej Hajda wrote:
+> 
+> > > +
+> > > +#include "skeleton.dtsi"
+> > > +
+> > > +/ {
+> > > +	compatible = "mediatek,mt8173";
+> > > +	interrupt-parent = <&sysirq>;
+> > > +	#address-cells = <2>;
+> > > +	#size-cells = <2>;
+> > > +
+> > > +	cpu-map {
+> > 
+> > This should live under /cpus, as documented in
+> > Documentation/devicetree/bindings/arm/topology.txt.
+> 
+> Got it, fix next version
+> 
+> > > +
+> > > +	psci {
+> > > +		compatible = "arm,psci-0.2";
+> > > +		method = "smc";
+> > > +	};
+> > 
+> > What are you using as your PSCI 0.2 implementation?
+> > 
+> > Is it fully compliant? (e.g. are the reset and power off functions
+> > implemented, may CPU0 be hotplugged)?
+> > 
+> > Given only portions of the GIC seem to be described below, what
+> > exception level is your kernel entered at? Per the spec it should be
+> > EL2, but given the brokenness below with the GIC I'm suspicious.
+> > 
+> 
+> Currently we only implement CPU boot, no power off, no CPU0 hotplug
+> either. And enter kernel at EL2. Actually, we run ATF in EL3, then
+> switch to EL2 to run lk and kernel.
 
-> >>+		kfree(ptask);
-> >>+
-> >>+		if (empty)
-> >>+			break;
-> >>+
-> >>+		track_process_task(track, task);
+Ok. In the absence of CPU_OFF, this is not yet a conforming PSCI 0.2
+implementation, so I'm wary of marking this as PSCI 0.2 until that is
+the case. Any attempt to power of CPUs will hit a BUG() in cpu_die(),
+and we don't want that.
 
-> >...we then go and do some other stuff, including processing that task,
-> >without the lock or or any other means I can see of excluding other
-> >users before going round and removing the task.  This seems to leave us
-> >vulnerable to double execution.
+Is CPU0 hotplug planned?
 
-> No, if you look at track_add_task function you will see that the queue is
-> processed only if it is initially empty, otherwise the task is only added=
- to
-> the queue, so it will be processed after processing earlier tasks.
-> So the rule is that if someone add task to the queue it checks if the que=
-ue
-> is empty, in such case it process all tasks from the queue until
-> the queue becomes empty, even the tasks added by other processed.
-> This way all tasks are serialized.
+If not, does your PSCI implementation report CPU0 as
+non-hotpluggable via MIGRATE_INFO_TYPE reporting a UP not migratable
+trusted OS (and MIGRATE_INFO_UP_CPU reporting CPU0 as the resident CPU)?
 
-This is all pretty fiddly and seems fragile - if nothing else the code
-seems undercommented since the above is only going to be apparent with
-following through multiple functions and we're relying on both owner and
-list emptiness with more than one place where a task can get processed.
+Are SYSTEM_OFF and SYSTEM_RESET available?
 
-> >I'm also unclear what is supposed to happen if adding a notification
-> >races with removing the thing being watched.
-
-> The sequence should be always as follows:
-> 1. create thing, then call track_up(thing).
-> ...
-> 2. call track_down(thing) then remove thing.
-
-> If we put 1 into probe and 2 into remove callback of the driver it will be
-> safe - we are synchronised by device_lock. But if, for some reason, we wa=
-nt
-> to create object after probe we should do own synchronization or just put
-> device_lock around 1. The same applies if we want to remove
-> object earlier. This is the comment above about. I will expand it to more
-> verbose explanation.
-
-You can't rely on the device lock here since this isn't tied to kobjects
-or anything at all - it's a freestanding interface someone could pick up
-and use in another context.  Besides, that isn't really my concern - my
-concern is what happens if something asks to wait for=20
-
---jmbcokH0GrqI2Ucc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUjtpdAAoJECTWi3JdVIfQZ0QH/iMfDK/L9XpgMZHOWJDq1X3N
-HfV1l6yDxaz5H8Css3wMm4KFpVS39H5LIFxhijJdQmX15+F6rPqKnvKCvHb6A05b
-ZoXJoGPePUPOIXK7iivTO+WqhckHzpxDxJ7lghuOSb/40UOZRbvnfFUWIzB4cP+o
-4pvUfA1lckvXEuGc1ucMzQjzGmvahrxDWeK6Yha349tl1UDf5gTX9eA2LWLSvaHG
-++koEZ+F5LM4PM01lpMSdkCeTPmPrVlhes9SVtHZBk676AkSuxx2XGoUDcN3xaTE
-ttvbqHAfE7VtfcBbIB0mwwggl6iA96wKjwslINLQHO5ZXU9dUy0NOFqMtjUWgNk=
-=oZ29
------END PGP SIGNATURE-----
-
---jmbcokH0GrqI2Ucc--
+Thanks,
+Mark.
