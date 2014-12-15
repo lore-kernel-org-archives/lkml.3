@@ -1,113 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaLOO1r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:27:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:49984 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380AbaLOO1a (ORCPT
+	id S1754011AbaLOPGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:06:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38437 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573AbaLOO1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:30 -0500
-Message-ID: <548EEFC5.2090002@oracle.com>
-Date: Mon, 15 Dec 2014 09:27:17 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: mm: BUG in release_pages
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Mon, 15 Dec 2014 09:27:47 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 053/168] ARM: pxa: fix hang on startup with DEBUG_LL
+Date: Mon, 15 Dec 2014 14:25:07 +0000
+Message-Id: <1418653622-21105-54-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel, I've stumbled on the following spew:
+------------------
 
-[  263.650215] page:ffffea0002fde3c0 count:0 mapcount:0 mapping:ffff880057633a31 index:0x803
-[  263.651812] flags: 0x5fffff80080028(uptodate|lru|swapbacked)
-[  263.653045] page dumped because: VM_BUG_ON_PAGE(atomic_read(&page->_count) == 0)
-[  263.654398] ------------[ cut here ]------------
-[  263.655241] kernel BUG at include/linux/mm.h:340!
-[  263.656067] invalid opcode: 0000 [#1] SMP KASAN
-[  263.656969] Dumping ftrace buffer:
-[  263.657562]    (ftrace buffer empty)
-[  263.658154] Modules linked in:
-[  263.658693] CPU: 23 PID: 8919 Comm: trinity-c23 Not tainted 3.18.0-next-20141211-sasha-00050-g421f72c-dirty #1604
-[  263.660068] task: ffff880473cb6000 ti: ffff880473d50000 task.ti: ffff880473d50000
-[  263.660068] RIP: release_pages (include/linux/mm.h:340 mm/swap.c:930)
-[  263.660068] RSP: 0000:ffff880473d53ad8  EFLAGS: 00010282
-[  263.660068] RAX: dfffe90000000000 RBX: ffffea0002fde3c0 RCX: 0000000000000044
-[  263.660068] RDX: 1ffffd40005fbc7f RSI: 0000000000000282 RDI: ffffea0002fde3f8
-[  263.660068] RBP: ffff880473d53b58 R08: 0000000000000000 R09: 0000000000000000
-[  263.660068] R10: 3a65737561636562 R11: 206465706d756420 R12: dfffe90000000000
-[  263.660068] R13: 0000000002fde080 R14: ffffea0002fde3dc R15: 0000000000000000
-[  263.660068] FS:  00007fab435de700(0000) GS:ffff880910c00000(0000) knlGS:0000000000000000
-[  263.660068] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  263.660068] CR2: 00000000011d4ff8 CR3: 0000000473cd6000 CR4: 00000000000006a0
-[  263.660068] Stack:
-[  263.660068]  ffffea0002fde080 0000000000000000 0000000000000000 0000000000000001
-[  263.660068]  ffff880473d53b58 ffffffffa18a511d 0000000e00000000 ffff880910c104d0
-[  263.660068]  ffff880473d53b18 ffff880473d53b18 1ffff1008e7aa002 000000000000000e
-[  263.660068] Call Trace:
-[  263.660068] ? __pagevec_lru_add_fn (mm/swap.c:489 mm/swap.c:1034)
-[  263.660068] pagevec_lru_move_fn (include/linux/pagevec.h:44 mm/swap.c:436)
-[  263.660068] ? __put_single_page (mm/swap.c:1025)
-[  263.660068] __lru_cache_add (include/linux/pagevec.h:62 mm/swap.c:628)
-[  263.660068] lru_cache_add (mm/swap.c:665)
-[  263.660068] lru_cache_add_active_or_unevictable (mm/swap.c:723)
-[  263.660068] do_wp_page (include/linux/mmu_notifier.h:190 include/linux/mmu_notifier.h:245 mm/memory.c:2233)
-[  263.660068] ? group_sched_in (kernel/events/core.c:1832)
-[  263.660068] handle_mm_fault (mm/memory.c:3236 mm/memory.c:3341 mm/memory.c:3370)
-[  263.660068] ? find_vma (mm/mmap.c:2042)
-[  263.660068] __do_page_fault (arch/x86/mm/fault.c:1246)
-[  263.660068] ? account_user_time (kernel/sched/cputime.c:152)
-[  263.660068] ? get_vtime_delta (kernel/sched/cputime.c:652 kernel/sched/cputime.c:660)
-[  263.660068] ? vtime_account_user (kernel/sched/cputime.c:701)
-[  263.660068] trace_do_page_fault (arch/x86/mm/fault.c:1329 include/linux/jump_label.h:114 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1330)
-[  263.660068] ? trace_hardirqs_off_thunk (arch/x86/lib/thunk_64.S:34)
-[  263.660068] do_async_page_fault (arch/x86/kernel/kvm.c:280)
-[  263.660068] async_page_fault (arch/x86/kernel/entry_64.S:1320)
-[  263.660068] Code: 00 20 00 00 e8 cb 6e ac 0f 48 89 df e8 73 d9 ff ff 31 c0 e9 7a fc ff ff 0f 1f 40 00 48 c7 c6 e8 44 4a b2 48 89 df e8 b9 76 07 00 <0f> 0b 0f 1f 80 00 00 00 00 0f ba 33 14 41 b9 04 00 00 00 e9 96
-All code
-========
-   0:	00 20                	add    %ah,(%rax)
-   2:	00 00                	add    %al,(%rax)
-   4:	e8 cb 6e ac 0f       	callq  0xfac6ed4
-   9:	48 89 df             	mov    %rbx,%rdi
-   c:	e8 73 d9 ff ff       	callq  0xffffffffffffd984
-  11:	31 c0                	xor    %eax,%eax
-  13:	e9 7a fc ff ff       	jmpq   0xfffffffffffffc92
-  18:	0f 1f 40 00          	nopl   0x0(%rax)
-  1c:	48 c7 c6 e8 44 4a b2 	mov    $0xffffffffb24a44e8,%rsi
-  23:	48 89 df             	mov    %rbx,%rdi
-  26:	e8 b9 76 07 00       	callq  0x776e4
-  2b:*	0f 0b                	ud2    		<-- trapping instruction
-  2d:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
-  34:	0f ba 33 14          	btrl   $0x14,(%rbx)
-  38:	41 b9 04 00 00 00    	mov    $0x4,%r9d
-  3e:	e9                   	.byte 0xe9
-  3f:	96                   	xchg   %eax,%esi
-	...
+From: Robert Jarzmik <robert.jarzmik@free.fr>
 
-Code starting with the faulting instruction
-===========================================
-   0:	0f 0b                	ud2
-   2:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
-   9:	0f ba 33 14          	btrl   $0x14,(%rbx)
-   d:	41 b9 04 00 00 00    	mov    $0x4,%r9d
-  13:	e9                   	.byte 0xe9
-  14:	96                   	xchg   %eax,%esi
-	...
-[  263.660068] RIP release_pages (include/linux/mm.h:340 mm/swap.c:930)
-[  263.660068]  RSP <ffff880473d53ad8>
+commit cde7fc879969f933614b1256df2625d6ff637bab upstream.
 
+The commit 2111667b4677 ("ARM: pxa: call debug_ll_io_init for
+earlyprintk") triggers in the current kernel the attached backtrace on
+PXA/tosa early in the boot time when DEBUG_LL is enabled.
 
-Thanks,
-Sasha
+It is due to overlap between uart virtual memory defined in
+DEBUG_UART_VIRT and mapped by debug_ll_io_init() and peripheral bus
+mapped by pxa_map_io at the same address, 0xf2100000.
+
+As hinted by Arnd, map early virtual memory for low level debug on
+address 0xf6200000, even if that means 2 virtual mappings will give
+access to the pxa internal UARTs (FFUART, BTUART, STUART, ...).
+
+------------[ cut here ]------------
+kernel BUG at /home/lumag/linux/mm/vmalloc.c:1143!
+Internal error: Oops - BUG: 0 [#1] PREEMPT ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.17.0-00032-g8e0d202-dirty #23
+task: c062a5a8 ti: c0620000 task.ti: c0620000
+PC is at vm_area_add_early+0x54/0x84
+LR is at add_static_vm_early+0xc/0x60
+pc : [<c03e1100>]    lr : [<c03d9ef4>]    psr: 800001d3
+sp : c0621f04  ip : c03efa74  fp : c03edf84
+r10: c0637e98  r9 : 40000001  r8 : c03da57c
+r7 : c3ffcfb0  r6 : 00000000  r5 : c3ffcfb0  r4 : 02000000
+r3 : c3ffcfd8  r2 : f2100000  r1 : f4000000  r0 : c3ffcfb0
+Flags: Nzcv  IRQs off  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+Control: 00007977  Table: a0004000  DAC: 00000017
+Process swapper (pid: 0, stack limit = 0xc06201c8)
+Stack: (0xc0621f04 to 0xc0622000)
+1f00:          c3ffcfd8 40000001 c3ffcfd8 c03ee08c c03da570 c03db90c c0637d24
+1f20: 00000000 c03ec7cc c066e654 a0700000 000a0700 c03db914 c03db90c c03daf84
+1f40: 00000000 000a0000 c0000000 c03ec7cc 000a0700 c0700000 ffff1000 000a3fff
+1f60: 00001000 00000007 00000000 c03ec7cc c0008000 c03ed748 c0621fd4 c03d5d18
+1f80: 69052d00 a03ec48c 00000000 c03d8ad0 0000006c 00007977 c036c6e8 00000001
+1fa0: c0621fd4 c03ed744 c0628000 a0004000 69052d00 a03ec48c 00000000 c03d68d4
+1fc0: 00000000 00000000 00000000 00000000 00000000 c03ed748 c0649894 c062801c
+1fe0: c03ed744 c062b2f0 a0004000 69052d00 a03ec48c a0008040 00000000 00000000
+[<c03e1100>] (vm_area_add_early) from [<c03d9ef4>] (add_static_vm_early+0xc/0x60)
+[<c03d9ef4>] (add_static_vm_early) from [<c03da570>] (iotable_init.part.6+0xa8/0xb4)
+[<c03da570>] (iotable_init.part.6) from [<c03db914>] (pxa25x_map_io+0x8/0x24)
+[<c03db914>] (pxa25x_map_io) from [<c03daf84>] (paging_init+0x744/0x8d8)
+[<c03daf84>] (paging_init) from [<c03d8ad0>] (setup_arch+0x354/0x608)
+[<c03d8ad0>] (setup_arch) from [<c03d68d4>] (start_kernel+0xa8/0x3dc)
+[<c03d68d4>] (start_kernel) from [<a0008040>] (0xa0008040)
+Code: e5904008 e0811004 e1520001 2a000005 (e7f001f2)
+---[ end trace f24b6c88ae00fa9a ]---
+Kernel panic - not syncing: Attempted to kill the idle task!
+---[ end Kernel panic - not syncing: Attempted to kill the idle task!
+
+Reported-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/arm/Kconfig.debug                    | 2 +-
+ arch/arm/mach-pxa/include/mach/addr-map.h | 5 +++++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 8f90595069a1..1fdb08427db7 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1118,7 +1118,7 @@ config DEBUG_UART_VIRT
+ 	default 0xf1600000 if ARCH_INTEGRATOR
+ 	default 0xf1c28000 if DEBUG_SUNXI_UART0
+ 	default 0xf1c28400 if DEBUG_SUNXI_UART1
+-	default 0xf2100000 if DEBUG_PXA_UART1
++	default 0xf6200000 if DEBUG_PXA_UART1
+ 	default 0xf4090000 if ARCH_LPC32XX
+ 	default 0xf4200000 if ARCH_GEMINI
+ 	default 0xf7000000 if DEBUG_S3C24XX_UART && (DEBUG_S3C_UART0 || \
+diff --git a/arch/arm/mach-pxa/include/mach/addr-map.h b/arch/arm/mach-pxa/include/mach/addr-map.h
+index bbf9df37ad4b..d28fe291233a 100644
+--- a/arch/arm/mach-pxa/include/mach/addr-map.h
++++ b/arch/arm/mach-pxa/include/mach/addr-map.h
+@@ -39,6 +39,11 @@
+ #define DMEMC_SIZE		0x00100000
+ 
+ /*
++ * Reserved space for low level debug virtual addresses within
++ * 0xf6200000..0xf6201000
++ */
++
++/*
+  * Internal Memory Controller (PXA27x and later)
+  */
+ #define IMEMC_PHYS		0x58000000
+-- 
+2.1.3
+
