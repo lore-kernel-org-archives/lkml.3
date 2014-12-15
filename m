@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaLOT24 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:28:56 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40715 "EHLO
+	id S1751737AbaLOT3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:29:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40720 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbaLOT2x (ORCPT
+	with ESMTP id S1751097AbaLOT25 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:53 -0500
+	Mon, 15 Dec 2014 14:28:57 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>,
+Cc: Panu Matilainen <pmatilai@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 23/96] vio: fix reuse of vio_dring slot
-Date: Mon, 15 Dec 2014 11:25:43 -0800
-Message-Id: <1418671616-25482-24-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 30/96] ipv4: Fix incorrect error code when adding an unreachable route
+Date: Mon, 15 Dec 2014 11:25:50 -0800
+Message-Id: <1418671616-25482-31-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,152 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Panu Matilainen <pmatilai@redhat.com>
 
-[ Upstream commit d0aedcd4f14a22e23b313f42b7e6e6ebfc0fbc31 ]
+[ Upstream commit 49dd18ba4615eaa72f15c9087dea1c2ab4744cf5 ]
 
-vio_dring_avail() will allow use of every dring entry, but when the last
-entry is allocated then dr->prod == dr->cons which is indistinguishable from
-the ring empty condition. This causes the next allocation to reuse an entry.
-When this happens in sunvdc, the server side vds driver begins nack'ing the
-messages and ends up resetting the ldc channel. This problem does not effect
-sunvnet since it checks for < 2.
+Trying to add an unreachable route incorrectly returns -ESRCH if
+if custom FIB rules are present:
 
-The fix here is to just never allocate the very last dring slot so that full
-and empty are not the same condition. The request start path was changed to
-check for the ring being full a bit earlier, and to stop the blk_queue if
-there is no space left. The blk_queue will be restarted once the ring is
-only half full again. The number of ring entries was increased to 512 which
-matches the sunvnet and Solaris vdc drivers, and greatly reduces the
-frequency of hitting the ring full condition and the associated blk_queue
-stop/starting. The checks in sunvent were adjusted to account for
-vio_dring_avail() returning 1 less.
+[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
+RTNETLINK answers: Network is unreachable
+[root@localhost ~]# ip rule add to 55.66.77.88 table 200
+[root@localhost ~]# ip route add 74.125.31.199 dev eth0 via 1.2.3.4
+RTNETLINK answers: No such process
+[root@localhost ~]#
 
-Orabug: 19441666
-OraBZ: 14983
+Commit 83886b6b636173b206f475929e58fac75c6f2446 ("[NET]: Change "not found"
+return value for rule lookup") changed fib_rules_lookup()
+to use -ESRCH as a "not found" code internally, but for user space it
+should be translated into -ENETUNREACH. Handle the translation centrally in
+ipv4-specific fib_lookup(), leaving the DECnet case alone.
 
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
+On a related note, commit b7a71b51ee37d919e4098cd961d59a883fd272d8
+("ipv4: removed redundant conditional") removed a similar translation from
+ip_route_input_slow() prematurely AIUI.
+
+Fixes: b7a71b51ee37 ("ipv4: removed redundant conditional")
+Signed-off-by: Panu Matilainen <pmatilai@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/include/asm/vio.h       |  2 +-
- drivers/block/sunvdc.c             | 39 ++++++++++++++++++++++----------------
- drivers/net/ethernet/sun/sunvnet.c |  4 ++--
- 3 files changed, 26 insertions(+), 19 deletions(-)
+ net/ipv4/fib_rules.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/sparc/include/asm/vio.h b/arch/sparc/include/asm/vio.h
-index a8210c5..55841c1 100644
---- a/arch/sparc/include/asm/vio.h
-+++ b/arch/sparc/include/asm/vio.h
-@@ -265,7 +265,7 @@ static inline u32 vio_dring_avail(struct vio_dring_state *dr,
- 				  unsigned int ring_size)
- {
- 	return (dr->pending -
--		((dr->prod - dr->cons) & (ring_size - 1)));
-+		((dr->prod - dr->cons) & (ring_size - 1)) - 1);
- }
- 
- #define VIO_MAX_TYPE_LEN	32
-diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
-index 1a9360d..756b8ec 100644
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -33,7 +33,7 @@ MODULE_DESCRIPTION("Sun LDOM virtual disk client driver");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(DRV_MODULE_VERSION);
- 
--#define VDC_TX_RING_SIZE	256
-+#define VDC_TX_RING_SIZE	512
- 
- #define WAITING_FOR_LINK_UP	0x01
- #define WAITING_FOR_TX_SPACE	0x02
-@@ -283,7 +283,9 @@ static void vdc_end_one(struct vdc_port *port, struct vio_dring_state *dr,
- 
- 	__blk_end_request(req, (desc->status ? -EIO : 0), desc->size);
- 
--	if (blk_queue_stopped(port->disk->queue))
-+	/* restart blk queue when ring is half emptied */
-+	if (blk_queue_stopped(port->disk->queue) &&
-+	    vdc_tx_dring_avail(dr) * 100 / VDC_TX_RING_SIZE >= 50)
- 		blk_start_queue(port->disk->queue);
- }
- 
-@@ -435,12 +437,6 @@ static int __send_request(struct request *req)
- 	for (i = 0; i < nsg; i++)
- 		len += sg[i].length;
- 
--	if (unlikely(vdc_tx_dring_avail(dr) < 1)) {
--		blk_stop_queue(port->disk->queue);
--		err = -ENOMEM;
--		goto out;
--	}
--
- 	desc = vio_dring_cur(dr);
- 
- 	err = ldc_map_sg(port->vio.lp, sg, nsg,
-@@ -480,21 +476,32 @@ static int __send_request(struct request *req)
- 		port->req_id++;
- 		dr->prod = (dr->prod + 1) & (VDC_TX_RING_SIZE - 1);
- 	}
--out:
- 
+diff --git a/net/ipv4/fib_rules.c b/net/ipv4/fib_rules.c
+index f2e1573..8f7bd56 100644
+--- a/net/ipv4/fib_rules.c
++++ b/net/ipv4/fib_rules.c
+@@ -62,6 +62,10 @@ int __fib_lookup(struct net *net, struct flowi4 *flp, struct fib_result *res)
+ 	else
+ 		res->tclassid = 0;
+ #endif
++
++	if (err == -ESRCH)
++		err = -ENETUNREACH;
++
  	return err;
  }
- 
--static void do_vdc_request(struct request_queue *q)
-+static void do_vdc_request(struct request_queue *rq)
- {
--	while (1) {
--		struct request *req = blk_fetch_request(q);
-+	struct request *req;
- 
--		if (!req)
--			break;
-+	while ((req = blk_peek_request(rq)) != NULL) {
-+		struct vdc_port *port;
-+		struct vio_dring_state *dr;
- 
--		if (__send_request(req) < 0)
--			__blk_end_request_all(req, -EIO);
-+		port = req->rq_disk->private_data;
-+		dr = &port->vio.drings[VIO_DRIVER_TX_RING];
-+		if (unlikely(vdc_tx_dring_avail(dr) < 1))
-+			goto wait;
-+
-+		blk_start_request(req);
-+
-+		if (__send_request(req) < 0) {
-+			blk_requeue_request(rq, req);
-+wait:
-+			/* Avoid pointless unplugs. */
-+			blk_stop_queue(rq);
-+			break;
-+		}
- 	}
- }
- 
-diff --git a/drivers/net/ethernet/sun/sunvnet.c b/drivers/net/ethernet/sun/sunvnet.c
-index 398faff..ade8bdf 100644
---- a/drivers/net/ethernet/sun/sunvnet.c
-+++ b/drivers/net/ethernet/sun/sunvnet.c
-@@ -656,7 +656,7 @@ static int vnet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	spin_lock_irqsave(&port->vio.lock, flags);
- 
- 	dr = &port->vio.drings[VIO_DRIVER_TX_RING];
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		if (!netif_queue_stopped(dev)) {
- 			netif_stop_queue(dev);
- 
-@@ -704,7 +704,7 @@ static int vnet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	dev->stats.tx_bytes += skb->len;
- 
- 	dr->prod = (dr->prod + 1) & (VNET_TX_RING_SIZE - 1);
--	if (unlikely(vnet_tx_dring_avail(dr) < 2)) {
-+	if (unlikely(vnet_tx_dring_avail(dr) < 1)) {
- 		netif_stop_queue(dev);
- 		if (vnet_tx_dring_avail(dr) > VNET_TX_WAKEUP_THRESH(dr))
- 			netif_wake_queue(dev);
+ EXPORT_SYMBOL_GPL(__fib_lookup);
 -- 
 1.9.1
 
