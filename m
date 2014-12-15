@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaLOPjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:39:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39174 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaLOPjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:39:52 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Krzysztof Konopko <kris@konagma.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: Fix sparse warnings
-References: <1418336609-10191-1-git-send-email-kris@konagma.com>
-	<1418425137-13339-1-git-send-email-kris@konagma.com>
-Date: Mon, 15 Dec 2014 10:39:41 -0500
-In-Reply-To: <1418425137-13339-1-git-send-email-kris@konagma.com> (Krzysztof
-	Konopko's message of "Fri, 12 Dec 2014 23:58:57 +0100")
-Message-ID: <wrfjk31svs5e.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	id S1752676AbaLOPmK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:42:10 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:35868 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022AbaLOPmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 10:42:08 -0500
+Date: Mon, 15 Dec 2014 07:42:03 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] nfs: follow direct I/O write locking convention
+Message-ID: <20141215154203.GA20161@mew>
+References: <cover.1418618044.git.osandov@osandov.com>
+ <7561c096c7de603ac39fcfcff7bd2ec80589cae1.1418618044.git.osandov@osandov.com>
+ <CAABAsM4jMcox1emR1nSxORUOPNMDYmCcmMD4YymJ9R_BM_UU4w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAABAsM4jMcox1emR1nSxORUOPNMDYmCcmMD4YymJ9R_BM_UU4w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Konopko <kris@konagma.com> writes:
-> Some struct fields in wifi.h are meant to be __le16 but were declared as
-> unsigned short.  This was reported by sparse:
->
->   rtw_wlan_util.c:538:24: warning: cast to restricted __le16
->   rtw_wlan_util.c:1544:29: warning: cast to restricted __le16
->   rtw_wlan_util.c:1546:25: warning: cast to restricted __le16
->
-> This patch changes the types of the struct fields involved to be
-> little-endian which is what is received over the air and consistent with
-> relevant structs in include/linux/ieee80211.h.
->
-> Signed-off-by: Krzysztof Konopko <kris@konagma.com>
-> ---
->  drivers/staging/rtl8723au/include/wifi.h | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
+On Mon, Dec 15, 2014 at 07:49:20AM -0500, Trond Myklebust wrote:
+> On Mon, Dec 15, 2014 at 12:26 AM, Omar Sandoval <osandov@osandov.com> wrote:
+> > The generic callers of direct_IO lock i_mutex before doing a write. NFS
+> > doesn't use the generic write code, so it doesn't follow this
+> > convention. This is now a problem because the interface introduced for
+> > swap-over-NFS calls direct_IO for a write without holding i_mutex, but
+> > other implementations of direct_IO will expect to have it locked.
+> 
+> I really don't care much about swap-over-NFS performance; that's a
+> niche usage at best. I _do_ care about O_DIRECT performance, and the
+> ability to run multiple WRITE calls in parallel.
+> 
+> IOW: Patch NACKed... Please find another solution.
+> 
+> Trond
 
-Looks OK
+So the patch formatting doesn't make it completely clear what's going on
+here, but here's what the original nfs_file_direct_write code did:
 
-Signed-off-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+- called with i_mutex unlocked
+- collects stats and does some generic checks
+- locks i_mutex
+- syncs the mapping, schedules the write
+- unlocks i_mutex
+- waits for the write to complete if synchronous
 
+After this patch, nfs_file_direct_write works like:
 
->
-> diff --git a/drivers/staging/rtl8723au/include/wifi.h b/drivers/staging/rtl8723au/include/wifi.h
-> index fd3da3b..266c43e 100644
-> --- a/drivers/staging/rtl8723au/include/wifi.h
-> +++ b/drivers/staging/rtl8723au/include/wifi.h
-> @@ -28,7 +28,7 @@
->  struct AC_param {
->  	unsigned char		ACI_AIFSN;
->  	unsigned char		CW;
-> -	unsigned short	TXOP_limit;
-> +	__le16			TXOP_limit;
->  }  __packed;
->  
->  struct WMM_para_element {
-> @@ -39,9 +39,9 @@ struct WMM_para_element {
->  
->  struct ADDBA_request {
->  	unsigned char		dialog_token;
-> -	unsigned short	BA_para_set;
-> -	unsigned short	BA_timeout_value;
-> -	unsigned short	BA_starting_seqctrl;
-> +	__le16		BA_para_set;
-> +	__le16		BA_timeout_value;
-> +	__le16		BA_starting_seqctrl;
->  }  __packed;
+- called with i_mutex locked
+- collects stats and does some generic checks
+- syncs the mapping, schedules the write
+- drops i_mutex
+- waits for the write to complete if synchronous
+- picks i_mutex back up
+
+There's an extra lock and unlock as a result and a slightly longer
+critical section, but we drop i_mutex to wait for the write, so multiple
+writes still work in parallel.
+
+-- 
+Omar
