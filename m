@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbaLOOum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:50:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38645 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbaLOO2U (ORCPT
+	id S1751781AbaLOOvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:51:02 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:35397 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712AbaLOOu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:20 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Maurizio Lombardi <mlombard@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 090/168] bnx2fc: do not add shared skbs to the fcoe_rx_list
-Date: Mon, 15 Dec 2014 14:25:44 +0000
-Message-Id: <1418653622-21105-91-git-send-email-luis.henriques@canonical.com>
+	Mon, 15 Dec 2014 09:50:58 -0500
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        acme@kernel.org, mpe@ellerman.id.au
+Cc: ananth@in.ibm.com
+Subject: [PATCHv2 0/8] Fix perf probe issues on powerpc
+Date: Mon, 15 Dec 2014 20:20:30 +0530
+Message-Id: <cover.1418654435.git.naveen.n.rao@linux.vnet.ibm.com>
 X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121514-0029-0000-0000-000000D1CF34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+This patchset fixes various issues with perf probe on powerpc across ABIv1 and
+ABIv2:
+- in the presence of DWARF debug-info,
+- in the absence of DWARF, but with the symbol table, and
+- in the absence of debug-info, but with kallsyms.
 
-------------------
+Applies cleanly on -tip. Tested on ppc64 BE and LE.
 
-From: Maurizio Lombardi <mlombard@redhat.com>
+Changes from previous version:
+Addressed various review comments from Mike Ellerman largely to generalize
+changes. Some of the simpler patches have been retained in their previous form
+to limit code churn, while others have been generalized by introducing arch
+helpers. Individual patches have more details.
 
-commit 01a4cc4d0cd6a836c7b923760e8eb1cbb6a47258 upstream.
 
-In some cases, the fcoe_rx_list may contains multiple instances
-of the same skb (the so called "shared skbs").
+- Naveen
 
-the bnx2fc_l2_rcv thread is a loop that extracts a skb from the list,
-modifies (and destroys) its content and then proceed to the next one.
-The problem is that if the skb is shared, the remaining instances will
-be corrupted.
+Naveen N. Rao (8):
+  kprobes: Fix kallsyms lookup across powerpc ABIv1 and ABIv2
+  perf probe: Improve detection of file/function name in the probe
+    pattern
+  perf probe powerpc: Fix symbol fixup issues due to ELF type
+  perf probe powerpc: Handle powerpc dot symbols
+  perf probe powerpc: Allow matching against dot symbols
+  perf tools powerpc: Fix PPC64 ELF ABIv2 symbol decoding
+  perf probe powerpc: Use DWARF info only if necessary
+  perf probe powerpc: Fixup function entry if using kallsyms lookup
 
-The solution is to use skb_share_check() before adding the skb to the
-fcoe_rx_list.
+ arch/powerpc/include/asm/kprobes.h          | 63 +++++++++++++++++++---------
+ tools/perf/arch/powerpc/Makefile            |  1 +
+ tools/perf/arch/powerpc/util/sym-handling.c | 64 +++++++++++++++++++++++++++++
+ tools/perf/config/Makefile                  |  2 +
+ tools/perf/util/probe-event.c               | 48 ++++++++++++++++++----
+ tools/perf/util/probe-event.h               | 21 ++++++++++
+ tools/perf/util/symbol-elf.c                |  5 ++-
+ tools/perf/util/symbol.c                    |  6 +++
+ tools/perf/util/symbol.h                    |  6 +++
+ 9 files changed, 188 insertions(+), 28 deletions(-)
+ create mode 100644 tools/perf/arch/powerpc/util/sym-handling.c
 
-[ 6286.808725] ------------[ cut here ]------------
-[ 6286.808729] WARNING: at include/scsi/fc_frame.h:173 bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]()
-[ 6286.808748] Modules linked in: bnx2x(-) mdio dm_service_time bnx2fc cnic uio fcoe libfcoe 8021q garp stp mrp libfc llc scsi_transport_fc scsi_tgt sg iTCO_wdt iTCO_vendor_support coretemp kvm_intel kvm crct10dif_pclmul crc32_pclmul crc32c_intel e1000e ghash_clmulni_intel aesni_intel lrw gf128mul glue_helper ablk_helper ptp cryptd hpilo serio_raw hpwdt lpc_ich pps_core ipmi_si pcspkr mfd_core ipmi_msghandler shpchp pcc_cpufreq mperf nfsd auth_rpcgss nfs_acl lockd sunrpc dm_multipath xfs libcrc32c ata_generic pata_acpi sd_mod crc_t10dif crct10dif_common mgag200 syscopyarea sysfillrect sysimgblt i2c_algo_bit ata_piix drm_kms_helper ttm drm libata i2c_core hpsa dm_mirror dm_region_hash dm_log dm_mod [last unloaded: mdio]
-[ 6286.808750] CPU: 3 PID: 1304 Comm: bnx2fc_l2_threa Not tainted 3.10.0-121.el7.x86_64 #1
-[ 6286.808750] Hardware name: HP ProLiant DL120 G7, BIOS J01 07/01/2013
-[ 6286.808752]  0000000000000000 000000000b36e715 ffff8800deba1e00 ffffffff815ec0ba
-[ 6286.808753]  ffff8800deba1e38 ffffffff8105dee1 ffffffffa05618c0 ffff8801e4c81888
-[ 6286.808754]  ffffe8ffff663868 ffff8801f402b180 ffff8801f56bc000 ffff8800deba1e48
-[ 6286.808754] Call Trace:
-[ 6286.808759]  [<ffffffff815ec0ba>] dump_stack+0x19/0x1b
-[ 6286.808762]  [<ffffffff8105dee1>] warn_slowpath_common+0x61/0x80
-[ 6286.808763]  [<ffffffff8105e00a>] warn_slowpath_null+0x1a/0x20
-[ 6286.808765]  [<ffffffffa054f415>] bnx2fc_l2_rcv_thread+0x425/0x450 [bnx2fc]
-[ 6286.808767]  [<ffffffffa054eff0>] ? bnx2fc_disable+0x90/0x90 [bnx2fc]
-[ 6286.808769]  [<ffffffff81085aef>] kthread+0xcf/0xe0
-[ 6286.808770]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
-[ 6286.808772]  [<ffffffff815fc76c>] ret_from_fork+0x7c/0xb0
-[ 6286.808773]  [<ffffffff81085a20>] ? kthread_create_on_node+0x140/0x140
-[ 6286.808774] ---[ end trace c6cdb939184ccb4e ]---
-
-Signed-off-by: Maurizio Lombardi <mlombard@redhat.com>
-Acked-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/scsi/bnx2fc/bnx2fc_fcoe.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-index 785d0d71781e..a190ab663133 100644
---- a/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-@@ -411,6 +411,7 @@ static int bnx2fc_rcv(struct sk_buff *skb, struct net_device *dev,
- 	struct fc_frame_header *fh;
- 	struct fcoe_rcv_info *fr;
- 	struct fcoe_percpu_s *bg;
-+	struct sk_buff *tmp_skb;
- 	unsigned short oxid;
- 
- 	interface = container_of(ptype, struct bnx2fc_interface,
-@@ -423,6 +424,12 @@ static int bnx2fc_rcv(struct sk_buff *skb, struct net_device *dev,
- 		goto err;
- 	}
- 
-+	tmp_skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (!tmp_skb)
-+		goto err;
-+
-+	skb = tmp_skb;
-+
- 	if (unlikely(eth_hdr(skb)->h_proto != htons(ETH_P_FCOE))) {
- 		printk(KERN_ERR PFX "bnx2fc_rcv: Wrong FC type frame\n");
- 		goto err;
 -- 
 2.1.3
 
