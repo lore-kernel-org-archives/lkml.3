@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaLOF15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 00:27:57 -0500
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:62353 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389AbaLOF1f (ORCPT
+	id S1751700AbaLOF2E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 00:28:04 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38393 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaLOF10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 00:27:35 -0500
+	Mon, 15 Dec 2014 00:27:26 -0500
 From: Omar Sandoval <osandov@osandov.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
@@ -14,10 +14,10 @@ To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
         linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Omar Sandoval <osandov@osandov.com>, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH 5/8] direct-io: don't dirty ITER_BVEC pages on read
-Date: Sun, 14 Dec 2014 21:26:59 -0800
-Message-Id: <30fbe8cf9f564f9ddbc7038935a25c1db9a3fd58.1418618044.git.osandov@osandov.com>
+Cc: Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH 1/8] nfs: follow direct I/O write locking convention
+Date: Sun, 14 Dec 2014 21:26:55 -0800
+Message-Id: <7561c096c7de603ac39fcfcff7bd2ec80589cae1.1418618044.git.osandov@osandov.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <cover.1418618044.git.osandov@osandov.com>
 References: <cover.1418618044.git.osandov@osandov.com>
@@ -27,64 +27,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reads through the iov_iter infrastructure for kernel pages shouldn't be
-dirtied by the direct I/O code.
+The generic callers of direct_IO lock i_mutex before doing a write. NFS
+doesn't use the generic write code, so it doesn't follow this
+convention. This is now a problem because the interface introduced for
+swap-over-NFS calls direct_IO for a write without holding i_mutex, but
+other implementations of direct_IO will expect to have it locked.
 
-This is based on Dave Kleikamp's and Ming Lei's previously posted
-patches.
-
-Cc: Ming Lei <ming.lei@canonical.com>
-Acked-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Signed-off-by: Omar Sandoval <osandov@osandov.com>
 ---
- fs/direct-io.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ fs/nfs/direct.c | 12 +++++-------
+ fs/nfs/file.c   |  8 ++++++--
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e181b6b..e542ce4 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -120,6 +120,7 @@ struct dio {
- 	spinlock_t bio_lock;		/* protects BIO fields below */
- 	int page_errors;		/* errno from get_user_pages() */
- 	int is_async;			/* is IO async ? */
-+	int should_dirty;		/* should we mark read pages dirty? */
- 	bool defer_completion;		/* defer AIO completion to workqueue? */
- 	int io_error;			/* IO error in completion path */
- 	unsigned long refcount;		/* direct_io_worker() and bios */
-@@ -392,7 +393,7 @@ static inline void dio_bio_submit(struct dio *dio, struct dio_submit *sdio)
- 	dio->refcount++;
- 	spin_unlock_irqrestore(&dio->bio_lock, flags);
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 10bf072..9402b96 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -906,17 +906,15 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
+ 	if (!count)
+ 		goto out;
  
--	if (dio->is_async && dio->rw == READ)
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty)
- 		bio_set_pages_dirty(bio);
+-	mutex_lock(&inode->i_mutex);
+-
+ 	result = nfs_sync_mapping(mapping);
+ 	if (result)
+-		goto out_unlock;
++		goto out;
  
- 	if (sdio->submit_io)
-@@ -463,13 +464,13 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
- 	if (!uptodate)
- 		dio->io_error = -EIO;
+ 	if (mapping->nrpages) {
+ 		result = invalidate_inode_pages2_range(mapping,
+ 					pos >> PAGE_CACHE_SHIFT, end);
+ 		if (result)
+-			goto out_unlock;
++			goto out;
+ 	}
  
--	if (dio->is_async && dio->rw == READ) {
-+	if (dio->is_async && dio->rw == READ && dio->should_dirty) {
- 		bio_check_pages_dirty(bio);	/* transfers ownership */
- 	} else {
- 		bio_for_each_segment_all(bvec, bio, i) {
- 			struct page *page = bvec->bv_page;
+ 	task_io_account_write(count);
+@@ -924,7 +922,7 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
+ 	result = -ENOMEM;
+ 	dreq = nfs_direct_req_alloc();
+ 	if (!dreq)
+-		goto out_unlock;
++		goto out;
  
--			if (dio->rw == READ && !PageCompound(page))
-+			if (dio->rw == READ && !PageCompound(page) && dio->should_dirty)
- 				set_page_dirty_lock(page);
- 			page_cache_release(page);
+ 	dreq->inode = inode;
+ 	dreq->bytes_left = count;
+@@ -960,12 +958,12 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, struct iov_iter *iter,
  		}
-@@ -1177,6 +1178,7 @@ do_blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
+ 	}
+ 	nfs_direct_req_release(dreq);
++
++	mutex_lock(&inode->i_mutex);
+ 	return result;
  
- 	dio->inode = inode;
- 	dio->rw = rw;
-+	dio->should_dirty = !(iter->type & ITER_BVEC);
+ out_release:
+ 	nfs_direct_req_release(dreq);
+-out_unlock:
+-	mutex_unlock(&inode->i_mutex);
+ out:
+ 	return result;
+ }
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 2ab6f00..8b80276 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -675,8 +675,12 @@ ssize_t nfs_file_write(struct kiocb *iocb, struct iov_iter *from)
+ 	if (result)
+ 		return result;
  
- 	/*
- 	 * For AIO O_(D)SYNC writes we need to defer completions to a workqueue
+-	if (file->f_flags & O_DIRECT)
+-		return nfs_file_direct_write(iocb, from, pos);
++	if (file->f_flags & O_DIRECT) {
++		mutex_lock(&inode->i_mutex);
++		result = nfs_file_direct_write(iocb, from, pos);
++		mutex_unlock(&inode->i_mutex);
++		return result;
++	}
+ 
+ 	dprintk("NFS: write(%pD2, %zu@%Ld)\n",
+ 		file, count, (long long) pos);
 -- 
 2.1.3
 
