@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbaLOLqe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:46:34 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:54010 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752232AbaLOLqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:46:31 -0500
-X-IronPort-AV: E=Sophos;i="5.07,579,1413244800"; 
-   d="scan'208";a="204396251"
-Message-ID: <548ECA14.9040805@citrix.com>
-Date: Mon, 15 Dec 2014 11:46:28 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Juergen Gross <jgross@suse.com>, <linux-kernel@vger.kernel.org>,
-        <x86@kernel.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <david.vrabel@citrix.com>,
-        <boris.ostrovsky@oracle.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
-        <hpa@zytor.com>, <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/4] xen: use generated hypervisor symbols
- in arch/x86/xen/trace.c
-References: <1418321065-10212-1-git-send-email-jgross@suse.com> <1418321065-10212-4-git-send-email-jgross@suse.com>
-In-Reply-To: <1418321065-10212-4-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA1
+	id S1752529AbaLOLrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:47:18 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:56955 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaLOLrP convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:2>);
+	Mon, 15 Dec 2014 06:47:15 -0500
+Message-Id: <548ED84D020000780004F8FB@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Mon, 15 Dec 2014 11:47:09 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <david.vrabel@citrix.com>
+Cc: <x86@kernel.org>, <tglx@linutronix.de>,
+        "xen-devel" <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>, <konrad.wilk@oracle.com>,
+        <mingo@redhat.com>, "Juergen Gross" <JGross@suse.com>,
+        <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH 1/4] xen: build infrastructure for
+ generating hypercall depending symbols
+References: <1418321065-10212-1-git-send-email-jgross@suse.com>
+ <1418321065-10212-2-git-send-email-jgross@suse.com>
+ <548EC841.2000107@citrix.com>
+In-Reply-To: <548EC841.2000107@citrix.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/14 18:04, Juergen Gross wrote:
-> Instead of manually list all hypervisor calls in arch/x86/xen/trace.c
-> use the auto generated list.
+>>> On 15.12.14 at 12:38, <david.vrabel@citrix.com> wrote:
+> On 11/12/14 18:04, Juergen Gross wrote:
+>> --- a/arch/x86/syscalls/Makefile
+>> +++ b/arch/x86/syscalls/Makefile
+> 
+> Why are these changes here and not in arch/x86/xen/Makefile?
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Because this needs to be done in a step that (afaict) has no hook
+in the Xen-specific Makefile.
 
-David
+>> @@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
+>>  $(out)/syscalls_64.h: $(syscall64) $(systbl)
+>>  	$(call if_changed,systbl)
+>>  
+>> +$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
+>> +	$(call if_changed,hypercalls)
+>> +
+>> +$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
+> 
+> The generated header should end up in asm/xen/
+
+Why is generated/asm/ not good enough?
+
+Jan
+
