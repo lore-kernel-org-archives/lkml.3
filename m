@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaLOKSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:18:02 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49190 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaLOKR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:17:59 -0500
-Date: Mon, 15 Dec 2014 11:17:57 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, gnomes@lxorguk.ukuu.org.uk,
-        computersforpeace@gmail.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, corbet@lwn.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/4] Documentation/SubmitChecklist: Remind submitters to
- check the merge window
-Message-ID: <20141215101757.GC6444@pd.tnic>
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
- <1418623790-28429-3-git-send-email-cernekee@gmail.com>
+	id S1752103AbaLOKUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:20:18 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:46832 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaLOKUP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 05:20:15 -0500
+Date: Mon, 15 Dec 2014 02:20:11 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Dudley Du <dudl@cypress.com>
+Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "rydberg@euromail.se" <rydberg@euromail.se>,
+        "bleung@google.com" <bleung@google.com>, David Solda <dso@cypress.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v15 00/12] input: cyapa: instruction of cyapa patches
+Message-ID: <20141215102011.GA27305@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Dudley Du <dudl@cypress.com>,
+	"dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+	"rydberg@euromail.se" <rydberg@euromail.se>,
+	"bleung@google.com" <bleung@google.com>,
+	David Solda <dso@cypress.com>,
+	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1418624603-19054-1-git-send-email-dudley.dulixin@gmail.com>
+ <BN1PR06MB0701116150EACEA75FCADB7D16F0@BN1PR06MB070.namprd06.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418623790-28429-3-git-send-email-cernekee@gmail.com>
+In-Reply-To: <BN1PR06MB0701116150EACEA75FCADB7D16F0@BN1PR06MB070.namprd06.prod.outlook.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 10:09:48PM -0800, Kevin Cernekee wrote:
-> Currently the checklist does not provide an indication of appropriate
-> times to send patches; add a brief note on the topic.
-> 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
->  Documentation/SubmitChecklist | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/Documentation/SubmitChecklist b/Documentation/SubmitChecklist
-> index 2b7e32d..8b23f9c 100644
-> --- a/Documentation/SubmitChecklist
-> +++ b/Documentation/SubmitChecklist
-> @@ -107,3 +107,8 @@ kernel patches.
->      CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
->      CONFIG_BLOCK, CONFIG_PM, CONFIG_MAGIC_SYSRQ,
->      CONFIG_NET, CONFIG_INET=n (but latter with CONFIG_NET=y)
-> +
-> +27: For patches which are not urgent fixes for bugs in the current tree,
-> +    double-check https://www.kernel.org/ to make sure the merge window is
-> +    CLOSED ("mainline:" showing an -rc kernel) before sending.  For more
-> +    information on the release cycle, see Documentation/development-process/.
+Dudley,
 
-Acked-by: Borislav Petkov <bp@suse.de>
+On Mon, Dec 15, 2014 at 06:31:25AM +0000, Dudley Du wrote:
+> Jeremiah,
+> 
+> Thanks for your review and comments.
+> I have updated v15 based on your comments and suggestions.
+> Could you help review again please.
+> 
+> Thank you very much,
+> Dudley
+> 
+
+Will do.
+
+[...]
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+- Jeremiah Mahler
