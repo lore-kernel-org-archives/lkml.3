@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaLOHUP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:20:15 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:54406 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647AbaLOHUN (ORCPT
+	id S1751765AbaLOHWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:22:14 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:40948 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419AbaLOHWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:20:13 -0500
-Message-ID: <548E8B88.8040100@i2se.com>
-Date: Mon, 15 Dec 2014 08:19:36 +0100
-From: Stefan Wahren <stefan.wahren@i2se.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 02:22:12 -0500
+Date: Mon, 15 Dec 2014 09:22:07 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: gregkh@linuxfoundation.org
+Cc: davidm@egauge.net, khoroshilov@ispras.ru, asaf.vertz@tandemg.com,
+        sachin.kamat@linaro.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: host: max3421-hcd: use time_after()
+Message-ID: <20141215072207.GA15062@ubuntu>
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: linux-kernel@vger.kernel.org, festevam@gmail.com, shawn.guo@linaro.org,
-        mturquette@linaro.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] clk: mxs: Fix invalid 32-bit access to frac registers
-References: <1418570933-21585-1-git-send-email-stefan.wahren@i2se.com> <201412141712.12589.marex@denx.de> <1638147247.144508.1418577377536.JavaMail.open-xchange@oxbaltgw03.schlund.de> <201412142019.50047.marex@denx.de>
-In-Reply-To: <201412142019.50047.marex@denx.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:dvf5Zwo2WY1CVC/7hbo0/5gKI/sPEz8CSW7CiAZ4tmsZfZ0iOtu
- /3HNLV3HExBYQib6Ru/YNwtYdwpmnM6TE9dsND2ifszZ1ztUwQwlkOw92CK8P9Oc25zDa8w
- 35mck0U8PdJ04866TVz8ihBSnt1hA8/IgWdkBUKte7FBmtShdfnb2mlzISzUpOx7NqBX4St
- 2utCd9pCjEjvsg4QboKCQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+To be future-proof and for better readability the time comparisons are
+modified to use time_after() instead of plain, error-prone math.
 
-Am 14.12.2014 um 20:19 schrieb Marek Vasut:
-> On Sunday, December 14, 2014 at 06:16:17 PM, Stefan Wahren wrote:
->>> [...]
->>>
->>> Also, it might be a good idea to zap the 0x3f mask and use HEX and DEC
->>> numbers consistently, but this is an idea for another patch.
->> Yes.
->>
->> Btw i hope this patch also fixes a SPI communication issue with our
->> hardware which forces us to bypass ref_io1 for ssp2.
->> But i will have access to that hardware tomorrow.
-> Which issue would that be please ? 
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+ drivers/usb/host/max3421-hcd.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-i've posted the issue in the Freescale Community [1].
-
-> What are the symptoms ?
-
-Bits from the SPI slave are misinterpreted.
-
-BR Stefan
-
-[1] - https://community.freescale.com/thread/310434
-
->
-> Best regards,
-> Marek Vasut
-
+diff --git a/drivers/usb/host/max3421-hcd.c b/drivers/usb/host/max3421-hcd.c
+index 6234c75..aaaff94 100644
+--- a/drivers/usb/host/max3421-hcd.c
++++ b/drivers/usb/host/max3421-hcd.c
+@@ -55,6 +55,7 @@
+  * single thread (max3421_spi_thread).
+  */
+ 
++#include <linux/jiffies.h>
+ #include <linux/module.h>
+ #include <linux/spi/spi.h>
+ #include <linux/usb.h>
+@@ -1291,7 +1292,7 @@ max3421_handle_irqs(struct usb_hcd *hcd)
+ 		char sbuf[16 * 16], *dp, *end;
+ 		int i;
+ 
+-		if (jiffies - last_time > 5*HZ) {
++		if (time_after(jiffies, last_time + 5*HZ)) {
+ 			dp = sbuf;
+ 			end = sbuf + sizeof(sbuf);
+ 			*dp = '\0';
+-- 
+1.7.0.4
 
