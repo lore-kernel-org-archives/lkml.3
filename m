@@ -1,57 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaLOHWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:22:14 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40948 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaLOHWM (ORCPT
+	id S1751329AbaLOHXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:23:46 -0500
+Received: from smtprelay.synopsys.com ([198.182.47.9]:56618 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaLOHXm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:22:12 -0500
-Date: Mon, 15 Dec 2014 09:22:07 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: gregkh@linuxfoundation.org
-Cc: davidm@egauge.net, khoroshilov@ispras.ru, asaf.vertz@tandemg.com,
-        sachin.kamat@linaro.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: host: max3421-hcd: use time_after()
-Message-ID: <20141215072207.GA15062@ubuntu>
+	Mon, 15 Dec 2014 02:23:42 -0500
+X-Greylist: delayed 538 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 02:23:42 EST
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
+        "acme@redhat.com" <acme@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Borislav Petkov" <bp@suse.de>, Jiri Olsa <jolsa@kernel.org>,
+        Cody P Schafer <dev@codyps.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2] perf tools: fix type mismatch - long vs __statfs_word
+Thread-Topic: [PATCH v2] perf tools: fix type mismatch - long vs
+ __statfs_word
+Thread-Index: AQHP0cE90s97Czxu0U+QrQNTDF42fw==
+Date: Mon, 15 Dec 2014 07:14:39 +0000
+Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BC6671@IN01WEMBXA.internal.synopsys.com>
+References: <1410880589-22531-1-git-send-email-abrodkin@synopsys.com>
+Accept-Language: en-US, en-IN
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.12.196.182]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To be future-proof and for better readability the time comparisons are
-modified to use time_after() instead of plain, error-prone math.
+On Tuesday 16 September 2014 08:46 PM, Alexey Brodkin wrote:
+> In case of compilation with "-Wextra" following breakage happens:
+> --->---
+> fs.c: In function ‘fs__valid_mount’:
+> fs.c:76:24: error: comparison between signed and unsigned integer expressions [-Werror=sign-compare]
+>   else if (st_fs.f_type != magic)
+>                         ^
+> cc1: all warnings being treated as errors
+> --->---
+>
+> Note that now when fs.c is in "lib/api/fs" and in "tools/lib/api/Makefile"
+> CFLAGS has hard-coded "-Wextra" this is inevitable even if one builds "perf"
+> with "WERROR=0".
+>
+> Even though "debugfs.c" gets compiled successfully because DEBUGFS_MAGIC is
+> definitely positive (MSB bit is not set, so compiler doesn't care about
+> explisit cast to "long") it's good to cast "st_fs.f_type" to "long" as well.
+>
+> And here's an explanation of observed issue.
+>
+> Perf tools use libc headers instead of ones from kernel source tree.
+> This is because "perf" is just a user-space tool even thought its sources are
+> merged in Linux kernel source tree.
+> And so "statfs.h" comes from either uClibc, glibc or musl.
+>
+> In case of uClibc most of architectures use "legacy" version from here:
+> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/statfs.h
+>
+> New UAPI compliant architectures (looks like for now it's only ARC) uses UAPI
+> version of "statfs.h" from here:
+> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
+>
+> In this particular situation most interesting difference is in data type used
+> for "struct statfs" member "f_type".
+>
+> In "legacy" version it's:
+> --->---
+> __SWORD_TYPE f_type;
+> --->---
+>
+> In UAPI version it's:
+> --->---
+> __U32_TYPE f_type;
+> --->---
+>
+> In its turn mentioned types are defined in
+> http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common/bits/types.h
+> this way:
+> --->---
+> ...
+> --->---
+>
+> And for 32-bit architectures "int" is of the same length as "long" so compiler
+> is happy on data type check.
+>
+> But if "f_type" is "unsigned int" it's definitely not an unsigned "long".
+>
+> Essential fix is explicit casting of "f_type" to "long".
+>
+> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+>
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Borislav Petkov <bp@suse.de>
+> Cc: Jiri Olsa <jolsa@kernel.org>
+> Cc: Cody P Schafer <dev@codyps.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> ---
+>
+> Changes in v2:
+>
+>  * Added type cast to DEBUGFS_MAGIC in "debugfs.c"
+>  * Added verbose explanation of root cause
+>
+> Thanks a lot to Arnaldo for mention of another instance of hidden missing
+> cast in "debugfs.c".
+>
+> ---
+>  tools/lib/api/fs/debugfs.c | 2 +-
+>  tools/lib/api/fs/fs.c      | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
+> index a74fba6..93aa4cd 100644
+> --- a/tools/lib/api/fs/debugfs.c
+> +++ b/tools/lib/api/fs/debugfs.c
+> @@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
+>  
+>  	if (statfs(debugfs, &st_fs) < 0)
+>  		return -ENOENT;
+> -	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
+> +	else if ((long) st_fs.f_type != (long) DEBUGFS_MAGIC)
 
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
- drivers/usb/host/max3421-hcd.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hi Arnaldo,
 
-diff --git a/drivers/usb/host/max3421-hcd.c b/drivers/usb/host/max3421-hcd.c
-index 6234c75..aaaff94 100644
---- a/drivers/usb/host/max3421-hcd.c
-+++ b/drivers/usb/host/max3421-hcd.c
-@@ -55,6 +55,7 @@
-  * single thread (max3421_spi_thread).
-  */
- 
-+#include <linux/jiffies.h>
- #include <linux/module.h>
- #include <linux/spi/spi.h>
- #include <linux/usb.h>
-@@ -1291,7 +1292,7 @@ max3421_handle_irqs(struct usb_hcd *hcd)
- 		char sbuf[16 * 16], *dp, *end;
- 		int i;
- 
--		if (jiffies - last_time > 5*HZ) {
-+		if (time_after(jiffies, last_time + 5*HZ)) {
- 			dp = sbuf;
- 			end = sbuf + sizeof(sbuf);
- 			*dp = '\0';
--- 
-1.7.0.4
+Does this fix look good to you. We need something like this to enable upstream ARC
+kernels to build perf.
+OTOH do we really need the cast on both sides for this 2nd hunk ?
+
+Thx,
+-Vineet
+
+>  		return -ENOENT;
+>  
+>  	return 0;
+> diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+> index c1b49c3..a9fd78b 100644
+> --- a/tools/lib/api/fs/fs.c
+> +++ b/tools/lib/api/fs/fs.c
+> @@ -75,7 +75,7 @@ static int fs__valid_mount(const char *fs, long magic)
+>  
+>  	if (statfs(fs, &st_fs) < 0)
+>  		return -ENOENT;
+> -	else if (st_fs.f_type != magic)
+> +	else if ((long) st_fs.f_type != magic)
+>  		return -ENOENT;
+>  
+>  	return 0;
 
