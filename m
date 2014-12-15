@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaLOH5B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:57:01 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:45910 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaLOH5A (ORCPT
+	id S1751604AbaLOH73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:59:29 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52141 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaLOH72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:57:00 -0500
-Date: Mon, 15 Dec 2014 08:57:34 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, airlied@linux.ie,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Subject: Re: [Regression] 3.18 black screen after boot (bisected)
-Message-ID: <20141215075734.GR27182@phenom.ffwll.local>
-Mail-Followup-To: linux-kernel@vger.kernel.org, airlied@linux.ie,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-References: <20141214115831.GA1634@fritha.org>
+	Mon, 15 Dec 2014 02:59:28 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 15 Dec 2014 17:03:38 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-mm@kvack.org, penberg@kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: [PATCH 3/7] slub: Do not use c->page on free
+Message-ID: <20141215080338.GE4898@js1304-P5Q-DELUXE>
+References: <20141210163017.092096069@linux.com>
+ <20141210163033.717707217@linux.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141214115831.GA1634@fritha.org>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20141210163033.717707217@linux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 12:58:31PM +0100, Heinz Diehl wrote:
-> Hi,
+On Wed, Dec 10, 2014 at 10:30:20AM -0600, Christoph Lameter wrote:
+> Avoid using the page struct address on free by just doing an
+> address comparison. That is easily doable now that the page address
+> is available in the page struct and we already have the page struct
+> address of the object to be freed calculated.
 > 
-> since kernel 3.18 I'm no longer able to run X on my machine. While
-> 3.17.6 is fine, 3.18 leaves me with a black screen when starting
-> X. Booting into runlevel 1/3 is fine.
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 > 
-> I did a "git bisect", and the offending commit is this one:
-> 
-> [root@kiera linux-git]# git bisect bad
-> 83f45fc360c8e16a330474860ebda872d1384c8c is the first bad commit
-> commit 83f45fc360c8e16a330474860ebda872d1384c8c
-> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Date:   Wed Aug 6 09:10:18 2014 +0200
-> 
->     drm: Don't grab an fb reference for the idr
-> 
-> [....]
-> 
-> I double-checked, and 3.18 is fine with this commit reverted.
-> 
-> My machine is an Asus U45JC laptop, and the CPU is an Intel i450M
-> (Ironlake). Please contact me if I can help in any way (I'm subscribed
-> to lkml, but not to other X or kernel related lists).
+> Index: linux/mm/slub.c
+> ===================================================================
+> --- linux.orig/mm/slub.c	2014-12-09 12:25:45.770405462 -0600
+> +++ linux/mm/slub.c	2014-12-09 12:25:45.766405582 -0600
+> @@ -2625,6 +2625,13 @@ slab_empty:
+>  	discard_slab(s, page);
+>  }
+>  
+> +static bool same_slab_page(struct kmem_cache *s, struct page *page, void *p)
+> +{
+> +	long d = p - page->address;
+> +
+> +	return d > 0 && d < (1 << MAX_ORDER) && d < (compound_order(page) << PAGE_SHIFT);
+> +}
+> +
 
-Can you please boot with drm.debug=0xf on both good and bad kernels and
-then grab dmesg from each?
+Somtimes, compound_order() induces one more cacheline access, because
+compound_order() access second struct page in order to get order. Is there
+any way to remove this?
 
-To make sure we don't forget this please file the above summary plus dmesg
-files as a new bug against dri -> drm(intel) on bugs.freedesktop.org.
-Please add "[ilk bisected]" to the bug summary so it shows up in all the
-right searches for us.
+Thanks.
 
-Thanks, Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
