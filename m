@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751964AbaLOT3m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:29:42 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40784 "EHLO
+	id S1752012AbaLOT3w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:29:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40794 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbaLOT3k (ORCPT
+	with ESMTP id S1751939AbaLOT3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:29:40 -0500
+	Mon, 15 Dec 2014 14:29:49 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 62/96] Input: xpad - use proper endpoint type
-Date: Mon, 15 Dec 2014 11:26:22 -0800
-Message-Id: <1418671616-25482-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 63/96] powerpc/pseries: Fix endiannes issue in RTAS call from xmon
+Date: Mon, 15 Dec 2014 11:26:23 -0800
+Message-Id: <1418671616-25482-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -29,52 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
+commit 3b8a3c01096925a824ed3272601082289d9c23a5 upstream.
 
-The xpad wireless endpoint is not a bulk endpoint on my devices, but
-rather an interrupt one, so the USB core complains when it is submitted.
-I'm guessing that the author really did mean that this should be an
-interrupt urb, but as there are a zillion different xpad devices out
-there, let's cover out bases and handle both bulk and interrupt
-endpoints just as easily.
+On pseries system (LPAR) xmon failed to enter when running in LE mode,
+system is hunging. Inititating xmon will lead to such an output on the
+console:
 
-Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+SysRq : Entering xmon
+cpu 0x15: Vector: 0  at [c0000003f39ffb10]
+    pc: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    lr: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+    sp: c0000003f39ffc70
+   msr: 8000000000009033
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+Bad kernel stack pointer fafb4b0 at eca7cc4
+cpu 0x15: Vector: 300 (Data Access) at [c000000007f07d40]
+    pc: 000000000eca7cc4
+    lr: 000000000eca7c44
+    sp: fafb4b0
+   msr: 8000000000001000
+   dar: 10000000
+ dsisr: 42000000
+  current = 0xc0000003fafa7180
+  paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+    pid   = 14617, comm = bash
+cpu 0x15: Exception 300 (Data Access) in xmon, returning to main loop
+xmon: WARNING: bad recursive fault on cpu 0x15
+
+The root cause is that xmon is calling RTAS to turn off the surveillance
+when entering xmon, and RTAS is requiring big endian parameters.
+
+This patch is byte swapping the RTAS arguments when running in LE mode.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/joystick/xpad.c | 16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ arch/powerpc/xmon/xmon.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 75e3b10..856c1b0 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -1002,9 +1002,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
- 		}
- 
- 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
--		usb_fill_bulk_urb(xpad->bulk_out, udev,
--				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
--				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
-+		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
-+			usb_fill_bulk_urb(xpad->bulk_out, udev,
-+					  usb_sndbulkpipe(udev,
-+							  ep_irq_in->bEndpointAddress),
-+					  xpad->bdata, XPAD_PKT_LEN,
-+					  xpad_bulk_out, xpad);
-+		} else {
-+			usb_fill_int_urb(xpad->bulk_out, udev,
-+					 usb_sndintpipe(udev,
-+							ep_irq_in->bEndpointAddress),
-+					 xpad->bdata, XPAD_PKT_LEN,
-+					 xpad_bulk_out, xpad, 0);
-+		}
- 
- 		/*
- 		 * Submit the int URB immediately rather than waiting for open
+diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
+index af9d346..4898203 100644
+--- a/arch/powerpc/xmon/xmon.c
++++ b/arch/powerpc/xmon/xmon.c
+@@ -288,10 +288,10 @@ static inline void disable_surveillance(void)
+ 	args.token = rtas_token("set-indicator");
+ 	if (args.token == RTAS_UNKNOWN_SERVICE)
+ 		return;
+-	args.nargs = 3;
+-	args.nret = 1;
++	args.nargs = cpu_to_be32(3);
++	args.nret = cpu_to_be32(1);
+ 	args.rets = &args.args[3];
+-	args.args[0] = SURVEILLANCE_TOKEN;
++	args.args[0] = cpu_to_be32(SURVEILLANCE_TOKEN);
+ 	args.args[1] = 0;
+ 	args.args[2] = 0;
+ 	enter_rtas(__pa(&args));
 -- 
 1.9.1
 
