@@ -1,102 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaLOPaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:30:13 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:50796 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892AbaLOPaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:30:08 -0500
-Message-ID: <548EFE7D.4020400@kernel.dk>
-Date: Mon, 15 Dec 2014 08:30:05 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751993AbaLOPab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:30:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:35288 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaLOPa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 10:30:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="498951349"
+Message-ID: <548EFE88.3000307@linux.intel.com>
+Date: Mon, 15 Dec 2014 23:30:16 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        ming.lei@canonical.com
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: blk-mq oops with today's Linus' kernel
-References: <20141215151907.GA22895@quack.suse.cz> <548EFC4B.4010307@kernel.dk>
-In-Reply-To: <548EFC4B.4010307@kernel.dk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Joerg Roedel <joro@8bytes.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, hpa@zytor.com, x86@kernel.org,
+        Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/5] Fix Intel IRQ remapping initialization order
+References: <1418656404-28575-1-git-send-email-joro@8bytes.org>
+In-Reply-To: <1418656404-28575-1-git-send-email-joro@8bytes.org>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 08:20 AM, Jens Axboe wrote:
-> On 12/15/2014 08:19 AM, Jan Kara wrote:
->>    Hello,
->>
->>    when running xfstests with today's Linus' kernel I've got the
->> following
->> oops:
->> BUG: unable to handle kernel paging request at 0000001000000a28
->> IP: [<ffffffff810ad9f3>] autoremove_wake_function+0x23/0x40
->> PGD 7f566067 PUD 0
->> Oops: 0002 [#1] SMP
->> Modules linked in: ext4 jbd2 crc16 netconsole loop raid6_pq
->> zlib_deflate lzo_compress xor
->> CPU: 4 PID: 0 Comm: swapper/4 Not tainted 3.18.0-xen+ #19
->> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
->> task: ffff88007e8fa310 ti: ffff88007e900000 task.ti: ffff88007e900000
->> RIP: 0010:[<ffffffff810ad9f3>]  [<ffffffff810ad9f3>]
->> autoremove_wake_function+0x23/0x40
->> RSP: 0018:ffff88007f103d78  EFLAGS: 00010002
->> RAX: 0000000000000000 RBX: ffff88005140f948 RCX: ffff88005140f960
->> RDX: 0000001000000a20 RSI: 0000000000000001 RDI: ffffffff813c2e1f
->> RBP: ffff88007f103d88 R08: 0000000000000001 R09: 0000000000000000
->> R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000000
->> R13: 0000000000000001 R14: ffff88007a3bd640 R15: 0000000000000000
->> FS:  00007ff3b5dc8700(0000) GS:ffff88007f100000(0000)
->> knlGS:0000000000000000
->> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> CR2: 0000001000000a28 CR3: 000000007a580000 CR4: 00000000000006e0
->> Stack:
->>   ffff880000000000 ffff88007a3bd628 ffff88007f103dc8 ffffffff810ad8d2
->>   0000000300000000 ffff88007a3bd608 0000000000000000 0000000000000001
->>   0000000000000082 0000000000000003 ffff88007f103e08 ffffffff810adf73
->> Call Trace:
->>   <IRQ>
->>   [<ffffffff810ad8d2>] __wake_up_common+0x52/0x80
->>   [<ffffffff810adf73>] __wake_up+0x43/0x70
->>   [<ffffffff8121d94e>] bt_clear_tag+0xae/0xc0
->>   [<ffffffff8121d98b>] blk_mq_put_tag+0x2b/0x50
->>   [<ffffffff8121ab10>] __blk_mq_free_request+0x40/0xc0
->>   [<ffffffff8121abc1>] blk_mq_free_hctx_request+0x31/0x40
->>   [<ffffffff8121abff>] blk_mq_free_request+0x2f/0x40
->>   [<ffffffff8121b047>] blk_mq_end_request+0x57/0x60
->>   [<ffffffff81214f73>] blk_flush_complete_seq+0x293/0x2d0
->>   [<ffffffff81215373>] flush_end_io+0x113/0x210
->>   [<ffffffff8121b029>] blk_mq_end_request+0x39/0x60
->>   [<ffffffff812d3f46>] virtblk_request_done+0x36/0x80
->>   [<ffffffff81219d1e>] __blk_mq_complete_request_remote+0xe/0x10
->>   [<ffffffff810e1d82>]
->> generic_smp_call_function_single_interrupt+0x72/0x120
->>   [<ffffffff810657d2>] smp_call_function_single_interrupt+0x22/0x30
->>   [<ffffffff813c4462>] call_function_single_interrupt+0x72/0x80
->>   <EOI>
->>   [<ffffffff8106e606>] ? native_safe_halt+0x6/0x10
->>   [<ffffffff810b65bd>] ? trace_hardirqs_on+0xd/0x10
->>   [<ffffffff8104520e>] default_idle+0xe/0x20
->>   [<ffffffff8104509a>] arch_cpu_idle+0xa/0x10
->>   [<ffffffff810ae64f>] cpu_startup_entry+0x2af/0x310
->>   [<ffffffff81066c8d>] start_secondary+0x15d/0x180
->> Code: 64 4a ff ff c9 c3 66 90 55 48 89 e5 53 48 89 fb 48 83
->> ec 08 e8 4f 4a ff ff 85 c0 89 c6 74 1b 48 8b 53 18 48 8b 43 20 48 8d
->> 4b 18
->> <48> 89 42 08 48 89 10 48 89 4b 18 48 89 4b 20 48 83 c4 08 89 f0
->> RIP  [<ffffffff810ad9f3>] autoremove_wake_function+0x23/0x40
->>   RSP <ffff88007f103d78>
->> CR2: 0000001000000a28
->> ---[ end trace d4dc64619e0b4713 ]---
->
-> Is this easily reproducible? If so, could you try and revert
-> 52f7eb945f2ba62b324bb9ae16d945326a961dcf and see if that helps?
+On 2014/12/15 23:13, Joerg Roedel wrote:
+> Hi,
+> 
+> here is a patch-set against tip/x86/apic to fix an initialization order
+> problem with the IRQ remapping code.  The problem is in the ordering of
+> the irq_remapping_prepare and irq_remapping_supported functions.
+> 
+> Currently the call-order is irq_remapping_prepare ->
+> irq_remapping_supported, so that 'prepare' can succeed but 'supported'
+> fails, so that interrupt remapping gets initialized but not enabled.
+> This causes a broken interrupt setup on affected systems (machines with
+> an Intel IOMMU without, or broken, IRQ remapping support). The result
+> are lost interrupts and a non-bootable system.
+> 
+> Both functions do checks whether IRQ remapping can be enabled on the
+> machine.  The reason for this is that some checks rely on
+> dmar_table_init() and thus have to be done in irq_remapping_prepare().
+> 
+> This patch-set moves all these checks into the irq_remapping_prepare()
+> path with the right ordering and removes the irq_remapping_supported()
+> function and its call-backs. This fixes the initializion order problem
+> and simplifies the exported API from the IOMMU code.
+> 
+> Please review.
+Hi Joerg,
+	I have posted a patch set for the same purpose at:
+https://lkml.org/lkml/2014/12/10/20
+	Seems we need to combine these two patch sets:)
+Regards!
+Gerry
 
-Re-checking that patch, it is broken. Reverting that should fix it up 
-for you, I'll send that in in a bit...
 
--- 
-Jens Axboe
-
+> 
+> Thanks,
+> 
+> 	Joerg
+> 
+> Joerg Roedel (5):
+>   iommu/vt-d: Allocate IRQ remapping data structures only for all IOMMUs
+>   iommu/vt-d: Don't check for ecap_ir_support in
+>     intel_irq_remapping_supported
+>   iommu/vt-d: Move supported-checks to intel_prepare_irq_remapping()
+>   iommu/amd: Check for irq-remap support amd_iommu_prepare()
+>   iommu, x86, apic: Remove irq_remapping_supported()
+> 
+>  arch/x86/kernel/apic/apic.c         |  5 ---
+>  drivers/iommu/amd_iommu.c           |  1 -
+>  drivers/iommu/amd_iommu_init.c      |  8 ++---
+>  drivers/iommu/amd_iommu_proto.h     |  1 -
+>  drivers/iommu/intel_irq_remapping.c | 62 +++++++++++++++++--------------------
+>  drivers/iommu/irq_remapping.c       | 11 -------
+>  drivers/iommu/irq_remapping.h       |  3 --
+>  7 files changed, 31 insertions(+), 60 deletions(-)
+> 
