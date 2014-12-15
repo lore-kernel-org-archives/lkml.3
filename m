@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbaLOPrr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:47:47 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:53913 "EHLO smtp5-g21.free.fr"
+	id S1752940AbaLOPs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:48:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54132 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaLOPrm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:47:42 -0500
-Date: Mon, 15 Dec 2014 16:48:08 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Kuankuan.Yang" <ykk@rock-chips.com>, Mark Rutland <mark.rutland@arm.com>,
-        Heiko Stuebner <heiko@sntech.de>, devicetree@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Liam Girdwood <lgirdwood@gmail.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Bard Liao <bardliao@realtek.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Pawel Moll <pawel.moll@arm.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        Oder Chiou <oder_chiou@realtek.com>, Zubair.Kakakhel@imgtec.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jyri Sarha <jsarha@ti.com>, Ben Zhang <benzh@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Daniel Kurtz <djkurtz@chromium.org>,
-        =?UTF-8?B?U3TDqXBoYW5l?= Marchesin <marcheu@chromium.org>,
-        Jaroslav Kysela <perex@perex.cz>, Sonny Rao <sonnyrao@chromium.org>,
-        Sean Cross <xobs@kosagi.com>, linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Brian Austin <brian.austin@cirrus.com>,
+	id S1751330AbaLOPs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 10:48:56 -0500
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [RFC PATCH 0/6] Those patches is used for dw_hdmi audio.
-Message-ID: <20141215164808.092cc7ac@armhf>
-In-Reply-To: <20141215120013.GH11285@n2100.arm.linux.org.uk>
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
-	<20141215103830.GD11285@n2100.arm.linux.org.uk>
-	<548EC9E1.5040206@rock-chips.com>
-	<548ECB66.70004@rock-chips.com>
-	<20141215120013.GH11285@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; arm-unknown-linux-gnueabihf)
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8723au: os_dep: usb_intf.c: Fix for possible null pointer dereference
+References: <1418596754-24735-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20141215103117.GC4856@mwanda>
+Date: Mon, 15 Dec 2014 10:48:45 -0500
+In-Reply-To: <20141215103117.GC4856@mwanda> (Dan Carpenter's message of "Mon,
+	15 Dec 2014 13:31:17 +0300")
+Message-ID: <wrfjbnn4vrqa.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Dec 2014 12:00:13 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Dan Carpenter <dan.carpenter@oracle.com> writes:
+> On Sun, Dec 14, 2014 at 11:39:14PM +0100, Rickard Strandqvist wrote:
+>> There is otherwise a risk of a possible null pointer dereference.
+>> 
+>> Was largely found by using a static code analysis program called cppcheck.
+>> 
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/staging/rtl8723au/os_dep/usb_intf.c |    3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>> 
+>> diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>> b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>> index 865743e..71a6330 100644
+>> --- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>> +++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
+>> @@ -351,10 +351,11 @@ error_exit:
+>>  int rtw_hw_resume23a(struct rtw_adapter *padapter)
+>
+> That's weird.  Is this function even called?
 
-> I really don't want to end up in another cocked up situation like
-> what happened with the Dove audio, where it became politically
-> impossible for the SolidRun platform to be properly supported by
-> mainline kernels.
+[jes@ultrasam jes.git]$ find drivers/staging/rtl8723au -name \*.[ch] |xargs grep rtw_hw_resume
+drivers/staging/rtl8723au/include/osdep_intf.h:int rtw_hw_resume23a(struct rtw_adapter *padapter);
+drivers/staging/rtl8723au/os_dep/usb_intf.c:int rtw_hw_resume23a(struct rtw_adapter *padapter)
+drivers/staging/rtl8723au/os_dep/usb_intf.c:		DBG_8723A("==> rtw_hw_resume23a\n");
+[jes@ultrasam jes.git]$ find drivers/staging/rtl8723au -name \*.[ch] |xargs grep rtw_hw_suspend
+drivers/staging/rtl8723au/include/osdep_intf.h:int rtw_hw_suspend23a(struct rtw_adapter *padapter);
+drivers/staging/rtl8723au/os_dep/usb_intf.c:int rtw_hw_suspend23a(struct rtw_adapter *padapter)
+drivers/staging/rtl8723au/os_dep/usb_intf.c:		DBG_8723A("==> rtw_hw_suspend23a\n");
 
-Hi Russell,
+A more useful patch would be one removing those two functions IMHO.
 
-I don't see what you mean. The last patches I proposed for the TDA998x
-and the HDMI CODEC do exactly what you wanted: S/PDIF out from the
-kirkwood audio device towards both S/PDIF optical and HDMI output2 by
-default.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Jes
