@@ -1,119 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaLOJgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:36:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970AbaLOJgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:36:06 -0500
-Message-ID: <548EAAB6.1020701@redhat.com>
-Date: Mon, 15 Dec 2014 10:32:38 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751956AbaLOJi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:38:27 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:37316 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaLOJiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 04:38:24 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: stable@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Nadav HarEl <nyh@il.ibm.com>, Jun Nakajima <jun.nakajima@intel.com>,
-        Xinhao Xu <xinhao.xu@intel.com>, Yang Zhang <yang.z.zhang@intel.com>,
-        Gleb Natapov <gleb@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Vinson Lee <vlee@twopensource.com>
-Subject: Re: [PATCH 3.10 19/24] nEPT: Nested INVEPT
-References: <20141214201800.613573495@linuxfoundation.org> <20141214201801.253573095@linuxfoundation.org>
-In-Reply-To: <20141214201801.253573095@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20141215183217.0529.AA925319@jp.panasonic.com>
+References: <20141215183217.0529.AA925319@jp.panasonic.com>
+Date: Mon, 15 Dec 2014 10:38:23 +0100
+X-Google-Sender-Auth: x0R6dqROBor7SIJPpoBIhlqzCN0
+Message-ID: <CAMuHMdWOAWr40YOoOVRvV-gPUU+ioSnShzHYcMoGpvhUO6chXw@mail.gmail.com>
+Subject: Re: [Question] How to print size_t type variable?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Andrew Murray <amurray@mpc-data.co.uk>,
+        linux-m68k <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Yamada-san,
 
 
-On 14/12/2014 21:20, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Nadav Har'El <nyh@il.ibm.com>
-> 
-> commit bfd0a56b90005f8c8a004baf407ad90045c2b11e upstream.
-> 
-> If we let L1 use EPT, we should probably also support the INVEPT instruction.
-> 
-> In our current nested EPT implementation, when L1 changes its EPT table
-> for L2 (i.e., EPT12), L0 modifies the shadow EPT table (EPT02), and in
-> the course of this modification already calls INVEPT. But if last level
-> of shadow page is unsync not all L1's changes to EPT12 are intercepted,
-> which means roots need to be synced when L1 calls INVEPT. Global INVEPT
-> should not be different since roots are synced by kvm_mmu_load() each
-> time EPTP02 changes.
-> 
-> Reviewed-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> Signed-off-by: Nadav Har'El <nyh@il.ibm.com>
-> Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
-> Signed-off-by: Xinhao Xu <xinhao.xu@intel.com>
-> Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> [bwh: Backported to 3.2:
->  - Adjust context, filename
->  - Simplify handle_invept() as recommended by Paolo - nEPT is not
->    supported so we always raise #UD]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Cc: Vinson Lee <vlee@twopensource.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> 
-> ---
->  arch/x86/include/uapi/asm/vmx.h |    1 +
->  arch/x86/kvm/vmx.c              |    8 ++++++++
->  2 files changed, 9 insertions(+)
-> 
-> --- a/arch/x86/include/uapi/asm/vmx.h
-> +++ b/arch/x86/include/uapi/asm/vmx.h
-> @@ -65,6 +65,7 @@
->  #define EXIT_REASON_EOI_INDUCED         45
->  #define EXIT_REASON_EPT_VIOLATION       48
->  #define EXIT_REASON_EPT_MISCONFIG       49
-> +#define EXIT_REASON_INVEPT              50
->  #define EXIT_REASON_PREEMPTION_TIMER    52
->  #define EXIT_REASON_WBINVD              54
->  #define EXIT_REASON_XSETBV              55
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -6242,6 +6242,12 @@ static int handle_vmptrst(struct kvm_vcp
->  	return 1;
->  }
->  
-> +static int handle_invept(struct kvm_vcpu *vcpu)
-> +{
-> +	kvm_queue_exception(vcpu, UD_VECTOR);
-> +	return 1;
-> +}
-> +
->  /*
->   * The exit handlers return 1 if the exit was handled fully and guest execution
->   * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
-> @@ -6286,6 +6292,7 @@ static int (*const kvm_vmx_exit_handlers
->  	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
->  	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
->  	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
-> +	[EXIT_REASON_INVEPT]                  = handle_invept,
->  };
->  
->  static const int kvm_vmx_max_exit_handlers =
-> @@ -6512,6 +6519,7 @@ static bool nested_vmx_exit_handled(stru
->  	case EXIT_REASON_VMPTRST: case EXIT_REASON_VMREAD:
->  	case EXIT_REASON_VMRESUME: case EXIT_REASON_VMWRITE:
->  	case EXIT_REASON_VMOFF: case EXIT_REASON_VMON:
-> +	case EXIT_REASON_INVEPT:
->  		/*
->  		 * VMX instructions trap unconditionally. This allows L1 to
->  		 * emulate them for its L2 guest, i.e., allows 3-level nesting!
-> 
-> 
+On Mon, Dec 15, 2014 at 10:32 AM, Masahiro Yamada
+<yamada.m@jp.panasonic.com> wrote:
+> I read through Documentation/printk-formats.txt
+>
+> It clearly says to use "%zu" or "%zx" to print size_t variables,
+> but I still have a question.
+>
+>
+> Assume we have code something like:
+>
+>     printk("%zx", (size_t)10);
+>
+>
+> I think this code works fine as long as it includes
+> the compiler-provided <stddef.h>.
+>
+> In the kernel space, however, <stddef.h> is never included.
+> Instead, size_t is defined by include/linux/types.h
+> and include/uapi/asm-generic/posix_types.h.
+>
+>
+> That is, size_t is defined independently from the compiler you are using,
+> although the compiler still decides which variable type is expected for the "%zx" format.
 
-Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
+That's correct.
 
-Thanks Greg.
+> This causes compiler warnings for some compilers.
+>
+> On bare-metal m68k toolchains, for example, size_t is "unsignd long",
+> whearas it is "unsigned int" on kernel.org m68k toolchains.
+>
+>
+> I see such warnings when I built the kernel with bare-metal m68k toolchains.
+>
+>
+> $ git describe
+> v3.18
+> $ make ARCH=m68k  CROSS_COMPILE=m68k-elf-  defconfig all
+>   HOSTCC  scripts/basic/fixdep
+>   HOSTCC  scripts/kconfig/conf.o
+>   SHIPPED scripts/kconfig/zconf.tab.c
+>   SHIPPED scripts/kconfig/zconf.lex.c
+>   SHIPPED scripts/kconfig/zconf.hash.c
+>   HOSTCC  scripts/kconfig/zconf.tab.o
+>   HOSTLD  scripts/kconfig/conf
+> *** Default configuration is based on 'multi_defconfig'
+> kernel/time/Kconfig:163:warning: range is invalid
+> #
+> # configuration written to .config
+> #
+>
+>   [ snip ]
+>
+>   LD      init/mounts.o
+>   CC      init/initramfs.o
+> init/initramfs.c: In function 'populate_rootfs':
+> init/initramfs.c:635:5: warning: format '%zd' expects argument of type 'signed size_t', but argument 2 has type 'ssize_t' [-Wformat]
 
-Paolo
+Please use a compiler configured for Linux, i.e. m68k-linux-*.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
