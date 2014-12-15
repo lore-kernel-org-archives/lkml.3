@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752710AbaLOTsk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:48:40 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40674 "EHLO
+	id S1752588AbaLOTtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:49:18 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40654 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLOT22 (ORCPT
+	with ESMTP id S1750863AbaLOT2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:28:28 -0500
+	Mon, 15 Dec 2014 14:28:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Bohac <jbohac@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 34/96] ipx: fix locking regression in ipx_sendmsg and ipx_recvmsg
-Date: Mon, 15 Dec 2014 11:25:54 -0800
-Message-Id: <1418671616-25482-35-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 45/96] nfsd: Fix slot wake up race in the nfsv4.1 callback code
+Date: Mon, 15 Dec 2014 11:26:05 -0800
+Message-Id: <1418671616-25482-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,69 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Bohac <jbohac@suse.cz>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-[ Upstream commit 01462405f0c093b2f8dfddafcadcda6c9e4c5cdf ]
+commit c6c15e1ed303ffc47e696ea1c9a9df1761c1f603 upstream.
 
-This fixes an old regression introduced by commit
-b0d0d915 (ipx: remove the BKL).
+The currect code for nfsd41_cb_get_slot() and nfsd4_cb_done() has no
+locking in order to guarantee atomicity, and so allows for races of
+the form.
 
-When a recvmsg syscall blocks waiting for new data, no data can be sent on the
-same socket with sendmsg because ipx_recvmsg() sleeps with the socket locked.
+Task 1                                  Task 2
+======                                  ======
+if (test_and_set_bit(0) != 0) {
+                                        clear_bit(0)
+                                        rpc_wake_up_next(queue)
+        rpc_sleep_on(queue)
+        return false;
+}
 
-This breaks mars-nwe (NetWare emulator):
-- the ncpserv process reads the request using recvmsg
-- ncpserv forks and spawns nwconn
-- ncpserv calls a (blocking) recvmsg and waits for new requests
-- nwconn deadlocks in sendmsg on the same socket
+This patch breaks the race condition by adding a retest of the bit
+after the call to rpc_sleep_on().
 
-Commit b0d0d915 has simply replaced BKL locking with
-lock_sock/release_sock. Unlike now, BKL got unlocked while
-sleeping, so a blocking recvmsg did not block a concurrent
-sendmsg.
-
-Only keep the socket locked while actually working with the socket data and
-release it prior to calling skb_recv_datagram().
-
-Signed-off-by: Jiri Bohac <jbohac@suse.cz>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipx/af_ipx.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/nfsd/nfs4callback.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipx/af_ipx.c b/net/ipx/af_ipx.c
-index e096025..6857ae4 100644
---- a/net/ipx/af_ipx.c
-+++ b/net/ipx/af_ipx.c
-@@ -1778,6 +1778,7 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct ipxhdr *ipx = NULL;
- 	struct sk_buff *skb;
- 	int copied, rc;
-+	bool locked = true;
- 
- 	lock_sock(sk);
- 	/* put the autobinding in */
-@@ -1804,6 +1805,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (sock_flag(sk, SOCK_ZAPPED))
- 		goto out;
- 
-+	release_sock(sk);
-+	locked = false;
- 	skb = skb_recv_datagram(sk, flags & ~MSG_DONTWAIT,
- 				flags & MSG_DONTWAIT, &rc);
- 	if (!skb)
-@@ -1837,7 +1840,8 @@ static int ipx_recvmsg(struct kiocb *iocb, struct socket *sock,
- out_free:
- 	skb_free_datagram(sk, skb);
- out:
--	release_sock(sk);
-+	if (locked)
-+		release_sock(sk);
- 	return rc;
+diff --git a/fs/nfsd/nfs4callback.c b/fs/nfsd/nfs4callback.c
+index 3eaa6e3..b2038c9 100644
+--- a/fs/nfsd/nfs4callback.c
++++ b/fs/nfsd/nfs4callback.c
+@@ -783,8 +783,12 @@ static bool nfsd41_cb_get_slot(struct nfs4_client *clp, struct rpc_task *task)
+ {
+ 	if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
+ 		rpc_sleep_on(&clp->cl_cb_waitq, task, NULL);
+-		dprintk("%s slot is busy\n", __func__);
+-		return false;
++		/* Race breaker */
++		if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
++			dprintk("%s slot is busy\n", __func__);
++			return false;
++		}
++		rpc_wake_up_queued_task(&clp->cl_cb_waitq, task);
+ 	}
+ 	return true;
  }
- 
 -- 
 1.9.1
 
