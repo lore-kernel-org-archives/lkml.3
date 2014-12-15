@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaLONhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 08:37:08 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:57379 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaLONhG (ORCPT
+	id S1751728AbaLONjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 08:39:07 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:61275 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaLONjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 08:37:06 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] i2c: sh_mobile: I2C_SH_MOBILE should depend on HAS_DMA
-Date: Mon, 15 Dec 2014 14:37:04 +0100
-Message-Id: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 15 Dec 2014 08:39:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 5/8] mfd: Add ST's Low Power Controller driver
+Date: Mon, 15 Dec 2014 14:38:33 +0100
+Message-ID: <2928949.OKYp272uiY@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418642738-17407-6-git-send-email-lee.jones@linaro.org>
+References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org> <1418642738-17407-6-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:0XW0XDsPUFIBNqDNUlIF9j+m8PrYLN4qdshpe3kf8uGEKLN/knT
+ H8qs18KseOgcWu8xNBkGhV0mEdoMpDaNSj8Ajb7KAERP8giZ6OuZIh5pGPcYsfCaL/ZG6YA
+ qwGkE72n/ReX3A5nxsZq3czM4hyOtdlNBiOTcMEsXwUJdg+g0B1J3mAHhTJLCFRNbiYhXFF
+ BtGJbgwg1lC2g8+nZ+tBQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+On Monday 15 December 2014 11:25:35 Lee Jones wrote:
+> +       ret = of_property_read_u32(np, "st,lpc-mode", &mode);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "An LPC mode must be selected\n");
+> +               return ret;
+> +       }
+> +
+> +       switch (mode) {
+> +       case ST_LPC_MODE_RTC:
+> +               cell->name = "st-lpc-rtc";
+> +               break;
+> +       case ST_LPC_MODE_WDT:
+> +               cell->name = "st-lpc-wdt";
+> +               break;
+> +       default:
+> +               dev_err(&pdev->dev, "Unsupported mode: %d\n", mode);
+> +               return ret;
+> +       }
+> +
+> +       /* Pass resources though to selected child device. */
+> +       cell->resources = pdev->resource;
+> +       cell->num_resources = pdev->num_resources;
+> +
+> +       ret = mfd_add_devices(&pdev->dev, PLATFORM_DEVID_AUTO,
+> +                             cell, 1, NULL, 0, NULL);
+> 
 
-drivers/built-in.o: In function `sh_mobile_i2c_dma_unmap':
-i2c-sh_mobile.c:(.text+0x60de42): undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `sh_mobile_i2c_xfer_dma':
-i2c-sh_mobile.c:(.text+0x60df22): undefined reference to `dma_map_single'
-i2c-sh_mobile.c:(.text+0x60df2e): undefined reference to `dma_mapping_error'
+I don't think it's necessary to have the MFD node if only one of the
+two modes can be used based on a DT property. It should be enough
+to have both the rtc and the wdt driver list the same compatible
+string and check the property in the probe function to decide if
+they want to drive the device or not:
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/i2c/busses/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+	ret = of_property_read_u32(np, "st,lpc-mode", &mode);
+	if (!ret && mode != ST_LPC_MODE_RTC)
+		return -ENXIO
 
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index c1351d9fb35bbc8d..f08dd20f625c184d 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -753,6 +753,7 @@ config I2C_SH7760
- 
- config I2C_SH_MOBILE
- 	tristate "SuperH Mobile I2C Controller"
-+	depends on HAS_DMA
- 	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
- 	help
- 	  If you say yes to this option, support will be included for the
--- 
-1.9.1
 
+	Arnd
