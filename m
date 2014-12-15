@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750868AbaLOVHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:07:30 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:37228 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaLOVH3 (ORCPT
+	id S1750905AbaLOVJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:09:52 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:57610 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaLOVJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:07:29 -0500
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Mon, 15 Dec 2014 16:07:46 -0500 (EST)
-To: linux-kernel@vger.kernel.org
-cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: [perf tool] cgroup support broken on Debian?
-Message-ID: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 15 Dec 2014 16:09:51 -0500
+Date: Mon, 15 Dec 2014 23:09:42 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Aleksey Makarov <feumilieu@gmail.com>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: [PATCH 13/14] MIPS: OCTEON: Add register definitions for OCTEON
+ III reset unit.
+Message-ID: <20141215210942.GC10323@fuloong-minipc.musicnaut.iki.fi>
+References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
+ <1418666603-15159-14-git-send-email-aleksey.makarov@auriga.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418666603-15159-14-git-send-email-aleksey.makarov@auriga.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
+Hi,
 
-has anyone tested the perf tool cgroup support recently?
+On Mon, Dec 15, 2014 at 09:03:19PM +0300, Aleksey Makarov wrote:
+> From: David Daney <david.daney@cavium.com>
+> 
+> Needed by follow-on patches.
 
-I was trying to get it working with a command like
-	sudo perf stat -a -e cycles:u,cycles:u,cycles:u -G systemd -- sleep 1
+Looks like only one of the unions was needed (cvmx_rst_boot)...?
 
-and it just failed by unhelfully dumping the "-G" help text.
-Once I added a lot of extra debug printfs to tools/perf/util/cgroup.c 
-things became a little clearer.
-
-First, you apparently need "perf_event" passed as a mount option to the 
-cgroup or you cannot attach perf to it (should perf be modified to 
-print a warning in this case rather than just printing the unhelpful
-helf text?)
-
-Secondly, the cgroup mount point detection completely fails on my debian 
-box.  On my machine /proc/mounts has this:
-
-  ...
-  none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
-  systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
-
-The current perf code looks for "cgroup" in the type field to find the 
-root cgroupfs tree.  This fails because as seen above on my machine the
-cgroup mount has type tmpfs.  And when it finds
-/sys/fs/cgroup/systemd as the root it tacks the name onto the end
-(/sys/fs/cgroup/systemd/systemd) which obviously doesn't exist.
-
-Once I hack the code to avoid that I do finally get some cgroup readings.
-
-I was checking if this was a known problem, a Debian issue, or what...
-
-Vince
-
+A.
