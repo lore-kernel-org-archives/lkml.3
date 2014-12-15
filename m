@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753875AbaLOOj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:39:59 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38847 "EHLO
+	id S1753889AbaLOOkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:40:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38838 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999AbaLOO2y (ORCPT
+	with ESMTP id S1752995AbaLOO2w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:54 -0500
+	Mon, 15 Dec 2014 09:28:52 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 127/168] drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets
-Date: Mon, 15 Dec 2014 14:26:21 +0000
-Message-Id: <1418653622-21105-128-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 126/168] x86_64, traps: Rework bad_iret
+Date: Mon, 15 Dec 2014 14:26:20 +0000
+Message-Id: <1418653622-21105-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,148 +28,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 5188cd44c55db3e92cd9e77a40b5baa7ed4340f7 upstream.
+commit b645af2d5905c4e32399005b867987919cbfc3ae upstream.
 
-UFO is now disabled on all drivers that work with virtio net headers,
-but userland may try to send UFO/IPv6 packets anyway.  Instead of
-sending with ID=0, we should select identifiers on their behalf (as we
-used to).
+It's possible for iretq to userspace to fail.  This can happen because
+of a bad CS, SS, or RIP.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 916e4cf46d02 ("ipv6: reuse ip6_frag_id from ip6_ufo_append_data")
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Historically, we've handled it by fixing up an exception from iretq to
+land at bad_iret, which pretends that the failed iret frame was really
+the hardware part of #GP(0) from userspace.  To make this work, there's
+an extra fixup to fudge the gs base into a usable state.
+
+This is suboptimal because it loses the original exception.  It's also
+buggy because there's no guarantee that we were on the kernel stack to
+begin with.  For example, if the failing iret happened on return from an
+NMI, then we'll end up executing general_protection on the NMI stack.
+This is bad for several reasons, the most immediate of which is that
+general_protection, as a non-paranoid idtentry, will try to deliver
+signals and/or schedule from the wrong stack.
+
+This patch throws out bad_iret entirely.  As a replacement, it augments
+the existing swapgs fudge into a full-blown iret fixup, mostly written
+in C.  It's should be clearer and more correct.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/macvtap.c  |  3 +++
- drivers/net/tun.c      |  6 +++++-
- include/net/ipv6.h     |  2 ++
- net/ipv6/output_core.c | 34 ++++++++++++++++++++++++++++++++++
- 4 files changed, 44 insertions(+), 1 deletion(-)
+ arch/x86/kernel/entry_64.S | 45 +++++++++++++++++++--------------------------
+ arch/x86/kernel/traps.c    | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index ff1acf99c10b..07c942b6ae01 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -16,6 +16,7 @@
- #include <linux/idr.h>
- #include <linux/fs.h>
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 41712e1d129a..902a14d02882 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -844,8 +844,13 @@ ENTRY(native_iret)
  
-+#include <net/ipv6.h>
- #include <net/net_namespace.h>
- #include <net/rtnetlink.h>
- #include <net/sock.h>
-@@ -570,6 +571,8 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
- 			gso_type = SKB_GSO_UDP;
-+			if (skb->protocol == htons(ETH_P_IPV6))
-+				ipv6_proxy_select_ident(skb);
- 			break;
- 		default:
- 			return -EINVAL;
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 6c48ae7b1faa..ee7538dc9c21 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -65,6 +65,7 @@
- #include <linux/nsproxy.h>
- #include <linux/virtio_net.h>
- #include <linux/rcupdate.h>
-+#include <net/ipv6.h>
- #include <net/net_namespace.h>
- #include <net/netns/generic.h>
- #include <net/rtnetlink.h>
-@@ -1139,6 +1140,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		break;
- 	}
+ .global native_irq_return_iret
+ native_irq_return_iret:
++	/*
++	 * This may fault.  Non-paranoid faults on return to userspace are
++	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
++	 * Double-faults due to espfix64 are handled in do_double_fault.
++	 * Other faults here are fatal.
++	 */
+ 	iretq
+-	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
  
-+	skb_reset_network_header(skb);
-+
- 	if (gso.gso_type != VIRTIO_NET_HDR_GSO_NONE) {
- 		pr_debug("GSO!\n");
- 		switch (gso.gso_type & ~VIRTIO_NET_HDR_GSO_ECN) {
-@@ -1150,6 +1153,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
-+			if (skb->protocol == htons(ETH_P_IPV6))
-+				ipv6_proxy_select_ident(skb);
- 			break;
- 		default:
- 			tun->dev->stats.rx_frame_errors++;
-@@ -1179,7 +1184,6 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		skb_shinfo(skb)->tx_flags |= SKBTX_SHARED_FRAG;
- 	}
+ #ifdef CONFIG_X86_ESPFIX64
+ native_irq_return_ldt:
+@@ -873,25 +878,6 @@ native_irq_return_ldt:
+ 	jmp native_irq_return_iret
+ #endif
  
--	skb_reset_network_header(skb);
- 	skb_probe_transport_header(skb, 0);
+-	.section .fixup,"ax"
+-bad_iret:
+-	/*
+-	 * The iret traps when the %cs or %ss being restored is bogus.
+-	 * We've lost the original trap vector and error code.
+-	 * #GPF is the most likely one to get for an invalid selector.
+-	 * So pretend we completed the iret and took the #GPF in user mode.
+-	 *
+-	 * We are now running with the kernel GS after exception recovery.
+-	 * But error_entry expects us to have user GS to match the user %cs,
+-	 * so swap back.
+-	 */
+-	pushq $0
+-
+-	SWAPGS
+-	jmp general_protection
+-
+-	.previous
+-
+ 	/* edi: workmask, edx: work */
+ retint_careful:
+ 	CFI_RESTORE_STATE
+@@ -1383,16 +1369,15 @@ error_sti:
  
- 	rxhash = skb_get_hash(skb);
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index 574337fe72dd..9b442a8d68ba 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -668,6 +668,8 @@ static inline int ipv6_addr_diff(const struct in6_addr *a1, const struct in6_add
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
- }
- 
-+void ipv6_proxy_select_ident(struct sk_buff *skb);
-+
- int ip6_dst_hoplimit(struct dst_entry *dst);
- 
- static inline int ip6_sk_dst_hoplimit(struct ipv6_pinfo *np, struct flowi6 *fl6,
-diff --git a/net/ipv6/output_core.c b/net/ipv6/output_core.c
-index 5ec867e4a8b7..1d4156ddf355 100644
---- a/net/ipv6/output_core.c
-+++ b/net/ipv6/output_core.c
-@@ -3,11 +3,45 @@
-  * not configured or static.  These functions are needed by GSO/GRO implementation.
+ /*
+  * There are two places in the kernel that can potentially fault with
+- * usergs. Handle them here. The exception handlers after iret run with
+- * kernel gs again, so don't set the user space flag. B stepping K8s
+- * sometimes report an truncated RIP for IRET exceptions returning to
+- * compat mode. Check for these here too.
++ * usergs. Handle them here.  B stepping K8s sometimes report a
++ * truncated RIP for IRET exceptions returning to compat mode. Check
++ * for these here too.
   */
- #include <linux/export.h>
-+#include <net/ip.h>
- #include <net/ipv6.h>
- #include <net/ip6_fib.h>
- #include <net/addrconf.h>
- #include <net/secure_seq.h>
+ error_kernelspace:
+ 	incl %ebx
+ 	leaq native_irq_return_iret(%rip),%rcx
+ 	cmpq %rcx,RIP+8(%rsp)
+-	je error_swapgs
++	je error_bad_iret
+ 	movl %ecx,%eax	/* zero extend */
+ 	cmpq %rax,RIP+8(%rsp)
+ 	je bstep_iret
+@@ -1403,7 +1388,15 @@ error_kernelspace:
+ bstep_iret:
+ 	/* Fix truncated RIP */
+ 	movq %rcx,RIP+8(%rsp)
+-	jmp error_swapgs
++	/* fall through */
++
++error_bad_iret:
++	SWAPGS
++	mov %rsp,%rdi
++	call fixup_bad_iret
++	mov %rax,%rsp
++	decl %ebx	/* Return to usergs */
++	jmp error_sti
+ 	CFI_ENDPROC
+ END(error_entry)
  
-+/* This function exists only for tap drivers that must support broken
-+ * clients requesting UFO without specifying an IPv6 fragment ID.
-+ *
-+ * This is similar to ipv6_select_ident() but we use an independent hash
-+ * seed to limit information leakage.
-+ *
-+ * The network header must be set before calling this.
-+ */
-+void ipv6_proxy_select_ident(struct sk_buff *skb)
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 48035e9cdde9..de801f22128a 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -407,6 +407,35 @@ asmlinkage __visible struct pt_regs *sync_regs(struct pt_regs *eregs)
+ 	return regs;
+ }
+ NOKPROBE_SYMBOL(sync_regs);
++
++struct bad_iret_stack {
++	void *error_entry_ret;
++	struct pt_regs regs;
++};
++
++asmlinkage __visible
++struct bad_iret_stack *fixup_bad_iret(struct bad_iret_stack *s)
 +{
-+	static u32 ip6_proxy_idents_hashrnd __read_mostly;
-+	struct in6_addr buf[2];
-+	struct in6_addr *addrs;
-+	u32 hash, id;
++	/*
++	 * This is called from entry_64.S early in handling a fault
++	 * caused by a bad iret to user mode.  To handle the fault
++	 * correctly, we want move our stack frame to task_pt_regs
++	 * and we want to pretend that the exception came from the
++	 * iret target.
++	 */
++	struct bad_iret_stack *new_stack =
++		container_of(task_pt_regs(current),
++			     struct bad_iret_stack, regs);
 +
-+	addrs = skb_header_pointer(skb,
-+				   skb_network_offset(skb) +
-+				   offsetof(struct ipv6hdr, saddr),
-+				   sizeof(buf), buf);
-+	if (!addrs)
-+		return;
++	/* Copy the IRET target to the new stack. */
++	memmove(&new_stack->regs.ip, (void *)s->regs.sp, 5*8);
 +
-+	net_get_random_once(&ip6_proxy_idents_hashrnd,
-+			    sizeof(ip6_proxy_idents_hashrnd));
++	/* Copy the remainder of the stack from the current stack. */
++	memmove(new_stack, s, offsetof(struct bad_iret_stack, regs.ip));
 +
-+	hash = __ipv6_addr_jhash(&addrs[1], ip6_proxy_idents_hashrnd);
-+	hash = __ipv6_addr_jhash(&addrs[0], hash);
-+
-+	id = ip_idents_reserve(hash, 1);
-+	skb_shinfo(skb)->ip6_frag_id = htonl(id);
++	BUG_ON(!user_mode_vm(&new_stack->regs));
++	return new_stack;
 +}
-+EXPORT_SYMBOL_GPL(ipv6_proxy_select_ident);
-+
- int ip6_find_1stfragopt(struct sk_buff *skb, u8 **nexthdr)
- {
- 	u16 offset = sizeof(struct ipv6hdr);
+ #endif
+ 
+ /*
 -- 
 2.1.3
 
