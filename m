@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaLOOHc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:07:32 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:56171 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaLOOH2 (ORCPT
+	id S1752124AbaLOOHw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:07:52 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39292 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaLOOHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:07:28 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 5/8] mfd: Add ST's Low Power Controller driver
-Date: Mon, 15 Dec 2014 15:06:50 +0100
-Message-ID: <5276146.VV460E9Y1P@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20141215135052.GC13885@x1>
-References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org> <2928949.OKYp272uiY@wuerfel> <20141215135052.GC13885@x1>
+	Mon, 15 Dec 2014 09:07:50 -0500
+Date: Mon, 15 Dec 2014 14:07:49 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: John Fastabend <john.fastabend@gmail.com>, Jiri Pirko <jiri@resnulli.us>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141215140749.GB21952@casper.infradead.org>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com>
+ <20141210165018.GG1863@nanopsycho.orion>
+ <54887CF7.70708@gmail.com>
+ <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:i8qpfiJ2xE581AA4aCPn9DitouK1Gx3I8ve3iG2janfTdrXMCjA
- /5t72xpySREOH0no0nsRJdl2H9zAIw+tZmSh5pwONNsl3hhAXKNCZsGv/9zUGw3E6zSYejx
- VVlTQpSXmxVDrrFiJCsAPCMvDPeuvS1In/te/okwYnFXLiV4+HUcmEgP1+2TZ+wTDjNcckA
- b8BnQPXN1ZEPgbhHXGuRQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 December 2014 13:50:52 Lee Jones wrote:
-> > > 
-> > 
-> > I don't think it's necessary to have the MFD node if only one of the
-> > two modes can be used based on a DT property. It should be enough
-> > to have both the rtc and the wdt driver list the same compatible
-> > string and check the property in the probe function to decide if
-> > they want to drive the device or not:
-> 
-> I tried that and it didn't work.  Only one driver probed.
-> 
-> 
+On 12/11/14 at 09:59am, Varlese, Marco wrote:
+> An example of attributes are:
+> * enabling/disabling of learning of source addresses on a given port (you can imagine the attribute called LEARNING for example);
+> * internal loopback control (i.e. LOOPBACK) which will control how the flow of traffic behaves from the switch fabric towards an egress port;
+> * flooding for broadcast/multicast/unicast type of packets (i.e. BFLOODING, MFLOODING, UFLOODING);
 
-Strange, the code in really_probe() and the comment in device_attach()
-suggest that this is not the intentional behavior. What error
-code did you return? If it's -ENODEV or -ENXIO, it should keep
-trying the other drivers, otherwise it will give up.
+All of these are highly generic and should *not* be passed through
+from user space to the driver directly but rather be properly
+abstracted as Roopa proposed. The value of this API is abstraction.
+If we introduce per device attributes for generic functions we lose
+large portions of the value gained.
 
-	Arnd
+You mentioned you have additional attributes in mind, maybe you can
+give a few examples which are not generic, i.e. do not apply to
+multiple vendors.
