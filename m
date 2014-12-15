@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752163AbaLOHbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 02:31:24 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:50738 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaLOHbW (ORCPT
+	id S1751379AbaLOHqP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 02:46:15 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:44128 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaLOHqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 02:31:22 -0500
-Date: Mon, 15 Dec 2014 08:31:56 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Emmanuel Benisty <benisty.e@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: Re: [Regression] 83f45fc turns machine's screen off
-Message-ID: <20141215073156.GK27182@phenom.ffwll.local>
-Mail-Followup-To: Emmanuel Benisty <benisty.e@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Airlie <airlied@linux.ie>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>
-References: <CA+i8gKK0sj55s-Gk8Y36KM4yBFLvLotffbSodjH5Gsd_yxd5Sg@mail.gmail.com>
- <CAKMK7uGa_dHnie8EACcX0mQvc-uGpsgQHjWGN_obxPa3O6SJbw@mail.gmail.com>
- <CA+i8gKKGBviLBaS8b=swqv2OWgh2Uc+m-TT8LVYcPehcYd903A@mail.gmail.com>
- <CA+i8gKJPPPUXrxY5q+81xZG91azygoUb27R_Wid3GTpb3-1-rw@mail.gmail.com>
+	Mon, 15 Dec 2014 02:46:10 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Mon, 15 Dec 2014 16:50:17 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH v2 0/3] page stealing tweaks
+Message-ID: <20141215075017.GB4898@js1304-P5Q-DELUXE>
+References: <1418400085-3622-1-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+i8gKJPPPUXrxY5q+81xZG91azygoUb27R_Wid3GTpb3-1-rw@mail.gmail.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418400085-3622-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 02:07:19AM +0100, Emmanuel Benisty wrote:
-> Hi Daniel,
+On Fri, Dec 12, 2014 at 05:01:22PM +0100, Vlastimil Babka wrote:
+> Changes since v1:
+> o Reorder patch 2 and 3, Cc stable for patch 1
+> o Fix tracepoint in patch 1 (Joonsoo Kim)
+> o Cleanup in patch 2 (suggested by Minchan Kim)
+> o Improved comments and changelogs per Minchan and Mel.
+> o Considered /proc/pagetypeinfo in evaluation with 3.18 as baseline
 > 
-> > On Mon, Nov 10, 2014 at 10:19 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> >> Adding relevant mailing lists.
-> >>
-> >>
-> >> On Sat, Nov 8, 2014 at 7:34 PM, Emmanuel Benisty <benisty.e@gmail.com> wrote:
-> >>> Hi,
-> >>>
-> >>> The following commit permanently turns my screen off when x server is
-> >>> started (i3 330M Ironlake):
-> >>>
-> >>>     [83f45fc360c8e16a330474860ebda872d1384c8c] drm: Don't grab an fb
-> >>> reference for the idr
-> >>>
-> >>> Reverting this commit fixed the issue.
-> >>
-> >> This is definitely unexpected. I think we need a bit more data to
-> >> figure out what's going on here:
-> >> - Please boot with drm.debug=0xe added to your kernel cmdline and grab
-> >> the dmesg right after boot-up for both a working or broken kernel.
-> >
-> > Please see attached files.
-> >
-> >> - Are you using any special i915 cmdline options?
-> >
-> > Nope.
+> When studying page stealing, I noticed some weird looking decisions in
+> try_to_steal_freepages(). The first I assume is a bug (Patch 1), the following
+> two patches were driven by evaluation.
 > 
-> Is there anything else I could provide to help fixing this issue? It's
-> still in Linus' tree.
+> Testing was done with stress-highalloc of mmtests, using the
+> mm_page_alloc_extfrag tracepoint and postprocessing to get counts of how often
+> page stealing occurs for individual migratetypes, and what migratetypes are
+> used for fallbacks. Arguably, the worst case of page stealing is when
+> UNMOVABLE allocation steals from MOVABLE pageblock. RECLAIMABLE allocation
+> stealing from MOVABLE allocation is also not ideal, so the goal is to minimize
+> these two cases.
+> 
+> For some reason, the first patch increased the number of page stealing events
+> for MOVABLE allocations in the former evaluation with 3.17-rc7 + compaction
+> patches. In theory these events are not as bad, and the second patch does more
+> than just to correct this. In v2 evaluation based on 3.18, the weird result
+> was gone completely.
+> 
+> In v2 I also checked if /proc/pagetypeinfo has shown an increase of the number
+> of unmovable/reclaimable pageblocks during and after the test, and it didn't.
+> The test was repeated 25 times with reboot only after each 5 to show
+> longer-term differences in the state of the system, which also wasn't the case.
+> 
+> Extfrag events summed over first iteration after reboot (5 repeats)
+>                                                         3.18            3.18            3.18            3.18
+>                                                    0-nothp-1       1-nothp-1       2-nothp-1       3-nothp-1
+> Page alloc extfrag event                                4547160     4593415     2343438     2198189
+> Extfrag fragmenting                                     4546361     4592610     2342595     2196611
+> Extfrag fragmenting for unmovable                          5725        9196        5720        1093
+> Extfrag fragmenting unmovable placed with movable          3877        4091        1330         859
+> Extfrag fragmenting for reclaimable                         770         628         511         616
+> Extfrag fragmenting reclaimable placed with movable         679         520         407         492
+> Extfrag fragmenting for movable                         4539866     4582786     2336364     2194902
+> 
+> Compared to v1 this looks like a regression for patch 1 wrt unmovable events,
+> but I blame noise and less repeats (it was 10 in v1). On the other hand, the
+> the mysterious increase in movable allocation events in v1 is gone (due to
+> different baseline?)
 
-Sorry for the delay. Absolutely no difference in the relevant parts of the
-log. There could be the chance that something is hidden somewhere, so can
-please grab a new set of logs but this time with drm.debug=0xe?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Hmm... the result on patch 2 looks odd.
+Because you reorder patches, patch 2 have some effects on unmovable
+stealing and I expect that 'Extfrag fragmenting for unmovable' decreases.
+But, the result looks not. Is there any reason you think?
+
+And, could you share compaction success rate and allocation success
+rate on each iteration? In fact, reducing Extfrag event isn't our goal.
+It is natural result of this patchset because we steal pages more
+aggressively. Our utimate goal is to make the system less fragmented
+and to get more high order freepage, so I'd like to know this results.
+
+Thanks.
+
+> 
+> Sum for second iterations since reboot:
+>                                                          3.18            3.18            3.18            3.18
+>                                                     0-nothp-2       1-nothp-2       2-nothp-2       3-nothp-2
+> Page alloc extfrag event                                1960806     1682705      868136      602097
+> Extfrag fragmenting                                     1960268     1682153      867624      601608
+> Extfrag fragmenting for unmovable                         14373       13973       12275        2158
+> Extfrag fragmenting unmovable placed with movable         10465        7233        8814        1821
+> Extfrag fragmenting for reclaimable                        2268        1244        1122        1284
+> Extfrag fragmenting reclaimable placed with movable        2092        1010         940        1033
+> Extfrag fragmenting for movable                         1943627     1666936      854227      598166
+> 
+> Running stress-highalloc again without reboot is indeed different, and worse
+> wrt unmovable allocations (also worse wrt high-order allocation success rates)
+> but the patches improve it as well. Similar trend can be observed for further
+> iterations after reboot.
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> Vlastimil Babka (3):
+>   mm: when stealing freepages, also take pages created by splitting
+>     buddy page
+>   mm: always steal split buddies in fallback allocations
+>   mm: more aggressive page stealing for UNMOVABLE allocations
+> 
+>  include/trace/events/kmem.h |  7 ++--
+>  mm/page_alloc.c             | 78 ++++++++++++++++++++++++---------------------
+>  2 files changed, 45 insertions(+), 40 deletions(-)
+> 
+> -- 
+> 2.1.2
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
