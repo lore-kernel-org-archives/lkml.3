@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014AbaLOCqf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:46:35 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:35551 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaLOCq1 (ORCPT
+	id S1751015AbaLOCxq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:53:46 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:41684 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaLOCxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:46:27 -0500
+	Sun, 14 Dec 2014 21:53:42 -0500
+Message-ID: <548E4D34.6000108@kernel.dk>
+Date: Sun, 14 Dec 2014 19:53:40 -0700
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418610272-21518-3-git-send-email-fweisbec@gmail.com>
-References: <1418610272-21518-1-git-send-email-fweisbec@gmail.com>
-	<1418610272-21518-3-git-send-email-fweisbec@gmail.com>
-Date: Sun, 14 Dec 2014 18:46:27 -0800
-X-Google-Sender-Auth: 25poN8VvU8a3kqhCmUe8uNZtP9Q
-Message-ID: <CA+55aFwhEkBc899yMY3KugwF0QGF8r7iM_6+DoYa0RgtApv5aw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sched: Pull resched loop to __schedule() callers
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: nick <xerofoify@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:block: Remove no longer needed FIXME comment
+ for the function, add_disk in genhd.c
+References: <1418526557-3295-1-git-send-email-xerofoify@gmail.com> <548E4A2D.2050603@kernel.dk> <548E4B85.1040602@gmail.com>
+In-Reply-To: <548E4B85.1040602@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 6:24 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> -need_resched:
->         preempt_disable();
->         cpu = smp_processor_id();
->         rq = cpu_rq(cpu);
-> @@ -2821,8 +2824,6 @@ need_resched:
->         post_schedule(rq);
->
->         sched_preempt_enable_no_resched();
-> -       if (need_resched())
-> -               goto need_resched;
+On 12/14/2014 07:46 PM, nick wrote:
+> Jens,
+> After rechecking the function definition we can't return an error as add_disk is declared void. Should I change the function to an int and then return an error. My thinking was that there is no good way to return an error code without
+> a breakage in the functions that  call add_disk.
 
+Please don't top post...
 
-So my suggestion was to move the
-"preempt_disable()/enable_no_resched()" into the callers too.
+It's a big job, it requires properly checking and updating all block 
+drivers. But yes, that is what would be required in removing that TODO.
 
-Everybody already does that - except for "schedule()" itself. So that
-would involve adding it here too:
+-- 
+Jens Axboe
 
-> @@ -2842,7 +2843,9 @@ asmlinkage __visible void __sched schedule(void)
->         struct task_struct *tsk = current;
->
->         sched_submit_work(tsk);
-> -       __schedule();
-> +       do {
-preempt_disable();
-> +               __schedule();
-sched_preempt_enable_no_resched();
-> +       } while (need_resched());
->  }
-
-Hmm?
-
-That would mean that we have one less preempt update in the
-__sched_preempt() cases. If somebody cares about the preempt counter
-value, we'd have to increemnt the preempt count add values too, ie do
-
-    __preempt_count_add(PREEMPT_ACTIVE+1);
-
-there, but I'm not convicned anybody cares about the exact count.
-
-As it is, you end up doing the preempt count things twice in the
-__sched_preempt() case: first the PREEMPT_ACTIVE count, and then the
-count inside __schedule().
-
-Hmm?
-
-                     Linus
