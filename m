@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaLOOmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:42:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38832 "EHLO
+	id S1752971AbaLOO2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:28:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38704 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752986AbaLOO2v (ORCPT
+	with ESMTP id S1752289AbaLOO2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:51 -0500
+	Mon, 15 Dec 2014 09:28:30 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 125/168] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
-Date: Mon, 15 Dec 2014 14:26:19 +0000
-Message-Id: <1418653622-21105-126-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 102/168] PCI/MSI: Add device flag indicating that 64-bit MSIs don't work
+Date: Mon, 15 Dec 2014 14:25:56 +0000
+Message-Id: <1418653622-21105-103-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,120 +27,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
+commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
 
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
+This can be set by quirks/drivers to be used by the architecture code
+that assigns the MSI addresses.
 
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
+We additionally add verification in the core MSI code that the values
+assigned by the architecture do satisfy the limitation in order to fail
+gracefully if they don't (ie. the arch hasn't been updated to deal with
+that quirk yet).
 
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+[ luis: backported to 3.16: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/entry_64.S | 34 ++--------------------------------
- arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
+ drivers/pci/msi.c   | 26 ++++++++++++++++++++++++++
+ include/linux/pci.h |  1 +
+ 2 files changed, 27 insertions(+)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1b1d9ab375a5..41712e1d129a 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -842,6 +842,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 13f3d3037272..1d6c61ad7da7 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -594,6 +594,20 @@ error_attrs:
+ 	return ret;
+ }
  
-+.global native_irq_return_iret
- native_irq_return_iret:
- 	iretq
- 	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
-@@ -936,37 +937,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
--
- /*
-  * APIC interrupts.
-  */
-@@ -1138,7 +1108,7 @@ idtentry overflow do_overflow has_error_code=0
- idtentry bounds do_bounds has_error_code=0
- idtentry invalid_op do_invalid_op has_error_code=0
- idtentry device_not_available do_device_not_available has_error_code=0
--idtentry double_fault __do_double_fault has_error_code=1 paranoid=1
-+idtentry double_fault do_double_fault has_error_code=1 paranoid=1
- idtentry coprocessor_segment_overrun do_coprocessor_segment_overrun has_error_code=0
- idtentry invalid_TSS do_invalid_TSS has_error_code=1
- idtentry segment_not_present do_segment_not_present has_error_code=1
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 0eafe9ea2494..48035e9cdde9 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -243,6 +243,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
++static int msi_verify_entries(struct pci_dev *dev)
++{
++	struct msi_desc *entry;
 +
-+	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
-+	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
-+
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
++	list_for_each_entry(entry, &dev->msi_list, list) {
++		if (!dev->no_64bit_msi || !entry->msg.address_hi)
++			continue;
++		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
++			" tried to assign one above 4G\n");
++		return -EIO;
 +	}
-+#endif
++	return 0;
++}
 +
- 	exception_enter();
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
+ /**
+  * msi_capability_init - configure device's MSI capability structure
+  * @dev: pointer to the pci_dev data structure of MSI device function
+@@ -647,6 +661,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
+ 		return ret;
+ 	}
+ 
++	ret = msi_verify_entries(dev);
++	if (ret) {
++		msi_mask_irq(entry, mask, ~mask);
++		free_msi_irqs(dev);
++		return ret;
++	}
++
+ 	ret = populate_msi_sysfs(dev);
+ 	if (ret) {
+ 		msi_mask_irq(entry, mask, ~mask);
+@@ -762,6 +783,11 @@ static int msix_capability_init(struct pci_dev *dev,
+ 	if (ret)
+ 		goto out_avail;
+ 
++	/* Check if all MSI entries honor device restrictions */
++	ret = msi_verify_entries(dev);
++	if (ret)
++		goto out_free;
++
+ 	/*
+ 	 * Some devices require MSI-X to be enabled before we can touch the
+ 	 * MSI-X registers.  We need to mask all the vectors to prevent
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 97fe7ebf2e25..04fdc409eec6 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -331,6 +331,7 @@ struct pci_dev {
+ 	unsigned int	is_added:1;
+ 	unsigned int	is_busmaster:1; /* device is busmaster */
+ 	unsigned int	no_msi:1;	/* device may not use msi */
++	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
+ 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
+ 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
+ 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
 -- 
 2.1.3
 
