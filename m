@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaLOOel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:34:41 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38961 "EHLO
+	id S1753443AbaLOOe3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:34:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38993 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaLOO3M (ORCPT
+	with ESMTP id S1753063AbaLOO3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:12 -0500
+	Mon, 15 Dec 2014 09:29:14 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Seth Jennings <sjennings@variantweb.net>,
-        Dan Streetman <ddstreet@ieee.org>, Minchan Kim <minchan@kernel.org>,
-        Bob Liu <bob.liu@oracle.com>,
+Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Tim Hartrick <tim@edgecast.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 141/168] mm: frontswap: invalidate expired data on a dup-store failure
-Date: Mon, 15 Dec 2014 14:26:35 +0000
-Message-Id: <1418653622-21105-142-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 146/168] mm: fix anon_vma_clone() error treatment
+Date: Mon, 15 Dec 2014 14:26:40 +0000
+Message-Id: <1418653622-21105-147-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -33,52 +34,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Weijie Yang <weijie.yang@samsung.com>
+From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
 
-commit fb993fa1a2f669215fa03a09eed7848f2663e336 upstream.
+commit c4ea95d7cd08d9ffd7fa75e6c5e0332d596dd11e upstream.
 
-If a frontswap dup-store failed, it should invalidate the expired page
-in the backend, or it could trigger some data corruption issue.
-Such as:
- 1. use zswap as the frontswap backend with writeback feature
- 2. store a swap page(version_1) to entry A, success
- 3. dup-store a newer page(version_2) to the same entry A, fail
- 4. use __swap_writepage() write version_2 page to swapfile, success
- 5. zswap do shrink, writeback version_1 page to swapfile
- 6. version_2 page is overwrited by version_1, data corrupt.
+Andrew Morton noticed that the error return from anon_vma_clone() was
+being dropped and replaced with -ENOMEM (which is not itself a bug
+because the only error return value from anon_vma_clone() is -ENOMEM).
 
-This patch fixes this issue by invalidating expired data immediately
-when meet a dup-store failure.
+I did an audit of callers of anon_vma_clone() and discovered an actual
+bug where the error return was being lost.  In __split_vma(), between
+Linux 3.11 and 3.12 the code was changed so the err variable is used
+before the call to anon_vma_clone() and the default initial value of
+-ENOMEM is overwritten.  So a failure of anon_vma_clone() will return
+success since err at this point is now zero.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Seth Jennings <sjennings@variantweb.net>
-Cc: Dan Streetman <ddstreet@ieee.org>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Bob Liu <bob.liu@oracle.com>
+Below is a patch which fixes this bug and also propagates the error
+return value from anon_vma_clone() in all cases.
+
+Fixes: ef0855d334e1 ("mm: mempolicy: turn vma_set_policy() into vma_dup_policy()")
+Signed-off-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Tim Hartrick <tim@edgecast.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Vlastimil Babka <vbabka@suse.cz>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/frontswap.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/mmap.c | 10 +++++++---
+ mm/rmap.c |  6 ++++--
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/mm/frontswap.c b/mm/frontswap.c
-index c30eec536f03..f2a3571c6e22 100644
---- a/mm/frontswap.c
-+++ b/mm/frontswap.c
-@@ -244,8 +244,10 @@ int __frontswap_store(struct page *page)
- 		  the (older) page from frontswap
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 874e0e5ea193..4813ecec5a94 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -747,8 +747,11 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		 * shrinking vma had, to cover any anon pages imported.
  		 */
- 		inc_frontswap_failed_stores();
--		if (dup)
-+		if (dup) {
- 			__frontswap_clear(sis, offset);
-+			frontswap_ops->invalidate_page(type, offset);
-+		}
+ 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
+-			if (anon_vma_clone(importer, exporter))
+-				return -ENOMEM;
++			int error;
++
++			error = anon_vma_clone(importer, exporter);
++			if (error)
++				return error;
+ 			importer->anon_vma = exporter->anon_vma;
+ 		}
  	}
- 	if (frontswap_writethrough_enabled)
- 		/* report failure so swap also writes to swap device */
+@@ -2430,7 +2433,8 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+ 	if (err)
+ 		goto out_free_vma;
+ 
+-	if (anon_vma_clone(new, vma))
++	err = anon_vma_clone(new, vma);
++	if (err)
+ 		goto out_free_mpol;
+ 
+ 	if (new->vm_file)
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 22a4a7699cdb..78274432b48f 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -274,6 +274,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ {
+ 	struct anon_vma_chain *avc;
+ 	struct anon_vma *anon_vma;
++	int error;
+ 
+ 	/* Don't bother if the parent process has no anon_vma here. */
+ 	if (!pvma->anon_vma)
+@@ -283,8 +284,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+ 	 * First, attach the new VMA to the parent VMA's anon_vmas,
+ 	 * so rmap can find non-COWed pages in child processes.
+ 	 */
+-	if (anon_vma_clone(vma, pvma))
+-		return -ENOMEM;
++	error = anon_vma_clone(vma, pvma);
++	if (error)
++		return error;
+ 
+ 	/* Then add our own anon_vma. */
+ 	anon_vma = anon_vma_alloc();
 -- 
 2.1.3
 
