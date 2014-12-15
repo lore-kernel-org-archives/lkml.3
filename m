@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaLONOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 08:14:05 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:55374 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753AbaLONOC convert rfc822-to-8bit (ORCPT
+	id S1751669AbaLONO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 08:14:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39040 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaLONOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 08:14:02 -0500
-Date: Mon, 15 Dec 2014 14:15:59 +0100
-From: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alban Bedel <alban.bedel@avionic-design.de>
-Subject: Re: [PATCH v3 1/2] iio: document ti-dac8554 devicetree bindings
-Message-ID: <20141215131559.GA16545@avionic-0071.adnet.avionic-design.de>
-References: <1418643605-15554-1-git-send-email-nikolaus.schulz@avionic-design.de>
- <20141215130248.GA8264@leverpostej>
+	Mon, 15 Dec 2014 08:14:23 -0500
+Date: Mon, 15 Dec 2014 14:14:10 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Sasha Levin <levinsasha928@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: sched: odd values for effective load calculations
+Message-ID: <20141215131410.GM10476@twins.programming.kicks-ass.net>
+References: <547E42F7.5070105@gmail.com>
+ <20141213083012.GH32572@gmail.com>
+ <20141215121227.GZ29390@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141215130248.GA8264@leverpostej>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V03:K0:qoUCr63YHWjbkOhijkAKN7LnpdZIZmm1u1JOivfD/ia60rwqo+T
- VoLKf8hRaGaIHVKqKt7GBvtU/AID1QtYLq05m4f/yarmEKIQpEsixMdDPvjm3Azj9AG4orl
- ZGiXWXfe6jebY/3L7AIKAdyWxLcc1NgGhvXnkM+fqcGJ9OdI/c+GhIVwXx5atjVUUd5cVY1
- fD02Mw/qCksaVpk+UzdeQ==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <20141215121227.GZ29390@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 01:02:48PM +0000, Mark Rutland wrote:
-> On Mon, Dec 15, 2014 at 11:39:56AM +0000, Nikolaus Schulz wrote:
-> > Signed-off-by: Nikolaus Schulz <nikolaus.schulz@avionic-design.de>
-> > ---
-> >  .../devicetree/bindings/iio/dac/ti-dac8554.txt     | 22 ++++++++++++++++++++++
-> >  1 file changed, 22 insertions(+)
-> >  create mode 100644 Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
+On Mon, Dec 15, 2014 at 01:12:27PM +0100, Peter Zijlstra wrote:
+> 
+> Sorry for the long delay, I was out for a few weeks due to having become
+> a dad for the second time.
+> 
+> On Sat, Dec 13, 2014 at 09:30:12AM +0100, Ingo Molnar wrote:
+> > * Sasha Levin <levinsasha928@gmail.com> wrote:
 > > 
-> > diff --git a/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-> > new file mode 100644
-> > index 0000000..32e96859
-> > --- /dev/null
-> > +++ b/Documentation/devicetree/bindings/iio/dac/ti-dac8554.txt
-> > @@ -0,0 +1,22 @@
-> > +TI DAC8554 Digital to Analog Converter
-> > +
-> > +This driver supports the SPI bus.
+> > > Hi all,
+> > > 
+> > > I was fuzzing with trinity inside a KVM tools guest, running the latest -next
+> > > kernel along with the undefined behaviour sanitizer patch, and hit the following:
+> > > 
+> > > [  787.894288] ================================================================================
+> > > [  787.897074] UBSan: Undefined behaviour in kernel/sched/fair.c:4541:17
+> > > [  787.898981] signed integer overflow:
+> > > [  787.900066] 361516561629678 * 101500 cannot be represented in type 'long long int'
 > 
-> The binding need not refer to the driver, this sentence can go. It might
-> be worth adding "(SPI)" to the first line.
-
-OK
-
-> > +
-> > +Required properties:
-> > +	- compatible: must be "ti,dac8554"
-> > +	- vref-supply: the vref power supply
-> > +	- ti,address: the additional 2-bit chip address
-> > +
-> > +For required properties on SPI, please consult
-> > +Documentation/devicetree/bindings/spi/spi-bus.txt
-> > +
-> > +Example:
-> > +
-> > +	dac8554@0 {
-> > +		compatible = "ti,dac8554";
-> > +		reg = <0>;
-> > +		spi-max-frequency = <50000000>;
-> > +
-> > +		vref-supply = <&vdd_vref>;
-> > +		ti,address = <0>;
+> So that's:
 > 
-> What's this property used for?
-
-The DAC8554 has its own addressing scheme, where each chip is assigned a
-two-bit address, defined by the state of two pins. So up to 4 DAC8554
-can be operated independently on the same SPI bus.
-
-> > +	};
+> 	this_eff_load *= this_load +
+> 		effective_load(tg, this_cpu, weight, weight);
 > 
-> Otherwise this looks sane to me.
+> Going by the numbers the 101500 must be 'this_eff_load', 100 * ~1024
+> makes that. Which makes the rhs 'large'. Do you have
+> CONFIG_FAIR_GROUP_SCHED enabled? If so, what kind of cgroup hierarchy
+> are you using?
 > 
-> Mark.
+> In any case, bit sad this doesn't have a register dump included :/
 
--- 
-Avionic Design GmbH
-Nikolaus Schulz
-Wragekamp 10
-D-22397 Hamburg
-Germany
+Hmm, I was hoping to be able to see if it was this_load or the
+effective_load() result being silly large, but going by the ASM output
+of my compiler this isn't going to be available in registers, its all
+stack spills.
 
-Tel.:  +49 40 88187-163
-Fax:   +49 40 88187-150
-Email: nikolaus.schulz@avionic-design.de
-
-Avionic Design GmbH
-Amtsgericht Hamburg HRB 82598
-Geschäftsführung: Cornelis Broers
-Ust.-Ident-Nr.: DE813378254
+Pinning my hopes on that reproducability thing :/
