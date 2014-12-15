@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbaLOVec (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:34:32 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45281 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaLOVea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:34:30 -0500
-Date: Mon, 15 Dec 2014 21:34:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH 3.18 15/19] move d_rcu from overlapping d_child to
- overlapping d_alias
-Message-ID: <20141215213428.GW22149@ZenIV.linux.org.uk>
-References: <20141214201823.543296369@linuxfoundation.org>
- <20141214201823.978185416@linuxfoundation.org>
- <20141215154650.GA6542@vader>
- <20141215163419.GA1351@kroah.com>
- <CA+5PVA49YBQMz1fardM8wP6R1n_QGCXudeu_KaSsYwaiHmMzWg@mail.gmail.com>
- <CA+5PVA6jZgOeDko_b5y2i8rYaxq_QWSfeDJ4RtA-1uZW87G+4Q@mail.gmail.com>
+	id S1751378AbaLOVda (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:33:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750820AbaLOVd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:33:27 -0500
+Date: Mon, 15 Dec 2014 23:33:13 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
+        cornelia.huck@de.ibm.com, Michael S Tsirkin <mst@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        linux-s390@vger.kernel.org
+Subject: [PATCH RFC 2/5] s390: add pci_iomap_range
+Message-ID: <1418679168-1011-3-git-send-email-mst@redhat.com>
+References: <1418679168-1011-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+5PVA6jZgOeDko_b5y2i8rYaxq_QWSfeDJ4RtA-1uZW87G+4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418679168-1011-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 04:21:12PM -0500, Josh Boyer wrote:
-> On Mon, Dec 15, 2014 at 11:38 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
-> > On Mon, Dec 15, 2014 at 11:34 AM, Greg Kroah-Hartman
-> > <gregkh@linuxfoundation.org> wrote:
-> >> On Mon, Dec 15, 2014 at 10:46:50AM -0500, Josh Boyer wrote:
-> >>> On Sun, Dec 14, 2014 at 12:21:26PM -0800, Greg Kroah-Hartman wrote:
-> >>> >3.18-stable review patch.  If anyone has any objections, please let me know.
-> >>> >
-> >>> >------------------
-> >>> >
-> >>> >From: Al Viro <viro@zeniv.linux.org.uk>
-> >>> >
-> >>> >commit 946e51f2bf37f1656916eb75bd0742ba33983c28 upstream.
-> >>> >
-> >>> >Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-> >>> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >>>
-> >>> I noticed you don't have this (and the child commit) queued for 3.17.y.
-> >>
-> >> That is because:
-> >>
-> >>> The backport wasn't exactly straight-forward because of the d_external
-> >>> stuff, but I took a swing at it.  After that, the other commit was a
-> >>> quick cherry-pick.
-> >>
-> >> It wasn't a "simple" backport, and I didn't have the time.  I'm also
-> >> going to drop 3.17 real-soon-now.
-> >
-> > Right, figured.  Fedora isn't going to rebase the stable releases to
-> > 3.18 until 3.18.2-ish, and this fixes an issue so I thought I'd give
-> > it a try.
-> >
-> >>> Al, does the below look correct for a backport on top of 3.17.6?  It
-> >>> builds, but I haven't tested it yet.
-> >>
-> >> Testing would be great to do :)
-> >
-> > Working on it.  Just wanted to send it out early in case Al spotted
-> > something obviously wrong and wanted to yell at me for it.
-> 
-> Finally got around to booting it.  Something is definitely wrong.  Sigh.
+From: Michael S Tsirkin <mst@redhat.com>
 
-Start with moving WARN_ON() into dentry_free() (as it's done in mainline and
-for the same reason)...
+Virtio drivers should map the part of the range they need, not
+necessarily all of it.
+To this end, support mapping ranges within BAR on s390.
+Since multiple ranges can now be mapped within a BAR, we keep track of
+the number of mappings created, and only clear out the mapping for a BAR
+when this number reaches 0.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ arch/s390/include/asm/pci_io.h |  1 +
+ arch/s390/pci/pci.c            | 34 +++++++++++++++++++++++++++-------
+ 2 files changed, 28 insertions(+), 7 deletions(-)
+
+diff --git a/arch/s390/include/asm/pci_io.h b/arch/s390/include/asm/pci_io.h
+index d194d54..25228b3 100644
+--- a/arch/s390/include/asm/pci_io.h
++++ b/arch/s390/include/asm/pci_io.h
+@@ -16,6 +16,7 @@
+ struct zpci_iomap_entry {
+ 	u32 fh;
+ 	u8 bar;
++	u16 count;
+ };
+ 
+ extern struct zpci_iomap_entry *zpci_iomap_start;
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 2fa7b14..51cb653 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -259,7 +259,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count)
+ }
+ 
+ /* Create a virtual mapping cookie for a PCI BAR */
+-void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
++void __iomem *pci_iomap_range(struct pci_dev *pdev,
++			      int bar,
++			      unsigned long offset,
++			      unsigned long max)
+ {
+ 	struct zpci_dev *zdev =	get_zdev(pdev);
+ 	u64 addr;
+@@ -270,14 +273,27 @@ void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
+ 
+ 	idx = zdev->bars[bar].map_idx;
+ 	spin_lock(&zpci_iomap_lock);
+-	zpci_iomap_start[idx].fh = zdev->fh;
+-	zpci_iomap_start[idx].bar = bar;
++	if (zpci_iomap_start[idx].count++) {
++		BUG_ON(zpci_iomap_start[idx].fh != zdev->fh ||
++		       zpci_iomap_start[idx].bar != bar);
++	} else {
++		zpci_iomap_start[idx].fh = zdev->fh;
++		zpci_iomap_start[idx].bar = bar;
++	}
++	/* Detect overrun */
++	BUG_ON(!zpci_iomap_start[idx].count);
+ 	spin_unlock(&zpci_iomap_lock);
+ 
+ 	addr = ZPCI_IOMAP_ADDR_BASE | ((u64) idx << 48);
+-	return (void __iomem *) addr;
++	return (void __iomem *) addr + offset;
+ }
+-EXPORT_SYMBOL_GPL(pci_iomap);
++EXPORT_SYMBOL_GPL(pci_iomap_range);
++
++void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
++{
++	return pci_iomap_range(dev, bar, 0, maxlen);
++}
++EXPORT_SYMBOL(pci_iomap);
+ 
+ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+ {
+@@ -285,8 +301,12 @@ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
+ 
+ 	idx = (((__force u64) addr) & ~ZPCI_IOMAP_ADDR_BASE) >> 48;
+ 	spin_lock(&zpci_iomap_lock);
+-	zpci_iomap_start[idx].fh = 0;
+-	zpci_iomap_start[idx].bar = 0;
++	/* Detect underrun */
++	BUG_ON(!zpci_iomap_start[idx].count);
++	if (!--zpci_iomap_start[idx].count) {
++		zpci_iomap_start[idx].fh = 0;
++		zpci_iomap_start[idx].bar = 0;
++	}
+ 	spin_unlock(&zpci_iomap_lock);
+ }
+ EXPORT_SYMBOL_GPL(pci_iounmap);
+-- 
+MST
+
