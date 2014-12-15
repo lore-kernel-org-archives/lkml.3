@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaLOPRt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:17:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38230 "EHLO
+	id S1754389AbaLOPS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:18:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38204 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185AbaLOO1Q (ORCPT
+	with ESMTP id S1750882AbaLOO1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:16 -0500
+	Mon, 15 Dec 2014 09:27:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Veaceslav Falico <vfalico@gmail.com>, Jay Vosburgh <j.vosburgh@gmail.com>,
+        Andy Gospodarek <andy@greyhouse.net>,
+        Ding Tianhong <dingtianhong@huawei.com>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 015/168] ASoC: fsi: remove unsupported PAUSE flag
-Date: Mon, 15 Dec 2014 14:24:29 +0000
-Message-Id: <1418653622-21105-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 007/168] bonding: fix curr_active_slave/carrier with loadbalance arp monitoring
+Date: Mon, 15 Dec 2014 14:24:21 +0000
+Message-Id: <1418653622-21105-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +31,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-commit c1b9b9b1ad2df6144ca3fbe6989f7bd9ea5c5562 upstream.
+commit b8e4500f42fe4464a33a887579147050bed8fcef upstream.
 
-FSI doesn't support PAUSE.
-Remove SNDRV_PCM_INFO_PAUSE flags from snd_pcm_hardware info
+Since commit 6fde8f037e60 ("bonding: fix locking in
+bond_loadbalance_arp_mon()") we can have a stale bond carrier state and
+stale curr_active_slave when using arp monitoring in loadbalance modes. The
+reason is that in bond_loadbalance_arp_mon() we can't have
+do_failover == true but slave_state_changed == false, whenever do_failover
+is true then slave_state_changed is also true. Then the following piece
+from bond_loadbalance_arp_mon():
+                if (slave_state_changed) {
+                        bond_slave_state_change(bond);
+                        if (BOND_MODE(bond) == BOND_MODE_XOR)
+                                bond_update_slave_arr(bond, NULL);
+                } else if (do_failover) {
+                        block_netpoll_tx();
+                        bond_select_active_slave(bond);
+                        unblock_netpoll_tx();
+                }
 
-Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+will execute only the first branch, always and regardless of do_failover.
+Since these two events aren't related in such way, we need to decouple and
+consider them separately.
+
+For example this issue could lead to the following result:
+Bonding Mode: load balancing (round-robin)
+*MII Status: down*
+MII Polling Interval (ms): 0
+Up Delay (ms): 0
+Down Delay (ms): 0
+ARP Polling Interval (ms): 100
+ARP IP target/s (n.n.n.n form): 192.168.9.2
+
+Slave Interface: ens12
+*MII Status: up*
+Speed: 10000 Mbps
+Duplex: full
+Link Failure Count: 2
+Permanent HW addr: 00:0f:53:01:42:2c
+Slave queue ID: 0
+
+Slave Interface: eth1
+*MII Status: up*
+Speed: Unknown
+Duplex: Unknown
+Link Failure Count: 70
+Permanent HW addr: 52:54:00:2f:0f:8e
+Slave queue ID: 0
+
+Since some interfaces are up, then the status of the bond should also be
+up, but it will never change unless something invokes bond_set_carrier()
+(i.e. enslave, bond_select_active_slave etc). Now, if I force the
+calling of bond_select_active_slave via for example changing
+primary_reselect (it can change in any mode), then the MII status goes to
+"up" because it calls bond_select_active_slave() which should've been done
+from bond_loadbalance_arp_mon() itself.
+
+CC: Veaceslav Falico <vfalico@gmail.com>
+CC: Jay Vosburgh <j.vosburgh@gmail.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+CC: Ding Tianhong <dingtianhong@huawei.com>
+
+Fixes: 6fde8f037e60 ("bonding: fix locking in bond_loadbalance_arp_mon()")
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Veaceslav Falico <vfalico@gmail.com>
+Acked-by: Andy Gospodarek <gospo@cumulusnetworks.com>
+Acked-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.16: used davem's backport to 3.17 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/sh/fsi.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/bonding/bond_main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/sh/fsi.c b/sound/soc/sh/fsi.c
-index 710a079a7377..8889179c4d7a 100644
---- a/sound/soc/sh/fsi.c
-+++ b/sound/soc/sh/fsi.c
-@@ -1785,8 +1785,7 @@ static const struct snd_soc_dai_ops fsi_dai_ops = {
- static struct snd_pcm_hardware fsi_pcm_hardware = {
- 	.info =		SNDRV_PCM_INFO_INTERLEAVED	|
- 			SNDRV_PCM_INFO_MMAP		|
--			SNDRV_PCM_INFO_MMAP_VALID	|
--			SNDRV_PCM_INFO_PAUSE,
-+			SNDRV_PCM_INFO_MMAP_VALID,
- 	.buffer_bytes_max	= 64 * 1024,
- 	.period_bytes_min	= 32,
- 	.period_bytes_max	= 8192,
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5f29c9a9a316..6c795cfd6bbc 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -2505,9 +2505,9 @@ static void bond_loadbalance_arp_mon(struct work_struct *work)
+ 		if (!rtnl_trylock())
+ 			goto re_arm;
+ 
+-		if (slave_state_changed) {
++		if (slave_state_changed)
+ 			bond_slave_state_change(bond);
+-		} else if (do_failover) {
++		if (do_failover) {
+ 			/* the bond_select_active_slave must hold RTNL
+ 			 * and curr_slave_lock for write.
+ 			 */
 -- 
 2.1.3
 
