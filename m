@@ -1,86 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaLOTgz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:36:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41017 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612AbaLOTd4 (ORCPT
+	id S1752631AbaLOTdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:33:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39436 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612AbaLOTdv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:56 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 72/96] drm/i915: More cautious with pch fifo underruns
-Date: Mon, 15 Dec 2014 11:26:32 -0800
-Message-Id: <1418671616-25482-73-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Dec 2014 14:33:51 -0500
+Date: Mon, 15 Dec 2014 11:33:51 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
+        apw@canonical.com, jasowang@redhat.com
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Support a vmbus API for
+ efficiently sending page arrays
+Message-ID: <20141215193351.GC9842@kroah.com>
+References: <1418675627-15213-1-git-send-email-kys@microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418675627-15213-1-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Dec 15, 2014 at 12:33:47PM -0800, K. Y. Srinivasan wrote:
+> Currently, the API for sending a multi-page buffer over VMBUS is limited to
+> a maximum pfn array of MAX_MULTIPAGE_BUFFER_COUNT. This limitation is
+> not imposed by the host and unnecessarily limits the maximum payload
+> that can be sent. Implement an API that does not have this restriction.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hv/channel.c   |   44 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/hyperv.h |   31 +++++++++++++++++++++++++++++++
+>  2 files changed, 75 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+> index c76ffbe..18c4f23 100644
+> --- a/drivers/hv/channel.c
+> +++ b/drivers/hv/channel.c
+> @@ -686,6 +686,50 @@ EXPORT_SYMBOL_GPL(vmbus_sendpacket_pagebuffer);
+>  /*
+>   * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
+>   * using a GPADL Direct packet type.
+> + * The buffer includes the vmbus descriptor.
+> + */
+> +int vmbus_sendpacket_mpb_desc(struct vmbus_channel *channel,
+> +			      struct vmbus_packet_mpb_array *desc,
+> +			      u32 desc_size,
+> +			      void *buffer, u32 bufferlen, u64 requestid)
+> +{
+> +	int ret;
+> +	u32 packetlen;
+> +	u32 packetlen_aligned;
+> +	struct kvec bufferlist[3];
+> +	u64 aligned_data = 0;
+> +	bool signal = false;
+> +
+> +	packetlen = desc_size + bufferlen;
+> +	packetlen_aligned = ALIGN(packetlen, sizeof(u64));
+> +
+> +	/* Setup the descriptor */
+> +	desc->type = VM_PKT_DATA_USING_GPA_DIRECT;
+> +	desc->flags = VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED;
+> +	desc->dataoffset8 = desc_size >> 3; /* in 8-bytes grandularity */
+> +	desc->length8 = (u16)(packetlen_aligned >> 3);
+> +	desc->transactionid = requestid;
+> +	desc->rangecount = 1;
+> +
+> +	bufferlist[0].iov_base = desc;
+> +	bufferlist[0].iov_len = desc_size;
+> +	bufferlist[1].iov_base = buffer;
+> +	bufferlist[1].iov_len = bufferlen;
+> +	bufferlist[2].iov_base = &aligned_data;
+> +	bufferlist[2].iov_len = (packetlen_aligned - packetlen);
+> +
+> +	ret = hv_ringbuffer_write(&channel->outbound, bufferlist, 3, &signal);
+> +
+> +	if (ret == 0 && signal)
+> +		vmbus_setevent(channel);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(vmbus_sendpacket_mpb_desc);
+> +
+> +/*
+> + * vmbus_sendpacket_multipagebuffer - Send a multi-page buffer packet
+> + * using a GPADL Direct packet type.
+>   */
+>  int vmbus_sendpacket_multipagebuffer(struct vmbus_channel *channel,
+>  				struct hv_multipage_buffer *multi_pagebuffer,
+> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> index 08cfaff..8615b0d 100644
+> --- a/include/linux/hyperv.h
+> +++ b/include/linux/hyperv.h
+> @@ -57,6 +57,18 @@ struct hv_multipage_buffer {
+>  	u64 pfn_array[MAX_MULTIPAGE_BUFFER_COUNT];
+>  };
+>  
+> +/*
+> + * Multiple-page buffer array; the pfn array is variable size:
+> + * The number of entries in the PFN array is determined by
+> + * "len" and "offset".
+> + */
+> +struct hv_mpb_array {
+> +	/* Length and Offset determines the # of pfns in the array */
+> +	u32 len;
+> +	u32 offset;
+> +	u64 pfn_array[];
+> +};
 
-------------------
+Does this cross the user/kernel boundry?  If so, they need to be __u32
+and __u64 variables.
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+> +
+>  /* 0x18 includes the proprietary packet header */
+>  #define MAX_PAGE_BUFFER_PACKET		(0x18 +			\
+>  					(sizeof(struct hv_page_buffer) * \
+> @@ -812,6 +824,18 @@ struct vmbus_channel_packet_multipage_buffer {
+>  	struct hv_multipage_buffer range;
+>  } __packed;
+>  
+> +/* The format must be the same as struct vmdata_gpa_direct */
+> +struct vmbus_packet_mpb_array {
+> +	u16 type;
+> +	u16 dataoffset8;
+> +	u16 length8;
+> +	u16 flags;
+> +	u64 transactionid;
+> +	u32 reserved;
+> +	u32 rangecount;         /* Always 1 in this case */
+> +	struct hv_mpb_array range;
+> +} __packed;
 
-commit b68362278af94e1171f5be9d4e44988601fb0439 upstream.
+Same here.
 
-Apparently PCH fifo underruns are tricky, we have plenty reports that
-we see the occasional underrun (especially at boot-up).
+thanks,
 
-So for a change let's see what happens when we don't re-enable pch
-fifo underrun reporting when the pipe is disabled. This means that the
-kernel can't catch pch fifo underruns when they happen (except when
-all pipes are on on the pch). But we'll still catch underruns when
-disabling the pipe again. So not a terrible reduction in test
-coverage.
-
-Since the DRM_ERROR is new and hence a regression plan B would be to
-revert it back to a debug output. Which would be a lot worse than this
-hack for underrun test coverage in the wild. See the referenced
-discussions for more.
-
-References: http://mid.gmane.org/CA+gsUGRfGe3t4NcjdeA=qXysrhLY3r4CEu7z4bjTwxi1uOfy+g@mail.gmail.com
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=85898
-References: https://bugs.freedesktop.org/show_bug.cgi?id=85898
-References: https://bugs.freedesktop.org/show_bug.cgi?id=86233
-References: https://bugs.freedesktop.org/show_bug.cgi?id=86478
-Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
-Tested-by: lu hua <huax.lu@intel.com>
-Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/intel_display.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 4a82251..2d2c1e1 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3755,7 +3755,6 @@ static void ironlake_crtc_disable(struct drm_crtc *crtc)
- 		ironlake_fdi_disable(crtc);
- 
- 		ironlake_disable_pch_transcoder(dev_priv, pipe);
--		intel_set_pch_fifo_underrun_reporting(dev, pipe, true);
- 
- 		if (HAS_PCH_CPT(dev)) {
- 			/* disable TRANS_DP_CTL */
-@@ -3821,7 +3820,6 @@ static void haswell_crtc_disable(struct drm_crtc *crtc)
- 
- 	if (intel_crtc->config.has_pch_encoder) {
- 		lpt_disable_pch_transcoder(dev_priv);
--		intel_set_pch_fifo_underrun_reporting(dev, TRANSCODER_A, true);
- 		intel_ddi_fdi_disable(crtc);
- 	}
- 
--- 
-1.9.1
-
+greg k-h
