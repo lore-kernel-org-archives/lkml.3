@@ -1,131 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbaLOPEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:04:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38460 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617AbaLOO1v (ORCPT
+	id S1753262AbaLOPFh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:05:37 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:50054 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750944AbaLOPFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:51 -0500
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Reyad Attiyat <reyad.attiyat@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 057/168] HID: usbhid: Use flag HID_DISCONNECTED when a usb device is removed
-Date: Mon, 15 Dec 2014 14:25:11 +0000
-Message-Id: <1418653622-21105-58-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.16
+	Mon, 15 Dec 2014 10:05:32 -0500
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <1418505257-5591-1-git-send-email-imre.deak@intel.com>
+References: <1418402285-9578-1-git-send-email-imre.deak@intel.com>
+	<1418505257-5591-1-git-send-email-imre.deak@intel.com>
+Date: Mon, 15 Dec 2014 16:05:31 +0100
+Message-ID: <CAKMK7uH4Lwv1CVqxrTnQm-HzeT5rJp_owXiCr4vwSc2rmrGqnQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] vt: fix check for system/busy console drivers when
+ unregistering them
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Imre Deak <imre.deak@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.16.7-ckt3 -stable review patch.  If anyone has any objections, please let me know.
+This seems to partially revert
 
-------------------
+commit d9c660e750fdf982e1e2bdd0e76c1e6c4db4217b
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Thu Jun 5 16:29:56 2014 +0200
 
-From: Reyad Attiyat <reyad.attiyat@gmail.com>
+    vt: Fix up unregistration of vt drivers
 
-commit 46df9dedabc1541f9c45f94ecd2c3c7ab0c3bf23 upstream.
+    A bunch of issues:
+    - We should not kick out the default console (which is tracked in
+      conswitchp), so check for that.
+    - Add better error codes so callers can differentiate between "something
+      went wrong" and "your driver isn't registered already". i915 needs
+      that so it doesn't fall over when reloading the driver and hence
+      vga_con is already unregistered.
+    - There's a mess with the driver flags: What we need to check for is
+      that the driver isn't used any more, i.e. unbound completely (FLAG_INIT).
+      And not whether it's the boot console or not (which is the only one
+      which doesn't have FLAG_MODULE). Otherwise there's no way to kick
+      out the boot console, which i915 wants to do to prevent havoc with
+      vga_con interferring (which tends to hang machines).
 
-Set disconnected flag in struct usbhid when a usb device is removed. Check for
-disconnected flag before sending urb requests. This prevents a kernel panic
-when a hid driver calls hid_hw_request() after removing a usb device.
+    Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Cc: Jiri Slaby <jslaby@suse.cz>
+    Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+    Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000058
- IP: [<ffffffff8161746f>] hid_submit_ctrl+0x7f/0x290
- PGD 0
- Oops: 0002 [#1] PREEMPT SMP
- CPU: 2 PID: 39 Comm: khubd Tainted: G          IO  3.16.0-rc5+ #112
- Hardware name: Microsoft Corporation Surface Pro 2/Surface Pro 2, BIOS 2.03.0250 09/06/2013
- task: ffff880118aba6e0 ti: ffff8800daf80000 task.ti: ffff8800daf80000
- RIP: 0010:[<ffffffff8161746f>]  [<ffffffff8161746f>] hid_submit_ctrl+0x7f/0x290
- RSP: 0018:ffff8800daf83750  EFLAGS: 00010086
- RAX: 0000000080000300 RBX: ffff88003f60c000 RCX: 0000000000000000
- RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff880117f78000
- RBP: ffff8800daf83788 R08: 0000000000000001 R09: 0000000000000001
- R10: 0000000000000001 R11: 0000000000000000 R12: ffff880117f78000
- R13: ffff88003f11a290 R14: 000000000000000c R15: ffff880091cb3ab8
- FS:  0000000000000000(0000) GS:ffff88011b000000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000058 CR3: 0000000001c11000 CR4: 00000000001407e0
- Stack:
-  ffff880117f3dcd0 ffff880117f78000 ffff88003f60c000 ffff880117f78000
-  ffff880117f78000 ffff88003f11a290 0000000000000000 ffff8800daf837b0
-  ffffffff81617707 ffff880117f78000 ffff88003f60c000 0000000000000013
- Call Trace:
-  [<ffffffff81617707>] usbhid_restart_ctrl_queue+0x87/0x140
-  [<ffffffff81617a88>] usbhid_submit_report+0x2c8/0x370
-  [<ffffffff81617b4a>] usbhid_request+0x1a/0x30
-  [<ffffffffa020edfb>] sensor_hub_set_feature+0x8b/0xd0 [hid_sensor_hub]
-  [<ffffffffa02d9084>] hid_sensor_power_state+0x84/0x110 [hid_sensor_trigger]
-  [<ffffffffa02d9129>] hid_sensor_data_rdy_trigger_set_state+0x19/0x20 [hid_sensor_trigger]
-  [<ffffffffa034d5b7>] iio_triggered_buffer_predisable+0xa7/0xb0 [industrialio]
-  [<ffffffffa034cc4a>] iio_disable_all_buffers+0x3a/0xc0 [industrialio]
-  [<ffffffffa03487d3>] iio_device_unregister+0x53/0x80 [industrialio]
-  [<ffffffffa026c06a>] hid_accel_3d_remove+0x2a/0x50 [hid_sensor_accel_3d]
-  [<ffffffff814f433d>] platform_drv_remove+0x1d/0x40
-  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
-  [<ffffffff814f1955>] device_release_driver+0x25/0x40
-  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
-  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
-  [<ffffffff81512190>] ? mfd_cell_disable+0x80/0x80
-  [<ffffffff814f41d1>] platform_device_del+0x21/0xc0
-  [<ffffffff814f4282>] platform_device_unregister+0x12/0x30
-  [<ffffffff815121d3>] mfd_remove_devices_fn+0x43/0x50
-  [<ffffffff814ed3e3>] device_for_each_child+0x43/0x70
-  [<ffffffff81512105>] mfd_remove_devices+0x25/0x30
-  [<ffffffffa020ebd7>] sensor_hub_remove+0x87/0x140 [hid_sensor_hub]
-  [<ffffffff81607c5b>] hid_device_remove+0x6b/0xd0
-  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
-  [<ffffffff814f1955>] device_release_driver+0x25/0x40
-  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
-  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
-  [<ffffffff81607d47>] hid_destroy_device+0x27/0x60
-  [<ffffffff81616972>] usbhid_disconnect+0x22/0x50
-  [<ffffffff81568597>] usb_unbind_interface+0x77/0x2b0
-  [<ffffffff814f18bf>] __device_release_driver+0x7f/0xf0
-  [<ffffffff814f1955>] device_release_driver+0x25/0x40
-  [<ffffffff814f121c>] bus_remove_device+0x11c/0x1a0
-  [<ffffffff814ed7d6>] device_del+0x136/0x1e0
-  [<ffffffff81565cd1>] usb_disable_device+0x91/0x2a0
-  [<ffffffff8155b046>] usb_disconnect+0x96/0x2e0
-  [<ffffffff8155d74a>] hub_thread+0xb5a/0x1840
+We really need to unregister vgacon when i915 loads since we
+completely kill vga support - just unbinding is not enough since then
+vgacon will be resurrect on module unload, killing the machine. And
+module unload is really important to stay sane as kernel driver
+hacker.
 
-Signed-off-by: Reyad Attiyat <reyad.attiyat@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/hid/usbhid/hid-core.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+If we need more precise checks for unregistering then I think we need
+to fix up that mess with the flags ...
+-Daniel
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index d8b69764d5a9..8945c9e551d7 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -538,7 +538,8 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
- 	int head;
- 	struct usbhid_device *usbhid = hid->driver_data;
- 
--	if ((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN)
-+	if (((hid->quirks & HID_QUIRK_NOGET) && dir == USB_DIR_IN) ||
-+		test_bit(HID_DISCONNECTED, &usbhid->iofl))
- 		return;
- 
- 	if (usbhid->urbout && dir == USB_DIR_OUT && report->type == HID_OUTPUT_REPORT) {
-@@ -1386,6 +1387,9 @@ static void usbhid_disconnect(struct usb_interface *intf)
- 		return;
- 
- 	usbhid = hid->driver_data;
-+	spin_lock_irq(&usbhid->lock);	/* Sync with error and led handlers */
-+	set_bit(HID_DISCONNECTED, &usbhid->iofl);
-+	spin_unlock_irq(&usbhid->lock);
- 	hid_destroy_device(hid);
- 	kfree(usbhid);
- }
+
+On Sat, Dec 13, 2014 at 10:14 PM, Imre Deak <imre.deak@intel.com> wrote:
+> System console drivers (without the CON_DRIVER_FLAG_MODULE flag) and
+> busy drivers bound to a console (as reported by con_is_bound())
+> shouldn't be unregistered. The current code checks for the
+> CON_DRIVER_FLAG_INIT flag but this doesn't really correspond to either
+> of the above two conditions. CON_DRIVER_FLAG_INIT is set whenever its
+> associated console's con_startup() function is called, which first
+> happens when the console driver is registered (so before the console
+> gets bound) and gets cleared when the console gets unbound. The
+> purpose of this flag is to show if we need to call con_startup() on a
+> console before we use it.
+>
+> Based on the above, do_unregister_con_driver() in its current form will
+> incorrectly allow unregistering a console driver only if it was never
+> bound, but will refuse to unregister one that was bound and later
+> unbound. It will also allow unregistering a system console driver.
+>
+> Fix this by checking for CON_DRIVER_FLAG_MODULE to allow non-system
+> console drivers to unregister and prevent system console drivers from
+> unregistering. Rely on the existing con_is_bound() check earlier in the
+> function to refuse unregistering a busy console driver.
+>
+> v2:
+> - reword the third paragraph to clarify how the fix works (Peter Hurley)
+>
+> Signed-off-by: Imre Deak <imre.deak@intel.com>
+> ---
+>  drivers/tty/vt/vt.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+> index b33b00b..1862e89 100644
+> --- a/drivers/tty/vt/vt.c
+> +++ b/drivers/tty/vt/vt.c
+> @@ -3660,7 +3660,7 @@ int do_unregister_con_driver(const struct consw *csw)
+>                 struct con_driver *con_driver = &registered_con_driver[i];
+>
+>                 if (con_driver->con == csw &&
+> -                   con_driver->flag & CON_DRIVER_FLAG_INIT) {
+> +                   con_driver->flag & CON_DRIVER_FLAG_MODULE) {
+>                         vtconsole_deinit_device(con_driver);
+>                         device_destroy(vtconsole_class,
+>                                        MKDEV(0, con_driver->node));
+> --
+> 1.8.4
+>
+
+
+
 -- 
-2.1.3
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
