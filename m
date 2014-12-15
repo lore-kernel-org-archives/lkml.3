@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaLOXKI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 18:10:08 -0500
-Received: from ozlabs.org ([103.22.144.67]:50452 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076AbaLOXKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 18:10:06 -0500
-Date: Tue, 16 Dec 2014 10:09:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: George Spelvin <linux@horizon.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, rdunlap@infradead.org
-Subject: Re: [PATCH v2] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h>
- where it belongs
-Message-ID: <20141216100957.6f42e898@canb.auug.org.au>
-In-Reply-To: <87egs1d0rk.fsf@rustcorp.com.au>
-References: <20141206032310.27123.qmail@ns.horizon.com>
-	<87egs1d0rk.fsf@rustcorp.com.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/=/fxWpQgYbXi85Mx9Tw+gtY"; protocol="application/pgp-signature"
+	id S1751291AbaLOXTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:19:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39475 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751220AbaLOXTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 18:19:13 -0500
+Message-ID: <1418677765.30883.23.camel@decadent.org.uk>
+Subject: Re: [PATCH] ioc3: fix incorrect use of htons/ntohs
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>, linux-mips@linux-mips.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 15 Dec 2014 21:09:25 +0000
+In-Reply-To: <20141215181444.GD26674@linux-mips.org>
+References: <1417344054-4374-1-git-send-email-LinoSanfilippo@gmx.de>
+	 <1417406976.7215.126.camel@decadent.org.uk>
+	 <20141215181444.GD26674@linux-mips.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-Zix5fHZKM620G0OqlTYM"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 88.202.169.74
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/=/fxWpQgYbXi85Mx9Tw+gtY
-Content-Type: text/plain; charset=US-ASCII
+
+--=-Zix5fHZKM620G0OqlTYM
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi George,
+On Mon, 2014-12-15 at 19:14 +0100, Ralf Baechle wrote:
+> On Mon, Dec 01, 2014 at 04:09:36AM +0000, Ben Hutchings wrote:
+>=20
+> > >  	/* Same as tx - compute csum of pseudo header  */
+> > >  	csum =3D hwsum +
+> > > -	       (ih->tot_len - (ih->ihl << 2)) +
+> > > -	       htons((uint16_t)ih->protocol) +
+> > > +	       (ih->tot_len - (ih->ihl << 2)) + ih->protocol +
+> > >  	       (ih->saddr >> 16) + (ih->saddr & 0xffff) +
+> > >  	       (ih->daddr >> 16) + (ih->daddr & 0xffff);
+> > >
+> >=20
+> > The pseudo-header is specified as:
+> >=20
+> >                      +--------+--------+--------+--------+
+> >                      |           Source Address          |
+> >                      +--------+--------+--------+--------+
+> >                      |         Destination Address       |
+> >                      +--------+--------+--------+--------+
+> >                      |  zero  |  PTCL  |    TCP Length   |
+> >                      +--------+--------+--------+--------+
+> >=20
+> > The current code zero-extends the protocol number to produce the 5th
+> > 16-bit word of the pseudo-header, then uses htons() to put it in
+> > big-endian order, consistent with the other fields.  (Yes, it's doing
+> > addition on big-endian words; this works even on little-endian machines
+> > due to the way the checksum is specified.)
+> >=20
+> > The driver should not be doing this at all, though.  It should set
+> > skb->csum =3D hwsum; skb->ip_summed =3D CHECKSUM_COMPLETE; and let the
+> > network stack adjust the hardware checksum.
+>=20
+> Really?  The IOC3 isn't the exactly the smartest NIC around; it does add =
+up
+> everything and the kitchen sink, that is ethernet headers, IP headers and
+> on RX the frame's trailing CRC.
 
-On Mon, 15 Dec 2014 14:26:15 +1030 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> George Spelvin <linux@horizon.com> writes:
-> > It's the only user of <linux/bug.h> in kernel.h, so that reduces
-> > the compile-time cost of #include <linux/kernel.h>
-> >
-> > Only one user has to change: <linux/moduleparam.h>.  The <linux/types.h>
-> > there is needed for one function prototype that passes s16 parameters.
-> > My first reaction is to wonder if that can be gotten rid of, too.
-> >
-> > Some other extraneous header files pruned while I was at it.
-> > Tested with allyesconfig & allmodconfig on x86-64, just to
-> > be sure.
+That is almost exactly what CHECKSUM_COMPLETE means on receive; only the
+CRC would need to be subtracted.  Then the driver can validate
+{TCP,UDP}/IPv{4,6} checksums without any header parsing.
 
-Please do *not* mix changes up like this.  Split this out into a
-separate patch, please (1 logical change per patch).  And testing only
-on x86_64 is not "sure" when talking about header file pruning (but at
-least you did the "all" configs).
+> All that needs to be subtracted in software
+> which is what this does.  I think others NICs are all smarted and don't
+> need this particular piece of magic.
+
+It may not be smart, but that allows it to cover more cases than most
+smart network controllers!
+
+On transmit, the driver should:
+- Calculate the partial checksum of data up to offset csum_start
+- Subtract this from the checksum at offset (csum_start + csum_offset)
+It should set the NETIF_F_GEN_CSUM feature flag rather than
+NETIF_F_IP_CSUM.  Then it will be able to generate {TCP,UDP}/IPv{4,6}
+checksums.
+
+Ben.
+
+> I agree with your other comment wrt. to htons().
+
 
 --=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Ben Hutchings
+The two most common things in the universe are hydrogen and stupidity.
 
---Sig_/=/fxWpQgYbXi85Mx9Tw+gtY
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
+--=-Zix5fHZKM620G0OqlTYM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQIcBAEBCAAGBQJUj2pKAAoJEMDTa8Ir7ZwV8ukP/0Osz9LD1/7XWUZQlpCkyiDo
-jMJTs0+0eu1Z/Uk2rns86Gsj6u/84dc3uK5dKyDFw4Fdr5pYj2DqX1X0wR3Jxn47
-LR721o28ywJ/DdhLyS9HX5iMTS1PkKy8utxI3VskfScpj7Q0LO+ow+VCJ3dlDrz/
-ILPohEffwycv5W8W8EHbPuOFyw0Iqgw0ryYyVlg/xiLUCUsDjYUM40+KQqjMZ/JS
-/fOgX7A1uPZvV9nGBsZRmGwdiQHOVCcivYxLSBx391nw192TR8Ag4NLk0HTO4VpN
-f9BtS0eAM8GrKBCS/Iyk4F3PsBXwaDLDkCzNiny2VQ77JvZlhAnldp8gyqaw2hIN
-fNIdAY4jU6MwDI0XlBR34Gelhp64me3EQQeCvqp25Rv02sKKHeW9G2qou6od5RLL
-hh7v67MTS3hLG37JWXKRgOEepiQlzstqaMju0wtuDZwptWwLd21Yj7PUZNL/55VV
-T6tEYIT1/UQyOXNhn6GACH0m3Stq38pG5IhjKwRGkej0eI05VcxWLiacf3aDd6/f
-jfQPMhfDSRcwA/+HOHDa1U+XkUZgMM72Oo5/iSR32+w5SjUf1sXUrwvOeaTxIlGm
-r1sPMbL7HIUWNaR5emjaBzJ9xFDvbjgxr+4iaGSwdrS8lHob8T17CIT5PfZi6jV0
-B24AnDsxWdJ/c77iSJ4e
-=MAyB
+iQIVAwUAVI9OCue/yOyVhhEJAQqxHhAAtq+Ozd3aCYDzZ4brcMbPbnbxoruJY70N
+tJvXWYPHqDc9y9XDtHtWLGCKpkByqX3a38N6sulCDJ8pN1mFBF9ws9oDF8nd6M0b
+h+RwlFqIm25oiwPblrKf1yxNSeGFHoTGyId3UpKG8uvnwV6OD4T1HNF+Xb6BfYZv
+EyNaLwpl8Q11HLINSO8GNv78gqpCqeeUXDRw4aucmxsAJOHVUpOcHmh2PUbDNezf
+pEbHN6ydpGmaOYSMwYwxXw9q//TjBNuE8nZsLsb7ifc7SB9JUKLLz7mAhWDHubyg
+GsWJrbnVwBPsSYz64d76hxfmj0Klnj1FxfKUNCUQv0gv0HvhhxwiH1XFTWRGqr73
+RXhnRhCuKmF6VS1P2AaKttidO2cxMXAjLpcO+WsyiuzRHcF71Q/w8VqMrH5sDW9W
+SpyIstDV1L2ypErS450ej+rUR5EnPzIATDfo7RlOsRoXeohNW4olbGlYzMuMQXkR
+yWNrbiWC9+rjlumxoZcZlq0y7t1nuPc2DzbXfmjAFbUathjIGiz18XEVT0LvvTiv
+vqeHLAbHbuk+zYiHHb2oskm4q6rIbzR4segMOi1CJdONB6yIUu+uqd7BMQGlgqk7
+9fcDn1/Cb5bUizH33lIU+C15Nq22n4nYqNw5xbExQrdKad7v89/iRqOUIZWSOR91
+C2jWo0Lu2Sc=
+=TgJb
 -----END PGP SIGNATURE-----
 
---Sig_/=/fxWpQgYbXi85Mx9Tw+gtY--
+--=-Zix5fHZKM620G0OqlTYM--
