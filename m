@@ -1,231 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaLOFdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 00:33:16 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50181 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861AbaLOFdP (ORCPT
+	id S1751055AbaLOFrb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 00:47:31 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:55605 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaLOFr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 00:33:15 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <548E728E.8090707@jp.fujitsu.com>
-Date: Mon, 15 Dec 2014 14:33:02 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 15 Dec 2014 00:47:27 -0500
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH 4/4] workqueue: handle change in cpu-node relationship.
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548C6B72.5080302@jp.fujitsu.com> <548E4388.5090308@cn.fujitsu.com> <548E4578.3070209@jp.fujitsu.com> <548E4BF7.3000605@cn.fujitsu.com> <548E4DBF.7090406@jp.fujitsu.com> <548E56DB.7090803@cn.fujitsu.com> <548E5DE4.8080201@jp.fujitsu.com> <548E6F7A.60802@cn.fujitsu.com>
-In-Reply-To: <548E6F7A.60802@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+In-Reply-To: <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
+References: <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
+	<1417806247.4845.1@mail.thefacebook.com>
+	<CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
+	<20141211145408.GB16800@redhat.com>
+	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
+	<20141212185454.GB4716@redhat.com>
+	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
+	<20141213165915.GA12756@redhat.com>
+	<20141213223616.GA22559@redhat.com>
+	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
+	<20141214234654.GA396@redhat.com>
+	<CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
+Date: Sun, 14 Dec 2014 21:47:26 -0800
+X-Google-Sender-Auth: pHUp4HOJwRo4aYBlBNSFuTqJaHY
+Message-ID: <CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/15 14:19), Lai Jiangshan wrote:
-> On 12/15/2014 12:04 PM, Kamezawa Hiroyuki wrote:
->> (2014/12/15 12:34), Lai Jiangshan wrote:
->>> On 12/15/2014 10:55 AM, Kamezawa Hiroyuki wrote:
->>>> (2014/12/15 11:48), Lai Jiangshan wrote:
->>>>> On 12/15/2014 10:20 AM, Kamezawa Hiroyuki wrote:
->>>>>> (2014/12/15 11:12), Lai Jiangshan wrote:
->>>>>>> On 12/14/2014 12:38 AM, Kamezawa Hiroyuki wrote:
->>>>>>>> Although workqueue detects relationship between cpu<->node at boot,
->>>>>>>> it is finally determined in cpu_up().
->>>>>>>> This patch tries to update pool->node using online status of cpus.
->>>>>>>>
->>>>>>>> 1. When a node goes down, clear per-cpu pool's node attr.
->>>>>>>> 2. When a cpu comes up, update per-cpu pool's node attr.
->>>>>>>> 3. When a cpu comes up, update possinle node cpumask workqueue is using for sched.
->>>>>>>> 4. Detect the best node for unbound pool's cpumask using the latest info.
->>>>>>>>
->>>>>>>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>>>>>>> ---
->>>>>>>>      kernel/workqueue.c | 67 ++++++++++++++++++++++++++++++++++++++++++------------
->>>>>>>>      1 file changed, 53 insertions(+), 14 deletions(-)
->>>>>>>>
->>>>>>>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->>>>>>>> index 07b4eb5..259b3ba 100644
->>>>>>>> --- a/kernel/workqueue.c
->>>>>>>> +++ b/kernel/workqueue.c
->>>>>>>> @@ -266,7 +266,8 @@ struct workqueue_struct {
->>>>>>>>      static struct kmem_cache *pwq_cache;
->>>>>>>>
->>>>>>>>      static cpumask_var_t *wq_numa_possible_cpumask;
->>>>>>>> -                    /* possible CPUs of each node */
->>>>>>>> +    /* possible CPUs of each node initialized with possible info at boot.
->>>>>>>> +           but modified at cpu hotplug to be adjusted to real info.  */
->>>>>>>>
->>>>>>>>      static bool wq_disable_numa;
->>>>>>>>      module_param_named(disable_numa, wq_disable_numa, bool, 0444);
->>>>>>>> @@ -3449,6 +3450,31 @@ static void put_unbound_pool(struct worker_pool *pool)
->>>>>>>>          call_rcu_sched(&pool->rcu, rcu_free_pool);
->>>>>>>>      }
->>>>>>>>
->>>>>>>> +/*
->>>>>>>> + * detect best node for given cpumask.
->>>>>>>> + */
->>>>>>>> +static int pool_detect_best_node(const struct cpumask *cpumask)
->>>>>>>> +{
->>>>>>>> +    int node, best, match, selected;
->>>>>>>> +    static struct cpumask andmask; /* we're under mutex */
->>>>>>>> +
->>>>>>>> +    /* Is any node okay ? */
->>>>>>>> +    if (!wq_numa_enabled ||
->>>>>>>> +        cpumask_subset(cpu_online_mask, cpumask))
->>>>>>>> +        return NUMA_NO_NODE;
->>>>>>>> +    best = 0;
->>>>>>>> +    selected = NUMA_NO_NODE;
->>>>>>>> +    /* select a node which contains the most cpu of cpumask */
->>>>>>>> +    for_each_node_state(node, N_ONLINE) {
->>>>>>>> +        cpumask_and(&andmask, cpumask, cpumask_of_node(node));
->>>>>>>> +        match = cpumask_weight(&andmask);
->>>>>>>> +        if (match > best)
->>>>>>>> +            selected = node;
->>>>>>>> +    }
->>>>>>>> +    return selected;
->>>>>>>> +}
->>>>>>>> +
->>>>>>>> +
->>>>>>>>      /**
->>>>>>>>       * get_unbound_pool - get a worker_pool with the specified attributes
->>>>>>>>       * @attrs: the attributes of the worker_pool to get
->>>>>>>> @@ -3467,7 +3493,6 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
->>>>>>>>      {
->>>>>>>>          u32 hash = wqattrs_hash(attrs);
->>>>>>>>          struct worker_pool *pool;
->>>>>>>> -    int node;
->>>>>>>>
->>>>>>>>          lockdep_assert_held(&wq_pool_mutex);
->>>>>>>>
->>>>>>>> @@ -3492,17 +3517,7 @@ static struct worker_pool *get_unbound_pool(const struct workqueue_attrs *attrs)
->>>>>>>>           * 'struct workqueue_attrs' comments for detail.
->>>>>>>>           */
->>>>>>>>          pool->attrs->no_numa = false;
->>>>>>>> -
->>>>>>>> -    /* if cpumask is contained inside a NUMA node, we belong to that node */
->>>>>>>> -    if (wq_numa_enabled) {
->>>>>>>> -        for_each_node(node) {
->>>>>>>> -            if (cpumask_subset(pool->attrs->cpumask,
->>>>>>>> -                       wq_numa_possible_cpumask[node])) {
->>>>>>>> -                pool->node = node;
->>>>>>>> -                break;
->>>>>>>> -            }
->>>>>>>> -        }
->>>>>>>> -    }
->>>>>>>> +    pool->node = pool_detect_best_node(pool->attrs->cpumask);
->>>>>>>>
->>>>>>>>          if (worker_pool_assign_id(pool) < 0)
->>>>>>>>              goto fail;
->>>>>>>> @@ -4567,7 +4582,7 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
->>>>>>>>          int cpu = (unsigned long)hcpu;
->>>>>>>>          struct worker_pool *pool;
->>>>>>>>          struct workqueue_struct *wq;
->>>>>>>> -    int pi;
->>>>>>>> +    int pi, node;
->>>>>>>>
->>>>>>>>          switch (action & ~CPU_TASKS_FROZEN) {
->>>>>>>>          case CPU_UP_PREPARE:
->>>>>>>> @@ -4583,6 +4598,16 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
->>>>>>>>          case CPU_ONLINE:
->>>>>>>>              mutex_lock(&wq_pool_mutex);
->>>>>>>>
->>>>>>>> +        /* now cpu <-> node info is established, update the info. */
->>>>>>>> +        if (!wq_disable_numa) {
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>>> +            for_each_node_state(node, N_POSSIBLE)
->>>>>>>> +                cpumask_clear_cpu(cpu,
->>>>>>>> +                    wq_numa_possible_cpumask[node]);
->>>>>>>
->>>>>>> The wq code try to reuse the origin pwqs/pools when the node still have cpu online.
->>>>>>> these 3 lines of code will cause the origin pwqs/pools be on the road of dying, and
->>>>>>> create a new set of pwqs/pools.
->>>>>>
->>>>>> because the result of wq_calc_node_cpumask() changes ?
->>>>>
->>>>> Yes.
->>>>>
->>>>>> Do you mean some comment should be added here ? or explaination for your reply for [3/4] ?
->>>>>
->>>>> this fix [4/4] breaks the original design.
->>>>>
->>>>
->>>> I'm sorry that I can't understand what this patch breaks.
->>>
->>> the pwqs/pools should be kept if the node still have cpu online.
->>
->> So, the fix's grand design should be
->>
->>   1. drop old pwq/pools only at node offline.
->>   2. set proper pool->node based on online node info.
->>   3. update pool->node of per-cpu-pool at cpu ONLINE.
->>
->> Hm. (1) is  done because cpumask_of_node() turns to be zero-filled
->> after all cpus on a node offlined.
->>
->> But, cpu-to-node relationship cannot be available until a cpu get onlined.
->> It changes at every cpu onlining. So, at node online, refleshing cpumasks
+On Sun, Dec 14, 2014 at 4:38 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 >
-> It changes at every cpu being added which earlier than any cpu of the node will be online.
->
->> of workqueues only after _all_ cpus on node are onlined seems to be the only way
->
-> When _any_ cpu on the new node is onlining, _add_ cpus of the node were *added*, which means
-> all cpu_to_node()s of the all cpus on new node ware updated.
->
+> Can anybody make sense of that backtrace, keeping in mind that we're
+> looking for some kind of endless loop where we don't make progress?
 
-Thank you, I misuderstood that.
+So looking at all the backtraces, which is kind of messy because
+there's some missing data (presumably buffers overflowed from all the
+CPU's printing at the same time), it looks  like:
 
+ - CPU 0 is missing. No idea why.
+ - CPU's 1-3 all have the same trace for
 
-> so we can check the updated information when up online.  This is what my patchset did.
->
->> but I'm not sure how to get a mask of possible cpus on a node.
->
-> like this:
->
-> +	for_each_possible_cpu(cpu) {
-> +		node = cpu_to_node(node);
-> +		if (node == new_node)
-> +			cpumask_set_cpu(cpu, wq_numa_possible_cpumask[new_node]);
-> +	}
->
+    int_signal ->
+    do_notify_resume ->
+    do_signal ->
+      ....
+    page_fault ->
+    do_page_fault
 
-Okay, I talked with Ishimatu-san and get some more knowledege.
+and "save_xstate_sig+0x81" shows up on all stacks, although only on
+CPU1 does it show up as a "guaranteed" part of the stack chain (ie it
+matches frame pointer data too). CPU1 also has that __clear_user show
+up (which is called from save_xstate_sig), but not other CPU's.  CPU2
+and CPU3 have "save_xstate_sig+0x98" in addition to that +0x81 thing.
 
-let me clarify. not at cpu hotplug,
+My guess is that "save_xstate_sig+0x81" is the instruction after the
+__clear_user call, and that CPU1 took the fault in __clear_user(),
+while CPU2 and CPU3 took the fault at "save_xstate_sig+0x98" instead,
+which I'd guess is the
 
-(A) At physical cpu hot add, cpu <-> node relationship is established.
-(B) If an exisitng cpu was on a memory less node, cpu<->node relationship may change
-     at CPU_ONLINE.
+        xsave64 (%rdi)
 
-Because (2) will not change topology of cpuids, this doesn't affect cpumask for sched.
-So, we just need to handle following.
+and in fact, with CONFIG_FTRACE on, my own kernel build gives exactly
+those two offsets for those things in save_xstate_sig().
 
-1. update pc->node if necessary.
-2. update wq_numa_possible_mask[] at physical cpu hot-add.
+So I'm pretty certain that on all three CPU's, we had page faults for
+save_xstate_sig() accessing user space, with the only difference being
+that on CPU1 it happened from __clear_user, while on CPU's 2/3 it
+happened on the xsaveq instruction itself.
 
-Leave wq_numa_possible_mask as it is for case (B) because the change doesn't affect
-the affinity group of cpus. no affects to cpumask.
+That sounds like much more than coincidence. I have no idea where CPU0
+is hiding, and all CPU's were at different stages of actually handling
+the fault, but that's to be expected if the page fault just keeps
+repeating.
 
-I'll cook a patch and do a test.
+In fact, CPU2 shows up three different times, and the call trace
+changes in between, so it's "making progress", just never getting out
+of that loop. The traces are
 
-Thanks,
--Kame
+    pagecache_get_page+0x0/0x220
+    ? lookup_swap_cache+0x2a/0x70
+    handle_mm_fault+0x401/0xe90
+    ? __do_page_fault+0x198/0x5c0
+    __do_page_fault+0x1fc/0x5c0
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    ? __do_softirq+0x1ed/0x310
+    ? retint_restore_args+0xe/0xe
+    ? trace_hardirqs_off_thunk+0x3a/0x3c
+    do_page_fault+0xc/0x10
+    page_fault+0x22/0x30
+    ? save_xstate_sig+0x98/0x220
+    ? save_xstate_sig+0x81/0x220
+    do_signal+0x5c7/0x740
+    ? _raw_spin_unlock_irq+0x30/0x40
+    do_notify_resume+0x65/0x80
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    int_signal+0x12/0x17
 
+and
 
+    ? __lock_acquire.isra.31+0x22c/0x9f0
+    ? lock_acquire+0xb4/0x120
+    ? __do_page_fault+0x198/0x5c0
+    down_read_trylock+0x5a/0x60
+    ? __do_page_fault+0x198/0x5c0
+    __do_page_fault+0x198/0x5c0
+    ? __do_softirq+0x1ed/0x310
+    ? retint_restore_args+0xe/0xe
+    ? __do_page_fault+0xd8/0x5c0
+    ? trace_hardirqs_off_thunk+0x3a/0x3c
+    do_page_fault+0xc/0x10
+    page_fault+0x22/0x30
+    ? save_xstate_sig+0x98/0x220
+    ? save_xstate_sig+0x81/0x220
+    do_signal+0x5c7/0x740
+    ? _raw_spin_unlock_irq+0x30/0x40
+    do_notify_resume+0x65/0x80
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    int_signal+0x12/0x17
 
+and
 
+    lock_acquire+0x40/0x120
+    down_read_trylock+0x5a/0x60
+    ? __do_page_fault+0x198/0x5c0
+    __do_page_fault+0x198/0x5c0
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    ? __do_softirq+0x1ed/0x310
+    ? retint_restore_args+0xe/0xe
+    ? trace_hardirqs_off_thunk+0x3a/0x3c
+    do_page_fault+0xc/0x10
+    page_fault+0x22/0x30
+    ? save_xstate_sig+0x98/0x220
+    ? save_xstate_sig+0x81/0x220
+    do_signal+0x5c7/0x740
+    ? _raw_spin_unlock_irq+0x30/0x40
+    do_notify_resume+0x65/0x80
+    ? trace_hardirqs_on_thunk+0x3a/0x3f
+    int_signal+0x12/0x17
 
+so it's always in __do_page_fault, but at sometimes it has gotten into
+handle_mm_fault too. So it really really looks like it is taking an
+endless stream of page faults on that "xsaveq" instruction. Presumably
+the page faulting never actually makes any progress, even though it
+*thinks* the page tables are fine.
 
+DaveJ - you've seen that "endless page faults" behavior before. You
+had a few traces that showed it. That was in that whole "pipe/page
+fault oddness." email thread, where you would get endless faults in
+copy_page_to_iter() with an error_code=0x2.
 
+That was the one where I chased it down to "page table entry must be
+marked with _PAGE_PROTNONE", but VM_WRITE in the vma, because your
+machine was alive enough that you got traces out of the endless loop.
 
+Very odd.
+
+              Linus
