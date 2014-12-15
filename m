@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103AbaLOTbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:31:00 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40822 "EHLO
+	id S1752128AbaLOTbI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:31:08 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40833 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaLOTa6 (ORCPT
+	with ESMTP id S1751089AbaLOTbF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:30:58 -0500
+	Mon, 15 Dec 2014 14:31:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
+Cc: Nadav Haklai <nadavh@marvell.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 64/96] powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
-Date: Mon, 15 Dec 2014 11:26:24 -0800
-Message-Id: <1418671616-25482-65-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 65/96] ARM: 8222/1: mvebu: enable strex backoff delay
+Date: Mon, 15 Dec 2014 11:26:25 -0800
+Message-Id: <1418671616-25482-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,36 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 152d44a853e42952f6c8a504fb1f8eefd21fd5fd upstream.
+commit 995ab5189d1d7264e79e665dfa032a19b3ac646e upstream.
 
-I used some 64 bit instructions when adding the 32 bit getcpu VDSO
-function. Fix it.
+Under extremely rare conditions, in an MPCore node consisting of at
+least 3 CPUs, two CPUs trying to perform a STREX to data on the same
+shared cache line can enter a livelock situation.
 
-Fixes: 18ad51dd342a ("powerpc: Add VDSO version of getcpu")
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+This patch enables the HW mechanism that overcomes the bug. This fixes
+the incorrect setup of the STREX backoff delay bit due to a wrong
+description in the specification.
+
+Note that enabling the STREX backoff delay mechanism is done by
+leaving the bit *cleared*, while the bit was currently being set by
+the proc-v7.S code.
+
+[Thomas: adapt to latest mainline, slightly reword the commit log, add
+stable markers.]
+
+Fixes: de4901933f6d ("arm: mm: Add support for PJ4B cpu and init routines")
+
+Signed-off-by: Nadav Haklai <nadavh@marvell.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/vdso32/getcpu.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/proc-v7.S | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/vdso32/getcpu.S b/arch/powerpc/kernel/vdso32/getcpu.S
-index 47afd08..fe7e97a 100644
---- a/arch/powerpc/kernel/vdso32/getcpu.S
-+++ b/arch/powerpc/kernel/vdso32/getcpu.S
-@@ -30,8 +30,8 @@
- V_FUNCTION_BEGIN(__kernel_getcpu)
-   .cfi_startproc
- 	mfspr	r5,SPRN_USPRG3
--	cmpdi	cr0,r3,0
--	cmpdi	cr1,r4,0
-+	cmpwi	cr0,r3,0
-+	cmpwi	cr1,r4,0
- 	clrlwi  r6,r5,16
- 	rlwinm  r7,r5,16,31-15,31-0
- 	beq	cr0,1f
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 74f6033..fdedc31 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -211,7 +211,6 @@ __v7_pj4b_setup:
+ /* Auxiliary Debug Modes Control 1 Register */
+ #define PJ4B_STATIC_BP (1 << 2) /* Enable Static BP */
+ #define PJ4B_INTER_PARITY (1 << 8) /* Disable Internal Parity Handling */
+-#define PJ4B_BCK_OFF_STREX (1 << 5) /* Enable the back off of STREX instr */
+ #define PJ4B_CLEAN_LINE (1 << 16) /* Disable data transfer for clean line */
+ 
+ /* Auxiliary Debug Modes Control 2 Register */
+@@ -234,7 +233,6 @@ __v7_pj4b_setup:
+ 	/* Auxiliary Debug Modes Control 1 Register */
+ 	mrc	p15, 1,	r0, c15, c1, 1
+ 	orr     r0, r0, #PJ4B_CLEAN_LINE
+-	orr     r0, r0, #PJ4B_BCK_OFF_STREX
+ 	orr     r0, r0, #PJ4B_INTER_PARITY
+ 	bic	r0, r0, #PJ4B_STATIC_BP
+ 	mcr	p15, 1,	r0, c15, c1, 1
 -- 
 1.9.1
 
