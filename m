@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752566AbaLOOOD (ORCPT <rfc822;w@1wt.eu>);
+	id S1752585AbaLOOOP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:14:15 -0500
+Received: from tex.lwn.net ([70.33.254.29]:49351 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752554AbaLOOOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 09:14:03 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:13294 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752543AbaLOOOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:14:01 -0500
-From: Cyrille Pitchen <cyrille.pitchen@atmel.com>
-To: <nicolas.ferre@atmel.com>, <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        <soren.brinkmann@xilinx.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Cyrille Pitchen <cyrille.pitchen@atmel.com>
-Subject: [PATCH 1/2] net/macb: fix misplaced call of free_netdev() in macb_remove()
-Date: Mon, 15 Dec 2014 15:13:31 +0100
-Message-ID: <bb09b43ee435334877b4f8aa6c006d03c1afa8f3.1418651689.git.cyrille.pitchen@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <cover.1418651689.git.cyrille.pitchen@atmel.com>
-References: <cover.1418651689.git.cyrille.pitchen@atmel.com>
+Date: Mon, 15 Dec 2014 09:13:56 -0500
+From: Jonathan Corbet <corbet@lwn.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH/RESEND] [media] VIDEO_CAFE_CCIC should select
+ VIDEOBUF2_DMA_SG
+Message-ID: <20141215091356.3f03f0d7@lwn.net>
+In-Reply-To: <CAMuHMdVGXyGJU1SoTMCX4P5BJEStpYrp0_dJ8TqaPhQTC_-guA@mail.gmail.com>
+References: <1418651737-10016-1-git-send-email-geert@linux-m68k.org>
+	<20141215090404.6d5cb86e@lwn.net>
+	<CAMuHMdVGXyGJU1SoTMCX4P5BJEStpYrp0_dJ8TqaPhQTC_-guA@mail.gmail.com>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix a bug introduced by the multiqueue support patch:
-"net/macb: add TX multiqueue support for gem"
+On Mon, 15 Dec 2014 15:10:38 +0100
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-the "bp" pointer to the netdev private data was dereferenced and used after the
-associated memory had been freed by calling free_netdev().
+> If the driver cannot do SG, perhaps this block should be removed from
+> drivers/media/platform/marvell-ccic/mcam-core.h?
+> 
+>     #if IS_ENABLED(CONFIG_VIDEOBUF2_DMA_SG)
+>     #define MCAM_MODE_DMA_SG 1
+>     #endif
 
-Signed-off-by: Cyrille Pitchen <cyrille.pitchen@atmel.com>
----
- drivers/net/ethernet/cadence/macb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Other drivers using the Marvell core can do S/G, though, so that option
+needs to remain.  Applying your patch is almost certainly the most
+straightforward solution at this point.
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 0987d2a..81f317f 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -2408,11 +2408,11 @@ static int __exit macb_remove(struct platform_device *pdev)
- 		queue = bp->queues;
- 		for (q = 0; q < bp->num_queues; ++q, ++queue)
- 			devm_free_irq(&pdev->dev, queue->irq, queue);
--		free_netdev(dev);
- 		if (!IS_ERR(bp->tx_clk))
- 			clk_disable_unprepare(bp->tx_clk);
- 		clk_disable_unprepare(bp->hclk);
- 		clk_disable_unprepare(bp->pclk);
-+		free_netdev(dev);
- 	}
- 
- 	return 0;
--- 
-1.8.2.2
+Thanks,
 
+jon
