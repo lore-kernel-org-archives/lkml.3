@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357AbaLOLME (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:12:04 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60267 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaLOLMA (ORCPT
+	id S1751103AbaLOLNZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:13:25 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:50928 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaLOLNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:12:00 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <548EC1E2.1010101@jp.fujitsu.com>
-Date: Mon, 15 Dec 2014 20:11:30 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Mon, 15 Dec 2014 06:13:21 -0500
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 0/4] workqueue: fix memory allocation after numa mapping is
- changed v3
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com>
-In-Reply-To: <548C68DA.20507@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+In-Reply-To: <20141214230628.85EB7660D3D@gitolite.kernel.org>
+References: <20141214230628.85EB7660D3D@gitolite.kernel.org>
+Date: Mon, 15 Dec 2014 12:13:19 +0100
+X-Google-Sender-Auth: n4yKOXYbiaS0zkrsduRe2wM6cvo
+Message-ID: <CAMuHMdWYqCDpceft22AT0dFkuw877JiHA1NkToFzehARu+fL6Q@mail.gmail.com>
+Subject: Re: usb: gadget: hid: add configfs support
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, Felipe Balbi <balbi@ti.com>
+Cc: USB list <linux-usb@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lai-san, Tejun-san,
+On Mon, Dec 15, 2014 at 12:06 AM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/;a=commit;h=21a9476a7ba847e413bf1c144d7c614532aed6dd
+> Commit:     21a9476a7ba847e413bf1c144d7c614532aed6dd
+> Parent:     5ca8d3ec9970f4798e68bd21a9d44db3d0ff4da7
+> Refname:    refs/heads/master
+> Author:     Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+> AuthorDate: Thu Nov 6 11:12:03 2014 +0100
+> Committer:  Felipe Balbi <balbi@ti.com>
+> CommitDate: Thu Nov 6 16:18:19 2014 -0600
+>
+>     usb: gadget: hid: add configfs support
+>
+>     Make the hid function available for gadgets composed with configfs.
+>
 
-Thank you for review, this a fix v3. This has been tested on NUMA node hotplug
-machine and seems work well.
+> --- a/drivers/usb/gadget/function/f_hid.c
+> +++ b/drivers/usb/gadget/function/f_hid.c
 
-The probelm is memory allocation failure because pool->node information can be stale
-after node hotplug. This patch(1,2) tries to fix pool->node calculation.
-Patch (3,4) tries to update cpumask calculation.
-(Fixing memory allocation bug just requires patch 1,2. But cpumask should be update
- I think.)
+> +
+> +#define F_HID_OPT(name, prec, limit)                                   \
+> +static ssize_t f_hid_opts_##name##_show(struct f_hid_opts *opts, char *page)\
+> +{                                                                      \
+> +       int result;                                                     \
+> +                                                                       \
+> +       mutex_lock(&opts->lock);                                        \
+> +       result = sprintf(page, "%d\n", opts->name);                     \
+> +       mutex_unlock(&opts->lock);                                      \
+> +                                                                       \
+> +       return result;                                                  \
+> +}                                                                      \
+> +                                                                       \
+> +static ssize_t f_hid_opts_##name##_store(struct f_hid_opts *opts,      \
+> +                                        const char *page, size_t len)  \
+> +{                                                                      \
+> +       int ret;                                                        \
+> +       u##prec num;                                                    \
+> +                                                                       \
+> +       mutex_lock(&opts->lock);                                        \
+> +       if (opts->refcnt) {                                             \
+> +               ret = -EBUSY;                                           \
+> +               goto end;                                               \
+> +       }                                                               \
+> +                                                                       \
+> +       ret = kstrtou##prec(page, 0, &num);                             \
+> +       if (ret)                                                        \
+> +               goto end;                                               \
+> +                                                                       \
+> +       if (num > limit) {                                              \
+> +               ret = -EINVAL;                                          \
+> +               goto end;                                               \
+> +       }                                                               \
+> +       opts->name = num;                                               \
+> +       ret = len;                                                      \
+> +                                                                       \
+> +end:                                                                   \
+> +       mutex_unlock(&opts->lock);                                      \
+> +       return ret;                                                     \
+> +}                                                                      \
+> +                                                                       \
+> +static struct f_hid_opts_attribute f_hid_opts_##name =                 \
+> +       __CONFIGFS_ATTR(name, S_IRUGO | S_IWUSR, f_hid_opts_##name##_show,\
+> +                       f_hid_opts_##name##_store)
+> +
+> +F_HID_OPT(subclass, 8, 255);
+> +F_HID_OPT(protocol, 8, 255);
+> +F_HID_OPT(report_length, 16, 65536);
 
-Changelog since v2.
-- reordered patch and split for each problem cases.
-- removed unnecessary calls pointed out by Lai-san.
-- restore node/cpu relationship when a new node comes online.
-- handle corner case at CPU_ONLINE.
+While all three of the above lines trigger a (false positive) compiler warning:
 
-1/4 .... fix unbound workqueue's memory node affinity calculation.
-2/4 ...  update percpu workqueue's memory node affinity at online/offline
-3/4 ...  update workqueue's possible cpumask when a new node onlined.
-4/4 ...  handle cpu-node affinity change at CPU_ONLINE.
+warning: comparison is always false due to limited range of data type
 
-Thanks,
--Kame
+it's a bit sloppy to use "2^8-1" for the first two limits, and "2^16"
+(without -1) for
+the third limit.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
