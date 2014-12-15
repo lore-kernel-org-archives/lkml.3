@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751689AbaLOSIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:08:53 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:43416 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaLOSGe (ORCPT
+	id S1751120AbaLOSMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:12:24 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:57929 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912AbaLOSMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:06:34 -0500
-From: Aleksey Makarov <feumilieu@gmail.com>
-X-Google-Original-From: Aleksey Makarov <aleksey.makarov@auriga.com>
-To: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 06/14] MIPS: Remove unneeded #ifdef __KERNEL__ from asm/processor.h
-Date: Mon, 15 Dec 2014 21:03:12 +0300
-Message-Id: <1418666603-15159-7-git-send-email-aleksey.makarov@auriga.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
-References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
+	Mon, 15 Dec 2014 13:12:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <1418396866-32625-1-git-send-email-lyz@rock-chips.com>
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+	<1418396866-32625-1-git-send-email-lyz@rock-chips.com>
+Date: Mon, 15 Dec 2014 10:12:20 -0800
+X-Google-Sender-Auth: 8Z_lncjPU6XhfeaiyCpspaZYQBI
+Message-ID: <CAD=FV=WvEcZAf-4yDBFVb3Bq8XLv=vWB5cM7GT9spOuYDLk96A@mail.gmail.com>
+Subject: Re: [PATCH v7 2/5] phy: add a driver for the Rockchip SoC internal
+ USB2.0 PHY
+From: Doug Anderson <dianders@chromium.org>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        jwerner@chromium.org, Olof Johansson <olof@lixom.net>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+Yunzhi,
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
----
- arch/mips/include/asm/processor.h | 6 ------
- 1 file changed, 6 deletions(-)
+On Fri, Dec 12, 2014 at 7:07 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
+> currently this driver can support RK3288. The RK3288 SoC have
+> three independent USB PHY IPs which are all configured through a
+> set of registers located in the GRF (general register files)
+> module.
+>
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+>
+> ---
+>
+> Changes in v7:
+> - Accept Kishon's comments to use phandle args to find a phy
+>   struct directly and get rid of using a custom of_xlate
+>   function.
+>
+> Changes in v6:
+> - Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
+>
+> Changes in v5: None
+> Changes in v4:
+> - Get number of PHYs from device tree.
+> - Model each PHY as subnode of the phy provider node.
+>
+> Changes in v3:
+> - Use BIT macro instead of bit shift ops.
+> - Rename the config entry to PHY_ROCKCHIP_USB.
+>
+>  drivers/phy/Kconfig            |   7 ++
+>  drivers/phy/Makefile           |   1 +
+>  drivers/phy/phy-rockchip-usb.c | 158 +++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 166 insertions(+)
+>  create mode 100644 drivers/phy/phy-rockchip-usb.c
 
-diff --git a/arch/mips/include/asm/processor.h b/arch/mips/include/asm/processor.h
-index a5b8a7f..728b05a 100644
---- a/arch/mips/include/asm/processor.h
-+++ b/arch/mips/include/asm/processor.h
-@@ -54,9 +54,7 @@ extern unsigned int vced_count, vcei_count;
- #define TASK_SIZE	0x7fff8000UL
- #endif
- 
--#ifdef __KERNEL__
- #define STACK_TOP_MAX	TASK_SIZE
--#endif
- 
- #define TASK_IS_32BIT_ADDR 1
- 
-@@ -73,11 +71,7 @@ extern unsigned int vced_count, vcei_count;
- #define TASK_SIZE32	0x7fff8000UL
- #define TASK_SIZE64	0x10000000000UL
- #define TASK_SIZE (test_thread_flag(TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
--
--#ifdef __KERNEL__
- #define STACK_TOP_MAX	TASK_SIZE64
--#endif
--
- 
- #define TASK_SIZE_OF(tsk)						\
- 	(test_tsk_thread_flag(tsk, TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
--- 
-2.1.3
+On rk3288-pinky (on a 3.14 tree with backports), I can confirm that
+this properly gets us into low power at suspend time.
 
+Tested-by: Doug Anderson <dianders@chromium.org>
