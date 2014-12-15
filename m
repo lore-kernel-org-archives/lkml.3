@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbaLOTeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:34:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:41028 "EHLO
+	id S1752738AbaLOTeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:34:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41049 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbaLOTeC (ORCPT
+	with ESMTP id S1752667AbaLOTeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:34:02 -0500
+	Mon, 15 Dec 2014 14:34:08 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Devin Ryles <devin.ryles@intel.com>, Tejun Heo <tj@kernel.org>,
+Cc: Dmitry Torokhov <dtor@chromium.org>, Tejun Heo <tj@kernel.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 74/96] AHCI: Add DeviceIDs for Sunrise Point-LP SATA controller
-Date: Mon, 15 Dec 2014 11:26:34 -0800
-Message-Id: <1418671616-25482-75-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 75/96] sata_fsl: fix error handling of irq_of_parse_and_map
+Date: Mon, 15 Dec 2014 11:26:35 -0800
+Message-Id: <1418671616-25482-76-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,33 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Devin Ryles <devin.ryles@intel.com>
+From: Dmitry Torokhov <dtor@chromium.org>
 
-commit 249cd0a187ed4ef1d0af7f74362cc2791ec5581b upstream.
+commit aad0b624129709c94c2e19e583b6053520353fa8 upstream.
 
-This patch adds DeviceIDs for Sunrise Point-LP.
+irq_of_parse_and_map() returns 0 on error (the result is unsigned int),
+so testing for negative result never works.
 
-Signed-off-by: Devin Ryles <devin.ryles@intel.com>
+Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/ata/sata_fsl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 12fc8d7..ccb972e 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -320,6 +320,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x8c87), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8e), board_ahci }, /* 9 Series RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8c8f), board_ahci }, /* 9 Series RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9d03), board_ahci }, /* Sunrise Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9d05), board_ahci }, /* Sunrise Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9d07), board_ahci }, /* Sunrise Point-LP RAID */
- 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H AHCI */
- 	{ PCI_VDEVICE(INTEL, 0xa103), board_ahci }, /* Sunrise Point-H RAID */
- 	{ PCI_VDEVICE(INTEL, 0xa105), board_ahci }, /* Sunrise Point-H RAID */
+diff --git a/drivers/ata/sata_fsl.c b/drivers/ata/sata_fsl.c
+index fb0b40a..ee2780d 100644
+--- a/drivers/ata/sata_fsl.c
++++ b/drivers/ata/sata_fsl.c
+@@ -1503,7 +1503,7 @@ static int sata_fsl_probe(struct platform_device *ofdev)
+ 	host_priv->csr_base = csr_base;
+ 
+ 	irq = irq_of_parse_and_map(ofdev->dev.of_node, 0);
+-	if (irq < 0) {
++	if (!irq) {
+ 		dev_err(&ofdev->dev, "invalid irq from platform\n");
+ 		goto error_exit_with_cleanup;
+ 	}
 -- 
 1.9.1
 
