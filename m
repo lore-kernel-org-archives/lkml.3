@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363AbaLOQ1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:27:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34160 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750840AbaLOQ1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:27:12 -0500
-Date: Mon, 15 Dec 2014 17:27:05 +0100
-From: Jan Kara <jack@suse.cz>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Christoph Hellwig <hch@infradead.org>, David Sterba <dsterba@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141215162705.GA23887@quack.suse.cz>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
+	id S1751600AbaLOQ16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:27:58 -0500
+Received: from smtp08.smtpout.orange.fr ([80.12.242.130]:26830 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000AbaLOQ14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 11:27:56 -0500
+X-ME-Helo: beldin
+X-ME-Date: Mon, 15 Dec 2014 17:27:54 +0100
+X-ME-IP: 86.199.199.51
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH] mfd: cottula: add cottula board
+References: <1418598606-21352-1-git-send-email-robert.jarzmik@free.fr>
+	<4307800.p21Sk5E3dV@wuerfel> <877fxsapds.fsf@free.fr>
+	<2126713.SdhEsThCG0@wuerfel>
+X-URL: http://belgarath.falguerolles.org/
+Date: Mon, 15 Dec 2014 17:27:53 +0100
+In-Reply-To: <2126713.SdhEsThCG0@wuerfel> (Arnd Bergmann's message of "Mon, 15
+	Dec 2014 17:01:14 +0100")
+Message-ID: <87388ganee.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 14-12-14 21:26:56, Omar Sandoval wrote:
-> The generic write code locks i_mutex for a direct_IO. Swap-over-NFS
-> doesn't grab the mutex because nfs_direct_IO doesn't expect i_mutex to
-> be held, but most direct_IO implementations do.
-  I think you are speaking about direct IO writes only, aren't you? For DIO
-reads we don't hold i_mutex AFAICS. And also for DIO writes we don't
-necessarily hold i_mutex - see for example XFS which doesn't take i_mutex
-for direct IO writes. It uses it's internal rwlock for this (see
-xfs_file_dio_aio_write()). So I think this is just wrong.
+Arnd Bergmann <arnd@arndb.de> writes:
 
-								Honza
+>> Will that look correct ?
+>
+> I'd still prefer the platform data, but this seems good enough and I
+> see no serious problems with it.
+OK, so I'll try with the 2 resources. If I'm bitten afterwards and am forced to
+have a platform data, you'll tell me "I had warned you" ;)
 
-> Signed-off-by: Omar Sandoval <osandov@osandov.com>
-> ---
->  mm/page_io.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/mm/page_io.c b/mm/page_io.c
-> index 955db8b..1630ac0 100644
-> --- a/mm/page_io.c
-> +++ b/mm/page_io.c
-> @@ -263,6 +263,7 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
->  	if (sis->flags & SWP_FILE) {
->  		struct kiocb kiocb;
->  		struct file *swap_file = sis->swap_file;
-> +		struct inode *inode = file_inode(swap_file);
->  		struct address_space *mapping = swap_file->f_mapping;
->  		struct bio_vec bv = {
->  			.bv_page = page,
-> @@ -283,9 +284,11 @@ int __swap_writepage(struct page *page, struct writeback_control *wbc,
->  
->  		set_page_writeback(page);
->  		unlock_page(page);
-> +		mutex_lock(&inode->i_mutex);
->  		ret = mapping->a_ops->direct_IO(ITER_BVEC | WRITE,
->  						&kiocb, &from,
->  						kiocb.ki_pos);
-> +		mutex_unlock(&inode->i_mutex);
->  		if (ret == PAGE_SIZE) {
->  			count_vm_event(PSWPOUT);
->  			ret = 0;
-> -- 
-> 2.1.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I'll let a couple of days before patch v2 to gather more reviews.
+
+Thanks.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Robert
