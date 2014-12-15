@@ -1,127 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaLOTdj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:33:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40973 "EHLO
+	id S1751090AbaLOTis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:38:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41092 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965AbaLOTdf (ORCPT
+	with ESMTP id S1750767AbaLOTip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:35 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 82/96] mm: fix anon_vma_clone() error treatment
-Date: Mon, 15 Dec 2014 11:26:42 -0800
-Message-Id: <1418671616-25482-83-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Dec 2014 14:38:45 -0500
+Date: Mon, 15 Dec 2014 19:38:38 +0000
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: =?iso-8859-1?Q?St=E9phane?= Graber <stgraber@ubuntu.com>,
+        Richard Weinberger <richard@nod.at>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        linux-man <linux-man@vger.kernel.org>,
+        Kees Cook <keescook@chromium.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>, stable <stable@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kenton Varda <kenton@sandstorm.io>,
+        LSM <linux-security-module@vger.kernel.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [CFT] Can I get some Tested-By's on this series?
+Message-ID: <20141215193838.GB28375@ubuntumail>
+References: <87ppbtn4mv.fsf@x220.int.ebiederm.org>
+ <CALCETrXSScp77BUJR5NSTh5-RnEZ9rqELSGJBeEzgdQ-OtohuQ@mail.gmail.com>
+ <87a92xn2io.fsf@x220.int.ebiederm.org>
+ <87r3w8liw4.fsf@x220.int.ebiederm.org>
+ <87iohklfvj.fsf_-_@x220.int.ebiederm.org>
+ <87mw6vh31e.fsf_-_@x220.int.ebiederm.org>
+ <20141210224822.GG20012@ubuntumail>
+ <87lhmcy2et.fsf@x220.int.ebiederm.org>
+ <20141212220840.GF22091@castiana.ipv6.teksavvy.com>
+ <8761dgze56.fsf@x220.int.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <8761dgze56.fsf@x220.int.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
+Quoting Eric W. Biederman (ebiederm@xmission.com):
+> Stéphane Graber <stgraber@ubuntu.com> writes:
+> 
+> > On Fri, Dec 12, 2014 at 03:38:18PM -0600, Eric W. Biederman wrote:
+> >> Serge Hallyn <serge.hallyn@ubuntu.com> writes:
+> >> 
+> >> > Quoting Eric W. Biederman (ebiederm@xmission.com):
+> >> >> 
+> >> >> Will people please test these patches with their container project?
+> >> >> 
+> >> >> These changes break container userspace (hopefully in a minimal way) if
+> >> >> I could have that confirmed by testing I would really appreciate it.  I
+> >> >> really don't want to send out a bug fix that accidentally breaks
+> >> >> userspace again.
+> >> >> 
+> >> >> The only issue sort of under discussion is if there is a better name for
+> >> >> /proc/<pid>/setgroups, and the name of the file will not affect the
+> >> >> functionality of the patchset.
+> >> >> 
+> >> >> With the code reviewed and written in simple obviously correct, easily
+> >> >> reviewable ways I am hoping/planning to send this to Linus ASAP.
+> >> >> 
+> >> >> Eric
+> >> >
+> >> > Is there a git tree we can clone?
+> >> 
+> >> Have either of you been able to check to see if any of my changes
+> >> affects lxc?
+> >> 
+> >> I am trying to gauge how hard and how fast I should push to Linus.  lxc
+> >> being the largest adopter of unprivileged user namespaces for general
+> >> purpose containers.
+> >> 
+> >> I expect you just call newuidmap and newgidmap and don't actually care
+> >> about not being able to set gid_map without privilege.  But I really
+> >> want to avoid pushing a security fix and then being surprised that
+> >> things like lxc break.
+> >> 
+> >> Eric
+> >
+> > Hi Eric,
+> >
+> > I've unfortunately been pretty busy this week as I was (well, still am)
+> > travelling to South Africa for a meeting. I don't have a full kernel
+> > tree around here and a full git clone isn't really doable over the kind
+> > of Internet I've got here :)
+> >
+> > Hopefully Serge can give it a quick try, otherwise I should be able to
+> > do some tests on Tuesday when I'm back home.
+> 
+> I thought Serge was going to but I haven't heard yet so I am prodding ;-)
 
-------------------
+Ok, thanks - yes, unprivileged lxc is working fine with your kernels.
+Just to be sure I was testing the right thing I also tested using
+my unprivileged nsexec testcases, and they failed on setgroup/setgid
+as now expected, and succeeded there without your patches.
 
-From: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-
-commit c4ea95d7cd08d9ffd7fa75e6c5e0332d596dd11e upstream.
-
-Andrew Morton noticed that the error return from anon_vma_clone() was
-being dropped and replaced with -ENOMEM (which is not itself a bug
-because the only error return value from anon_vma_clone() is -ENOMEM).
-
-I did an audit of callers of anon_vma_clone() and discovered an actual
-bug where the error return was being lost.  In __split_vma(), between
-Linux 3.11 and 3.12 the code was changed so the err variable is used
-before the call to anon_vma_clone() and the default initial value of
--ENOMEM is overwritten.  So a failure of anon_vma_clone() will return
-success since err at this point is now zero.
-
-Below is a patch which fixes this bug and also propagates the error
-return value from anon_vma_clone() in all cases.
-
-Fixes: ef0855d334e1 ("mm: mempolicy: turn vma_set_policy() into vma_dup_policy()")
-Signed-off-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Cc: Konstantin Khlebnikov <koct9i@gmail.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Tim Hartrick <tim@edgecast.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Vlastimil Babka <vbabka@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- mm/mmap.c | 10 +++++++---
- mm/rmap.c |  6 ++++--
- 2 files changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 32dbf6d..d407dcd 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -742,8 +742,11 @@ again:			remove_next = 1 + (end > next->vm_end);
- 		 * shrinking vma had, to cover any anon pages imported.
- 		 */
- 		if (exporter && exporter->anon_vma && !importer->anon_vma) {
--			if (anon_vma_clone(importer, exporter))
--				return -ENOMEM;
-+			int error;
-+
-+			error = anon_vma_clone(importer, exporter);
-+			if (error)
-+				return error;
- 			importer->anon_vma = exporter->anon_vma;
- 		}
- 	}
-@@ -2414,7 +2417,8 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
- 	if (err)
- 		goto out_free_vma;
- 
--	if (anon_vma_clone(new, vma))
-+	err = anon_vma_clone(new, vma);
-+	if (err)
- 		goto out_free_mpol;
- 
- 	if (new->vm_file)
-diff --git a/mm/rmap.c b/mm/rmap.c
-index cd6b576..ac0506d 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -274,6 +274,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- {
- 	struct anon_vma_chain *avc;
- 	struct anon_vma *anon_vma;
-+	int error;
- 
- 	/* Don't bother if the parent process has no anon_vma here. */
- 	if (!pvma->anon_vma)
-@@ -283,8 +284,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
- 	 */
--	if (anon_vma_clone(vma, pvma))
--		return -ENOMEM;
-+	error = anon_vma_clone(vma, pvma);
-+	if (error)
-+		return error;
- 
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
--- 
-1.9.1
-
+thanks,
+-serge
