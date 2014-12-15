@@ -1,39 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751015AbaLOCxq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:53:46 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:41684 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaLOCxm (ORCPT
+	id S1751222AbaLOCzz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:55:55 -0500
+Received: from regular1.263xmail.com ([211.150.99.131]:38026 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaLOCzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:53:42 -0500
-Message-ID: <548E4D34.6000108@kernel.dk>
-Date: Sun, 14 Dec 2014 19:53:40 -0700
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: nick <xerofoify@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:block: Remove no longer needed FIXME comment
- for the function, add_disk in genhd.c
-References: <1418526557-3295-1-git-send-email-xerofoify@gmail.com> <548E4A2D.2050603@kernel.dk> <548E4B85.1040602@gmail.com>
-In-Reply-To: <548E4B85.1040602@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Dec 2014 21:55:47 -0500
+X-Greylist: delayed 2617 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Dec 2014 21:55:45 EST
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: ykk@rock-chips.com
+X-FST-TO: ykk@rock-chips.com
+X-SENDER-IP: 104.167.231.7
+X-LOGIN-NAME: ykk@rock-chips.com
+X-UNIQUE-TAG: <710391f6deaf69dd0c538ff36e0284b8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Yakir Yang <ykk@rock-chips.com>
+To: ykk@rock-chips.com
+Cc: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?UTF-8?q?St=A8=A6phane=20Marchesin?= <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Mark Brown <broonie@kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, Jyri Sarha <jsarha@ti.com>
+Subject: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
+Date: Mon, 15 Dec 2014 10:55:14 +0800
+Message-Id: <1418612114-19692-1-git-send-email-ykk@rock-chips.com>
+X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2014 07:46 PM, nick wrote:
-> Jens,
-> After rechecking the function definition we can't return an error as add_disk is declared void. Should I change the function to an int and then return an error. My thinking was that there is no good way to return an error code without
-> a breakage in the functions that  call add_disk.
+Required properties:
+- compatible: platform specific
+- cpu-of-node: the device node of cpu_dai
+- codec-name: the dw-hdmi codec's device name
+- codec-dai-name: the dw-hdmi codec's dai name
 
-Please don't top post...
+Signed-off-by: Yakir Yang <ykk@rock-chips.com>
+---
 
-It's a big job, it requires properly checking and updating all block 
-drivers. But yes, that is what would be required in removing that TODO.
+ .../bindings/sound/rockchip,rockchip-hdmi-audio.txt      | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/rockchip,rockchip-hdmi-audio.txt
 
+diff --git a/Documentation/devicetree/bindings/sound/rockchip,rockchip-hdmi-audio.txt b/Documentation/devicetree/bindings/sound/rockchip,rockchip-hdmi-audio.txt
+new file mode 100644
+index 0000000..674cff0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/rockchip,rockchip-hdmi-audio.txt
+@@ -0,0 +1,16 @@
++Rockchip hdmi audio bindings
++
++Required properties:
++- compatible: platform specific
++- cpu-of-node: the device node of cpu_dai
++- codec-name: the dw-hdmi codec's device name
++- codec-dai-name: the dw-hdmi codec's dai name
++
++Example:
++
++sound {
++	compatible = "rockchip,rk3288-hdmi-audio";
++	cpu-of-node = <&i2s>;
++	codec-name = "dw-hdmi-audio";
++	codec-dai-name = "dw-hdmi-hifi";
++};
 -- 
-Jens Axboe
+2.1.2
+
 
