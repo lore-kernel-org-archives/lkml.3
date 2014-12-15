@@ -1,81 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750892AbaLORMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:12:43 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:44512 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbaLORMk (ORCPT
+	id S1751000AbaLORM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:12:56 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:42958 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbaLORMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:12:40 -0500
-Message-ID: <548F1686.4080507@lwfinger.net>
-Date: Mon, 15 Dec 2014 11:12:38 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Karthik Nayak <karthik.188@gmail.com>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH] Staging: rtl8712: removed an unnecessary else statement
-References: <1418657154-10481-1-git-send-email-karthik.188@gmail.com> <1418661543.2674.17.camel@perches.com>
-In-Reply-To: <1418661543.2674.17.camel@perches.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Dec 2014 12:12:53 -0500
+From: Petr Cermak <petrcermak@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Petr Cermak <petrcermak@chromium.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>
+Subject: [PATCH 1/2] task_mmu: Reduce excessive indentation in clear_refs_write
+Date: Mon, 15 Dec 2014 17:12:30 +0000
+Message-Id: <1418663550-15778-1-git-send-email-petrcermak@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+References: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
+In-Reply-To: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 10:39 AM, Joe Perches wrote:
-> On Mon, 2014-12-15 at 20:55 +0530, Karthik Nayak wrote:
->> As per checkpatch warning, removed an unnecessary else statement
->> proceeding an if statement with a return.
->
-> This is not a correct change.
-> The checkpatch message said "generally".
-> You still have to verify the code.
->
->> diff --git a/drivers/staging/rtl8712/rtl8712_recv.c b/drivers/staging/rtl8712/rtl8712_recv.c
->> index cd8b444..800b2b3 100644
->> --- a/drivers/staging/rtl8712/rtl8712_recv.c
->> +++ b/drivers/staging/rtl8712/rtl8712_recv.c
->> @@ -496,8 +496,7 @@ static int enqueue_reorder_recvframe(struct recv_reorder_ctrl *preorder_ctrl,
->>   			plist = plist->next;
->>   		else if (SN_EQUAL(pnextattrib->seq_num, pattrib->seq_num))
->>   			return false;
->> -		else
->> -			break;
->> +		break;
->
->
-> It's not the same logic.
-> It would be if the code was:
->
-> 	while (end_of_queue_search(phead, plist) == false) {
-> 		pnextrframe = LIST_CONTAINOR(plist, union recv_frame, u);
-> 		pnextattrib = &pnextrframe->u.hdr.attrib;
-> 		if (SN_LESS(pnextattrib->seq_num, pattrib->seq_num)) {
-> 			plist = plist->next;
-> 			continue;
-> 		} else if (SN_EQUAL(pnextattrib->seq_num, pattrib->seq_num)) {
-> 			return false;
-> 		}
-> 		break;
-> 	}
->
-> But that's not necessary.
+This is a purely cosmetic fix for clear_refs_write(). It removes excessive
+indentation as suggested by Bjorn Helgaas <bhelgaas@google.com>. This is to
+make upcoming changes to the file more readable.
 
-I have almost been tripped by this warning when the code said
+Cc: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Primiano Tucci <primiano@chromium.org>
+Cc: Petr Cermak <petrcermak@chromium.org>
+Signed-off-by: Petr Cermak <petrcermak@chromium.org>
+---
+ fs/proc/task_mmu.c | 100 +++++++++++++++++++++++++++--------------------------
+ 1 file changed, 51 insertions(+), 49 deletions(-)
 
-	if (...) {
-		.......
-	} else if (...) {
-		.......
-		return;
-	} else {
-		.......
-	}
-
-Perhaps checkpatch should ignore setting this warning when there is an "else if" 
-in the flow.
-
-Larry
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 246eae8..3ee8541 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -852,59 +852,61 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	if (!task)
+ 		return -ESRCH;
+ 	mm = get_task_mm(task);
+-	if (mm) {
+-		struct clear_refs_private cp = {
+-			.type = type,
+-		};
+-		struct mm_walk clear_refs_walk = {
+-			.pmd_entry = clear_refs_pte_range,
+-			.mm = mm,
+-			.private = &cp,
+-		};
+-		down_read(&mm->mmap_sem);
+-		if (type == CLEAR_REFS_SOFT_DIRTY) {
+-			for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-				if (!(vma->vm_flags & VM_SOFTDIRTY))
+-					continue;
+-				up_read(&mm->mmap_sem);
+-				down_write(&mm->mmap_sem);
+-				for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-					vma->vm_flags &= ~VM_SOFTDIRTY;
+-					vma_set_page_prot(vma);
+-				}
+-				downgrade_write(&mm->mmap_sem);
+-				break;
+-			}
+-			mmu_notifier_invalidate_range_start(mm, 0, -1);
+-		}
++	if (!mm)
++		goto out_task;
++
++	struct clear_refs_private cp = {
++		.type = type,
++	};
++	struct mm_walk clear_refs_walk = {
++		.pmd_entry = clear_refs_pte_range,
++		.mm = mm,
++		.private = &cp,
++	};
++	down_read(&mm->mmap_sem);
++	if (type == CLEAR_REFS_SOFT_DIRTY) {
+ 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+-			cp.vma = vma;
+-			if (is_vm_hugetlb_page(vma))
+-				continue;
+-			/*
+-			 * Writing 1 to /proc/pid/clear_refs affects all pages.
+-			 *
+-			 * Writing 2 to /proc/pid/clear_refs only affects
+-			 * Anonymous pages.
+-			 *
+-			 * Writing 3 to /proc/pid/clear_refs only affects file
+-			 * mapped pages.
+-			 *
+-			 * Writing 4 to /proc/pid/clear_refs affects all pages.
+-			 */
+-			if (type == CLEAR_REFS_ANON && vma->vm_file)
++			if (!(vma->vm_flags & VM_SOFTDIRTY))
+ 				continue;
+-			if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
+-				continue;
+-			walk_page_range(vma->vm_start, vma->vm_end,
+-					&clear_refs_walk);
++			up_read(&mm->mmap_sem);
++			down_write(&mm->mmap_sem);
++			for (vma = mm->mmap; vma; vma = vma->vm_next) {
++				vma->vm_flags &= ~VM_SOFTDIRTY;
++				vma_set_page_prot(vma);
++			}
++			downgrade_write(&mm->mmap_sem);
++			break;
+ 		}
+-		if (type == CLEAR_REFS_SOFT_DIRTY)
+-			mmu_notifier_invalidate_range_end(mm, 0, -1);
+-		flush_tlb_mm(mm);
+-		up_read(&mm->mmap_sem);
+-		mmput(mm);
++		mmu_notifier_invalidate_range_start(mm, 0, -1);
+ 	}
++	for (vma = mm->mmap; vma; vma = vma->vm_next) {
++		cp.vma = vma;
++		if (is_vm_hugetlb_page(vma))
++			continue;
++		/*
++		 * Writing 1 to /proc/pid/clear_refs affects all pages.
++		 *
++		 * Writing 2 to /proc/pid/clear_refs only affects anonymous
++		 * pages.
++		 *
++		 * Writing 3 to /proc/pid/clear_refs only affects file mapped
++		 * pages.
++		 *
++		 * Writing 4 to /proc/pid/clear_refs affects all pages.
++		 */
++		if (type == CLEAR_REFS_ANON && vma->vm_file)
++			continue;
++		if (type == CLEAR_REFS_MAPPED && !vma->vm_file)
++			continue;
++		walk_page_range(vma->vm_start, vma->vm_end, &clear_refs_walk);
++	}
++	if (type == CLEAR_REFS_SOFT_DIRTY)
++		mmu_notifier_invalidate_range_end(mm, 0, -1);
++	flush_tlb_mm(mm);
++	up_read(&mm->mmap_sem);
++	mmput(mm);
++
++out_task:
+ 	put_task_struct(task);
+ 
+ 	return count;
+-- 
+2.2.0.rc0.207.ga3a616c
 
