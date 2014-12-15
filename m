@@ -1,173 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751189AbaLOVls (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 16:41:48 -0500
-Received: from mga09.intel.com ([134.134.136.24]:23357 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738AbaLOVlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 16:41:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="499146084"
-From: "Luck, Tony" <tony.luck@intel.com>
-In-Reply-To: <5ab8b2e0b3e41b1bb4bdee09289200e12a0dfbe4.1418248436.git.tony.luck@intel.com>
-Date: Wed, 10 Dec 2014 13:53:26 -0800
-Subject: [PATCHv3] ACPI, EINJ: Enhance error injection tolerance level
-To: Tomasz Nowicki <tomasz.nowicki@linaro.org>, <linux-kernel@vger.kernel.org>
-CC: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
-        <linux-acpi@vger.kernel.org>
-Message-Id: <075830@agluck-desk.sc.intel.com>
+	id S1751124AbaLOVoh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 16:44:37 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:40875 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaLOVof (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 16:44:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141215213428.GW22149@ZenIV.linux.org.uk>
+References: <20141214201823.543296369@linuxfoundation.org>
+	<20141214201823.978185416@linuxfoundation.org>
+	<20141215154650.GA6542@vader>
+	<20141215163419.GA1351@kroah.com>
+	<CA+5PVA49YBQMz1fardM8wP6R1n_QGCXudeu_KaSsYwaiHmMzWg@mail.gmail.com>
+	<CA+5PVA6jZgOeDko_b5y2i8rYaxq_QWSfeDJ4RtA-1uZW87G+4Q@mail.gmail.com>
+	<20141215213428.GW22149@ZenIV.linux.org.uk>
+Date: Mon, 15 Dec 2014 16:44:35 -0500
+X-Google-Sender-Auth: rkVgCPYK31pThpAfKNVrNTGuQUg
+Message-ID: <CA+5PVA5KEvgJyVPdoC4Tz6fTM5_U3+FTNgOt2Xy-jpCOagwAyA@mail.gmail.com>
+Subject: Re: [PATCH 3.18 15/19] move d_rcu from overlapping d_child to
+ overlapping d_alias
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Chen, Gong" <gong.chen@linux.intel.com>
+On Mon, Dec 15, 2014 at 4:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Dec 15, 2014 at 04:21:12PM -0500, Josh Boyer wrote:
+>> On Mon, Dec 15, 2014 at 11:38 AM, Josh Boyer <jwboyer@fedoraproject.org> wrote:
+>> > On Mon, Dec 15, 2014 at 11:34 AM, Greg Kroah-Hartman
+>> > <gregkh@linuxfoundation.org> wrote:
+>> >> On Mon, Dec 15, 2014 at 10:46:50AM -0500, Josh Boyer wrote:
+>> >>> On Sun, Dec 14, 2014 at 12:21:26PM -0800, Greg Kroah-Hartman wrote:
+>> >>> >3.18-stable review patch.  If anyone has any objections, please let me know.
+>> >>> >
+>> >>> >------------------
+>> >>> >
+>> >>> >From: Al Viro <viro@zeniv.linux.org.uk>
+>> >>> >
+>> >>> >commit 946e51f2bf37f1656916eb75bd0742ba33983c28 upstream.
+>> >>> >
+>> >>> >Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+>> >>> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >>>
+>> >>> I noticed you don't have this (and the child commit) queued for 3.17.y.
+>> >>
+>> >> That is because:
+>> >>
+>> >>> The backport wasn't exactly straight-forward because of the d_external
+>> >>> stuff, but I took a swing at it.  After that, the other commit was a
+>> >>> quick cherry-pick.
+>> >>
+>> >> It wasn't a "simple" backport, and I didn't have the time.  I'm also
+>> >> going to drop 3.17 real-soon-now.
+>> >
+>> > Right, figured.  Fedora isn't going to rebase the stable releases to
+>> > 3.18 until 3.18.2-ish, and this fixes an issue so I thought I'd give
+>> > it a try.
+>> >
+>> >>> Al, does the below look correct for a backport on top of 3.17.6?  It
+>> >>> builds, but I haven't tested it yet.
+>> >>
+>> >> Testing would be great to do :)
+>> >
+>> > Working on it.  Just wanted to send it out early in case Al spotted
+>> > something obviously wrong and wanted to yell at me for it.
+>>
+>> Finally got around to booting it.  Something is definitely wrong.  Sigh.
+>
+> Start with moving WARN_ON() into dentry_free() (as it's done in mainline and
+> for the same reason)...
 
-Some BIOSes utilize PCI MMCFG space read/write opertion to trigger
-specific errors. EINJ will report errors as below when hitting such
-cases:
+Gah, yes.  I'd just gotten to that hunk and realized it looked really
+really wrong.  I'll give that a shot.
 
-APEI: Can not request [mem 0x83f990a0-0x83f990a3] for APEI EINJ Trigger registers
-
-It is because on x86 platform ACPI based PCI MMCFG logic has
-reserved all MMCFG spaces so that EINJ can't reserve it again.
-We already trust the ACPI/APEI code when using the EINJ interface
-so it is not a big leap to also trust it to access the right
-MMCFG addresses. Skip address checking to allow the access.
-
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
-
-v3: Same as v2, except dropped the
-  +#ifdef CONFIG_PCI_MMCONFIG
-  +#include <asm/pci_x86.h>
-  +#endif
-hunk from apei-base.c as it is not needed
-
- arch/x86/pci/mmconfig-shared.c | 28 ++++++++++++++++++++++++++++
- drivers/acpi/apei/apei-base.c  | 32 ++++++++++++++++++++++++++------
- 2 files changed, 54 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-index 326198a4434e..676e5e04e4d4 100644
---- a/arch/x86/pci/mmconfig-shared.c
-+++ b/arch/x86/pci/mmconfig-shared.c
-@@ -610,6 +610,32 @@ static int __init pci_parse_mcfg(struct acpi_table_header *header)
- 	return 0;
- }
- 
-+#ifdef CONFIG_ACPI_APEI
-+extern int (*arch_apei_filter_addr)(int (*func)(__u64 start, __u64 size,
-+				     void *data), void *data);
-+
-+static int pci_mmcfg_for_each_region(int (*func)(__u64 start, __u64 size,
-+				     void *data), void *data)
-+{
-+	struct pci_mmcfg_region *cfg;
-+	int rc;
-+
-+	if (list_empty(&pci_mmcfg_list))
-+		return 0;
-+
-+	list_for_each_entry(cfg, &pci_mmcfg_list, list) {
-+		rc = func(cfg->res.start, resource_size(&cfg->res), data);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return 0;
-+}
-+#define set_apei_filter() (arch_apei_filter_addr = pci_mmcfg_for_each_region)
-+#else
-+#define set_apei_filter()
-+#endif
-+
- static void __init __pci_mmcfg_init(int early)
- {
- 	pci_mmcfg_reject_broken(early);
-@@ -644,6 +670,8 @@ void __init pci_mmcfg_early_init(void)
- 		else
- 			acpi_sfi_table_parse(ACPI_SIG_MCFG, pci_parse_mcfg);
- 		__pci_mmcfg_init(1);
-+
-+		set_apei_filter();
- 	}
- }
- 
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index 2cd7bdd6c8b3..a85ac07f3da3 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -449,7 +449,7 @@ int apei_resources_sub(struct apei_resources *resources1,
- }
- EXPORT_SYMBOL_GPL(apei_resources_sub);
- 
--static int apei_get_nvs_callback(__u64 start, __u64 size, void *data)
-+static int apei_get_res_callback(__u64 start, __u64 size, void *data)
- {
- 	struct apei_resources *resources = data;
- 	return apei_res_add(&resources->iomem, start, size);
-@@ -457,7 +457,15 @@ static int apei_get_nvs_callback(__u64 start, __u64 size, void *data)
- 
- static int apei_get_nvs_resources(struct apei_resources *resources)
- {
--	return acpi_nvs_for_each_region(apei_get_nvs_callback, resources);
-+	return acpi_nvs_for_each_region(apei_get_res_callback, resources);
-+}
-+
-+int (*arch_apei_filter_addr)(int (*func)(__u64 start, __u64 size,
-+				     void *data), void *data);
-+static int apei_get_arch_resources(struct apei_resources *resources)
-+
-+{
-+	return arch_apei_filter_addr(apei_get_res_callback, resources);
- }
- 
- /*
-@@ -470,7 +478,7 @@ int apei_resources_request(struct apei_resources *resources,
- {
- 	struct apei_res *res, *res_bak = NULL;
- 	struct resource *r;
--	struct apei_resources nvs_resources;
-+	struct apei_resources nvs_resources, arch_res;
- 	int rc;
- 
- 	rc = apei_resources_sub(resources, &apei_resources_all);
-@@ -485,10 +493,20 @@ int apei_resources_request(struct apei_resources *resources,
- 	apei_resources_init(&nvs_resources);
- 	rc = apei_get_nvs_resources(&nvs_resources);
- 	if (rc)
--		goto res_fini;
-+		goto nvs_res_fini;
- 	rc = apei_resources_sub(resources, &nvs_resources);
- 	if (rc)
--		goto res_fini;
-+		goto nvs_res_fini;
-+
-+	if (arch_apei_filter_addr) {
-+		apei_resources_init(&arch_res);
-+		rc = apei_get_arch_resources(&arch_res);
-+		if (rc)
-+			goto arch_res_fini;
-+		rc = apei_resources_sub(resources, &arch_res);
-+		if (rc)
-+			goto arch_res_fini;
-+	}
- 
- 	rc = -EINVAL;
- 	list_for_each_entry(res, &resources->iomem, list) {
-@@ -536,7 +554,9 @@ err_unmap_iomem:
- 			break;
- 		release_mem_region(res->start, res->end - res->start);
- 	}
--res_fini:
-+arch_res_fini:
-+	apei_resources_fini(&arch_res);
-+nvs_res_fini:
- 	apei_resources_fini(&nvs_resources);
- 	return rc;
- }
--- 
-2.1.0
-
+josh
