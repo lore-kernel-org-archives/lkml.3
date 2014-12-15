@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481AbaLOTmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:42:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40848 "EHLO
+	id S1752522AbaLOTmk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:42:40 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40839 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbaLOTbN (ORCPT
+	with ESMTP id S1750786AbaLOTbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:31:13 -0500
+	Mon, 15 Dec 2014 14:31:07 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 56/96] sound/radeon: Move 64-bit MSI quirk from arch to driver
-Date: Mon, 15 Dec 2014 11:26:16 -0800
-Message-Id: <1418671616-25482-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 51/96] USB: xhci: Reset a halted endpoint immediately when we encounter a stall.
+Date: Mon, 15 Dec 2014 11:26:11 -0800
+Message-Id: <1418671616-25482-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,69 +28,182 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit db79afa1e57925ba96ab18514c0ebe42a28e393e upstream.
+commit 8e71a322fdb127814bcba423a512914ca5bc6cf5 upstream.
 
-A number of radeon cards have a HW limitation causing them to be
-unable to generate the full 64-bit of address bits for MSIs. This
-breaks MSIs on some platforms such as POWER machines.
+If a device is halted and reuturns a STALL, then the halted endpoint
+needs to be cleared both on the host and device side. The host
+side halt is cleared by issueing a xhci reset endpoint command. The device side
+is cleared with a ClearFeature(ENDPOINT_HALT) request, which should
+be issued by the device driver if a URB reruen -EPIPE.
 
-We used to have a powerpc specific quirk to address that on a
-single card, but this doesn't scale very well, this is better
-put under control of the drivers who know precisely what a given
-HW revision can do.
+Previously we cleared the host side halt after the device side was cleared.
+To make sure the host side halt is cleared in time we want to issue the
+reset endpoint command immedialtely when a STALL status is encountered.
 
-We now have a generic quirk in the PCI code. We should set it
-appropriately for all radeon's from the audio driver.
+Otherwise we end up not following the specs and not returning -EPIPE
+several times in a row when trying to transfer data to a halted endpoint.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
-[ kamal: backport to 3.13-stable: AZX_DCAPS list in hda_intel.c ]
+Fixes: bcef3fd (USB: xhci: Handle errors that cause endpoint halts.)
+Tested-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ kamal: backport to 3.13-stable: context ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-ring.c | 40 ++++++++---------------------
+ drivers/usb/host/xhci.c      | 61 +++++++++++---------------------------------
+ 2 files changed, 25 insertions(+), 76 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index c3f7839..e0f076c 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -607,6 +607,7 @@ enum {
- #define AZX_DCAPS_COUNT_LPIB_DELAY  (1 << 25)	/* Take LPIB as delay */
- #define AZX_DCAPS_PM_RUNTIME	(1 << 26)	/* runtime PM support */
- #define AZX_DCAPS_I915_POWERWELL (1 << 27)	/* HSW i915 power well support */
-+#define AZX_DCAPS_NO_MSI64	(1 << 29)	/* Stick to 32-bit MSIs */
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 1d84081..3cf8bc4 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2015,22 +2015,13 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
+ 		ep->stopped_td = td;
+ 		return 0;
+ 	} else {
+-		if (trb_comp_code == COMP_STALL) {
+-			/* The transfer is completed from the driver's
+-			 * perspective, but we need to issue a set dequeue
+-			 * command for this stalled endpoint to move the dequeue
+-			 * pointer past the TD.  We can't do that here because
+-			 * the halt condition must be cleared first.  Let the
+-			 * USB class driver clear the stall later.
+-			 */
+-			ep->stopped_td = td;
+-			ep->stopped_stream = ep_ring->stream_id;
+-		} else if (xhci_requires_manual_halt_cleanup(xhci,
+-					ep_ctx, trb_comp_code)) {
+-			/* Other types of errors halt the endpoint, but the
+-			 * class driver doesn't call usb_reset_endpoint() unless
+-			 * the error is -EPIPE.  Clear the halted status in the
+-			 * xHCI hardware manually.
++		if (trb_comp_code == COMP_STALL ||
++		    xhci_requires_manual_halt_cleanup(xhci, ep_ctx,
++						      trb_comp_code)) {
++			/* Issue a reset endpoint command to clear the host side
++			 * halt, followed by a set dequeue command to move the
++			 * dequeue pointer past the TD.
++			 * The class driver clears the device side halt later.
+ 			 */
+ 			xhci_cleanup_halted_endpoint(xhci,
+ 					slot_id, ep_index, ep_ring->stream_id,
+@@ -2150,9 +2141,7 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
+ 		else
+ 			td->urb->actual_length = 0;
  
- /* quirks for Intel PCH */
- #define AZX_DCAPS_INTEL_PCH_NOPM \
-@@ -628,7 +629,8 @@ enum {
- 
- /* quirks for ATI/AMD HDMI */
- #define AZX_DCAPS_PRESET_ATI_HDMI \
--	(AZX_DCAPS_NO_TCSEL | AZX_DCAPS_SYNC_WRITE | AZX_DCAPS_POSFIX_LPIB)
-+	(AZX_DCAPS_NO_TCSEL | AZX_DCAPS_SYNC_WRITE | AZX_DCAPS_POSFIX_LPIB|\
-+	 AZX_DCAPS_NO_MSI64)
- 
- /* quirks for Nvidia */
- #define AZX_DCAPS_PRESET_NVIDIA \
-@@ -3681,9 +3683,14 @@ static int azx_first_init(struct azx *chip)
- 		return -ENXIO;
+-		xhci_cleanup_halted_endpoint(xhci,
+-			slot_id, ep_index, 0, td, event_trb);
+-		return finish_td(xhci, td, event_trb, event, ep, status, true);
++		return finish_td(xhci, td, event_trb, event, ep, status, false);
  	}
+ 	/*
+ 	 * Did we transfer any data, despite the errors that might have
+@@ -2706,17 +2695,8 @@ cleanup:
+ 		if (ret) {
+ 			urb = td->urb;
+ 			urb_priv = urb->hcpriv;
+-			/* Leave the TD around for the reset endpoint function
+-			 * to use(but only if it's not a control endpoint,
+-			 * since we already queued the Set TR dequeue pointer
+-			 * command for stalled control endpoints).
+-			 */
+-			if (usb_endpoint_xfer_control(&urb->ep->desc) ||
+-				(trb_comp_code != COMP_STALL &&
+-					trb_comp_code != COMP_BABBLE))
+-				xhci_urb_free_priv(xhci, urb_priv);
+-			else
+-				kfree(urb_priv);
++
++			xhci_urb_free_priv(xhci, urb_priv);
  
--	if (chip->msi)
-+	if (chip->msi) {
-+		if (chip->driver_caps & AZX_DCAPS_NO_MSI64) {
-+			dev_dbg(card->dev, "Disabling 64bit MSI\n");
-+			pci->no_64bit_msi = true;
-+		}
- 		if (pci_enable_msi(pci) < 0)
- 			chip->msi = 0;
-+	}
+ 			usb_hcd_unlink_urb_from_ep(bus_to_hcd(urb->dev->bus), urb);
+ 			if ((urb->actual_length != urb->transfer_buffer_length &&
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 959e769..9189f3f 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2887,63 +2887,32 @@ void xhci_cleanup_stalled_ring(struct xhci_hcd *xhci,
+ 	}
+ }
  
- 	if (azx_acquire_irq(chip, 0) < 0)
- 		return -EBUSY;
+-/* Deal with stalled endpoints.  The core should have sent the control message
+- * to clear the halt condition.  However, we need to make the xHCI hardware
+- * reset its sequence number, since a device will expect a sequence number of
+- * zero after the halt condition is cleared.
++/* Called when clearing halted device. The core should have sent the control
++ * message to clear the device halt condition. The host side of the halt should
++ * already be cleared with a reset endpoint command issued when the STALL tx
++ * event was received.
++ *
+  * Context: in_interrupt
+  */
++
+ void xhci_endpoint_reset(struct usb_hcd *hcd,
+ 		struct usb_host_endpoint *ep)
+ {
+ 	struct xhci_hcd *xhci;
+-	struct usb_device *udev;
+-	unsigned int ep_index;
+-	unsigned long flags;
+-	int ret;
+-	struct xhci_virt_ep *virt_ep;
+ 
+ 	xhci = hcd_to_xhci(hcd);
+-	udev = (struct usb_device *) ep->hcpriv;
+-	/* Called with a root hub endpoint (or an endpoint that wasn't added
+-	 * with xhci_add_endpoint()
+-	 */
+-	if (!ep->hcpriv)
+-		return;
+-	ep_index = xhci_get_endpoint_index(&ep->desc);
+-	virt_ep = &xhci->devs[udev->slot_id]->eps[ep_index];
+-	if (!virt_ep->stopped_td) {
+-		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
+-			"Endpoint 0x%x not halted, refusing to reset.",
+-			ep->desc.bEndpointAddress);
+-		return;
+-	}
+-	if (usb_endpoint_xfer_control(&ep->desc)) {
+-		xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
+-				"Control endpoint stall already handled.");
+-		return;
+-	}
+-
+-	xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,
+-			"Queueing reset endpoint command");
+-	spin_lock_irqsave(&xhci->lock, flags);
+-	ret = xhci_queue_reset_ep(xhci, udev->slot_id, ep_index);
+ 	/*
+-	 * Can't change the ring dequeue pointer until it's transitioned to the
+-	 * stopped state, which is only upon a successful reset endpoint
+-	 * command.  Better hope that last command worked!
++	 * We might need to implement the config ep cmd in xhci 4.8.1 note:
++	 * The Reset Endpoint Command may only be issued to endpoints in the
++	 * Halted state. If software wishes reset the Data Toggle or Sequence
++	 * Number of an endpoint that isn't in the Halted state, then software
++	 * may issue a Configure Endpoint Command with the Drop and Add bits set
++	 * for the target endpoint. that is in the Stopped state.
+ 	 */
+-	if (!ret) {
+-		xhci_cleanup_stalled_ring(xhci, udev, ep_index);
+-		kfree(virt_ep->stopped_td);
+-		xhci_ring_cmd_db(xhci);
+-	}
+-	virt_ep->stopped_td = NULL;
+-	virt_ep->stopped_stream = 0;
+-	spin_unlock_irqrestore(&xhci->lock, flags);
+ 
+-	if (ret)
+-		xhci_warn(xhci, "FIXME allocate a new ring segment\n");
++	/* For now just print debug to follow the situation */
++	xhci_dbg(xhci, "Endpoint 0x%x ep reset callback called\n",
++		 ep->desc.bEndpointAddress);
+ }
+ 
+ static int xhci_check_streams_endpoint(struct xhci_hcd *xhci,
 -- 
 1.9.1
 
