@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaLOSGR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:06:17 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:59376 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaLOSGM (ORCPT
+	id S1751329AbaLOSGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:06:33 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:39088 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaLOSG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:06:12 -0500
+	Mon, 15 Dec 2014 13:06:27 -0500
 From: Aleksey Makarov <feumilieu@gmail.com>
 X-Google-Original-From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: linux-mips@linux-mips.org
 Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>,
+        Chandrakala Chavva <cchavva@caviumnetworks.com>,
         Aleksey Makarov <aleksey.makarov@auriga.com>,
         Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH 02/14] MIPS: OCTEON: Fix FP context save.
-Date: Mon, 15 Dec 2014 21:03:08 +0300
-Message-Id: <1418666603-15159-3-git-send-email-aleksey.makarov@auriga.com>
+Subject: [PATCH 04/14] MIPS: OCTEON: Use correct instruction to read 64-bit COP0 register
+Date: Mon, 15 Dec 2014 21:03:10 +0300
+Message-Id: <1418666603-15159-5-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
 References: <1418666603-15159-1-git-send-email-aleksey.makarov@auriga.com>
@@ -23,58 +24,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+From: Chandrakala Chavva <cchavva@caviumnetworks.com>
 
-It wasn't being saved on task switch.
+Use dmfc0/dmtc0 instructions for reading CvmMemCtl COP0 register,
+its a 64-bit wide.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Chandrakala Chavva <cchavva@caviumnetworks.com>
 Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
 ---
- arch/mips/kernel/octeon_switch.S | 19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ arch/mips/kernel/octeon_switch.S | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/mips/kernel/octeon_switch.S b/arch/mips/kernel/octeon_switch.S
-index 3dec1e8..2787c01 100644
+index 590ca2d..f0a699d 100644
 --- a/arch/mips/kernel/octeon_switch.S
 +++ b/arch/mips/kernel/octeon_switch.S
-@@ -31,15 +31,11 @@
- 	/*
- 	 * check if we need to save FPU registers
- 	 */
--	PTR_L	t3, TASK_THREAD_INFO(a0)
--	LONG_L	t0, TI_FLAGS(t3)
--	li	t1, _TIF_USEDFPU
--	and	t2, t0, t1
--	beqz	t2, 1f
--	nor	t1, zero, t1
--
--	and	t0, t0, t1
--	LONG_S	t0, TI_FLAGS(t3)
-+	.set push
-+	.set noreorder
-+	beqz	a3, 1f
-+	 PTR_L	t3, TASK_THREAD_INFO(a0)
-+	.set pop
- 
- 	/*
- 	 * clear saved user stack CU1 bit
-@@ -57,14 +53,13 @@
+@@ -80,7 +80,7 @@
  1:
+ #if CONFIG_CAVIUM_OCTEON_CVMSEG_SIZE > 0
+ 	/* Check if we need to store CVMSEG state */
+-	mfc0	t0, $11,7	/* CvmMemCtl */
++	dmfc0	t0, $11,7	/* CvmMemCtl */
+ 	bbit0	t0, 6, 3f	/* Is user access enabled? */
  
- 	/* check if we need to save COP2 registers */
--	PTR_L	t2, TASK_THREAD_INFO(a0)
--	LONG_L	t0, ST_OFF(t2)
-+	LONG_L	t0, ST_OFF(t3)
- 	bbit0	t0, 30, 1f
+ 	/* Store the CVMSEG state */
+@@ -104,9 +104,9 @@
+ 	.set reorder
  
- 	/* Disable COP2 in the stored process state */
- 	li	t1, ST0_CU2
- 	xor	t0, t1
--	LONG_S	t0, ST_OFF(t2)
-+	LONG_S	t0, ST_OFF(t3)
+ 	/* Disable access to CVMSEG */
+-	mfc0	t0, $11,7	/* CvmMemCtl */
++	dmfc0	t0, $11,7	/* CvmMemCtl */
+ 	xori	t0, t0, 0x40	/* Bit 6 is CVMSEG user enable */
+-	mtc0	t0, $11,7	/* CvmMemCtl */
++	dmtc0	t0, $11,7	/* CvmMemCtl */
+ #endif
+ 3:
  
- 	/* Enable COP2 so we can save it */
- 	mfc0	t0, CP0_STATUS
 -- 
 2.1.3
 
