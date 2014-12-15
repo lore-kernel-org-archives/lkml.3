@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983AbaLOPGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:06:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38427 "EHLO
+	id S1754026AbaLOPHO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:07:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38421 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432AbaLOO1q (ORCPT
+	with ESMTP id S1752556AbaLOO1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:46 -0500
+	Mon, 15 Dec 2014 09:27:45 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Stefan Bader <stefan.bader@canonical.com>,
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 051/168] fold swapping ->d_name.hash into switch_names()
-Date: Mon, 15 Dec 2014 14:25:05 +0000
-Message-Id: <1418653622-21105-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 050/168] x86_64, traps: Stop using IST for #SS
+Date: Mon, 15 Dec 2014 14:25:04 +0000
+Message-Id: <1418653622-21105-51-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,50 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit a28ddb87cdddb0db57466ba7f59f831002f4340c upstream.
+commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
 
-and do it along with ->d_name.len there
+On a 32-bit kernel, this has no effect, since there are no IST stacks.
 
+On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+to user space, a canonical violation on access via RSP or RBP, or a
+genuine stack segment violation in 32-bit kernel code.  The first two
+cases don't need IST, and the latter two cases are unlikely fatal bugs,
+and promoting them to double faults would be fine.
+
+This fixes a bug in which the espfix64 code mishandles a stack segment
+violation.
+
+This saves 4k of memory per CPU and a tiny bit of code.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-[ luis: used Stefan's backport to 3.16 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/dcache.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ arch/x86/include/asm/page_32_types.h |  1 -
+ arch/x86/include/asm/page_64_types.h | 11 +++++------
+ arch/x86/include/asm/traps.h         |  1 +
+ arch/x86/kernel/dumpstack_64.c       |  1 -
+ arch/x86/kernel/entry_64.S           |  2 +-
+ arch/x86/kernel/traps.c              | 18 +-----------------
+ 6 files changed, 8 insertions(+), 26 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index f9cec9d4dbe0..8a7dcc895d99 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2441,7 +2441,7 @@ static void switch_names(struct dentry *dentry, struct dentry *target)
- 			}
- 		}
- 	}
--	swap(dentry->d_name.len, target->d_name.len);
-+	swap(dentry->d_name.hash_len, target->d_name.hash_len);
- }
+diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+index f48b17df4224..3a52ee0e726d 100644
+--- a/arch/x86/include/asm/page_32_types.h
++++ b/arch/x86/include/asm/page_32_types.h
+@@ -20,7 +20,6 @@
+ #define THREAD_SIZE_ORDER	1
+ #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
  
- static void dentry_lock_for_move(struct dentry *dentry, struct dentry *target)
-@@ -2540,7 +2540,6 @@ static void __d_move(struct dentry *dentry, struct dentry *target,
+-#define STACKFAULT_STACK 0
+ #define DOUBLEFAULT_STACK 1
+ #define NMI_STACK 0
+ #define DEBUG_STACK 0
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 678205195ae1..75450b2c7be4 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -14,12 +14,11 @@
+ #define IRQ_STACK_ORDER 2
+ #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
  
- 	/* Switch the names.. */
- 	switch_names(dentry, target);
--	swap(dentry->d_name.hash, target->d_name.hash);
+-#define STACKFAULT_STACK 1
+-#define DOUBLEFAULT_STACK 2
+-#define NMI_STACK 3
+-#define DEBUG_STACK 4
+-#define MCE_STACK 5
+-#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
++#define DOUBLEFAULT_STACK 1
++#define NMI_STACK 2
++#define DEBUG_STACK 3
++#define MCE_STACK 4
++#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
  
- 	/* ... and switch the parents */
- 	if (IS_ROOT(dentry)) {
-@@ -2679,7 +2678,6 @@ static void __d_materialise_dentry(struct dentry *dentry, struct dentry *anon)
- 	dparent = dentry->d_parent;
+ #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+ #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index bc8352e7010a..707adc6549d8 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -39,6 +39,7 @@ asmlinkage void simd_coprocessor_error(void);
  
- 	switch_names(dentry, anon);
--	swap(dentry->d_name.hash, anon->d_name.hash);
+ #ifdef CONFIG_TRACING
+ asmlinkage void trace_page_fault(void);
++#define trace_stack_segment stack_segment
+ #define trace_divide_error divide_error
+ #define trace_bounds bounds
+ #define trace_invalid_op invalid_op
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 1abcb50b48ae..ff86f19b5758 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+ 		[ DEBUG_STACK-1			]	= "#DB",
+ 		[ NMI_STACK-1			]	= "NMI",
+ 		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+-		[ STACKFAULT_STACK-1		]	= "#SS",
+ 		[ MCE_STACK-1			]	= "#MC",
+ #if DEBUG_STKSZ > EXCEPTION_STKSZ
+ 		[ N_EXCEPTION_STACKS ...
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index c844f0816ab8..1b1d9ab375a5 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1303,7 +1303,7 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
  
- 	dentry->d_parent = dentry;
- 	list_del_init(&dentry->d_u.d_child);
+ idtentry debug do_debug has_error_code=0 paranoid=1 shift_ist=DEBUG_STACK
+ idtentry int3 do_int3 has_error_code=0 paranoid=1 shift_ist=DEBUG_STACK
+-idtentry stack_segment do_stack_segment has_error_code=1 paranoid=1
++idtentry stack_segment do_stack_segment has_error_code=1
+ #ifdef CONFIG_XEN
+ idtentry xen_debug do_debug has_error_code=0
+ idtentry xen_int3 do_int3 has_error_code=0
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 0d0e922fafc1..0eafe9ea2494 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -233,27 +233,11 @@ DO_ERROR(X86_TRAP_UD,     SIGILL,  "invalid opcode",		invalid_op)
+ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE,  "coprocessor segment overrun",coprocessor_segment_overrun)
+ DO_ERROR(X86_TRAP_TS,     SIGSEGV, "invalid TSS",		invalid_TSS)
+ DO_ERROR(X86_TRAP_NP,     SIGBUS,  "segment not present",	segment_not_present)
+-#ifdef CONFIG_X86_32
+ DO_ERROR(X86_TRAP_SS,     SIGBUS,  "stack segment",		stack_segment)
+-#endif
+ DO_ERROR(X86_TRAP_AC,     SIGBUS,  "alignment check",		alignment_check)
+ 
+ #ifdef CONFIG_X86_64
+ /* Runs on IST stack */
+-dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+-{
+-	enum ctx_state prev_state;
+-
+-	prev_state = exception_enter();
+-	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+-		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
+-		preempt_conditional_sti(regs);
+-		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+-		preempt_conditional_cli(regs);
+-	}
+-	exception_exit(prev_state);
+-}
+-
+ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+ {
+ 	static const char str[] = "double fault";
+@@ -778,7 +762,7 @@ void __init trap_init(void)
+ 	set_intr_gate(X86_TRAP_OLD_MF, coprocessor_segment_overrun);
+ 	set_intr_gate(X86_TRAP_TS, invalid_TSS);
+ 	set_intr_gate(X86_TRAP_NP, segment_not_present);
+-	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
++	set_intr_gate(X86_TRAP_SS, stack_segment);
+ 	set_intr_gate(X86_TRAP_GP, general_protection);
+ 	set_intr_gate(X86_TRAP_SPURIOUS, spurious_interrupt_bug);
+ 	set_intr_gate(X86_TRAP_MF, coprocessor_error);
 -- 
 2.1.3
 
