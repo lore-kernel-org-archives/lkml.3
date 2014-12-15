@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaLOTbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:31:53 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40892 "EHLO
+	id S1752287AbaLOTcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:32:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40902 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250AbaLOTbv (ORCPT
+	with ESMTP id S1751625AbaLOTcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:31:51 -0500
+	Mon, 15 Dec 2014 14:32:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        Jane Zhou <a17711@motorola.com>, Yiwei Zhao <gbjc64@motorola.com>,
+Cc: Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 60/96] net/ping: handle protocol mismatching scenario
-Date: Mon, 15 Dec 2014 11:26:20 -0800
-Message-Id: <1418671616-25482-61-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 66/96] ARM: 8226/1: cacheflush: get rid of restarting block
+Date: Mon, 15 Dec 2014 11:26:26 -0800
+Message-Id: <1418671616-25482-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -32,43 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jane Zhou <a17711@motorola.com>
+From: Vladimir Murzin <vladimir.murzin@arm.com>
 
-commit 91a0b603469069cdcce4d572b7525ffc9fd352a6 upstream.
+commit 3f4aa45ceea5789a4aade536acc27f2e0d3da5e1 upstream.
 
-ping_lookup() may return a wrong sock if sk_buff's and sock's protocols
-dont' match. For example, sk_buff's protocol is ETH_P_IPV6, but sock's
-sk_family is AF_INET, in that case, if sk->sk_bound_dev_if is zero, a wrong
-sock will be returned.
-the fix is to "continue" the searching, if no matching, return NULL.
+We cannot restart cacheflush safely if a process provides user-defined
+signal handler and signal is pending. In this case -EINTR is returned
+and it is expected that process re-invokes syscall. However, there are
+a few problems with that:
+ * looks like nobody bothers checking return value from cacheflush
+ * but if it did, we don't provide the restart address for that, so the
+   process has to use the same range again
+ * ...and again, what might lead to looping forever
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Jane Zhou <a17711@motorola.com>
-Signed-off-by: Yiwei Zhao <gbjc64@motorola.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+So, remove cacheflush restarting code and terminate cache flushing
+as early as fatal signal is pending.
+
+Reported-by: Chanho Min <chanho.min@lge.com>
+Signed-off-by: Vladimir Murzin <vladimir.murzin@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv4/ping.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/include/asm/thread_info.h | 11 -----------
+ arch/arm/kernel/traps.c            | 31 ++-----------------------------
+ 2 files changed, 2 insertions(+), 40 deletions(-)
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index 3ef2919..8e0f65c 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -213,6 +213,8 @@ static struct sock *ping_lookup(struct net *net, struct sk_buff *skb, u16 ident)
- 					     &ipv6_hdr(skb)->daddr))
- 				continue;
- #endif
-+		} else {
-+			continue;
- 		}
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index 71a06b2..3e635ee 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -43,16 +43,6 @@ struct cpu_context_save {
+ 	__u32	extra[2];		/* Xscale 'acc' register, etc */
+ };
  
- 		if (sk->sk_bound_dev_if && sk->sk_bound_dev_if != dif)
+-struct arm_restart_block {
+-	union {
+-		/* For user cache flushing */
+-		struct {
+-			unsigned long start;
+-			unsigned long end;
+-		} cache;
+-	};
+-};
+-
+ /*
+  * low level task data that entry.S needs immediate access to.
+  * __switch_to() assumes cpu_context follows immediately after cpu_domain.
+@@ -78,7 +68,6 @@ struct thread_info {
+ 	unsigned long		thumbee_state;	/* ThumbEE Handler Base register */
+ #endif
+ 	struct restart_block	restart_block;
+-	struct arm_restart_block	arm_restart_block;
+ };
+ 
+ #define INIT_THREAD_INFO(tsk)						\
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index 318fc36..c68db27 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -510,8 +510,6 @@ static int bad_syscall(int n, struct pt_regs *regs)
+ 	return regs->ARM_r0;
+ }
+ 
+-static long do_cache_op_restart(struct restart_block *);
+-
+ static inline int
+ __do_cache_op(unsigned long start, unsigned long end)
+ {
+@@ -520,24 +518,8 @@ __do_cache_op(unsigned long start, unsigned long end)
+ 	do {
+ 		unsigned long chunk = min(PAGE_SIZE, end - start);
+ 
+-		if (signal_pending(current)) {
+-			struct thread_info *ti = current_thread_info();
+-
+-			ti->restart_block = (struct restart_block) {
+-				.fn	= do_cache_op_restart,
+-			};
+-
+-			ti->arm_restart_block = (struct arm_restart_block) {
+-				{
+-					.cache = {
+-						.start	= start,
+-						.end	= end,
+-					},
+-				},
+-			};
+-
+-			return -ERESTART_RESTARTBLOCK;
+-		}
++		if (fatal_signal_pending(current))
++			return 0;
+ 
+ 		ret = flush_cache_user_range(start, start + chunk);
+ 		if (ret)
+@@ -550,15 +532,6 @@ __do_cache_op(unsigned long start, unsigned long end)
+ 	return 0;
+ }
+ 
+-static long do_cache_op_restart(struct restart_block *unused)
+-{
+-	struct arm_restart_block *restart_block;
+-
+-	restart_block = &current_thread_info()->arm_restart_block;
+-	return __do_cache_op(restart_block->cache.start,
+-			     restart_block->cache.end);
+-}
+-
+ static inline int
+ do_cache_op(unsigned long start, unsigned long end, int flags)
+ {
 -- 
 1.9.1
 
