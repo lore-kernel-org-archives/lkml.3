@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaLOXWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 18:22:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:63345 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818AbaLOXWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 18:22:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="499188944"
-Date: Mon, 15 Dec 2014 15:22:56 -0800
-From: Kevin Strasser <kevin.strasser@linux.intel.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: "Strasser, Kevin" <kevin.strasser@intel.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Koul, Vinod" <vinod.koul@intel.com>,
-        "Lin, Mengdong" <mengdong.lin@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Fang, Yang A" <yang.a.fang@intel.com>
-Subject: Re: [alsa-devel] [PATCH] ASoC: Intel: fix possible acpi enumeration
- panic
-Message-ID: <20141215232256.GC27822@H87M>
-References: <1418282517-851-1-git-send-email-kevin.strasser@intel.com>
- <20141211132026.GY11764@sirena.org.uk>
- <51B6C3CD1F10FB47A5702881E0E230A74A0ECAE1@ORSMSX104.amr.corp.intel.com>
- <20141215170645.GH11764@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215170645.GH11764@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751395AbaLOXZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 18:25:49 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:57867 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751227AbaLOXZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 18:25:47 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Alexandru Stan <amstan@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/3] ARM: dts: Specify VMMC and VQMMC on rk3288-evb
+Date: Mon, 15 Dec 2014 15:25:29 -0800
+Message-Id: <1418685929-13096-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1418685929-13096-1-git-send-email-dianders@chromium.org>
+References: <1418685929-13096-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 05:06:45PM +0000, Mark Brown wrote:
-> Please fix your mailer to word wrap comfortably under 80 colums so that your
-> mails are easily legible.
+Specifying these rails should eventually let us do UHS.
 
-Understood
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v2:
+- Fix subject line
 
-> > > This changes the check from verifying if a codec_id is present to
-> > > verifying if the first character in the codec_id is non-NULL.  That
-> > > doesn't seem obviously safer and the tables of machines seem to be
-> > > terminated by having an entry with all fields set to zero (which is a
-> > > common idiom in Linux) which would now crash with this change.
-> 
-> > In this case mach->codec_id is non-NULL, even for the terminating element,
-> > because it is defined to be a fixed width. So we have to take a look at the
-> > first character to see if it has been initialized.
-> 
-> That's a really unusual and (as you've seen) error prone idiom - is it not
-> better to fix the struct to use the more common idiom?
+ arch/arm/boot/dts/rk3288-evb.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-That seems like a good idea to me. I'll prepare a new patch to change the
-sst_machines definition so that codec_id gets initialized to NULL.
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index 3e067dd..d660fe6 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -114,6 +114,8 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_cd &sdmmc_bus4>;
+ 	status = "okay";
++	vmmc-supply = <&vcc_io>;
++	vqmmc-supply = <&vccio_sd>;
+ };
+ 
+ &i2c0 {
+-- 
+2.2.0.rc0.207.ga3a616c
 
--Kevin
