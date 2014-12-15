@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387AbaLOJ4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:56:09 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37688 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096AbaLOJ4F (ORCPT
+	id S1752030AbaLOJ61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:58:27 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:64649 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbaLOJ6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:56:05 -0500
-Date: Mon, 15 Dec 2014 10:55:51 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: kan.liang@intel.com
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, ak@linux.intel.com
-Subject: Re: [PATCH 1/1] perf, core: Use sample period avg as child event's
- initial period
-Message-ID: <20141215095551.GU29390@twins.programming.kicks-ass.net>
-References: <1418397035-7014-1-git-send-email-kan.liang@intel.com>
+	Mon, 15 Dec 2014 04:58:25 -0500
+Date: Mon, 15 Dec 2014 09:58:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Flora Fu <flora.fu@mediatek.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH RESEND v2] mfd: syscon: add child device support
+Message-ID: <20141215095819.GB7972@x1>
+References: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
+ <1418636633.3193.3.camel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1418397035-7014-1-git-send-email-kan.liang@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418636633.3193.3.camel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 10:10:35AM -0500, kan.liang@intel.com wrote:
-
-> That's because, in the inherit_event, the period
-> for child event is inherit from parent's parent's event, which is
-> usually the default sample_period 1. Each child event has to recaculate
-> the period from 1 everytime. That brings high overhead.
+On Mon, 15 Dec 2014, Philipp Zabel wrote:
+> Am Montag, den 01.12.2014, 17:25 +0100 schrieb Philipp Zabel:
+> > For devices which have a complete register for themselves, it is possible to
+> > place them next to the syscon device with overlapping reg ranges. The same is
+> > not possible for devices which only occupy bitfields in registers shared with
+> > other users.
+> > For devices that are completely controlled by bitfields in the syscon address
+> > range, such as multiplexers or voltage regulators, allow to put child devices
+> > into the syscon device node.
 > 
-> This patch keeps the sample period average in original parent event.
+> What is the status of this patch?
+> Is this ok to be applied after the merge window closes?
+> 
+> For reference, these are the previous threads:
+> https://lkml.org/lkml/2014/5/27/422
+> https://lkml.org/lkml/2014/11/3/134
 
-That's going to make an even worse nightmare of the refcounting :/
+As this is such an important driver I need more Acks for users/testers
+and senior reviewers before applying.
 
-> Each new child event can use it as its initial sample period.
-> Adding a ori_parent in struct perf_event to help child event access the
-> original parent. For each new child event, the parent event refcount++.
-> Parent will not go away until all children go away. So the stored
-> pointer is safe to be accessed.
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> > Changes since v1:
+> >  - Reworded binding documentation to allow #size-cells = <1>, which is useful
+> >    for syscon children that are controlled through a (possibly shared) register
+> >    range.
+> > ---
+> >  Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
+> >  drivers/mfd/syscon.c                             |  3 +++
+> >  2 files changed, 16 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+> > index fe8150b..0c6b497 100644
+> > --- a/Documentation/devicetree/bindings/mfd/syscon.txt
+> > +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+> > @@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
+> >  OS driver) to determine the location of the registers, and access the
+> >  registers directly.
+> >  
+> > +Optionally, devices that are controlled exclusively through syscon registers,
+> > +or even bitfields in shared syscon registers, can also be added as child nodes
+> > +to the syscon device node. These devices can implicitly assume their parent
+> > +node is a syscon provider without referencing it explicitly via phandle.
+> > +In this case, the syscon node should have #address-cells = <1> and
+> > +#size-cells = <0> or <1> and no ranges property.
+> > +
+> >  Required properties:
+> >  - compatible: Should contain "syscon".
+> >  - reg: the register region can be accessed from syscon
+> >  
+> > +Optional properties:
+> > +- #address-cells: Should be 1.
+> > +- #size-cells: Should be 0 or 1.
+> > +
+> >  Examples:
+> >  gpr: iomuxc-gpr@020e0000 {
+> > +	#address-cells = <1>;
+> > +	#size-cells = <0>;
+> >  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+> >  	reg = <0x020e0000 0x38>;
+> >  };
+> > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > index ca15878..38da178 100644
+> > --- a/drivers/mfd/syscon.c
+> > +++ b/drivers/mfd/syscon.c
+> > @@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
+> >  
+> >  	dev_dbg(dev, "regmap %pR registered\n", res);
+> >  
+> > +	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
+> > +		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> > +
+> >  	return 0;
+> >  }
+> >  
+> 
+> 
 
-So going by the above you only use this once, during fork, which already
-guarantees the existence of the parent.
-
-Now looking at the code you actually use it again in
-perf_adjust_period() and push period adjustments into the parent.
-
-This doesn't seem to make any kind of sense, and its weirdly
-implemented.
-
-So why would you push anything to the original parent? Your description
-states that the parent event usually has 1, and then you argue about
-fixing that by using the orig parent, but then you need to update the
-orig parent. Did you go in circles and confuse yourself? Why not push
-things into the regular parent event if you're going to push things up.
-
-Also, since you can have multiple child events, on many CPUs local64_t
-is the wrong data type, furthermore its going to be a scalability issue
-on big hardware.
-
-So please, try again. And try and explain what you're actually doing.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
