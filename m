@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142AbaLOWLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 17:11:07 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:51097 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaLOWLE (ORCPT
+	id S1751214AbaLOWLM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 17:11:12 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38305 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaLOWLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 17:11:04 -0500
+	Mon, 15 Dec 2014 17:11:08 -0500
+Date: Mon, 15 Dec 2014 14:11:00 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
+Message-ID: <20141215221100.GA4637@mew>
+References: <cover.1418618044.git.osandov@osandov.com>
+ <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
+ <20141215162705.GA23887@quack.suse.cz>
+ <20141215165615.GA19041@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20141212125951.GE11764@sirena.org.uk>
-References: <1418245085-9754-1-git-send-email-dianders@chromium.org>
-	<20141210235347.GT11764@sirena.org.uk>
-	<CAHNYxRy2t0OVj-+CqQFOfj0zWAGG0j8rmd8SxdNWgBMA2iAfXQ@mail.gmail.com>
-	<20141211123106.GU11764@sirena.org.uk>
-	<CAD=FV=U4RFYx9NXOACrXJZK2bKkosyYnmTZRHkXuaSz-FS9kNQ@mail.gmail.com>
-	<20141211170934.GZ11764@sirena.org.uk>
-	<CAD=FV=WBAuF0+BVMG9rp53Zt851Ou0kZ6xgTe9mjmgxyugWteg@mail.gmail.com>
-	<20141212002410.GB11764@sirena.org.uk>
-	<CAD=FV=W1r2MXNHXTRiO1pBPWurvgqq+dSoOPgpSJ_zAbpU7T4Q@mail.gmail.com>
-	<20141212125951.GE11764@sirena.org.uk>
-Date: Mon, 15 Dec 2014 14:11:02 -0800
-X-Google-Sender-Auth: 9pAPJ4rpvHi48f_jmeMDMXcl0xE
-Message-ID: <CAD=FV=UfKAduhzs5-EJFZDgv-kv=rzMzuzT5N97ogdno66PqYw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] regulator: core: Support trying to get close to a
- certain voltage
-From: Doug Anderson <dianders@chromium.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Alexandru Stan <amstan@chromium.org>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215165615.GA19041@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
-
-On Fri, Dec 12, 2014 at 4:59 AM, Mark Brown <broonie@kernel.org> wrote:
->> > There's also the potential
->> > performance considerations for the DVS type applications now I think
->> > about it.
+On Mon, Dec 15, 2014 at 08:56:15AM -0800, Christoph Hellwig wrote:
+> On Mon, Dec 15, 2014 at 05:27:05PM +0100, Jan Kara wrote:
+> > On Sun 14-12-14 21:26:56, Omar Sandoval wrote:
+> > > The generic write code locks i_mutex for a direct_IO. Swap-over-NFS
+> > > doesn't grab the mutex because nfs_direct_IO doesn't expect i_mutex to
+> > > be held, but most direct_IO implementations do.
+> >   I think you are speaking about direct IO writes only, aren't you? For DIO
+> > reads we don't hold i_mutex AFAICS. And also for DIO writes we don't
+> > necessarily hold i_mutex - see for example XFS which doesn't take i_mutex
+> > for direct IO writes. It uses it's internal rwlock for this (see
+> > xfs_file_dio_aio_write()). So I think this is just wrong.
+> 
+> The problem is that the use of ->direct_IO by the swap code is a gross
+> layering violation.  ->direct_IO is a callback for the filesystem, and
+> the swap code need to call ->read_iter instead of ->readpage and
+> ->write_tier instead of ->direct_IO, and leave the locking to the
+> filesystem.
 >
->> Iterating through voltages is really that slow?  If so, perhaps we
->> could add some caching to keep track of what voltage we actually got
->> last time...  I could also add an optimization to try the exact
->> requested voltage right away...
->
-> Applications like DVS get pretty performance sensitive and for a
-> regulator with high resolution if you're trying to hit a voltage at the
-> top of the range you could be iterating over a hundred or more values.
+Ok, I got the swap code working with ->read_iter/->write_iter without
+too much trouble. I wanted to double check before I submit if there's
+any gotchas involved with adding the O_DIRECT flag to a file pointer
+after it has been opened -- swapon opens the swapfile before we know if
+we're using the SWP_FILE infrastructure, and we need to add O_DIRECT so
+->{read,write}_iter use direct I/O, but we can't add O_DIRECT to the
+original open without excluding filesystems that support the old bmap
+path but not direct I/O.
 
-OK, you've convinced me.  :)
-
-
-> Perhaps doing something based on the various factorings out of the
-> voltage mapping would do the trick, add a new op for getting to the
-> closest voltage?
-
-I'd really rather add a new op because I think it would mean that all
-the old regulators that don't implement the op would be slow all of a
-sudden.  :(
-
-
-I looked at trying to refactor everything, but I think the answer is
-that I should drop my patch and consider the existing
-regulator_set_voltage_tol() experience good enough.  While I could go
-through and try to make regulator_set_voltage_tol() better:
-
-1. It fixes no issues that I know of.  On all boards that I've worked
-with it is possible to make VMMC and VQMMC exactly equal.
-
-2. As you said, regulator_set_voltage_tol() is on the critical path
-for CPUfreq and the existing code is heavily optimized to work fast on
-a large number of different types of regulators.  Trying to replicate
-that without huge code duplication and without any bugs would be
-difficult.
-
-
-I'll spin my MMC patch to use regulator_set_voltage_tol().  If Ulf
-responds and says that he'd like to more accurately specify the
-min/max voltage then I'll post up a new function using a scheme like
-regulator_set_voltage_tol() but asymmetric.
-
-
-As always, thanks for your great feedback!
-
--Doug
+-- 
+Omar
