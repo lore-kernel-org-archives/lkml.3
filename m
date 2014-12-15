@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750876AbaLOKfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:35:05 -0500
-Received: from zimbra.brainity.com ([188.40.76.72]:58056 "EHLO
-	zimbra.brainity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716AbaLOKfC (ORCPT
+	id S1750931AbaLOKjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:39:10 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:59302 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750716AbaLOKjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:35:02 -0500
-X-Greylist: delayed 443 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 05:35:01 EST
-Date: Mon, 15 Dec 2014 11:27:36 +0100 (CET)
-From: Daniel Walter <sahne@0x90.at>
-To: Richard Weinberger <richard@nod.at>
-Cc: arnd@arndb.de, miklos@szeredi.hu, linux-kernel@vger.kernel.org,
-        geert@linux-m68k.org, lftan@altera.com,
-        user-mode-linux-devel@lists.sourceforge.net
-Message-ID: <1164899144.1350.1418639256356.JavaMail.root@0x90.at>
-In-Reply-To: <1418216535-29295-1-git-send-email-richard@nod.at>
-Subject: Re: [uml-devel] [PATCH] um: Skip futex_atomic_cmpxchg_inatomic()
- test
+	Mon, 15 Dec 2014 05:39:07 -0500
+Date: Mon, 15 Dec 2014 10:38:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Yakir Yang <ykk@rock-chips.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?iso-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        linux-rockchip@lists.infradead.org, Pawel Moll <pawel.moll@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, devicetree@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
+        Mark Brown <broonie@kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Mark Rutland <mark.rutland@arm.com>, Jyri Sarha <jsarha@ti.com>
+Subject: Re: [RFC PATCH 0/6] Those patches is used for dw_hdmi audio.
+Message-ID: <20141215103830.GD11285@n2100.arm.linux.org.uk>
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [213.155.151.233]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - GC38 (Linux)/7.2.0_GA_2669)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Richard Weinberger" <richard@nod.at>
-> To: user-mode-linux-devel@lists.sourceforge.net
-> Cc: arnd@arndb.de, miklos@szeredi.hu, "Richard Weinberger" <richard@nod.at>, linux-kernel@vger.kernel.org,
-> geert@linux-m68k.org, lftan@altera.com
-> Sent: Wednesday, December 10, 2014 1:02:15 PM
-> Subject: [uml-devel] [PATCH] um: Skip futex_atomic_cmpxchg_inatomic() test
+On Mon, Dec 15, 2014 at 10:11:28AM +0800, Yakir Yang wrote:
 > 
-> futex_atomic_cmpxchg_inatomic() does not work on UML because
-> it triggers a copy_from_user() in kernel context.
-> On UML copy_from_user() can only be used if the kernel was called
-> by a real user space process such that UML can use ptrace()
-> to fetch the value.
-> 
-> Reported-by: Miklos Szeredi <miklos@szeredi.hu>
-> Suggested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  arch/um/Kconfig.common | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-> index 87bc868..d195a87 100644
-> --- a/arch/um/Kconfig.common
-> +++ b/arch/um/Kconfig.common
-> @@ -3,6 +3,7 @@ config UML
->  	default y
->  	select HAVE_ARCH_AUDITSYSCALL
->  	select HAVE_UID16
-> +	select HAVE_FUTEX_CMPXCHG if FUTEX
->  	select GENERIC_IRQ_SHOW
->  	select GENERIC_CPU_DEVICES
->  	select GENERIC_IO
-> --
-> 2.1.0
-> 
-Hi,
+> rk3288 use Designware HDMI IP, Designware HDMI supports four interfaces to
+> config hdmi audio(I2S, S/PDIF, Generic Parallel Audio, AHB Audio DMA), but
+> rk3288 only support two ways to config hdmi audio(I2S, S/PDIF), So we take
+> I2S as hdmi audio operation interfaces, and then treat hdmi audio as an
+> standard ALSA devices(only got platback function).
 
-tested it a few days, looks good.
+There is no need for dw-hdmi audio to be implemented as an ASoC
+device - as I've already sent patches to Andy with my ALSA driver
+which has been around for the last two years, and works well, and
+doesn't require any additional DT description.
 
-
-Tested-by: Daniel Walter <d.walter@0x90.at>
+-- 
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
