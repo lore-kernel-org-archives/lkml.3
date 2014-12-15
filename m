@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaLOIPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 03:15:48 -0500
-Received: from mga03.intel.com ([134.134.136.65]:59117 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861AbaLOIPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 03:15:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,578,1413270000"; 
-   d="scan'208";a="623838379"
-Date: Mon, 15 Dec 2014 13:45:53 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Asaf Vertz <asaf.vertz@tandemg.com>
-Cc: dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: imx-sdma: fix indentation
-Message-ID: <20141215081553.GO16827@intel.com>
-References: <20141210080035.GA25812@ubuntu>
- <20141211045006.GI16827@intel.com>
- <5489466B.5080901@tandemg.com>
+	id S1751492AbaLOIQt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 03:16:49 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:38138 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375AbaLOIQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 03:16:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5489466B.5080901@tandemg.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [85.250.69.26]
+In-Reply-To: <CAK=WgbZJX1GxB-nDwYtS3Qw-TY32QBkywsCaajnCqPXhZ=HQCg@mail.gmail.com>
+References: <CAK=WgbZJX1GxB-nDwYtS3Qw-TY32QBkywsCaajnCqPXhZ=HQCg@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 15 Dec 2014 10:16:25 +0200
+Message-ID: <CAK=Wgbbq5zCjuii2SQoB-erLTT_oOQAfmVe9CNuDuDB4=CkPmg@mail.gmail.com>
+Subject: Re: [GIT PULL] rpmsg for 3.19
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Anna, Suman" <s-anna@ti.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 09:23:23AM +0200, Asaf Vertz wrote:
-> On 12/11/2014 06:50 AM, Vinod Koul wrote:
-> > On Wed, Dec 10, 2014 at 10:00:36AM +0200, Asaf Vertz wrote:
-> >> Fixed a coding style error, switch and case should be at the same indent
-> > Please use the right subsystem name for the patches
-> 
-> what subsystem name I should have used?
-> I used the one from the last patches in the log
-> 
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/drivers/dma/imx-sdma.c
+[Resending in plain text mode - sorry]
 
-$ git llog drivers/dma/pl330.c | grep "dma: pl" |wc -l
-22
-$ git log drivers/dma/pl330.c | grep "dmaengine: pl" |wc -l
-32
+The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
 
-and these are last commits
+  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
 
-$ git log --oneline drivers/dma/pl330.c
-046209f61b5f dmaengine: pl330: update author info
-cee42392f5f0 dmaengine: pl330: Correct device assignment.
-6e4a2a83f958 dmaengine: pl330: Fix NULL pointer dereference on driver unbind
-0f5ebabdd03b dmaengine: pl330: Fix NULL pointer dereference on probe failure
-c3cb38f43cb9 dmaengine: pl330: Remove unused 'regs' variable in pl330_submit_req()
-937cb2f2498d dmaengine: pl330: Remove non-NULL check for pl330_submit_req parameters
-31c1e5a1350a dmaengine: Remove the context argument to the prep_dma_cyclic operation
-b1e51d771fbc dmaengine: pl330: Check if the DMA descriptor is NULL
-c26939e5204c dmaengine: pl330: Remove pl330_chan_ctrl()
-8ed30a14265f dmaengine: pl330: Simplify marking a request as unused
-9dc5a315fe51 dmaengine: pl330: Embed pl330_req directly into dma_pl330_desc
-f6f2421c0a1c dmaengine: pl330: Merge dma_pl330_dmac and pl330_dmac structs
-fbbcd9be96a0 dmaengine: pl330: Simplify is_manager()
+are available in the git repository at:
 
--- 
-~Vinod
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git
+tags/rpmsg-3.19-next
+
+for you to fetch changes up to b1b9891441fa33fd0d49b5cb3aa7f04bca1cc1db:
+
+  rpmsg: use less buffers when vrings are small (2014-11-26 18:24:36 +0200)
+
+----------------------------------------------------------------
+A single patch from Suman Anna which makes rpmsg
+use less buffers when small vrings are being used.
+
+----------------------------------------------------------------
+Suman Anna (1):
+      rpmsg: use less buffers when vrings are small
+
+ drivers/rpmsg/virtio_rpmsg_bus.c | 44 +++++++++++++++++++++++++++-------------
+ 1 file changed, 30 insertions(+), 14 deletions(-)
