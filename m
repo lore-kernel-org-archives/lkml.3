@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061AbaLOOyE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:54:04 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38634 "EHLO
+	id S1753268AbaLOOy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:54:56 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38612 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751842AbaLOO2S (ORCPT
+	with ESMTP id S1752768AbaLOO2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:18 -0500
+	Mon, 15 Dec 2014 09:28:15 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 088/168] SUNRPC: Fix locking around callback channel reply receive
-Date: Mon, 15 Dec 2014 14:25:42 +0000
-Message-Id: <1418653622-21105-89-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 085/168] USB: keyspan: fix overrun-error reporting
+Date: Mon, 15 Dec 2014 14:25:39 +0000
+Message-Id: <1418653622-21105-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,72 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 093a1468b6edb0e568be7311b8d2228d205702db upstream.
+commit 855515a6d3731242d85850a206f2ec084c917338 upstream.
 
-Both xprt_lookup_rqst() and xprt_complete_rqst() require that you
-take the transport lock in order to avoid races with xprt_transmit().
+Fix reporting of overrun errors, which are not associated with a
+character. Instead insert a null character and report only once.
 
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Reviewed-by: Jeff Layton <jlayton@primarydata.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[ luis: backported to 3.16: adjusted context ]
+Fixes: 1da177e4c3f4 ("Linux-2.6.12-rc2")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/sunrpc/svcsock.c | 27 ++++++++++++++++-----------
- 1 file changed, 16 insertions(+), 11 deletions(-)
+ drivers/usb/serial/keyspan.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index b2437ee93657..89a4db5be155 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1000,17 +1000,12 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
- 	xid = *p++;
- 	calldir = *p;
- 
--	if (bc_xprt)
--		req = xprt_lookup_rqst(bc_xprt, xid);
--
--	if (!req) {
--		printk(KERN_NOTICE
--			"%s: Got unrecognized reply: "
--			"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
--			__func__, ntohl(calldir),
--			bc_xprt, xid);
-+	if (!bc_xprt)
- 		return -EAGAIN;
--	}
-+	spin_lock_bh(&bc_xprt->transport_lock);
-+	req = xprt_lookup_rqst(bc_xprt, xid);
-+	if (!req)
-+		goto unlock_notfound;
- 
- 	memcpy(&req->rq_private_buf, &req->rq_rcv_buf, sizeof(struct xdr_buf));
- 	/*
-@@ -1021,11 +1016,21 @@ static int receive_cb_reply(struct svc_sock *svsk, struct svc_rqst *rqstp)
- 	dst = &req->rq_private_buf.head[0];
- 	src = &rqstp->rq_arg.head[0];
- 	if (dst->iov_len < src->iov_len)
--		return -EAGAIN; /* whatever; just giving up. */
-+		goto unlock_eagain; /* whatever; just giving up. */
- 	memcpy(dst->iov_base, src->iov_base, src->iov_len);
- 	xprt_complete_rqst(req->rq_task, rqstp->rq_arg.len);
- 	rqstp->rq_arg.len = 0;
-+	spin_unlock_bh(&bc_xprt->transport_lock);
- 	return 0;
-+unlock_notfound:
-+	printk(KERN_NOTICE
-+		"%s: Got unrecognized reply: "
-+		"calldir 0x%x xpt_bc_xprt %p xid %08x\n",
-+		__func__, ntohl(calldir),
-+		bc_xprt, ntohl(xid));
-+unlock_eagain:
-+	spin_unlock_bh(&bc_xprt->transport_lock);
-+	return -EAGAIN;
- }
- 
- static int copy_pages_to_kvecs(struct kvec *vec, struct page **pages, int len)
+diff --git a/drivers/usb/serial/keyspan.c b/drivers/usb/serial/keyspan.c
+index 7799d8bc4a63..077c714f1285 100644
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -311,12 +311,13 @@ static void	usa26_indat_callback(struct urb *urb)
+ 		if ((data[0] & 0x80) == 0) {
+ 			/* no errors on individual bytes, only
+ 			   possible overrun err */
+-			if (data[0] & RXERROR_OVERRUN)
+-				err = TTY_OVERRUN;
+-			else
+-				err = 0;
++			if (data[0] & RXERROR_OVERRUN) {
++				tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++			}
+ 			for (i = 1; i < urb->actual_length ; ++i)
+-				tty_insert_flip_char(&port->port, data[i], err);
++				tty_insert_flip_char(&port->port, data[i],
++								TTY_NORMAL);
+ 		} else {
+ 			/* some bytes had errors, every byte has status */
+ 			dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
+@@ -787,13 +788,13 @@ static void usa90_indat_callback(struct urb *urb)
+ 			if ((data[0] & 0x80) == 0) {
+ 				/* no errors on individual bytes, only
+ 				   possible overrun err*/
+-				if (data[0] & RXERROR_OVERRUN)
+-					err = TTY_OVERRUN;
+-				else
+-					err = 0;
++				if (data[0] & RXERROR_OVERRUN) {
++					tty_insert_flip_char(&port->port, 0,
++								TTY_OVERRUN);
++				}
+ 				for (i = 1; i < urb->actual_length ; ++i)
+ 					tty_insert_flip_char(&port->port,
+-							data[i], err);
++							data[i], TTY_NORMAL);
+ 			}  else {
+ 			/* some bytes had errors, every byte has status */
+ 				dev_dbg(&port->dev, "%s - RX error!!!!\n", __func__);
 -- 
 2.1.3
 
