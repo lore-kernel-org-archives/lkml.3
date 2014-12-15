@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaLOT3N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:29:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40736 "EHLO
+	id S1752289AbaLOTpi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:45:38 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40747 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751749AbaLOT3I (ORCPT
+	with ESMTP id S1751811AbaLOT3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:29:08 -0500
+	Mon, 15 Dec 2014 14:29:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "David S. Miller" <davem@davemloft.net>,
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Benjamin LaHaise <bcrl@kvack.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 25/96] sparc64: Fix crashes in schizo_pcierr_intr_other().
-Date: Mon, 15 Dec 2014 11:25:45 -0800
-Message-Id: <1418671616-25482-26-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 35/96] aio: fix uncorrent dirty pages accouting when truncating AIO ring buffer
+Date: Mon, 15 Dec 2014 11:25:55 -0800
+Message-Id: <1418671616-25482-36-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +30,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
 
-[ Upstream commit 7da89a2a3776442a57e918ca0b8678d1b16a7072 ]
+commit 835f252c6debd204fcd607c79975089b1ecd3472 upstream.
 
-Meelis Roos reports crashes during bootup on a V480 that look like
-this:
+https://bugzilla.kernel.org/show_bug.cgi?id=86831
 
-====================
-[   61.300577] PCI: Scanning PBM /pci@9,600000
-[   61.304867] schizo f009b070: PCI host bridge to bus 0003:00
-[   61.310385] pci_bus 0003:00: root bus resource [io  0x7ffe9000000-0x7ffe9ffffff] (bus address [0x0000-0xffffff])
-[   61.320515] pci_bus 0003:00: root bus resource [mem 0x7fb00000000-0x7fbffffffff] (bus address [0x00000000-0xffffffff])
-[   61.331173] pci_bus 0003:00: root bus resource [bus 00]
-[   61.385344] Unable to handle kernel NULL pointer dereference
-[   61.390970] tsk->{mm,active_mm}->context = 0000000000000000
-[   61.396515] tsk->{mm,active_mm}->pgd = fff000b000002000
-[   61.401716]               \|/ ____ \|/
-[   61.401716]               "@'/ .. \`@"
-[   61.401716]               /_| \__/ |_\
-[   61.401716]                  \__U_/
-[   61.416362] swapper/0(0): Oops [#1]
-[   61.419837] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.18.0-rc1-00422-g2cc9188-dirty #24
-[   61.427975] task: fff000b0fd8e9c40 ti: fff000b0fd928000 task.ti: fff000b0fd928000
-[   61.435426] TSTATE: 0000004480e01602 TPC: 00000000004455e4 TNPC: 00000000004455e8 Y: 00000000    Not tainted
-[   61.445230] TPC: <schizo_pcierr_intr+0x104/0x560>
-[   61.449897] g0: 0000000000000000 g1: 0000000000000000 g2: 0000000000a10f78 g3: 000000000000000a
-[   61.458563] g4: fff000b0fd8e9c40 g5: fff000b0fdd82000 g6: fff000b0fd928000 g7: 000000000000000a
-[   61.467229] o0: 000000000000003d o1: 0000000000000000 o2: 0000000000000006 o3: fff000b0ffa5fc7e
-[   61.475894] o4: 0000000000060000 o5: c000000000000000 sp: fff000b0ffa5f3c1 ret_pc: 00000000004455cc
-[   61.484909] RPC: <schizo_pcierr_intr+0xec/0x560>
-[   61.489500] l0: fff000b0fd8e9c40 l1: 0000000000a20800 l2: 0000000000000000 l3: 000000000119a430
-[   61.498164] l4: 0000000001742400 l5: 00000000011cfbe0 l6: 00000000011319c0 l7: fff000b0fd8ea348
-[   61.506830] i0: 0000000000000000 i1: fff000b0fdb34000 i2: 0000000320000000 i3: 0000000000000000
-[   61.515497] i4: 00060002010b003f i5: 0000040004e02000 i6: fff000b0ffa5f481 i7: 00000000004a9920
-[   61.524175] I7: <handle_irq_event_percpu+0x40/0x140>
-[   61.529099] Call Trace:
-[   61.531531]  [00000000004a9920] handle_irq_event_percpu+0x40/0x140
-[   61.537681]  [00000000004a9a58] handle_irq_event+0x38/0x80
-[   61.543145]  [00000000004ac77c] handle_fasteoi_irq+0xbc/0x200
-[   61.548860]  [00000000004a9084] generic_handle_irq+0x24/0x40
-[   61.554500]  [000000000042be0c] handler_irq+0xac/0x100
-====================
+Markus reported that when shutting down mysqld (with AIO support,
+on a ext3 formatted Harddrive) leads to a negative number of dirty pages
+(underrun to the counter). The negative number results in a drastic reduction
+of the write performance because the page cache is not used, because the kernel
+thinks it is still 2 ^ 32 dirty pages open.
 
-The problem is that pbm->pci_bus->self is NULL.
+Add a warn trace in __dec_zone_state will catch this easily:
 
-This code is trying to go through the standard PCI config space
-interfaces to read the PCI controller's PCI_STATUS register.
+static inline void __dec_zone_state(struct zone *zone, enum
+	zone_stat_item item)
+{
+     atomic_long_dec(&zone->vm_stat[item]);
++    WARN_ON_ONCE(item == NR_FILE_DIRTY &&
+	atomic_long_read(&zone->vm_stat[item]) < 0);
+     atomic_long_dec(&vm_stat[item]);
+}
 
-This doesn't work, because we more often than not do not enumerate
-the PCI controller as a bonafide PCI device during the OF device
-node scan.  Therefore bus->self remains NULL.
+[   21.341632] ------------[ cut here ]------------
+[   21.346294] WARNING: CPU: 0 PID: 309 at include/linux/vmstat.h:242
+cancel_dirty_page+0x164/0x224()
+[   21.355296] Modules linked in: wutbox_cp sata_mv
+[   21.359968] CPU: 0 PID: 309 Comm: kworker/0:1 Not tainted 3.14.21-WuT #80
+[   21.366793] Workqueue: events free_ioctx
+[   21.370760] [<c0016a64>] (unwind_backtrace) from [<c0012f88>]
+(show_stack+0x20/0x24)
+[   21.378562] [<c0012f88>] (show_stack) from [<c03f8ccc>]
+(dump_stack+0x24/0x28)
+[   21.385840] [<c03f8ccc>] (dump_stack) from [<c0023ae4>]
+(warn_slowpath_common+0x84/0x9c)
+[   21.393976] [<c0023ae4>] (warn_slowpath_common) from [<c0023bb8>]
+(warn_slowpath_null+0x2c/0x34)
+[   21.402800] [<c0023bb8>] (warn_slowpath_null) from [<c00c0688>]
+(cancel_dirty_page+0x164/0x224)
+[   21.411524] [<c00c0688>] (cancel_dirty_page) from [<c00c080c>]
+(truncate_inode_page+0x8c/0x158)
+[   21.420272] [<c00c080c>] (truncate_inode_page) from [<c00c0a94>]
+(truncate_inode_pages_range+0x11c/0x53c)
+[   21.429890] [<c00c0a94>] (truncate_inode_pages_range) from
+[<c00c0f6c>] (truncate_pagecache+0x88/0xac)
+[   21.439252] [<c00c0f6c>] (truncate_pagecache) from [<c00c0fec>]
+(truncate_setsize+0x5c/0x74)
+[   21.447731] [<c00c0fec>] (truncate_setsize) from [<c013b3a8>]
+(put_aio_ring_file.isra.14+0x34/0x90)
+[   21.456826] [<c013b3a8>] (put_aio_ring_file.isra.14) from
+[<c013b424>] (aio_free_ring+0x20/0xcc)
+[   21.465660] [<c013b424>] (aio_free_ring) from [<c013b4f4>]
+(free_ioctx+0x24/0x44)
+[   21.473190] [<c013b4f4>] (free_ioctx) from [<c003d8d8>]
+(process_one_work+0x134/0x47c)
+[   21.481132] [<c003d8d8>] (process_one_work) from [<c003e988>]
+(worker_thread+0x130/0x414)
+[   21.489350] [<c003e988>] (worker_thread) from [<c00448ac>]
+(kthread+0xd4/0xec)
+[   21.496621] [<c00448ac>] (kthread) from [<c000ec18>]
+(ret_from_fork+0x14/0x20)
+[   21.503884] ---[ end trace 79c4bf42c038c9a1 ]---
 
-Existing common code for PSYCHO and PSYCHO-like PCI controllers
-handles this properly, by doing the config space access directly.
+The cause is that we set the aio ring file pages as *DIRTY* via SetPageDirty
+(bypasses the VFS dirty pages increment) when init, and aio fs uses
+*default_backing_dev_info* as the backing dev, which does not disable
+the dirty pages accounting capability.
+So truncating aio ring file will contribute to accounting dirty pages (VFS
+dirty pages decrement), then error occurs.
 
-Do the same here, pbm->pci_ops->{read,write}().
+The original goal is keeping these pages in memory (can not be reclaimed
+or swapped) in life-time via marking it dirty. But thinking more, we have
+already pinned pages via elevating the page's refcount, which can already
+achieve the goal, so the SetPageDirty seems unnecessary.
 
-Reported-by: Meelis Roos <mroos@linux.ee>
-Tested-by: Meelis Roos <mroos@linux.ee>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In order to fix the issue, using the __set_page_dirty_no_writeback instead
+of the nop .set_page_dirty, and dropped the SetPageDirty (don't manually
+set the dirty flags, don't disable set_page_dirty(), rely on default behaviour).
+
+With the above change, the dirty pages accounting can work well. But as we
+known, aio fs is an anonymous one, which should never cause any real write-back,
+we can ignore the dirty pages (write back) accounting by disabling the dirty
+pages (write back) accounting capability. So we introduce an aio private
+backing dev info (disabled the ACCT_DIRTY/WRITEBACK/ACCT_WB capabilities) to
+replace the default one.
+
+Reported-by: Markus Königshaus <m.koenigshaus@wut.de>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Acked-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/pci_schizo.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/aio.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
 
-diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
-index 8f76f23..f9c6813 100644
---- a/arch/sparc/kernel/pci_schizo.c
-+++ b/arch/sparc/kernel/pci_schizo.c
-@@ -581,7 +581,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
- {
- 	unsigned long csr_reg, csr, csr_error_bits;
- 	irqreturn_t ret = IRQ_NONE;
--	u16 stat;
-+	u32 stat;
+diff --git a/fs/aio.c b/fs/aio.c
+index 4555755..a17e9ac 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -159,6 +159,15 @@ static struct vfsmount *aio_mnt;
+ static const struct file_operations aio_ring_fops;
+ static const struct address_space_operations aio_ctx_aops;
  
- 	csr_reg = pbm->pbm_regs + SCHIZO_PCI_CTRL;
- 	csr = upa_readq(csr_reg);
-@@ -617,7 +617,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
- 			       pbm->name);
- 		ret = IRQ_HANDLED;
- 	}
--	pci_read_config_word(pbm->pci_bus->self, PCI_STATUS, &stat);
-+	pbm->pci_ops->read(pbm->pci_bus, 0, PCI_STATUS, 2, &stat);
- 	if (stat & (PCI_STATUS_PARITY |
- 		    PCI_STATUS_SIG_TARGET_ABORT |
- 		    PCI_STATUS_REC_TARGET_ABORT |
-@@ -625,7 +625,7 @@ static irqreturn_t schizo_pcierr_intr_other(struct pci_pbm_info *pbm)
- 		    PCI_STATUS_SIG_SYSTEM_ERROR)) {
- 		printk("%s: PCI bus error, PCI_STATUS[%04x]\n",
- 		       pbm->name, stat);
--		pci_write_config_word(pbm->pci_bus->self, PCI_STATUS, 0xffff);
-+		pbm->pci_ops->write(pbm->pci_bus, 0, PCI_STATUS, 2, 0xffff);
- 		ret = IRQ_HANDLED;
- 	}
- 	return ret;
++/* Backing dev info for aio fs.
++ * -no dirty page accounting or writeback happens
++ */
++static struct backing_dev_info aio_fs_backing_dev_info = {
++	.name           = "aiofs",
++	.state          = 0,
++	.capabilities   = BDI_CAP_NO_ACCT_AND_WRITEBACK | BDI_CAP_MAP_COPY,
++};
++
+ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+ {
+ 	struct qstr this = QSTR_INIT("[aio]", 5);
+@@ -170,6 +179,7 @@ static struct file *aio_private_file(struct kioctx *ctx, loff_t nr_pages)
+ 
+ 	inode->i_mapping->a_ops = &aio_ctx_aops;
+ 	inode->i_mapping->private_data = ctx;
++	inode->i_mapping->backing_dev_info = &aio_fs_backing_dev_info;
+ 	inode->i_size = PAGE_SIZE * nr_pages;
+ 
+ 	path.dentry = d_alloc_pseudo(aio_mnt->mnt_sb, &this);
+@@ -215,6 +225,9 @@ static int __init aio_setup(void)
+ 	if (IS_ERR(aio_mnt))
+ 		panic("Failed to create aio fs mount.");
+ 
++	if (bdi_init(&aio_fs_backing_dev_info))
++		panic("Failed to init aio fs backing dev info.");
++
+ 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 
+@@ -276,11 +289,6 @@ static const struct file_operations aio_ring_fops = {
+ 	.mmap = aio_ring_mmap,
+ };
+ 
+-static int aio_set_page_dirty(struct page *page)
+-{
+-	return 0;
+-}
+-
+ #if IS_ENABLED(CONFIG_MIGRATION)
+ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 			struct page *old, enum migrate_mode mode)
+@@ -352,7 +360,7 @@ out:
+ #endif
+ 
+ static const struct address_space_operations aio_ctx_aops = {
+-	.set_page_dirty = aio_set_page_dirty,
++	.set_page_dirty = __set_page_dirty_no_writeback,
+ #if IS_ENABLED(CONFIG_MIGRATION)
+ 	.migratepage	= aio_migratepage,
+ #endif
+@@ -407,7 +415,6 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 		pr_debug("pid(%d) page[%d]->count=%d\n",
+ 			 current->pid, i, page_count(page));
+ 		SetPageUptodate(page);
+-		SetPageDirty(page);
+ 		unlock_page(page);
+ 
+ 		ctx->ring_pages[i] = page;
 -- 
 1.9.1
 
