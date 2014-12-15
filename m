@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaLOW0f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 17:26:35 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59395 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750877AbaLOW0d (ORCPT
+	id S1751062AbaLOWeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 17:34:20 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:58473 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892AbaLOWeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 17:26:33 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Mike Turquette <mturquette@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ARM: at91: fix irq_pm_install_action WARNING
-Date: Mon, 15 Dec 2014 23:48:14 +0100
-Message-ID: <3542278.8lcJeXLMFm@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <2662748.NJbkr6jW7r@vostro.rjw.lan>
-References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com> <2662748.NJbkr6jW7r@vostro.rjw.lan>
+	Mon, 15 Dec 2014 17:34:19 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Dave Gerlach <d-gerlach@ti.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Len Brown <len.brown@intel.com>, Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH] PM QoS: Add debugfs support to view the list of constraints
+References: <1417799948-48440-1-git-send-email-d-gerlach@ti.com>
+Date: Mon, 15 Dec 2014 14:34:15 -0800
+In-Reply-To: <1417799948-48440-1-git-send-email-d-gerlach@ti.com> (Dave
+	Gerlach's message of "Fri, 5 Dec 2014 11:19:08 -0600")
+Message-ID: <7h1to0h7a0.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 15, 2014 11:20:17 PM Rafael J. Wysocki wrote:
-> On Monday, December 15, 2014 05:15:47 PM Boris Brezillon wrote:
-> > Commit cab303be91dc47942bc25de33dc1140123540800 [1] introduced a WARN_ON
-> > test which triggers a WARNING backtrace on at91 platforms.
-> 
-> Pretty much as intended.
-> 
-> > While this WARN_ON is absolutely necessary to warn users that they should
-> > not mix request with and without IRQF_NO_SUSPEND flags on shared IRQs,
-> > there is no easy way to solve this issue on at91 platforms.
-> > 
-> > The main reason is that the init timer is often using a shared irq line
-> > and thus request this irq with IRQF_NO_SUSPEND flag set, while other
-> > peripherals request the same irq line without this flag.
-> > 
-> > We could deal with that by identifying whether a given peripheral is
-> > connected to the init timer shared irq line and add the IRQF_NO_SUSPEND
-> > in this case, but this implies adding the logic in all peripheral drivers
-> > that could be connected to this shared irq.
-> > 
-> > This series takes the reverse approach: force IRQ users to specify that
-> > they take care of disabling peripheral interrupts and that IRQ core can
-> > safely leave the handler in a suspended state without having to bother
-> > about spurious interrupts.
-> > This is done by mean of a new IRQF_SUSPEND_NOACTION flag which tells the
-> > core to move the action handler to a suspended list, thus preventing its
-> > execution when we are in suspend mode.
-> > Of course, specifying the IRQF_SUSPEND_NOACTION flag implies taking care
-> > of masking/unmasking the peripheral interrupts in the suspend/resume
-> > implementation.
-> 
-> Well, I'm not sure how much value is in all that to be honest.  The only
-> thing it helps with is to make the WARN_ON go away in some cases, while
-> the drivers in question need to make sure that they disable their interrupts
-> properly anyway, so what exactly is the purpose of the new irqaction
-> shuffling?
-> 
-> It might just be simpler to add a flag to suppress the WARN_ON that would be
-> set by the user of IRQF_NO_SUSPEND that is broken enough to have to share the
-> interrupt with others ...
+Dave Gerlach <d-gerlach@ti.com> writes:
 
-Or even set IRFQ_NO_SUSPEND for all of the users of this interrupt and add
-comments to them explaining why it is set.
+> From: Nishanth Menon <nm@ti.com>
+>
+> PM QoS requests are notoriously hard to debug and made even
+> more so due to their highly dynamic nature. Having visibility
+> into the internal data representation per constraint allows
+> us to have much better appreciation of potential issues or
+> bad usage by drivers in the system.
+>
+> So introduce for all classes of PM QoS, an entry in
+> /sys/kernel/debug/pm_qos that shall show all the current
+> requests as well as the snapshot of the value these requests
+> boil down to. For example:
+> ==> /sys/kernel/debug/pm_qos/cpu_dma_latency <==
+> 1: 4444: Active
+> 2: 2000000000: Default
+> 3: 2000000000: Default
+> 4: 2000000000: Default
+> Type=Minimum, Value=4444, Requests: active=1 / total=4
+>
+> ==> /sys/kernel/debug/pm_qos/memory_bandwidth <==
+> Empty!
+>
+> ...
+>
+> The actual value listed will have their meaning based
+> on the QoS it is on, the 'Type' indicates what logic
+> it would use to collate the information - Minimum,
+> Maximum, or Sum. Value is the collation of all requests.
+> This interface also compares the values with the defaults
+> for the QoS class and marks the ones that are
+> currently active.
+>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
 
+A very useful feature indeed,
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Acked-by: Kevin Hilman <khilman@linaro.org>
+
+Kevin
