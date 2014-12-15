@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaLOQml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 11:42:41 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:47727 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751741AbaLOQmc (ORCPT
+	id S1751518AbaLOQoc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 11:44:32 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:59350 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764AbaLOQo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 11:42:32 -0500
-Date: Mon, 15 Dec 2014 12:23:01 +0100
-From: David Hildenbrand <dahi@linux.vnet.ibm.com>
-To: "LF.Tan" <lftan.linux@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>, benh@kernel.crashing.org,
-        paulus@samba.org, akpm@linux-foundation.org, heiko.carstens@de.ibm.com,
-        schwidefsky@de.ibm.com, borntraeger@de.ibm.com,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, David.Laight@aculab.com,
-        peterz@infradead.org, hughd@google.com, hocko@suse.cz
-Subject: Re: [PATCH v2 1/5] uaccess: add pagefault_count to thread_info
-Message-ID: <20141215122301.0eac5f19@thinkpad-w530>
-In-Reply-To: <CAFiDJ59Y9y4VrcVfyo8rrQV-NtM=1G=kQScBtEvnuC3MpXt0KA@mail.gmail.com>
-References: <1418221414-60110-1-git-send-email-dahi@linux.vnet.ibm.com>
-	<1418221414-60110-2-git-send-email-dahi@linux.vnet.ibm.com>
-	<CAFiDJ59Y9y4VrcVfyo8rrQV-NtM=1G=kQScBtEvnuC3MpXt0KA@mail.gmail.com>
-Organization: IBM Deutschland GmbH
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.24; x86_64-redhat-linux-gnu)
+	Mon, 15 Dec 2014 11:44:29 -0500
+Message-ID: <548F0FE7.1080603@cumulusnetworks.com>
+Date: Mon, 15 Dec 2014 08:44:23 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Thomas Graf <tgraf@suug.ch>
+CC: "Varlese, Marco" <marco.varlese@intel.com>,
+        John Fastabend <john.fastabend@gmail.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "stephen@networkplumber.org" <stephen@networkplumber.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AC3257@IRSMSX108.ger.corp.intel.com> <20141210165018.GG1863@nanopsycho.orion> <54887CF7.70708@gmail.com> <C4896FB061E7DE4AAC93031BDCA044B104AC3914@IRSMSX108.ger.corp.intel.com> <20141215140749.GB21952@casper.infradead.org> <C4896FB061E7DE4AAC93031BDCA044B104AC5DCF@IRSMSX108.ger.corp.intel.com> <20141215144027.GA21262@casper.infradead.org>
+In-Reply-To: <20141215144027.GA21262@casper.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121511-0021-0000-0000-00000222739B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Dec 10, 2014 at 10:23 PM, David Hildenbrand
-> <dahi@linux.vnet.ibm.com> wrote:
-> > This patch adds the pagefault_count to the thread_info of all
-> > architectures. It will be used to count the pagefault_disable() levels
-> > on a per-thread basis.
-> >
-> > We are not reusing the preempt_count as this is per cpu on x86 and we want to
-> > demangle pagefault_disable() from preemption in the future.
-> >
-> > The new counter is added directly below the preempt_count, except for archs
-> > relying on a manual calculation of asm offsets - to minimize the changes.
-> >
-> Hi David
-> 
-> Is this patchset targeted for 3.19? If yes, then we need this for
-> arch/nios2 as well (new arch in 3.19).
-> 
-
-Hi,
-
-Peter just showed my that there is some work ongoing on that
-pagefault_disable() topic. So I am not sure if the arch-specific part of this
-series is still relevant.
-
-But thanks for the info!
-
-David
+On 12/15/14, 6:40 AM, Thomas Graf wrote:
+> On 12/15/14 at 02:29pm, Varlese, Marco wrote:
+>>> All of these are highly generic and should *not* be passed through from user
+>>> space to the driver directly but rather be properly abstracted as Roopa
+>>> proposed. The value of this API is abstraction.
+>> How would you let the user enable/disable features then? For instance, how would the user enable/disable flooding for broadcast packets (BFLOODING) on a given port? What I was proposing is to have a list of attributes (to be added in if_link.h) which can be tuned by the user using a tool like iproute2. What do you propose?
+> Excellent, I agree with what you are saying. What set me off is that
+> the patch does not reflect that yet. Instead, the patch introduces
+> a pure Netlink pass-through API to the driver.
+>
+> I would expect the patch to:
+>   1. Parse the Netlink messages and be aware of individual attributes
+>   2. Validate them
+>   3. Pass the configuration to the driver using an API that can also
+>      be consumed from in-kernel users.
+yes, exactly.
+>
+>> I think I have seen Roopa posting his updated ndo patch and getting some feedback by few people already and as long as I will be able to accomplish the use case described here I am happy with his way.
+> I think Roopa's patches are supplementary. Not all switchdev users
+> will be backed with a Linux Bridge. I therefore welcome your patches
+> very much.
+>
+> The overlap is in the ndo. I think both the API you propose and
+> Roopa's bridge code should use the same NDO.
+>> I do not have an example right now of a vendor specific attribute but I was just saying that might happen (i.e. someone will have a feature not implemented by others?).
+> That's fine. Once we have them we can consider adding vendor specific
+> extensions.
 
