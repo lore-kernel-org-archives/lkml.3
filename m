@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbaLOOeW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:34:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:39000 "EHLO
+	id S1753479AbaLOOef (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:34:35 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38981 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaLOO3P (ORCPT
+	with ESMTP id S1753061AbaLOO3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:29:15 -0500
+	Mon, 15 Dec 2014 09:29:13 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 147/168] slab: fix nodeid bounds check for non-contiguous node IDs
-Date: Mon, 15 Dec 2014 14:26:41 +0000
-Message-Id: <1418653622-21105-148-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 151/168] drm/radeon: sync all BOs involved in a CS v2
+Date: Mon, 15 Dec 2014 14:26:45 +0000
+Message-Id: <1418653622-21105-152-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,60 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
 
-commit 7c3fbbdd04a681a1992ad6a3d7a36a63ff668753 upstream.
+commit 86b276385c6a986872e4cd144f5940b156053c3f upstream.
 
-The bounds check for nodeid in ____cache_alloc_node gives false
-positives on machines where the node IDs are not contiguous, leading to
-a panic at boot time.  For example, on a POWER8 machine the node IDs are
-typically 0, 1, 16 and 17.  This means that num_online_nodes() returns
-4, so when ____cache_alloc_node is called with nodeid = 16 the VM_BUG_ON
-triggers, like this:
+Not just the userspace relocs, otherwise we won't wait
+for a swapped out page tables to be swapped in again.
 
-  kernel BUG at /home/paulus/kernel/kvm/mm/slab.c:3079!
-  Call Trace:
-    .____cache_alloc_node+0x5c/0x270 (unreliable)
-    .kmem_cache_alloc_node_trace+0xdc/0x360
-    .init_list+0x3c/0x128
-    .kmem_cache_init+0x1dc/0x258
-    .start_kernel+0x2a0/0x568
-    start_here_common+0x20/0xa8
+v2: rebased on Alex current drm-fixes-3.18
 
-To fix this, we instead compare the nodeid with MAX_NUMNODES, and
-additionally make sure it isn't negative (since nodeid is an int).  The
-check is there mainly to protect the array dereference in the get_node()
-call in the next line, and the array being dereferenced is of size
-MAX_NUMNODES.  If the nodeid is in range but invalid (for example if the
-node is off-line), the BUG_ON in the next line will catch that.
-
-Fixes: 14e50c6a9bc2 ("mm: slab: Verify the nodeid passed to ____cache_alloc_node")
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.16: adjusted context ]
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ luis: backported to 3.16: used Christian's backport to 3.17 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- mm/slab.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/radeon_cs.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-diff --git a/mm/slab.c b/mm/slab.c
-index c9103e4cf2c2..92dbea7e7132 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3225,7 +3225,7 @@ static void *____cache_alloc_node(struct kmem_cache *cachep, gfp_t flags,
- 	void *obj;
- 	int x;
+diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
+index c50a1da6c12a..4aa1ede7b7b5 100644
+--- a/drivers/gpu/drm/radeon/radeon_cs.c
++++ b/drivers/gpu/drm/radeon/radeon_cs.c
+@@ -226,14 +226,11 @@ static int radeon_cs_get_ring(struct radeon_cs_parser *p, u32 ring, s32 priority
  
--	VM_BUG_ON(nodeid > num_online_nodes());
-+	VM_BUG_ON(nodeid < 0 || nodeid >= MAX_NUMNODES);
- 	n = cachep->node[nodeid];
- 	BUG_ON(!n);
+ static void radeon_cs_sync_rings(struct radeon_cs_parser *p)
+ {
+-	int i;
+-
+-	for (i = 0; i < p->nrelocs; i++) {
+-		if (!p->relocs[i].robj)
+-			continue;
++	struct radeon_cs_reloc *reloc;
+ 
++	list_for_each_entry(reloc, &p->validated, tv.head) {
+ 		radeon_semaphore_sync_to(p->ib.semaphore,
+-					 p->relocs[i].robj->tbo.sync_obj);
++					 reloc->robj->tbo.sync_obj);
+ 	}
+ }
  
 -- 
 2.1.3
