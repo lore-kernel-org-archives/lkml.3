@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054AbaLORmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:42:44 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:57242 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867AbaLORmn (ORCPT
+	id S1751131AbaLORpZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:45:25 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:59669 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaLORpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:42:43 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 15 Dec 2014 18:42:31 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire (IEEE 1394) updates post v3.18
-Message-ID: <20141215184231.5b006cab@kant>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.24; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Dec 2014 12:45:21 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, andre.przywara@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: [PATCH v3 1/2] KVM: arm/arm64: vgic: vgic_init returns -ENODEV when no online vcpu
+Date: Mon, 15 Dec 2014 18:43:32 +0100
+Message-Id: <1418665413-31521-2-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418665413-31521-1-git-send-email-eric.auger@linaro.org>
+References: <1418665413-31521-1-git-send-email-eric.auger@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+To be more explicit on vgic initialization failure, -ENODEV is
+returned by vgic_init when no online vcpus can be found at init.
 
-please pull from the tag "firewire-updates" at
+Signed-off-by: Eric Auger <eric.auger@linaro.org>
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-updates
+---
 
-to receive the following IEEE 1394 subsystem updates:
-Clean up firewire-ohci's longlived vm-mapping;
-use target instance lock instead of core lock in firewire-sbp2.
+v2 -> v3: vgic_init_maps was renamed into vgic_init
+---
+ virt/kvm/arm/vgic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Clemens Ladisch (1):
-      firewire: ohci: replace vm_map_ram() with vmap()
-
-Stefan Richter (4):
-      firewire: core: document fw_csr_string's truncation of long strings
-      firewire: sbp2: protect a reference counter properly
-      firewire: sbp2: replace some spin_lock_irqsave by spin_lock_irq
-      firewire: sbp2: replace card lock by target lock
-
- drivers/firewire/core-device.c |  3 +++
- drivers/firewire/ohci.c        |  6 ++----
- drivers/firewire/sbp2.c        | 67 ++++++++++++++++++++++++++++++-------------------------------------
- 3 files changed, 35 insertions(+), 41 deletions(-)
-
-Thanks,
+diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
+index e373b76..d61a61f 100644
+--- a/virt/kvm/arm/vgic.c
++++ b/virt/kvm/arm/vgic.c
+@@ -1809,7 +1809,7 @@ static int vgic_init(struct kvm *kvm)
+ 
+ 	nr_cpus = dist->nr_cpus = atomic_read(&kvm->online_vcpus);
+ 	if (!nr_cpus)		/* No vcpus? Can't be good... */
+-		return -EINVAL;
++		return -ENODEV;
+ 
+ 	/*
+ 	 * If nobody configured the number of interrupts, use the
 -- 
-Stefan Richter
--=====-====- ==-- -====
-http://arcgraph.de/sr/
+1.9.1
+
