@@ -1,119 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105AbaLORNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 12:13:46 -0500
-Received: from fieldses.org ([174.143.236.118]:47411 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819AbaLORNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 12:13:44 -0500
-Date: Mon, 15 Dec 2014 12:13:42 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] nfsd changes for 3.19
-Message-ID: <20141215171342.GD20089@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1750894AbaLORQn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 12:16:43 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:63264 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaLORQk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 12:16:40 -0500
+From: Petr Cermak <petrcermak@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Petr Cermak <petrcermak@chromium.org>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>
+Subject: [PATCH 2/2] task_mmu: Add user-space support for resetting mm->hiwater_rss (peak RSS)
+Date: Mon, 15 Dec 2014 17:15:33 +0000
+Message-Id: <1418663733-15949-1-git-send-email-petrcermak@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+References: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
+In-Reply-To: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull nfsd changes for 3.19 from
+Peak resident size of a process can be reset by writing "5" to
+/proc/pid/clear_refs. The driving use-case for this would be getting the
+peak RSS value, which can be retrieved from the VmHWM field in
+/proc/pid/status, per benchmark iteration or test scenario.
 
-  git://linux-nfs.org/~bfields/linux.git for-3.19
+Cc: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Primiano Tucci <primiano@chromium.org>
+Cc: Petr Cermak <petrcermak@chromium.org>
+Signed-off-by: Petr Cermak <petrcermak@chromium.org>
+---
+ Documentation/filesystems/proc.txt |  3 +++
+ fs/proc/task_mmu.c                 | 15 ++++++++++++++-
+ include/linux/mm.h                 |  5 +++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
-A comparatively quieter cycle for nfsd this time, but still with two
-larger changes:
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index aae9dd1..eab62e3 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -488,6 +488,9 @@ To clear the bits for the file mapped pages associated with the process
+ To clear the soft-dirty bit
+     > echo 4 > /proc/PID/clear_refs
+ 
++To reset the peak resident set size ("high water mark")
++    > echo 5 > /proc/PID/clear_refs
++
+ Any other value written to /proc/PID/clear_refs will have no effect.
+ 
+ The /proc/pid/pagemap gives the PFN, which can be used to find the pageflags
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 3ee8541..7967535 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -747,6 +747,7 @@ enum clear_refs_types {
+ 	CLEAR_REFS_ANON,
+ 	CLEAR_REFS_MAPPED,
+ 	CLEAR_REFS_SOFT_DIRTY,
++	CLEAR_REFS_MM_HIWATER_RSS,
+ 	CLEAR_REFS_LAST,
+ };
+ 
+@@ -855,6 +856,17 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	if (!mm)
+ 		goto out_task;
+ 
++	if (type == CLEAR_REFS_MM_HIWATER_RSS) {
++		/*
++		 * Writing 5 to /proc/pid/clear_refs resets the peak resident
++		 * set size.
++		 */
++		down_write(&mm->mmap_sem);
++		reset_mm_hiwater_rss(mm);
++		up_write(&mm->mmap_sem);
++		goto out_mm;
++	}
++
+ 	struct clear_refs_private cp = {
+ 		.type = type,
+ 	};
+@@ -904,8 +916,9 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 		mmu_notifier_invalidate_range_end(mm, 0, -1);
+ 	flush_tlb_mm(mm);
+ 	up_read(&mm->mmap_sem);
+-	mmput(mm);
+ 
++out_mm:
++	mmput(mm);
+ out_task:
+ 	put_task_struct(task);
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c0a67b8..f3f6cee 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1368,6 +1368,11 @@ static inline void update_hiwater_vm(struct mm_struct *mm)
+ 		mm->hiwater_vm = mm->total_vm;
+ }
+ 
++static inline void reset_mm_hiwater_rss(struct mm_struct *mm)
++{
++	mm->hiwater_rss = get_mm_rss(mm);
++}
++
+ static inline void setmax_mm_hiwater_rss(unsigned long *maxrss,
+ 					 struct mm_struct *mm)
+ {
+-- 
+2.2.0.rc0.207.ga3a616c
 
-	- RPC server scalability improvements from Jeff Layton (using
-	  RCU instead of a spinlock to find idle threads).
-	- server-side NFSv4.2 ALLOCATE/DEALLOCATE support from Anna
-	  Schumaker, enabling fallocate on new clients
-
---b.
-
-----------------------------------------------------------------
-Andy Shevchenko (1):
-      sunrpc/cache: convert to use string_escape_str()
-
-Anna Schumaker (3):
-      VFS: Rename do_fallocate() to vfs_fallocate()
-      nfsd: Add ALLOCATE support
-      nfsd: Add DEALLOCATE support
-
-Benjamin Coddington (2):
-      nfsd4: fix xdr4 inclusion of escaped char
-      nfsd4: fix xdr4 count of server in fs_location4
-
-Chuck Lever (1):
-      NFSD: Always initialize cl_cb_addr
-
-Dan Carpenter (2):
-      SUNRPC: off by one in BUG_ON()
-      nfsd: minor off by one checks in __write_versions()
-
-J. Bruce Fields (4):
-      RPC: remove unneeded checks from xdr_truncate_encode()
-      rpc: change comments to assertions
-      merge nfs bugfixes into nfsd for-3.19 branch
-      Merge tag 'nfs-for-3.19-1' into nfsd for-3.19 branch
-
-Jeff Layton (19):
-      nfsd: clean up comments over nfs4_file definition
-      lockd: ratelimit "lockd: cannot monitor" messages
-      nfsd: convert nfs4_file searches to use RCU
-      sunrpc: eliminate the XPT_DETACHED flag
-      sunrpc: release svc_pool_map reference when serv allocation fails
-      sunrpc: add a generic rq_flags field to svc_rqst and move rq_secure to it
-      sunrpc: move rq_local field to rq_flags
-      sunrpc: move rq_usedeferral flag to rq_flags
-      sunrpc: move rq_dropme flag into rq_flags
-      sunrpc: move rq_splice_ok flag into rq_flags
-      sunrpc: move rq_cachetype field to better optimize space
-      sunrpc: convert sp_task_pending flag to use atomic bitops
-      sunrpc: have svc_wake_up only deal with pool 0
-      sunrpc: require svc_create callers to pass in meaningful shutdown routine
-      sunrpc: add a rcu_head to svc_rqst and use kfree_rcu to free it
-      sunrpc: fix potential races in pool_stats collection
-      sunrpc: convert to lockless lookup of queued server threads
-      sunrpc: add some tracepoints around enqueue and dequeue of svc_xprt
-      sunrpc: only call test_bit once in svc_xprt_received
-
-Rasmus Villemoes (1):
-      fs: nfsd: Fix signedness bug in compare_blob
-
-Zach Brown (1):
-      nfsd: fix inclusive vfs_fsync_range() end
-
- drivers/staging/android/ashmem.c  |   2 +-
- fs/ioctl.c                        |   2 +-
- fs/lockd/mon.c                    |   2 +-
- fs/lockd/svc.c                    |   2 +-
- fs/nfsd/nfs4proc.c                |  57 +++++++-
- fs/nfsd/nfs4state.c               |  68 +++++----
- fs/nfsd/nfs4xdr.c                 |  34 ++++-
- fs/nfsd/nfscache.c                |   4 +-
- fs/nfsd/nfsctl.c                  |   6 +-
- fs/nfsd/nfsd.h                    |   9 +-
- fs/nfsd/nfsfh.c                   |   2 +-
- fs/nfsd/nfssvc.c                  |   2 +-
- fs/nfsd/state.h                   |  19 ++-
- fs/nfsd/vfs.c                     |  37 ++++-
- fs/nfsd/vfs.h                     |   2 +
- fs/nfsd/xdr4.h                    |   9 ++
- fs/open.c                         |   5 +-
- include/linux/fs.h                |   2 +-
- include/linux/sunrpc/svc.h        |  34 +++--
- include/linux/sunrpc/svc_xprt.h   |   7 +-
- include/trace/events/sunrpc.h     | 120 +++++++++++++++-
- mm/madvise.c                      |   2 +-
- net/sunrpc/auth_gss/svcauth_gss.c |   2 +-
- net/sunrpc/cache.c                |  26 +---
- net/sunrpc/svc.c                  |  42 +++---
- net/sunrpc/svc_xprt.c             | 292 +++++++++++++++++++++-----------------
- net/sunrpc/svcsock.c              |  32 +++--
- net/sunrpc/xdr.c                  |   9 +-
- 28 files changed, 547 insertions(+), 283 deletions(-)
