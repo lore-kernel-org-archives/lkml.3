@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824AbaLOPCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:02:05 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49943 "EHLO
+	id S1753876AbaLOPCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:02:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49952 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827AbaLOPB7 (ORCPT
+	with ESMTP id S1751952AbaLOPCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 10:01:59 -0500
-Date: Mon, 15 Dec 2014 07:01:43 -0800
+	Mon, 15 Dec 2014 10:02:14 -0500
+Date: Mon, 15 Dec 2014 07:02:01 -0800
 From: tip-bot for Dave Hansen <tipbot@zytor.com>
-Message-ID: <tip-010e593b140decdc16bb0c1c754b07b1fccb6999@git.kernel.org>
-Cc: mingo@kernel.org, dave.hansen@linux.intel.com, hpa@zytor.com,
-        dave@sr71.net, linux-kernel@vger.kernel.org, tglx@linutronix.de
-Reply-To: tglx@linutronix.de, dave@sr71.net, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, dave.hansen@linux.intel.com, hpa@zytor.com
-In-Reply-To: <20141212183835.8C581B3E@viggo.jf.intel.com>
-References: <20141212183835.8C581B3E@viggo.jf.intel.com>
+Message-ID: <tip-72e9b5fe9bee0826e7ce7599adbdc64e544780ef@git.kernel.org>
+Cc: dave.hansen@linux.intel.com, mingo@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, dave@sr71.net, linux-kernel@vger.kernel.org
+Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de, dave@sr71.net, dave.hansen@linux.intel.com
+In-Reply-To: <20141212183836.2569D58D@viggo.jf.intel.com>
+References: <20141212183836.2569D58D@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mpx] x86, mpx: Update documentation
-Git-Commit-ID: 010e593b140decdc16bb0c1c754b07b1fccb6999
+Subject: [tip:x86/mpx] x86, mpx: Give MPX a real config option prompt
+Git-Commit-ID: 72e9b5fe9bee0826e7ce7599adbdc64e544780ef
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,62 +31,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  010e593b140decdc16bb0c1c754b07b1fccb6999
-Gitweb:     http://git.kernel.org/tip/010e593b140decdc16bb0c1c754b07b1fccb6999
+Commit-ID:  72e9b5fe9bee0826e7ce7599adbdc64e544780ef
+Gitweb:     http://git.kernel.org/tip/72e9b5fe9bee0826e7ce7599adbdc64e544780ef
 Author:     Dave Hansen <dave.hansen@linux.intel.com>
-AuthorDate: Fri, 12 Dec 2014 10:38:35 -0800
+AuthorDate: Fri, 12 Dec 2014 10:38:36 -0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 15 Dec 2014 15:58:57 +0100
 
-x86, mpx: Update documentation
+x86, mpx: Give MPX a real config option prompt
 
-I was writing some MPX test programs and realized that the
-current design makes it tricky.  I did something like:
+Give MPX a real config option. The CPUs that support it (referenced
+here):
 
-	bndcfgu |= bnd_dir | BNDCFGU_ENABLE;
-	xrstor();
-	printf("xrstor done");
-	// #BR bounds exception here
-	prctl(MPX_ENABLE_MANAGEMENT);
+  https://software.intel.com/en-us/forums/topic/402393
 
-and then compiled the app with "-fcheck-pointer-bounds -mmpx"
-to enable MPX instrumentation.
+are not available publicly yet. Right now only the software emulator
+provides MPX for the general public.
 
-The problem is that there is MPX instrumentation inserted in
-to the area of the printf().  The kernel gets a bounds exception
-and since management isn't yet enabled, it SIGSEGV's.
-
-Add a bit to the documentation to explain a way around this and
-where apps need to be careful.
+[ tglx: Make it default off. There is no point in having it on right
+        now as no hardware and no proper tooling support are available ]
 
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 Cc: Dave Hansen <dave@sr71.net>
-Link: http://lkml.kernel.org/r/20141212183835.8C581B3E@viggo.jf.intel.com
+Link: http://lkml.kernel.org/r/20141212183836.2569D58D@viggo.jf.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- Documentation/x86/intel_mpx.txt | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ Documentation/x86/intel_mpx.txt |  6 +++++-
+ arch/x86/Kconfig                | 30 ++++++++++++++++++++++++++----
+ 2 files changed, 31 insertions(+), 5 deletions(-)
 
 diff --git a/Documentation/x86/intel_mpx.txt b/Documentation/x86/intel_mpx.txt
-index 4472ed2..6ca6e2b 100644
+index 6ca6e2b..818518a 100644
 --- a/Documentation/x86/intel_mpx.txt
 +++ b/Documentation/x86/intel_mpx.txt
-@@ -30,9 +30,15 @@ is how we expect the compiler, application and kernel to work together.
-    instrumentation as well as some setup code called early after the app
-    starts. New instruction prefixes are noops for old CPUs.
- 2) That setup code allocates (virtual) space for the "bounds directory",
--   points the "bndcfgu" register to the directory and notifies the kernel
--   (via the new prctl(PR_MPX_ENABLE_MANAGEMENT)) that the app will be using
--   MPX.
-+   points the "bndcfgu" register to the directory (must also set the valid
-+   bit) and notifies the kernel (via the new prctl(PR_MPX_ENABLE_MANAGEMENT))
-+   that the app will be using MPX.  The app must be careful not to access
-+   the bounds tables between the time when it populates "bndcfgu" and
-+   when it calls the prctl().  This might be hard to guarantee if the app
-+   is compiled with MPX.  You can add "__attribute__((bnd_legacy))" to
-+   the function to disable MPX instrumentation to help guarantee this.
-+   Also be careful not to call out to any other code which might be
-+   MPX-instrumented.
- 3) The kernel detects that the CPU has MPX, allows the new prctl() to
-    succeed, and notes the location of the bounds directory. Userspace is
-    expected to keep the bounds directory at that locationWe note it
+@@ -7,11 +7,15 @@ that can be used in conjunction with compiler changes to check memory
+ references, for those references whose compile-time normal intentions are
+ usurped at runtime due to buffer overflow or underflow.
+ 
++You can tell if your CPU supports MPX by looking in /proc/cpuinfo:
++
++	cat /proc/cpuinfo  | grep ' mpx '
++
+ For more information, please refer to Intel(R) Architecture Instruction
+ Set Extensions Programming Reference, Chapter 9: Intel(R) Memory Protection
+ Extensions.
+ 
+-Note: Currently no hardware with MPX ISA is available but it is always
++Note: As of December 2014, no hardware with MPX is available but it is
+ possible to use SDE (Intel(R) Software Development Emulator) instead, which
+ can be downloaded from
+ http://software.intel.com/en-us/articles/intel-software-development-emulator
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 967dfe0..cc91e5e 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -248,10 +248,6 @@ config HAVE_INTEL_TXT
+ 	def_bool y
+ 	depends on INTEL_IOMMU && ACPI
+ 
+-config X86_INTEL_MPX
+-	def_bool y
+-	depends on CPU_SUP_INTEL
+-
+ config X86_32_SMP
+ 	def_bool y
+ 	depends on X86_32 && SMP
+@@ -1575,6 +1571,32 @@ config X86_SMAP
+ 
+ 	  If unsure, say Y.
+ 
++config X86_INTEL_MPX
++	prompt "Intel MPX (Memory Protection Extensions)"
++	def_bool n
++	depends on CPU_SUP_INTEL
++	---help---
++	  MPX provides hardware features that can be used in
++	  conjunction with compiler-instrumented code to check
++	  memory references.  It is designed to detect buffer
++	  overflow or underflow bugs.
++
++	  This option enables running applications which are
++	  instrumented or otherwise use MPX.  It does not use MPX
++	  itself inside the kernel or to protect the kernel
++	  against bad memory references.
++
++	  Enabling this option will make the kernel larger:
++	  ~8k of kernel text and 36 bytes of data on a 64-bit
++	  defconfig.  It adds a long to the 'mm_struct' which
++	  will increase the kernel memory overhead of each
++	  process and adds some branches to paths used during
++	  exec() and munmap().
++
++	  For details, see Documentation/x86/intel_mpx.txt
++
++	  If unsure, say N.
++
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
