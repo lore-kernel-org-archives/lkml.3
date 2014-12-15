@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaLOSX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:23:58 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:43476 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099AbaLOSXz (ORCPT
+	id S1751053AbaLOS0C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:26:02 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:36855 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaLOSZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:23:55 -0500
+	Mon, 15 Dec 2014 13:25:59 -0500
+From: bsegall@google.com
+To: Kirill Tkhai <ktkhai@parallels.com>
+Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, Kirill Tkhai <tkhai@yandex.ru>,
+        pjt@google.com
+Subject: Re: [PATCH] sched/fair: Fix sched_entity::avg::decay_count initialization
+References: <1418644618.6074.13.camel@tkhai>
+Date: Mon, 15 Dec 2014 10:25:56 -0800
+In-Reply-To: <1418644618.6074.13.camel@tkhai> (Kirill Tkhai's message of "Mon,
+	15 Dec 2014 14:56:58 +0300")
+Message-ID: <xm26vblc7osr.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <548EC6C3.9060902@redhat.com>
-References: <20141214223523.GA3802@kroah.com>
-	<CA+55aFx4V9urJ=_Ai0-zuQmQvzpz-t250bgDZBEDhWUbfe3oBQ@mail.gmail.com>
-	<548EC6C3.9060902@redhat.com>
-Date: Mon, 15 Dec 2014 10:23:53 -0800
-X-Google-Sender-Auth: nsgXr07vh9VL4ylWZQREd44I0lQ
-Message-ID: <CA+55aFyNcXXa2wDTqnP6E_DShXgr9nfgG5j-c52PUOPxA6uSiA@mail.gmail.com>
-Subject: Re: [GIT PULL] USB driver patches for 3.19-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 3:32 AM, Hans de Goede <hdegoede@redhat.com> wrote:
->
-> Code wise this looks good and I've just given:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git master
->
-> a spin with an uas disk enclosure, and verified that tcq is being used,
-> and everything works fine.
+Kirill Tkhai <ktkhai@parallels.com> writes:
 
-Thanks for verifying,
+> Child has the same decay_count as parent. If it's not zero,
+> we add it to parent's cfs_rq->removed_load:
+>
+> wake_up_new_task()->set_task_cpu()->migrate_task_rq_fair().
+>
+> Child's load is a just garbade after copying of parent,
+> it hasn't been on cfs_rq yet, and it must not be added to
+> cfs_rq::removed_load in migrate_task_rq_fair().
+>
+> The patch moves sched_entity::avg::decay_count intialization
+> in sched_fork(). So, migrate_task_rq_fair() does not change
+> removed_load.
+>
+> Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
 
-                  Linus
+Reviewed-by: Ben Segall <bsegall@google.com>
+
+> ---
+>  kernel/sched/core.c |    1 +
+>  kernel/sched/fair.c |    1 -
+>  2 files changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index bb398c0..2894b69 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1832,6 +1832,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
+>  	p->se.prev_sum_exec_runtime	= 0;
+>  	p->se.nr_migrations		= 0;
+>  	p->se.vruntime			= 0;
+> +	p->se.avg.decay_count		= 0;
+>  	INIT_LIST_HEAD(&p->se.group_node);
+>  
+>  #ifdef CONFIG_SCHEDSTATS
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index df2cdf7..5f3b5a7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -676,7 +676,6 @@ void init_task_runnable_average(struct task_struct *p)
+>  {
+>  	u32 slice;
+>  
+> -	p->se.avg.decay_count = 0;
+>  	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
+>  	p->se.avg.runnable_avg_sum = slice;
+>  	p->se.avg.runnable_avg_period = slice;
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
