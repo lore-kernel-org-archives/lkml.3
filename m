@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbaLOT3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:29:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40777 "EHLO
+	id S1751964AbaLOT3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:29:42 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40784 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755AbaLOT3g (ORCPT
+	with ESMTP id S1751939AbaLOT3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:29:36 -0500
+	Mon, 15 Dec 2014 14:29:40 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dwight Engen <dwight.engen@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 22/96] sunvdc: limit each sg segment to a page
-Date: Mon, 15 Dec 2014 11:25:42 -0800
-Message-Id: <1418671616-25482-23-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 62/96] Input: xpad - use proper endpoint type
+Date: Mon, 15 Dec 2014 11:26:22 -0800
+Message-Id: <1418671616-25482-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,43 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dwight Engen <dwight.engen@oracle.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-[ Upstream commit 5eed69ffd248c9f68f56c710caf07db134aef28b ]
+commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
 
-ldc_map_sg() could fail its check that the number of pages referred to
-by the sg scatterlist was <= the number of cookies.
+The xpad wireless endpoint is not a bulk endpoint on my devices, but
+rather an interrupt one, so the USB core complains when it is submitted.
+I'm guessing that the author really did mean that this should be an
+interrupt urb, but as there are a zillion different xpad devices out
+there, let's cover out bases and handle both bulk and interrupt
+endpoints just as easily.
 
-This fixes the issue by doing a similar thing to the xen-blkfront driver,
-ensuring that the scatterlist will only ever contain a segment count <=
-port->ring_cookies, and each segment will be page aligned, and <= page
-size. This ensures that the scatterlist is always mappable.
-
-Orabug: 19347817
-OraBZ: 15945
-
-Signed-off-by: Dwight Engen <dwight.engen@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/sunvdc.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/input/joystick/xpad.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/block/sunvdc.c b/drivers/block/sunvdc.c
-index 1616ad0..1a9360d 100644
---- a/drivers/block/sunvdc.c
-+++ b/drivers/block/sunvdc.c
-@@ -747,6 +747,10 @@ static int probe_disk(struct vdc_port *port)
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index 75e3b10..856c1b0 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -1002,9 +1002,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
+ 		}
  
- 	port->disk = g;
+ 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
+-		usb_fill_bulk_urb(xpad->bulk_out, udev,
+-				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+-				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
++			usb_fill_bulk_urb(xpad->bulk_out, udev,
++					  usb_sndbulkpipe(udev,
++							  ep_irq_in->bEndpointAddress),
++					  xpad->bdata, XPAD_PKT_LEN,
++					  xpad_bulk_out, xpad);
++		} else {
++			usb_fill_int_urb(xpad->bulk_out, udev,
++					 usb_sndintpipe(udev,
++							ep_irq_in->bEndpointAddress),
++					 xpad->bdata, XPAD_PKT_LEN,
++					 xpad_bulk_out, xpad, 0);
++		}
  
-+	/* Each segment in a request is up to an aligned page in size. */
-+	blk_queue_segment_boundary(q, PAGE_SIZE - 1);
-+	blk_queue_max_segment_size(q, PAGE_SIZE);
-+
- 	blk_queue_max_segments(q, port->ring_cookies);
- 	blk_queue_max_hw_sectors(q, port->max_xfer_size);
- 	g->major = vdc_major;
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
 -- 
 1.9.1
 
