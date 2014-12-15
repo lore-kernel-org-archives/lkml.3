@@ -1,148 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860AbaLOTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:53:29 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40575 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751092AbaLOT1K (ORCPT
+	id S1752878AbaLOTxi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:53:38 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:47408 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092AbaLOTxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:27:10 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 01/96] x86_64, traps: Fix the espfix64 #DF fixup and rewrite it in C
-Date: Mon, 15 Dec 2014 11:25:21 -0800
-Message-Id: <1418671616-25482-2-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Mon, 15 Dec 2014 14:53:36 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Tomasz Figa <tfiga@chromium.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iommu@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, Heiko Stuebner <heiko@sntech.de>,
+        Joerg Roedel <joro@8bytes.org>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Daniel Kurtz <djkurtz@chromium.org>
+Subject: Re: [RFC PATCH 2/2] iommu: rockchip: Handle system-wide and runtime PM
+Date: Mon, 15 Dec 2014 21:53:34 +0200
+Message-ID: <1994723.9H6BPHKqxP@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <CAAFQd5A5UAYpV6Z3ii+TTuPOxJF8VFJmnUnHZWkc9dZN04qxYA@mail.gmail.com>
+References: <1418286387-9663-1-git-send-email-tfiga@chromium.org> <1508486.LLFuttrbI2@avalon> <CAAFQd5A5UAYpV6Z3ii+TTuPOxJF8VFJmnUnHZWkc9dZN04qxYA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt13 -stable review patch.  If anyone has any objections, please let me know.
+Hi Tomasz,
 
-------------------
+On Monday 15 December 2014 11:39:01 Tomasz Figa wrote:
+> On Sat, Dec 13, 2014 at 5:47 AM, Laurent Pinchart wrote:
+> > On Friday 12 December 2014 13:15:51 Tomasz Figa wrote:
+> >> On Fri, Dec 12, 2014 at 5:48 AM, Rafael J. Wysocki wrote:
+> >>> On Thursday, December 11, 2014 04:51:37 PM Ulf Hansson wrote:
+> >>>> On 11 December 2014 at 16:31, Kevin Hilman <khilman@kernel.org> wrote:
+> >>>>> [+ Laurent Pinchart]
+> >>>>> 
+> >>>>> Tomasz Figa <tfiga@chromium.org> writes:
+> >>>>>> On Thu, Dec 11, 2014 at 8:58 PM, Ulf Hansson wrote:
+> >>>>> [...]
+> >>>>> 
+> >>>>>>>> @@ -988,11 +1107,28 @@ static int rk_iommu_probe(struct
+> >>>>>>>> platform_device *pdev)
+> >>>>>>>>                 return -ENXIO;
+> >>>>>>>>         }
+> >>>>>>>> 
+> >>>>>>>> +       pm_runtime_no_callbacks(dev);
+> >>>>>>>> +       pm_runtime_enable(dev);
+> >>>>>>>> +
+> >>>>>>>> +       /* Synchronize state of the domain with driver data. */
+> >>>>>>>> +       pm_runtime_get_sync(dev);
+> >>>>>>>> +       iommu->is_powered = true;
+> >>>>>>> 
+> >>>>>>> Doesn't the runtime PM status reflect the value of "is_powered",
+> >>>>>>> thus why do you need to have a copy of it? Could it perpahps be
+> >>>>>>> that you try to cope with the case when CONFIG_PM is unset?
+> >>>>>> 
+> >>>>>> It's worth noting that this driver fully relies on status of other
+> >>>>>> devices in the power domain the IOMMU is in and does not enforce
+> >>>>>> the status on its own. So in general, as far as my understanding of
+> >>>>>> PM runtime subsystem, the status of the IOMMU device will be always
+> >>>>>> suspended, because nobody will call pm_runtime_get() on it (except
+> >>>>>> the get and put pair in probe). So is_powered is here to track
+> >>>>>> status of the domain, not the device. Feel free to suggest a better
+> >>>>>> way, though.
+> >>>>> 
+> >>>>> I still don't like these notifiers.  I think they add ways to bypass
+> >>>>> having proper runtime PM implemented for devices/subsystems.
+> >>>> 
+> >>>> I do agree, but I haven't found another good solution to the problem.
+> >>> 
+> >>> For the record, I'm not liking this mostly because it "fixes" a generic
+> >>> problem in a way that's hidden in the genpd code and very indirect.
+> >> 
+> >> Well, that's true. This is indeed a generic problem of PM dependencies
+> >> between devices (other than those represented by parent-child
+> >> relation), which in fact doesn't have much to do with genpd, but
+> >> rather with those devices directly. It is just that genpd is the most
+> >> convenient location to solve this in current code and in a simple way.
+> >> In other words, I see this solution as a reasonable way to get the
+> >> problem solved quickly for now, so that we can start thinking about a
+> >> more elegant solution.
+> >> 
+> >> >> > From a high-level, the IOMMU is just another device inside the PM
+> >> >> > domain, so ideally it should be doing it's own _get() and _put()
+> >> >> > calls so the PM domain code would just do the right thing without
+> >> >> > the need for notifiers.
+> >> >> 
+> >> >> As I understand it, the IOMMU (or for other similar cases) shouldn't
+> >> >> be doing any get() and put() at all because there are no IO API to
+> >> >> serve request from.
+> > 
+> > Speaking purely from an IOMMU point of view that's not entirely tree.
+> > IOMMU drivers expose map and unmap operations, so they can track whether
+> > any memory is mapped. From a bus master point of view the IOMMU map and
+> > unmap operations are hidden by the DMA mapping API. The IOMMU can thus
+> > track the existence of mappings without any IOMMU awareness in the bus
+> > master driver.
+> > 
+> > If no mapping exist the IOMMU shouldn't receive any translation request.
+> > An IOMMU driver could thus call pm_runtime_get_sync() in the map handler
+> > when creating the first mapping, and pm_runtime_put() in the unmap handler
+> > when tearing the last mapping down.
+> > 
+> > One could argue that the IOMMU would end up being powered more often than
+> > strictly needed, as bus masters drivers, even when written properly, could
+> > keep mappings around at times they don't perform bus access. This is true,
+> > and that's an argument I've raised during the last kernel summit. The
+> > general response (including Linus Torvald's) was that micro-optimizing
+> > power management might not be worth it, and that measurements proving
+> > that the gain is worth it are required before introducing new APIs to
+> > solve the problem. I can't disagree with that argument.
+> 
+> This would be a micro optimization if the IOMMU was located in its own
+> power domain. Unfortunately in most cases it is not, so keeping all
+> the devices in the domain powered on, because one of them have a
+> mapping created doesn't sound like a good idea.
+> 
+> Moreover, most of the drivers will keep the mapping for much longer
+> than one run cycle. Please take a look at V4L2's videobuf2 subsystem
+> (which I guess you are more familiar with than me;)), which will keep
+> MMAP buffers mapped in IOMMU address space for their whole lifetime. I
+> believe similar is the case for DRM drivers.
 
-From: Andy Lutomirski <luto@amacapital.net>
+Yes, but that doesn't mean it gets out of control. Buffers shouldn't be 
+allocated if they won't be used. Granted, they could be preallocated (or 
+rather premapped) slightly before being used, but in sane use cases that 
+shouldn't be long before the hardware needs to be turned on.
 
-commit af726f21ed8af2cdaa4e93098dc211521218ae65 upstream.
-
-There's nothing special enough about the espfix64 double fault fixup to
-justify writing it in assembly.  Move it to C.
-
-This also fixes a bug: if the double fault came from an IST stack, the
-old asm code would return to a partially uninitialized stack frame.
-
-Fixes: 3891a04aafd668686239349ea58f3314ea2af86b
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.13-stable: context ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/entry_64.S | 34 ++--------------------------------
- arch/x86/kernel/traps.c    | 24 ++++++++++++++++++++++++
- 2 files changed, 26 insertions(+), 32 deletions(-)
-
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index d414188..29e2ff3 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1053,6 +1053,7 @@ ENTRY(native_iret)
- 	jnz native_irq_return_ldt
- #endif
- 
-+.global native_irq_return_iret
- native_irq_return_iret:
- 	iretq
- 	_ASM_EXTABLE(native_irq_return_iret, bad_iret)
-@@ -1147,37 +1148,6 @@ ENTRY(retint_kernel)
- 	CFI_ENDPROC
- END(common_interrupt)
- 
--	/*
--	 * If IRET takes a fault on the espfix stack, then we
--	 * end up promoting it to a doublefault.  In that case,
--	 * modify the stack to make it look like we just entered
--	 * the #GP handler from user space, similar to bad_iret.
--	 */
--#ifdef CONFIG_X86_ESPFIX64
--	ALIGN
--__do_double_fault:
--	XCPT_FRAME 1 RDI+8
--	movq RSP(%rdi),%rax		/* Trap on the espfix stack? */
--	sarq $PGDIR_SHIFT,%rax
--	cmpl $ESPFIX_PGD_ENTRY,%eax
--	jne do_double_fault		/* No, just deliver the fault */
--	cmpl $__KERNEL_CS,CS(%rdi)
--	jne do_double_fault
--	movq RIP(%rdi),%rax
--	cmpq $native_irq_return_iret,%rax
--	jne do_double_fault		/* This shouldn't happen... */
--	movq PER_CPU_VAR(kernel_stack),%rax
--	subq $(6*8-KERNEL_STACK_OFFSET),%rax	/* Reset to original stack */
--	movq %rax,RSP(%rdi)
--	movq $0,(%rax)			/* Missing (lost) #GP error code */
--	movq $general_protection,RIP(%rdi)
--	retq
--	CFI_ENDPROC
--END(__do_double_fault)
--#else
--# define __do_double_fault do_double_fault
--#endif
--
- /*
-  * End of kprobes section
-  */
-@@ -1379,7 +1349,7 @@ zeroentry overflow do_overflow
- zeroentry bounds do_bounds
- zeroentry invalid_op do_invalid_op
- zeroentry device_not_available do_device_not_available
--paranoiderrorentry double_fault __do_double_fault
-+paranoiderrorentry double_fault do_double_fault
- zeroentry coprocessor_segment_overrun do_coprocessor_segment_overrun
- errorentry invalid_TSS do_invalid_TSS
- errorentry segment_not_present do_segment_not_present
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 43eac01..d2451ad 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -232,6 +232,30 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- 	static const char str[] = "double fault";
- 	struct task_struct *tsk = current;
- 
-+#ifdef CONFIG_X86_ESPFIX64
-+	extern unsigned char native_irq_return_iret[];
-+
-+	/*
-+	 * If IRET takes a non-IST fault on the espfix64 stack, then we
-+	 * end up promoting it to a doublefault.  In that case, modify
-+	 * the stack to make it look like we just entered the #GP
-+	 * handler from user space, similar to bad_iret.
-+	 */
-+	if (((long)regs->sp >> PGDIR_SHIFT) == ESPFIX_PGD_ENTRY &&
-+		regs->cs == __KERNEL_CS &&
-+		regs->ip == (unsigned long)native_irq_return_iret)
-+	{
-+		struct pt_regs *normal_regs = task_pt_regs(current);
-+
-+		/* Fake a #GP(0) from userspace. */
-+		memmove(&normal_regs->ip, (void *)regs->sp, 5*8);
-+		normal_regs->orig_ax = 0;  /* Missing (lost) #GP error code */
-+		regs->ip = (unsigned long)general_protection;
-+		regs->sp = (unsigned long)&normal_regs->orig_ax;
-+		return;
-+	}
-+#endif
-+
- 	exception_enter();
- 	/* Return not checked because double check cannot be ignored */
- 	notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_DF, SIGSEGV);
 -- 
-1.9.1
+Regards,
+
+Laurent Pinchart
 
