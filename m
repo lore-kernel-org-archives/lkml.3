@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419AbaLOOrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:47:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38716 "EHLO
+	id S1751628AbaLOOsO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:48:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38709 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849AbaLOO2c (ORCPT
+	with ESMTP id S1752840AbaLOO2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:32 -0500
+	Mon, 15 Dec 2014 09:28:31 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Mark Rustad <mark.d.rustad@intel.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 104/168] sound/radeon: Move 64-bit MSI quirk from arch to driver
-Date: Mon, 15 Dec 2014 14:25:58 +0000
-Message-Id: <1418653622-21105-105-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 100/168] ixgbe: fix use after free adapter->state test in ixgbe_remove/ixgbe_probe
+Date: Mon, 15 Dec 2014 14:25:54 +0000
+Message-Id: <1418653622-21105-101-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,73 +30,116 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit db79afa1e57925ba96ab18514c0ebe42a28e393e upstream.
+commit b5b2ffc0574e1f271d79b6b992ee382dc9d5eaa8 upstream.
 
-A number of radeon cards have a HW limitation causing them to be
-unable to generate the full 64-bit of address bits for MSIs. This
-breaks MSIs on some platforms such as POWER machines.
+While working on a different issue, I noticed an annoying use
+after free bug on my machine when unloading the ixgbe driver:
 
-We used to have a powerpc specific quirk to address that on a
-single card, but this doesn't scale very well, this is better
-put under control of the drivers who know precisely what a given
-HW revision can do.
+[ 8642.318797] ixgbe 0000:02:00.1: removed PHC on p2p2
+[ 8642.742716] ixgbe 0000:02:00.1: complete
+[ 8642.743784] BUG: unable to handle kernel paging request at ffff8807d3740a90
+[ 8642.744828] IP: [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
+[ 8642.745886] PGD 20c6067 PUD 81c1f6067 PMD 81c15a067 PTE 80000007d3740060
+[ 8642.746956] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
+[ 8642.748039] Modules linked in: [...]
+[ 8642.752929] CPU: 1 PID: 1225 Comm: rmmod Not tainted 3.18.0-rc2+ #49
+[ 8642.754203] Hardware name: Supermicro X10SLM-F/X10SLM-F, BIOS 1.1b 11/01/2013
+[ 8642.755505] task: ffff8807e34d3fe0 ti: ffff8807b7204000 task.ti: ffff8807b7204000
+[ 8642.756831] RIP: 0010:[<ffffffffa01c77dc>]  [<ffffffffa01c77dc>] ixgbe_remove+0xfc/0x1b0 [ixgbe]
+[...]
+[ 8642.774335] Stack:
+[ 8642.775805]  ffff8807ee824098 ffff8807ee824098 ffffffffa01f3000 ffff8807ee824000
+[ 8642.777326]  ffff8807b7207e18 ffffffff8137720f ffff8807ee824098 ffff8807ee824098
+[ 8642.778848]  ffffffffa01f3068 ffff8807ee8240f8 ffff8807b7207e38 ffffffff8144180f
+[ 8642.780365] Call Trace:
+[ 8642.781869]  [<ffffffff8137720f>] pci_device_remove+0x3f/0xc0
+[ 8642.783395]  [<ffffffff8144180f>] __device_release_driver+0x7f/0xf0
+[ 8642.784876]  [<ffffffff814421f8>] driver_detach+0xb8/0xc0
+[ 8642.786352]  [<ffffffff814414a9>] bus_remove_driver+0x59/0xe0
+[ 8642.787783]  [<ffffffff814429d0>] driver_unregister+0x30/0x70
+[ 8642.789202]  [<ffffffff81375c65>] pci_unregister_driver+0x25/0xa0
+[ 8642.790657]  [<ffffffffa01eb38e>] ixgbe_exit_module+0x1c/0xc8e [ixgbe]
+[ 8642.792064]  [<ffffffff810f93a2>] SyS_delete_module+0x132/0x1c0
+[ 8642.793450]  [<ffffffff81012c61>] ? do_notify_resume+0x61/0xa0
+[ 8642.794837]  [<ffffffff816d2029>] system_call_fastpath+0x12/0x17
 
-We now have a generic quirk in the PCI code. We should set it
-appropriately for all radeon's from the audio driver.
+The issue is that test_and_set_bit() done on adapter->state is being
+performed *after* the netdevice has been freed via free_netdev().
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Reviewed-by: Takashi Iwai <tiwai@suse.de>
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+When netdev is being allocated on initialization time, it allocates
+a private area, here struct ixgbe_adapter, that resides after the
+net_device structure. In ixgbe_probe(), the device init routine,
+we set up the adapter after alloc_etherdev_mq() on the private area
+and add a reference for the pci_dev as well via pci_set_drvdata().
+
+Both in the error path of ixgbe_probe(), but also on module unload
+when ixgbe_remove() is being called, commit 41c62843eb6a ("ixgbe:
+Fix rcu warnings induced by LER") accesses adapter after free_netdev().
+The patch stores the result in a bool and thus fixes above oops on my
+side.
+
+Fixes: 41c62843eb6a ("ixgbe: Fix rcu warnings induced by LER")
+Cc: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 10 ++++++++--
- sound/pci/hda/hda_priv.h  |  1 +
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index ba0266f7cf03..6383971dcd15 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -252,7 +252,8 @@ enum {
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index c4d560d7dabb..a125d3c35856 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -8081,6 +8081,7 @@ static int ixgbe_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	int i, err, pci_using_dac, expected_gts;
+ 	unsigned int indices = MAX_TX_QUEUES;
+ 	u8 part_str[IXGBE_PBANUM_LENGTH];
++	bool disable_dev = false;
+ #ifdef IXGBE_FCOE
+ 	u16 device_caps;
+ #endif
+@@ -8471,13 +8472,14 @@ err_sw_init:
+ 	iounmap(adapter->io_addr);
+ 	kfree(adapter->mac_table);
+ err_ioremap:
++	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
+ 	free_netdev(netdev);
+ err_alloc_etherdev:
+ 	pci_release_selected_regions(pdev,
+ 				     pci_select_bars(pdev, IORESOURCE_MEM));
+ err_pci_reg:
+ err_dma:
+-	if (!adapter || !test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
++	if (!adapter || disable_dev)
+ 		pci_disable_device(pdev);
+ 	return err;
+ }
+@@ -8495,6 +8497,7 @@ static void ixgbe_remove(struct pci_dev *pdev)
+ {
+ 	struct ixgbe_adapter *adapter = pci_get_drvdata(pdev);
+ 	struct net_device *netdev = adapter->netdev;
++	bool disable_dev;
  
- /* quirks for ATI/AMD HDMI */
- #define AZX_DCAPS_PRESET_ATI_HDMI \
--	(AZX_DCAPS_NO_TCSEL | AZX_DCAPS_SYNC_WRITE | AZX_DCAPS_POSFIX_LPIB)
-+	(AZX_DCAPS_NO_TCSEL | AZX_DCAPS_SYNC_WRITE | AZX_DCAPS_POSFIX_LPIB|\
-+	 AZX_DCAPS_NO_MSI64)
+ 	ixgbe_dbg_adapter_exit(adapter);
  
- /* quirks for Nvidia */
- #define AZX_DCAPS_PRESET_NVIDIA \
-@@ -1297,9 +1298,14 @@ static int azx_first_init(struct azx *chip)
- 		return -ENXIO;
- 	}
+@@ -8544,11 +8547,12 @@ static void ixgbe_remove(struct pci_dev *pdev)
+ 	e_dev_info("complete\n");
  
--	if (chip->msi)
-+	if (chip->msi) {
-+		if (chip->driver_caps & AZX_DCAPS_NO_MSI64) {
-+			dev_dbg(card->dev, "Disabling 64bit MSI\n");
-+			pci->no_64bit_msi = true;
-+		}
- 		if (pci_enable_msi(pci) < 0)
- 			chip->msi = 0;
-+	}
+ 	kfree(adapter->mac_table);
++	disable_dev = !test_and_set_bit(__IXGBE_DISABLED, &adapter->state);
+ 	free_netdev(netdev);
  
- 	if (azx_acquire_irq(chip, 0) < 0)
- 		return -EBUSY;
-diff --git a/sound/pci/hda/hda_priv.h b/sound/pci/hda/hda_priv.h
-index e9d1a5762a55..526bc876f0a1 100644
---- a/sound/pci/hda/hda_priv.h
-+++ b/sound/pci/hda/hda_priv.h
-@@ -191,6 +191,7 @@ enum { SDI0, SDI1, SDI2, SDI3, SDO0, SDO1, SDO2, SDO3 };
- #define AZX_DCAPS_PM_RUNTIME	(1 << 26)	/* runtime PM support */
- #define AZX_DCAPS_I915_POWERWELL (1 << 27)	/* HSW i915 powerwell support */
- #define AZX_DCAPS_CORBRP_SELF_CLEAR (1 << 28)	/* CORBRP clears itself after reset */
-+#define AZX_DCAPS_NO_MSI64      (1 << 29)	/* Stick to 32-bit MSIs */
+ 	pci_disable_pcie_error_reporting(pdev);
  
- /* position fix mode */
- enum {
+-	if (!test_and_set_bit(__IXGBE_DISABLED, &adapter->state))
++	if (disable_dev)
+ 		pci_disable_device(pdev);
+ }
+ 
 -- 
 2.1.3
 
