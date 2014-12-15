@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240AbaLOCYu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Dec 2014 21:24:50 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:35928 "EHLO
+	id S1751312AbaLOCZA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Dec 2014 21:25:00 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:38843 "EHLO
 	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaLOCYl (ORCPT
+	with ESMTP id S1751009AbaLOCYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Dec 2014 21:24:41 -0500
+	Sun, 14 Dec 2014 21:24:43 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 1/2] sched: Fix missing preemption check in cond_resched()
-Date: Mon, 15 Dec 2014 03:24:31 +0100
-Message-Id: <1418610272-21518-2-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 2/2] sched: Pull resched loop to __schedule() callers
+Date: Mon, 15 Dec 2014 03:24:32 +0100
+Message-Id: <1418610272-21518-3-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418610272-21518-1-git-send-email-fweisbec@gmail.com>
 References: <1418610272-21518-1-git-send-email-fweisbec@gmail.com>
@@ -23,113 +23,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an interrupt fires in cond_resched() between the call to __schedule()
-and the PREEMPT_ACTIVE count decrementation with the interrupt having
-set TIF_NEED_RESCHED, the call to preempt_schedule_irq() will be ignored
-due to the PREEMPT_ACTIVE count. This kind of scenario, with irq preemption
-being delayed because we are interrupting a preempt-disabled area, is
-usually fixed up after preemption is re-enabled back with an explicit
-call to preempt_schedule().
+__schedule() disables preemption during its job and re-enables it
+afterward without doing a preemption check to avoid recursion.
 
-This is what preempt_enable() does but a raw preempt count decrement as
-performed by __preempt_count_sub(PREEMPT_ACTIVE) doesn't handle delayed
-preemption check. Therefore when such a race happens, the rescheduling
-is going to be delayed until the next scheduler or preemption entrypoint.
-This can be a problem for scheduler latency sensitive workloads.
+But if an event happens after the context switch which requires
+rescheduling, we need to check again if a task of a higher priority
+needs the CPU. A preempt irq can raise such a situation. To handle that,
+__schedule() loops on need_resched().
 
-Lets fix that by consolidating cond_resched() with preempt_schedule()
-internals.
+But preempt_schedule_*() functions, which call __schedule(), also loop
+on need_resched() to handle missed preempt irqs. Hence we end up with
+the same loop happening twice.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Reported-and-inspired-by: Ingo Molnar <mingo@kernel.org>
+Lets simplify that by attributing the need_resched() loop responsability
+to all __schedule() callers.
+
+There is a risk that the outer loop now handles reschedules that used
+to be handled by the inner loop with the added overhead of caller details
+(inc/dec of PREEMPT_ACTIVE, irq save/restore) but assuming those inner
+rescheduling loop weren't too frequent, this shouldn't matter. Especially
+since the whole preemption path is now loosing one loop in any case.
+
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- kernel/sched/core.c | 40 +++++++++++++++++++---------------------
- 1 file changed, 19 insertions(+), 21 deletions(-)
+ kernel/sched/core.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b5797b7..069a2d8 100644
+index 069a2d8..368c8f3 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2877,6 +2877,21 @@ void __sched schedule_preempt_disabled(void)
- 	preempt_disable();
- }
- 
-+static void preempt_schedule_common(void)
-+{
-+	do {
-+		__preempt_count_add(PREEMPT_ACTIVE);
-+		__schedule();
-+		__preempt_count_sub(PREEMPT_ACTIVE);
-+
-+		/*
-+		 * Check again in case we missed a preemption opportunity
-+		 * between schedule and now.
-+		 */
-+		barrier();
-+	} while (need_resched());
-+}
-+
- #ifdef CONFIG_PREEMPT
- /*
-  * this is the entry point to schedule() from in-kernel preemption
-@@ -2892,17 +2907,7 @@ asmlinkage __visible void __sched notrace preempt_schedule(void)
- 	if (likely(!preemptible()))
- 		return;
- 
--	do {
--		__preempt_count_add(PREEMPT_ACTIVE);
--		__schedule();
--		__preempt_count_sub(PREEMPT_ACTIVE);
--
--		/*
--		 * Check again in case we missed a preemption opportunity
--		 * between schedule and now.
--		 */
--		barrier();
--	} while (need_resched());
-+	preempt_schedule_common();
- }
- NOKPROBE_SYMBOL(preempt_schedule);
- EXPORT_SYMBOL(preempt_schedule);
-@@ -4202,17 +4207,10 @@ SYSCALL_DEFINE0(sched_yield)
- 	return 0;
- }
- 
--static void __cond_resched(void)
--{
--	__preempt_count_add(PREEMPT_ACTIVE);
--	__schedule();
--	__preempt_count_sub(PREEMPT_ACTIVE);
--}
--
- int __sched _cond_resched(void)
+@@ -2748,6 +2748,10 @@ again:
+  *          - explicit schedule() call
+  *          - return from syscall or exception to user-space
+  *          - return from interrupt-handler to user-space
++ *
++ * WARNING: all callers must re-check need_resched() afterward and reschedule
++ * accordingly in case an event triggered the need for rescheduling (such as
++ * an interrupt waking up a task) while preemption was disabled in __schedule().
+  */
+ static void __sched __schedule(void)
  {
- 	if (should_resched()) {
--		__cond_resched();
-+		preempt_schedule_common();
- 		return 1;
- 	}
- 	return 0;
-@@ -4237,7 +4235,7 @@ int __cond_resched_lock(spinlock_t *lock)
- 	if (spin_needbreak(lock) || resched) {
- 		spin_unlock(lock);
- 		if (resched)
--			__cond_resched();
-+			preempt_schedule_common();
- 		else
- 			cpu_relax();
- 		ret = 1;
-@@ -4253,7 +4251,7 @@ int __sched __cond_resched_softirq(void)
+@@ -2756,7 +2760,6 @@ static void __sched __schedule(void)
+ 	struct rq *rq;
+ 	int cpu;
  
- 	if (should_resched()) {
- 		local_bh_enable();
--		__cond_resched();
-+		preempt_schedule_common();
- 		local_bh_disable();
- 		return 1;
- 	}
+-need_resched:
+ 	preempt_disable();
+ 	cpu = smp_processor_id();
+ 	rq = cpu_rq(cpu);
+@@ -2821,8 +2824,6 @@ need_resched:
+ 	post_schedule(rq);
+ 
+ 	sched_preempt_enable_no_resched();
+-	if (need_resched())
+-		goto need_resched;
+ }
+ 
+ static inline void sched_submit_work(struct task_struct *tsk)
+@@ -2842,7 +2843,9 @@ asmlinkage __visible void __sched schedule(void)
+ 	struct task_struct *tsk = current;
+ 
+ 	sched_submit_work(tsk);
+-	__schedule();
++	do {
++		__schedule();
++	} while (need_resched());
+ }
+ EXPORT_SYMBOL(schedule);
+ 
 -- 
 2.1.3
 
