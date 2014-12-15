@@ -1,101 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaLOJoi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 04:44:38 -0500
-Received: from arrakis.dune.hu ([78.24.191.176]:50976 "EHLO arrakis.dune.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819AbaLOJoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 04:44:32 -0500
+	id S1751892AbaLOJrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 04:47:09 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:48184 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619AbaLOJrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 04:47:06 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: ykk@rock-chips.com
+X-FST-TO: jsarha@ti.com
+X-SENDER-IP: 104.167.231.7
+X-LOGIN-NAME: ykk@rock-chips.com
+X-UNIQUE-TAG: <99e6c404e4f96a36eae5aa8b81eed6fd>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <548EADFB.6020903@rock-chips.com>
+Date: Mon, 15 Dec 2014 17:46:35 +0800
+From: "Kuankuan.Yang" <ykk@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418422034-17099-14-git-send-email-cernekee@gmail.com>
-References: <1418422034-17099-1-git-send-email-cernekee@gmail.com> <1418422034-17099-14-git-send-email-cernekee@gmail.com>
-From: Jonas Gorski <jogo@openwrt.org>
-Date: Mon, 15 Dec 2014 10:43:58 +0100
-Message-ID: <CAOiHx=nX9jJEFZmkA-1fWj47whq85wj-ZgUxnZBwpAYDUfAO4w@mail.gmail.com>
-Subject: Re: [PATCH V5 13/23] MIPS: BMIPS: Flush the readahead cache after DMA
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Brian Norris <computersforpeace@gmail.com>,
-        MIPS Mailing List <linux-mips@linux-mips.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?UTF-8?B?U3Tvv73vv71waGFuZSBNYXJjaGVzaW4=?= <marcheu@chromium.org>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Mark Brown <broonie@kernel.org>,
+        Takashi Iwai <tiwai@suse.de>, Jyri Sarha <jsarha@ti.com>
+Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <1418612114-19692-1-git-send-email-ykk@rock-chips.com> <548EA3B9.5080407@metafoo.de>
+In-Reply-To: <548EA3B9.5080407@metafoo.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 12, 2014 at 11:07 PM, Kevin Cernekee <cernekee@gmail.com> wrote:
-> BMIPS 3300/435x/438x CPUs have a readahead cache that is separate from
-> the L1/L2.  During a DMA operation, accesses adjacent to a DMA buffer
-> may cause parts of the DMA buffer to be prefetched into the RAC.  To
-> avoid possible coherency problems, flush the RAC upon DMA completion.
+Hi lars:
 
-According to what I have, any cpu [d-]cache invalidate operation
-should already flush the full RAC unless explicitly disabled in the
-RAC configuration - is this intended as an optimization/shortcut?
+thks for your review, I will move it to hdmi audio driver, give the 
+codec_name & codec_dai_name an const string.
 
-> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
-> ---
->  arch/mips/mm/dma-default.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
+Best Regards.
+
+在 2014年12月15日 17:02, Lars-Peter Clausen 写道:
+> On 12/15/2014 03:55 AM, Yakir Yang wrote:
+> [...]
+>> +- codec-name: the dw-hdmi codec's device name
+>> +- codec-dai-name: the dw-hdmi codec's dai name
 >
-> diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
-> index af5f046..ee6d12c 100644
-> --- a/arch/mips/mm/dma-default.c
-> +++ b/arch/mips/mm/dma-default.c
-> @@ -18,6 +18,7 @@
->  #include <linux/highmem.h>
->  #include <linux/dma-contiguous.h>
+> Please you phandles for this, the names are Linux driver and framework 
+> specific details. That should not leak into the DT bindings.
 >
-> +#include <asm/bmips.h>
->  #include <asm/cache.h>
->  #include <asm/cpu-type.h>
->  #include <asm/io.h>
-> @@ -69,6 +70,18 @@ static inline struct page *dma_addr_to_page(struct device *dev,
->   */
->  static inline int cpu_needs_post_dma_flush(struct device *dev)
->  {
-
-The place for it seems a bit misplaced; I would not expect
-cpu_needs_post_dma_flush() to have any side effects.
-
-> +       if (boot_cpu_type() == CPU_BMIPS3300 ||
-> +           boot_cpu_type() == CPU_BMIPS4350 ||
-> +           boot_cpu_type() == CPU_BMIPS4380) {
-> +               void __iomem *cbr = BMIPS_GET_CBR();
-> +
-> +               /* Flush stale data out of the readahead cache */
-> +               __raw_writel(0x100, cbr + BMIPS_RAC_CONFIG);
-
-Hm, according to what I have, bits [6:0] of RAC_CONFIG are R/W
-configuration bits, and this will overwrite them:
-
-CFE> dm 0xff400000 4
-ff400000: 02a07015                                        ..p.
-CFE> sm 0xff400000 0x100 4
-ff400000: 02a00000                                        ....
-
-(As far as I can tell, RAC was previously enabled for instruction
-cache misses , and now isn't any more for anything, so effectively
-disabled?)
-
-Also for BMIPS4350 (and I guess 4380) there seems to be a second
-RAC_CONFIG register at 0x8, I guess for the second thread? Does it
-need flushing, too?
-
-> +               __raw_readl(cbr + BMIPS_RAC_CONFIG);
-> +
-> +               return 0;
-> +       }
-> +
->         return !plat_device_is_coherent(dev) &&
->                (boot_cpu_type() == CPU_R10000 ||
->                 boot_cpu_type() == CPU_R12000 ||
-> --
-> 2.1.1
+> [..]
+>
+>
+>
 
 
-Jonas
