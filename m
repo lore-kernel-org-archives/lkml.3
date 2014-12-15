@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaLOOp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:45:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38778 "EHLO
+	id S1752911AbaLOOpu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:45:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38761 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaLOO2n (ORCPT
+	with ESMTP id S1751211AbaLOO2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:43 -0500
+	Mon, 15 Dec 2014 09:28:41 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 117/168] drm/radeon: report disconnected for LVDS/eDP with PX if ddc fails
-Date: Mon, 15 Dec 2014 14:26:11 +0000
-Message-Id: <1418653622-21105-118-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 113/168] Input: xpad - use proper endpoint type
+Date: Mon, 15 Dec 2014 14:26:07 +0000
+Message-Id: <1418653622-21105-114-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 1348579433566355e570008929daa09a0db64fd8 upstream.
+commit a1f9a4072655843fc03186acbad65990cc05dd2d upstream.
 
-If ddc fails, presumably the i2c mux (and hopefully the signal
-mux) are switched to the other GPU so don't fetch the edid from
-the vbios so that the connector reports disconnected.
+The xpad wireless endpoint is not a bulk endpoint on my devices, but
+rather an interrupt one, so the USB core complains when it is submitted.
+I'm guessing that the author really did mean that this should be an
+interrupt urb, but as there are a zillion different xpad devices out
+there, let's cover out bases and handle both bulk and interrupt
+endpoints just as easily.
 
-bug:
-https://bugzilla.opensuse.org/show_bug.cgi?id=904417
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.16:
-  - dropped changes to radeon_connector_get_edid() ]
+Signed-off-by: "Pierre-Loup A. Griffais" <pgriffais@valvesoftware.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_connectors.c | 13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/input/joystick/xpad.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
-index 44831197e82e..eb76aa72466c 100644
---- a/drivers/gpu/drm/radeon/radeon_connectors.c
-+++ b/drivers/gpu/drm/radeon/radeon_connectors.c
-@@ -695,6 +695,8 @@ static int radeon_lvds_mode_valid(struct drm_connector *connector,
- static enum drm_connector_status
- radeon_lvds_detect(struct drm_connector *connector, bool force)
- {
-+	struct drm_device *dev = connector->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_connector *radeon_connector = to_radeon_connector(connector);
- 	struct drm_encoder *encoder = radeon_best_single_encoder(connector);
- 	enum drm_connector_status ret = connector_status_disconnected;
-@@ -711,7 +713,11 @@ radeon_lvds_detect(struct drm_connector *connector, bool force)
- 		/* check if panel is valid */
- 		if (native_mode->hdisplay >= 320 && native_mode->vdisplay >= 240)
- 			ret = connector_status_connected;
--
-+		/* don't fetch the edid from the vbios if ddc fails and runpm is
-+		 * enabled so we report disconnected.
-+		 */
-+		if ((rdev->flags & RADEON_IS_PX) && (radeon_runtime_pm != 0))
-+			ret = connector_status_disconnected;
- 	}
- 
- 	/* check for edid as well */
-@@ -1492,6 +1498,11 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
- 			/* check if panel is valid */
- 			if (native_mode->hdisplay >= 320 && native_mode->vdisplay >= 240)
- 				ret = connector_status_connected;
-+			/* don't fetch the edid from the vbios if ddc fails and runpm is
-+			 * enabled so we report disconnected.
-+			 */
-+			if ((rdev->flags & RADEON_IS_PX) && (radeon_runtime_pm != 0))
-+				ret = connector_status_disconnected;
+diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
+index e383eebbafdd..18558f73b4a3 100644
+--- a/drivers/input/joystick/xpad.c
++++ b/drivers/input/joystick/xpad.c
+@@ -1038,9 +1038,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
  		}
- 		/* eDP is always DP */
- 		radeon_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
+ 
+ 		ep_irq_in = &intf->cur_altsetting->endpoint[1].desc;
+-		usb_fill_bulk_urb(xpad->bulk_out, udev,
+-				usb_sndbulkpipe(udev, ep_irq_in->bEndpointAddress),
+-				xpad->bdata, XPAD_PKT_LEN, xpad_bulk_out, xpad);
++		if (usb_endpoint_is_bulk_out(ep_irq_in)) {
++			usb_fill_bulk_urb(xpad->bulk_out, udev,
++					  usb_sndbulkpipe(udev,
++							  ep_irq_in->bEndpointAddress),
++					  xpad->bdata, XPAD_PKT_LEN,
++					  xpad_bulk_out, xpad);
++		} else {
++			usb_fill_int_urb(xpad->bulk_out, udev,
++					 usb_sndintpipe(udev,
++							ep_irq_in->bEndpointAddress),
++					 xpad->bdata, XPAD_PKT_LEN,
++					 xpad_bulk_out, xpad, 0);
++		}
+ 
+ 		/*
+ 		 * Submit the int URB immediately rather than waiting for open
 -- 
 2.1.3
 
