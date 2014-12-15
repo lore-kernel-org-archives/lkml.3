@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaLOPLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 10:11:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38337 "EHLO
+	id S1754161AbaLOPMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 10:12:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38299 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426AbaLOO1d (ORCPT
+	with ESMTP id S1752367AbaLOO11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:27:33 -0500
+	Mon, 15 Dec 2014 09:27:27 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Junjie Mao <eternal.n08@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 036/168] x86, kaslr: Handle Gold linker for finding bss/brk
-Date: Mon, 15 Dec 2014 14:24:50 +0000
-Message-Id: <1418653622-21105-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 031/168] drm/i915: Kick fbdev before vgacon
+Date: Mon, 15 Dec 2014 14:24:45 +0000
+Message-Id: <1418653622-21105-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 70b61e362187b5fccac206506d402f3424e3e749 upstream.
+commit 0485c9dc24ec0939b42ca5104c0373297506b555 upstream.
 
-When building with the Gold linker, the .bss and .brk areas of vmlinux
-are shown as consecutive instead of having the same file offset. Allow
-for either state, as long as things add up correctly.
+It's magic, but it seems to work.
 
-Fixes: e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
-Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Junjie Mao <eternal.n08@gmail.com>
-Link: http://lkml.kernel.org/r/20141118001604.GA25045@www.outflux.net
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+This fixes a regression introduced in
+
+commit 1bb9e632a0aeee1121e652ee4dc80e5e6f14bcd2
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Tue Jul 8 10:02:43 2014 +0200
+
+    drm/i915: Only unbind vgacon, not other console drivers
+
+My best guess is that the vga fbdev driver falls over if we rip out
+parts of vgacon. Hooray.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=82439
+Reported-and-tested-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/tools/calc_run_size.pl | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_dma.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/tools/calc_run_size.pl b/arch/x86/tools/calc_run_size.pl
-index 0b0b124d3ece..23210baade2d 100644
---- a/arch/x86/tools/calc_run_size.pl
-+++ b/arch/x86/tools/calc_run_size.pl
-@@ -19,7 +19,16 @@ while (<>) {
- 		if ($file_offset == 0) {
- 			$file_offset = $offset;
- 		} elsif ($file_offset != $offset) {
--			die ".bss and .brk lack common file offset\n";
-+			# BFD linker shows the same file offset in ELF.
-+			# Gold linker shows them as consecutive.
-+			next if ($file_offset + $mem_size == $offset + $size);
-+
-+			printf STDERR "file_offset: 0x%lx\n", $file_offset;
-+			printf STDERR "mem_size: 0x%lx\n", $mem_size;
-+			printf STDERR "offset: 0x%lx\n", $offset;
-+			printf STDERR "size: 0x%lx\n", $size;
-+
-+			die ".bss and .brk are non-contiguous\n";
+diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+index 0663fb4fa606..646b68a58979 100644
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1662,15 +1662,17 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+ 		goto out_regs;
+ 
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
+-		ret = i915_kick_out_vgacon(dev_priv);
++		/* WARNING: Apparently we must kick fbdev drivers before vgacon,
++		 * otherwise the vga fbdev driver falls over. */
++		ret = i915_kick_out_firmware_fb(dev_priv);
+ 		if (ret) {
+-			DRM_ERROR("failed to remove conflicting VGA console\n");
++			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
+ 			goto out_gtt;
+ 		}
+ 
+-		ret = i915_kick_out_firmware_fb(dev_priv);
++		ret = i915_kick_out_vgacon(dev_priv);
+ 		if (ret) {
+-			DRM_ERROR("failed to remove conflicting framebuffer drivers\n");
++			DRM_ERROR("failed to remove conflicting VGA console\n");
+ 			goto out_gtt;
  		}
  	}
- }
 -- 
 2.1.3
 
