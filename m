@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaLOTay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:30:54 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40812 "EHLO
+	id S1752103AbaLOTbA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:31:00 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40822 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaLOTau (ORCPT
+	with ESMTP id S1751122AbaLOTa6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:30:50 -0500
+	Mon, 15 Dec 2014 14:30:58 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Anton Blanchard <anton@samba.org>, Michael Ellerman <mpe@ellerman.id.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 53/96] ALSA: hda - Limit 40bit DMA for AMD HDMI controllers
-Date: Mon, 15 Dec 2014 11:26:13 -0800
-Message-Id: <1418671616-25482-54-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 64/96] powerpc: 32 bit getcpu VDSO function uses 64 bit instructions
+Date: Mon, 15 Dec 2014 11:26:24 -0800
+Message-Id: <1418671616-25482-65-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,66 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Anton Blanchard <anton@samba.org>
 
-commit 413cbf469a19e7662ba5025695bf5a573927105a upstream.
+commit 152d44a853e42952f6c8a504fb1f8eefd21fd5fd upstream.
 
-AMD/ATI HDMI controller chip models, we already have a filter to lower
-to 32bit DMA, but the rest are supposed to be working with 64bit
-although the hardware doesn't really work with 63bit but only with 40
-or 48bit DMA.  In this patch, we take 40bit DMA for safety for the
-AMD/ATI controllers as the graphics drivers does.
+I used some 64 bit instructions when adding the 32 bit getcpu VDSO
+function. Fix it.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-[ kamal: backport to 3.13-stable: s/AZX/ICH6/ ]
+Fixes: 18ad51dd342a ("powerpc: Add VDSO version of getcpu")
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/pci/hda/hda_intel.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/vdso32/getcpu.S | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index a045023..c3f7839 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -3657,6 +3657,7 @@ static int azx_first_init(struct azx *chip)
- 	struct snd_card *card = chip->card;
- 	int i, err;
- 	unsigned short gcap;
-+	unsigned int dma_bits = 64;
- 
- #if BITS_PER_LONG != 64
- 	/* Fix up base address on ULI M5461 */
-@@ -3693,9 +3694,14 @@ static int azx_first_init(struct azx *chip)
- 	gcap = azx_readw(chip, GCAP);
- 	snd_printdd(SFX "%s: chipset global capabilities = 0x%x\n", pci_name(chip->pci), gcap);
- 
-+	/* AMD devices support 40 or 48bit DMA, take the safe one */
-+	if (chip->pci->vendor == PCI_VENDOR_ID_AMD)
-+		dma_bits = 40;
-+
- 	/* disable SB600 64bit support for safety */
- 	if (chip->pci->vendor == PCI_VENDOR_ID_ATI) {
- 		struct pci_dev *p_smbus;
-+		dma_bits = 40;
- 		p_smbus = pci_get_device(PCI_VENDOR_ID_ATI,
- 					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 					 NULL);
-@@ -3725,9 +3731,11 @@ static int azx_first_init(struct azx *chip)
- 	}
- 
- 	/* allow 64bit DMA address if supported by H/W */
--	if ((gcap & ICH6_GCAP_64OK) && !pci_set_dma_mask(pci, DMA_BIT_MASK(64)))
--		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(64));
--	else {
-+	if (!(gcap & ICH6_GCAP_64OK))
-+		dma_bits = 32;
-+	if (!pci_set_dma_mask(pci, DMA_BIT_MASK(dma_bits))) {
-+		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(dma_bits));
-+	} else {
- 		pci_set_dma_mask(pci, DMA_BIT_MASK(32));
- 		pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
- 	}
+diff --git a/arch/powerpc/kernel/vdso32/getcpu.S b/arch/powerpc/kernel/vdso32/getcpu.S
+index 47afd08..fe7e97a 100644
+--- a/arch/powerpc/kernel/vdso32/getcpu.S
++++ b/arch/powerpc/kernel/vdso32/getcpu.S
+@@ -30,8 +30,8 @@
+ V_FUNCTION_BEGIN(__kernel_getcpu)
+   .cfi_startproc
+ 	mfspr	r5,SPRN_USPRG3
+-	cmpdi	cr0,r3,0
+-	cmpdi	cr1,r4,0
++	cmpwi	cr0,r3,0
++	cmpwi	cr1,r4,0
+ 	clrlwi  r6,r5,16
+ 	rlwinm  r7,r5,16,31-15,31-0
+ 	beq	cr0,1f
 -- 
 1.9.1
 
