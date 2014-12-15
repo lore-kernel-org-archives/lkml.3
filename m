@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaLOKRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 05:17:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46064 "EHLO mx1.redhat.com"
+	id S1752136AbaLOKSC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 05:18:02 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49190 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752036AbaLOKRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 05:17:14 -0500
-Date: Mon, 15 Dec 2014 12:17:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "LF.Tan" <lftan.linux@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 00/18] uaccess: fix sparse warning on get_user for
- bitwise types
-Message-ID: <20141215101703.GA26156@redhat.com>
-References: <1418575877-21488-1-git-send-email-mst@redhat.com>
- <CAFiDJ5_fGWx2E1jvU+k0Tv_esRpWmC-p+kq7Y_VOr5bx2ZUFzg@mail.gmail.com>
+	id S1751744AbaLOKR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 05:17:59 -0500
+Date: Mon, 15 Dec 2014 11:17:57 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: tglx@linutronix.de, gnomes@lxorguk.ukuu.org.uk,
+        computersforpeace@gmail.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, corbet@lwn.net, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/4] Documentation/SubmitChecklist: Remind submitters to
+ check the merge window
+Message-ID: <20141215101757.GC6444@pd.tnic>
+References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
+ <1418623790-28429-3-git-send-email-cernekee@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAFiDJ5_fGWx2E1jvU+k0Tv_esRpWmC-p+kq7Y_VOr5bx2ZUFzg@mail.gmail.com>
+In-Reply-To: <1418623790-28429-3-git-send-email-cernekee@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 06:03:10PM +0800, LF.Tan wrote:
-> On Mon, Dec 15, 2014 at 12:51 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > At the moment, if p and x are both tagged as bitwise types,
-> > get_user(x, p) produces a sparse warning on many architectures.
-> > This is because *p on these architectures is loaded into long
-> > (typically using asm), then cast back to typeof(*p).
-> >
-> > When typeof(*p) is a bitwise type (which is uncommon), such a cast needs
-> > __force, otherwise sparse produces a warning.
-> >
-> > Some architectures already have the __force tag, add it
-> > where it's missing.
-> >
-> > Specificlly, vhost wants to read bitwise types from userspace using get_user.
-> > At the moment this triggers sparse errors, since the value is passed through an
-> > integer.
-> >
-> > For now, I worked around this by converting vhost code to access_ok +
-> > __get_user, but that's not robust, I'd like to switch to get_user for 3.19.
-> >
-> > I tested this on x86 only so far. Since it's just adding __force, should be
-> > trivially safe everywhere?
-> >
-> > Please review, and consider for 3.19.
-> >
-> > Who can merge this? Arnd?
-> Hi Michael
+On Sun, Dec 14, 2014 at 10:09:48PM -0800, Kevin Cernekee wrote:
+> Currently the checklist does not provide an indication of appropriate
+> times to send patches; add a brief note on the topic.
 > 
-> FYI, there is new arch (arch/nios2) in 3.19. Is your patchset include
-> the fix for it?
-> Thanks.
+> Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+> ---
+>  Documentation/SubmitChecklist | 5 +++++
+>  1 file changed, 5 insertions(+)
 > 
-> Regards
-> Ley Foon
+> diff --git a/Documentation/SubmitChecklist b/Documentation/SubmitChecklist
+> index 2b7e32d..8b23f9c 100644
+> --- a/Documentation/SubmitChecklist
+> +++ b/Documentation/SubmitChecklist
+> @@ -107,3 +107,8 @@ kernel patches.
+>      CONFIG_SMP, CONFIG_SYSFS, CONFIG_PROC_FS, CONFIG_INPUT, CONFIG_PCI,
+>      CONFIG_BLOCK, CONFIG_PM, CONFIG_MAGIC_SYSRQ,
+>      CONFIG_NET, CONFIG_INET=n (but latter with CONFIG_NET=y)
+> +
+> +27: For patches which are not urgent fixes for bugs in the current tree,
+> +    double-check https://www.kernel.org/ to make sure the merge window is
+> +    CLOSED ("mainline:" showing an -rc kernel) before sending.  For more
+> +    information on the release cycle, see Documentation/development-process/.
 
-Thanks for the heads up.
-No - it will probably need a similar fix for __get_user and get_user.
-It's just a parse warning so it's not a blocker.
-Can you fix it yourself or prefer me to?
+Acked-by: Borislav Petkov <bp@suse.de>
 
 -- 
-MST
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
