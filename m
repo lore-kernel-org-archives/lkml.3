@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784AbaLOO2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:28:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38576 "EHLO
+	id S1752837AbaLOO20 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:28:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38619 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676AbaLOO2J (ORCPT
+	with ESMTP id S1752774AbaLOO2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:09 -0500
+	Mon, 15 Dec 2014 09:28:16 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vlastimil Setka <setka@vsis.cz>,
-        Thor Thayer <tthayer@opensource.altera.com>,
-        Mark Brown <broonie@kernel.org>,
+Cc: Johan Hovold <johan@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 075/168] spi: dw: Fix dynamic speed change.
-Date: Mon, 15 Dec 2014 14:25:29 +0000
-Message-Id: <1418653622-21105-76-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 086/168] USB: ssu100: fix overrun-error reporting
+Date: Mon, 15 Dec 2014 14:25:40 +0000
+Message-Id: <1418653622-21105-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -29,69 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thor Thayer <tthayer@opensource.altera.com>
+From: Johan Hovold <johan@kernel.org>
 
-commit 0a8727e69778683495058852f783eeda141a754e upstream.
+commit 75bcbf29c284dd0154c3e895a0bd1ef0e796160e upstream.
 
-An IOCTL call that calls spi_setup() and then dw_spi_setup() will
-overwrite the persisted last transfer speed. On each transfer, the
-SPI speed is compared to the last transfer speed to determine if the
-clock divider registers need to be updated (did the speed change?).
-This bug was observed with the spidev driver using spi-config to
-update the max transfer speed.
+Fix reporting of overrun errors, which should only be reported once
+using the inserted null character.
 
-This fix: Don't overwrite the persisted last transaction clock speed
-when updating the SPI parameters in dw_spi_setup(). On the next
-transaction, the new speed won't match the persisted last speed
-and the hardware registers will be updated.
-On initialization, the persisted last transaction clock
-speed will be 0 but will be updated after the first SPI
-transaction.
-
-Move zeroed clock divider check into clock change test because
-chip->clk_div is zero on startup and would cause a divide-by-zero
-error. The calculation was wrong as well (can't support odd #).
-
-Reported-by: Vlastimil Setka <setka@vsis.cz>
-Signed-off-by: Vlastimil Setka <setka@vsis.cz>
-Signed-off-by: Thor Thayer <tthayer@opensource.altera.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Fixes: 6b8f1ca5581b ("USB: ssu100: set tty_flags in ssu100_process_packet")
+Signed-off-by: Johan Hovold <johan@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/spi/spi-dw.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/usb/serial/ssu100.c | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-index 0dd0623319b0..080e0a343675 100644
---- a/drivers/spi/spi-dw.c
-+++ b/drivers/spi/spi-dw.c
-@@ -382,9 +382,6 @@ static void pump_transfers(unsigned long data)
- 	chip = dws->cur_chip;
- 	spi = message->spi;
- 
--	if (unlikely(!chip->clk_div))
--		chip->clk_div = dws->max_freq / chip->speed_hz;
--
- 	if (message->state == ERROR_STATE) {
- 		message->status = -EIO;
- 		goto early_exit;
-@@ -425,7 +422,7 @@ static void pump_transfers(unsigned long data)
- 	if (transfer->speed_hz) {
- 		speed = chip->speed_hz;
- 
--		if (transfer->speed_hz != speed) {
-+		if ((transfer->speed_hz != speed) || (!chip->clk_div)) {
- 			speed = transfer->speed_hz;
- 
- 			/* clk_div doesn't support odd number */
-@@ -586,7 +583,6 @@ static int dw_spi_setup(struct spi_device *spi)
- 		dev_err(&spi->dev, "No max speed HZ parameter\n");
- 		return -EINVAL;
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index a7fe664b6b7d..70a098de429f 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -490,10 +490,9 @@ static void ssu100_update_lsr(struct usb_serial_port *port, u8 lsr,
+ 			if (*tty_flag == TTY_NORMAL)
+ 				*tty_flag = TTY_FRAME;
+ 		}
+-		if (lsr & UART_LSR_OE){
++		if (lsr & UART_LSR_OE) {
+ 			port->icount.overrun++;
+-			if (*tty_flag == TTY_NORMAL)
+-				*tty_flag = TTY_OVERRUN;
++			tty_insert_flip_char(&port->port, 0, TTY_OVERRUN);
+ 		}
  	}
--	chip->speed_hz = spi->max_speed_hz;
  
- 	chip->tmode = 0; /* Tx & Rx */
- 	/* Default SPI mode is SCPOL = 0, SCPH = 0 */
+@@ -511,12 +510,8 @@ static void ssu100_process_read_urb(struct urb *urb)
+ 	if ((len >= 4) &&
+ 	    (packet[0] == 0x1b) && (packet[1] == 0x1b) &&
+ 	    ((packet[2] == 0x00) || (packet[2] == 0x01))) {
+-		if (packet[2] == 0x00) {
++		if (packet[2] == 0x00)
+ 			ssu100_update_lsr(port, packet[3], &flag);
+-			if (flag == TTY_OVERRUN)
+-				tty_insert_flip_char(&port->port, 0,
+-						TTY_OVERRUN);
+-		}
+ 		if (packet[2] == 0x01)
+ 			ssu100_update_msr(port, packet[3]);
+ 
 -- 
 2.1.3
 
