@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaLOL1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 06:27:25 -0500
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:40595 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaLOLZ6 (ORCPT
+	id S1751875AbaLOLZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 06:25:57 -0500
+Received: from mail-yh0-f52.google.com ([209.85.213.52]:47124 "EHLO
+	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbaLOLZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 06:25:58 -0500
+	Mon, 15 Dec 2014 06:25:51 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, a.zummo@towertech.it,
         rtc-linux@googlegroups.com, wim@iguana.be,
         linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 4/8] mfd: dt-bindings: Provide human readable defines for LPC mode choosing
-Date: Mon, 15 Dec 2014 11:25:34 +0000
-Message-Id: <1418642738-17407-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 1/8] ARM: multi_v7_defconfig: Enable support for ST's LPC Watchdog
+Date: Mon, 15 Dec 2014 11:25:31 +0000
+Message-Id: <1418642738-17407-2-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
 References: <1418642738-17407-1-git-send-email-lee.jones@linaro.org>
@@ -22,37 +22,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's Low Power Controller can currently operate in two supported modes;
-Watchdog and Real Time Clock.  These defines will aid engineers to easily
-identify the selected mode.
-
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/dt-bindings/mfd/st-lpc.h | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
- create mode 100644 include/dt-bindings/mfd/st-lpc.h
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/dt-bindings/mfd/st-lpc.h b/include/dt-bindings/mfd/st-lpc.h
-new file mode 100644
-index 0000000..e3e6c75
---- /dev/null
-+++ b/include/dt-bindings/mfd/st-lpc.h
-@@ -0,0 +1,15 @@
-+/*
-+ * This header provides shared DT/Driver defines for ST's LPC device
-+ *
-+ * Copyright (C) 2014 STMicroelectronics -- All Rights Reserved
-+ *
-+ * Author: Lee Jones <lee.jones@linaro.org> for STMicroelectronics
-+ */
-+
-+#ifndef __DT_BINDINGS_ST_LPC_H__
-+#define __DT_BINDINGS_ST_LPC_H__
-+
-+#define ST_LPC_MODE_RTC		0
-+#define ST_LPC_MODE_WDT		1
-+
-+#endif /* __DT_BINDINGS_ST_LPC_H__ */
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index 99a8a4a..e34d5c6 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -238,6 +238,7 @@ CONFIG_ST_THERMAL_SYSCFG=y
+ CONFIG_ST_THERMAL_MEMMAP=y
+ CONFIG_WATCHDOG=y
+ CONFIG_ORION_WATCHDOG=y
++CONFIG_ST_WATCHDOG=y
+ CONFIG_SUNXI_WATCHDOG=y
+ CONFIG_MFD_AS3722=y
+ CONFIG_MFD_BCM590XX=y
 -- 
 1.9.1
 
