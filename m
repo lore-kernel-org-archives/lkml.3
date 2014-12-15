@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971AbaLOO2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 09:28:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38704 "EHLO
+	id S1752760AbaLOOmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 09:42:32 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38810 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289AbaLOO2a (ORCPT
+	with ESMTP id S1752957AbaLOO2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 09:28:30 -0500
+	Mon, 15 Dec 2014 09:28:48 -0500
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.16.y-ckt 102/168] PCI/MSI: Add device flag indicating that 64-bit MSIs don't work
-Date: Mon, 15 Dec 2014 14:25:56 +0000
-Message-Id: <1418653622-21105-103-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.16.y-ckt 119/168] ARM: 8226/1: cacheflush: get rid of restarting block
+Date: Mon, 15 Dec 2014 14:26:13 +0000
+Message-Id: <1418653622-21105-120-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
 References: <1418653622-21105-1-git-send-email-luis.henriques@canonical.com>
@@ -27,90 +28,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: Vladimir Murzin <vladimir.murzin@arm.com>
 
-commit f144d1496b47e7450f41b767d0d91c724c2198bc upstream.
+commit 3f4aa45ceea5789a4aade536acc27f2e0d3da5e1 upstream.
 
-This can be set by quirks/drivers to be used by the architecture code
-that assigns the MSI addresses.
+We cannot restart cacheflush safely if a process provides user-defined
+signal handler and signal is pending. In this case -EINTR is returned
+and it is expected that process re-invokes syscall. However, there are
+a few problems with that:
+ * looks like nobody bothers checking return value from cacheflush
+ * but if it did, we don't provide the restart address for that, so the
+   process has to use the same range again
+ * ...and again, what might lead to looping forever
 
-We additionally add verification in the core MSI code that the values
-assigned by the architecture do satisfy the limitation in order to fail
-gracefully if they don't (ie. the arch hasn't been updated to deal with
-that quirk yet).
+So, remove cacheflush restarting code and terminate cache flushing
+as early as fatal signal is pending.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-[ luis: backported to 3.16: adjusted context ]
+Reported-by: Chanho Min <chanho.min@lge.com>
+Signed-off-by: Vladimir Murzin <vladimir.murzin@arm.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/pci/msi.c   | 26 ++++++++++++++++++++++++++
- include/linux/pci.h |  1 +
- 2 files changed, 27 insertions(+)
+ arch/arm/include/asm/thread_info.h | 11 -----------
+ arch/arm/kernel/traps.c            | 31 ++-----------------------------
+ 2 files changed, 2 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 13f3d3037272..1d6c61ad7da7 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -594,6 +594,20 @@ error_attrs:
- 	return ret;
+diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
+index e4e4208a9130..76155ee5ac3b 100644
+--- a/arch/arm/include/asm/thread_info.h
++++ b/arch/arm/include/asm/thread_info.h
+@@ -43,16 +43,6 @@ struct cpu_context_save {
+ 	__u32	extra[2];		/* Xscale 'acc' register, etc */
+ };
+ 
+-struct arm_restart_block {
+-	union {
+-		/* For user cache flushing */
+-		struct {
+-			unsigned long start;
+-			unsigned long end;
+-		} cache;
+-	};
+-};
+-
+ /*
+  * low level task data that entry.S needs immediate access to.
+  * __switch_to() assumes cpu_context follows immediately after cpu_domain.
+@@ -78,7 +68,6 @@ struct thread_info {
+ 	unsigned long		thumbee_state;	/* ThumbEE Handler Base register */
+ #endif
+ 	struct restart_block	restart_block;
+-	struct arm_restart_block	arm_restart_block;
+ };
+ 
+ #define INIT_THREAD_INFO(tsk)						\
+diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
+index da11b28a72da..8dffc57a9f71 100644
+--- a/arch/arm/kernel/traps.c
++++ b/arch/arm/kernel/traps.c
+@@ -511,8 +511,6 @@ static int bad_syscall(int n, struct pt_regs *regs)
+ 	return regs->ARM_r0;
  }
  
-+static int msi_verify_entries(struct pci_dev *dev)
-+{
-+	struct msi_desc *entry;
-+
-+	list_for_each_entry(entry, &dev->msi_list, list) {
-+		if (!dev->no_64bit_msi || !entry->msg.address_hi)
-+			continue;
-+		dev_err(&dev->dev, "Device has broken 64-bit MSI but arch"
-+			" tried to assign one above 4G\n");
-+		return -EIO;
-+	}
-+	return 0;
-+}
-+
- /**
-  * msi_capability_init - configure device's MSI capability structure
-  * @dev: pointer to the pci_dev data structure of MSI device function
-@@ -647,6 +661,13 @@ static int msi_capability_init(struct pci_dev *dev, int nvec)
- 		return ret;
- 	}
+-static long do_cache_op_restart(struct restart_block *);
+-
+ static inline int
+ __do_cache_op(unsigned long start, unsigned long end)
+ {
+@@ -521,24 +519,8 @@ __do_cache_op(unsigned long start, unsigned long end)
+ 	do {
+ 		unsigned long chunk = min(PAGE_SIZE, end - start);
  
-+	ret = msi_verify_entries(dev);
-+	if (ret) {
-+		msi_mask_irq(entry, mask, ~mask);
-+		free_msi_irqs(dev);
-+		return ret;
-+	}
-+
- 	ret = populate_msi_sysfs(dev);
- 	if (ret) {
- 		msi_mask_irq(entry, mask, ~mask);
-@@ -762,6 +783,11 @@ static int msix_capability_init(struct pci_dev *dev,
- 	if (ret)
- 		goto out_avail;
+-		if (signal_pending(current)) {
+-			struct thread_info *ti = current_thread_info();
+-
+-			ti->restart_block = (struct restart_block) {
+-				.fn	= do_cache_op_restart,
+-			};
+-
+-			ti->arm_restart_block = (struct arm_restart_block) {
+-				{
+-					.cache = {
+-						.start	= start,
+-						.end	= end,
+-					},
+-				},
+-			};
+-
+-			return -ERESTART_RESTARTBLOCK;
+-		}
++		if (fatal_signal_pending(current))
++			return 0;
  
-+	/* Check if all MSI entries honor device restrictions */
-+	ret = msi_verify_entries(dev);
-+	if (ret)
-+		goto out_free;
-+
- 	/*
- 	 * Some devices require MSI-X to be enabled before we can touch the
- 	 * MSI-X registers.  We need to mask all the vectors to prevent
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 97fe7ebf2e25..04fdc409eec6 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -331,6 +331,7 @@ struct pci_dev {
- 	unsigned int	is_added:1;
- 	unsigned int	is_busmaster:1; /* device is busmaster */
- 	unsigned int	no_msi:1;	/* device may not use msi */
-+	unsigned int	no_64bit_msi:1; /* device may only use 32-bit MSIs */
- 	unsigned int	block_cfg_access:1;	/* config space access is blocked */
- 	unsigned int	broken_parity_status:1;	/* Device generates false positive parity */
- 	unsigned int	irq_reroute_variant:2;	/* device needs IRQ rerouting variant */
+ 		ret = flush_cache_user_range(start, start + chunk);
+ 		if (ret)
+@@ -551,15 +533,6 @@ __do_cache_op(unsigned long start, unsigned long end)
+ 	return 0;
+ }
+ 
+-static long do_cache_op_restart(struct restart_block *unused)
+-{
+-	struct arm_restart_block *restart_block;
+-
+-	restart_block = &current_thread_info()->arm_restart_block;
+-	return __do_cache_op(restart_block->cache.start,
+-			     restart_block->cache.end);
+-}
+-
+ static inline int
+ do_cache_op(unsigned long start, unsigned long end, int flags)
+ {
 -- 
 2.1.3
 
