@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbaLOTdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:33:32 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40959 "EHLO
+	id S1752535AbaLOTde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:33:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40953 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaLOTdZ (ORCPT
+	with ESMTP id S1752482AbaLOTdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 14:33:25 -0500
+	Mon, 15 Dec 2014 14:33:22 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Kochetkov <al.kochet@gmail.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 70/96] i2c: omap: fix NACK and Arbitration Lost irq handling
-Date: Mon, 15 Dec 2014 11:26:30 -0800
-Message-Id: <1418671616-25482-71-git-send-email-kamal@canonical.com>
+Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 84/96] ahci: disable MSI on SAMSUNG 0xa800 SSD
+Date: Mon, 15 Dec 2014 11:26:44 -0800
+Message-Id: <1418671616-25482-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -27,72 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Kochetkov <al.kochet@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 27caca9d2e01c92b26d0690f065aad093fea01c7 upstream.
+commit 2b21ef0aae65f22f5ba86b13c4588f6f0c2dbefb upstream.
 
-commit 1d7afc95946487945cc7f5019b41255b72224b70 (i2c: omap: ack IRQ in parts)
-changed the interrupt handler to complete transfers without clearing
-XRDY (AL case) and ARDY (NACK case) flags. XRDY or ARDY interrupts will be
-fired again. As a result, ISR keep processing transfer after it was already
-complete (from the driver code point of view).
+Just like 0x1600 which got blacklisted by 66a7cbc303f4 ("ahci: disable
+MSI instead of NCQ on Samsung pci-e SSDs on macbooks"), 0xa800 chokes
+on NCQ commands if MSI is enabled.  Disable MSI.
 
-A didn't see real impacts of the 1d7afc9, but it is really bad idea to
-have ISR running on user data after transfer was complete.
-
-It looks, what 1d7afc9 violate TI specs in what how AL and NACK should be
-handled (see Note 1, sprugn4r, Figure 17-31 and Figure 17-32).
-
-According to specs (if I understood correctly), in case of NACK and AL driver
-must reset NACK, AL, ARDY, RDR, and RRDY (Master Receive Mode), and
-NACK, AL, ARDY, and XDR (Master Transmitter Mode).
-
-All that is done down the code under the if condition:
-if (stat & (OMAP_I2C_STAT_ARDY | OMAP_I2C_STAT_NACK | OMAP_I2C_STAT_AL)) ...
-
-The patch restore pre 1d7afc9 logic of handling NACK and AL interrupts, so
-no interrupts is fired after ISR informs the rest of driver what transfer
-complete.
-
-Note: instead of removing break under NACK case, we could just replace 'break'
-with 'continue' and allow NACK transfer to finish using ARDY event. I found
-that NACK and ARDY bits usually set together. That case confirm TI wiki:
-http://processors.wiki.ti.com/index.php/I2C_Tips#Detecting_and_handling_NACK
-
-In order if someone interested in the event traces for NACK and AL cases,
-I sent them to mailing list.
-
-Tested on Beagleboard XM C.
-
-Signed-off-by: Alexander Kochetkov <al.kochet@gmail.com>
-Fixes: 1d7afc9 i2c: omap: ack IRQ in parts
-Acked-by: Felipe Balbi <balbi@ti.com>
-Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Dominik Mierzejewski <dominik@greysector.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=89171
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/i2c/busses/i2c-omap.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/ata/ahci.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 90dcc2e..9af7095 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -926,14 +926,12 @@ omap_i2c_isr_thread(int this_irq, void *dev_id)
- 		if (stat & OMAP_I2C_STAT_NACK) {
- 			err |= OMAP_I2C_STAT_NACK;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_NACK);
--			break;
- 		}
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index ccb972e..9de149d 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -494,6 +494,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	 * enabled.  https://bugzilla.kernel.org/show_bug.cgi?id=60731
+ 	 */
+ 	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_nomsi },
++	{ PCI_VDEVICE(SAMSUNG, 0xa800), board_ahci_nomsi },
  
- 		if (stat & OMAP_I2C_STAT_AL) {
- 			dev_err(dev->dev, "Arbitration lost\n");
- 			err |= OMAP_I2C_STAT_AL;
- 			omap_i2c_ack_stat(dev, OMAP_I2C_STAT_AL);
--			break;
- 		}
- 
- 		/*
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
 -- 
 1.9.1
 
