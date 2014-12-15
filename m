@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827AbaLOTuw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 14:50:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:40617 "EHLO
+	id S1752796AbaLOTus (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 14:50:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:40621 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaLOT1M (ORCPT
+	with ESMTP id S1751132AbaLOT1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Dec 2014 14:27:12 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
+Cc: Steffen Klassert <steffen.klassert@secunet.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 11/96] drivers/net, ipv6: Select IPv6 fragment idents for virtio UFO packets
-Date: Mon, 15 Dec 2014 11:25:31 -0800
-Message-Id: <1418671616-25482-12-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 14/96] vti6: Use vti6_dev_init as the ndo_init function.
+Date: Mon, 15 Dec 2014 11:25:34 -0800
+Message-Id: <1418671616-25482-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418671616-25482-1-git-send-email-kamal@canonical.com>
 References: <1418671616-25482-1-git-send-email-kamal@canonical.com>
@@ -28,146 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Steffen Klassert <steffen.klassert@secunet.com>
 
-[ Upstream commit 5188cd44c55db3e92cd9e77a40b5baa7ed4340f7 ]
+[ Upstream commit 16a0231bf7dc3fb37e9b1f1cb1a277dc220b5c5e ]
 
-UFO is now disabled on all drivers that work with virtio net headers,
-but userland may try to send UFO/IPv6 packets anyway.  Instead of
-sending with ID=0, we should select identifiers on their behalf (as we
-used to).
+vti6_dev_init() sets the dev->iflink via a call to
+vti6_link_config(). After that, register_netdevice()
+sets dev->iflink = -1. So we loose the iflink configuration
+for vti6 tunnels. Fix this by using vti6_dev_init() as the
+ndo_init function. Then vti6_dev_init() is called after
+dev->iflink is set to -1 from register_netdevice().
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Fixes: 916e4cf46d02 ("ipv6: reuse ip6_frag_id from ip6_ufo_append_data")
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/macvtap.c  |  3 +++
- drivers/net/tun.c      |  6 +++++-
- include/net/ipv6.h     |  2 ++
- net/ipv6/output_core.c | 33 +++++++++++++++++++++++++++++++++
- 4 files changed, 43 insertions(+), 1 deletion(-)
+ net/ipv6/ip6_vti.c | 11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index ffe8fa4..5aead8c 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -17,6 +17,7 @@
- #include <linux/idr.h>
- #include <linux/fs.h>
+diff --git a/net/ipv6/ip6_vti.c b/net/ipv6/ip6_vti.c
+index 7b42d5e..bcf7d17 100644
+--- a/net/ipv6/ip6_vti.c
++++ b/net/ipv6/ip6_vti.c
+@@ -173,10 +173,6 @@ static int vti6_tnl_create2(struct net_device *dev)
+ 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
+ 	int err;
  
-+#include <net/ipv6.h>
- #include <net/net_namespace.h>
- #include <net/rtnetlink.h>
- #include <net/sock.h>
-@@ -566,6 +567,8 @@ static int macvtap_skb_from_vnet_hdr(struct sk_buff *skb,
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
- 			gso_type = SKB_GSO_UDP;
-+			if (skb->protocol == htons(ETH_P_IPV6))
-+				ipv6_proxy_select_ident(skb);
- 			break;
- 		default:
- 			return -EINVAL;
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index d0460a3..2e3886a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -65,6 +65,7 @@
- #include <linux/nsproxy.h>
- #include <linux/virtio_net.h>
- #include <linux/rcupdate.h>
-+#include <net/ipv6.h>
- #include <net/net_namespace.h>
- #include <net/netns/generic.h>
- #include <net/rtnetlink.h>
-@@ -1104,6 +1105,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		break;
- 	}
- 
-+	skb_reset_network_header(skb);
-+
- 	if (gso.gso_type != VIRTIO_NET_HDR_GSO_NONE) {
- 		pr_debug("GSO!\n");
- 		switch (gso.gso_type & ~VIRTIO_NET_HDR_GSO_ECN) {
-@@ -1115,6 +1118,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 			break;
- 		case VIRTIO_NET_HDR_GSO_UDP:
- 			skb_shinfo(skb)->gso_type = SKB_GSO_UDP;
-+			if (skb->protocol == htons(ETH_P_IPV6))
-+				ipv6_proxy_select_ident(skb);
- 			break;
- 		default:
- 			tun->dev->stats.rx_frame_errors++;
-@@ -1144,7 +1149,6 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 		skb_shinfo(skb)->tx_flags |= SKBTX_SHARED_FRAG;
- 	}
- 
--	skb_reset_network_header(skb);
- 	skb_probe_transport_header(skb, 0);
- 
- 	rxhash = skb_get_rxhash(skb);
-diff --git a/include/net/ipv6.h b/include/net/ipv6.h
-index d164d0c..e379338 100644
---- a/include/net/ipv6.h
-+++ b/include/net/ipv6.h
-@@ -660,6 +660,8 @@ static inline int ipv6_addr_diff(const struct in6_addr *a1, const struct in6_add
- 	return __ipv6_addr_diff(a1, a2, sizeof(struct in6_addr));
+-	err = vti6_dev_init(dev);
+-	if (err < 0)
+-		goto out;
+-
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+ 		goto out;
+@@ -694,6 +690,7 @@ static int vti6_change_mtu(struct net_device *dev, int new_mtu)
  }
  
-+void ipv6_proxy_select_ident(struct sk_buff *skb);
-+
- int ip6_dst_hoplimit(struct dst_entry *dst);
+ static const struct net_device_ops vti6_netdev_ops = {
++	.ndo_init	= vti6_dev_init,
+ 	.ndo_uninit	= vti6_dev_uninit,
+ 	.ndo_start_xmit = vti6_tnl_xmit,
+ 	.ndo_do_ioctl	= vti6_ioctl,
+@@ -773,16 +770,10 @@ static int __net_init vti6_fb_tnl_dev_init(struct net_device *dev)
+ 	struct ip6_tnl *t = netdev_priv(dev);
+ 	struct net *net = dev_net(dev);
+ 	struct vti6_net *ip6n = net_generic(net, vti6_net_id);
+-	int err = vti6_dev_init_gen(dev);
+-
+-	if (err)
+-		return err;
  
- /*
-diff --git a/net/ipv6/output_core.c b/net/ipv6/output_core.c
-index 798eb0f..ae4a06b 100644
---- a/net/ipv6/output_core.c
-+++ b/net/ipv6/output_core.c
-@@ -3,10 +3,43 @@
-  * not configured or static.  These functions are needed by GSO/GRO implementation.
-  */
- #include <linux/export.h>
-+#include <net/ip.h>
- #include <net/ipv6.h>
- #include <net/ip6_fib.h>
- #include <net/addrconf.h>
+ 	t->parms.proto = IPPROTO_IPV6;
+ 	dev_hold(dev);
  
-+/* This function exists only for tap drivers that must support broken
-+ * clients requesting UFO without specifying an IPv6 fragment ID.
-+ *
-+ * This is similar to ipv6_select_ident() but we use an independent hash
-+ * seed to limit information leakage.
-+ *
-+ * The network header must be set before calling this.
-+ */
-+void ipv6_proxy_select_ident(struct sk_buff *skb)
-+{
-+	static u32 ip6_proxy_idents_hashrnd __read_mostly;
-+	struct in6_addr buf[2];
-+	struct in6_addr *addrs;
-+	u32 hash, id;
-+
-+	addrs = skb_header_pointer(skb,
-+				   skb_network_offset(skb) +
-+				   offsetof(struct ipv6hdr, saddr),
-+				   sizeof(buf), buf);
-+	if (!addrs)
-+		return;
-+
-+	net_get_random_once(&ip6_proxy_idents_hashrnd,
-+			    sizeof(ip6_proxy_idents_hashrnd));
-+
-+	hash = __ipv6_addr_jhash(&addrs[1], ip6_proxy_idents_hashrnd);
-+	hash = __ipv6_addr_jhash(&addrs[0], hash);
-+
-+	id = ip_idents_reserve(hash, 1);
-+	skb_shinfo(skb)->ip6_frag_id = htonl(id);
-+}
-+EXPORT_SYMBOL_GPL(ipv6_proxy_select_ident);
- 
- int ip6_find_1stfragopt(struct sk_buff *skb, u8 **nexthdr)
- {
+-	vti6_link_config(t);
+-
+ 	rcu_assign_pointer(ip6n->tnls_wc[0], t);
+ 	return 0;
+ }
 -- 
 1.9.1
 
