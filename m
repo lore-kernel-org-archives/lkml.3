@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214AbaLOWLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 17:11:12 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:38305 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150AbaLOWLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 17:11:08 -0500
-Date: Mon, 15 Dec 2014 14:11:00 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141215221100.GA4637@mew>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
- <20141215162705.GA23887@quack.suse.cz>
- <20141215165615.GA19041@infradead.org>
+	id S1751021AbaLOWP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 17:15:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:54926 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745AbaLOWPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 17:15:55 -0500
+Date: Mon, 15 Dec 2014 19:01:50 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [perf tool] cgroup support broken on Debian?
+Message-ID: <20141215220150.GP9845@kernel.org>
+References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141215165615.GA19041@infradead.org>
+In-Reply-To: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 08:56:15AM -0800, Christoph Hellwig wrote:
-> On Mon, Dec 15, 2014 at 05:27:05PM +0100, Jan Kara wrote:
-> > On Sun 14-12-14 21:26:56, Omar Sandoval wrote:
-> > > The generic write code locks i_mutex for a direct_IO. Swap-over-NFS
-> > > doesn't grab the mutex because nfs_direct_IO doesn't expect i_mutex to
-> > > be held, but most direct_IO implementations do.
-> >   I think you are speaking about direct IO writes only, aren't you? For DIO
-> > reads we don't hold i_mutex AFAICS. And also for DIO writes we don't
-> > necessarily hold i_mutex - see for example XFS which doesn't take i_mutex
-> > for direct IO writes. It uses it's internal rwlock for this (see
-> > xfs_file_dio_aio_write()). So I think this is just wrong.
+Em Mon, Dec 15, 2014 at 04:07:46PM -0500, Vince Weaver escreveu:
+> Hello
 > 
-> The problem is that the use of ->direct_IO by the swap code is a gross
-> layering violation.  ->direct_IO is a callback for the filesystem, and
-> the swap code need to call ->read_iter instead of ->readpage and
-> ->write_tier instead of ->direct_IO, and leave the locking to the
-> filesystem.
->
-Ok, I got the swap code working with ->read_iter/->write_iter without
-too much trouble. I wanted to double check before I submit if there's
-any gotchas involved with adding the O_DIRECT flag to a file pointer
-after it has been opened -- swapon opens the swapfile before we know if
-we're using the SWP_FILE infrastructure, and we need to add O_DIRECT so
-->{read,write}_iter use direct I/O, but we can't add O_DIRECT to the
-original open without excluding filesystems that support the old bmap
-path but not direct I/O.
+> has anyone tested the perf tool cgroup support recently?
+> 
+> I was trying to get it working with a command like
+> 	sudo perf stat -a -e cycles:u,cycles:u,cycles:u -G systemd -- sleep 1
+> 
+> and it just failed by unhelfully dumping the "-G" help text.
+> Once I added a lot of extra debug printfs to tools/perf/util/cgroup.c 
+> things became a little clearer.
+> 
+> First, you apparently need "perf_event" passed as a mount option to the 
+> cgroup or you cannot attach perf to it (should perf be modified to 
+> print a warning in this case rather than just printing the unhelpful
+> helf text?)
 
--- 
-Omar
+yes, please
+ 
+> Secondly, the cgroup mount point detection completely fails on my debian 
+> box.  On my machine /proc/mounts has this:
+> 
+>   ...
+>   none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
+>   systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
+> 
+> The current perf code looks for "cgroup" in the type field to find the 
+> root cgroupfs tree.  This fails because as seen above on my machine the
+> cgroup mount has type tmpfs.  And when it finds
+> /sys/fs/cgroup/systemd as the root it tacks the name onto the end
+> (/sys/fs/cgroup/systemd/systemd) which obviously doesn't exist.
+> 
+> Once I hack the code to avoid that I do finally get some cgroup readings.
+> 
+> I was checking if this was a known problem, a Debian issue, or what...
+
+Its just that the cgroup support is rough, patches are welcome to
+improve the situation.
+
+BTW, here its fedora20, same problem:
+
+[root@zoo ~]# mount | grep cgroup
+tmpfs on /sys/fs/cgroup type tmpfs
+(rw,nosuid,nodev,noexec,seclabel,mode=755)
+cgroup on /sys/fs/cgroup/systemd type cgroup
+(rw,nosuid,nodev,noexec,relatime,xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd)
+
+- Arnaldo
