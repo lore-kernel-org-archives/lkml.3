@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaLOSOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 13:14:51 -0500
-Received: from eddie.linux-mips.org ([148.251.95.138]:50776 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaLOSOt (ORCPT
+	id S1751447AbaLOSPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 13:15:41 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:35409 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaLOSPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 13:14:49 -0500
-Date: Mon, 15 Dec 2014 19:14:44 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Lino Sanfilippo <LinoSanfilippo@gmx.de>, linux-mips@linux-mips.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ioc3: fix incorrect use of htons/ntohs
-Message-ID: <20141215181444.GD26674@linux-mips.org>
-References: <1417344054-4374-1-git-send-email-LinoSanfilippo@gmx.de>
- <1417406976.7215.126.camel@decadent.org.uk>
+	Mon, 15 Dec 2014 13:15:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1417406976.7215.126.camel@decadent.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418397422-17249-1-git-send-email-lyz@rock-chips.com>
+References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com>
+	<1418397422-17249-1-git-send-email-lyz@rock-chips.com>
+Date: Mon, 15 Dec 2014 10:15:37 -0800
+X-Google-Sender-Auth: RT-afMU6kSaqYFS1pTyHie-IAZE
+Message-ID: <CAD=FV=V93J81SVnOpA1jciGfs9Bh9En-quda677tKzdt7sQDMg@mail.gmail.com>
+Subject: Re: [PATCH v7 5/5] ARM: dts: rockchip: Enable usb PHY on rk3288-evb board
+From: Doug Anderson <dianders@chromium.org>
+To: Yunzhi Li <lyz@rock-chips.com>
+Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        jwerner@chromium.org, Olof Johansson <olof@lixom.net>,
+        Tao Huang <huangtao@rock-chips.com>, Chris <zyw@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 01, 2014 at 04:09:36AM +0000, Ben Hutchings wrote:
+Yunzhi,
 
-> >  	/* Same as tx - compute csum of pseudo header  */
-> >  	csum = hwsum +
-> > -	       (ih->tot_len - (ih->ihl << 2)) +
-> > -	       htons((uint16_t)ih->protocol) +
-> > +	       (ih->tot_len - (ih->ihl << 2)) + ih->protocol +
-> >  	       (ih->saddr >> 16) + (ih->saddr & 0xffff) +
-> >  	       (ih->daddr >> 16) + (ih->daddr & 0xffff);
-> >
-> 
-> The pseudo-header is specified as:
-> 
->                      +--------+--------+--------+--------+
->                      |           Source Address          |
->                      +--------+--------+--------+--------+
->                      |         Destination Address       |
->                      +--------+--------+--------+--------+
->                      |  zero  |  PTCL  |    TCP Length   |
->                      +--------+--------+--------+--------+
-> 
-> The current code zero-extends the protocol number to produce the 5th
-> 16-bit word of the pseudo-header, then uses htons() to put it in
-> big-endian order, consistent with the other fields.  (Yes, it's doing
-> addition on big-endian words; this works even on little-endian machines
-> due to the way the checksum is specified.)
-> 
-> The driver should not be doing this at all, though.  It should set
-> skb->csum = hwsum; skb->ip_summed = CHECKSUM_COMPLETE; and let the
-> network stack adjust the hardware checksum.
+On Fri, Dec 12, 2014 at 7:17 AM, Yunzhi Li <lyz@rock-chips.com> wrote:
+> Enable usb PHY for all usb ports on rk3288-evb.
+>
+> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
+>
+> ---
+>
+> Changes in v7: None
+> Changes in v6: None
+> Changes in v5: None
+> Changes in v4: None
+> Changes in v3: None
+>
+>  arch/arm/boot/dts/rk3288-evb.dtsi | 4 ++++
+>  1 file changed, 4 insertions(+)
 
-Really?  The IOC3 isn't the exactly the smartest NIC around; it does add up
-everything and the kitchen sink, that is ethernet headers, IP headers and
-on RX the frame's trailing CRC.  All that needs to be subtracted in software
-which is what this does.  I think others NICs are all smarted and don't
-need this particular piece of magic.
+I have tested a similar change on rk3288-pinky (on a 3.14 tree with
+backports).  There I can confirm that this properly gets us into low
+power at suspend time.  I have not tested on EVB itself though, so
+leaving off my tested tag.
 
-I agree with your other comment wrt. to htons().
+This does look reasonable to me, though:
 
-  Ralf
+Reviewed-by: Doug Anderson <dianders@chromium.org>
