@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751470AbaLPDpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 22:45:49 -0500
-Received: from ozlabs.org ([103.22.144.67]:50042 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281AbaLPDps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 22:45:48 -0500
-Date: Tue, 16 Dec 2014 14:45:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: linux-next: build failure after merge of the clk tree
-Message-ID: <20141216144536.594b50c0@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751133AbaLPD7W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 22:59:22 -0500
+Received: from pegasus3.altlinux.org ([194.107.17.103]:39969 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaLPD7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 22:59:21 -0500
+Date: Tue, 16 Dec 2014 06:59:19 +0300
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RESEND v4 PATCH 1/2] vfs: cleanup show_mountinfo
+Message-ID: <20141216035919.GB2461@altlinux.org>
+Mail-Followup-To: Al Viro <viro@ZenIV.linux.org.uk>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20140929180523.GC15829@altlinux.org>
+ <20140929183222.GJ7996@ZenIV.linux.org.uk>
+ <20140929184333.GD15829@altlinux.org>
+ <20140929193329.GL7996@ZenIV.linux.org.uk>
+ <20140929202659.GA16292@altlinux.org>
+ <20140929212057.GN7996@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/mPP.J0HU4lm22fZiN6NwrBt"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929212057.GN7996@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/mPP.J0HU4lm22fZiN6NwrBt
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Date: Wed, 17 Oct 2012 20:29:36 +0400
 
-Hi Mike,
+Starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
+changes the value of its "struct path *root" argument.
+Starting with commit v3.2-rc7-104-g8c9379e, the "struct path *root"
+argument of seq_path_root() is const.
+As result, the temporary variable "root" in show_mountinfo() that
+holds a copy of struct path root is no longer needed.
 
-After merging the clk tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+---
+ fs/proc_namespace.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-In file included from arch/x86/include/asm/bug.h:35:0,
-                 from include/linux/bug.h:4,
-                 from include/linux/cpumask.h:12,
-                 from arch/x86/include/asm/cpumask.h:4,
-                 from arch/x86/include/asm/msr.h:10,
-                 from arch/x86/include/asm/processor.h:20,
-                 from arch/x86/include/asm/atomic.h:6,
-                 from include/linux/atomic.h:4,
-                 from include/linux/debug_locks.h:5,
-                 from include/linux/lockdep.h:23,
-                 from include/linux/spinlock_types.h:18,
-                 from include/linux/mutex.h:15,
-                 from include/linux/notifier.h:13,
-                 from include/linux/clk.h:17,
-                 from include/linux/clk-provider.h:14,
-                 from include/linux/clk-private.h:14,
-                 from drivers/clk/clk.c:12:
-drivers/clk/clk.c: In function 'clk_debug_create_one':
-include/linux/lockdep.h:339:51: error: invalid type argument of '->' (have =
-'struct mutex')
- #define lockdep_is_held(lock) lock_is_held(&(lock)->dep_map)
-                                                   ^
-include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
-  int __ret_warn_on =3D !!(condition);    \
-                         ^
-include/linux/lockdep.h:362:27: note: in expansion of macro 'lockdep_is_hel=
-d'
-   WARN_ON(debug_locks && !lockdep_is_held(l)); \
-                           ^
-drivers/clk/clk.c:248:2: note: in expansion of macro 'lockdep_assert_held'
-  lockdep_assert_held(clk_debug_lock);
-  ^
-
-Caused by commit 9a2027b99994 ("clk: Really fix deadlock with
-mmap_sem").  I wonder how this ever built?
-
-I have used the clk tree from next-20141215 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/mPP.J0HU4lm22fZiN6NwrBt
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUj6rpAAoJEMDTa8Ir7ZwV5P4P/jiyZZc1NurMkoF8QQnMgd52
-se57RLOuFVh/6hquCgASG7TRHilLb+HvQo4aqaY3FXsSJiF1UsLcz5TC9Bhep405
-loRlf+vsNTztKKUXRceSvTxmIoXm5fbih0IHGYA+mrq/Ll3+IjgsoaYcnvxDp6gT
-o0+ItGNoaxPuftN+VrzlZOjJAJ+2kXcEzTcYwhnEFU5HHq5SgUE1QDbt2TxSYtUE
-O7bkjr5/q0JpTJ1bbIgxMsooHOrIOAusgRWk0JbzOl+pJppJfCbx9pjusThhBj2D
-hkkLnneZBNahxqCHdE7TwicZZIUqO4ivi3ZHKUpK1wJqooX3RQCYURrTa2P91Y4C
-jH1esxgvXU1le5ZZHqXoUdLpO2ZE9fc4bOsnXuey+IrOSXoQA2T9JziO0+GPqotC
-U4Fg+J5oj0S046FiPyAKXxSNxyRldEqzKCIkxMB79w0NJJ0EYAtecepCfzJIvpTD
-YggAGO/3P1rEhwypGb1jZOjDW79syNFHKmheE/aOmr3/GuL8chZqd5nY2lDA7IxY
-hiiqNRIi45naCG/rwQUZQU0K4PTu5U6yikSXQ8P8EMs/ft69Wd6AAcVNe+jshDno
-PkJTdwMpxU0zo4P9U7pZhk1lZoBnd1CqehAwCe5+qJmNJbAkgjP6Jj2C50mQA6AR
-QkM5cHJLrmcQYQShWzDW
-=ryjm
------END PGP SIGNATURE-----
-
---Sig_/mPP.J0HU4lm22fZiN6NwrBt--
+diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
+index 73ca174..789e8d1 100644
+--- a/fs/proc_namespace.c
++++ b/fs/proc_namespace.c
+@@ -125,7 +125,6 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	struct mount *r = real_mount(mnt);
+ 	struct super_block *sb = mnt->mnt_sb;
+ 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
+-	struct path root = p->root;
+ 	int err = 0;
+ 
+ 	seq_printf(m, "%i %i %u:%u ", r->mnt_id, r->mnt_parent->mnt_id,
+@@ -139,7 +138,7 @@ static int show_mountinfo(struct seq_file *m, struct vfsmount *mnt)
+ 	seq_putc(m, ' ');
+ 
+ 	/* mountpoints outside of chroot jail will give SEQ_SKIP on this */
+-	err = seq_path_root(m, &mnt_path, &root, " \t\n\\");
++	err = seq_path_root(m, &mnt_path, &p->root, " \t\n\\");
+ 	if (err)
+ 		goto out;
+ 
+-- 
+ldv
