@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaLPOjj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:39:39 -0500
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:54666 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906AbaLPOji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:39:38 -0500
-From: Jia He <hejianet@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jia He <hejianet@gmail.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] staging: lustre: libcfs: fix sparse warnings about static declaration
-Date: Tue, 16 Dec 2014 22:39:38 +0800
-Message-Id: <1418740778-827-1-git-send-email-hejianet@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751332AbaLPOkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:40:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54177 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873AbaLPOkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 09:40:07 -0500
+Message-ID: <54904443.5050806@suse.com>
+Date: Tue, 16 Dec 2014 15:40:03 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 1/4] xen: build infrastructure for generating
+ hypercall depending symbols
+References: <1418321065-10212-1-git-send-email-jgross@suse.com> <1418321065-10212-2-git-send-email-jgross@suse.com> <548EC841.2000107@citrix.com>
+In-Reply-To: <548EC841.2000107@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make sparse happy since these two fuchtion are only used in module.c.
-tested by successful compilation.
+On 12/15/2014 12:38 PM, David Vrabel wrote:
+> On 11/12/14 18:04, Juergen Gross wrote:
+>> Today there are several places in the kernel which build tables
+>> containing one entry for each possible Xen hypercall. Create an
+>> infrastructure to be able to generate these tables at build time.
+>
+> Does arm and arm64 need something similar?  If so are the tools here
+> suitable for them?
 
-Signed-off-by: Jia He <hejianet@gmail.com>
-Cc: Oleg Drokin <oleg.drokin@intel.com>
-Cc: Andreas Dilger <andreas.dilger@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/lustre/lustre/libcfs/module.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+I don't think arm* needs this. But in case it does, the tools would
+support arm as well.
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/module.c b/drivers/staging/lustre/lustre/libcfs/module.c
-index 2c4fc74..b9ee37c 100644
---- a/drivers/staging/lustre/lustre/libcfs/module.c
-+++ b/drivers/staging/lustre/lustre/libcfs/module.c
-@@ -42,8 +42,7 @@
- #include "../../include/linux/lnet/lnet.h"
- #include "tracefile.h"
- 
--void
--kportal_memhog_free (struct libcfs_device_userstate *ldu)
-+static void kportal_memhog_free (struct libcfs_device_userstate *ldu)
- {
- 	struct page **level0p = &ldu->ldu_memhog_root_page;
- 	struct page **level1p;
-@@ -86,8 +85,7 @@ kportal_memhog_free (struct libcfs_device_userstate *ldu)
- 	LASSERT (ldu->ldu_memhog_pages == 0);
- }
- 
--int
--kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
-+static int kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
- 		     gfp_t flags)
- {
- 	struct page **level0p;
--- 
-1.9.1
+
+Juergen
+
+>
+>> --- a/arch/x86/syscalls/Makefile
+>> +++ b/arch/x86/syscalls/Makefile
+>
+> Why are these changes here and not in arch/x86/xen/Makefile?
+>
+>> @@ -19,6 +19,9 @@ quiet_cmd_syshdr = SYSHDR  $@
+>>   quiet_cmd_systbl = SYSTBL  $@
+>>         cmd_systbl = $(CONFIG_SHELL) '$(systbl)' $< $@
+>>
+>> +quiet_cmd_hypercalls = HYPERCALLS $@
+>> +      cmd_hypercalls = $(CONFIG_SHELL) '$<' $@ $(filter-out $<,$^)
+>> +
+>>   syshdr_abi_unistd_32 := i386
+>>   $(uapi)/unistd_32.h: $(syscall32) $(syshdr)
+>>   	$(call if_changed,syshdr)
+>> @@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
+>>   $(out)/syscalls_64.h: $(syscall64) $(systbl)
+>>   	$(call if_changed,systbl)
+>>
+>> +$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
+>> +	$(call if_changed,hypercalls)
+>> +
+>> +$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
+>
+> The generated header should end up in asm/xen/
+>
+>> --- /dev/null
+>> +++ b/scripts/xen-hypercalls.sh
+>> @@ -0,0 +1,11 @@
+>> +#!/bin/sh
+>> +out="$1"
+>> +shift
+>> +in="$@"
+>> +
+>> +for i in $in; do
+>> +	eval $CPP $LINUXINCLUDE -dD -imacros "$i" -x c /dev/null
+>> +done | \
+>> +awk '$1 == "#define" && $2 ~ /__HYPERVISOR_[a-z][a-z_0-9]*/ { v[$3] = $2 }
+>> +	END {for (i in v) if (!(v[i] in v))
+>> +		print "HYPERCALL("substr(v[i], 14)")"}' | sort -u >$out
+>
+> Include a comment in the generated output saying what generated it. e.g.,
+>
+> /* auto-generated by scripts/xen-hypercall.sh */
+>
+> David
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
