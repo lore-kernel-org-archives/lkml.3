@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751004AbaLPLUK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:20:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48587 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaLPLUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:20:07 -0500
-Message-ID: <54901564.6070201@suse.com>
-Date: Tue, 16 Dec 2014 12:20:04 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751222AbaLPLUz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:20:55 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:48241 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLPLUy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 06:20:54 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-sh@vger.kernel.org, horms@verge.net.au, geert@linux-m68k.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
+Date: Tue, 16 Dec 2014 13:20:56 +0200
+Message-ID: <1418731028.WfBPmyK53y@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <54901420.50403@linaro.org>
+References: <20141216094854.22639.69181.sendpatchset@w520> <54901420.50403@linaro.org>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, mmarek@suse.cz, linux-kbuild@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH 4/4] xen: use generated hypercall symbols
- in arch/x86/xen/xen-head.S
-References: <1418321065-10212-1-git-send-email-jgross@suse.com>	<1418321065-10212-5-git-send-email-jgross@suse.com>	<548ECE9B.3040105@citrix.com> <548FC95E.70903@suse.com> <5490086D.2060808@citrix.com>
-In-Reply-To: <5490086D.2060808@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 11:24 AM, David Vrabel wrote:
-> On 16/12/14 05:55, Juergen Gross wrote:
->> On 12/15/2014 01:05 PM, David Vrabel wrote:
->>> On 11/12/14 18:04, Juergen Gross wrote:
->>>> Instead of manually list each hypercall in arch/x86/xen/xen-head.S
->>>> use the auto generated symbol list.
->>>>
->>>> This also corrects the wrong address of xen_hypercall_mca which was
->>>> located 32 bytes higher than it should.
->>>>
->>>> Symbol addresses have been verified to match the correct ones via
->>>> objdump output.
->>> [...]
->>>> +
->>>> +#define HYPERCALL(n) \
->>>> +    .equ xen_hypercall_##n, hypercall_page + __HYPERVISOR_##n * 32; \
->>>> +    .type xen_hypercall_##n, function; .size xen_hypercall_##n, 32
->>>> +#include <asm/xen-hypercalls.h>
->>>> +#undef HYPERCALL
->>>
->>> The gas manual[1] suggests the syntax you've used for .type is invalid
->>> and suggest using .type <name>, STT_FUNC
->>
->> Really? In the link below I see:
->>
->> The types supported are:
->>
->> STT_FUNC
->> function
->>      Mark the symbol as being a function name.
->> ...
->>
->> So "function" seems to be okay.
->
->>From the manual
->
->      The syntaxes supported are:
->
->         .type <name> STT_<TYPE_IN_UPPER_CASE>
->         .type <name>,#<type>
->         .type <name>,@<type>
->         .type <name>,%<type>
->         .type <name>,"<type>"
->
-> And
->
->      The first variant will be accepted by the GNU assembler on all
->      architectures...
+Hi Daniel,
 
-grepping through the x86 assembler sources
+On Tuesday 16 December 2014 12:14:40 Daniel Lezcano wrote:
+> On 12/16/2014 10:48 AM, Magnus Damm wrote:
+> > From: Magnus Damm <damm+renesas@opensource.se>
+> > 
+> > Update the TMU driver to use cpu_possible_mask as cpumask to make
+> > r8a7779 SMP work as expected with or without the ARM TWD timer.
+> > 
+> > Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+> 
+> Applied as a 3.18 fix.
 
-.type <name>,@function
+You're a bit too fast, I haven't had time to review the patch yet.
 
-seems to be the preferred syntax (100%). I think I'll switch to that.
+> ps: May I suggest to use the CLOCK_EVT_FEAT_DYNIRQ flag for this driver ?
+> 
+> > ---
+> > 
+> >   drivers/clocksource/sh_tmu.c |    2 +-
+> >   1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- 0001/drivers/clocksource/sh_tmu.c
+> > +++ work/drivers/clocksource/sh_tmu.c	2014-12-16 17:49:49.000000000 +0900
+> > @@ -428,7 +428,7 @@ static void sh_tmu_register_clockevent(s
+> > 
+> >   	ced->features = CLOCK_EVT_FEAT_PERIODIC;
+> >   	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
+> >   	ced->rating = 200;
+> > -	ced->cpumask = cpumask_of(0);
+> > +	ced->cpumask = cpu_possible_mask;
 
+Magnus, how thoroughly have you tested this ? The TMU is indeed usable by all 
+CPUs, so setting the CPU mask to cpu_possible_mask makes sense, but last time 
+I've tried that it broke the broadcast timer due to the heuristics used by the 
+clock events core code.
 
-Juergen
+Could you please confirm that you've tested both CONFIG_PREEMPT_NONE and 
+CONFIG_PREEMPT with and without the ARM TWD times, and that you've booted to 
+userspace and tested timer broadcast on all CPUs ?
+
+> >   	ced->set_next_event = sh_tmu_clock_event_next;
+> >   	ced->set_mode = sh_tmu_clock_event_mode;
+> >   	ced->suspend = sh_tmu_clock_event_suspend;
+
+-- 
+Regards,
+
+Laurent Pinchart
 
