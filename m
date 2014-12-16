@@ -1,140 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaLPLy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:54:59 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:44422 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaLPLy5 (ORCPT
+	id S1751403AbaLPLzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:55:44 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:34117 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaLPLzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:54:57 -0500
-Message-ID: <54901D90.1080109@linaro.org>
-Date: Tue, 16 Dec 2014 12:54:56 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 16 Dec 2014 06:55:41 -0500
+Date: Tue, 16 Dec 2014 03:55:37 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [BUG, linux-next] spawn PID 1 without CLONE_FS, wireless inop
+Message-ID: <20141216115537.GA1259@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Al Viro <viro@zeniv.linux.org.uk>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
 MIME-Version: 1.0
-To: Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP
- broadcast
-References: <20141216094854.22639.69181.sendpatchset@w520>	<54901420.50403@linaro.org>	<1418731028.WfBPmyK53y@avalon> <CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
-In-Reply-To: <CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 12:46 PM, Magnus Damm wrote:
-> Hi Laurent,
->
-> On Tue, Dec 16, 2014 at 8:20 PM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
->> Hi Daniel,
->>
->> On Tuesday 16 December 2014 12:14:40 Daniel Lezcano wrote:
->>> On 12/16/2014 10:48 AM, Magnus Damm wrote:
->>>> From: Magnus Damm <damm+renesas@opensource.se>
->>>>
->>>> Update the TMU driver to use cpu_possible_mask as cpumask to make
->>>> r8a7779 SMP work as expected with or without the ARM TWD timer.
->>>>
->>>> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
->>>
->>> Applied as a 3.18 fix.
->>
->> You're a bit too fast, I haven't had time to review the patch yet.
->>
->>> ps: May I suggest to use the CLOCK_EVT_FEAT_DYNIRQ flag for this driver ?
->>>
->>>> ---
->>>>
->>>>    drivers/clocksource/sh_tmu.c |    2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> --- 0001/drivers/clocksource/sh_tmu.c
->>>> +++ work/drivers/clocksource/sh_tmu.c       2014-12-16 17:49:49.000000000 +0900
->>>> @@ -428,7 +428,7 @@ static void sh_tmu_register_clockevent(s
->>>>
->>>>      ced->features = CLOCK_EVT_FEAT_PERIODIC;
->>>>      ced->features |= CLOCK_EVT_FEAT_ONESHOT;
->>>>      ced->rating = 200;
->>>> -   ced->cpumask = cpumask_of(0);
->>>> +   ced->cpumask = cpu_possible_mask;
->>
->> Magnus, how thoroughly have you tested this ? The TMU is indeed usable by all
->> CPUs, so setting the CPU mask to cpu_possible_mask makes sense, but last time
->> I've tried that it broke the broadcast timer due to the heuristics used by the
->> clock events core code.
->
-> Uhm, so I've tested this particular patch on r8a7779 but I do agree
-> that the TMU is used on a bunch of SoCs if that's what you mean. I
-> don't see how it is different from any other of our timers though, and
-> those got fixed like this earlier.
->
-> I wonder if you may recall an earlier issue with incorrect clock event
-> priorities and code somehow working-by-accident without the mask set
-> as expected?
+all,
 
-Could have been fixed with : ?
+The wireless network interface has become inoperative when running
+linux-next 20141216 on a Lenovo Carbon X1.  It is completely
+non-existent and `ip addr` doesn't show it.  A bisect has found that
+the bug was introduced by the following commit.
 
-commit 70e5975d3a04be5479a28eec4a2fb10f98ad2785
-Author: Stephen Boyd <sboyd@codeaurora.org>
-Date:   Thu Jun 13 11:39:50 2013 -0700
+  commit 9d328afb18f05c25686102ad890a67bb3ca38aab
+  Author: Al Viro <viro@zeniv.linux.org.uk>
+  Date:   Thu Dec 11 22:34:21 2014 -0500
+  
+      spawn PID 1 without CLONE_FS, give kernel threads zero umask
+      
+      Don't give PID 1 init_fs, give it a copy of its own when it's
+  spawned.
+      Then we can make init_fs.umode zero, and have both the PID 1 and
+      everything that gets spawned by call_usermodehelper() set
+  ->fs->umask
+      to old value (0022) early on.
+      
+      Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-     clockevents: Prefer CPU local devices over global devices
+Below is my network interface information.  And the iwlwifi modules are
+being used.
 
-     On an SMP system with only one global clockevent and a dummy
-     clockevent per CPU we run into problems. We want the dummy
-     clockevents to be registered as the per CPU tick devices, but
-     we can only achieve that if we register the dummy clockevents
-     before the global clockevent or if we artificially inflate the
-     rating of the dummy clockevents to be higher than the rating
-     of the global clockevent. Failure to do so leads to boot
-     hangs when the dummy timers are registered on all other CPUs
-     besides the CPU that accepted the global clockevent as its tick
-     device and there is no broadcast timer to poke the dummy
-     devices.
+  $ lspci
+  ...
+  03:00.0 Network controller: Intel Corporation Centrino Advanced-N 6205
+  [Taylor Peak] (rev 96)
+  ...
 
-     If we're registering multiple clockevents and one clockevent is
-     global and the other is local to a particular CPU we should
-     choose to use the local clockevent regardless of the rating of
-     the device. This way, if the clockevent is a dummy it will take
-     the tick device duty as long as there isn't a higher rated tick
-     device and any global clockevent will be bumped out into
-     broadcast mode, fixing the problem described above.
+And the patch which introduced this bug is included below.
 
+>From 9d328afb18f05c25686102ad890a67bb3ca38aab Mon Sep 17 00:00:00 2001
+From: Al Viro <viro@zeniv.linux.org.uk>
+Date: Thu, 11 Dec 2014 22:34:21 -0500
+Subject: [PATCH] spawn PID 1 without CLONE_FS, give kernel threads zero umask
 
+Don't give PID 1 init_fs, give it a copy of its own when it's spawned.
+Then we can make init_fs.umode zero, and have both the PID 1 and
+everything that gets spawned by call_usermodehelper() set ->fs->umask
+to old value (0022) early on.
 
->> Could you please confirm that you've tested both CONFIG_PREEMPT_NONE and
->> CONFIG_PREEMPT with and without the ARM TWD times, and that you've booted to
->> userspace and tested timer broadcast on all CPUs ?
->
-> No I have not. I've booted to user space in initramfs with DT-based
-> TWD on Multiplatform for r8a7779. Without this fix (and other r8a7779
-> TWD bits) I see a lot of breakage. For instance, TWD and SMP boot is
-> broken on r8a7779 - both legacy and non-legacy. I have not gotten to
-> sh73a0 yet, but I assume it is busted too.
->
-> Can you please explain to me how the TMU is any different compared to
-> the CMT, MTU2 or STI? =)
->
-> And no, I don't have any r8a7740 board anymore. Can anyone else test?
->
-> Cheers,
->
-> / magnus
->
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+ fs/fs_struct.c | 2 +-
+ init/main.c    | 4 +++-
+ kernel/kmod.c  | 2 ++
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
+diff --git a/fs/fs_struct.c b/fs/fs_struct.c
+index 7dca743..2242c40 100644
+--- a/fs/fs_struct.c
++++ b/fs/fs_struct.c
+@@ -162,5 +162,5 @@ struct fs_struct init_fs = {
+ 	.users		= 1,
+ 	.lock		= __SPIN_LOCK_UNLOCKED(init_fs.lock),
+ 	.seq		= SEQCNT_ZERO(init_fs.seq),
+-	.umask		= 0022,
++	.umask		= 0,
+ };
+diff --git a/init/main.c b/init/main.c
+index 40240c8..3a169a2 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -79,6 +79,7 @@
+ #include <linux/random.h>
+ #include <linux/list.h>
+ #include <linux/proc_ns.h>
++#include <linux/fs_struct.h>
+ 
+ #include <asm/io.h>
+ #include <asm/bugs.h>
+@@ -401,7 +402,7 @@ static noinline void __init_refok rest_init(void)
+ 	 * the init task will end up wanting to create kthreads, which, if
+ 	 * we schedule it before we create kthreadd, will OOPS.
+ 	 */
+-	kernel_thread(kernel_init, NULL, CLONE_FS);
++	kernel_thread(kernel_init, NULL, 0);
+ 	numa_default_policy();
+ 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
+ 	rcu_read_lock();
+@@ -933,6 +934,7 @@ static int __ref kernel_init(void *unused)
+ {
+ 	int ret;
+ 
++	current->fs->umask = 0022;
+ 	kernel_init_freeable();
+ 	/* need to finish all async __init code before freeing the memory */
+ 	async_synchronize_full();
+diff --git a/kernel/kmod.c b/kernel/kmod.c
+index 80f7a6d..8879506 100644
+--- a/kernel/kmod.c
++++ b/kernel/kmod.c
+@@ -39,6 +39,7 @@
+ #include <linux/rwsem.h>
+ #include <linux/ptrace.h>
+ #include <linux/async.h>
++#include <linux/fs_struct.h>
+ #include <asm/uaccess.h>
+ 
+ #include <trace/events/module.h>
+@@ -227,6 +228,7 @@ static int ____call_usermodehelper(void *data)
+ 	struct cred *new;
+ 	int retval;
+ 
++	current->fs->umask = 0022;
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	flush_signal_handlers(current, 1);
+ 	spin_unlock_irq(&current->sighand->siglock);
+-- 
+2.1.3
+
+Let me know if I can provided any further information that would be helpful.
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+- Jeremiah Mahler
