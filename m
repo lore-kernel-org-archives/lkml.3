@@ -1,150 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751120AbaLPX53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 18:57:29 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:48951 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaLPX52 convert rfc822-to-8bit (ORCPT
+	id S1751270AbaLPX6T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 18:58:19 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:40834 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaLPX6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 18:57:28 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        =?ISO-8859-1?Q?J=FCrg?= Billeter <j@bitron.ch>,
-        Magnus Damm <damm+renesas@opensource.se>,
-        Phil Edworthy <phil.edworthy@renesas.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH] dmaengine: rcar-dmac: Handle hardware descriptor allocation failure
-Date: Wed, 17 Dec 2014 01:57:30 +0200
-Message-ID: <5322978.GxSKO5eTNh@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20141216070413.GW16827@intel.com>
-References: <1416924617-15939-1-git-send-email-j@bitron.ch> <24462099.2yiDWKCQ5B@avalon> <20141216070413.GW16827@intel.com>
+	Tue, 16 Dec 2014 18:58:17 -0500
+Date: Tue, 16 Dec 2014 15:58:13 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>,
+        Chirantan Ekbote <chirantan@chromium.org>
+Subject: Re: [PATCH] PM / sleep: add configurable delay for pm_test
+Message-ID: <20141216235813.GI9759@ld-irv-0074>
+References: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
+ <20141213025530.GO21347@ld-irv-0074>
+ <20141213083123.GA26129@amd>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141213083123.GA26129@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
-
-On Tuesday 16 December 2014 12:34:13 Vinod Koul wrote:
-> On Mon, Dec 15, 2014 at 10:04:45PM +0200, Laurent Pinchart wrote:
-> > On Monday 15 December 2014 12:08:35 Vinod Koul wrote:
-> >> On Fri, Dec 12, 2014 at 09:41:11PM +0200, Laurent Pinchart wrote:
-> >>> On Thursday 11 December 2014 01:16:31 Kuninori Morimoto wrote:
-> >>>>>> On Mon, Dec 08, 2014 at 11:20:44PM +0530, Vinod Koul wrote:
-> >>>>>>> On Mon, Dec 08, 2014 at 07:40:15PM +0200, Laurent Pinchart wrote:
-> >>>>>>>>>> [GIT PULL FOR v3.19] R-Car DMA engine driver
-> >>>>>>>>>> http://www.spinics.net/lists/linux-sh/msg37764.html
-> >>>>>>>>> 
-> >>>>>>>>> And I dont seem to have this request in my Inbox :(
-> >>>>>>>>> Yes I do see it in archieves, so not sure how this is not
-> >>>>>>>>> present, not sure if the servers mangeled it!!
-> >>>>>>>> 
-> >>>>>>>> I haven't CC'ed you, I'll make sure to do so next time. The mail
-> >>>>>>>> should still have reached you through the mailing list though (I
-> >>>>>>>> assume you're subscribed to dmaengine@vger.kernel.org ;-)).
-> >>>>>>> 
-> >>>>>>> Yes I am, so should have reached me even though i wasnt cced
-> >>>>>>> I do see email reaching me from list without me being in CC, but
-> >>>>>>> then it wont hit my inbox and go to ML folder :)
-> >>>>>>> So generally its a good practice to CC relvant folks, lots of
-> >>>>>>> folks do ask that if ML is high volume
-> >>>>>> 
-> >>>>>> Hey Laurent,
-> >>>>>> 
-> >>>>>> I see that the oddity in commitlogs with change since artifacts
-> >>>>>> after SOB, can you please fix that up
-> >>>>> 
-> >>>>> My bad. I've fixed the problem and pushed the result to the same
-> >>>>> branch
-> >>>>> 
-> >>>>> 	git://linuxtv.org/pinchartl/fbdev.git dma/next
-> >>>>> 
-> >>>>> The only difference lies in the commit logs.
-> >>>> 
-> >>>> If my understanding was correct, we need to be based on Vinod's
-> >>>> topic/slave_caps_device_control_fix
-> >>> 
-> >>> Vinod, could you please comment on that ? To which kernel version do
-> >>> you plan to push this series ? Do I need to rebase it ?
-> >> 
-> >> Hi Laurent,
-> >> 
-> >> I did a quick at the series, looks fine mostly. I have already sent by
-> >> pull request to linus earlier last week and its merged, so we need to
-> >> merge it for next one. So yes we need to fix and test this for caps and
-> >> control API fix. Can you do that and I will pull and put in my next for
-> >> 3.20
+On Sat, Dec 13, 2014 at 09:31:23AM +0100, Pavel Machek wrote:
+> On Fri 2014-12-12 18:55:30, Brian Norris wrote:
+> > On Wed, Sep 03, 2014 at 04:55:35PM -0700, Brian Norris wrote:
+> > > When CONFIG_PM_DEBUG=y, we provide a sysfs file (/sys/power/pm_test) for
+> > > selecting one of a few suspend test modes, where rather than entering a
+> > > full suspend state, the kernel will perform some subset of suspend
+> > > steps, wait 5 seconds, and then resume back to normal operation.
+> > > 
+> > > This mode is useful for (among other things) observing the state of the
+> > > system just before entering a sleep mode, for debugging or analysis
+> > > purposes. However, a constant 5 second wait is not sufficient for some
+> > > sorts of analysis; for example, on an SoC, one might want to use
+> > > external tools to probe the power states of various on-chip controllers
+> > > or clocks.
+> > > 
+> > > This patch adds a companion sysfs file (/sys/power/pm_test_delay) that
+> > > allows user-space to configure how long the system waits in this test
+> > > state before resuming. It also updates the PM debugging documentation to
+> > > mention the new file.
+> > > 
+> > > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 > > 
-> > That's very annoying given that I have users waiting for the driver to be
-> > merged, and that I've sent the pull request two weeks and a half ago.
+> > What do you think about this patch? It seems there is at least one other
+> > developer who is independently interested in this.
 > 
-> Sorry cant help if I dont see the PULL request :( Apprently once a year
-> intel domain gets kicked out causing us to be unsubscribed, just bad timing
-> here...
+> 40 lines of code, and new sysfs interface for use by someone who puts
+> the probes on board, anyway... (so should be able to add the single
+> mdelay himself).
 
-Do you mean that every Intel employee needs to resubscribe to all vger mailing 
-list once a year ? :-o
+I heard your complaint the first time:
 
-> > I suppose I have no choice anyway. Please provide me with a v3.20
-> > development branch on which I can rebase the patch set, I don't want to
-> > rebase it twice.
->
-> Please use topic/slave_caps_device_control_fix. I am going to rebase this
-> once rc1 is declared (eow i guess). It would plain git rebase, so shouldn't
-> impact you.
+  https://lkml.org/lkml/2014/9/4/63
 
-Done. I'll rebase it once again when you will have rebased your branch, and 
-will then send a pull request. Could you please rebase your branch early after 
-the -rc1 release ?
+And I responded to it already:
 
-> > > One more thing I saw in driver "dmaengine: rcar-dmac: Add Renesas R-Car
-> > > Gen2 DMA Controller (DMAC) driver" is the CONFIG_ARCH_DMA_ADDR_T_64BIT
-> > > code. Can you please explain a bit more on it, why do you need to
-> > > modify addresses based on config option?
-> > 
-> > Because there's no need to write the upper bits (above 32) of the DMA
-> > addresses when the DMA address spans 32 bits only, and because there's no
-> > need to check for transfers that cross a 4GB boundary (that's a hardware
-> > limitation) when the DMA address space is 4GB in total.
-> 
-> I was hoping that dma_addr_t should take care of this... but lots of HW
-> limitations
+  https://lkml.org/lkml/2014/9/4/494
 
-dma_addr_t gets a different size depending on whether large physical address 
-extension is enabled or not, but that's only part of the solution. It doesn't 
-magically remove code that ends up not being needed anymore, and worse than 
-that, it causes the following build warnings:
+You did not respond, but Chirantan spoke up saying he wanted such a
+patch too. He came up with a very similar solution independently:
 
-  CC [M]  drivers/dma/sh/rcar-dmac.o
-drivers/dma/sh/rcar-dmac.c: In function ‘rcar_dmac_chan_start_xfer’:
-drivers/dma/sh/rcar-dmac.c:333:10: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:377:10: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:379:10: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c: In function ‘rcar_dmac_chan_prep_sg’:
-drivers/dma/sh/rcar-dmac.c:873:4: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:873:4: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:875:4: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:875:4: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:883:4: warning: right shift count >= width of type 
-[enabled by default]
-drivers/dma/sh/rcar-dmac.c:883:4: warning: right shift count >= width of type 
-[enabled by default
+  https://chromium.googlesource.com/chromiumos/third_party/kernel/+/15bccc2c63c3475ef61d3187c73ccf1d80b18c7e
 
--- 
-Regards,
+But since you've decided to make the same comment again, I will detail
+more of the reasons why I think your suggestion ("go add the mdelay
+yourself") is off-base.
 
-Laurent Pinchart
+ 1. This is behind a debug config option (CONFIG_PM_DEBUG). So what's
+ the problem with improving its usefulness? Non-debug users can easily
+ compile it out if they're worried about 40 lines.
 
+ 2. The current debug code encodes a particular policy (which kernels
+ generally should not). Is it better if I submit a patch that changes
+ the current magic delay to 60000 milliseconds? What about 1334
+ milliseconds?
+
+ 3. To continue your argument: why would I ever try to patch the
+ upstream kernel, if I'm perfectly capable of doing this myself?
+
+ 4. How does putting probes on a board suddenly qualify someone for
+ patching and rebuilding their kernel? I noted that I have *users* who
+ want to do this. Hence, I'm patching a *user* interface.
+
+Brian
