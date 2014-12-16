@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356AbaLPAJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:09:08 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:40703 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaLPAJG (ORCPT
+	id S1751512AbaLPALF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:11:05 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:44391 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818AbaLPALD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:09:06 -0500
+	Mon, 15 Dec 2014 19:11:03 -0500
+Date: Mon, 15 Dec 2014 16:10:58 -0800
+From: Dmitry Torokhov <dtor@chromium.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Stefan Wahren <stefan.wahren@i2se.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cpufreq-dt: defer probing if OPP table is not ready
+Message-ID: <20141216001058.GA31286@dtor-ws>
 MIME-Version: 1.0
-In-Reply-To: <CAL1qeaHfsq1xOOBMQc58uSvV4unuEWHjqVpiZrpu2bQD36LbXg@mail.gmail.com>
-References: <1418685929-13096-1-git-send-email-dianders@chromium.org>
-	<1418685929-13096-2-git-send-email-dianders@chromium.org>
-	<CAL1qeaHfsq1xOOBMQc58uSvV4unuEWHjqVpiZrpu2bQD36LbXg@mail.gmail.com>
-Date: Mon, 15 Dec 2014 16:09:05 -0800
-X-Google-Sender-Auth: L3qZCOTJdeBLP1TVHi_-2C5zjjo
-Message-ID: <CAD=FV=XigXJWg1PiFzA20xXz-6VY=OGnGefJfvoVOiajq5Aicg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] mmc: dw_mmc: Use mmc_regulator_set_vqmmc in start_signal_voltage_switch
-From: Doug Anderson <dianders@chromium.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>, Mark Brown <broonie@kernel.org>,
-        Alexandru Stan <amstan@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Chris Ball <chris@printf.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+cpufreq-dt driver supports mode when OPP table is provided by platform
+code and not device tree. However on certain platforms code that fills
+OPP table may run after cpufreq driver tries to initialize, so let's
+report -EPROBE_DEFER if we do not find any entires in OPP table for the
+CPU.
 
-On Mon, Dec 15, 2014 at 3:44 PM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
->> -       if (!IS_ERR(mmc->supply.vqmmc)) {
->> -               ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
->> -
->> -               if (ret) {
->> -                       dev_dbg(&mmc->class_dev,
->> -                                        "Regulator set error %d: %d - %d\n",
->> -                                        ret, min_uv, max_uv);
->> -                       return ret;
->> -               }
->> -       }
->> +       mmc_regulator_set_vqmmc(mmc, ios);
->
-> Shouldn't we check the return value here and bail out of the voltage
-> switch procedure if it fails?
+Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+---
+ drivers/cpufreq/cpufreq-dt.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-My thought was to purposely _not_ check the return value.  The comment
-right above this says:
+diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
+index f56147a..4f874fa 100644
+--- a/drivers/cpufreq/cpufreq-dt.c
++++ b/drivers/cpufreq/cpufreq-dt.c
+@@ -211,6 +211,19 @@ static int cpufreq_init(struct cpufreq_policy *policy)
+ 	/* OPPs might be populated at runtime, don't check for error here */
+ 	of_init_opp_table(cpu_dev);
+ 
++	/*
++	 * But we need OPP table to function so if it is not there let's
++	 * give platform code chance to provide it for us.
++	 */
++	rcu_read_lock();
++	ret = dev_pm_opp_get_opp_count(cpu_dev);
++	rcu_read_unlock();
++	if (ret <= 0) {
++		pr_debug("OPP table is not ready, deferring probe\n");
++		ret = -EPROBE_DEFER;
++		goto out_free_opp;
++	}
++
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv) {
+ 		ret = -ENOMEM;
+-- 
+2.2.0.rc0.207.ga3a616c
 
-* Program the voltage.  Note that some instances of dw_mmc may use
-* the UHS_REG for this.  For other instances (like exynos) the UHS_REG
-* does no harm but you need to set the regulator directly.  Try both.
 
-...I'm not 100% sure that I understand how the UHS_REG is supposed to
-be implemented since I've never seen a system that uses it.  I was
-assuming that if you have UHS_REG you don't need the regulator...
-
-...but probably a better solution is to return the error if "
-!IS_ERR(mmc->supply.vqmmc)".  Let me fix that up and repost.
-
-
--Doug
+-- 
+Dmitry
