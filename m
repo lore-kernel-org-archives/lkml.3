@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751115AbaLPNpV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 08:45:21 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45142 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaLPNpT (ORCPT
+	id S1751225AbaLPNqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 08:46:36 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:38125 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaLPNqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 08:45:19 -0500
+	Tue, 16 Dec 2014 08:46:35 -0500
+Message-ID: <549037B8.6060803@cogentembedded.com>
+Date: Tue, 16 Dec 2014 16:46:32 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <54902AA1.7080301@hurleysoftware.com>
-References: <1418681761-3709-1-git-send-email-imre.deak@intel.com>
-	<1418681761-3709-3-git-send-email-imre.deak@intel.com>
-	<20141216075300.GI2711@phenom.ffwll.local>
-	<1418725405.3185.31.camel@ideak-mobl>
-	<54902AA1.7080301@hurleysoftware.com>
-Date: Tue, 16 Dec 2014 14:45:18 +0100
-X-Google-Sender-Auth: xWya7Ybr36FRQkV_wb8Ic-XSnyQ
-Message-ID: <CAKMK7uFN0qnxuQyWwpq4dgNy4eS+LdE-2404UqG4TQoAh58q7w@mail.gmail.com>
-Subject: Re: [PATCH v4 3/3] vt: fix console lock vs. kernfs s_active lock order
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Imre Deak <imre.deak@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Evgeni Dobrev <evgeni@studio-punkt.com>, devicetree@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: dts: kirkwood: enable phy driver for SATA controller
+ on 88f6192
+References: <20141215203724.GA22936@anne>
+In-Reply-To: <20141215203724.GA22936@anne>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 1:50 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->>> So NACK from me for this.
->>
->> I think I proved it in the commit message that this issue is independent
->> of fbcon/fbdev, so refactoring these will not solve it. This patch fixes
->> an issue in vt and while your points may be valid, they are not really
->> about this issue or how the patch fixes it.
->
-> I think you may have missed Daniel's point. Which is what I was trying to
-> point out earlier but in an overly terse manner.
->
-> If you start by just moving the sysfs teardown outside the console_lock
-> (but still in the same thread of execution), then the direct lock inversion
-> between console_lock and the sysfs lock goes away.
->
-> However, you'll now realize that you can't move the sysfs teardown outside
-> the console lock because fbcon is doing teardown from inside its notifier,
-> which means that there would be a lock inversion between the console lock
-> and the notifier lock.
->
-> Which is why we're pointing out that the real problem here is the
-> fb notifier call chain lock.
+Hello.
 
-It's more the overall story. The patch is imo technically ok, but it's
-yet another step in the wrong direction. We've unfortunately piled up
-lots of those around fbcon/console_lock and eventually we need to
-start going a better direction. Applying a hack will just result in
-everyone forgetting about this until the next head of the hydra pops
-out of the water.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+On 12/15/2014 11:37 PM, Evgeni Dobrev wrote:
+
+> This patch enables the phy drivers for the SATA controller on Marvell's 88f6192. Without them it is not possible to use SATA drives attached to this processor.
+
+    Please wrap the change log likes at 80 characters or less.
+
+> Signed-off-by: Evgeni Dobrev <evgeni@studio-punkt.com>
+> ---
+>   arch/arm/boot/dts/kirkwood-6192.dtsi |    2 ++
+>   1 file changed, 2 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/kirkwood-6192.dtsi b/arch/arm/boot/dts/kirkwood-6192.dtsi
+> index dd81508..bed2dec 100644
+> --- a/arch/arm/boot/dts/kirkwood-6192.dtsi
+> +++ b/arch/arm/boot/dts/kirkwood-6192.dtsi
+> @@ -66,6 +66,8 @@
+>   			interrupts = <21>;
+>   			clocks = <&gate_clk 14>, <&gate_clk 15>;
+>   			clock-names = "0", "1";
+> +                        phys = <&sata_phy0>, <&sata_phy1>;
+> +                        phy-names = "port0", "port1";
+
+    Please indent with tabs,  not spaces.
+
+[...]
+
+WBR, Sergei
+
