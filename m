@@ -1,256 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955AbaLPURV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 15:17:21 -0500
-Received: from smtprelay0058.hostedemail.com ([216.40.44.58]:44254 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751765AbaLPURS (ORCPT
+	id S1751712AbaLPUUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 15:20:06 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:52149 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaLPUUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 15:17:18 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:2393:2559:2562:2828:2898:3138:3139:3140:3141:3142:3865:3867:3868:3870:3872:4049:4118:4250:4321:4605:5007:6119:6261:7903:10004:10848:11026:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12679:12683:14110:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crook99_50b020be2626
-X-Filterd-Recvd-Size: 7114
-Message-ID: <1418761033.14140.5.camel@perches.com>
-Subject: [PATCH netfilter-next] xt_osf: Use continue to reduce indentation
-From: Joe Perches <joe@perches.com>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Dec 2014 12:17:13 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Dec 2014 15:20:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Arun Ramamurthy <arun.ramamurthy@broadcom.com>, mark.rutland@arm.com,
+        a.zummo@towertech.it, sbranden@broadcom.com, pawel.moll@arm.com,
+        devicetree@vger.kernel.org, rjui@broadcom.com,
+        ijc+devicetree@hellion.org.uk, Arun Ramamurthy <arunrama@broadcom.com>,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, bcm-kernel-feedback-list@broadcom.com,
+        galak@codeaurora.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCHv1] rtc: bcm-iproc: Add support for Broadcom iproc rtc
+Date: Tue, 16 Dec 2014 21:19:05 +0100
+Message-ID: <1418783023.hzNZBNCmFc@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54909074.2070804@broadcom.com>
+References: <1418757750-3628-1-git-send-email-arun.ramamurthy@broadcom.com> <7947905.aK8KkUx4sY@wuerfel> <54909074.2070804@broadcom.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:B4mJKDCh6jf3d7/7T5Nl80gbfhw8C4JVuNNCrE/p7dvEIuPrQRW
+ BpdHZMY7A/4Pg38uF36g7EkbU4GcpcNPHMdjkDMhc8XCWlDOMQosdAIb6sY/jpmRscblnUv
+ el88mp79GbrpX/1g/HAHNJJ5igAj1Zo3gw7CYSOoV6ez0d5ttdOrPUTV1KBwW8JFcmQKIws
+ FzzEDacVzX5LAm6kZzq6Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Invert logic in test to use continue.
+On Tuesday 16 December 2014 12:05:08 Arun Ramamurthy wrote:
+> On 14-12-16 11:42 AM, Arnd Bergmann wrote:
+> > On Tuesday 16 December 2014 11:22:30 arun.ramamurthy@broadcom.com wrote:
+> >> +       rtc: iproc_rtc@0x03026000 {
+> >> +               compatible = "brcm,iproc-rtc";
+> >> +               reg =   spru_bbl:               <0x03026000 0xC>,
+> >> +                       crmu_pwr_good_status:   <0x0301C02C 0x14>,
+> >> +                       crmu_bbl_auth:          <0x03024C74 0x8>;
+> >> +               interrupts = spru_rtc_periodic: <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
+> >> +                            spru_alarm:        <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>;
+> >
+> > The reg properties look really random, could it be that the registers
+> > are really part of some other device that contains multiple functions?
+> >
+> This RTC block is on a battery backed logic island and is accessed 
+> indirectly using the spru_bbl registers. The CRMU registers are required 
+> to read the power status and write to some authentication registers. 
+> Without writing to these authentication
+> registers, we cannot access any of the spru_bbl registers. In conclusion
+> I don't think the CRMU register accesses can be considered as another 
+> device access. Do you agree Arnd?
 
-This routine already uses continue, use it a bit more to
-minimize > 80 column long lines and unnecessary indentation.
+It sounds like CRMU is some other unit aside from the RTC. Could this
+be something like a generic system controller? I think it should
+either have its own driver or use the syscon logic if that is what
+this is.
 
-No change in compiled object file.
+> > Also, what do you use the labels for?
+> >
+> The labels are purely to improve readability of the device tree entry
 
-Other miscellanea:
+Please remove them then, they don't help at all.
 
-o Remove trailing whitespace
-o Realign arguments to multiline statement
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- net/netfilter/xt_osf.c | 169 +++++++++++++++++++++++++------------------------
- 1 file changed, 85 insertions(+), 84 deletions(-)
-
-diff --git a/net/netfilter/xt_osf.c b/net/netfilter/xt_osf.c
-index c529161..0778855 100644
---- a/net/netfilter/xt_osf.c
-+++ b/net/netfilter/xt_osf.c
-@@ -225,6 +225,8 @@ xt_osf_match_packet(const struct sk_buff *skb, struct xt_action_param *p)
- 
- 	rcu_read_lock();
- 	list_for_each_entry_rcu(kf, &xt_osf_fingers[df], finger_entry) {
-+		int foptsize, optnum;
-+
- 		f = &kf->finger;
- 
- 		if (!(info->flags & XT_OSF_LOG) && strcmp(info->genre, f->genre))
-@@ -233,110 +235,109 @@ xt_osf_match_packet(const struct sk_buff *skb, struct xt_action_param *p)
- 		optp = _optp;
- 		fmatch = FMATCH_WRONG;
- 
--		if (totlen == f->ss && xt_osf_ttl(skb, info, f->ttl)) {
--			int foptsize, optnum;
-+		if (totlen != f->ss || !xt_osf_ttl(skb, info, f->ttl))
-+			continue;
- 
--			/*
--			 * Should not happen if userspace parser was written correctly.
--			 */
--			if (f->wss.wc >= OSF_WSS_MAX)
--				continue;
-+		/*
-+		 * Should not happen if userspace parser was written correctly.
-+		 */
-+		if (f->wss.wc >= OSF_WSS_MAX)
-+			continue;
- 
--			/* Check options */
-+		/* Check options */
- 
--			foptsize = 0;
--			for (optnum = 0; optnum < f->opt_num; ++optnum)
--				foptsize += f->opt[optnum].length;
-+		foptsize = 0;
-+		for (optnum = 0; optnum < f->opt_num; ++optnum)
-+			foptsize += f->opt[optnum].length;
- 
--			if (foptsize > MAX_IPOPTLEN ||
--				optsize > MAX_IPOPTLEN ||
--				optsize != foptsize)
--				continue;
-+		if (foptsize > MAX_IPOPTLEN ||
-+		    optsize > MAX_IPOPTLEN ||
-+		    optsize != foptsize)
-+			continue;
- 
--			check_WSS = f->wss.wc;
-+		check_WSS = f->wss.wc;
- 
--			for (optnum = 0; optnum < f->opt_num; ++optnum) {
--				if (f->opt[optnum].kind == (*optp)) {
--					__u32 len = f->opt[optnum].length;
--					const __u8 *optend = optp + len;
--					int loop_cont = 0;
-+		for (optnum = 0; optnum < f->opt_num; ++optnum) {
-+			if (f->opt[optnum].kind == (*optp)) {
-+				__u32 len = f->opt[optnum].length;
-+				const __u8 *optend = optp + len;
-+				int loop_cont = 0;
- 
--					fmatch = FMATCH_OK;
-+				fmatch = FMATCH_OK;
- 
--					switch (*optp) {
--					case OSFOPT_MSS:
--						mss = optp[3];
--						mss <<= 8;
--						mss |= optp[2];
-+				switch (*optp) {
-+				case OSFOPT_MSS:
-+					mss = optp[3];
-+					mss <<= 8;
-+					mss |= optp[2];
- 
--						mss = ntohs((__force __be16)mss);
--						break;
--					case OSFOPT_TS:
--						loop_cont = 1;
--						break;
--					}
-+					mss = ntohs((__force __be16)mss);
-+					break;
-+				case OSFOPT_TS:
-+					loop_cont = 1;
-+					break;
-+				}
- 
--					optp = optend;
--				} else
--					fmatch = FMATCH_OPT_WRONG;
-+				optp = optend;
-+			} else
-+				fmatch = FMATCH_OPT_WRONG;
- 
--				if (fmatch != FMATCH_OK)
--					break;
--			}
-+			if (fmatch != FMATCH_OK)
-+				break;
-+		}
- 
--			if (fmatch != FMATCH_OPT_WRONG) {
--				fmatch = FMATCH_WRONG;
-+		if (fmatch != FMATCH_OPT_WRONG) {
-+			fmatch = FMATCH_WRONG;
- 
--				switch (check_WSS) {
--				case OSF_WSS_PLAIN:
--					if (f->wss.val == 0 || window == f->wss.val)
--						fmatch = FMATCH_OK;
--					break;
--				case OSF_WSS_MSS:
--					/*
--					 * Some smart modems decrease mangle MSS to 
--					 * SMART_MSS_2, so we check standard, decreased
--					 * and the one provided in the fingerprint MSS
--					 * values.
--					 */
-+			switch (check_WSS) {
-+			case OSF_WSS_PLAIN:
-+				if (f->wss.val == 0 || window == f->wss.val)
-+					fmatch = FMATCH_OK;
-+				break;
-+			case OSF_WSS_MSS:
-+				/*
-+				 * Some smart modems decrease mangle MSS to
-+				 * SMART_MSS_2, so we check standard, decreased
-+				 * and the one provided in the fingerprint MSS
-+				 * values.
-+				 */
- #define SMART_MSS_1	1460
- #define SMART_MSS_2	1448
--					if (window == f->wss.val * mss ||
--					    window == f->wss.val * SMART_MSS_1 ||
--					    window == f->wss.val * SMART_MSS_2)
--						fmatch = FMATCH_OK;
--					break;
--				case OSF_WSS_MTU:
--					if (window == f->wss.val * (mss + 40) ||
--					    window == f->wss.val * (SMART_MSS_1 + 40) ||
--					    window == f->wss.val * (SMART_MSS_2 + 40))
--						fmatch = FMATCH_OK;
--					break;
--				case OSF_WSS_MODULO:
--					if ((window % f->wss.val) == 0)
--						fmatch = FMATCH_OK;
--					break;
--				}
-+				if (window == f->wss.val * mss ||
-+				    window == f->wss.val * SMART_MSS_1 ||
-+				    window == f->wss.val * SMART_MSS_2)
-+					fmatch = FMATCH_OK;
-+				break;
-+			case OSF_WSS_MTU:
-+				if (window == f->wss.val * (mss + 40) ||
-+				    window == f->wss.val * (SMART_MSS_1 + 40) ||
-+				    window == f->wss.val * (SMART_MSS_2 + 40))
-+					fmatch = FMATCH_OK;
-+				break;
-+			case OSF_WSS_MODULO:
-+				if ((window % f->wss.val) == 0)
-+					fmatch = FMATCH_OK;
-+				break;
- 			}
-+		}
- 
--			if (fmatch != FMATCH_OK)
--				continue;
-+		if (fmatch != FMATCH_OK)
-+			continue;
- 
--			fcount++;
-+		fcount++;
- 
--			if (info->flags & XT_OSF_LOG)
--				nf_log_packet(net, p->family, p->hooknum, skb,
--					p->in, p->out, NULL,
--					"%s [%s:%s] : %pI4:%d -> %pI4:%d hops=%d\n",
--					f->genre, f->version, f->subtype,
--					&ip->saddr, ntohs(tcp->source),
--					&ip->daddr, ntohs(tcp->dest),
--					f->ttl - ip->ttl);
-+		if (info->flags & XT_OSF_LOG)
-+			nf_log_packet(net, p->family, p->hooknum, skb,
-+				      p->in, p->out, NULL,
-+				      "%s [%s:%s] : %pI4:%d -> %pI4:%d hops=%d\n",
-+				      f->genre, f->version, f->subtype,
-+				      &ip->saddr, ntohs(tcp->source),
-+				      &ip->daddr, ntohs(tcp->dest),
-+				      f->ttl - ip->ttl);
- 
--			if ((info->flags & XT_OSF_LOG) &&
--			    info->loglevel == XT_OSF_LOGLEVEL_FIRST)
--				break;
--		}
-+		if ((info->flags & XT_OSF_LOG) &&
-+		    info->loglevel == XT_OSF_LOGLEVEL_FIRST)
-+			break;
- 	}
- 	rcu_read_unlock();
- 
-
-
+	Arnd
