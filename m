@@ -1,573 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaLPAlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:41:35 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:54095 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaLPAlc (ORCPT
+	id S1752644AbaLPAmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:42:20 -0500
+Received: from mail-yk0-f174.google.com ([209.85.160.174]:36909 "EHLO
+	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbaLPAmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:41:32 -0500
-Date: Tue, 16 Dec 2014 09:40:33 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: ngupta@vflare.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm/zsmalloc: adjust order of functions
-Message-ID: <20141216003941.GA17665@blaptop>
-References: <1418478203-17687-1-git-send-email-opensource.ganesh@gmail.com>
+	Mon, 15 Dec 2014 19:42:17 -0500
+Date: Mon, 15 Dec 2014 16:42:04 -0800
+From: Dmitry Torokhov <dtor@chromium.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Nishanth Menon <nm@ti.com>,
+        Chander Kashyap <k.chander@samsung.com>,
+        Inderpal Singh <inderpal.s@samsung.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PM / OPP: add some lockdep annotations
+Message-ID: <20141216004204.GA30467@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418478203-17687-1-git-send-email-opensource.ganesh@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ganesh,
+Certain OPP APIs need to be called under RCU lock; let's add a few
+rcu_lockdep_assert() calls to warn about potential misuse.
 
-On Sat, Dec 13, 2014 at 09:43:23PM +0800, Ganesh Mahendran wrote:
-> Currently functions in zsmalloc.c does not arranged in a readable
-> and reasonable sequence. With the more and more functions added,
-> we may meet below inconvenience. For example:
-> 
-> Current functions:
->     void zs_init()
->     {
->     }
-> 
->     static void get_maxobj_per_zspage()
->     {
->     }
-> 
-> Then I want to add a func_1() which is called from zs_init(), and this new added
-> function func_1() will used get_maxobj_per_zspage() which is defined below zs_init().
-> 
->     void func_1()
->     {
->         get_maxobj_per_zspage()
->     }
-> 
->     void zs_init()
->     {
->         func_1()
->     }
-> 
->     static void get_maxobj_per_zspage()
->     {
->     }
-> 
-> This will cause compiling issue. So we must add a declaration:
->     static void get_maxobj_per_zspage();
-> before func_1() if we do not put get_maxobj_per_zspage() before func_1().
+Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
+---
+ drivers/base/power/opp.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Yes, I suffered from that when I made compaction but was not sure
-it's it was obviously wrong.
-Stupid question:
-What's the problem if we should put function declaration on top of
-source code?
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+index d24dd614a..852eebf 100644
+--- a/drivers/base/power/opp.c
++++ b/drivers/base/power/opp.c
+@@ -218,6 +218,11 @@ int dev_pm_opp_get_opp_count(struct device *dev)
+ 	struct dev_pm_opp *temp_opp;
+ 	int count = 0;
+ 
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++				lockdep_is_held(&dev_opp_list_lock),
++			   "dev_pm_opp_get_opp_count() needs rcu_read_lock() "
++			   "or dev_opp_list_lock protection");
++
+ 	dev_opp = find_device_opp(dev);
+ 	if (IS_ERR(dev_opp)) {
+ 		int r = PTR_ERR(dev_opp);
+@@ -267,6 +272,11 @@ struct dev_pm_opp *dev_pm_opp_find_freq_exact(struct device *dev,
+ 	struct device_opp *dev_opp;
+ 	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+ 
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++				lockdep_is_held(&dev_opp_list_lock),
++			   "dev_pm_opp_find_freq_exact() needs rcu_read_lock() "
++			   "or dev_opp_list_lock protection");
++
+ 	dev_opp = find_device_opp(dev);
+ 	if (IS_ERR(dev_opp)) {
+ 		int r = PTR_ERR(dev_opp);
+@@ -313,6 +323,11 @@ struct dev_pm_opp *dev_pm_opp_find_freq_ceil(struct device *dev,
+ 	struct device_opp *dev_opp;
+ 	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+ 
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++				lockdep_is_held(&dev_opp_list_lock),
++			   "dev_pm_opp_find_freq_ceil() needs rcu_read_lock() "
++			   "or dev_opp_list_lock protection");
++
+ 	if (!dev || !freq) {
+ 		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+ 		return ERR_PTR(-EINVAL);
+@@ -361,6 +376,11 @@ struct dev_pm_opp *dev_pm_opp_find_freq_floor(struct device *dev,
+ 	struct device_opp *dev_opp;
+ 	struct dev_pm_opp *temp_opp, *opp = ERR_PTR(-ERANGE);
+ 
++	rcu_lockdep_assert(rcu_read_lock_held() ||
++				lockdep_is_held(&dev_opp_list_lock),
++			   "dev_pm_opp_find_freq_floor() needs rcu_read_lock() "
++			   "or dev_opp_list_lock protection");
++
+ 	if (!dev || !freq) {
+ 		dev_err(dev, "%s: Invalid argument freq=%p\n", __func__, freq);
+ 		return ERR_PTR(-EINVAL);
+-- 
+2.2.0.rc0.207.ga3a616c
 
-> 
-> In addition, puting module_[init|exit] functions at the bottom of the file
-> conforms to our habit.
 
-Normally, we do but without any strong reason, I don't want to rub git-blame
-by clean up patches.
-
-In summary, I like this patch but don't like to churn git-blame by clean-up
-patchset without strong reason so I need something I am sure.
-
-> 
-> So, this patch ajusts function sequence as:
->     /* helper functions */
->     ...
->     obj_location_to_handle()
->     ...
-> 
->     /* Some exported functions */
->     ...
-> 
->     zs_map_object()
->     zs_unmap_object()
-> 
->     zs_malloc()
->     zs_free()
-> 
->     zs_init()
->     zs_exit()
-> 
-> Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
-> ---
->  mm/zsmalloc.c |  374 ++++++++++++++++++++++++++++-----------------------------
->  1 file changed, 187 insertions(+), 187 deletions(-)
-> 
-> diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
-> index 4d0a063..b724039 100644
-> --- a/mm/zsmalloc.c
-> +++ b/mm/zsmalloc.c
-> @@ -884,19 +884,6 @@ static struct notifier_block zs_cpu_nb = {
->  	.notifier_call = zs_cpu_notifier
->  };
->  
-> -static void zs_unregister_cpu_notifier(void)
-> -{
-> -	int cpu;
-> -
-> -	cpu_notifier_register_begin();
-> -
-> -	for_each_online_cpu(cpu)
-> -		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
-> -	__unregister_cpu_notifier(&zs_cpu_nb);
-> -
-> -	cpu_notifier_register_done();
-> -}
-> -
->  static int zs_register_cpu_notifier(void)
->  {
->  	int cpu, uninitialized_var(ret);
-> @@ -914,40 +901,28 @@ static int zs_register_cpu_notifier(void)
->  	return notifier_to_errno(ret);
->  }
->  
-> -static void init_zs_size_classes(void)
-> +static void zs_unregister_cpu_notifier(void)
->  {
-> -	int nr;
-> +	int cpu;
->  
-> -	nr = (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1;
-> -	if ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA)
-> -		nr += 1;
-> +	cpu_notifier_register_begin();
->  
-> -	zs_size_classes = nr;
-> -}
-> +	for_each_online_cpu(cpu)
-> +		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
-> +	__unregister_cpu_notifier(&zs_cpu_nb);
->  
-> -static void __exit zs_exit(void)
-> -{
-> -#ifdef CONFIG_ZPOOL
-> -	zpool_unregister_driver(&zs_zpool_driver);
-> -#endif
-> -	zs_unregister_cpu_notifier();
-> +	cpu_notifier_register_done();
->  }
->  
-> -static int __init zs_init(void)
-> +static void init_zs_size_classes(void)
->  {
-> -	int ret = zs_register_cpu_notifier();
-> -
-> -	if (ret) {
-> -		zs_unregister_cpu_notifier();
-> -		return ret;
-> -	}
-> +	int nr;
->  
-> -	init_zs_size_classes();
-> +	nr = (ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) / ZS_SIZE_CLASS_DELTA + 1;
-> +	if ((ZS_MAX_ALLOC_SIZE - ZS_MIN_ALLOC_SIZE) % ZS_SIZE_CLASS_DELTA)
-> +		nr += 1;
->  
-> -#ifdef CONFIG_ZPOOL
-> -	zpool_register_driver(&zs_zpool_driver);
-> -#endif
-> -	return 0;
-> +	zs_size_classes = nr;
->  }
->  
->  static unsigned int get_maxobj_per_zspage(int size, int pages_per_zspage)
-> @@ -967,113 +942,101 @@ static bool can_merge(struct size_class *prev, int size, int pages_per_zspage)
->  	return true;
->  }
->  
-> +unsigned long zs_get_total_pages(struct zs_pool *pool)
-> +{
-> +	return atomic_long_read(&pool->pages_allocated);
-> +}
-> +EXPORT_SYMBOL_GPL(zs_get_total_pages);
-> +
->  /**
-> - * zs_create_pool - Creates an allocation pool to work from.
-> - * @flags: allocation flags used to allocate pool metadata
-> + * zs_map_object - get address of allocated object from handle.
-> + * @pool: pool from which the object was allocated
-> + * @handle: handle returned from zs_malloc
->   *
-> - * This function must be called before anything when using
-> - * the zsmalloc allocator.
-> + * Before using an object allocated from zs_malloc, it must be mapped using
-> + * this function. When done with the object, it must be unmapped using
-> + * zs_unmap_object.
->   *
-> - * On success, a pointer to the newly created pool is returned,
-> - * otherwise NULL.
-> + * Only one object can be mapped per cpu at a time. There is no protection
-> + * against nested mappings.
-> + *
-> + * This function returns with preemption and page faults disabled.
->   */
-> -struct zs_pool *zs_create_pool(gfp_t flags)
-> +void *zs_map_object(struct zs_pool *pool, unsigned long handle,
-> +			enum zs_mapmode mm)
->  {
-> -	int i;
-> -	struct zs_pool *pool;
-> -	struct size_class *prev_class = NULL;
-> +	struct page *page;
-> +	unsigned long obj_idx, off;
->  
-> -	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
-> -	if (!pool)
-> -		return NULL;
-> +	unsigned int class_idx;
-> +	enum fullness_group fg;
-> +	struct size_class *class;
-> +	struct mapping_area *area;
-> +	struct page *pages[2];
->  
-> -	pool->size_class = kcalloc(zs_size_classes, sizeof(struct size_class *),
-> -			GFP_KERNEL);
-> -	if (!pool->size_class) {
-> -		kfree(pool);
-> -		return NULL;
-> -	}
-> +	BUG_ON(!handle);
->  
->  	/*
-> -	 * Iterate reversly, because, size of size_class that we want to use
-> -	 * for merging should be larger or equal to current size.
-> +	 * Because we use per-cpu mapping areas shared among the
-> +	 * pools/users, we can't allow mapping in interrupt context
-> +	 * because it can corrupt another users mappings.
->  	 */
-> -	for (i = zs_size_classes - 1; i >= 0; i--) {
-> -		int size;
-> -		int pages_per_zspage;
-> -		struct size_class *class;
-> -
-> -		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
-> -		if (size > ZS_MAX_ALLOC_SIZE)
-> -			size = ZS_MAX_ALLOC_SIZE;
-> -		pages_per_zspage = get_pages_per_zspage(size);
-> -
-> -		/*
-> -		 * size_class is used for normal zsmalloc operation such
-> -		 * as alloc/free for that size. Although it is natural that we
-> -		 * have one size_class for each size, there is a chance that we
-> -		 * can get more memory utilization if we use one size_class for
-> -		 * many different sizes whose size_class have same
-> -		 * characteristics. So, we makes size_class point to
-> -		 * previous size_class if possible.
-> -		 */
-> -		if (prev_class) {
-> -			if (can_merge(prev_class, size, pages_per_zspage)) {
-> -				pool->size_class[i] = prev_class;
-> -				continue;
-> -			}
-> -		}
-> -
-> -		class = kzalloc(sizeof(struct size_class), GFP_KERNEL);
-> -		if (!class)
-> -			goto err;
-> +	BUG_ON(in_interrupt());
->  
-> -		class->size = size;
-> -		class->index = i;
-> -		class->pages_per_zspage = pages_per_zspage;
-> -		spin_lock_init(&class->lock);
-> -		pool->size_class[i] = class;
-> +	obj_handle_to_location(handle, &page, &obj_idx);
-> +	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-> +	class = pool->size_class[class_idx];
-> +	off = obj_idx_to_offset(page, obj_idx, class->size);
->  
-> -		prev_class = class;
-> +	area = &get_cpu_var(zs_map_area);
-> +	area->vm_mm = mm;
-> +	if (off + class->size <= PAGE_SIZE) {
-> +		/* this object is contained entirely within a page */
-> +		area->vm_addr = kmap_atomic(page);
-> +		return area->vm_addr + off;
->  	}
->  
-> -	pool->flags = flags;
-> -
-> -	return pool;
-> +	/* this object spans two pages */
-> +	pages[0] = page;
-> +	pages[1] = get_next_page(page);
-> +	BUG_ON(!pages[1]);
->  
-> -err:
-> -	zs_destroy_pool(pool);
-> -	return NULL;
-> +	return __zs_map_object(area, pages, off, class->size);
->  }
-> -EXPORT_SYMBOL_GPL(zs_create_pool);
-> +EXPORT_SYMBOL_GPL(zs_map_object);
->  
-> -void zs_destroy_pool(struct zs_pool *pool)
-> +void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
->  {
-> -	int i;
-> +	struct page *page;
-> +	unsigned long obj_idx, off;
->  
-> -	for (i = 0; i < zs_size_classes; i++) {
-> -		int fg;
-> -		struct size_class *class = pool->size_class[i];
-> +	unsigned int class_idx;
-> +	enum fullness_group fg;
-> +	struct size_class *class;
-> +	struct mapping_area *area;
->  
-> -		if (!class)
-> -			continue;
-> +	BUG_ON(!handle);
->  
-> -		if (class->index != i)
-> -			continue;
-> +	obj_handle_to_location(handle, &page, &obj_idx);
-> +	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-> +	class = pool->size_class[class_idx];
-> +	off = obj_idx_to_offset(page, obj_idx, class->size);
->  
-> -		for (fg = 0; fg < _ZS_NR_FULLNESS_GROUPS; fg++) {
-> -			if (class->fullness_list[fg]) {
-> -				pr_info("Freeing non-empty class with size %db, fullness group %d\n",
-> -					class->size, fg);
-> -			}
-> -		}
-> -		kfree(class);
-> -	}
-> +	area = this_cpu_ptr(&zs_map_area);
-> +	if (off + class->size <= PAGE_SIZE)
-> +		kunmap_atomic(area->vm_addr);
-> +	else {
-> +		struct page *pages[2];
->  
-> -	kfree(pool->size_class);
-> -	kfree(pool);
-> +		pages[0] = page;
-> +		pages[1] = get_next_page(page);
-> +		BUG_ON(!pages[1]);
-> +
-> +		__zs_unmap_object(area, pages, off, class->size);
-> +	}
-> +	put_cpu_var(zs_map_area);
->  }
-> -EXPORT_SYMBOL_GPL(zs_destroy_pool);
-> +EXPORT_SYMBOL_GPL(zs_unmap_object);
->  
->  /**
->   * zs_malloc - Allocate block of given size from pool.
-> @@ -1176,100 +1139,137 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
->  EXPORT_SYMBOL_GPL(zs_free);
->  
->  /**
-> - * zs_map_object - get address of allocated object from handle.
-> - * @pool: pool from which the object was allocated
-> - * @handle: handle returned from zs_malloc
-> - *
-> - * Before using an object allocated from zs_malloc, it must be mapped using
-> - * this function. When done with the object, it must be unmapped using
-> - * zs_unmap_object.
-> + * zs_create_pool - Creates an allocation pool to work from.
-> + * @flags: allocation flags used to allocate pool metadata
->   *
-> - * Only one object can be mapped per cpu at a time. There is no protection
-> - * against nested mappings.
-> + * This function must be called before anything when using
-> + * the zsmalloc allocator.
->   *
-> - * This function returns with preemption and page faults disabled.
-> + * On success, a pointer to the newly created pool is returned,
-> + * otherwise NULL.
->   */
-> -void *zs_map_object(struct zs_pool *pool, unsigned long handle,
-> -			enum zs_mapmode mm)
-> +struct zs_pool *zs_create_pool(gfp_t flags)
->  {
-> -	struct page *page;
-> -	unsigned long obj_idx, off;
-> +	int i;
-> +	struct zs_pool *pool;
-> +	struct size_class *prev_class = NULL;
->  
-> -	unsigned int class_idx;
-> -	enum fullness_group fg;
-> -	struct size_class *class;
-> -	struct mapping_area *area;
-> -	struct page *pages[2];
-> +	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
-> +	if (!pool)
-> +		return NULL;
->  
-> -	BUG_ON(!handle);
-> +	pool->size_class = kcalloc(zs_size_classes, sizeof(struct size_class *),
-> +			GFP_KERNEL);
-> +	if (!pool->size_class) {
-> +		kfree(pool);
-> +		return NULL;
-> +	}
->  
->  	/*
-> -	 * Because we use per-cpu mapping areas shared among the
-> -	 * pools/users, we can't allow mapping in interrupt context
-> -	 * because it can corrupt another users mappings.
-> +	 * Iterate reversly, because, size of size_class that we want to use
-> +	 * for merging should be larger or equal to current size.
->  	 */
-> -	BUG_ON(in_interrupt());
-> +	for (i = zs_size_classes - 1; i >= 0; i--) {
-> +		int size;
-> +		int pages_per_zspage;
-> +		struct size_class *class;
->  
-> -	obj_handle_to_location(handle, &page, &obj_idx);
-> -	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-> -	class = pool->size_class[class_idx];
-> -	off = obj_idx_to_offset(page, obj_idx, class->size);
-> +		size = ZS_MIN_ALLOC_SIZE + i * ZS_SIZE_CLASS_DELTA;
-> +		if (size > ZS_MAX_ALLOC_SIZE)
-> +			size = ZS_MAX_ALLOC_SIZE;
-> +		pages_per_zspage = get_pages_per_zspage(size);
->  
-> -	area = &get_cpu_var(zs_map_area);
-> -	area->vm_mm = mm;
-> -	if (off + class->size <= PAGE_SIZE) {
-> -		/* this object is contained entirely within a page */
-> -		area->vm_addr = kmap_atomic(page);
-> -		return area->vm_addr + off;
-> +		/*
-> +		 * size_class is used for normal zsmalloc operation such
-> +		 * as alloc/free for that size. Although it is natural that we
-> +		 * have one size_class for each size, there is a chance that we
-> +		 * can get more memory utilization if we use one size_class for
-> +		 * many different sizes whose size_class have same
-> +		 * characteristics. So, we makes size_class point to
-> +		 * previous size_class if possible.
-> +		 */
-> +		if (prev_class) {
-> +			if (can_merge(prev_class, size, pages_per_zspage)) {
-> +				pool->size_class[i] = prev_class;
-> +				continue;
-> +			}
-> +		}
-> +
-> +		class = kzalloc(sizeof(struct size_class), GFP_KERNEL);
-> +		if (!class)
-> +			goto err;
-> +
-> +		class->size = size;
-> +		class->index = i;
-> +		class->pages_per_zspage = pages_per_zspage;
-> +		spin_lock_init(&class->lock);
-> +		pool->size_class[i] = class;
-> +
-> +		prev_class = class;
->  	}
->  
-> -	/* this object spans two pages */
-> -	pages[0] = page;
-> -	pages[1] = get_next_page(page);
-> -	BUG_ON(!pages[1]);
-> +	pool->flags = flags;
->  
-> -	return __zs_map_object(area, pages, off, class->size);
-> +	return pool;
-> +
-> +err:
-> +	zs_destroy_pool(pool);
-> +	return NULL;
->  }
-> -EXPORT_SYMBOL_GPL(zs_map_object);
-> +EXPORT_SYMBOL_GPL(zs_create_pool);
->  
-> -void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
-> +void zs_destroy_pool(struct zs_pool *pool)
->  {
-> -	struct page *page;
-> -	unsigned long obj_idx, off;
-> +	int i;
->  
-> -	unsigned int class_idx;
-> -	enum fullness_group fg;
-> -	struct size_class *class;
-> -	struct mapping_area *area;
-> +	for (i = 0; i < zs_size_classes; i++) {
-> +		int fg;
-> +		struct size_class *class = pool->size_class[i];
->  
-> -	BUG_ON(!handle);
-> +		if (!class)
-> +			continue;
->  
-> -	obj_handle_to_location(handle, &page, &obj_idx);
-> -	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
-> -	class = pool->size_class[class_idx];
-> -	off = obj_idx_to_offset(page, obj_idx, class->size);
-> +		if (class->index != i)
-> +			continue;
->  
-> -	area = this_cpu_ptr(&zs_map_area);
-> -	if (off + class->size <= PAGE_SIZE)
-> -		kunmap_atomic(area->vm_addr);
-> -	else {
-> -		struct page *pages[2];
-> +		for (fg = 0; fg < _ZS_NR_FULLNESS_GROUPS; fg++) {
-> +			if (class->fullness_list[fg]) {
-> +				pr_info("Freeing non-empty class with size %db, fullness group %d\n",
-> +					class->size, fg);
-> +			}
-> +		}
-> +		kfree(class);
-> +	}
->  
-> -		pages[0] = page;
-> -		pages[1] = get_next_page(page);
-> -		BUG_ON(!pages[1]);
-> +	kfree(pool->size_class);
-> +	kfree(pool);
-> +}
-> +EXPORT_SYMBOL_GPL(zs_destroy_pool);
->  
-> -		__zs_unmap_object(area, pages, off, class->size);
-> +static int __init zs_init(void)
-> +{
-> +	int ret = zs_register_cpu_notifier();
-> +
-> +	if (ret) {
-> +		zs_unregister_cpu_notifier();
-> +		return ret;
->  	}
-> -	put_cpu_var(zs_map_area);
-> +
-> +	init_zs_size_classes();
-> +
-> +#ifdef CONFIG_ZPOOL
-> +	zpool_register_driver(&zs_zpool_driver);
-> +#endif
-> +	return 0;
->  }
-> -EXPORT_SYMBOL_GPL(zs_unmap_object);
->  
-> -unsigned long zs_get_total_pages(struct zs_pool *pool)
-> +static void __exit zs_exit(void)
->  {
-> -	return atomic_long_read(&pool->pages_allocated);
-> +#ifdef CONFIG_ZPOOL
-> +	zpool_unregister_driver(&zs_zpool_driver);
-> +#endif
-> +	zs_unregister_cpu_notifier();
->  }
-> -EXPORT_SYMBOL_GPL(zs_get_total_pages);
->  
->  module_init(zs_init);
->  module_exit(zs_exit);
-> -- 
-> 1.7.9.5
-> 
+-- 
+Dmitry
