@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaLPR7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 12:59:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57804 "EHLO mx1.redhat.com"
+	id S1751470AbaLPR7w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 12:59:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60792 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950AbaLPR67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 12:58:59 -0500
+	id S1751023AbaLPR7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 12:59:00 -0500
 From: Seth Jennings <sjenning@redhat.com>
 To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
@@ -17,212 +17,166 @@ Cc: Christoph Hellwig <hch@infradead.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCHv7 0/3] Kernel Live Patching
-Date: Tue, 16 Dec 2014 11:58:17 -0600
-Message-Id: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
+Subject: [PATCHv7 3/3] samples: add sample live patching module
+Date: Tue, 16 Dec 2014 11:58:20 -0600
+Message-Id: <1418752700-14649-4-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
+References: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
+Add a sample live patching module.
 
-Thanks for all the feedback!
-
-I think that we have something that is workable for everyone now.  Barring
-functional defects, I think we should put a hold on any nits to avoid churn for
-the moment and start gathering acks so that we are in a position to go into
--next when the 3.19 window closes.
-
-Also, I don't think patches 1/3 and 3/3 have changed since v5, so if you reviewed
-them then, they haven't changed.
-
-changes in v7:
-- TODO: set IPMODIFY (not a blocker to moving forward)
-- s/klp_patch_is_registered/klp_is_patch_registered/
-- return -ENOMEM in klp_init_func() error path
-- add missing kobject_put() in klp_init_object() error path
-- remove state check WARN_ON()s from functions that can also be called in
-  error paths
-- lookup function old_addr's even if patch is disabled
-- i have a new kid; increased review needed on my patches for a few weeks :)
-
-changes in v6:
-- TODO: set IPMODIFY
-- add empty patch release function
-- do not quietly ignore wrong usage (Petr)
-- find and verify the old address in klp_*_init() (Petr)
-- clean up ordering of functions (Petr)
-- split init and free code that is done only for loaded modules
-- minor cleanups
-
-changes in v5:
-- TODO: set IPMODIFY
-- Mria and Petr patches
-- add livepatch subdir to samples Makefile
-- kernel-doc for internal struct fields and other cleanups (colons)
-- s/klp_find_symbol/klp_find_object_symbol/
-- remove redundant error checks
-- protect API functions from init failure
-- protect API functions from unregistered patches
-- return -EBUSY in klp_unregister_patch()
-- remove unneeded comments
-- propagate error in klp_init_objects()
-- s/free/err/ for error handling labels
-- fix broken patch release handling
-- add asm/livepatch.h and asm/elf.h includes
-- add comment for numpages
-- handle NULL obj->name in kobject_create_and_add()
-- remove redundant obj->mod assignment (again)
-- add notrace to ftrace handler
-- mutex protect all of klp_init_patch()
-- generate compile error when live patching is disabled
-- add WARN_ON checks
-- rename struct klp_reloc fields
-- make readonly bool and optimize
-- smaller cleanups
-
-changes in v4:
-- TODO: set IPMODIFY (Masami patch heading to -next)
-- kernel-doc for structures
-- dynamically allocate ftrace ops (add ktype and release for func)
-- add sample live patch module
-- add CC_USING_FENTRY check
-- s/LPC_/KLP_/
-- objname NULL for vmlinux rather than "vmlinux"
-- remove module unload code and licensing (since we are builtin now)
-- remove code section headers
-- narrow mutex hold to only include list_add() in register path
-- split WARN_ON with compound condition
-- add inline to static function defined in header file
-
-changes in v3:
-- TODO: FTRACE_OPS_FL_DYNAMIC? allocate fops in core?
-- TODO: kernel-doc for API structs once agreed upon
-- merge API and core data structures (Miroslav)
-- replace lp_ and lpc_ prefixes with klp_
-- add ARCH_HAVE_LIVE_PATCHING
-- guard livepatch.h content with IS_ENABLED(CONFIG_LIVE_PATCHING)
-- smaller cleanups
-
-changes in v2:
-- TODO: kernel-doc for API structs once agreed upon
-- rebase to next-20141113
-- add copyright/license block to livepatch.h
-- add _LINUX prefix to header defines
-- replace semaphore with mutex
-- add LPC_ prefix to state enum
-- convert BUGs to WARNs and handle properly
-- change Kconfig default to n
-- remove [old|new] attrs from function sysfs dir (KASLR leak, no use)
-- disregard user provided old_addr if kernel uses KASLR
-- s/out/err for error path labels
-- s/unregister/disable for uniform terminology
-- s/lp/lpc for module notifier elements
-- replace module ref'ing with unload notifier + mutex protection
-- adjust notifier priority to run before ftrace
-- make LIVE_PATCHING boolean (about to depend on arch stuff)
-- move x86-specific reloc code to arch/x86
-- s/dynrela/reloc/
-- add live patching sysfs documentation
-- add API function kernel-doc
-
-Summary:
-
-This patchset implements an ftrace-based mechanism and kernel interface for
-doing live patching of kernel and kernel module functions.  It represents the
-greatest common functionality set between kpatch [1] and kGraft [2] and can
-accept patches built using either method.  This solution was discussed in the
-Live Patching Mini-conference at LPC 2014 [3].
-
-The model consists of a live patching "core" that provides an interface for
-other "patch" kernel modules to register patches with the core.
-
-Patch modules contain the new function code and create an klp_patch structure
-containing the required data about what functions to patch, where the new code
-for each patched function resides, and in which kernel object (vmlinux or
-module) the function to be patch resides.  The patch module then invokes the
-klp_register_patch() function to register with the core, then klp_enable_patch()
-to have the core redirect the execution paths using ftrace.
-
-The live patching core creates a sysfs hierarchy for user-level access to live
-patching information.  The hierarchy is structured like this:
-
-/sys/kernel/livepatch
-/sys/kernel/livepatch/<patch>
-/sys/kernel/livepatch/<patch>/enabled
-/sys/kernel/livepatch/<patch>/<object>
-/sys/kernel/livepatch/<patch>/<object>/<func>
-
-The old function is located using one of two methods: it is either provided by
-the patch module (only possible for a function in vmlinux) or kallsyms lookup.
-Symbol ambiguity results in a failure.
-
-The core takes a reference on the patch module itself to keep it from
-unloading.  This is because, without a mechanism to ensure that no thread is
-currently executing in the patched function, we can not determine whether it is
-safe to unload the patch module.  For this reason, unloading patch modules is
-currently not allowed.
-
-Disabling patches can be done using the "enabled" attribute of the patch:
-
-echo 0 > /sys/kernel/livepatch/<patch>/enabled
-
-If a patch module contains a patch for a module that is not currently loaded,
-there is nothing to patch so the core does nothing for that patch object.
-However, the core registers a module notifier that looks for COMING events so
-that if the module is ever loaded, it is immediately patched.  If a module with
-patch code is removed, the notifier looks for GOING events and disables any
-patched functions for that object before it unloads.  The notifier has a higher
-priority than that of the ftrace notifier so that it runs before the ftrace
-notifier for GOING events and we can cleanly unregister from ftrace.
-
-kpatch and kGraft each have their own mechanisms for ensuring system
-consistency during the patching process. This first version does not implement
-any consistency mechanism that ensures that old and new code do not run
-together.  In practice, ~90% of CVEs are safe to apply in this way, since they
-simply add a conditional check.  However, any function change that can not
-execute safely with the old version of the function can _not_ be safely applied
-for now.
-
-[1] https://github.com/dynup/kpatch
-[2] https://git.kernel.org/cgit/linux/kernel/git/jirislaby/kgraft.git/
-[3] https://etherpad.fr/p/LPC2014_LivePatching
-
-Seth Jennings (3):
-  kernel: add TAINT_LIVEPATCH
-  kernel: add support for live patching
-  samples: add sample live patching module
-
- Documentation/ABI/testing/sysfs-kernel-livepatch |  44 ++
- Documentation/oops-tracing.txt                   |   2 +
- Documentation/sysctl/kernel.txt                  |   1 +
- MAINTAINERS                                      |  14 +
- arch/x86/Kconfig                                 |   3 +
- arch/x86/include/asm/livepatch.h                 |  36 +
- arch/x86/kernel/Makefile                         |   1 +
- arch/x86/kernel/livepatch.c                      |  89 +++
- include/linux/kernel.h                           |   1 +
- include/linux/livepatch.h                        | 132 ++++
- kernel/Makefile                                  |   1 +
- kernel/livepatch/Kconfig                         |  18 +
- kernel/livepatch/Makefile                        |   3 +
- kernel/livepatch/core.c                          | 929 +++++++++++++++++++++++
- kernel/panic.c                                   |   2 +
- samples/Kconfig                                  |   7 +
- samples/Makefile                                 |   2 +-
- samples/livepatch/Makefile                       |   1 +
- samples/livepatch/livepatch-sample.c             |  87 +++
- 19 files changed, 1372 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-livepatch
- create mode 100644 arch/x86/include/asm/livepatch.h
- create mode 100644 arch/x86/kernel/livepatch.c
- create mode 100644 include/linux/livepatch.h
- create mode 100644 kernel/livepatch/Kconfig
- create mode 100644 kernel/livepatch/Makefile
- create mode 100644 kernel/livepatch/core.c
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
+---
+ MAINTAINERS                          |  1 +
+ samples/Kconfig                      |  7 +++
+ samples/Makefile                     |  2 +-
+ samples/livepatch/Makefile           |  1 +
+ samples/livepatch/livepatch-sample.c | 87 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 97 insertions(+), 1 deletion(-)
  create mode 100644 samples/livepatch/Makefile
  create mode 100644 samples/livepatch/livepatch-sample.c
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 94f9f69..15c0929d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5788,6 +5788,7 @@ F:	include/linux/livepatch.h
+ F:	arch/x86/include/asm/livepatch.h
+ F:	arch/x86/kernel/livepatch.c
+ F:	Documentation/ABI/testing/sysfs-kernel-livepatch
++F:	samples/livepatch/
+ L:	live-patching@vger.kernel.org
+ 
+ LLC (802.2)
+diff --git a/samples/Kconfig b/samples/Kconfig
+index 6181c2c..0aed20d 100644
+--- a/samples/Kconfig
++++ b/samples/Kconfig
+@@ -63,4 +63,11 @@ config SAMPLE_RPMSG_CLIENT
+ 	  to communicate with an AMP-configured remote processor over
+ 	  the rpmsg bus.
+ 
++config SAMPLE_LIVE_PATCHING
++	tristate "Build live patching sample -- loadable modules only"
++	depends on LIVE_PATCHING && m
++	help
++	  Builds a sample live patch that replaces the procfs handler
++	  for /proc/cmdline to print "this has been live patched".
++
+ endif # SAMPLES
+diff --git a/samples/Makefile b/samples/Makefile
+index 1a60c62..f00257b 100644
+--- a/samples/Makefile
++++ b/samples/Makefile
+@@ -1,4 +1,4 @@
+ # Makefile for Linux samples code
+ 
+-obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ \
++obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ trace_events/ livepatch/ \
+ 			   hw_breakpoint/ kfifo/ kdb/ hidraw/ rpmsg/ seccomp/
+diff --git a/samples/livepatch/Makefile b/samples/livepatch/Makefile
+new file mode 100644
+index 0000000..7f1cdc1
+--- /dev/null
++++ b/samples/livepatch/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_SAMPLE_LIVE_PATCHING) += livepatch-sample.o
+diff --git a/samples/livepatch/livepatch-sample.c b/samples/livepatch/livepatch-sample.c
+new file mode 100644
+index 0000000..21f159d
+--- /dev/null
++++ b/samples/livepatch/livepatch-sample.c
+@@ -0,0 +1,87 @@
++/*
++ * livepatch-sample.c - Kernel Live Patching Sample Module
++ *
++ * Copyright (C) 2014 Seth Jennings <sjenning@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/livepatch.h>
++
++/*
++ * This (dumb) live patch overrides the function that prints the
++ * kernel boot cmdline when /proc/cmdline is read.
++ *
++ * Example:
++ * $ cat /proc/cmdline
++ * <your cmdline>
++ * $ insmod livepatch-sample.ko
++ * $ cat /proc/cmdline
++ * this has been live patched
++ * $ echo 0 > /sys/kernel/livepatch/klp_sample/enabled
++ * <your cmdline>
++ */
++
++#include <linux/seq_file.h>
++static int livepatch_cmdline_proc_show(struct seq_file *m, void *v)
++{
++	seq_printf(m, "%s\n", "this has been live patched");
++	return 0;
++}
++
++static struct klp_func funcs[] = {
++	{
++		.old_name = "cmdline_proc_show",
++		.new_func = livepatch_cmdline_proc_show,
++	}, { }
++};
++
++static struct klp_object objs[] = {
++	{
++		/* name being NULL means vmlinux */
++		.funcs = funcs,
++	}, { }
++};
++
++static struct klp_patch patch = {
++	.mod = THIS_MODULE,
++	.objs = objs,
++};
++
++static int livepatch_init(void)
++{
++	int ret;
++
++	ret = klp_register_patch(&patch);
++	if (ret)
++		return ret;
++	ret = klp_enable_patch(&patch);
++	if (ret) {
++		WARN_ON(klp_unregister_patch(&patch));
++		return ret;
++	}
++	return 0;
++}
++
++static void livepatch_exit(void)
++{
++	WARN_ON(klp_disable_patch(&patch));
++	WARN_ON(klp_unregister_patch(&patch));
++}
++
++module_init(livepatch_init);
++module_exit(livepatch_exit);
++MODULE_LICENSE("GPL");
 -- 
 2.1.0
 
