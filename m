@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaLPQzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:55:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50921 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaLPQzS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:55:18 -0500
-Date: Tue, 16 Dec 2014 17:54:58 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-In-Reply-To: <20141216145653.GY3337@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.11.1412161741480.17382@nanos>
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com> <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com> <548FFD20.1040102@linux.vnet.ibm.com> <alpine.DEB.2.11.1412161105470.17382@nanos> <alpine.DEB.2.11.1412161510000.17382@nanos> <20141216145653.GY3337@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1751201AbaLPQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:57:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:46672 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873AbaLPQ5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:57:31 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Mitchell Krome <mitchellkrome@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/18] perf/core improvements and fixes
+Date: Tue, 16 Dec 2014 13:57:02 -0300
+Message-Id: <1418749040-31807-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Dec 2014, Peter Zijlstra wrote:
-> On Tue, Dec 16, 2014 at 03:32:28PM +0100, Thomas Gleixner wrote:
-> So let me try and understand the problem with the emulated idle thing
-> better (running idle from FIFO threads).
-> 
-> I suppose the tricky bit is what happens when the cpu was idle; in that
-> case we'll end up with 1 running thread in state:
-> 
->  1              0               1               valid
-> 
-> But need to avoid ending up in:
-> 
->  1              1               1               BUG
-> 
-> Which should be relatively simple by never entering nohzfull when 'idle'.
+Hi Ingo,
 
-Well, yes. 
- 
-> However with your proposed thingy, I think we'll end up in:
-> 
->  1              1               1               BUG
-> 
-> Because we don't start another thread, so infullnohz will stay valid,
-> however we'll also be 'forced' into idle (with nr_running > 0) and stop
-> the tick.
+	Please consider pulling,
 
-Indeed.
- 
-> A remote wakeup might result in nr_running going from 1->2 and seeing
-> infullnohz == 1, try and restart the tick, while we're idle!
-> 
-> Of course, we can fix that too, by clearing nohzfull when going 'idle',
-> after all, nohzfull will re-establish itself automagically when the tick
-> detects but the one task afterwards.
-> 
-> So both cases need work, neither works out of the box afaict. But I
+- Arnaldo
 
-Agreed.
+The following changes since commit 41e950c033b7df997d4b38653efe6554be9b96a7:
 
-> can't see one really being better than the other either -- am I missing
-> obvious things again?
+  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-12-12 09:09:52 +0100)
 
-No, it's both butt ugly, though what really bothers me is that we
-pretend to be idle without being in the idle thread. That makes a lot
-of stuff really weird.
+are available in the git repository at:
 
-Anything which relies on is_idle_task(current), idle_cpu() and a bunch
-of other things just fail to work while we pretend being "the idle"
-task.
 
-That's just wrong. That powerclamp stuff needs to put the cpu
-(including the scheduler, etc.) into a well defined state.
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
 
-The fake idle task is everything else than well defined state, really.
+for you to fetch changes up to 67195c75a87232f055ff415fc4624ef01f24fc3d:
 
-Thanks,
+  perf symbols: Fix use after free in filename__read_build_id (2014-12-16 13:38:28 -0300)
 
-	tglx
+----------------------------------------------------------------
+perf/core improvements and fixes:
 
-   
+User visible:
 
+- The mmap address range for the ring buffer now is calculated using the
+  contents of /proc/sys/kernel/perf_event_mlock_kb.
+
+  This fixes an -EPERM case where 'trace' was trying to use more than what
+  configured on perf_event_mlock_kb. (Arnaldo Carvalho de Melo)
+
+Infrastructure:
+
+- Move bitops definitions so that they match the header file hierarchy
+  in the kernel sources where that code came from. (Arnaldo Carvalho de Melo)
+
+- Adopt round{down,up}_pow_of_two from the kernel and use it instead of
+  equivalent code, so that we reuse more kernel code and make tools/ look
+  more like kernel source code, to encourage further contributions from
+  kernel hackers (Arnaldo Carvalho de Melo)
+
+- Fix use after free in filename__read_build_id (Mitchell Krome)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Arnaldo Carvalho de Melo (17):
+      perf evlist: Fixup brown paper bag on "hint" for --mmap-pages cmdline arg
+      perf evlist: Clarify sterror_mmap variable names
+      perf evlist: Improve the strerror_mmap method
+      perf trace: Let the perf_evlist__mmap autosize the number of pages to use
+      perf evlist: Do not use hard coded value for a mmap_pages default
+      tools: Move __ffs implementation to tools/include/asm-generic/bitops/__ffs.h
+      tools: Move code originally from linux/log2.h to tools/include/linux/
+      tools: Move code originally from asm-generic/atomic.h into tools/include/asm-generic/
+      tools: Whitespace prep patches for moving bitops.h
+      tools lib: Move asm-generic/bitops/find.h code to tools/include and tools/lib
+      tools: Introduce asm-generic/bitops.h
+      tools: Move bitops.h from tools/perf/util to tools/
+      tools: Adopt fls_long and deps
+      tools: Adopt rounddown_pow_of_two and deps
+      perf tools: Make the mmap length autotuning more robust
+      tools: Adopt roundup_pow_of_two
+      perf evlist: Use roundup_pow_of_two
+
+Mitchell Krome (1):
+      perf symbols: Fix use after free in filename__read_build_id
+
+ tools/include/asm-generic/bitops.h        |  27 +++++
+ tools/include/asm-generic/bitops/__ffs.h  |  43 +++++++
+ tools/include/asm-generic/bitops/__fls.h  |   1 +
+ tools/include/asm-generic/bitops/atomic.h |  22 ++++
+ tools/include/asm-generic/bitops/find.h   |  33 ++++++
+ tools/include/asm-generic/bitops/fls.h    |   1 +
+ tools/include/asm-generic/bitops/fls64.h  |   1 +
+ tools/include/linux/bitops.h              |  53 +++++++++
+ tools/include/linux/log2.h                | 185 ++++++++++++++++++++++++++++++
+ tools/lib/util/find_next_bit.c            |  89 ++++++++++++++
+ tools/perf/MANIFEST                       |  13 ++-
+ tools/perf/Makefile.perf                  |  14 ++-
+ tools/perf/builtin-trace.c                |   2 +-
+ tools/perf/util/evlist.c                  |  46 ++++++--
+ tools/perf/util/include/linux/bitops.h    | 162 --------------------------
+ tools/perf/util/symbol-minimal.c          |   8 +-
+ tools/perf/util/util.h                    |  29 -----
+ 17 files changed, 522 insertions(+), 207 deletions(-)
+ create mode 100644 tools/include/asm-generic/bitops.h
+ create mode 100644 tools/include/asm-generic/bitops/__ffs.h
+ create mode 100644 tools/include/asm-generic/bitops/__fls.h
+ create mode 100644 tools/include/asm-generic/bitops/atomic.h
+ create mode 100644 tools/include/asm-generic/bitops/find.h
+ create mode 100644 tools/include/asm-generic/bitops/fls.h
+ create mode 100644 tools/include/asm-generic/bitops/fls64.h
+ create mode 100644 tools/include/linux/bitops.h
+ create mode 100644 tools/include/linux/log2.h
+ create mode 100644 tools/lib/util/find_next_bit.c
+ delete mode 100644 tools/perf/util/include/linux/bitops.h
