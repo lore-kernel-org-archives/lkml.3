@@ -1,160 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaLPDf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 22:35:57 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:48363 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaLPDf4 (ORCPT
+	id S1751141AbaLPDpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 22:45:20 -0500
+Received: from pegasus3.altlinux.org ([194.107.17.103]:39077 "EHLO
+	pegasus3.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaLPDpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 22:35:56 -0500
-Message-ID: <548FA897.8000607@gmail.com>
-Date: Tue, 16 Dec 2014 11:35:51 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Charles Chiou <ch1102chiou@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, JBottomley@parallels.com,
-        Oliver Neukum <oneukum@suse.de>
-CC: ed.lin@promise.com, grace.chang@tw.promise.com, linus.chen@tw.promise.com,
-        victor.p@promise.com, linux-scsi@vger.kernel.org,
+	Mon, 15 Dec 2014 22:45:18 -0500
+X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 22:45:17 EST
+Date: Tue, 16 Dec 2014 06:37:57 +0300
+From: "Dmitry V. Levin" <ldv@altlinux.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Joe Perches <joe@perches.com>,
+        Steven Whitehouse <swhiteho@redhat.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        Rob Jones <rob.jones@codethink.co.uk>, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4 v4] scsi:stex.c Add hotplug support
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [RESEND v4 PATCH] Documentation: update seq_file
+Message-ID: <20141216033757.GA2461@altlinux.org>
+References: <20140929180445.GA15829@altlinux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140929180445.GA15829@altlinux.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Date: Wed, 17 Oct 2012 20:29:22 +0400
 
- From 901f2c1b2d1ae2991182f0f62cedc70f87ea49bc Mon Sep 17 00:00:00 2001
-From: Charles Chiou <charles.chiou@tw.promise.com>
-Date: Wed, 5 Nov 2014 17:18:37 +0800
-Subject: [PATCH 2/4] scsi:stex.c Add hotplug support
+Update descriptions of seq_path() and seq_path_root():
+starting with commit v3.2-rc4-1-g02125a8, seq_path_root() no longer
+changes the value of root;
+starting with commit v3.2-rc7-104-g8c9379e, some arguments of seq_path()
+and seq_path_root() are const.
 
-1. Add hotplug support. Pegasus support surprise removal. To this end, I
-    use return_abnormal_state function to return DID_NO_CONNECT for all
-    commands which sent to driver.
-
-2. Remove stex_hba_stop in stex_remove because we cannot send command to
-    device after hotplug.
-
-3. Add new device status:  MU_STATE_STOP, MU_STATE_NOCONNECT
-    , MU_STATE_STOP. MU_STATE_STOP is currently not referenced.
-    MU_STATE_NOCONNECT represent that device is plugged out
-    from the host.
-
-4. Use return_abnormal_function() to substitute part of code
-    in stex_do_reset.
-
-Signed-off-by: charles.chiou@tw.promise.com
+Signed-off-by: Dmitry V. Levin <ldv@altlinux.org>
+Acked-by: Rob Landley <rob@landley.net>
 ---
-  drivers/scsi/stex.c | 51 
-+++++++++++++++++++++++++++++++++------------------
-  1 file changed, 33 insertions(+), 18 deletions(-)
+ Documentation/filesystems/seq_file.txt | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
-index 08e7bc8..7dc6afe 100644
---- a/drivers/scsi/stex.c
-+++ b/drivers/scsi/stex.c
-@@ -83,6 +83,8 @@ enum {
-  	MU_STATE_STARTED			= 2,
-  	MU_STATE_RESETTING			= 3,
-  	MU_STATE_FAILED				= 4,
-+	MU_STATE_STOP				= 5,
-+	MU_STATE_NOCONNECT			= 6,
-
-  	MU_MAX_DELAY				= 120,
-  	MU_HANDSHAKE_SIGNATURE			= 0x55aaaa55,
-@@ -544,6 +546,27 @@ stex_ss_send_cmd(struct st_hba *hba, struct req_msg 
-*req, u16 tag)
-  	readl(hba->mmio_base + YH2I_REQ); /* flush */
-  }
-
-+static void return_abnormal_state(struct st_hba *hba, int status)
-+{
-+	struct st_ccb *ccb;
-+	unsigned long flags;
-+	u16 tag;
-+
-+	spin_lock_irqsave(hba->host->host_lock, flags);
-+	for (tag = 0; tag < hba->host->can_queue; tag++) {
-+		ccb = &hba->ccb[tag];
-+		if (ccb->req == NULL)
-+			continue;
-+		ccb->req = NULL;
-+		if (ccb->cmd) {
-+			scsi_dma_unmap(ccb->cmd);
-+			ccb->cmd->result = status << 16;
-+			ccb->cmd->scsi_done(ccb->cmd);
-+			ccb->cmd = NULL;
-+		}
-+	}
-+	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+}
-  static int
-  stex_slave_alloc(struct scsi_device *sdev)
-  {
-@@ -585,7 +608,11 @@ stex_queuecommand_lck(struct scsi_cmnd *cmd, void 
-(*done)(struct scsi_cmnd *))
-  	id = cmd->device->id;
-  	lun = cmd->device->lun;
-  	hba = (struct st_hba *) &host->hostdata[0];
--
-+	if (hba->mu_status == MU_STATE_NOCONNECT) {
-+		cmd->result = DID_NO_CONNECT;
-+		done(cmd);
-+		return 0;
-+	}
-  	if (unlikely(hba->mu_status == MU_STATE_RESETTING))
-  		return SCSI_MLQUEUE_HOST_BUSY;
-
-@@ -1287,10 +1314,8 @@ static void stex_ss_reset(struct st_hba *hba)
-
-  static int stex_do_reset(struct st_hba *hba)
-  {
--	struct st_ccb *ccb;
-  	unsigned long flags;
-  	unsigned int mu_status = MU_STATE_RESETTING;
--	u16 tag;
-
-  	spin_lock_irqsave(hba->host->host_lock, flags);
-  	if (hba->mu_status == MU_STATE_STARTING) {
-@@ -1324,20 +1349,8 @@ static int stex_do_reset(struct st_hba *hba)
-  	else if (hba->cardtype == st_yel)
-  		stex_ss_reset(hba);
-
--	spin_lock_irqsave(hba->host->host_lock, flags);
--	for (tag = 0; tag < hba->host->can_queue; tag++) {
--		ccb = &hba->ccb[tag];
--		if (ccb->req == NULL)
--			continue;
--		ccb->req = NULL;
--		if (ccb->cmd) {
--			scsi_dma_unmap(ccb->cmd);
--			ccb->cmd->result = DID_RESET << 16;
--			ccb->cmd->scsi_done(ccb->cmd);
--			ccb->cmd = NULL;
--		}
--	}
--	spin_unlock_irqrestore(hba->host->host_lock, flags);
-+
-+	return_abnormal_state(hba, DID_RESET);
-
-  	if (stex_handshake(hba) == 0)
-  		return 0;
-@@ -1808,9 +1821,11 @@ static void stex_remove(struct pci_dev *pdev)
-  {
-  	struct st_hba *hba = pci_get_drvdata(pdev);
-
-+	hba->mu_status = MU_STATE_NOCONNECT;
-+	return_abnormal_state(hba, DID_NO_CONNECT);
-  	scsi_remove_host(hba->host);
-
--	stex_hba_stop(hba);
-+	scsi_block_requests(hba->host);
-
-  	stex_hba_free(hba);
+diff --git a/Documentation/filesystems/seq_file.txt b/Documentation/filesystems/seq_file.txt
+index b797ed3..9de4303 100644
+--- a/Documentation/filesystems/seq_file.txt
++++ b/Documentation/filesystems/seq_file.txt
+@@ -194,16 +194,16 @@ which is in the string esc will be represented in octal form in the output.
+ 
+ There are also a pair of functions for printing filenames:
+ 
+-	int seq_path(struct seq_file *m, struct path *path, char *esc);
+-	int seq_path_root(struct seq_file *m, struct path *path,
+-			  struct path *root, char *esc)
++	int seq_path(struct seq_file *m, const struct path *path,
++		     const char *esc);
++	int seq_path_root(struct seq_file *m, const struct path *path,
++			  const struct path *root, const char *esc)
+ 
+ Here, path indicates the file of interest, and esc is a set of characters
+ which should be escaped in the output.  A call to seq_path() will output
+ the path relative to the current process's filesystem root.  If a different
+-root is desired, it can be used with seq_path_root().  Note that, if it
+-turns out that path cannot be reached from root, the value of root will be
+-changed in seq_file_root() to a root which *does* work.
++root is desired, it can be used with seq_path_root().  If it turns out that
++path cannot be reached from root, seq_path_root() returns SEQ_SKIP.
+ 
+ A function producing complicated output may want to check
+ 	bool seq_has_overflowed(struct seq_file *m);
 
 -- 
-1.9.1
-
+ldv
