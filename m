@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaLPVzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:55:46 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:61721 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaLPVzp (ORCPT
+	id S1751618AbaLPV4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:56:07 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:63350 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaLPV4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:55:45 -0500
+	Tue, 16 Dec 2014 16:56:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418745323-17133-1-git-send-email-peter@lekensteyn.nl>
+In-Reply-To: <1418745323-17133-2-git-send-email-peter@lekensteyn.nl>
 References: <CAN+gG=EL0kYim=_uaS4yj7c_XC8rKa1eELxpVXaOuvnWgT_eQw@mail.gmail.com>
 	<1418745323-17133-1-git-send-email-peter@lekensteyn.nl>
-Date: Tue, 16 Dec 2014 16:55:44 -0500
-Message-ID: <CAN+gG=Gtzbgxh6ttu-2Yaf4gXi58vgMkUXuF-=c40uYLiPpmnw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] HID: logitech-dj: check report length
+	<1418745323-17133-2-git-send-email-peter@lekensteyn.nl>
+Date: Tue, 16 Dec 2014 16:56:03 -0500
+Message-ID: <CAN+gG=GbBourMyH5PcznOPB+wGsfC-Nsh_ea5h171fzpTc=O9Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] HID: logitech-hidpp: check WTP report length
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Peter Wu <peter@lekensteyn.nl>
 Cc: Jiri Kosina <jkosina@suse.cz>,
@@ -28,8 +29,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Dec 16, 2014 at 10:55 AM, Peter Wu <peter@lekensteyn.nl> wrote:
 > Malicious USB devices can send bogus reports smaller than the expected
-> buffer size. Ensure that the length is valid to avoid reading out of
-> bounds.
+> buffer size. Ensure that the length for WTP reports is valid to avoid
+> reading out of bounds.
 >
 > Signed-off-by: Peter Wu <peter@lekensteyn.nl>
 > ---
@@ -42,39 +43,33 @@ Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Cheers,
 Benjamin
 
->  drivers/hid/hid-logitech-dj.c | 16 +++++++++++++++-
->  1 file changed, 15 insertions(+), 1 deletion(-)
+>  drivers/hid/hid-logitech-hidpp.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
 >
-> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-> index c917ab6..5bc6d80 100644
-> --- a/drivers/hid/hid-logitech-dj.c
-> +++ b/drivers/hid/hid-logitech-dj.c
-> @@ -962,10 +962,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
+> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> index b32f751..2f1b0ac 100644
+> --- a/drivers/hid/hid-logitech-hidpp.c
+> +++ b/drivers/hid/hid-logitech-hidpp.c
+> @@ -805,6 +805,11 @@ static int wtp_raw_event(struct hid_device *hdev, u8 *data, int size)
 >
 >         switch (data[0]) {
->         case REPORT_ID_DJ_SHORT:
-> +               if (size != DJREPORT_SHORT_LENGTH) {
-> +                       dev_err(&hdev->dev, "DJ report of bad size (%d)", size);
-> +                       return false;
+>         case 0x02:
+> +               if (size < 2) {
+> +                       hid_err(hdev, "Received HID report of bad size (%d)",
+> +                               size);
+> +                       return 1;
 > +               }
->                 return logi_dj_dj_event(hdev, report, data, size);
->         case REPORT_ID_HIDPP_SHORT:
-> -               /* intentional fallthrough */
-> +               if (size != HIDPP_REPORT_SHORT_LENGTH) {
-> +                       dev_err(&hdev->dev,
-> +                               "Short HID++ report of bad size (%d)", size);
-> +                       return false;
-> +               }
-> +               return logi_dj_hidpp_event(hdev, report, data, size);
+>                 if (hidpp->quirks & HIDPP_QUIRK_WTP_PHYSICAL_BUTTONS) {
+>                         input_event(wd->input, EV_KEY, BTN_LEFT,
+>                                         !!(data[1] & 0x01));
+> @@ -818,6 +823,7 @@ static int wtp_raw_event(struct hid_device *hdev, u8 *data, int size)
+>                         return wtp_mouse_raw_xy_event(hidpp, &data[7]);
+>                 }
 >         case REPORT_ID_HIDPP_LONG:
-> +               if (size != HIDPP_REPORT_LONG_LENGTH) {
-> +                       dev_err(&hdev->dev,
-> +                               "Long HID++ report of bad size (%d)", size);
-> +                       return false;
-> +               }
->                 return logi_dj_hidpp_event(hdev, report, data, size);
->         }
->
+> +               /* size is already checked in hidpp_raw_event. */
+>                 if ((report->fap.feature_index != wd->mt_feature_index) ||
+>                     (report->fap.funcindex_clientid != EVENT_TOUCHPAD_RAW_XY))
+>                         return 1;
 > --
 > 2.1.3
 >
