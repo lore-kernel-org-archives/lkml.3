@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaLPU15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 15:27:57 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:4655 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaLPU14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 15:27:56 -0500
-X-IronPort-AV: E=Sophos;i="5.07,588,1413270000"; 
-   d="scan'208";a="53378404"
-Message-ID: <549095CA.7090505@broadcom.com>
-Date: Tue, 16 Dec 2014 12:27:54 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751224AbaLPUgM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 15:36:12 -0500
+Received: from imap.thunk.org ([74.207.234.97]:59511 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750791AbaLPUgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 15:36:10 -0500
+Date: Tue, 16 Dec 2014 15:35:46 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de, bp@alien8.de,
+        gnomes@lxorguk.ukuu.org.uk, computersforpeace@gmail.com,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/4] Stop maintainer abuse
+Message-ID: <20141216203546.GU17575@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de,
+	bp@alien8.de, gnomes@lxorguk.ukuu.org.uk,
+	computersforpeace@gmail.com, torvalds@linux-foundation.org,
+	akpm@linux-foundation.org, linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
+ <20141216130939.166c4369@lwn.net>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Arun Ramamurthy <arun.ramamurthy@broadcom.com>, <mark.rutland@arm.com>,
-        <a.zummo@towertech.it>, <sbranden@broadcom.com>, <pawel.moll@arm.com>,
-        <devicetree@vger.kernel.org>, <ijc+devicetree@hellion.org.uk>,
-        "Arun Ramamurthy" <arunrama@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <bcm-kernel-feedback-list@broadcom.com>,
-        <galak@codeaurora.org>, <rtc-linux@googlegroups.com>
-Subject: Re: [PATCHv1] rtc: bcm-iproc: Add support for Broadcom iproc rtc
-References: <1418757750-3628-1-git-send-email-arun.ramamurthy@broadcom.com> <7947905.aK8KkUx4sY@wuerfel> <54909074.2070804@broadcom.com> <1418783023.hzNZBNCmFc@wuerfel>
-In-Reply-To: <1418783023.hzNZBNCmFc@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141216130939.166c4369@lwn.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 16, 2014 at 01:09:39PM -0500, Jonathan Corbet wrote:
+> 
+> In general, I worry about trying to codify things too much just because
+> different maintainers have different expectations.  As Linus noted, some
+> maintainers have their work done by the time the merge window starts and
+> can take patches just fine — until something catches fire, at least.
 
+Yeah, I think it's going to be really different pretty much all
+maintainers.
 
-On 12/16/2014 12:19 PM, Arnd Bergmann wrote:
-> On Tuesday 16 December 2014 12:05:08 Arun Ramamurthy wrote:
->> On 14-12-16 11:42 AM, Arnd Bergmann wrote:
->>> On Tuesday 16 December 2014 11:22:30 arun.ramamurthy@broadcom.com wrote:
->>>> +       rtc: iproc_rtc@0x03026000 {
->>>> +               compatible = "brcm,iproc-rtc";
->>>> +               reg =   spru_bbl:               <0x03026000 0xC>,
->>>> +                       crmu_pwr_good_status:   <0x0301C02C 0x14>,
->>>> +                       crmu_bbl_auth:          <0x03024C74 0x8>;
->>>> +               interrupts = spru_rtc_periodic: <GIC_SPI 142 IRQ_TYPE_LEVEL_HIGH>,
->>>> +                            spru_alarm:        <GIC_SPI 133 IRQ_TYPE_LEVEL_HIGH>;
->>>
->>> The reg properties look really random, could it be that the registers
->>> are really part of some other device that contains multiple functions?
->>>
->> This RTC block is on a battery backed logic island and is accessed
->> indirectly using the spru_bbl registers. The CRMU registers are required
->> to read the power status and write to some authentication registers.
->> Without writing to these authentication
->> registers, we cannot access any of the spru_bbl registers. In conclusion
->> I don't think the CRMU register accesses can be considered as another
->> device access. Do you agree Arnd?
->
-> It sounds like CRMU is some other unit aside from the RTC. Could this
-> be something like a generic system controller? I think it should
-> either have its own driver or use the syscon logic if that is what
-> this is.
->
-Giving that CRMU has scattered, miscellaneous control logic for multiple 
-different peripherals, it probably makes more sense to use the syscon 
-logic here.
+Speaking for myself, that's what patchwork is for.  There are plenty
+of other times besides merge window when I'm going to be super busy
+--- say, because I'm travelling to a conference or for business
+reasons.  And those times are far more likely to be hard on me as a
+maintainer compared to the merge window.  So everyone's mileage going
+to vary widely.
 
->>> Also, what do you use the labels for?
->>>
->> The labels are purely to improve readability of the device tree entry
->
-> Please remove them then, they don't help at all.
->
-> 	Arnd
->
+And having a strict schedule like this:
+
++  kernel.org "mainline:"  |  Patch may appear
++  field when posted       |  in released kernel
++  ------------------------+--------------------------------
++  3.18-rc[1-4]            |  3.19
++  3.18-rc[5-9]            |  3.20
++  3.18                    |  Merge window open - don't post
++  3.19-rc[1-4]            |  3.20
++  3.19-rc[5-9]            |  3.21
++  3.19                    |  Merge window open - don't post
++
++Bug fixes can typically be accepted at any time.
+
+Seems like it's very, VERY bad ju-ju.  I'll take some feature patches
+as late as -rc6, if they are simple and I'm confident that regression
+testing will catch any problems (because for file systems, very often
+xfstests is far more likely to find problems than soak time in
+linux-next).
+
+On the flip side, a feature patch, submitted between -rc2 and -rc3,
+might not make it because we want more people to look at it, better
+benchmarks, etc., etc.  Even a bug fix submitted at that point might
+not make it, especially if the bug is extremely rare (and we may have
+lived with it for years or decades), and the change is especially
+risky/hairy.
+
+So having a schedule like this is very likely going to set all sorts
+of false expectations, and may end up causing just as many problems as
+it purports to solve.
+
+I wonder if this sort of thing is better placed in various unofficial
+documentations which help new users acculturate.  For example, see
+some of the slides in the last half of Sarah Sharp's presentation
+here:
+
+https://plus.google.com/+SarahSharp/posts/4GSqqGpg8cg
+
+That has the advantage of significantly reducing the risk that things
+that originally started out as preferences by a few maintainers
+getting turned into bureaucratic rules.
+
+					- Ted
