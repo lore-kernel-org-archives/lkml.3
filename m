@@ -1,60 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837AbaLPWTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:19:25 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:39860 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLPWTX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:19:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141216130939.166c4369@lwn.net>
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com> <20141216130939.166c4369@lwn.net>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Tue, 16 Dec 2014 14:19:02 -0800
-Message-ID: <CAJiQ=7B76vE2ctYd2GK5+_whNnLGKtUY65qkMLdewBqfO7HfPg@mail.gmail.com>
-Subject: Re: [RFC 0/4] Stop maintainer abuse
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>, bp@alien8.de,
-        gnomes@lxorguk.ukuu.org.uk, Brian Norris <computersforpeace@gmail.com>,
-        torvalds@linux-foundation.org,
-        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1751930AbaLPWTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:19:38 -0500
+Received: from plane.gmane.org ([80.91.229.3]:47533 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130AbaLPWTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 17:19:36 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
+	<holger.hoffstaette@googlemail.com>
+Subject: 3.18.1: broken directory with one file too many
+Date: Tue, 16 Dec 2014 22:19:18 +0000 (UTC)
+Message-ID: <pan.2014.12.16.22.19.18@googlemail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: p4ff58697.dip0.t-ipconnect.de
+User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
+ git://git.gnome.org/pan2)
+Cc: linux-nfs@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 10:09 AM, Jonathan Corbet <corbet@lwn.net> wrote:
-> On Sun, 14 Dec 2014 22:09:46 -0800
-> Kevin Cernekee <cernekee@gmail.com> wrote:
->
->> This patch series amends the kernel development process to reduce the
->> load on key maintainers during peak periods, by discouraging the submission
->> of non-urgent patches while the merge window is open.
->
-> You do understand the irony of posting this during the merge window,
-> right? :)
+g
+(please CC: for followups)
 
-I specifically exempted [RFC] from the rules because these threads are
-readily distinguishable from urgent patches.  One could envision
-setting up a procmail rule to move all [RFC] and [.*-next] messages
-into a "save for later" folder.
+I just spent two hours trying to untangle a *weird* bug that I have not
+seen before. It might be new to 3.18.x but I don't know for sure.
+Apologies in advance for the long prelude but I figured I need to
+describe the problem scenario as precisely as possible.
 
-> In general, I worry about trying to codify things too much just because
-> different maintainers have different expectations.  As Linus noted, some
-> maintainers have their work done by the time the merge window starts and
-> can take patches just fine — until something catches fire, at least.
+All this is on freshly baked 3.18.1 with Gentoo userland; the exported
+filesystem is ext4.
 
-Do you think it might make sense to list the (stricter?) patch
-acceptance policies in MAINTAINERS?
+On my NFS server I work with a git repo:
 
-In the current process, many submitters do not know their maintainer's
-policy until they get in trouble for violating it.  This is not a very
-efficient way of educating people.  It might work if a submitter is
-focusing most of his efforts on a small number of subsystems, with
-which he becomes familiar over time.  But it doesn't work if somebody
-has to touch many different areas of the kernel just once to e.g. add
-support for a new SoC (including its syscon devices, irqchip drivers,
-regulators, clocks, buses, and peripherals).
+holger>git clone ../work/kernel-patches.git
+Cloning into 'kernel-patches'...
+done.
+holger>cd kernel-patches 
+holger>git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+nothing to commit, working directory clean
+holger>ll
+total 92K
+drwxr-xr-x 2 holger users  72K Dec 16 22:41 3.14/
+drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
+-rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
+holger>
+
+Looking fine!
+
+On my NFS client this directory is automounted via NFS:
+
+holger>mount | grep home
+tux:/home/holger on /mnt/tux/holger type nfs (rw,noatime,tcp,sloppy,vers=4,addr=192.168.100.222,clientaddr=192.168.100.128)
+
+This has worked for ages and never caused any problems.
+
+Let's see how my git repo is doing:
+ 
+holger>cd /mnt/tux/holger/Projects/kernel-patches 
+holger>ll
+total 92K
+drwxr-xr-x 2 holger users  72K Dec 16 22:41 3.14/
+drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
+-rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
+holger>git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	3.14/btrfs-20
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+..wait, what? There is no such file "btrfs-20" !
+
+holger>ll 3.14 | head
+ls: cannot access 3.14/btrfs-20: No such file or directory
+total 4.5M
+-rw-r--r-- 1 holger users 3.3K Dec 16 22:41 bfq-v7r6-001-block-cgroups-kconfig-build-bits-for-BFQ-v7r6-3.14.patch
+-rw-r--r-- 1 holger users 219K Dec 16 22:41 bfq-v7r6-002-block-introduce-the-BFQ-v7r6-I-O-sched-for-3.14.patch
+-rw-r--r-- 1 holger users  41K Dec 16 22:41 bfq-v7r6-003-block-bfq-add-Early-Queue-Merge-EQM-to-BFQ-v7r6-for-3.14.0.patch
+-rw-r--r-- 1 holger users 237K Dec 16 22:41 bfs-454-001-sched-bfs.patch
+-rw-r--r-- 1 holger users 5.2K Dec 16 22:41 bfs-454-002-cpu-topology.patch
+-rw-r--r-- 1 holger users  13K Dec 16 22:41 bfs-454-003-smtnice-v6.patch
+-????????? ? ?      ?        ?            ? btrfs-20
+-rw-r--r-- 1 holger users 7.8K Dec 16 22:41 btrfs-20140114-don't-mix-the-ordered-extents-of-all-files-together-during-logging-the-inodes.patch
+-rw-r--r-- 1 holger users 1.2K Dec 16 22:41 btrfs-20140130-add-missing-error-check-in-incremental-send.patch
+holger>
+
+There is a "rogue" file messing up the directory?!
+
+This used to work until I added a specific file, so..
+
+holger>ll 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch 
+-rw-r--r-- 1 holger users 2.3K Dec 16 22:41 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+
+holger>stat 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+  File: ‘3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch’
+  Size: 2306      	Blocks: 8          IO Block: 1048576 regular file
+Device: 18h/24d	Inode: 22544856    Links: 1
+Access: (0644/-rw-r--r--)  Uid: ( 1000/  holger)   Gid: (  100/   users)
+Access: 2014-12-16 22:41:36.515665610 +0100
+Modify: 2014-12-16 22:41:36.515665610 +0100
+Change: 2014-12-16 22:41:36.515665610 +0100
+ Birth: -
+
+Looks fine..maybe try moving it to the parent?
+
+holger>mv 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch .
+holger>ll
+total 96K
+drwxr-xr-x 2 holger users  72K Dec 16 22:44 3.14/
+drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
+-rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
+-rw-r--r-- 1 holger users 2.3K Dec 16 22:41 btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+
+holger>git status
+On branch master
+Your branch is up-to-date with 'origin/master'.
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+
+	deleted:    3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+holger>ll 3.14 | head                                                                  
+total 4.5M
+-rw-r--r-- 1 holger users 3.3K Dec 16 22:41 bfq-v7r6-001-block-cgroups-kconfig-build-bits-for-BFQ-v7r6-3.14.patch
+-rw-r--r-- 1 holger users 219K Dec 16 22:41 bfq-v7r6-002-block-introduce-the-BFQ-v7r6-I-O-sched-for-3.14.patch
+-rw-r--r-- 1 holger users  41K Dec 16 22:41 bfq-v7r6-003-block-bfq-add-Early-Queue-Merge-EQM-to-BFQ-v7r6-for-3.14.0.patch
+-rw-r--r-- 1 holger users 237K Dec 16 22:41 bfs-454-001-sched-bfs.patch
+-rw-r--r-- 1 holger users 5.2K Dec 16 22:41 bfs-454-002-cpu-topology.patch
+-rw-r--r-- 1 holger users  13K Dec 16 22:41 bfs-454-003-smtnice-v6.patch
+-rw-r--r-- 1 holger users 7.8K Dec 16 22:41 btrfs-20140114-don't-mix-the-ordered-extents-of-all-files-together-during-logging-the-inodes.patch
+-rw-r--r-- 1 holger users 1.2K Dec 16 22:41 btrfs-20140130-add-missing-error-check-in-incremental-send.patch
+-rw-r--r-- 1 holger users 5.2K Dec 16 22:41 btrfs-20140130-fix-32-64-bit-problem-with-BTRFS_SET_RECEIVED_SUBVOL-ioctl.patch
+
+I can move it back into 3.14/ and the directory is messed up again.
+All this is reproducible, in different export directories.
+
+Any ideas what this might be? A direntry hash collision maybe?
+There is a large number of files starting with btrfs-2014xxyy-.. but with
+the typical kernel patch names (some quite long), so that would be pretty
+bad. Also everything works locally on ext4 without problems, so I suspect
+it's an isolated NFS problem.
+
+Things that did not work - same results every time:
+- dropping caches on client & server
+- restarting NFS on client & server
+
+Any suggestions welcome; I'll gladly test patches.
+
+thanks
+Holger
+
