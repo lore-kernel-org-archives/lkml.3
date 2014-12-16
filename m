@@ -1,94 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159AbaLPKmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 05:42:03 -0500
-Received: from webmail.rjcorp.in ([122.160.223.166]:54665 "EHLO
-	mailzmsm.rjcorp.in" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750885AbaLPKmA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 05:42:00 -0500
-X-Greylist: delayed 5403 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Dec 2014 05:41:59 EST
-X-AuditID: 0a000396-f79196d0000015cf-17-548fe5bd7f78
-Date: Tue, 16 Dec 2014 13:42:56 +0530 (IST)
-From: Standard Loans <neethudevi.vs@cryobanksindia.com>
-Reply-To: standardloancompanymail1@rediffmail.com
-Message-ID: <7633106.37242.1418717576586.JavaMail.root@webmail.rjcorp.in>
-Subject: KREDIT-ANGEBOT BEI 2 % NUR
+	id S1751312AbaLPKmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 05:42:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47669 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751189AbaLPKmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 05:42:23 -0500
+Date: Tue, 16 Dec 2014 11:42:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Tim Hartrick <tim@edgecast.com>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: Re: [PATCH v3] mm: prevent endless growth of anon_vma hierarchy
+Message-ID: <20141216104218.GB22920@dhcp22.suse.cz>
+References: <20141126191145.3089.90947.stgit@zurg>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Zimbra 6.0.7_GA_2473.RHEL5_64 (zclient/6.0.7_GA_2473.RHEL5_64)
-To: undisclosed-recipients:;
-X-Brightmail-Tracker: H4sIAAAAAAAAA22Te0wUVxTGuTOzs8OGIcMieAo0bbZNaCWFSm16U+0j1ujUtKlV2saStF3L
-	KNuyu3QXCBhjNgWEEuSdVRBwecujLOADWKVWNFuQRlHKoxTl/dyAVR5dK4bOuij80X9uvnzn
-	/s4598sMQ8p7XX0YlSZK0GmUEQpaRslcSLfXWsbTQ16/keaN/7AkEjjzeDeNZ20WCf59UlSP
-	jQVSvLycL8F1t/MJPF87R+AqUzyN201tNE5L6qBxRWIxjS3TfxG4c6iHxmZjDsIzI5UIP7AV
-	kHi20Bd3j4/SeOzYZQlemXkRW4uXEE4eb6Bw1b9ZEpySFYK7LPk0ziiKJ/FUhoAHDf0kthlW
-	aHwmpUlc5rxFimuTTxN46OESjYuPVRD44ewYiWsmT0rwUp2ZxCPjFyhx/Rs0ru4bJbE5wyJe
-	sd0ncLXtDolrzedofCWxgcBLadcofC9hlsQ5pmwCX8xsIN4P5gcWT9F8db1FynfcSJPyFRMy
-	viQpR8ovWv+m+B+NVRRvtN2k+dlMM8H3NN2U8ultiRSfNFeL+AbTTxI+1dpJ8RPDcv58bTOx
-	Z9OXsm1hQoQqRtAFvfuNLLxpcJSIrHaL7XrYSBhQuSwFuTLAbYGRunSpU3tD510znYJkjJz7
-	GUFz2RhyFl6F4Wz7E01xAWA2LBAOTXNvwcU0mwgzIrAZurp3OGyW+xDycnqfXPfkXoLBY/2E
-	0/eA9twxyqFJzh+WC2+TTh0A5UU20tEGOB5mrn/lsDdwflBwalSSgdzz1tF56+i8dbQJkVVI
-	rlaqIg6r9epA3XffanWRgSpNA3J+XsYm1JawvRVxDFK4saaI9BC5RBmjj1O3ojcZQuHFXp8U
-	LfcD2rC4cKU+/GtddISgV/iwRTvDQuSez2x99AG1Sq9XaTWtCBhSsYE9NyhybJgy7rCg0zqx
-	VuTLUIqN7F6/R/vk3CFllPC9IEQKuqfVrQyjAFbvGOihEw4JsQdVEVFPy4rnWeTi4iL3Xl9Z
-	P5ZgXFvRG4ybONvuaMHqI5VqverQKv6cE5c/ddfQ6+gTxlB1JZdgli9fFc+5X8VTTmm0GsFn
-	I3vU0YtzUOHRmmfb+PixlQVpIXKvdYW1jjOoD4l5erLDDthN/KPX9gBndB6r5hoUXCoyXL8E
-	zCtKsA/1IpifzCBhpCaTAntqqhTaOi+4wtTdm64wVnnJHfoWyj0h+4TZCwrtbV4w0XnaG9pL
-	e14AS3xTIKx05AVB1ujZICge/ycY+v5MeQeSi29/AMaF5F1grxnfBfP18zxM/TL9MTTUD3wK
-	w4+t++CMuW0flCRnfQbZg91hUHPpxEGYelSghsUFezRMV3XHzogZE2LGXSjVkXGUMup/Ml51
-	1x7nY0Cmkt+8/Yu9bh3fYi898nLLA4XhPe1R634yVNe4aWlpf8/bo43N89BxdqtJOmG9t3i/
-	xdPN71qCb4zacoeeW7z1Udzx7TvkTK92N1+f7r6ronxwz0mr3+dXo/fqvIe2lMVHHal7Zdvm
-	7oM/VIZuNOSlBwZFBrikhO6srM7dOfBFgX9WmYLShys3byJ1euV/tbP0GWoFAAA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141126191145.3089.90947.stgit@zurg>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+What happened to this patch? I do not see it merged for 3.19 and
+nor in the current mmotm tree (2014-12-15-17-05)
 
+On Wed 26-11-14 22:11:45, Konstantin Khlebnikov wrote:
+> Constantly forking task causes unlimited grow of anon_vma chain.
+> Each next child allocate new level of anon_vmas and links vmas to all
+> previous levels because it inherits pages from them. None of anon_vmas
+> cannot be freed because there might be pages which points to them.
+> 
+> This patch adds heuristic which decides to reuse existing anon_vma instead
+> of forking new one. It counts vmas and direct descendants for each anon_vma.
+> Anon_vma with degree lower than two will be reused at next fork.
+> 
+> As a result each anon_vma has either alive vma or at least two descendants,
+> endless chains are no longer possible and count of anon_vmas is no more than
+> two times more than count of vmas.
+> 
+> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+> Reported-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
+> Tested-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> Link: http://lkml.kernel.org/r/20120816024610.GA5350@evergreen.ssec.wisc.edu
+> Fixes: 5beb49305251 ("mm: change anon_vma linking to fix multi-process server scalability issue")
+> Cc: Stable <stable@vger.kernel.org> (2.6.34+)
+> 
+> ---
+> 
+> v2: update degree in anon_vma_prepare for merged anon_vma
+> v3: update comment and tags
+> ---
+>  include/linux/rmap.h |   16 ++++++++++++++++
+>  mm/rmap.c            |   30 +++++++++++++++++++++++++++++-
+>  2 files changed, 45 insertions(+), 1 deletion(-)
+> 
+> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+> index c0c2bce..b1d140c 100644
+> --- a/include/linux/rmap.h
+> +++ b/include/linux/rmap.h
+> @@ -45,6 +45,22 @@ struct anon_vma {
+>  	 * mm_take_all_locks() (mm_all_locks_mutex).
+>  	 */
+>  	struct rb_root rb_root;	/* Interval tree of private "related" vmas */
+> +
+> +	/*
+> +	 * Count of child anon_vmas and VMAs which points to this anon_vma.
+> +	 *
+> +	 * This counter is used for making decision about reusing old anon_vma
+> +	 * instead of forking new one. It allows to detect anon_vmas which have
+> +	 * just one direct descendant and no vmas. Reusing such anon_vma not
+> +	 * leads to significant preformance regression but prevents degradation
+> +	 * of anon_vma hierarchy to endless linear chain.
+> +	 *
+> +	 * Root anon_vma is never reused because it is its own parent and it has
+> +	 * at leat one vma or child, thus at fork it's degree is at least 2.
+> +	 */
+> +	unsigned degree;
+> +
+> +	struct anon_vma *parent;	/* Parent of this anon_vma */
+>  };
+>  
+>  /*
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 19886fb..df5c44e 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -72,6 +72,8 @@ static inline struct anon_vma *anon_vma_alloc(void)
+>  	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
+>  	if (anon_vma) {
+>  		atomic_set(&anon_vma->refcount, 1);
+> +		anon_vma->degree = 1;	/* Reference for first vma */
+> +		anon_vma->parent = anon_vma;
+>  		/*
+>  		 * Initialise the anon_vma root to point to itself. If called
+>  		 * from fork, the root will be reset to the parents anon_vma.
+> @@ -188,6 +190,8 @@ int anon_vma_prepare(struct vm_area_struct *vma)
+>  		if (likely(!vma->anon_vma)) {
+>  			vma->anon_vma = anon_vma;
+>  			anon_vma_chain_link(vma, avc, anon_vma);
+> +			/* vma link if merged or child link for new root */
+> +			anon_vma->degree++;
+>  			allocated = NULL;
+>  			avc = NULL;
+>  		}
+> @@ -256,7 +260,17 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
+>  		anon_vma = pavc->anon_vma;
+>  		root = lock_anon_vma_root(root, anon_vma);
+>  		anon_vma_chain_link(dst, avc, anon_vma);
+> +
+> +		/*
+> +		 * Reuse existing anon_vma if its degree lower than two,
+> +		 * that means it has no vma and just one anon_vma child.
+> +		 */
+> +		if (!dst->anon_vma && anon_vma != src->anon_vma &&
+> +				anon_vma->degree < 2)
+> +			dst->anon_vma = anon_vma;
+>  	}
+> +	if (dst->anon_vma)
+> +		dst->anon_vma->degree++;
+>  	unlock_anon_vma_root(root);
+>  	return 0;
+>  
+> @@ -279,6 +293,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+>  	if (!pvma->anon_vma)
+>  		return 0;
+>  
+> +	/* Drop inherited anon_vma, we'll reuse old one or allocate new. */
+> +	vma->anon_vma = NULL;
+> +
+>  	/*
+>  	 * First, attach the new VMA to the parent VMA's anon_vmas,
+>  	 * so rmap can find non-COWed pages in child processes.
+> @@ -286,6 +303,10 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+>  	if (anon_vma_clone(vma, pvma))
+>  		return -ENOMEM;
+>  
+> +	/* An old anon_vma has been reused. */
+> +	if (vma->anon_vma)
+> +		return 0;
+> +
+>  	/* Then add our own anon_vma. */
+>  	anon_vma = anon_vma_alloc();
+>  	if (!anon_vma)
+> @@ -299,6 +320,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+>  	 * lock any of the anon_vmas in this anon_vma tree.
+>  	 */
+>  	anon_vma->root = pvma->anon_vma->root;
+> +	anon_vma->parent = pvma->anon_vma;
+>  	/*
+>  	 * With refcounts, an anon_vma can stay around longer than the
+>  	 * process it belongs to. The root anon_vma needs to be pinned until
+> @@ -309,6 +331,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
+>  	vma->anon_vma = anon_vma;
+>  	anon_vma_lock_write(anon_vma);
+>  	anon_vma_chain_link(vma, avc, anon_vma);
+> +	anon_vma->parent->degree++;
+>  	anon_vma_unlock_write(anon_vma);
+>  
+>  	return 0;
+> @@ -339,12 +362,16 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
+>  		 * Leave empty anon_vmas on the list - we'll need
+>  		 * to free them outside the lock.
+>  		 */
+> -		if (RB_EMPTY_ROOT(&anon_vma->rb_root))
+> +		if (RB_EMPTY_ROOT(&anon_vma->rb_root)) {
+> +			anon_vma->parent->degree--;
+>  			continue;
+> +		}
+>  
+>  		list_del(&avc->same_vma);
+>  		anon_vma_chain_free(avc);
+>  	}
+> +	if (vma->anon_vma)
+> +		vma->anon_vma->degree--;
+>  	unlock_anon_vma_root(root);
+>  
+>  	/*
+> @@ -355,6 +382,7 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
+>  	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
+>  		struct anon_vma *anon_vma = avc->anon_vma;
+>  
+> +		BUG_ON(anon_vma->degree);
+>  		put_anon_vma(anon_vma);
+>  
+>  		list_del(&avc->same_vma);
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Grüße
-
-Wir sind eine sehr schnelle Finanzierung Service im Bereich Finanzierung, zur Unterstützung der Banken sehr schweren und organisierten. Sind Sie ein industrieller, Unternehmer, zurückziehen Sie, Person oder alle anderen Kredit, sein oder ihr Unternehmen neu zu starten oder ein Unternehmen einzurichten etc. zu wollen.
-
-Wir geben Kredite. 2 % verzinst?
-
-Kontaktieren Sie uns heute mit den folgenden Informationen unten.
-
-Name:
-Höhe des Darlehens:
-Darlehen-Dauer:
-Telefonnummer:
-Land:
-Adresse:
-
-Alle Informationen an uns gesendet werden soll: standardloancompanymail1@rediffmail.com
-
-Ziel Kunden zu erfüllen, ist unser Stolz.
-
-Grüße
-Dickson Luke.
-
-=============================================================================
-
-Greetings
-
-We are a very fast financing service operating in funding, In support of banks very serious and organized. If you are an industrial, contractor, retire person or all others wanting credit to restart his or her business or to set up a company etc.
-
-we give out loans. At 2% interest rate?
-
-Contact us today with the following information below.
-
-Name:
-Amount of loan:
-Loan Duration:
-Telephone Number:
-Country:
-Address:
-
-All information should be sent to us at: standardloancompanymail1@rediffmail.com
-
-meeting customer goal is our pride.
-
-Regards
-Dickson Luke.
+-- 
+Michal Hocko
+SUSE Labs
