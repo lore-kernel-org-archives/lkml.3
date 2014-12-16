@@ -1,162 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750996AbaLPM4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 07:56:12 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:41897 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750814AbaLPM4K (ORCPT
+	id S1751414AbaLPM4V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 07:56:21 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47287 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308AbaLPM4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 07:56:10 -0500
-Message-ID: <54902AA1.7080301@hurleysoftware.com>
-Date: Tue, 16 Dec 2014 07:50:41 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 16 Dec 2014 07:56:19 -0500
+Date: Tue, 16 Dec 2014 12:56:15 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeremiah Mahler <jmmahler@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [BUG, linux-next] spawn PID 1 without CLONE_FS, wireless inop
+Message-ID: <20141216125615.GZ22149@ZenIV.linux.org.uk>
+References: <20141216115537.GA1259@hudson.localdomain>
 MIME-Version: 1.0
-To: imre.deak@intel.com, Daniel Vetter <daniel@ffwll.ch>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] vt: fix console lock vs. kernfs s_active lock
- order
-References: <1418681761-3709-1-git-send-email-imre.deak@intel.com>	 <1418681761-3709-3-git-send-email-imre.deak@intel.com>	 <20141216075300.GI2711@phenom.ffwll.local> <1418725405.3185.31.camel@ideak-mobl>
-In-Reply-To: <1418725405.3185.31.camel@ideak-mobl>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216115537.GA1259@hudson.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 05:23 AM, Imre Deak wrote:
-> On Tue, 2014-12-16 at 08:53 +0100, Daniel Vetter wrote:
->> On Tue, Dec 16, 2014 at 12:16:01AM +0200, Imre Deak wrote:
->>> Currently there is a lock order problem between the console lock and the
->>> kernfs s_active lock of the console driver's bind sysfs entry. When
->>> writing to the sysfs entry the lock order is first s_active then console
->>> lock, when unregistering the console driver via
->>> do_unregister_con_driver() the order is the opposite. See the below
->>> bugzilla reference for one instance of a lockdep backtrace.
->>>
->>> Fix this by unregistering the console driver from a deferred work, where
->>> we can safely drop the console lock while unregistering the device and
->>> corresponding sysfs entries (which in turn acquire s_active). Note that
->>> we have to keep the console driver slot in the registered_con_driver
->>> array reserved for the driver that's being unregistered until it's fully
->>> removed. Otherwise a concurrent call to do_register_con_driver could
->>> try to reuse the same slot and fail when registering the corresponding
->>> device with a minor index that's still in use.
->>>
->>> Note that the referenced bug report contains two dmesg logs with two
->>> distinct lockdep reports: [1] is about a locking scenario involving
->>> s_active, console_lock and the fb_notifier list lock, while [2] is
->>> about a locking scenario involving only s_active and console_lock.
->>> In [1] locking fb_notifier triggers the lockdep warning only because
->>> of its dependence on console_lock, otherwise case [1] is the same
->>> s_active<->console_lock dependency problem fixed by this patch.
->>> Before this change we have the following locking scenarios involving
->>> the 3 locks:
->>>
->>> a) via do_unregister_framebuffer()->...->do_unregister_con_driver():
->>>    1. console lock 2. fb_notifier lock 3. s_active lock
->>> b) for example via give_up_console()->do_unregister_con_driver():
->>>    1. console lock 2. s_active lock
->>> c) via vt_bind()/vt_unbind():
->>>    1. s_active lock 2. console lock
->>>
->>> Since c) is the console bind sysfs entry's write code path we can't
->>> change the locking order there. We can only fix this issue by removing
->>> s_active's dependence on the other two locks in a) and b). We can do
->>> this only in the vt code which owns the corresponding sysfs entry, so
->>> that after the change we have:
->>>
->>> a) 1. console lock 2. fb_notifier lock
->>> b) 1. console lock
->>> c) 1. s_active lock 2. console lock
->>> d) in the new con_driver_unregister_callback():
->>>    1. s_active lock
->>>
->>> [1] https://bugs.freedesktop.org/attachment.cgi?id=87716
->>> [2] https://bugs.freedesktop.org/attachment.cgi?id=107602
->>>
->>> v2:
->>> - get console_lock earlier in con_driver_unregister_callback(), so we
->>>   protect the following console driver field assignments there
->>> - add code coment explaining the reason for deferring the sysfs entry
->>>   removal
->>> - add a third paragraph to the commit message explaining why there are
->>>   two distinct lockdep reports and that this issue is independent of
->>>   fb/fbcon. (Peter Hurley)
->>> v3:
->>> - clarify further the third paragraph
->>> v4:
->>> - rebased on v4 of patch 1/3
->>>
->>> Reference: https://bugs.freedesktop.org/show_bug.cgi?id=70523
->>> Signed-off-by: Imre Deak <imre.deak@intel.com>
->>
->> So the normal/simple solution would be to remove the con driver from the
->> registration while holding required locks, but destroy sysfs stuff after
->> the critical section.
->>
->> The problem is that console unbind/bind/reg/unreg are all done with the
->> locks held already, and the reason for that is the fbcon/fbdev notifier
->> chain. You can read up on the story by chasing the commits that added the
->> various locked do_* functions over the past years.
->>
->> Short story is that the notifier chain has it's own mutex and any call
->> mediated through it introces that lock into the chain, which creates a
->> massive pile of additional depencies. The only solution is to grab _all_
->> required locks outside of that notifier chain, which means we've spent a
->> lot of patches growing the scope of console_lock. Which is bad, since
->> anything holding console_lock can't get dmesg lines out when it dies.
+On Tue, Dec 16, 2014 at 03:55:37AM -0800, Jeremiah Mahler wrote:
+> all,
 > 
-> These are independent issues from what this patch fixes. It doesn't try
-> to grow the scope of console_lock either, it makes the sysfs s_active
-> lock independent of console_lock.
-> 
->> This patch here is another step into the wrong direction imo. It's also
->> for a feature that mere users should never use (even though it's in
->> sysfs). Heck it's a regression which has been introduced by pulling
->> console_lock out&up, before that effort sysfs files worked correctly and
->> implemented locking as described.
-> 
-> It doesn't matter where you take console_lock, since it's fixed where
-> s_active is taken (in the vfs code before the sysfs entry's write hook
-> is called). So again this issue is not related to the growing scope of
-> console_lock. This fix makes the s_active lock independent of
-> console_lock, so I don't see why it's a step in the wrong direction.
-> 
->> The right solution imo here is to at least cut up the fbdev notifier into
->> the different uses so that the locking artificial locking inversions go
->> away. Most of the calls are used to go from fbdev core (fbmem.c) to the
->> fbcon.c. Apparently someone though it would be great to allow fb.ko and
->> fbcon.ko to be able to load in any order whatsoever. Then there's various
->> other calls that go the other direction (e.g. fbcon calling into backlight
->> logic) and those introduce the locking inversion. So if we split things
->> into 2 notifier chais, one to exclusively call into fbcon and the other
->> for everything else we could revert all the patche that move console_lock
->> out and fix this bug here properly.
->>
->> So NACK from me for this.
-> 
-> I think I proved it in the commit message that this issue is independent
-> of fbcon/fbdev, so refactoring these will not solve it. This patch fixes
-> an issue in vt and while your points may be valid, they are not really
-> about this issue or how the patch fixes it.
+> The wireless network interface has become inoperative when running
+> linux-next 20141216 on a Lenovo Carbon X1.  It is completely
+> non-existent and `ip addr` doesn't show it.  A bisect has found that
+> the bug was introduced by the following commit.
 
-I think you may have missed Daniel's point. Which is what I was trying to
-point out earlier but in an overly terse manner.
+Very interesting.  What userland are you running?  I take it, the root
+filesystem is mounted and system boot except for that interface not
+coming up, right?
 
-If you start by just moving the sysfs teardown outside the console_lock
-(but still in the same thread of execution), then the direct lock inversion
-between console_lock and the sysfs lock goes away.
-
-However, you'll now realize that you can't move the sysfs teardown outside
-the console lock because fbcon is doing teardown from inside its notifier,
-which means that there would be a lock inversion between the console lock
-and the notifier lock.
-
-Which is why we're pointing out that the real problem here is the
-fb notifier call chain lock.
-
-Regards,
-Peter Hurley
+Your card is normally handled by what, iwlwifi?  What happens upon
+modprobe iwlwifi (or whatever module you see loaded on the normal
+boot)?  Another interesting question is whether it manages to load
+the firmware...  What happens if you boot with debug in kernel command
+line, with working and with non-working kernels resp.?
