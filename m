@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbaLPIfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 03:35:50 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:35885 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaLPIfs (ORCPT
+	id S1751434AbaLPImA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 03:42:00 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:50239 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaLPIl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 03:35:48 -0500
-Date: Tue, 16 Dec 2014 00:35:43 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141216083543.GA32425@infradead.org>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
- <20141215162705.GA23887@quack.suse.cz>
- <20141215165615.GA19041@infradead.org>
- <20141215221100.GA4637@mew>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215221100.GA4637@mew>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 16 Dec 2014 03:41:57 -0500
+From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+To: linux-pm@vger.kernel.org
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mikko Perttunen <mikko.perttunen@kapsi.fi>,
+        Arto Merilainen <amerilainen@nvidia.com>,
+        Tomeu Vizoso <tomeu.vizoso@collabora.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: [PATCH v5 0/3] Add support for Tegra Activity Monitor
+Date: Tue, 16 Dec 2014 09:41:18 +0100
+Message-Id: <1418719298-25314-1-git-send-email-tomeu.vizoso@collabora.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 02:11:00PM -0800, Omar Sandoval wrote:
-> Ok, I got the swap code working with ->read_iter/->write_iter without
-> too much trouble. I wanted to double check before I submit if there's
-> any gotchas involved with adding the O_DIRECT flag to a file pointer
-> after it has been opened -- swapon opens the swapfile before we know if
-> we're using the SWP_FILE infrastructure, and we need to add O_DIRECT so
-> ->{read,write}_iter use direct I/O, but we can't add O_DIRECT to the
-> original open without excluding filesystems that support the old bmap
-> path but not direct I/O.
+Hello,
 
-In general just adding O_DIRECT is a problem.  However given that the
-swap file is locked against any other access while in use it seems ok
-in this particular case.  Just make sure to clear it on swapoff, and
-write a detailed comment explaining the situation.
+this v5 addresses a few comments from Alexandre:
+
+* Clarify the units of avg_dependency_threshold
+* Remove unused references to platform_device
+* Enable and disable interrupts on governor events
+* Make sure we handle all interrupts for any of the devices we are sampling
+* Move locking to be per-actmon-device
+
+These patches implement support for setting the rate of the EMC clock based on
+stats collected from the ACTMON, a piece of hw in the Tegra124 that counts
+memory accesses (among others).
+
+It depends on the following in-flight patches:
+
+* EMC driver: http://thread.gmane.org/gmane.linux.drivers.devicetree/99304
+* CPUFreq driver: http://thread.gmane.org/gmane.linux.kernel/1812962
+
+I have pushed a branch here for testing:
+
+http://cgit.collabora.com/git/user/tomeu/linux.git/log/?h=actmon-v5
+
+Regards,
+
+Tomeu
+
+Tomeu Vizoso (3):
+  of: Add binding for NVIDIA Tegra ACTMON node
+  PM / devfreq: tegra: add devfreq driver for Tegra Activity Monitor
+  ARM: tegra: Add Tegra124 ACTMON support
+
+ .../devicetree/bindings/arm/tegra/actmon.txt       |  38 +
+ arch/arm/boot/dts/tegra124.dtsi                    |  23 +
+ drivers/devfreq/Kconfig                            |   9 +
+ drivers/devfreq/Makefile                           |   1 +
+ drivers/devfreq/tegra-actmon-devfreq.c             | 767 +++++++++++++++++++++
+ 5 files changed, 838 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/tegra/actmon.txt
+ create mode 100644 drivers/devfreq/tegra-actmon-devfreq.c
+
+-- 
+1.9.3
+
