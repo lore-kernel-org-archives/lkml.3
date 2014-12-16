@@ -1,100 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaLPXeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 18:34:13 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:49248 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751015AbaLPXeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 18:34:12 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: logitech-hidpp: bail out if wtp_connect fails
-Date: Wed, 17 Dec 2014 00:33:55 +0100
-Message-ID: <1771836.oYfhfEolNx@al>
-User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1751654AbaLPXls (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 18:41:48 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:53922 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaLPXlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 18:41:46 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: 0.0 (/)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Wed, 17 Dec 2014 00:41:33 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
+        kernel@pengutronix.de, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] ARM: dts: add support for Vybrid running on
+ Cortex-M4
+In-Reply-To: <2994970.DCfUQgtmcD@wuerfel>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
+ <1417565531-4507-12-git-send-email-stefan@agner.ch>
+ <2994970.DCfUQgtmcD@wuerfel>
+Message-ID: <6ae4dd827bf4dcc202f60e8505173d0e@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Dec 17 00:40:48 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5490c30012811615911700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 December 2014 17:06:01 Benjamin Tissoires wrote:
-> If wtp_connect() fails, that means most of the time that the device has
-> been disconnected. Subsequent attempts to contact the device will fail
-> too, so it's simpler to bail out earlier.
+On 2014-12-03 12:03, Arnd Bergmann wrote:
+> On Wednesday 03 December 2014 01:12:10 Stefan Agner wrote:
+>> diff --git a/arch/arm/boot/dts/vf610m4-colibri.dts b/arch/arm/boot/dts/vf610m4-colibri.dts
+>> new file mode 100644
+>> index 0000000..051ee0f
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/vf610m4-colibri.dts
+>> @@ -0,0 +1,52 @@
+>> +/*
+>> + * Device tree for Colibri VF61 Cortex-M4 support
+>> + *
+>> + * Copyright 2014 Stefan Agner
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +#include "vf610m4.dtsi"
+>> +
+>> +/ {
+>> +       model = "VF610 Cortex-M4";
+>> +       compatible = "fsl,vf610m4";
+>> +
+>> +       chosen {
+>> +               bootargs = "console=ttyLP2,115200 ihash_entries=64 dhash_entries=64 earlyprintk clk_ignore_unused init=/linuxrc rw";
+>> +       };
+>> +
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-logitech-hidpp.c | 15 +++++++++------
->  1 file changed, 9 insertions(+), 6 deletions(-)
+> Starting with v3.19, you should be able to use the earlycon framework on
+> arm32, so it would be better to replace earlyprintk with earlycon here
+> and add a stdout-path property in chosen that points to the console
+> uart.
+
+I started to implement earlycon support, but something currently fails
+when earlycon tries to map the UART registers:
+[    0.000000] earlycon_map: Couldn't map 0x40027000
+
+I traced the issue a bit further down and found that get_vm_area_caller
+returns NULL (in __arm_ioremap_pfn_caller). This happend on Linus master
+as of today (2dbfca5a181973558277b28b1f4c36362291f5e0). Do I miss
+something here?
+
 > 
-> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> index d008d71..c0fb5fe 100644
-> --- a/drivers/hid/hid-logitech-hidpp.c
-> +++ b/drivers/hid/hid-logitech-hidpp.c
-> @@ -914,24 +914,24 @@ static int wtp_allocate(struct hid_device *hdev, const struct hid_device_id *id)
->  	return 0;
->  };
->  
-> -static void wtp_connect(struct hid_device *hdev, bool connected)
-> +static int wtp_connect(struct hid_device *hdev, bool connected)
->  {
->  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
->  	struct wtp_data *wd = hidpp->private_data;
->  	int ret;
->  
->  	if (!connected)
-> -		return;
-> +		return 0;
-
-"0" is success, what about -1 or -ENODEV here to signal an error? The
-following line (in hidpp_connect_event) returns on !connected, but that
-is no reason to return 0 here.
-
-("No connection" sounds like an error condition to me as "[wtp_]connect"
-cannot do something meaningful.)
-
-Whether or not you change the return value is up to you. This patch is
-Reviewed-by: Peter Wu <peter@lekensteyn.nl>
-
-Kind regards,
-Peter
-
->  	if (!wd->x_size) {
->  		ret = wtp_get_config(hidpp);
->  		if (ret) {
->  			hid_err(hdev, "Can not get wtp config: %d\n", ret);
-> -			return;
-> +			return ret;
->  		}
->  	}
->  
-> -	hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
-> +	return hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
->  			true, true);
->  }
->  
-> @@ -1115,8 +1115,11 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
->  	struct input_dev *input;
->  	char *name, *devm_name;
->  
-> -	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
-> -		wtp_connect(hdev, connected);
-> +	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
-> +		ret = wtp_connect(hdev, connected);
-> +		if (ret)
-> +			return;
-> +	}
->  
->  	if (!connected || hidpp->delayed_input)
->  		return;
+> 64 hash table entries sounds extremely small, doesn't that impact
+> performance? If you have 50MB of actual RAM available, I don't think
+> you need that.
 > 
+> 	Arnd
 
