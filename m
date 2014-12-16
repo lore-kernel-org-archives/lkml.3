@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419AbaLPHn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:43:59 -0500
-Received: from mail-by2on0060.outbound.protection.outlook.com ([207.46.100.60]:48448
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750863AbaLPHn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:43:57 -0500
-From: Ley Foon Tan <lftan@altera.com>
-To: Tobias Klauser <tklauser@distanz.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Ley Foon Tan <lftan@altera.com>,
-        <lftan.linux@gmail.com>, <linux-serial@vger.kernel.org>,
-        <nios2-dev@lists.rocketboards.org>
-Subject: [PATCH] serial: altera-uart: fix NULL device in log message
-Date: Tue, 16 Dec 2014 15:28:34 +0800
-Message-ID: <1418714914-2836-1-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751499AbaLPHoj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:44:39 -0500
+Received: from mail.fireflyinternet.com ([87.106.93.118]:50026 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751124AbaLPHoh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:44:37 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
+Date: Tue, 16 Dec 2014 07:44:13 +0000
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Subject: Re: [git pull] drm for 3.19-rc1
+Message-ID: <20141216074413.GB26498@nuc-i3427.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Dave Airlie <airlied@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Thomas Hellstrom <thellstrom@vmware.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI mailing list <dri-devel@lists.freedesktop.org>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	Daniel Vetter <daniel.vetter@intel.com>
+References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
+ <CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
+ <CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+ <CA+55aFxmT98972EM7OaJoF_P8AoA1Lyj6WcN9LaT+MC_wgrhRQ@mail.gmail.com>
+ <CAPM=9tx=vkMFhiRRYkoaxL+a9vjMREMTO=xo68Xxsxuto5LWhw@mail.gmail.com>
+ <CA+55aFyOD4a81DfXvVVxwK7AdLksffYkuwbydvOar1xJQut+AA@mail.gmail.com>
+ <CAPM=9tyUKeA5FqhRQ+Ldj1nMM=729XnVAsKRw9h_n__JFSJtTw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(64706001)(50986999)(106466001)(229853001)(105596002)(33646002)(6806004)(89996001)(19580405001)(50466002)(87936001)(19580395003)(50226001)(42186005)(92566001)(48376002)(86362001)(120916001)(107046002)(31966008)(62966003)(20776003)(77156002)(46102003)(21056001)(47776003)(84676001)(97736003)(4396001)(68736005)(99396003)(36756003)(7099022);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB216;H:sj-itexedge03.altera.priv.altera.com;FPR:;SPF:SoftFail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB216;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB216;
-X-Forefront-PRVS: 04270EF89C
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB216;
-X-OriginatorOrg: altera.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tyUKeA5FqhRQ+Ldj1nMM=729XnVAsKRw9h_n__JFSJtTw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device pointer to port->dev.
+On Tue, Dec 16, 2014 at 12:37:52PM +1000, Dave Airlie wrote:
+> > Having a quiet deprecation warning with the understanding that things
+> > will stay around for *years* is fine. Although it makes me wonder how
+> > much value the deprecation message really adds. I mean, why the hell
+> > print a message, when the only correct thing to do is to just look at
+> > and fix Xorg?
+> >
+> > And if you can't get Xorg fixed, then the message is kind of pointless too?
+> >
+> > So really, I don't see the point of even a oneliner message. You guys
+> > know who the user is. There's no value in the message. Either you fix
+> > the user or you don't.
+> >
+> > It's not like "oh, it's Xorg that uses our drm interfaces" is a big
+> > surprise, is it?
+> 
+> Its not X.org the X server,
 
-Before:
+It is plymouthd using libkms. It affects -radeon, -nouveau and -intel
+who all try to copy the fbcon created using a dumb buffer into the
+Screen Pixmap.
+-Chris
 
-"(NULL device *): ttyAL0 at MMIO 0x2020 (irq = 6, base_baud = 3125000)
-is a Altera UART"
-
-After:
-"altera_uart 2020.serial: ttyAL0 at MMIO 0x2020 (irq = 6, base_baud = 3125000)
-is a Altera UART"
-
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- drivers/tty/serial/altera_uart.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/tty/serial/altera_uart.c b/drivers/tty/serial/altera_uart.c
-index eb15a50..b2859fe 100644
---- a/drivers/tty/serial/altera_uart.c
-+++ b/drivers/tty/serial/altera_uart.c
-@@ -589,6 +589,7 @@ static int altera_uart_probe(struct platform_device *pdev)
- 	port->iotype = SERIAL_IO_MEM;
- 	port->ops = &altera_uart_ops;
- 	port->flags = UPF_BOOT_AUTOCONF;
-+	port->dev = &pdev->dev;
- 
- 	platform_set_drvdata(pdev, port);
- 
 -- 
-1.8.2.1
-
+Chris Wilson, Intel Open Source Technology Centre
