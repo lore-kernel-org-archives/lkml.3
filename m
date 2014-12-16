@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaLPOK7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:10:59 -0500
-Received: from c-82-192-226-27.customer.ggaweb.ch ([82.192.226.27]:35220 "EHLO
+	id S1751379AbaLPOLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:11:06 -0500
+Received: from c-82-192-226-27.customer.ggaweb.ch ([82.192.226.27]:35233 "EHLO
 	dizzy-6.o2s.ch" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751035AbaLPOK5 (ORCPT
+	with ESMTP id S1751055AbaLPOLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:10:57 -0500
-Subject: [PATCH 0/4] mmc: sunxi: General fixup (v2)
+	Tue, 16 Dec 2014 09:11:01 -0500
+Subject: [PATCH 1/4] mmc: sunxi: Fix setup of last descriptor of dma transfer
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
 To: Ulf Hansson <ulf.hansson@linaro.org>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
@@ -19,8 +19,10 @@ To: Ulf Hansson <ulf.hansson@linaro.org>,
         =?utf-8?b?5p2O5oOz?= <lixiang@allwinnertech.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org
-Date: Tue, 16 Dec 2014 15:10:54 +0100
-Message-ID: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
+Date: Tue, 16 Dec 2014 15:10:59 +0100
+Message-ID: <20141216141059.3036.53205.stgit@dizzy-6.o2s.ch>
+In-Reply-To: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
+References: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,33 +31,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello
-This patchset was inspired questions from 李想 of Allwinner and incorporates as
-well suggestions from Hans related to spin locks.
-For example have not all attributes of the shared host object been protected
-by the spin lock, this has been changed.
-Also some register names and reset behavior have been fixed now.
-And a minor cleanup happened at the clock frequecy setting, since there has
-been a piece of left over code which has been there because it was in the Android
-driver and we just adapted it because we didn't have proper documentation about
-the timing of the module.
+From: Hans de Goede <hdegoede@redhat.com>
 
-Looking forward to your feedback
-Cheers David
+The last descriptor might be the first descriptor as well, so use masking to
+add the LD (last descriptor) bit and drop the DIC (disable interrupt on
+completion) bit rather then hard assignment as hard assigment will override
+the FD (first descriptor) bit if there is only 1 descriptor.
 
+Also set the ER (end of ring) bit and clear buf_addr_ptr2 on the last
+descriptor, like the android kernel code does.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
+Reported-by: 李想 <lixiang@allwinnertech.com>
 ---
+ drivers/mmc/host/sunxi-mmc.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-David Lanzendörfer (3):
-      mmc: sunxi: Lock fix
-      mmc: sunxi: Correcting SDXC_HARDWARE_RESET bit
-      mmc: sunxi: Removing unused code
+diff --git a/drivers/mmc/host/sunxi-mmc.c b/drivers/mmc/host/sunxi-mmc.c
+index 15cb8b7..1fe54a8 100644
+--- a/drivers/mmc/host/sunxi-mmc.c
++++ b/drivers/mmc/host/sunxi-mmc.c
+@@ -310,7 +310,9 @@ static void sunxi_mmc_init_idma_des(struct sunxi_mmc_host *host,
+ 	}
+ 
+ 	pdes[0].config |= SDXC_IDMAC_DES0_FD;
+-	pdes[i - 1].config = SDXC_IDMAC_DES0_OWN | SDXC_IDMAC_DES0_LD;
++	pdes[i - 1].config |= SDXC_IDMAC_DES0_LD | SDXC_IDMAC_DES0_ER;
++	pdes[i - 1].config &= ~SDXC_IDMAC_DES0_DIC;
++	pdes[i - 1].buf_addr_ptr2 = 0;
+ 
+ 	/*
+ 	 * Avoid the io-store starting the idmac hitting io-mem before the
 
-Hans de Goede (1):
-      mmc: sunxi: Fix setup of last descriptor of dma transfer
-
-
- drivers/mmc/host/sunxi-mmc.c |   29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
-
---
-Signature
