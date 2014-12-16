@@ -1,74 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaLPEtB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 23:49:01 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:54958 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaLPEtA (ORCPT
+	id S1751406AbaLPEvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 23:51:09 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:65119 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaLPEvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 23:49:00 -0500
-X-Original-SENDERIP: 10.177.222.235
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Tue, 16 Dec 2014 13:49:09 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, ak@linux.intel.com, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: fix building warning on ARM 32.
-Message-ID: <20141216044909.GA20215@sejong>
-References: <1418695810-74455-1-git-send-email-wangnan0@huawei.com>
+	Mon, 15 Dec 2014 23:51:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1418695810-74455-1-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Date: Mon, 15 Dec 2014 23:51:07 -0500
+Message-ID: <CABPqkBS-iWehgyp0xEkeJLygeTOg7Ci-3jugRNMJ9Medz=2A1w@mail.gmail.com>
+Subject: [BUG] perf: sampling with precise=2 broken in 3.18
+From: Stephane Eranian <eranian@google.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        dave.hansen@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
+Hi,
 
-On Tue, Dec 16, 2014 at 10:10:10AM +0800, Wang Nan wrote:
-> Commit 85c116a6c introduces asprintf() call and matches '%ld' to a u64
-> argument, which is incorrect on ARM.
-> 
->    CC       /home/wn/util/srcline.o
->  util/srcline.c: In function 'get_srcline':
->  util/srcline.c:297:6: error: format '%ld' expects argument of type 'long int', but argument 4 has type 'u64' [-Werror=format]
->  cc1: all warnings being treated as errors
->  make[1]: *** [/home/wn/util/srcline.o] Error 1
+I was running some perf mem test for an upcoming patch when
+I realize that precise=2 was broken on 3.18. It seems it never
+(or extremely rarely) correct the off-by-one error, when until 3.18-rc4
+it was 100% on the same program. So something was introduced
+that broke the asm walker in perf_event_intel_ds.c.
 
-Hmm.. shouldn't it be %PRIu64 instead?
+Looking at the log of that file, I can see one change that could have
+some impact:
 
-Thanks,
-Namhyung
+Author: Dave Hansen <dave.hansen@linux.intel.com>
+6ba48ff x86: Remove arbitrary instruction size limit in instruction decoder
 
+if I use a kernel without this fix (prior to that commit), then correction
+works. Any kernel after fails. I have not investigated why but may you
+have an idea.
 
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> ---
->  tools/perf/util/srcline.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
-> index e73b6a5..42cb642 100644
-> --- a/tools/perf/util/srcline.c
-> +++ b/tools/perf/util/srcline.c
-> @@ -294,7 +294,7 @@ out:
->  	}
->  	if (sym) {
->  		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
-> -					addr - sym->start) < 0)
-> +					(long int)(addr - sym->start)) < 0)
->  			return SRCLINE_UNKNOWN;
->  	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
->  		return SRCLINE_UNKNOWN;
-> -- 
-> 1.8.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+To reproduce try using perf mem -t load rec my_load_test, then use
+perf report to navigate to the assembly view, the samples should be
+on load instructions, not on the instructions following them. If you use
+perf mem -t load rec -vv you can verify that precise=2. So something
+is not working anymore in the instruction decoder that the fixup routine
+bails out.
+
+Any clue?
