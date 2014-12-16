@@ -1,100 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751090AbaLPF2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:28:21 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:12502 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751027AbaLPF2U (ORCPT
+	id S1751197AbaLPFaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:30:05 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:41889 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaLPFaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:28:20 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="45241094"
-Message-ID: <548FC3EA.7020505@cn.fujitsu.com>
-Date: Tue, 16 Dec 2014 13:32:26 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Tue, 16 Dec 2014 00:30:03 -0500
+Message-ID: <548FC338.4050409@oracle.com>
+Date: Tue, 16 Dec 2014 00:29:28 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH 2/4] workqueue: update per-cpu workqueue's node affinity
- at,online-offline
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548EC1E2.1010101@jp.fujitsu.com> <548EC320.3060206@jp.fujitsu.com>
-In-Reply-To: <548EC320.3060206@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: sched: odd values for effective load calculations
+References: <547E42F7.5070105@gmail.com> <20141213083012.GH32572@gmail.com> <20141215121227.GZ29390@twins.programming.kicks-ass.net> <20141215131410.GM10476@twins.programming.kicks-ass.net>
+In-Reply-To: <20141215131410.GM10476@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 07:16 PM, Kamezawa Hiroyuki wrote:
-> The percpu workqueue pool are persistend and never be freed.
-> But cpu<->node relationship can be changed by cpu hotplug and pool->node
-> can point to an offlined node.
+On 12/15/2014 08:14 AM, Peter Zijlstra wrote:
+>>>> [  787.894288] ================================================================================
+>>>> > > > [  787.897074] UBSan: Undefined behaviour in kernel/sched/fair.c:4541:17
+>>>> > > > [  787.898981] signed integer overflow:
+>>>> > > > [  787.900066] 361516561629678 * 101500 cannot be represented in type 'long long int'
+>> > 
+>> > So that's:
+>> > 
+>> > 	this_eff_load *= this_load +
+>> > 		effective_load(tg, this_cpu, weight, weight);
+>> > 
+>> > Going by the numbers the 101500 must be 'this_eff_load', 100 * ~1024
+>> > makes that. Which makes the rhs 'large'. Do you have
+>> > CONFIG_FAIR_GROUP_SCHED enabled? If so, what kind of cgroup hierarchy
+>> > are you using?
+>> > 
+>> > In any case, bit sad this doesn't have a register dump included :/
+> Hmm, I was hoping to be able to see if it was this_load or the
+> effective_load() result being silly large, but going by the ASM output
+> of my compiler this isn't going to be available in registers, its all
+> stack spills.
 > 
-> If pool->node points to an offlined node,
-> following allocation failure can happen.
->     ==
->      SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
->       cache: kmalloc-192, object size: 192, buffer size: 192, default
-> order:
->     1, min order: 0
->       node 0: slabs: 6172, objs: 259224, free: 245741
->       node 1: slabs: 3261, objs: 136962, free: 127656
->     ==
-> 
-> This patch clears per-cpu workqueue pool's node affinity at
-> cpu offlining and restore it at cpu onlining.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  kernel/workqueue.c | 11 ++++++++++-
->  1 file changed, 10 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 7809154..2fd0bd7 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4586,6 +4586,11 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
->  	case CPU_DOWN_FAILED:
->  	case CPU_ONLINE:
->  		mutex_lock(&wq_pool_mutex);
-> +		/*
-> +		 * now cpu <-> node info is established. update numa node
-> +		 */
-> +		for_each_cpu_worker_pool(pool, cpu)
-> +			pool->node = cpu_to_node(cpu);
->  
->  		for_each_pool(pool, pi) {
->  			mutex_lock(&pool->attach_mutex);
-> @@ -4619,6 +4624,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
->  	int cpu = (unsigned long)hcpu;
->  	struct work_struct unbind_work;
->  	struct workqueue_struct *wq;
-> +	struct worker_pool *pool;
->  
->  	switch (action & ~CPU_TASKS_FROZEN) {
->  	case CPU_DOWN_PREPARE:
-> @@ -4626,10 +4632,13 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
->  		INIT_WORK_ONSTACK(&unbind_work, wq_unbind_fn);
->  		queue_work_on(cpu, system_highpri_wq, &unbind_work);
->  
-> -		/* update NUMA affinity of unbound workqueues */
->  		mutex_lock(&wq_pool_mutex);
-> +		/* update NUMA affinity of unbound workqueues */
->  		list_for_each_entry(wq, &workqueues, list)
->  			wq_update_unbound_numa(wq, cpu, false);
-> +		/* clear per-cpu workqueues's numa affinity. */
-> +		for_each_cpu_worker_pool(pool, cpu)
-> +			pool->node = NUMA_NO_NODE; /* restored at online */
+> Pinning my hopes on that reproducability thing :/
+
+Okay, yeah, it's very reproducible. I've added:
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index df2cdf7..e1fbe1a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4486,7 +4486,7 @@ static int wake_wide(struct task_struct *p)
+
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+-       s64 this_load, load;
++       s64 this_load, load, tmps;
+        s64 this_eff_load, prev_eff_load;
+        int idx, this_cpu, prev_cpu;
+        struct task_group *tg;
+@@ -4538,6 +4538,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+        prev_eff_load *= capacity_of(this_cpu);
+
+        if (this_load > 0) {
++               if (__builtin_mul_overflow(this_eff_load, this_load +
++                        effective_load(tg, this_cpu, weight, weight), &tmps))
++                       printk(KERN_CRIT "%lld %lld %lld", this_eff_load, this_load, effective_load(tg, this_cpu, weight, weight));
+                this_eff_load *= this_load +
+                        effective_load(tg, this_cpu, weight, weight);
+
+And got:
+
+[  437.511964] 91600 1765238667340524 81
+[  437.512781] ================================================================================
+[  437.516069] UBSan: Undefined behaviour in kernel/sched/fair.c:4544:17
+[  437.517888] signed integer overflow:
+[  437.518721] 1765238667340605 * 91600 cannot be represented in type 'long long int'
+[  437.520051] CPU: 16 PID: 23069 Comm: trinity-c510 Not tainted 3.18.0-next-20141211-sasha-00069-g11f17a7-dirty #1607
+[  437.520153]  0000000000000000 0000000000000000 ffffffffb1f0fc70 ffff880321e8f908
+[  437.520153]  ffffffffb0250d8f 1ffffffff78a0603 ffffffffb1f0fc88 ffff880321e8f928
+[  437.520153]  ffffffffb0252f96 1ffffffff78a0603 ffffffffb1f0fc88 ffff880321e8f9e8
+[  437.520153] Call Trace:
+[  437.520153] dump_stack (lib/dump_stack.c:52)
+[  437.520153] ubsan_epilogue (lib/ubsan.c:159)
+[  437.520153] handle_overflow (lib/ubsan.c:191)
+[  437.520153] ? printk (./arch/x86/include/asm/preempt.h:95 kernel/printk/printk.c:1863)
+[  437.520153] __ubsan_handle_mul_overflow (lib/ubsan.c:218)
+[  437.520153] select_task_rq_fair (kernel/sched/fair.c:4544 kernel/sched/fair.c:4758)
+[  437.520153] ? get_parent_ip (kernel/sched/core.c:2564)
+[  437.520153] ? get_parent_ip (kernel/sched/core.c:2564)
+[  437.520153] try_to_wake_up (kernel/sched/core.c:1415 kernel/sched/core.c:1729)
+[  437.520153] ? deactivate_slab (include/linux/spinlock.h:349 mm/slub.c:1940)
+[  437.520153] default_wake_function (kernel/sched/core.c:2988)
+[  437.520153] ? get_parent_ip (kernel/sched/core.c:2564)
+[  437.520153] autoremove_wake_function (kernel/sched/wait.c:295)
+[  437.520153] __wake_up_common (kernel/sched/wait.c:73)
+[  437.520153] ? copy_page_to_iter (./arch/x86/include/asm/preempt.h:95 include/linux/uaccess.h:36 include/linux/highmem.h:75 mm/iov_iter.c:180 mm/iov_iter.c:432)
+[  437.520153] __wake_up_sync_key (include/linux/spinlock.h:364 kernel/sched/wait.c:146)
+[  437.520153] pipe_read (fs/pipe.c:317)
+[  437.520153] ? do_sync_readv_writev (fs/read_write.c:396)
+[  437.520153] do_iter_readv_writev (fs/read_write.c:681)
+[  437.520153] do_readv_writev (fs/read_write.c:849)
+[  437.520153] ? pipe_write (fs/pipe.c:231)
+[  437.520153] ? acct_account_cputime (kernel/tsacct.c:168)
+[  437.520153] ? preempt_count_sub (kernel/sched/core.c:2620)
+[  437.520153] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183)
+[  437.520153] ? vtime_account_user (kernel/sched/cputime.c:701)
+[  437.520153] vfs_readv (fs/read_write.c:881)
+[  437.520153] SyS_readv (fs/read_write.c:907 fs/read_write.c:898)
+[  437.520153] ? trace_hardirqs_on_thunk (arch/x86/lib/thunk_64.S:33)
+[  437.520153] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+[  437.520153] ================================================================================
+
+So it's actually 'this_load' going bananas.
 
 
-If the node is still online, it is better to keep the original pool->node.
-
->  		mutex_unlock(&wq_pool_mutex);
->  
->  		/* wait for per-cpu unbinding to finish */
-
+Thanks,
+Sasha
