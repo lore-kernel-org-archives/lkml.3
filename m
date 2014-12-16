@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751202AbaLPCQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 21:16:20 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56897 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaLPCQT (ORCPT
+	id S1751103AbaLPCSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 21:18:44 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:29838 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaLPCSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 21:16:19 -0500
-Date: Tue, 16 Dec 2014 12:16:12 +1000
-From: Mitchell Krome <mitchellkrome@gmail.com>
-To: acme@kernel.org
-Cc: mingo@redhat.com, paulus@samba.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf tool: Fix use after free in filename__read_build_id
-Message-ID: <20141216021612.GA7199@mitchell>
+	Mon, 15 Dec 2014 21:18:42 -0500
+X-IronPort-AV: E=Sophos;i="5.07,583,1413270000"; 
+   d="scan'208";a="52996626"
+From: Ray Jui <rjui@broadcom.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Linus Walleij" <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        "Arnd Bergmann" <arnd@arndb.de>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-gpio@vger.kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
+Subject: [PATCH v6 0/3] Add gpio support to Broadcom Cygnus SoC
+Date: Mon, 15 Dec 2014 18:18:24 -0800
+Message-ID: <1418696307-19392-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In filename__read_build_id, phdr points to memory in buf, which gets realloced
-before a call to fseek that uses phdr->p_offset. This change stores the value
-of p_offset before buf is realloced, so the fseek can use the value safely.
+This patchset contains the initial GPIO support for the Broadcom Cygnus SoC.
+Cygnus has 3 GPIO controllers: 1) the ASIU GPIO; 2) the chipCommonG GPIO;
+and 3) the ALWAYS-ON GPIO. All 3 types of GPIO controllers are supported by
+the same Cygnus GPIO driver
 
-Signed-off-by: Mitchell Krome <mitchellkrome@gmail.com>
----
- tools/perf/util/symbol-minimal.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Changes from v5:
+ - Get rid of DT property "linux,gpio-base". Use dynamic allocation for GPIO base
+   number
 
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index fa585c6..d7efb03 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -129,6 +129,7 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
- 
- 		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
- 			void *tmp;
-+			long offset;
- 
- 			if (need_swap) {
- 				phdr->p_type = bswap_32(phdr->p_type);
-@@ -140,12 +141,13 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
- 				continue;
- 
- 			buf_size = phdr->p_filesz;
-+			offset = phdr->p_offset;
- 			tmp = realloc(buf, buf_size);
- 			if (tmp == NULL)
- 				goto out_free;
- 
- 			buf = tmp;
--			fseek(fp, phdr->p_offset, SEEK_SET);
-+			fseek(fp, offset, SEEK_SET);
- 			if (fread(buf, buf_size, 1, fp) != 1)
- 				goto out_free;
- 
-@@ -178,6 +180,7 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
- 
- 		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
- 			void *tmp;
-+			long offset;
- 
- 			if (need_swap) {
- 				phdr->p_type = bswap_32(phdr->p_type);
-@@ -189,12 +192,13 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
- 				continue;
- 
- 			buf_size = phdr->p_filesz;
-+			offset = phdr->p_offset;
- 			tmp = realloc(buf, buf_size);
- 			if (tmp == NULL)
- 				goto out_free;
- 
- 			buf = tmp;
--			fseek(fp, phdr->p_offset, SEEK_SET);
-+			fseek(fp, offset, SEEK_SET);
- 			if (fread(buf, buf_size, 1, fp) != 1)
- 				goto out_free;
- 
+Changes from v4:
+ - Use DT property "linux,gpio-base" to define GPIO base number
+ - factorize common code to improve code readability and reduce code size
+ - remove "bcm_" prefix on function and struct names
+ - improve debugging prints
+ - default GPIO_BCM_CYGNUS to y in Kconfig (it still depends on
+   ARCH_BCM_CYGNUS). This way we do not need to select it from the
+   arch/arm/mach-bcm/Kconfig
+ - Get rid of redundant MAINTAINER entry for this driver. It will be maintained
+   by Broadcom iProc/Cygnus maintainers
+ - Update device tree document based on driver changes
+
+Changes from v3:
+ - Fix dt property tpyo
+ - Fix incorrect GPIO compatible ID in device tree binding document example
+
+Changes from v2:
+ - Consolidate different compatible IDs into "brcm,cygnus-gpio"
+ - Get rid of redundant "no-interrupt" property
+
+Changes from v1:
+ - Get rid of inline qualifier
+ - Get rid of redundant check in the ISR
+ - Other minor fixes to imrove code readability
+
+Ray Jui (3):
+  gpio: Cygnus: define Broadcom Cygnus GPIO binding
+  gpio: Cygnus: add GPIO driver
+  ARM: dts: enable GPIO for Broadcom Cygnus
+
+ .../devicetree/bindings/gpio/brcm,cygnus-gpio.txt  |   82 +++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |   30 +
+ drivers/gpio/Kconfig                               |   12 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-bcm-cygnus.c                     |  607 ++++++++++++++++++++
+ 5 files changed, 732 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/brcm,cygnus-gpio.txt
+ create mode 100644 drivers/gpio/gpio-bcm-cygnus.c
+
 -- 
-1.9.1
+1.7.9.5
 
