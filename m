@@ -1,101 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751218AbaLPVWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:22:30 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:53207 "EHLO
+	id S1751344AbaLPVYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:24:39 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:56332 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990AbaLPVW3 (ORCPT
+	with ESMTP id S1750910AbaLPVYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:22:29 -0500
+	Tue, 16 Dec 2014 16:24:38 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT PULL 3/3] ARM: SoC/iommu configuration for 3.19
-Date: Tue, 16 Dec 2014 22:22:25 +0100
-Message-ID: <5437011.lU1AJxKYA5@wuerfel>
+Subject: [GIT PULL 2/3] ARM: SoC DT updates for 3.19, part 2
+Date: Tue, 16 Dec 2014 22:24:07 +0100
+Message-ID: <4321166.6UpSDjLxLY@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5499732.TPqbyGxy2W@wuerfel>
-References: <5499732.TPqbyGxy2W@wuerfel>
+In-Reply-To: <1472557.DTsj0nlvTo@wuerfel>
+References: <5499732.TPqbyGxy2W@wuerfel> <1472557.DTsj0nlvTo@wuerfel>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:mpyiifQm0FTy7JmGjmAKv2zUr9LNA7jSpxzuXNS3G6G39ptD4mx
- zhCUIXJBjG7RAp2lwU9y5Qgd1UJmiYoUZtvfE7meFnC9wgEmfpxiNME/SSMudLEQY5iTEoZ
- MWYRlXwlwG7tU3AgbJ77eWa6AV7FVser8oOPv2VRwKXWxDlI1IA5bWkFXj955WMY4vlusN0
- UdwZeaaVo7Ei/eoI4S05w==
+X-Provags-ID: V03:K0:dg/vd5f5f3M3yGqVt3/eOcTEOdIE3v/9EDRJb34puxWzGMr5R4/
+ gnHflKClzR9Z3j3iBaYHBm0eop1XLAJ+eg3xaIYrfYBsv+/C/W/RbmZOIlodE4JAstJKUyY
+ yYiOiD3/nr0ybIN+o6MJWa5pf2hyc4W3+e/skDZ5NTAcWts0AAABjVEuf2Gga0iSPI+1zuy
+ BIvjA1WAGOboN98wUu02Q==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
+Sorry for the broken subject line in the previous mail, this has the
+same contents with the right subject.
 
-  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
+8<-------
+The following changes since commit 8918465163171322c77a19d5258a95f56d89d2e4:
+
+  memory: Add NVIDIA Tegra memory controller support (2014-12-04 16:11:47 +0100)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/iommu-config-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2-for-linus
 
-for you to fetch changes up to fd522d279235b8bcafc39c1040895fe2d938d1e7:
+for you to fetch changes up to 1d5f497d87c7d960c27cdc40e7563b0ae88387d3:
 
-  Merge tag 'of-iommu-configure' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into next/iommu-config (2014-12-05 17:45:38 +0100)
-
-----------------------------------------------------------------
-ARM: SoC/iommu configuration for 3.19
-
-The iomm-config branch contains work from Will Deacon, quoting his description:
-
-    This series adds automatic IOMMU and DMA-mapping configuration for
-    OF-based DMA masters described using the generic IOMMU devicetree
-    bindings. Although there is plenty of future work around splitting up
-    iommu_ops, adding default IOMMU domains and sorting out automatic IOMMU
-    group creation for the platform_bus, this is already useful enough for
-    people to port over their IOMMU drivers and start using the new probing
-    infrastructure (indeed, Marek has patches queued for the Exynos IOMMU).
-
-The branch touches core ARM and IOMMU driver files, and the respective
-maintainers (Russell King and Joerg Roedel) agreed to have the contents
-merged through the arm-soc tree. The final version was ready just before
-the merge window, so we ended up delaying it a bit longer than the rest,
-but we don't expect to see regressions because this is just additional
-infrastructure that will get used in drivers starting in 3.20 but is
-unused so far.
-
----
-
-Please note the non-obvious conflict resolution, Stephen got it
-right in linux-next: https://lkml.org/lkml/2014/12/8/83
+  Merge tag 'tegra-for-3.19-dt' of git://git.kernel.org/pub/scm/linux/kernel/git/tegra/linux into next/dt2 (2014-12-04 17:21:49 +0100)
 
 ----------------------------------------------------------------
-Arnd Bergmann (1):
-      Merge tag 'of-iommu-configure' of git://git.kernel.org/.../will/linux into next/iommu-config
+ARM: SoC DT updates for 3.19, part 2
 
-Marek Szyprowski (1):
-      iommu: fix initialization without 'add_device' callback
+This is a follow-up to the early ARM SoC DT changes, with additional
+content that has external dependencies:
 
-Robin Murphy (1):
-      iommu: store DT-probed IOMMU data privately
+* The Tegra IOMMU DT support depends on changes from the iommu
+  tree, plus the contents of the arm-soc drivers branch
+* The MVEBU PHY support depends on changes from the phy tree
+* The AT91 DT support depends on changes from the RTC and
+  DMA-slave trees
 
-Will Deacon (7):
-      iommu: provide early initialisation hook for IOMMU drivers
-      dma-mapping: replace set_arch_dma_coherent_ops with arch_setup_dma_ops
-      iommu: add new iommu_ops callback for adding an OF device
-      iommu: provide helper function to configure an IOMMU for an of master
-      dma-mapping: detect and configure IOMMU in of_dma_configure
-      arm: call iommu_init before of_platform_populate
-      arm: dma-mapping: plumb our iommu mapping ops into arch_setup_dma_ops
+All of these changes just enable additional devices for
+existing platforms.
 
- arch/arm/include/asm/dma-mapping.h | 12 ++---
- arch/arm/kernel/setup.c            |  2 +
- arch/arm/mm/dma-mapping.c          | 83 ++++++++++++++++++++++++++++++++---
- drivers/iommu/Kconfig              |  2 +-
- drivers/iommu/iommu.c              |  2 +-
- drivers/iommu/of_iommu.c           | 89 ++++++++++++++++++++++++++++++++++++++
- drivers/of/platform.c              | 50 +++++++++++----------
- include/asm-generic/vmlinux.lds.h  |  2 +
- include/linux/dma-mapping.h        | 13 +++---
- include/linux/iommu.h              |  8 ++++
- include/linux/of_iommu.h           | 23 ++++++++++
- 11 files changed, 242 insertions(+), 44 deletions(-)
+----------------------------------------------------------------
+Alexandre Belloni (1):
+      ARM: at91/dt: at91sam9rl: add rtc
+
+Arnd Bergmann (6):
+      Merge branch 'topic/at_xdmac' of git://git.infradead.org/users/vkoul/slave-dma into next/dt
+      Merge tag 'at91-dt2' of git://git.kernel.org/.../nferre/linux-at91 into next/dt2
+      Merge tag 'v3.18-rc4' into next/dt2
+      Merge tag 'depends/phy-dt-header' into next/dt2
+      Merge tag 'mvebu-dt-usb-phy-3.19-3' of git://git.infradead.org/linux-mvebu into next/dt2
+      Merge tag 'tegra-for-3.19-dt' of git://git.kernel.org/.../tegra/linux into next/dt2
+
+Boris Brezillon (5):
+      ARM: at91/dt: add RTT nodes to at91 dtsis
+      ARM: at91/dt: add GPBR nodes
+      ARM: at91/dt: enable the RTT block on the sam9g20ek board
+      ARM: at91/dt: enable the RTT block on the at91sam9m10g45ek board
+      ARM: at91/dt: at91sam9g45: add ISI node
+
+Gregory CLEMENT (2):
+      ARM: mvebu: add Device Tree description of USB cluster controller on Armada 375
+      ARM: mvebu: add PHY support to the dts for the USB controllers on Armada 375
+
+Jason Cooper (1):
+      Merge tag 'tags/phy-dt-header' into mvebu/dt-usb_phy
+
+Ludovic Desroches (2):
+      ARM: at91/dt: sama5d4: use macro instead of numeric value
+      ARM: at91/dt: sama5d4: add DMA support
+
+Nicolas Ferre (3):
+      Merge branch 'at91-3.19-dt' into at91-3.19-dt2
+      Merge branch 'topic/at_xdmac' of git://git.infradead.org/users/vkoul/slave-dma into at91-3.19-dt2
+      ARM: at91: fix GPLv2 wording
+
+Sean Paul (1):
+      ARM: tegra: Add APB_MISC_GP as a MIPI pad control bank
+
+Thierry Reding (7):
+      Merge branch 'for-3.19/iommu' into for-3.19/dt
+      ARM: tegra: Add memory controller support for Tegra30
+      ARM: tegra: Add memory controller support for Tegra114
+      ARM: tegra: Add memory controller support for Tegra124
+      ARM: tegra: Enable IOMMU for display controllers on Tegra30
+      ARM: tegra: Enable IOMMU for display controllers on Tegra114
+      ARM: tegra: Enable IOMMU for display controllers on Tegra124
+
+ arch/arm/boot/dts/armada-375.dtsi           | 11 +++++
+ arch/arm/boot/dts/at91-sama5d4ek.dts        |  4 +-
+ arch/arm/boot/dts/at91sam9260.dtsi          | 14 ++++++
+ arch/arm/boot/dts/at91sam9261.dtsi          | 14 ++++++
+ arch/arm/boot/dts/at91sam9263.dtsi          | 21 ++++++++
+ arch/arm/boot/dts/at91sam9g20ek_common.dtsi | 14 ++++++
+ arch/arm/boot/dts/at91sam9g45.dtsi          | 46 ++++++++++++++++++
+ arch/arm/boot/dts/at91sam9m10g45ek.dts      |  9 ++++
+ arch/arm/boot/dts/at91sam9rl.dtsi           | 21 ++++++++
+ arch/arm/boot/dts/sama5d4.dtsi              | 75 +++++++++++++++++++++++++++--
+ arch/arm/boot/dts/tegra114.dtsi             | 23 +++++----
+ arch/arm/boot/dts/tegra124.dtsi             | 19 +++++++-
+ arch/arm/boot/dts/tegra30.dtsi              | 25 +++++-----
+ 13 files changed, 267 insertions(+), 29 deletions(-)
 
