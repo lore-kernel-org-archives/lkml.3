@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaLPNGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 08:06:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52811 "EHLO mx1.redhat.com"
+	id S1751794AbaLPNHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 08:07:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44599 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469AbaLPNF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 08:05:26 -0500
-Date: Tue, 16 Dec 2014 15:05:10 +0200
+	id S1751334AbaLPNFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 08:05:24 -0500
+Date: Tue, 16 Dec 2014 15:05:06 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
         Dan Carpenter <dan.carpenter@oracle.com>,
-        Jason Wang <jasowang@redhat.com>, Tom Herbert <therbert@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 4/5] macvtap: drop broken IFF_VNET_LE
-Message-ID: <1418732988-3535-5-git-send-email-mst@redhat.com>
+        Jason Wang <jasowang@redhat.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Xi Wang <xii@google.com>, Masatake YAMATO <yamato@redhat.com>
+Subject: [PATCH 3/5] tun: drop broken IFF_VNET_LE
+Message-ID: <1418732988-3535-4-git-send-email-mst@redhat.com>
 References: <1418732988-3535-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,57 +31,73 @@ Use TUNSETVNETLE/TUNGETVNETLE instead.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- drivers/net/macvtap.c | 23 ++++++++++++++++++++---
- 1 file changed, 20 insertions(+), 3 deletions(-)
+ drivers/net/tun.c | 26 +++++++++++++++++++++++---
+ 1 file changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index de88285..f1f0df1 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -45,16 +45,18 @@ struct macvtap_queue {
- 	struct list_head next;
- };
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index c052bd6b..e3e8a0e 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -109,9 +109,11 @@ do {								\
+  * overload it to mean fasync when stored there.
+  */
+ #define TUN_FASYNC	IFF_ATTACH_QUEUE
++/* High bits in flags field are unused. */
++#define TUN_VNET_LE     0x80000000
  
--#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_VNET_LE | IFF_MULTI_QUEUE)
-+#define MACVTAP_FEATURES (IFF_VNET_HDR | IFF_MULTI_QUEUE)
-+
-+#define MACVTAP_VNET_LE 0x80000000
+ #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
+-		      IFF_VNET_LE | IFF_MULTI_QUEUE)
++		      IFF_MULTI_QUEUE)
+ #define GOODCOPY_LEN 128
  
- static inline u16 macvtap16_to_cpu(struct macvtap_queue *q, __virtio16 val)
+ #define FLT_EXACT_COUNT 8
+@@ -207,12 +209,12 @@ struct tun_struct {
+ 
+ static inline u16 tun16_to_cpu(struct tun_struct *tun, __virtio16 val)
  {
--	return __virtio16_to_cpu(q->flags & IFF_VNET_LE, val);
-+	return __virtio16_to_cpu(q->flags & MACVTAP_VNET_LE, val);
+-	return __virtio16_to_cpu(tun->flags & IFF_VNET_LE, val);
++	return __virtio16_to_cpu(tun->flags & TUN_VNET_LE, val);
  }
  
- static inline __virtio16 cpu_to_macvtap16(struct macvtap_queue *q, u16 val)
+ static inline __virtio16 cpu_to_tun16(struct tun_struct *tun, u16 val)
  {
--	return __cpu_to_virtio16(q->flags & IFF_VNET_LE, val);
-+	return __cpu_to_virtio16(q->flags & MACVTAP_VNET_LE, val);
+-	return __cpu_to_virtio16(tun->flags & IFF_VNET_LE, val);
++	return __cpu_to_virtio16(tun->flags & TUN_VNET_LE, val);
  }
  
- static struct proto macvtap_proto = {
-@@ -1082,6 +1084,21 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
- 		q->vnet_hdr_sz = s;
- 		return 0;
+ static inline u32 tun_hashfn(u32 rxhash)
+@@ -1853,6 +1855,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	int sndbuf;
+ 	int vnet_hdr_sz;
+ 	unsigned int ifindex;
++	int le;
+ 	int ret;
+ 
+ 	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 0x89) {
+@@ -2052,6 +2055,23 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 		tun->vnet_hdr_sz = vnet_hdr_sz;
+ 		break;
  
 +	case TUNGETVNETLE:
-+		s = !!(q->flags & MACVTAP_VNET_LE);
-+		if (put_user(s, sp))
-+			return -EFAULT;
-+		return 0;
++		le = !!(tun->flags & TUN_VNET_LE);
++		if (put_user(le, (int __user *)argp))
++			ret = -EFAULT;
++		break;
 +
 +	case TUNSETVNETLE:
-+		if (get_user(s, sp))
-+			return -EFAULT;
-+		if (s)
-+			q->flags |= MACVTAP_VNET_LE;
++		if (get_user(le, (int __user *)argp)) {
++			ret = -EFAULT;
++			break;
++		}
++		if (le)
++			tun->flags |= TUN_VNET_LE;
 +		else
-+			q->flags &= ~MACVTAP_VNET_LE;
-+		return 0;
++			tun->flags &= ~TUN_VNET_LE;
++		break;
 +
- 	case TUNSETOFFLOAD:
- 		/* let the user check for future flags */
- 		if (arg & ~(TUN_F_CSUM | TUN_F_TSO4 | TUN_F_TSO6 |
+ 	case TUNATTACHFILTER:
+ 		/* Can be set only for TAPs */
+ 		ret = -EINVAL;
 -- 
 MST
 
