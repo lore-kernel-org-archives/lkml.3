@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750930AbaLPJj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:39:57 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:9445 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaLPJjy (ORCPT
+	id S1751141AbaLPJlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:41:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23158 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaLPJlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:39:54 -0500
-Message-ID: <548FFDDC.5090001@huawei.com>
-Date: Tue, 16 Dec 2014 17:39:40 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Dec 2014 04:41:36 -0500
+Date: Tue, 16 Dec 2014 12:41:09 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Chris Rorvick <chris@rorvick.com>
+Cc: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>, devel@driverdev.osuosl.org,
+        HPDD-discuss@ml01.01.org, Greg Donald <gdonald@gmail.com>,
+        James Simmons <uja.ornl@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-kernel@vger.kernel.org, Fabian Frederick <fabf@skynet.be>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        "John L. Hammond" <john.hammond@intel.com>
+Subject: Re: [PATCH] drivers: staging: lustre: Use mult if units not specified
+Message-ID: <20141216094109.GH4856@mwanda>
+References: <1418708509-18196-1-git-send-email-chris@rorvick.com>
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
-CC: <wangnan0@huawei.com>
-Subject: The kernel interface of inotify was removed ?
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A010203.548FFDE8.01B5,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 207d7e07ae8f863721e0bf012ad4ba38
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418708509-18196-1-git-send-email-chris@rorvick.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Dec 15, 2014 at 11:41:49PM -0600, Chris Rorvick wrote:
+> Units can be passed to lprocfs_write_frac_u64_helper() via a suffix
+> (e.g., "...K", "...M", etc.) tacked onto the value.  A comment states
+> that "specified units override the multiplier," though the multiplier is
+> overridden regardless.  Update the conditional logic so that it only
+> applies when units are specified.
+> 
 
-	I try to use inotify in kernel module according to Documentation/filesystems/inotify.txt,
-	but i found inotify was reimplemented in this commit 63c882a (inotify: reimplement inotify using fsnotify)
-	and the document has been expired.
+That introduces a bug.  We need to take the initial '-' into
+consideration.  Just remove the condition.  Also remove the "mult"
+parameter since that is always 1.
 
-	Now how we can monitor file in kernel module ?
+	bool negative = false;
 
-	Best regards!
+	...
+
+	if (*pbuf == '-') {
+		negative = true;
+		pbuf++;
+	}
+
+	...
+
+	mult = negative ? -units : units;
+
+
+regards,
+dan carpenter
 
