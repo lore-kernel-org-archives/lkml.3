@@ -1,61 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485AbaLPQgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:36:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48249 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaLPQgj (ORCPT
+	id S1751587AbaLPQhB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:37:01 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:34778 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504AbaLPQg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:36:39 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <54905F87.2030302@jp.fujitsu.com>
-Date: Wed, 17 Dec 2014 01:36:23 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 16 Dec 2014 11:36:59 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 16 Dec 2014 11:36:57 -0500
+To: Nishanth Menon <nm@ti.com>
+Cc: Lokesh Vutla <lokeshvutla@ti.com>, t-kristo@ti.com,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+Message-ID: <20141216163657.GL24110@csclub.uwaterloo.ca>
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <20141214044517.GD24110@csclub.uwaterloo.ca>
+ <549018EC.8020207@ti.com>
+ <20141216145856.GA23358@kahuna>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: =?ISO-2022-JP?B?IklzaGltYXRzdSwgWWFzdWFraS8bJEJAUD4+GyhCIBskQkx3Pk8bKEI=?=
-	 =?ISO-2022-JP?B?Ig==?= <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 0/2] workqueue: fix a bug when numa mapping is changed v4
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216145856.GA23358@kahuna>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is v4. Thank you for hints/commentes to previous versions.
+On Tue, Dec 16, 2014 at 08:58:56AM -0600, Nishanth Menon wrote:
+> On 17:05-20141216, Lokesh Vutla wrote:
+> [...]
+> >  
+> > @@ -545,6 +546,16 @@ static void __init realtime_counter_init(void)
+> >  		break;
+> >  	}
+> >  
+> > +	if (soc_is_dra7xx()) {
+> > +		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
+> > +		reg = reg & DRA7_SPEEDSELECT_MASK;
+> > +
+> > +		if (reg) {
+> > +			num = 75;
+> > +			den = 244;
+> > +		}
+> > +	}
+> > +
+> >  	/* Program numerator and denumerator registers */
+> >  	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
+> >  			NUMERATOR_DENUMERATOR_MASK;
+> 
+> A) So, it does look like the 32k node is actually wrong then -> Tero:
+> any comments? should'nt this now be modeled based on
+> CTRL_CORE_BOOTSTRAP::SPEEDSELECT considering that clock nodes do have
+> clk mux options based on the 32k..
+> sys_32k_ck: sys_32k_ck {
+> 	#clock-cells = <0>;
+> 	compatible = "fixed-clock";
+> 	clock-frequency = <32768>;
+> };
 
-I think this versions only contains necessary things and not invasive.
-Tested several patterns of node hotplug and seems to work well.
+Hmm, I hadn't considered other things that might care.  Certainly if
+you were to use a SYSCLK1 other than 20MHz, it certainly won't be 32KHz
+anymore.
 
-Changes since v3
- - removed changes against get_unbound_pool()
- - remvoed codes in cpu offline event.
- - added node unregister callback.
-   clear wq_numa_possible_mask at node offline rather than cpu offline.
- - updates per-cpu pool's pool-> node at node_(un)register.
- - added more comments.
- - almost all codes are under CONFIG_MEMORY_HOTPLUG
+> B) Since rate switch is no longer needed, how about something like the
+> following:
+> diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
+> index a3c0133..315d6d1 100644
+> --- a/arch/arm/mach-omap2/control.h
+> +++ b/arch/arm/mach-omap2/control.h
+> @@ -286,6 +286,11 @@
+>  #define OMAP5XXX_CONTROL_STATUS                0x134
+>  #define OMAP5_DEVICETYPE_MASK          (0x7 << 6)
+>  
+> +
+> +/* DRA7XX CONTROL CORE BOOTSTRAP */
+> +#define DRA7_CTRL_CORE_BOOTSTRAP	0x6c4
+> +#define DRA7_SPEEDSELECT_MASK		(0x3 << 8)
+> +
+>  /*
+>   * REVISIT: This list of registers is not comprehensive - there are more
+>   * that should be added.
 
- include/linux/memory_hotplug.h |    3 +
- kernel/workqueue.c             |   81 ++++++++++++++++++++++++++++++++++++++++-
- mm/memory_hotplug.c            |    6 ++-
- 3 files changed, 88 insertions(+), 2 deletions(-)
+I like that as a place for those.
 
-Original problem was a memory allocation failure because pool->node
-points to not-online node. This happens when cpu<->node mapping changes.
+> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+> index 4f61148..783d3c3 100644
+> --- a/arch/arm/mach-omap2/timer.c
+> +++ b/arch/arm/mach-omap2/timer.c
+> @@ -54,6 +54,7 @@
+>  
+>  #include "soc.h"
+>  #include "common.h"
+> +#include "control.h"
+>  #include "powerdomain.h"
+>  #include "omap-secure.h"
+>  
 
-Yasuaki Ishimatsu hit a allocation failure bug when the numa mapping
-between CPU and node is changed. This was the last scene:
- SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
-  cache: kmalloc-192, object size: 192, buffer size: 192, default order: 1, min order: 0
-  node 0: slabs: 6172, objs: 259224, free: 245741
-  node 1: slabs: 3261, objs: 136962, free: 127656
+How about this version for the rest of the file.  It handles that for
+the errata case we would like to do rate * num / den, which given how
+small the num is will fit in 32bit and gives the best accuracy for the
+calculation, while the non errata case the existing calculation works
+well and fits in 32 bit for all other cases.  It just has to be moved
+up so that the goto can skip it.  I changed sysclk to sysclk1 since on
+the dra7xx there is in fact a sysclk1 and a sysclk2 and it is probably
+worth keeping it clear which one this is referring to.
 
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index fb0cb2b..be254bf 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -511,6 +511,36 @@ static void __init realtime_counter_init(void)
+ 	}
+ 
+ 	rate = clk_get_rate(sys_clk);
++
++	if (soc_is_dra7xx()) {
++		/*
++		 * Errata i856 says the 32.768KHz crystal does not start at
++		 * power on, so the CPU falls back to an emulated 32KHz clock
++		 * based on sysclk1 / 610 instead. This causes the master counter
++		 * frequency to not be 6.144MHz but at sysclk1 / 610 * 375 / 2
++		 * (OR sysclk1 * 75 / 244)
++		 *
++		 * This affects at least the DRA7/AM572x 1.0, 1.1 revisions.
++		 * Of course any board built without a populated 32.768KHz
++	         * crystal would also need this fix even if the CPU is fixed
++		 * later.
++		 *
++		 * Either case can be detected by using the two speedselect bits
++		 * If they are not 0, then the 32.768KHz clock driving the
++		 * coarse counter that corrects the fine counter every time it
++		 * ticks is actually rate/610 rather than 32.768KHz and we
++		 * should compensate to avoid the 570ppm (at 20MHz, much worse
++		 * at other rates) too fast system time.
++		 */
++		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
++		if (reg & DRA7_SPEEDSELECT_MASK) {
++			num = 75;
++			den = 244;
++			arch_timer_freq = (rate * num) / den;
++			goto sysclk1_based;
++		}
++	}
++
+ 	/* Numerator/denumerator values refer TRM Realtime Counter section */
+ 	switch (rate) {
+ 	case 12000000:
+@@ -544,7 +574,9 @@ static void __init realtime_counter_init(void)
+ 		den = 25;
+ 		break;
+ 	}
++	arch_timer_freq = (rate / den) * num;
+ 
++sysclk1_based:
+ 	/* Program numerator and denumerator registers */
+ 	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
+ 			NUMERATOR_DENUMERATOR_MASK;
+@@ -556,7 +588,6 @@ static void __init realtime_counter_init(void)
+ 	reg |= den;
+ 	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+ 
+-	arch_timer_freq = (rate / den) * num;
+ 	set_cntfreq();
+ 
+ 	iounmap(base);
 
+-- 
+Len Sorensen
