@@ -1,105 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751940AbaLPWHO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:07:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35687 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751573AbaLPWHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:07:12 -0500
-Message-ID: <5490AD09.3000807@suse.de>
-Date: Tue, 16 Dec 2014 23:07:05 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751704AbaLPWKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:10:31 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48121 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLPWK2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 17:10:28 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, rjw@rjwysocki.net,
+        len.brown@intel.com, ulf.hansson@linaro.org, tomasz.figa@gmail.com,
+        kgene.kim@samsung.com, s.nawrocki@samsung.com, thomas.ab@samsung.com,
+        pankaj.dubey@samsung.com, geert+renesas@glider.be,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore to use restore types
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+	<54901341.20106@samsung.com>
+Date: Tue, 16 Dec 2014 14:10:25 -0800
+In-Reply-To: <54901341.20106@samsung.com> (Marek Szyprowski's message of "Tue,
+	16 Dec 2014 12:10:57 +0100")
+Message-ID: <7h61dbdz5a.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
-CC: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>,
-        Scott Wood <scottwood@freescale.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH 26/35] [PATCH 26/36] powerpc: Replace __get_cpu_var uses
-References: <20140817173023.439660246@linux.com> <20140817173036.985604442@linux.com> <20140826181444.GJ31659@mtj.dyndns.org>
-In-Reply-To: <20140826181444.GJ31659@mtj.dyndns.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.08.14 20:14, Tejun Heo wrote:
-> On Sun, Aug 17, 2014 at 12:30:49PM -0500, Christoph Lameter wrote:
->> __get_cpu_var() is used for multiple purposes in the kernel source. One of
->> them is address calculation via the form &__get_cpu_var(x).  This calculates
->> the address for the instance of the percpu variable of the current processor
->> based on an offset.
+Marek Szyprowski <m.szyprowski@samsung.com> writes:
+
+> Hello,
+>
+> On 2014-12-13 17:51, Amit Daniel Kachhap wrote:
+>> Instead of using bool to restore suspended devices initially, use flags
+>> like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
+>> The first two flags will be similar to the existing true/false functionality.
+>> The third flag may be used to force restore of suspended devices
+>> whenever their associated power domain is turned on.
 >>
->> Other use cases are for storing and retrieving data from the current
->> processors percpu area.  __get_cpu_var() can be used as an lvalue when
->> writing data or on the right side of an assignment.
-> ...
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> CC: Paul Mackerras <paulus@samba.org>
->> Signed-off-by: Christoph Lameter <cl@linux.com>
-> 
-> (Please disregard the ones I posted for v1 of the patch series)
-> 
-> Applied to percpu/for-3.18-consistent-ops with the fix up patch rolled
-> in.  Please let me know if this patch should be routed differently.
-> Note that this patch was to be applied to percpu/for-3.17 but delayed
-> due to build issues caused by cpumask_var_t.
+>> Currently, PD power off function powers off all the associated unused
+>> devices. The functionality added in this patch is similar to it.
+>>
+>> This feature may be used for those devices which are always in ON state
+>> if the PD associated with them is ON but may need local runtime resume
+>> and suspend during PD On/Off. These devices (like clock) may not implement
+>> complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
+>> subsystems interaction behaviour or any other reason.
+>>
+>> The model works like,
+>>      DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
+>>      /	pm_runtime_put. Its local runtime_suspend/resume is invoked via
+>>     /	GPD_DEV_RESTORE_FORCE option)
+>>    /
+>> PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
+>>    \	pm_runtime_put. This in turn invokes PD On/Off)
+>>     \
+>>      DEV3 (Similar to DEV1)
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+> The idea of adding new gen_pd flag and reusing runtime pm calls intead
+> of additional notifiers looks promising, but I have some doubts. 
 
-Unfortunately this commit breaks e500v2 builds with KVM enabled:
+I agree, this is better than notifiers, but I have some doubts too.
 
-  arch/powerpc/kvm/e500.c: In function "local_sid_setup_one":
-  arch/powerpc/kvm/e500.c:81:29: error: macro "__this_cpu_write"
-requires 2 arguments, but only 1 given
-  arch/powerpc/kvm/e500.c:81:3: error: unknown type name "__this_cpu_write"
-  arch/powerpc/kvm/e500.c:81:47: error: expected "=", ",", ";", "asm" or
-"__attribute__" before ")" token
-  arch/powerpc/kvm/e500.c:82:8: error: request for member "val" in
-something not a structure or union
-  arch/powerpc/kvm/e500.c:83:8: error: request for member "pentry" in
-something not a structure or union
+> don't see any guarantee that devices with GPD_DEV_RESTORE_FORCE flag
+> will be suspended after all "normal" devices and restored before
+> them. Without such assumption it will be hard to use this approach for
+> iommu related activities, because device might need to use (in its
+> suspend/resume callbacks) the functionality provided by the other
+> device with GPD_DEV_RESTORE_FORCE flag. Maybe some additional flags
+> like suspend/resume priority (or more flags) will solve somehow this
+> dependency.
 
-Looking at the offending line of code I'm not surprised:
+At a deeper level, the problem with this approach is that this is more
+generically a runtime PM dependency problem, not a genpd problem.  For
+example, what happens when the same kind of dependency exists on a
+platform using a custom PM domain instead of genpd (like ACPI.) ?
 
--               __get_cpu_var(pcpu_sids).entry[sid] = entry;
-+               __this_cpu_write(pcpu_sids)entry[sid], entry);
+What's needed to solve this problem is a generalized way to have runtime
+PM dependencies between devices.  Runtime PM already automatically
+handles parent devices as one type of dependent device (e.g. a parent
+device needs to be runtime PM resumed before its child.)  So what's
+needed is a generic way to other PM dependencies with the runtime PM
+core (not the genpd core.)
 
-This doesn't quite look like valid C to me. The patch below fixes the
-build error for me. Please check whether it's correct and if so apply it
-directly to the tree.
+If runtime PM handles the dependencies corretcly, then genpd (and any
+other PM domain) will get them "for free".
 
-
-Alex
-
-
-From: Alexander Graf <agraf@suse.de>
-Date: Tue, 16 Dec 2014 23:04:01 +0100
-Subject: [PATCH] KVM: PPC: E500: Compile fix in this_cpu_write
-
-Commit 69111bac42f5 (powerpc: Replace __get_cpu_var uses) introduced compile
-breakage to the e500 target by introducing invalid automatically created C
-syntax.
-
-Fix up the breakage and make the code compile again.
-
-Signed-off-by: Alexander Graf <agraf@suse.de>
-
-diff --git a/arch/powerpc/kvm/e500.c b/arch/powerpc/kvm/e500.c
-index 1609584..e1cb588 100644
---- a/arch/powerpc/kvm/e500.c
-+++ b/arch/powerpc/kvm/e500.c
-@@ -78,7 +78,7 @@ static inline int local_sid_setup_one(struct id *entry)
-
- 	sid = __this_cpu_inc_return(pcpu_last_used_sid);
- 	if (sid < NUM_TIDS) {
--		__this_cpu_write(pcpu_sids)entry[sid], entry);
-+		__this_cpu_write(pcpu_sids.entry[sid], entry);
- 		entry->val = sid;
- 		entry->pentry = this_cpu_ptr(&pcpu_sids.entry[sid]);
- 		ret = sid;
+Kevin
