@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357AbaLPQOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:14:11 -0500
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:50534 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaLPQOJ (ORCPT
+	id S1751404AbaLPQOj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:14:39 -0500
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:65327 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLPQOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:14:09 -0500
-Message-ID: <54905A4E.6060205@hurleysoftware.com>
-Date: Tue, 16 Dec 2014 11:14:06 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 16 Dec 2014 11:14:37 -0500
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: NeilBrown <neilb@suse.de>, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] TTY: add support for "tty slave" devices.
-References: <20141211214801.4127.93914.stgit@notabene.brown>	<20141211215943.4127.24792.stgit@notabene.brown>	<548A264D.8070103@hurleysoftware.com>	<20141212162352.66be5b5e@notabene.brown>	<548AE778.90205@hurleysoftware.com> <20141213142344.61372b92@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141213142344.61372b92@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <548C5F1F.8070804@roeck-us.net>
+References: <1418395859-32209-1-git-send-email-matthias.bgg@gmail.com>
+	<1418395859-32209-3-git-send-email-matthias.bgg@gmail.com>
+	<548C5F1F.8070804@roeck-us.net>
+Date: Tue, 16 Dec 2014 17:14:35 +0100
+Message-ID: <CABuKBe+=PaJ2BuhoGGwn8V20207QU3zzWb4UGgXzwwF-AvBEPw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] ARM: mediatek: dts: Add bindings for watchdog
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: wim@iguana.be, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-watchdog@vger.kernel.org,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Yingjoe Chen <yingjoe.chen@gmail.com>,
+        Howard Chen <ibanezchen@gmail.com>, greta.zhang@mediatek.com,
+        huang eddie <eddie.huang@mediatek.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/13/2014 09:23 AM, One Thousand Gnomes wrote:
-> On Fri, 12 Dec 2014 08:02:48 -0500
->> Which brings up another point: why not do this in the runtime power management;
->> ie, turn on the slave device when the master device is turned on? Sebastian
->> recently made the 8250 driver power-managed per access, which would enable
->> significant power savings over just leaving the slave device on the whole time.
-> 
-> That per access model only works on 8250 (in fact only on some 8250). On
-> most devices if the UART is in low power you lose bytes send to it rather
-> than then queuing up anywhere.
-> 
-> It doesn't handle cases where you need to keep power on to different rules
-> (for example there are cases where you do things like power the uart down
-> after no bits have been received for 'n' millseconds). Right now if you
-> look into Androidspace you'll find people doing this in userspace by
-> having the sysfs node open and playing crazy games with sysfs, Android
-> glue hacks and gpio poking via the gpio sysfs/gpio lib routines.
-> 
-> Good example is some of the GPS and serial based sensor chips. The
-> latency of tty open/close is unacceptable and risks losing bits so they
-> keep the tty open and whack the power management by hand right now.
-> 
-> The kind of thing many of them want is stuff like
-> 
-> "hold power on until we see receive data, then keep it on until it shuts
-> up for a bit"
-> 
-> "assert gpio, send, receive, wait idle, drop gpio"
-> 
-> "on GPIO interrupt wake uart, wait for data, when idle, power uart down"
-> 
->>>> 2) why is this tied to the tty core and not the serial core
->>>>    if this is only for UART?
->>>
->>> Because the knowledge of "the device is being opened" or "the device is being
->>> closed" seems to exist in the tty core but not in the serial core.
+2014-12-13 16:45 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
+> On 12/12/2014 06:50 AM, Matthias Brugger wrote:
 >>
->> uart_open() = device file is being opened
->> uart_close() = device file is being released
-> 
-> Only for a subset of uart type devices that use the uart layer. Quite a
-> few don't, including all the USB ones, and the sd ones.
-> 
->>> I'm happy to move it to serial_core.c if that is preferred.
->>> I'll also move the open/close handling if you can point to where it should go.
+>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>> ---
+>>   Documentation/devicetree/bindings/watchdog/mtk-wdt.txt | 13
+>> +++++++++++++
+>>   1 file changed, 13 insertions(+)
+>>   create mode 100644
+>> Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
 >>
->> Yes, please.
-> 
-> NAK - I certainly object to it being moved to uart. That's the wrong
-> abstraction layer for this. It's a generic behaviour, it's a tty level
-> behaviour without any uart specific properties. It should work for uarts
-> that don't use the legacy serial_core code, uarts that do, uarts that use
-> USB, uarts that are directly connected to things like sdio etc.
-> 
-> That means it has to be tty layer.
+>> diff --git a/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
+>> b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
+>> new file mode 100644
+>> index 0000000..af9eb5b
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
+>> @@ -0,0 +1,13 @@
+>> +Mediatek SoCs Watchdog timer
+>> +
+>> +Required properties:
+>> +
+>> +- compatible : should be "mediatek,mt6589-wdt"
+>
+>
+> "mediatek" is undefined as vendor prefix in the current upstream code.
+> Is this vendor prefix coming in from another patch set ?
 
-I was reviewing the patch submitted, which does none of the things you
-outlined and does not provide the necessary infrastructure to build upon it.
+Strange, should be in vendor-prefix.txt [1].
+Please double check.
 
-I'm all for the functionality you describe but I think that design will end
-up subsystem-agnostic.
+Thanks,
+Matthias
 
-Regards,
-Peter Hurley
+[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/vendor-prefixes.txt?id=refs/tags/v3.18#n93
+
+>
+> Guenter
+>
+>
+>> +- reg : Specifies base physical address and size of the registers.
+>> +
+>> +Example:
+>> +
+>> +wdt: watchdog@010000000 {
+>> +       compatible = "mediatek,mt6589-wdt";
+>> +       reg = <0x10000000 0x18>;
+>> +};
+>>
+>
 
 
+
+-- 
+motzblog.wordpress.com
