@@ -1,80 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaLPDIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 22:08:39 -0500
-Received: from exprod6og107.obsmtp.com ([64.18.1.208]:50972 "EHLO
-	exprod6og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750950AbaLPDIi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 22:08:38 -0500
-From: Patrick Farrell <paf@cray.com>
-To: Joe Perches <joe@perches.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "Fabian Frederick" <fabf@skynet.be>,
-        Julia Lawall <Julia.Lawall@lip6.fr>,
-        "James Simmons" <uja.ornl@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Donald <gdonald@gmail.com>,
-        "HPDD-discuss@lists.01.org" <HPDD-discuss@ml01.01.org>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>
-Subject: RE: [HPDD-discuss] [PATCH] staging: lustre: lustre: obdclass:
- lprocfs_status.c: Fix for possible null pointer dereference
-Thread-Topic: [HPDD-discuss] [PATCH] staging: lustre: lustre: obdclass:
- lprocfs_status.c: Fix for possible null pointer dereference
-Thread-Index: AQHQGGuxhDultA0Mv0+StzfzdrS3mpyRnzmAgAAZGwD//9BJRw==
-Date: Tue, 16 Dec 2014 03:08:23 +0000
-Message-ID: <DB0C8A206669AC40B1C4E52A8584A6F61499F749@CFWEX01.americas.cray.com>
-References: <1418597547-25086-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <1418608297.2674.4.camel@perches.com>
- <CAFo99gaVUbsvwY7RKZ9D=c0jnVeFiBLAeNVb53UX=Ba4XytoKg@mail.gmail.com>,<1418687596.2674.25.camel@perches.com>
-In-Reply-To: <1418687596.2674.25.camel@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.234.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751021AbaLPDVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 22:21:20 -0500
+Received: from ozlabs.org ([103.22.144.67]:47726 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaLPDVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 22:21:19 -0500
+Date: Tue, 16 Dec 2014 14:21:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the userns tree with the vfs tree
+Message-ID: <20141216142109.4a67e8b0@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/B3bwB=h/qWtvDV32L.iN4yN"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strongly agreed that execution speed is not critical here.  It's the update of a proc variable, not a tight loop or critical section.
+--Sig_/B3bwB=h/qWtvDV32L.iN4yN
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Normally I'd leave it alone, but since you're writing a patch anyway, I'd do 'tolower' myself.  I dislike the stacked case statements on a single line like that.  (It's the only time I've seen them written that way.  Perhaps it's common and I've just missed it.)
+Hi Eric,
 
-Regards,
-- Patrick
-________________________________________
-From: HPDD-discuss [hpdd-discuss-bounces@lists.01.org] on behalf of Joe Perches [joe@perches.com]
-Sent: Monday, December 15, 2014 5:53 PM
-To: Rickard Strandqvist
-Cc: devel@driverdev.osuosl.org; Fabian Frederick; Julia Lawall; James Simmons; Greg Kroah-Hartman; linux-kernel@vger.kernel.org; Greg Donald; HPDD-discuss@lists.01.org; Andriy Skulysh
-Subject: Re: [HPDD-discuss] [PATCH] staging: lustre: lustre: obdclass: lprocfs_status.c: Fix for possible null pointer dereference
+Today's linux-next merge of the userns tree got a conflict in
+kernel/user_namespace.c between commits 3c0411846118 ("switch the rest
+of proc_ns_operations to working with &...->ns") and 64964528b24e
+("make proc_ns_operations work with struct ns_common * instead of void
+*") from the vfs tree and commits 273d2c67c3e1 ("userns: Don't allow
+setgroups until a gid mapping has been setablished") and 9cc46516ddf4
+("userns: Add a knob to disable setgroups on a per user namespace
+basis") from the userns tree.
 
-On Mon, 2014-12-15 at 23:23 +0100, Rickard Strandqvist wrote:
-> Hi Joe
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Hello Rickard
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> No, it does not look like end can be NULL then.
-> Then remove the end != NULL instead?
-> ...
->     if (end != NULL && *end == '.') {
+diff --cc kernel/user_namespace.c
+index 1491ad00388f,ad419b04c146..000000000000
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@@ -842,12 -849,101 +850,106 @@@ static bool new_idmap_permitted(const s
+  	return false;
+  }
+ =20
+ +static inline struct user_namespace *to_user_ns(struct ns_common *ns)
+ +{
+ +	return container_of(ns, struct user_namespace, ns);
+ +}
+ +
++ int proc_setgroups_show(struct seq_file *seq, void *v)
++ {
++ 	struct user_namespace *ns =3D seq->private;
++ 	unsigned long userns_flags =3D ACCESS_ONCE(ns->flags);
++=20
++ 	seq_printf(seq, "%s\n",
++ 		   (userns_flags & USERNS_SETGROUPS_ALLOWED) ?
++ 		   "allow" : "deny");
++ 	return 0;
++ }
++=20
++ ssize_t proc_setgroups_write(struct file *file, const char __user *buf,
++ 			     size_t count, loff_t *ppos)
++ {
++ 	struct seq_file *seq =3D file->private_data;
++ 	struct user_namespace *ns =3D seq->private;
++ 	char kbuf[8], *pos;
++ 	bool setgroups_allowed;
++ 	ssize_t ret;
++=20
++ 	/* Only allow a very narrow range of strings to be written */
++ 	ret =3D -EINVAL;
++ 	if ((*ppos !=3D 0) || (count >=3D sizeof(kbuf)))
++ 		goto out;
++=20
++ 	/* What was written? */
++ 	ret =3D -EFAULT;
++ 	if (copy_from_user(kbuf, buf, count))
++ 		goto out;
++ 	kbuf[count] =3D '\0';
++ 	pos =3D kbuf;
++=20
++ 	/* What is being requested? */
++ 	ret =3D -EINVAL;
++ 	if (strncmp(pos, "allow", 5) =3D=3D 0) {
++ 		pos +=3D 5;
++ 		setgroups_allowed =3D true;
++ 	}
++ 	else if (strncmp(pos, "deny", 4) =3D=3D 0) {
++ 		pos +=3D 4;
++ 		setgroups_allowed =3D false;
++ 	}
++ 	else
++ 		goto out;
++=20
++ 	/* Verify there is not trailing junk on the line */
++ 	pos =3D skip_spaces(pos);
++ 	if (*pos !=3D '\0')
++ 		goto out;
++=20
++ 	ret =3D -EPERM;
++ 	mutex_lock(&userns_state_mutex);
++ 	if (setgroups_allowed) {
++ 		/* Enabling setgroups after setgroups has been disabled
++ 		 * is not allowed.
++ 		 */
++ 		if (!(ns->flags & USERNS_SETGROUPS_ALLOWED))
++ 			goto out_unlock;
++ 	} else {
++ 		/* Permanently disabling setgroups after setgroups has
++ 		 * been enabled by writing the gid_map is not allowed.
++ 		 */
++ 		if (ns->gid_map.nr_extents !=3D 0)
++ 			goto out_unlock;
++ 		ns->flags &=3D ~USERNS_SETGROUPS_ALLOWED;
++ 	}
++ 	mutex_unlock(&userns_state_mutex);
++=20
++ 	/* Report a successful write */
++ 	*ppos =3D count;
++ 	ret =3D count;
++ out:
++ 	return ret;
++ out_unlock:
++ 	mutex_unlock(&userns_state_mutex);
++ 	goto out;
++ }
++=20
++ bool userns_may_setgroups(const struct user_namespace *ns)
++ {
++ 	bool allowed;
++=20
++ 	mutex_lock(&userns_state_mutex);
++ 	/* It is not safe to use setgroups until a gid mapping in
++ 	 * the user namespace has been established.
++ 	 */
++ 	allowed =3D ns->gid_map.nr_extents !=3D 0;
++ 	/* Is setgroups allowed? */
++ 	allowed =3D allowed && (ns->flags & USERNS_SETGROUPS_ALLOWED);
++ 	mutex_unlock(&userns_state_mutex);
++=20
++ 	return allowed;
++ }
++=20
+ -static void *userns_get(struct task_struct *task)
+ +static struct ns_common *userns_get(struct task_struct *task)
+  {
+  	struct user_namespace *user_ns;
+ =20
 
-Up to you.
+--Sig_/B3bwB=h/qWtvDV32L.iN4yN
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
-> However, I am hesitant to the tolower()  I think double case is faster...?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-I doubt code execution speed is paramount here.
-Maybe see if the object code size is smaller one
-way or the other.
+iQIcBAEBCAAGBQJUj6UqAAoJEMDTa8Ir7ZwVFPcP/jAutCuijWEp7LaQG0SjVO5R
+Qw0ZG6QUIRdeoJlr53MXbPFHFRbmrFoBkhh7CDkOFby5BLnLtNNhC3wjCW24X8lK
+ObkPu8/24BKvcfnqYYgOadHTHvAO+CRhYDGquRlZfxvd01rG9N+cEETbkmVH/2Mc
+86kWVV4crLIYAQemWuTENUOB9N/yyR7TIQJ8TSZH/jbceAUuVOCY4B2L8NmHhA3d
+gQAh5nr/rovycZYX8qDv0pidlS8FEzxzMkGJ1l30nVjH6pCe38ScXhXXftIsdgTU
+m1Y/JJNsazhIPVzObzADj7VQdzjU9duDoGcDgKpUF72iHXC7Vueh8pgsdqnadKGo
+aBeypOBfg5Ubh9y6824d30iSf2LleI70hjQ+/P3Hw6q+B2ctPj90oaWhaEMMeo8s
+p7IFnHQ3tO2ub7MaqDuLEC3RYXi4rcAD39v9lrLig69nLUMan9Sfsk6t95O+cLWE
+LXaYEZ0chqy6gXcEGmNO6vK6WYkZCS8yjuvVwqiw7aeHv6+CPuhSE2WVV8lrpAng
+GGtkwNv73YMIIezHI18t6jxb92uMWdg6QnRqed+VkHdY0f80vjnNufgnWJKuXbKg
+9usy28oK8GreHIymvym0Vherfo1DYd2rIhZnfhOit2aBvjvj6ivnEPxFduBktJsI
+Py+QKpbbswLqdY/jUT7K
+=sxbs
+-----END PGP SIGNATURE-----
 
-
-_______________________________________________
-HPDD-discuss mailing list
-HPDD-discuss@lists.01.org
-https://lists.01.org/mailman/listinfo/hpdd-discuss
+--Sig_/B3bwB=h/qWtvDV32L.iN4yN--
