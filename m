@@ -1,284 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaLPVVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:21:41 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51788 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaLPVVk (ORCPT
+	id S1751218AbaLPVWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:22:30 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:53207 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaLPVW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:21:40 -0500
-Date: Tue, 16 Dec 2014 22:21:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-In-Reply-To: <alpine.DEB.2.11.1412161533210.17382@nanos>
-Message-ID: <alpine.DEB.2.11.1412161802570.17382@nanos>
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com> <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com> <548FFD20.1040102@linux.vnet.ibm.com> <alpine.DEB.2.11.1412161105470.17382@nanos> <20141216142029.GA27375@lerouge> <alpine.DEB.2.11.1412161533210.17382@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 16 Dec 2014 16:22:29 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL 3/3] ARM: SoC/iommu configuration for 3.19
+Date: Tue, 16 Dec 2014 22:22:25 +0100
+Message-ID: <5437011.lU1AJxKYA5@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5499732.TPqbyGxy2W@wuerfel>
+References: <5499732.TPqbyGxy2W@wuerfel>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:mpyiifQm0FTy7JmGjmAKv2zUr9LNA7jSpxzuXNS3G6G39ptD4mx
+ zhCUIXJBjG7RAp2lwU9y5Qgd1UJmiYoUZtvfE7meFnC9wgEmfpxiNME/SSMudLEQY5iTEoZ
+ MWYRlXwlwG7tU3AgbJ77eWa6AV7FVser8oOPv2VRwKXWxDlI1IA5bWkFXj955WMY4vlusN0
+ UdwZeaaVo7Ei/eoI4S05w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Dec 2014, Thomas Gleixner wrote:
-> On Tue, 16 Dec 2014, Frederic Weisbecker wrote:
-> So like we do in tick_nohz_idle_enter() and tick_nohz_idle_exit() we
-> have a clear state change in the nohz code and not something which is
-> randomly deduced from async state all over the place.
-> 
-> So that only tells the NOHZ core that the rest of the system decided
-> that the cpu can actually go into full nohz mode. Whether the tick
-> code disables the tick or not is decided by the tick code.
-> 
-> It's not different from idle.
+The following changes since commit 5d01410fe4d92081f349b013a2e7a95429e4f2c9:
 
-That made me look deeper into it. So we have a full zoo of functions
-related to this nohz full stuff
+  Linux 3.18-rc6 (2014-11-23 15:25:20 -0800)
 
-extern void __tick_nohz_full_check(void);
-extern void tick_nohz_full_kick(void);
-extern void tick_nohz_full_kick_cpu(int cpu);
-extern void tick_nohz_full_kick_all(void);
-extern void __tick_nohz_task_switch(struct task_struct *tsk);
+are available in the git repository at:
 
-Plus a few inline functions
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/iommu-config-for-linus
 
-static inline bool tick_nohz_full_enabled(void)
-{
-	if (!context_tracking_is_enabled())
-		return false;
+for you to fetch changes up to fd522d279235b8bcafc39c1040895fe2d938d1e7:
 
-	return tick_nohz_full_running;
-}
+  Merge tag 'of-iommu-configure' of git://git.kernel.org/pub/scm/linux/kernel/git/will/linux into next/iommu-config (2014-12-05 17:45:38 +0100)
 
-static inline void tick_nohz_full_check(void)
-{
-	if (tick_nohz_full_enabled())
-		__tick_nohz_full_check();
-}
+----------------------------------------------------------------
+ARM: SoC/iommu configuration for 3.19
 
-static inline void tick_nohz_task_switch(struct task_struct *tsk)
-{
-	if (tick_nohz_full_enabled())
-		__tick_nohz_task_switch(tsk);
-}
+The iomm-config branch contains work from Will Deacon, quoting his description:
 
-context_tracking_is_enabled() is actually the static key you talked
-about, right? Very intuitive - NOT!
+    This series adds automatic IOMMU and DMA-mapping configuration for
+    OF-based DMA masters described using the generic IOMMU devicetree
+    bindings. Although there is plenty of future work around splitting up
+    iommu_ops, adding default IOMMU domains and sorting out automatic IOMMU
+    group creation for the platform_bus, this is already useful enough for
+    people to port over their IOMMU drivers and start using the new probing
+    infrastructure (indeed, Marek has patches queued for the Exynos IOMMU).
 
-Now lets look at the call site of tick_nohz_task_switch(). That's
-invoked at the end of finish_task_switch(). Looking at one of the
-worst case call chains here:
+The branch touches core ARM and IOMMU driver files, and the respective
+maintainers (Russell King and Joerg Roedel) agreed to have the contents
+merged through the arm-soc tree. The final version was ready just before
+the merge window, so we ended up delaying it a bit longer than the rest,
+but we don't expect to see regressions because this is just additional
+infrastructure that will get used in drivers starting in 3.20 but is
+unused so far.
 
-finish_task_switch()
-  tick_nohz_task_switch()
-    __tick_nohz_task_switch()
-        tick_nohz_tick_stopped()
-	can_stop_full_tick()
-	  sched_can_stop_tick()
-	  posix_cpu_timers_can_stop_tick()
-	  perf_event_can_stop_tick()
-	tick_nohz_full_kick()
-	  tick_nohz_full_kick()
-	    irq_work_queue()
-	      arch_irq_work_raise()
+---
 
-And then you take the self ipi and do:
+Please note the non-obvious conflict resolution, Stephen got it
+right in linux-next: https://lkml.org/lkml/2014/12/8/83
 
-    irq_work_run()
-	can_stop_full_tick()
-	  sched_can_stop_tick()
-	  posix_cpu_timers_can_stop_tick()
-	  perf_event_can_stop_tick()
-	tick_nohz_restart_sched_tick();
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      Merge tag 'of-iommu-configure' of git://git.kernel.org/.../will/linux into next/iommu-config
 
-and right after that:
+Marek Szyprowski (1):
+      iommu: fix initialization without 'add_device' callback
 
-    irq_exit()
-      tick_nohz_full_stop_tick()
-	can_stop_full_tick()
-	  sched_can_stop_tick()
-	  posix_cpu_timers_can_stop_tick()
-	  perf_event_can_stop_tick()
+Robin Murphy (1):
+      iommu: store DT-probed IOMMU data privately
 
-What a trainwreck in the scheduler hotpath!
+Will Deacon (7):
+      iommu: provide early initialisation hook for IOMMU drivers
+      dma-mapping: replace set_arch_dma_coherent_ops with arch_setup_dma_ops
+      iommu: add new iommu_ops callback for adding an OF device
+      iommu: provide helper function to configure an IOMMU for an of master
+      dma-mapping: detect and configure IOMMU in of_dma_configure
+      arm: call iommu_init before of_platform_populate
+      arm: dma-mapping: plumb our iommu mapping ops into arch_setup_dma_ops
 
-So you have three states which can change the nohzfull state:
+ arch/arm/include/asm/dma-mapping.h | 12 ++---
+ arch/arm/kernel/setup.c            |  2 +
+ arch/arm/mm/dma-mapping.c          | 83 ++++++++++++++++++++++++++++++++---
+ drivers/iommu/Kconfig              |  2 +-
+ drivers/iommu/iommu.c              |  2 +-
+ drivers/iommu/of_iommu.c           | 89 ++++++++++++++++++++++++++++++++++++++
+ drivers/of/platform.c              | 50 +++++++++++----------
+ include/asm-generic/vmlinux.lds.h  |  2 +
+ include/linux/dma-mapping.h        | 13 +++---
+ include/linux/iommu.h              |  8 ++++
+ include/linux/of_iommu.h           | 23 ++++++++++
+ 11 files changed, 242 insertions(+), 44 deletions(-)
 
- 1)  rq->nr_running > 1
- 2)  current->uses_posix_timer
- 3)  perf needing the tick
-
-So instead of evaluating the whole nonsense a gazillion times in a row
-and firing pointless self ipis why are you not looking at the obvious
-solution of sane state change tracking?
-
-DEFINE_PER_CPU(nohz_full_must_tick, unsigned long);
-
-enum {
-     NOHZ_SCHED_NEEDS_TICK,
-     NOHZ_POSIXTIMER_NEEDS_TICK,
-     NOHZ_PERF_NEEEDS_TICK,
-};
-
-/* rq->lock is held for evaluating rq->nr_running */
-static void sched_ttwu_nohz(struct rq *rq)
-{
-	if (nohz_full_disabled())
-		return;
-
-	if (rq->nr_running != 2)
-		return;
-	set_bit(NOHZ_SCHED_NEEDS_TICK, this_cpu_ptr(nohz_full_must_tick);
-}
-
-/* rq->lock is held for evaluating rq->nr_running */
-static void sched_ttwu_remote_nohz(struct rq *rq)
-{
-	if (nohz_full_disabled())
-		return;
-
-	if (rq->nr_running != 2)
-	   	return;
-	/*
-	 * Force smp_send_reschedule(). irq_exit() on the
-	 * remote cpu will handle the rest.
-	 */
-	set_bit(NOHZ_SCHED_NEEDS_TICK, per_cpu_ptr(nohz_full_must_tick, rq->cpu);
-	rq->force_send_resched = true;
-}
-
-/* rq->lock is held for evaluating rq->nr_running */
-static void sched_out_nohz(struct rq *rq)
-{
-	if (nohz_full_disabled())
-		return;
-
-	if (rq->nr_running >= 2)
-	   	return;
-	clear_bit(NOHZ_SCHED_NEEDS_TICK, this_cpu_ptr(nohz_full_must_tick);
-}
-
-/* preeemption is disabled */
-static void sched_in_nohz(struct task_struct *task)
-{
-	if (nohz_full_disabled())
-		return;
-
-	if (!task_uses_posix_timers(task))
-		clear_bit(NOHZ_POSIXTIMER_NEEDS_TICK,
-			  this_cpu_ptr(nohz_full_must_tick));
-	else
-		set_bit(NOHZ_POSIXTIMER_NEEDS_TICK,
-			this_cpu_ptr(nohz_full_must_tick));
-
-	local_irq_disable();
-	tick_full_nohz_update_state();
-	local_irq_enable();
-}
-
-/* interrupts are disabled */
-void tick_full_nohz_update_state(void)
-{
-        struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
-
-	if (this_cpu_read(nohz_full_must_tick)) {
-	   	if (ts->infullnohz)
-			tick_full_nohz_exit();
-	} else {
-	        if (!ts->infullnohz)
-			tick_full_nohz_enter();
-	   	else
-			__tick_full_nohz_enter();
-	}
-}
-
-So the irq_exit() path becomes:
-
-/* interrupts are disabled */
-void tick_nohz_irq_exit(void)
-{
-        struct tick_sched *ts = this_cpu_ptr(&tick_cpu_sched);
-
-        if (ts->inidle) {
-                __tick_nohz_idle_enter();
-		return;
-	}
-	if (nohz_full_disabled())
-		return;
-	tick_nohz_update_state();
-}
-
-No self IPI, no irq work, no triple evaluation of the same condition
-chain and proper state tracking of infullnohz inside of the tick code.
-
-Precicely TWO points where the NOHZ internal state gets updated:
-
-   switch_to() and irq_exit()	  	  
-
-No conflict between infullnohz and inidle because it's all internal to
-the NOHZ code.
-
-Simple, isn't it?
-
-Now for perf and posix cpu timers I'm sure you'll find equally simple
-solutions which do not add extra update points. switch_to() and
-irq_exit() are enough. It's really not rocket science.
-
-While at it let me rant about some other things.
-
- 1) Remote accounting
- 
-    I really cannot understand why all of you NOHZ enthusiasts just
-    avoid to make that work in the first place as it reduces the
-    problem space significantly.
-
-    Instead of that you folks come up with broken patches for
-    debugfs/sysfs/sysctl/... to forcefully disable the tick. Sure it's
-    harder to implement remote accounting proper than hacking up some
-    random disable mechanism, but the latter is just utter waste of
-    time and resources.
-
-    I told all of you from the very beginning that remote accounting
-    is a key mechanism for this, but you keep insisting on hacking
-    around it.
-
-    If done right, then the whole kick ALL cpus nonsense in posix cpu
-    timers can just go away. You can do the complete posix cpu timer
-    thing from the housekeeper cpu(s) once you have remote accounting
-    implemented.
-
- 2) Perf
-
-    I doubt that the tick_nohz_full_kick() in __perf_event_overflow()
-    is actually necessary when you implement the above scheme.
-
-    The nr_freq_events kick ALL cpus is horrible as well. This really
-    wants to be restricted on the target cpus and not wholesale global
-    just because it is conveniant.
-
-Managerial summary:
-
- 1) Stop fiddling on symptoms. Tackle the root causes
-
- 2) Stop creating overengineered monstrosities which just create more
-    race conditions and corner cases than actual functionality
-
- 3) Fix that ASAP before I slap BROKEN on it or get annoyed enough to
-    rip it out completely.
-
-Thanks,
-
-	tglx
