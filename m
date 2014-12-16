@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaLPQOj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:14:39 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:65327 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118AbaLPQOh (ORCPT
+	id S1751432AbaLPQQS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:16:18 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:56213 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaLPQQQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:14:37 -0500
+	Tue, 16 Dec 2014 11:16:16 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Tue, 16 Dec 2014 11:16:14 -0500
+To: Lokesh Vutla <lokeshvutla@ti.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, "Kristo, Tero" <t-kristo@ti.com>,
+        Nishanth Menon <nm@ti.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+Message-ID: <20141216161614.GK24110@csclub.uwaterloo.ca>
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <20141214044517.GD24110@csclub.uwaterloo.ca>
+ <549018EC.8020207@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <548C5F1F.8070804@roeck-us.net>
-References: <1418395859-32209-1-git-send-email-matthias.bgg@gmail.com>
-	<1418395859-32209-3-git-send-email-matthias.bgg@gmail.com>
-	<548C5F1F.8070804@roeck-us.net>
-Date: Tue, 16 Dec 2014 17:14:35 +0100
-Message-ID: <CABuKBe+=PaJ2BuhoGGwn8V20207QU3zzWb4UGgXzwwF-AvBEPw@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] ARM: mediatek: dts: Add bindings for watchdog
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: wim@iguana.be, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Howard Chen <ibanezchen@gmail.com>, greta.zhang@mediatek.com,
-        huang eddie <eddie.huang@mediatek.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <549018EC.8020207@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-13 16:45 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> On 12/12/2014 06:50 AM, Matthias Brugger wrote:
->>
->> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
->> ---
->>   Documentation/devicetree/bindings/watchdog/mtk-wdt.txt | 13
->> +++++++++++++
->>   1 file changed, 13 insertions(+)
->>   create mode 100644
->> Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
->>
->> diff --git a/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
->> b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
->> new file mode 100644
->> index 0000000..af9eb5b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
->> @@ -0,0 +1,13 @@
->> +Mediatek SoCs Watchdog timer
->> +
->> +Required properties:
->> +
->> +- compatible : should be "mediatek,mt6589-wdt"
->
->
-> "mediatek" is undefined as vendor prefix in the current upstream code.
-> Is this vendor prefix coming in from another patch set ?
+On Tue, Dec 16, 2014 at 05:05:08PM +0530, Lokesh Vutla wrote:
+> Is this applicable for OMAP5 also?
+> If not can you drop omap5 from $subject?
 
-Strange, should be in vendor-prefix.txt [1].
-Please double check.
+DRA7xx = OMAP57xx, which to me is an omap5.  Isn't it?
 
-Thanks,
-Matthias
+And I haven't been able to get a manual for the omap54xx to confirm it,
+although it seems it does not apply to the omap54xx from what I have
+been able to gather indirectly.
 
-[1] https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/devicetree/bindings/vendor-prefixes.txt?id=refs/tags/v3.18#n93
+arch_timer_freq = (rate / den) * num;
 
->
-> Guenter
->
->
->> +- reg : Specifies base physical address and size of the registers.
->> +
->> +Example:
->> +
->> +wdt: watchdog@010000000 {
->> +       compatible = "mediatek,mt6589-wdt";
->> +       reg = <0x10000000 0x18>;
->> +};
->>
->
+If I do this with the workaround I get:
 
+20000000 / 75 * 244 = 6147525
 
+where as
+
+20000000 * 244 / 75 = 6147540
+
+best value would be 6147541 with proper rounding.
+
+In the normal case the worst case is:
+
+26000000 * 384 = 9984000000
+
+That is too big for 32 bits.
+
+Now what could be done is prescale by 4 to make the worst case still
+fit in 32 bits while doing the multiplication before the division,
+so like this:
+
+arch_timer_freq = ((rate / 4) * num / den ) * 4;
+
+That gives the same result in all cases including the errata case for
+the dra7xx at 20MHz and 27MHz.  It is off by 3 in the 19.2MHz case though
+which isn't so nice.
+
+Would that be more acceptable?  I think having the arch_timer_freq
+calculated for the errata case seperately from the normal case is
+cleaner looking compared to that mess and gives a better result for the
+19.2MHz case.
 
 -- 
-motzblog.wordpress.com
+Len Sorensen
