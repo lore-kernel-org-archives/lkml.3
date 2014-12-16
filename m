@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546AbaLPSNE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 13:13:04 -0500
-Received: from mga03.intel.com ([134.134.136.65]:37694 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030AbaLPSNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 13:13:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,588,1413270000"; 
-   d="scan'208";a="624722449"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>, Linux PM <linux-pm@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 1/2] powercap/rapl: add ids for future xeon cpus
-Date: Tue, 16 Dec 2014 09:52:47 -0800
-Message-Id: <1418752367-8291-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
+	id S1751628AbaLPSOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 13:14:21 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:61083 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172AbaLPSOT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 13:14:19 -0500
+Message-ID: <54907676.4050108@cogentembedded.com>
+Date: Tue, 16 Dec 2014 21:14:14 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Octavian Purdila <octavian.purdila@intel.com>, linus.walleij@linaro.org,
+        lee.jones@linaro.org, rjw@rjwysocki.net
+CC: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, heikki.krogerus@intel.com,
+        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 1/4] ACPICA: take ACPI_MTX_INTERPRETER in acpi_unload_table_id
+References: <1418746353-3481-1-git-send-email-octavian.purdila@intel.com> <1418746353-3481-2-git-send-email-octavian.purdila@intel.com>
+In-Reply-To: <1418746353-3481-2-git-send-email-octavian.purdila@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable RAPL driver on Xeon cpu id 0x56.
+Hello.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/powercap/intel_rapl.c | 1 +
- 1 file changed, 1 insertion(+)
+On 12/16/2014 07:12 PM, Octavian Purdila wrote:
 
-diff --git a/drivers/powercap/intel_rapl.c b/drivers/powercap/intel_rapl.c
-index c71443c..97b5e4e 100644
---- a/drivers/powercap/intel_rapl.c
-+++ b/drivers/powercap/intel_rapl.c
-@@ -1041,6 +1041,7 @@ static const struct x86_cpu_id rapl_ids[] = {
- 	RAPL_CPU(0x45, rapl_defaults_core),/* Haswell ULT */
- 	RAPL_CPU(0x4C, rapl_defaults_atom),/* Braswell */
- 	RAPL_CPU(0x4A, rapl_defaults_atom),/* Tangier */
-+	RAPL_CPU(0x56, rapl_defaults_core),/* Future Xeon */
- 	RAPL_CPU(0x5A, rapl_defaults_atom),/* Annidale */
- 	{}
- };
--- 
-1.9.1
+> acpi_tb_delete_namespace_by_owner expects ACPI_MTX_INTERPRETER to be
+> taken. This fixes the following issue:
+
+> ACPI Error: Mutex [0x0] is not acquired, cannot release (20141107/utmutex-322)
+> Call Trace:
+>    [<ffffffff81b0bd28>] dump_stack+0x4f/0x7b
+>    [<ffffffff81546bfc>] acpi_ut_release_mutex+0x47/0x67
+>    [<ffffffff81542cf1>] acpi_tb_delete_namespace_by_owner+0x57/0x8d
+>    [<ffffffff81543ef1>] acpi_unload_table_id+0x3a/0x5e
+
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> ---
+>   drivers/acpi/acpica/tbxface.c | 7 +++++++
+>   1 file changed, 7 insertions(+)
+
+> diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+> index 6482b0d..9520ae1 100644
+> --- a/drivers/acpi/acpica/tbxface.c
+> +++ b/drivers/acpi/acpica/tbxface.c
+> @@ -281,6 +281,11 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
+>
+>   	ACPI_FUNCTION_TRACE(acpi_unload_table_id);
+>
+> +	status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
+> +	if (ACPI_FAILURE(status)) {
+> +		return_ACPI_STATUS(status);
+> +	}
+
+    {} not needed here. Please run your patches thru scripts/checkpatch.pl, it 
+should complain in this case.
+
+> +
+>   	/* Find table in the global table list */
+>   	for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
+>   		if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
+> @@ -297,6 +302,8 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
+>   		acpi_tb_set_table_loaded_flag(i, FALSE);
+>   		break;
+>   	}
+> +
+> +	(void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
+
+    Cast to *void*  not necessary either.
+
+[...]
+
+WBR, Sergei
 
