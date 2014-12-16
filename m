@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751780AbaLPWtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:49:47 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:44215 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714AbaLPWtq (ORCPT
+	id S1751211AbaLPWzL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:55:11 -0500
+Received: from www.linutronix.de ([62.245.132.108]:52061 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaLPWzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:49:46 -0500
-Date: Tue, 16 Dec 2014 14:49:42 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, pekon@pek-sem.com, linux-mtd@lists.infradead.org
-Subject: Re: [PATCH v4 11/11] mtd: nand: stm_nand_bch: provide ST's
- implementation of Bad Block Table
-Message-ID: <20141216224942.GH9759@ld-irv-0074>
-References: <1415206793-25670-1-git-send-email-lee.jones@linaro.org>
- <1415206793-25670-12-git-send-email-lee.jones@linaro.org>
+	Tue, 16 Dec 2014 17:55:09 -0500
+Date: Tue, 16 Dec 2014 23:54:51 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
+Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
+In-Reply-To: <20141216224903.GS3219@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.11.1412162350110.17382@nanos>
+References: <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com> <20141215234443.GA23297@lerouge> <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com>
+ <548FFD20.1040102@linux.vnet.ibm.com> <alpine.DEB.2.11.1412161105470.17382@nanos> <20141216142029.GA27375@lerouge> <alpine.DEB.2.11.1412161533210.17382@nanos> <alpine.DEB.2.11.1412161802570.17382@nanos>
+ <20141216224903.GS3219@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415206793-25670-12-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 05, 2014 at 04:59:53PM +0000, Lee Jones wrote:
-> This is the BBT format ST use internally.  It has to be used on boards
-> which were flashed with or actively use ST's tooling and boards which
-> are booted using ST's bootloaders.
+On Tue, 16 Dec 2014, Peter Zijlstra wrote:
+> On Tue, Dec 16, 2014 at 10:21:27PM +0100, Thomas Gleixner wrote:
+> > /* rq->lock is held for evaluating rq->nr_running */
+> > static void sched_ttwu_remote_nohz(struct rq *rq)
+> > {
+> > 	if (nohz_full_disabled())
+> > 		return;
+> > 
+> > 	if (rq->nr_running != 2)
+> > 	   	return;
+> > 	/*
+> > 	 * Force smp_send_reschedule(). irq_exit() on the
+> > 	 * remote cpu will handle the rest.
+> > 	 */
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mtd/nand/Kconfig        |   8 +
->  drivers/mtd/nand/Makefile       |   4 +-
->  drivers/mtd/nand/stm_nand_bbt.c | 619 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 630 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/mtd/nand/stm_nand_bbt.c
+> smp_send_reschedule() is magic and does not guarantee irq_{enter,exit}()
+> being called, although we could audit and fix that.
+
+I know. I did not want to do all the work for the nohz
+folks. Otherwise I would have simply sent a patch. :)
+ 
+> > 	if (!task_uses_posix_timers(task))
+> > 		clear_bit(NOHZ_POSIXTIMER_NEEDS_TICK,
+> > 			  this_cpu_ptr(nohz_full_must_tick));
+> > 	else
+> > 		set_bit(NOHZ_POSIXTIMER_NEEDS_TICK,
+> > 			this_cpu_ptr(nohz_full_must_tick));
+> > 
 > 
-> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> index 2738eec..040374d 100644
-> --- a/drivers/mtd/nand/Kconfig
-> +++ b/drivers/mtd/nand/Kconfig
-> @@ -520,4 +520,12 @@ config MTD_NAND_STM_BCH
->  	help
->  	  Adds support for the STMicroelectronics NANDi BCH Controller.
->  
-> +config MTD_NAND_STM_BCH_BBT
-> +	bool "STMicroelectronics: NANDi BCH Controller Bad Block Table support"
-> +	default y if MTD_NAND_STM_BCH=y || MTD_NAND_STM_BCH=m
+> /me hands you a few spare {} :-)
 
-This line could be simplified. But it's also weird now that you can
-select CONFIG_MTD_NAND_STM_BCH_BBT, but that won't build the BBT code if
-MTD_NAND_STM_BCH=n. So I'd suggest the following instead:
+Without the proper instruction manual they are pretty useless.
+ 
+> Arguably test state before doing a possibly pointless update?
+> 
+> > 	local_irq_disable();
+> > 	tick_full_nohz_update_state();
+> > 	local_irq_enable();
+> > }
+> 
+> But yes, that should work just fine..
 
-	depends on MTD_NAND_STM_BCH
-	default y
+So I'm not the only one who thinks that this needs a proper
+reimplementation :)
 
-Or maybe this could be more explicit about the default:
+Thanks,
 
-	depends on MTD_NAND_STM_BCH
-	default MTD_NAND_STM_BCH
+	tglx
 
-> +	help
-> +	  Adds support for the STMicroelectronics Bad Block Table support.
-> +	  If you are using a device which has has already been initialised
-> +	  by ST or using their tooling/bootloaders, leave this enabled.
-> +
->  endif # MTD_NAND
-> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-> index 6044e0a..e342c91 100644
-> --- a/drivers/mtd/nand/Makefile
-> +++ b/drivers/mtd/nand/Makefile
-> @@ -41,7 +41,9 @@ obj-$(CONFIG_MTD_NAND_MLC_LPC32XX)      += lpc32xx_mlc.o
->  obj-$(CONFIG_MTD_NAND_SH_FLCTL)		+= sh_flctl.o
->  obj-$(CONFIG_MTD_NAND_MXC)		+= mxc_nand.o
->  obj-$(CONFIG_MTD_NAND_SOCRATES)		+= socrates_nand.o
-> -obj-$(CONFIG_MTD_NAND_STM_BCH)		+= stm_nand_bch.o
-> +obj-$(CONFIG_MTD_NAND_STM_BCH)		+= stm-nand.o
-> +stm-nand-y				+= stm_nand_bch.o
-> +stm-nand-$(CONFIG_MTD_NAND_STM_BCH_BBT)	+= stm_nand_bbt.o
->  obj-$(CONFIG_MTD_NAND_TXX9NDFMC)	+= txx9ndfmc.o
->  obj-$(CONFIG_MTD_NAND_NUC900)		+= nuc900_nand.o
->  obj-$(CONFIG_MTD_NAND_MPC5121_NFC)	+= mpc5121_nfc.o
-
-[...]
-
-Brian
