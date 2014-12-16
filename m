@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbaLPLQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:16:03 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:52815 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaLPLQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:16:01 -0500
-Message-ID: <5490146A.3000408@de.ibm.com>
-Date: Tue, 16 Dec 2014 12:15:54 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751004AbaLPLUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:20:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48587 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809AbaLPLUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 06:20:07 -0500
+Message-ID: <54901564.6070201@suse.com>
+Date: Tue, 16 Dec 2014 12:20:04 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] arm/rpc: avoid static keyword removal via define
-References: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com> <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com>
-In-Reply-To: <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com>
-Content-Type: text/plain; charset=iso-8859-15
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
+        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, mmarek@suse.cz, linux-kbuild@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 4/4] xen: use generated hypercall symbols
+ in arch/x86/xen/xen-head.S
+References: <1418321065-10212-1-git-send-email-jgross@suse.com>	<1418321065-10212-5-git-send-email-jgross@suse.com>	<548ECE9B.3040105@citrix.com> <548FC95E.70903@suse.com> <5490086D.2060808@citrix.com>
+In-Reply-To: <5490086D.2060808@citrix.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121611-0005-0000-0000-000002798EE9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.12.2014 um 09:48 schrieb Christian Borntraeger:
-> commit 4486b86368d7 ("[ARM] riscpc: fix decompressor font file handling")
-> introduced Makefile magic to avoid building a file two times. Using
-> -Dstatic= does break some assumptions on compiler.h that were introduced
-> for READ_ONCE.
-> 
-> Lets just use sed on the copy instead of using a define.
-> 
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
+On 12/16/2014 11:24 AM, David Vrabel wrote:
+> On 16/12/14 05:55, Juergen Gross wrote:
+>> On 12/15/2014 01:05 PM, David Vrabel wrote:
+>>> On 11/12/14 18:04, Juergen Gross wrote:
+>>>> Instead of manually list each hypercall in arch/x86/xen/xen-head.S
+>>>> use the auto generated symbol list.
+>>>>
+>>>> This also corrects the wrong address of xen_hypercall_mca which was
+>>>> located 32 bytes higher than it should.
+>>>>
+>>>> Symbol addresses have been verified to match the correct ones via
+>>>> objdump output.
+>>> [...]
+>>>> +
+>>>> +#define HYPERCALL(n) \
+>>>> +    .equ xen_hypercall_##n, hypercall_page + __HYPERVISOR_##n * 32; \
+>>>> +    .type xen_hypercall_##n, function; .size xen_hypercall_##n, 32
+>>>> +#include <asm/xen-hypercalls.h>
+>>>> +#undef HYPERCALL
+>>>
+>>> The gas manual[1] suggests the syntax you've used for .type is invalid
+>>> and suggest using .type <name>, STT_FUNC
+>>
+>> Really? In the link below I see:
+>>
+>> The types supported are:
+>>
+>> STT_FUNC
+>> function
+>>      Mark the symbol as being a function name.
+>> ...
+>>
+>> So "function" seems to be okay.
+>
+>>From the manual
+>
+>      The syntaxes supported are:
+>
+>         .type <name> STT_<TYPE_IN_UPPER_CASE>
+>         .type <name>,#<type>
+>         .type <name>,@<type>
+>         .type <name>,%<type>
+>         .type <name>,"<type>"
+>
+> And
+>
+>      The first variant will be accepted by the GNU assembler on all
+>      architectures...
 
-This fixed the linux-next build http://kisskb.ellerman.id.au/kisskb/target/1508/
-Unless anybody complains, I will send the pull request for the access_once tree tomorrow and I have this patch applied on top.
+grepping through the x86 assembler sources
 
-Christian
+.type <name>,@function
+
+seems to be the preferred syntax (100%). I think I'll switch to that.
 
 
-> ---
->  arch/arm/boot/compressed/Makefile | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-> index 3ea230a..198f12a 100644
-> --- a/arch/arm/boot/compressed/Makefile
-> +++ b/arch/arm/boot/compressed/Makefile
-> @@ -196,10 +196,11 @@ $(obj)/piggy.$(suffix_y): $(obj)/../Image FORCE
-> 
->  $(obj)/piggy.$(suffix_y).o:  $(obj)/piggy.$(suffix_y) FORCE
-> 
-> -CFLAGS_font.o := -Dstatic=
-> -
-> +# use the font from lib/fonts/. We have to make the font global,
-> +# for the decompressor so lets remove the static declaration
->  $(obj)/font.c: $(FONTC)
->  	$(call cmd,shipped)
-> +	sed -i s/static//g $@
-> 
->  $(obj)/hyp-stub.S: $(srctree)/arch/$(SRCARCH)/kernel/hyp-stub.S
->  	$(call cmd,shipped)
-> 
+Juergen
 
