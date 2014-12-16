@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaLPBmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 20:42:36 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:45183 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbaLPBmd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 20:42:33 -0500
-Date: Mon, 15 Dec 2014 17:42:27 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jaewon Kim <jaewon02.kim@samsung.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-input@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Hyunhee Kim <hyunhee.kim@samsung.com>
-Subject: Re: [PATCH v6 1/2] Input: add regulator haptic driver
-Message-ID: <20141216014227.GA18491@dtor-ws>
-References: <1418380349-32588-1-git-send-email-jaewon02.kim@samsung.com>
- <1418380349-32588-2-git-send-email-jaewon02.kim@samsung.com>
- <20141213195611.GE22702@dtor-ws>
- <548F8645.3070002@samsung.com>
+	id S1751147AbaLPBpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 20:45:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:9230 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750810AbaLPBpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 20:45:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="499250510"
+Message-ID: <548F8EAA.80700@linux.intel.com>
+Date: Tue, 16 Dec 2014 09:45:14 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <548F8645.3070002@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, x86@kernel.org, Borislav Petkov <bp@alien8.de>,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: Re: [PATCH 0/5] Fix Intel IRQ remapping initialization order
+References: <1418656404-28575-1-git-send-email-joro@8bytes.org> <548EFE88.3000307@linux.intel.com> <alpine.DEB.2.11.1412152012000.17382@nanos>
+In-Reply-To: <alpine.DEB.2.11.1412152012000.17382@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 10:09:25AM +0900, Jaewon Kim wrote:
-> Hi Dmitry,
-> 
-> 2014년 12월 14일 04:56에 Dmitry Torokhov 이(가) 쓴 글:
-> >Hi Jaewon,
-> >
-> >On Fri, Dec 12, 2014 at 07:32:28PM +0900, Jaewon Kim wrote:
-...
-> >>+static int __maybe_unused regulator_haptic_suspend(struct device *dev)
-> >>+{
-> >>+	struct platform_device *pdev = to_platform_device(dev);
-> >>+	struct regulator_haptic *haptic = platform_get_drvdata(pdev);
-> >>+
-> >>+	mutex_lock(&haptic->mutex);
-> >>+	if (haptic->enabled) {
-> >>+		regulator_haptic_enable(haptic, false);
-> >>+		haptic->suspend_state = true;
-> >Why do we only set suspend_state if an effect was playing? I think we
-> >should always indicate that the device is suspended so that we do not
-> >try to start playing another effect - while it is true that normally
-> >effects are played by request from userspace which should be frozen by
-> >now, it is theoretically possible to trigger an effect from kernel as
-> >well.
-> 
-> This variable name seems to make you confuse.
-> I used this variable to restore the old state.
-> 
-> When kernel is entering suspend state while the motor is vibrating,
-> I store vibrating state for vibrate again after escape suspend state.
-> 
-> 
-> I will change variable name to "suspend_restore".
-> And prevent to start playing effect  when kernel entering suspend state.
 
-You do not need to save if haptic was playing or not - on resume, if
-haptic->magnitude != 0 you need to restart playing, otherwise leave it
-off.
 
-Thanks.
-
--- 
-Dmitry
+On 2014/12/16 3:54, Thomas Gleixner wrote:
+> On Mon, 15 Dec 2014, Jiang Liu wrote:
+>> On 2014/12/15 23:13, Joerg Roedel wrote:
+>>> Hi,
+>>>
+>>> here is a patch-set against tip/x86/apic to fix an initialization order
+>>> problem with the IRQ remapping code.  The problem is in the ordering of
+>>> the irq_remapping_prepare and irq_remapping_supported functions.
+>>>
+>>> Currently the call-order is irq_remapping_prepare ->
+>>> irq_remapping_supported, so that 'prepare' can succeed but 'supported'
+>>> fails, so that interrupt remapping gets initialized but not enabled.
+>>> This causes a broken interrupt setup on affected systems (machines with
+>>> an Intel IOMMU without, or broken, IRQ remapping support). The result
+>>> are lost interrupts and a non-bootable system.
+>>>
+>>> Both functions do checks whether IRQ remapping can be enabled on the
+>>> machine.  The reason for this is that some checks rely on
+>>> dmar_table_init() and thus have to be done in irq_remapping_prepare().
+>>>
+>>> This patch-set moves all these checks into the irq_remapping_prepare()
+>>> path with the right ordering and removes the irq_remapping_supported()
+>>> function and its call-backs. This fixes the initializion order problem
+>>> and simplifies the exported API from the IOMMU code.
+>>>
+>>> Please review.
+>> Hi Joerg,
+>> 	I have posted a patch set for the same purpose at:
+>> https://lkml.org/lkml/2014/12/10/20
+>> 	Seems we need to combine these two patch sets:)
+> 
+> Actually you want to combine it also with these patches:
+> 
+> 326c2bb2c526: iommu/vt-d: Convert allocations to GFP_KERNEL
+> e9220e591375: iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+> e88edbd316ea: iommu, x86: Restructure setup of the irq remapping feature
+> dd60143c04f2: x86, smpboot: Remove pointless preempt_disable() in native_smp_prepare_cpus()
+> 
+> against 3.19 independent of the irqdomain stuff.
+> 
+> So that would be a clean base to put the rest of the irqdomain and
+> hotplug stuff on top.
+> 
+> So the ordering of the patches for 3.20 would become:
+> 
+>    iommu cleanup (init and allocations)
+>    acpi cleanup and parser extensions
+>    ioapic hotplug
+>    irqdomain conversion
+> 
+> I will route dd60143c04f2 "x86, smpboot: Remove pointless
+> preempt_disable() in native_smp_prepare_cpus()" into -rc1.  I'm going
+> to do so for a few other cherry-picks from x86/apic.
+> 
+> So can you please create a combined series, which just deals with the
+> init cleanup and the allocation conversion (ATOMIC -> GFP) based on
+> current Linus tree should be fine.
+Hi Thomas,
+	I will work on that, hope we will have something after Christmas Holiday:)
+Regards!
+Gerry
+> 
+> Thanks,
+> 
+> 	tglx
+> 
