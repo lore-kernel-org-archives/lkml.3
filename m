@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaLPAvF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:51:05 -0500
-Received: from smtprelay0189.hostedemail.com ([216.40.44.189]:50506 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751206AbaLPAvC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:51:02 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:982:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:4321:5007:6261:10004:10400:10848:11232:11658:11914:12296:12517:12519:12555:12679:12740:13069:13255:13311:13357:13870:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: rake55_8820f15aa301
-X-Filterd-Recvd-Size: 1882
-Message-ID: <1418691057.2674.26.camel@perches.com>
-Subject: Re: [PATCH] checkpatch giving bogus advice (was staging: goldfish:
- Fix minor coding style)
-From: Joe Perches <joe@perches.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jeremiah Mahler <jmmahler@gmail.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, jun.j.tian@intel.com,
-        linux-kernel@vger.kernel.org, octavian.purdila@intel.com,
-        apw@canonical.com, nnk@google.com, alan@linux.intel.com
-Date: Mon, 15 Dec 2014 16:50:57 -0800
-In-Reply-To: <20141215115956.GD4856@mwanda>
-References: <e2a3b3ccf85790c865683832698908458931be6a.1418487651.git.loic@loicp.eu>
-	 <20141213175518.GA28616@hudson.localdomain> <20141213182238.GA6979@iron>
-	 <20141213194647.GA30065@hudson.localdomain>
-	 <20141215114421.7389d32a@lxorguk.ukuu.org.uk>
-	 <20141215115956.GD4856@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751880AbaLPAuf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:50:35 -0500
+Received: from lekensteyn.nl ([178.21.112.251]:59213 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796AbaLPAud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 19:50:33 -0500
+From: Peter Wu <peter@lekensteyn.nl>
+To: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] HID: logitech-{dj,hidpp}: check report length
+Date: Tue, 16 Dec 2014 01:50:15 +0100
+Message-Id: <1418691016-30681-3-git-send-email-peter@lekensteyn.nl>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
+References: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
+X-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-15 at 14:59 +0300, Dan Carpenter wrote:
-> I prefer !foo because it is more common in the kernel and I think it's
-> easier to read but I don't feel strongly about this.
+Malicious USB devices can send bogus reports smaller than the expected
+buffer size. Ensure that the length is valid to avoid reading out of
+bounds.
 
-Me too.  But I do prefer consistency.
+For the old WTP, I do not have a HID descriptor so just check for the
+minimum length in hidpp_raw_event (this can be changed to an inequality
+later).
 
-fyi: for variants of:
+Signed-off-by: Peter Wu <peter@lekensteyn.nl>
+---
+Hi,
 
-	"if (!foo)"
-vs
-	"if (foo == NULL)"
+If you know that the WTP report (ID 2) has a length of 2, then you can change
+"<" to "!=" and remove the paragraph from the commit message.
 
-a little cocci script shows a preference for "if (!foo)"
-of >5:1 in drivers/net/
-(actual: 11557:2145)
-and a little less (>3:1) in net/
-(actual: 10263:3045)
+Kind regards,
+Peter
+---
+ drivers/hid/hid-logitech-dj.c    | 16 +++++++++++++++-
+ drivers/hid/hid-logitech-hidpp.c | 12 +++++++++---
+ 2 files changed, 24 insertions(+), 4 deletions(-)
 
-$ cat pointer_style.cocci
-@@
-type T;
-T *a;
-@@
-
-*	a == NULL
-
-@@
-type T;
-T *a;
-@@
-
-*	a != NULL
-
-@@
-type T;
-T *a;
-@@
-
-*	!a
-
+diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+index c917ab6..5bc6d80 100644
+--- a/drivers/hid/hid-logitech-dj.c
++++ b/drivers/hid/hid-logitech-dj.c
+@@ -962,10 +962,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
+ 
+ 	switch (data[0]) {
+ 	case REPORT_ID_DJ_SHORT:
++		if (size != DJREPORT_SHORT_LENGTH) {
++			dev_err(&hdev->dev, "DJ report of bad size (%d)", size);
++			return false;
++		}
+ 		return logi_dj_dj_event(hdev, report, data, size);
+ 	case REPORT_ID_HIDPP_SHORT:
+-		/* intentional fallthrough */
++		if (size != HIDPP_REPORT_SHORT_LENGTH) {
++			dev_err(&hdev->dev,
++				"Short HID++ report of bad size (%d)", size);
++			return false;
++		}
++		return logi_dj_hidpp_event(hdev, report, data, size);
+ 	case REPORT_ID_HIDPP_LONG:
++		if (size != HIDPP_REPORT_LONG_LENGTH) {
++			dev_err(&hdev->dev,
++				"Long HID++ report of bad size (%d)", size);
++			return false;
++		}
+ 		return logi_dj_hidpp_event(hdev, report, data, size);
+ 	}
+ 
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index ae23dec..2315358 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -992,11 +992,17 @@ static int hidpp_raw_event(struct hid_device *hdev, struct hid_report *report,
+ 			return 1;
+ 		}
+ 		return hidpp_raw_hidpp_event(hidpp, data, size);
++	case 0x02:
++		if (size < 2) {
++			hid_err(hdev, "Received HID report of bad size (%d)",
++				size);
++			return 1;
++		}
++		if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
++			return wtp_raw_event(hdev, data, size);
++		return 1;
+ 	}
+ 
+-	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
+-		return wtp_raw_event(hdev, data, size);
+-
+ 	return 0;
+ }
+ 
+-- 
+2.1.3
 
