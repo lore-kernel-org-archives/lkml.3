@@ -1,130 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaLPJnJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:43:09 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:50982 "EHLO
-	imgpgp01.kl.imgtec.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750789AbaLPJnF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:43:05 -0500
-X-PGP-Universal: processed;
-	by imgpgp01.kl.imgtec.org on Tue, 16 Dec 2014 09:43:03 +0000
-Message-ID: <548FFEA0.1060905@imgtec.com>
-Date: Tue, 16 Dec 2014 09:42:56 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751262AbaLPJnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:43:25 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:48003 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaLPJnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 04:43:21 -0500
+Message-ID: <548FFEB0.9080604@mm-sol.com>
+Date: Tue, 16 Dec 2014 11:43:12 +0200
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        <linux-metag@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 16
-References: <20141216154622.7c2ded16@canb.auug.org.au>	<20141216063549.GA1060@roeck-us.net> <20141215224444.dc7f0f3c.akpm@linux-foundation.org> <548FD746.1050904@roeck-us.net>
-In-Reply-To: <548FD746.1050904@roeck-us.net>
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="qqeNvLeg37pPuErDifolw1fMKCMRI58jc"
-X-Originating-IP: [192.168.154.101]
-X-ESG-ENCRYPT-TAG: da4c5968
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 4/5] PCI: qcom: Add Qualcomm PCIe controller driver
+References: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com> <1418404441-5518-5-git-send-email-svarbanov@mm-sol.com> <2577563.x0mEZJNVDQ@wuerfel>
+In-Reply-To: <2577563.x0mEZJNVDQ@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---qqeNvLeg37pPuErDifolw1fMKCMRI58jc
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: quoted-printable
+Hi Arnd,
 
-On 16/12/14 06:55, Guenter Roeck wrote:
-> On 12/15/2014 10:44 PM, Andrew Morton wrote:
->> On Mon, 15 Dec 2014 22:35:49 -0800 Guenter Roeck <linux@roeck-us.net>
->> wrote:
+Thanks for the comments!
+
+On 12/12/2014 07:30 PM, Arnd Bergmann wrote:
+> On Friday 12 December 2014 19:14:00 Stanimir Varbanov wrote:
+>> The PCIe driver reuse the Designware common code for host
+>> and MSI initialization, and also program the Qualcomm
+>> application specific registers.
 >>
->>> On Tue, Dec 16, 2014 at 03:46:22PM +1100, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> Please do not add any code destined for v3.20 to your linux-next
->>>> included
->>>> trees/branches until after v3.19-rc1 is released.
->>>>
->>>> Changes since 20141215:
->>>>
->>>> The infiniband tree gained a conflict against Linus' tree and a buil=
-d
->>>> failure so I used the version from next-20141215.
->>>>
->>>> The userns tree gained a conflict against the vfs tree.
->>>>
->>>> The clk tree gained a build failure so I used the version from
->>>> next-20141215.
->>>>
->>>> Non-merge commits (relative to Linus' tree): 3588
->>>>   2582 files changed, 123494 insertions(+), 135748 deletions(-)
->>>>
->>>
->>> My metag buildbot test fails with this kernel.
->>
->> Thanks.  What are the error messages?
->>
->>
-> Nothing. It just hangs until killed.
->=20
-> qemu log:
-> char device redirected to /dev/pts/5
-> Unable to load ROM!
-> qemu: terminating on signal 15 from pid 17843
->=20
-> http://server.roeck-us.net:8010/builders/qemu-metag-next/builds/60/step=
-s/qemubuildcommand/logs/stdio
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+> 
+> Looks nice!
+> 
+>> +static int
+>> +qcom_pcie_rd_own_conf(struct pcie_port *pp, int where, int size, u32 *val)
+>> +{
+>> +	if (where == PCI_CLASS_REVISION && size == 4) {
+>> +		*val = readl(pp->dbi_base + PCI_CLASS_REVISION);
+>> +		*val &= ~(0xffff << 16);
+>> +		*val |= PCI_CLASS_BRIDGE_PCI << 16;
+>> +		return PCIBIOS_SUCCESSFUL;
+>> +	}
+>> +
+>> +	return dw_pcie_cfg_read(pp->dbi_base + (where & ~0x3), where,
+>> +				size, val);
+>> +}
+> 
+> Could you add a comment here to explain what this is for?
 
-Thanks a lot Guenter for report and bisection. I've confirmed on real
-hardware too. I'll try debugging it.
+Sure I will add a comment. The issue is that the pci device class is not
+reported correctly from the register.
 
-Cheers
-James
+> 
+>> +static int __init qcom_pcie_probe(struct platform_device *pdev)
+>> +{
+> 
+> I think it's a bug to mark this function as __init. It breaks
+> deferred probing and detaching/reattaching the device trough sysfs.
+> 
 
->=20
->=20
-> Normally output would be similar to the following.
->=20
-> /opt/buildbot/bin/qemu-system-meta -display none -kernel vmlinux -devic=
-e
-> da,exit_threads=3D1 -chardev stdio,id=3Dchan1 -chardev pty,id=3Dchan2 -=
-append
-> "rdinit=3D/sbin/init"
-> char device redirected to /dev/pts/29
-> Unable to load ROM!
-> Linux version 3.18.0+ (groeck@server.roeck-us.net) (gcc version 4.2.4
-> (IMG-1.4.0.300)) #5 Mon Dec 15 22:50:31 PST 2014
-> LNKGET/SET go through cache but CONFIG_METAG_LNKGET_AROUND_CACHE=3Dy
-> DA present
-> ...
->=20
-> Guenter
->=20
+My bad, I have tried to avoid mismatch section warnings came up from
+dw_pcie_host_init() which is annotated as __init. Do you think we need
+to remove __init from dw_pcie_host_init() declaration and fix the
+drivers accordingly?
 
+> After you fix that, you can remove the __refdata below.
+> 
+>> +static struct platform_driver __refdata qcom_pcie_driver = {
+>> +	.probe = qcom_pcie_probe,
+>> +	.remove = qcom_pcie_remove,
+>> +	.driver = {
+>> +		.name = "qcom-pcie",
+>> +		.of_match_table = qcom_pcie_match,
+>> +	},
+>> +};
+> 
+> 	Arnd
+> 
 
---qqeNvLeg37pPuErDifolw1fMKCMRI58jc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUj/6mAAoJEGwLaZPeOHZ6RRgP/3SbIwh+YPbdaq4RPdxefW8Z
-sNUln7dkew+KoSEmZZwH7aBcPIXzTAD/swA9xwl6KNLK60tLv4FO1umjqnIAkKSB
-1L2xO3xJfEcbDriwMH+jXM0wTYHVkMPdNEk2COUf8Y5X3rBM8fmiMftOjfnMOVH5
-zP5LJynXRZ0Ud/yrx86HSznBl2UnT8qjhORwuDWgSVT+IoTmOCMnyZ6k/sThIRWk
-pxQdt03NN8QgpA0YO3Hwdvkm0ObskklXv3HTiHaikPEF7ZjIqQiKu4Xcfmbsawfw
-Mt0RE5lePp6H6nTKBnPF/g7zDVcIBc/K/X3MiI2tOBX3gh/9p3WePowmLWuEQmzC
-w1WJBFYqtiVjjun/8WP8GxsMvpvNCLcDZJzciNum5wxDH6BHHt2msboaOzK4tz8U
-yi07UPZDFS1aLyfNDyHcCB2Tmysc8ffEFdKysGA6qVYNBznp1CC7jcwW0glccYw5
-pT6uk512rOh6BeBP4sd3zqPt6PK30PPTgrfT/uM4syS1/MXoH6/5TlqZxf5eqV9a
-yRi/hkwuqOR+oWPsfDXiCHdcbUpHHv80EvtPnhMJQh7Mni6c4IblQNMG6Ddg5x3w
-cXjLc0YBtdx28RDOMh9OH5UbLv+qXBBHUgQgBWHCa7HNiygkI8H1i7RemHkEW1Um
-Iezh8Le5CVJPf5LtaUrn
-=M9IB
------END PGP SIGNATURE-----
-
---qqeNvLeg37pPuErDifolw1fMKCMRI58jc--
+regards,
+Stan
