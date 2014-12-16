@@ -1,150 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751124AbaLPKE2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 05:04:28 -0500
-Received: from www.linutronix.de ([62.245.132.108]:49085 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLPKEZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 05:04:25 -0500
-Date: Tue, 16 Dec 2014 11:03:55 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        Mike Turquette <mturquette@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ARM: at91: fix irq_pm_install_action WARNING
-In-Reply-To: <20141216100715.57baeb65@bbrezillon>
-Message-ID: <alpine.DEB.2.11.1412161013570.17382@nanos>
-References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com> <2662748.NJbkr6jW7r@vostro.rjw.lan> <3542278.8lcJeXLMFm@vostro.rjw.lan> <20141216100715.57baeb65@bbrezillon>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	id S1751261AbaLPKEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 05:04:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:40401 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224AbaLPKEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 05:04:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,585,1413270000"; 
+   d="scan'208";a="638284591"
+Date: Tue, 16 Dec 2014 12:04:41 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Ken Xue <Ken.Xue@amd.com>
+Cc: rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3 V2] acpi:apd:add AMD ACPI2Platform device support
+Message-ID: <20141216100441.GV1300@lahna.fi.intel.com>
+References: <1418267133-5609-1-git-send-email-Ken.Xue@amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418267133-5609-1-git-send-email-Ken.Xue@amd.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Dec 2014, Boris Brezillon wrote:
-> On Mon, 15 Dec 2014 23:48:14 +0100
-> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
-> > Or even set IRFQ_NO_SUSPEND for all of the users of this interrupt and add
-> > comments to them explaining why it is set.
-> Actually I thought about adding a new flag (let's call it
-> IRQF_DONT_COMPLAIN for now ;-)) to remove those warnings (or specifying
-> IRFQ_NO_SUSPEND in all peripherals sharing the IRQ with the init
-> timer), but after discussing the problem with Thomas I decided to go
-> for the approach described in my cover letter.
+On Thu, Dec 11, 2014 at 11:05:33AM +0800, Ken Xue wrote:
+> This is a new feature to interpret AMD specific ACPI device to
+> platform device such as I2C, UART found on AMD CZ and later
+> chipsets. It based on acpi soc.
 > 
-> Thomas, correct me if I'm wrong, but your concern about the
-> IRQF_DONT_COMPLAIN approach was that it was leaving interrupt handlers
-> of suspended devices in an active state (meaning that they could be
-> called in "suspend" or "early resume" state), and such devices might
-> not properly handle interrupts while being in a suspended state (clocks
-> and regulators disabled).
-> In at91 specific case this should not be an issue thought.
+> Signed-off-by: Ken Xue <Ken.Xue@amd.com>
+
+This looks good to me. One style problem found below.
+
+> ---
+>  arch/x86/Kconfig        | 11 ++++++++
+>  drivers/acpi/Makefile   |  2 +-
+>  drivers/acpi/acpi_apd.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/acpi/internal.h |  2 ++
+>  drivers/acpi/scan.c     |  1 +
+>  5 files changed, 86 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/acpi/acpi_apd.c
 > 
-> We have the same problem when setting IRFQ_NO_SUSPEND on all peripherals
-> sharing the IRQ with the init timer.
-> Moreover, I'd like to keep the core automatically disabling the IRQ when
-> the PMC, RTC, watchdog or DBGU (UART) peripherals have their own
-> dedicated IRQ (which is the case on Atmel sama5 SoCs).
-> This implies testing for the SoC version in each of these drivers and
-> adapting the request_irq call accordingly.
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index ded8a67..030f508 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -495,6 +495,17 @@ config X86_INTEL_LPSS
+>  	  things like clock tree (common clock framework) and pincontrol
+>  	  which are needed by the LPSS peripheral drivers.
+>  
+> +config X86_AMD_PLATFORM_DEVICE
+> +	bool "AMD ACPI2Platform devices support"
+> +	depends on ACPI
+> +	select COMMON_CLK
+> +	select PINCTRL
+> +	---help---
+> +	  Select to interpret AMD specific ACPI device to platform device
+> +	  such as I2C, UART found on AMD Carrizo and later chipsets. Selecting
+> +	  this option enables things like clock tree (common clock framework)
+> +	  and pinctrl.
+> +
+>  config IOSF_MBI
+>  	tristate "Intel SoC IOSF Sideband support for SoC platforms"
+>  	depends on PCI
+> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
+> index ae3397d..b07003a 100644
+> --- a/drivers/acpi/Makefile
+> +++ b/drivers/acpi/Makefile
+> @@ -40,7 +40,7 @@ acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
+>  acpi-y				+= ec.o
+>  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
+>  acpi-y				+= pci_root.o pci_link.o pci_irq.o
+> -acpi-y				+= acpi_soc.o acpi_lpss.o
+> +acpi-y				+= acpi_soc.o acpi_lpss.o acpi_apd.o
+>  acpi-y				+= acpi_platform.o
+>  acpi-y				+= acpi_pnp.o
+>  acpi-y				+= int340x_thermal.o
+> diff --git a/drivers/acpi/acpi_apd.c b/drivers/acpi/acpi_apd.c
+> new file mode 100644
+> index 0000000..b46e2af
+> --- /dev/null
+> +++ b/drivers/acpi/acpi_apd.c
+> @@ -0,0 +1,71 @@
+> +/*
+> + * AMD ACPI support for  ACPI2platform device.
+                          ^^ doubled space
 
-But still all those drivers must disable the interrupts at the device
-level on suspend, right?
-
-> Thomas, Rafael, if both of you think I should either introduce a new
-> flag or specify IRFQ_NO_SUSPEND in all shared IRQ users, then I can go
-> for one of this solution.
-
-All of this really sucks. What about the following?
-
-Install the timer interrupt as a demultiplexing interrupt.
-
-Create a pseudo interrupt chip, which essentially does nothing, but
-keeps track of the disabled state. Install handle_simple_irq as
-handler for those "demux" interrupts. Then have:
-
-struct data {
-       u32 unmasked;
-       u32 demuxavail;
-};
-
-static struct data demuxdata;
-
-At init time you know how many of these demux interrupts are
-available. So you set the demuxdata up, e.g. for 3 interrupts
-connected:
-
-	demuxdata.demuxavail = 0x07;
-
-You install a pointer to demuxdata for all demux interrupts as irq
-chip data and the simple handler.
-
-And in the mask/unmask handlers you do:
-
-mask(irqdata) {
-       struct data *d = irq_data_get_irq_chip_data(irqdata);
-
-       d->unmasked &= ~irqdata->mask;
-       if (!d->unmasked)
-       	  mask_demux_irq();
-}
-
-unmask(irqdata) {
-       struct data *d = irq_data_get_irq_chip_data(irqdata);
-
-       if (!d->unmasked)
-       	  unmask_demux_irq();
-       d->mask |= irqdata->mask;
-}
-
-Now the demuxhandler does:
-
-    mask = demuxdata.demuxavail & demuxdata.unmasked;
-
-    for_each_bit(bit, mask)
-    	generic_handle_irq(demuxirq_start + bit);
-
-So the handler wont be invoked for masked bits and handle_simple_irq()
-will not call the device handler if the interrupt is marked disabled.
-
-So in the suspend case all "demux" interrupts except those which are
-marked NOSUSPEND are marked disabled and the handlers wont be invoked.
-
-Locking and other details omitted.
-
-That avoids the whole flag, action, whatever business for the price of
-a really trivial demux mechanism. Everything just works. Even the irq
-storm detector will just disable the parent interrupt once all
-handlers return NONE often enough.
-
-Your device drivers just work fine, as long as they disable the
-interrupt at the device level on suspend, but they have to do that in
-any case. Aside of that detail they are completely oblivous whether
-they are connected to this "demux" chip or to a seperate irq line on
-other devices.
-
-> BTW, have you heard about other platforms/drivers impacted by this
-> WARN_ON addition, and if so how did they solve the problem ?
-
-Nothing so far. Seems not many hardware folks are that crazy.
-
-But I have no objections to make this generic infrastructure as long
-as it can be compiled out.
-
-Thanks,
-
-	tglx
+> + *
+> + * Copyright (c) 2014, AMD Corporation.
+> + * Authors: Ken Xue <Ken.Xue@amd.com>
+> + *	Wu, Jeff <Jeff.Wu@amd.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/clkdev.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/err.h>
+> +
+> +#include "acpi_soc.h"
+> +#include "internal.h"
+> +
+> +static struct acpi_soc a_soc;
+> +
+> +#ifdef CONFIG_X86_AMD_PLATFORM_DEVICE
+> +#define APD_ADDR(desc)	((unsigned long)&desc)
+> +
+> +static int acpi_apd_setup(struct acpi_soc_dev_private_data *pdata)
+> +{
+> +	struct acpi_soc_dev_desc *dev_desc = pdata->dev_desc;
+> +	struct clk *clk = ERR_PTR(-ENODEV);
+> +
+> +	if (dev_desc->fixed_clk_rate) {
+> +		clk = clk_register_fixed_rate(&pdata->adev->dev,
+> +					dev_name(&pdata->adev->dev),
+> +					NULL, CLK_IS_ROOT,
+> +					dev_desc->fixed_clk_rate);
+> +		clk_register_clkdev(clk, NULL, dev_name(&pdata->adev->dev));
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct acpi_soc_dev_desc cz_i2c_desc = {
+> +	.setup = acpi_apd_setup,
+> +	.fixed_clk_rate = 133000000,
+> +};
+> +
+> +static struct acpi_soc_dev_desc cz_uart_desc = {
+> +	.setup = acpi_apd_setup,
+> +	.fixed_clk_rate = 48000000,
+> +};
+> +
+> +#else
+> +
+> +#define APD_ADDR(desc) (0UL)
+> +
+> +#endif /* CONFIG_X86_AMD_PLATFORM_DEVICE */
+> +
+> +static struct acpi_device_id acpi_apd_device_ids[] = {
+> +	/* Generic apd devices */
+> +	{ "AMD0010", APD_ADDR(cz_i2c_desc) },
+> +	{ "AMD0020", APD_ADDR(cz_uart_desc) },
+> +	{ }
+> +};
+> +
+> +void __init acpi_apd_init(void)
+> +{
+> +	a_soc.ids = acpi_apd_device_ids;
+> +#ifdef CONFIG_X86_AMD_PLATFORM_DEVICE
+> +	register_acpi_soc(&a_soc, false);
+> +#else
+> +	register_acpi_soc(&a_soc, true);
+> +#endif /* CONFIG_X86_AMD_PLATFORM_DEVICE */
+> +}
+> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
+> index 447f6d6..bade825 100644
+> --- a/drivers/acpi/internal.h
+> +++ b/drivers/acpi/internal.h
+> @@ -68,6 +68,8 @@ static inline void acpi_debugfs_init(void) { return; }
+>  #endif
+>  void acpi_lpss_init(void);
+>  
+> +void acpi_apd_init(void);
+> +
+>  acpi_status acpi_hotplug_schedule(struct acpi_device *adev, u32 src);
+>  bool acpi_queue_hotplug_work(struct work_struct *work);
+>  void acpi_device_hotplug(struct acpi_device *adev, u32 src);
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index 0476e90..24fef2b 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -2349,6 +2349,7 @@ int __init acpi_scan_init(void)
+>  	acpi_pci_link_init();
+>  	acpi_processor_init();
+>  	acpi_lpss_init();
+> +	acpi_apd_init();
+>  	acpi_cmos_rtc_init();
+>  	acpi_container_init();
+>  	acpi_memory_hotplug_init();
+> -- 
+> 1.9.1
