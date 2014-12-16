@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaLPQ6q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:58:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47051 "EHLO mail.kernel.org"
+	id S1752172AbaLPQ6w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:58:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47090 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaLPQ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:58:44 -0500
+	id S1751576AbaLPQ6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:58:50 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 13/18] tools: Adopt fls_long and deps
-Date: Tue, 16 Dec 2014 13:57:15 -0300
-Message-Id: <1418749040-31807-14-git-send-email-acme@kernel.org>
+Subject: [PATCH 14/18] tools: Adopt rounddown_pow_of_two and deps
+Date: Tue, 16 Dec 2014 13:57:16 -0300
+Message-Id: <1418749040-31807-15-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418749040-31807-1-git-send-email-acme@kernel.org>
 References: <1418749040-31807-1-git-send-email-acme@kernel.org>
@@ -28,7 +28,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Will be used when adopting rounddown_pow_of_two.
+Will be used to make sure we pass a power of two when automatically
+setting up the perf_mmap addr range length, as the kernel code
+validating input on /proc/sys/kernel/perf_event_mlock_kb accepts any
+integer, if we plain use it to set up the mmap lenght, we may get an
+EINVAL when passing a non power of two.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -41,102 +45,162 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-9m0tt5300q1ygv51hejjas82@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-zflvep0q01dmkruf4o291l4p@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/asm-generic/bitops.h       | 3 +++
- tools/include/asm-generic/bitops/__fls.h | 1 +
- tools/include/asm-generic/bitops/fls.h   | 1 +
- tools/include/asm-generic/bitops/fls64.h | 1 +
- tools/include/linux/bitops.h             | 7 +++++++
- tools/perf/MANIFEST                      | 3 +++
- tools/perf/Makefile.perf                 | 3 +++
- 7 files changed, 19 insertions(+)
- create mode 100644 tools/include/asm-generic/bitops/__fls.h
- create mode 100644 tools/include/asm-generic/bitops/fls.h
- create mode 100644 tools/include/asm-generic/bitops/fls64.h
+ tools/include/linux/log2.h | 134 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 134 insertions(+)
 
-diff --git a/tools/include/asm-generic/bitops.h b/tools/include/asm-generic/bitops.h
-index 6dfd9d5fd828..6eedba1f7732 100644
---- a/tools/include/asm-generic/bitops.h
-+++ b/tools/include/asm-generic/bitops.h
-@@ -13,6 +13,9 @@
-  */
+diff --git a/tools/include/linux/log2.h b/tools/include/linux/log2.h
+index 141b7665d842..990b138362d6 100644
+--- a/tools/include/linux/log2.h
++++ b/tools/include/linux/log2.h
+@@ -13,6 +13,30 @@
+ #define _TOOLS_LINUX_LOG2_H
  
- #include <asm-generic/bitops/__ffs.h>
-+#include <asm-generic/bitops/fls.h>
-+#include <asm-generic/bitops/__fls.h>
-+#include <asm-generic/bitops/fls64.h>
- #include <asm-generic/bitops/find.h>
- 
- #ifndef _TOOLS_LINUX_BITOPS_H_
-diff --git a/tools/include/asm-generic/bitops/__fls.h b/tools/include/asm-generic/bitops/__fls.h
-new file mode 100644
-index 000000000000..2218b9add4c1
---- /dev/null
-+++ b/tools/include/asm-generic/bitops/__fls.h
-@@ -0,0 +1 @@
-+#include <../../../../include/asm-generic/bitops/__fls.h>
-diff --git a/tools/include/asm-generic/bitops/fls.h b/tools/include/asm-generic/bitops/fls.h
-new file mode 100644
-index 000000000000..dbf711a28f71
---- /dev/null
-+++ b/tools/include/asm-generic/bitops/fls.h
-@@ -0,0 +1 @@
-+#include <../../../../include/asm-generic/bitops/fls.h>
-diff --git a/tools/include/asm-generic/bitops/fls64.h b/tools/include/asm-generic/bitops/fls64.h
-new file mode 100644
-index 000000000000..980b1f63c047
---- /dev/null
-+++ b/tools/include/asm-generic/bitops/fls64.h
-@@ -0,0 +1 @@
-+#include <../../../../include/asm-generic/bitops/fls64.h>
-diff --git a/tools/include/linux/bitops.h b/tools/include/linux/bitops.h
-index 5237bc9f6266..26005a15e7e2 100644
---- a/tools/include/linux/bitops.h
-+++ b/tools/include/linux/bitops.h
-@@ -43,4 +43,11 @@ static inline unsigned long hweight_long(unsigned long w)
- 	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
- }
- 
-+static inline unsigned fls_long(unsigned long l)
+ /*
++ * deal with unrepresentable constant logarithms
++ */
++extern __attribute__((const, noreturn))
++int ____ilog2_NaN(void);
++
++/*
++ * non-constant log of base 2 calculators
++ * - the arch may override these in asm/bitops.h if they can be implemented
++ *   more efficiently than using fls() and fls64()
++ * - the arch is not required to handle n==0 if implementing the fallback
++ */
++static inline __attribute__((const))
++int __ilog2_u32(u32 n)
 +{
-+	if (sizeof(l) == 4)
-+		return fls(l);
-+	return fls64(l);
++	return fls(n) - 1;
 +}
 +
- #endif
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 7729af9f417a..0c6cc8de007f 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -8,7 +8,10 @@ tools/lib/util/find_next_bit.c
- tools/include/asm/bug.h
- tools/include/asm-generic/bitops/atomic.h
- tools/include/asm-generic/bitops/__ffs.h
-+tools/include/asm-generic/bitops/__fls.h
- tools/include/asm-generic/bitops/find.h
-+tools/include/asm-generic/bitops/fls64.h
-+tools/include/asm-generic/bitops/fls.h
- tools/include/asm-generic/bitops.h
- tools/include/linux/bitops.h
- tools/include/linux/compiler.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 55b9c97cafc2..6b7153f8b056 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -234,7 +234,10 @@ LIB_H += util/include/linux/bitmap.h
- LIB_H += ../include/linux/bitops.h
- LIB_H += ../include/asm-generic/bitops/atomic.h 
- LIB_H += ../include/asm-generic/bitops/find.h 
-+LIB_H += ../include/asm-generic/bitops/fls64.h
-+LIB_H += ../include/asm-generic/bitops/fls.h
- LIB_H += ../include/asm-generic/bitops/__ffs.h 
-+LIB_H += ../include/asm-generic/bitops/__fls.h
- LIB_H += ../include/asm-generic/bitops.h
- LIB_H += ../include/linux/compiler.h
- LIB_H += ../include/linux/log2.h
++static inline __attribute__((const))
++int __ilog2_u64(u64 n)
++{
++	return fls64(n) - 1;
++}
++
++/*
+  *  Determine whether some value is a power of two, where zero is
+  * *not* considered a power of two.
+  */
+@@ -23,4 +47,114 @@ bool is_power_of_2(unsigned long n)
+ 	return (n != 0 && ((n & (n - 1)) == 0));
+ }
+ 
++/*
++ * round down to nearest power of two
++ */
++static inline __attribute__((const))
++unsigned long __rounddown_pow_of_two(unsigned long n)
++{
++	return 1UL << (fls_long(n) - 1);
++}
++
++/**
++ * ilog2 - log of base 2 of 32-bit or a 64-bit unsigned value
++ * @n - parameter
++ *
++ * constant-capable log of base 2 calculation
++ * - this can be used to initialise global variables from constant data, hence
++ *   the massive ternary operator construction
++ *
++ * selects the appropriately-sized optimised version depending on sizeof(n)
++ */
++#define ilog2(n)				\
++(						\
++	__builtin_constant_p(n) ? (		\
++		(n) < 1 ? ____ilog2_NaN() :	\
++		(n) & (1ULL << 63) ? 63 :	\
++		(n) & (1ULL << 62) ? 62 :	\
++		(n) & (1ULL << 61) ? 61 :	\
++		(n) & (1ULL << 60) ? 60 :	\
++		(n) & (1ULL << 59) ? 59 :	\
++		(n) & (1ULL << 58) ? 58 :	\
++		(n) & (1ULL << 57) ? 57 :	\
++		(n) & (1ULL << 56) ? 56 :	\
++		(n) & (1ULL << 55) ? 55 :	\
++		(n) & (1ULL << 54) ? 54 :	\
++		(n) & (1ULL << 53) ? 53 :	\
++		(n) & (1ULL << 52) ? 52 :	\
++		(n) & (1ULL << 51) ? 51 :	\
++		(n) & (1ULL << 50) ? 50 :	\
++		(n) & (1ULL << 49) ? 49 :	\
++		(n) & (1ULL << 48) ? 48 :	\
++		(n) & (1ULL << 47) ? 47 :	\
++		(n) & (1ULL << 46) ? 46 :	\
++		(n) & (1ULL << 45) ? 45 :	\
++		(n) & (1ULL << 44) ? 44 :	\
++		(n) & (1ULL << 43) ? 43 :	\
++		(n) & (1ULL << 42) ? 42 :	\
++		(n) & (1ULL << 41) ? 41 :	\
++		(n) & (1ULL << 40) ? 40 :	\
++		(n) & (1ULL << 39) ? 39 :	\
++		(n) & (1ULL << 38) ? 38 :	\
++		(n) & (1ULL << 37) ? 37 :	\
++		(n) & (1ULL << 36) ? 36 :	\
++		(n) & (1ULL << 35) ? 35 :	\
++		(n) & (1ULL << 34) ? 34 :	\
++		(n) & (1ULL << 33) ? 33 :	\
++		(n) & (1ULL << 32) ? 32 :	\
++		(n) & (1ULL << 31) ? 31 :	\
++		(n) & (1ULL << 30) ? 30 :	\
++		(n) & (1ULL << 29) ? 29 :	\
++		(n) & (1ULL << 28) ? 28 :	\
++		(n) & (1ULL << 27) ? 27 :	\
++		(n) & (1ULL << 26) ? 26 :	\
++		(n) & (1ULL << 25) ? 25 :	\
++		(n) & (1ULL << 24) ? 24 :	\
++		(n) & (1ULL << 23) ? 23 :	\
++		(n) & (1ULL << 22) ? 22 :	\
++		(n) & (1ULL << 21) ? 21 :	\
++		(n) & (1ULL << 20) ? 20 :	\
++		(n) & (1ULL << 19) ? 19 :	\
++		(n) & (1ULL << 18) ? 18 :	\
++		(n) & (1ULL << 17) ? 17 :	\
++		(n) & (1ULL << 16) ? 16 :	\
++		(n) & (1ULL << 15) ? 15 :	\
++		(n) & (1ULL << 14) ? 14 :	\
++		(n) & (1ULL << 13) ? 13 :	\
++		(n) & (1ULL << 12) ? 12 :	\
++		(n) & (1ULL << 11) ? 11 :	\
++		(n) & (1ULL << 10) ? 10 :	\
++		(n) & (1ULL <<  9) ?  9 :	\
++		(n) & (1ULL <<  8) ?  8 :	\
++		(n) & (1ULL <<  7) ?  7 :	\
++		(n) & (1ULL <<  6) ?  6 :	\
++		(n) & (1ULL <<  5) ?  5 :	\
++		(n) & (1ULL <<  4) ?  4 :	\
++		(n) & (1ULL <<  3) ?  3 :	\
++		(n) & (1ULL <<  2) ?  2 :	\
++		(n) & (1ULL <<  1) ?  1 :	\
++		(n) & (1ULL <<  0) ?  0 :	\
++		____ilog2_NaN()			\
++				   ) :		\
++	(sizeof(n) <= 4) ?			\
++	__ilog2_u32(n) :			\
++	__ilog2_u64(n)				\
++ )
++
++
++/**
++ * rounddown_pow_of_two - round the given value down to nearest power of two
++ * @n - parameter
++ *
++ * round the given value down to the nearest power of two
++ * - the result is undefined when n == 0
++ * - this can be used to initialise global variables from constant data
++ */
++#define rounddown_pow_of_two(n)			\
++(						\
++	__builtin_constant_p(n) ? (		\
++		(1UL << ilog2(n))) :		\
++	__rounddown_pow_of_two(n)		\
++ )
++
+ #endif /* _TOOLS_LINUX_LOG2_H */
 -- 
 1.9.3
 
