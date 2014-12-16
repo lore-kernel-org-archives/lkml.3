@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113AbaLPMxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 07:53:05 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:62252 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaLPMxB (ORCPT
+	id S1751234AbaLPMxX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 07:53:23 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:33387 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaLPMxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 07:53:01 -0500
-Date: Tue, 16 Dec 2014 13:52:59 +0100
-From: Johan Hovold <johan@kernel.org>
-To: George McCollister <george.mccollister@gmail.com>
-Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] USB: serial: add nt124 usb to serial driver
-Message-ID: <20141216125259.GM6778@localhost>
-References: <1418081057-25283-1-git-send-email-george.mccollister@gmail.com>
- <20141210130412.GJ14346@localhost>
- <CAFSKS=PnDa+_2eBk0M7xiE5me-7muo2ddVzhk=gHWMYoXhZtmw@mail.gmail.com>
- <CAFSKS=MH0CU=t-TyHgcOun050EBQawkaDXfSN2OoC6MpZKgjmw@mail.gmail.com>
- <20141215095238.GB6778@localhost>
- <CAFSKS=P2TdK08m-pCY-WadBrMjXQj2ue-AxOujuKBaFFqvokaQ@mail.gmail.com>
+	Tue, 16 Dec 2014 07:53:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFSKS=P2TdK08m-pCY-WadBrMjXQj2ue-AxOujuKBaFFqvokaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20141216113509.GI4856@mwanda>
+References: <1418708509-18196-1-git-send-email-chris@rorvick.com>
+	<20141216094109.GH4856@mwanda>
+	<D0B55F56.D05F1%andreas.dilger@intel.com>
+	<20141216113509.GI4856@mwanda>
+Date: Tue, 16 Dec 2014 06:53:19 -0600
+X-Google-Sender-Auth: H2gjMljjY5BrDQbnYtcxmNCeD5M
+Message-ID: <CAEUsAPYTBq+0DGG909Rn0JhpF5Rh_6KbvmxS0wPQJ3j+qgZrEQ@mail.gmail.com>
+Subject: Re: [PATCH] drivers: staging: lustre: Use mult if units not specified
+From: Chris Rorvick <chris@rorvick.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        James Simmons <uja.ornl@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Drokin, Oleg" <oleg.drokin@intel.com>,
+        Greg Donald <gdonald@gmail.com>,
+        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
+        "Hammond, John" <john.hammond@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 10:09:22AM -0600, George McCollister wrote:
-> On Mon, Dec 15, 2014 at 3:52 AM, Johan Hovold <johan@kernel.org> wrote:
-> > On Sun, Dec 14, 2014 at 11:51:11AM -0600, George McCollister wrote:
-> >> Johan,
-> >>
-> >> While working on the tx_empty changes you suggested it occurred to me
-> >> that it might not be obvious to others that the firmware doesn't send
-> >> a packet with the NT124_CTRL_TXEMPTY flag cleared when it begins
-> >> transmitting. The practical implication is that if the driver sets
-> >> tx_empty = true when it sees NT124_CTRL_TXEMPTY, tx_empty must be
-> >> reset to false somewhere when more data is transmitted. Perhaps I
-> >> could add prepare_write_buffer and do it in there before calling
-> >> usb_serial_generic_prepare_write_buffer(). Does that sound acceptable?
+On Tue, Dec 16, 2014 at 5:35 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> On Tue, Dec 16, 2014 at 11:14:35AM +0000, Dilger, Andreas wrote:
 > >
-> > Hmm. There's no way to query that flag? And the status is sent (as bulk
-> > in data) periodically or only when data has been received? And not when
-> > the actual status changes?
+> > Sorry, that isn't right.  Chris' patch is actually doing the right thing
+> > to check for units > 1.
 >
-> The bulk in packets are not sent periodically only on TXEMPTY, other
-> line change or received data. There's no way to query the flag, though
-> we're still at the stage we can make modifications to the firmware if
-> there's justification. One of the design goals is to minimize
-> unnecessary USB traffic so if there's a place to clear the flag in the
-> driver without querying it would be preferable.
->
-> > A potential problem with using prepare_write_buffer would be on failures
-> > to submit the write urb, in which case this flag might never be cleared.
->
-> Yes, this could be a problem though I wonder how many (if any)
-> recoverable situations this would happen in that didn't eventually
-> lead to a transmission. Adding a timer with a long timeout that set
-> tx_empty  = true crossed my mind but that doesn't really seem any less
-> error prone than the original issue. I could of course duplicate a
-> bunch of code from generic.c and make a few minor changes to set
-> tx_empty = true but that obviously isn't desirable either.
-> 
-> If none of the above solutions sound acceptable, let me know I and I
-> guess I'll change the firmware to allow polling of TXEMPTY with a
-> control message and remove it from the bulk in packet.
+> It's not right because it discards the negative.
 
-I think it would be best if you could add a way to query the driver. It
-seems like that is the only way to avoid having write race with the
-tx_empty bulk-in status reports.
+I don't think this patch introduces a bug.  If anything, it was already
+there.  It looked to me like the value passed in to `mult' was assumed
+to be positive and was simply being used as a flag to indicate whether
+`buffer' started with a '-' when units were passed.
 
-Thanks,
-Johan
+For example, say the value passed in is "-2K" and the `mult' is 1.  The
+check for '-' will negate `mult' making it -1.  Then the units
+conditional will override mult with `-units' (i.e., -1024.)
+
+Now say we pass "-2" with `mult' equal to 1024.  The result is same, but
+the path is a bit different.  `mult' will again be negated due to
+`buffer' beginning with '-', but then it will be left alone at the units
+check.
+
+In both of the above cases the negative sign is properly accounted for.
+
+> >  The proposed change above discards "mult"
+> > entirely, which breaks the users of this function that are not in this
+> > file (e.g. osc_cached_mb_seq_write() or ll_max_cached_mb_seq_write())
+> > that have tunables in units of MB by default, but can also use parameters
+> > with units like "4.5G" for convenience.
+>
+> I think you are confusing lprocfs_write_frac_helper() and
+> lprocfs_write_frac_u64_helper().  There is only one caller for this
+> function.
+
+By this logic, lprocfs_write_frac_u64_helper() should just be removed
+and it's code should be folded into lprocfs_write_u64_helper(), no?
+
+Regards,
+
+Chris
