@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaLPJf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:35:29 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33375 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751008AbaLPJfZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:35:25 -0500
-Date: Tue, 16 Dec 2014 09:34:43 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Kuankuan.Yang" <ykk@rock-chips.com>
-Cc: Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        alsa-devel@alsa-project.org, Heiko Stuebner <heiko@sntech.de>,
-        devicetree@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org, Liam Girdwood <lgirdwood@gmail.com>,
-        Max Filippov <jcmvbkbc@gmail.com>, Bard Liao <bardliao@realtek.com>,
-        Lars-Peter Clausen <lars@metafoo.de>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>, linux-rockchip@lists.infradead.org,
-        Grant Likely <grant.likely@linaro.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        Oder Chiou <oder_chiou@realtek.com>, Zubair.Kakakhel@imgtec.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jyri Sarha <jsarha@ti.com>, Ben Zhang <benzh@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Daniel Kurtz <djkurtz@chromium.org>,
-        =?utf-8?B?U3Tvv73vv71waGFuZQ==?= Marchesin <marcheu@chromium.org>,
-        Jaroslav Kysela <perex@perex.cz>, Sonny Rao <sonnyrao@chromium.org>,
-        Sean Cross <xobs@kosagi.com>, linux-arm-kernel@lists.infradead.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip
- hdmi-audio
-Message-ID: <20141216093443.GN11285@n2100.arm.linux.org.uk>
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com>
- <1418612114-19692-1-git-send-email-ykk@rock-chips.com>
- <20141215104029.GE11285@n2100.arm.linux.org.uk>
- <20141215120205.GZ11764@sirena.org.uk>
- <548EDDC2.9050104@rock-chips.com>
- <20141215161827.GE11764@sirena.org.uk>
- <548FCE8F.7090106@rock-chips.com>
+	id S1751306AbaLPJf6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:35:58 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866AbaLPJfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 04:35:55 -0500
+Message-ID: <548FFCF3.9080303@nod.at>
+Date: Tue, 16 Dec 2014 10:35:47 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <548FCE8F.7090106@rock-chips.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Christoph Hellwig <hch@infradead.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: [GIT PULL] Staging driver patches for 3.19-rc1
+References: <20141215175535.GA4665@kroah.com> <CAFLxGvwvj_ihWQQV3yY8Czxt0F2ieP=CRBrPMKqUatpjj9zdvQ@mail.gmail.com> <20141215183915.GA15554@infradead.org> <20141215184103.GA6761@kroah.com> <20141215185638.GA8036@kroah.com>
+In-Reply-To: <20141215185638.GA8036@kroah.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 02:17:51PM +0800, Kuankuan.Yang wrote:
-> hdmi-audio driver share irq with dw_hdmi driver,  for continuing AHBAUDDMA
-> or for detecting hdmi insert.
-> So maybe it's hard to switch to simple-card way,  Russell what's your
-> opinion ?
+Am 15.12.2014 um 19:56 schrieb Greg KH:
+> On Mon, Dec 15, 2014 at 10:41:03AM -0800, Greg KH wrote:
+>> On Mon, Dec 15, 2014 at 10:39:15AM -0800, Christoph Hellwig wrote:
+>>> On Mon, Dec 15, 2014 at 07:23:35PM +0100, Richard Weinberger wrote:
+>>>> I don't understand this kind of logic.
+>>>> a) Binder is considered a piece of shite.
+>>>> b) Google is working on a (hopefully sane) replacement.
+>>>>
+>>>> Why moving it out of staging then? What is the benefit?
+>>>
+>>> There is none, and Greg didn't even bother addressing the various
+>>> comments when this first came up.
+>>
+>> I thought I did, it was a long thread at the time, and I was on the road
+>> for 3 weeks, sorry if I missed something.
+>>
+>>> So a clear NAK from me on this one.
+>>
+>> You don't have to maintain it, I do, so why does it concern you?
+> 
+> Ok, that was a bit snotty on my part, I apologize.
+> 
+> But really, this is self-contained, doesn't touch any core
+> infrastructure, and is really just like any other driver for hardware
+> that people don't use.  It shouldn't affect anything elsewhere in the
+> kernel, so objecting to it seems odd to me.
 
-My "opinion" is that I need to spend some time looking in depth at both
-your code and my code before I can form an idea of how to proceed.
+Doesn't it use internal stuff from fs/file.c?
+Anyway, Linus pulled it.
 
-However, since I seem to be spending a lot of time chasing regressions
-which have appeared in v3.18, I don't have a lot of time to look at this
-right now.
+I'm just a bit astonished that binder finally sneaked into the
+core kernel. Hopefully no smart ass will ever decide to make
+some userspace component hard depend on it...
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Thanks,
+//richard
