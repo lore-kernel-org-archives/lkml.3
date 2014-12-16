@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaLPPGl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 10:06:41 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:47082 "EHLO mailhub1.si.c-s.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133AbaLPPDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 10:03:42 -0500
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: [PATCH 05/11] powerpc/8xx: Optimise access to swapper_pg_dir
-Message-Id: <20141216150338.D4F0A1A5E0A@localhost.localdomain>
-Date: Tue, 16 Dec 2014 16:03:38 +0100 (CET)
+	id S1751030AbaLPPKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 10:10:15 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:44507 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbaLPPKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 10:10:13 -0500
+MIME-Version: 1.0
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <5490491E.70102@hurleysoftware.com>
+References: <1418681761-3709-1-git-send-email-imre.deak@intel.com>
+	<1418681761-3709-3-git-send-email-imre.deak@intel.com>
+	<20141216075300.GI2711@phenom.ffwll.local>
+	<1418725405.3185.31.camel@ideak-mobl>
+	<54902AA1.7080301@hurleysoftware.com>
+	<1418740692.7338.33.camel@intelbox>
+	<5490491E.70102@hurleysoftware.com>
+Date: Tue, 16 Dec 2014 16:10:12 +0100
+Message-ID: <CAKMK7uGbT6LYW5+75sowtJ95yitTTUbwRFhuWqeGKJNAUDY7kg@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] vt: fix console lock vs. kernfs s_active lock order
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Imre Deak <imre.deak@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All accessed to PGD entries are done via 0(r11).
-By using lower part of swapper_pg_dir as load index to r11, we can remove the
-ori instruction.
+On Tue, Dec 16, 2014 at 4:00 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> The fix will be anyway the same in principal even after Daniel's planned
+>> rework for fbcon/fbdev: not holding the console_lock while freeing the
+>> sysfs entries.
+>
+> Oh, I didn't know Daniel was planning to rework fbcon/fbdev.
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+I don't. I've tried, cried and failed, so maybe in my next live ;-)
+But what I've tried was "let's fix fbcon" which was probably a bit too
+ambigitous. Splitting the notifier chains should be a lot more doable
+(but still lots of work I guess). The problem is it's not just the
+notifier chain that's broken with fbcon, but a lot more things:
+- initial modeset is done while holding the console lock. Would be
+true even after we fix this, since it's done as part of the con setup
+done by con_register. We'd need to do the modeset upfront, before
+registering fbcon.
+- panic handling is a joke with drm drivers and fbdev emulation plus
+fbcon - there's way too many sleeps and way too much code in the
+fbcon+drm panic path for this to ever work reliably as is. Would need
+massive rework. One of the most glaring things is that we have about 3
+things that tried to set up fbcon on panic (drm fbdev emulation panic
+handler, console unblanking on panic and fbcon panic handling).
 
----
- arch/powerpc/kernel/head_8xx.S | 22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
-
-diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index ae05f28..aa45225 100644
---- a/arch/powerpc/kernel/head_8xx.S
-+++ b/arch/powerpc/kernel/head_8xx.S
-@@ -322,13 +322,12 @@ InstructionTLBMiss:
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
- #ifdef CONFIG_MODULES
- 	beq	3f
--	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
--	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
-+	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@ha
- 3:
- #endif
- 	/* Insert level 1 index */
- 	rlwimi	r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
--	lwz	r11, 0(r11)	/* Get the level 1 entry */
-+	lwz	r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)	/* Get the level 1 entry */
- 
- 	/* Load the MI_TWC with the attributes for this "segment." */
- 	MTSPR_CPU6(SPRN_MI_TWC, r11, r3)	/* Set segment attributes */
-@@ -376,12 +375,11 @@ DataStoreTLBMiss:
- 	andis.	r11, r10, 0x8000
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
- 	beq	3f
--	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
--	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
-+	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@ha
- 3:
- 	/* Insert level 1 index */
- 	rlwimi	r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
--	lwz	r11, 0(r11)	/* Get the level 1 entry */
-+	lwz	r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)	/* Get the level 1 entry */
- 
- 	/* We have a pte table, so load fetch the pte from the table.
- 	 */
-@@ -510,12 +508,11 @@ FixupDAR:/* Entry point for dcbx workaround. */
- 	mfspr	r10, SPRN_SRR0
- 	andis.	r11, r10, 0x8000	/* Address >= 0x80000000 */
- 	mfspr	r11, SPRN_M_TW	/* Get level 1 table base address */
--	beq-	3f		/* Branch if user space */
--	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@h
--	ori	r11, r11, (swapper_pg_dir-PAGE_OFFSET)@l
-+	beq	3f
-+	lis	r11, (swapper_pg_dir-PAGE_OFFSET)@ha
- 	/* Insert level 1 index */
- 3:	rlwimi	r11, r10, 32 - ((PAGE_SHIFT - 2) << 1), (PAGE_SHIFT - 2) << 1, 29
--	lwz	r11, 0(r11)	/* Get the level 1 entry */
-+	lwz	r11, (swapper_pg_dir-PAGE_OFFSET)@l(r11)	/* Get the level 1 entry */
- 	rlwinm	r11, r11,0,0,19	/* Extract page descriptor page address */
- 	/* Insert level 2 index */
- 	rlwimi	r11, r10, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
-@@ -670,8 +667,7 @@ start_here:
- 	 * init's THREAD like the context switch code does, but this is
- 	 * easier......until someone changes init's static structures.
- 	 */
--	lis	r6, swapper_pg_dir@h
--	ori	r6, r6, swapper_pg_dir@l
-+	lis	r6, swapper_pg_dir@ha
- 	tophys(r6,r6)
- #ifdef CONFIG_8xx_CPU6
- 	lis	r4, cpu6_errata_word@h
-@@ -850,6 +846,8 @@ _GLOBAL(set_context)
- 	stw	r4, 0x4(r5)
- #endif
- 
-+	li	r5, (swapper_pg_dir-PAGE_OFFSET)@l
-+	sub	r4, r4, r5
- #ifdef CONFIG_8xx_CPU6
- 	lis	r6, cpu6_errata_word@h
- 	ori	r6, r6, cpu6_errata_word@l
+It's imo unfixable overall, so my long term plan is to get rid of
+fbdev emulation, fbcon and all console_lock paths from kms drivers (we
+have that now with I915_FBDEV=n). And then provide consoles with
+userspace deamons (kmscon) and a very minimalistic crash-dump tooling
+for panic handling on bare-bones kms drivers (not yet there, but
+patches from David Herrmann are floating around).
+-Daniel
 -- 
-2.1.0
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
