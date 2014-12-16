@@ -1,87 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379AbaLPEw0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 23:52:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:30897 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881AbaLPEwZ (ORCPT
+	id S1751512AbaLPExQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 23:53:16 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:37918 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaLPExO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 23:52:25 -0500
-Message-ID: <548FBA62.5090603@oracle.com>
-Date: Mon, 15 Dec 2014 23:51:46 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 15 Dec 2014 23:53:14 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: sched: odd values for effective load calculations
-References: <547E42F7.5070105@gmail.com> <20141213083012.GH32572@gmail.com> <20141215121227.GZ29390@twins.programming.kicks-ass.net>
-In-Reply-To: <20141215121227.GZ29390@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20141215234443.GA23297@lerouge>
+References: <20141211194204.GA19083@wfg-t540p.sh.intel.com>
+	<CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com>
+	<548E8D01.9050707@linux.vnet.ibm.com>
+	<CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
+	<20141215234443.GA23297@lerouge>
+Date: Tue, 16 Dec 2014 10:23:14 +0530
+Message-ID: <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com>
+Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 07:12 AM, Peter Zijlstra wrote:
-> 
-> Sorry for the long delay, I was out for a few weeks due to having become
-> a dad for the second time.
++ Peter from Jacob's mail ..
 
-Congrats! May you be able to sleep at night sooner rather than later.
+On 16 December 2014 at 05:14, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> So to summarize: I see it enqueues a timer then it loops on that timer expiration.
+> On that loop we stop the CPU and we expect the timer to fire and wake the thread up.
+> But if the delayed tick fires too early, before the timer actually
+> expires, then we go to sleep again because we haven't yet reached the delay,
+> but since tick_nohz_irq_exit() is only called on idle tasks and not for threads
+> like powerclamp, the tick isn't rescheduled to handle the remaining timer slice
+> so we sleep forever.
 
-> On Sat, Dec 13, 2014 at 09:30:12AM +0100, Ingo Molnar wrote:
->> * Sasha Levin <levinsasha928@gmail.com> wrote:
->>
->>> Hi all,
->>>
->>> I was fuzzing with trinity inside a KVM tools guest, running the latest -next
->>> kernel along with the undefined behaviour sanitizer patch, and hit the following:
->>>
->>> [  787.894288] ================================================================================
->>> [  787.897074] UBSan: Undefined behaviour in kernel/sched/fair.c:4541:17
->>> [  787.898981] signed integer overflow:
->>> [  787.900066] 361516561629678 * 101500 cannot be represented in type 'long long int'
-> 
-> So that's:
-> 
-> 	this_eff_load *= this_load +
-> 		effective_load(tg, this_cpu, weight, weight);
-> 
-> Going by the numbers the 101500 must be 'this_eff_load', 100 * ~1024
-> makes that. Which makes the rhs 'large'. Do you have
-> CONFIG_FAIR_GROUP_SCHED enabled? If so, what kind of cgroup hierarchy
-> are you using?
+Perfect !!
 
-CONFIG_FAIR_GROUP_SCHED is enabled. There's no cgroup set-up initially,
-but I figure that trinity is able to do crazy things here.
+> Hence if we really want to stop the tick when we mimic idle from powerclamp driver,
+> we must call tick_nohz_irq_exit() on irq exit to do it correctly.
+>
+> It happened to work by accident before the commit because we were rescheduling the
+> tick from itself without tick_nohz_irq_exit() to cancel anything. And that restored
+> the periodic behaviour necessary to complete the delay.
+>
+> So the above change is rather a hack than a solution.
+>
+> We have several choices:
+>
+> 1) Revert the commit. But this has to be a temporary solution really. Powerclamp has
+> to be fixed and handle tick_nohz_irq_exit().
+>
+> 2) Remove powerclamp tick stop until somebody fixes it to handle nohz properly.
+>
+> 2) Fix it directly. But I believe there is a release that is going to miss the fix
+> and suffer the regression. Does the regression matter for anybody? Is powerclamp
+> meant for anything else than testing (I have no idea what it's used for)?
+>
+> So to fix powerclamp to handle nohz correctly, tick_nohz_irq_exit() must be called
+> for both idle tasks and powerclamp kthreads. Checking ts->inidle can be a good way to match
+> both. That means we might need to use a reduced part of idle_cpu() to avoid redundant checks.
+> tick_irq_enter() must be called as well for powerclamp, in case it's the only CPU running, it
+> has to fixup the timekeeping alone.
 
-> In any case, bit sad this doesn't have a register dump included :/
-> 
-> Is this easy to reproduce or something that happened once?
+Yeah, you can call my fix a Hacky one. I agree..
 
-It's fairy reproducible, I've seen it happen quite a few times. What other
-information might be useful?
+But I don't know if calling tick_nohz_irq_exit() from these threads wouldn't
+be hacky as well. And ofcourse my knowledge wouldn't be adequate here to
+judge that :)
 
->>> The values for effective load seem a bit off (and are overflowing!).
->>
->> It definitely looks like a bug in SMP load balancing!
-> 
-> Yeah, although theoretically (and somewhat practical) this can be
-> triggered in more places if you manage to run up the 'weight' with
-> enough tasks.
-> 
-> That said, it should at worst result in 'funny' balancing behaviour, not
-> anything else.
+It looked a bit odd to me. Why should we call irq-exit from the threads working
+with idle? And that's not what we do even for the real-idle loop as well ..
 
-I'm not sure if you've caught up on the RCU stall issue we've been trying
-to track down (https://lkml.org/lkml/2014/11/14/656), but could this "funny"
-balancing behaviour be "funny" enough to cause a stall?
+Also from Jacob's referenced patch, we would be moving to a consolidated
+idle-loop for both real idle and threads like powerclamp, and this part may be
+tricky then..
+
+Untested, but what about something like this?
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 5918d227730f..5e4bfc367735 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -321,7 +321,7 @@ asmlinkage __visible void do_softirq(void)
+ void irq_enter(void)
+ {
+        rcu_irq_enter();
+-       if (is_idle_task(current) && !in_interrupt()) {
++       if (tick_idle_active() && !in_interrupt()) {
+                /*
+                 * Prevent raise_softirq from needlessly waking up ksoftirqd
+                 * here, as softirq will be serviced on return from interrupt.
+@@ -363,7 +363,7 @@ static inline void tick_irq_exit(void)
+        int cpu = smp_processor_id();
+
+        /* Make sure that timer wheel updates are propagated */
+-       if ((idle_cpu(cpu) && !need_resched()) || tick_nohz_full_cpu(cpu)) {
++       if ((tick_idle_active() && !need_resched()) ||
+tick_nohz_full_cpu(cpu)) {
+                if (!in_interrupt())
+                        tick_nohz_irq_exit();
+        }
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 07c2bad0afce..e52b76037c0a 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -46,6 +46,13 @@ struct tick_sched *tick_get_tick_sched(int cpu)
+        return &per_cpu(tick_cpu_sched, cpu);
+ }
+
++bool tick_idle_active(void)
++{
++       struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++       return ts->idle_active;
++}
++
+ /*
+  * Must be called with interrupts disabled !
+  */
 
 
-Thanks,
-Sasha
+I am not sure of the purpose of the idle-checks in the irq-paths.
+All I understood from git logs is, these are to check if we
+came out of dynticks mode and need to start/stop ticks again..
 
+Then why not handle these idle mimicking threads as well?
+We just need to check ts->idle_active which will take care of both
+the cases, real idle and these threads..
+
+Sorry, if this will break things further :(
+
+--
+viresh
