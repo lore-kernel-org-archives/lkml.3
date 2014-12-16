@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751013AbaLPCh7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 21:37:59 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:33065 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaLPCh4 (ORCPT
+	id S1751105AbaLPCis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 21:38:48 -0500
+Received: from regular1.263xmail.com ([211.150.99.134]:60259 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaLPCir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 21:37:56 -0500
-X-Original-SENDERIP: 10.177.222.213
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Tue, 16 Dec 2014 11:42:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: akpm@linuxfoundation.org, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linux-mm@kvack.org, penberg@kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Subject: Re: [PATCH 3/7] slub: Do not use c->page on free
-Message-ID: <20141216024210.GB23270@js1304-P5Q-DELUXE>
-References: <20141210163017.092096069@linux.com>
- <20141210163033.717707217@linux.com>
- <20141215080338.GE4898@js1304-P5Q-DELUXE>
- <alpine.DEB.2.11.1412150815210.20101@gentwo.org>
+	Mon, 15 Dec 2014 21:38:47 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: ykk@rock-chips.com
+X-FST-TO: jsarha@ti.com
+X-SENDER-IP: 104.167.231.21
+X-LOGIN-NAME: ykk@rock-chips.com
+X-UNIQUE-TAG: <60d51f8eea06bc37a93d203a9658c2d6>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <548F9B27.9070008@rock-chips.com>
+Date: Tue, 16 Dec 2014 10:38:31 +0800
+From: "Kuankuan.Yang" <ykk@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412150815210.20101@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?UTF-8?B?U3Tvv73vv71waGFuZSBNYXJjaGVzaW4=?= <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Jyri Sarha <jsarha@ti.com>
+Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <1418612114-19692-1-git-send-email-ykk@rock-chips.com> <20141215104029.GE11285@n2100.arm.linux.org.uk> <20141215120205.GZ11764@sirena.org.uk> <548EDDC2.9050104@rock-chips.com> <20141215161827.GE11764@sirena.org.uk>
+In-Reply-To: <20141215161827.GE11764@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 08:16:00AM -0600, Christoph Lameter wrote:
-> On Mon, 15 Dec 2014, Joonsoo Kim wrote:
-> 
-> > > +static bool same_slab_page(struct kmem_cache *s, struct page *page, void *p)
-> > > +{
-> > > +	long d = p - page->address;
-> > > +
-> > > +	return d > 0 && d < (1 << MAX_ORDER) && d < (compound_order(page) << PAGE_SHIFT);
-> > > +}
-> > > +
-> >
-> > Somtimes, compound_order() induces one more cacheline access, because
-> > compound_order() access second struct page in order to get order. Is there
-> > any way to remove this?
-> 
-> I already have code there to avoid the access if its within a MAX_ORDER
-> page. We could probably go for a smaller setting there. PAGE_COSTLY_ORDER?
 
-That is the solution to avoid compound_order() call when slab of
-object isn't matched with per cpu slab.
+在 2014年12月16日 00:18, Mark Brown 写道:
+> On Mon, Dec 15, 2014 at 09:10:26PM +0800, Kuankuan.Yang wrote:
+>> Hi Mark & Russell:
+> Please don't top post, that way people have some context for what you're
+> saying - look at how people normally format their mails on thelist.
 
-What I'm asking is whether there is a way to avoid compound_order() call when slab
-of object is matched with per cpu slab or not.
+got it,  thanks for your remind.
 
-Thanks.
+>> In that way, dt will only need compatible for creating sound device. is it
+>> ok  ?
+>> sound {
+>>      compatible = "rockchip,rk3288-hdmi-audio";
+>>      status = "okay";
+>> }
+>> could you give me some advises.
+> That'd be good, though the other question is if this can be made to use
+> simple-card so we can avoid having a custom driver for this.
+
+
