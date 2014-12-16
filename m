@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaLPTwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 14:52:41 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47883 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306AbaLPTwg (ORCPT
+	id S1751584AbaLPTwu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 14:52:50 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:41154 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751416AbaLPTwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 14:52:36 -0500
+	Tue, 16 Dec 2014 14:52:41 -0500
 From: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
 To: hjk@hansjkoch.de, gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
         linux-fsdevel@vger.kernel.org,
         Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
-Subject: [PATCH 1/4] staging: uio: Simplify the lifetime logic of struct uio_device.
-Date: Tue, 16 Dec 2014 11:52:21 -0800
-Message-Id: <1418759544-2610-2-git-send-email-mandeep.sandhu@cyaninc.com>
+Subject: [PATCH 3/4] staging: libunload: A library to help remove open files
+Date: Tue, 16 Dec 2014 11:52:23 -0800
+Message-Id: <1418759544-2610-4-git-send-email-mandeep.sandhu@cyaninc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418759544-2610-1-git-send-email-mandeep.sandhu@cyaninc.com>
 References: <1418759544-2610-1-git-send-email-mandeep.sandhu@cyaninc.com>
@@ -22,159 +22,284 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Embed struct device into struct uio_device, and use
-the refcounting and the release method of struct device
-to control struct uio_device.
+The problem of how to remove open files due to module unloading or
+device hotunplugging keeps coming up.  We have multiple implementations
+of roughly the same logic in proc, sysctl, sysfs, tun and now I am
+working on yet another one for uio. It is time to start working on a
+generic implementation.
 
-This allows device_create and device_destroy to be replaced
-with the more standard device_register and device_unregister,
-and allows the struct device reference count to act as a
-reference count on struct idev as well.
+This library does not aim to allow wrapping any arbitray set of file
+operations and making it safe to unload any module. This library aims
+to work in conjunction with the code implementiong an object to make it
+safe to remove the object while file handles to it are still open.
+libunload implements the necessary locking and logic to make it
+striaght forward to implement file_operations for objects that are
+removed at runtime.
+
+It is hard to arrange for the ->close method of vm_operations_struct to
+be called when an object is being removed, and this code doesn't even
+attempt to help with that. Instead it is assumed that calling ->close
+is not needed. Without close support mmap at hotunplug time is simply a
+matter of calling umap_mapping_range() to invaildate the mappings, and
+to arrange for vm_fault to return VM_FAULT_SIGBUS when the
+unload_trylock fails.
+
+Wait queues and fasync queues can safely be woken up after
+unload_barrier making the semantics clean. The fasync entries can be
+freed as a list of all of the file descriptors is kept. poll entries
+can not be freed so the poll wait queue heads must be kept around. If
+someone else's poll method is being wrapped, the wrapped poll wait
+queue head could be freed, but it requires that there is a wrapping
+wait queue head that is kept around. If there is no other way wrapping
+a poll wait queue head seems practical but in general it isn't
+particularly useful.
+
+libunload is best understood from the perspective of code that calls
+unload_barrier(). Past the unload barrier it is guaranteed that there
+is no code in the critical sections protectecd by the unload lock, and
+the unload release lock. Past the unload barrier it is safe to call the
+release methods for remaining file descriptors, to ensure some logical
+state does not persist.
 
 Tested-by: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
 Signed-off-by: Mandeep Sandhu <mandeep.sandhu@cyaninc.com>
 ---
- drivers/uio/uio.c          | 41 ++++++++++++++++++++++++++---------------
- include/linux/uio_driver.h |  3 ++-
- 2 files changed, 28 insertions(+), 16 deletions(-)
+ fs/Makefile            |   2 +-
+ fs/libunload.c         | 169 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/unload.h |  35 ++++++++++
+ 3 files changed, 205 insertions(+), 1 deletion(-)
+ create mode 100644 fs/libunload.c
+ create mode 100644 include/linux/unload.h
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 60fa627..708b093 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -16,7 +16,6 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/poll.h>
--#include <linux/device.h>
- #include <linux/slab.h>
- #include <linux/mm.h>
- #include <linux/idr.h>
-@@ -270,7 +269,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 		if (!map_found) {
- 			map_found = 1;
- 			idev->map_dir = kobject_create_and_add("maps",
--							&idev->dev->kobj);
-+							&idev->device.kobj);
- 			if (!idev->map_dir)
- 				goto err_map;
- 		}
-@@ -295,7 +294,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 		if (!portio_found) {
- 			portio_found = 1;
- 			idev->portio_dir = kobject_create_and_add("portio",
--							&idev->dev->kobj);
-+							&idev->device.kobj);
- 			if (!idev->portio_dir)
- 				goto err_portio;
- 		}
-@@ -334,7 +333,7 @@ err_map_kobj:
- 		kobject_put(&map->kobj);
- 	}
- 	kobject_put(idev->map_dir);
--	dev_err(idev->dev, "error creating sysfs files (%d)\n", ret);
-+	dev_err(&idev->device, "error creating sysfs files (%d)\n", ret);
- 	return ret;
- }
+diff --git a/fs/Makefile b/fs/Makefile
+index da0bbb4..7ad5341 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -11,7 +11,7 @@ obj-y :=	open.o read_write.o file_table.o super.o \
+ 		attr.o bad_inode.o file.o filesystems.o namespace.o \
+ 		seq_file.o xattr.o libfs.o fs-writeback.o \
+ 		pnode.o splice.o sync.o utimes.o \
+-		stack.o fs_struct.o statfs.o fs_pin.o
++		stack.o fs_struct.o statfs.o fs_pin.o libunload.o
  
-@@ -371,7 +370,7 @@ static int uio_get_minor(struct uio_device *idev)
- 		idev->minor = retval;
- 		retval = 0;
- 	} else if (retval == -ENOSPC) {
--		dev_err(idev->dev, "too many uio devices\n");
-+		dev_err(&idev->device, "too many uio devices\n");
- 		retval = -EINVAL;
- 	}
- 	mutex_unlock(&minor_lock);
-@@ -785,6 +784,13 @@ static void release_uio_class(void)
- 	uio_major_cleanup();
- }
- 
-+static void uio_device_release(struct device *dev)
-+{
-+	struct uio_device *idev = dev_get_drvdata(dev);
+ ifeq ($(CONFIG_BLOCK),y)
+ obj-y +=	buffer.o block_dev.o direct-io.o mpage.o
+diff --git a/fs/libunload.c b/fs/libunload.c
+new file mode 100644
+index 0000000..0a365bb
+--- /dev/null
++++ b/fs/libunload.c
+@@ -0,0 +1,169 @@
++#include <linux/fs.h>
++#include <linux/mm_types.h>
++#include <linux/mm.h>
++#include <linux/spinlock.h>
++#include <linux/module.h>
++#include <linux/unload.h>
 +
-+	devm_kfree(dev->parent, idev);
++struct unload_barrier {
++	struct completion   completion;
++	int         releasers;
++};
++
++void unload_init(struct unload *unload)
++{
++	INIT_HLIST_HEAD(&unload->ufiles);
++	spin_lock_init(&unload->lock);
++	unload->active = 1;
++	unload->barrier = NULL;
++}
++EXPORT_SYMBOL_GPL(unload_init);
++
++void unload_file_init(struct unload_file *ufile,
++		      struct file *file,
++		      struct unload *unload)
++{
++	ufile->file = file;
++	ufile->unload = unload;
++	INIT_HLIST_NODE(&ufile->list);
++}
++EXPORT_SYMBOL_GPL(unload_file_init);
++
++bool unload_trylock(struct unload *unload)
++{
++	bool locked = false;
++
++	spin_lock(&unload->lock);
++	if (likely(!unload->barrier)) {
++		unload->active++;
++		locked = true;
++	}
++	spin_unlock(&unload->lock);
++	return locked;
++}
++EXPORT_SYMBOL_GPL(unload_trylock);
++
++static void __unload_unlock(struct unload *unload)
++{
++	unload->active--;
++	if ((unload->active == 0) && (unload->barrier->releasers == 0))
++		complete(&unload->barrier->completion);
 +}
 +
- /**
-  * uio_register_device - register a new userspace IO device
-  * @owner:	module that creates the new device
-@@ -819,14 +825,19 @@ int __uio_register_device(struct module *owner,
- 	if (ret)
- 		return ret;
- 
--	idev->dev = device_create(&uio_class, parent,
--				  MKDEV(uio_major, idev->minor), idev,
--				  "uio%d", idev->minor);
--	if (IS_ERR(idev->dev)) {
--		printk(KERN_ERR "UIO: device register failed\n");
--		ret = PTR_ERR(idev->dev);
-+	idev->device.devt = MKDEV(uio_major, idev->minor);
-+	idev->device.class = &uio_class;
-+	idev->device.parent = parent;
-+	idev->device.release = uio_device_release;
-+	dev_set_drvdata(&idev->device, idev);
++void unload_unlock(struct unload *unload)
++{
++	spin_lock(&unload->lock);
++	__unload_unlock(unload);
++	spin_unlock(&unload->lock);
++}
++EXPORT_SYMBOL_GPL(unload_unlock);
 +
-+	ret = kobject_set_name(&idev->device.kobj, "uio%d", idev->minor);
-+	if (ret)
-+		goto err_device_create;
++static void __unload_file_attach(struct unload_file *ufile,
++				 struct unload *unload)
++{
++	ufile->unload = unload;
++	hlist_add_head(&ufile->list, &unload->ufiles);
++}
 +
-+	ret = device_register(&idev->device);
-+	if (ret)
- 		goto err_device_create;
--	}
- 
- 	ret = uio_dev_add_attributes(idev);
- 	if (ret)
-@@ -835,7 +846,7 @@ int __uio_register_device(struct module *owner,
- 	info->uio_dev = idev;
- 
- 	if (info->irq && (info->irq != UIO_IRQ_CUSTOM)) {
--		ret = devm_request_irq(idev->dev, info->irq, uio_interrupt,
-+		ret = devm_request_irq(&idev->device, info->irq, uio_interrupt,
- 				  info->irq_flags, info->name, idev);
- 		if (ret)
- 			goto err_request_irq;
-@@ -846,7 +857,7 @@ int __uio_register_device(struct module *owner,
- err_request_irq:
- 	uio_dev_del_attributes(idev);
- err_uio_dev_add_attributes:
--	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
-+	device_unregister(&idev->device);
- err_device_create:
- 	uio_free_minor(idev);
- 	return ret;
-@@ -871,7 +882,7 @@ void uio_unregister_device(struct uio_info *info)
- 
- 	uio_dev_del_attributes(idev);
- 
--	device_destroy(&uio_class, MKDEV(uio_major, idev->minor));
-+	device_unregister(&idev->device);
- 
- 	return;
- }
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index baa8171..3ed7fca 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -14,6 +14,7 @@
- #ifndef _UIO_DRIVER_H_
- #define _UIO_DRIVER_H_
- 
-+#include <linux/device.h>
- #include <linux/fs.h>
- #include <linux/interrupt.h>
- 
-@@ -65,7 +66,7 @@ struct uio_port {
- 
- struct uio_device {
-         struct module           *owner;
--        struct device           *dev;
-+	struct device           device;
-         int                     minor;
-         atomic_t                event;
-         struct fasync_struct    *async_queue;
++void unload_file_attach(struct unload_file *ufile, struct unload *unload)
++{
++	spin_lock(&unload->lock);
++	__unload_file_attach(ufile, unload);
++	spin_unlock(&unload->lock);
++}
++EXPORT_SYMBOL_GPL(unload_file_attach);
++
++static void __unload_file_detach(struct unload_file *ufile)
++{
++	hlist_del_init(&ufile->list);
++}
++
++void unload_file_detach(struct unload_file *ufile)
++{
++	struct unload *unload = ufile->unload;
++
++	spin_lock(&unload->lock);
++	__unload_file_detach(ufile);
++	spin_unlock(&unload->lock);
++}
++EXPORT_SYMBOL_GPL(unload_file_detach);
++
++struct unload_file *find_unload_file(struct unload *unload, struct file *file)
++{
++	struct unload_file *ufile;
++
++	spin_lock(&unload->lock);
++	hlist_for_each_entry(ufile, &unload->ufiles, list) {
++		if (ufile->file == file)
++			goto done;
++	}
++	ufile = NULL;
++done:
++	spin_unlock(&unload->lock);
++	return ufile;
++}
++EXPORT_SYMBOL_GPL(find_unload_file);
++
++bool unload_release_trylock(struct unload_file *ufile)
++{
++	struct unload *unload = ufile->unload;
++	bool locked = false;
++
++	spin_lock(&unload->lock);
++	if (!hlist_unhashed(&ufile->list))
++		locked = true;
++	spin_unlock(&unload->lock);
++	return locked;
++}
++EXPORT_SYMBOL_GPL(unload_release_trylock);
++
++void unload_release_unlock(struct unload_file *ufile)
++{
++	struct unload *unload = ufile->unload;
++	struct unload_barrier *barrier;
++
++	spin_lock(&unload->lock);
++	__unload_file_detach(ufile);
++	barrier = unload->barrier;
++	if (barrier) {
++		barrier->releasers -= 1;
++		if ((barrier->releasers == 0) && (unload->active == 0))
++			complete(&barrier->completion);
++	}
++	spin_unlock(&unload->lock);
++}
++EXPORT_SYMBOL_GPL(unload_release_unlock);
++
++
++void unload_barrier(struct unload *unload)
++{
++	struct unload_barrier barrier;
++	struct unload_file *ufile;
++
++	/* Guarantee that when this function returns I am not
++	 * executing any code protected by the unload_lock or
++	 * unload_releas_lock, and that I will never again execute
++	 * code protected by those locks.
++	 *
++	 * Also guarantee the file count for every file remaining on
++	 * the unload ufiles list has been incremented.  The increment
++	 * of the file count guarantees __fput will not be called.
++	 */
++	init_completion(&barrier.completion);
++	barrier.releasers = 0;
++
++	spin_lock(&unload->lock);
++	unload->barrier = &barrier;
++
++	hlist_for_each_entry(ufile, &unload->ufiles, list)
++		if (!atomic_long_inc_not_zero(&ufile->file->f_count))
++			barrier.releasers++;
++	unload->active--;
++	if (unload->active || barrier.releasers) {
++		spin_unlock(&unload->lock);
++		wait_for_completion(&barrier.completion);
++		spin_lock(&unload->lock);
++	}
++	spin_unlock(&unload->lock);
++}
++EXPORT_SYMBOL_GPL(unload_barrier);
+diff --git a/include/linux/unload.h b/include/linux/unload.h
+new file mode 100644
+index 0000000..83d378f
+--- /dev/null
++++ b/include/linux/unload.h
+@@ -0,0 +1,35 @@
++#ifndef _LINUX_UNLOAD_H
++#define _LINUX_UNLOAD_H
++
++#include <linux/list.h>
++
++struct file;
++struct vm_operations_struct;
++struct unload_barrier;
++
++struct unload {
++	struct hlist_head   ufiles;
++	struct unload_barrier   *barrier;
++	spinlock_t      lock;
++	int         active;
++};
++
++struct unload_file {
++	struct unload       *unload;
++	struct hlist_node   list;
++	struct file         *file;
++};
++
++void unload_init(struct unload *unload);
++void unload_file_init(struct unload_file *ufile,
++		      struct file *file,
++		      struct unload *unload);
++bool unload_trylock(struct unload *unload);
++void unload_unlock(struct unload *unload);
++bool unload_release_trylock(struct unload_file *ufile);
++void unload_release_unlock(struct unload_file *ufile);
++void unload_file_attach(struct unload_file *ufile, struct unload *unload);
++void unload_file_detach(struct unload_file *ufile);
++struct unload_file *find_unload_file(struct unload *unload, struct file *file);
++void unload_barrier(struct unload *unload);
++#endif /* _LINUX_UNLOAD_H */
 -- 
 1.9.1
 
