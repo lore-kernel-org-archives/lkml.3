@@ -1,47 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaLPVEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:04:47 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:56632 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaLPVEq (ORCPT
+	id S1751933AbaLPVFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:05:52 -0500
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:61538 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaLPVFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:04:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1415863357-15680-2-git-send-email-kever.yang@rock-chips.com>
-References: <1415863357-15680-1-git-send-email-kever.yang@rock-chips.com>
-	<1415863357-15680-2-git-send-email-kever.yang@rock-chips.com>
-Date: Tue, 16 Dec 2014 13:04:45 -0800
-X-Google-Sender-Auth: oxiyiyMfVIvCsNAa6OSCraO2Lbg
-Message-ID: <CAD=FV=US1eS4jj-uVFpG2hYFQ3W1D-B3D_ysaCrbee8L=dEU-g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] clk: rockchip: use the clock ID for usbphy480m_src
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Dec 2014 16:05:49 -0500
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sifan Naeem <sifan.naeem@imgtec.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH 2/3] spi: img-spfi: Select FIFO based on transfer length
+Date: Tue, 16 Dec 2014 13:05:45 -0800
+Message-Id: <1418763946-22260-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1418763946-22260-1-git-send-email-abrestic@chromium.org>
+References: <1418763946-22260-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+Since the 32-bit FIFO is deeper (64 bytes) than the 8-bit FIFO (16 bytes),
+use the 32-bit FIFO when there are at least 32 bits remaining to be
+transferred in PIO mode or when the transfer length is 32-bit aligned
+in DMA mode.
 
-On Wed, Nov 12, 2014 at 11:22 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> Use the clock ID for usbphy480m_src so that we can find
-> this clock node in dts.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
->  drivers/clk/rockchip/clk-rk3288.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/spi/spi-img-spfi.c | 49 ++++++++++++++++++----------------------------
+ 1 file changed, 19 insertions(+), 30 deletions(-)
 
-Tested-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+diff --git a/drivers/spi/spi-img-spfi.c b/drivers/spi/spi-img-spfi.c
+index e7e79e6..2b29df0 100644
+--- a/drivers/spi/spi-img-spfi.c
++++ b/drivers/spi/spi-img-spfi.c
+@@ -160,16 +160,16 @@ static unsigned int spfi_pio_write32(struct img_spfi *spfi, const u32 *buf,
+ 	unsigned int count = 0;
+ 	u32 status;
+ 
+-	while (count < max) {
++	while (count < max / 4) {
+ 		spfi_writel(spfi, SPFI_INTERRUPT_SDFUL, SPFI_INTERRUPT_CLEAR);
+ 		status = spfi_readl(spfi, SPFI_INTERRUPT_STATUS);
+ 		if (status & SPFI_INTERRUPT_SDFUL)
+ 			break;
+-		spfi_writel(spfi, buf[count / 4], SPFI_TX_32BIT_VALID_DATA);
+-		count += 4;
++		spfi_writel(spfi, buf[count], SPFI_TX_32BIT_VALID_DATA);
++		count++;
+ 	}
+ 
+-	return count;
++	return count * 4;
+ }
+ 
+ static unsigned int spfi_pio_write8(struct img_spfi *spfi, const u8 *buf,
+@@ -196,17 +196,17 @@ static unsigned int spfi_pio_read32(struct img_spfi *spfi, u32 *buf,
+ 	unsigned int count = 0;
+ 	u32 status;
+ 
+-	while (count < max) {
++	while (count < max / 4) {
+ 		spfi_writel(spfi, SPFI_INTERRUPT_GDEX32BIT,
+ 			    SPFI_INTERRUPT_CLEAR);
+ 		status = spfi_readl(spfi, SPFI_INTERRUPT_STATUS);
+ 		if (!(status & SPFI_INTERRUPT_GDEX32BIT))
+ 			break;
+-		buf[count / 4] = spfi_readl(spfi, SPFI_RX_32BIT_VALID_DATA);
+-		count += 4;
++		buf[count] = spfi_readl(spfi, SPFI_RX_32BIT_VALID_DATA);
++		count++;
+ 	}
+ 
+-	return count;
++	return count * 4;
+ }
+ 
+ static unsigned int spfi_pio_read8(struct img_spfi *spfi, u8 *buf,
+@@ -251,17 +251,15 @@ static int img_spfi_start_pio(struct spi_master *master,
+ 	       time_before(jiffies, timeout)) {
+ 		unsigned int tx_count, rx_count;
+ 
+-		switch (xfer->bits_per_word) {
+-		case 32:
++		if (tx_bytes >= 4)
+ 			tx_count = spfi_pio_write32(spfi, tx_buf, tx_bytes);
+-			rx_count = spfi_pio_read32(spfi, rx_buf, rx_bytes);
+-			break;
+-		case 8:
+-		default:
++		else
+ 			tx_count = spfi_pio_write8(spfi, tx_buf, tx_bytes);
++
++		if (rx_bytes >= 4)
++			rx_count = spfi_pio_read32(spfi, rx_buf, rx_bytes);
++		else
+ 			rx_count = spfi_pio_read8(spfi, rx_buf, rx_bytes);
+-			break;
+-		}
+ 
+ 		tx_buf += tx_count;
+ 		rx_buf += rx_count;
+@@ -331,14 +329,11 @@ static int img_spfi_start_dma(struct spi_master *master,
+ 
+ 	if (xfer->rx_buf) {
+ 		rxconf.direction = DMA_DEV_TO_MEM;
+-		switch (xfer->bits_per_word) {
+-		case 32:
++		if (xfer->len % 4 == 0) {
+ 			rxconf.src_addr = spfi->phys + SPFI_RX_32BIT_VALID_DATA;
+ 			rxconf.src_addr_width = 4;
+ 			rxconf.src_maxburst = 4;
+-			break;
+-		case 8:
+-		default:
++		} else {
+ 			rxconf.src_addr = spfi->phys + SPFI_RX_8BIT_VALID_DATA;
+ 			rxconf.src_addr_width = 1;
+ 			rxconf.src_maxburst = 1;
+@@ -358,18 +353,14 @@ static int img_spfi_start_dma(struct spi_master *master,
+ 
+ 	if (xfer->tx_buf) {
+ 		txconf.direction = DMA_MEM_TO_DEV;
+-		switch (xfer->bits_per_word) {
+-		case 32:
++		if (xfer->len % 4 == 0) {
+ 			txconf.dst_addr = spfi->phys + SPFI_TX_32BIT_VALID_DATA;
+ 			txconf.dst_addr_width = 4;
+ 			txconf.dst_maxburst = 4;
+-			break;
+-		case 8:
+-		default:
++		} else {
+ 			txconf.dst_addr = spfi->phys + SPFI_TX_8BIT_VALID_DATA;
+ 			txconf.dst_addr_width = 1;
+ 			txconf.dst_maxburst = 1;
+-			break;
+ 		}
+ 		dmaengine_slave_config(spfi->tx_ch, &txconf);
+ 
+@@ -508,9 +499,7 @@ static void img_spfi_set_cs(struct spi_device *spi, bool enable)
+ static bool img_spfi_can_dma(struct spi_master *master, struct spi_device *spi,
+ 			     struct spi_transfer *xfer)
+ {
+-	if (xfer->bits_per_word == 8 && xfer->len > SPFI_8BIT_FIFO_SIZE)
+-		return true;
+-	if (xfer->bits_per_word == 32 && xfer->len > SPFI_32BIT_FIFO_SIZE)
++	if (xfer->len > SPFI_32BIT_FIFO_SIZE)
+ 		return true;
+ 	return false;
+ }
+-- 
+2.2.0.rc0.207.ga3a616c
+
