@@ -1,99 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224AbaLPUgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 15:36:12 -0500
-Received: from imap.thunk.org ([74.207.234.97]:59511 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791AbaLPUgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 15:36:10 -0500
-Date: Tue, 16 Dec 2014 15:35:46 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de, bp@alien8.de,
-        gnomes@lxorguk.ukuu.org.uk, computersforpeace@gmail.com,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/4] Stop maintainer abuse
-Message-ID: <20141216203546.GU17575@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Kevin Cernekee <cernekee@gmail.com>, tglx@linutronix.de,
-	bp@alien8.de, gnomes@lxorguk.ukuu.org.uk,
-	computersforpeace@gmail.com, torvalds@linux-foundation.org,
-	akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
- <20141216130939.166c4369@lwn.net>
+	id S1751469AbaLPUhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 15:37:46 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51617 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaLPUhp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 15:37:45 -0500
+Date: Tue, 16 Dec 2014 21:37:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ARM: at91: fix irq_pm_install_action WARNING
+In-Reply-To: <20141216192609.778f5f8d@bbrezillon>
+Message-ID: <alpine.DEB.2.11.1412162125000.17382@nanos>
+References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com> <2662748.NJbkr6jW7r@vostro.rjw.lan> <3542278.8lcJeXLMFm@vostro.rjw.lan> <20141216100715.57baeb65@bbrezillon> <alpine.DEB.2.11.1412161013570.17382@nanos>
+ <20141216192609.778f5f8d@bbrezillon>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141216130939.166c4369@lwn.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 01:09:39PM -0500, Jonathan Corbet wrote:
+On Tue, 16 Dec 2014, Boris Brezillon wrote:
+> On Tue, 16 Dec 2014 11:03:55 +0100 (CET)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> > That avoids the whole flag, action, whatever business for the price of
+> > a really trivial demux mechanism. Everything just works. Even the irq
+> > storm detector will just disable the parent interrupt once all
+> > handlers return NONE often enough.
 > 
-> In general, I worry about trying to codify things too much just because
-> different maintainers have different expectations.  As Linus noted, some
-> maintainers have their work done by the time the merge window starts and
-> can take patches just fine — until something catches fire, at least.
+> Still have one question regarding the spurious interrupt detection code.
+> AFAIU, it disables a specific IRQ handler if it triggers to often with
+> an IRQ_NONE return, right ?
+> 
+> In this dumb demuxer I can't tell which child interrupt should be
+> handled (there is no interrupt cause register), thus I call
+> generic_handle_irq on all unmasked IRQs.
+> Isn't there a risk to get some of my child interrupts disabled because
+> they always return IRQ_NONE (which is a normal use case for
+> IRQF_SHARED: we're only expecting at least one handler to return
+> IRQ_HANDLED or IRQ_WAKE_THREAD, not all of them) ?
 
-Yeah, I think it's going to be really different pretty much all
-maintainers.
+Good point. I missed that aspect.
 
-Speaking for myself, that's what patchwork is for.  There are plenty
-of other times besides merge window when I'm going to be super busy
---- say, because I'm travelling to a conference or for business
-reasons.  And those times are far more likely to be hard on me as a
-maintainer compared to the merge window.  So everyone's mileage going
-to vary widely.
+Another good reason to make that core infrastructure.
 
-And having a strict schedule like this:
+So what you need is the following:
 
-+  kernel.org "mainline:"  |  Patch may appear
-+  field when posted       |  in released kernel
-+  ------------------------+--------------------------------
-+  3.18-rc[1-4]            |  3.19
-+  3.18-rc[5-9]            |  3.20
-+  3.18                    |  Merge window open - don't post
-+  3.19-rc[1-4]            |  3.20
-+  3.19-rc[5-9]            |  3.21
-+  3.19                    |  Merge window open - don't post
-+
-+Bug fixes can typically be accepted at any time.
+void dumb_demux_handler(....)
+{
+	irq_return ret = IRQ_NONE:
+	int i;
 
-Seems like it's very, VERY bad ju-ju.  I'll take some feature patches
-as late as -rc6, if they are simple and I'm confident that regression
-testing will catch any problems (because for file systems, very often
-xfstests is far more likely to find problems than soak time in
-linux-next).
+	for_each_demux_irq(i)
+		ret |= handle_dumb_demux_irq(base + i);
 
-On the flip side, a feature patch, submitted between -rc2 and -rc3,
-might not make it because we want more people to look at it, better
-benchmarks, etc., etc.  Even a bug fix submitted at that point might
-not make it, especially if the bug is extremely rare (and we may have
-lived with it for years or decades), and the change is especially
-risky/hairy.
+	note_interrupt(demuxirq, ret);
+}   
 
-So having a schedule like this is very likely going to set all sorts
-of false expectations, and may end up causing just as many problems as
-it purports to solve.
+So that disables the demux irq if all sub handlers return NONE 100k
+times in a row. Otherwise if one of them handles it, you're fine.
 
-I wonder if this sort of thing is better placed in various unofficial
-documentations which help new users acculturate.  For example, see
-some of the slides in the last half of Sarah Sharp's presentation
-here:
+That more or less resembles the shared action magic.
 
-https://plus.google.com/+SarahSharp/posts/4GSqqGpg8cg
+So yes, that wants to be core functionality which can be instantiated
+from an affected irq chip for this particular case of HW insanity.
 
-That has the advantage of significantly reducing the risk that things
-that originally started out as preferences by a few maintainers
-getting turned into bureaucratic rules.
+Thanks,
 
-					- Ted
+	tglx
+
+
