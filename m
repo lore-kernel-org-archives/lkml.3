@@ -1,140 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109AbaLPVIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:08:24 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:56333 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaLPVIX (ORCPT
+	id S1751489AbaLPVNm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:13:42 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:58738 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaLPVNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:08:23 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Tue, 16 Dec 2014 16:08:21 -0500
-To: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH V2 2/2] ARM: dra7xx: Fix counter frequency drift for AM572x
- errata i856.
-Message-ID: <89b793993eaa492af531bd7aa9dff1f871fb4a77.1418762900.git.lsorense@csclub.uwaterloo.ca>
-References: <cover.1418762900.git.lsorense@csclub.uwaterloo.ca>
+	Tue, 16 Dec 2014 16:13:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL 1/3] ARM: SoC fixes for 3.19-rc1
+Date: Tue, 16 Dec 2014 22:13:10 +0100
+Message-ID: <5499732.TPqbyGxy2W@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1418762900.git.lsorense@csclub.uwaterloo.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Y86db2hNJHGmB5HNgVwpAqT5yuD1hSyVPlUsNNiAmirtf1wzlLp
+ 34YWjDJmGi0jucdDgmLliLncpS0PxIzjJ2a4f4OPUSAxpbctN9ZKg9zvZ3QVQy+6PDfMk5Z
+ pdqDrxvo+bKWm6J0tnmZocS5UMGkrcApf7NPfNJn2UWI6CGW2C73fggpYnw20h23ke8dGYH
+ 5q/8l5t2rLmUOsKHutc6g==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
-crystal is not enabled at power up.  Instead the CPU falls back to using
-an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
-20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
-but can also be 19.2 or 27MHz which result in much larger drift.
+The following changes since commit a0e4467726cd26bacb16f13d207ffcfa82ffc07d:
 
-Since this is used to drive the master counter at 32.768KHz * 375 /
-2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
-seconds per day, and more than the 500ppm NTP is able to tolerate.
+  Merge tag 'asm-generic-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic (2014-12-09 17:25:00 -0800)
 
-Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
-is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
-by known that the real counter frequency can be determined and used.
-The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 75 / 244.
+are available in the git repository at:
 
-Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
----
- arch/arm/mach-omap2/control.h |    4 ++++
- arch/arm/mach-omap2/timer.c   |   36 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 38 insertions(+), 2 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
 
-diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-index a3c0133..a80ac2d 100644
---- a/arch/arm/mach-omap2/control.h
-+++ b/arch/arm/mach-omap2/control.h
-@@ -286,6 +286,10 @@
- #define OMAP5XXX_CONTROL_STATUS                0x134
- #define OMAP5_DEVICETYPE_MASK          (0x7 << 6)
- 
-+/* DRA7XX CONTROL CORE BOOTSTRAP */
-+#define DRA7_CTRL_CORE_BOOTSTRAP	0x6c4
-+#define DRA7_SPEEDSELECT_MASK		(0x3 << 8)
-+
- /*
-  * REVISIT: This list of registers is not comprehensive - there are more
-  * that should be added.
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index fb0cb2b..7d45c84 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -54,6 +54,7 @@
- 
- #include "soc.h"
- #include "common.h"
-+#include "control.h"
- #include "powerdomain.h"
- #include "omap-secure.h"
- 
-@@ -496,7 +497,8 @@ static void __init realtime_counter_init(void)
- 	void __iomem *base;
- 	static struct clk *sys_clk;
- 	unsigned long rate;
--	unsigned int reg, num, den;
-+	unsigned int reg;
-+	unsigned long long num, den;
- 
- 	base = ioremap(REALTIME_COUNTER_BASE, SZ_32);
- 	if (!base) {
-@@ -511,6 +513,35 @@ static void __init realtime_counter_init(void)
- 	}
- 
- 	rate = clk_get_rate(sys_clk);
-+
-+	if (soc_is_dra7xx()) {
-+		/*
-+		 * Errata i856 says the 32.768KHz crystal does not start at
-+		 * power on, so the CPU falls back to an emulated 32KHz clock
-+		 * based on sysclk / 610 instead. This causes the master counter
-+		 * frequency to not be 6.144MHz but at sysclk / 610 * 375 / 2
-+		 * (OR sysclk * 75 / 244)
-+		 *
-+		 * This affects at least the DRA7/AM572x 1.0, 1.1 revisions.
-+		 * Of course any board built without a populated 32.768KHz
-+		 * crystal would also need this fix even if the CPU is fixed
-+		 * later.
-+		 *
-+		 * Either case can be detected by using the two speedselect bits
-+		 * If they are not 0, then the 32.768KHz clock driving the
-+		 * coarse counter that corrects the fine counter every time it
-+		 * ticks is actually rate/610 rather than 32.768KHz and we
-+		 * should compensate to avoid the 570ppm (at 20MHz, much worse
-+		 * at other rates) too fast system time.
-+		 */
-+		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
-+		if (reg & DRA7_SPEEDSELECT_MASK) {
-+			num = 75;
-+			den = 244;
-+			goto sysclk1_based;
-+		}
-+	}
-+
- 	/* Numerator/denumerator values refer TRM Realtime Counter section */
- 	switch (rate) {
- 	case 12000000:
-@@ -545,6 +576,7 @@ static void __init realtime_counter_init(void)
- 		break;
- 	}
- 
-+sysclk1_based:
- 	/* Program numerator and denumerator registers */
- 	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
- 			NUMERATOR_DENUMERATOR_MASK;
-@@ -556,7 +588,7 @@ static void __init realtime_counter_init(void)
- 	reg |= den;
- 	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
- 
--	arch_timer_freq = (rate / den) * num;
-+	arch_timer_freq = DIV_ROUND_UP_ULL(rate * num, den);
- 	set_cntfreq();
- 
- 	iounmap(base);
--- 
-1.7.10.4
+for you to fetch changes up to 5f1b2953da58e51e97eea9b7235545d72e9e1dab:
+
+  Merge tag 'renesas-defconfig-fixes-for-v3.19' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into fixes (2014-12-16 21:43:15 +0100)
+
+----------------------------------------------------------------
+ARM: SoC fixes for 3.19-rc1
+
+Here are the first arm-soc bug fixes. Most of these are OMAP related
+fixes for regressions or minor bugs. Aside from that, there are a
+few defconfig changes for various platforms.
+
+----------------------------------------------------------------
+Arnd Bergmann (1):
+      Merge tag 'renesas-defconfig-fixes-for-v3.19' of git://git.kernel.org/.../horms/renesas into fixes
+
+Felipe Balbi (1):
+      ARM: dts: am437x-sk: fix lcd enable pin mux data
+
+Johan Hovold (1):
+      ARM: OMAP2+: clock: remove unused function prototype
+
+Kevin Hilman (1):
+      Merge tag 'omap-for-v3.19/fixes-for-merge-window' of git://git.kernel.org/.../tmlind/linux-omap into fixes
+
+Lokesh Vutla (2):
+      ARM: dts: DRA7: wdt: Fix compatible property for watchdog node
+      ARM: OMAP2+: AM43x: Add ID for ES1.2
+
+Mark Brown (1):
+      iommu/exynos: Fix arm64 allmodconfig build
+
+Ravikumar Kattekola (2):
+      ARM: dts: dra7-evm: Fix typo in SMPS6 (VDD_GPU) max voltage
+      ARM: dts: dra7-evm: Update SMPS7 (VDD_CORE) max voltage to match DM
+
+Roger Quadros (1):
+      ARM: omap2plus_defconfig: Enable AHCI_PLATFORM driver
+
+Simon Horman (1):
+      Revert "ARM: shmobile: multiplatform: add Audo DMAC peri peri support on defconfig"
+
+Tomi Valkeinen (2):
+      ARM: dts: dra7: fix DSS PLL clock mux registers
+      ARM: dts: am437x-sk-evm.dts: fix LCD timings
+
+Tony Lindgren (2):
+      Merge branch 'omap-for-v3.19/fixes-not-urgent' into omap-for-v3.19/fixes
+      ARM: dts: Fix gpmc regression for omap 2430sdp smc91x
+
+Viresh Kumar (1):
+      ARM: defconfigs: use CONFIG_CPUFREQ_DT
+
+ arch/arm/boot/dts/am437x-sk-evm.dts  | 15 +++++++--------
+ arch/arm/boot/dts/dra7-evm.dts       |  4 ++--
+ arch/arm/boot/dts/dra7.dtsi          |  2 +-
+ arch/arm/boot/dts/dra72-evm.dts      |  2 +-
+ arch/arm/boot/dts/dra7xx-clocks.dtsi |  6 +++---
+ arch/arm/boot/dts/omap2430-sdp.dts   | 32 ++++++++++++++++----------------
+ arch/arm/configs/multi_v7_defconfig  |  2 +-
+ arch/arm/configs/omap2plus_defconfig |  2 ++
+ arch/arm/configs/shmobile_defconfig  |  3 +--
+ arch/arm/mach-omap2/clock.h          |  2 --
+ arch/arm/mach-omap2/id.c             |  8 ++++++--
+ arch/arm/mach-omap2/soc.h            |  1 +
+ drivers/iommu/Kconfig                |  2 +-
+ 13 files changed, 42 insertions(+), 39 deletions(-)
+
