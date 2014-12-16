@@ -1,43 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbaLPNdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 08:33:33 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47419 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaLPNdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 08:33:32 -0500
-Date: Tue, 16 Dec 2014 13:33:30 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs.git pile 2
-Message-ID: <20141216133330.GB22149@ZenIV.linux.org.uk>
-References: <20141215235124.GX22149@ZenIV.linux.org.uk>
+	id S1750976AbaLPNjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 08:39:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51577 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832AbaLPNjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 08:39:39 -0500
+Date: Tue, 16 Dec 2014 14:39:35 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Chintan Pandya <cpandya@codeaurora.org>
+Cc: hannes@cmpxchg.org, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: Provide knob for force OOM into the memcg
+Message-ID: <20141216133935.GK22914@dhcp22.suse.cz>
+References: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141215235124.GX22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 11:51:25PM +0000, Al Viro wrote:
-> Next pile (and there'll be one or two more).  The large piece in this one is
-> getting rid of /proc/*/ns/* weirdness; among other things, it allows to
-> (finally) make nameidata completely opaque outside of fs/namei.c, making for
-> easier further cleanups in there.
+On Tue 16-12-14 18:55:35, Chintan Pandya wrote:
+> We may want to use memcg to limit the total memory
+> footprint of all the processes within the one group.
+> This may lead to a situation where any arbitrary
+> process cannot get migrated to that one  memcg
+> because its limits will be breached. Or, process can
+> get migrated but even being most recently used
+> process, it can get killed by in-cgroup OOM. To
+> avoid such scenarios, provide a convenient knob
+> by which we can forcefully trigger OOM and make
+> a room for upcoming process.
 > 
-> I have _not_ included removal of unshare_fs_struct() into that pile; I think
-> it'll turn out to be OK, but it's clearly the next cycle fodder.
+> To trigger force OOM,
+> $ echo 1 > /<memcg_path>/memory.force_oom
 
-... but I have included the "obviously safe" patch separating PID 1
-->fs.  Without letting it sit in -next long enough.  And it turns out
-to be not safe at all - it might be salvagable, but not in this form.
+What would prevent another task deplete that memory shortly after you
+triggered OOM and end up in the same situation? E.g. while the moving
+task is migrating its charges to the new group...
 
-Mea maxima culpa - I should've known better than that.  Self-LART applied;
-please, drop this pull request, I'll send a saner one (for stuff that *did*
-sit in -next long enough) in a bit.
+Why cannot you simply disable OOM killer in that memcg and handle it
+from userspace properly?
 
-Again, my apologies ;-/
+> Signed-off-by: Chintan Pandya <cpandya@codeaurora.org>
+> ---
+>  mm/memcontrol.c | 29 +++++++++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index ef91e85..4c68aa7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3305,6 +3305,30 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
+>  	return 0;
+>  }
+>  
+> +static int mem_cgroup_force_oom(struct cgroup *cont, unsigned int event)
+> +{
+> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+> +	int ret;
+> +
+> +	if (mem_cgroup_is_root(memcg))
+> +		return -EINVAL;
+> +
+> +	css_get(&memcg->css);
+> +	ret = mem_cgroup_handle_oom(memcg, GFP_KERNEL, 0);
+> +	css_put(&memcg->css);
+> +
+> +	return ret;
+> +}
+> +
+> +static int mem_cgroup_force_oom_write(struct cgroup *cgrp,
+> +				struct cftype *cft, u64 val)
+> +{
+> +	if (val > 1 || val < 1)
+> +		return -EINVAL;
+> +
+> +	return mem_cgroup_force_oom(cgrp, 0);
+> +}
+> +
+>  static ssize_t mem_cgroup_force_empty_write(struct kernfs_open_file *of,
+>  					    char *buf, size_t nbytes,
+>  					    loff_t off)
+> @@ -4442,6 +4466,11 @@ static struct cftype mem_cgroup_files[] = {
+>  		.write = mem_cgroup_force_empty_write,
+>  	},
+>  	{
+> +		.name = "force_oom",
+> +		.trigger = mem_cgroup_force_oom,
+> +		.write_u64 = mem_cgroup_force_oom_write,
+> +	},
+> +	{
+>  		.name = "use_hierarchy",
+>  		.write_u64 = mem_cgroup_hierarchy_write,
+>  		.read_u64 = mem_cgroup_hierarchy_read,
+> -- 
+> Chintan Pandya
+> 
+> QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+> member of the Code Aurora Forum, hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Michal Hocko
+SUSE Labs
