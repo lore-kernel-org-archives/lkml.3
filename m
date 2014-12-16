@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751017AbaLPI4a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 03:56:30 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:52501 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750789AbaLPI42 (ORCPT
+	id S1751141AbaLPI5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 03:57:10 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:56253 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794AbaLPI5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 03:56:28 -0500
-Date: Tue, 16 Dec 2014 00:56:24 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141216085624.GA25256@mew>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
- <20141215162705.GA23887@quack.suse.cz>
- <20141215165615.GA19041@infradead.org>
- <20141215221100.GA4637@mew>
- <20141216083543.GA32425@infradead.org>
+	Tue, 16 Dec 2014 03:57:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Scott Branden <sbranden@broadcom.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-gpio@vger.kernel.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 0/3] Add gpio support to Broadcom Cygnus SoC
+Date: Tue, 16 Dec 2014 09:56:10 +0100
+Message-ID: <6058985.1pSGN9OVHq@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418696307-19392-1-git-send-email-rjui@broadcom.com>
+References: <1418696307-19392-1-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141216083543.GA32425@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:g+iJk1XxcQdXX0npVibmNh+nd3sEPqLhP639u+9LUMhDiE4jfN9
+ ROgFhTOsr9ojvdSUJ62pmUoINpMOO5+13zO65OX8fNhRsLpFmfWulvhLx1t+LWe6HSd+KFS
+ zcb/occFAK1sVBaBrDym61mYUcjzQJadnp0GyBLA5c8vVCi9lDLWV33IObfTRWa9R4rR9T/
+ L4oyOo888Htm3kPlWBXzw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 12:35:43AM -0800, Christoph Hellwig wrote:
-> On Mon, Dec 15, 2014 at 02:11:00PM -0800, Omar Sandoval wrote:
-> > Ok, I got the swap code working with ->read_iter/->write_iter without
-> > too much trouble. I wanted to double check before I submit if there's
-> > any gotchas involved with adding the O_DIRECT flag to a file pointer
-> > after it has been opened -- swapon opens the swapfile before we know if
-> > we're using the SWP_FILE infrastructure, and we need to add O_DIRECT so
-> > ->{read,write}_iter use direct I/O, but we can't add O_DIRECT to the
-> > original open without excluding filesystems that support the old bmap
-> > path but not direct I/O.
+On Monday 15 December 2014 18:18:24 Ray Jui wrote:
+> This patchset contains the initial GPIO support for the Broadcom Cygnus SoC.
+> Cygnus has 3 GPIO controllers: 1) the ASIU GPIO; 2) the chipCommonG GPIO;
+> and 3) the ALWAYS-ON GPIO. All 3 types of GPIO controllers are supported by
+> the same Cygnus GPIO driver
 > 
-> In general just adding O_DIRECT is a problem.  However given that the
-> swap file is locked against any other access while in use it seems ok
-> in this particular case.  Just make sure to clear it on swapoff, and
-> write a detailed comment explaining the situation.
+> 
 
-I'll admit that I'm a bit confused. I want to do this:
+Looks good to me now.
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 8798b2e..5145c09 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -1728,6 +1728,9 @@ static int setup_swap_extents(struct swap_info_struct *sis, sector_t *span)
-        }
- 
-        if (mapping->a_ops->swap_activate) {
-+               if (!mapping->a_ops->direct_IO)
-+                       return -EINVAL;
-+               swap_file->f_flags |= O_DIRECT;
-                ret = mapping->a_ops->swap_activate(sis, swap_file, span);
-                if (!ret) {
-                        sis->flags |= SWP_FILE;
-
-This seems to be more or less equivalent to doing a fcntl(F_SETFL) to
-add the O_DIRECT flag to swap_file (which is a struct file *). Swapoff
-calls filp_close on swap_file, so I don't see why it's necessary to
-clear the flag.
-
--- 
-Omar
+	Arnd
