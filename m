@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaLPXJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 18:09:55 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45959 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaLPXJw (ORCPT
+	id S1751273AbaLPXQi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 18:16:38 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:60693 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044AbaLPXQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 18:09:52 -0500
-From: Dmitry Torokhov <dtor@chromium.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stefan Wahren <stefan.wahren@i2se.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Nishanth Menon <nm@ti.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] Allow cpufreq-dt to defer probe if OPP table is not ready
-Date: Tue, 16 Dec 2014 15:09:35 -0800
-Message-Id: <1418771379-24369-1-git-send-email-dtor@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+	Tue, 16 Dec 2014 18:16:36 -0500
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: hcd: add OTG ID signal sensing
+Date: Wed, 17 Dec 2014 02:16:31 +0300
+Message-ID: <3663198.HSrURZGche@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.14.3 (Linux/3.17.4-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Resending as my previous attempt appears to be messed up... ]
+On the Renesas R8A7791 SoC based boards there's MAX3355 USB OTG chip and mini-AB
+USB connector corresponding to USB port 0 driven either by EHCI/OHCI or  Renesas
+USBHS gadget controller. And we'd like the  host/gadget drivers to work based on
+the cable type connected. An 'extcon' driver for MAX3355 has been written, so we
+only need to bind  to it via device tree which I'm doing in this patch.
 
-This series change cpufreq-dt driver to return -EPROBE_DEFER in case OPP table
-is not ready by the time it gets to initialize. The use case is for platforms
-that use platform code (or maybe a different driver altogether) to provide OPP
-tables.
+I wasn't able to find a solution better than checking the cable type at the host
+driver probe time and refusing to drive a host if B-cable is connected.
 
-In addition to changes to cpufreq-dt there are assorted changes to OPP code to
-make it work a bit better.
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-Note that I am not happy with OPP code: dev_pm_opp_init_cpufreq_table() is
-wrong in it's assumption that taking RCU lock will guarantee that number of
-OPPs will not change - we can remove OPP from list just fine, and then
-initialization will fail. I also think that we shoudl change API so users should
-get a reference to their OPP table and then pass opaque dev_opp pointer to
-accessor APIs instead of re-scanning the global list over and over and over.
+---
+The patch is against the 'usb-next' branch of Greg KH's 'usb.git' repo.
+It needs the recent 'extcon' core in order to properly handle probe deferral.  
 
-Thanks,
-Dmitry
+ drivers/usb/core/hcd.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-Dmitry Torokhov (4):
-  PM / OPP: add some lockdep annotations
-  PM / OPP: fix warning in of_free_opp_table
-  PM / OPP: take RCU lock in dev_pm_opp_get_opp_count
-  cpufreq-dt: defer probing if OPP table is not ready
-
- drivers/base/power/opp.c     | 39 +++++++++++++++++++++++++++++++--------
- drivers/cpufreq/cpufreq-dt.c | 11 +++++++++++
- 2 files changed, 42 insertions(+), 8 deletions(-)
+Index: usb/drivers/usb/core/hcd.c
+===================================================================
+--- usb.orig/drivers/usb/core/hcd.c
++++ usb/drivers/usb/core/hcd.c
+@@ -42,6 +42,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/types.h>
+ 
++#include <linux/extcon.h>
+ #include <linux/phy/phy.h>
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+@@ -2632,6 +2633,23 @@ int usb_add_hcd(struct usb_hcd *hcd,
+ 	int retval;
+ 	struct usb_device *rhdev;
+ 
++	if (IS_ENABLED(CONFIG_EXTCON) &&
++	    of_property_read_bool(hcd->self.controller->of_node, "extcon")) {
++		struct extcon_dev *edev;
++
++		edev = extcon_get_edev_by_phandle(hcd->self.controller, 0);
++		if (IS_ERR(edev))
++			return PTR_ERR(edev);
++
++		retval = extcon_get_cable_state(edev, "USB-HOST");
++		if (!retval) {
++			dev_err(hcd->self.controller,
++				"OTG B-cable plugged in, host driver won't load\n");
++			return -EINVAL;
++		} else if (retval < 0)
++			return retval;
++	}
++
+ 	if (IS_ENABLED(CONFIG_USB_PHY) && !hcd->usb_phy) {
+ 		struct usb_phy *phy = usb_get_phy_dev(hcd->self.controller, 0);
+ 
 
