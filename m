@@ -1,116 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280AbaLPL3s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:29:48 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33163 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750840AbaLPL3q (ORCPT
+	id S1750976AbaLPLfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:35:19 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:59167 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814AbaLPLfR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:29:46 -0500
-Date: Tue, 16 Dec 2014 11:29:28 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Message-ID: <20141216112928.GN11764@sirena.org.uk>
-References: <1418130764-22440-1-git-send-email-mike.looijmans@topic.nl>
- <20141209161420.GJ1934@sirena.org.uk>
- <54873B8E.1060106@topic.nl>
- <20141209184817.GH11764@sirena.org.uk>
- <549008F7.9060206@topic.nl>
+	Tue, 16 Dec 2014 06:35:17 -0500
+Date: Tue, 16 Dec 2014 11:36:02 +0000
+From: Sudeep Holla <sudeep.holla@arm.com>
+To: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+Cc: "jaswinder.singh@linaro.org" <jaswinder.singh@linaro.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sudeep Holla <sudeep.holla@arm.com>
+Subject: Re: [Linaro-acpi] [PATCH] Mailbox: Complete wait event only if Tx
+ was successful
+Message-ID: <20141216113602.GA21888@e103737-lin.cambridge.arm.com>
+References: <1418242572-20998-1-git-send-email-ashwin.chaugule@linaro.org>
+ <548AAA95.6020001@arm.com>
+ <CAJ5Y-eYFsK_heBRQUOmPXGtkLtze-NGzWKy1=0qJVV3x2EycUw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P4FumoV6cQve47oF"
+In-Reply-To: <CAJ5Y-eYFsK_heBRQUOmPXGtkLtze-NGzWKy1=0qJVV3x2EycUw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 16 Dec 2014 11:35:12.0393 (UTC) FILETIME=[5AA38F90:01D01924]
+X-MC-Unique: 114121611351402201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <549008F7.9060206@topic.nl>
-X-Cookie: I don't get no respect.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] drivers/regulator/core.c: Don't print error on
- EPROBE_DEFER
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 12, 2014 at 05:47:26PM +0000, Ashwin Chaugule wrote:
+> On 12 December 2014 at 03:43, Sudeep Holla <sudeep.holla@arm.com> wrote:
+> > Hi Ashwin,
+> 
+> Hi,
+>
 
---P4FumoV6cQve47oF
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Ashwin,
 
-On Tue, Dec 16, 2014 at 11:27:03AM +0100, Mike Looijmans wrote:
-> =EF=BB=BFOn 12/09/2014 07:48 PM, Mark Brown wrote:
-> >On Tue, Dec 09, 2014 at 07:12:30PM +0100, Mike Looijmans wrote:
+> > On Thursday 11 December 2014 01:46 AM, Ashwin Chaugule wrote:
+> >>
+> >> If a wait_for_completion_timeout() call returns due to a timeout,
+> >> the mbox code can still call complete() after returning from the wait.
+> >> This can cause subsequent transmissions on a channel to fail, since
+> >> the wait_for_completion_timeout() sees the completion variable
+> >> is !=0, caused by the erroneous complete() call, and immediately
+> >> returns without waiting for the time as expected by the client.
+> >>
+> >> Fix this by calling complete() only if the TX was successful.
+> >>
+> >> Signed-off-by: Ashwin Chaugule <ashwin.chaugule@linaro.org>
+> >> ---
+> >>   drivers/mailbox/mailbox.c | 2 +-
+> >>   1 file changed, 1 insertion(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/mailbox/mailbox.c b/drivers/mailbox/mailbox.c
+> >> index 17e9e4a..4acaddb 100644
+> >> --- a/drivers/mailbox/mailbox.c
+> >> +++ b/drivers/mailbox/mailbox.c
+> >> @@ -101,7 +101,7 @@ static void tx_tick(struct mbox_chan *chan, int r)
+> >>         if (mssg && chan->cl->tx_done)
+> >>                 chan->cl->tx_done(chan->cl, mssg, r);
+> >>
+> >> -       if (chan->cl->tx_block)
+> >> +       if ((!r) && chan->cl->tx_block)
+> >>                 complete(&chan->tx_complete);
+> >
+> >
+> > Just curious to check if there's another possible race which is
+> > a different issue.
+> >
+> > Suppose the timer fired and indicated that the Tx is complete, then
+> > it tries to execute complete while the wait_for_completion_timeout timed
+> > out. Does that make sense ?
+> >
+> > So if yes, how about adding !completion_done(..) to the check while you
+> > are at this ?
+> 
+> Yea. Seems like another race condition. I'll add it along with this..
+> 
 
-> >>Can we instead at least reduce it to WARN or INFO level then?
+Thanks !
 
-> >You appear to have deleted my reply here...  one problem with your
-> >suggestion is that it means we have to special case all error handling
-> >on probe for deferral which isn't wonderful.
+Regards,
+Sudeep
 
-> special casing deferral may not be "wonderful", but it is what currently
-> happens in many places, and it's just "the best we can do for now". A
-> similar patch for MMC got approval:
-> https://lkml.org/lkml/2014/10/27/477
-
-That's just one call site, were all the other places that might see a
-probe deferral updated too?
-
-That also looks like a case of the core passing through other errors
-rather than a case of primary error reporting - I guess there's a
-reasonable case for the core not logging at all here since the drivers
-ought to be doing it.
-
-> >>I have to explain over and over again that there's no problem when that
-> >>message comes along ten times in a row. And it causes people to overloo=
-k the
-> >>messages that really are errors.
-
-> >Can we do something with the log message that triggers on probe
-> >deferral?  There tends to be a learning curve with probe deferral but
-> >the fact that it's generally extremely noisy tends to be useful - I
-> >usually point people at that (not just in the context at regulators) and
-> >tell them not to worry unless debugging.
-
-> Using "dev_err" is not really "tell them not to worry unless debugging", I
-> think that is what "dev_dbg" was meant to do.
-
-Well, then the core probe deferral stuff ought to be less chatty then...
-
-> The only real solution I could come up with here is to replace "return
-> -EPROBE_DEFER" with something that stores the current stack, registers the
-> resource it requires and jumps back to where the driver probe originated.
-> Once the resource is available, the stored stack is resumed and then the
-> probe code path can continue as if nothing bad happened. This would also
-> deliver excellent diagnostic data in case the resource remains absent. I'=
-ve
-> built something like this in Python which has a "yield" statement one can
-> use for this purpose. It's a bit tougher to do in C I guess. So until the=
-n,
-> we're stuck with sprinkling "if (ret =3D=3D -EPROBE_DEFER)" code snippets=
- all
-> over the place.
-
-There was a proposal the other day for a restrack framework (name might
-change in future) which drivers would call in their probe and get a
-callback when everything appears.
-
---P4FumoV6cQve47oF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUkBeYAAoJECTWi3JdVIfQPEkH/2djQAXWup10+Gk9aDJnA7ej
-F9WziOje5veP2ON7DTUKrwkYBc6GoXZyT8kGw3CF49KcjK3ezqPF3pK42CsicSXi
-Op6SVZbkbMeO4l2t3qpv8GhLjejYnFRZqG6j0PC64q3QNwzMjYjEMVqDyj/RLbH0
-s43/GnpVO0qI60UrKymuhm2EMZD4YVbfrIDSdvTB/aJ3AZgzDo8V6YgnWzQT3fwZ
-xCAjntJVz4E2x/rEo8bobYn2+ZYqOyGocsdn9j0AZNERsnkN1pUhoffH5skACj+j
-OqhJYCTUuT1LInlqjWoodRCLx3EsI6HWiGFEqqBCKSiI0dlchg70qfkaR9J5Bj4=
-=2UyL
------END PGP SIGNATURE-----
-
---P4FumoV6cQve47oF--
