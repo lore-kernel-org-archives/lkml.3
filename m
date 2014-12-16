@@ -1,84 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159AbaLPN2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 08:28:25 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47390 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaLPN2Y (ORCPT
+	id S1751213AbaLPNam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 08:30:42 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50435 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881AbaLPNal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 08:28:24 -0500
-Date: Tue, 16 Dec 2014 13:28:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [BUG, linux-next] spawn PID 1 without CLONE_FS, wireless inop
-Message-ID: <20141216132821.GA22149@ZenIV.linux.org.uk>
-References: <20141216115537.GA1259@hudson.localdomain>
- <20141216125615.GZ22149@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141216125615.GZ22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Dec 2014 08:30:41 -0500
+Message-ID: <1418736635.3374.64.camel@pengutronix.de>
+Subject: Re: i.MX6 CSC and scaler
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Cc: Nicolas Dufresne <nicolas.dufresne@collabora.com>,
+        Steve Longerbeam <slongerbeam@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Sureau 
+	<frederic.sureau@vodalys.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Date: Tue, 16 Dec 2014 14:30:35 +0100
+In-Reply-To: <CAL8zT=jNis3VN11xN82fci5dA5f0TwAAhkBVq2+5TaKpmm_S-Q@mail.gmail.com>
+References: <CAL8zT=hAVi2-io3POmj9Lp1AF11ovg6bqCMPRp_w_QySAgFGtw@mail.gmail.com>
+	 <548F272E.3040808@gmail.com> <548F2DD6.70805@collabora.com>
+	 <CAL8zT=jNis3VN11xN82fci5dA5f0TwAAhkBVq2+5TaKpmm_S-Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 12:56:15PM +0000, Al Viro wrote:
-> On Tue, Dec 16, 2014 at 03:55:37AM -0800, Jeremiah Mahler wrote:
-> > all,
-> > 
-> > The wireless network interface has become inoperative when running
-> > linux-next 20141216 on a Lenovo Carbon X1.  It is completely
-> > non-existent and `ip addr` doesn't show it.  A bisect has found that
-> > the bug was introduced by the following commit.
+Am Montag, den 15.12.2014, 22:27 +0100 schrieb Jean-Michel Hautbois:
+> 2014-12-15 19:52 GMT+01:00 Nicolas Dufresne <nicolas.dufresne@collabora.com>:
+> > Le 12/15/2014 01:23 PM, Steve Longerbeam a écrit :
+> >> You would need to write a gstreamer plugin to make use of the
+> >> mem2mem device for h/w CSC and scaling.
 > 
-> Very interesting.  What userland are you running?  I take it, the root
-> filesystem is mounted and system boot except for that interface not
-> coming up, right?
+> Thank you Steve, this is of a great help !
 > 
-> Your card is normally handled by what, iwlwifi?  What happens upon
-> modprobe iwlwifi (or whatever module you see loaded on the normal
-> boot)?  Another interesting question is whether it manages to load
-> the firmware...  What happens if you boot with debug in kernel command
-> line, with working and with non-working kernels resp.?
+> > There is an element already (v4l2transform), though it currently only
+> > handle color conversion. I'd like to see scaling in that too instead of
+> > having a separate element that only do scaling like:
+> >
+> > https://bugzilla.gnome.org/show_bug.cgi?id=726104
+> 
+> Nice idea. You are probably right Nicolas, it would make sense to be
+> able to scale and convert color in the same element.
+>
+> > I think Michael and Philipp idea was that scaling could be done directly
+> > out of the decoder, something supported by CODA driver. There is some
+> > work require to get that in GStreamer, see:
+> >
+> > https://bugzilla.gnome.org/show_bug.cgi?id=733827 (pixel format nego)
+> > https://bugzilla.gnome.org/show_bug.cgi?id=733828 (display size nego)
+> 
+> There is a need for a separate element too. So it could be handled in
+> front of the encoder if needed, on decoder output if needed, but
+> should be a single element too, instanciable multiple times if
+> multiple inputs/outputs are needed.
 
-Hmm...  OK, I think I see what might be going on.  On the testbox here
-I've got pivot_root(2) done from /init on initramfs.  And that triggers
-chroot_fs_refs(), which switches init_fs.{root,pwd} to the final rootfs.
-In your case it apparently isn't triggered (different userland or setup,
-perhaps) and init_fs is left behind on initramfs.  With some files
-(firmware?) not being there...  Could you check if the following kludge
-helps?  It's not intended as a solution, I just want to verify that guess
-about the mechanism of the problem...
+Scaling in the decoder element is desirable, but unrelated. I wanted
+that for the CODA JPEG decoder, which can produce decimated output right
+during the decoding process.
 
-diff --git a/init/main.c b/init/main.c
-index 3a169a2..36c29d6 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -80,6 +80,8 @@
- #include <linux/list.h>
- #include <linux/proc_ns.h>
- #include <linux/fs_struct.h>
-+#include "../fs/internal.h" // HACK
-+#include <linux/init_task.h> // HACK
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -1024,6 +1026,15 @@ static noinline void __init kernel_init_freeable(void)
- 	if (sys_access((const char __user *) ramdisk_execute_command, 0) != 0) {
- 		ramdisk_execute_command = NULL;
- 		prepare_namespace();
-+		{
-+		/* HACK */
-+			struct path old, new;
-+			get_fs_root(current->fs, &new);
-+			get_fs_root(&init_fs, &old);
-+			chroot_fs_refs(&old, &new);
-+			path_put(&old);
-+			path_put(&new);
-+		}
- 	}
- 
- 	/*
+For the IPU IC mem2mem scaler/CSC, v4l2transform with scaling capability
+would be the perfect fit.
+
+regards
+Philipp
+
