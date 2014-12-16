@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751138AbaLPHKm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:10:42 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:46497 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaLPHKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:10:40 -0500
-Date: Mon, 15 Dec 2014 23:10:37 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] usb: serial: handle -ENODEV and -EPROTO quietly
-Message-ID: <20141216071037.GA3487@newt.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1418340594-30469-1-git-send-email-jmmahler@gmail.com>
- <20141215102321.GD6778@localhost>
- <20141215125305.GA18251@hudson.localdomain>
- <20141215163801.GB1470@kroah.com>
+	id S1751150AbaLPHRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:17:34 -0500
+Received: from mx02.posteo.de ([89.146.194.165]:59504 "EHLO mx02.posteo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796AbaLPHRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:17:33 -0500
+Message-ID: <548FDC85.3060400@posteo.de>
+Date: Tue, 16 Dec 2014 08:17:25 +0100
+From: Martin Kepplinger <martink@posteo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141215163801.GB1470@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
+References: <1418660317-21750-1-git-send-email-martink@posteo.de> <1418660317-21750-4-git-send-email-martink@posteo.de> <20141215212948.GA23765@roeck-us.net>
+In-Reply-To: <20141215212948.GA23765@roeck-us.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+Am 2014-12-15 um 22:29 schrieb Guenter Roeck:
+> On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
+>> ---
+> 
+> Some description would be nice. Also, please consider adding
+> relevant subsystem mailing lists and maintainers to your patches.
+> 
 
-On Mon, Dec 15, 2014 at 08:38:01AM -0800, Greg Kroah-Hartman wrote:
-> On Mon, Dec 15, 2014 at 04:53:05AM -0800, Jeremiah Mahler wrote:
-> > Johan,
-> > 
-> > On Mon, Dec 15, 2014 at 11:23:21AM +0100, Johan Hovold wrote:
-> > > On Thu, Dec 11, 2014 at 03:29:52PM -0800, Jeremiah Mahler wrote:
-> > > > If a USB serial device (e.g. /dev/ttyUSB0) with an active program is
-> > > > unplugged, a bunch of -ENODEV and -EPROTO errors will be produced in the
-> > > > logs.  This patch set quiets these messages without changing the
-> > > > original behavior.
-> > > 
-> > > Don't unplug devices that are in use then. ;)
-> > > 
-> > I knew someone was going to say that :-)
-> > 
-> > > > This change is beneficial when using daemons such as slcand, which is
-> > > > similar to pppd or slip, that cannot determine whether they should exit
-> > > > until after the USB serial device is unplugged.  Producing these error
-> > > > messages for a normal use case is not helpful.
-> > > 
-> > > Your patches would hide these errors when they occur during normal use
-> > > (e.g. EPROTO).
-> > > 
-> > > Receiving an error message when unplugging an active device should not
-> > > surprise anyone. And at least you know where it came from (and it's
-> > > right there in the logs as well).
-> > > 
-> > > Johan
-> > 
-> > Hmm.  Yes, I can see why quieting -EPROTO would be bad because it would
-> > hide protocol errors which we want to know about.
-> 
-> Do you really want to "know about" them?  What can a user do with them?
-> Nothing, so just resubmit and you should be fine.
-> 
-> > I need to re-think this patch.
-> > Nack.
-> 
-> I like this patch, putting crud in the kernel log that no one can do
-> anything with for a "normal" operation like yanking a USB device out
-> while it is open should not happen.
-> 
-> thanks,
-> 
-> greg k-h
+I shouldn't have added the Signed-off-by line to some of them. Sorry.
 
-Perhaps something at a lower level could return a more apt error number
-such as -ENODEV.  Then there would be no conflict with -EPROTO.
+The driver-patches are meant to be examples of what can be changed if
+the sign_extend functions are added. I don't know if they are taken and
+planned to post the driver patches (probably more) thereafter, and of
+course to the relevant people.
 
-I will look in to it again and re-submit the patches.
+>>  drivers/hwmon/jc42.c | 5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
+>> index 388f8bc..335a2de 100644
+>> --- a/drivers/hwmon/jc42.c
+>> +++ b/drivers/hwmon/jc42.c
+>> @@ -31,6 +31,7 @@
+>>  #include <linux/hwmon-sysfs.h>
+>>  #include <linux/err.h>
+>>  #include <linux/mutex.h>
+>> +#include <linux/bitops.h>
+>>  
+>>  /* Addresses to scan */
+>>  static const unsigned short normal_i2c[] = {
+>> @@ -215,9 +216,7 @@ static int jc42_temp_from_reg(s16 reg)
+>>  {
+>>  	reg &= 0x1fff;
+>>  
+> If I understand the code in sign_extend16 correctly, the above mask
+> should no longer be necessary.
 
--- 
-- Jeremiah Mahler
+exactly. The mask would then be shifting. Thanks!
+
+> 
+> Thanks,
+> Guenter
+> 
+>> -	/* sign extend register */
+>> -	if (reg & 0x1000)
+>> -		reg |= 0xf000;
+>> +	reg = sign_extend16(reg, 12);
+>>  
+>>  	/* convert from 0.0625 to 0.001 resolution */
+>>  	return reg * 125 / 2;
+>> -- 
+>> 2.1.3
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+
