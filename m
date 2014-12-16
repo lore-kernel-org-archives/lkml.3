@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388AbaLPPz6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 10:55:58 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:57013 "EHLO lekensteyn.nl"
+	id S1751399AbaLPP5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 10:57:50 -0500
+Received: from mga03.intel.com ([134.134.136.65]:28514 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaLPPzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 10:55:40 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] HID: logitech-dj: check report length
-Date: Tue, 16 Dec 2014 16:55:21 +0100
-Message-Id: <1418745323-17133-1-git-send-email-peter@lekensteyn.nl>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <CAN+gG=EL0kYim=_uaS4yj7c_XC8rKa1eELxpVXaOuvnWgT_eQw@mail.gmail.com>
-References: <CAN+gG=EL0kYim=_uaS4yj7c_XC8rKa1eELxpVXaOuvnWgT_eQw@mail.gmail.com>
-X-Spam-Score: 0.0 (/)
+	id S1750936AbaLPP5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 10:57:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="499594762"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: linus.walleij@linaro.org, lee.jones@linaro.org
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [PATCH v2 0/4] DLN2 fixes related to suspend/resume
+Date: Tue, 16 Dec 2014 17:57:11 +0200
+Message-Id: <1418745435-2851-1-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Malicious USB devices can send bogus reports smaller than the expected
-buffer size. Ensure that the length is valid to avoid reading out of
-bounds.
+This 2nd patch set addresses Johan review comments:
 
-Signed-off-by: Peter Wu <peter@lekensteyn.nl>
----
- v1: patch 2/3 HID: logitech-{dj,hidpp}: check report length
- v2: splitted original report length check patch
----
- drivers/hid/hid-logitech-dj.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ * Fix an issue introduced by v1 where we can get a use after free in
+   the error path of probe
 
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index c917ab6..5bc6d80 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -962,10 +962,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 
- 	switch (data[0]) {
- 	case REPORT_ID_DJ_SHORT:
-+		if (size != DJREPORT_SHORT_LENGTH) {
-+			dev_err(&hdev->dev, "DJ report of bad size (%d)", size);
-+			return false;
-+		}
- 		return logi_dj_dj_event(hdev, report, data, size);
- 	case REPORT_ID_HIDPP_SHORT:
--		/* intentional fallthrough */
-+		if (size != HIDPP_REPORT_SHORT_LENGTH) {
-+			dev_err(&hdev->dev,
-+				"Short HID++ report of bad size (%d)", size);
-+			return false;
-+		}
-+		return logi_dj_hidpp_event(hdev, report, data, size);
- 	case REPORT_ID_HIDPP_LONG:
-+		if (size != HIDPP_REPORT_LONG_LENGTH) {
-+			dev_err(&hdev->dev,
-+				"Long HID++ report of bad size (%d)", size);
-+			return false;
-+		}
- 		return logi_dj_hidpp_event(hdev, report, data, size);
- 	}
- 
+ * Add start/stop RX URBs helpers
+
+ * move the suspend/resume routines above the module device table
+
+ * used GFP_NOIO in resume
+
+Octavian Purdila (4):
+  gpio: dln2: fix issue when an IRQ is unmasked then enabled
+  gpio: dln2: use bus_sync_unlock instead of scheduling work
+  mfd: dln2: add start/stop RX URBs helpers
+  mfd: dln2: add suspend/resume functionality
+
+ drivers/gpio/gpio-dln2.c | 141 +++++++++++++++++++----------------------------
+ drivers/mfd/dln2.c       |  71 ++++++++++++++++++++----
+ 2 files changed, 117 insertions(+), 95 deletions(-)
+
 -- 
-2.1.3
+1.9.1
 
