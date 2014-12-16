@@ -1,98 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbaLPAWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:22:52 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:48068 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457AbaLPAWa (ORCPT
+	id S1751519AbaLPA21 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:28:27 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:6789 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaLPA2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:22:30 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Mark Brown <broonie@kernel.org>, Alexandru Stan <amstan@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>, chris@printf.net,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/3] mmc: dw_mmc: Use mmc_regulator_set_vqmmc in start_signal_voltage_switch
-Date: Mon, 15 Dec 2014 16:22:19 -0800
-Message-Id: <1418689340-29517-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1418689340-29517-1-git-send-email-dianders@chromium.org>
-References: <1418689340-29517-1-git-send-email-dianders@chromium.org>
+	Mon, 15 Dec 2014 19:28:25 -0500
+X-IronPort-AV: E=Sophos;i="5.07,583,1413270000"; 
+   d="scan'208";a="53131299"
+Message-ID: <548F7CA7.8070600@broadcom.com>
+Date: Mon, 15 Dec 2014 16:28:23 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Scott Branden <sbranden@broadcom.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] PCI: iproc: Add Broadcom iProc PCIe driver
+References: <1418351817-14898-3-git-send-email-rjui@broadcom.com> <1790462.K12S5vem48@wuerfel> <548F338F.9030203@broadcom.com> <2242033.mU3KpyO3Rt@wuerfel>
+In-Reply-To: <2242033.mU3KpyO3Rt@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've introduced a new helper in the MMC core:
-mmc_regulator_set_vqmmc().  Let's use this in dw_mmc.  Using this new
-helper has some advantages:
 
-1. We get the mmc_regulator_set_vqmmc() behavior of trying to match
-   VQMMC and VMMC when the signal voltage is 3.3V.  This ensures max
-   compatibility.
 
-2. We get rid of a few more warnings when probing unsupported
-   voltages.
+On 12/15/2014 1:37 PM, Arnd Bergmann wrote:
+> On Monday 15 December 2014 11:16:31 Ray Jui wrote:
+>> On 12/12/2014 9:21 AM, Arnd Bergmann wrote:
+>>> On Friday 12 December 2014 09:08:48 Ray Jui wrote:
+>>> One way to solve this would be by turning the driver into a library
+>>> the same way as the pcie-dw driver, and have separate front-ends
+>>> for it for platform_device and bcma_device.
+>>>
+>> I'm fine with this solution, i.e., to introduce a common pcie-iproc core
+>> driver (just like pcie-designware) and have different front-ends
+>> depending on the device/bus type. If we end up deciding to go with this
+>> solution, I need to discuss with Hauke to come up with a plan to
+>> collaborate.
+>
+> Ok
+>
+>> But before we choose to go with that route, may I ask, what is the
+>> purpose of tying a PCIe host driver to BCMA? What benefit does BCMA give
+>> us? If we have a generic platform based PCIe driver that can work on all
+>> iProc SoCs + BCM4708 and BCM5301X with all HW specific configurations
+>> taken care of by device tree, why do we still need to use BCMA?
+>>
+>> I thought all a BCMA device here does is to auto-instantiate based on
+>> some register readings?
+>
+> Basically, DT is a hack that we only need for nondiscoverable buses.
+> As BCMA is (mostly) discoverable, we should use that, just like we do
+> for things like PCI and USB. There are clearly some limitations to
+> BCMA as well, e.g. on bcm4708 we don't have proper IRQ numbers in
+> the device list and we need to work around that using DT, but overall
+> it still seems to have more upsides than downsides to use it.
+>
+> It's also good to point other SoC makers to Broadcom as a good example
+> for how to do things they claim are impossible to do.
+>
+> 	Arnd
+>
+Okay. Fair enough. Let's go with your proposal to create a generic 
+driver pcie-iproc to be used by both bcma and platform bus. I'll 
+initiate another email thread with you, Hauke, Scott, and me. We can 
+discuss how to collaborate on that email thread.
 
-3. We get rid of some non-dw_mmc specific code in dw_mmc.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v3:
-- Continue to check for errors if VQMMC is not an error as per Andrew.
-
-Changes in v2: None
-
- drivers/mmc/host/dw_mmc.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 67c0451..b3993d4 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1160,7 +1160,6 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 	struct dw_mci *host = slot->host;
- 	u32 uhs;
- 	u32 v18 = SDMMC_UHS_18V << slot->id;
--	int min_uv, max_uv;
- 	int ret;
- 
- 	/*
-@@ -1169,22 +1168,18 @@ static int dw_mci_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 	 * does no harm but you need to set the regulator directly.  Try both.
- 	 */
- 	uhs = mci_readl(host, UHS_REG);
--	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330) {
--		min_uv = 2700000;
--		max_uv = 3600000;
-+	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
- 		uhs &= ~v18;
--	} else {
--		min_uv = 1700000;
--		max_uv = 1950000;
-+	else
- 		uhs |= v18;
--	}
-+
- 	if (!IS_ERR(mmc->supply.vqmmc)) {
--		ret = regulator_set_voltage(mmc->supply.vqmmc, min_uv, max_uv);
-+		ret = mmc_regulator_set_vqmmc(mmc, ios);
- 
- 		if (ret) {
- 			dev_dbg(&mmc->class_dev,
--					 "Regulator set error %d: %d - %d\n",
--					 ret, min_uv, max_uv);
-+					 "Regulator set error %d - %s V\n",
-+					 ret, uhs & v18 ? "1.8" : "3.3");
- 			return ret;
- 		}
- 	}
--- 
-2.2.0.rc0.207.ga3a616c
-
+Thanks.
