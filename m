@@ -1,56 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409AbaLPFnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:43:14 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:37741 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaLPFnM (ORCPT
+	id S1751450AbaLPFoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:44:10 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:64334 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877AbaLPFoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:43:12 -0500
+	Tue, 16 Dec 2014 00:44:08 -0500
+Date: Tue, 16 Dec 2014 14:43:58 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mm/zsmalloc: adjust order of functions
+Message-ID: <20141216054357.GA17615@blaptop>
+References: <1418478203-17687-1-git-send-email-opensource.ganesh@gmail.com>
+ <20141216003941.GA17665@blaptop>
+ <CADAEsF99yOT0ZHD3yDxT_tOM-48=3gut+-GB6SR5BBZxZ_XY6w@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKohpon_z5duigPptOpT1wrLkWLgDqGQq8+1J7oofujy7Q4MtA@mail.gmail.com>
-References: <20141216001058.GA31286@dtor-ws>
-	<CAKohpo=mcG99N5q_CCua8Hdydo=ydHKD-CiTJO9SsAhLvkTJHw@mail.gmail.com>
-	<CAE_wzQ_Lz7pv1io6UMAXjesVeurbC=as2BuxBrA+XXkh5b+AWA@mail.gmail.com>
-	<CAKohpon_z5duigPptOpT1wrLkWLgDqGQq8+1J7oofujy7Q4MtA@mail.gmail.com>
-Date: Mon, 15 Dec 2014 21:43:11 -0800
-Message-ID: <CAE_wzQ8OmWxtZcb5aD8TKkfthkR=N6oYF4a-9fZXcqTyTR=L-w@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq-dt: defer probing if OPP table is not ready
-From: Dmitry Torokhov <dtor@chromium.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dmitry Torokhov <dtor@chromium.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stefan Wahren <stefan.wahren@i2se.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADAEsF99yOT0ZHD3yDxT_tOM-48=3gut+-GB6SR5BBZxZ_XY6w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 9:38 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 16 December 2014 at 11:02, Dmitry Torokhov <dtor@chromium.org> wrote:
->> Yes we will. Which simply means that this WARN is stupid. We also will
->> hit it if there is no opp table and the allocation below fails; or if
->> it succeeds then dev_pm_opp_init_cpufreq_table() will fail and we'll
->> hit this code path again.
->>
->> We should either drop that WARN() or handle -ENODEV there properly.
->
-> Yeah, we should drop it. Its just too hard for such cases. You will take care
-> of that in your series?
->
+On Tue, Dec 16, 2014 at 12:08:02PM +0800, Ganesh Mahendran wrote:
+> Hello Minchan,
+> 
+> 
+> 2014-12-16 8:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
+> > Hello Ganesh,
+> >
+> > On Sat, Dec 13, 2014 at 09:43:23PM +0800, Ganesh Mahendran wrote:
+> >> Currently functions in zsmalloc.c does not arranged in a readable
+> >> and reasonable sequence. With the more and more functions added,
+> >> we may meet below inconvenience. For example:
+> >>
+> >> Current functions:
+> >>     void zs_init()
+> >>     {
+> >>     }
+> >>
+> >>     static void get_maxobj_per_zspage()
+> >>     {
+> >>     }
+> >>
+> >> Then I want to add a func_1() which is called from zs_init(), and this new added
+> >> function func_1() will used get_maxobj_per_zspage() which is defined below zs_init().
+> >>
+> >>     void func_1()
+> >>     {
+> >>         get_maxobj_per_zspage()
+> >>     }
+> >>
+> >>     void zs_init()
+> >>     {
+> >>         func_1()
+> >>     }
+> >>
+> >>     static void get_maxobj_per_zspage()
+> >>     {
+> >>     }
+> >>
+> >> This will cause compiling issue. So we must add a declaration:
+> >>     static void get_maxobj_per_zspage();
+> >> before func_1() if we do not put get_maxobj_per_zspage() before func_1().
+> >
+> > Yes, I suffered from that when I made compaction but was not sure
+> > it's it was obviously wrong.
+> > Stupid question:
+> > What's the problem if we should put function declaration on top of
+> > source code?
+> 
+> There is no problem if we do this. But if we obey to some coding
+> style, then it will
+> be convenient for the later developers.
+> Normally I put the global or important interface function at the
+> bottom of the file, and
+> the static or helper functions on the top. Because usually global
+> functions is the caller, and
+> static functions is the callee.
+> 
+> >
+> >>
+> >> In addition, puting module_[init|exit] functions at the bottom of the file
+> >> conforms to our habit.
+> >
+> > Normally, we do but without any strong reason, I don't want to rub git-blame
+> > by clean up patches.
+> 
+> Sorry, I did not consider this when I made this patch.:)
+> 
+> >
+> > In summary, I like this patch but don't like to churn git-blame by clean-up
+> > patchset without strong reason so I need something I am sure.
+> 
+> Now, zsmalloc module is active in development. More and more changes
+> will be included.
+> If we do not clean up, then this file may looks messy.
+> 
+> Thanks a lot.
 
-Yes, I'll address other comments and resubmit.
+Okay, you move my heart
 
-> For your patch:
->
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
 
-Thanks!
-
--- 
-Dmitry
