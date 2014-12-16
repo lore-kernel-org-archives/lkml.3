@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487AbaLPOLU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:11:20 -0500
-Received: from c-82-192-226-27.customer.ggaweb.ch ([82.192.226.27]:35270 "EHLO
+	id S1751464AbaLPOLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:11:15 -0500
+Received: from c-82-192-226-27.customer.ggaweb.ch ([82.192.226.27]:35257 "EHLO
 	dizzy-6.o2s.ch" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751355AbaLPOLR (ORCPT
+	with ESMTP id S1751355AbaLPOLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:11:17 -0500
-Subject: [PATCH 4/4] mmc: sunxi: Removing unused code
+	Tue, 16 Dec 2014 09:11:11 -0500
+Subject: [PATCH 3/4] mmc: sunxi: Correcting SDXC_HARDWARE_RESET bit
 From: David =?utf-8?q?Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
 To: Ulf Hansson <ulf.hansson@linaro.org>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
@@ -19,8 +19,8 @@ To: Ulf Hansson <ulf.hansson@linaro.org>,
         =?utf-8?b?5p2O5oOz?= <lixiang@allwinnertech.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org
-Date: Tue, 16 Dec 2014 15:11:15 +0100
-Message-ID: <20141216141115.3036.96031.stgit@dizzy-6.o2s.ch>
+Date: Tue, 16 Dec 2014 15:11:10 +0100
+Message-ID: <20141216141110.3036.2534.stgit@dizzy-6.o2s.ch>
 In-Reply-To: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
 References: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
 User-Agent: StGit/0.17.1-dirty
@@ -31,41 +31,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing a relict from reverse engineering of the Android driver code in
-sunxi_mmc_clk_set_rate.
+Fixing the register name in sunxi_mmc_reset_host since the SDXC_HARDWARE_RESET bit
+is actually located within REG_GCTRL and not REG_CMDR as it was pointed out by Allwinner.
 
 Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
 Reported-by: 李想 <lixiang@allwinnertech.com>
 ---
- drivers/mmc/host/sunxi-mmc.c |   10 +---------
- 1 file changed, 1 insertion(+), 9 deletions(-)
+ drivers/mmc/host/sunxi-mmc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/mmc/host/sunxi-mmc.c b/drivers/mmc/host/sunxi-mmc.c
-index 695fe85..6af0a28 100644
+index 67e680c..695fe85 100644
 --- a/drivers/mmc/host/sunxi-mmc.c
 +++ b/drivers/mmc/host/sunxi-mmc.c
-@@ -627,7 +627,7 @@ static int sunxi_mmc_oclk_onoff(struct sunxi_mmc_host *host, u32 oclk_en)
- static int sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *host,
- 				  struct mmc_ios *ios)
- {
--	u32 rate, oclk_dly, rval, sclk_dly, src_clk;
-+	u32 rate, oclk_dly, rval, sclk_dly;
- 	int ret;
+@@ -252,7 +252,7 @@ static int sunxi_mmc_reset_host(struct sunxi_mmc_host *host)
+ 	unsigned long expire = jiffies + msecs_to_jiffies(250);
+ 	u32 rval;
  
- 	rate = clk_round_rate(host->clk_mmc, ios->clock);
-@@ -672,14 +672,6 @@ static int sunxi_mmc_clk_set_rate(struct sunxi_mmc_host *host,
- 		sclk_dly = 4;
- 	}
- 
--	src_clk = clk_get_rate(clk_get_parent(host->clk_mmc));
--	if (src_clk >= 300000000 && src_clk <= 400000000) {
--		if (oclk_dly)
--			oclk_dly--;
--		if (sclk_dly)
--			sclk_dly--;
--	}
--
- 	clk_sunxi_mmc_phase_control(host->clk_mmc, sclk_dly, oclk_dly);
- 
- 	return sunxi_mmc_oclk_onoff(host, 1);
+-	mmc_writel(host, REG_CMDR, SDXC_HARDWARE_RESET);
++	mmc_writel(host, REG_GCTRL, SDXC_HARDWARE_RESET);
+ 	do {
+ 		rval = mmc_readl(host, REG_GCTRL);
+ 	} while (time_before(jiffies, expire) && (rval & SDXC_HARDWARE_RESET));
 
