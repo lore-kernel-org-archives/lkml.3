@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaLPVqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:46:31 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:53707 "EHLO
+	id S1751655AbaLPVqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:46:32 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:53706 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051AbaLPVpy (ORCPT
+	with ESMTP id S1750986AbaLPVpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Dec 2014 16:45:54 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -16,9 +16,9 @@ Cc: u.kleine-koenig@pengutronix.de, shawn.guo@linaro.org,
         linux@arm.linux.org.uk, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         stefan@agner.ch
-Subject: [PATCH v3 1/3] irqchip: vf610-mscm: add support for MSCM interrupt router
-Date: Tue, 16 Dec 2014 22:45:45 +0100
-Message-Id: <1418766347-6225-2-git-send-email-stefan@agner.ch>
+Subject: [PATCH v3 3/3] ARM: dts: vf610: add Miscellaneous System Control Module (MSCM)
+Date: Tue, 16 Dec 2014 22:45:47 +0100
+Message-Id: <1418766347-6225-4-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418766347-6225-1-git-send-email-stefan@agner.ch>
 References: <1418766347-6225-1-git-send-email-stefan@agner.ch>
@@ -26,278 +26,458 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for Vybrid's interrupt router. On VF6xx models,
-almost all peripherals can be accessed from either of the two
-CPU's, from the Cortex-A5 or from the Cortex-M4. The interrupt
-router routes the peripheral interrupts to the configured CPU.
+Add the Miscellaneous System Control Module (MSCM) to the base
+device tree for Vybrid SoC's. This module contains the peripheral
+interrupt router, which handles the routing of the interrupts
+for the two CPU cores. Almost all peripheral interrupts are
+handled by the router, hence we make the MSCM module as default
+interrupt parent for the SoC.
 
-The driver makes use of the irqdomain hierarchy support. The
-parent is either the ARM GIC or the ARM NVIC interrupt controller
-depending on which CPU the kernel is executed on. Currently only
-ARM GIC is supported because the NVIC driver lacks hierarchical
-irqdomain support as of now.
-
-Currently, there is no resource control mechnism implemented to
-avoid concurrent access of the same peripheral. The user needs
-to make sure to use device trees which assign the peripherals
-orthogonally. However, this driver warns the user in case the
-interrupt is already configured for the other CPU. This provides
-a poor man's resource controller.
+In a earlier commit the interrupt nodes were moved out of the
+peripheral nodes and specified in the CPU specific vf500.dtsi
+device tree. This allowed to use the base device tree vfxxx.dtsi
+also for a Cortex-M4 specific device tree, which uses different
+interrupt nodes due to the NVIC interrupt controller. However,
+since the interrupt parent for peripherals is the MSCM module
+independently which CPU the device tree is used for, we can move
+the interrupt nodes into the base device tree vfxxx.dtsi again.
+Depending on which CPU this base device tree will used with, the
+correct parent interrupt controller has to be assigned to the
+MSCM node (GIC or NVIC). The driver takes care of the parent
+interrupt controller specific needs (interrupt-cells).
 
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
-The detection of the parent depending on compatible string of the
-interrupt-parent is not yet implemented here since NVIC is still
-missing the hierarchic irq domain support. I will add that in a
-seperate patch later in my next Vybrid Cortex-M4 patchset. This
-is tested and proved working on Cortex-A5 CPU with GIC interrupt
-controller.
+ arch/arm/boot/dts/vf500.dtsi | 128 ++-----------------------------------------
+ arch/arm/boot/dts/vfxxx.dtsi |  42 ++++++++++++++
+ 2 files changed, 46 insertions(+), 124 deletions(-)
 
- arch/arm/mach-imx/Kconfig        |   1 +
- drivers/irqchip/Kconfig          |  11 +++
- drivers/irqchip/Makefile         |   1 +
- drivers/irqchip/irq-vf610-mscm.c | 186 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 199 insertions(+)
- create mode 100644 drivers/irqchip/irq-vf610-mscm.c
-
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index e8627e0..3c5859e 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -631,6 +631,7 @@ config SOC_IMX6SX
+diff --git a/arch/arm/boot/dts/vf500.dtsi b/arch/arm/boot/dts/vf500.dtsi
+index de67005..fcccc18 100644
+--- a/arch/arm/boot/dts/vf500.dtsi
++++ b/arch/arm/boot/dts/vf500.dtsi
+@@ -24,14 +24,13 @@
+ 	};
  
- config SOC_VF610
- 	bool "Vybrid Family VF610 support"
-+	select VF610_MSCM
- 	select ARM_GIC
- 	select PINCTRL_VF610
- 	select PL310_ERRATA_769419 if CACHE_L2X0
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index cc79d2a..af5e72a 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -136,6 +136,17 @@ config IRQ_CROSSBAR
- 	  a free irq and configures the IP. Thus the peripheral interrupts are
- 	  routed to one of the free irqchip interrupt lines.
+ 	soc {
+-		interrupt-parent = <&intc>;
+-
+ 		aips-bus@40000000 {
  
-+config VF610_MSCM
-+	bool
-+	help
-+	  Support for MSCM interrupt router available on Vybrid SoC's. The
-+	  interrupt router is between the CPU's interrupt controller and the
-+	  peripheral. The router allows to route the peripheral interrupts to
-+	  one of the two available CPU's on Vybrid VF6xx SoC's (Cortex-A5 or
-+	  Cortex-M4). The router will be configured transparently on a IRQ
-+	  request.
-+	select IRQ_DOMAIN_HIERARCHY
+ 			intc: interrupt-controller@40002000 {
+ 				compatible = "arm,cortex-a9-gic";
+ 				#interrupt-cells = <3>;
+ 				interrupt-controller;
++				interrupt-parent = <&intc>;
+ 				reg = <0x40003000 0x1000>,
+ 				      <0x40002100 0x100>;
+ 			};
+@@ -40,132 +39,13 @@
+ 				compatible = "arm,cortex-a9-global-timer";
+ 				reg = <0x40002200 0x20>;
+ 				interrupts = <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-parent = <&intc>;
+ 				clocks = <&clks VF610_CLK_PLATFORM_BUS>;
+ 			};
+ 		};
+ 	};
+ };
+ 
+-&adc0 {
+-	interrupts = <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&adc1 {
+-	interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&can0 {
+-	interrupts = <GIC_SPI 58 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&can1 {
+-	interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&dspi0 {
+-	interrupts = <GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&edma0 {
+-	interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_HIGH>,
+-			<GIC_SPI 9 IRQ_TYPE_LEVEL_HIGH>;
+-	interrupt-names = "edma-tx", "edma-err";
+-};
+-
+-&edma1 {
+-	interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
+-			<GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+-	interrupt-names = "edma-tx", "edma-err";
+-};
+-
+-&esdhc1 {
+-	interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&fec0 {
+-	interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&fec1 {
+-	interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&ftm {
+-	interrupts = <GIC_SPI 44 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&gpio1 {
+-	interrupts = <GIC_SPI 107 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&gpio2 {
+-	interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&gpio3 {
+-	interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&gpio4 {
+-	interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&gpio5 {
+-	interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&i2c0 {
+-	interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&pit {
+-	interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&qspi0 {
+-	interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&sai2 {
+-	interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart0 {
+-	interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart1 {
+-	interrupts = <GIC_SPI 62 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart2 {
+-	interrupts = <GIC_SPI 63 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart3 {
+-	interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart4 {
+-	interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&uart5 {
+-	interrupts = <GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&usbdev0 {
+-	interrupts = <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&usbh1 {
+-	interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&usbphy0 {
+-	interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
+-};
+-
+-&usbphy1 {
+-	interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
++&mscm {
++	interrupt-parent = <&intc>;
+ };
+diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
+index 505969a..ccdb268 100644
+--- a/arch/arm/boot/dts/vfxxx.dtsi
++++ b/arch/arm/boot/dts/vfxxx.dtsi
+@@ -47,6 +47,7 @@
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		compatible = "simple-bus";
++		interrupt-parent = <&mscm>;
+ 		ranges;
+ 
+ 		aips0: aips-bus@40000000 {
+@@ -55,6 +56,13 @@
+ 			#size-cells = <1>;
+ 			ranges;
+ 
++			mscm: mscm@40001000 {
++				compatible = "fsl,vf610-mscm", "syscon";
++				#interrupt-cells = <2>;
++				interrupt-controller;
++				reg = <0x40001000 0x1000>;
++			};
 +
- config KEYSTONE_IRQ
- 	tristate "Keystone 2 IRQ controller IP"
- 	depends on ARCH_KEYSTONE
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 9516a32..85651be 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -37,6 +37,7 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
- obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
- obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
- obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-+obj-$(CONFIG_VF610_MSCM)		+= irq-vf610-mscm.o
- obj-$(CONFIG_BCM7120_L2_IRQ)		+= irq-bcm7120-l2.o
- obj-$(CONFIG_BRCMSTB_L2_IRQ)		+= irq-brcmstb-l2.o
- obj-$(CONFIG_KEYSTONE_IRQ)		+= irq-keystone.o
-diff --git a/drivers/irqchip/irq-vf610-mscm.c b/drivers/irqchip/irq-vf610-mscm.c
-new file mode 100644
-index 0000000..7a284d5
---- /dev/null
-+++ b/drivers/irqchip/irq-vf610-mscm.c
-@@ -0,0 +1,186 @@
-+/*
-+ * Copyright 2014 Stefan Agner
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+#include <linux/cpu_pm.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <dt-bindings/interrupt-controller/arm-gic.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+
-+#include "irqchip.h"
-+
-+#define MSCM_CPxNUM		0x4
-+#define MSCM_IRSPRC(n)		(0x880 + 2 * (n))
-+#define MSCM_IRSPRC_CPEN_MASK	0x3
-+
-+#define MSCM_IRSPRC_NUM		112
-+
-+struct vf610_mscm_chip_data {
-+	void __iomem *mscm_base;
-+	u16 cpu_mask;
-+	u16 saved_irsprc[MSCM_IRSPRC_NUM];
-+};
-+
-+static struct vf610_mscm_chip_data *mscm_data;
-+
-+static inline void vf610_mscm_save(struct vf610_mscm_chip_data *data)
-+{
-+	int i;
-+
-+	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-+		data->saved_irsprc[i] = readw_relaxed(data->mscm_base + MSCM_IRSPRC(i));
-+}
-+
-+static inline void vf610_mscm_restore(struct vf610_mscm_chip_data *data)
-+{
-+	int i;
-+
-+	for (i = 0; i < MSCM_IRSPRC_NUM; i++)
-+		writew_relaxed(data->saved_irsprc[i], data->mscm_base + MSCM_IRSPRC(i));
-+}
-+
-+static int vf610_mscm_notifier(struct notifier_block *self, unsigned long cmd,
-+			       void *v)
-+{
-+	switch (cmd) {
-+	case CPU_CLUSTER_PM_ENTER:
-+		vf610_mscm_save(mscm_data);
-+		break;
-+	case CPU_CLUSTER_PM_ENTER_FAILED:
-+	case CPU_CLUSTER_PM_EXIT:
-+		vf610_mscm_restore(mscm_data);
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block mscm_notifier_block = {
-+	.notifier_call = vf610_mscm_notifier,
-+};
-+
-+static void vf610_mscm_enable(struct irq_data *data)
-+{
-+	irq_hw_number_t hwirq = data->hwirq;
-+	struct vf610_mscm_chip_data *chip_data = data->chip_data;
-+	u16 irsprc;
-+
-+	irsprc = readw_relaxed(chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-+	irsprc &= MSCM_IRSPRC_CPEN_MASK;
-+
-+	WARN_ON(irsprc);
-+
-+	writew_relaxed(chip_data->cpu_mask,
-+		       chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-+
-+	irq_chip_unmask_parent(data);
-+}
-+
-+static void vf610_mscm_disable(struct irq_data *data)
-+{
-+	irq_hw_number_t hwirq = data->hwirq;
-+	struct vf610_mscm_chip_data *chip_data = data->chip_data;
-+
-+	writew_relaxed(0x0, chip_data->mscm_base + MSCM_IRSPRC(hwirq));
-+
-+	irq_chip_mask_parent(data);
-+}
-+
-+static struct irq_chip vf610_mscm_irq_chip = {
-+	.name			= "MSCM",
-+	.irq_mask		= irq_chip_mask_parent,
-+	.irq_unmask		= irq_chip_unmask_parent,
-+	.irq_eoi		= irq_chip_eoi_parent,
-+	.irq_enable		= vf610_mscm_enable,
-+	.irq_disable		= vf610_mscm_disable,
-+	.irq_retrigger		= irq_chip_retrigger_hierarchy,
-+	.irq_set_affinity	= irq_chip_set_affinity_parent,
-+};
-+
-+static int vf610_mscm_domain_alloc(struct irq_domain *domain, unsigned int virq,
-+				   unsigned int nr_irqs, void *arg)
-+{
-+	int i;
-+	irq_hw_number_t hwirq;
-+	struct of_phandle_args *irq_data = arg;
-+	struct of_phandle_args gic_data;
-+
-+	if (irq_data->args_count != 2)
-+		return -EINVAL;
-+
-+	hwirq = irq_data->args[0];
-+	for (i = 0; i < nr_irqs; i++)
-+		irq_domain_set_hwirq_and_chip(domain, virq + i, hwirq + i,
-+					      &vf610_mscm_irq_chip,
-+					      domain->host_data);
-+
-+	gic_data.np = domain->parent->of_node;
-+	gic_data.args_count = 3;
-+	gic_data.args[0] = GIC_SPI;
-+	gic_data.args[1] = irq_data->args[0];
-+	gic_data.args[2] = irq_data->args[1];
-+	return irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, &gic_data);
-+}
-+
-+static const struct irq_domain_ops mscm_irq_domain_ops = {
-+	.xlate = irq_domain_xlate_twocell,
-+	.alloc = vf610_mscm_domain_alloc,
-+	.free = irq_domain_free_irqs_common,
-+};
-+
-+static int __init vf610_mscm_of_init(struct device_node *node,
-+			       struct device_node *parent)
-+{
-+	struct irq_domain *domain, *domain_parent;
-+	int ret;
-+
-+	domain_parent = irq_find_host(parent);
-+	if (!domain_parent) {
-+		pr_err("vf610_mscm: interrupt-parent not found\n");
-+		return -EINVAL;
-+	}
-+
-+	mscm_data = kzalloc(sizeof(*mscm_data), GFP_KERNEL);
-+	if (!mscm_data)
-+		return -ENOMEM;
-+
-+	mscm_data->mscm_base = of_io_request_and_map(node, 0, "mscm");
-+
-+	if (!mscm_data->mscm_base) {
-+		pr_err("vf610_mscm: unable to map mscm register\n");
-+		ret = -ENOMEM;
-+		goto out_free;
-+	}
-+
-+	domain = irq_domain_add_hierarchy(domain_parent, 0,
-+					  MSCM_IRSPRC_NUM, node,
-+					  &mscm_irq_domain_ops, mscm_data);
-+	if (!domain) {
-+		ret = -ENOMEM;
-+		goto out_unmap;
-+	}
-+
-+	mscm_data->cpu_mask = 0x1 << readl_relaxed(mscm_data->mscm_base + MSCM_CPxNUM);
-+
-+	cpu_pm_register_notifier(&mscm_notifier_block);
-+
-+	return 0;
-+
-+out_unmap:
-+	iounmap(mscm_data->mscm_base);
-+out_free:
-+	kfree(mscm_data);
-+	return ret;
-+}
-+IRQCHIP_DECLARE(vf610_mscm, "fsl,vf610-mscm", vf610_mscm_of_init);
+ 			edma0: dma-controller@40018000 {
+ 				#dma-cells = <2>;
+ 				compatible = "fsl,vf610-edma";
+@@ -62,6 +70,9 @@
+ 					<0x40024000 0x1000>,
+ 					<0x40025000 0x1000>;
+ 				dma-channels = <32>;
++				interrupts = <8 IRQ_TYPE_LEVEL_HIGH>,
++						<9 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "edma-tx", "edma-err";
+ 				clock-names = "dmamux0", "dmamux1";
+ 				clocks = <&clks VF610_CLK_DMAMUX0>,
+ 					<&clks VF610_CLK_DMAMUX1>;
+@@ -71,6 +82,7 @@
+ 			can0: flexcan@40020000 {
+ 				compatible = "fsl,vf610-flexcan";
+ 				reg = <0x40020000 0x4000>;
++				interrupts = <58 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_FLEXCAN0>,
+ 					 <&clks VF610_CLK_FLEXCAN0>;
+ 				clock-names = "ipg", "per";
+@@ -80,6 +92,7 @@
+ 			uart0: serial@40027000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x40027000 0x1000>;
++				interrupts = <61 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART0>;
+ 				clock-names = "ipg";
+ 				dmas = <&edma0 0 2>,
+@@ -91,6 +104,7 @@
+ 			uart1: serial@40028000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x40028000 0x1000>;
++				interrupts = <62 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART1>;
+ 				clock-names = "ipg";
+ 				dmas = <&edma0 0 4>,
+@@ -102,6 +116,7 @@
+ 			uart2: serial@40029000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x40029000 0x1000>;
++				interrupts = <63 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART2>;
+ 				clock-names = "ipg";
+ 				dmas = <&edma0 0 6>,
+@@ -113,6 +128,7 @@
+ 			uart3: serial@4002a000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x4002a000 0x1000>;
++				interrupts = <64 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART3>;
+ 				clock-names = "ipg";
+ 				dmas = <&edma0 0 8>,
+@@ -126,6 +142,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "fsl,vf610-dspi";
+ 				reg = <0x4002c000 0x1000>;
++				interrupts = <67 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_DSPI0>;
+ 				clock-names = "dspi";
+ 				spi-num-chipselects = <5>;
+@@ -135,6 +152,7 @@
+ 			sai2: sai@40031000 {
+ 				compatible = "fsl,vf610-sai";
+ 				reg = <0x40031000 0x1000>;
++				interrupts = <86 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_SAI2>;
+ 				clock-names = "sai";
+ 				dma-names = "tx", "rx";
+@@ -146,6 +164,7 @@
+ 			pit: pit@40037000 {
+ 				compatible = "fsl,vf610-pit";
+ 				reg = <0x40037000 0x1000>;
++				interrupts = <39 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_PIT>;
+ 				clock-names = "pit";
+ 			};
+@@ -179,6 +198,7 @@
+ 			adc0: adc@4003b000 {
+ 				compatible = "fsl,vf610-adc";
+ 				reg = <0x4003b000 0x1000>;
++				interrupts = <53 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_ADC0>;
+ 				clock-names = "adc";
+ 				status = "disabled";
+@@ -197,6 +217,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "fsl,vf610-qspi";
+ 				reg = <0x40044000 0x1000>;
++				interrupts = <24 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_QSPI0_EN>,
+ 					<&clks VF610_CLK_QSPI0>;
+ 				clock-names = "qspi_en", "qspi";
+@@ -214,6 +235,7 @@
+ 				reg = <0x40049000 0x1000 0x400ff000 0x40>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++				interrupts = <107 IRQ_TYPE_LEVEL_HIGH>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
+ 				gpio-ranges = <&iomuxc 0 0 32>;
+@@ -224,6 +246,7 @@
+ 				reg = <0x4004a000 0x1000 0x400ff040 0x40>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++				interrupts = <108 IRQ_TYPE_LEVEL_HIGH>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
+ 				gpio-ranges = <&iomuxc 0 32 32>;
+@@ -234,6 +257,7 @@
+ 				reg = <0x4004b000 0x1000 0x400ff080 0x40>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++				interrupts = <109 IRQ_TYPE_LEVEL_HIGH>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
+ 				gpio-ranges = <&iomuxc 0 64 32>;
+@@ -244,6 +268,7 @@
+ 				reg = <0x4004c000 0x1000 0x400ff0c0 0x40>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++				interrupts = <110 IRQ_TYPE_LEVEL_HIGH>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
+ 				gpio-ranges = <&iomuxc 0 96 32>;
+@@ -254,6 +279,7 @@
+ 				reg = <0x4004d000 0x1000 0x400ff100 0x40>;
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
++				interrupts = <111 IRQ_TYPE_LEVEL_HIGH>;
+ 				interrupt-controller;
+ 				#interrupt-cells = <2>;
+ 				gpio-ranges = <&iomuxc 0 128 7>;
+@@ -267,6 +293,7 @@
+ 			usbphy0: usbphy@40050800 {
+ 				compatible = "fsl,vf610-usbphy";
+ 				reg = <0x40050800 0x400>;
++				interrupts = <50 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBPHY0>;
+ 				fsl,anatop = <&anatop>;
+ 				status = "disabled";
+@@ -275,6 +302,7 @@
+ 			usbphy1: usbphy@40050c00 {
+ 				compatible = "fsl,vf610-usbphy";
+ 				reg = <0x40050c00 0x400>;
++				interrupts = <51 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBPHY1>;
+ 				fsl,anatop = <&anatop>;
+ 				status = "disabled";
+@@ -285,6 +313,7 @@
+ 				#size-cells = <0>;
+ 				compatible = "fsl,vf610-i2c";
+ 				reg = <0x40066000 0x1000>;
++				interrupts = <71 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_I2C0>;
+ 				clock-names = "ipg";
+ 				dmas = <&edma0 0 50>,
+@@ -304,6 +333,7 @@
+ 			usbdev0: usb@40034000 {
+ 				compatible = "fsl,vf610-usb", "fsl,imx27-usb";
+ 				reg = <0x40034000 0x800>;
++				interrupts = <75 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBC0>;
+ 				fsl,usbphy = <&usbphy0>;
+ 				fsl,usbmisc = <&usbmisc0 0>;
+@@ -333,6 +363,9 @@
+ 					<0x400a1000 0x1000>,
+ 					<0x400a2000 0x1000>;
+ 				dma-channels = <32>;
++				interrupts = <10 IRQ_TYPE_LEVEL_HIGH>,
++						<11 IRQ_TYPE_LEVEL_HIGH>;
++				interrupt-names = "edma-tx", "edma-err";
+ 				clock-names = "dmamux0", "dmamux1";
+ 				clocks = <&clks VF610_CLK_DMAMUX2>,
+ 					<&clks VF610_CLK_DMAMUX3>;
+@@ -342,6 +375,7 @@
+ 			uart4: serial@400a9000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x400a9000 0x1000>;
++				interrupts = <65 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART4>;
+ 				clock-names = "ipg";
+ 				status = "disabled";
+@@ -350,6 +384,7 @@
+ 			uart5: serial@400aa000 {
+ 				compatible = "fsl,vf610-lpuart";
+ 				reg = <0x400aa000 0x1000>;
++				interrupts = <66 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_UART5>;
+ 				clock-names = "ipg";
+ 				status = "disabled";
+@@ -358,6 +393,7 @@
+ 			adc1: adc@400bb000 {
+ 				compatible = "fsl,vf610-adc";
+ 				reg = <0x400bb000 0x1000>;
++				interrupts = <54 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_ADC1>;
+ 				clock-names = "adc";
+ 				status = "disabled";
+@@ -366,6 +402,7 @@
+ 			esdhc1: esdhc@400b2000 {
+ 				compatible = "fsl,imx53-esdhc";
+ 				reg = <0x400b2000 0x1000>;
++				interrupts = <28 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_IPG_BUS>,
+ 					<&clks VF610_CLK_PLATFORM_BUS>,
+ 					<&clks VF610_CLK_ESDHC1>;
+@@ -376,6 +413,7 @@
+ 			usbh1: usb@400b4000 {
+ 				compatible = "fsl,vf610-usb", "fsl,imx27-usb";
+ 				reg = <0x400b4000 0x800>;
++				interrupts = <76 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_USBC1>;
+ 				fsl,usbphy = <&usbphy1>;
+ 				fsl,usbmisc = <&usbmisc1 0>;
+@@ -394,6 +432,7 @@
+ 			ftm: ftm@400b8000 {
+ 				compatible = "fsl,ftm-timer";
+ 				reg = <0x400b8000 0x1000 0x400b9000 0x1000>;
++				interrupts = <44 IRQ_TYPE_LEVEL_HIGH>;
+ 				clock-names = "ftm-evt", "ftm-src",
+ 					"ftm-evt-counter-en", "ftm-src-counter-en";
+ 				clocks = <&clks VF610_CLK_FTM2>,
+@@ -406,6 +445,7 @@
+ 			fec0: ethernet@400d0000 {
+ 				compatible = "fsl,mvf600-fec";
+ 				reg = <0x400d0000 0x1000>;
++				interrupts = <78 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_ENET0>,
+ 					<&clks VF610_CLK_ENET0>,
+ 					<&clks VF610_CLK_ENET>;
+@@ -416,6 +456,7 @@
+ 			fec1: ethernet@400d1000 {
+ 				compatible = "fsl,mvf600-fec";
+ 				reg = <0x400d1000 0x1000>;
++				interrupts = <79 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_ENET1>,
+ 					<&clks VF610_CLK_ENET1>,
+ 					<&clks VF610_CLK_ENET>;
+@@ -426,6 +467,7 @@
+ 			can1: flexcan@400d4000 {
+ 				compatible = "fsl,vf610-flexcan";
+ 				reg = <0x400d4000 0x4000>;
++				interrupts = <59 IRQ_TYPE_LEVEL_HIGH>;
+ 				clocks = <&clks VF610_CLK_FLEXCAN1>,
+ 					 <&clks VF610_CLK_FLEXCAN1>;
+ 				clock-names = "ipg", "per";
 -- 
 2.1.3
 
