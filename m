@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbaLPVCE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:02:04 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:47139 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791AbaLPVCC (ORCPT
+	id S1751784AbaLPVDo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:03:44 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:50498 "EHLO
+	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaLPVDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:02:02 -0500
+	Tue, 16 Dec 2014 16:03:43 -0500
+Date: Wed, 17 Dec 2014 08:03:10 +1100
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 8/9] virtio_pci: split out legacy device support
+Message-ID: <20141216210309.GA32071@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <1415863357-15680-1-git-send-email-kever.yang@rock-chips.com>
-References: <1415863357-15680-1-git-send-email-kever.yang@rock-chips.com>
-Date: Tue, 16 Dec 2014 13:02:01 -0800
-X-Google-Sender-Auth: sVyLIcHrLewOkR8oMy3lfqy-3LU
-Message-ID: <CAD=FV=WdX6YEYSUuahxGPkkyzF2ArFb7mji1PvEXiuDj6Xt1bA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] clk: rockchip: add clock ID for usbphy480m_src
-From: Doug Anderson <dianders@chromium.org>
-To: Kever Yang <kever.yang@rock-chips.com>
-Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
-        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
-        Eddie Cai <cf@rock-chips.com>,
-        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
-        Tao Huang <huangtao@rock-chips.com>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Mark yao <mark.yao@rock-chips.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418043812-25753-9-git-send-email-mst@redhat.com>
+Organization: Core
+X-Newsgroups: apana.lists.os.linux.kernel,apana.lists.os.linux.virtualization
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kever,
+Michael S. Tsirkin <mst@redhat.com> wrote:
+> Move everything dealing with legacy devices out to virtio_pci_legacy.c.
+> Expose common code APIs in virtio_pci.h
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-On Wed, Nov 12, 2014 at 11:22 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
-> There are 3 different parent clock from different usbphy,
-> all of them are fixed 480MHz, it is not able to auto select
-> by clock core to the 2nd and the 3rd parent.
-> For different use case for different board, we may need to
-> select different usbphy clock out as parent manually.
->
-> Add the clock ID for it so that we can use in dts.
->
-> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
-> ---
->
->  include/dt-bindings/clock/rk3288-cru.h | 1 +
->  1 file changed, 1 insertion(+)
+This breaks virtio_pci because you deleted the licence from it.
 
-Aside from clock ID collisions that Heiko can fixup, this looks good to me.
+-- >8 --
+Subject: virtio_pci: Restore module licence and other attributes
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+When the virtio_pci driver was moved into virtio_pci_legacy.c the
+module licence and other attributes went AWOL.  This patch restores
+them.
+
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+
+diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
+index 2588252..6b100e3 100644
+--- a/drivers/virtio/virtio_pci_legacy.c
++++ b/drivers/virtio/virtio_pci_legacy.c
+@@ -324,3 +324,8 @@ static struct pci_driver virtio_pci_driver = {
+ };
+ 
+ module_pci_driver(virtio_pci_driver);
++
++MODULE_AUTHOR("Anthony Liguori <aliguori@us.ibm.com>");
++MODULE_DESCRIPTION("virtio-pci");
++MODULE_LICENSE("GPL");
++MODULE_VERSION("1");
+
+Cheers,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
