@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290AbaLPSTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 13:19:03 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:47796 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaLPSTA (ORCPT
+	id S1751389AbaLPSTV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 13:19:21 -0500
+Received: from h1943130.stratoserver.net ([81.169.133.216]:50720 "EHLO
+	studio-punkt.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaLPSTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 13:19:00 -0500
+	Tue, 16 Dec 2014 13:19:19 -0500
+Date: Tue, 16 Dec 2014 19:19:13 +0100
+From: Evgeni Dobrev <evgeni@studio-punkt.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: dts: kirkwood: enable phy driver for SATA
+ controller on 88f6192
+Message-ID: <20141216181913.GF20170@anne>
+References: <20141215203724.GA22936@anne>
+ <20141216170138.14dcabc1@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
-References: <54584260.8030602@nvidia.com>
-	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
-	<545895B2.2000101@nvidia.com>
-	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
-	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
-	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
-	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
-Date: Tue, 16 Dec 2014 10:18:59 -0800
-Message-ID: <CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
-Subject: Re: Possible regression with commit 52221610d
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216170138.14dcabc1@free-electrons.com>
+X-PGP-Key: http://evgeni.studio-punkt.com/pub.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 10:27 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
-> On Sun, Dec 14, 2014 at 8:48 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
->> On Sat, Dec 13, 2014 at 11:22 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
-> [..]
->>> Or simply; what is vmmc (in the code) supposed to represent?
->>
->> Hi Bjorn,
->>
->> VMMC is the supply that delivers power out to the SD card itself (aka VDD).
->>
->> It is not the internal power rail/power domain of the host controller
->> within the SoC.
->>
->
-> Thanks for you answer Tim, I'll write up a patch for the Qualcomm
-> driver that add the possibility of specifying an internal supply for
-> the devices where that uses that.
->
-> My only concern is that for any standard compliant sdhci driver we're
-> supposed to have a info printout that vmmc was not found (but vqmmc is
-> there). But I guess that's a matter of proper documentation and hoping
-> people don't pay too much attention to it?
->
+Hello Thomas,
 
-Sorry, this is wrong.
+On Tue, Dec 16, 2014 at 05:01:38PM +0100, Thomas Petazzoni wrote:
+> Dear Evgeni Dobrev,
+> 
+> On Mon, 15 Dec 2014 21:37:24 +0100, Evgeni Dobrev wrote:
+> > This patch enables the phy drivers for the SATA controller on Marvell's 88f6192. Without them it is not possible to use SATA drives attached to this processor.
+> 
+> Commit log text should be wrapped to some reasonable length.
+> 
 
-We are routing the regulators straight to vdd of the memory and should
-hence use vmmc to specify this. However unless I actually program 0x29
-in the Qualcomm sdhci block I get no responses from the card.
+I will fix this.
 
-Which I believe is correct behavior as the SDHC specification [1] says
-the following about BIT(0) of 0x29:
+> 
+> >  			interrupts = <21>;
+> >  			clocks = <&gate_clk 14>, <&gate_clk 15>;
+> >  			clock-names = "0", "1";
+> > +                        phys = <&sata_phy0>, <&sata_phy1>;
+> > +                        phy-names = "port0", "port1";
+> 
+> You should use tabs and not spaces for indentation in Device Tree files.
 
-"If this bit is cleared, the Host Controller shall immediately stop
-driving CMD and DAT[3:0] (tri-state) and drive SDCLK to low level".
+I will resubmit. Thank you for your review.
 
+> 
+> Thanks!
+> 
+> Thomas
+> -- 
+> Thomas Petazzoni, CTO, Free Electrons
+> Embedded Linux, Kernel and Android engineering
+> http://free-electrons.com
+> --
 
-So I think 52221610d is indeed incorrect.
-
-[1] https://www.sdcard.org/downloads/pls/simplified_specs/archive/partA2_300.pdf
-
-Regards,
-Bjorn
+evgeni
