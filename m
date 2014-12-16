@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaLPJ1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:27:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59375 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaLPJ0i (ORCPT
+	id S1751347AbaLPJ2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:28:08 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:51341 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750940AbaLPJ2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:26:38 -0500
-From: Vignesh R <vigneshr@ti.com>
-To: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kishon Vijay Abraham I <kishon@ti.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Vignesh R <vigneshr@ti.com>
-Subject: [PATCH 0/2] PCIe related fixes for DRA7xx
-Date: Tue, 16 Dec 2014 14:52:49 +0530
-Message-ID: <1418721771-31184-1-git-send-email-vigneshr@ti.com>
-X-Mailer: git-send-email 1.9.1
+	Tue, 16 Dec 2014 04:28:05 -0500
+Date: Tue, 16 Dec 2014 12:27:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
+        Fabian Frederick <fabf@skynet.be>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        James Simmons <uja.ornl@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Oleg Drokin <oleg.drokin@intel.com>, Greg Donald <gdonald@gmail.com>,
+        HPDD-discuss@ml01.01.org, Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
+        "John L. Hammond" <john.hammond@intel.com>
+Subject: Re: [PATCH] staging: lustre: lustre: obdclass: lprocfs_status.c: Fix
+ for possible null pointer dereference
+Message-ID: <20141216092717.GG4856@mwanda>
+References: <1418597547-25086-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+ <1418608297.2674.4.camel@perches.com>
+ <CAFo99gaVUbsvwY7RKZ9D=c0jnVeFiBLAeNVb53UX=Ba4XytoKg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFo99gaVUbsvwY7RKZ9D=c0jnVeFiBLAeNVb53UX=Ba4XytoKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix inconsistent enumeration of PCIe gen2 cards on DRA7xx
-boards. Tested this patch series, after applying some out of the
-tree patches for resetting PCIe.
+On Mon, Dec 15, 2014 at 11:23:25PM +0100, Rickard Strandqvist wrote:
+> Hi Joe
+> 
+> No, it does not look like end can be NULL then.
+> Then remove the end != NULL instead?
+> ...
+>     if (end != NULL && *end == '.') {
+> 
 
-Vignesh R (2):
-  phy: phy-ti-pipe3: fix inconsistent enumeration of PCIe gen2 cards
-  ARM: dts: DRA7X: drop id property in pcie_phy
+Yes.  Please do.
 
- arch/arm/boot/dts/dra7.dtsi          |  2 --
- drivers/phy/phy-omap-control.c       |  7 +++----
- drivers/phy/phy-ti-pipe3.c           | 10 ++++++----
- include/linux/phy/omap_control_phy.h |  6 +++---
- 4 files changed, 12 insertions(+), 13 deletions(-)
-
--- 
-1.9.1
+regards,
+dan carpenter
 
