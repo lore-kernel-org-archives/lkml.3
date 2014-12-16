@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750905AbaLPB5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 20:57:17 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:39087 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810AbaLPB5Q (ORCPT
+	id S1751127AbaLPB7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 20:59:32 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:38197 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751042AbaLPB7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 20:57:16 -0500
+	Mon, 15 Dec 2014 20:59:31 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH RESEND v2] mfd: syscon: add child device support
+From: Flora Fu <flora.fu@mediatek.com>
+To: Lee Jones <lee.jones@linaro.org>, Philipp Zabel <p.zabel@pengutronix.de>
+CC: Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <kernel@pengutronix.de>, Eddie Huang <eddie.huang@mediatek.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>
+In-Reply-To: <20141215095819.GB7972@x1>
+References: <1417451138-13583-1-git-send-email-p.zabel@pengutronix.de>
+	 <1418636633.3193.3.camel@pengutronix.de>  <20141215095819.GB7972@x1>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Dec 2014 09:59:20 +0800
+Message-ID: <1418695160.11847.7.camel@mtksdaap41>
 MIME-Version: 1.0
-In-Reply-To: <20141216124750.153e3fdd@canb.auug.org.au>
-References: <20141216124750.153e3fdd@canb.auug.org.au>
-From: Roland Dreier <roland@kernel.org>
-Date: Mon, 15 Dec 2014 17:56:55 -0800
-X-Google-Sender-Auth: _AFpvZ27CyXwH_dOMET6gJFSxEw
-Message-ID: <CAG4TOxP9WFHALPb0y0eKFup6uhszXfd+hLcwZ98kZUVaR_9j4w@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the infiniband tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        Haggai Eran <haggaie@mellanox.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 5:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi all,
->
-> After merging the infiniband tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->
-> drivers/infiniband/hw/mlx5/main.c: In function 'mlx5_ib_query_device':
-> drivers/infiniband/hw/mlx5/main.c:248:34: error: 'MLX5_DEV_CAP_FLAG_ON_DMND_PG' undeclared (first use in this function)
->   if (dev->mdev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
->                                   ^
-> drivers/net/ethernet/mellanox/mlx5/core/fw.c: In function 'mlx5_query_odp_caps':
-> drivers/net/ethernet/mellanox/mlx5/core/fw.c:79:30: error: 'MLX5_DEV_CAP_FLAG_ON_DMND_PG' undeclared (first use in this function)
->   if (!(dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG))
->                               ^
-> drivers/net/ethernet/mellanox/mlx5/core/eq.c: In function 'mlx5_start_eqs':
-> drivers/net/ethernet/mellanox/mlx5/core/eq.c:459:28: error: 'MLX5_DEV_CAP_FLAG_ON_DMND_PG' undeclared (first use in this function)
->   if (dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
->                             ^
->
-> Really?  Code added half way though the merge window not even build
-> tested?
+Hi,
 
-It's not quite as bad as it seems.  The infiniband tree itself builds,
-the problem is the merged tree.
+The patch set is used to implement reset controller in
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/299141.html
 
-The Mellanox guys merged the "cleanup"
+Tested-by: Flora Fu <flora.fu@mediatek.com>
 
-commit 0c7aac854f52
-Author: Eli Cohen <eli@dev.mellanox.co.il>
-Date:   Tue Dec 2 02:26:14 2014
+Thanks,
+Flora
 
-    net/mlx5_core: Remove unused dev cap enum fields
+On Mon, 2014-12-15 at 09:58 +0000, Lee Jones wrote:
+> On Mon, 15 Dec 2014, Philipp Zabel wrote:
+> > Am Montag, den 01.12.2014, 17:25 +0100 schrieb Philipp Zabel:
+> > > For devices which have a complete register for themselves, it is possible to
+> > > place them next to the syscon device with overlapping reg ranges. The same is
+> > > not possible for devices which only occupy bitfields in registers shared with
+> > > other users.
+> > > For devices that are completely controlled by bitfields in the syscon address
+> > > range, such as multiplexers or voltage regulators, allow to put child devices
+> > > into the syscon device node.
+> > 
+> > What is the status of this patch?
+> > Is this ok to be applied after the merge window closes?
+> > 
+> > For reference, these are the previous threads:
+> > https://lkml.org/lkml/2014/5/27/422
+> > https://lkml.org/lkml/2014/11/3/134
+> 
+> As this is such an important driver I need more Acks for users/testers
+> and senior reviewers before applying.
+> 
+> > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > > ---
+> > > Changes since v1:
+> > >  - Reworded binding documentation to allow #size-cells = <1>, which is useful
+> > >    for syscon children that are controlled through a (possibly shared) register
+> > >    range.
+> > > ---
+> > >  Documentation/devicetree/bindings/mfd/syscon.txt | 13 +++++++++++++
+> > >  drivers/mfd/syscon.c                             |  3 +++
+> > >  2 files changed, 16 insertions(+)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/mfd/syscon.txt b/Documentation/devicetree/bindings/mfd/syscon.txt
+> > > index fe8150b..0c6b497 100644
+> > > --- a/Documentation/devicetree/bindings/mfd/syscon.txt
+> > > +++ b/Documentation/devicetree/bindings/mfd/syscon.txt
+> > > @@ -9,12 +9,25 @@ using a specific compatible value), interrogate the node (or associated
+> > >  OS driver) to determine the location of the registers, and access the
+> > >  registers directly.
+> > >  
+> > > +Optionally, devices that are controlled exclusively through syscon registers,
+> > > +or even bitfields in shared syscon registers, can also be added as child nodes
+> > > +to the syscon device node. These devices can implicitly assume their parent
+> > > +node is a syscon provider without referencing it explicitly via phandle.
+> > > +In this case, the syscon node should have #address-cells = <1> and
+> > > +#size-cells = <0> or <1> and no ranges property.
+> > > +
+> > >  Required properties:
+> > >  - compatible: Should contain "syscon".
+> > >  - reg: the register region can be accessed from syscon
+> > >  
+> > > +Optional properties:
+> > > +- #address-cells: Should be 1.
+> > > +- #size-cells: Should be 0 or 1.
+> > > +
+> > >  Examples:
+> > >  gpr: iomuxc-gpr@020e0000 {
+> > > +	#address-cells = <1>;
+> > > +	#size-cells = <0>;
+> > >  	compatible = "fsl,imx6q-iomuxc-gpr", "syscon";
+> > >  	reg = <0x020e0000 0x38>;
+> > >  };
+> > > diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+> > > index ca15878..38da178 100644
+> > > --- a/drivers/mfd/syscon.c
+> > > +++ b/drivers/mfd/syscon.c
+> > > @@ -155,6 +155,9 @@ static int syscon_probe(struct platform_device *pdev)
+> > >  
+> > >  	dev_dbg(dev, "regmap %pR registered\n", res);
+> > >  
+> > > +	if (!of_device_is_compatible(pdev->dev.of_node, "simple-bus"))
+> > > +		of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
+> > > +
+> > >  	return 0;
+> > >  }
+> > >  
+> > 
+> > 
+> 
 
-    These enumerations are not used so remove them.
 
-    Signed-off-by: Eli Cohen <eli@mellanox.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-through davem's tree, and then went ahead and used at least
-MLX5_DEV_CAP_FLAG_ON_DMND_PG (which that patch removes) in patches
-they merged through my tree.
-
-I'll add a partial revert of that patch to my tree to get back the
-now-used enum values.
-
- - R.
