@@ -1,51 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaLPOEo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:04:44 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45713 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaLPOEn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:04:43 -0500
-Date: Tue, 16 Dec 2014 17:04:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Chris Rorvick <chris@rorvick.com>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        James Simmons <uja.ornl@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>,
-        Greg Donald <gdonald@gmail.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Subject: Re: [PATCH] drivers: staging: lustre: Use mult if units not specified
-Message-ID: <20141216140418.GK4856@mwanda>
-References: <1418708509-18196-1-git-send-email-chris@rorvick.com>
- <20141216094109.GH4856@mwanda>
- <D0B55F56.D05F1%andreas.dilger@intel.com>
- <20141216113509.GI4856@mwanda>
- <CAEUsAPYTBq+0DGG909Rn0JhpF5Rh_6KbvmxS0wPQJ3j+qgZrEQ@mail.gmail.com>
- <20141216135459.GJ4856@mwanda>
+	id S1751375AbaLPOGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:06:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902AbaLPOGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 09:06:04 -0500
+Date: Tue, 16 Dec 2014 15:05:37 +0100
+From: Jesper Dangaard Brouer <brouer@redhat.com>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        akpm@linuxfoundation.org, rostedt@goodmis.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, brouer@redhat.com
+Subject: Re: [PATCH 3/7] slub: Do not use c->page on free
+Message-ID: <20141216150537.25c72553@redhat.com>
+In-Reply-To: <CAPAsAGyGXSP-2eY1CQS1jDpJq89kwpCuJm4ZBa3cYDGkv_oTxA@mail.gmail.com>
+References: <20141210163017.092096069@linux.com>
+	<20141210163033.717707217@linux.com>
+	<20141215080338.GE4898@js1304-P5Q-DELUXE>
+	<alpine.DEB.2.11.1412150815210.20101@gentwo.org>
+	<20141216024210.GB23270@js1304-P5Q-DELUXE>
+	<CAPAsAGyGXSP-2eY1CQS1jDpJq89kwpCuJm4ZBa3cYDGkv_oTxA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141216135459.GJ4856@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh wait... You're right.  This doesn't change the code how the code
-works.  My bad.
+On Tue, 16 Dec 2014 11:54:12 +0400
+Andrey Ryabinin <ryabinin.a.a@gmail.com> wrote:
 
-Still, it's better to just remove the condition instead of making the
-condition even more complicated and confusing.
+> 2014-12-16 5:42 GMT+03:00 Joonsoo Kim <iamjoonsoo.kim@lge.com>:
+> > On Mon, Dec 15, 2014 at 08:16:00AM -0600, Christoph Lameter wrote:
+> >> On Mon, 15 Dec 2014, Joonsoo Kim wrote:
+> >>
+> >> > > +static bool same_slab_page(struct kmem_cache *s, struct page *page, void *p)
+> >> > > +{
+> >> > > + long d = p - page->address;
+> >> > > +
+> >> > > + return d > 0 && d < (1 << MAX_ORDER) && d < (compound_order(page) << PAGE_SHIFT);
+> >> > > +}
+> >> > > +
+> >> >
+> >> > Somtimes, compound_order() induces one more cacheline access, because
+> >> > compound_order() access second struct page in order to get order. Is there
+> >> > any way to remove this?
+> >>
+> >> I already have code there to avoid the access if its within a MAX_ORDER
+> >> page. We could probably go for a smaller setting there. PAGE_COSTLY_ORDER?
+> >
+> > That is the solution to avoid compound_order() call when slab of
+> > object isn't matched with per cpu slab.
+> >
+> > What I'm asking is whether there is a way to avoid compound_order() call when slab
+> > of object is matched with per cpu slab or not.
+> >
+> 
+> Can we use page->objects for that?
+> 
+> Like this:
+> 
+>         return d > 0 && d < page->objects * s->size;
 
-regards,
-dan carpenter
+I gave this change a quick micro benchmark spin (with Christoph's
+tool), the results are below.
 
+Notice, the "2. Kmalloc: alloc/free test" for small obj sizes improves,
+which is more "back-to-normal" as before this patchset.
+
+Before (with curr patchset):
+============================
+
+ Single thread testing
+ =====================
+ 1. Kmalloc: Repeatedly allocate then free test
+ 10000 times kmalloc(8) -> 50 cycles kfree -> 60 cycles
+ 10000 times kmalloc(16) -> 52 cycles kfree -> 60 cycles
+ 10000 times kmalloc(32) -> 56 cycles kfree -> 64 cycles
+ 10000 times kmalloc(64) -> 67 cycles kfree -> 72 cycles
+ 10000 times kmalloc(128) -> 86 cycles kfree -> 79 cycles
+ 10000 times kmalloc(256) -> 97 cycles kfree -> 110 cycles
+ 10000 times kmalloc(512) -> 88 cycles kfree -> 114 cycles
+ 10000 times kmalloc(1024) -> 91 cycles kfree -> 115 cycles
+ 10000 times kmalloc(2048) -> 119 cycles kfree -> 131 cycles
+ 10000 times kmalloc(4096) -> 159 cycles kfree -> 163 cycles
+ 10000 times kmalloc(8192) -> 269 cycles kfree -> 226 cycles
+ 10000 times kmalloc(16384) -> 498 cycles kfree -> 291 cycles
+ 2. Kmalloc: alloc/free test
+ 10000 times kmalloc(8)/kfree -> 112 cycles
+ 10000 times kmalloc(16)/kfree -> 118 cycles
+ 10000 times kmalloc(32)/kfree -> 117 cycles
+ 10000 times kmalloc(64)/kfree -> 122 cycles
+ 10000 times kmalloc(128)/kfree -> 133 cycles
+ 10000 times kmalloc(256)/kfree -> 79 cycles
+ 10000 times kmalloc(512)/kfree -> 79 cycles
+ 10000 times kmalloc(1024)/kfree -> 79 cycles
+ 10000 times kmalloc(2048)/kfree -> 72 cycles
+ 10000 times kmalloc(4096)/kfree -> 78 cycles
+ 10000 times kmalloc(8192)/kfree -> 78 cycles
+ 10000 times kmalloc(16384)/kfree -> 596 cycles
+
+After (with proposed change):
+=============================
+ Single thread testing
+ =====================
+ 1. Kmalloc: Repeatedly allocate then free test
+ 10000 times kmalloc(8) -> 53 cycles kfree -> 62 cycles
+ 10000 times kmalloc(16) -> 53 cycles kfree -> 64 cycles
+ 10000 times kmalloc(32) -> 57 cycles kfree -> 66 cycles
+ 10000 times kmalloc(64) -> 68 cycles kfree -> 72 cycles
+ 10000 times kmalloc(128) -> 77 cycles kfree -> 80 cycles
+ 10000 times kmalloc(256) -> 98 cycles kfree -> 110 cycles
+ 10000 times kmalloc(512) -> 87 cycles kfree -> 113 cycles
+ 10000 times kmalloc(1024) -> 90 cycles kfree -> 116 cycles
+ 10000 times kmalloc(2048) -> 116 cycles kfree -> 131 cycles
+ 10000 times kmalloc(4096) -> 160 cycles kfree -> 164 cycles
+ 10000 times kmalloc(8192) -> 269 cycles kfree -> 226 cycles
+ 10000 times kmalloc(16384) -> 499 cycles kfree -> 295 cycles
+ 2. Kmalloc: alloc/free test
+ 10000 times kmalloc(8)/kfree -> 74 cycles
+ 10000 times kmalloc(16)/kfree -> 73 cycles
+ 10000 times kmalloc(32)/kfree -> 73 cycles
+ 10000 times kmalloc(64)/kfree -> 74 cycles
+ 10000 times kmalloc(128)/kfree -> 73 cycles
+ 10000 times kmalloc(256)/kfree -> 72 cycles
+ 10000 times kmalloc(512)/kfree -> 73 cycles
+ 10000 times kmalloc(1024)/kfree -> 72 cycles
+ 10000 times kmalloc(2048)/kfree -> 73 cycles
+ 10000 times kmalloc(4096)/kfree -> 72 cycles
+ 10000 times kmalloc(8192)/kfree -> 72 cycles
+ 10000 times kmalloc(16384)/kfree -> 556 cycles
+
+
+(kernel 3.18.0-net-next+ SMP PREEMPT on top of f96fe225677)
+
+-- 
+Best regards,
+  Jesper Dangaard Brouer
+  MSc.CS, Sr. Network Kernel Developer at Red Hat
+  Author of http://www.iptv-analyzer.org
+  LinkedIn: http://www.linkedin.com/in/brouer
