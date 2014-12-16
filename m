@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaLPOcq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:32:46 -0500
-Received: from www.linutronix.de ([62.245.132.108]:50290 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaLPOcp (ORCPT
+	id S1751318AbaLPOdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:33:46 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:48961 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaLPOdp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:32:45 -0500
-Date: Tue, 16 Dec 2014 15:32:28 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-In-Reply-To: <alpine.DEB.2.11.1412161105470.17382@nanos>
-Message-ID: <alpine.DEB.2.11.1412161510000.17382@nanos>
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com> <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com> <548FFD20.1040102@linux.vnet.ibm.com> <alpine.DEB.2.11.1412161105470.17382@nanos>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Tue, 16 Dec 2014 09:33:45 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <1418691016-30681-2-git-send-email-peter@lekensteyn.nl>
+References: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
+	<1418691016-30681-2-git-send-email-peter@lekensteyn.nl>
+Date: Tue, 16 Dec 2014 09:33:44 -0500
+Message-ID: <CAN+gG=FiL1SY84W5acowe8hkoHnp6ObkbCtoeFu0s2juone=+Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] HID: logitech-hidpp: detect HID++ 2.0 errors too
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Dec 2014, Thomas Gleixner wrote:
-> Now the powerclamp mess is a different story.
-> 
-> Calling tick_nohz_idle_enter()/exit() from outside the idle task is
-> just broken. Period.
-> 
-> Trying to work around that madness in the core code is just fiddling
-> with the symptoms and ignoring the root cause. And the root cause is
-> simply that powerclamp calls tick_nohz_idle_enter()/exit().
+Hi Peter,
 
-The only sane solution for that insanity is to rip out the thread code
-from powerclamp and replace it with a simple per cpu timer.
+On Mon, Dec 15, 2014 at 7:50 PM, Peter Wu <peter@lekensteyn.nl> wrote:
+> Devices speaking HID++ 2.0 report a different error code (0xff). Detect
+> these errors too to avoid 5 second delays when the device reports an
+> error. Caught by... well, a bug in the QEMU emulation of this receiver.
+>
+> Renamed fap to rap for HID++ 1.0 errors because it is more logical,
+> it has no functional difference.
+>
+> Signed-off-by: Peter Wu <peter@lekensteyn.nl>
+> ---
 
-timerfn() 
-{
-   too_hot = magic();
-   sched_fair_this_cpu_wreckaged(too_hot);   
-   restart_clamp_timer();
-}
+I'd like to have Nestor's opinion on this. I did not manage to find on
+the documentation that HID++ 2.0 Long report error code is 0xff, so
+introducing this change without Logitech's blessing would be
+unfortunate.
+I understand this will fix your qemu problem, but I am not entirely
+sure if we do not have to check on 0xff and 0x8f in both short and
+long responses.
 
-And have the following in sched
+Cheers,
+Benjamin
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index df2cdf77f899..d257b62ee533 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4989,6 +4989,34 @@ preempt:
- 		set_last_buddy(se);
- }
- 
-+#ifdef CONFIG_WRECKAGE_SCHED_FAIR
-+static struct static_key wreckage_key = STATIC_KEY_INIT;
-+static DEFINE_PER_CPU(cpu_is_wreckaged, bool);
-+
-+void sched_fair_this_cpu_wreckaged(bool wreckaged)
-+{
-+	this_cpu_write(sched_block_fair, wreckaged);
-+}
-+
-+void sched_fair_cpu_wreckage_control(bool on)
-+{
-+	if (on)
-+		static_key_slow_inc(&wreckage_key);
-+	else
-+		static_key_slow_dec(&wreckage_key);
-+}
-+
-+static inline bool class_fair_disabled(void)
-+{
-+	if (static_key_false(&wreckage_key))
-+		return false;
-+	return this_cpu_read(sched_block_fair);
-+}
-+
-+#else
-+static inline bool class_fair_disabled(void) { return false; }
-+#endif
-+
- static struct task_struct *
- pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- {
-@@ -4997,6 +5025,8 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
- 	struct task_struct *p;
- 	int new_tasks;
- 
-+	if (class_fair_disabled())
-+		goto idle;
- again:
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	if (!cfs_rq->nr_running)
-
-The static key is enabled once the powerclamp mess starts. So nobody
-else than powerclamp users are affected by this and rightfully so.
-
-Not pretty, but better than a gazillion workarounds all over the place
-to make "pretending I'm idle" actually work. This is basically the
-same mechanism as we have with the RT throttler, where a RT hog will
-be put onto hold for some time. We just put all sched other tasks on
-hold while still allowing RT tasks and everything else to work.
-
-Thoughts?
-
-Thanks,
-
-	tglx
+>  drivers/hid/hid-logitech-hidpp.c | 17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> index 2f420c0..ae23dec 100644
+> --- a/drivers/hid/hid-logitech-hidpp.c
+> +++ b/drivers/hid/hid-logitech-hidpp.c
+> @@ -105,6 +105,7 @@ struct hidpp_device {
+>  };
+>
+>
+> +/* HID++ 1.0 error codes */
+>  #define HIDPP_ERROR                            0x8f
+>  #define HIDPP_ERROR_SUCCESS                    0x00
+>  #define HIDPP_ERROR_INVALID_SUBID              0x01
+> @@ -119,6 +120,8 @@ struct hidpp_device {
+>  #define HIDPP_ERROR_REQUEST_UNAVAILABLE                0x0a
+>  #define HIDPP_ERROR_INVALID_PARAM_VALUE                0x0b
+>  #define HIDPP_ERROR_WRONG_PIN_CODE             0x0c
+> +/* HID++ 2.0 error codes */
+> +#define HIDPP20_ERROR                          0xff
+>
+>  static void hidpp_connect_event(struct hidpp_device *hidpp_dev);
+>
+> @@ -192,9 +195,16 @@ static int hidpp_send_message_sync(struct hidpp_device *hidpp,
+>         }
+>
+>         if (response->report_id == REPORT_ID_HIDPP_SHORT &&
+> -           response->fap.feature_index == HIDPP_ERROR) {
+> +           response->rap.sub_id == HIDPP_ERROR) {
+> +               ret = response->rap.params[1];
+> +               dbg_hid("%s:got hidpp error %02X\n", __func__, ret);
+> +               goto exit;
+> +       }
+> +
+> +       if (response->report_id == REPORT_ID_HIDPP_LONG &&
+> +           response->fap.feature_index == HIDPP20_ERROR) {
+>                 ret = response->fap.params[1];
+> -               dbg_hid("__hidpp_send_report got hidpp error %02X\n", ret);
+> +               dbg_hid("%s:got hidpp 2.0 error %02X\n", __func__, ret);
+>                 goto exit;
+>         }
+>
+> @@ -271,7 +281,8 @@ static inline bool hidpp_match_answer(struct hidpp_report *question,
+>  static inline bool hidpp_match_error(struct hidpp_report *question,
+>                 struct hidpp_report *answer)
+>  {
+> -       return (answer->fap.feature_index == HIDPP_ERROR) &&
+> +       return ((answer->rap.sub_id == HIDPP_ERROR) ||
+> +           (answer->fap.feature_index == HIDPP20_ERROR)) &&
+>             (answer->fap.funcindex_clientid == question->fap.feature_index) &&
+>             (answer->fap.params[0] == question->fap.funcindex_clientid);
+>  }
+> --
+> 2.1.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
