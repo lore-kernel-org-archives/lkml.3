@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaLPQ6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:58:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:46970 "EHLO mail.kernel.org"
+	id S1752117AbaLPQ6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:58:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47007 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353AbaLPQ62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:58:28 -0500
+	id S1751353AbaLPQ6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:58:35 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/18] tools lib: Move asm-generic/bitops/find.h code to tools/include and tools/lib
-Date: Tue, 16 Dec 2014 13:57:12 -0300
-Message-Id: <1418749040-31807-11-git-send-email-acme@kernel.org>
+Subject: [PATCH 12/18] tools: Move bitops.h from tools/perf/util to tools/
+Date: Tue, 16 Dec 2014 13:57:14 -0300
+Message-Id: <1418749040-31807-13-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418749040-31807-1-git-send-email-acme@kernel.org>
 References: <1418749040-31807-1-git-send-email-acme@kernel.org>
@@ -28,7 +28,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To match the Linux kernel source code structure from where this code came from.
+So that we better mirror the kernel sources and make it available for
+other tools.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -41,289 +42,146 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-fkbma1h04ki0zzdmp0dpgfyy@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-mvfu6x753tksnto3t6412m93@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/asm-generic/bitops/find.h | 33 ++++++++++++
- tools/lib/util/find_next_bit.c          | 89 +++++++++++++++++++++++++++++++++
- tools/perf/MANIFEST                     |  3 ++
- tools/perf/Makefile.perf                |  5 ++
- tools/perf/util/include/linux/bitops.h  | 73 +--------------------------
- 5 files changed, 131 insertions(+), 72 deletions(-)
- create mode 100644 tools/include/asm-generic/bitops/find.h
- create mode 100644 tools/lib/util/find_next_bit.c
+ tools/include/linux/bitops.h           | 46 ++++++++++++++++++++++++++++++++++
+ tools/perf/MANIFEST                    |  1 +
+ tools/perf/Makefile.perf               |  2 +-
+ tools/perf/util/include/linux/bitops.h | 46 ----------------------------------
+ 4 files changed, 48 insertions(+), 47 deletions(-)
+ create mode 100644 tools/include/linux/bitops.h
+ delete mode 100644 tools/perf/util/include/linux/bitops.h
 
-diff --git a/tools/include/asm-generic/bitops/find.h b/tools/include/asm-generic/bitops/find.h
+diff --git a/tools/include/linux/bitops.h b/tools/include/linux/bitops.h
 new file mode 100644
-index 000000000000..31f51547fcd4
+index 000000000000..5237bc9f6266
 --- /dev/null
-+++ b/tools/include/asm-generic/bitops/find.h
-@@ -0,0 +1,33 @@
-+#ifndef _TOOLS_LINUX_ASM_GENERIC_BITOPS_FIND_H_
-+#define _TOOLS_LINUX_ASM_GENERIC_BITOPS_FIND_H_
++++ b/tools/include/linux/bitops.h
+@@ -0,0 +1,46 @@
++#ifndef _TOOLS_LINUX_BITOPS_H_
++#define _TOOLS_LINUX_BITOPS_H_
 +
-+#ifndef find_next_bit
-+/**
-+ * find_next_bit - find the next set bit in a memory region
-+ * @addr: The address to base the search on
-+ * @offset: The bitnumber to start searching at
-+ * @size: The bitmap size in bits
-+ *
-+ * Returns the bit number for the next set bit
-+ * If no bits are set, returns @size.
-+ */
-+extern unsigned long find_next_bit(const unsigned long *addr, unsigned long
-+		size, unsigned long offset);
++#include <linux/kernel.h>
++#include <linux/compiler.h>
++#include <asm/hweight.h>
++
++#ifndef __WORDSIZE
++#define __WORDSIZE (__SIZEOF_LONG__ * 8)
 +#endif
 +
-+#ifndef find_first_bit
++#define BITS_PER_LONG __WORDSIZE
 +
-+/**
-+ * find_first_bit - find the first set bit in a memory region
-+ * @addr: The address to start the search at
-+ * @size: The maximum number of bits to search
-+ *
-+ * Returns the bit number of the first set bit.
-+ * If no bits are set, returns @size.
-+ */
-+extern unsigned long find_first_bit(const unsigned long *addr,
-+				    unsigned long size);
++#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
++#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
++#define BITS_PER_BYTE		8
++#define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
++#define BITS_TO_U64(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
++#define BITS_TO_U32(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
++#define BITS_TO_BYTES(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE)
 +
-+#endif /* find_first_bit */
-+
-+#endif /*_TOOLS_LINUX_ASM_GENERIC_BITOPS_FIND_H_ */
-diff --git a/tools/lib/util/find_next_bit.c b/tools/lib/util/find_next_bit.c
-new file mode 100644
-index 000000000000..41b44f65a79e
---- /dev/null
-+++ b/tools/lib/util/find_next_bit.c
-@@ -0,0 +1,89 @@
-+/* find_next_bit.c: fallback find next bit implementation
-+ *
-+ * Copied from lib/find_next_bit.c to tools/lib/next_bit.c
-+ *
-+ * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <asm/types.h>
-+#include <asm/byteorder.h>
-+
-+#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
-+
-+#ifndef find_next_bit
 +/*
-+ * Find the next set bit in a memory region.
++ * Include this here because some architectures need generic_ffs/fls in
++ * scope
++ *
++ * XXX: this needs to be asm/bitops.h, when we get to per arch optimizations
 + */
-+unsigned long find_next_bit(const unsigned long *addr, unsigned long size,
-+			    unsigned long offset)
++#include <asm-generic/bitops.h>
++
++#define for_each_set_bit(bit, addr, size) \
++	for ((bit) = find_first_bit((addr), (size));		\
++	     (bit) < (size);					\
++	     (bit) = find_next_bit((addr), (size), (bit) + 1))
++
++/* same as for_each_set_bit() but use bit as value to start with */
++#define for_each_set_bit_from(bit, addr, size) \
++	for ((bit) = find_next_bit((addr), (size), (bit));	\
++	     (bit) < (size);					\
++	     (bit) = find_next_bit((addr), (size), (bit) + 1))
++
++static inline unsigned long hweight_long(unsigned long w)
 +{
-+	const unsigned long *p = addr + BITOP_WORD(offset);
-+	unsigned long result = offset & ~(BITS_PER_LONG-1);
-+	unsigned long tmp;
-+
-+	if (offset >= size)
-+		return size;
-+	size -= result;
-+	offset %= BITS_PER_LONG;
-+	if (offset) {
-+		tmp = *(p++);
-+		tmp &= (~0UL << offset);
-+		if (size < BITS_PER_LONG)
-+			goto found_first;
-+		if (tmp)
-+			goto found_middle;
-+		size -= BITS_PER_LONG;
-+		result += BITS_PER_LONG;
-+	}
-+	while (size & ~(BITS_PER_LONG-1)) {
-+		if ((tmp = *(p++)))
-+			goto found_middle;
-+		result += BITS_PER_LONG;
-+		size -= BITS_PER_LONG;
-+	}
-+	if (!size)
-+		return result;
-+	tmp = *p;
-+
-+found_first:
-+	tmp &= (~0UL >> (BITS_PER_LONG - size));
-+	if (tmp == 0UL)		/* Are any bits set? */
-+		return result + size;	/* Nope. */
-+found_middle:
-+	return result + __ffs(tmp);
++	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
 +}
-+#endif
 +
-+#ifndef find_first_bit
-+/*
-+ * Find the first set bit in a memory region.
-+ */
-+unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
-+{
-+	const unsigned long *p = addr;
-+	unsigned long result = 0;
-+	unsigned long tmp;
-+
-+	while (size & ~(BITS_PER_LONG-1)) {
-+		if ((tmp = *(p++)))
-+			goto found;
-+		result += BITS_PER_LONG;
-+		size -= BITS_PER_LONG;
-+	}
-+	if (!size)
-+		return result;
-+
-+	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
-+	if (tmp == 0UL)		/* Are any bits set? */
-+		return result + size;	/* Nope. */
-+found:
-+	return result + __ffs(tmp);
-+}
 +#endif
 diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 67d48e20f7e1..bfd7e22bafad 100644
+index 86f115cdbb5b..7729af9f417a 100644
 --- a/tools/perf/MANIFEST
 +++ b/tools/perf/MANIFEST
-@@ -4,8 +4,10 @@ tools/lib/traceevent
- tools/lib/api
- tools/lib/symbol/kallsyms.c
- tools/lib/symbol/kallsyms.h
-+tools/lib/util/find_next_bit.c
- tools/include/asm/bug.h
- tools/include/asm-generic/bitops/atomic.h
-+tools/include/asm-generic/bitops/find.h
+@@ -10,6 +10,7 @@ tools/include/asm-generic/bitops/atomic.h
  tools/include/asm-generic/bitops/__ffs.h
+ tools/include/asm-generic/bitops/find.h
+ tools/include/asm-generic/bitops.h
++tools/include/linux/bitops.h
  tools/include/linux/compiler.h
  tools/include/linux/export.h
-@@ -18,6 +20,7 @@ include/linux/rbtree.h
- include/linux/list.h
- include/linux/hash.h
- include/linux/stringify.h
-+lib/find_next_bit.c
- lib/rbtree.c
- include/linux/swab.h
- arch/*/include/asm/unistd*.h
+ tools/include/linux/hash.h
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index fc4082fdf6bf..2d799da4eacc 100644
+index d9bf9685e9da..55b9c97cafc2 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -233,6 +233,7 @@ LIB_H += ../../include/linux/stringify.h
+@@ -231,7 +231,7 @@ LIB_H += ../../include/uapi/linux/const.h
+ LIB_H += ../include/linux/hash.h
+ LIB_H += ../../include/linux/stringify.h
  LIB_H += util/include/linux/bitmap.h
- LIB_H += util/include/linux/bitops.h
+-LIB_H += util/include/linux/bitops.h
++LIB_H += ../include/linux/bitops.h
  LIB_H += ../include/asm-generic/bitops/atomic.h 
-+LIB_H += ../include/asm-generic/bitops/find.h 
+ LIB_H += ../include/asm-generic/bitops/find.h 
  LIB_H += ../include/asm-generic/bitops/__ffs.h 
- LIB_H += ../include/linux/compiler.h
- LIB_H += ../include/linux/log2.h
-@@ -338,6 +339,7 @@ LIB_OBJS += $(OUTPUT)util/event.o
- LIB_OBJS += $(OUTPUT)util/evlist.o
- LIB_OBJS += $(OUTPUT)util/evsel.o
- LIB_OBJS += $(OUTPUT)util/exec_cmd.o
-+LIB_OBJS += $(OUTPUT)util/find_next_bit.o
- LIB_OBJS += $(OUTPUT)util/help.o
- LIB_OBJS += $(OUTPUT)util/kallsyms.o
- LIB_OBJS += $(OUTPUT)util/levenshtein.o
-@@ -737,6 +739,9 @@ $(OUTPUT)util/kallsyms.o: ../lib/symbol/kallsyms.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
- 
-+$(OUTPUT)util/find_next_bit.o: ../lib/util/find_next_bit.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-unused-parameter -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
-+
- $(OUTPUT)util/parse-events.o: util/parse-events.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) -Wno-redundant-decls $<
- 
 diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index 58c4a2520ac2..292aadeb66c5 100644
+deleted file mode 100644
+index 5237bc9f6266..000000000000
 --- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -37,78 +37,7 @@ static inline unsigned long hweight_long(unsigned long w)
- 	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
- }
- 
--#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
++++ /dev/null
+@@ -1,46 +0,0 @@
+-#ifndef _TOOLS_LINUX_BITOPS_H_
+-#define _TOOLS_LINUX_BITOPS_H_
 -
- #include <asm-generic/bitops/__ffs.h>
+-#include <linux/kernel.h>
+-#include <linux/compiler.h>
+-#include <asm/hweight.h>
 -
--typedef const unsigned long __attribute__((__may_alias__)) long_alias_t;
+-#ifndef __WORDSIZE
+-#define __WORDSIZE (__SIZEOF_LONG__ * 8)
+-#endif
 -
--/*
-- * Find the first set bit in a memory region.
-- */
--static inline unsigned long
--find_first_bit(const unsigned long *addr, unsigned long size)
--{
--	long_alias_t *p = (long_alias_t *) addr;
--	unsigned long result = 0;
--	unsigned long tmp;
+-#define BITS_PER_LONG __WORDSIZE
 -
--	while (size & ~(BITS_PER_LONG-1)) {
--		if ((tmp = *(p++)))
--			goto found;
--		result += BITS_PER_LONG;
--		size -= BITS_PER_LONG;
--	}
--	if (!size)
--		return result;
--
--	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
--	if (tmp == 0UL)		/* Are any bits set? */
--		return result + size;	/* Nope. */
--found:
--	return result + __ffs(tmp);
--}
+-#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
+-#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
+-#define BITS_PER_BYTE		8
+-#define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
+-#define BITS_TO_U64(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
+-#define BITS_TO_U32(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
+-#define BITS_TO_BYTES(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE)
 -
 -/*
-- * Find the next set bit in a memory region.
+- * Include this here because some architectures need generic_ffs/fls in
+- * scope
+- *
+- * XXX: this needs to be asm/bitops.h, when we get to per arch optimizations
 - */
--static inline unsigned long
--find_next_bit(const unsigned long *addr, unsigned long size, unsigned long offset)
+-#include <asm-generic/bitops.h>
+-
+-#define for_each_set_bit(bit, addr, size) \
+-	for ((bit) = find_first_bit((addr), (size));		\
+-	     (bit) < (size);					\
+-	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+-
+-/* same as for_each_set_bit() but use bit as value to start with */
+-#define for_each_set_bit_from(bit, addr, size) \
+-	for ((bit) = find_next_bit((addr), (size), (bit));	\
+-	     (bit) < (size);					\
+-	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+-
+-static inline unsigned long hweight_long(unsigned long w)
 -{
--	const unsigned long *p = addr + BITOP_WORD(offset);
--	unsigned long result = offset & ~(BITS_PER_LONG-1);
--	unsigned long tmp;
--
--	if (offset >= size)
--		return size;
--	size -= result;
--	offset %= BITS_PER_LONG;
--	if (offset) {
--		tmp = *(p++);
--		tmp &= (~0UL << offset);
--		if (size < BITS_PER_LONG)
--			goto found_first;
--		if (tmp)
--			goto found_middle;
--		size -= BITS_PER_LONG;
--		result += BITS_PER_LONG;
--	}
--	while (size & ~(BITS_PER_LONG-1)) {
--		if ((tmp = *(p++)))
--			goto found_middle;
--		result += BITS_PER_LONG;
--		size -= BITS_PER_LONG;
--	}
--	if (!size)
--		return result;
--	tmp = *p;
--
--found_first:
--	tmp &= (~0UL >> (BITS_PER_LONG - size));
--	if (tmp == 0UL)		/* Are any bits set? */
--		return result + size;	/* Nope. */
--found_middle:
--	return result + __ffs(tmp);
+-	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
 -}
-+#include <asm-generic/bitops/find.h>
- 
- #endif
+-
+-#endif
 -- 
 1.9.3
 
