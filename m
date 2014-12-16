@@ -1,120 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751698AbaLPWGW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:06:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38348 "EHLO mx1.redhat.com"
+	id S1751940AbaLPWHO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:07:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35687 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaLPWGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:06:20 -0500
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Peter Wu <peter@lekensteyn.nl>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] HID: logitech-hidpp: store the name of the device in struct hidpp
-Date: Tue, 16 Dec 2014 17:06:02 -0500
-Message-Id: <1418767562-4136-2-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1751573AbaLPWHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 17:07:12 -0500
+Message-ID: <5490AD09.3000807@suse.de>
+Date: Tue, 16 Dec 2014 23:07:05 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>
+CC: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Scott Wood <scottwood@freescale.com>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH 26/35] [PATCH 26/36] powerpc: Replace __get_cpu_var uses
+References: <20140817173023.439660246@linux.com> <20140817173036.985604442@linux.com> <20140826181444.GJ31659@mtj.dyndns.org>
+In-Reply-To: <20140826181444.GJ31659@mtj.dyndns.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a disconnect occurs while getting the actual name of the device
-(which can take several HID transactions), the name of the device will
-be the hid name, provided by the Unifying Receiver.
-This means that in some cases, the user space will see a different
-name that what it usually sees when there is no disconnect.
+On 26.08.14 20:14, Tejun Heo wrote:
+> On Sun, Aug 17, 2014 at 12:30:49PM -0500, Christoph Lameter wrote:
+>> __get_cpu_var() is used for multiple purposes in the kernel source. One of
+>> them is address calculation via the form &__get_cpu_var(x).  This calculates
+>> the address for the instance of the percpu variable of the current processor
+>> based on an offset.
+>>
+>> Other use cases are for storing and retrieving data from the current
+>> processors percpu area.  __get_cpu_var() can be used as an lvalue when
+>> writing data or on the right side of an assignment.
+> ...
+>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>> CC: Paul Mackerras <paulus@samba.org>
+>> Signed-off-by: Christoph Lameter <cl@linux.com>
+> 
+> (Please disregard the ones I posted for v1 of the patch series)
+> 
+> Applied to percpu/for-3.18-consistent-ops with the fix up patch rolled
+> in.  Please let me know if this patch should be routed differently.
+> Note that this patch was to be applied to percpu/for-3.17 but delayed
+> due to build issues caused by cpumask_var_t.
 
-We should store the name of the device in the struct hidpp. That way,
-if a disconnect occurs while we are accessing the name,
-hidpp_connect_event() can fail, and the input node is not created.
+Unfortunately this commit breaks e500v2 builds with KVM enabled:
 
-The input node will be created only if we have a connection which
-lasts long enough to retrieve all the requested information:
-name, protocol, and specific configuration.
+  arch/powerpc/kvm/e500.c: In function "local_sid_setup_one":
+  arch/powerpc/kvm/e500.c:81:29: error: macro "__this_cpu_write"
+requires 2 arguments, but only 1 given
+  arch/powerpc/kvm/e500.c:81:3: error: unknown type name "__this_cpu_write"
+  arch/powerpc/kvm/e500.c:81:47: error: expected "=", ",", ";", "asm" or
+"__attribute__" before ")" token
+  arch/powerpc/kvm/e500.c:82:8: error: request for member "val" in
+something not a structure or union
+  arch/powerpc/kvm/e500.c:83:8: error: request for member "pentry" in
+something not a structure or union
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-logitech-hidpp.c | 31 ++++++++++++++++++++-----------
- 1 file changed, 20 insertions(+), 11 deletions(-)
+Looking at the offending line of code I'm not surprised:
 
-diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index c0fb5fe..4bc8714 100644
---- a/drivers/hid/hid-logitech-hidpp.c
-+++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -89,6 +89,7 @@ struct hidpp_device {
- 	struct hid_device *hid_dev;
- 	struct mutex send_mutex;
- 	void *send_receive_buf;
-+	char *name;
- 	wait_queue_head_t wait;
- 	bool answer_available;
- 	u8 protocol_major;
-@@ -1087,6 +1088,7 @@ static void hidpp_input_close(struct input_dev *dev)
- static struct input_dev *hidpp_allocate_input(struct hid_device *hdev)
- {
- 	struct input_dev *input_dev = devm_input_allocate_device(&hdev->dev);
-+	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
- 
- 	if (!input_dev)
- 		return NULL;
-@@ -1095,7 +1097,7 @@ static struct input_dev *hidpp_allocate_input(struct hid_device *hdev)
- 	input_dev->open = hidpp_input_open;
- 	input_dev->close = hidpp_input_close;
- 
--	input_dev->name = hdev->name;
-+	input_dev->name = hidpp->name;
- 	input_dev->phys = hdev->phys;
- 	input_dev->uniq = hdev->uniq;
- 	input_dev->id.bustype = hdev->bus;
-@@ -1137,22 +1139,28 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
- 	hid_info(hdev, "HID++ %u.%u device connected.\n",
- 		 hidpp->protocol_major, hidpp->protocol_minor);
- 
-+	if (!hidpp->name || hidpp->name == hdev->name) {
-+		name = hidpp_get_device_name(hidpp);
-+		if (!name) {
-+			hid_err(hdev,
-+				"unable to retrieve the name of the device");
-+			return;
-+		}
-+
-+		devm_name = devm_kasprintf(&hdev->dev, GFP_KERNEL, "%s", name);
-+		kfree(name);
-+		if (!devm_name)
-+			return;
-+
-+		hidpp->name = devm_name;
-+	}
-+
- 	input = hidpp_allocate_input(hdev);
- 	if (!input) {
- 		hid_err(hdev, "cannot allocate new input device: %d\n", ret);
- 		return;
- 	}
- 
--	name = hidpp_get_device_name(hidpp);
--	if (!name) {
--		hid_err(hdev, "unable to retrieve the name of the device");
--	} else {
--		devm_name = devm_kasprintf(&hdev->dev, GFP_KERNEL, "%s", name);
--		if (devm_name)
--			input->name = devm_name;
--		kfree(name);
--	}
--
- 	hidpp_populate_input(hidpp, input, false);
- 
- 	ret = input_register_device(input);
-@@ -1175,6 +1183,7 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
- 		return -ENOMEM;
- 
- 	hidpp->hid_dev = hdev;
-+	hidpp->name = hdev->name;
- 	hid_set_drvdata(hdev, hidpp);
- 
- 	hidpp->quirks = id->driver_data;
--- 
-2.1.0
+-               __get_cpu_var(pcpu_sids).entry[sid] = entry;
++               __this_cpu_write(pcpu_sids)entry[sid], entry);
 
+This doesn't quite look like valid C to me. The patch below fixes the
+build error for me. Please check whether it's correct and if so apply it
+directly to the tree.
+
+
+Alex
+
+
+From: Alexander Graf <agraf@suse.de>
+Date: Tue, 16 Dec 2014 23:04:01 +0100
+Subject: [PATCH] KVM: PPC: E500: Compile fix in this_cpu_write
+
+Commit 69111bac42f5 (powerpc: Replace __get_cpu_var uses) introduced compile
+breakage to the e500 target by introducing invalid automatically created C
+syntax.
+
+Fix up the breakage and make the code compile again.
+
+Signed-off-by: Alexander Graf <agraf@suse.de>
+
+diff --git a/arch/powerpc/kvm/e500.c b/arch/powerpc/kvm/e500.c
+index 1609584..e1cb588 100644
+--- a/arch/powerpc/kvm/e500.c
++++ b/arch/powerpc/kvm/e500.c
+@@ -78,7 +78,7 @@ static inline int local_sid_setup_one(struct id *entry)
+
+ 	sid = __this_cpu_inc_return(pcpu_last_used_sid);
+ 	if (sid < NUM_TIDS) {
+-		__this_cpu_write(pcpu_sids)entry[sid], entry);
++		__this_cpu_write(pcpu_sids.entry[sid], entry);
+ 		entry->val = sid;
+ 		entry->pentry = this_cpu_ptr(&pcpu_sids.entry[sid]);
+ 		ret = sid;
