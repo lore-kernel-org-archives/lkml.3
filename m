@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750986AbaLPBrm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 20:47:42 -0500
-Received: from mga11.intel.com ([192.55.52.93]:34815 "EHLO mga11.intel.com"
+	id S1751291AbaLPBr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 20:47:58 -0500
+Received: from ozlabs.org ([103.22.144.67]:41251 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722AbaLPBrl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 20:47:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="429401377"
-Message-ID: <1418694459.5745.198.camel@intel.com>
-Subject: Re: [LKP] [userns] BUG: unable to handle kernel NULL pointer
- dereference at (null)
-From: Huang Ying <ying.huang@intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Date: Tue, 16 Dec 2014 09:47:39 +0800
-In-Reply-To: <87iohcx1k1.fsf@x220.int.ebiederm.org>
-References: <1418613661.5745.164.camel@intel.com>
-	 <87iohcx1k1.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751074AbaLPBr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 20:47:57 -0500
+Date: Tue, 16 Dec 2014 12:47:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
+        Haggai Eran <haggaie@mellanox.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the infiniband tree
+Message-ID: <20141216124750.153e3fdd@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/UQQO4pX7abOKhts/BrsgpgH"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-15 at 11:31 -0600, Eric W. Biederman wrote:
-> Huang Ying <ying.huang@intel.com> writes:
-> 
-> > FYI, we noticed the below changes on
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-testing
-> > commit bbea5f5532501fdd67f46442ba7b1122d7ff3123 
-> > ("userns: Add a knob to disable setgroups on a per user namespace basis")
-> 
-> Thank you.
-> 
-> I am quite puzzled by this failure.  There was an similar failure when
-> /proc/[pid]/setgroups was read (if I recall correctly).  I don't see how
-> that change could result at failures during open or failures during
-> boot.  I added a new file to proc which any reasonable system should
-> leave alone.  Are you by chance running trinity during boot?
+--Sig_/UQQO4pX7abOKhts/BrsgpgH
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes.  We are running trinity during boot.
+Hi all,
 
-> If the reproducer gave me any clue about which file that was opened or
-> which code path this happened on I would be bery interested.  If for no
-> other reason that to confirm that I have fixed the issue.
+After merging the infiniband tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-This is just boot test, with trinity running after kernel boot.
+drivers/infiniband/hw/mlx5/main.c: In function 'mlx5_ib_query_device':
+drivers/infiniband/hw/mlx5/main.c:248:34: error: 'MLX5_DEV_CAP_FLAG_ON_DMND=
+_PG' undeclared (first use in this function)
+  if (dev->mdev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
+                                  ^
+drivers/net/ethernet/mellanox/mlx5/core/fw.c: In function 'mlx5_query_odp_c=
+aps':
+drivers/net/ethernet/mellanox/mlx5/core/fw.c:79:30: error: 'MLX5_DEV_CAP_FL=
+AG_ON_DMND_PG' undeclared (first use in this function)
+  if (!(dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG))
+                              ^
+drivers/net/ethernet/mellanox/mlx5/core/eq.c: In function 'mlx5_start_eqs':
+drivers/net/ethernet/mellanox/mlx5/core/eq.c:459:28: error: 'MLX5_DEV_CAP_F=
+LAG_ON_DMND_PG' undeclared (first use in this function)
+  if (dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
+                            ^
 
-Fengguang, do you have more information?
+Really?  Code added half way though the merge window not even build
+tested?
 
-Best Regards,
-Huang, Ying
+I have used the infiniband tree from next-20141215 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> I have rewritten the implementation of /proc/[pid]/setgroups so it is
-> simpler and more robust and does not have any errors I can detect.
-> 
-> Thank you very much for picking up my for-testing branch and beating up
-> on it.
-> 
-> Eric
+--Sig_/UQQO4pX7abOKhts/BrsgpgH
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
+iQIcBAEBCAAGBQJUj49KAAoJEMDTa8Ir7ZwV16IP/15ZzM3O90EgQsDh2NCZ9HyK
+SuPkUwMoLbI+/a4TjbvxddCBtxb6WXLnxyin8uUT+92ZtH5wq/bjqL2OOeNutL1s
+x0uVOfWBu0L6FLvZlE/sdTNW5w1yQbDX6jRrSrupjGVffCYbYU+vC4p9ylceMpoF
+TeQczsZFZp8FDiKXa4nSOV4Fp2zLvZtk4G74kPyFVf6AVl/l4+Uc+UmhzjbQKk6s
+h4+RfqVo76xU5qRnWEogJiJnLV1zlgI3HN+WOZUKTDa3O4grIJMvax2odYGNPUF9
+HrQsRqyLsGcFXjH+thTEArcEpYJ5Bhq7plvK8Gv7d1FfIzxgoNqCHKVnTaWdXr2s
+yENlVsWca4pJyN9ioCvzjDRz3M4v2OtfErEc2/cC30akOGKHO8HbDWkKrGvfw9Gd
+McWGPFS11oCfYoKH5KIRBvexVJvnyLlFuxYwRCLUCN0QmJHqlJoFTy4gbnxtxukw
+qV7ncDpdTaR5eJRtU0Rz9BL3ZTFO7HDTgyE26GwNrFWThMWivstLtMV9n1Ip/D/2
+yWmq12ke48aQ27IiE68sPgHzS0yI91q7KebKd/5agxYrJaAv2QmrHMJ2AvwZRjkf
+ezvN3bnRUzeLIydVa2gRdk109ozVoGbl5ziXiYvjAnmbgYVfSIyv43neeuGNskhc
+Vv07z9NgxQeLshEZh9tf
+=HGnS
+-----END PGP SIGNATURE-----
+
+--Sig_/UQQO4pX7abOKhts/BrsgpgH--
