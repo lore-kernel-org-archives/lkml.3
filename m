@@ -1,117 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751006AbaLPOUj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:20:39 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:52624 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaLPOUh (ORCPT
+	id S1751194AbaLPOUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:20:52 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:35178 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751084AbaLPOUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:20:37 -0500
-Date: Tue, 16 Dec 2014 15:20:33 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	Tue, 16 Dec 2014 09:20:47 -0500
+Date: Tue, 16 Dec 2014 15:20:41 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
 To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-Message-ID: <20141216142029.GA27375@lerouge>
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com>
- <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com>
- <548E8D01.9050707@linux.vnet.ibm.com>
- <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
- <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com>
- <548FFD20.1040102@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1412161105470.17382@nanos>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ARM: at91: fix irq_pm_install_action WARNING
+Message-ID: <20141216152041.56ff9b2e@bbrezillon>
+In-Reply-To: <alpine.DEB.2.11.1412161349420.17382@nanos>
+References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com>
+	<2662748.NJbkr6jW7r@vostro.rjw.lan>
+	<3542278.8lcJeXLMFm@vostro.rjw.lan>
+	<20141216100715.57baeb65@bbrezillon>
+	<alpine.DEB.2.11.1412161013570.17382@nanos>
+	<20141216122503.77c5632f@bbrezillon>
+	<alpine.DEB.2.11.1412161349420.17382@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412161105470.17382@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 01:49:03PM +0100, Thomas Gleixner wrote:
-> And that's where the whole problem starts. The nohz full stuff is
-> trying to evaluate everything dynamically which is just insane.
-> 
-> So we want to have functions which do:
-> 
->    tick_nohz_full_enter()
->      ts->infullnohz = true;
->      if (stop_possible)
->      	stop_tick(ts);
-> 
->    tick_nohz_full_exit()
->      ts->infullnohz = false;
->      if (ts->tick_stopped)
->      	start_tick(ts);
-> 
-> Plus irq_exit would become:     
-> 
-> irq_exit
-> 	if (ts->inidle)
-> 	   tick_nohz_update_sched_tick();
-> 
-> 	else if (ts->infullnohz)
-> 	   tick_nohz_full_update_sched_tick();
+On Tue, 16 Dec 2014 13:56:26 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-So I can do that indeed. But then it's going to break the jump label that's
-off in 99.99% of the case.
+> On Tue, 16 Dec 2014, Boris Brezillon wrote:
+> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > Install the timer interrupt as a demultiplexing interrupt.
+> > 
+> > I can try to hack the AIC irqchip driver to implement this demux logic,
+> > but this logic can't be placed in the PIT (Periodic Interval Timer)
+> > driver itself, because the shared IRQ line is used by the at91 clock
+> > controller (PMC) which is providing the clock to the PIT device.
+> > This gives the following dependency graph:
+> > 
+> > PIT =depends-on=> Master Clock =provided-by=> PMC =needs=> PMC IRQ.
+> 
+> It never can be a part of a device driver. This is a property of the
+> interrupt controller which fails to provide a proper demux for this
+> irq line in the first place.
+> 
+> So you fake the demux in the irq chip driver, where you provide the
+> pseudo chip and the demux logic. None of the device drivers (PIT, PMC,
+> UART ...) even knows about that.
+> 
+> |--------|             |--------|
+> | AIC    |-------------| Pseudo |---- PIT
+> |        |             | chip   |---- PMC
+> |        |             |        |---- UART
+> |        |             |--------|
+> |        |--- devX
+> |        |--- devY
+> |        |--- devZ
+> |--------|
+> 
+> So PIT, PMC and UART get interrupt numbers handed out which are
+> outside of the interrupt space of AIC.
 
-Now I can wrap that into parallel functions:
+Okay, that's what I had in mind, thanks for clarifying this aspect.
 
-irq_exit
-	if (tick_nohz_idle())
-	   tick_nohz_update_sched_tick();
+Regarding the DT representation, it should look like this, right ?
 
-	else if (tick_nohz_full())
-	   tick_nohz_full_update_sched_tick();
+aic: interrupt-controller@fffff000 {
+	#interrupt-cells = <3>;
+	compatible = "atmel,at91rm9200-aic";
+	interrupt-controller;
+	reg = <0xfffff000 0x200>;
+	atmel,external-irqs = <29 30 31>;
 
-Just to be sure I understand you well. By ts->infullnohz, you mean the fact
-that a CPU _wants_ to be in full nohz, not whether it _can_ right? Whether
-the CPU wants to be in full nohz is decided in boottime with nohz_full= parameter.
-Whether it can is dynamically checked on top of scheduler, perf, posix cpu timers, etc...
+	irq1_demux: irq1-demux {
+		#interrupt-cells = <1>;
+		interrupt-controller;
+	}
+};
 
-But I agree with you on the design. First check which nohz flavour we are
-under, second call the appropriate function. That's what it actually does but
-it's badly buried in functions, I'm going to fix that.
+pit: timer@fffffd30 {
+	compatible = "atmel,at91sam9260-pit";
+	reg = <0xfffffd30 0xf>;
+	/* 0 is the id reserved for the PIT */
+	interrupts-extended = <&irq1_demux 0>;
+	clocks = <&mck>;
+};
 
-> 
-> You need to keep track of the fact that the cpu entered fullnohz and
-> work from there. Whether the tick is stopped or not does not matter at
-> all because that is a seperate decision like in the nohz idle case.
-> 
-> Everything else is voodoo programming.
-> 
-> Now the powerclamp mess is a different story.
-> 
-> Calling tick_nohz_idle_enter()/exit() from outside the idle task is
-> just broken. Period.
-> 
-> Trying to work around that madness in the core code is just fiddling
-> with the symptoms and ignoring the root cause. And the root cause is
-> simply that powerclamp calls tick_nohz_idle_enter()/exit().
-> 
-> So there are two things to solve:
-> 
->    1) Remove the powerclamp stupidity
-> 
->    2) Fix the whole nohz full mess with proper state tracking.
-> 
-> If you folks insist on curing the symptoms and ignoring the root
-> causes I'm going to mark NOHZ_FULL broken and NOHZ depend on
-> POWERCLAMP=n.
-> 
-> The commit in question, does not really cause a regression, it merily
-> unearths the utter broken crap which existed before in both NOHZ FULL
-> and powerclamp and just ever worked by chance.
+pmc: pmc@fffffc00 {
+	compatible = "atmel,at91sam9260-pmc";
+	reg = <0xfffffc00 0x100>;
+	/* 1 is the id reserved for the PMC */
+	interrupts-extended = <&irq1_demux 1>;
+[...]
+};
 
-Agreed.
+Regards,
 
-Thanks.
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
