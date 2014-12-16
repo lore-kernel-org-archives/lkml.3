@@ -1,49 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750953AbaLPJeY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:34:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46245 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaLPJeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:34:22 -0500
-Message-ID: <1418722450.2448.3.camel@linux-0dmf.site>
-Subject: Re: [PATCH 4/4 v4] scsi:stex.c Add S3/S4 support
-From: Oliver Neukum <oneukum@suse.de>
-To: Charles Chiou <ch1102chiou@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, JBottomley@parallels.com,
-        ed.lin@promise.com, grace.chang@tw.promise.com,
-        linus.chen@tw.promise.com, victor.p@promise.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 16 Dec 2014 10:34:10 +0100
-In-Reply-To: <548FCDC8.1010900@gmail.com>
-References: <548FCDC8.1010900@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751150AbaLPJfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:35:08 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:33920 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751008AbaLPJfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 04:35:04 -0500
+Date: Tue, 16 Dec 2014 10:32:41 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: VishnuPatekar <vishnupatekar0510@gmail.com>
+Cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+        hdegoede@redhat.com, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, grant.likely@linaro.org,
+        benh@kernel.crashing.org, msalter@redhat.com, ralf@linux-mips.org,
+        jdelvare@suse.de
+Subject: Re: [PATCHv3 3/5] ARM: sunxi: dts: Add PS2 nodes to dtsi for A10 and
+ A20
+Message-ID: <20141216093241.GN4337@lukather>
+References: <1418408748-9797-1-git-send-email-vishnupatekar0510@gmail.com>
+ <1418408748-9797-4-git-send-email-vishnupatekar0510@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wwtQuX191/I956S7"
+Content-Disposition: inline
+In-Reply-To: <1418408748-9797-4-git-send-email-vishnupatekar0510@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-12-16 at 14:14 +0800, Charles Chiou wrote:
->  From f9d84df080c16097218092630db9b5df31d487b5 Mon Sep 17 00:00:00 2001
-> From: Charles Chiou <charles.chiou@tw.promise.com>
-> Date: Fri, 7 Nov 2014 10:15:18 +0800
-> Subject: [PATCH 4/4] scsi:stex.c Add S3/S4 support
-> 
-> Add S3/S4 support, add .suspend and .resume function in pci_driver.
-> 
-> Pegasus need 30~40 seconds to boot up. We don't want to OS wait
-> in .resume function. Create a thread to handle device boot up.
 
-I am sorry to be obnoxious, but this patch raises another
-question. What happens if the the system is suspended again
-while the work scheduled in resume is still running?
+--wwtQuX191/I956S7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Furthermore, what happens in the case of a PCI hotunplug while
-the work is still scheduled?
+Hi Vishnu,
 
-	Regards
-		Oliver
+On Fri, Dec 12, 2014 at 11:55:46PM +0530, VishnuPatekar wrote:
+> 1) Fixup the sun4i ps/2 nodes interrupt property, sun4i interrupts take
+> only 1 specifier
+>=20
+> 2) dt bindings should use the compat string for the earliest version of t=
+he
+> hardware which has the relevant hardware block, unless there are differen=
+ces,
+> the A10 and A20 ps2 controllers are identical, so for both sun4i-a10-ps2
+> should be used as compat string, update the sun7i.dtsi ps2 entries to
+> use the sun4i-a10-ps2 compat string.
 
+This shouldn't be a changelog, but what this patch actually does.
 
+> Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+> ---
+>  arch/arm/boot/dts/sun4i-a10.dtsi |   17 +++++++++++++++++
+>  arch/arm/boot/dts/sun7i-a20.dtsi |   18 ++++++++++++++++++
+>  2 files changed, 35 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a=
+10.dtsi
+> index 7b4099f..ef9a01c 100644
+> --- a/arch/arm/boot/dts/sun4i-a10.dtsi
+> +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+> @@ -629,6 +629,7 @@
+>  				allwinner,drive =3D <0>;
+>  				allwinner,pull =3D <0>;
+>  			};
+> +
+
+This is an uneeded change
+
+>  		};
+> =20
+>  		timer@01c20c00 {
+> @@ -795,5 +796,21 @@
+>  			#address-cells =3D <1>;
+>  			#size-cells =3D <0>;
+>  		};
+> +
+> +		ps20: ps2@01c2a000 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a000 0x400>;
+> +			interrupts =3D <62>;
+> +			clocks =3D <&apb1_gates 6>;
+> +			status =3D "disabled";
+> +		};
+> +
+> +		ps21: ps2@01c2a400 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a400 0x400>;
+> +			interrupts =3D <63>;
+> +			clocks =3D <&apb1_gates 7>;
+> +			status =3D "disabled";
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index e21ce59..6ab7714 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -866,6 +866,7 @@
+>  				    allwinner,drive =3D <0>;
+>  				    allwinner,pull =3D <0>;
+>  			};
+> +
+
+Ditto.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--wwtQuX191/I956S7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUj/w5AAoJEBx+YmzsjxAgtJsQALNM69R96RZTqD95JMB18/uT
+ghUxLLq2/rXKRztDrJVmAZZAhBX+WC/YNAYcJGD9RTP0R9emJyyEvQ0Kc9+abNic
+0OwbUSzIqBulbAMmapo4JENPxJ7I+oNfKpYEXFCDJawUtWgoh8PVyO5VJuniYvw0
+NCRZecZFPwleU61AOVV7OpuDUVOp5d+wDvu3P6ZMyWQf/s0tReu2hkaYIC1lR/Jj
+yqPrRLFKyf0sv7ZyMjVHiUsQJYn0haz9hO+MiWoSP+PhUONENdKNIS4fTFVonYF9
+0SkNfPAPDn137rv8hr2PquPz+ehsH5s6bPRqUFjKink89KdqvXU4vFWaJ0SAvSBa
+8OvSb+f8q7s21yLakLh5LSRDPvLs+bR1aPrfjmlzdilzUQ5mqL3Fv0/f3eBWAMv4
+5sCSdqS0A6mFOvNuzP5DHjlqVOuBC0/kDTYPPUid0FNW/iCWXpJXcknrJJVoxqpK
+IyDXA+RAvsp1sD0o9brG1WbjwILq0ea2m/lYToHJptwlK/K8qWyX7jwAJ6ST0lLn
+GCdDnHeLxU+gMl5kCfT/W6JiT3QDBuapsQorqoAZm94PE9CpZAHJCPb0ZTZqWkB5
+DmrkwaAlZf+lbP3pKHkyKlgiwJtNUpeZ+nj6hJT11WoEQ62i1TicgpNEXij4ioQH
+zctr44x/4XpAknUp2gnT
+=f35W
+-----END PGP SIGNATURE-----
+
+--wwtQuX191/I956S7--
