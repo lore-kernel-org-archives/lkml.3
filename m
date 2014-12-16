@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbaLPAtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:49:09 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39250 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750900AbaLPAtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:49:07 -0500
-Message-ID: <548F80CA.8010900@ubuntu.com>
-Date: Mon, 15 Dec 2014 19:46:02 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: "Akers, Jason B" <jason.b.akers@intel.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-CC: "Karkra, Kapil" <kapil.karkra@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dgilbert@interlog.com" <dgilbert@interlog.com>
-Subject: Re: [RFC PATCH] sg3_utils: Added hybrid information log utility
-References: <20141029195400.5225.96984.stgit@stg-AndroidDev-VirtualBox> <20141029195720.5225.51331.stgit@stg-AndroidDev-VirtualBox> <5473CE5C.7010300@ubuntu.com> <372C7AE269BA5E4D92B1082F530ED4B88A13F692@ORSMSX110.amr.corp.intel.com>
-In-Reply-To: <372C7AE269BA5E4D92B1082F530ED4B88A13F692@ORSMSX110.amr.corp.intel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	id S1752530AbaLPAug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:50:36 -0500
+Received: from lekensteyn.nl ([178.21.112.251]:39762 "EHLO lekensteyn.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876AbaLPAud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 19:50:33 -0500
+From: Peter Wu <peter@lekensteyn.nl>
+To: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] HID: logitech-{dj,hidpp}: more reliability fixes
+Date: Tue, 16 Dec 2014 01:50:13 +0100
+Message-Id: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
+X-Mailer: git-send-email 2.1.3
+X-Spam-Score: -0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
+Hi Jiri,
 
-On 11/25/2014 02:13 PM, Akers, Jason B wrote:
-> Hi Phillip, It turns out that this patch was based on an old
-> github repository that doesn't appear to be updated. Doug Gilbert
-> reached out after the initial RFC and directed us to his page 
-> (http://sg.danny.cz/sg/) where he has updated sg3_utils code.
-> 
-> As we continue to work through the feedback from our SSHD kernel 
-> patches, I'm going to follow up with Doug again on sg3_utils.
+Here are more fixes intended for the 3.19 tree after a review. Two bugfixes.
+one which was mentioned in a mail with Benjamin ("avoid unintended
+fall-through") and a fix to avoid a possible 5 second delay for HID++ 2.0
+errors. I haven't encountered a case where the hidpp module generates a HID++
+2.0 error though, so maybe that change can go to 3.20 too if you want to keep
+the changeset small.
 
-So is there a set of patches that applies to a release from that web
-site?  Also is the source only released as tarballs?  There is no
-source repo?
+The third (second) patch adds a check to avoid passing a short report. A similar
+fix should probably be written for stable kernels (the code was changed in 3.19,
+but the length check was already missing in older kernels).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Kind regards,
+Peter
 
-iQEcBAEBCgAGBQJUj4DKAAoJENRVrw2cjl5RwEwH/147w+N+z9r3J70AQrLdXgtN
-mRF2VLEK/v0l7rpnnyiKyL7Trjc3/YXY9tLf3feC225l9UL6K73moLKGWMI+iRU2
-xvCWIJKHQyf8E/j6qFqid0G9V/IQNG9vXAZSEmrTcvT5NaEJ0U3kSCKe5w9xEYEE
-6SLYTF+FRHkXceloFvW/8PAwj/2K4g/KsZShIS07kdzAh+fIoZM6qQP3XbEK5v1T
-x+zuFZtIVzVglQmQWF6wAn5pBjHGNLCA1Yw1+Lx3tuJCoVv1B5ze1k0FOnWu6xOQ
-bjeOQ0cgZOjYGjgywhoJn5hgKxOhfXsNsIhSSqA/SNky4vMOV5gRXKjA2WgHu6g=
-=7jVR
------END PGP SIGNATURE-----
+Peter Wu (3):
+  HID: logitech-hidpp: detect HID++ 2.0 errors too
+  HID: logitech-{dj,hidpp}: check report length
+  HID: logitech-hidpp: avoid unintended fall-through
+
+ drivers/hid/hid-logitech-dj.c    | 16 +++++++++++++++-
+ drivers/hid/hid-logitech-hidpp.c | 30 ++++++++++++++++++++++++------
+ 2 files changed, 39 insertions(+), 7 deletions(-)
+
+-- 
+2.1.3
+
