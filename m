@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaLPMgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 07:36:12 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46836 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaLPMgL (ORCPT
+	id S1751262AbaLPMkv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 07:40:51 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:46086 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851AbaLPMkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 07:36:11 -0500
-Date: Tue, 16 Dec 2014 13:35:58 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Liang, Kan" <kan.liang@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eranian@google.com" <eranian@google.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>
-Subject: Re: [PATCH 1/1] perf, core: Use sample period avg as child event's
- initial period
-Message-ID: <20141216123558.GX3337@twins.programming.kicks-ass.net>
-References: <1418397035-7014-1-git-send-email-kan.liang@intel.com>
- <20141215095551.GU29390@twins.programming.kicks-ass.net>
- <37D7C6CF3E00A74B8858931C1DB2F0770168DAE9@SHSMSX103.ccr.corp.intel.com>
+	Tue, 16 Dec 2014 07:40:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <37D7C6CF3E00A74B8858931C1DB2F0770168DAE9@SHSMSX103.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
+References: <20141216094854.22639.69181.sendpatchset@w520>
+	<54901420.50403@linaro.org>
+	<1418731028.WfBPmyK53y@avalon>
+	<CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
+Date: Tue, 16 Dec 2014 13:40:47 +0100
+X-Google-Sender-Auth: Zaro52_3A99MB-HDUGSrGDc2XIQ
+Message-ID: <CAMuHMdUzys9pbEjUybyDP-3=uemLZuP5WgXeyONxGmADUJJL4A@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 09:17:33PM +0000, Liang, Kan wrote:
-> > This doesn't seem to make any kind of sense, and its weirdly implemented.
-> >
-> > So why would you push anything to the original parent? Your description
-> > states that the parent event usually has 1, and then you argue about fixing
-> > that by using the orig parent, but then you need to update the orig parent.
-> > Did you go in circles and confuse yourself? Why not push things into the
-> > regular parent event if you're going to push things up.
-> 
-> My thought is that the original parent is the root of the tree.
+Hi Magnus,
 
-No parent is the root; I thought your orig parent thing was the event
-you forked from, but now I see its not.
+On Tue, Dec 16, 2014 at 12:46 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> Could you please confirm that you've tested both CONFIG_PREEMPT_NONE and
+>> CONFIG_PREEMPT with and without the ARM TWD times, and that you've booted to
+>> userspace and tested timer broadcast on all CPUs ?
+>
+> No I have not. I've booted to user space in initramfs with DT-based
+> TWD on Multiplatform for r8a7779. Without this fix (and other r8a7779
+> TWD bits) I see a lot of breakage. For instance, TWD and SMP boot is
+> broken on r8a7779 - both legacy and non-legacy. I have not gotten to
+> sh73a0 yet, but I assume it is busted too.
 
-See inherit_event(), event->parent is the root event.
+FWIW, I applied this patch, and booted the result successfully and without
+any user-visible changes on:
+  - koelsch
+  - armadillo-multiplatform
+  - kzm9g-legacy
+  - kzm9g-multiplatform
 
-> If there is an
-> average sample period for nodes, it should be kept in the root node, since
-> it's the only node everyone knows.
+Armadillo-legacy is broken, and probably won't come back (cfr.
+https://lkml.org/lkml/2014/12/2/339).
 
-Right, but, that's also contention central..
+Kzm9g-reference still hangs at "Calibrating local timer..." (it did work
+at some point in the past).
 
-> > Also, since you can have multiple child events, on many CPUs local64_t is
-> > the wrong data type, furthermore its going to be a scalability issue on big
-> > hardware.
-> 
-> I'd like to have avg_sample_period for each CPU. The similar usage is
-> period_left in hw_perf_event.
+Note that my local tree is based on renesas-drivers-2014-12-08-v3.18,
+renesas-devel-20141212-v3.18, and yesterday's upstream, with CCF,
+PM domain, TWD, and lots of WIP patches from the kitchen sink applied.
 
-Well, some events are per cpu, some are per task. The per task events do
-not have per-cpu storage and their parent can be on whatever cpu.
+Gr{oetje,eeting}s,
 
-> We don't need to share the avg_sample_period between CPUs, after all
-> it's only a reference.
+                        Geert
 
-Right, some smarts are needed to avoid the worst contention there. Maybe
-a jiffy timestamp and don't update more than once every HZ jiffies or
-so.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
