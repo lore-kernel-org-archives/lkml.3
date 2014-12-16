@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751141AbaLPA4m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:56:42 -0500
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:45022 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820AbaLPA4k convert rfc822-to-8bit (ORCPT
+	id S1751413AbaLPA5J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:57:09 -0500
+Received: from nm23-vm8.access.bullet.mail.bf1.yahoo.com ([216.109.115.167]:47732
+	"EHLO nm23-vm8.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751308AbaLPA5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:56:40 -0500
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-To: Alexander Duyck <alexander.duyck@gmail.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to
- enable MC promiscuous mode
-Thread-Topic: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to
- enable MC promiscuous mode
-Thread-Index: AQHQD+ngQGOefuMim0OG0YZMPBmEtJyAFDFggBFKsYA=
-Date: Tue, 16 Dec 2014 00:49:17 +0000
-Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05DDD231@BPXM14GP.gisp.nec.co.jp>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05DBFDAD@BPXM14GP.gisp.nec.co.jp>
- <54809D57.9060804@gmail.com> 
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.5.123]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Dec 2014 19:57:07 -0500
+X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Dec 2014 19:57:07 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=s2048; d=rogers.com;
+	b=SBJSkrRiXmSgZaX1aB+GeFdP8LDY3ExO3eg91gevEdYblYcmuRTe5J+9NEMFo2Wl5lBg7XsyN1pgGsZtdZN26W+sxcpNn6jEhRNCtp/4EE9HkhPvIaeJlaUsDxUwLNpIn8xidAbjMDK2SDHDxoFvKDSdMrOxkeq3VlYZ2HC5aV4DZwMd2ATkSeSod9pfReKyFLl3ijZbxmi/zzqhYUvlchdLKxPiMcb5+xOs4Is3k1OKuAsiJVg9Jrw0a6PjEPx9ritL3xu6eAc95HjTM3SIhr34m9tYQxksze1yZpv4ZKXznJ5dccKcmh9Y95/GzvtwgaNVYrcp/5YiBAyddYWBxg==;
+X-Yahoo-Newman-Id: 512652.48933.bm@smtp116.sbc.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: gh06XbcVM1ku7KbMbQwWps9_2jm3D7sWd_VyJwA6O4ayDC4
+ vpEKjEsZImNes_oN0eR7e06So9aircQ3jY0cVLmTPFbISWpnOj26YcEdZOko
+ XOM3eMCvNHGGR3qkYd.cmkdFFcWQdvU6el1xJNUK6eFrc4cp8USVpbG2EnVB
+ HEsMW84Wd.fxLi0kamPRoUYbwCtefq9t.yAoeFZhyNU_61KSANpvxo6AKFN1
+ PD_AFUzE4LO9jA2K081r3Y01rY17AvTVUhMNbuTuINY0P92MzVw9lZRO56m2
+ A2lPfJl9zXj9zJK6gfg.QA0WdMJd0NPPTeCcoXwLzxHyg0SXEXtGUD69hu70
+ zU6QOy15ew2RTGpF5zwNZL1u12gzgWqBWtOITX4QRLy0H16EOZhmXJh3a_JW
+ nXjX2c62Bhldkm44kZdkadJvcwQoHI05EL_gNqcrkF1bLboQ7DnXfwWCiGFK
+ 1BZanm5pSWQx784k7CwKxzPFMdbU9kjgYHroNYrBoIDCn9oLSgmVcKW4ziyP
+ RsFRdHfkQ4M1hZlvUlirQF.xR3f9VPxrHt5nz.5iC_w--
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+From: Shawn Starr <shawn.starr@rogers.com>
+To: Kernel development list <linux-kernel@vger.kernel.org>,
+        alsa-user@lists.sourceforge.net
+Subject: [alsa][intel-hda] Dell M6800 - Realtek ALC3226 - Headphone Microphone not detected/working
+Date: Mon, 15 Dec 2014 19:49:58 -0500
+Message-ID: <4163174.cv3dxoLyRx@segfault.sh0n.net>
+Organization: sh0n.net
+User-Agent: KMail/4.14.3 (Linux/3.18.0+; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Subject: Re: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to enable MC promiscuous mode
-> >
-> > On 11/27/2014 02:39 AM, Hiroshi Shimamoto wrote:
-> > > From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> > >
-> > > The limitation of the number of multicast address for VF is not enough
-> > > for the large scale server with SR-IOV feature.
-> > > IPv6 requires the multicast MAC address for each IP address to handle
-> > > the Neighbor Solicitation message.
-> > > We couldn't assign over 30 IPv6 addresses to a single VF interface.
-> > >
-> > > The easy way to solve this is enabling multicast promiscuous mode.
-> > > It is good to have a functionality to enable multicast promiscuous mode
-> > > for each VF from VF driver.
-> > >
-> > > This patch introduces the new mbox API, IXGBE_VF_SET_MC_PROMISC, to
-> > > enable/disable multicast promiscuous mode in VF. If multicast promiscuous
-> > > mode is enabled the VF can receive all multicast packets.
-> > >
-> > > With this patch, the ixgbevf driver automatically enable multicast
-> > > promiscuous mode when the number of multicast addresses is over than 30
-> > > if possible.
-> > >
-> > > This also bump the API version up to 1.2 to check whether the API,
-> > > IXGBE_VF_SET_MC_PROMISC is available.
-> > >
-> > > Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> > > CC: Choi, Sy Jong <sy.jong.choi@intel.com>
-> > > Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
-> >
-> > This is a REALLY bad idea unless you plan to limit this to privileged VFs.
-> >
-> > I would recommend looking at adding an ndo operation to control this
-> > feature so that it could be disabled by default in the PF and only
-> > enabled on the host side if specifically requested.  Otherwise the
-> 
-> Do you mean that PF driver should have the flag to enable or disable per VF
-> and disallow the request from VF?
+Hello ALSA/Kernel devs,
 
-Could you answer about that?
+I have a Dell Precision M6800 with latest BIOS here is output from the HDA driver
 
-> 
-> > problem is I can easily see this leading security issues as the VFs
-> > might begin getting access to messages that they aren't supposed to.
-> 
-> OK, by the way, I think that the current ixgbe and ixgbevf implementation
-> has already such issue. The guest can add hash entry to receive MAC and it
-> can get every multicast MAC frame with the current mbox API.
-> Does your concern come from the easiness of doing that?
+[   20.783635] snd_hda_intel 0000:00:03.0: enabling device (0000 -> 0002)
+[   20.783804] snd_hda_intel 0000:00:1b.0: irq 34 for MSI/MSI-X
+[   20.783911] snd_hda_intel 0000:01:00.1: Handle VGA-switcheroo audio client
+[   20.783914] snd_hda_intel 0000:01:00.1: VGA controller is disabled
+[   20.783914] snd_hda_intel 0000:01:00.1: Delaying initialization
+[   20.785722] snd_hda_intel 0000:00:03.0: irq 35 for MSI/MSI-X
+[   20.798841] input: HDA Intel HDMI HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:03.0/sound/card1/input16
+[   20.798881] input: HDA Intel HDMI HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:03.0/sound/card1/input17
+[   20.798914] input: HDA Intel HDMI HDMI/DP,pcm=8 as /devices/pci0000:00/0000:00:03.0/sound/card1/input18
+[   20.800208] sound hdaudioC2D0: autoconfig: line_outs=1 (0x16/0x0/0x0/0x0/0x0) type:line
+[   20.800209] sound hdaudioC2D0:    speaker_outs=1 (0x14/0x0/0x0/0x0/0x0)
+[   20.800210] sound hdaudioC2D0:    hp_outs=1 (0x15/0x0/0x0/0x0/0x0)
+[   20.800210] sound hdaudioC2D0:    mono: mono_out=0x0
+[   20.800211] sound hdaudioC2D0:    inputs:
+[   20.800212] sound hdaudioC2D0:      Front Mic=0x18
+[   20.800212] sound hdaudioC2D0:      Dock Mic=0x19
+[   20.800213] sound hdaudioC2D0:      Headset Mic=0x1a
+[   20.800213] sound hdaudioC2D0:      Internal Mic=0x12
+[   20.805683] input: HDA Intel PCH Front Mic as /devices/pci0000:00/0000:00:1b.0/sound/card2/input19
+[   20.805724] input: HDA Intel PCH Dock Mic as /devices/pci0000:00/0000:00:1b.0/sound/card2/input20
+[   20.805756] input: HDA Intel PCH Dock Line Out as /devices/pci0000:00/0000:00:1b.0/sound/card2/input21
+[   20.805784] input: HDA Intel PCH Front Headphone as /devices/pci0000:00/0000:00:1b.0/sound/card2/input22
+[   78.191344] snd_hda_intel 0000:01:00.1: Start delayed initialization
+[   78.195309] snd_hda_intel 0000:01:00.1: irq 36 for MSI/MSI-X
+[   78.298530] snd_hda_intel 0000:01:00.1: CORB reset timeout#2, CORBRP = 65535
+[   78.300524] snd_hda_intel 0000:01:00.1: no AFG or MFG node found
+[   78.303813] snd_hda_intel 0000:01:00.1: no AFG or MFG node found
+[   78.306054] snd_hda_intel 0000:01:00.1: no AFG or MFG node found
+[   78.308797] snd_hda_intel 0000:01:00.1: no AFG or MFG node found
+[   78.311717] snd_hda_intel 0000:01:00.1: no codecs initialized
+[   78.314116] snd_hda_intel 0000:01:00.1: initialization error
+[  264.477548] snd_hda_intel 0000:00:1b.0: Unstable LPIB (352800 >= 176400); disabling LPIB delay counting
+[  381.091720] snd_hda_intel 0000:01:00.1: enabling device (0000 -> 0002)
+[  381.095346] snd_hda_intel 0000:01:00.1: Handle VGA-switcheroo audio client
+[  381.097754] snd_hda_intel 0000:01:00.1: VGA controller is disabled
+[  381.100294] snd_hda_intel 0000:01:00.1: Delaying initialization
 
-There is the single MTA per PF, not per VF.
-VF requests PF to register the hash of MC MAC, then PF set a bit in the MTA
-and set the flag IXGBE_VMOLR_ROMPE of VF, which enables packets switching to
-the VF if MC MAC hits the hash entry in the MTA.
-If VM1 has VF1 which uses MC MAC1 and VM2 has VF2 which uses MC MAC2, both
-of VM1 and VM2 will receive MC MAC1. VM2 doesn't know why it receives MAC1.
-In other words, in the current implementation, a VF receives all multicast
-packets which are registered from other VFs.
-Because the above reason, I hadn't imagined that enabling MC promiscuous mode
-increases receiving the MC messages that they aren't supposed to.
-I think that this patch doesn't change that behavior.
+When I have the analog headphones plugged in the headphone speakers work but microphone does not, interestingly in another OS, it also didn't show it functioning.
 
-thanks,
-Hiroshi
+If someone has had similar issues in Linux, let me know, I will also test patches.
+
+Thanks,
+Shawn
+
+
 
