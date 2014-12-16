@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562AbaLPTdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 14:33:50 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:44794 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750941AbaLPTds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 14:33:48 -0500
-Message-ID: <54908904.9060908@ti.com>
-Date: Tue, 16 Dec 2014 13:33:24 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751644AbaLPTg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 14:36:56 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:18342 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaLPTgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 14:36:54 -0500
+X-IronPort-AV: E=Sophos;i="5.07,588,1413270000"; 
+   d="scan'208";a="53068804"
+Message-ID: <549089DA.9070405@broadcom.com>
+Date: Tue, 16 Dec 2014 11:36:58 -0800
+From: Jonathan Richardson <jonathar@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-CC: Lokesh Vutla <lokeshvutla@ti.com>, <t-kristo@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca> <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca> <20141214044517.GD24110@csclub.uwaterloo.ca> <549018EC.8020207@ti.com> <20141216145856.GA23358@kahuna> <20141216163657.GL24110@csclub.uwaterloo.ca> <54908128.7040005@ti.com> <20141216192740.GN24110@csclub.uwaterloo.ca>
-In-Reply-To: <20141216192740.GN24110@csclub.uwaterloo.ca>
-Content-Type: text/plain; charset="windows-1252"
+To: Tim Kryger <tim.kryger@gmail.com>
+CC: Scott Branden <sbranden@broadcom.com>,
+        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
+        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
+        <bcm-kernel-feedback-list@broadcom.com>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+        <linux-pwm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/2] pwm: kona: Fix incorrect enable, config, and disable
+ procedures
+References: <jonathar@broadcom.com> <1418260059-1642-1-git-send-email-jonathar@broadcom.com> <CAD7vxxJ2++PNteSZ+F5epvPW_nrrSZT9pja325pmLVhq_MHL0w@mail.gmail.com>
+In-Reply-To: <CAD7vxxJ2++PNteSZ+F5epvPW_nrrSZT9pja325pmLVhq_MHL0w@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 01:27 PM, Lennart Sorensen wrote:
->> I see why arch_timer_freq might skip the rounding error of 39, 15 and
->> 55 Vs existing logic which is possibly at a truncation error risk
->> (without errata for sysclk 13, 26 and 27MHz).
+On 14-12-14 11:18 PM, Tim Kryger wrote:
+> On Wed, Dec 10, 2014 at 5:07 PM, Jonathan Richardson
+> <jonathar@broadcom.com> wrote:
+> 
+>>     If config is called when the pwm is disabled and there is nothing to do,
+>>     the while loop to calculate duty cycle and period doesn't need to be
+>>     done. The function now just returns if the pwm state is disabled.
+> 
+> It doesn't take long to figure out whether the duty and period are achievable.
+> 
+> If the caller specifies bad settings, why not return an error immediately?
+
+Sorry, not sure what you're suggesting here. It's returning as soon as
+it can isn't it? Nothing changed in the way the period and duty cycle
+were calculated and checked in the while loop.
+
+> 
+>> @@ -207,13 +240,23 @@ static void kona_pwmc_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+>>  {
+>>         struct kona_pwmc *kp = to_kona_pwmc(chip);
+>>         unsigned int chan = pwm->hwpwm;
+>> +       unsigned int value = readl(kp->base + PWM_CONTROL_OFFSET);
+>> +
+>> +       /* Set smooth type to 0 and disable */
+>> +       value &= ~(1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
+>> +       value &= ~(1 << PWM_CONTROL_TRIGGER_SHIFT(chan));
+>> +       writel(value, kp->base + PWM_CONTROL_OFFSET);
 >>
->> all you'd probably need to do is cast rate, num and den to unsigned
->> long and have a common computation logic.
+>>         /* Simulate a disable by configuring for zero duty */
+>>         writel(0, kp->base + DUTY_CYCLE_HIGH_OFFSET(chan));
+>> -       kona_pwmc_apply_settings(kp, chan);
+>> +       writel(0, kp->base + PERIOD_COUNT_OFFSET(chan));
+>>
+>> -       /* Wait for waveform to settle before gating off the clock */
+>> -       ndelay(400);
+>> +       /* Set prescale to 0 for this channel */
+>> +       value = readl(kp->base + PRESCALE_OFFSET);
+>> +       value &= ~PRESCALE_MASK(chan);
+>> +       writel(value, kp->base + PRESCALE_OFFSET);
+>> +
+>> +       kona_pwmc_apply_settings(kp, chan);
+>>
+>>         clk_disable_unprepare(kp->clk);
+>>  }
 > 
-> If that is acceptable, then sure I can do that.  I liked avoiding casts
-> in general though.
+> I've mentioned this before but I will say it again, when the smooth
+> and trigger bit are both low, the output is constant high.
 > 
->> if you'd really want to handle truncation error, it must be a separate
->> patch of it's own - I would not mix it with the errata fix.
+> If you look at the PWM output on a scope you will see it go high for
+> 400 ns during your disable even if the duty prior to the disable was
+> zero.
 > 
-> Well there is no error in the existing code because the rate / den
-> is always a clean integer division.  The problem is introduced by the
-
-key is "there is no error in existing code for existing value" :) ->
-the same code for new values will fail. and introducing (rate * num) /
-den without cast will fail for old values.
-
-> SYSCLK1 / 610 used by the emulated clock which is not a clean division.
+> How are you testing your proposed changes?
 > 
-> So for the existing logic, the calculation was perfect.  It is only for
-> the errata case that it is a problem.
+
+I see what you mean now and verified it. For a smooth transition even on
+disable the smooth bit should be set high, not low. It's the same
+procedure as in config. Setting the bit high instead of low gets rid of
+the 400ns transition high. I can make this change.
+
+> Thanks,
+> Tim Kryger
 > 
-> So I think leaving the existing calculation but moved up works well,
-> and then having the alternate order calculation only in the errata case
-> seemed cleaner and avoids casts and 64bit math which I thought was
-> overall desirable.
 
-In general using DIV_ROUND_UP and family of macros(in kernel.h) is the
-right way of doing division in similar cases in Linux kernel. And for
-the same functionality, we want a common equation - if it does not fit
-well for all values (even if we introduce new values), then we must
-come to a better equation that will work for all values. What we do
-not do is to have two equations meant for doing the same thing.
-
-
--- 
-Regards,
-Nishanth Menon
