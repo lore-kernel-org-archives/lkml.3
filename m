@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750912AbaLPFz4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:55:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43685 "EHLO mx2.suse.de"
+	id S1750984AbaLPGCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:02:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35320 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaLPFzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:55:55 -0500
-Message-ID: <548FC95E.70903@suse.com>
-Date: Tue, 16 Dec 2014 06:55:42 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        boris.ostrovsky@oracle.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, mmarek@suse.cz, linux-kbuild@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH 4/4] xen: use generated hypercall symbols
- in arch/x86/xen/xen-head.S
-References: <1418321065-10212-1-git-send-email-jgross@suse.com> <1418321065-10212-5-git-send-email-jgross@suse.com> <548ECE9B.3040105@citrix.com>
-In-Reply-To: <548ECE9B.3040105@citrix.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750827AbaLPGCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 01:02:45 -0500
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, peterz@infradead.org, Waiman.Long@hp.com,
+        Baoquan He <bhe@redhat.com>
+Subject: [PATCH] locking/rwlocks: clean up of qrwlock
+Date: Tue, 16 Dec 2014 14:00:40 +0800
+Message-Id: <1418709640-5625-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/15/2014 01:05 PM, David Vrabel wrote:
-> On 11/12/14 18:04, Juergen Gross wrote:
->> Instead of manually list each hypercall in arch/x86/xen/xen-head.S
->> use the auto generated symbol list.
->>
->> This also corrects the wrong address of xen_hypercall_mca which was
->> located 32 bytes higher than it should.
->>
->> Symbol addresses have been verified to match the correct ones via
->> objdump output.
-> [...]
->> +
->> +#define HYPERCALL(n) \
->> +	.equ xen_hypercall_##n, hypercall_page + __HYPERVISOR_##n * 32; \
->> +	.type xen_hypercall_##n, function; .size xen_hypercall_##n, 32
->> +#include <asm/xen-hypercalls.h>
->> +#undef HYPERCALL
->
-> The gas manual[1] suggests the syntax you've used for .type is invalid
-> and suggest using .type <name>, STT_FUNC
+In queue_read_lock_slowpath, when writer count becomes 0, we need
+increment the read count and get the lock. Then need call
+rspin_until_writer_unlock to check again if an incoming writer
+steals the lock in the gap. But in rspin_until_writer_unlock
+it only checks the writer count, namely low 8 bit of lock->cnts,
+no need to subtract the reader count unit specifically. So remove
+that subtraction to make it clearer, rspin_until_writer_unlock
+just takes the actual lock->cnts as the 2nd argument.
 
-Really? In the link below I see:
+And also change the code comment in queue_write_lock_slowpath to
+make it more exact and explicit.
 
-The types supported are:
+Signed-off-by: Baoquan He <bhe@redhat.com>
+---
+ kernel/locking/qrwlock.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-STT_FUNC
-function
-     Mark the symbol as being a function name.
-...
-
-So "function" seems to be okay.
-
->
->> +
->>   	.balign PAGE_SIZE
->
-> You can remove this .balign.
-
-Indeed.
-
-
-Juergen
+diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
+index f956ede..ae66c10 100644
+--- a/kernel/locking/qrwlock.c
++++ b/kernel/locking/qrwlock.c
+@@ -76,7 +76,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
+ 	while (atomic_read(&lock->cnts) & _QW_WMASK)
+ 		cpu_relax_lowlatency();
+ 
+-	cnts = atomic_add_return(_QR_BIAS, &lock->cnts) - _QR_BIAS;
++	cnts = atomic_add_return(_QR_BIAS, &lock->cnts);
+ 	rspin_until_writer_unlock(lock, cnts);
+ 
+ 	/*
+@@ -97,14 +97,14 @@ void queue_write_lock_slowpath(struct qrwlock *lock)
+ 	/* Put the writer into the wait queue */
+ 	arch_spin_lock(&lock->lock);
+ 
+-	/* Try to acquire the lock directly if no reader is present */
++	/* Try to acquire the lock directly if no reader and writer is present */
+ 	if (!atomic_read(&lock->cnts) &&
+ 	    (atomic_cmpxchg(&lock->cnts, 0, _QW_LOCKED) == 0))
+ 		goto unlock;
+ 
+ 	/*
+-	 * Set the waiting flag to notify readers that a writer is pending,
+-	 * or wait for a previous writer to go away.
++	 * Wait for a previous writer to go away, then set the waiting flag to
++	 * notify readers that a writer is pending.
+ 	 */
+ 	for (;;) {
+ 		cnts = atomic_read(&lock->cnts);
+-- 
+1.8.5.3
 
