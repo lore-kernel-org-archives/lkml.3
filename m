@@ -1,55 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751122AbaLPJ0j (ORCPT <rfc822;w@1wt.eu>);
+	id S1751187AbaLPJ0m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:26:42 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39378 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751103AbaLPJ0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Dec 2014 04:26:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50488 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLPJ0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:26:37 -0500
-Date: Tue, 16 Dec 2014 12:26:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: devel@driverdev.osuosl.org, Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Drokin <oleg.drokin@intel.com>, Greg Donald <gdonald@gmail.com>,
-        HPDD-discuss@ml01.01.org
-Subject: Re: [PATCH] staging: lustre: lustre: osc: lproc_osc.c: Fix for
- possible null pointer dereference
-Message-ID: <20141216092613.GF4856@mwanda>
-References: <1418596638-24646-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <20141215102502.GB4856@mwanda>
- <CAFo99gZXxEgZMgZ4Vc0yKjm8AYdrGTkZZ3Yr4j_HNuPEPUUFbw@mail.gmail.com>
+From: Vignesh R <vigneshr@ti.com>
+To: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Vignesh R <vigneshr@ti.com>
+Subject: [PATCH 1/2] phy: phy-ti-pipe3: fix inconsistent enumeration of PCIe gen2 cards
+Date: Tue, 16 Dec 2014 14:52:50 +0530
+Message-ID: <1418721771-31184-2-git-send-email-vigneshr@ti.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418721771-31184-1-git-send-email-vigneshr@ti.com>
+References: <1418721771-31184-1-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFo99gZXxEgZMgZ4Vc0yKjm8AYdrGTkZZ3Yr4j_HNuPEPUUFbw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 12:07:19AM +0100, Rickard Strandqvist wrote:
-> Hi Dan
-> 
-> Quite right! Had to try it.
-> 
-> Do nothing then?
-> But you must agree that it is still ugly and confusing code.
-> 
+Prior to DRA74x silicon rev 1.1, pcie_pcs register bits 8-15 and bits 16-23
+were used to configure RC delay count for phy1 and phy2 respectively.
+phyid was used as index to distinguish the phys and to configure the delay
+values appropriately.
 
-Yes.  I agree that it's confusing.  I also suspect that "obd" is never
-NULL but I haven't actually looked and these things are sometimes
-complicated to verify.
+As of DRA74x silicon rev 1.1, pcie_pcs register definition has changed.
+Bits 16-23 are used to configure delay values for *both* phy1 and phy2.
 
-I fine with merging the patch as a cleanup.
+Hence phyid is no longer required.
 
-Smatch has code to not warn about these but it's not 100% correct so
-it still warns sometimes when it shouldn't.
+So, drop id field from ti_pipe3 structure and its subsequent references
+for configuring pcie_pcs register.
 
-regards,
-dan carpenter
+Also, pcie_pcs register now needs to be configured with delay value of 0x96
+at bit positions 16-23. See register description of CTRL_CORE_PCIE_PCS in
+ARM572x TRM, SPRUHZ6, October 2014, section 18.5.2.2, table 18-1804.
+
+This is needed to ensure Gen2 cards are enumerated consistently.
+
+DRA72x silicon behaves same way as DRA74x rev 1.1 as far as this functionality
+is considered.
+
+Test results on DRA74x and DRA72x EVMs:
+
+Before patch
+------------
+DRA74x ES 1.0: Gen1 cards work, Gen2 cards do not work (expected result due to
+silicon errata)
+DRA74x ES 1.1: Gen1 cards work, Gen2 cards do not work sometimes due to incorrect
+programming of register
+
+DRA72x: Gen1 cards work, Gen2 cards do not work sometimes due to incorrect
+programming of register
+
+After patch
+-----------
+DRA74x ES 1.0: Gen1 cards work, Gen2 cards do not work (expected result due to
+silicon errata)
+DRA74x ES 1.1: Gen1 cards work, Gen2 cards work consistently.
+
+DRA72x: Gen1 and Gen2 cards enumerate consistently.
+Signed-off-by: Vignesh R <vigneshr@ti.com>
+---
+ drivers/phy/phy-omap-control.c       |  7 +++----
+ drivers/phy/phy-ti-pipe3.c           | 10 ++++++----
+ include/linux/phy/omap_control_phy.h |  6 +++---
+ 3 files changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/phy/phy-omap-control.c b/drivers/phy/phy-omap-control.c
+index c96e8183a8ff..efe724f97e02 100644
+--- a/drivers/phy/phy-omap-control.c
++++ b/drivers/phy/phy-omap-control.c
+@@ -29,10 +29,9 @@
+ /**
+  * omap_control_pcie_pcs - set the PCS delay count
+  * @dev: the control module device
+- * @id: index of the pcie PHY (should be 1 or 2)
+  * @delay: 8 bit delay value
+  */
+-void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
++void omap_control_pcie_pcs(struct device *dev, u8 delay)
+ {
+ 	u32 val;
+ 	struct omap_control_phy	*control_phy;
+@@ -55,8 +54,8 @@ void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
+ 
+ 	val = readl(control_phy->pcie_pcs);
+ 	val &= ~(OMAP_CTRL_PCIE_PCS_MASK <<
+-		(id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT));
+-	val |= delay << (id * OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT);
++		OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT);
++	val |= (delay << OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT);
+ 	writel(val, control_phy->pcie_pcs);
+ }
+ EXPORT_SYMBOL_GPL(omap_control_pcie_pcs);
+diff --git a/drivers/phy/phy-ti-pipe3.c b/drivers/phy/phy-ti-pipe3.c
+index c297b7a10d30..4f31f2be4b5e 100644
+--- a/drivers/phy/phy-ti-pipe3.c
++++ b/drivers/phy/phy-ti-pipe3.c
+@@ -82,7 +82,6 @@ struct ti_pipe3 {
+ 	struct clk		*refclk;
+ 	struct clk		*div_clk;
+ 	struct pipe3_dpll_map	*dpll_map;
+-	u8			id;
+ };
+ 
+ static struct pipe3_dpll_map dpll_map_usb[] = {
+@@ -217,8 +216,13 @@ static int ti_pipe3_init(struct phy *x)
+ 	u32 val;
+ 	int ret = 0;
+ 
++	/*
++	 * Set pcie_pcs register to 0x96 for proper functioning of phy
++	 * as recommended in AM572x TRM SPRUHZ6, section 18.5.2.2, table
++	 * 18-1804.
++	 */
+ 	if (of_device_is_compatible(phy->dev->of_node, "ti,phy-pipe3-pcie")) {
+-		omap_control_pcie_pcs(phy->control_dev, phy->id, 0xF1);
++		omap_control_pcie_pcs(phy->control_dev, 0x96);
+ 		return 0;
+ 	}
+ 
+@@ -347,8 +351,6 @@ static int ti_pipe3_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (of_device_is_compatible(node, "ti,phy-pipe3-pcie")) {
+-		if (of_property_read_u8(node, "id", &phy->id) < 0)
+-			phy->id = 1;
+ 
+ 		clk = devm_clk_get(phy->dev, "dpll_ref");
+ 		if (IS_ERR(clk)) {
+diff --git a/include/linux/phy/omap_control_phy.h b/include/linux/phy/omap_control_phy.h
+index e9e6cfbfbb58..eb7d4a135a9e 100644
+--- a/include/linux/phy/omap_control_phy.h
++++ b/include/linux/phy/omap_control_phy.h
+@@ -66,7 +66,7 @@ enum omap_control_usb_mode {
+ #define	OMAP_CTRL_PIPE3_PHY_TX_RX_POWEROFF	0x0
+ 
+ #define	OMAP_CTRL_PCIE_PCS_MASK			0xff
+-#define	OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT	0x8
++#define	OMAP_CTRL_PCIE_PCS_DELAY_COUNT_SHIFT	16
+ 
+ #define OMAP_CTRL_USB2_PHY_PD		BIT(28)
+ 
+@@ -79,7 +79,7 @@ enum omap_control_usb_mode {
+ void omap_control_phy_power(struct device *dev, int on);
+ void omap_control_usb_set_mode(struct device *dev,
+ 			       enum omap_control_usb_mode mode);
+-void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay);
++void omap_control_pcie_pcs(struct device *dev, u8 delay);
+ #else
+ 
+ static inline void omap_control_phy_power(struct device *dev, int on)
+@@ -91,7 +91,7 @@ static inline void omap_control_usb_set_mode(struct device *dev,
+ {
+ }
+ 
+-static inline void omap_control_pcie_pcs(struct device *dev, u8 id, u8 delay)
++static inline void omap_control_pcie_pcs(struct device *dev, u8 delay)
+ {
+ }
+ #endif
+-- 
+1.9.1
 
