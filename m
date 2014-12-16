@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117AbaLPQ6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:58:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47007 "EHLO mail.kernel.org"
+	id S1752147AbaLPQ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:58:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47051 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353AbaLPQ6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:58:35 -0500
+	id S1751576AbaLPQ6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:58:44 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,9 +16,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 12/18] tools: Move bitops.h from tools/perf/util to tools/
-Date: Tue, 16 Dec 2014 13:57:14 -0300
-Message-Id: <1418749040-31807-13-git-send-email-acme@kernel.org>
+Subject: [PATCH 13/18] tools: Adopt fls_long and deps
+Date: Tue, 16 Dec 2014 13:57:15 -0300
+Message-Id: <1418749040-31807-14-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418749040-31807-1-git-send-email-acme@kernel.org>
 References: <1418749040-31807-1-git-send-email-acme@kernel.org>
@@ -28,8 +28,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-So that we better mirror the kernel sources and make it available for
-other tools.
+Will be used when adopting rounddown_pow_of_two.
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -42,146 +41,102 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mvfu6x753tksnto3t6412m93@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-9m0tt5300q1ygv51hejjas82@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/linux/bitops.h           | 46 ++++++++++++++++++++++++++++++++++
- tools/perf/MANIFEST                    |  1 +
- tools/perf/Makefile.perf               |  2 +-
- tools/perf/util/include/linux/bitops.h | 46 ----------------------------------
- 4 files changed, 48 insertions(+), 47 deletions(-)
- create mode 100644 tools/include/linux/bitops.h
- delete mode 100644 tools/perf/util/include/linux/bitops.h
+ tools/include/asm-generic/bitops.h       | 3 +++
+ tools/include/asm-generic/bitops/__fls.h | 1 +
+ tools/include/asm-generic/bitops/fls.h   | 1 +
+ tools/include/asm-generic/bitops/fls64.h | 1 +
+ tools/include/linux/bitops.h             | 7 +++++++
+ tools/perf/MANIFEST                      | 3 +++
+ tools/perf/Makefile.perf                 | 3 +++
+ 7 files changed, 19 insertions(+)
+ create mode 100644 tools/include/asm-generic/bitops/__fls.h
+ create mode 100644 tools/include/asm-generic/bitops/fls.h
+ create mode 100644 tools/include/asm-generic/bitops/fls64.h
 
-diff --git a/tools/include/linux/bitops.h b/tools/include/linux/bitops.h
+diff --git a/tools/include/asm-generic/bitops.h b/tools/include/asm-generic/bitops.h
+index 6dfd9d5fd828..6eedba1f7732 100644
+--- a/tools/include/asm-generic/bitops.h
++++ b/tools/include/asm-generic/bitops.h
+@@ -13,6 +13,9 @@
+  */
+ 
+ #include <asm-generic/bitops/__ffs.h>
++#include <asm-generic/bitops/fls.h>
++#include <asm-generic/bitops/__fls.h>
++#include <asm-generic/bitops/fls64.h>
+ #include <asm-generic/bitops/find.h>
+ 
+ #ifndef _TOOLS_LINUX_BITOPS_H_
+diff --git a/tools/include/asm-generic/bitops/__fls.h b/tools/include/asm-generic/bitops/__fls.h
 new file mode 100644
-index 000000000000..5237bc9f6266
+index 000000000000..2218b9add4c1
 --- /dev/null
++++ b/tools/include/asm-generic/bitops/__fls.h
+@@ -0,0 +1 @@
++#include <../../../../include/asm-generic/bitops/__fls.h>
+diff --git a/tools/include/asm-generic/bitops/fls.h b/tools/include/asm-generic/bitops/fls.h
+new file mode 100644
+index 000000000000..dbf711a28f71
+--- /dev/null
++++ b/tools/include/asm-generic/bitops/fls.h
+@@ -0,0 +1 @@
++#include <../../../../include/asm-generic/bitops/fls.h>
+diff --git a/tools/include/asm-generic/bitops/fls64.h b/tools/include/asm-generic/bitops/fls64.h
+new file mode 100644
+index 000000000000..980b1f63c047
+--- /dev/null
++++ b/tools/include/asm-generic/bitops/fls64.h
+@@ -0,0 +1 @@
++#include <../../../../include/asm-generic/bitops/fls64.h>
+diff --git a/tools/include/linux/bitops.h b/tools/include/linux/bitops.h
+index 5237bc9f6266..26005a15e7e2 100644
+--- a/tools/include/linux/bitops.h
 +++ b/tools/include/linux/bitops.h
-@@ -0,0 +1,46 @@
-+#ifndef _TOOLS_LINUX_BITOPS_H_
-+#define _TOOLS_LINUX_BITOPS_H_
-+
-+#include <linux/kernel.h>
-+#include <linux/compiler.h>
-+#include <asm/hweight.h>
-+
-+#ifndef __WORDSIZE
-+#define __WORDSIZE (__SIZEOF_LONG__ * 8)
-+#endif
-+
-+#define BITS_PER_LONG __WORDSIZE
-+
-+#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
-+#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
-+#define BITS_PER_BYTE		8
-+#define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
-+#define BITS_TO_U64(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
-+#define BITS_TO_U32(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
-+#define BITS_TO_BYTES(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE)
-+
-+/*
-+ * Include this here because some architectures need generic_ffs/fls in
-+ * scope
-+ *
-+ * XXX: this needs to be asm/bitops.h, when we get to per arch optimizations
-+ */
-+#include <asm-generic/bitops.h>
-+
-+#define for_each_set_bit(bit, addr, size) \
-+	for ((bit) = find_first_bit((addr), (size));		\
-+	     (bit) < (size);					\
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
-+
-+/* same as for_each_set_bit() but use bit as value to start with */
-+#define for_each_set_bit_from(bit, addr, size) \
-+	for ((bit) = find_next_bit((addr), (size), (bit));	\
-+	     (bit) < (size);					\
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
-+
-+static inline unsigned long hweight_long(unsigned long w)
+@@ -43,4 +43,11 @@ static inline unsigned long hweight_long(unsigned long w)
+ 	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
+ }
+ 
++static inline unsigned fls_long(unsigned long l)
 +{
-+	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
++	if (sizeof(l) == 4)
++		return fls(l);
++	return fls64(l);
 +}
 +
-+#endif
+ #endif
 diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 86f115cdbb5b..7729af9f417a 100644
+index 7729af9f417a..0c6cc8de007f 100644
 --- a/tools/perf/MANIFEST
 +++ b/tools/perf/MANIFEST
-@@ -10,6 +10,7 @@ tools/include/asm-generic/bitops/atomic.h
+@@ -8,7 +8,10 @@ tools/lib/util/find_next_bit.c
+ tools/include/asm/bug.h
+ tools/include/asm-generic/bitops/atomic.h
  tools/include/asm-generic/bitops/__ffs.h
++tools/include/asm-generic/bitops/__fls.h
  tools/include/asm-generic/bitops/find.h
++tools/include/asm-generic/bitops/fls64.h
++tools/include/asm-generic/bitops/fls.h
  tools/include/asm-generic/bitops.h
-+tools/include/linux/bitops.h
+ tools/include/linux/bitops.h
  tools/include/linux/compiler.h
- tools/include/linux/export.h
- tools/include/linux/hash.h
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index d9bf9685e9da..55b9c97cafc2 100644
+index 55b9c97cafc2..6b7153f8b056 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -231,7 +231,7 @@ LIB_H += ../../include/uapi/linux/const.h
- LIB_H += ../include/linux/hash.h
- LIB_H += ../../include/linux/stringify.h
- LIB_H += util/include/linux/bitmap.h
--LIB_H += util/include/linux/bitops.h
-+LIB_H += ../include/linux/bitops.h
+@@ -234,7 +234,10 @@ LIB_H += util/include/linux/bitmap.h
+ LIB_H += ../include/linux/bitops.h
  LIB_H += ../include/asm-generic/bitops/atomic.h 
  LIB_H += ../include/asm-generic/bitops/find.h 
++LIB_H += ../include/asm-generic/bitops/fls64.h
++LIB_H += ../include/asm-generic/bitops/fls.h
  LIB_H += ../include/asm-generic/bitops/__ffs.h 
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-deleted file mode 100644
-index 5237bc9f6266..000000000000
---- a/tools/perf/util/include/linux/bitops.h
-+++ /dev/null
-@@ -1,46 +0,0 @@
--#ifndef _TOOLS_LINUX_BITOPS_H_
--#define _TOOLS_LINUX_BITOPS_H_
--
--#include <linux/kernel.h>
--#include <linux/compiler.h>
--#include <asm/hweight.h>
--
--#ifndef __WORDSIZE
--#define __WORDSIZE (__SIZEOF_LONG__ * 8)
--#endif
--
--#define BITS_PER_LONG __WORDSIZE
--
--#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
--#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
--#define BITS_PER_BYTE		8
--#define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
--#define BITS_TO_U64(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
--#define BITS_TO_U32(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
--#define BITS_TO_BYTES(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE)
--
--/*
-- * Include this here because some architectures need generic_ffs/fls in
-- * scope
-- *
-- * XXX: this needs to be asm/bitops.h, when we get to per arch optimizations
-- */
--#include <asm-generic/bitops.h>
--
--#define for_each_set_bit(bit, addr, size) \
--	for ((bit) = find_first_bit((addr), (size));		\
--	     (bit) < (size);					\
--	     (bit) = find_next_bit((addr), (size), (bit) + 1))
--
--/* same as for_each_set_bit() but use bit as value to start with */
--#define for_each_set_bit_from(bit, addr, size) \
--	for ((bit) = find_next_bit((addr), (size), (bit));	\
--	     (bit) < (size);					\
--	     (bit) = find_next_bit((addr), (size), (bit) + 1))
--
--static inline unsigned long hweight_long(unsigned long w)
--{
--	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
--}
--
--#endif
++LIB_H += ../include/asm-generic/bitops/__fls.h
+ LIB_H += ../include/asm-generic/bitops.h
+ LIB_H += ../include/linux/compiler.h
+ LIB_H += ../include/linux/log2.h
 -- 
 1.9.3
 
