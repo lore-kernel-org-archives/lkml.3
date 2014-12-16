@@ -1,48 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234AbaLPHID (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:08:03 -0500
-Received: from purkki.adurom.net ([80.68.90.206]:46933 "EHLO purkki.adurom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836AbaLPHIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:08:01 -0500
-X-Greylist: delayed 1164 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Dec 2014 02:08:00 EST
-From: Kalle Valo <kvalo@adurom.com>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, bp@alien8.de, gnomes@lxorguk.ukuu.org.uk,
-        computersforpeace@gmail.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, corbet@lwn.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [RFC 2/4] Documentation/SubmitChecklist: Remind submitters to check the merge window
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
-	<1418623790-28429-3-git-send-email-cernekee@gmail.com>
-Date: Tue, 16 Dec 2014 08:48:33 +0200
-In-Reply-To: <1418623790-28429-3-git-send-email-cernekee@gmail.com> (Kevin
-	Cernekee's message of "Sun, 14 Dec 2014 22:09:48 -0800")
-Message-ID: <87iohc2ipq.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751138AbaLPHKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:10:42 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:46497 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaLPHKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:10:40 -0500
+Date: Mon, 15 Dec 2014 23:10:37 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] usb: serial: handle -ENODEV and -EPROTO quietly
+Message-ID: <20141216071037.GA3487@newt.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Johan Hovold <johan@kernel.org>, linux-usb@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1418340594-30469-1-git-send-email-jmmahler@gmail.com>
+ <20141215102321.GD6778@localhost>
+ <20141215125305.GA18251@hudson.localdomain>
+ <20141215163801.GB1470@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141215163801.GB1470@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Cernekee <cernekee@gmail.com> writes:
+Greg,
 
-> +27: For patches which are not urgent fixes for bugs in the current tree,
-> +    double-check https://www.kernel.org/ to make sure the merge window is
-> +    CLOSED ("mainline:" showing an -rc kernel) before sending.  For more
-> +    information on the release cycle, see Documentation/development-process/.
+On Mon, Dec 15, 2014 at 08:38:01AM -0800, Greg Kroah-Hartman wrote:
+> On Mon, Dec 15, 2014 at 04:53:05AM -0800, Jeremiah Mahler wrote:
+> > Johan,
+> > 
+> > On Mon, Dec 15, 2014 at 11:23:21AM +0100, Johan Hovold wrote:
+> > > On Thu, Dec 11, 2014 at 03:29:52PM -0800, Jeremiah Mahler wrote:
+> > > > If a USB serial device (e.g. /dev/ttyUSB0) with an active program is
+> > > > unplugged, a bunch of -ENODEV and -EPROTO errors will be produced in the
+> > > > logs.  This patch set quiets these messages without changing the
+> > > > original behavior.
+> > > 
+> > > Don't unplug devices that are in use then. ;)
+> > > 
+> > I knew someone was going to say that :-)
+> > 
+> > > > This change is beneficial when using daemons such as slcand, which is
+> > > > similar to pppd or slip, that cannot determine whether they should exit
+> > > > until after the USB serial device is unplugged.  Producing these error
+> > > > messages for a normal use case is not helpful.
+> > > 
+> > > Your patches would hide these errors when they occur during normal use
+> > > (e.g. EPROTO).
+> > > 
+> > > Receiving an error message when unplugging an active device should not
+> > > surprise anyone. And at least you know where it came from (and it's
+> > > right there in the logs as well).
+> > > 
+> > > Johan
+> > 
+> > Hmm.  Yes, I can see why quieting -EPROTO would be bad because it would
+> > hide protocol errors which we want to know about.
+> 
+> Do you really want to "know about" them?  What can a user do with them?
+> Nothing, so just resubmit and you should be fine.
+> 
+> > I need to re-think this patch.
+> > Nack.
+> 
+> I like this patch, putting crud in the kernel log that no one can do
+> anything with for a "normal" operation like yanking a USB device out
+> while it is open should not happen.
+> 
+> thanks,
+> 
+> greg k-h
 
-Maybe the crystal ball should be extended to show if the merge is open
-or closed? And if it's closed, an estimate when the next merge window
-starts would be nice ("Merge window is closed, estimate for it to open:
-21 days").
+Perhaps something at a lower level could return a more apt error number
+such as -ENODEV.  Then there would be no conflict with -EPROTO.
 
-http://phb-crystal-ball.org/
-
-I'm sure Johannes would be happy to take patches.
+I will look in to it again and re-submit the patches.
 
 -- 
-Kalle Valo
+- Jeremiah Mahler
