@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751090AbaLPOZr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:25:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47534 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaLPOZq (ORCPT
+	id S1751238AbaLPO1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:27:49 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:45788 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaLPO1s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:25:46 -0500
-Date: Tue, 16 Dec 2014 14:25:42 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [BUG, linux-next] spawn PID 1 without CLONE_FS, wireless inop
-Message-ID: <20141216142542.GC22149@ZenIV.linux.org.uk>
-References: <20141216115537.GA1259@hudson.localdomain>
- <20141216125615.GZ22149@ZenIV.linux.org.uk>
- <20141216132821.GA22149@ZenIV.linux.org.uk>
- <20141216140952.GA1224@hudson.localdomain>
+	Tue, 16 Dec 2014 09:27:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141216140952.GA1224@hudson.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54903E88.2070701@collabora.com>
+References: <CAL8zT=hAVi2-io3POmj9Lp1AF11ovg6bqCMPRp_w_QySAgFGtw@mail.gmail.com>
+ <548F272E.3040808@gmail.com> <548F2DD6.70805@collabora.com>
+ <CAL8zT=jNis3VN11xN82fci5dA5f0TwAAhkBVq2+5TaKpmm_S-Q@mail.gmail.com>
+ <1418736635.3374.64.camel@pengutronix.de> <54903E88.2070701@collabora.com>
+From: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+Date: Tue, 16 Dec 2014 15:27:32 +0100
+X-Google-Sender-Auth: E_IPlb1RfV52WX0Y1h6g5IWIKHc
+Message-ID: <CAL8zT=hq5mx71eB8dBea2qAuESjcLYremb81Vj-BjjTd+iA2-g@mail.gmail.com>
+Subject: Re: i.MX6 CSC and scaler
+To: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Steve Longerbeam <slongerbeam@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBTdXJlYXU=?= <frederic.sureau@vodalys.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 06:09:52AM -0800, Jeremiah Mahler wrote:
-> >  		ramdisk_execute_command = NULL;
-> >  		prepare_namespace();
-> > +		{
-> > +		/* HACK */
-> > +			struct path old, new;
-> > +			get_fs_root(current->fs, &new);
-> > +			get_fs_root(&init_fs, &old);
-> > +			chroot_fs_refs(&old, &new);
-> > +			path_put(&old);
-> > +			path_put(&new);
-> > +		}
-> >  	}
-> >  
-> >  	/*
-> 
-> I tested the bad commit with your patch applied but it made no
-> difference, the wireless is still down.
+Hi,
 
-Interesting...  What happens if you move that added piece (i.e. call of
-chroot_fs_refs()) just after that if, instead of the end of the body of
-the if?
+2014-12-16 15:15 GMT+01:00 Nicolas Dufresne <nicolas.dufresne@collabora.com>:
+>
+> Le 2014-12-16 08:30, Philipp Zabel a écrit :
+>>
+>> For the IPU IC mem2mem scaler/CSC, v4l2transform with scaling capability
+>> would be the perfect fit
+>
+> Thanks you for clarifying. Jean-Michel, are you going to work on this ? If
+> so, feel free to contact me directly for pointers. You'll find me as stormer
+> on IRC freenode on both #v4l2 and #gstreamer.
 
-> Not sure if it helps, but the dmesg is included below.  There are errors
-> about not being able to load the firmware that look interesting.
+Well, yes, we are going to work on it, but first we need to have
+Steve's module probed. It seems to be using DT, but figuring out how
+to use it properly.
 
-Errors about not being able to load the firmware clearly indicate that we
-have an attempt to load it (from a kernel thread of some sort, e.g.
-workqueue worker) getting failing with ENOENT.  So we have init_fs stuck
-behind, presumably still on initramfs under the overmounting rootfs.
+> What would need to be done:
+> a) Import scaler negotiation code from videoscale element, and merge it into
+> v4l2transform negotiation. It is likely that wtay (Wim Tayman) have some
+> code already for you, has on the SW side he is currently working on merging
+> videoscale and videoconvert together as it's faster this way.
+
+OK, so better to go on #gstreamer and talk together with Wim of this.
+
+> b) Complete the handling of G_CROP (if required add G_SELECTION). Most HW
+> scaler will allocate aligned buffers, but can reach a 1 or 2 pixels
+> precision through CROP or SELECTION.
+
+Have you already started something about that ?
+JM
