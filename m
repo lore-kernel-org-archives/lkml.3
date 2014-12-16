@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750996AbaLPTcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 14:32:48 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:63149 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaLPTcq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 14:32:46 -0500
+	id S1751562AbaLPTdu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 14:33:50 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:44794 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941AbaLPTds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 14:33:48 -0500
+Message-ID: <54908904.9060908@ti.com>
+Date: Tue, 16 Dec 2014 13:33:24 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <54907676.4050108@cogentembedded.com>
-References: <1418746353-3481-1-git-send-email-octavian.purdila@intel.com>
-	<1418746353-3481-2-git-send-email-octavian.purdila@intel.com>
-	<54907676.4050108@cogentembedded.com>
-Date: Tue, 16 Dec 2014 21:32:44 +0200
-Message-ID: <CAE1zotL5W=PpKjrcCV_Q_nBdpm+cakn7NOqqjEwx3WEcYduacw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ACPICA: take ACPI_MTX_INTERPRETER in acpi_unload_table_id
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Johan Hovold <johan@kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Heikki Krogerus <heikki.krogerus@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
+CC: Lokesh Vutla <lokeshvutla@ti.com>, <t-kristo@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca> <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca> <20141214044517.GD24110@csclub.uwaterloo.ca> <549018EC.8020207@ti.com> <20141216145856.GA23358@kahuna> <20141216163657.GL24110@csclub.uwaterloo.ca> <54908128.7040005@ti.com> <20141216192740.GN24110@csclub.uwaterloo.ca>
+In-Reply-To: <20141216192740.GN24110@csclub.uwaterloo.ca>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 8:14 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> Hello.
->
-> On 12/16/2014 07:12 PM, Octavian Purdila wrote:
->
->> acpi_tb_delete_namespace_by_owner expects ACPI_MTX_INTERPRETER to be
->> taken. This fixes the following issue:
->
->
->> ACPI Error: Mutex [0x0] is not acquired, cannot release
->> (20141107/utmutex-322)
->> Call Trace:
->>    [<ffffffff81b0bd28>] dump_stack+0x4f/0x7b
->>    [<ffffffff81546bfc>] acpi_ut_release_mutex+0x47/0x67
->>    [<ffffffff81542cf1>] acpi_tb_delete_namespace_by_owner+0x57/0x8d
->>    [<ffffffff81543ef1>] acpi_unload_table_id+0x3a/0x5e
->
->
->> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
->> ---
->>   drivers/acpi/acpica/tbxface.c | 7 +++++++
->>   1 file changed, 7 insertions(+)
->
->
->> diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
->> index 6482b0d..9520ae1 100644
->> --- a/drivers/acpi/acpica/tbxface.c
->> +++ b/drivers/acpi/acpica/tbxface.c
->> @@ -281,6 +281,11 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
+On 12/16/2014 01:27 PM, Lennart Sorensen wrote:
+>> I see why arch_timer_freq might skip the rounding error of 39, 15 and
+>> 55 Vs existing logic which is possibly at a truncation error risk
+>> (without errata for sysclk 13, 26 and 27MHz).
 >>
->>         ACPI_FUNCTION_TRACE(acpi_unload_table_id);
->>
->> +       status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
->> +       if (ACPI_FAILURE(status)) {
->> +               return_ACPI_STATUS(status);
->> +       }
->
->
->    {} not needed here. Please run your patches thru scripts/checkpatch.pl,
-> it should complain in this case.
->
+>> all you'd probably need to do is cast rate, num and den to unsigned
+>> long and have a common computation logic.
+> 
+> If that is acceptable, then sure I can do that.  I liked avoiding casts
+> in general though.
+> 
+>> if you'd really want to handle truncation error, it must be a separate
+>> patch of it's own - I would not mix it with the errata fix.
+> 
+> Well there is no error in the existing code because the rate / den
+> is always a clean integer division.  The problem is introduced by the
 
-I always run checkpatch. It does not complain.
+key is "there is no error in existing code for existing value" :) ->
+the same code for new values will fail. and introducing (rate * num) /
+den without cast will fail for old values.
 
->> +
->>         /* Find table in the global table list */
->>         for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i)
->> {
->>                 if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
->> @@ -297,6 +302,8 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
->>                 acpi_tb_set_table_loaded_flag(i, FALSE);
->>                 break;
->>         }
->> +
->> +       (void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
->
->
->    Cast to *void*  not necessary either.
->
+> SYSCLK1 / 610 used by the emulated clock which is not a clean division.
+> 
+> So for the existing logic, the calculation was perfect.  It is only for
+> the errata case that it is a problem.
+> 
+> So I think leaving the existing calculation but moved up works well,
+> and then having the alternate order calculation only in the errata case
+> seemed cleaner and avoids casts and 64bit math which I thought was
+> overall desirable.
 
-AFAICS ACPICA has a slight different coding style than the rest of the
-kernel and I kept using it in these patches. Rafael, please let me
-know if I am wrong.
+In general using DIV_ROUND_UP and family of macros(in kernel.h) is the
+right way of doing division in similar cases in Linux kernel. And for
+the same functionality, we want a common equation - if it does not fit
+well for all values (even if we introduce new values), then we must
+come to a better equation that will work for all values. What we do
+not do is to have two equations meant for doing the same thing.
+
+
+-- 
+Regards,
+Nishanth Menon
