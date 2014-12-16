@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833AbaLPQ0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:26:18 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64932 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751800AbaLPQ0N (ORCPT
+	id S1751993AbaLPQ0f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:26:35 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:35472 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751720AbaLPQ0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:26:13 -0500
-From: Athira Lekshmi <andnlnbn18@gmail.com>
-To: wim@iguana.be
-Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Athira Lekshmi <andnlnbn18@gmail.com>
-Subject: [PATCH 7/8] drivers: watchdog: Fixed missing blank line warning
-Date: Tue, 16 Dec 2014 21:55:28 +0530
-Message-Id: <1418747129-3766-7-git-send-email-andnlnbn18@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
-References: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
+	Tue, 16 Dec 2014 11:26:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141216104614.GV3337@twins.programming.kicks-ass.net>
+References: <CABPqkBS-iWehgyp0xEkeJLygeTOg7Ci-3jugRNMJ9Medz=2A1w@mail.gmail.com>
+	<20141216104614.GV3337@twins.programming.kicks-ass.net>
+Date: Tue, 16 Dec 2014 11:26:23 -0500
+Message-ID: <CABPqkBSM7naL9DM4gaF5DtEORgxp4sMT6DQA1_ej85Y_oDqXqA@mail.gmail.com>
+Subject: Re: [BUG] perf: sampling with precise=2 broken in 3.18
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        dave.hansen@linux.intel.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a blank line after declarations to remove the warning:
-'Missing blank line after declarations'
+On Tue, Dec 16, 2014 at 5:46 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, Dec 15, 2014 at 11:51:07PM -0500, Stephane Eranian wrote:
+>> Hi,
+>>
+>> I was running some perf mem test for an upcoming patch when
+>> I realize that precise=2 was broken on 3.18. It seems it never
+>> (or extremely rarely) correct the off-by-one error, when until 3.18-rc4
+>> it was 100% on the same program. So something was introduced
+>> that broke the asm walker in perf_event_intel_ds.c.
+>>
+>> Looking at the log of that file, I can see one change that could have
+>> some impact:
+>>
+>> Author: Dave Hansen <dave.hansen@linux.intel.com>
+>> 6ba48ff x86: Remove arbitrary instruction size limit in instruction decoder
+>>
+>> if I use a kernel without this fix (prior to that commit), then correction
+>> works. Any kernel after fails. I have not investigated why but may you
+>> have an idea.
+>>
+>> To reproduce try using perf mem -t load rec my_load_test, then use
+>> perf report to navigate to the assembly view, the samples should be
+>> on load instructions, not on the instructions following them. If you use
+>> perf mem -t load rec -vv you can verify that precise=2. So something
+>> is not working anymore in the instruction decoder that the fixup routine
+>> bails out.
+>>
+>> Any clue?
+>
+> This appears to have fixed it.
+>
+> ---
+> Subject: x86: Fix off-by-one in instruction decoder
+>
+> Stephane reported that the PEBS fixup was broken by the recent commit to
+> the instruction decoder. The thing had an off-by-one which resulted in
+> not being able to decode the last instruction and always bail.
+>
+Works again now. Thanks for fixing this quickly.
 
-Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
----
- drivers/watchdog/at91sam9_wdt.c |    3 +++
- 1 file changed, 3 insertions(+)
+Acked-by: Stephane Eranian <eranian@google.com>
 
-diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-index 489729b..794a34a 100644
---- a/drivers/watchdog/at91sam9_wdt.c
-+++ b/drivers/watchdog/at91sam9_wdt.c
-@@ -82,6 +82,7 @@ MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
- #define to_wdt(wdd) container_of(wdd, struct at91wdt, wdd)
- struct at91wdt {
- 	struct watchdog_device wdd;
-+
- 	void __iomem *base;
- 	unsigned long next_heartbeat;	/* the next_heartbeat for the timer */
- 	struct timer_list timer;	/* The timer that pings the watchdog */
-@@ -121,6 +122,7 @@ static inline void at91_wdt_reset(struct at91wdt *wdt)
- static void at91_ping(unsigned long data)
- {
- 	struct at91wdt *wdt = (struct at91wdt *)data;
-+
- 	if (time_before(jiffies, wdt->next_heartbeat) ||
- 	    !watchdog_active(&wdt->wdd)) {
- 		at91_wdt_reset(wdt);
-@@ -372,6 +374,7 @@ static int __init at91wdt_probe(struct platform_device *pdev)
- static int __exit at91wdt_remove(struct platform_device *pdev)
- {
- 	struct at91wdt *wdt = platform_get_drvdata(pdev);
-+
- 	watchdog_unregister_device(&wdt->wdd);
- 
- 	pr_warn("I quit now, hardware will probably reboot!\n");
--- 
-1.7.9.5
-
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Fixes: 6ba48ff46f76 ("x86: Remove arbitrary instruction size limit in instruction decoder")
+> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+> ---
+>  arch/x86/lib/insn.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+> index 2480978..1313ae6 100644
+> --- a/arch/x86/lib/insn.c
+> +++ b/arch/x86/lib/insn.c
+> @@ -28,7 +28,7 @@
+>
+>  /* Verify next sizeof(t) bytes can be on the same instruction */
+>  #define validate_next(t, insn, n)      \
+> -       ((insn)->next_byte + sizeof(t) + n < (insn)->end_kaddr)
+> +       ((insn)->next_byte + sizeof(t) + n <= (insn)->end_kaddr)
+>
+>  #define __get_next(t, insn)    \
+>         ({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
