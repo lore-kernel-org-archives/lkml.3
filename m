@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaLPP67 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 10:58:59 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:59254 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaLPP65 (ORCPT
+	id S1751409AbaLPQBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:01:44 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:35644 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751035AbaLPQBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 10:58:57 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [PATCH] sched/fair: Fix the dealing with decay_count in __synchronize_entity_decay()
-Date: Tue, 16 Dec 2014 23:58:29 +0800
-Message-Id: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Tue, 16 Dec 2014 11:01:43 -0500
+Date: Tue, 16 Dec 2014 17:01:38 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Evgeni Dobrev <evgeni@studio-punkt.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] ARM: dts: kirkwood: enable phy driver for SATA
+ controller on 88f6192
+Message-ID: <20141216170138.14dcabc1@free-electrons.com>
+In-Reply-To: <20141215203724.GA22936@anne>
+References: <20141215203724.GA22936@anne>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __synchronize_entity_decay(), if "decays" happens to be zero, 
-se->avg.decay_count will not be zeroed, holding the positive value
-assigned when dequeued last time.
+Dear Evgeni Dobrev,
 
-This is problematic in the following case:
-If this runnable task is CFS-balanced to other CPUs soon afterwards, 
-migrate_task_rq_fair() will treat it as a blocked task due to its
-non-zero decay_count, thereby adding its load to cfs_rq->removed_load
-wrongly.
+On Mon, 15 Dec 2014 21:37:24 +0100, Evgeni Dobrev wrote:
+> This patch enables the phy drivers for the SATA controller on Marvell's 88f6192. Without them it is not possible to use SATA drives attached to this processor.
 
-Thus, we must zero se->avg.decay_count in this case as well.
+Commit log text should be wrapped to some reasonable length.
 
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index df2cdf7..ea517cd 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2574,11 +2574,11 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
- 	u64 decays = atomic64_read(&cfs_rq->decay_counter);
- 
- 	decays -= se->avg.decay_count;
-+	se->avg.decay_count = 0;
- 	if (!decays)
- 		return 0;
- 
- 	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
--	se->avg.decay_count = 0;
- 
- 	return decays;
- }
+>  			interrupts = <21>;
+>  			clocks = <&gate_clk 14>, <&gate_clk 15>;
+>  			clock-names = "0", "1";
+> +                        phys = <&sata_phy0>, <&sata_phy1>;
+> +                        phy-names = "port0", "port1";
+
+You should use tabs and not spaces for indentation in Device Tree files.
+
+Thanks!
+
+Thomas
 -- 
-1.9.1
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
