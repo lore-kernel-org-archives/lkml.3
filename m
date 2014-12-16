@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159AbaLPH0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:26:10 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33316 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaLPH0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:26:08 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <548FDE56.8060107@jp.fujitsu.com>
-Date: Tue, 16 Dec 2014 16:25:10 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1751308AbaLPH16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:27:58 -0500
+Received: from mail-bn1on0083.outbound.protection.outlook.com ([157.56.110.83]:23096
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750863AbaLPH15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:27:57 -0500
+From: Ley Foon Tan <lftan@altera.com>
+To: Tobias Klauser <tklauser@distanz.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Ley Foon Tan <lftan@altera.com>,
+        <lftan.linux@gmail.com>, <linux-serial@vger.kernel.org>,
+        <nios2-dev@lists.rocketboards.org>
+Subject: [PATCH] serial: altera-juart: fix NULL device in log message
+Date: Tue, 16 Dec 2014 15:27:46 +0800
+Message-ID: <1418714866-2744-1-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
-        tangchen <tangchen@cn.fujitsu.com>
-Subject: Re: [PATCH 2/4] workqueue: update per-cpu workqueue's node affinity
- at,online-offline
-References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548EC1E2.1010101@jp.fujitsu.com> <548EC320.3060206@jp.fujitsu.com> <548FC3EA.7020505@cn.fujitsu.com>
-In-Reply-To: <548FC3EA.7020505@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
+ smtp.mailfrom=lftan@altera.com; 
+X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(50226001)(84676001)(50466002)(48376002)(64706001)(20776003)(99396003)(47776003)(68736005)(97736003)(4396001)(46102003)(50986999)(86362001)(36756003)(19580405001)(19580395003)(6806004)(92566001)(33646002)(120916001)(106466001)(105596002)(31966008)(77156002)(107046002)(89996001)(229853001)(21056001)(42186005)(87936001)(62966003)(7099022);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB224;H:sj-itexedge03.altera.priv.altera.com;FPR:;SPF:SoftFail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB224;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR03MB224;
+X-Forefront-PRVS: 04270EF89C
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB224;
+X-OriginatorOrg: altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/16 14:32), Lai Jiangshan wrote:
-> On 12/15/2014 07:16 PM, Kamezawa Hiroyuki wrote:
->> The percpu workqueue pool are persistend and never be freed.
->> But cpu<->node relationship can be changed by cpu hotplug and pool->node
->> can point to an offlined node.
->>
->> If pool->node points to an offlined node,
->> following allocation failure can happen.
->>      ==
->>       SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
->>        cache: kmalloc-192, object size: 192, buffer size: 192, default
->> order:
->>      1, min order: 0
->>        node 0: slabs: 6172, objs: 259224, free: 245741
->>        node 1: slabs: 3261, objs: 136962, free: 127656
->>      ==
->>
->> This patch clears per-cpu workqueue pool's node affinity at
->> cpu offlining and restore it at cpu onlining.
->>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>   kernel/workqueue.c | 11 ++++++++++-
->>   1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->> index 7809154..2fd0bd7 100644
->> --- a/kernel/workqueue.c
->> +++ b/kernel/workqueue.c
->> @@ -4586,6 +4586,11 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
->>   	case CPU_DOWN_FAILED:
->>   	case CPU_ONLINE:
->>   		mutex_lock(&wq_pool_mutex);
->> +		/*
->> +		 * now cpu <-> node info is established. update numa node
->> +		 */
->> +		for_each_cpu_worker_pool(pool, cpu)
->> +			pool->node = cpu_to_node(cpu);
->>
->>   		for_each_pool(pool, pi) {
->>   			mutex_lock(&pool->attach_mutex);
->> @@ -4619,6 +4624,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
->>   	int cpu = (unsigned long)hcpu;
->>   	struct work_struct unbind_work;
->>   	struct workqueue_struct *wq;
->> +	struct worker_pool *pool;
->>
->>   	switch (action & ~CPU_TASKS_FROZEN) {
->>   	case CPU_DOWN_PREPARE:
->> @@ -4626,10 +4632,13 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
->>   		INIT_WORK_ONSTACK(&unbind_work, wq_unbind_fn);
->>   		queue_work_on(cpu, system_highpri_wq, &unbind_work);
->>
->> -		/* update NUMA affinity of unbound workqueues */
->>   		mutex_lock(&wq_pool_mutex);
->> +		/* update NUMA affinity of unbound workqueues */
->>   		list_for_each_entry(wq, &workqueues, list)
->>   			wq_update_unbound_numa(wq, cpu, false);
->> +		/* clear per-cpu workqueues's numa affinity. */
->> +		for_each_cpu_worker_pool(pool, cpu)
->> +			pool->node = NUMA_NO_NODE; /* restored at online */
->
->
-> If the node is still online, it is better to keep the original pool->node.
->
+Add device pointer to port->dev.
 
-Hm, ok, drop this code.  or moving all to node online event handler.
+Before:
 
-Thanks,
--Kame
+"(NULL device *): ttyJ0 at MMIO 0x1008 (irq = 2, base_baud = 0) is a
+Altera JTAG UART"
 
+After:
+"altera_jtaguart 1008.serial: ttyJ0 at MMIO 0x1008 (irq = 2, base_baud = 0) is a
+Altera JTAG UART"
+
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
+---
+ drivers/tty/serial/altera_jtaguart.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/tty/serial/altera_jtaguart.c b/drivers/tty/serial/altera_jtaguart.c
+index 192d043..0fefdd8 100644
+--- a/drivers/tty/serial/altera_jtaguart.c
++++ b/drivers/tty/serial/altera_jtaguart.c
+@@ -441,6 +441,7 @@ static int altera_jtaguart_probe(struct platform_device *pdev)
+ 	port->iotype = SERIAL_IO_MEM;
+ 	port->ops = &altera_jtaguart_ops;
+ 	port->flags = UPF_BOOT_AUTOCONF;
++	port->dev = &pdev->dev;
+ 
+ 	uart_add_one_port(&altera_jtaguart_driver, port);
+ 
+-- 
+1.8.2.1
 
