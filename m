@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaLPVDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:03:44 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:50498 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaLPVDn (ORCPT
+	id S1751827AbaLPVEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:04:47 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:56632 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaLPVEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:03:43 -0500
-Date: Wed, 17 Dec 2014 08:03:10 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 8/9] virtio_pci: split out legacy device support
-Message-ID: <20141216210309.GA32071@gondor.apana.org.au>
+	Tue, 16 Dec 2014 16:04:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418043812-25753-9-git-send-email-mst@redhat.com>
-Organization: Core
-X-Newsgroups: apana.lists.os.linux.kernel,apana.lists.os.linux.virtualization
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1415863357-15680-2-git-send-email-kever.yang@rock-chips.com>
+References: <1415863357-15680-1-git-send-email-kever.yang@rock-chips.com>
+	<1415863357-15680-2-git-send-email-kever.yang@rock-chips.com>
+Date: Tue, 16 Dec 2014 13:04:45 -0800
+X-Google-Sender-Auth: oxiyiyMfVIvCsNAa6OSCraO2Lbg
+Message-ID: <CAD=FV=US1eS4jj-uVFpG2hYFQ3W1D-B3D_ysaCrbee8L=dEU-g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] clk: rockchip: use the clock ID for usbphy480m_src
+From: Doug Anderson <dianders@chromium.org>
+To: Kever Yang <kever.yang@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Mike Turquette <mturquette@linaro.org>,
+        Sonny Rao <sonnyrao@chromium.org>, Addy Ke <addy.ke@rock-chips.com>,
+        Eddie Cai <cf@rock-chips.com>,
+        =?UTF-8?B?5oi05YWL6ZyWIChKYWNrKQ==?= <dkl@rock-chips.com>,
+        Tao Huang <huangtao@rock-chips.com>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael S. Tsirkin <mst@redhat.com> wrote:
-> Move everything dealing with legacy devices out to virtio_pci_legacy.c.
-> Expose common code APIs in virtio_pci.h
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Kever,
 
-This breaks virtio_pci because you deleted the licence from it.
+On Wed, Nov 12, 2014 at 11:22 PM, Kever Yang <kever.yang@rock-chips.com> wrote:
+> Use the clock ID for usbphy480m_src so that we can find
+> this clock node in dts.
+>
+> Signed-off-by: Kever Yang <kever.yang@rock-chips.com>
+> ---
+>
+>  drivers/clk/rockchip/clk-rk3288.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
--- >8 --
-Subject: virtio_pci: Restore module licence and other attributes
-
-When the virtio_pci driver was moved into virtio_pci_legacy.c the
-module licence and other attributes went AWOL.  This patch restores
-them.
-
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/drivers/virtio/virtio_pci_legacy.c b/drivers/virtio/virtio_pci_legacy.c
-index 2588252..6b100e3 100644
---- a/drivers/virtio/virtio_pci_legacy.c
-+++ b/drivers/virtio/virtio_pci_legacy.c
-@@ -324,3 +324,8 @@ static struct pci_driver virtio_pci_driver = {
- };
- 
- module_pci_driver(virtio_pci_driver);
-+
-+MODULE_AUTHOR("Anthony Liguori <aliguori@us.ibm.com>");
-+MODULE_DESCRIPTION("virtio-pci");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION("1");
-
-Cheers,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Tested-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
