@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751733AbaLPQ0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:26:03 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:43945 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaLPQ0A (ORCPT
+	id S1751641AbaLPQZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:25:57 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:50337 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570AbaLPQZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:26:00 -0500
+	Tue, 16 Dec 2014 11:25:54 -0500
 From: Athira Lekshmi <andnlnbn18@gmail.com>
 To: wim@iguana.be
 Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
         Athira Lekshmi <andnlnbn18@gmail.com>
-Subject: [PATCH 5/8] drivers: watchdog: Fixed missing blank line warning
-Date: Tue, 16 Dec 2014 21:55:26 +0530
-Message-Id: <1418747129-3766-5-git-send-email-andnlnbn18@gmail.com>
+Subject: [PATCH 4/8] drivers: watchdog: Fixed missing blank line warning
+Date: Tue, 16 Dec 2014 21:55:25 +0530
+Message-Id: <1418747129-3766-4-git-send-email-andnlnbn18@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
 References: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
@@ -26,15 +26,15 @@ Added a blank line after declarations to remove the warning:
 
 Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
 ---
- drivers/watchdog/acquirewdt.c |    1 +
+ drivers/watchdog/advantechwdt.c |    1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/drivers/watchdog/acquirewdt.c b/drivers/watchdog/acquirewdt.c
-index 5614416..d78a120 100644
---- a/drivers/watchdog/acquirewdt.c
-+++ b/drivers/watchdog/acquirewdt.c
-@@ -132,6 +132,7 @@ static ssize_t acq_write(struct file *file, const char __user *buf,
- 			   magic character */
+diff --git a/drivers/watchdog/advantechwdt.c b/drivers/watchdog/advantechwdt.c
+index 7796db7..74e49ed 100644
+--- a/drivers/watchdog/advantechwdt.c
++++ b/drivers/watchdog/advantechwdt.c
+@@ -121,6 +121,7 @@ static ssize_t advwdt_write(struct file *file, const char __user *buf,
+ 
  			for (i = 0; i != count; i++) {
  				char c;
 +
