@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724AbaLPPFQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 10:05:16 -0500
-Received: from pegase1.c-s.fr ([93.17.236.30]:47083 "EHLO mailhub1.si.c-s.fr"
+	id S1751334AbaLPPDm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 10:03:42 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:47070 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751201AbaLPPDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 10:03:43 -0500
+	id S1750922AbaLPPDl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 10:03:41 -0500
 From: Christophe Leroy <christophe.leroy@c-s.fr>
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
         Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
 CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Subject: [PATCH 08/11] powerpc/8xx: Handle CR out of exception PROLOG/EPILOG
-Message-Id: <20141216150339.520591A5E04@localhost.localdomain>
-Date: Tue, 16 Dec 2014 16:03:39 +0100 (CET)
+Subject: [PATCH 01/11] powerpc/8xx: remove remaining unnecessary code in FixupDAR
+Message-Id: <20141216150338.371EE1A5E07@localhost.localdomain>
+Date: Tue, 16 Dec 2014 16:03:37 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to be able to reduce scope during which CR is saved, we take
-CR saving/restoring out of exception PROLOG and EPILOG
+Since commit 33fb845a6f01 ("powerpc/8xx: Don't use MD_TWC for walk"), MD_EPN and
+MD_TWC are not writen anymore in FixupDAR so saving r3 has become useless.
 
 Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
 ---
- arch/powerpc/kernel/head_8xx.S | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ arch/powerpc/kernel/head_8xx.S | 6 ------
+ 1 file changed, 6 deletions(-)
 
 diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
-index b3f3cb5..c89aed9 100644
+index 3d4b8ee..79b8a23 100644
 --- a/arch/powerpc/kernel/head_8xx.S
 +++ b/arch/powerpc/kernel/head_8xx.S
-@@ -116,13 +116,13 @@ turn_on_mmu:
-  */
- #define EXCEPTION_PROLOG	\
- 	EXCEPTION_PROLOG_0;	\
-+	mfcr	r10;		\
- 	EXCEPTION_PROLOG_1;	\
- 	EXCEPTION_PROLOG_2
- 
- #define EXCEPTION_PROLOG_0	\
- 	mtspr	SPRN_SPRG_SCRATCH0,r10;	\
--	mtspr	SPRN_SPRG_SCRATCH1,r11;	\
--	mfcr	r10
-+	mtspr	SPRN_SPRG_SCRATCH1,r11
- 
- #define EXCEPTION_PROLOG_1	\
- 	mfspr	r11,SPRN_SRR1;		/* check whether user or kernel */ \
-@@ -162,7 +162,6 @@ turn_on_mmu:
-  * Exception exit code.
-  */
- #define EXCEPTION_EPILOG_0	\
--	mtcr	r10;		\
- 	mfspr	r10,SPRN_SPRG_SCRATCH0;	\
- 	mfspr	r11,SPRN_SPRG_SCRATCH1
- 
-@@ -313,6 +312,7 @@ InstructionTLBMiss:
- 	mtspr	SPRN_DAR, r3
- #endif
- 	EXCEPTION_PROLOG_0
-+	mfcr	r10
+@@ -532,9 +532,6 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+  /* define if you don't want to use self modifying code */
+ #define NO_SELF_MODIFYING_CODE
+ FixupDAR:/* Entry point for dcbx workaround. */
+-#ifdef CONFIG_8xx_CPU6
+-	mtspr	SPRN_DAR, r3
+-#endif
  	mtspr	SPRN_SPRG_SCRATCH2, r10
- 	mfspr	r10, SPRN_SRR0	/* Get effective address of fault */
- 	DO_8xx_CPU15(r11, r10)
-@@ -363,6 +363,7 @@ InstructionTLBMiss:
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
- #endif
- 	mfspr	r10, SPRN_SPRG_SCRATCH2
-+	mtcr	r10
- 	EXCEPTION_EPILOG_0
- 	rfi
- 
-@@ -372,6 +373,7 @@ DataStoreTLBMiss:
- 	mtspr	SPRN_DAR, r3
- #endif
- 	EXCEPTION_PROLOG_0
-+	mfcr	r10
- 	mtspr	SPRN_SPRG_SCRATCH2, r10
- 	mfspr	r10, SPRN_MD_EPN
- 
-@@ -440,6 +442,7 @@ DataStoreTLBMiss:
- #endif
- 	mtspr	SPRN_DAR, r11	/* Tag DAR */
- 	mfspr	r10, SPRN_SPRG_SCRATCH2
-+	mtcr	r10
- 	EXCEPTION_EPILOG_0
- 	rfi
- 
-@@ -465,6 +468,7 @@ InstructionTLBError:
- 	. = 0x1400
- DataTLBError:
- 	EXCEPTION_PROLOG_0
-+	mfcr	r10
- 
- 	mfspr	r11, SPRN_DAR
- 	cmpwi	cr0, r11, RPN_PATTERN
+ 	/* fetch instruction from memory. */
+ 	mfspr	r10, SPRN_SRR0
+@@ -551,9 +548,6 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	/* Extract level 2 index */
+ 	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+-#ifdef CONFIG_8xx_CPU6
+-	mfspr	r3, SPRN_DAR
+-#endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
+ 	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
 -- 
 2.1.0
 
