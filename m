@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaLPVp5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:45:57 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:53705 "EHLO
+	id S1751312AbaLPVp4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:45:56 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:53708 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaLPVpy (ORCPT
+	with ESMTP id S1750983AbaLPVpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Dec 2014 16:45:54 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -16,66 +16,50 @@ Cc: u.kleine-koenig@pengutronix.de, shawn.guo@linaro.org,
         linux@arm.linux.org.uk, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         stefan@agner.ch
-Subject: [PATCH v3 0/3] irqchip: vf610-mscm: add support for MSCM interrupt router
-Date: Tue, 16 Dec 2014 22:45:44 +0100
-Message-Id: <1418766347-6225-1-git-send-email-stefan@agner.ch>
+Subject: [PATCH v3 2/3] irqchip: vf610-mscm: dt-bindings: add MSCM bindings
+Date: Tue, 16 Dec 2014 22:45:46 +0100
+Message-Id: <1418766347-6225-3-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1418766347-6225-1-git-send-email-stefan@agner.ch>
+References: <1418766347-6225-1-git-send-email-stefan@agner.ch>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Splitted out version of the MSCM driver. My first driver based on the
-routeable domain support and was part of the Vybrid Cortex-M4 support
-patchset.
+Add binding documentation for Miscellaneous System Control Module
+found in Freescale Vybrid SoC's.
 
-So far the MSCM interrupt router was initialized by the boot loader
-and configured all interrupts for the Cortex-A5 CPU. There are two
-use cases where a proper driver is necessary:
-- To run Linux on the Cortex-M4. When the kernel is running on the
-  non-preconfigured CPU, the interrupt router need to be configured
-  properly.
-- To support deeper sleep modes: LPSTOP clears the interrupt router
-  configuration, hence a driver needs to restore the configuration
-  on resume.
-I created a seperate patchset for that driver which hopefully makes
-it easier to get it into mergeable state.
-
-The patchset is based on the master branch of Linus as of today.
-
-Since I identified some registers likely to be used by other drivers
-(e.g. CPU ID or the CPU Generate Interrupt Register) I also added
-the "syscon" compatible string to make the registers available for
-other drivers in case needed.
-
-Changes since v2
-- Use two cell layout for MSCM interrupt router
-- Move peripheral interrupt properties to base device tree vfxxx.dtsi
-- Use generic two cell xlate (irq_domain_xlate_twocell)
-- Add syscon to compatible string
-- Remove some line breaks for better readability
-
-Changes since v1 (part of Vybrid Cortex-M4 support)
-- Rewrite with irqdomain hierarchy
-- Implemented as proper irqchip and move to driver/irqchip/
-- Doesn't work on Cortex-M4 anymore (NVIC as parent is not yet
-  implemented)
-
-Stefan Agner (3):
-  irqchip: vf610-mscm: add support for MSCM interrupt router
-  irqchip: vf610-mscm: dt-bindings: add MSCM bindings
-  ARM: dts: vf610: add Miscellaneous System Control Module (MSCM)
-
- .../bindings/arm/freescale/fsl,vf610-mscm.txt      |  19 +++
- arch/arm/boot/dts/vf500.dtsi                       | 128 +-------------
- arch/arm/boot/dts/vfxxx.dtsi                       |  42 +++++
- arch/arm/mach-imx/Kconfig                          |   1 +
- drivers/irqchip/Kconfig                            |  11 ++
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-vf610-mscm.c                   | 186 +++++++++++++++++++++
- 7 files changed, 264 insertions(+), 124 deletions(-)
+Signed-off-by: Stefan Agner <stefan@agner.ch>
+---
+ .../bindings/arm/freescale/fsl,vf610-mscm.txt         | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
- create mode 100644 drivers/irqchip/irq-vf610-mscm.c
 
+diff --git a/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+new file mode 100644
+index 0000000..e051b88
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+@@ -0,0 +1,19 @@
++Freescale Vybrid Miscellaneous System Control Module
++
++The MSCM IP contains Access Control and TrustZone Security hardware,
++CPU Configuration registers and Interrupt Router control.
++
++Required properties:
++- compatible : "fsl,vf610-mscm", "syscon"
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Two cells, interrupt number and flags (IRQ type)
++- reg : the register range of the MSCM module
++
++Example:
++	mscm: mscm@40001000 {
++		compatible = "fsl,vf610-mscm", "syscon";
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupt-parent = <&intc>;
++		reg = <0x40001000 0x1000>;
++	}
 -- 
 2.1.3
 
