@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaLPQQS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:16:18 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:56213 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaLPQQQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:16:16 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Tue, 16 Dec 2014 11:16:14 -0500
-To: Lokesh Vutla <lokeshvutla@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, "Kristo, Tero" <t-kristo@ti.com>,
-        Nishanth Menon <nm@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-Message-ID: <20141216161614.GK24110@csclub.uwaterloo.ca>
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
- <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
- <20141214044517.GD24110@csclub.uwaterloo.ca>
- <549018EC.8020207@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549018EC.8020207@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751542AbaLPQRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:17:45 -0500
+Received: from mga03.intel.com ([134.134.136.65]:2905 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751107AbaLPQRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:17:43 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,587,1413270000"; 
+   d="scan'208";a="624666085"
+From: Octavian Purdila <octavian.purdila@intel.com>
+To: linus.walleij@linaro.org, lee.jones@linaro.org, rjw@rjwysocki.net
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-gpio@vger.kernel.org, heikki.krogerus@intel.com,
+        mika.westerberg@linux.intel.com, linux-acpi@vger.kernel.org,
+        Octavian Purdila <octavian.purdila@intel.com>
+Subject: [PATCH 1/4] ACPICA: take ACPI_MTX_INTERPRETER in acpi_unload_table_id
+Date: Tue, 16 Dec 2014 18:12:30 +0200
+Message-Id: <1418746353-3481-2-git-send-email-octavian.purdila@intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418746353-3481-1-git-send-email-octavian.purdila@intel.com>
+References: <1418746353-3481-1-git-send-email-octavian.purdila@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 05:05:08PM +0530, Lokesh Vutla wrote:
-> Is this applicable for OMAP5 also?
-> If not can you drop omap5 from $subject?
+acpi_tb_delete_namespace_by_owner expects ACPI_MTX_INTERPRETER to be
+taken. This fixes the following issue:
 
-DRA7xx = OMAP57xx, which to me is an omap5.  Isn't it?
+ACPI Error: Mutex [0x0] is not acquired, cannot release (20141107/utmutex-322)
+Call Trace:
+  [<ffffffff81b0bd28>] dump_stack+0x4f/0x7b
+  [<ffffffff81546bfc>] acpi_ut_release_mutex+0x47/0x67
+  [<ffffffff81542cf1>] acpi_tb_delete_namespace_by_owner+0x57/0x8d
+  [<ffffffff81543ef1>] acpi_unload_table_id+0x3a/0x5e
 
-And I haven't been able to get a manual for the omap54xx to confirm it,
-although it seems it does not apply to the omap54xx from what I have
-been able to gather indirectly.
+Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+---
+ drivers/acpi/acpica/tbxface.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-arch_timer_freq = (rate / den) * num;
-
-If I do this with the workaround I get:
-
-20000000 / 75 * 244 = 6147525
-
-where as
-
-20000000 * 244 / 75 = 6147540
-
-best value would be 6147541 with proper rounding.
-
-In the normal case the worst case is:
-
-26000000 * 384 = 9984000000
-
-That is too big for 32 bits.
-
-Now what could be done is prescale by 4 to make the worst case still
-fit in 32 bits while doing the multiplication before the division,
-so like this:
-
-arch_timer_freq = ((rate / 4) * num / den ) * 4;
-
-That gives the same result in all cases including the errata case for
-the dra7xx at 20MHz and 27MHz.  It is off by 3 in the 19.2MHz case though
-which isn't so nice.
-
-Would that be more acceptable?  I think having the arch_timer_freq
-calculated for the errata case seperately from the normal case is
-cleaner looking compared to that mess and gives a better result for the
-19.2MHz case.
-
+diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
+index 6482b0d..9520ae1 100644
+--- a/drivers/acpi/acpica/tbxface.c
++++ b/drivers/acpi/acpica/tbxface.c
+@@ -281,6 +281,11 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
+ 
+ 	ACPI_FUNCTION_TRACE(acpi_unload_table_id);
+ 
++	status = acpi_ut_acquire_mutex(ACPI_MTX_INTERPRETER);
++	if (ACPI_FAILURE(status)) {
++		return_ACPI_STATUS(status);
++	}
++
+ 	/* Find table in the global table list */
+ 	for (i = 0; i < acpi_gbl_root_table_list.current_table_count; ++i) {
+ 		if (id != acpi_gbl_root_table_list.tables[i].owner_id) {
+@@ -297,6 +302,8 @@ acpi_status acpi_unload_table_id(acpi_owner_id id)
+ 		acpi_tb_set_table_loaded_flag(i, FALSE);
+ 		break;
+ 	}
++
++	(void)acpi_ut_release_mutex(ACPI_MTX_INTERPRETER);
+ 	return_ACPI_STATUS(status);
+ }
+ 
 -- 
-Len Sorensen
+1.9.1
+
