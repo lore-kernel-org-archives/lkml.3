@@ -1,171 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930AbaLPWTi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:19:38 -0500
-Received: from plane.gmane.org ([80.91.229.3]:47533 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130AbaLPWTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:19:36 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Holger =?iso-8859-1?q?Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Subject: 3.18.1: broken directory with one file too many
-Date: Tue, 16 Dec 2014 22:19:18 +0000 (UTC)
-Message-ID: <pan.2014.12.16.22.19.18@googlemail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p4ff58697.dip0.t-ipconnect.de
-User-Agent: Pan/0.139 (Sexual Chocolate; GIT bf56508
- git://git.gnome.org/pan2)
-Cc: linux-nfs@vger.kernel.org
+	id S1751510AbaLPWTW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:19:22 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:53804 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLPWTU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 17:19:20 -0500
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Date: Tue, 16 Dec 2014 23:19:08 +0100
+From: Stefan Agner <stefan@agner.ch>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
+        kernel@pengutronix.de, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] ARM: dts: add support for Vybrid running on
+ Cortex-M4
+In-Reply-To: <2994970.DCfUQgtmcD@wuerfel>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch>
+ <1417565531-4507-12-git-send-email-stefan@agner.ch>
+ <2994970.DCfUQgtmcD@wuerfel>
+Message-ID: <b090cb361e81d2f1be5d21d1a07e9340@agner.ch>
+User-Agent: Roundcube Webmail/1.0.3
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Dec 16 23:18:23 2014
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5490afaf12811913614052
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-g
-(please CC: for followups)
+On 2014-12-03 12:03, Arnd Bergmann wrote:
+> On Wednesday 03 December 2014 01:12:10 Stefan Agner wrote:
+>> diff --git a/arch/arm/boot/dts/vf610m4-colibri.dts b/arch/arm/boot/dts/vf610m4-colibri.dts
+>> new file mode 100644
+>> index 0000000..051ee0f
+>> --- /dev/null
+>> +++ b/arch/arm/boot/dts/vf610m4-colibri.dts
+>> @@ -0,0 +1,52 @@
+>> +/*
+>> + * Device tree for Colibri VF61 Cortex-M4 support
+>> + *
+>> + * Copyright 2014 Stefan Agner
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + */
+>> +
+>> +/dts-v1/;
+>> +#include "vf610m4.dtsi"
+>> +
+>> +/ {
+>> +       model = "VF610 Cortex-M4";
+>> +       compatible = "fsl,vf610m4";
+>> +
+>> +       chosen {
+>> +               bootargs = "console=ttyLP2,115200 ihash_entries=64 dhash_entries=64 earlyprintk clk_ignore_unused init=/linuxrc rw";
+>> +       };
+>> +
+> 
+> Starting with v3.19, you should be able to use the earlycon framework on
+> arm32, so it would be better to replace earlyprintk with earlycon here
+> and add a stdout-path property in chosen that points to the console
+> uart.
 
-I just spent two hours trying to untangle a *weird* bug that I have not
-seen before. It might be new to 3.18.x but I don't know for sure.
-Apologies in advance for the long prelude but I figured I need to
-describe the problem scenario as precisely as possible.
+Hi Arnd,
 
-All this is on freshly baked 3.18.1 with Gentoo userland; the exported
-filesystem is ext4.
+Just started looking in that a bit deeper and some question arose:
+Afaik, earlycon need to be supported by the uart driver. The fsl_lpuart,
+which is used for Vybrid's uart, does not support earlycon yet. However,
+earlyprink already works (see ./arch/arm/include/debug/vf.S). I
+understand that earlycon has the advantage of being able to be used on
+multiplatform. But earlyprintk is working really early (e.g. before
+locating the FDT), and it proved helpful for me when I started working
+on that Cortex-M4 stuff. Should earlycon replace earlyprintk completely?
 
-On my NFS server I work with a git repo:
+Maybe, on Vybrid, since it would be a good platform for automated !MMU
+testing, it would be nice to have earlycon which can be enabled in any
+case and would provide output even something blows up quite early... But
+I guess I would add earlycon support as part of a new patchset and just
+drop earlyprintk here for now.
 
-holger>git clone ../work/kernel-patches.git
-Cloning into 'kernel-patches'...
-done.
-holger>cd kernel-patches 
-holger>git status
-On branch master
-Your branch is up-to-date with 'origin/master'.
-nothing to commit, working directory clean
-holger>ll
-total 92K
-drwxr-xr-x 2 holger users  72K Dec 16 22:41 3.14/
-drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
--rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
-holger>
+> 64 hash table entries sounds extremely small, doesn't that impact
+> performance? If you have 50MB of actual RAM available, I don't think
+> you need that.
 
-Looking fine!
+Agreed. I copied that from EFM32 which is under much more memory
+pressure...
 
-On my NFS client this directory is automounted via NFS:
-
-holger>mount | grep home
-tux:/home/holger on /mnt/tux/holger type nfs (rw,noatime,tcp,sloppy,vers=4,addr=192.168.100.222,clientaddr=192.168.100.128)
-
-This has worked for ages and never caused any problems.
-
-Let's see how my git repo is doing:
- 
-holger>cd /mnt/tux/holger/Projects/kernel-patches 
-holger>ll
-total 92K
-drwxr-xr-x 2 holger users  72K Dec 16 22:41 3.14/
-drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
--rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
-holger>git status
-On branch master
-Your branch is up-to-date with 'origin/master'.
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-
-	3.14/btrfs-20
-
-nothing added to commit but untracked files present (use "git add" to track)
-
-..wait, what? There is no such file "btrfs-20" !
-
-holger>ll 3.14 | head
-ls: cannot access 3.14/btrfs-20: No such file or directory
-total 4.5M
--rw-r--r-- 1 holger users 3.3K Dec 16 22:41 bfq-v7r6-001-block-cgroups-kconfig-build-bits-for-BFQ-v7r6-3.14.patch
--rw-r--r-- 1 holger users 219K Dec 16 22:41 bfq-v7r6-002-block-introduce-the-BFQ-v7r6-I-O-sched-for-3.14.patch
--rw-r--r-- 1 holger users  41K Dec 16 22:41 bfq-v7r6-003-block-bfq-add-Early-Queue-Merge-EQM-to-BFQ-v7r6-for-3.14.0.patch
--rw-r--r-- 1 holger users 237K Dec 16 22:41 bfs-454-001-sched-bfs.patch
--rw-r--r-- 1 holger users 5.2K Dec 16 22:41 bfs-454-002-cpu-topology.patch
--rw-r--r-- 1 holger users  13K Dec 16 22:41 bfs-454-003-smtnice-v6.patch
--????????? ? ?      ?        ?            ? btrfs-20
--rw-r--r-- 1 holger users 7.8K Dec 16 22:41 btrfs-20140114-don't-mix-the-ordered-extents-of-all-files-together-during-logging-the-inodes.patch
--rw-r--r-- 1 holger users 1.2K Dec 16 22:41 btrfs-20140130-add-missing-error-check-in-incremental-send.patch
-holger>
-
-There is a "rogue" file messing up the directory?!
-
-This used to work until I added a specific file, so..
-
-holger>ll 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch 
--rw-r--r-- 1 holger users 2.3K Dec 16 22:41 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-
-holger>stat 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-  File: ‘3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch’
-  Size: 2306      	Blocks: 8          IO Block: 1048576 regular file
-Device: 18h/24d	Inode: 22544856    Links: 1
-Access: (0644/-rw-r--r--)  Uid: ( 1000/  holger)   Gid: (  100/   users)
-Access: 2014-12-16 22:41:36.515665610 +0100
-Modify: 2014-12-16 22:41:36.515665610 +0100
-Change: 2014-12-16 22:41:36.515665610 +0100
- Birth: -
-
-Looks fine..maybe try moving it to the parent?
-
-holger>mv 3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch .
-holger>ll
-total 96K
-drwxr-xr-x 2 holger users  72K Dec 16 22:44 3.14/
-drwxr-xr-x 2 holger users  16K Dec 16 22:41 3.18/
--rw-r--r-- 1 holger users 2.4K Dec 16 22:41 README.md
--rw-r--r-- 1 holger users 2.3K Dec 16 22:41 btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-
-holger>git status
-On branch master
-Your branch is up-to-date with 'origin/master'.
-Changes not staged for commit:
-  (use "git add/rm <file>..." to update what will be committed)
-  (use "git checkout -- <file>..." to discard changes in working directory)
-
-	deleted:    3.14/btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-
-	btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-
-no changes added to commit (use "git add" and/or "git commit -a")
-
-holger>ll 3.14 | head                                                                  
-total 4.5M
--rw-r--r-- 1 holger users 3.3K Dec 16 22:41 bfq-v7r6-001-block-cgroups-kconfig-build-bits-for-BFQ-v7r6-3.14.patch
--rw-r--r-- 1 holger users 219K Dec 16 22:41 bfq-v7r6-002-block-introduce-the-BFQ-v7r6-I-O-sched-for-3.14.patch
--rw-r--r-- 1 holger users  41K Dec 16 22:41 bfq-v7r6-003-block-bfq-add-Early-Queue-Merge-EQM-to-BFQ-v7r6-for-3.14.0.patch
--rw-r--r-- 1 holger users 237K Dec 16 22:41 bfs-454-001-sched-bfs.patch
--rw-r--r-- 1 holger users 5.2K Dec 16 22:41 bfs-454-002-cpu-topology.patch
--rw-r--r-- 1 holger users  13K Dec 16 22:41 bfs-454-003-smtnice-v6.patch
--rw-r--r-- 1 holger users 7.8K Dec 16 22:41 btrfs-20140114-don't-mix-the-ordered-extents-of-all-files-together-during-logging-the-inodes.patch
--rw-r--r-- 1 holger users 1.2K Dec 16 22:41 btrfs-20140130-add-missing-error-check-in-incremental-send.patch
--rw-r--r-- 1 holger users 5.2K Dec 16 22:41 btrfs-20140130-fix-32-64-bit-problem-with-BTRFS_SET_RECEIVED_SUBVOL-ioctl.patch
-
-I can move it back into 3.14/ and the directory is messed up again.
-All this is reproducible, in different export directories.
-
-Any ideas what this might be? A direntry hash collision maybe?
-There is a large number of files starting with btrfs-2014xxyy-.. but with
-the typical kernel patch names (some quite long), so that would be pretty
-bad. Also everything works locally on ext4 without problems, so I suspect
-it's an isolated NFS problem.
-
-Things that did not work - same results every time:
-- dropping caches on client & server
-- restarting NFS on client & server
-
-Any suggestions welcome; I'll gladly test patches.
-
-thanks
-Holger
+--
+Stefan
 
