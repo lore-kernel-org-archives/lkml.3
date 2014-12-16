@@ -1,174 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaLPGOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 01:14:38 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:36358 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaLPGOh (ORCPT
+	id S1751092AbaLPGSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:18:17 -0500
+Received: from regular1.263xmail.com ([211.150.99.135]:55803 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaLPGSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 01:14:37 -0500
-Message-ID: <548FCDC8.1010900@gmail.com>
-Date: Tue, 16 Dec 2014 14:14:32 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 16 Dec 2014 01:18:15 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-RL-SENDER: ykk@rock-chips.com
+X-FST-TO: jsarha@ti.com
+X-SENDER-IP: 104.167.231.21
+X-LOGIN-NAME: ykk@rock-chips.com
+X-UNIQUE-TAG: <c34af0b92bcf5e4e4092694cdea10ddd>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+Message-ID: <548FCE8F.7090106@rock-chips.com>
+Date: Tue, 16 Dec 2014 14:17:51 +0800
+From: "Kuankuan.Yang" <ykk@rock-chips.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Charles Chiou <ch1102chiou@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>, JBottomley@parallels.com,
-        Oliver Neukum <oneukum@suse.de>
-CC: ed.lin@promise.com, grace.chang@tw.promise.com, linus.chen@tw.promise.com,
-        victor.p@promise.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4 v4] scsi:stex.c Add S3/S4 support
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@kernel.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
+        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
+        =?UTF-8?B?U3Tvv73vv71waGFuZSBNYXJjaGVzaW4=?= <marcheu@chromium.org>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Brian Austin <brian.austin@cirrus.com>,
+        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
+        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
+        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
+        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Jyri Sarha <jsarha@ti.com>
+Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
+References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <1418612114-19692-1-git-send-email-ykk@rock-chips.com> <20141215104029.GE11285@n2100.arm.linux.org.uk> <20141215120205.GZ11764@sirena.org.uk> <548EDDC2.9050104@rock-chips.com> <20141215161827.GE11764@sirena.org.uk>
+In-Reply-To: <20141215161827.GE11764@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
- From f9d84df080c16097218092630db9b5df31d487b5 Mon Sep 17 00:00:00 2001
-From: Charles Chiou <charles.chiou@tw.promise.com>
-Date: Fri, 7 Nov 2014 10:15:18 +0800
-Subject: [PATCH 4/4] scsi:stex.c Add S3/S4 support
+在 2014年12月16日 00:18, Mark Brown 写道:
+> On Mon, Dec 15, 2014 at 09:10:26PM +0800, Kuankuan.Yang wrote:
+>> Hi Mark & Russell:
+> Please don't top post, that way people have some context for what you're
+> saying - look at how people normally format their mails on thelist.
+>
+>> In that way, dt will only need compatible for creating sound device. is it
+>> ok  ?
+>> sound {
+>>      compatible = "rockchip,rk3288-hdmi-audio";
+>>      status = "okay";
+>> }
+>> could you give me some advises.
+> That'd be good, though the other question is if this can be made to use
+> simple-card so we can avoid having a custom driver for this.
+Hi Russell  & Mark:
 
-Add S3/S4 support, add .suspend and .resume function in pci_driver.
+hdmi-audio driver share irq with dw_hdmi driver,  for continuing 
+AHBAUDDMA or for detecting hdmi insert.
+So maybe it's hard to switch to simple-card way,  Russell what's your 
+opinion ?
 
-Pegasus need 30~40 seconds to boot up. We don't want to OS wait
-in .resume function. Create a thread to handle device boot up.
+Best Regards.
 
-Signed-off-by: charles.chiou@tw.promise.com
----
-  drivers/scsi/stex.c | 65 
-++++++++++++++++++++++++++++++++++++++++++++++++++++-
-  1 file changed, 64 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/stex.c b/drivers/scsi/stex.c
-index a536cfb..264dcd8 100644
---- a/drivers/scsi/stex.c
-+++ b/drivers/scsi/stex.c
-@@ -301,6 +301,11 @@ struct st_ccb {
-  	u8 reserved[2];
-  };
-
-+struct hba_handshake_workstruct {
-+	struct st_hba *hba;
-+	struct work_struct handshake_work;
-+};
-+
-  struct st_hba {
-  	void __iomem *mmio_base;	/* iomapped PCI memory space */
-  	void *dma_mem;
-@@ -328,6 +333,7 @@ struct st_hba {
-  	char work_q_name[20];
-  	struct workqueue_struct *work_q;
-  	struct work_struct reset_work;
-+	struct hba_handshake_workstruct *resumework;
-  	wait_queue_head_t reset_waitq;
-  	unsigned int mu_status;
-  	unsigned int cardtype;
-@@ -369,6 +375,8 @@ static const char console_inq_page[] =
-  	0x0C,0x20,0x20,0x20,0x20,0x20,0x20,0x20
-  };
-
-+
-+
-  MODULE_AUTHOR("Ed Lin");
-  MODULE_DESCRIPTION("Promise Technology SuperTrak EX Controllers");
-  MODULE_LICENSE("GPL");
-@@ -630,7 +638,7 @@ stex_queuecommand_lck(struct scsi_cmnd *cmd, void 
-(*done)(struct scsi_cmnd *))
-  		done(cmd);
-  		return 0;
-  	}
--	if (unlikely(hba->mu_status == MU_STATE_RESETTING))
-+	if (unlikely(hba->mu_status != MU_STATE_STARTED))
-  		return SCSI_MLQUEUE_HOST_BUSY;
-
-  	switch (cmd->cmnd[0]) {
-@@ -1397,6 +1405,19 @@ static void stex_reset_work(struct work_struct *work)
-  	stex_do_reset(hba);
-  }
-
-+
-+static void resume_handshake(struct work_struct *work)
-+{
-+	struct st_hba *hba;
-+	struct hba_handshake_workstruct *hswork;
-+
-+	hswork = container_of(work, struct hba_handshake_workstruct,
-+				handshake_work);
-+	hba = hswork->hba;
-+	stex_handshake(hba);
-+}
-+
-+
-  static int stex_biosparam(struct scsi_device *sdev,
-  	struct block_device *bdev, sector_t capacity, int geom[])
-  {
-@@ -1620,6 +1641,12 @@ static int stex_probe(struct pci_dev *pdev, const 
-struct pci_device_id *id)
-  		goto out_iounmap;
-  	}
-
-+	hba->resumework = kzalloc(sizeof(struct hba_handshake_workstruct),
-+						GFP_KERNEL);
-+	hba->resumework->hba = hba;
-+	INIT_WORK(&hba->resumework->handshake_work, resume_handshake);
-+
-+
-  	hba->cardtype = (unsigned int) id->driver_data;
-  	ci = &stex_card_info[hba->cardtype];
-  	switch (id->subdevice) {
-@@ -1875,6 +1902,40 @@ static void stex_shutdown(struct pci_dev *pdev)
-  	}
-  }
-
-+static int stex_choice_sleep_MIC(pm_message_t state)
-+{
-+	switch (state.event) {
-+	case PM_EVENT_SUSPEND:
-+		return ST_S3;
-+	case PM_EVENT_FREEZE:
-+	case PM_EVENT_HIBERNATE:
-+		return ST_S4;
-+	default:
-+		return ST_S4;
-+	}
-+}
-+
-+static int stex_suspend(struct pci_dev *pdev, pm_message_t state)
-+{
-+	struct st_hba *hba = pci_get_drvdata(pdev);
-+
-+	if (hba->cardtype == st_yel && hba->supports_pm == 1)
-+		stex_hba_stop(hba, stex_choice_sleep_MIC(state));
-+	else
-+		stex_hba_stop(hba, ST_IGNORED);
-+	return 0;
-+}
-+
-+
-+static int stex_resume(struct pci_dev *pdev)
-+{
-+	struct st_hba *hba = pci_get_drvdata(pdev);
-+	int sts;
-+
-+	hba->mu_status = MU_STATE_STARTING;
-+	sts = schedule_work(&hba->resumework->handshake_work);
-+	return 0;
-+}
-  MODULE_DEVICE_TABLE(pci, stex_pci_tbl);
-
-  static struct pci_driver stex_pci_driver = {
-@@ -1883,6 +1944,8 @@ static struct pci_driver stex_pci_driver = {
-  	.probe		= stex_probe,
-  	.remove		= stex_remove,
-  	.shutdown	= stex_shutdown,
-+	.suspend	= stex_suspend,
-+	.resume		= stex_resume,
-  };
-
-  static struct notifier_block stex_reboot_notifier = {
--- 
-1.9.1
 
