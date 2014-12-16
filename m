@@ -1,120 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaLPVRD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:17:03 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:63212 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbaLPVRA (ORCPT
+	id S1752052AbaLPVRQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:17:16 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:37025 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbaLPVRO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:17:00 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL 1/3]
-Date: Tue, 16 Dec 2014 22:16:30 +0100
-Message-ID: <1472557.DTsj0nlvTo@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5499732.TPqbyGxy2W@wuerfel>
-References: <5499732.TPqbyGxy2W@wuerfel>
+	Tue, 16 Dec 2014 16:17:14 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:GDJYw6o6yyn4Bm6Tn5p3g03NcHxFcz7dUP9BB3y5BkkcWVHJRA/
- AZfSFbS3SP6txeRAYKVPOKrQmxuY9jb2Appd0CskwZCt9UdhBC6AKbOmj/SPMzA4p7smmfD
- B/phT68jyQWRjsG3QOmLXj1V6Ybt/vb3BKXcTOf5y80Iifq3S7CoRBYHpyYKNGgPkW/EhPr
- VXUAU7DK0HTSsFHnBW6Sg==
-X-UI-Out-Filterresults: notjunk:1;
+In-Reply-To: <548F57D8.4080809@osg.samsung.com>
+References: <548750AD.6090201@osg.samsung.com>
+	<CA+55aFx2DSXuikfd-RyEN3V+OaLSYhWub92=NJsNXGUhVnKKFQ@mail.gmail.com>
+	<548EEA88.2060206@osg.samsung.com>
+	<548F57D8.4080809@osg.samsung.com>
+Date: Tue, 16 Dec 2014 13:17:13 -0800
+X-Google-Sender-Auth: gvEc8nphW89GOYkyVtSjdg8isKI
+Message-ID: <CA+55aFyhci5QwftDPTinKx4MXpKz0Se+9PyTaqSaKNM+3g1tPw@mail.gmail.com>
+Subject: Re: [GIT PULL RESEND] kselftest-3.19-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Shuah Khan <shuah.kh@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8918465163171322c77a19d5258a95f56d89d2e4:
+On Mon, Dec 15, 2014 at 1:51 PM, Shuah Khan <shuahkh@osg.samsung.com> wrote:
+>
+> Please pull the following Kselftest updates for 3.19-rc1. Hope
+> I have this right this time.
 
-  memory: Add NVIDIA Tegra memory controller support (2014-12-04 16:11:47 +0100)
+Looks good, thanks,
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/dt2-for-linus
-
-for you to fetch changes up to 1d5f497d87c7d960c27cdc40e7563b0ae88387d3:
-
-  Merge tag 'tegra-for-3.19-dt' of git://git.kernel.org/pub/scm/linux/kernel/git/tegra/linux into next/dt2 (2014-12-04 17:21:49 +0100)
-
-----------------------------------------------------------------
-ARM: SoC DT updates for 3.19, part 2
-
-This is a follow-up to the early ARM SoC DT changes, with additional
-content that has external dependencies:
-
-* The Tegra IOMMU DT support depends on changes from the iommu
-  tree, plus the contents of the arm-soc drivers branch
-* The MVEBU PHY support depends on changes from the phy tree
-* The AT91 DT support depends on changes from the RTC and
-  DMA-slave trees
-
-All of these changes just enable additional devices for
-existing platforms.
-
-----------------------------------------------------------------
-Alexandre Belloni (1):
-      ARM: at91/dt: at91sam9rl: add rtc
-
-Arnd Bergmann (6):
-      Merge branch 'topic/at_xdmac' of git://git.infradead.org/users/vkoul/slave-dma into next/dt
-      Merge tag 'at91-dt2' of git://git.kernel.org/.../nferre/linux-at91 into next/dt2
-      Merge tag 'v3.18-rc4' into next/dt2
-      Merge tag 'depends/phy-dt-header' into next/dt2
-      Merge tag 'mvebu-dt-usb-phy-3.19-3' of git://git.infradead.org/linux-mvebu into next/dt2
-      Merge tag 'tegra-for-3.19-dt' of git://git.kernel.org/.../tegra/linux into next/dt2
-
-Boris Brezillon (5):
-      ARM: at91/dt: add RTT nodes to at91 dtsis
-      ARM: at91/dt: add GPBR nodes
-      ARM: at91/dt: enable the RTT block on the sam9g20ek board
-      ARM: at91/dt: enable the RTT block on the at91sam9m10g45ek board
-      ARM: at91/dt: at91sam9g45: add ISI node
-
-Gregory CLEMENT (2):
-      ARM: mvebu: add Device Tree description of USB cluster controller on Armada 375
-      ARM: mvebu: add PHY support to the dts for the USB controllers on Armada 375
-
-Jason Cooper (1):
-      Merge tag 'tags/phy-dt-header' into mvebu/dt-usb_phy
-
-Ludovic Desroches (2):
-      ARM: at91/dt: sama5d4: use macro instead of numeric value
-      ARM: at91/dt: sama5d4: add DMA support
-
-Nicolas Ferre (3):
-      Merge branch 'at91-3.19-dt' into at91-3.19-dt2
-      Merge branch 'topic/at_xdmac' of git://git.infradead.org/users/vkoul/slave-dma into at91-3.19-dt2
-      ARM: at91: fix GPLv2 wording
-
-Sean Paul (1):
-      ARM: tegra: Add APB_MISC_GP as a MIPI pad control bank
-
-Thierry Reding (7):
-      Merge branch 'for-3.19/iommu' into for-3.19/dt
-      ARM: tegra: Add memory controller support for Tegra30
-      ARM: tegra: Add memory controller support for Tegra114
-      ARM: tegra: Add memory controller support for Tegra124
-      ARM: tegra: Enable IOMMU for display controllers on Tegra30
-      ARM: tegra: Enable IOMMU for display controllers on Tegra114
-      ARM: tegra: Enable IOMMU for display controllers on Tegra124
-
- arch/arm/boot/dts/armada-375.dtsi           | 11 +++++
- arch/arm/boot/dts/at91-sama5d4ek.dts        |  4 +-
- arch/arm/boot/dts/at91sam9260.dtsi          | 14 ++++++
- arch/arm/boot/dts/at91sam9261.dtsi          | 14 ++++++
- arch/arm/boot/dts/at91sam9263.dtsi          | 21 ++++++++
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi | 14 ++++++
- arch/arm/boot/dts/at91sam9g45.dtsi          | 46 ++++++++++++++++++
- arch/arm/boot/dts/at91sam9m10g45ek.dts      |  9 ++++
- arch/arm/boot/dts/at91sam9rl.dtsi           | 21 ++++++++
- arch/arm/boot/dts/sama5d4.dtsi              | 75 +++++++++++++++++++++++++++--
- arch/arm/boot/dts/tegra114.dtsi             | 23 +++++----
- arch/arm/boot/dts/tegra124.dtsi             | 19 +++++++-
- arch/arm/boot/dts/tegra30.dtsi              | 25 +++++-----
- 13 files changed, 267 insertions(+), 29 deletions(-)
-
+                  Linus
