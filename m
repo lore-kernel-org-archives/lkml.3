@@ -1,110 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751450AbaLPFoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:44:10 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:64334 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877AbaLPFoI (ORCPT
+	id S1751068AbaLPFra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:47:30 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:43706 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778AbaLPFr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:44:08 -0500
-Date: Tue, 16 Dec 2014 14:43:58 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Ganesh Mahendran <opensource.ganesh@gmail.com>
-Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm/zsmalloc: adjust order of functions
-Message-ID: <20141216054357.GA17615@blaptop>
-References: <1418478203-17687-1-git-send-email-opensource.ganesh@gmail.com>
- <20141216003941.GA17665@blaptop>
- <CADAEsF99yOT0ZHD3yDxT_tOM-48=3gut+-GB6SR5BBZxZ_XY6w@mail.gmail.com>
+	Tue, 16 Dec 2014 00:47:29 -0500
+Message-ID: <548FC75E.5010602@huawei.com>
+Date: Tue, 16 Dec 2014 13:47:10 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADAEsF99yOT0ZHD3yDxT_tOM-48=3gut+-GB6SR5BBZxZ_XY6w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Namhyung Kim <namhyung@kernel.org>
+CC: <a.p.zijlstra@chello.nl>, <paulus@samba.org>, <mingo@redhat.com>,
+        <acme@kernel.org>, <ak@linux.intel.com>, <lizefan@huawei.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf: fix building warning on ARM 32.
+References: <1418695810-74455-1-git-send-email-wangnan0@huawei.com> <20141216044909.GA20215@sejong>
+In-Reply-To: <20141216044909.GA20215@sejong>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.90]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A010201.548FC76E.0167,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 1e3ed97c67674dd95e36f64920e62e18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 12:08:02PM +0800, Ganesh Mahendran wrote:
-> Hello Minchan,
+On 2014/12/16 12:49, Namhyung Kim wrote:
+> Hi Wang,
 > 
+> On Tue, Dec 16, 2014 at 10:10:10AM +0800, Wang Nan wrote:
+>> Commit 85c116a6c introduces asprintf() call and matches '%ld' to a u64
+>> argument, which is incorrect on ARM.
+>>
+>>    CC       /home/wn/util/srcline.o
+>>  util/srcline.c: In function 'get_srcline':
+>>  util/srcline.c:297:6: error: format '%ld' expects argument of type 'long int', but argument 4 has type 'u64' [-Werror=format]
+>>  cc1: all warnings being treated as errors
+>>  make[1]: *** [/home/wn/util/srcline.o] Error 1
 > 
-> 2014-12-16 8:40 GMT+08:00 Minchan Kim <minchan@kernel.org>:
-> > Hello Ganesh,
-> >
-> > On Sat, Dec 13, 2014 at 09:43:23PM +0800, Ganesh Mahendran wrote:
-> >> Currently functions in zsmalloc.c does not arranged in a readable
-> >> and reasonable sequence. With the more and more functions added,
-> >> we may meet below inconvenience. For example:
-> >>
-> >> Current functions:
-> >>     void zs_init()
-> >>     {
-> >>     }
-> >>
-> >>     static void get_maxobj_per_zspage()
-> >>     {
-> >>     }
-> >>
-> >> Then I want to add a func_1() which is called from zs_init(), and this new added
-> >> function func_1() will used get_maxobj_per_zspage() which is defined below zs_init().
-> >>
-> >>     void func_1()
-> >>     {
-> >>         get_maxobj_per_zspage()
-> >>     }
-> >>
-> >>     void zs_init()
-> >>     {
-> >>         func_1()
-> >>     }
-> >>
-> >>     static void get_maxobj_per_zspage()
-> >>     {
-> >>     }
-> >>
-> >> This will cause compiling issue. So we must add a declaration:
-> >>     static void get_maxobj_per_zspage();
-> >> before func_1() if we do not put get_maxobj_per_zspage() before func_1().
-> >
-> > Yes, I suffered from that when I made compaction but was not sure
-> > it's it was obviously wrong.
-> > Stupid question:
-> > What's the problem if we should put function declaration on top of
-> > source code?
+> Hmm.. shouldn't it be %PRIu64 instead?
 > 
-> There is no problem if we do this. But if we obey to some coding
-> style, then it will
-> be convenient for the later developers.
-> Normally I put the global or important interface function at the
-> bottom of the file, and
-> the static or helper functions on the top. Because usually global
-> functions is the caller, and
-> static functions is the callee.
-> 
-> >
-> >>
-> >> In addition, puting module_[init|exit] functions at the bottom of the file
-> >> conforms to our habit.
-> >
-> > Normally, we do but without any strong reason, I don't want to rub git-blame
-> > by clean up patches.
-> 
-> Sorry, I did not consider this when I made this patch.:)
-> 
-> >
-> > In summary, I like this patch but don't like to churn git-blame by clean-up
-> > patchset without strong reason so I need something I am sure.
-> 
-> Now, zsmalloc module is active in development. More and more changes
-> will be included.
-> If we do not clean up, then this file may looks messy.
-> 
-> Thanks a lot.
 
-Okay, you move my heart
+It is a difference between two addresses, and I believe the value should not be very large.
 
-Acked-by: Minchan Kim <minchan@kernel.org>
+Anyway, I'll follow your advise if you prefer to use %PRIu64.
+
+In addition, addr is 'unsigned long addr', sym->start is 'u64', the type if
+this expression is more or less obscure to readers. By investigating all caller
+of get_srcline(), I find that the type of 'addr' should be 'u64', not 'unsigned long'.
+So I'll post another patch which fixes param list of get_srcline() also.
+
+Thanks.
+
+> Thanks,
+> Namhyung
+> 
+> 
+>>
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  tools/perf/util/srcline.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/tools/perf/util/srcline.c b/tools/perf/util/srcline.c
+>> index e73b6a5..42cb642 100644
+>> --- a/tools/perf/util/srcline.c
+>> +++ b/tools/perf/util/srcline.c
+>> @@ -294,7 +294,7 @@ out:
+>>  	}
+>>  	if (sym) {
+>>  		if (asprintf(&srcline, "%s+%ld", show_sym ? sym->name : "",
+>> -					addr - sym->start) < 0)
+>> +					(long int)(addr - sym->start)) < 0)
+>>  			return SRCLINE_UNKNOWN;
+>>  	} else if (asprintf(&srcline, "%s[%lx]", dso->short_name, addr) < 0)
+>>  		return SRCLINE_UNKNOWN;
+>> -- 
+>> 1.8.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+
 
