@@ -1,111 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214AbaLPSGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 13:06:07 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47971 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996AbaLPSGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 13:06:05 -0500
-Date: Tue, 16 Dec 2014 18:06:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs.git pile 2
-Message-ID: <20141216180603.GF22149@ZenIV.linux.org.uk>
-References: <20141215235124.GX22149@ZenIV.linux.org.uk>
- <20141216133330.GB22149@ZenIV.linux.org.uk>
+	id S1751310AbaLPSIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 13:08:38 -0500
+Received: from mga01.intel.com ([192.55.52.88]:47326 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974AbaLPSIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 13:08:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="429736263"
+Date: Wed, 17 Dec 2014 01:33:16 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Jon Medhurst <tixy@linaro.org>
+Cc: kbuild-all@01.org, linux-kernel@vger.kernel.org
+Subject: [tixy:tracking-armlt-gator 1/6]
+ drivers/gator/gator_events_meminfo.c:371:26: sparse: incorrect type in
+ initializer (different modifiers)
+Message-ID: <201412170151.C4iMWfhE%fengguang.wu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141216133330.GB22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 01:33:30PM +0000, Al Viro wrote:
-> On Mon, Dec 15, 2014 at 11:51:25PM +0000, Al Viro wrote:
-> > Next pile (and there'll be one or two more).  The large piece in this one is
-> > getting rid of /proc/*/ns/* weirdness; among other things, it allows to
-> > (finally) make nameidata completely opaque outside of fs/namei.c, making for
-> > easier further cleanups in there.
-> > 
-> > I have _not_ included removal of unshare_fs_struct() into that pile; I think
-> > it'll turn out to be OK, but it's clearly the next cycle fodder.
-> 
-> ... but I have included the "obviously safe" patch separating PID 1
-> ->fs.  Without letting it sit in -next long enough.  And it turns out
-> to be not safe at all - it might be salvagable, but not in this form.
-> 
-> Mea maxima culpa - I should've known better than that.  Self-LART applied;
-> please, drop this pull request, I'll send a saner one (for stuff that *did*
-> sit in -next long enough) in a bit.
-> 
-> Again, my apologies ;-/
+tree:   https://git.linaro.org/people/tixy/kernel tracking-armlt-gator
+head:   9b552ac355654e1fdd504f4b84b57c971084d83e
+commit: a7bdf015d9043286f35de13eb11f54f64f2af143 [1/6] gator: Version 5.20
+reproduce:
+  # apt-get install sparse
+  git checkout a7bdf015d9043286f35de13eb11f54f64f2af143
+  make ARCH=x86_64 allmodconfig
+  make C=1 CF=-D__CHECK_ENDIAN__
 
-... and this time around - only the stuff that has sat in -next for a while,
-with no "obviously safe" additions thrown in.  Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-Shortlog:
-Al Viro (17):
-      common object embedded into various struct ....ns
-      make mntns ->get()/->put()/->install()/->inum() work with &mnt_ns->ns
-      netns: switch ->get()/->put()/->install()/->inum() to working with &net->ns
-      switch the rest of proc_ns_operations to working with &...->ns
-      make proc_ns_operations work with struct ns_common * instead of void *
-      new helpers: ns_alloc_inum/ns_free_inum
-      copy address of proc_ns_ops into ns_common
-      bury struct proc_ns in fs/proc
-      take the targets of /proc/*/ns/* symlinks to separate fs
-      kill proc_ns completely
-      make nameidata completely opaque outside of fs/namei.c
-      make default ->i_fop have ->open() fail with ENXIO
-      path_init(): store the "base" pointer to file in nameidata itself
-      fs/namei.c: new helper (path_cleanup())
-      path_init(): don't bother with LOOKUP_PARENT in argument
-      fs/namei.c: fold link_path_walk() call into path_init()
-      coda_venus_readdir(): use file_inode()
+sparse warnings: (new ones prefixed by >>)
 
-Diffstat:
- arch/ia64/kernel/perfmon.c     |  10 ---
- fs/Makefile                    |   2 +-
- fs/coda/dir.c                  |   4 +-
- fs/inode.c                     |  11 ++-
- fs/internal.h                  |   5 ++
- fs/mount.h                     |   3 +-
- fs/namei.c                     |  98 +++++++++++++------------
- fs/namespace.c                 |  51 ++++++-------
- fs/nsfs.c                      | 161 +++++++++++++++++++++++++++++++++++++++++
- fs/proc/inode.c                |  10 +--
- fs/proc/internal.h             |   2 +-
- fs/proc/namespaces.c           | 153 ++++-----------------------------------
- include/linux/fs.h             |   1 -
- include/linux/ipc_namespace.h  |   3 +-
- include/linux/namei.h          |  25 +------
- include/linux/ns_common.h      |  12 +++
- include/linux/pid_namespace.h  |   3 +-
- include/linux/proc_ns.h        |  43 ++++++-----
- include/linux/user_namespace.h |   3 +-
- include/linux/utsname.h        |   3 +-
- include/net/net_namespace.h    |   3 +-
- include/uapi/linux/magic.h     |   1 +
- init/main.c                    |   2 +
- init/version.c                 |   5 +-
- ipc/msgutil.c                  |   5 +-
- ipc/namespace.c                |  32 ++++----
- kernel/nsproxy.c               |  10 +--
- kernel/pid.c                   |   5 +-
- kernel/pid_namespace.c         |  29 ++++----
- kernel/user.c                  |   5 +-
- kernel/user_namespace.c        |  29 ++++----
- kernel/utsname.c               |  31 ++++----
- net/Makefile                   |   2 -
- net/core/net_namespace.c       |  39 +++++-----
- net/nonet.c                    |  26 -------
- net/socket.c                   |  19 -----
- 36 files changed, 416 insertions(+), 430 deletions(-)
- create mode 100644 fs/nsfs.c
- create mode 100644 include/linux/ns_common.h
- delete mode 100644 net/nonet.c
+>> drivers/gator/gator_events_meminfo.c:371:26: sparse: incorrect type in initializer (different modifiers)
+   drivers/gator/gator_events_meminfo.c:371:26:    expected long long *buf
+   drivers/gator/gator_events_meminfo.c:371:26:    got long long [noderef] *<noident>
+--
+>> drivers/gator/gator_events_net.c:48:1: sparse: symbol 'wq_get_stats' was not declared. Should it be static?
+>> drivers/gator/gator_events_net.c:98:27: sparse: Using plain integer as NULL pointer
+--
+>> drivers/gator/gator_events_perf_pmu.c:140:60: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:151:83: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:151:95: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:519:74: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:519:92: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:530:72: sparse: Using plain integer as NULL pointer
+>> drivers/gator/gator_events_perf_pmu.c:530:90: sparse: Using plain integer as NULL pointer
+
+Please review and possibly fold the followup patch.
+
+vim +371 drivers/gator/gator_events_meminfo.c
+
+   355	#endif
+   356	#endif
+   357	}
+   358	
+   359	#define get_mm_counter(mm, member) gator_get_mm_counter(mm, member)
+   360	
+   361	#endif
+   362	
+   363	static int gator_events_meminfo_read_proc(long long **buffer, struct task_struct *task)
+   364	{
+   365		struct mm_struct *mm;
+   366		u64 share = 0;
+   367		int i;
+   368		long long value;
+   369		int len = 0;
+   370		int cpu = get_physical_cpu();
+ > 371		long long *buf = per_cpu(proc_buffer, cpu);
+   372	
+   373		if (!proc_global_enabled)
+   374			return 0;
+   375	
+   376		/* Collect the memory stats of the process instead of the thread */
+   377		if (task->group_leader != NULL)
+   378			task = task->group_leader;
+   379	
+
+---
+0-DAY kernel test infrastructure                Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
