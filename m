@@ -1,123 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247AbaLPGgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 01:36:11 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54560 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929AbaLPGgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 01:36:09 -0500
-Date: Mon, 15 Dec 2014 22:35:49 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 16
-Message-ID: <20141216063549.GA1060@roeck-us.net>
-References: <20141216154622.7c2ded16@canb.auug.org.au>
+	id S1751485AbaLPGg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:36:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44074 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332AbaLPGg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 01:36:27 -0500
+Message-ID: <548FD2E8.5030307@suse.com>
+Date: Tue, 16 Dec 2014 07:36:24 +0100
+From: Juergen Gross <jgross@suse.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141216154622.7c2ded16@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010203.548FD2D8.046F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: jongman.heo@samsung.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to
+ use cache mode translation tables")
+References: <1700772815.47681418711378276.JavaMail.weblogic@epmlwas09d>
+In-Reply-To: <1700772815.47681418711378276.JavaMail.weblogic@epmlwas09d>
+Content-Type: text/plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 03:46:22PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On 12/16/2014 07:29 AM, Jongman Heo wrote:
+>>
+>> ------- Original Message -------
+>> Sender : Juergen Gross<jgross@suse.com>
+>> Date : 2014-12-16 14:14 (GMT+09:00)
+>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
+>>
+>> On 12/16/2014 05:40 AM, Jongman Heo wrote:
+>>>> ------- Original Message -------
+>>>> Sender : Juergen Gross
+>>>> Date : 2014-12-15 20:52 (GMT+09:00)
+>>>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
+>>>>
+>>>> On 12/15/2014 08:52 AM, Jongman Heo wrote:
+>>>>>> ------- Original Message -------
+>>>>>> Sender : Juergen Gross
+>>>>>> Date : 2014-12-15 14:04 (GMT+09:00)
+>>>>>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
+>>>>>>
+>>>>>> On 12/14/2014 06:07 AM, ÇãÁ¾¸¸ wrote:
+>>>>>>>
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> My Linux virtual machine on (Windows) VMWare workstation 10 can't boot with following commit.
+>>>>>>>
+>>>>>>> commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
+>>>>>>> Author: Juergen Gross
+>>>>>>> Date:   Mon Nov 3 14:02:03 2014 +0100
+>>>>>>>
+>>>>>>>         x86: Enable PAT to use cache mode translation tables
+>>>>>>>
+>>>>>>> Unfortunately I can't see any console log.
+>>>>>>
+>>>>>> Hmm, weird. Could you provide some more information?
+>>>>>>
+>>>>>> Kernel config, hardware used, /proc/cpuinfo of working kernel?
+>>>>>> Anything you see with earlyprintk enabled?
+>>>>>>
+>>>>>>
+>>>>>> Juergen
+>>>>>
+>>>>> (Sorry for resending this email, previous one bounced from mailing list due to HTML format)
+>>>>>
+>>>>> Hi,
+>>>>>
+>>>>> I'm using Fedora 21, with custom built kernel.
+>>>>> Host PC is windows 7 64-bit, and running VMWare workstation 10 for guest Fedora Linux.
+>>>>>
+>>>>> With earlyprintk, just following message is printed.
+>>>>>
+>>>>>      early console in setup code
+>>>>>
+>>>>> and nothing more...
+>>>>
+>>>> Can you try attached diagnostic patch, please? I suspect a problem
+>>>> regarding VMWares PAT emulation...
+>>>>
+>>>>
+>>>> Juergen
+>>>
+>>> Hi,
+>>>
+>>> With the commit reverted, the patch doesn't apply.
+>>
+>> Sure.
+>>
+>>> Without revert, kernel (patch applied) doesn't boot and I can't see any message.
+>>
+>> What are your kernel parameters? There must be some message with the
+>> diagnostic patch, as the first pr_info() is called before any other
+>> part of the critical patch is becoming active. Could it be you have
+>> instructed the kernel to be "quiet"? I'd recommend:
+>>
+>> earlyprintk=vga ignore_loglevel
+>>
+>> and no quiet. I don't know VMWare settings, so may be you can use
+>> earlyprintk=ttyS0 instead of vga.
+>>
+>>>
+>>> Let me show you my PAT values (the commit reverted)
+>>>
+>>> # dmesg | grep PAT
+>>> [    0.000000] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
+>>> [    0.314631] x86 PAT enabled: cpu 3, old 0x0, new 0x7010600070106
+>>> [    0.314703] x86 PAT enabled: cpu 1, old 0x0, new 0x7010600070106
+>>> [    0.314780] x86 PAT enabled: cpu 2, old 0x0, new 0x7010600070106
+>>> [    0.314852] x86 PAT enabled: cpu 4, old 0x0, new 0x7010600070106
+>>> [    0.314923] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
+>>> [    0.314997] x86 PAT enabled: cpu 6, old 0x0, new 0x7010600070106
+>>> [    0.315069] x86 PAT enabled: cpu 7, old 0x0, new 0x7010600070106
+>>> [    0.315142] x86 PAT enabled: cpu 5, old 0x0, new 0x7010600070106
+>>
+>> These are the expected values. But these values are the ones which are
+>> written, not the ones which have been read from the PAT MSR again.
+>>
+>> Without applying the critical patch you could add:
+>>
+>> rdmsrl(MSR_IA32_CR_PAT, pat);
+>> printk(KERN_INFO "PAT read: cpu %d, 0x%Lx\n", smp_processor_id(), pat);
+>>
+>> at the end of pat_init() to verify VMWare is handling reads of the PAT
+>> MSR properly.
+>>
+>> Juergen
+>>
 > 
-> Please do not add any code destined for v3.20 to your linux-next included
-> trees/branches until after v3.19-rc1 is released.
+> Hi,
 > 
-> Changes since 20141215:
+> With earlyprintk=vga, I can see the log.
+> But due to call trace, I can't see what the pat value is.
 > 
-> The infiniband tree gained a conflict against Linus' tree and a build
-> failure so I used the version from next-20141215.
+> Call chain is as follows.
 > 
-> The userns tree gained a conflict against the vfs tree.
+>    i386_start_kernel -> start_kernel -> setup_arch ->
+>    mtrr_bp_init -> get_mtrr_state -> pat_init ->
+>    pat_init_cache_mode_entry -> update_cache_mode_entry ->
+>    early_idt_handler -> dump_stack
 > 
-> The clk tree gained a build failure so I used the version from
-> next-20141215.
+> So, I blocked update_cache_mode_entry() call like below...
 > 
-> Non-merge commits (relative to Linus' tree): 3588
->  2582 files changed, 123494 insertions(+), 135748 deletions(-)
+> --- a/arch/x86/mm/pat.c
+> +++ b/arch/x86/mm/pat.c
+> @@ -182,11 +182,12 @@ void pat_init_cache_modes(void)
+>          u64 pat;
+>   
+>          rdmsrl(MSR_IA32_CR_PAT, pat);
+> +       pr_info("read pat %0llx\n", pat);
+>          pat_msg[32] = 0;
+>          for (i = 7; i >= 0; i--) {
+>                  cache = pat_get_cache_mode((pat >> (i * 8)) & 7,
+>                                             pat_msg + 4 * i);
+> -               update_cache_mode_entry(i, cache);
+> +               //update_cache_mode_entry(i, cache);
+>          }
+>          pr_info("PAT configuration [0-7]: %s\n", pat_msg);
+>   }
+> @@ -238,9 +239,13 @@ void pat_init(void)
+>                  rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
+>   
+>          wrmsrl(MSR_IA32_CR_PAT, pat);
+> +       pr_info("about to write pat %0llx\n", pat);
+>   
+>          if (boot_cpu)
+>                  pat_init_cache_modes();
+> +
+> +       rdmsrl(MSR_IA32_CR_PAT, pat);
+> +       printk(KERN_INFO "PAT read: cpu %d, 0x%Lx\n", smp_processor_id(), pat);
+>   }
+>   
 > 
+> Then boot is fine, and PAT values are as follows.
+> 
+> 
+> # dmesg|grep -i "pat "
+> [    0.000000] about to write pat 7010600070106
+> [    0.000000] read pat 0
+> [    0.000000] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.000000] PAT read: cpu 0, 0x0
+> [    0.320559] about to write pat 7010600070106
+> [    0.320876] read pat 0
+> [    0.321090] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.321260] PAT read: cpu 5, 0x0
+> [    0.321403] about to write pat 7010600070106
+> [    0.321818] read pat 0
+> [    0.322033] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.322205] PAT read: cpu 6, 0x0
+> [    0.322334] about to write pat 7010600070106
+> [    0.322417] read pat 0
+> [    0.322479] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.322573] PAT read: cpu 0, 0x0
+> [    0.322703] about to write pat 7010600070106
+> [    0.323012] read pat 0
+> [    0.323228] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.323400] PAT read: cpu 1, 0x0
+> [    0.323537] about to write pat 7010600070106
+> [    0.323833] read pat 0
+> [    0.324055] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.324224] PAT read: cpu 7, 0x0
+> [    0.324362] about to write pat 7010600070106
+> [    0.324662] read pat 0
+> [    0.324877] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.325048] PAT read: cpu 2, 0x0
+> [    0.325185] about to write pat 7010600070106
+> [    0.325483] read pat 0
+> [    0.325695] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.325863] PAT read: cpu 4, 0x0
+> [    0.325997] about to write pat 7010600070106
+> [    0.326288] read pat 0
+> [    0.326507] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
+> [    0.326677] PAT read: cpu 3, 0x0
 
-My metag buildbot test fails with this kernel.
+Okay, so VMWare doesn't seem to return the correct PAT MSR value.
 
-bisect result:
+I suggest you try "nopat" as kernel option. This should disable all the
+PAT handling and VMWare can't wreck the kernel this way.
 
-a82be12232dcccf6b914cec7458e96ee79fae0e3 is the first bad commit
-commit a82be12232dcccf6b914cec7458e96ee79fae0e3
-Author: Andy Lutomirski <luto@amacapital.net>
-Date:   Tue Dec 16 13:26:43 2014 +1100
+I'll write a patch which detects this VMWare bug by checking the PAT
+value after writing it.
 
-    all arches, signal: move restart_block to struct task_struct
+Thanks for reporting that case,
 
-bisect log:
 
-# bad: [a0eda581bf3fdc7be6bdf4cb18ce087675699336] Add linux-next specific files for 20141216
-# good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
-git bisect start 'HEAD' 'v3.18'
-# good: [27afc5dbda52ee3dbcd0bda7375c917c6936b470] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
-git bisect good 27afc5dbda52ee3dbcd0bda7375c917c6936b470
-# good: [a5e6d5b3bb7124309ce581e9e050e029ab037609] Merge remote-tracking branch 'l2-mtd/master'
-git bisect good a5e6d5b3bb7124309ce581e9e050e029ab037609
-# good: [93cc1d514a7e8bc4e00ce913ddccb34ee8a2a001] Merge remote-tracking branch 'ipmi/for-next'
-git bisect good 93cc1d514a7e8bc4e00ce913ddccb34ee8a2a001
-# good: [865cde938ee6ab758fd47d1a36150aee20371b85] staging: unisys: virtpci: Fix CamelCase in delete_vbus_device()
-git bisect good 865cde938ee6ab758fd47d1a36150aee20371b85
-# good: [594e400a2c3a64d7c3ba8ad7b0196c887a354100] staging: comedi: das6402: add basic (*do_cmdtest) for AI async commands
-git bisect good 594e400a2c3a64d7c3ba8ad7b0196c887a354100
-# good: [4e8bb35b814a1377dcaf48b98d4ab29176528cdc] Merge remote-tracking branch 'target-updates/for-next'
-git bisect good 4e8bb35b814a1377dcaf48b98d4ab29176528cdc
-# good: [e03f3bb62ca8a1124bc408046c50aed7629b24cc] next-20141215/clk
-git bisect good e03f3bb62ca8a1124bc408046c50aed7629b24cc
-# bad: [a82be12232dcccf6b914cec7458e96ee79fae0e3] all arches, signal: move restart_block to struct task_struct
-git bisect bad a82be12232dcccf6b914cec7458e96ee79fae0e3
-# good: [4425fdc4c01ab7699072a417741a008b0dca576b] ocfs2: do not fallback to buffer I/O write if appending
-git bisect good 4425fdc4c01ab7699072a417741a008b0dca576b
-# good: [98b090c1d15d1c94f01f071b283ce44be8644220] mm: define MADV_FREE for some arches
-git bisect good 98b090c1d15d1c94f01f071b283ce44be8644220
-# good: [ca402e9bfbbac21d3d7541c33adb60f7ebcc480e] arm: add pmd_mkclean for THP
-git bisect good ca402e9bfbbac21d3d7541c33adb60f7ebcc480e
-# good: [60eeb1279b50c205f045d2b7c76c906a2d2fb751] mm: Fix comment typo "CONFIG_TRANSPARNTE_HUGE"
-git bisect good 60eeb1279b50c205f045d2b7c76c906a2d2fb751
-# good: [1134212f12cb9e5b3c24b7be5cfa304486f2f96b] do_shared_fault(): check that mmap_sem is held
-git bisect good 1134212f12cb9e5b3c24b7be5cfa304486f2f96b
-# first bad commit: [a82be12232dcccf6b914cec7458e96ee79fae0e3] all arches, signal: move restart_block to struct task_struct
+Juergen
 
---
-
-Guenter
