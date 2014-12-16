@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaLPQfQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:35:16 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:48380 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaLPQfM (ORCPT
+	id S1751485AbaLPQgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:36:40 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48249 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaLPQgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:35:12 -0500
-Date: Tue, 16 Dec 2014 08:34:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Matthias Brugger <matthias.bgg@gmail.com>
-Cc: wim@iguana.be, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-watchdog@vger.kernel.org,
-        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
-        Yingjoe Chen <yingjoe.chen@gmail.com>,
-        Howard Chen <ibanezchen@gmail.com>, greta.zhang@mediatek.com,
-        huang eddie <eddie.huang@mediatek.com>
-Subject: Re: [PATCH v2 2/2] ARM: mediatek: dts: Add bindings for watchdog
-Message-ID: <20141216163406.GB26966@roeck-us.net>
-References: <1418395859-32209-1-git-send-email-matthias.bgg@gmail.com>
- <1418395859-32209-3-git-send-email-matthias.bgg@gmail.com>
- <548C5F1F.8070804@roeck-us.net>
- <CABuKBe+=PaJ2BuhoGGwn8V20207QU3zzWb4UGgXzwwF-AvBEPw@mail.gmail.com>
+	Tue, 16 Dec 2014 11:36:39 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <54905F87.2030302@jp.fujitsu.com>
+Date: Wed, 17 Dec 2014 01:36:23 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABuKBe+=PaJ2BuhoGGwn8V20207QU3zzWb4UGgXzwwF-AvBEPw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010202.54905F3F.01B9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: =?ISO-2022-JP?B?IklzaGltYXRzdSwgWWFzdWFraS8bJEJAUD4+GyhCIBskQkx3Pk8bKEI=?=
+	 =?ISO-2022-JP?B?Ig==?= <isimatu.yasuaki@jp.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 0/2] workqueue: fix a bug when numa mapping is changed v4
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 05:14:35PM +0100, Matthias Brugger wrote:
-> 2014-12-13 16:45 GMT+01:00 Guenter Roeck <linux@roeck-us.net>:
-> > On 12/12/2014 06:50 AM, Matthias Brugger wrote:
-> >>
-> >> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
-> >> ---
-> >>   Documentation/devicetree/bindings/watchdog/mtk-wdt.txt | 13
-> >> +++++++++++++
-> >>   1 file changed, 13 insertions(+)
-> >>   create mode 100644
-> >> Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-> >> b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-> >> new file mode 100644
-> >> index 0000000..af9eb5b
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-> >> @@ -0,0 +1,13 @@
-> >> +Mediatek SoCs Watchdog timer
-> >> +
-> >> +Required properties:
-> >> +
-> >> +- compatible : should be "mediatek,mt6589-wdt"
-> >
-> >
-> > "mediatek" is undefined as vendor prefix in the current upstream code.
-> > Is this vendor prefix coming in from another patch set ?
-> 
-> Strange, should be in vendor-prefix.txt [1].
-> Please double check.
-> 
-Sorry, I misunderstood the output from checkpatch.
+This is v4. Thank you for hints/commentes to previous versions.
 
-Guenter
+I think this versions only contains necessary things and not invasive.
+Tested several patterns of node hotplug and seems to work well.
+
+Changes since v3
+ - removed changes against get_unbound_pool()
+ - remvoed codes in cpu offline event.
+ - added node unregister callback.
+   clear wq_numa_possible_mask at node offline rather than cpu offline.
+ - updates per-cpu pool's pool-> node at node_(un)register.
+ - added more comments.
+ - almost all codes are under CONFIG_MEMORY_HOTPLUG
+
+ include/linux/memory_hotplug.h |    3 +
+ kernel/workqueue.c             |   81 ++++++++++++++++++++++++++++++++++++++++-
+ mm/memory_hotplug.c            |    6 ++-
+ 3 files changed, 88 insertions(+), 2 deletions(-)
+
+Original problem was a memory allocation failure because pool->node
+points to not-online node. This happens when cpu<->node mapping changes.
+
+Yasuaki Ishimatsu hit a allocation failure bug when the numa mapping
+between CPU and node is changed. This was the last scene:
+ SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
+  cache: kmalloc-192, object size: 192, buffer size: 192, default order: 1, min order: 0
+  node 0: slabs: 6172, objs: 259224, free: 245741
+  node 1: slabs: 3261, objs: 136962, free: 127656
+
+
