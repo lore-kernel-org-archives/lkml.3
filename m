@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381AbaLPSJn (ORCPT <rfc822;w@1wt.eu>);
+	id S1751473AbaLPSJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 13:09:51 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:42305 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaLPSJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Dec 2014 13:09:43 -0500
-Received: from tex.lwn.net ([70.33.254.29]:54016 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750976AbaLPSJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 13:09:42 -0500
-Date: Tue, 16 Dec 2014 13:09:39 -0500
-From: Jonathan Corbet <corbet@lwn.net>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: tglx@linutronix.de, bp@alien8.de, gnomes@lxorguk.ukuu.org.uk,
-        computersforpeace@gmail.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/4] Stop maintainer abuse
-Message-ID: <20141216130939.166c4369@lwn.net>
-In-Reply-To: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+From: bsegall@google.com
+To: Xunlei Pang <pang.xunlei@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@redhat.com>, pjt@google.com
+Subject: Re: [PATCH] sched/fair: Fix the dealing with decay_count in __synchronize_entity_decay()
+References: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
+Date: Tue, 16 Dec 2014 10:09:40 -0800
+In-Reply-To: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org> (Xunlei
+	Pang's message of "Tue, 16 Dec 2014 23:58:29 +0800")
+Message-ID: <xm26d27j79gb.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Dec 2014 22:09:46 -0800
-Kevin Cernekee <cernekee@gmail.com> wrote:
+Xunlei Pang <pang.xunlei@linaro.org> writes:
 
-> This patch series amends the kernel development process to reduce the
-> load on key maintainers during peak periods, by discouraging the submission
-> of non-urgent patches while the merge window is open.
+> In __synchronize_entity_decay(), if "decays" happens to be zero, 
+> se->avg.decay_count will not be zeroed, holding the positive value
+> assigned when dequeued last time.
+>
+> This is problematic in the following case:
+> If this runnable task is CFS-balanced to other CPUs soon afterwards, 
+> migrate_task_rq_fair() will treat it as a blocked task due to its
+> non-zero decay_count, thereby adding its load to cfs_rq->removed_load
+> wrongly.
+>
+> Thus, we must zero se->avg.decay_count in this case as well.
 
-You do understand the irony of posting this during the merge window,
-right? :)
+Yep. We probably didn't notice this because migrate will happen to clear
+this by doing decay_count = -__synch(), but you can hit this via
+switched_from_fair or just on enqueue followed by a load-balance
+migration that thinks decay_counter was zero due to being on_rq.
 
-In general, I worry about trying to codify things too much just because
-different maintainers have different expectations.  As Linus noted, some
-maintainers have their work done by the time the merge window starts and
-can take patches just fine — until something catches fire, at least.
+>
+> Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
 
-I'll await a revision taking account the feedback you've gotten, just
-adding my own suggestion to phrase things as guidelines rather than
-hard-and-fast rules.
+Reviewed-by: Ben Segall <bsegall@google.com>
 
-Thanks,
-
-jon
+> ---
+>  kernel/sched/fair.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index df2cdf7..ea517cd 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2574,11 +2574,11 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+>  	u64 decays = atomic64_read(&cfs_rq->decay_counter);
+>  
+>  	decays -= se->avg.decay_count;
+> +	se->avg.decay_count = 0;
+>  	if (!decays)
+>  		return 0;
+>  
+>  	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
+> -	se->avg.decay_count = 0;
+>  
+>  	return decays;
+>  }
