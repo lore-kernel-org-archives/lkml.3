@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLPAO4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:14:56 -0500
-Received: from ns.horizon.com ([71.41.210.147]:41170 "HELO ns.horizon.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750818AbaLPAOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:14:55 -0500
-Date: 15 Dec 2014 19:14:53 -0500
-Message-ID: <20141216001453.1808.qmail@ns.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, sfr@canb.auug.org.au
-Subject: Re: [PATCH v2] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h> where it belongs
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rdunlap@infradead.org, rusty@rustcorp.com.au
-In-Reply-To: <20141216100957.6f42e898@canb.auug.org.au>
+	id S1751553AbaLPAWe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:22:34 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:37560 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509AbaLPAWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 19:22:31 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>, Heiko Stuebner <heiko@sntech.de>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Alexandru Stan <amstan@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 3/3] ARM: dts: Specify VMMC and VQMMC on rk3288-evb
+Date: Mon, 15 Dec 2014 16:22:20 -0800
+Message-Id: <1418689340-29517-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1418689340-29517-1-git-send-email-dianders@chromium.org>
+References: <1418689340-29517-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Please do *not* mix changes up like this.  Split this out into a
-> separate patch, please (1 logical change per patch).
+Specifying these rails should eventually let us do UHS.
 
-Um... I thought I was doing that.  More particularly, the task of
-untangling header file dependencies eseemed sufficiently cohesive
-that it could be considered one logical change.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v3: None
+Changes in v2:
+- Fix subject line
 
-It was one round of thinking and analysis about what declarations the
-affected files depend on.
+ arch/arm/boot/dts/rk3288-evb.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Although syntactically possible, given the small size of the change (I
-deleted a total of 5 #includes, 2 from moduleparam.h and 3 from sysfs.h),
-it didn't seem worth breaking it up further.
+diff --git a/arch/arm/boot/dts/rk3288-evb.dtsi b/arch/arm/boot/dts/rk3288-evb.dtsi
+index 3e067dd..d660fe6 100644
+--- a/arch/arm/boot/dts/rk3288-evb.dtsi
++++ b/arch/arm/boot/dts/rk3288-evb.dtsi
+@@ -114,6 +114,8 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_cd &sdmmc_bus4>;
+ 	status = "okay";
++	vmmc-supply = <&vcc_io>;
++	vqmmc-supply = <&vccio_sd>;
+ };
+ 
+ &i2c0 {
+-- 
+2.2.0.rc0.207.ga3a616c
 
-> And testing only
-> on x86_64 is not "sure" when talking about header file pruning (but at
-> least you did the "all" configs).
-
-Well, the first round was reading and understanding the headers; the
-compile was just to make sure.
-
-The files I was messing with (moduleparam.h and sysfs.h) don't have a
-lot of architecture-specificness within them.  The main danger is that
-they're used in a zillion places and some caller might depend on the
-over-inclusion.
-
-I was rushing to get that to Andrew while the coversation was ongoing
-(if you check the mail headers, only a few minutes separated the various
-messages) so I was less cautious than usual, but given that a mistake
-would result in a nice obvious compile error (with an almost as obvious
-fix), it seemed worth the risk.
-
-If my haste made me judge wrong, I apologize.  Was I very wrong, or just
-a bit over the line?
