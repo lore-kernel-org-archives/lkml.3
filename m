@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaLPNFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 08:05:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44504 "EHLO mx1.redhat.com"
+	id S1751575AbaLPNFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 08:05:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaLPNFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 08:05:11 -0500
-Date: Tue, 16 Dec 2014 15:05:01 +0200
+	id S1750851AbaLPNFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 08:05:21 -0500
+Date: Tue, 16 Dec 2014 15:04:56 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, linux-api@vger.kernel.org,
-        Jason Wang <jasowang@redhat.com>
-Subject: [PATCH 2/5] if_tun: add TUNSETVNETLE/TUNGETVNETLE
-Message-ID: <1418732988-3535-3-git-send-email-mst@redhat.com>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jason Wang <jasowang@redhat.com>, Tom Herbert <therbert@google.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 1/5] macvtap: fix uninitialized access on TUNSETIFF
+Message-ID: <1418732988-3535-2-git-send-email-mst@redhat.com>
 References: <1418732988-3535-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -24,44 +27,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ifreq flags field is only 16 bit wide, so setting IFF_VNET_LE there has
-no effect:
-doesn't fit in two bytes.
+flags field in ifreq is only 16 bit wide, but
+we read it as a 32 bit value.
+If userspace doesn't zero-initialize unused fields,
+this will lead to failures.
 
-The tests passed apparently because they have an even number of bugs,
-all cancelling out.
-
-Luckily we didn't release a kernel with this flag, so it's
-not too late to fix this.
-
-Add TUNSETVNETLE/TUNGETVNETLE to really achieve the purpose
-of IFF_VNET_LE.
-
-This has an added benefit that if we ever want a BE flag,
-we won't have to deal with weird configurations like
-setting both LE and BE at the same time.
-
-IFF_VNET_LE will be dropped in a follow-up patch.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/uapi/linux/if_tun.h | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/macvtap.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-index 18b2403..274630c 100644
---- a/include/uapi/linux/if_tun.h
-+++ b/include/uapi/linux/if_tun.h
-@@ -48,6 +48,8 @@
- #define TUNSETQUEUE  _IOW('T', 217, int)
- #define TUNSETIFINDEX	_IOW('T', 218, unsigned int)
- #define TUNGETFILTER _IOR('T', 219, struct sock_fprog)
-+#define TUNSETVNETLE _IOW('T', 220, int)
-+#define TUNGETVNETLE _IOR('T', 221, int)
+diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
+index af90ab5..de88285 100644
+--- a/drivers/net/macvtap.c
++++ b/drivers/net/macvtap.c
+@@ -1011,7 +1011,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 	void __user *argp = (void __user *)arg;
+ 	struct ifreq __user *ifr = argp;
+ 	unsigned int __user *up = argp;
+-	unsigned int u;
++	unsigned short u;
+ 	int __user *sp = argp;
+ 	int s;
+ 	int ret;
+@@ -1026,7 +1026,7 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		if ((u & ~MACVTAP_FEATURES) != (IFF_NO_PI | IFF_TAP))
+ 			ret = -EINVAL;
+ 		else
+-			q->flags = u;
++			q->flags = (q->flags & ~MACVTAP_FEATURES) | u;
  
- /* TUNSETIFF ifr flags */
- #define IFF_TUN		0x0001
+ 		return ret;
+ 
+@@ -1039,8 +1039,9 @@ static long macvtap_ioctl(struct file *file, unsigned int cmd,
+ 		}
+ 
+ 		ret = 0;
++		u = q->flags;
+ 		if (copy_to_user(&ifr->ifr_name, vlan->dev->name, IFNAMSIZ) ||
+-		    put_user(q->flags, &ifr->ifr_flags))
++		    put_user(u, &ifr->ifr_flags))
+ 			ret = -EFAULT;
+ 		macvtap_put_vlan(vlan);
+ 		rtnl_unlock();
 -- 
 MST
 
