@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaLPAs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:48:26 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:44652 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751000AbaLPAsY (ORCPT
+	id S1751741AbaLPAtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:49:09 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:39250 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750900AbaLPAtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:48:24 -0500
+	Mon, 15 Dec 2014 19:49:07 -0500
+Message-ID: <548F80CA.8010900@ubuntu.com>
+Date: Mon, 15 Dec 2014 19:46:02 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
-References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
-	<CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
-Date: Tue, 16 Dec 2014 10:48:23 +1000
-Message-ID: <CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
-Subject: Re: [git pull] drm for 3.19-rc1
-From: Dave Airlie <airlied@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Akers, Jason B" <jason.b.akers@intel.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+CC: "Karkra, Kapil" <kapil.karkra@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dgilbert@interlog.com" <dgilbert@interlog.com>
+Subject: Re: [RFC PATCH] sg3_utils: Added hybrid information log utility
+References: <20141029195400.5225.96984.stgit@stg-AndroidDev-VirtualBox> <20141029195720.5225.51331.stgit@stg-AndroidDev-VirtualBox> <5473CE5C.7010300@ubuntu.com> <372C7AE269BA5E4D92B1082F530ED4B88A13F692@ORSMSX110.amr.corp.intel.com>
+In-Reply-To: <372C7AE269BA5E4D92B1082F530ED4B88A13F692@ORSMSX110.amr.corp.intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 December 2014 at 10:35, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Dec 14, 2014 at 11:17 PM, Dave Airlie <airlied@linux.ie> wrote:
->>
->> i915:
->>         Initial Skylake (SKL) support
->>         gen3/4 reset work
->>         start of dri1/ums removal
->>         infoframe tracking
->>         fixes for lots of things.
->
-> So I'm not sure how happy I am about this. It seems to work, but on
-> the very first boot I get this:
->
->   ------------[ cut here ]------------
->   WARNING: CPU: 1 PID: 1292 at
-> drivers/gpu/drm/i915/i915_gem_execbuffer.c:125
-> eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]()
->   GPU use of dumb buffer is illegal.
->   Modules linked in: ip6t_rpfilter bnep ip6t_REJECT nf_reject_ipv6
-> bluetooth nf_conntrack_ipv6 ...
->    video
->   CPU: 1 PID: 1292 Comm: Xorg Not tainted 3.18.0-09423-g988adfdffdd4 #1
->   Hardware name:                  /DH87RL, BIOS
-> RLH8710H.86A.0327.2014.0924.1645 09/24/2014
->   Call Trace:
->     dump_stack+0x45/0x57
->     warn_slowpath_common+0x80/0xc0
->     warn_slowpath_fmt+0x41/0x50
->     ? sg_kfree+0x30/0x30
->     eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]
->     i915_gem_do_execbuffer.isra.25+0x50d/0xd80 [i915]
->     ? unlock_page+0x6d/0x80
->     i915_gem_execbuffer2+0xb1/0x2c0 [i915]
->     drm_ioctl+0x19c/0x630 [drm]
->     do_vfs_ioctl+0x2e0/0x4e0
->     ? file_has_perm+0x87/0xa0
->     ? __audit_syscall_entry+0xac/0x100
->     SyS_ioctl+0x81/0xa0
->     ? do_page_fault+0xc/0x10
->     system_call_fastpath+0x12/0x17
->   ---[ end trace cb3c78163212ca1d ]---
->
-> apparently Introduced by commit 355a70183848 ("drm/gem: Warn on
-> illegal use of the dumb buffer interface v2")
->
-> The commit says "the next step is to fail".
->
-> And I want to make it painfully clear that if somebody breaks existing
-> working setups, they don't get to work on the kernel.
->
-> So get rid of the warning. And get rid of the notion that you can just
-> fail. You can try to fix Xorg, and then come back to this - in a
-> couple of years - when it no longer happens.
->
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-I'd be inclined to just revert this for now, it is annoying we let
-userspace away with this, but we probably need to find a better
-way to enforce it, since the cat is out of the bag.
+On 11/25/2014 02:13 PM, Akers, Jason B wrote:
+> Hi Phillip, It turns out that this patch was based on an old
+> github repository that doesn't appear to be updated. Doug Gilbert
+> reached out after the initial RFC and directed us to his page 
+> (http://sg.danny.cz/sg/) where he has updated sg3_utils code.
+> 
+> As we continue to work through the feedback from our SSHD kernel 
+> patches, I'm going to follow up with Doug again on sg3_utils.
 
-Dave.
+So is there a set of patches that applies to a release from that web
+site?  Also is the source only released as tarballs?  There is no
+source repo?
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBCgAGBQJUj4DKAAoJENRVrw2cjl5RwEwH/147w+N+z9r3J70AQrLdXgtN
+mRF2VLEK/v0l7rpnnyiKyL7Trjc3/YXY9tLf3feC225l9UL6K73moLKGWMI+iRU2
+xvCWIJKHQyf8E/j6qFqid0G9V/IQNG9vXAZSEmrTcvT5NaEJ0U3kSCKe5w9xEYEE
+6SLYTF+FRHkXceloFvW/8PAwj/2K4g/KsZShIS07kdzAh+fIoZM6qQP3XbEK5v1T
+x+zuFZtIVzVglQmQWF6wAn5pBjHGNLCA1Yw1+Lx3tuJCoVv1B5ze1k0FOnWu6xOQ
+bjeOQ0cgZOjYGjgywhoJn5hgKxOhfXsNsIhSSqA/SNky4vMOV5gRXKjA2WgHu6g=
+=7jVR
+-----END PGP SIGNATURE-----
