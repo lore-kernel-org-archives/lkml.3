@@ -1,97 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750890AbaLPFCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:02:41 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:35547 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaLPFCj (ORCPT
+	id S1750904AbaLPFKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:10:30 -0500
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:63594 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaLPFK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:02:39 -0500
-Date: Mon, 15 Dec 2014 21:02:34 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Yunkang Tang <yunkang.tang@cn.alps.com>,
-        Vadim Klishko <vadim@cirque.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] input: alps: Set correct name of psmouse device in
- alps_init()
-Message-ID: <20141216050234.GA35408@dtor-ws>
-References: <1415993906-13307-1-git-send-email-pali.rohar@gmail.com>
- <1415993906-13307-2-git-send-email-pali.rohar@gmail.com>
+	Tue, 16 Dec 2014 00:10:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1415993906-13307-2-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141216001058.GA31286@dtor-ws>
+References: <20141216001058.GA31286@dtor-ws>
+Date: Tue, 16 Dec 2014 10:40:27 +0530
+Message-ID: <CAKohpo=mcG99N5q_CCua8Hdydo=ydHKD-CiTJO9SsAhLvkTJHw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq-dt: defer probing if OPP table is not ready
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dmitry Torokhov <dtor@chromium.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Stefan Wahren <stefan.wahren@i2se.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pali,
-
-On Fri, Nov 14, 2014 at 08:38:20PM +0100, Pali Rohár wrote:
-> On some laptops after starting them from off state (not after reboot), function
-> alps_probe_trackstick_v3() (called from function alps_identify()) does not
-> detect trackstick. To fix this problem we need to reset device. But function
-> alps_identify() is called also from alps_detect() and we do not want to reset
-> device in detect function because it will slow down initialization of all other
-> non alps devices.
-> 
-> This patch moves code for setting correct device name & protocol from function
-> alps_detect() to alps_init() which already doing full device reset.
-> 
-> So this patch removes need to do trackstick detection in alps_detect() function.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+On 16 December 2014 at 05:40, Dmitry Torokhov <dtor@chromium.org> wrote:
+> cpufreq-dt driver supports mode when OPP table is provided by platform
+> code and not device tree. However on certain platforms code that fills
+> OPP table may run after cpufreq driver tries to initialize, so let's
+> report -EPROBE_DEFER if we do not find any entires in OPP table for the
+> CPU.
+>
+> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
 > ---
->  drivers/input/mouse/alps.c |   17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/alps.c b/drivers/input/mouse/alps.c
-> index 8d85c79..9ffa98d 100644
-> --- a/drivers/input/mouse/alps.c
-> +++ b/drivers/input/mouse/alps.c
-> @@ -2392,6 +2392,10 @@ int alps_init(struct psmouse *psmouse)
->  	if (input_register_device(priv->dev2))
->  		goto init_fail;
->  
-> +	if (!(priv->flags & ALPS_DUALPOINT))
-> +		psmouse->name = "GlidePoint TouchPad";
-> +	psmouse->model = priv->proto_version;
+>  drivers/cpufreq/cpufreq-dt.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
+> index f56147a..4f874fa 100644
+> --- a/drivers/cpufreq/cpufreq-dt.c
+> +++ b/drivers/cpufreq/cpufreq-dt.c
+> @@ -211,6 +211,19 @@ static int cpufreq_init(struct cpufreq_policy *policy)
+>         /* OPPs might be populated at runtime, don't check for error here */
+>         of_init_opp_table(cpu_dev);
+>
+> +       /*
+> +        * But we need OPP table to function so if it is not there let's
+> +        * give platform code chance to provide it for us.
+> +        */
+> +       rcu_read_lock();
+> +       ret = dev_pm_opp_get_opp_count(cpu_dev);
+> +       rcu_read_unlock();
+> +       if (ret <= 0) {
+> +               pr_debug("OPP table is not ready, deferring probe\n");
+> +               ret = -EPROBE_DEFER;
+> +               goto out_free_opp;
+
+Hmm, so we are trying to free opps while we failed to find one.
+
+Are you sure you have tested this on one such platform where we
+fail here?
+
+Because this is what I see:
+
+void of_free_opp_table(struct device *dev)
+{
+        struct device_opp *dev_opp;
+        struct dev_pm_opp *opp, *tmp;
+
+        /* Check for existing list for 'dev' */
+        dev_opp = find_device_opp(dev);
+        if (WARN(IS_ERR(dev_opp), "%s: dev_opp: %ld\n", dev_name(dev),
+                 PTR_ERR(dev_opp)))
+                return;
+
+        ...
+}
+
+
+And we probably will hit this WARN(), wouldn't we ?
+
+> +       }
 > +
->  	psmouse->protocol_handler = alps_process_byte;
->  	psmouse->poll = alps_poll;
->  	psmouse->disconnect = alps_disconnect;
-> @@ -2422,11 +2426,18 @@ int alps_detect(struct psmouse *psmouse, bool set_properties)
->  		return -1;
->  
->  	if (set_properties) {
-> +		/*
-> +		 * NOTE: To detect model and trackstick presence we need to do
-> +		 *       full device reset. To speed up detection and prevent
-> +		 *       calling duplicate initialization sequence (both in
-> +		 *       alps_detect() and alps_init()) we set model/protocol
-> +		 *       version and correct name in alps_init() (which will
-> +		 *       do full device reset). For now set name to DualPoint.
-> +		 */
->  		psmouse->vendor = "ALPS";
-> -		psmouse->name = dummy.flags & ALPS_DUALPOINT ?
-> -				"DualPoint TouchPad" : "GlidePoint";
-> -		psmouse->model = dummy.proto_version << 8;
-> +		psmouse->name = "DualPoint TouchPad";
->  	}
-> +
-
-I do not quite like the way we change the device description back and
-forth. Do you think we could allocate the "real" priv structure in
-alps_detect() and have alps_init() expect to find it (and free it if
-set_properties is false). This way we'd go through initialization once
-in detect, it will be authoritative, and we would set the name of the
-device properly from the beginning.
-
-Thanks.
-
--- 
-Dmitry
+>         priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+>         if (!priv) {
+>                 ret = -ENOMEM;
+> --
+> 2.2.0.rc0.207.ga3a616c
+>
+>
+> --
+> Dmitry
