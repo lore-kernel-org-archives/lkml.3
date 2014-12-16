@@ -1,104 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751489AbaLPVNm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:13:42 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:58738 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaLPVNl (ORCPT
+	id S1751776AbaLPVOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:14:31 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:54139 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165AbaLPVOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:13:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL 1/3] ARM: SoC fixes for 3.19-rc1
-Date: Tue, 16 Dec 2014 22:13:10 +0100
-Message-ID: <5499732.TPqbyGxy2W@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+	Tue, 16 Dec 2014 16:14:30 -0500
+Date: Tue, 16 Dec 2014 22:14:27 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
+        acme@redhat.com, dsahern@gmail.com, dzickus@redhat.com,
+        rfowles@redhat.com, jmario@redhat.com, namhyung@kernel.org
+Subject: [PATCH v2] perf mem: enable simultaneous sampling of loads/stores
+Message-ID: <20141216211427.GA23877@thinkpad>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:Y86db2hNJHGmB5HNgVwpAqT5yuD1hSyVPlUsNNiAmirtf1wzlLp
- 34YWjDJmGi0jucdDgmLliLncpS0PxIzjJ2a4f4OPUSAxpbctN9ZKg9zvZ3QVQy+6PDfMk5Z
- pdqDrxvo+bKWm6J0tnmZocS5UMGkrcApf7NPfNJn2UWI6CGW2C73fggpYnw20h23ke8dGYH
- 5q/8l5t2rLmUOsKHutc6g==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a0e4467726cd26bacb16f13d207ffcfa82ffc07d:
 
-  Merge tag 'asm-generic-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arnd/asm-generic (2014-12-09 17:25:00 -0800)
+This patch modifies perf mem to default to smapling loads
+and stores simultaneously. It could only do one or the other
+before yet there was not hardware restriction preventing
+simultaneous collection. With this patch, one run is sufficient
+to collect both.
 
-are available in the git repository at:
+It is still possible to smaple only loads or stores by using the
+-t option:
+ $ perf mem -t load rec
+ $ perf mem -t load rep
+Or
+ $ perf mem -t store rec
+ $ perf mem -t store rep
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+The perf report TUI will show one event at a time. The store
+output will contain a Weight column which will be empty.
 
-for you to fetch changes up to 5f1b2953da58e51e97eea9b7235545d72e9e1dab:
+In V2, we update the man page and simplify the initialization
+of the argv vector to cmd_*().
 
-  Merge tag 'renesas-defconfig-fixes-for-v3.19' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into fixes (2014-12-16 21:43:15 +0100)
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/Documentation/perf-mem.txt |   9 +--
+ tools/perf/builtin-mem.c              | 123 +++++++++++++++++++++++++++-------
+ 2 files changed, 105 insertions(+), 27 deletions(-)
 
-----------------------------------------------------------------
-ARM: SoC fixes for 3.19-rc1
-
-Here are the first arm-soc bug fixes. Most of these are OMAP related
-fixes for regressions or minor bugs. Aside from that, there are a
-few defconfig changes for various platforms.
-
-----------------------------------------------------------------
-Arnd Bergmann (1):
-      Merge tag 'renesas-defconfig-fixes-for-v3.19' of git://git.kernel.org/.../horms/renesas into fixes
-
-Felipe Balbi (1):
-      ARM: dts: am437x-sk: fix lcd enable pin mux data
-
-Johan Hovold (1):
-      ARM: OMAP2+: clock: remove unused function prototype
-
-Kevin Hilman (1):
-      Merge tag 'omap-for-v3.19/fixes-for-merge-window' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-
-Lokesh Vutla (2):
-      ARM: dts: DRA7: wdt: Fix compatible property for watchdog node
-      ARM: OMAP2+: AM43x: Add ID for ES1.2
-
-Mark Brown (1):
-      iommu/exynos: Fix arm64 allmodconfig build
-
-Ravikumar Kattekola (2):
-      ARM: dts: dra7-evm: Fix typo in SMPS6 (VDD_GPU) max voltage
-      ARM: dts: dra7-evm: Update SMPS7 (VDD_CORE) max voltage to match DM
-
-Roger Quadros (1):
-      ARM: omap2plus_defconfig: Enable AHCI_PLATFORM driver
-
-Simon Horman (1):
-      Revert "ARM: shmobile: multiplatform: add Audo DMAC peri peri support on defconfig"
-
-Tomi Valkeinen (2):
-      ARM: dts: dra7: fix DSS PLL clock mux registers
-      ARM: dts: am437x-sk-evm.dts: fix LCD timings
-
-Tony Lindgren (2):
-      Merge branch 'omap-for-v3.19/fixes-not-urgent' into omap-for-v3.19/fixes
-      ARM: dts: Fix gpmc regression for omap 2430sdp smc91x
-
-Viresh Kumar (1):
-      ARM: defconfigs: use CONFIG_CPUFREQ_DT
-
- arch/arm/boot/dts/am437x-sk-evm.dts  | 15 +++++++--------
- arch/arm/boot/dts/dra7-evm.dts       |  4 ++--
- arch/arm/boot/dts/dra7.dtsi          |  2 +-
- arch/arm/boot/dts/dra72-evm.dts      |  2 +-
- arch/arm/boot/dts/dra7xx-clocks.dtsi |  6 +++---
- arch/arm/boot/dts/omap2430-sdp.dts   | 32 ++++++++++++++++----------------
- arch/arm/configs/multi_v7_defconfig  |  2 +-
- arch/arm/configs/omap2plus_defconfig |  2 ++
- arch/arm/configs/shmobile_defconfig  |  3 +--
- arch/arm/mach-omap2/clock.h          |  2 --
- arch/arm/mach-omap2/id.c             |  8 ++++++--
- arch/arm/mach-omap2/soc.h            |  1 +
- drivers/iommu/Kconfig                |  2 +-
- 13 files changed, 42 insertions(+), 39 deletions(-)
+diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
+index 1d78a40..43310d8 100644
+--- a/tools/perf/Documentation/perf-mem.txt
++++ b/tools/perf/Documentation/perf-mem.txt
+@@ -12,11 +12,12 @@ SYNOPSIS
+ 
+ DESCRIPTION
+ -----------
+-"perf mem -t <TYPE> record" runs a command and gathers memory operation data
++"perf mem record" runs a command and gathers memory operation data
+ from it, into perf.data. Perf record options are accepted and are passed through.
+ 
+-"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
+-right set of options to display a memory access profile.
++"perf mem report" displays the result. It invokes perf report with the
++right set of options to display a memory access profile. By default, loads
++and stores are sampled. Use the -t option to limit to loads or stores.
+ 
+ Note that on Intel systems the memory latency reported is the use-latency,
+ not the pure load (or store latency). Use latency includes any pipeline
+@@ -29,7 +30,7 @@ OPTIONS
+ 
+ -t::
+ --type=::
+-	Select the memory operation type: load or store (default: load)
++	Select the memory operation type: load or store (default: load,store)
+ 
+ -D::
+ --dump-raw-samples=::
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index 24db6ff..1eded0a 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -7,10 +7,13 @@
+ #include "util/session.h"
+ #include "util/data.h"
+ 
+-#define MEM_OPERATION_LOAD	"load"
+-#define MEM_OPERATION_STORE	"store"
++#define MEM_OPERATION_LOAD	0x1
++#define MEM_OPERATION_STORE	0x2
+ 
+-static const char	*mem_operation		= MEM_OPERATION_LOAD;
++/*
++ * default to both load an store sampling
++ */
++static int mem_operation = MEM_OPERATION_LOAD | MEM_OPERATION_STORE;
+ 
+ struct perf_mem {
+ 	struct perf_tool	tool;
+@@ -25,26 +28,30 @@ static int __cmd_record(int argc, const char **argv)
+ {
+ 	int rec_argc, i = 0, j;
+ 	const char **rec_argv;
+-	char event[64];
+ 	int ret;
+ 
+-	rec_argc = argc + 4;
++	rec_argc = argc + 7; /* max number of arguments */
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 	if (!rec_argv)
+ 		return -1;
+ 
+-	rec_argv[i++] = strdup("record");
+-	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
+-		rec_argv[i++] = strdup("-W");
+-	rec_argv[i++] = strdup("-d");
+-	rec_argv[i++] = strdup("-e");
++	rec_argv[i++] = "record";
+ 
+-	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+-		sprintf(event, "cpu/mem-stores/pp");
+-	else
+-		sprintf(event, "cpu/mem-loads/pp");
++	if (mem_operation & MEM_OPERATION_LOAD)
++		rec_argv[i++] = "-W";
++
++	rec_argv[i++] = "-d";
++
++	if (mem_operation & MEM_OPERATION_LOAD) {
++		rec_argv[i++] = "-e";
++		rec_argv[i++] = "cpu/mem-loads/pp";
++	}
++
++	if (mem_operation & MEM_OPERATION_STORE) {
++		rec_argv[i++] = "-e";
++		rec_argv[i++] = "cpu/mem-stores/pp";
++	}
+ 
+-	rec_argv[i++] = strdup(event);
+ 	for (j = 1; j < argc; j++, i++)
+ 		rec_argv[i] = argv[j];
+ 
+@@ -162,17 +169,17 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+ 	if (!rep_argv)
+ 		return -1;
+ 
+-	rep_argv[i++] = strdup("report");
+-	rep_argv[i++] = strdup("--mem-mode");
+-	rep_argv[i++] = strdup("-n"); /* display number of samples */
++	rep_argv[i++] = "report";
++	rep_argv[i++] = "--mem-mode";
++	rep_argv[i++] = "-n"; /* display number of samples */
+ 
+ 	/*
+ 	 * there is no weight (cost) associated with stores, so don't print
+ 	 * the column
+ 	 */
+-	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+-		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
+-				       "dso_daddr,tlb,locked");
++	if (!(mem_operation & MEM_OPERATION_LOAD))
++		rep_argv[i++] = "--sort=mem,sym,dso,symbol_daddr,"
++				"dso_daddr,tlb,locked";
+ 
+ 	for (j = 1; j < argc; j++, i++)
+ 		rep_argv[i] = argv[j];
+@@ -182,6 +189,75 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+ 	return ret;
+ }
+ 
++struct mem_mode {
++	const char *name;
++	int mode;
++};
++
++#define MEM_OPT(n, m) \
++	{ .name = n, .mode = (m) }
++
++#define MEM_END { .name = NULL }
++
++static const struct mem_mode mem_modes[]={
++	MEM_OPT("load", MEM_OPERATION_LOAD),
++	MEM_OPT("store", MEM_OPERATION_STORE),
++	MEM_END
++};
++
++static int
++parse_mem_ops(const struct option *opt, const char *str, int unset)
++{
++	int *mode = (int *)opt->value;
++	const struct mem_mode *m;
++	char *s, *os = NULL, *p;
++	int ret = -1;
++
++	if (unset)
++		return 0;
++
++	/* str may be NULL in case no arg is passed to -t */
++	if (str) {
++		/* because str is read-only */
++		s = os = strdup(str);
++		if (!s)
++			return -1;
++
++		/* reset mode */
++		*mode = 0;
++
++		for (;;) {
++			p = strchr(s, ',');
++			if (p)
++				*p = '\0';
++
++			for (m = mem_modes; m->name; m++) {
++				if (!strcasecmp(s, m->name))
++					break;
++			}
++			if (!m->name) {
++				fprintf(stderr, "unknown sampling op %s,"
++					    " check man page\n", s);
++				goto error;
++			}
++
++			*mode |= m->mode;
++
++			if (!p)
++				break;
++
++			s = p + 1;
++		}
++	}
++	ret = 0;
++
++	if (*mode == 0)
++		*mode = MEM_OPERATION_LOAD;
++error:
++	free(os);
++	return ret;
++}
++
+ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	struct stat st;
+@@ -199,8 +275,9 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.input_name		 = "perf.data",
+ 	};
+ 	const struct option mem_options[] = {
+-	OPT_STRING('t', "type", &mem_operation,
+-		   "type", "memory operations(load/store)"),
++	OPT_CALLBACK('t', "type", &mem_operation,
++		   "type", "memory operations(load,store) Default load,store",
++		    parse_mem_ops),
+ 	OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
+ 		    "dump raw samples in ASCII"),
+ 	OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
+-- 
+1.9.1
 
