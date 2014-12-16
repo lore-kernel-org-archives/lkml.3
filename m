@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751491AbaLPAOf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:14:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8137 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818AbaLPAOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:14:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,582,1413270000"; 
-   d="scan'208";a="624268070"
-From: Kevin Strasser <kevin.strasser@linux.intel.com>
-To: alsa-devel@alsa-project.org
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Mark Brown <broonie@kernel.org>, Mengdong Lin <mengdong.lin@intel.com>,
-        Yang Fang <yang.a.fang@intel.com>, linux-kernel@vger.kernel.org,
-        Kevin Strasser <kevin.strasser@intel.com>
-Subject: [PATCH v2] ASoC: Intel: fix possible acpi enumeration panic
-Date: Mon, 15 Dec 2014 16:15:04 -0800
-Message-Id: <1418688904-26959-1-git-send-email-kevin.strasser@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418282517-851-1-git-send-email-kevin.strasser@intel.com>
-References: <1418282517-851-1-git-send-email-kevin.strasser@intel.com>
+	id S1751531AbaLPAO4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:14:56 -0500
+Received: from ns.horizon.com ([71.41.210.147]:41170 "HELO ns.horizon.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750818AbaLPAOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 19:14:55 -0500
+Date: 15 Dec 2014 19:14:53 -0500
+Message-ID: <20141216001453.1808.qmail@ns.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: linux@horizon.com, sfr@canb.auug.org.au
+Subject: Re: [PATCH v2] VERIFY_OCTAL_PERMISSIONS: Move to <linux/sysfs.h> where it belongs
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rdunlap@infradead.org, rusty@rustcorp.com.au
+In-Reply-To: <20141216100957.6f42e898@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A crash can occur on some platforms where adsp is enumerated but codec is not
-matched. Define codec_id as a pointer intead of an array so that it gets
-initialized to NULL for the terminating element of sst_acpi_bytcr[] and
-sst_acpi_chv[].
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Please do *not* mix changes up like this.  Split this out into a
+> separate patch, please (1 logical change per patch).
 
-Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
----
- sound/soc/intel/sst/sst_acpi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Um... I thought I was doing that.  More particularly, the task of
+untangling header file dependencies eseemed sufficiently cohesive
+that it could be considered one logical change.
 
-diff --git a/sound/soc/intel/sst/sst_acpi.c b/sound/soc/intel/sst/sst_acpi.c
-index 31124aa..87b5090 100644
---- a/sound/soc/intel/sst/sst_acpi.c
-+++ b/sound/soc/intel/sst/sst_acpi.c
-@@ -43,7 +43,7 @@
- #include "sst.h"
- 
- struct sst_machines {
--	char codec_id[32];
-+	char *codec_id;
- 	char board[32];
- 	char machine[32];
- 	void (*machine_quirk)(void);
--- 
-1.9.1
+It was one round of thinking and analysis about what declarations the
+affected files depend on.
 
+Although syntactically possible, given the small size of the change (I
+deleted a total of 5 #includes, 2 from moduleparam.h and 3 from sysfs.h),
+it didn't seem worth breaking it up further.
+
+> And testing only
+> on x86_64 is not "sure" when talking about header file pruning (but at
+> least you did the "all" configs).
+
+Well, the first round was reading and understanding the headers; the
+compile was just to make sure.
+
+The files I was messing with (moduleparam.h and sysfs.h) don't have a
+lot of architecture-specificness within them.  The main danger is that
+they're used in a zillion places and some caller might depend on the
+over-inclusion.
+
+I was rushing to get that to Andrew while the coversation was ongoing
+(if you check the mail headers, only a few minutes separated the various
+messages) so I was less cautious than usual, but given that a mistake
+would result in a nice obvious compile error (with an almost as obvious
+fix), it seemed worth the risk.
+
+If my haste made me judge wrong, I apologize.  Was I very wrong, or just
+a bit over the line?
