@@ -1,67 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308AbaLPH16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:27:58 -0500
-Received: from mail-bn1on0083.outbound.protection.outlook.com ([157.56.110.83]:23096
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750863AbaLPH15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:27:57 -0500
-From: Ley Foon Tan <lftan@altera.com>
-To: Tobias Klauser <tklauser@distanz.ch>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Ley Foon Tan <lftan@altera.com>,
-        <lftan.linux@gmail.com>, <linux-serial@vger.kernel.org>,
-        <nios2-dev@lists.rocketboards.org>
-Subject: [PATCH] serial: altera-juart: fix NULL device in log message
-Date: Tue, 16 Dec 2014 15:27:46 +0800
-Message-ID: <1418714866-2744-1-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=softfail (sender IP is 66.35.236.227)
- smtp.mailfrom=lftan@altera.com; 
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(50226001)(84676001)(50466002)(48376002)(64706001)(20776003)(99396003)(47776003)(68736005)(97736003)(4396001)(46102003)(50986999)(86362001)(36756003)(19580405001)(19580395003)(6806004)(92566001)(33646002)(120916001)(106466001)(105596002)(31966008)(77156002)(107046002)(89996001)(229853001)(21056001)(42186005)(87936001)(62966003)(7099022);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB224;H:sj-itexedge03.altera.priv.altera.com;FPR:;SPF:SoftFail;MLV:ovrnspm;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB224;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR03MB224;
-X-Forefront-PRVS: 04270EF89C
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB224;
-X-OriginatorOrg: altera.com
+	id S1751389AbaLPHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:30:56 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:53988 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaLPHay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:30:54 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-13-548fdfabd271
+Message-id: <548FDFA2.1090002@samsung.com>
+Date: Tue, 16 Dec 2014 08:30:42 +0100
+From: Karol Wrona <k.wrona@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.2.0
+MIME-version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
+        Hartmut Knaack <knaack.h@gmx.de>, linux-kernel@vger.kernel.org
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v3 2/5] iio: sensorhub: Add sensorhub bindings
+References: <1417809290-9662-1-git-send-email-k.wrona@samsung.com>
+ <1417809290-9662-3-git-send-email-k.wrona@samsung.com>
+ <548312D9.3070104@kernel.org>
+In-reply-to: <548312D9.3070104@kernel.org>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7qr7/eHGKx9aWCxccZ6Vov5R86x
+	WvS/Wchqce7VSkaLB02rmCx2/X/DbHG26Q27xbwj71gsLu+aw2ax9PpFJosJ09eyWLTuPcJu
+	sWfdFiYHXo8189Ywelzu62Xy2DnrLrvHh49xHiuXf2Hz2LSqk82jb8sqRo/Pm+QCOKK4bFJS
+	czLLUov07RK4Mn42GhYsVag48e0vcwNjn1QXIyeHhICJxLq+j4wQtpjEhXvr2boYuTiEBJYy
+	SlzbsJUZwvnEKHGx+yN7FyMHB6+AlsSf1VogDSwCqhIn2/tYQWw2AXWJ5h2LmUFsUYEIiStr
+	5oAN5RUQlPgx+R4LyBwRgRZGiRc/d4E1MAs0M0s8u8UCYgsLOElMXnCZCWLZbEaJ57cegiU4
+	gZatnLCBBWQxs4CexP2LWhC98hKb17xlnsAoMAvJjlkIVbOQVC1gZF7FKJpamlxQnJSea6RX
+	nJhbXJqXrpecn7uJERI7X3cwLj1mdYhRgINRiYdXoKU/RIg1say4MvcQowQHs5IIb9s1oBBv
+	SmJlVWpRfnxRaU5q8SFGJg5OqQbG2Z4yynuKbkr1RqTvMJD+GGv4eBHXz3UbGhZ8nP56n3Df
+	f9Glj7peLC5/6WYRtNz1ydQ5E5LUhJtvrPh1bIlVdV3G9Ct3Hdj2RV563ZbOGyN9oVbSxeBe
+	hZsL94Sqe7++7ypcxH0gd3br7WbriOIkr4MLy0xUWJLSDKfb2jRJXOp+m9Ir4nBeiaU4I9FQ
+	i7moOBEAwTN4ZnsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device pointer to port->dev.
+On 12/06/2014 03:29 PM, Jonathan Cameron wrote:
+> On 05/12/14 19:54, Karol Wrona wrote:
+>> Add sensorhub bindings for sensorhub on Galaxy Gear 2.
+>>
+>> Change-Id: I4ee25aef33c21a4662de230841de9a8684f2c26b
+>> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Looks good to me.  Comments inline.  Note I either need a device tree
+> ack or a long delay before I can take this though.  Unlikely to get the
+> device tree ack as you haven't cc'd the maintainers or list ;)
+I am curious about DT community opinion and I prefer to know it before
+v4 sending.
 
-Before:
+> 
+> I've added the cc's. Please make sure future versions have them or you'll
+> just be slowing the process down (particularly if no one notices they 
+> are missing!)
+Thanks, I will remember that.
+> 
+>> ---
+>>  .../devicetree/bindings/iio/sensorhub.txt          |   46 ++++++++++++++++++++
+>>  1 file changed, 46 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/iio/sensorhub.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/iio/sensorhub.txt b/Documentation/devicetree/bindings/iio/sensorhub.txt
+>> new file mode 100644
+>> index 0000000..2aca0c3
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/iio/sensorhub.txt
+>> @@ -0,0 +1,46 @@
+>> +Samsung Sensorhub driver
+>> +
+>> +Sensorhub is a MCU which manages several sensors and also plays the role
+>> +of a virtual sensor device.
+>> +
+>> +Required properties:
+>> +- compatible: "samsung,sensorhub-rinato" or "samsung,sensorhub-thermostat"
+>> +- spi-max-frequency: max SPI clock frequency
+>> +- interrupt-parent: interrupt parent
+>> +- interrupts: communication interrupt
+>> +- ap-mcu-gpio: [out] ap to sensorhub line - used during communication
+>> +- mcu-ap-gpio: [in] sensorhub to ap - used during communication
+>> +- mcu-reset: [out] sensorhub reset
+> as commented in previous patch, why do the first two have -gpio and the
+> third not?
+Ok, all 3 will have "gpios" ending
+>> +
+>> +Optional properties:
+>> +- sensor's nodes:
+>> +  compatible = "samsung,mpu6500-accel"
+>> +  compatible = "samsung,mpu6500-gyro"
+>> +  compatible = "samsung,adpd142"
+>> +
+>> +Sensor compatibles are used to match proper sensor driver to real sensor on
+>> +the board. The firmware does not give such information, so it helps to specify
+>> +some sensors properties. Sensors have "samsung" prefixes because frequently
+>> +they will not have much in common with sensors used without sensorhub because
+>> +it can do some data processing.
+> We'll keep that under review.  Might make sense, sometimes, to unify the
+> drivers.  The different compatible will probably still be needed, but if
+> these devices proliferate I don't want two drivers for everything that
+> gets stuck behind them.
+I think that sensorhub is very similar hid-sensor (without hotpluging) where
+every sensor type has its own representation.  The real sensors are not driven
+directly but by external MCU so very often these sensors will not have much
+common with real ones.  So I wonder if it could be better to resign from these
+sensor compatibles and represent each sensor as mfd cell so optional properties
+probably will dropped (?)
+Generally I intended to have i.e. one ssp-accel driver if they use another
+accelerometer then mpu6500 the buffering manner and sysfs will be handled in the
+same way.  I think I was mistaken with these compatibles.  There is also some
+probability that the firmware will be fixed someday and it will be able to tell
+more about sensor then the type.
 
-"(NULL device *): ttyJ0 at MMIO 0x1008 (irq = 2, base_baud = 0) is a
-Altera JTAG UART"
-
-After:
-"altera_jtaguart 1008.serial: ttyJ0 at MMIO 0x1008 (irq = 2, base_baud = 0) is a
-Altera JTAG UART"
-
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- drivers/tty/serial/altera_jtaguart.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/tty/serial/altera_jtaguart.c b/drivers/tty/serial/altera_jtaguart.c
-index 192d043..0fefdd8 100644
---- a/drivers/tty/serial/altera_jtaguart.c
-+++ b/drivers/tty/serial/altera_jtaguart.c
-@@ -441,6 +441,7 @@ static int altera_jtaguart_probe(struct platform_device *pdev)
- 	port->iotype = SERIAL_IO_MEM;
- 	port->ops = &altera_jtaguart_ops;
- 	port->flags = UPF_BOOT_AUTOCONF;
-+	port->dev = &pdev->dev;
- 
- 	uart_add_one_port(&altera_jtaguart_driver, port);
- 
--- 
-1.8.2.1
+>> +
+>> +Example:
+>> +
+>> +	shub_spi: shub {
+>> +		compatible = "samsung,sensorhub-rinato";
+>> +		spi-max-frequency = <5000000>;
+>> +		interrupt-parent = <&gpx0>;
+>> +		interrupts = <2 0>;
+>> +		ap-mcu-gpio = <&gpx0 0 0>;
+>> +		mcu-ap-gpio = <&gpx0 4 0>;
+>> +		mcu-reset = <&gpx0 5 0>;
+>> +		sensor@0 {
+>> +			compatible = "samsung,mpu6500-accel";
+>> +		};
+>> +		sensor@1 {
+>> +			compatible = "samsung,mpu6500-gyro";
+>> +		};
+>> +		sensor@2 {
+>> +			compatible = "samsung,adpd142";
+>> +		};
+>> +	};
+>>
+> 
+> 
 
