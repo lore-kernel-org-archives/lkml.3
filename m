@@ -1,260 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaLPVOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:14:31 -0500
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:54139 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaLPVOa (ORCPT
+	id S1751881AbaLPVPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:15:51 -0500
+Received: from www.linutronix.de ([62.245.132.108]:51741 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaLPVPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:14:30 -0500
-Date: Tue, 16 Dec 2014 22:14:27 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, jolsa@redhat.com,
-        acme@redhat.com, dsahern@gmail.com, dzickus@redhat.com,
-        rfowles@redhat.com, jmario@redhat.com, namhyung@kernel.org
-Subject: [PATCH v2] perf mem: enable simultaneous sampling of loads/stores
-Message-ID: <20141216211427.GA23877@thinkpad>
+	Tue, 16 Dec 2014 16:15:49 -0500
+Date: Tue, 16 Dec 2014 22:15:34 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
+        "Zijlstra, Peter" <peter.zijlstra@intel.com>
+Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
+In-Reply-To: <20141216091528.17ee429d@ultegra>
+Message-ID: <alpine.DEB.2.11.1412162205130.17382@nanos>
+References: <20141211194204.GA19083@wfg-t540p.sh.intel.com> <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com> <548E8D01.9050707@linux.vnet.ibm.com> <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com> <548EAD4A.6070506@linux.vnet.ibm.com>
+ <DD415AA12F8FF042BF4EA69DF123C1478AF76532@ORSMSX106.amr.corp.intel.com> <CAKohpokZCK3TAZx1mwo3zLxugkxg-h7MAXkTxA4LVWausufDYg@mail.gmail.com> <20141216091528.17ee429d@ultegra>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 16 Dec 2014, Jacob Pan wrote:
+> On Tue, 16 Dec 2014 09:48:42 +0530
+> Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > I really don't know what stuff out of the two patches I posted (The
+> > above one and the fix I posted yesterday), will possible make the
+> > synchronization bad ..
+> > 
+> But since your patch has real benefits and does not cause regression
+> with the current code, there is no reason to hold it back. I was just
+> hoping to get help on debugging this.
 
-This patch modifies perf mem to default to smapling loads
-and stores simultaneously. It could only do one or the other
-before yet there was not hardware restriction preventing
-simultaneous collection. With this patch, one run is sufficient
-to collect both.
+As I said elsewhere in this thread, this is not going anywhere. The
+only sane decision is to revert 2a16fc93d2c9 for now.
 
-It is still possible to smaple only loads or stores by using the
--t option:
- $ perf mem -t load rec
- $ perf mem -t load rep
-Or
- $ perf mem -t store rec
- $ perf mem -t store rep
+Aside of that both NOHZ full and powerclamp need to be fixed
+proper. Both of them are a complete disaster and just a steaming pile
+of abuse and bandaids fixing the abuse. Read my other replies on that
+before you ponder to argue.
 
-The perf report TUI will show one event at a time. The store
-output will contain a Weight column which will be empty.
+The real solution for both things at the moment would be to make them
+depend on BROKEN. I'm serious about that, really.
 
-In V2, we update the man page and simplify the initialization
-of the argv vector to cmd_*().
+Your's grumpy
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/Documentation/perf-mem.txt |   9 +--
- tools/perf/builtin-mem.c              | 123 +++++++++++++++++++++++++++-------
- 2 files changed, 105 insertions(+), 27 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
-index 1d78a40..43310d8 100644
---- a/tools/perf/Documentation/perf-mem.txt
-+++ b/tools/perf/Documentation/perf-mem.txt
-@@ -12,11 +12,12 @@ SYNOPSIS
- 
- DESCRIPTION
- -----------
--"perf mem -t <TYPE> record" runs a command and gathers memory operation data
-+"perf mem record" runs a command and gathers memory operation data
- from it, into perf.data. Perf record options are accepted and are passed through.
- 
--"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
--right set of options to display a memory access profile.
-+"perf mem report" displays the result. It invokes perf report with the
-+right set of options to display a memory access profile. By default, loads
-+and stores are sampled. Use the -t option to limit to loads or stores.
- 
- Note that on Intel systems the memory latency reported is the use-latency,
- not the pure load (or store latency). Use latency includes any pipeline
-@@ -29,7 +30,7 @@ OPTIONS
- 
- -t::
- --type=::
--	Select the memory operation type: load or store (default: load)
-+	Select the memory operation type: load or store (default: load,store)
- 
- -D::
- --dump-raw-samples=::
-diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
-index 24db6ff..1eded0a 100644
---- a/tools/perf/builtin-mem.c
-+++ b/tools/perf/builtin-mem.c
-@@ -7,10 +7,13 @@
- #include "util/session.h"
- #include "util/data.h"
- 
--#define MEM_OPERATION_LOAD	"load"
--#define MEM_OPERATION_STORE	"store"
-+#define MEM_OPERATION_LOAD	0x1
-+#define MEM_OPERATION_STORE	0x2
- 
--static const char	*mem_operation		= MEM_OPERATION_LOAD;
-+/*
-+ * default to both load an store sampling
-+ */
-+static int mem_operation = MEM_OPERATION_LOAD | MEM_OPERATION_STORE;
- 
- struct perf_mem {
- 	struct perf_tool	tool;
-@@ -25,26 +28,30 @@ static int __cmd_record(int argc, const char **argv)
- {
- 	int rec_argc, i = 0, j;
- 	const char **rec_argv;
--	char event[64];
- 	int ret;
- 
--	rec_argc = argc + 4;
-+	rec_argc = argc + 7; /* max number of arguments */
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 	if (!rec_argv)
- 		return -1;
- 
--	rec_argv[i++] = strdup("record");
--	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
--		rec_argv[i++] = strdup("-W");
--	rec_argv[i++] = strdup("-d");
--	rec_argv[i++] = strdup("-e");
-+	rec_argv[i++] = "record";
- 
--	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
--		sprintf(event, "cpu/mem-stores/pp");
--	else
--		sprintf(event, "cpu/mem-loads/pp");
-+	if (mem_operation & MEM_OPERATION_LOAD)
-+		rec_argv[i++] = "-W";
-+
-+	rec_argv[i++] = "-d";
-+
-+	if (mem_operation & MEM_OPERATION_LOAD) {
-+		rec_argv[i++] = "-e";
-+		rec_argv[i++] = "cpu/mem-loads/pp";
-+	}
-+
-+	if (mem_operation & MEM_OPERATION_STORE) {
-+		rec_argv[i++] = "-e";
-+		rec_argv[i++] = "cpu/mem-stores/pp";
-+	}
- 
--	rec_argv[i++] = strdup(event);
- 	for (j = 1; j < argc; j++, i++)
- 		rec_argv[i] = argv[j];
- 
-@@ -162,17 +169,17 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
- 	if (!rep_argv)
- 		return -1;
- 
--	rep_argv[i++] = strdup("report");
--	rep_argv[i++] = strdup("--mem-mode");
--	rep_argv[i++] = strdup("-n"); /* display number of samples */
-+	rep_argv[i++] = "report";
-+	rep_argv[i++] = "--mem-mode";
-+	rep_argv[i++] = "-n"; /* display number of samples */
- 
- 	/*
- 	 * there is no weight (cost) associated with stores, so don't print
- 	 * the column
- 	 */
--	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
--		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
--				       "dso_daddr,tlb,locked");
-+	if (!(mem_operation & MEM_OPERATION_LOAD))
-+		rep_argv[i++] = "--sort=mem,sym,dso,symbol_daddr,"
-+				"dso_daddr,tlb,locked";
- 
- 	for (j = 1; j < argc; j++, i++)
- 		rep_argv[i] = argv[j];
-@@ -182,6 +189,75 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
- 	return ret;
- }
- 
-+struct mem_mode {
-+	const char *name;
-+	int mode;
-+};
-+
-+#define MEM_OPT(n, m) \
-+	{ .name = n, .mode = (m) }
-+
-+#define MEM_END { .name = NULL }
-+
-+static const struct mem_mode mem_modes[]={
-+	MEM_OPT("load", MEM_OPERATION_LOAD),
-+	MEM_OPT("store", MEM_OPERATION_STORE),
-+	MEM_END
-+};
-+
-+static int
-+parse_mem_ops(const struct option *opt, const char *str, int unset)
-+{
-+	int *mode = (int *)opt->value;
-+	const struct mem_mode *m;
-+	char *s, *os = NULL, *p;
-+	int ret = -1;
-+
-+	if (unset)
-+		return 0;
-+
-+	/* str may be NULL in case no arg is passed to -t */
-+	if (str) {
-+		/* because str is read-only */
-+		s = os = strdup(str);
-+		if (!s)
-+			return -1;
-+
-+		/* reset mode */
-+		*mode = 0;
-+
-+		for (;;) {
-+			p = strchr(s, ',');
-+			if (p)
-+				*p = '\0';
-+
-+			for (m = mem_modes; m->name; m++) {
-+				if (!strcasecmp(s, m->name))
-+					break;
-+			}
-+			if (!m->name) {
-+				fprintf(stderr, "unknown sampling op %s,"
-+					    " check man page\n", s);
-+				goto error;
-+			}
-+
-+			*mode |= m->mode;
-+
-+			if (!p)
-+				break;
-+
-+			s = p + 1;
-+		}
-+	}
-+	ret = 0;
-+
-+	if (*mode == 0)
-+		*mode = MEM_OPERATION_LOAD;
-+error:
-+	free(os);
-+	return ret;
-+}
-+
- int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct stat st;
-@@ -199,8 +275,9 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
- 		.input_name		 = "perf.data",
- 	};
- 	const struct option mem_options[] = {
--	OPT_STRING('t', "type", &mem_operation,
--		   "type", "memory operations(load/store)"),
-+	OPT_CALLBACK('t', "type", &mem_operation,
-+		   "type", "memory operations(load,store) Default load,store",
-+		    parse_mem_ops),
- 	OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
- 		    "dump raw samples in ASCII"),
- 	OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
--- 
-1.9.1
+       tglx
 
