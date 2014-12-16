@@ -1,123 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750930AbaLPFOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:14:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43356 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaLPFOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:14:30 -0500
-Message-ID: <548FBFB3.9080708@suse.com>
-Date: Tue, 16 Dec 2014 06:14:27 +0100
-From: Juergen Gross <jgross@suse.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: jongman.heo@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to
- use cache mode translation tables")
-References: <1194554367.45481418704807712.JavaMail.weblogic@epmlwas09d>
-In-Reply-To: <1194554367.45481418704807712.JavaMail.weblogic@epmlwas09d>
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
+	id S1750935AbaLPFUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:20:24 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:42015 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812AbaLPFUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 00:20:22 -0500
+From: "Nicholas A. Bellinger" <nab@daterainc.com>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] iscsi-target: Fail connection on short writes/reads
+Date: Tue, 16 Dec 2014 04:48:58 +0000
+Message-Id: <1418705338-23695-1-git-send-email-nab@daterainc.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 05:40 AM, Jongman Heo wrote:
->> ------- Original Message -------
->> Sender : Juergen Gross<jgross@suse.com>
->> Date : 2014-12-15 20:52 (GMT+09:00)
->> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->>
->> On 12/15/2014 08:52 AM, Jongman Heo wrote:
->>>> ------- Original Message -------
->>>> Sender : Juergen Gross
->>>> Date : 2014-12-15 14:04 (GMT+09:00)
->>>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->>>>
->>>> On 12/14/2014 06:07 AM, ÇãÁ¾¸¸ wrote:
->>>>>
->>>>> Hi,
->>>>>
->>>>> My Linux virtual machine on (Windows) VMWare workstation 10 can't boot with following commit.
->>>>>
->>>>> commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
->>>>> Author: Juergen Gross
->>>>> Date:   Mon Nov 3 14:02:03 2014 +0100
->>>>>
->>>>>        x86: Enable PAT to use cache mode translation tables
->>>>>
->>>>> Unfortunately I can't see any console log.
->>>>
->>>> Hmm, weird. Could you provide some more information?
->>>>
->>>> Kernel config, hardware used, /proc/cpuinfo of working kernel?
->>>> Anything you see with earlyprintk enabled?
->>>>
->>>>
->>>> Juergen
->>>
->>> (Sorry for resending this email, previous one bounced from mailing list due to HTML format)
->>>
->>> Hi,
->>>
->>> I'm using Fedora 21, with custom built kernel.
->>> Host PC is windows 7 64-bit, and running VMWare workstation 10 for guest Fedora Linux.
->>>
->>> With earlyprintk, just following message is printed.
->>>
->>>     early console in setup code
->>>
->>> and nothing more...
->>
->> Can you try attached diagnostic patch, please? I suspect a problem
->> regarding VMWares PAT emulation...
->>
->>
->> Juergen
-> 
-> Hi,
-> 
-> With the commit reverted, the patch doesn't apply.
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Sure.
+This patch changes iscsit_do_[tx,rx]_data() to fail on short
+write/reads when kernel_[send,recv]msg() returns a value different
+than the requested transfer length, returning -EPIPE and thus
+causing a connection reset to occur.
 
-> Without revert, kernel (patch applied) doesn't boot and I can't see any message.
+This avoids a potential bug in the original code where a short
+write/read would result in kernel_[send,recv]msg() being called
+again with the original iovec base + length.
 
-What are your kernel parameters? There must be some message with the
-diagnostic patch, as the first pr_info() is called before any other
-part of the critical patch is becoming active. Could it be you have
-instructed the kernel to be "quiet"? I'd recommend:
+In practice this has not been an issue because iscsit_do_tx_data()
+is only used for transferring 48 byte headers + 4 byte digests,
+along with seldom used control payloads from NOPIN + TEXT_RSP +
+REJECT with less than 32k of data.  Nor has it been occuring with
+iscsit_do_rx_data() because MSG_WAITALL won't return to caller
+until the requested transfer length is reached, or an error has
+occured.
 
-earlyprintk=vga ignore_loglevel
+So following Al's audit of iovec consumers, go ahead and fail
+the connection on short writes/reads for now, and remove the
+bogus logic.
 
-and no quiet. I don't know VMWare settings, so may be you can use
-earlyprintk=ttyS0 instead of vga.
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: David S. Miller <davem@davemloft.net>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/iscsi/iscsi_target_util.c | 48 +++++++++++++-------------------
+ 1 file changed, 20 insertions(+), 28 deletions(-)
 
-> 
-> Let me show you my PAT values (the commit reverted)
-> 
-> # dmesg | grep PAT
-> [    0.000000] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
-> [    0.314631] x86 PAT enabled: cpu 3, old 0x0, new 0x7010600070106
-> [    0.314703] x86 PAT enabled: cpu 1, old 0x0, new 0x7010600070106
-> [    0.314780] x86 PAT enabled: cpu 2, old 0x0, new 0x7010600070106
-> [    0.314852] x86 PAT enabled: cpu 4, old 0x0, new 0x7010600070106
-> [    0.314923] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
-> [    0.314997] x86 PAT enabled: cpu 6, old 0x0, new 0x7010600070106
-> [    0.315069] x86 PAT enabled: cpu 7, old 0x0, new 0x7010600070106
-> [    0.315142] x86 PAT enabled: cpu 5, old 0x0, new 0x7010600070106
-
-These are the expected values. But these values are the ones which are
-written, not the ones which have been read from the PAT MSR again.
-
-Without applying the critical patch you could add:
-
-rdmsrl(MSR_IA32_CR_PAT, pat);
-printk(KERN_INFO "PAT read: cpu %d, 0x%Lx\n", smp_processor_id(), pat);
-
-at the end of pat_init() to verify VMWare is handling reads of the PAT
-MSR properly.
-
-Juergen
+diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
+index ce87ce9..9aa24f1 100644
+--- a/drivers/target/iscsi/iscsi_target_util.c
++++ b/drivers/target/iscsi/iscsi_target_util.c
+@@ -1326,7 +1326,7 @@ static int iscsit_do_rx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
+ {
+-	int data = count->data_length, rx_loop = 0, total_rx = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
+ 
+@@ -1338,35 +1338,31 @@ static int iscsit_do_rx_data(
+ 	iov_p = count->iov;
+ 	iov_len	= count->iov_count;
+ 
+-	while (total_rx < data) {
+-		rx_loop = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_rx), MSG_WAITALL);
+-		if (rx_loop <= 0) {
+-			pr_debug("rx_loop: %d total_rx: %d\n",
+-				rx_loop, total_rx);
+-			return rx_loop;
+-		}
+-		total_rx += rx_loop;
+-		pr_debug("rx_loop: %d, total_rx: %d, data: %d\n",
+-				rx_loop, total_rx, data);
++	ret = kernel_recvmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length, MSG_WAITALL);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d recv data: %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, recv data: %d\n", ret, count->data_length);
+ 
+-	return total_rx;
++	return ret;
+ }
+ 
+ static int iscsit_do_tx_data(
+ 	struct iscsi_conn *conn,
+ 	struct iscsi_data_count *count)
+ {
+-	int data = count->data_length, total_tx = 0, tx_loop = 0, iov_len;
++	int ret, iov_len;
+ 	struct kvec *iov_p;
+ 	struct msghdr msg;
+ 
+ 	if (!conn || !conn->sock || !conn->conn_ops)
+ 		return -1;
+ 
+-	if (data <= 0) {
+-		pr_err("Data length is: %d\n", data);
++	if (count->data_length <= 0) {
++		pr_err("Data length is: %d\n", count->data_length);
+ 		return -1;
+ 	}
+ 
+@@ -1375,20 +1371,16 @@ static int iscsit_do_tx_data(
+ 	iov_p = count->iov;
+ 	iov_len = count->iov_count;
+ 
+-	while (total_tx < data) {
+-		tx_loop = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
+-					(data - total_tx));
+-		if (tx_loop <= 0) {
+-			pr_debug("tx_loop: %d total_tx %d\n",
+-				tx_loop, total_tx);
+-			return tx_loop;
+-		}
+-		total_tx += tx_loop;
+-		pr_debug("tx_loop: %d, total_tx: %d, data: %d\n",
+-					tx_loop, total_tx, data);
++	ret = kernel_sendmsg(conn->sock, &msg, iov_p, iov_len,
++			     count->data_length);
++	if (ret != count->data_length) {
++		pr_err("Unexpected ret: %d send data %d\n",
++		       ret, count->data_length);
++		return -EPIPE;
+ 	}
++	pr_debug("ret: %d, sent data: %d\n", ret, count->data_length);
+ 
+-	return total_tx;
++	return ret;
+ }
+ 
+ int rx_data(
+-- 
+1.9.1
 
