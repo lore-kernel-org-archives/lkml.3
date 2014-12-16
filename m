@@ -1,104 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbaLPAuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 19:50:35 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:59213 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaLPAud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 19:50:33 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Jiri Kosina <jkosina@suse.cz>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] HID: logitech-{dj,hidpp}: check report length
-Date: Tue, 16 Dec 2014 01:50:15 +0100
-Message-Id: <1418691016-30681-3-git-send-email-peter@lekensteyn.nl>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
-References: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
-X-Spam-Score: 0.0 (/)
+	id S1751141AbaLPA4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 19:56:42 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:45022 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820AbaLPA4k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 19:56:40 -0500
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: Alexander Duyck <alexander.duyck@gmail.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        Hayato Momma <h-momma@ce.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to
+ enable MC promiscuous mode
+Thread-Topic: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to
+ enable MC promiscuous mode
+Thread-Index: AQHQD+ngQGOefuMim0OG0YZMPBmEtJyAFDFggBFKsYA=
+Date: Tue, 16 Dec 2014 00:49:17 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05DDD231@BPXM14GP.gisp.nec.co.jp>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05DBFDAD@BPXM14GP.gisp.nec.co.jp>
+ <54809D57.9060804@gmail.com> 
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Malicious USB devices can send bogus reports smaller than the expected
-buffer size. Ensure that the length is valid to avoid reading out of
-bounds.
+> > Subject: Re: [E1000-devel] [PATCH] ixgbe, ixgbevf: Add new mbox API to enable MC promiscuous mode
+> >
+> > On 11/27/2014 02:39 AM, Hiroshi Shimamoto wrote:
+> > > From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> > >
+> > > The limitation of the number of multicast address for VF is not enough
+> > > for the large scale server with SR-IOV feature.
+> > > IPv6 requires the multicast MAC address for each IP address to handle
+> > > the Neighbor Solicitation message.
+> > > We couldn't assign over 30 IPv6 addresses to a single VF interface.
+> > >
+> > > The easy way to solve this is enabling multicast promiscuous mode.
+> > > It is good to have a functionality to enable multicast promiscuous mode
+> > > for each VF from VF driver.
+> > >
+> > > This patch introduces the new mbox API, IXGBE_VF_SET_MC_PROMISC, to
+> > > enable/disable multicast promiscuous mode in VF. If multicast promiscuous
+> > > mode is enabled the VF can receive all multicast packets.
+> > >
+> > > With this patch, the ixgbevf driver automatically enable multicast
+> > > promiscuous mode when the number of multicast addresses is over than 30
+> > > if possible.
+> > >
+> > > This also bump the API version up to 1.2 to check whether the API,
+> > > IXGBE_VF_SET_MC_PROMISC is available.
+> > >
+> > > Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> > > CC: Choi, Sy Jong <sy.jong.choi@intel.com>
+> > > Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
+> >
+> > This is a REALLY bad idea unless you plan to limit this to privileged VFs.
+> >
+> > I would recommend looking at adding an ndo operation to control this
+> > feature so that it could be disabled by default in the PF and only
+> > enabled on the host side if specifically requested.  Otherwise the
+> 
+> Do you mean that PF driver should have the flag to enable or disable per VF
+> and disallow the request from VF?
 
-For the old WTP, I do not have a HID descriptor so just check for the
-minimum length in hidpp_raw_event (this can be changed to an inequality
-later).
+Could you answer about that?
 
-Signed-off-by: Peter Wu <peter@lekensteyn.nl>
----
-Hi,
+> 
+> > problem is I can easily see this leading security issues as the VFs
+> > might begin getting access to messages that they aren't supposed to.
+> 
+> OK, by the way, I think that the current ixgbe and ixgbevf implementation
+> has already such issue. The guest can add hash entry to receive MAC and it
+> can get every multicast MAC frame with the current mbox API.
+> Does your concern come from the easiness of doing that?
 
-If you know that the WTP report (ID 2) has a length of 2, then you can change
-"<" to "!=" and remove the paragraph from the commit message.
+There is the single MTA per PF, not per VF.
+VF requests PF to register the hash of MC MAC, then PF set a bit in the MTA
+and set the flag IXGBE_VMOLR_ROMPE of VF, which enables packets switching to
+the VF if MC MAC hits the hash entry in the MTA.
+If VM1 has VF1 which uses MC MAC1 and VM2 has VF2 which uses MC MAC2, both
+of VM1 and VM2 will receive MC MAC1. VM2 doesn't know why it receives MAC1.
+In other words, in the current implementation, a VF receives all multicast
+packets which are registered from other VFs.
+Because the above reason, I hadn't imagined that enabling MC promiscuous mode
+increases receiving the MC messages that they aren't supposed to.
+I think that this patch doesn't change that behavior.
 
-Kind regards,
-Peter
----
- drivers/hid/hid-logitech-dj.c    | 16 +++++++++++++++-
- drivers/hid/hid-logitech-hidpp.c | 12 +++++++++---
- 2 files changed, 24 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
-index c917ab6..5bc6d80 100644
---- a/drivers/hid/hid-logitech-dj.c
-+++ b/drivers/hid/hid-logitech-dj.c
-@@ -962,10 +962,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
- 
- 	switch (data[0]) {
- 	case REPORT_ID_DJ_SHORT:
-+		if (size != DJREPORT_SHORT_LENGTH) {
-+			dev_err(&hdev->dev, "DJ report of bad size (%d)", size);
-+			return false;
-+		}
- 		return logi_dj_dj_event(hdev, report, data, size);
- 	case REPORT_ID_HIDPP_SHORT:
--		/* intentional fallthrough */
-+		if (size != HIDPP_REPORT_SHORT_LENGTH) {
-+			dev_err(&hdev->dev,
-+				"Short HID++ report of bad size (%d)", size);
-+			return false;
-+		}
-+		return logi_dj_hidpp_event(hdev, report, data, size);
- 	case REPORT_ID_HIDPP_LONG:
-+		if (size != HIDPP_REPORT_LONG_LENGTH) {
-+			dev_err(&hdev->dev,
-+				"Long HID++ report of bad size (%d)", size);
-+			return false;
-+		}
- 		return logi_dj_hidpp_event(hdev, report, data, size);
- 	}
- 
-diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-index ae23dec..2315358 100644
---- a/drivers/hid/hid-logitech-hidpp.c
-+++ b/drivers/hid/hid-logitech-hidpp.c
-@@ -992,11 +992,17 @@ static int hidpp_raw_event(struct hid_device *hdev, struct hid_report *report,
- 			return 1;
- 		}
- 		return hidpp_raw_hidpp_event(hidpp, data, size);
-+	case 0x02:
-+		if (size < 2) {
-+			hid_err(hdev, "Received HID report of bad size (%d)",
-+				size);
-+			return 1;
-+		}
-+		if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
-+			return wtp_raw_event(hdev, data, size);
-+		return 1;
- 	}
- 
--	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
--		return wtp_raw_event(hdev, data, size);
--
- 	return 0;
- }
- 
--- 
-2.1.3
+thanks,
+Hiroshi
 
