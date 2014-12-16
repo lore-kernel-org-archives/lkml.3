@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326AbaLPBsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 20:48:24 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:37495 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaLPBsW (ORCPT
+	id S1751312AbaLPBuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 20:50:16 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:36628 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaLPBuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 20:48:22 -0500
+	Mon, 15 Dec 2014 20:50:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+In-Reply-To: <CA+55aFxmT98972EM7OaJoF_P8AoA1Lyj6WcN9LaT+MC_wgrhRQ@mail.gmail.com>
 References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
 	<CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
 	<CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
-Date: Mon, 15 Dec 2014 20:48:22 -0500
-Message-ID: <CAF6AEGvib-pnowM1pbTNt9Y-ZDuqAxrbm+aZS9+HWvWskEqpxA@mail.gmail.com>
+	<CA+55aFxmT98972EM7OaJoF_P8AoA1Lyj6WcN9LaT+MC_wgrhRQ@mail.gmail.com>
+Date: Tue, 16 Dec 2014 11:50:11 +1000
+Message-ID: <CAPM=9tx=vkMFhiRRYkoaxL+a9vjMREMTO=xo68Xxsxuto5LWhw@mail.gmail.com>
 Subject: Re: [git pull] drm for 3.19-rc1
-From: Rob Clark <robdclark@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
         Thomas Hellstrom <thellstrom@vmware.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
         Alex Deucher <alexander.deucher@amd.com>,
-        Daniel Vetter <daniel.vetter@intel.com>
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 7:48 PM, Dave Airlie <airlied@gmail.com> wrote:
-> On 16 December 2014 at 10:35, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> On Sun, Dec 14, 2014 at 11:17 PM, Dave Airlie <airlied@linux.ie> wrote:
->>>
->>> i915:
->>>         Initial Skylake (SKL) support
->>>         gen3/4 reset work
->>>         start of dri1/ums removal
->>>         infoframe tracking
->>>         fixes for lots of things.
+On 16 December 2014 at 11:03, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, Dec 15, 2014 at 4:48 PM, Dave Airlie <airlied@gmail.com> wrote:
 >>
->> So I'm not sure how happy I am about this. It seems to work, but on
->> the very first boot I get this:
->>
->>   ------------[ cut here ]------------
->>   WARNING: CPU: 1 PID: 1292 at
->> drivers/gpu/drm/i915/i915_gem_execbuffer.c:125
->> eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]()
->>   GPU use of dumb buffer is illegal.
->>   Modules linked in: ip6t_rpfilter bnep ip6t_REJECT nf_reject_ipv6
->> bluetooth nf_conntrack_ipv6 ...
->>    video
->>   CPU: 1 PID: 1292 Comm: Xorg Not tainted 3.18.0-09423-g988adfdffdd4 #1
->>   Hardware name:                  /DH87RL, BIOS
->> RLH8710H.86A.0327.2014.0924.1645 09/24/2014
->>   Call Trace:
->>     dump_stack+0x45/0x57
->>     warn_slowpath_common+0x80/0xc0
->>     warn_slowpath_fmt+0x41/0x50
->>     ? sg_kfree+0x30/0x30
->>     eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]
->>     i915_gem_do_execbuffer.isra.25+0x50d/0xd80 [i915]
->>     ? unlock_page+0x6d/0x80
->>     i915_gem_execbuffer2+0xb1/0x2c0 [i915]
->>     drm_ioctl+0x19c/0x630 [drm]
->>     do_vfs_ioctl+0x2e0/0x4e0
->>     ? file_has_perm+0x87/0xa0
->>     ? __audit_syscall_entry+0xac/0x100
->>     SyS_ioctl+0x81/0xa0
->>     ? do_page_fault+0xc/0x10
->>     system_call_fastpath+0x12/0x17
->>   ---[ end trace cb3c78163212ca1d ]---
->>
->> apparently Introduced by commit 355a70183848 ("drm/gem: Warn on
->> illegal use of the dumb buffer interface v2")
->>
->> The commit says "the next step is to fail".
->>
->> And I want to make it painfully clear that if somebody breaks existing
->> working setups, they don't get to work on the kernel.
->>
->> So get rid of the warning. And get rid of the notion that you can just
->> fail. You can try to fix Xorg, and then come back to this - in a
->> couple of years - when it no longer happens.
->>
+>> I'd be inclined to just revert this for now, it is annoying we let
+>> userspace away with this, but we probably need to find a better
+>> way to enforce it, since the cat is out of the bag.
 >
-> I'd be inclined to just revert this for now, it is annoying we let
-> userspace away with this, but we probably need to find a better
-> way to enforce it, since the cat is out of the bag.
+> .. why did that commit ever even get far enough to get to me?
+>
+> It seems to happen on any reasonably modern Intel graphics - at least
+> it happens on both my laptop and my desktop. And I'm running
+> bog-standard F20, so either nobody ever even tested that broken thing,
+> or nobody bothered to look at the messages to notice it was broken.
+> Either way, it shows a rather distinct lack of actual testing,
+> wouldn't you say?
+>
+> I really see no excuse for crap like this. If I find obvious bugs
+> immediately, on my very normal hardware and very normal distribution,
+> that means that there is something wrong in the development process.
+> If I was some subtle timing-dependent thing, or I were to be using
+> eally odd hardware, or I had to do something special to trigger it,
+> that would be one thing. But that's definitely not the case here.
 
-Replace w/ DRM_ERROR?  (perhaps ratelimited..)?
+Its a rather straightforward revert, patch should have used an
+DRM_INFO rather than WARN at this point, people like WARN
+because automatic tools find them on the Internet and make it
+easier to track down, but it also freaks everyone out when they
+see a backtrace, and there are ongoing discussion with the WARN
+fans to tone them down. especially where things continue fine after
+them. I think a few people have become immune to i915 WARNs
+in logs, and we are trying to bring that back a bit.
 
-It's not a driver error, so much as a warning for userspace that it is
-doing something that is not expected to work on all hw / generations,
-and it appears to be finding more or less what it was intended to
-find, although I'm not sure the stack trace serves much purpose.
+Now you might complain that printing anything in this case is bad,
+but I've got machines with buckets of deprecated sysctl warnings
+etc, so the precedent has well been set for at least trying to track
+down bad userspace behaviour.
+e.g. I see
+WARNING! power/level is deprecated; use power/control instead
 
-BR,
--R
+This patch was just over zealous in picking it reporting method.
 
+I'd have to ask the i915 folks why it didn't get seen there,
+I haven't had the bandwidth to test -next on the haswell laptop
+I have here and I expect this would happen on it fine, but I've been
+running it on a few amd/nvidia laptops to diversify testing a bit.
 
-> Dave.
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+The patch came from VMware developers and maybe it
+didn't get into the Intel developers test cycle early enough
+for them to notice it. Its main job was to find out early if
+userspace things were breaking the rules, and it looks
+like yes they were, and its a pity nobody noticed earlier.
+
+Dave.
