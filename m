@@ -1,282 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751452AbaLPGdi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 01:33:38 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:33112 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaLPGdh (ORCPT
+	id S1751247AbaLPGgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:36:11 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:54560 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaLPGgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 01:33:37 -0500
+	Tue, 16 Dec 2014 01:36:09 -0500
+Date: Mon, 15 Dec 2014 22:35:49 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Hogan <james.hogan@imgtec.com>, linux-metag@vger.kernel.org
+Subject: Re: linux-next: Tree for Dec 16
+Message-ID: <20141216063549.GA1060@roeck-us.net>
+References: <20141216154622.7c2ded16@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <548F4A99.7040409@ti.com>
-References: <1418378690-3466-1-git-send-email-lftan@altera.com>
-	<548AFDE9.6000909@gmail.com>
-	<548F4A99.7040409@ti.com>
-Date: Tue, 16 Dec 2014 14:33:34 +0800
-X-Google-Sender-Auth: RAIzHEWvuXVCue_rOs1I9m2A2-w
-Message-ID: <CAFiDJ5-b9qsLKj8Qh2+yx8_Y1nv5CG1PHyn2Se0zzZLSHWTKNg@mail.gmail.com>
-Subject: Re: [PATCH (resend)] mailbox: Add Altera mailbox driver
-From: Ley Foon Tan <lftan@altera.com>
-To: Suman Anna <s-anna@ti.com>
-Cc: Dinh Nguyen <dinh.linux@gmail.com>, Jassi Brar <jassisinghbrar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216154622.7c2ded16@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A010203.548FD2D8.046F,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 4:54 AM, Suman Anna <s-anna@ti.com> wrote:
-> Hi Ley Foon,
->
-> On 12/12/2014 08:38 AM, Dinh Nguyen wrote:
->>
->>
->> On 12/12/14, 4:04 AM, Ley Foon Tan wrote:
->>> The Altera mailbox allows for interprocessor communication. It supports
->>> only one channel and work as either sender or receiver.
->
-> I have a few more comments in addition to those that Dinh provided.
->
->>>
->>> Signed-off-by: Ley Foon Tan <lftan@altera.com>
->>> ---
->>>  .../devicetree/bindings/mailbox/altera-mailbox.txt |  49 +++
->>>  drivers/mailbox/Kconfig                            |   6 +
->>>  drivers/mailbox/Makefile                           |   2 +
->>>  drivers/mailbox/mailbox-altera.c                   | 404 +++++++++++++++++++++
->>>  4 files changed, 461 insertions(+)
->>>  create mode 100644 Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
->>>  create mode 100644 drivers/mailbox/mailbox-altera.c
->>>
->>> diff --git a/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
->>> new file mode 100644
->>> index 0000000..c261979
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/mailbox/altera-mailbox.txt
->>> @@ -0,0 +1,49 @@
->>> +Altera Mailbox Driver
->>> +=====================
->>> +
->>> +Required properties:
->>> +- compatible :      "altr,mailbox-1.0".
->
-> I am not sure on this convention, sounds like IP version number. Please
-> check this with a DT maintainer.
-Our other soft IPs compatible strings all have 1.0 version number. Eg:
-altr,juart-1.0.
-So, we want to keep it as same format.
+On Tue, Dec 16, 2014 at 03:46:22PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Please do not add any code destined for v3.20 to your linux-next included
+> trees/branches until after v3.19-rc1 is released.
+> 
+> Changes since 20141215:
+> 
+> The infiniband tree gained a conflict against Linus' tree and a build
+> failure so I used the version from next-20141215.
+> 
+> The userns tree gained a conflict against the vfs tree.
+> 
+> The clk tree gained a build failure so I used the version from
+> next-20141215.
+> 
+> Non-merge commits (relative to Linus' tree): 3588
+>  2582 files changed, 123494 insertions(+), 135748 deletions(-)
+> 
 
->>> diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
->>> index c04fed9..84325f2 100644
->>> --- a/drivers/mailbox/Kconfig
->>> +++ b/drivers/mailbox/Kconfig
->>> @@ -45,4 +45,10 @@ config PCC
->>>        states). Select this driver if your platform implements the
->>>        PCC clients mentioned above.
->>>
->>> +config ALTERA_MBOX
->>> +    tristate "Altera Mailbox"
->
-> You haven't used any depends on here, this driver is not applicable on
-> all platforms, right?
-It is a soft IP, so it is not limited to our platform only.
-Other soft IP drivers also don't have 'depend on', so I think should be fine.
+My metag buildbot test fails with this kernel.
 
+bisect result:
 
->>> +
->>> +static inline struct altera_mbox *to_altera_mbox(struct mbox_chan *chan)
->>> +{
->>> +    if (!chan)
->>> +            return NULL;
->>> +
->>> +    return container_of(chan, struct altera_mbox, chan);
->>> +}
->>> +
->>> +static inline int altera_mbox_full(struct altera_mbox *mbox)
->>> +{
->>> +    u32 status;
->>> +
->>> +    status = __raw_readl(mbox->mbox_base + MAILBOX_STS_REG);
->
-> You may want to replace all the __raw_readl/__raw_writel with regular
-> readl/writel or its equivalent relaxed versions depending on your needs.
-Okay.
+a82be12232dcccf6b914cec7458e96ee79fae0e3 is the first bad commit
+commit a82be12232dcccf6b914cec7458e96ee79fae0e3
+Author: Andy Lutomirski <luto@amacapital.net>
+Date:   Tue Dec 16 13:26:43 2014 +1100
 
+    all arches, signal: move restart_block to struct task_struct
 
->>> +static int altera_mbox_send_data(struct mbox_chan *chan, void *data)
->>> +{
->>> +    struct altera_mbox *mbox = to_altera_mbox(chan);
->>> +    u32 *udata = (u32 *)data;
->>> +
->>> +    if (!mbox || !data)
->>> +            return -EINVAL;
->>> +    if (!mbox->is_sender) {
->>> +            dev_warn(mbox->dev,
->>> +                    "failed to send. This is receiver mailbox.\n");
->>> +            return -EINVAL;
->>> +    }
->>> +
->>> +    if (altera_mbox_full(mbox))
->>> +            return -EBUSY;
->
-> I think this logic in general will conflict between interrupt and poll
-> mode. send_data is supposed to return -EBUSY only in polling mode and
-> not in interrupt mode.
-What is the recommended error code for this case? BTW, omap-mailbox.c
-also return -EBUSY if mailbox is full.
+bisect log:
 
->>> +
->>> +    /* Enable interrupt before send */
->>> +    altera_mbox_tx_intmask(mbox, true);
->
-> Is this true and required in Polling mode too?
-Add checking for interrupt mode here.
+# bad: [a0eda581bf3fdc7be6bdf4cb18ce087675699336] Add linux-next specific files for 20141216
+# good: [b2776bf7149bddd1f4161f14f79520f17fc1d71d] Linux 3.18
+git bisect start 'HEAD' 'v3.18'
+# good: [27afc5dbda52ee3dbcd0bda7375c917c6936b470] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
+git bisect good 27afc5dbda52ee3dbcd0bda7375c917c6936b470
+# good: [a5e6d5b3bb7124309ce581e9e050e029ab037609] Merge remote-tracking branch 'l2-mtd/master'
+git bisect good a5e6d5b3bb7124309ce581e9e050e029ab037609
+# good: [93cc1d514a7e8bc4e00ce913ddccb34ee8a2a001] Merge remote-tracking branch 'ipmi/for-next'
+git bisect good 93cc1d514a7e8bc4e00ce913ddccb34ee8a2a001
+# good: [865cde938ee6ab758fd47d1a36150aee20371b85] staging: unisys: virtpci: Fix CamelCase in delete_vbus_device()
+git bisect good 865cde938ee6ab758fd47d1a36150aee20371b85
+# good: [594e400a2c3a64d7c3ba8ad7b0196c887a354100] staging: comedi: das6402: add basic (*do_cmdtest) for AI async commands
+git bisect good 594e400a2c3a64d7c3ba8ad7b0196c887a354100
+# good: [4e8bb35b814a1377dcaf48b98d4ab29176528cdc] Merge remote-tracking branch 'target-updates/for-next'
+git bisect good 4e8bb35b814a1377dcaf48b98d4ab29176528cdc
+# good: [e03f3bb62ca8a1124bc408046c50aed7629b24cc] next-20141215/clk
+git bisect good e03f3bb62ca8a1124bc408046c50aed7629b24cc
+# bad: [a82be12232dcccf6b914cec7458e96ee79fae0e3] all arches, signal: move restart_block to struct task_struct
+git bisect bad a82be12232dcccf6b914cec7458e96ee79fae0e3
+# good: [4425fdc4c01ab7699072a417741a008b0dca576b] ocfs2: do not fallback to buffer I/O write if appending
+git bisect good 4425fdc4c01ab7699072a417741a008b0dca576b
+# good: [98b090c1d15d1c94f01f071b283ce44be8644220] mm: define MADV_FREE for some arches
+git bisect good 98b090c1d15d1c94f01f071b283ce44be8644220
+# good: [ca402e9bfbbac21d3d7541c33adb60f7ebcc480e] arm: add pmd_mkclean for THP
+git bisect good ca402e9bfbbac21d3d7541c33adb60f7ebcc480e
+# good: [60eeb1279b50c205f045d2b7c76c906a2d2fb751] mm: Fix comment typo "CONFIG_TRANSPARNTE_HUGE"
+git bisect good 60eeb1279b50c205f045d2b7c76c906a2d2fb751
+# good: [1134212f12cb9e5b3c24b7be5cfa304486f2f96b] do_shared_fault(): check that mmap_sem is held
+git bisect good 1134212f12cb9e5b3c24b7be5cfa304486f2f96b
+# first bad commit: [a82be12232dcccf6b914cec7458e96ee79fae0e3] all arches, signal: move restart_block to struct task_struct
 
+--
 
->
-> Do you even need the chans variable, don't see it getting used
-> anywhere. You are directly using the mbox->chan during registration..
-Will update this.
->
->>
->>> +    struct resource *regs;
->>> +    int ret;
->>> +
->>> +    mbox = devm_kzalloc(&pdev->dev, sizeof(struct altera_mbox),
->
-> Use sizeof(*mbox)
-Okay.
-
->
->>> +            GFP_KERNEL);
->
-> You have a few "Alignment should match open parenthesis" checks
-> generated with the --strict option on checkpatch. I am not sure if Jassi
-> is requiring them, but I would recommend that you fix all of them.
-Okay, will check these.
-
->
->>> +    if (!mbox)
->>> +            return -ENOMEM;
->>> +
->>> +    regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> +    if (!regs)
->>> +            return -ENXIO;
->
-> You can remove the check for regs, devm_ioremap_resource is capable
-> of handling the error.
-Okay.
-
->>> +
->>> +    mbox->mbox_base = devm_ioremap_resource(&pdev->dev, regs);
->>> +    if (IS_ERR(mbox->mbox_base))
->>> +            return PTR_ERR(mbox->mbox_base);
->>> +
->>> +    /* Check is it a sender or receiver? */
->>> +    mbox->is_sender = altera_mbox_is_sender(mbox);
->>> +
->>> +    mbox->irq = platform_get_irq(pdev, 0);
->>> +    if (mbox->irq >= 0)
->>> +            mbox->intr_mode = true;
->
-> This seems to be a poor way of setting up the mode. Is it the same IP
-> block but different integration on different SoCs? Or on the same SoC,
-> and you can use it either by interrupt driven or by polling.
-Yes, it can use interrupt or polling mode depends on hardware configurations.
-It is a soft IP and can be configured with different hardware configurations.
-
->>> +
->>> +    mbox->dev = &pdev->dev;
->>> +
->>> +    /* Hardware supports only one channel. */
->>> +    chans[0] = &mbox->chan;
->>> +    mbox->controller.dev = mbox->dev;
->>> +    mbox->controller.num_chans = 1;
->>> +    mbox->controller.chans =  &mbox->chan;
->>> +    mbox->controller.ops = &altera_mbox_ops;
->>> +
->>> +    if (mbox->is_sender) {
->>> +            if (mbox->intr_mode)
->>> +                    mbox->controller.txdone_irq = true;
->>> +            else {
->>> +                    mbox->controller.txdone_poll = true;
->>> +                    mbox->controller.txpoll_period = MBOX_POLLING_MS;
->>> +            }
->>
->> Need braces around the if as well.
->>
->>> +    }
->>> +
->>> +    ret = mbox_controller_register(&mbox->controller);
->>> +    if (ret) {
->>> +            dev_err(&pdev->dev, "Register mailbox failed\n");
->>> +            goto err;
->>> +    }
->>> +
->>> +    platform_set_drvdata(pdev, mbox);
->>> +    return 0;
->
-> Not required, ret should be 0 if mbox_controller_register succeeds.
-Okay.
->
->>> +err:
->>> +    return ret;
->>> +}
->>> +
->>> +static int altera_mbox_remove(struct platform_device *pdev)
->>> +{
->>> +    struct altera_mbox *mbox = platform_get_drvdata(pdev);
->>> +
->>> +    if (!mbox)
->>> +            return -EINVAL;
->>> +
->>> +    mbox_controller_unregister(&mbox->controller);
->>> +
->>> +    platform_set_drvdata(pdev, NULL);
->
-> This is not required.
-Okay.
->
->>> +    return 0;
->>> +}
->>> +
->>> +static const struct of_device_id altera_mbox_match[] = {
->>> +    { .compatible = "altr,mailbox-1.0" },
->>> +    { /* Sentinel */ }
->>> +};
->>> +
->>> +MODULE_DEVICE_TABLE(of, altera_mbox_match);
->>> +
->>> +static struct platform_driver altera_mbox_driver = {
->>> +    .probe  = altera_mbox_probe,
->>> +    .remove = altera_mbox_remove,
->>> +    .driver = {
->>> +            .name   = DRIVER_NAME,
->>> +            .owner  = THIS_MODULE,
->>> +            .of_match_table = altera_mbox_match,
->
-> of_match_ptr(altera_mbox_match).
-Okay.
->
->>> +    },
->>> +};
->>> +
->>> +static int altera_mbox_init(void)
->>> +{
->>> +    return platform_driver_register(&altera_mbox_driver);
->>> +}
->>> +
->>> +static void altera_mbox_exit(void)
->>> +{
->>> +    platform_driver_unregister(&altera_mbox_driver);
->>> +}
->
-> Use module_platform_driver here as you are using just regular platform
-> driver register and unregister.
->
-Okay.
-
-Thanks for reviewing.
-
-Regards.
+Guenter
