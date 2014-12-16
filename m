@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281AbaLPT1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 14:27:43 -0500
-Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:42392 "EHLO
-	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbaLPT1m (ORCPT
+	id S1751396AbaLPT2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 14:28:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49310 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862AbaLPT2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 14:27:42 -0500
-From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
-Date: Tue, 16 Dec 2014 14:27:40 -0500
-To: Nishanth Menon <nm@ti.com>
-Cc: Lokesh Vutla <lokeshvutla@ti.com>, t-kristo@ti.com,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-Message-ID: <20141216192740.GN24110@csclub.uwaterloo.ca>
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
- <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
- <20141214044517.GD24110@csclub.uwaterloo.ca>
- <549018EC.8020207@ti.com>
- <20141216145856.GA23358@kahuna>
- <20141216163657.GL24110@csclub.uwaterloo.ca>
- <54908128.7040005@ti.com>
+	Tue, 16 Dec 2014 14:28:17 -0500
+Date: Tue, 16 Dec 2014 20:28:03 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141216192803.GC3337@twins.programming.kicks-ass.net>
+References: <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
+ <CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
+ <CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
+ <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212049220.6439@nanos>
+ <CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212110320.6439@nanos>
+ <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+ <alpine.DEB.2.11.1411212207150.6439@nanos>
+ <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54908128.7040005@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I see why arch_timer_freq might skip the rounding error of 39, 15 and
-> 55 Vs existing logic which is possibly at a truncation error risk
-> (without errata for sysclk 13, 26 and 27MHz).
+On Fri, Nov 21, 2014 at 02:55:27PM -0800, Linus Torvalds wrote:
+> On Fri, Nov 21, 2014 at 1:11 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >
+> > I'm fine with that. I just think it's not horrid enough, but that can
+> > be fixed easily :)
 > 
-> all you'd probably need to do is cast rate, num and den to unsigned
-> long and have a common computation logic.
+> Oh, I think it's plenty horrid.
+> 
+> Anyway, here's an actual patch. As usual, it has seen absolutely no
+> actual testing, but I did try to make sure it compiles and seems to do
+> the right thing on:
+>  - x86-32 no-PAE
+>  - x86-32 no-PAE with PARAVIRT
+>  - x86-32 PAE
+>  - x86-64
+> 
+> also, I just removed the noise that is "vmalloc_sync_all()", since
+> it's just all garbage and nothing actually uses it. Yeah, it's used by
+> "register_die_notifier()", which makes no sense what-so-ever.
+> Whatever. It's gone.
+> 
+> Can somebody actually *test* this? In particular, in any kind of real
+> paravirt environment? Or, any comments even without testing?
+> 
+> I *really* am not proud of the mess wrt the whole
+> 
+>   #ifdef CONFIG_PARAVIRT
+>   #ifdef CONFIG_X86_32
+>     ...
+> 
+> but I think that from a long-term perspective, we're actually better
+> off with this kind of really ugly - but very explcit - hack that very
+> clearly shows what is going on.
+> 
+> The old code that actually "walked" the page tables was more
+> "portable", but was somewhat misleading about what was actually going
+> on.
+> 
+> Comments?
 
-If that is acceptable, then sure I can do that.  I liked avoiding casts
-in general though.
-
-> if you'd really want to handle truncation error, it must be a separate
-> patch of it's own - I would not mix it with the errata fix.
-
-Well there is no error in the existing code because the rate / den
-is always a clean integer division.  The problem is introduced by the
-SYSCLK1 / 610 used by the emulated clock which is not a clean division.
-
-So for the existing logic, the calculation was perfect.  It is only for
-the errata case that it is a problem.
-
-So I think leaving the existing calculation but moved up works well,
-and then having the alternate order calculation only in the errata case
-seemed cleaner and avoids casts and 64bit math which I thought was
-overall desirable.
-
--- 
-Len Sorensen
+While going through this thread I wondered whatever became of this
+patch. It seems a shame to forget about it entirely. Maybe just queued
+for later while hunting wabbits?
