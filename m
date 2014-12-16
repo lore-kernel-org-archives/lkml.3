@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751375AbaLPCPg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 21:15:36 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:42254 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900AbaLPCPf (ORCPT
+	id S1751392AbaLPCPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 21:15:49 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:60962 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876AbaLPCPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 21:15:35 -0500
-Message-ID: <548F95BA.6080009@roeck-us.net>
-Date: Mon, 15 Dec 2014 18:15:22 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 21:15:47 -0500
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.17 000/122] 3.17.5-stable review
-References: <20141205223305.514276242@linuxfoundation.org> <54827868.4040100@roeck-us.net> <20141206034425.GA3350@kroah.com>
-In-Reply-To: <20141206034425.GA3350@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A090203.548F95C6.0141,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CAPM=9tx=vkMFhiRRYkoaxL+a9vjMREMTO=xo68Xxsxuto5LWhw@mail.gmail.com>
+References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
+	<CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
+	<CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+	<CA+55aFxmT98972EM7OaJoF_P8AoA1Lyj6WcN9LaT+MC_wgrhRQ@mail.gmail.com>
+	<CAPM=9tx=vkMFhiRRYkoaxL+a9vjMREMTO=xo68Xxsxuto5LWhw@mail.gmail.com>
+Date: Mon, 15 Dec 2014 18:15:47 -0800
+X-Google-Sender-Auth: Cwe3c9NfnYFbPkyaAcrYQ0RhKbU
+Message-ID: <CA+55aFyOD4a81DfXvVVxwK7AdLksffYkuwbydvOar1xJQut+AA@mail.gmail.com>
+Subject: Re: [git pull] drm for 3.19-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2014 07:44 PM, Greg Kroah-Hartman wrote:
-> On Fri, Dec 05, 2014 at 07:30:48PM -0800, Guenter Roeck wrote:
->> On 12/05/2014 02:42 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.17.5 release.
->>> There are 122 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sun Dec  7 22:32:17 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->>
->> Build results:
->> 	total: 133 pass: 132 fail: 1
->> Failed builds:
->> 	avr32:atngw100mkii_evklcd101_defconfig
+On Mon, Dec 15, 2014 at 5:50 PM, Dave Airlie <airlied@gmail.com> wrote:
 >
-> Bah, it looks like no one cares about avr32 anymore :(
->
+> Now you might complain that printing anything in this case is bad,
 
-Hi Greg,
+I don't mind it if it's *one* line, and if people realize that the
+commentary in the commit in question was pure and utter shit.
 
-Just in case you do care, the following patch makes it compile again.
+Because talking about how it's going to become an error is pretty damn
+premature, if Xorg uses it today. That's part of what just made me
+really frigging upset. People applied this patch, didn't test it AT
+ALL, and the commit message is completely inappropriate crap.
 
-cd514e727b18 ("lib/string.c: remove duplicated function")
+Having a quiet deprecation warning with the understanding that things
+will stay around for *years* is fine. Although it makes me wonder how
+much value the deprecation message really adds. I mean, why the hell
+print a message, when the only correct thing to do is to just look at
+and fix Xorg?
 
-Guenter
+And if you can't get Xorg fixed, then the message is kind of pointless too?
 
+So really, I don't see the point of even a oneliner message. You guys
+know who the user is. There's no value in the message. Either you fix
+the user or you don't.
+
+It's not like "oh, it's Xorg that uses our drm interfaces" is a big
+surprise, is it?
+
+                         Linus
