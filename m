@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105AbaLPCis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 21:38:48 -0500
-Received: from regular1.263xmail.com ([211.150.99.134]:60259 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaLPCir (ORCPT
+	id S1750883AbaLPCnK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 21:43:10 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:45371 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750722AbaLPCnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 21:38:47 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-RL-SENDER: ykk@rock-chips.com
-X-FST-TO: jsarha@ti.com
-X-SENDER-IP: 104.167.231.21
-X-LOGIN-NAME: ykk@rock-chips.com
-X-UNIQUE-TAG: <60d51f8eea06bc37a93d203a9658c2d6>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-Message-ID: <548F9B27.9070008@rock-chips.com>
-Date: Tue, 16 Dec 2014 10:38:31 +0800
-From: "Kuankuan.Yang" <ykk@rock-chips.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 15 Dec 2014 21:43:08 -0500
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Heiko Stuebner <heiko@sntech.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Zubair.Kakakhel@imgtec.com,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>, dri-devel@lists.freedesktop.org,
-        Daniel Kurtz <djkurtz@chromium.org>, Sonny Rao <sonnyrao@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Xu Jianqun <jay.xu@rock-chips.com>,
-        =?UTF-8?B?U3Tvv73vv71waGFuZSBNYXJjaGVzaW4=?= <marcheu@chromium.org>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Brian Austin <brian.austin@cirrus.com>,
-        Bard Liao <bardliao@realtek.com>, Max Filippov <jcmvbkbc@gmail.com>,
-        Oder Chiou <oder_chiou@realtek.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, alsa-devel@alsa-project.org,
-        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
-        Sean Cross <xobs@kosagi.com>, Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Zhang <benzh@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Jyri Sarha <jsarha@ti.com>
-Subject: Re: [PATCH 5/6] dt-bindings: Add documentation for Rockchip hdmi-audio
-References: <1418609494-15820-1-git-send-email-ykk@rock-chips.com> <1418612114-19692-1-git-send-email-ykk@rock-chips.com> <20141215104029.GE11285@n2100.arm.linux.org.uk> <20141215120205.GZ11764@sirena.org.uk> <548EDDC2.9050104@rock-chips.com> <20141215161827.GE11764@sirena.org.uk>
-In-Reply-To: <20141215161827.GE11764@sirena.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPM=9tyUKeA5FqhRQ+Ldj1nMM=729XnVAsKRw9h_n__JFSJtTw@mail.gmail.com>
+References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
+	<CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
+	<CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+	<CA+55aFxmT98972EM7OaJoF_P8AoA1Lyj6WcN9LaT+MC_wgrhRQ@mail.gmail.com>
+	<CAPM=9tx=vkMFhiRRYkoaxL+a9vjMREMTO=xo68Xxsxuto5LWhw@mail.gmail.com>
+	<CA+55aFyOD4a81DfXvVVxwK7AdLksffYkuwbydvOar1xJQut+AA@mail.gmail.com>
+	<CAPM=9tyUKeA5FqhRQ+Ldj1nMM=729XnVAsKRw9h_n__JFSJtTw@mail.gmail.com>
+Date: Mon, 15 Dec 2014 18:43:07 -0800
+X-Google-Sender-Auth: 0YCXK2ImvoZSyKy-xMzbpbxhS94
+Message-ID: <CA+55aFzKRjawGLXf7LBunfh5sLBa7oDLEHpD+6fQV0wQzAbORw@mail.gmail.com>
+Subject: Re: [git pull] drm for 3.19-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Dave Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 15, 2014 at 6:37 PM, Dave Airlie <airlied@gmail.com> wrote:
+>
+> Now I've no idea if this happens with SNA it probably does, but it it
+> didn't then F20 is using UXA so hardly anyone at Intel would see it.
 
-在 2014年12月16日 00:18, Mark Brown 写道:
-> On Mon, Dec 15, 2014 at 09:10:26PM +0800, Kuankuan.Yang wrote:
->> Hi Mark & Russell:
-> Please don't top post, that way people have some context for what you're
-> saying - look at how people normally format their mails on thelist.
+Ugh, ok. I haven't upgraded to F21 yet, and won't until the merge
+window is over and my life is back to semi-normal. Except for that
+whole xmas thing, of course, so maybe not even then. So I can't say
+whether this is gone with newer intel drivers.
 
-got it,  thanks for your remind.
-
->> In that way, dt will only need compatible for creating sound device. is it
->> ok  ?
->> sound {
->>      compatible = "rockchip,rk3288-hdmi-audio";
->>      status = "okay";
->> }
->> could you give me some advises.
-> That'd be good, though the other question is if this can be made to use
-> simple-card so we can avoid having a custom driver for this.
-
-
+                       Linus
