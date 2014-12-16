@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbaLPVTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:19:35 -0500
-Received: from mout.gmx.net ([212.227.17.21]:60166 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736AbaLPVTd convert rfc822-to-8bit (ORCPT
+	id S1752161AbaLPVUK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:20:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40208 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176AbaLPVUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:19:33 -0500
+	Tue, 16 Dec 2014 16:20:08 -0500
+Message-ID: <5490A1F8.6020207@oracle.com>
+Date: Tue, 16 Dec 2014 16:19:52 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Message-ID: <trinity-c582edfe-4951-4a31-911d-db0c6f723157-1418764766771@3capp-gmx-bs15>
-From: "Peter Huewe" <PeterHuewe@gmx.de>
-To: "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
-Cc: "Ashley Lai" <ashley@ashleylai.com>,
-        "Marcel Selhorst" <tpmdd@selhorst.net>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        josh@joshtriplett.org, christophe.ricard@gmail.com,
-        jason.gunthorpe@obsidianresearch.com, stefanb@linux.vnet.ibm.com,
-        linux-api@vger.kernel.org, trousers-tech@lists.sourceforge.net
-Subject: Aw: Re: [PATCH v10 0/8] TPM 2.0 support
-Content-Type: text/plain; charset=UTF-8
-Date: Tue, 16 Dec 2014 22:19:26 +0100
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <20141215201757.GA27923@intel.com>
-References: <1418413600-5400-1-git-send-email-jarkko.sakkinen@linux.intel.com>,
- <20141215201757.GA27923@intel.com>
-Content-Transfer-Encoding: 8BIT
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:5W8ec5nsNhfSdHYzvVlG+X/eMeI/dWm297cOIE4V52I
- j29JRI4K2qKDQSvhOdlkX3g1YvuoFcdIHUOwLJNaxdkgQnJQdy
- FweRTyIrv6GSl5UEOzvhfdLkRXTQs8IY/Wm9T0OC8mfAEXNWuH
- V42eAKmiZYU6rcw8OghsBXqrbBZPcptAesfUpMBYc3l6FWFy9n
- wC/h96vFujGba/ctlsOQsT6veiA5TMGUgTOQqjrX7+HzrqwXqe
- u9/Yc/IT0RNEI54WpomxhPizPWpg5E9uyGMeGIBmg0EeSpuNHD Z8kfa0=
-X-UI-Out-Filterresults: notjunk:1;
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dave Jones <davej@redhat.com>
+Subject: net: integer overflow in ip_idents_reserve
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So, what do you think? Are we now settled with this?
+Hi Eric,
 
-Meh...
-It does not recognize my tpm20 with force=1 :( :( :(
-Probably since I don't have a machine with bios integration -> no tpm startup,
-and your startup is returned with RC_SIZE :(
+While fuzzing with trinity on a -next kernel with the undefined behaviour
+sanitizer path, I've observed the following warning in code which was
+introduced in 04ca6973f7 ("ip: make IP identifiers less predictable"):
+
+[  234.317163] ================================================================================
+[  234.320001] UBSan: Undefined behaviour in ./arch/x86/include/asm/atomic.h:157:9
+[  234.321568] signed integer overflow:
+[  234.322772] 1678406574 + 641542997 cannot be represented in type 'int'
+[  234.324316] CPU: 2 PID: 16819 Comm: trinity-c537 Not tainted 3.18.0-next-20141216-sasha-00065-g3c56201-dirty #1609
+[  234.326548]  0000000000000000 0000000000000000 ffffffffbc2e4e10 ffff8802e63137e8
+[  234.327837]  ffffffffb126bd68 1ffffffff7aa2c03 ffffffffbc2e5c34 ffff8802e6313808
+[  234.329117]  ffffffffb126df6f 1ffffffff7aa2c03 ffffffffbc2e5c34 ffff8802e63138c8
+[  234.330755] Call Trace:
+[  234.331213] dump_stack (lib/dump_stack.c:52)
+[  234.332025] ubsan_epilogue (lib/ubsan.c:159)
+[  234.332986] handle_overflow (lib/ubsan.c:191)
+[  234.334022] ? preempt_schedule (./arch/x86/include/asm/preempt.h:77 (discriminator 1) kernel/sched/core.c:2898 (discriminator 1))
+[  234.334945] ? ___preempt_schedule (arch/x86/lib/thunk_64.S:42)
+[  234.335919] __ubsan_handle_add_overflow (lib/ubsan.c:200)
+[  234.337211] ip_idents_reserve (./arch/x86/include/asm/atomic.h:157 net/ipv4/route.c:482)
+[  234.338935] __ip_select_ident (include/uapi/linux/swab.h:49 (discriminator 3) net/ipv4/route.c:498 (discriminator 3))
+[  234.340773] __ip_make_skb (include/net/ip.h:339 include/net/ip.h:345 net/ipv4/ip_output.c:1386)
+[  234.342736] ip_push_pending_frames (include/net/ip.h:148 net/ipv4/ip_output.c:1430)
+[  234.344707] raw_sendmsg (net/ipv4/raw.c:644)
+[  234.346537] ? system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+[  234.348431] ? get_parent_ip (kernel/sched/core.c:2564)
+[  234.350259] ? preempt_count_sub (kernel/sched/core.c:2620)
+[  234.352170] inet_sendmsg (net/ipv4/af_inet.c:734)
+[  234.354107] do_sock_sendmsg (net/socket.c:646 (discriminator 4))
+[  234.355947] ? retint_restore_args (arch/x86/kernel/entry_64.S:844)
+[  234.357962] ___sys_sendmsg (net/socket.c:653 net/socket.c:2094)
+[  234.359545] ? sched_clock (./arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:304)
+[  234.361182] ? __acct_update_integrals (kernel/tsacct.c:147)
+[  234.363394] ? acct_account_cputime (kernel/tsacct.c:168)
+[  234.365417] __sys_sendmsg (net/socket.c:2131)
+[  234.367248] SyS_sendmsg (net/socket.c:2136)
+[  234.368925] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
+[  234.371038] ================================================================================
 
 
-
- rmmod tpm; modprobe tpm_tis force=1 ; dmesg 
-modprobe: ERROR: could not insert 'tpm_tis': No such device
-[   77.744050] tpm_tis tpm_tis: 2.0 TPM (device-id 0x1A, rev-id 16)
-[   77.816049] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   77.888043] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   77.960043] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   77.960057] genirq: Flags mismatch irq 6. 00000080 (tpm0) vs. 00000000 (floppy)
-[   77.960067] tpm_tis tpm_tis: Unable to request irq: 6 for probe
-[   77.960073] genirq: Flags mismatch irq 7. 00000080 (tpm0) vs. 00000000 (parport0)
-[   77.960077] tpm_tis tpm_tis: Unable to request irq: 7 for probe
-[   77.960082] genirq: Flags mismatch irq 8. 00000080 (tpm0) vs. 00000000 (rtc0)
-[   77.960087] tpm_tis tpm_tis: Unable to request irq: 8 for probe
-[   78.032041] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.104043] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.176041] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.248041] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.320041] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.392040] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.464041] tpm_tis tpm_tis: A TPM error (256) occurred attempting to generate an interrupt
-[   78.524041] tpm_tis tpm_tis: A TPM error (256) occurred continue selftest
-[   78.524048] tpm_tis tpm_tis: Firmware has not started TPM
-[   78.596041] tpm_tis tpm_tis: A TPM error (149) occurred attempting to start the TPM
-[   78.596048] tpm_tis tpm_tis: TPM self test failed
-
-
-;(
-Peter
+Thanks,
+Sasha
