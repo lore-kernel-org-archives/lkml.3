@@ -1,120 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751194AbaLPO5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:57:12 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:58481 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaLPO5K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:57:10 -0500
-Date: Tue, 16 Dec 2014 15:56:53 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-Message-ID: <20141216145653.GY3337@twins.programming.kicks-ass.net>
-References: <20141211194204.GA19083@wfg-t540p.sh.intel.com>
- <CAKohpokEw6f5+u8J_AoV76sOAQO=J8dGhX1eZb=QZOuE+Jhq_A@mail.gmail.com>
- <548E8D01.9050707@linux.vnet.ibm.com>
- <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
- <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com>
- <548FFD20.1040102@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1412161105470.17382@nanos>
- <alpine.DEB.2.11.1412161510000.17382@nanos>
+	id S1751225AbaLPO7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:59:22 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51965 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750950AbaLPO7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 09:59:21 -0500
+Date: Tue, 16 Dec 2014 08:58:56 -0600
+From: Nishanth Menon <nm@ti.com>
+To: Lokesh Vutla <lokeshvutla@ti.com>, <t-kristo@ti.com>
+CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Kristo, Tero" <t-kristo@ti.com>, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+Message-ID: <20141216145856.GA23358@kahuna>
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <20141214044517.GD24110@csclub.uwaterloo.ca>
+ <549018EC.8020207@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412161510000.17382@nanos>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <549018EC.8020207@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 03:32:28PM +0100, Thomas Gleixner wrote:
-> @@ -4997,6 +5025,8 @@ pick_next_task_fair(struct rq *rq, struct task_struct *prev)
->  	struct task_struct *p;
->  	int new_tasks;
+On 17:05-20141216, Lokesh Vutla wrote:
+[...]
 >  
-> +	if (class_fair_disabled())
-> +		goto idle;
+> @@ -545,6 +546,16 @@ static void __init realtime_counter_init(void)
+>  		break;
+>  	}
+>  
+> +	if (soc_is_dra7xx()) {
+> +		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
+> +		reg = reg & DRA7_SPEEDSELECT_MASK;
+> +
+> +		if (reg) {
+> +			num = 75;
+> +			den = 244;
+> +		}
+> +	}
+> +
+>  	/* Program numerator and denumerator registers */
+>  	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
+>  			NUMERATOR_DENUMERATOR_MASK;
 
-We don't want to do new idle balancing here I think, just return NULL.
+A) So, it does look like the 32k node is actually wrong then -> Tero:
+any comments? should'nt this now be modeled based on
+CTRL_CORE_BOOTSTRAP::SPEEDSELECT considering that clock nodes do have
+clk mux options based on the 32k..
+sys_32k_ck: sys_32k_ck {
+	#clock-cells = <0>;
+	compatible = "fixed-clock";
+	clock-frequency = <32768>;
+};
 
->  again:
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  	if (!cfs_rq->nr_running)
-> 
-> The static key is enabled once the powerclamp mess starts. So nobody
-> else than powerclamp users are affected by this and rightfully so.
-> 
-> Not pretty, but better than a gazillion workarounds all over the place
-> to make "pretending I'm idle" actually work. This is basically the
-> same mechanism as we have with the RT throttler, where a RT hog will
-> be put onto hold for some time. We just put all sched other tasks on
-> hold while still allowing RT tasks and everything else to work.
-> 
-> Thoughts?
+B) Since rate switch is no longer needed, how about something like the
+following:
+diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
+index a3c0133..315d6d1 100644
+--- a/arch/arm/mach-omap2/control.h
++++ b/arch/arm/mach-omap2/control.h
+@@ -286,6 +286,11 @@
+ #define OMAP5XXX_CONTROL_STATUS                0x134
+ #define OMAP5_DEVICETYPE_MASK          (0x7 << 6)
+ 
++
++/* DRA7XX CONTROL CORE BOOTSTRAP */
++#define DRA7_CTRL_CORE_BOOTSTRAP	0x6c4
++#define DRA7_SPEEDSELECT_MASK		(0x3 << 8)
++
+ /*
+  * REVISIT: This list of registers is not comprehensive - there are more
+  * that should be added.
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index 4f61148..783d3c3 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -54,6 +54,7 @@
+ 
+ #include "soc.h"
+ #include "common.h"
++#include "control.h"
+ #include "powerdomain.h"
+ #include "omap-secure.h"
+ 
+@@ -511,6 +512,35 @@ static void __init realtime_counter_init(void)
+ 	}
+ 
+ 	rate = clk_get_rate(sys_clk);
++
++	if (soc_is_dra7xx()) {
++		/*
++		 * Errata i856 says the 32.768KHz crystal does not start at
++		 * power on, so the CPU falls back in an emulated 32KHz clock
++		 * based on sysclk / 610 instead. This causes the master counter
++		 * frequency to not be 6.144MHz but at sysclk / 610  * 375 / 2
++		 * (OR sysclk * 75 / 244)
++		 *
++		 * This affects at least the DRA7/AM572x 1.0, 1.1 revisions.
++		 * Of course any board built without a populated 32.768KHz
++		 * crystal would also need this fix even if the CPU is fixed
++		 * later.
++		 *
++		 * Either case can be detected by using the two speedselect bits
++		 * If they are not 0, then the 32.768KHz clock driving the
++		 * course counter that corrects the fine counter every time it
++		 * ticks is actually rate/610 rather than 32.768KHz and we
++		 * should compensate to avoid the 570ppm (At 20MHz, much worse
++		 * at other rates) too fast system time.
++		 */
++		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
++		if (reg & DRA7_SPEEDSELECT_MASK) {
++			num = 75;
++			den = 244;
++			goto sysclk_based;
++		}
++	}
++
+ 	/* Numerator/denumerator values refer TRM Realtime Counter section */
+ 	switch (rate) {
+ 	case 1200000:
+@@ -545,6 +575,7 @@ static void __init realtime_counter_init(void)
+ 		break;
+ 	}
+ 
++sysclk_based:
+ 	/* Program numerator and denumerator registers */
+ 	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
+ 			NUMERATOR_DENUMERATOR_MASK;
 
-Other than hating it on sight right? ;-)
-
-So let me try and understand the problem with the emulated idle thing
-better (running idle from FIFO threads).
-
-Suppose we are in nohz_full:
-
- ts->inidle     ts->infullnohz  ts->tick_stopped
-
-  0              1               1               valid
-
-Then the powerclamp fake idle thread comes in, this increase nr_running
-and will result in leaving infullnohz and will re-start the
-tick_stopped.
-
- 0              0               0               valid
-
-Then we 'start' the idle loop, and end up in:
-
- 1              0               1               valid
-
-No problem there, right? And it looks to be the same in reverse.
-
-
-I suppose the tricky bit is what happens when the cpu was idle; in that
-case we'll end up with 1 running thread in state:
-
- 1              0               1               valid
-
-But need to avoid ending up in:
-
- 1              1               1               BUG
-
-Which should be relatively simple by never entering nohzfull when 'idle'.
-
-
-
-However with your proposed thingy, I think we'll end up in:
-
- 1              1               1               BUG
-
-Because we don't start another thread, so infullnohz will stay valid,
-however we'll also be 'forced' into idle (with nr_running > 0) and stop
-the tick.
-
-A remote wakeup might result in nr_running going from 1->2 and seeing
-infullnohz == 1, try and restart the tick, while we're idle!
-
-Of course, we can fix that too, by clearing nohzfull when going 'idle',
-after all, nohzfull will re-establish itself automagically when the tick
-detects but the one task afterwards.
-
-
-So both cases need work, neither works out of the box afaict. But I
-can't see one really being better than the other either -- am I missing
-obvious things again?
+-- 
+Regards,
+Nishanth Menon
