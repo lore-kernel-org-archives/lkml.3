@@ -1,57 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751074AbaLPG1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 01:27:55 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:60739 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaLPG1y (ORCPT
+	id S1751245AbaLPG3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:29:10 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:48638 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750796AbaLPG3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 01:27:54 -0500
+	Tue, 16 Dec 2014 01:29:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
-References: <54584260.8030602@nvidia.com>
-	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
-	<545895B2.2000101@nvidia.com>
-	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
-	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
-	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
-Date: Mon, 15 Dec 2014 22:27:52 -0800
-Message-ID: <CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
-Subject: Re: Possible regression with commit 52221610d
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Tim Kryger <tim.kryger@gmail.com>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Sachin Kamat <spk.linux@gmail.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>
+In-Reply-To: <CAKZGPAN6Ct_+FY1khP4AMSJ1RgP0zKdJ2pkczjhe-Q5HxTzsrw@mail.gmail.com>
+References: <CAKZGPAN6Ct_+FY1khP4AMSJ1RgP0zKdJ2pkczjhe-Q5HxTzsrw@mail.gmail.com>
+Date: Tue, 16 Dec 2014 11:59:07 +0530
+Message-ID: <CAKZGPAN7Vk2xpooZ2uFTiyWywT9yCCiW6bSAjRbT5fGs6fRYNw@mail.gmail.com>
+Subject: Re: [RCU] kernel hangs in wait_rcu_gp during suspend path
+From: Arun KS <arunks.linux@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Paul McKenney <paulmck@linux.vnet.ibm.com>, josh@joshtriplett.org,
+        rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
+        laijs@cn.fujitsu.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 14, 2014 at 8:48 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
-> On Sat, Dec 13, 2014 at 11:22 PM, Bjorn Andersson <bjorn@kryo.se> wrote:
-[..]
->> Or simply; what is vmmc (in the code) supposed to represent?
->
-> Hi Bjorn,
->
-> VMMC is the supply that delivers power out to the SD card itself (aka VDD).
->
-> It is not the internal power rail/power domain of the host controller
-> within the SoC.
->
+Hello,
 
-Thanks for you answer Tim, I'll write up a patch for the Qualcomm
-driver that add the possibility of specifying an internal supply for
-the devices where that uses that.
+I dig little deeper to understand the situation.
+All other cpus are in idle thread already.
+As per my understanding, for the grace period to end, at-least one of
+the following should happen on all online cpus,
 
-My only concern is that for any standard compliant sdhci driver we're
-supposed to have a info printout that vmmc was not found (but vqmmc is
-there). But I guess that's a matter of proper documentation and hoping
-people don't pay too much attention to it?
+1. a context switch.
+2. user space switch.
+3. switch to idle thread.
 
-Regards,
-Bjorn
+In this situation, since all the other cores are already in idle,  non
+of the above are meet on all online cores.
+So grace period is getting extended and never finishes. Below is the
+state of runqueue when the hang happens.
+--------------start------------------------------------
+crash> runq
+CPU 0 [OFFLINE]
+
+CPU 1 [OFFLINE]
+
+CPU 2 [OFFLINE]
+
+CPU 3 [OFFLINE]
+
+CPU 4 RUNQUEUE: c3192e40
+  CURRENT: PID: 0      TASK: f0874440  COMMAND: "swapper/4"
+  RT PRIO_ARRAY: c3192f20
+     [no tasks queued]
+  CFS RB_ROOT: c3192eb0
+     [no tasks queued]
+
+CPU 5 RUNQUEUE: c31a0e40
+  CURRENT: PID: 0      TASK: f0874980  COMMAND: "swapper/5"
+  RT PRIO_ARRAY: c31a0f20
+     [no tasks queued]
+  CFS RB_ROOT: c31a0eb0
+     [no tasks queued]
+
+CPU 6 RUNQUEUE: c31aee40
+  CURRENT: PID: 0      TASK: f0874ec0  COMMAND: "swapper/6"
+  RT PRIO_ARRAY: c31aef20
+     [no tasks queued]
+  CFS RB_ROOT: c31aeeb0
+     [no tasks queued]
+
+CPU 7 RUNQUEUE: c31bce40
+  CURRENT: PID: 0      TASK: f0875400  COMMAND: "swapper/7"
+  RT PRIO_ARRAY: c31bcf20
+     [no tasks queued]
+  CFS RB_ROOT: c31bceb0
+     [no tasks queued]
+--------------end------------------------------------
+
+If my understanding is correct the below patch should help, because it
+will expedite grace periods during suspend,
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
+
+But I wonder why it was not taken to stable trees. Can we take it?
+Appreciate your help.
+
+Thanks,
+Arun
+
+On Mon, Dec 15, 2014 at 10:34 PM, Arun KS <arunks.linux@gmail.com> wrote:
+> Hi,
+>
+> Here is the backtrace of the process hanging in wait_rcu_gp,
+>
+> PID: 247    TASK: e16e7380  CPU: 4   COMMAND: "kworker/u16:5"
+>  #0 [<c09fead0>] (__schedule) from [<c09fcab0>]
+>  #1 [<c09fcab0>] (schedule_timeout) from [<c09fe050>]
+>  #2 [<c09fe050>] (wait_for_common) from [<c013b2b4>]
+>  #3 [<c013b2b4>] (wait_rcu_gp) from [<c0142f50>]
+>  #4 [<c0142f50>] (atomic_notifier_chain_unregister) from [<c06b2ab8>]
+>  #5 [<c06b2ab8>] (cpufreq_interactive_disable_sched_input) from [<c06b32a8>]
+>  #6 [<c06b32a8>] (cpufreq_governor_interactive) from [<c06abbf8>]
+>  #7 [<c06abbf8>] (__cpufreq_governor) from [<c06ae474>]
+>  #8 [<c06ae474>] (__cpufreq_remove_dev_finish) from [<c06ae8c0>]
+>  #9 [<c06ae8c0>] (cpufreq_cpu_callback) from [<c0a0185c>]
+> #10 [<c0a0185c>] (notifier_call_chain) from [<c0121888>]
+> #11 [<c0121888>] (__cpu_notify) from [<c0121a04>]
+> #12 [<c0121a04>] (cpu_notify_nofail) from [<c09ee7f0>]
+> #13 [<c09ee7f0>] (_cpu_down) from [<c0121b70>]
+> #14 [<c0121b70>] (disable_nonboot_cpus) from [<c016788c>]
+> #15 [<c016788c>] (suspend_devices_and_enter) from [<c0167bcc>]
+> #16 [<c0167bcc>] (pm_suspend) from [<c0167d94>]
+> #17 [<c0167d94>] (try_to_suspend) from [<c0138460>]
+> #18 [<c0138460>] (process_one_work) from [<c0138b18>]
+> #19 [<c0138b18>] (worker_thread) from [<c013dc58>]
+> #20 [<c013dc58>] (kthread) from [<c01061b8>]
+>
+> Will this patch helps here,
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
+>
+> I couldn't really understand why it got struck in  synchronize_rcu().
+> Please give some pointers to debug this further.
+>
+> Below are the configs enable related to RCU.
+>
+> CONFIG_TREE_PREEMPT_RCU=y
+> CONFIG_PREEMPT_RCU=y
+> CONFIG_RCU_STALL_COMMON=y
+> CONFIG_RCU_FANOUT=32
+> CONFIG_RCU_FANOUT_LEAF=16
+> CONFIG_RCU_FAST_NO_HZ=y
+> CONFIG_RCU_CPU_STALL_TIMEOUT=21
+> CONFIG_RCU_CPU_STALL_VERBOSE=y
+>
+> Kernel version is 3.10.28
+> Architecture is ARM
+>
+> Thanks,
+> Arun
