@@ -1,417 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751008AbaLPKCF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 05:02:05 -0500
-Received: from mga09.intel.com ([134.134.136.24]:33166 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaLPKCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 05:02:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,585,1413270000"; 
-   d="scan'208";a="654756298"
-Date: Tue, 16 Dec 2014 12:01:57 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Ken Xue <Ken.Xue@amd.com>
-Cc: rjw@rjwysocki.net, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3 V2] acpi:soc: merge common codes for creating
- platform device
-Message-ID: <20141216100157.GU1300@lahna.fi.intel.com>
-References: <1418267089-5555-1-git-send-email-Ken.Xue@amd.com>
+	id S1751124AbaLPKE2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 05:04:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:49085 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLPKEZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 05:04:25 -0500
+Date: Tue, 16 Dec 2014 11:03:55 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ARM: at91: fix irq_pm_install_action WARNING
+In-Reply-To: <20141216100715.57baeb65@bbrezillon>
+Message-ID: <alpine.DEB.2.11.1412161013570.17382@nanos>
+References: <1418660152-17185-1-git-send-email-boris.brezillon@free-electrons.com> <2662748.NJbkr6jW7r@vostro.rjw.lan> <3542278.8lcJeXLMFm@vostro.rjw.lan> <20141216100715.57baeb65@bbrezillon>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418267089-5555-1-git-send-email-Ken.Xue@amd.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 11, 2014 at 11:04:49AM +0800, Ken Xue wrote:
-> This patch is supposed to deliver some common codes for AMD APD and
-> INTEL LPSS. It can help to convert some specific acpi devices to be
-
-INTEL -> Intel, acpi -> ACPI
-
-> platform devices.
->
-> Signed-off-by: Ken Xue <Ken.Xue@amd.com>
-> ---
->  drivers/acpi/Makefile   |   2 +-
->  drivers/acpi/acpi_soc.c | 224 ++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/acpi_soc.h |  98 +++++++++++++++++++++
->  3 files changed, 323 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/acpi/acpi_soc.c
->  create mode 100644 drivers/acpi/acpi_soc.h
+On Tue, 16 Dec 2014, Boris Brezillon wrote:
+> On Mon, 15 Dec 2014 23:48:14 +0100
+> "Rafael J. Wysocki" <rjw@rjwysocki.net> wrote:
+> > Or even set IRFQ_NO_SUSPEND for all of the users of this interrupt and add
+> > comments to them explaining why it is set.
+> Actually I thought about adding a new flag (let's call it
+> IRQF_DONT_COMPLAIN for now ;-)) to remove those warnings (or specifying
+> IRFQ_NO_SUSPEND in all peripherals sharing the IRQ with the init
+> timer), but after discussing the problem with Thomas I decided to go
+> for the approach described in my cover letter.
 > 
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index c3b2fcb..ae3397d 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -40,7 +40,7 @@ acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
->  acpi-y				+= ec.o
->  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
->  acpi-y				+= pci_root.o pci_link.o pci_irq.o
-> -acpi-y				+= acpi_lpss.o
-> +acpi-y				+= acpi_soc.o acpi_lpss.o
->  acpi-y				+= acpi_platform.o
->  acpi-y				+= acpi_pnp.o
->  acpi-y				+= int340x_thermal.o
-> diff --git a/drivers/acpi/acpi_soc.c b/drivers/acpi/acpi_soc.c
-> new file mode 100644
-> index 0000000..46901d5
-> --- /dev/null
-> +++ b/drivers/acpi/acpi_soc.c
-> @@ -0,0 +1,224 @@
-> +/*
-> + * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
-> + *
-> + * Copyright (C) 2015, Intel Corporation & AMD Corporation
-> + * Authors: Ken Xue <Ken.Xue@amd.com>
-> + *		Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/list.h>
-> +#include <linux/pm_domain.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include "acpi_soc.h"
-> +#include "internal.h"
-> +
-> +ACPI_MODULE_NAME("acpi_soc");
-> +
-> +/* A list for all acpi soc device */
-> +static LIST_HEAD(a_soc_list);
-> +
-> +static int is_memory(struct acpi_resource *res, void *not_used)
-> +{
-> +	struct resource r;
-> +
-> +	return !acpi_dev_resource_memory(res, &r);
-> +}
-> +
-> +static int acpi_soc_create_device(struct acpi_device *adev,
-> +				   const struct acpi_device_id *id)
-> +{
-> +	struct acpi_soc_dev_desc *dev_desc;
-> +	struct acpi_soc_dev_private_data *pdata;
-> +	struct resource_list_entry *rentry;
-> +	struct list_head resource_list;
-> +	struct platform_device *pdev;
-> +	int ret;
-> +
-> +	dev_desc = (struct acpi_soc_dev_desc *)id->driver_data;
-> +	if (!dev_desc) {
-> +		pdev = acpi_create_platform_device(adev);
-> +		return IS_ERR_OR_NULL(pdev) ? PTR_ERR(pdev) : 1;
-> +	}
-> +	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return -ENOMEM;
-> +
-> +	INIT_LIST_HEAD(&resource_list);
-> +	ret = acpi_dev_get_resources(adev, &resource_list, is_memory, NULL);
-> +	if (ret < 0)
-> +		goto err_out;
-> +
-> +	list_for_each_entry(rentry, &resource_list, node)
-> +		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
-> +			if (dev_desc->mem_size_override)
-> +				pdata->mmio_size = dev_desc->mem_size_override;
-> +			else
-> +				pdata->mmio_size = resource_size(&rentry->res);
-> +			pdata->mmio_base = ioremap(rentry->res.start,
-> +						   pdata->mmio_size);
-> +			break;
-> +		}
-> +
-> +	acpi_dev_free_resource_list(&resource_list);
-> +
-> +	pdata->adev = adev;
-> +	pdata->dev_desc = dev_desc;
-> +
-> +	if (dev_desc->setup) {
-> +		ret = dev_desc->setup(pdata);
-> +		if (ret)
-> +			goto err_out;
-> +	}
-> +
-> +	/*
-> +	 * This works around a known issue in ACPI tables where acpi soc devices
+> Thomas, correct me if I'm wrong, but your concern about the
+> IRQF_DONT_COMPLAIN approach was that it was leaving interrupt handlers
+> of suspended devices in an active state (meaning that they could be
+> called in "suspend" or "early resume" state), and such devices might
+> not properly handle interrupts while being in a suspended state (clocks
+> and regulators disabled).
+> In at91 specific case this should not be an issue thought.
+> 
+> We have the same problem when setting IRFQ_NO_SUSPEND on all peripherals
+> sharing the IRQ with the init timer.
+> Moreover, I'd like to keep the core automatically disabling the IRQ when
+> the PMC, RTC, watchdog or DBGU (UART) peripherals have their own
+> dedicated IRQ (which is the case on Atmel sama5 SoCs).
+> This implies testing for the SoC version in each of these drivers and
+> adapting the request_irq call accordingly.
 
-acpi soc -> ACPI SoC
+But still all those drivers must disable the interrupts at the device
+level on suspend, right?
 
-Please use these consistently.
+> Thomas, Rafael, if both of you think I should either introduce a new
+> flag or specify IRFQ_NO_SUSPEND in all shared IRQ users, then I can go
+> for one of this solution.
 
-> +	 * have _PS0 and _PS3 without _PSC (and no power resources), so
-> +	 * acpi_bus_init_power() will assume that the BIOS has put them into D0.
-> +	 */
-> +	ret = acpi_device_fix_up_power(adev);
-> +	if (ret) {
-> +		/* Skip the device, but continue the namespace scan. */
-> +		ret = 0;
-> +		goto err_out;
-> +	}
-> +
-> +	adev->driver_data = pdata;
-> +	pdev = acpi_create_platform_device(adev);
-> +	if (!IS_ERR_OR_NULL(pdev))
-> +		return 1;
-> +
-> +	ret = PTR_ERR(pdev);
-> +	adev->driver_data = NULL;
-> +
-> + err_out:
-> +	kfree(pdata);
-> +	return ret;
-> +}
-> +
-> +static int acpi_soc_platform_notify(struct notifier_block *nb,
-> +				     unsigned long action, void *data)
-> +{
-> +	struct platform_device *pdev = to_platform_device(data);
-> +	struct acpi_soc_dev_private_data *pdata;
-> +	struct acpi_device *adev;
-> +	struct acpi_soc *a_soc_entry;
-> +	const struct acpi_device_id *id = NULL;
-> +
-> +	list_for_each_entry(a_soc_entry, &a_soc_list, list) {
-> +		id = acpi_match_device(a_soc_entry->ids, &pdev->dev);
-> +		if (id)
-> +			break;
-> +	}
-> +
-> +	if (!id || !id->driver_data)
-> +		return 0;
-> +
-> +	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
-> +		return 0;
-> +
-> +	pdata = acpi_driver_data(adev);
-> +	if (!pdata || !pdata->mmio_base)
-> +		return 0;
-> +
-> +	switch (action) {
-> +	case BUS_NOTIFY_BOUND_DRIVER:
-> +		if ((pdata->dev_desc->flags & ACPI_SOC_PM)) {
-> +			if (a_soc_entry->pm_domain)
-> +				pdev->dev.pm_domain = a_soc_entry->pm_domain;
-> +			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
-> +					dev_pm_domain_attach(&pdev->dev, true);
+All of this really sucks. What about the following?
 
-Too much indent.
+Install the timer interrupt as a demultiplexing interrupt.
 
-> +			else
-> +					dev_pm_domain_attach(&pdev->dev, false);
+Create a pseudo interrupt chip, which essentially does nothing, but
+keeps track of the disabled state. Install handle_simple_irq as
+handler for those "demux" interrupts. Then have:
 
-Ditto.
+struct data {
+       u32 unmasked;
+       u32 demuxavail;
+};
 
-> +		}
-> +		break;
-> +	case BUS_NOTIFY_UNBOUND_DRIVER:
-> +		if ((pdata->dev_desc->flags & ACPI_SOC_PM)) {
-> +			if (a_soc_entry->pm_domain)
-> +				pdev->dev.pm_domain = a_soc_entry->pm_domain;
-> +			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
-> +					dev_pm_domain_detach(&pdev->dev, true);
+static struct data demuxdata;
 
-Ditto.
+At init time you know how many of these demux interrupts are
+available. So you set the demuxdata up, e.g. for 3 interrupts
+connected:
 
-> +			else
-> +					dev_pm_domain_detach(&pdev->dev, false);
+	demuxdata.demuxavail = 0x07;
 
-Ditto
+You install a pointer to demuxdata for all demux interrupts as irq
+chip data and the simple handler.
 
-> +		}
-> +		break;
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
-> +			&& a_soc_entry->attr_group)
-> +			sysfs_create_group(&pdev->dev.kobj,
-> +						  a_soc_entry->attr_group);
-> +		break;
-> +	case BUS_NOTIFY_DEL_DEVICE:
-> +		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
-> +			&& a_soc_entry->attr_group)
-> +			sysfs_remove_group(&pdev->dev.kobj,
-> +			a_soc_entry->attr_group);
-> +		break;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct notifier_block acpi_soc_nb = {
-> +	.notifier_call = acpi_soc_platform_notify,
-> +};
-> +
-> +static void acpi_soc_bind(struct device *dev)
-> +{
-> +	struct acpi_soc_dev_private_data *pdata;
-> +
-> +	pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> +
-> +	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->bind)
-> +		return;
-> +
-> +	pdata->dev_desc->bind(pdata, dev);
-> +}
-> +
-> +static void acpi_soc_unbind(struct device *dev)
-> +{
-> +	struct acpi_soc_dev_private_data *pdata;
-> +
-> +	pdata = acpi_driver_data(ACPI_COMPANION(dev));
-> +
-> +	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->unbind)
-> +		return;
-> +
-> +	pdata->dev_desc->unbind(pdata, dev);
-> +}
-> +
-> +/**
-> + * register_acpi_soc - register a new acpi soc
-> + * @a_soc: acpi soc
-> + * @disable_scan_handler: true means remove default scan handle
-> + *                      false means use default scan handle
-> + *
-> + * register a new acpi soc into asoc_list and install default scan handle.
-> + */
-> +void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler)
+And in the mask/unmask handlers you do:
 
-I still think passing scan handler here is better. Up to Rafael to
-decide.
+mask(irqdata) {
+       struct data *d = irq_data_get_irq_chip_data(irqdata);
 
-> +{
-> +	static int init;
-> +	struct acpi_scan_handler *acpi_soc_handler;
-> +
-> +	INIT_LIST_HEAD(&a_soc->list);
-> +	list_add(&a_soc->list, &a_soc_list);
-> +
-> +	acpi_soc_handler = kzalloc(sizeof(*acpi_soc_handler), GFP_KERNEL);
-> +	acpi_soc_handler->ids = a_soc->ids;
-> +	if (!disable_scan_handler) {
-> +		acpi_soc_handler->attach = acpi_soc_create_device;
-> +		acpi_soc_handler->bind = acpi_soc_bind;
-> +		acpi_soc_handler->unbind = acpi_soc_unbind;
-> +		if (init == 0) {
-> +			init++;
-> +			bus_register_notifier(&platform_bus_type, &acpi_soc_nb);
-> +		}
-> +	}
-> +	acpi_scan_add_handler(acpi_soc_handler);
-> +}
-> diff --git a/drivers/acpi/acpi_soc.h b/drivers/acpi/acpi_soc.h
-> new file mode 100644
-> index 0000000..bada2a1
-> --- /dev/null
-> +++ b/drivers/acpi/acpi_soc.h
-> @@ -0,0 +1,98 @@
-> +/*
-> + * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
-> + *
-> + * Copyright (C) 2015, Intel Corporation & AMD Corporation
-> + * Authors: Ken Xue <Ken.Xue@amd.com>
-> + *		Mika Westerberg <mika.westerberg@linux.intel.com>
-> + *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#ifndef _ACPI_SOC_H
-> +#define _ACPI_SOC_H
-> +
-> +#include <linux/acpi.h>
-> +#include <linux/clk.h>
-> +#include <linux/pm.h>
-> +
-> +struct acpi_soc_dev_private_data;
-> +
-> +/**
-> + * struct acpi_soc - acpi soc
-> + * @list: list head
-> + * @ids: all acpi device ids for acpi soc
-> + * @pm_domain: power domain for all acpi device;can be NULL
-> + * @attr_group: attribute group for sysfs support of acpi soc;can be NULL
-> + */
-> +struct acpi_soc {
-> +	struct list_head	list;
-> +	struct acpi_device_id	*ids;
-> +	struct dev_pm_domain	*pm_domain;
-> +	struct attribute_group	*attr_group;
-> +};
-> +
-> +
-> +/**
-> + * device flags of acpi_soc_dev_desc.
-> + * bit 16 to 31 reserved for acpi soc.
-> + * bit 0 ~15 reserved for private flags.
-> + * ACPI_SOC_SYSFS : add device attributes in sysfs
-> + * ACPI_SOC_PM : attach power domain to device
-> + * ACPI_SOC_PM_ON : power on device when attach power domain
-> + */
-> +#define ACPI_SOC_SYSFS	BIT(16)
-> +#define ACPI_SOC_PM	BIT(17)
-> +#define ACPI_SOC_PM_ON	BIT(18)
-> +
-> +/**
-> + * struct acpi_soc_dev_desc - a descriptor for acpi device
-> + * @flags: device flags like ACPI_SOC_SYSFS ACPI_SOC_PM ACPI_SOC_PM_ON
-> + * @clk: clock device
-> + * @fixed_clk_rate: fixed rate input clock source for acpi device;
-> + *			0 means no fixed rate input clock source
-> + * @mem_size_override: a workaround for override device memsize;
-> + *			0 means no needs for this WA
-> + * @prv_offset: reg offest of lpss features
-> + * @setup: a hook routine to set device resource during create platform device
-> + * @bind: a hook of acpi_scan_handler.bind
-> + * @unbind: a hook of acpi_scan_handler.unbind
-> + *
-> + * device description defined as acpi_device_id.driver_data
-> + */
-> +struct acpi_soc_dev_desc {
-> +	unsigned int flags;
-> +	struct clk *clk;
-> +	unsigned int fixed_clk_rate;
-> +	size_t mem_size_override;
-> +	unsigned int prv_offset;
-> +	int (*setup)(struct acpi_soc_dev_private_data *pdata);
-> +	void (*bind)(struct acpi_soc_dev_private_data *pdata,
-> +				struct device *dev);
-> +	void (*unbind)(struct acpi_soc_dev_private_data *pdata,
-> +				struct device *dev);
-> +};
-> +
-> +#define ACPI_SOC_REG_CONTEXT_MAX		10
-> +
-> +/**
-> + * struct acpi_soc_dev_private_data - acpi device private data
-> + * @mmio_base: virtual memory base addr of the device
-> + * @mmio_size: device memory size
-> + * @dev_desc: device description
-> + * @adev: acpi device
-> + * @prv_reg_ctx: reg context for power management
-> + */
-> +struct acpi_soc_dev_private_data {
-> +	void __iomem *mmio_base;
-> +	resource_size_t mmio_size;
-> +
-> +	struct acpi_soc_dev_desc *dev_desc;
-> +	struct acpi_device *adev;
-> +	u32 prv_reg_ctx[ACPI_SOC_REG_CONTEXT_MAX];
-> +};
-> +
-> +void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler);
-> +
-> +#endif
-> -- 
-> 1.9.1
+       d->unmasked &= ~irqdata->mask;
+       if (!d->unmasked)
+       	  mask_demux_irq();
+}
+
+unmask(irqdata) {
+       struct data *d = irq_data_get_irq_chip_data(irqdata);
+
+       if (!d->unmasked)
+       	  unmask_demux_irq();
+       d->mask |= irqdata->mask;
+}
+
+Now the demuxhandler does:
+
+    mask = demuxdata.demuxavail & demuxdata.unmasked;
+
+    for_each_bit(bit, mask)
+    	generic_handle_irq(demuxirq_start + bit);
+
+So the handler wont be invoked for masked bits and handle_simple_irq()
+will not call the device handler if the interrupt is marked disabled.
+
+So in the suspend case all "demux" interrupts except those which are
+marked NOSUSPEND are marked disabled and the handlers wont be invoked.
+
+Locking and other details omitted.
+
+That avoids the whole flag, action, whatever business for the price of
+a really trivial demux mechanism. Everything just works. Even the irq
+storm detector will just disable the parent interrupt once all
+handlers return NONE often enough.
+
+Your device drivers just work fine, as long as they disable the
+interrupt at the device level on suspend, but they have to do that in
+any case. Aside of that detail they are completely oblivous whether
+they are connected to this "demux" chip or to a seperate irq line on
+other devices.
+
+> BTW, have you heard about other platforms/drivers impacted by this
+> WARN_ON addition, and if so how did they solve the problem ?
+
+Nothing so far. Seems not many hardware folks are that crazy.
+
+But I have no objections to make this generic infrastructure as long
+as it can be compiled out.
+
+Thanks,
+
+	tglx
