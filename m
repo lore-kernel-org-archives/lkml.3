@@ -1,86 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751150AbaLPHRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 02:17:34 -0500
-Received: from mx02.posteo.de ([89.146.194.165]:59504 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750796AbaLPHRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 02:17:33 -0500
-Message-ID: <548FDC85.3060400@posteo.de>
-Date: Tue, 16 Dec 2014 08:17:25 +0100
-From: Martin Kepplinger <martink@posteo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1751159AbaLPH0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 02:26:10 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33316 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaLPH0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 02:26:08 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
+Message-ID: <548FDE56.8060107@jp.fujitsu.com>
+Date: Tue, 16 Dec 2014 16:25:10 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: peterz@infradead.org, mingo@kernel.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hwmon: jc42: use bitops' sign_extend16
-References: <1418660317-21750-1-git-send-email-martink@posteo.de> <1418660317-21750-4-git-send-email-martink@posteo.de> <20141215212948.GA23765@roeck-us.net>
-In-Reply-To: <20141215212948.GA23765@roeck-us.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH 2/4] workqueue: update per-cpu workqueue's node affinity
+ at,online-offline
+References: <1418379595-6281-1-git-send-email-laijs@cn.fujitsu.com> <548C68DA.20507@jp.fujitsu.com> <548EC1E2.1010101@jp.fujitsu.com> <548EC320.3060206@jp.fujitsu.com> <548FC3EA.7020505@cn.fujitsu.com>
+In-Reply-To: <548FC3EA.7020505@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 2014-12-15 um 22:29 schrieb Guenter Roeck:
-> On Mon, Dec 15, 2014 at 05:18:34PM +0100, Martin Kepplinger wrote:
+(2014/12/16 14:32), Lai Jiangshan wrote:
+> On 12/15/2014 07:16 PM, Kamezawa Hiroyuki wrote:
+>> The percpu workqueue pool are persistend and never be freed.
+>> But cpu<->node relationship can be changed by cpu hotplug and pool->node
+>> can point to an offlined node.
+>>
+>> If pool->node points to an offlined node,
+>> following allocation failure can happen.
+>>      ==
+>>       SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
+>>        cache: kmalloc-192, object size: 192, buffer size: 192, default
+>> order:
+>>      1, min order: 0
+>>        node 0: slabs: 6172, objs: 259224, free: 245741
+>>        node 1: slabs: 3261, objs: 136962, free: 127656
+>>      ==
+>>
+>> This patch clears per-cpu workqueue pool's node affinity at
+>> cpu offlining and restore it at cpu onlining.
+>>
+>> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 >> ---
-> 
-> Some description would be nice. Also, please consider adding
-> relevant subsystem mailing lists and maintainers to your patches.
-> 
-
-I shouldn't have added the Signed-off-by line to some of them. Sorry.
-
-The driver-patches are meant to be examples of what can be changed if
-the sign_extend functions are added. I don't know if they are taken and
-planned to post the driver patches (probably more) thereafter, and of
-course to the relevant people.
-
->>  drivers/hwmon/jc42.c | 5 ++---
->>  1 file changed, 2 insertions(+), 3 deletions(-)
+>>   kernel/workqueue.c | 11 ++++++++++-
+>>   1 file changed, 10 insertions(+), 1 deletion(-)
 >>
->> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
->> index 388f8bc..335a2de 100644
->> --- a/drivers/hwmon/jc42.c
->> +++ b/drivers/hwmon/jc42.c
->> @@ -31,6 +31,7 @@
->>  #include <linux/hwmon-sysfs.h>
->>  #include <linux/err.h>
->>  #include <linux/mutex.h>
->> +#include <linux/bitops.h>
->>  
->>  /* Addresses to scan */
->>  static const unsigned short normal_i2c[] = {
->> @@ -215,9 +216,7 @@ static int jc42_temp_from_reg(s16 reg)
->>  {
->>  	reg &= 0x1fff;
->>  
-> If I understand the code in sign_extend16 correctly, the above mask
-> should no longer be necessary.
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index 7809154..2fd0bd7 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -4586,6 +4586,11 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
+>>   	case CPU_DOWN_FAILED:
+>>   	case CPU_ONLINE:
+>>   		mutex_lock(&wq_pool_mutex);
+>> +		/*
+>> +		 * now cpu <-> node info is established. update numa node
+>> +		 */
+>> +		for_each_cpu_worker_pool(pool, cpu)
+>> +			pool->node = cpu_to_node(cpu);
+>>
+>>   		for_each_pool(pool, pi) {
+>>   			mutex_lock(&pool->attach_mutex);
+>> @@ -4619,6 +4624,7 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
+>>   	int cpu = (unsigned long)hcpu;
+>>   	struct work_struct unbind_work;
+>>   	struct workqueue_struct *wq;
+>> +	struct worker_pool *pool;
+>>
+>>   	switch (action & ~CPU_TASKS_FROZEN) {
+>>   	case CPU_DOWN_PREPARE:
+>> @@ -4626,10 +4632,13 @@ static int workqueue_cpu_down_callback(struct notifier_block *nfb,
+>>   		INIT_WORK_ONSTACK(&unbind_work, wq_unbind_fn);
+>>   		queue_work_on(cpu, system_highpri_wq, &unbind_work);
+>>
+>> -		/* update NUMA affinity of unbound workqueues */
+>>   		mutex_lock(&wq_pool_mutex);
+>> +		/* update NUMA affinity of unbound workqueues */
+>>   		list_for_each_entry(wq, &workqueues, list)
+>>   			wq_update_unbound_numa(wq, cpu, false);
+>> +		/* clear per-cpu workqueues's numa affinity. */
+>> +		for_each_cpu_worker_pool(pool, cpu)
+>> +			pool->node = NUMA_NO_NODE; /* restored at online */
+>
+>
+> If the node is still online, it is better to keep the original pool->node.
+>
 
-exactly. The mask would then be shifting. Thanks!
+Hm, ok, drop this code.  or moving all to node online event handler.
 
-> 
-> Thanks,
-> Guenter
-> 
->> -	/* sign extend register */
->> -	if (reg & 0x1000)
->> -		reg |= 0xf000;
->> +	reg = sign_extend16(reg, 12);
->>  
->>  	/* convert from 0.0625 to 0.001 resolution */
->>  	return reg * 125 / 2;
->> -- 
->> 2.1.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
+Thanks,
+-Kame
+
 
