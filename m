@@ -1,73 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387AbaLPU6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 15:58:53 -0500
-Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:51418 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750791AbaLPU6w (ORCPT
+	id S1751518AbaLPVAx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:00:53 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:45480 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaLPVAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 15:58:52 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:967:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2525:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4605:4823:5007:6261:7903:8660:8957:9025:9149:9388:10004:10400:10848:10881:11026:11256:11257:11473:11658:11914:12043:12050:12517:12519:12679:12806:13069:13146:13148:13161:13229:13230:13311:13357:13848:14093:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: burst61_4d3cab418a04d
-X-Filterd-Recvd-Size: 2189
-Message-ID: <1418763529.14140.9.camel@perches.com>
-Subject: newbies CheckpatchTips for multiline statements (Breaking function
- calls)
-From: Joe Perches <joe@perches.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        kernelnewbies <kernelnewbies@kernelnewbies.org>
-Date: Tue, 16 Dec 2014 12:58:49 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Dec 2014 16:00:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141216204449.GA9327@redhat.com>
+References: <20141216165358.GA9310@thinkpad>
+	<20141216204449.GA9327@redhat.com>
+Date: Tue, 16 Dec 2014 16:00:51 -0500
+Message-ID: <CABPqkBSv85qnY8Fk1MrGOrXBUo9=kkujHHZw37chWRCmLah+5g@mail.gmail.com>
+Subject: Re: [PATCH] perf mem: enable simultaneous sampling of loads/stores
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
+        Joe Mario <jmario@redhat.com>, Richard Fowles <rfowles@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://kernelnewbies.org/CheckpatchTips
+On Tue, Dec 16, 2014 at 3:44 PM, Arnaldo Carvalho de Melo
+<acme@redhat.com> wrote:
+>
+> Em Tue, Dec 16, 2014 at 05:53:58PM +0100, Stephane Eranian escreveu:
+> >
+> > This patch modifies perf mem to default to sampling loads
+> > and stores simultaneously. It could only do one or the other
+> > before yet there was not hardware restriction preventing
+> > simultaneous collection. With this patch, one run is sufficient
+> > to collect both.
+> >
+> > By default load/stores are sampled now:
+> > $ perf mem rec
+> > $ perf mem rep
+> >
+> > It is still possible to sample only loads or stores by using the
+> > -t option:
+> >  $ perf mem -t load rec
+> >  $ perf mem -t load rep
+> > Or
+> >  $ perf mem -t store rec
+> >  $ perf mem -t store rep
+> >
+> > The perf report TUI will show one event at a time. The store
+> > output will contain a Weight column which will be empty.
+>
+> Can you please update the man page and resubmit?
+>
+Ok, will do that.
 
-The block about "Breaking function calls" is dubious.
+>
+> Are those unchecked strdups really needed?
+>
+Well, it all boils down to how cmd_xx() declares argv:
+    - const char **argv
+    - char *argv
 
-The majority of code today uses arguments aligned to parenthesis.
-The suggested 1 tab is in fact very infrequently used.
+If the latter, then cannot simply do rec[i++] = "report"
+otherwise we may crash it the ever decides to modify that string.
 
-CodingStyle has this as "substantially to the right", not 1 tab.
+Given that cmd_record() and cmd_report() use const char *argv, then
+I can use literals. Right?
 
-btw: there's a perferred/preferred tyop too.
-
-------------
-
-Breaking function calls
-
-Sometimes a call to a function has several variables, and you need to
-break the line in the middle of those variables. Look at this example: 
-
- 
-        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN, GFP_KERNEL, &pdata->urb->transfer_dma);
-
-
-This line is too long, so we want to break it up. By default, vim will
-increase the indentation of the trailing line by one tab: 
-
-        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-                GFP_KERNEL, &pdata->urb->transfer_dma);
-
-
-This style is fine, and generally perferred. However, some driver
-writers prefer to have the trailing line of a function call line up with
-the starting '('. They use tabs, followed by spaces, to align the
-trailing line: 
-
- 
-        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-                                            GFP_KERNEL,
-                                            &pdata->urb->transfer_dma);
-
-
-Again, the one tab indent style is preferred, but don't change lines
-that use the other style. 
-
-
+>
+> - Arnaldo
+>
+> > Signed-off-by: Stephane Eranian <eranian@google.com>
+> > ---
+> >  tools/perf/builtin-mem.c | 107 ++++++++++++++++++++++++++++++++++++++++-------
+> >  1 file changed, 92 insertions(+), 15 deletions(-)
+> >
+> > diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+> > index 24db6ff..52dbaae 100644
+> > --- a/tools/perf/builtin-mem.c
+> > +++ b/tools/perf/builtin-mem.c
+> > @@ -7,10 +7,13 @@
+> >  #include "util/session.h"
+> >  #include "util/data.h"
+> >
+> > -#define MEM_OPERATION_LOAD   "load"
+> > -#define MEM_OPERATION_STORE  "store"
+> > +#define MEM_OPERATION_LOAD   0x1
+> > +#define MEM_OPERATION_STORE  0x2
+> >
+> > -static const char    *mem_operation          = MEM_OPERATION_LOAD;
+> > +/*
+> > + * default to both load an store sampling
+> > + */
+> > +static int mem_operation = MEM_OPERATION_LOAD | MEM_OPERATION_STORE;
+> >
+> >  struct perf_mem {
+> >       struct perf_tool        tool;
+> > @@ -25,26 +28,30 @@ static int __cmd_record(int argc, const char **argv)
+> >  {
+> >       int rec_argc, i = 0, j;
+> >       const char **rec_argv;
+> > -     char event[64];
+> >       int ret;
+> >
+> > -     rec_argc = argc + 4;
+> > +     rec_argc = argc + 7; /* max number of arguments */
+> >       rec_argv = calloc(rec_argc + 1, sizeof(char *));
+> >       if (!rec_argv)
+> >               return -1;
+> >
+> >       rec_argv[i++] = strdup("record");
+> > -     if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > +
+> > +     if (mem_operation & MEM_OPERATION_LOAD)
+> >               rec_argv[i++] = strdup("-W");
+> > +
+> >       rec_argv[i++] = strdup("-d");
+> > -     rec_argv[i++] = strdup("-e");
+> >
+> > -     if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > -             sprintf(event, "cpu/mem-stores/pp");
+> > -     else
+> > -             sprintf(event, "cpu/mem-loads/pp");
+> > +     if (mem_operation & MEM_OPERATION_LOAD) {
+> > +             rec_argv[i++] = strdup("-e");
+> > +             rec_argv[i++] = strdup("cpu/mem-loads/pp");
+> > +     }
+> > +
+> > +     if (mem_operation & MEM_OPERATION_STORE) {
+> > +             rec_argv[i++] = strdup("-e");
+> > +             rec_argv[i++] = strdup("cpu/mem-stores/pp");
+> > +     }
+> >
+> > -     rec_argv[i++] = strdup(event);
+> >       for (j = 1; j < argc; j++, i++)
+> >               rec_argv[i] = argv[j];
+> >
+> > @@ -170,7 +177,7 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+> >        * there is no weight (cost) associated with stores, so don't print
+> >        * the column
+> >        */
+> > -     if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > +     if (!(mem_operation & MEM_OPERATION_LOAD))
+> >               rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
+> >                                      "dso_daddr,tlb,locked");
+> >
+> > @@ -182,6 +189,75 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+> >       return ret;
+> >  }
+> >
+> > +struct mem_mode {
+> > +     const char *name;
+> > +     int mode;
+> > +};
+> > +
+> > +#define MEM_OPT(n, m) \
+> > +     { .name = n, .mode = (m) }
+> > +
+> > +#define MEM_END { .name = NULL }
+> > +
+> > +static const struct mem_mode mem_modes[]={
+> > +     MEM_OPT("load", MEM_OPERATION_LOAD),
+> > +     MEM_OPT("store", MEM_OPERATION_STORE),
+> > +     MEM_END
+> > +};
+> > +
+> > +static int
+> > +parse_mem_ops(const struct option *opt, const char *str, int unset)
+> > +{
+> > +     int *mode = (int *)opt->value;
+> > +     const struct mem_mode *m;
+> > +     char *s, *os = NULL, *p;
+> > +     int ret = -1;
+> > +
+> > +     if (unset)
+> > +             return 0;
+> > +
+> > +     /* str may be NULL in case no arg is passed to -t */
+> > +     if (str) {
+> > +             /* because str is read-only */
+> > +             s = os = strdup(str);
+> > +             if (!s)
+> > +                     return -1;
+> > +
+> > +             /* reset mode */
+> > +             *mode = 0;
+> > +
+> > +             for (;;) {
+> > +                     p = strchr(s, ',');
+> > +                     if (p)
+> > +                             *p = '\0';
+> > +
+> > +                     for (m = mem_modes; m->name; m++) {
+> > +                             if (!strcasecmp(s, m->name))
+> > +                                     break;
+> > +                     }
+> > +                     if (!m->name) {
+> > +                             fprintf(stderr, "unknown sampling op %s,"
+> > +                                         " check man page\n", s);
+> > +                             goto error;
+> > +                     }
+> > +
+> > +                     *mode |= m->mode;
+> > +
+> > +                     if (!p)
+> > +                             break;
+> > +
+> > +                     s = p + 1;
+> > +             }
+> > +     }
+> > +     ret = 0;
+> > +
+> > +     if (*mode == 0)
+> > +             *mode = MEM_OPERATION_LOAD;
+> > +error:
+> > +     free(os);
+> > +     return ret;
+> > +}
+> > +
+> >  int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  {
+> >       struct stat st;
+> > @@ -199,8 +275,9 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >               .input_name              = "perf.data",
+> >       };
+> >       const struct option mem_options[] = {
+> > -     OPT_STRING('t', "type", &mem_operation,
+> > -                "type", "memory operations(load/store)"),
+> > +     OPT_CALLBACK('t', "type", &mem_operation,
+> > +                "type", "memory operations(load,store) Default load,store",
+> > +                 parse_mem_ops),
+> >       OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
+> >                   "dump raw samples in ASCII"),
+> >       OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
+> > --
+> > 1.9.1
