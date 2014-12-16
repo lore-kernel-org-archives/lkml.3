@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157AbaLPJpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:45:38 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:50501 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750876AbaLPJpf (ORCPT
+	id S1751332AbaLPJqP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:46:15 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:62515 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbaLPJqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:45:35 -0500
-Date: Tue, 16 Dec 2014 09:45:27 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Mitchel Humpherys <mitchelh@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Robert Elliott <elliott@hp.com>, Matt Wagantall <mattw@codeaurora.org>
-Subject: Re: [PATCH v10] iopoll: Introduce memory-mapped IO polling macros
-Message-ID: <20141216094527.GC6580@arm.com>
-References: <1418687243-16395-1-git-send-email-mitchelh@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418687243-16395-1-git-send-email-mitchelh@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 16 Dec 2014 04:46:13 -0500
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org
+Cc: linux-sh@vger.kernel.org, daniel.lezcano@linaro.org, horms@verge.net.au,
+        geert@linux-m68k.org, laurent.pinchart@ideasonboard.com,
+        Magnus Damm <magnus.damm@gmail.com>, tglx@linutronix.de
+Date: Tue, 16 Dec 2014 18:48:54 +0900
+Message-Id: <20141216094854.22639.69181.sendpatchset@w520>
+Subject: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 11:47:23PM +0000, Mitchel Humpherys wrote:
-> From: Matt Wagantall <mattw@codeaurora.org>
-> 
-> It is sometimes necessary to poll a memory-mapped register until its value
-> satisfies some condition. Introduce a family of convenience macros that do
-> this. Tight-looping, sleeping, and timing out can all be accomplished using
-> these macros.
-> 
-> Cc: Thierry Reding <thierry.reding@gmail.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Robert Elliott <elliott@hp.com>
-> Signed-off-by: Matt Wagantall <mattw@codeaurora.org>
-> Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
-> ---
-> v9..10:
->   - Actually added the comments mentioned in v8..v9 (doh!)
-> 
-> v8..v9:
->   - Added note in comments about max sleep time (Rob Elliott)
-> 
-> v7..v8:
->   - sorted helper macros by size (b, w, l, q)
->   - removed some of the more esoteric (or flat-out bogus) helper macros
-> 
-> This patch was originally part of a series [1] for adding support for IOMMU
-> address translations through an ARM SMMU hardware register.  The other
-> patch in the series (the one that actually uses these macros and implements
-> said hardware address translations) was Ack'd by the driver maintainer
-> there (Will Deacon) so I've pulled this patch out to avoid resending an
-> already Ack'd patch over and over again.
-> 
-> In short, please see [1] for previous discussion and the first user of
-> these macros.
-> 
-> Will also acked this patch in [2].  I didn't retain his Ack here because I
-> added to the macro comments.
+From: Magnus Damm <damm+renesas@opensource.se>
 
-You can keep the ack, it still looks good to me and I'm not really fussed
-about the comments.
+Update the TMU driver to use cpu_possible_mask as cpumask to make
+r8a7779 SMP work as expected with or without the ARM TWD timer.
 
-Will
+Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+---
+
+ drivers/clocksource/sh_tmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- 0001/drivers/clocksource/sh_tmu.c
++++ work/drivers/clocksource/sh_tmu.c	2014-12-16 17:49:49.000000000 +0900
+@@ -428,7 +428,7 @@ static void sh_tmu_register_clockevent(s
+ 	ced->features = CLOCK_EVT_FEAT_PERIODIC;
+ 	ced->features |= CLOCK_EVT_FEAT_ONESHOT;
+ 	ced->rating = 200;
+-	ced->cpumask = cpumask_of(0);
++	ced->cpumask = cpu_possible_mask;
+ 	ced->set_next_event = sh_tmu_clock_event_next;
+ 	ced->set_mode = sh_tmu_clock_event_mode;
+ 	ced->suspend = sh_tmu_clock_event_suspend;
