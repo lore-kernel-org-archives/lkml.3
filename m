@@ -1,740 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225AbaLPLIK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:08:10 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:64534 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750878AbaLPLIH (ORCPT
+	id S1751376AbaLPLLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:11:06 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:59893 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840AbaLPLLD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:08:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <548F6C6D.8000903@gmx.de>
-References: <1417613513-28285-1-git-send-email-daniel.baluta@intel.com>
-	<1417613513-28285-7-git-send-email-daniel.baluta@intel.com>
-	<548F6C6D.8000903@gmx.de>
-Date: Tue, 16 Dec 2014 13:08:04 +0200
-X-Google-Sender-Auth: srq0DoCljY0g2Qfr8eVKlQ4bVl8
-Message-ID: <CAEnQRZD56qLjhc_4SDP-aE1GHrdStEaozwzf68goO87do0xiWA@mail.gmail.com>
-Subject: Re: [PATCH v4 6/6] iio: imu: kmx61: Add support for any motion trigger
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: Hartmut Knaack <knaack.h@gmx.de>
-Cc: Daniel Baluta <daniel.baluta@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Dec 2014 06:11:03 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-b3-54901343ec72
+Message-id: <54901341.20106@samsung.com>
+Date: Tue, 16 Dec 2014 12:10:57 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: linux-samsung-soc@vger.kernel.org, khilman@linaro.org, rjw@rjwysocki.net,
+        len.brown@intel.com, ulf.hansson@linaro.org, tomasz.figa@gmail.com,
+        kgene.kim@samsung.com, s.nawrocki@samsung.com, thomas.ab@samsung.com,
+        pankaj.dubey@samsung.com, geert+renesas@glider.be,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API
+ pm_genpd_dev_need_restore to use restore types
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+In-reply-to: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+Content-type: text/plain; charset=utf-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t/xq7rOwhNCDBY9F7ZouBpiMXf2JEaL
+	3gVX2Sy+Hl7BaDFryl4mi02Pr7FaXN41h83ic+8RRosZ5/cxWSza+oXd4szpS6wWh9+0s1p0
+	LGO0WLXrD6PF8bXhDvweE8/qeuycdZfdY/Gel0wed67tYfPYvKTeY8vVdhaPvi2rGD0+b5IL
+	4IjisklJzcksSy3St0vgymi8/pat4JlTxcs/E1gaGJ+ZdjFyckgImEg8PriKDcIWk7hwbz2Q
+	zcUhJLCUUWLRpv+MEM4nIGfKJ1aQKl4BDYmVn5axgNgsAqoSXyZOYgex2QQMJbredoFNEhWI
+	kVi8cDUzRL2gxI/J98DqRQQiJQ4u/MsEMpRZ4CSTxMp7P8GKhAUyJdqubQNbICTgJrF9+RUw
+	m1PAXaJ/93QmEJtZwEziy8vDrBC2vMTmNW+ZJzAKzEKyYxaSsllIyhYwMq9iFE0tTS4oTkrP
+	NdQrTswtLs1L10vOz93ECImmLzsYFx+zOsQowMGoxMNb0NsfIsSaWFZcmXuIUYKDWUmEd8t9
+	oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGgSNHpCoiXyxs0lzL+PfxIUa12Evtx2skv0/f9U/h
+	uH/404Do4oIlj7/HVZ/lDf0zddOe+vbWsMuRTTnerSEFJw2PuYsq3jArPWIc1eG1VfvvNCYN
+	54VSP4uKN/GVLN4hxaTTtePB3Ncby4xanvAwVs/tt7zzp9veVef0IcmOBq+u3eLZ3j+UWIoz
+	Eg21mIuKEwFV7vqShAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 1:19 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
-> Daniel Baluta schrieb am 03.12.2014 um 14:31:
->> We use WUFE (Wake Up from Sleep Engine) and BTSE (Back to Sleep Engine)
->> to detect general motion input.
->>
-> A few recommendations, issues and questions inline.
->> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> ---
->>  drivers/iio/imu/kmx61.c | 433 +++++++++++++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 426 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/iio/imu/kmx61.c b/drivers/iio/imu/kmx61.c
->> index 0f6816a..972424b 100644
->> --- a/drivers/iio/imu/kmx61.c
->> +++ b/drivers/iio/imu/kmx61.c
->> @@ -20,6 +20,7 @@
->>  #include <linux/pm_runtime.h>
->>  #include <linux/iio/iio.h>
->>  #include <linux/iio/sysfs.h>
->> +#include <linux/iio/events.h>
->>  #include <linux/iio/trigger.h>
->>  #include <linux/iio/buffer.h>
->>  #include <linux/iio/triggered_buffer.h>
->> @@ -30,6 +31,8 @@
->>  #define KMX61_IRQ_NAME "kmx61_event"
->>
->>  #define KMX61_REG_WHO_AM_I   0x00
->> +#define KMX61_REG_INS1               0x01
->> +#define KMX61_REG_INS2               0x02
->>
->>  /*
->>   * three 16-bit accelerometer output registers for X/Y/Z axis
->> @@ -63,20 +66,36 @@
->>  #define KMX61_REG_INL                0x28
->>  #define KMX61_REG_STBY               0x29
->>  #define KMX61_REG_CTRL1              0x2A
->> +#define KMX61_REG_CTRL2              0x2B
->>  #define KMX61_REG_ODCNTL     0x2C
->>  #define KMX61_REG_INC1               0x2D
->>
->> +#define KMX61_REG_WUF_THRESH 0x3D
->> +#define KMX61_REG_WUF_TIMER  0x3E
->> +
->>  #define KMX61_ACC_STBY_BIT   BIT(0)
->>  #define KMX61_MAG_STBY_BIT   BIT(1)
->>  #define KMX61_ACT_STBY_BIT   BIT(7)
->>
->>  #define KMX61_ALL_STBY               (KMX61_ACC_STBY_BIT | KMX61_MAG_STBY_BIT)
->>
->> +#define KMX61_REG_INS1_BIT_WUFS              BIT(1)
->> +
->> +#define KMX61_REG_INS2_BIT_ZP                BIT(0)
->> +#define KMX61_REG_INS2_BIT_ZN                BIT(1)
->> +#define KMX61_REG_INS2_BIT_YP                BIT(2)
->> +#define KMX61_REG_INS2_BIT_YN                BIT(3)
->> +#define KMX61_REG_INS2_BIT_XP                BIT(4)
->> +#define KMX61_REG_INS2_BIT_XN                BIT(5)
->> +
->>  #define KMX61_REG_CTRL1_GSEL_MASK    0x03
->>
->>  #define KMX61_REG_CTRL1_BIT_RES              BIT(4)
->>  #define KMX61_REG_CTRL1_BIT_DRDYE    BIT(5)
->> +#define KMX61_REG_CTRL1_BIT_WUFE     BIT(6)
->> +#define KMX61_REG_CTRL1_BIT_BTSE     BIT(7)
->>
->> +#define KMX61_REG_INC1_BIT_WUFS              BIT(0)
->>  #define KMX61_REG_INC1_BIT_DRDYM     BIT(1)
->>  #define KMX61_REG_INC1_BIT_DRDYA     BIT(2)
->>  #define KMX61_REG_INC1_BIT_IEN               BIT(5)
->> @@ -86,6 +105,11 @@
->>  #define KMX61_ACC_ODR_MASK   0x0F
->>  #define KMX61_MAG_ODR_MASK   0xF0
->>
->> +#define KMX61_OWUF_MASK              0x7
->> +
->> +#define KMX61_DEFAULT_WAKE_THRESH    1
->> +#define KMX61_DEFAULT_WAKE_DURATION  1
->> +
->>  #define KMX61_SLEEP_DELAY_MS 2000
->>
->>  #define KMX61_CHIP_ID                0x12
->> @@ -111,11 +135,16 @@ struct kmx61_data {
->>       /* config bits */
->>       u8 range;
->>       u8 odr_bits;
->> +     u8 wake_thresh;
->> +     u8 wake_duration;
->>
->>       /* accelerometer specific data */
->>       struct iio_dev *acc_indio_dev;
->>       struct iio_trigger *acc_dready_trig;
->> +     struct iio_trigger *motion_trig;
->>       bool acc_dready_trig_on;
->> +     bool motion_trig_on;
->> +     bool ev_enable_state;
->>
->>       /* magnetometer specific data */
->>       struct iio_dev *mag_indio_dev;
->> @@ -154,6 +183,23 @@ static const struct {
->>                       {3, 125000, 0x0A},
->>                       {6, 250000, 0x0B} };
->>
->> +static const struct {
->> +     int val;
->> +     int val2;
->> +     int odr_bits;
->> +} kmx61_wake_up_odr_table[] = { {0, 781000, 0x00},
->> +                              {1, 563000, 0x01},
->> +                              {3, 125000, 0x02},
->> +                              {6, 250000, 0x03},
->> +                              {12, 500000, 0x04},
->> +                              {25, 0, 0x05},
->> +                              {50, 0, 0x06},
->> +                              {100, 0, 0x06},
->> +                              {200, 0, 0x06},
->> +                              {400, 0, 0x06},
->> +                              {800, 0, 0x06},
->> +                              {1600, 0, 0x06} };
-> Is it intentional, that values above 50 share the same odr_bits?
+Hello,
 
-Yes, this is as intended. I followed the idea from kxcjk-1013 driver.
-Experimenting with ODR of > 50HZ  makes no benefit to system c states.
+On 2014-12-13 17:51, Amit Daniel Kachhap wrote:
+> Instead of using bool to restore suspended devices initially, use flags
+> like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
+> The first two flags will be similar to the existing true/false functionality.
+> The third flag may be used to force restore of suspended devices
+> whenever their associated power domain is turned on.
+>
+> Currently, PD power off function powers off all the associated unused
+> devices. The functionality added in this patch is similar to it.
+>
+> This feature may be used for those devices which are always in ON state
+> if the PD associated with them is ON but may need local runtime resume
+> and suspend during PD On/Off. These devices (like clock) may not implement
+> complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
+> subsystems interaction behaviour or any other reason.
+>
+> The model works like,
+>      DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
+>      /	pm_runtime_put. Its local runtime_suspend/resume is invoked via
+>     /	GPD_DEV_RESTORE_FORCE option)
+>    /
+> PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
+>    \	pm_runtime_put. This in turn invokes PD On/Off)
+>     \
+>      DEV3 (Similar to DEV1)
+>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
 
->> +
->>  static IIO_CONST_ATTR(accel_scale_available, "0.009582 0.019163 0.038326");
->>  static IIO_CONST_ATTR(magn_scale_available, "0.001465");
->>  static IIO_CONST_ATTR_SAMP_FREQ_AVAIL(
->> @@ -179,6 +225,14 @@ static const struct attribute_group kmx61_mag_attribute_group = {
->>       .attrs = kmx61_mag_attributes,
->>  };
->>
->> +static const struct iio_event_spec kmx61_event = {
->> +     .type = IIO_EV_TYPE_THRESH,
->> +     .dir = IIO_EV_DIR_EITHER,
->> +     .mask_separate = BIT(IIO_EV_INFO_VALUE) |
->> +                      BIT(IIO_EV_INFO_ENABLE) |
->> +                      BIT(IIO_EV_INFO_PERIOD),
->> +};
->> +
->>  #define KMX61_ACC_CHAN(_axis) { \
->>       .type = IIO_ACCEL, \
->>       .modified = 1, \
->> @@ -195,6 +249,8 @@ static const struct attribute_group kmx61_mag_attribute_group = {
->>               .shift = 4, \
->>               .endianness = IIO_LE, \
->>       }, \
->> +     .event_spec = &kmx61_event, \
->> +     .num_event_specs = 1 \
->>  }
->>
->>  #define KMX61_MAG_CHAN(_axis) { \
->> @@ -250,6 +306,31 @@ static int kmx61_convert_freq_to_bit(int val, int val2)
->>       return -EINVAL;
->>  }
->>
->> +static int kmx61_convert_bit_to_freq(u8 odr_bits, int *val, int *val2)
->> +{
->> +     int i;
->> +
->> +     for (i = 0; i < ARRAY_SIZE(kmx61_samp_freq_table); i++)
->> +             if (odr_bits == kmx61_samp_freq_table[i].odr_bits) {
->> +                     *val = kmx61_samp_freq_table[i].val;
->> +                     *val2 = kmx61_samp_freq_table[i].val2;
->> +                     return 0;
->> +             }
->> +     return -EINVAL;
-> Given that kmx61_samp_freq_table[].odr_bits is practically representing the
-> index, it could be handled in the way that we did when accessing
-> kmx61_uscale_table. Just check odr_bits to be in range of valid indexes and
-> then access the tables' elements with odr_bits used as index.
-> Not sure, why I didn't mention it on my first review - maybe I thought you
-> would pick it up by yourself if you liked the idea with the _scale_table.
+The idea of adding new gen_pd flag and reusing runtime pm calls intead 
+of additional
+notifiers looks promising, but I have some doubts. I don't see any 
+guarantee that
+devices with GPD_DEV_RESTORE_FORCE flag will be suspended after all 
+"normal" devices
+and restored before them. Without such assumption it will be hard to use 
+this approach
+for iommu related activities, because device might need to use (in its 
+suspend/resume
+callbacks) the functionality provided by the other device with 
+GPD_DEV_RESTORE_FORCE
+flag. Maybe some additional flags like suspend/resume priority (or more 
+flags) will
+solve somehow this dependency.
 
-Oh, ok.
+> ---
+> This work is continuation of earlier work,
+>
+> In V2: Completely removed notfiers and add support for huge clock list to be
+> 	suspended and restored. There was some issue in this as some clocks are
+> 	not exposed and are just initialised by bootloaders. This approach
+> 	required all of them to be exposed which is cumbersome. Also some
+> 	clock API's set_parent are disabling the original parent clocks
+> 	which is not required.
+> 	Link (https://lkml.org/lkml/2014/11/24/290)
+>
+> In V1: Implemented PM Domain notfier such as PD_ON_PRE, PD_ON_POST
+> 	PD_OFF_PRE and PD_OFF_POST. This was not supported and other
+> 	options suggested. link (http://www.spinics.net/lists/linux-samsung-soc/msg38442.html)
+>
+> This work may also assist exynos iommu pm runtime posted earlier by Marek
+> http://lists.linaro.org/pipermail/linaro-mm-sig/2014-August/004099.html
+> 	
+>   drivers/base/power/domain.c | 40 ++++++++++++++++++++++++++++++++++++----
+>   include/linux/pm_domain.h   | 15 +++++++++++++--
+>   2 files changed, 49 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/base/power/domain.c b/drivers/base/power/domain.c
+> index 6a103a3..d955a05 100644
+> --- a/drivers/base/power/domain.c
+> +++ b/drivers/base/power/domain.c
+> @@ -49,6 +49,7 @@
+>   
+>   static LIST_HEAD(gpd_list);
+>   static DEFINE_MUTEX(gpd_list_lock);
+> +static void __pm_genpd_restore_devices(struct generic_pm_domain *genpd);
+>   
+>   static struct generic_pm_domain *pm_genpd_lookup_name(const char *domain_name)
+>   {
+> @@ -176,6 +177,8 @@ static int genpd_power_on(struct generic_pm_domain *genpd)
+>   	pr_warn("%s: Power-%s latency exceeded, new value %lld ns\n",
+>   		genpd->name, "on", elapsed_ns);
+>   
+> +	__pm_genpd_restore_devices(genpd);
+> +
+>   	return ret;
+>   }
+>   
+> @@ -453,6 +456,24 @@ static void __pm_genpd_restore_device(struct pm_domain_data *pdd,
+>   }
+>   
+>   /**
+> + * __pm_genpd_restore_devices- Restore the pre-suspend state of all device
+> + *				according to the restore flag.
+> + * @genpd: PM domain the device belongs to.
+> + */
+> +static void __pm_genpd_restore_devices(struct generic_pm_domain *genpd)
+> +{
+> +	struct pm_domain_data *pdd;
+> +	struct generic_pm_domain_data *gpd_data;
+> +
+> +	/* Force restore the devices according to the restore flag */
+> +	list_for_each_entry(pdd, &genpd->dev_list, list_node) {
+> +		gpd_data = to_gpd_data(pdd);
+> +		if (gpd_data->force_restore == true)
+> +			__pm_genpd_restore_device(pdd, genpd);
+> +	}
+> +}
+> +
+> +/**
+>    * genpd_abort_poweroff - Check if a PM domain power off should be aborted.
+>    * @genpd: PM domain to check.
+>    *
+> @@ -1469,6 +1490,7 @@ int __pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev,
+>   	gpd_data->base.dev = dev;
+>   	list_add_tail(&gpd_data->base.list_node, &genpd->dev_list);
+>   	gpd_data->need_restore = -1;
+> +	gpd_data->force_restore = false;
+>   	gpd_data->td.constraint_changed = true;
+>   	gpd_data->td.effective_constraint_ns = -1;
+>   	mutex_unlock(&gpd_data->lock);
+> @@ -1561,18 +1583,28 @@ int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+>   /**
+>    * pm_genpd_dev_need_restore - Set/unset the device's "need restore" flag.
+>    * @dev: Device to set/unset the flag for.
+> - * @val: The new value of the device's "need restore" flag.
+> + * @val: This can have values GPD_DEV_SUSPEND_INIT or GPD_DEV_RESTORE_INIT
+> + *	together with GPD_DEV_RESTORE_FORCE.
+>    */
+> -void pm_genpd_dev_need_restore(struct device *dev, bool val)
+> +void pm_genpd_dev_need_restore(struct device *dev, unsigned int val)
+>   {
+>   	struct pm_subsys_data *psd;
+> +	struct generic_pm_domain_data *pdd;
+>   	unsigned long flags;
+>   
+>   	spin_lock_irqsave(&dev->power.lock, flags);
+>   
+>   	psd = dev_to_psd(dev);
+> -	if (psd && psd->domain_data)
+> -		to_gpd_data(psd->domain_data)->need_restore = val ? 1 : 0;
+> +	if (psd && psd->domain_data) {
+> +		pdd = to_gpd_data(psd->domain_data);
+> +		if (val & GPD_DEV_SUSPEND_INIT)
+> +			pdd->need_restore = 0;
+> +		else if (val & GPD_DEV_RESTORE_INIT)
+> +			pdd->need_restore = 1;
+> +
+> +		if (val & GPD_DEV_RESTORE_FORCE)
+> +			pdd->force_restore = true;
+> +	}
+>   
+>   	spin_unlock_irqrestore(&dev->power.lock, flags);
+>   }
+> diff --git a/include/linux/pm_domain.h b/include/linux/pm_domain.h
+> index 6cd20d5..8aa74ee 100644
+> --- a/include/linux/pm_domain.h
+> +++ b/include/linux/pm_domain.h
+> @@ -20,6 +20,15 @@
+>   /* Defines used for the flags field in the struct generic_pm_domain */
+>   #define GENPD_FLAG_PM_CLK	(1U << 0) /* PM domain uses PM clk */
+>   
+> +/* Defines used for the types of restore */
+> +#define	GPD_DEV_SUSPEND_INIT	0x1	/* Initiate the device runtime as
+> +					   suspend/resume/suspend... */
+> +#define	GPD_DEV_RESTORE_INIT	0x10	/* Initiate the device runtime as
+> +					   resume/suspend/suspend... */
+> +#define	GPD_DEV_RESTORE_FORCE	0x100	/* Force these devices to always do
+> +					   resume in PD power on. Initial
+> +					   behaviour can be one of the above */
+> +
+>   enum gpd_status {
+>   	GPD_STATE_ACTIVE = 0,	/* PM domain is active */
+>   	GPD_STATE_WAIT_MASTER,	/* PM domain's master is being waited for */
+> @@ -116,6 +125,7 @@ struct generic_pm_domain_data {
+>   	struct mutex lock;
+>   	unsigned int refcount;
+>   	int need_restore;
+> +	bool force_restore;
+>   };
+>   
+>   #ifdef CONFIG_PM_GENERIC_DOMAINS
+> @@ -140,7 +150,7 @@ extern int __pm_genpd_name_add_device(const char *domain_name,
+>   
+>   extern int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+>   				  struct device *dev);
+> -extern void pm_genpd_dev_need_restore(struct device *dev, bool val);
+> +extern void pm_genpd_dev_need_restore(struct device *dev, unsigned int val);
+>   extern int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
+>   				  struct generic_pm_domain *new_subdomain);
+>   extern int pm_genpd_add_subdomain_names(const char *master_name,
+> @@ -187,7 +197,8 @@ static inline int pm_genpd_remove_device(struct generic_pm_domain *genpd,
+>   {
+>   	return -ENOSYS;
+>   }
+> -static inline void pm_genpd_dev_need_restore(struct device *dev, bool val) {}
+> +static inline void pm_genpd_dev_need_restore(struct device *dev,
+> +						unsigned int val) {}
+>   static inline int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
+>   					 struct generic_pm_domain *new_sd)
+>   {
 
->> +}
->> +
->> +
->> +static int kmx61_convert_wake_up_odr_to_bit(int val, int val2)
->> +{
->> +     int i;
->> +
->> +     for (i = 0; i < ARRAY_SIZE(kmx61_wake_up_odr_table); ++i)
->> +             if (kmx61_wake_up_odr_table[i].val == val &&
->> +                     kmx61_wake_up_odr_table[i].val2 == val2)
->> +                             return kmx61_wake_up_odr_table[i].odr_bits;
->> +     return -EINVAL;
->> +}
->> +
->>  /**
->>   * kmx61_set_mode() - set KMX61 device operating mode
->>   * @data - kmx61 device private data pointer
->> @@ -338,6 +419,21 @@ static int kmx61_get_mode(struct kmx61_data *data, u8 *mode, u8 device)
->>       return 0;
->>  }
->>
->> +int kmx61_set_wake_up_odr(struct kmx61_data *data, int val, int val2)
->> +{
->> +     int ret, odr_bits;
->> +
->> +     odr_bits = kmx61_convert_wake_up_odr_to_bit(val, val2);
->> +     if (odr_bits < 0)
->> +             return odr_bits;
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL2,
->> +                                     odr_bits);
->> +     if (ret < 0)
->> +             dev_err(&data->client->dev, "Error writing reg_ctrl2\n");
->> +     return ret;
->> +}
->> +
->>  static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
->>  {
->>       int ret;
->> @@ -369,6 +465,12 @@ static int kmx61_set_odr(struct kmx61_data *data, int val, int val2, u8 device)
->>       if (ret < 0)
->>               return ret;
->>
->> +     if (device & KMX61_ACC) {
->> +             ret = kmx61_set_wake_up_odr(data, val, val2);
->> +             if (ret)
->> +                     return ret;
->> +     }
->> +
->>       return kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG, true);
->>  }
->>
->> @@ -449,7 +551,7 @@ static int kmx61_set_scale(struct kmx61_data *data, u16 uscale)
->>
->>  static int kmx61_chip_init(struct kmx61_data *data)
->>  {
->> -     int ret;
->> +     int ret, val, val2;
->>
->>       ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_WHO_AM_I);
->>       if (ret < 0) {
->> @@ -476,11 +578,23 @@ static int kmx61_chip_init(struct kmx61_data *data)
->>       }
->>       data->odr_bits = ret;
->>
->> +     /* set output data rate for wake up (motion detection) function */
->> +     ret = kmx61_convert_bit_to_freq(data->odr_bits, &val, &val2);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = kmx61_set_wake_up_odr(data, val, val2);
->> +     if (ret < 0)
->> +             return ret;
->> +
->>       /* set acc/magn to OPERATION mode */
->>       ret = kmx61_set_mode(data, 0, KMX61_ACC | KMX61_MAG, true);
->>       if (ret < 0)
->>               return ret;
->>
->> +     data->wake_thresh = KMX61_DEFAULT_WAKE_THRESH;
->> +     data->wake_duration = KMX61_DEFAULT_WAKE_DURATION;
->> +
->>       return 0;
->>  }
->>
->> @@ -547,6 +661,87 @@ static int kmx61_setup_new_data_interrupt(struct kmx61_data *data,
->>       return 0;
->>  }
->>
->> +static int kmx61_chip_update_thresholds(struct kmx61_data *data)
->> +{
->> +     int ret;
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client,
->> +                                     KMX61_REG_WUF_TIMER,
->> +                                     data->wake_duration);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Errow writing reg_wuf_timer\n");
->> +             return ret;
->> +     }
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client,
->> +                                     KMX61_REG_WUF_THRESH,
->> +                                     data->wake_thresh);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error writing reg_wuf_thresh\n");
->> +             return ret;
->> +     }
->> +
->> +     return 0;
-> Like in kmx61_set_wake_up_odr, you could return ret here and drop it in the
-> last error handler.
+Best regards
+-- 
+Marek Szyprowski, PhD
+Samsung R&D Institute Poland
 
-ok.
-
->> +}
->> +
->> +static int kmx61_setup_any_motion_interrupt(struct kmx61_data *data,
->> +                                         bool status, u8 device)
-> device is unused in this function.
->> +{
->> +     u8 mode;
->> +     int ret;
->> +
->> +     ret = kmx61_get_mode(data, &mode, KMX61_ACC | KMX61_MAG);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = kmx61_chip_update_thresholds(data);
->> +     if (ret < 0)
->> +             return ret;
->> +
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INC1);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error reading reg_inc1\n");
->> +             return ret;
->> +     }
->> +     if (status)
->> +             ret |= (KMX61_REG_INC1_BIT_IEN | KMX61_REG_INC1_BIT_WUFS);
->> +     else
->> +             ret &= ~(KMX61_REG_INC1_BIT_IEN | KMX61_REG_INC1_BIT_WUFS);
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_INC1, ret);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error writing reg_inc1\n");
->> +             return ret;
->> +     }
->> +
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
->> +             return ret;
->> +     }
->> +
->> +     if (status)
->> +             ret |= KMX61_REG_CTRL1_BIT_WUFE | KMX61_REG_CTRL1_BIT_BTSE;
->> +     else
->> +             ret &= ~(KMX61_REG_CTRL1_BIT_WUFE | KMX61_REG_CTRL1_BIT_BTSE);
->> +
->> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error writing reg_ctrl1\n");
->> +             return ret;
->> +     }
->> +     mode |= KMX61_ACT_STBY_BIT;
->> +     ret = kmx61_set_mode(data, mode, KMX61_ACC | KMX61_MAG, true);
->> +     if (ret)
->> +             return ret;
->> +
->> +     return 0;
-> Just like in the end of kmx61_set_odr(): return kmx61_set_mode(...);
-
-ok.
-
->> +}
->> +
->>  /**
->>   * kmx61_set_power_state() - set power state for kmx61 @device
->>   * @data - kmx61 device private pointer
->> @@ -707,12 +902,111 @@ static int kmx61_write_raw(struct iio_dev *indio_dev,
->>       }
->>  }
->>
->> +static int kmx61_read_event(struct iio_dev *indio_dev,
->> +                         const struct iio_chan_spec *chan,
->> +                         enum iio_event_type type,
->> +                         enum iio_event_direction dir,
->> +                         enum iio_event_info info,
->> +                         int *val, int *val2)
->> +{
->> +     struct kmx61_data *data = kmx61_get_data(indio_dev);
->> +
->> +     *val2 = 0;
->> +     switch (info) {
->> +     case IIO_EV_INFO_VALUE:
->> +             *val = data->wake_thresh;
->> +             break;
->> +     case IIO_EV_INFO_PERIOD:
->> +             *val = data->wake_duration;
->> +             break;
->> +     default:
->> +             return -EINVAL;
->> +     }
->> +
->> +     return IIO_VAL_INT;
-> Stylewise, we usually put the return IIO_VAL_INT (or similar) inside each case
-> if there is nothing more to be done (like unlocking mutexes, ...). Makes it
-> slightly more obvious, what type the data is supposed to be.
->> +}
-ok.
-
->> +
->> +static int kmx61_write_event(struct iio_dev *indio_dev,
->> +                         const struct iio_chan_spec *chan,
->> +                         enum iio_event_type type,
->> +                         enum iio_event_direction dir,
->> +                         enum iio_event_info info,
->> +                         int val, int val2)
-> Parameters should be indented one more space.
-ok.
->> +{
->> +     struct kmx61_data *data = kmx61_get_data(indio_dev);
->> +
->> +     if (data->ev_enable_state)
->> +             return -EBUSY;
->> +
->> +     switch (info) {
->> +     case IIO_EV_INFO_VALUE:
->> +             data->wake_thresh = val;
->> +             break;
->> +     case IIO_EV_INFO_PERIOD:
->> +             data->wake_duration = val;
->> +             break;
->> +     default:
->> +             return -EINVAL;
->> +     }
->> +
->> +     return IIO_VAL_INT;
-> Same here.
-ok.
->> +}
->> +
->> +static int kmx61_read_event_config(struct iio_dev *indio_dev,
->> +                                const struct iio_chan_spec *chan,
->> +                                enum iio_event_type type,
->> +                                enum iio_event_direction dir)
->> +{
->> +     struct kmx61_data *data = kmx61_get_data(indio_dev);
->> +
->> +     return data->ev_enable_state;
->> +}
->> +
->> +static int kmx61_write_event_config(struct iio_dev *indio_dev,
->> +                                const struct iio_chan_spec *chan,
->> +                                enum iio_event_type type,
->> +                                enum iio_event_direction dir,
->> +                                int state)
-> Parameters should be indented one more space.
-ok.
->> +{
->> +     struct kmx61_data *data = kmx61_get_data(indio_dev);
->> +     int ret;
->> +
->> +     if (state && data->ev_enable_state)
->> +             return 0;
->> +
->> +     mutex_lock(&data->lock);
->> +
->> +     if (!state && data->motion_trig_on) {
->> +             data->ev_enable_state = 0;
-> Assign true/false to bools?
-ok.
->> +             mutex_unlock(&data->lock);
->> +             return 0;
->> +     }
->> +
->> +     ret = kmx61_set_power_state(data, state, KMX61_ACC);
->> +     if (ret < 0) {
->> +             mutex_unlock(&data->lock);
->> +             return ret;
->> +     }
->> +
->> +     ret = kmx61_setup_any_motion_interrupt(data, state, KMX61_ACC);
->> +     if (ret < 0) {
->> +             kmx61_set_power_state(data, false, KMX61_ACC);
->> +             mutex_unlock(&data->lock);
->> +             return ret;
->> +     }
->> +
->> +     data->ev_enable_state = state;
-> You could place an error label here and return ret below to reduce some code
-> repetition in the error handlers above.
->> +     mutex_unlock(&data->lock);
->> +
->> +     return 0;
->> +}
->> +
->>  static int kmx61_acc_validate_trigger(struct iio_dev *indio_dev,
->>                                     struct iio_trigger *trig)
->>  {
->>       struct kmx61_data *data = kmx61_get_data(indio_dev);
->>
->> -     if (data->acc_dready_trig != trig)
->> +     if (data->acc_dready_trig != trig && data->motion_trig != trig)
->>               return -EINVAL;
->>
->>       return 0;
->> @@ -734,6 +1028,10 @@ static const struct iio_info kmx61_acc_info = {
->>       .read_raw               = kmx61_read_raw,
->>       .write_raw              = kmx61_write_raw,
->>       .attrs                  = &kmx61_acc_attribute_group,
->> +     .read_event_value       = kmx61_read_event,
->> +     .write_event_value      = kmx61_write_event,
->> +     .read_event_config      = kmx61_read_event_config,
->> +     .write_event_config     = kmx61_write_event_config,
->>       .validate_trigger       = kmx61_acc_validate_trigger,
->>  };
->>
->> @@ -753,11 +1051,18 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->>       u8 device;
->>
->>       struct iio_dev *indio_dev = iio_trigger_get_drvdata(trig);
->> -     struct kmx61_data *data = iio_priv(indio_dev);
->> +     struct kmx61_data *data = kmx61_get_data(indio_dev);
-> Oh well, fixing the issue I pointed out in your previous patch. LOL and ouch!
-:)). That explains why the driver didn't crash when I tested it.
-
->>
->>       mutex_lock(&data->lock);
->>
->> -     if (data->acc_dready_trig == trig)
->> +     if (!state && data->ev_enable_state && data->motion_trig_on) {
->> +             data->motion_trig_on = false;
->> +             mutex_unlock(&data->lock);
->> +             return 0;
->> +     }
->> +
->> +
->> +     if (data->acc_dready_trig == trig || data->motion_trig)
-> Wouldn't you want to compare data->motion_trig with trig?
-This is a nice catch.
-
->>               device = KMX61_ACC;
->>       else
->>               device = KMX61_MAG;
->> @@ -768,7 +1073,10 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->>               return ret;
->>       }
->>
->> -     ret = kmx61_setup_new_data_interrupt(data, state, device);
->> +     if (data->acc_dready_trig == trig || data->mag_dready_trig == trig)
->> +             ret = kmx61_setup_new_data_interrupt(data, state, device);
->> +     else
->> +             ret = kmx61_setup_any_motion_interrupt(data, state, KMX61_ACC);
->>       if (ret < 0) {
->>               kmx61_set_power_state(data, false, device);
->>               mutex_unlock(&data->lock);
->> @@ -777,8 +1085,10 @@ static int kmx61_data_rdy_trigger_set_state(struct iio_trigger *trig,
->>
->>       if (data->acc_dready_trig == trig)
->>               data->acc_dready_trig_on = state;
->> -     else
->> +     else if (data->mag_dready_trig == trig)
->>               data->mag_dready_trig_on = state;
->> +     else
->> +             data->motion_trig_on = state;
->>
->>       mutex_unlock(&data->lock);
->>
->> @@ -806,6 +1116,99 @@ static const struct iio_trigger_ops kmx61_trigger_ops = {
->>       .owner = THIS_MODULE,
->>  };
->>
->> +static irqreturn_t kmx61_event_handler(int irq, void *private)
->> +{
->> +     struct kmx61_data *data = private;
->> +     struct iio_dev *indio_dev = data->acc_indio_dev;
->> +     int ret;
->> +
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS1);
->> +     if (ret < 0) {
->> +             dev_err(&data->client->dev, "Error reading reg_ins1\n");
->> +             goto ack_intr;
->> +     }
->> +
->> +     if (ret & KMX61_REG_INS1_BIT_WUFS) {
->> +             ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS2);
->> +             if (ret < 0) {
->> +                     dev_err(&data->client->dev, "Error reading reg_ins2\n");
->> +                     goto ack_intr;
->> +             }
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_XN)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_X,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_FALLING),
->> +                                    0);
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_XP)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_X,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_RISING),
->> +                                    0);
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_YN)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_Y,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_FALLING),
->> +                                    0);
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_YP)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_Y,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_RISING),
->> +                                    0);
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_ZN)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_Z,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_FALLING),
->> +                                    0);
->> +
->> +             if (ret & KMX61_REG_INS2_BIT_ZP)
->> +                     iio_push_event(indio_dev,
->> +                                    IIO_MOD_EVENT_CODE(IIO_ACCEL,
->> +                                    0,
->> +                                    IIO_MOD_Z,
->> +                                    IIO_EV_TYPE_THRESH,
->> +                                    IIO_EV_DIR_RISING),
->> +                                    0);
->> +     }
->> +
->> +ack_intr:
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_CTRL1);
->> +     if (ret < 0)
->> +             dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
->> +
->> +     ret |= KMX61_REG_CTRL1_BIT_RES;
->> +     ret = i2c_smbus_write_byte_data(data->client, KMX61_REG_CTRL1, ret);
->> +     if (ret < 0)
->> +             dev_err(&data->client->dev, "Error reading reg_ctrl1\n");
-> Typo: Error writing ...
-ok.
->> +
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INL);
->> +     if (ret < 0)
->> +             dev_err(&data->client->dev, "Error reading reg_inl\n");
->> +
->> +     ret = i2c_smbus_read_byte_data(data->client, KMX61_REG_INS1);
-> Missing error handling/message here.
-ok.
->> +
->> +     return IRQ_HANDLED;
->> +}
->> +
->>  static irqreturn_t kmx61_data_rdy_trig_poll(int irq, void *private)
->>  {
->>       struct kmx61_data *data = private;
->> @@ -815,6 +1218,11 @@ static irqreturn_t kmx61_data_rdy_trig_poll(int irq, void *private)
->>       if (data->mag_dready_trig_on)
->>               iio_trigger_poll(data->mag_dready_trig);
->>
->> +     if (data->motion_trig_on)
->> +             iio_trigger_poll(data->motion_trig);
->> +
->> +     if (data->ev_enable_state)
->> +             return IRQ_WAKE_THREAD;
->>       return IRQ_HANDLED;
->>  }
->>
->> @@ -982,7 +1390,7 @@ static int kmx61_probe(struct i2c_client *client,
->>       if (client->irq >= 0) {
->>               ret = devm_request_threaded_irq(&client->dev, client->irq,
->>                                               kmx61_data_rdy_trig_poll,
->> -                                             NULL,
->> +                                             kmx61_event_handler,
->>                                               IRQF_TRIGGER_RISING,
->>                                               KMX61_IRQ_NAME,
->>                                               data);
->> @@ -1003,6 +1411,14 @@ static int kmx61_probe(struct i2c_client *client,
->>                       goto err_trigger_unregister;
->>               }
->>
->> +             data->motion_trig =
->> +                     kmx61_trigger_setup(data, data->acc_indio_dev,
->> +                                         "any-motion");
->> +             if (IS_ERR(data->motion_trig)) {
->> +                     ret = PTR_ERR(data->motion_trig);
->> +                     goto err_trigger_unregister;
->> +             }
->> +
->>               ret = iio_triggered_buffer_setup(data->acc_indio_dev,
->>                                                &iio_pollfunc_store_time,
->>                                                kmx61_trigger_handler,
->> @@ -1060,6 +1476,8 @@ err_trigger_unregister:
->>               iio_trigger_unregister(data->acc_dready_trig);
->>       if (data->mag_dready_trig)
->>               iio_trigger_unregister(data->mag_dready_trig);
->> +     if (data->motion_trig)
->> +             iio_trigger_unregister(data->motion_trig);
->>  err_chip_uninit:
->>       kmx61_set_mode(data, KMX61_ALL_STBY, KMX61_ACC | KMX61_MAG, true);
->>       return ret;
->> @@ -1081,6 +1499,7 @@ static int kmx61_remove(struct i2c_client *client)
->>               iio_triggered_buffer_cleanup(data->mag_indio_dev);
->>               iio_trigger_unregister(data->acc_dready_trig);
->>               iio_trigger_unregister(data->mag_dready_trig);
->> +             iio_trigger_unregister(data->motion_trig);
->>       }
->>
->>       mutex_lock(&data->lock);
-
-Thanks a lot for the feedback, Hartmut!
-
-Daniel.
