@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaLPTKn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 14:10:43 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:39593 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaLPTKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 14:10:42 -0500
-Message-ID: <5490839A.304@gmail.com>
-Date: Tue, 16 Dec 2014 11:10:18 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751202AbaLPTVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 14:21:44 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:47872 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbaLPTVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 14:21:43 -0500
+Date: Tue, 16 Dec 2014 20:20:20 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Evgeni Dobrev <evgeni@studio-punkt.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, devicetree@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
+        linux-kernel@vger.kernel.org,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: dts: kirkwood: add dts support for Seagate
+ BlackArmor NAS220
+Message-ID: <20141216192020.GB12820@lunn.ch>
+References: <20141215203855.GA28940@anne>
+ <20141216085645.GB1450@lunn.ch>
+ <20141216163714.GE20170@anne>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Wenyou Yang <wenyou.yang@atmel.com>
-CC: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
- NAND_Tree which improperly strapp-in during the reset period.
-References: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com> <54900779.9030509@atmel.com>
-In-Reply-To: <54900779.9030509@atmel.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216163714.GE20170@anne>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/12/14 02:20, Nicolas Ferre wrote:
-> Le 11/12/2014 08:31, Wenyou Yang a écrit :
->> Appearance: On some SAMA5D4EK boards, after power up, the Eth1 doesn't work.
->>
->> Reason: The PIOE2 pin is connected to the NAND_Tree# of KSZ8081,
->> But it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
->>
->> Add phy_fixup() to disable NAND_Tree by overriding the Operation
->> Mode Strap Override register(i.e. Register 16h) to clear the NAND_Tree bit.
->>
->> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> 
-> It seems correct to me.
+> The LED can be either one of the two colors or off. Swapping the
+> polarity on the two LED pins changes the color.
 
-Just one minor nit, see below
+O.K, so it is using the diode property of a Light Emitting Diode, to
+support two colours.
 
-> 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> Anyway, I add Florian in the loop as he is the one who proposed this
-> solution. So it would have been good to have his feeling about the
-> implementation...
-> 
-> Bye,
-> 
->> ---
->>  arch/arm/mach-at91/board-dt-sama5.c |   18 ++++++++++++++++++
->>  1 file changed, 18 insertions(+)
->>
->> diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
->> index 8fb9ef5..97f7367 100644
->> --- a/arch/arm/mach-at91/board-dt-sama5.c
->> +++ b/arch/arm/mach-at91/board-dt-sama5.c
->> @@ -17,6 +17,7 @@
->>  #include <linux/of_platform.h>
->>  #include <linux/phy.h>
->>  #include <linux/clk-provider.h>
->> +#include <linux/phy.h>
->>  
->>  #include <asm/setup.h>
->>  #include <asm/irq.h>
->> @@ -26,8 +27,25 @@
->>  
->>  #include "generic.h"
->>  
->> +static int ksz8081_phy_fixup(struct phy_device *phy)
->> +{
->> +	int value;
->> +
->> +	value = phy_read(phy, 0x16);
->> +	value &= ~0x20;
->> +	phy_write(phy, 0x16, value);
->> +
->> +	return 0;
->> +}
->> +
->>  static void __init sama5_dt_device_init(void)
->>  {
->> +	if (of_machine_is_compatible("atmel,sama5d4ek") &&
->> +	   IS_ENABLED(CONFIG_PHYLIB)) {
->> +		phy_register_fixup_for_id("fc028000.etherne:00",
->> +						ksz8081_phy_fixup);
+> I am currently playing with the idea to create a multicolor LED kernel 
+> driver which is being controlled via GPIOs, but I still have not found 
+> the proper abstraction for it.
 
-Matching the bus id certainly works, but I would rather match on your
-specific PHY device 32-bits OUI to make sure that if you ever change the
-PHY on a different design, this is not inadvertently writing to a
-register that is not micrel specific?
+Maybe multi-colour is too far. Just support bi-colour via two gpios.
+Still, it is not so simple. As you said, the led class does not give
+too good an abstraction. I guess the best you can do is that when you
+turn one on, it automagically turns the other off.
 
->> +	}
->> +
->>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
->>  }
->>  
->>
-> 
-> 
+> The point is, that even though this functionality must currently be
+> handled by user space (some combination of sysfs writes and a shell
+> script) at the moment, the rest of the system is usable.
 
+Sure, we will take the DT file without support for the bicolour
+LED. It can be added later.
+
+      Andrew
+ 
