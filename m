@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbaLPQ0f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:26:35 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:35472 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaLPQ0Y (ORCPT
+	id S1751966AbaLPQ0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:26:25 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:45588 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751674AbaLPQ0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:26:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141216104614.GV3337@twins.programming.kicks-ass.net>
-References: <CABPqkBS-iWehgyp0xEkeJLygeTOg7Ci-3jugRNMJ9Medz=2A1w@mail.gmail.com>
-	<20141216104614.GV3337@twins.programming.kicks-ass.net>
-Date: Tue, 16 Dec 2014 11:26:23 -0500
-Message-ID: <CABPqkBSM7naL9DM4gaF5DtEORgxp4sMT6DQA1_ej85Y_oDqXqA@mail.gmail.com>
-Subject: Re: [BUG] perf: sampling with precise=2 broken in 3.18
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>, "Liang, Kan" <kan.liang@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        dave.hansen@linux.intel.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Dec 2014 11:26:20 -0500
+From: Athira Lekshmi <andnlnbn18@gmail.com>
+To: wim@iguana.be
+Cc: linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Athira Lekshmi <andnlnbn18@gmail.com>
+Subject: [PATCH 8/8] drivers: watchdog: Fixed missing blank line warning
+Date: Tue, 16 Dec 2014 21:55:29 +0530
+Message-Id: <1418747129-3766-8-git-send-email-andnlnbn18@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
+References: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 5:46 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Dec 15, 2014 at 11:51:07PM -0500, Stephane Eranian wrote:
->> Hi,
->>
->> I was running some perf mem test for an upcoming patch when
->> I realize that precise=2 was broken on 3.18. It seems it never
->> (or extremely rarely) correct the off-by-one error, when until 3.18-rc4
->> it was 100% on the same program. So something was introduced
->> that broke the asm walker in perf_event_intel_ds.c.
->>
->> Looking at the log of that file, I can see one change that could have
->> some impact:
->>
->> Author: Dave Hansen <dave.hansen@linux.intel.com>
->> 6ba48ff x86: Remove arbitrary instruction size limit in instruction decoder
->>
->> if I use a kernel without this fix (prior to that commit), then correction
->> works. Any kernel after fails. I have not investigated why but may you
->> have an idea.
->>
->> To reproduce try using perf mem -t load rec my_load_test, then use
->> perf report to navigate to the assembly view, the samples should be
->> on load instructions, not on the instructions following them. If you use
->> perf mem -t load rec -vv you can verify that precise=2. So something
->> is not working anymore in the instruction decoder that the fixup routine
->> bails out.
->>
->> Any clue?
->
-> This appears to have fixed it.
->
-> ---
-> Subject: x86: Fix off-by-one in instruction decoder
->
-> Stephane reported that the PEBS fixup was broken by the recent commit to
-> the instruction decoder. The thing had an off-by-one which resulted in
-> not being able to decode the last instruction and always bail.
->
-Works again now. Thanks for fixing this quickly.
+Added a blank line after declarations to remove the warning:
+'Missing blank line after declarations'
 
-Acked-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
+---
+ drivers/watchdog/eurotechwdt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Fixes: 6ba48ff46f76 ("x86: Remove arbitrary instruction size limit in instruction decoder")
-> Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-> ---
->  arch/x86/lib/insn.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
-> index 2480978..1313ae6 100644
-> --- a/arch/x86/lib/insn.c
-> +++ b/arch/x86/lib/insn.c
-> @@ -28,7 +28,7 @@
->
->  /* Verify next sizeof(t) bytes can be on the same instruction */
->  #define validate_next(t, insn, n)      \
-> -       ((insn)->next_byte + sizeof(t) + n < (insn)->end_kaddr)
-> +       ((insn)->next_byte + sizeof(t) + n <= (insn)->end_kaddr)
->
->  #define __get_next(t, insn)    \
->         ({ t r = *(t*)insn->next_byte; insn->next_byte += sizeof(t); r; })
+diff --git a/drivers/watchdog/eurotechwdt.c b/drivers/watchdog/eurotechwdt.c
+index 23ee532..86b19ee 100644
+--- a/drivers/watchdog/eurotechwdt.c
++++ b/drivers/watchdog/eurotechwdt.c
+@@ -210,6 +210,7 @@ size_t count, loff_t *ppos)
+ 
+ 			for (i = 0; i != count; i++) {
+ 				char c;
++
+ 				if (get_user(c, buf + i))
+ 					return -EFAULT;
+ 				if (c == 'V')
+-- 
+1.7.9.5
+
