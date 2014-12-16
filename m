@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751816AbaLPWBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 17:01:37 -0500
-Received: from marmot.wormnet.eu ([188.246.204.87]:35170 "EHLO
-	marmot.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaLPWBf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 17:01:35 -0500
-From: Jamie Lentin <jm@lentin.co.uk>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jamie Lentin <jm@lentin.co.uk>
-Subject: [PATCH 2/2] HID: lenovo: Use native middle-button mode for compact keyboards
-Date: Tue, 16 Dec 2014 21:26:46 +0000
-Message-Id: <1418765206-30885-3-git-send-email-jm@lentin.co.uk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1418765206-30885-1-git-send-email-jm@lentin.co.uk>
-References: <1418765206-30885-1-git-send-email-jm@lentin.co.uk>
+	id S1751431AbaLPWGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 17:06:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983AbaLPWGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 17:06:16 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Peter Wu <peter@lekensteyn.nl>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>
+Cc: Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] HID: logitech-hidpp: bail out if wtp_connect fails
+Date: Tue, 16 Dec 2014 17:06:01 -0500
+Message-Id: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default the middle button is in a compatibility mode, and generates
-standard wheel events when dragging with the middle trackpoint button.
-Unfortunately this is buggy:
-* The middle button comes up before starting wheel events, causing a middle
-  click on whatever the mouse cursor was sitting on
-* The USB keyboard always generates the "native" horizontal wheel event,
-  regardless of mode.
+If wtp_connect() fails, that means most of the time that the device has
+been disconnected. Subsequent attempts to contact the device will fail
+too, so it's simpler to bail out earlier.
 
-Instead, enable the "native" mode the Windows driver uses, and add support
-for the custom events this generates. This fixes the USB keyboard wheel
-events, and the middle-click up event comes after the wheel events.
-
-Signed-off-by: Jamie Lentin <jm@lentin.co.uk>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-lenovo.c | 37 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 37 insertions(+)
+ drivers/hid/hid-logitech-hidpp.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/hid/hid-lenovo.c b/drivers/hid/hid-lenovo.c
-index 0f35a76..c4c3f09 100644
---- a/drivers/hid/hid-lenovo.c
-+++ b/drivers/hid/hid-lenovo.c
-@@ -92,6 +92,38 @@ static int lenovo_input_mapping_cptkbd(struct hid_device *hdev,
- 		case 0x00fa: /* Fn-Esc: Fn-lock toggle */
- 			map_key_clear(KEY_FN_ESC);
- 			return 1;
-+		case 0x00fb: /* Middle mouse button (in native mode) */
-+			map_key_clear(BTN_MIDDLE);
-+			return 1;
-+		}
-+	}
-+
-+	/* Compatibility middle/wheel mappings should be ignored */
-+	if (usage->hid == HID_GD_WHEEL)
-+		return -1;
-+	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_BUTTON &&
-+			(usage->hid & HID_USAGE) == 0x003)
-+		return -1;
-+	if ((usage->hid & HID_USAGE_PAGE) == HID_UP_CONSUMER &&
-+			(usage->hid & HID_USAGE) == 0x238)
-+		return -1;
-+
-+	/* Map wheel emulation reports: 0xffa1 = USB, 0xff10 = BT */
-+	if ((usage->hid & HID_USAGE_PAGE) == 0xff100000 ||
-+	    (usage->hid & HID_USAGE_PAGE) == 0xffa10000) {
-+		field->flags |= HID_MAIN_ITEM_RELATIVE | HID_MAIN_ITEM_VARIABLE;
-+		field->logical_minimum = -127;
-+		field->logical_maximum = 127;
-+
-+		switch (usage->hid & HID_USAGE) {
-+		case 0x0000:
-+			hid_map_usage(hi, usage, bit, max, EV_REL, 0x06);
-+			return 1;
-+		case 0x0001:
-+			hid_map_usage(hi, usage, bit, max, EV_REL, 0x08);
-+			return 1;
-+		default:
-+			return -1;
+diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+index d008d71..c0fb5fe 100644
+--- a/drivers/hid/hid-logitech-hidpp.c
++++ b/drivers/hid/hid-logitech-hidpp.c
+@@ -914,24 +914,24 @@ static int wtp_allocate(struct hid_device *hdev, const struct hid_device_id *id)
+ 	return 0;
+ };
+ 
+-static void wtp_connect(struct hid_device *hdev, bool connected)
++static int wtp_connect(struct hid_device *hdev, bool connected)
+ {
+ 	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
+ 	struct wtp_data *wd = hidpp->private_data;
+ 	int ret;
+ 
+ 	if (!connected)
+-		return;
++		return 0;
+ 
+ 	if (!wd->x_size) {
+ 		ret = wtp_get_config(hidpp);
+ 		if (ret) {
+ 			hid_err(hdev, "Can not get wtp config: %d\n", ret);
+-			return;
++			return ret;
  		}
  	}
  
-@@ -633,6 +665,11 @@ static int lenovo_probe_cptkbd(struct hid_device *hdev)
- 	if (ret)
- 		hid_warn(hdev, "Failed to switch F7/9/11 mode: %d\n", ret);
+-	hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
++	return hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
+ 			true, true);
+ }
  
-+	/* Switch middle button to native mode */
-+	ret = lenovo_send_cmd_cptkbd(hdev, 0x09, 0x01);
-+	if (ret)
-+		hid_warn(hdev, "Failed to switch middle button: %d\n", ret);
-+
- 	/* Set keyboard settings to known state */
- 	cptkbd_data->fn_lock = true;
- 	cptkbd_data->sensitivity = 0x05;
+@@ -1115,8 +1115,11 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
+ 	struct input_dev *input;
+ 	char *name, *devm_name;
+ 
+-	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
+-		wtp_connect(hdev, connected);
++	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
++		ret = wtp_connect(hdev, connected);
++		if (ret)
++			return;
++	}
+ 
+ 	if (!connected || hidpp->delayed_input)
+ 		return;
 -- 
-2.1.3
+2.1.0
 
