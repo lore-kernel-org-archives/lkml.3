@@ -1,92 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751406AbaLPQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:51:57 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47984 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaLPQvz (ORCPT
+	id S1751554AbaLPQyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:54:04 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34635 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbaLPQyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:51:55 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <5490631C.1010309@jp.fujitsu.com>
-Date: Wed, 17 Dec 2014 01:51:40 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 16 Dec 2014 11:54:01 -0500
+Date: Tue, 16 Dec 2014 17:53:58 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
+        jolsa@redhat.com, dsahern@gmail.com, dzickus@redhat.com,
+        namhyung@kernel.org, jmario@redhat.com, rfowles@redhat.com
+Subject: [PATCH] perf mem: enable simultaneous sampling of loads/stores
+Message-ID: <20141216165358.GA9310@thinkpad>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: =?ISO-2022-JP?B?IklzaGltYXRzdSwgWWFzdWFraS8bJEJAUD4+GyhCIBskQkx3Pk8bKEI=?=
-	 =?ISO-2022-JP?B?Ig==?= <isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH 2/2] workqueue: update cpumask at CPU_ONLINE if necessary
-References: <54905F87.2030302@jp.fujitsu.com>
-In-Reply-To: <54905F87.2030302@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
-X-TM-AS-MML: No
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some case, cpu's numa affinity will be changed in cpu_up().
-It happens after a new node is onlined.
-(in x86, online cpus are tied to onlined node at boot.
- so, if memory is added later, cpu mapping can be changed at cpu_up()
 
-Although wq_numa_possible_cpumask at el. are maintained against
-node hotplug, this case should be handled.
+This patch modifies perf mem to default to sampling loads
+and stores simultaneously. It could only do one or the other
+before yet there was not hardware restriction preventing
+simultaneous collection. With this patch, one run is sufficient
+to collect both.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+By default load/stores are sampled now:
+$ perf mem rec
+$ perf mem rep
+
+It is still possible to sample only loads or stores by using the
+-t option:
+ $ perf mem -t load rec
+ $ perf mem -t load rep
+Or
+ $ perf mem -t store rec
+ $ perf mem -t store rep
+
+The perf report TUI will show one event at a time. The store
+output will contain a Weight column which will be empty.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- kernel/workqueue.c | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ tools/perf/builtin-mem.c | 107 ++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 92 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f6ad05a..59d8be5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4618,6 +4618,27 @@ void workqueue_node_unregister(int node)
- 	mutex_unlock(&wq_pool_mutex);
+diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+index 24db6ff..52dbaae 100644
+--- a/tools/perf/builtin-mem.c
++++ b/tools/perf/builtin-mem.c
+@@ -7,10 +7,13 @@
+ #include "util/session.h"
+ #include "util/data.h"
+ 
+-#define MEM_OPERATION_LOAD	"load"
+-#define MEM_OPERATION_STORE	"store"
++#define MEM_OPERATION_LOAD	0x1
++#define MEM_OPERATION_STORE	0x2
+ 
+-static const char	*mem_operation		= MEM_OPERATION_LOAD;
++/*
++ * default to both load an store sampling
++ */
++static int mem_operation = MEM_OPERATION_LOAD | MEM_OPERATION_STORE;
+ 
+ struct perf_mem {
+ 	struct perf_tool	tool;
+@@ -25,26 +28,30 @@ static int __cmd_record(int argc, const char **argv)
+ {
+ 	int rec_argc, i = 0, j;
+ 	const char **rec_argv;
+-	char event[64];
+ 	int ret;
+ 
+-	rec_argc = argc + 4;
++	rec_argc = argc + 7; /* max number of arguments */
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 	if (!rec_argv)
+ 		return -1;
+ 
+ 	rec_argv[i++] = strdup("record");
+-	if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
++
++	if (mem_operation & MEM_OPERATION_LOAD)
+ 		rec_argv[i++] = strdup("-W");
++
+ 	rec_argv[i++] = strdup("-d");
+-	rec_argv[i++] = strdup("-e");
+ 
+-	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+-		sprintf(event, "cpu/mem-stores/pp");
+-	else
+-		sprintf(event, "cpu/mem-loads/pp");
++	if (mem_operation & MEM_OPERATION_LOAD) {
++		rec_argv[i++] = strdup("-e");
++		rec_argv[i++] = strdup("cpu/mem-loads/pp");
++	}
++
++	if (mem_operation & MEM_OPERATION_STORE) {
++		rec_argv[i++] = strdup("-e");
++		rec_argv[i++] = strdup("cpu/mem-stores/pp");
++	}
+ 
+-	rec_argv[i++] = strdup(event);
+ 	for (j = 1; j < argc; j++, i++)
+ 		rec_argv[i] = argv[j];
+ 
+@@ -170,7 +177,7 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+ 	 * there is no weight (cost) associated with stores, so don't print
+ 	 * the column
+ 	 */
+-	if (strcmp(mem_operation, MEM_OPERATION_LOAD))
++	if (!(mem_operation & MEM_OPERATION_LOAD))
+ 		rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
+ 				       "dso_daddr,tlb,locked");
+ 
+@@ -182,6 +189,75 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+ 	return ret;
  }
  
-+static void workqueue_may_update_numa_affinity(int cpu)
++struct mem_mode {
++	const char *name;
++	int mode;
++};
++
++#define MEM_OPT(n, m) \
++	{ .name = n, .mode = (m) }
++
++#define MEM_END { .name = NULL }
++
++static const struct mem_mode mem_modes[]={
++	MEM_OPT("load", MEM_OPERATION_LOAD),
++	MEM_OPT("store", MEM_OPERATION_STORE),
++	MEM_END
++};
++
++static int
++parse_mem_ops(const struct option *opt, const char *str, int unset)
 +{
-+	int curnode = cpu_to_node(cpu);
-+	int node;
++	int *mode = (int *)opt->value;
++	const struct mem_mode *m;
++	char *s, *os = NULL, *p;
++	int ret = -1;
 +
-+	if (likely(cpumask_test_cpu(cpu, wq_numa_possible_cpumask[curnode])))
-+		return;
++	if (unset)
++		return 0;
 +
-+	/* cpu<->node relationship is changed in cpu_up() */
-+	for_each_node_state(node, N_POSSIBLE)
-+		cpumask_clear_cpu(cpu, wq_numa_possible_cpumask[node]);
++	/* str may be NULL in case no arg is passed to -t */
++	if (str) {
++		/* because str is read-only */
++		s = os = strdup(str);
++		if (!s)
++			return -1;
 +
-+	workqueue_update_cpu_numa_affinity(cpu, curnode);
++		/* reset mode */
++		*mode = 0;
++
++		for (;;) {
++			p = strchr(s, ',');
++			if (p)
++				*p = '\0';
++
++			for (m = mem_modes; m->name; m++) {
++				if (!strcasecmp(s, m->name))
++					break;
++			}
++			if (!m->name) {
++				fprintf(stderr, "unknown sampling op %s,"
++					    " check man page\n", s);
++				goto error;
++			}
++
++			*mode |= m->mode;
++
++			if (!p)
++				break;
++
++			s = p + 1;
++		}
++	}
++	ret = 0;
++
++	if (*mode == 0)
++		*mode = MEM_OPERATION_LOAD;
++error:
++	free(os);
++	return ret;
 +}
-+#else
 +
-+static void workqueue_may_update_numa_affinity(int cpu)
-+{
-+	return;
-+}
-+
- #endif
- 
- /*
-@@ -4647,6 +4668,8 @@ static int workqueue_cpu_up_callback(struct notifier_block *nfb,
- 	case CPU_ONLINE:
- 		mutex_lock(&wq_pool_mutex);
- 
-+		workqueue_may_update_numa_affinity(cpu);
-+
- 		for_each_pool(pool, pi) {
- 			mutex_lock(&pool->attach_mutex);
- 
+ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	struct stat st;
+@@ -199,8 +275,9 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.input_name		 = "perf.data",
+ 	};
+ 	const struct option mem_options[] = {
+-	OPT_STRING('t', "type", &mem_operation,
+-		   "type", "memory operations(load/store)"),
++	OPT_CALLBACK('t', "type", &mem_operation,
++		   "type", "memory operations(load,store) Default load,store",
++		    parse_mem_ops),
+ 	OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
+ 		    "dump raw samples in ASCII"),
+ 	OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
 -- 
-1.8.3.1
-
-
+1.9.1
 
