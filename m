@@ -1,72 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaLPMkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 07:40:51 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:46086 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851AbaLPMkt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 07:40:49 -0500
+	id S1751357AbaLPMn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 07:43:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40255 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882AbaLPMnz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 07:43:55 -0500
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+To: Asaf Vertz <asaf.vertz@tandemg.com>
+Cc: Larry.Finger@lwfinger.net, gregkh@linuxfoundation.org, ninox@posteo.net,
+        tapaswenipathak@gmail.com, gdonald@gmail.com, cmroliv@gmail.com,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8723au: core: fixing "foo * bar" should be "foo *bar"
+References: <20141216091323.GA28072@ubuntu>
+Date: Tue, 16 Dec 2014 07:43:34 -0500
+In-Reply-To: <20141216091323.GA28072@ubuntu> (Asaf Vertz's message of "Tue, 16
+	Dec 2014 11:13:23 +0200")
+Message-ID: <wrfjy4q7pxxl.fsf@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
-References: <20141216094854.22639.69181.sendpatchset@w520>
-	<54901420.50403@linaro.org>
-	<1418731028.WfBPmyK53y@avalon>
-	<CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
-Date: Tue, 16 Dec 2014 13:40:47 +0100
-X-Google-Sender-Auth: Zaro52_3A99MB-HDUGSrGDc2XIQ
-Message-ID: <CAMuHMdUzys9pbEjUybyDP-3=uemLZuP5WgXeyONxGmADUJJL4A@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-
-On Tue, Dec 16, 2014 at 12:46 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> Could you please confirm that you've tested both CONFIG_PREEMPT_NONE and
->> CONFIG_PREEMPT with and without the ARM TWD times, and that you've booted to
->> userspace and tested timer broadcast on all CPUs ?
+Asaf Vertz <asaf.vertz@tandemg.com> writes:
+> Fixed a coding style error, "foo * bar" should be "foo *bar"
 >
-> No I have not. I've booted to user space in initramfs with DT-based
-> TWD on Multiplatform for r8a7779. Without this fix (and other r8a7779
-> TWD bits) I see a lot of breakage. For instance, TWD and SMP boot is
-> broken on r8a7779 - both legacy and non-legacy. I have not gotten to
-> sh73a0 yet, but I assume it is busted too.
+> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+> ---
+>  drivers/staging/rtl8723au/core/rtw_efuse.c |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
 
-FWIW, I applied this patch, and booted the result successfully and without
-any user-visible changes on:
-  - koelsch
-  - armadillo-multiplatform
-  - kzm9g-legacy
-  - kzm9g-multiplatform
+If you want to fix the 'error' here, include it with a cleanup that also
+fixes the ugly multiline arguments to the functions.
 
-Armadillo-legacy is broken, and probably won't come back (cfr.
-https://lkml.org/lkml/2014/12/2/339).
+Jes
 
-Kzm9g-reference still hangs at "Calibrating local timer..." (it did work
-at some point in the past).
-
-Note that my local tree is based on renesas-drivers-2014-12-08-v3.18,
-renesas-devel-20141212-v3.18, and yesterday's upstream, with CCF,
-PM domain, TWD, and lots of WIP patches from the kitchen sink applied.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> diff --git a/drivers/staging/rtl8723au/core/rtw_efuse.c b/drivers/staging/rtl8723au/core/rtw_efuse.c
+> index 81960e7..0e64d12 100644
+> --- a/drivers/staging/rtl8723au/core/rtw_efuse.c
+> +++ b/drivers/staging/rtl8723au/core/rtw_efuse.c
+> @@ -328,12 +328,12 @@ EFUSE_Read1Byte23a(struct rtw_adapter *Adapter, u16 Address)
+>  
+>  void
+>  EFUSE_Write1Byte(
+> -	struct rtw_adapter *	Adapter,
+> +	struct rtw_adapter *Adapter,
+>  	u16		Address,
+>  	u8		Value);
+>  void
+>  EFUSE_Write1Byte(
+> -	struct rtw_adapter *	Adapter,
+> +	struct rtw_adapter *Adapter,
+>  	u16		Address,
+>  	u8		Value)
+>  {
+> @@ -636,7 +636,7 @@ Efuse_ReadAllMap(struct rtw_adapter *pAdapter, u8 efuseType, u8 *Efuse)
+>   *---------------------------------------------------------------------------*/
+>  static void
+>  efuse_ShadowRead1Byte(
+> -	struct rtw_adapter *	pAdapter,
+> +	struct rtw_adapter *pAdapter,
+>  	u16		Offset,
+>  	u8		*Value)
+>  {
+> @@ -648,7 +648,7 @@ efuse_ShadowRead1Byte(
+>  /* Read Two Bytes */
+>  static void
+>  efuse_ShadowRead2Byte(
+> -	struct rtw_adapter *	pAdapter,
+> +	struct rtw_adapter *pAdapter,
+>  	u16		Offset,
+>  	u16		*Value)
+>  {
+> @@ -661,7 +661,7 @@ efuse_ShadowRead2Byte(
+>  /* Read Four Bytes */
+>  static void
+>  efuse_ShadowRead4Byte(
+> -	struct rtw_adapter *	pAdapter,
+> +	struct rtw_adapter *pAdapter,
+>  	u16		Offset,
+>  	u32		*Value)
+>  {
+> @@ -723,7 +723,7 @@ void EFUSE_ShadowMapUpdate23a(struct rtw_adapter *pAdapter, u8 efuseType)
+>   *---------------------------------------------------------------------------*/
+>  void
+>  EFUSE_ShadowRead23a(
+> -	struct rtw_adapter *	pAdapter,
+> +	struct rtw_adapter *pAdapter,
+>  	u8		Type,
+>  	u16		Offset,
+>  	u32		*Value)
