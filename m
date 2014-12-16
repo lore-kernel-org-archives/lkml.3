@@ -1,52 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751654AbaLPIyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 03:54:12 -0500
-Received: from box2.japko.eu ([91.121.152.53]:52022 "EHLO box2.japko.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035AbaLPIyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 03:54:11 -0500
-Date: Tue, 16 Dec 2014 09:53:58 +0100
-From: Krzysztof Adamski <k@japko.eu>
-To: Joe Perches <joe@perches.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
+	id S1751017AbaLPI4a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 03:56:30 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:52501 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789AbaLPI42 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 03:56:28 -0500
+Date: Tue, 16 Dec 2014 00:56:24 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: vt6656: Use ether_addr_copy() in
- vnt_fill_ieee80211_rts.
-Message-ID: <20141216085357.GB14666@box2.japko.eu>
-References: <20141216083021.GA14666@box2.japko.eu>
- <1418719326.2674.32.camel@perches.com>
+Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
+Message-ID: <20141216085624.GA25256@mew>
+References: <cover.1418618044.git.osandov@osandov.com>
+ <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
+ <20141215162705.GA23887@quack.suse.cz>
+ <20141215165615.GA19041@infradead.org>
+ <20141215221100.GA4637@mew>
+ <20141216083543.GA32425@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418719326.2674.32.camel@perches.com>
+In-Reply-To: <20141216083543.GA32425@infradead.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 12:42:06AM -0800, Joe Perches wrote:
->On Tue, 2014-12-16 at 09:30 +0100, Krzysztof Adamski wrote:
->> Both struct ieee80211_rts and struct ieee80211_hdr defined in
->> linux/ieee80211.h are declared as __aligned(2) so it is safe to use
->> ether_addr_copy() instead of memcpy().
->
->Just fyi:
->
->That the structure is declared __aligned(2) is not
->the important bit.  What's necessary is that the
->members in the struct are __aligned(2).
->
->In this case, all of these members are.
+On Tue, Dec 16, 2014 at 12:35:43AM -0800, Christoph Hellwig wrote:
+> On Mon, Dec 15, 2014 at 02:11:00PM -0800, Omar Sandoval wrote:
+> > Ok, I got the swap code working with ->read_iter/->write_iter without
+> > too much trouble. I wanted to double check before I submit if there's
+> > any gotchas involved with adding the O_DIRECT flag to a file pointer
+> > after it has been opened -- swapon opens the swapfile before we know if
+> > we're using the SWP_FILE infrastructure, and we need to add O_DIRECT so
+> > ->{read,write}_iter use direct I/O, but we can't add O_DIRECT to the
+> > original open without excluding filesystems that support the old bmap
+> > path but not direct I/O.
+> 
+> In general just adding O_DIRECT is a problem.  However given that the
+> swap file is locked against any other access while in use it seems ok
+> in this particular case.  Just make sure to clear it on swapoff, and
+> write a detailed comment explaining the situation.
 
-Hi,
+I'll admit that I'm a bit confused. I want to do this:
 
-Thank you for your feedback. Yes, you are right. It was a bit of a 
-shortcut in my reasoning.  Since struct is aligned and it's packed and 
-both members preceding the array we want to copy are 16 bit large, the 
-array address is guaranteed to be properly aligned.
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 8798b2e..5145c09 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -1728,6 +1728,9 @@ static int setup_swap_extents(struct swap_info_struct *sis, sector_t *span)
+        }
+ 
+        if (mapping->a_ops->swap_activate) {
++               if (!mapping->a_ops->direct_IO)
++                       return -EINVAL;
++               swap_file->f_flags |= O_DIRECT;
+                ret = mapping->a_ops->swap_activate(sis, swap_file, span);
+                if (!ret) {
+                        sis->flags |= SWP_FILE;
 
-Best regards,
-Krzysztof Adamski
+This seems to be more or less equivalent to doing a fcntl(F_SETFL) to
+add the O_DIRECT flag to swap_file (which is a struct file *). Swapoff
+calls filp_close on swap_file, so I don't see why it's necessary to
+clear the flag.
+
+-- 
+Omar
