@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaLPIUf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 03:20:35 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:47621 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542AbaLPIUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 03:20:33 -0500
-Date: Tue, 16 Dec 2014 09:19:22 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Evgeni Dobrev <evgeni@studio-punkt.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH 1/2] ARM: dts: kirkwood: enable phy driver for SATA
- controller on 88f6192
-Message-ID: <20141216081922.GA1450@lunn.ch>
-References: <20141215203724.GA22936@anne>
+	id S1751641AbaLPIVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 03:21:44 -0500
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56533 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751380AbaLPIVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 03:21:43 -0500
+X-Original-SENDERIP: 10.177.222.213
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Tue, 16 Dec 2014 17:25:56 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrey Ryabinin <ryabinin.a.a@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, akpm@linuxfoundation.org,
+        rostedt@goodmis.org, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Jesper Dangaard Brouer <brouer@redhat.com>
+Subject: Re: [PATCH 3/7] slub: Do not use c->page on free
+Message-ID: <20141216082555.GA6088@js1304-P5Q-DELUXE>
+References: <20141210163017.092096069@linux.com>
+ <20141210163033.717707217@linux.com>
+ <20141215080338.GE4898@js1304-P5Q-DELUXE>
+ <alpine.DEB.2.11.1412150815210.20101@gentwo.org>
+ <20141216024210.GB23270@js1304-P5Q-DELUXE>
+ <CAPAsAGyGXSP-2eY1CQS1jDpJq89kwpCuJm4ZBa3cYDGkv_oTxA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141215203724.GA22936@anne>
+In-Reply-To: <CAPAsAGyGXSP-2eY1CQS1jDpJq89kwpCuJm4ZBa3cYDGkv_oTxA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15, 2014 at 09:37:24PM +0100, Evgeni Dobrev wrote:
-> This patch enables the phy drivers for the SATA controller on Marvell's 88f6192. Without them it is not possible to use SATA drives attached to this processor.
+On Tue, Dec 16, 2014 at 11:54:12AM +0400, Andrey Ryabinin wrote:
+> 2014-12-16 5:42 GMT+03:00 Joonsoo Kim <iamjoonsoo.kim@lge.com>:
+> > On Mon, Dec 15, 2014 at 08:16:00AM -0600, Christoph Lameter wrote:
+> >> On Mon, 15 Dec 2014, Joonsoo Kim wrote:
+> >>
+> >> > > +static bool same_slab_page(struct kmem_cache *s, struct page *page, void *p)
+> >> > > +{
+> >> > > + long d = p - page->address;
+> >> > > +
+> >> > > + return d > 0 && d < (1 << MAX_ORDER) && d < (compound_order(page) << PAGE_SHIFT);
+> >> > > +}
+> >> > > +
+> >> >
+> >> > Somtimes, compound_order() induces one more cacheline access, because
+> >> > compound_order() access second struct page in order to get order. Is there
+> >> > any way to remove this?
+> >>
+> >> I already have code there to avoid the access if its within a MAX_ORDER
+> >> page. We could probably go for a smaller setting there. PAGE_COSTLY_ORDER?
+> >
+> > That is the solution to avoid compound_order() call when slab of
+> > object isn't matched with per cpu slab.
+> >
+> > What I'm asking is whether there is a way to avoid compound_order() call when slab
+> > of object is matched with per cpu slab or not.
+> >
 > 
-> Signed-off-by: Evgeni Dobrev <evgeni@studio-punkt.com>
-
-Acked-by: Andrew Lunn <andrew@lunn.ch>
-
-This should also go to stable.
-
-     Andrew
-
-
-> ---
->  arch/arm/boot/dts/kirkwood-6192.dtsi |    2 ++
->  1 file changed, 2 insertions(+)
+> Can we use page->objects for that?
 > 
-> diff --git a/arch/arm/boot/dts/kirkwood-6192.dtsi b/arch/arm/boot/dts/kirkwood-6192.dtsi
-> index dd81508..bed2dec 100644
-> --- a/arch/arm/boot/dts/kirkwood-6192.dtsi
-> +++ b/arch/arm/boot/dts/kirkwood-6192.dtsi
-> @@ -66,6 +66,8 @@
->  			interrupts = <21>;
->  			clocks = <&gate_clk 14>, <&gate_clk 15>;
->  			clock-names = "0", "1";
-> +                        phys = <&sata_phy0>, <&sata_phy1>;
-> +                        phy-names = "port0", "port1";
->  			status = "disabled";
->  		};
->  
-> -- 
-> 1.7.10.4
+> Like this:
 > 
+>         return d > 0 && d < page->objects * s->size;
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+Yes! That's what I'm looking for.
+Christoph, how about above change?
+
+Thanks.
