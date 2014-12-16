@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaLPVyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:54:16 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:13758 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLPVyO (ORCPT
+	id S1751339AbaLPVzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:55:46 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:61721 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaLPVzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:54:14 -0500
-X-IronPort-AV: E=Sophos;i="5.07,589,1413270000"; 
-   d="scan'208";a="53083035"
-Message-ID: <5490A9FC.6030305@broadcom.com>
-Date: Tue, 16 Dec 2014 13:54:04 -0800
-From: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 16 Dec 2014 16:55:45 -0500
 MIME-Version: 1.0
-To: Ray Jui <rjui@broadcom.com>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: <mark.rutland@arm.com>, <a.zummo@towertech.it>, <sbranden@broadcom.com>,
-        <pawel.moll@arm.com>, <devicetree@vger.kernel.org>,
-        <ijc+devicetree@hellion.org.uk>,
-        Arun Ramamurthy <arunrama@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <grant.likely@linaro.org>,
-        <robh+dt@kernel.org>, <bcm-kernel-feedback-list@broadcom.com>,
-        <galak@codeaurora.org>, <rtc-linux@googlegroups.com>
-Subject: Re: [PATCHv1] rtc: bcm-iproc: Add support for Broadcom iproc rtc
-References: <1418757750-3628-1-git-send-email-arun.ramamurthy@broadcom.com> <7947905.aK8KkUx4sY@wuerfel> <54909074.2070804@broadcom.com> <1418783023.hzNZBNCmFc@wuerfel> <549095CA.7090505@broadcom.com>
-In-Reply-To: <549095CA.7090505@broadcom.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1418745323-17133-1-git-send-email-peter@lekensteyn.nl>
+References: <CAN+gG=EL0kYim=_uaS4yj7c_XC8rKa1eELxpVXaOuvnWgT_eQw@mail.gmail.com>
+	<1418745323-17133-1-git-send-email-peter@lekensteyn.nl>
+Date: Tue, 16 Dec 2014 16:55:44 -0500
+Message-ID: <CAN+gG=Gtzbgxh6ttu-2Yaf4gXi58vgMkUXuF-=c40uYLiPpmnw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] HID: logitech-dj: check report length
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 14-12-16 12:27 PM, Ray Jui wrote:
+On Tue, Dec 16, 2014 at 10:55 AM, Peter Wu <peter@lekensteyn.nl> wrote:
+> Malicious USB devices can send bogus reports smaller than the expected
+> buffer size. Ensure that the length is valid to avoid reading out of
+> bounds.
 >
->
-> On 12/16/2014 12:19 PM, Arnd Bergmann wrote:
->> On Tuesday 16 December 2014 12:05:08 Arun Ramamurthy wrote:
->>> On 14-12-16 11:42 AM, Arnd Bergmann wrote:
->>>> On Tuesday 16 December 2014 11:22:30 arun.ramamurthy@broadcom.com
->>>> wrote:
->>>>> +       rtc: iproc_rtc@0x03026000 {
->>>>> +               compatible = "brcm,iproc-rtc";
->>>>> +               reg =   spru_bbl:               <0x03026000 0xC>,
->>>>> +                       crmu_pwr_good_status:   <0x0301C02C 0x14>,
->>>>> +                       crmu_bbl_auth:          <0x03024C74 0x8>;
->>>>> +               interrupts = spru_rtc_periodic: <GIC_SPI 142
->>>>> IRQ_TYPE_LEVEL_HIGH>,
->>>>> +                            spru_alarm:        <GIC_SPI 133
->>>>> IRQ_TYPE_LEVEL_HIGH>;
->>>>
->>>> The reg properties look really random, could it be that the registers
->>>> are really part of some other device that contains multiple functions?
->>>>
->>> This RTC block is on a battery backed logic island and is accessed
->>> indirectly using the spru_bbl registers. The CRMU registers are required
->>> to read the power status and write to some authentication registers.
->>> Without writing to these authentication
->>> registers, we cannot access any of the spru_bbl registers. In conclusion
->>> I don't think the CRMU register accesses can be considered as another
->>> device access. Do you agree Arnd?
->>
->> It sounds like CRMU is some other unit aside from the RTC. Could this
->> be something like a generic system controller? I think it should
->> either have its own driver or use the syscon logic if that is what
->> this is.
->>
-> Giving that CRMU has scattered, miscellaneous control logic for multiple
-> different peripherals, it probably makes more sense to use the syscon
-> logic here.
->
-Arnd, thanks for the feedback. If I was to write a separate driver for 
-the CRMU, I would have to export certain functions and create an api 
-that only this RTC driver would use. I am not sure that is efficient or 
-required. What is your opinion?
-Would it be better if I use the syson api in my current driver and move 
-the CRMU registers to separate syscon device tree entry?
+> Signed-off-by: Peter Wu <peter@lekensteyn.nl>
+> ---
+>  v1: patch 2/3 HID: logitech-{dj,hidpp}: check report length
+>  v2: splitted original report length check patch
+> ---
 
->>>> Also, what do you use the labels for?
->>>>
->>> The labels are purely to improve readability of the device tree entry
->>
->> Please remove them then, they don't help at all.
->>
-Sure, I will remove the labels
->>     Arnd
->>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Cheers,
+Benjamin
+
+>  drivers/hid/hid-logitech-dj.c | 16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hid/hid-logitech-dj.c b/drivers/hid/hid-logitech-dj.c
+> index c917ab6..5bc6d80 100644
+> --- a/drivers/hid/hid-logitech-dj.c
+> +++ b/drivers/hid/hid-logitech-dj.c
+> @@ -962,10 +962,24 @@ static int logi_dj_raw_event(struct hid_device *hdev,
+>
+>         switch (data[0]) {
+>         case REPORT_ID_DJ_SHORT:
+> +               if (size != DJREPORT_SHORT_LENGTH) {
+> +                       dev_err(&hdev->dev, "DJ report of bad size (%d)", size);
+> +                       return false;
+> +               }
+>                 return logi_dj_dj_event(hdev, report, data, size);
+>         case REPORT_ID_HIDPP_SHORT:
+> -               /* intentional fallthrough */
+> +               if (size != HIDPP_REPORT_SHORT_LENGTH) {
+> +                       dev_err(&hdev->dev,
+> +                               "Short HID++ report of bad size (%d)", size);
+> +                       return false;
+> +               }
+> +               return logi_dj_hidpp_event(hdev, report, data, size);
+>         case REPORT_ID_HIDPP_LONG:
+> +               if (size != HIDPP_REPORT_LONG_LENGTH) {
+> +                       dev_err(&hdev->dev,
+> +                               "Long HID++ report of bad size (%d)", size);
+> +                       return false;
+> +               }
+>                 return logi_dj_hidpp_event(hdev, report, data, size);
+>         }
+>
+> --
+> 2.1.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
