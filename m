@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaLPRug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 12:50:36 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:50759 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985AbaLPRuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 12:50:35 -0500
-Date: Tue, 16 Dec 2014 17:50:19 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        catalin.marinas@arm.com
-Subject: [GIT PULL] arm64: fixes for -rc1
-Message-ID: <20141216175019.GC2260@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751238AbaLPR7D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 12:59:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750979AbaLPR67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 12:58:59 -0500
+From: Seth Jennings <sjenning@redhat.com>
+To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
+        Steven Rostedt <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv7 1/3] kernel: add TAINT_LIVEPATCH
+Date: Tue, 16 Dec 2014 11:58:18 -0600
+Message-Id: <1418752700-14649-2-git-send-email-sjenning@redhat.com>
+In-Reply-To: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
+References: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+This adds a new taint flag to indicate when the kernel or a kernel
+module has been live patched.  This will provide a clean indication in
+bug reports that live patching was used.
 
-Given that my availability next week is likely to be poor, here are three
-arm64 fixes to resolve some issues introduced by features merged last
-week. I was going to wait until -rc1, but it doesn't make much sense to
-sit on fixes. Please pull.
+Additionally, if the crash occurs in a live patched function, the live
+patch module will appear beside the patched function in the backtrace.
 
-Thanks,
+Signed-off-by: Seth Jennings <sjenning@redhat.com>
+---
+ Documentation/oops-tracing.txt  | 2 ++
+ Documentation/sysctl/kernel.txt | 1 +
+ include/linux/kernel.h          | 1 +
+ kernel/panic.c                  | 2 ++
+ 4 files changed, 6 insertions(+)
 
-Will
+diff --git a/Documentation/oops-tracing.txt b/Documentation/oops-tracing.txt
+index beefb9f..f3ac05c 100644
+--- a/Documentation/oops-tracing.txt
++++ b/Documentation/oops-tracing.txt
+@@ -270,6 +270,8 @@ characters, each representing a particular tainted value.
+ 
+  15: 'L' if a soft lockup has previously occurred on the system.
+ 
++ 16: 'K' if the kernel has been live patched.
++
+ The primary reason for the 'Tainted: ' string is to tell kernel
+ debuggers if this is a clean kernel or if anything unusual has
+ occurred.  Tainting is permanent: even if an offending module is
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 75511ef..83ab256 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -843,6 +843,7 @@ can be ORed together:
+ 8192 - An unsigned module has been loaded in a kernel supporting module
+        signature.
+ 16384 - A soft lockup has previously occurred on the system.
++32768 - The kernel has been live patched.
+ 
+ ==============================================================
+ 
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 5449d2f..d03e3de 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -471,6 +471,7 @@ extern enum system_states {
+ #define TAINT_OOT_MODULE		12
+ #define TAINT_UNSIGNED_MODULE		13
+ #define TAINT_SOFTLOCKUP		14
++#define TAINT_LIVEPATCH			15
+ 
+ extern const char hex_asc[];
+ #define hex_asc_lo(x)	hex_asc[((x) & 0x0f)]
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 4d8d6f9..8136ad7 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -226,6 +226,7 @@ static const struct tnt tnts[] = {
+ 	{ TAINT_OOT_MODULE,		'O', ' ' },
+ 	{ TAINT_UNSIGNED_MODULE,	'E', ' ' },
+ 	{ TAINT_SOFTLOCKUP,		'L', ' ' },
++	{ TAINT_LIVEPATCH,		'K', ' ' },
+ };
+ 
+ /**
+@@ -246,6 +247,7 @@ static const struct tnt tnts[] = {
+  *  'O' - Out-of-tree module has been loaded.
+  *  'E' - Unsigned module has been loaded.
+  *  'L' - A soft lockup has previously occurred.
++ *  'K' - Kernel has been live patched.
+  *
+  *	The string is overwritten by the next call to print_tainted().
+  */
+-- 
+2.1.0
 
---->8
-
-The following changes since commit eb8a653137b7e74f7cdc01f814eb9d094a65aed9:
-
-  arm64: remove the unnecessary arm64_swiotlb_init() (2014-12-05 12:19:52 +0000)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git tags/arm64-fixes
-
-for you to fetch changes up to fb59d007a0e44e2304e4fc8cf5c20b6fda7890f3:
-
-  arm64: mm: dump: don't skip final region (2014-12-11 12:08:07 +0000)
-
-----------------------------------------------------------------
-arm64 fixes:
-
-Fix some fallout introduced during the merge window:
- - Build failure when PM_SLEEP is disabled but CPU_IDLE is enabled
- - Compiler warning from page table dumper w/ 48-bit VAs
- - Erroneous page table truncation in reported dump
-
-----------------------------------------------------------------
-Krzysztof Kozlowski (1):
-      arm64: psci: Fix build breakage without PM_SLEEP
-
-Mark Rutland (2):
-      arm64: mm: dump: fix shift warning
-      arm64: mm: dump: don't skip final region
-
- arch/arm64/kernel/psci.c | 2 ++
- arch/arm64/mm/dump.c     | 5 +----
- 2 files changed, 3 insertions(+), 4 deletions(-)
