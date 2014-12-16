@@ -1,283 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaLPGqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 01:46:35 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:62754 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaLPGqe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 01:46:34 -0500
-X-AuditID: cbfee68d-f79296d000004278-f8-548fd54734d9
-Date: Tue, 16 Dec 2014 06:46:11 +0000 (GMT)
-From: Jongman Heo <jongman.heo@samsung.com>
-Subject: Re: Re: [3.18+] Can't boot with commit bd809af1
- ("x86: Enable PAT to use cache mode translation tables")
-To: Juergen Gross <jgross@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: jongman.heo@samsung.com
-MIME-version: 1.0
-X-MTR: 20141216064413050@jongman.heo
-Msgkey: 20141216064413050@jongman.heo
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-MLAttribute: 
-X-RootMTR: 20141216064413050@jongman.heo
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-X-ConfirmMail: N,general
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <1973992816.47941418712371282.JavaMail.weblogic@epmlwas09d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkRNfjan+Iwe2frBaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvj5t9HrAVTwipa751laWD8EtzFyMkhJKAmcfPzIUYQW0LARGLe
-	xLnMELaYxIV769m6GLmAapYySnT9e8wEU9S2cC0TRGIOo8StLxeBqjg4WARUJTatkgCpYRPQ
-	kej4v58VxBYWKJQ4+PA7I0iJiECaROt0C4i9ihLXli5mA7F5BQQlTs58wgJSIiGgInH3rxdE
-	WFXiwpuHrBBbJSRmTb8AZfNKzGh/ygJhy0lM+7oG6mRpifOzNjDCnL/4+2OoOL/Esds7oK4X
-	kJh65iBUjabEgouPoObwSaxZ+JYFpn7XqeXMMLvub5nLBHPD1pYnYDcwA50/pfshO4StJfHl
-	xz40r4DY7hKL129nBIWUhEAjh8S2I6vAiliAjvg2+RDLBEbFWUh6ZiGZOwvJXGQ1CxhZVjGK
-	phYkFxQnpRcZ6hUn5haX5qXrJefnbmIEpoXT/5717mC8fcD6EKMAB6MSD++PvP4QIdbEsuLK
-	3EOMpkCrJzJLiSbnA5NPXkm8obGZkYWpiamxkbmlmZI4r6LUz2AhgfTEktTs1NSC1KL4otKc
-	1OJDjEwcnFINjKr9iycWhRrp3Slkq1I/l8q5YFZ4pdbPh4F5V8vq9O6p71ra8Iz7vz271onH
-	gYq5jkWLhV/cSlP0kd874bDzx5wiNuHdgnt5+OZP4hHZ/P/WIos/TDp3T65SD5n65bCWRkXC
-	b8PjFWE6inu/P49fEDl1OYNrtvma9ddzu/c+u7hzhkfHUuG9bkosxRmJhlrMRcWJAM+QndcG	AwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t/tPl3jq/0hBv0NphaXd81hc2D0+LxJ
-	LoAxKs0mIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2io
-	kkJZYk4pUCggsbhYSd/Opii/tCRVISO/uMRWKdrQ3EjPyEDP1EjP0DjWytDAwMgUqCYhLePm
-	30esBVPCKlrvnWVpYPwS3MXIySEkoCZx8/MhRhBbQsBEom3hWiYIW0ziwr31bF2MXEA1cxgl
-	bn25CORwcLAIqEpsWiUBUsMmoCPR8X8/K4gtLFAocfDhd0aQEhGBNInW6RYQ4xUlri1dzAZi
-	8woISpyc+YQFpERCQEXi7l8viLCqxIU3D1khtkpIzJp+AcrmlZjR/pQFwpaTmPZ1DTOELS1x
-	ftYGRpgrF39/DBXnlzh2ewfU9QISU88chKrRlFhw8RHUHD6JNQvfssDU7zq1nBlm1/0tc5lg
-	btja8gTsBmag86d0P2SHsLUkvvzYh+YVENtdYvH67YwTGGVmIUnNQtI+C0k7spoFjCyrGEVT
-	C5ILipPSK4z0ihNzi0vz0vWS83M3MYJTzbNFOxj/nbc+xCjAwajEwxtY2B8ixJpYVlyZe4hR
-	goNZSYTXfSpQiDclsbIqtSg/vqg0J7X4EKMpMJomMkuJJucD02BeSbyhsbGJmYmppYmFgam5
-	kjjv/3O5IUIC6YklqdmpqQWpRTB9TBycUg2M1wJLp6p4fDC03O+t6tf4eM+56eyadV7xkedM
-	r8zKeO0akzGt4fAVuXXpcerKTU/mN3t+v7nDODtpbutGrnm7TkUZ3p2VujHWbPfZh3wfThpO
-	4f4ZxB3mMPuCpO+znV/2rng6QTBuj+6DSEfHF/q8x8xifJmKj37NtmKNbsvaXjIn+UyS9s1F
-	SizFGYmGWsxFxYkAXy4MqEsDAAA=
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1750929AbaLPGyu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 01:54:50 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51598 "EHLO namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796AbaLPGys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 01:54:48 -0500
+Date: Tue, 16 Dec 2014 17:54:42 +1100 (AEDT)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Security subsystem fixes for 3.19
+Message-ID: <alpine.LRH.2.11.1412161753250.14583@namei.org>
+User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBG6ki27004230
 
->------- Original Message -------
->Sender : Juergen Gross<jgross@suse.com>
->Date : 2014-12-16 15:36 (GMT+09:00)
->Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->
->On 12/16/2014 07:29 AM, Jongman Heo wrote:
->>>
->>> ------- Original Message -------
->>> Sender : Juergen Gross
->>> Date : 2014-12-16 14:14 (GMT+09:00)
->>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->>>
->>> On 12/16/2014 05:40 AM, Jongman Heo wrote:
->>>>> ------- Original Message -------
->>>>> Sender : Juergen Gross
->>>>> Date : 2014-12-15 20:52 (GMT+09:00)
->>>>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->>>>>
->>>>> On 12/15/2014 08:52 AM, Jongman Heo wrote:
->>>>>>> ------- Original Message -------
->>>>>>> Sender : Juergen Gross
->>>>>>> Date : 2014-12-15 14:04 (GMT+09:00)
->>>>>>> Title : Re: [3.18+] Can't boot with commit bd809af1 ("x86: Enable PAT to use cache mode translation tables")
->>>>>>>
->>>>>>> On 12/14/2014 06:07 AM, «„¡æ∏∏ wrote:
->>>>>>>>
->>>>>>>> Hi,
->>>>>>>>
->>>>>>>> My Linux virtual machine on (Windows) VMWare workstation 10 can't boot with following commit.
->>>>>>>>
->>>>>>>> commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2
->>>>>>>> Author: Juergen Gross
->>>>>>>> Date:   Mon Nov 3 14:02:03 2014 +0100
->>>>>>>>
->>>>>>>>         x86: Enable PAT to use cache mode translation tables
->>>>>>>>
->>>>>>>> Unfortunately I can't see any console log.
->>>>>>>
->>>>>>> Hmm, weird. Could you provide some more information?
->>>>>>>
->>>>>>> Kernel config, hardware used, /proc/cpuinfo of working kernel?
->>>>>>> Anything you see with earlyprintk enabled?
->>>>>>>
->>>>>>>
->>>>>>> Juergen
->>>>>>
->>>>>> (Sorry for resending this email, previous one bounced from mailing list due to HTML format)
->>>>>>
->>>>>> Hi,
->>>>>>
->>>>>> I'm using Fedora 21, with custom built kernel.
->>>>>> Host PC is windows 7 64-bit, and running VMWare workstation 10 for guest Fedora Linux.
->>>>>>
->>>>>> With earlyprintk, just following message is printed.
->>>>>>
->>>>>>      early console in setup code
->>>>>>
->>>>>> and nothing more...
->>>>>
->>>>> Can you try attached diagnostic patch, please? I suspect a problem
->>>>> regarding VMWares PAT emulation...
->>>>>
->>>>>
->>>>> Juergen
->>>>
->>>> Hi,
->>>>
->>>> With the commit reverted, the patch doesn't apply.
->>>
->>> Sure.
->>>
->>>> Without revert, kernel (patch applied) doesn't boot and I can't see any message.
->>>
->>> What are your kernel parameters? There must be some message with the
->>> diagnostic patch, as the first pr_info() is called before any other
->>> part of the critical patch is becoming active. Could it be you have
->>> instructed the kernel to be "quiet"? I'd recommend:
->>>
->>> earlyprintk=vga ignore_loglevel
->>>
->>> and no quiet. I don't know VMWare settings, so may be you can use
->>> earlyprintk=ttyS0 instead of vga.
->>>
->>>>
->>>> Let me show you my PAT values (the commit reverted)
->>>>
->>>> # dmesg | grep PAT
->>>> [    0.000000] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
->>>> [    0.314631] x86 PAT enabled: cpu 3, old 0x0, new 0x7010600070106
->>>> [    0.314703] x86 PAT enabled: cpu 1, old 0x0, new 0x7010600070106
->>>> [    0.314780] x86 PAT enabled: cpu 2, old 0x0, new 0x7010600070106
->>>> [    0.314852] x86 PAT enabled: cpu 4, old 0x0, new 0x7010600070106
->>>> [    0.314923] x86 PAT enabled: cpu 0, old 0x0, new 0x7010600070106
->>>> [    0.314997] x86 PAT enabled: cpu 6, old 0x0, new 0x7010600070106
->>>> [    0.315069] x86 PAT enabled: cpu 7, old 0x0, new 0x7010600070106
->>>> [    0.315142] x86 PAT enabled: cpu 5, old 0x0, new 0x7010600070106
->>>
->>> These are the expected values. But these values are the ones which are
->>> written, not the ones which have been read from the PAT MSR again.
->>>
->>> Without applying the critical patch you could add:
->>>
->>> rdmsrl(MSR_IA32_CR_PAT, pat);
->>> printk(KERN_INFO "PAT read: cpu %d, 0x%Lx\n", smp_processor_id(), pat);
->>>
->>> at the end of pat_init() to verify VMWare is handling reads of the PAT
->>> MSR properly.
->>>
->>> Juergen
->>>
->> 
->> Hi,
->> 
->> With earlyprintk=vga, I can see the log.
->> But due to call trace, I can't see what the pat value is.
->> 
->> Call chain is as follows.
->> 
->>    i386_start_kernel -> start_kernel -> setup_arch ->
->>    mtrr_bp_init -> get_mtrr_state -> pat_init ->
->>    pat_init_cache_mode_entry -> update_cache_mode_entry ->
->>    early_idt_handler -> dump_stack
->> 
->> So, I blocked update_cache_mode_entry() call like below...
->> 
->> --- a/arch/x86/mm/pat.c
->> +++ b/arch/x86/mm/pat.c
->> @@ -182,11 +182,12 @@ void pat_init_cache_modes(void)
->>          u64 pat;
->>   
->>          rdmsrl(MSR_IA32_CR_PAT, pat);
->> +       pr_info("read pat %0llx\n", pat);
->>          pat_msg[32] = 0;
->>          for (i = 7; i >= 0; i--) {
->>                  cache = pat_get_cache_mode((pat >> (i * 8)) & 7,
->>                                             pat_msg + 4 * i);
->> -               update_cache_mode_entry(i, cache);
->> +               //update_cache_mode_entry(i, cache);
->>          }
->>          pr_info("PAT configuration [0-7]: %s\n", pat_msg);
->>   }
->> @@ -238,9 +239,13 @@ void pat_init(void)
->>                  rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
->>   
->>          wrmsrl(MSR_IA32_CR_PAT, pat);
->> +       pr_info("about to write pat %0llx\n", pat);
->>   
->>          if (boot_cpu)
->>                  pat_init_cache_modes();
->> +
->> +       rdmsrl(MSR_IA32_CR_PAT, pat);
->> +       printk(KERN_INFO "PAT read: cpu %d, 0x%Lx\n", smp_processor_id(), pat);
->>   }
->>   
->> 
->> Then boot is fine, and PAT values are as follows.
->> 
->> 
->> # dmesg|grep -i "pat "
->> [    0.000000] about to write pat 7010600070106
->> [    0.000000] read pat 0
->> [    0.000000] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.000000] PAT read: cpu 0, 0x0
->> [    0.320559] about to write pat 7010600070106
->> [    0.320876] read pat 0
->> [    0.321090] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.321260] PAT read: cpu 5, 0x0
->> [    0.321403] about to write pat 7010600070106
->> [    0.321818] read pat 0
->> [    0.322033] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.322205] PAT read: cpu 6, 0x0
->> [    0.322334] about to write pat 7010600070106
->> [    0.322417] read pat 0
->> [    0.322479] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.322573] PAT read: cpu 0, 0x0
->> [    0.322703] about to write pat 7010600070106
->> [    0.323012] read pat 0
->> [    0.323228] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.323400] PAT read: cpu 1, 0x0
->> [    0.323537] about to write pat 7010600070106
->> [    0.323833] read pat 0
->> [    0.324055] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.324224] PAT read: cpu 7, 0x0
->> [    0.324362] about to write pat 7010600070106
->> [    0.324662] read pat 0
->> [    0.324877] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.325048] PAT read: cpu 2, 0x0
->> [    0.325185] about to write pat 7010600070106
->> [    0.325483] read pat 0
->> [    0.325695] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.325863] PAT read: cpu 4, 0x0
->> [    0.325997] about to write pat 7010600070106
->> [    0.326288] read pat 0
->> [    0.326507] PAT configuration [0-7]: UC  UC  UC  UC  UC  UC  UC  UC
->> [    0.326677] PAT read: cpu 3, 0x0
->
->Okay, so VMWare doesn't seem to return the correct PAT MSR value.
->
->I suggest you try "nopat" as kernel option. This should disable all the
->PAT handling and VMWare can't wreck the kernel this way.
->
->I'll write a patch which detects this VMWare bug by checking the PAT
->value after writing it.
->
->Thanks for reporting that case,
->
->
->Juergen
->
->
+Please pull these fixes for the security subsystem.
 
-OK, my VMWare works with "nopat" option.
+The following changes since commit 988adfdffdd43cfd841df734664727993076d7cb:
 
-Thanks~.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+  Merge branch 'drm-next' of git://people.freedesktop.org/~airlied/linux (2014-12-15 15:52:01 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git for-linus
+
+Dan Carpenter (1):
+      KEYS: remove a bogus NULL check
+
+James Morris (1):
+      Merge branch 'next' of git://git.kernel.org/.../zohar/linux-integrity into for-linus
+
+Michael Ellerman (1):
+      ima: Fix build failure on powerpc when TCG_IBMVTPM dependencies are not met
+
+Takashi Iwai (1):
+      KEYS: Fix stale key registration at error path
+
+ security/integrity/ima/Kconfig           |    2 +-
+ security/keys/encrypted-keys/encrypted.c |    5 ++++-
+ security/keys/key.c                      |   10 ++++------
+ 3 files changed, 9 insertions(+), 8 deletions(-)
+
+---
+
+commit 5057975ae38452679b964f1382c5efcb9faee74e
+Author: Dan Carpenter <dan.carpenter@oracle.com>
+Date:   Thu Dec 11 19:59:38 2014 +0000
+
+    KEYS: remove a bogus NULL check
+    
+    We already checked if "desc" was NULL at the beginning of the function
+    and we've dereferenced it so this causes a static checker warning.
+    
+    Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+    Signed-off-by: David Howells <dhowells@redhat.com>
+    Signed-off-by: James Morris <james.l.morris@oracle.com>
+
+diff --git a/security/keys/key.c b/security/keys/key.c
+index e17ba6a..aee2ec5 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -276,12 +276,10 @@ struct key *key_alloc(struct key_type *type, const char *desc,
+ 	if (!key)
+ 		goto no_memory_2;
+ 
+-	if (desc) {
+-		key->index_key.desc_len = desclen;
+-		key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
+-		if (!key->description)
+-			goto no_memory_3;
+-	}
++	key->index_key.desc_len = desclen;
++	key->index_key.description = kmemdup(desc, desclen + 1, GFP_KERNEL);
++	if (!key->description)
++		goto no_memory_3;
+ 
+ 	atomic_set(&key->usage, 1);
+ 	init_rwsem(&key->sem);
+
+commit d0bffab0439fb7edaee09677b636eef5991e8b80
+Merge: 988adfd 63a0eb7
+Author: James Morris <james.l.morris@oracle.com>
+Date:   Tue Dec 16 12:49:10 2014 +1100
+
+    Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/zohar/linux-integrity into for-linus
+
+commit 63a0eb7891bdf3ef32ecb6b01eb09106df646c10
+Author: Michael Ellerman <mpe@ellerman.id.au>
+Date:   Wed Dec 3 17:04:50 2014 +1100
+
+    ima: Fix build failure on powerpc when TCG_IBMVTPM dependencies are not met
+    
+    On powerpc we can end up with IMA=y and PPC_PSERIES=n which leads to:
+    
+     warning: (IMA) selects TCG_IBMVTPM which has unmet direct dependencies (TCG_TPM && PPC_PSERIES)
+      tpm_ibmvtpm.c:(.text+0x14f3e8): undefined reference to `.plpar_hcall_norets'
+    
+    I'm not sure why IMA needs to select those user-visible symbols, but if
+    it must then the simplest fix is to just express the proper dependencies
+    on the select.
+    
+    Tested-by: Hon Ching (Vicky) Lo <lo1@us.ibm.com>
+    Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+    Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+
+diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
+index b80a93e..57515bc 100644
+--- a/security/integrity/ima/Kconfig
++++ b/security/integrity/ima/Kconfig
+@@ -10,7 +10,7 @@ config IMA
+ 	select CRYPTO_HASH_INFO
+ 	select TCG_TPM if HAS_IOMEM && !UML
+ 	select TCG_TIS if TCG_TPM && X86
+-	select TCG_IBMVTPM if TCG_TPM && PPC64
++	select TCG_IBMVTPM if TCG_TPM && PPC_PSERIES
+ 	help
+ 	  The Trusted Computing Group(TCG) runtime Integrity
+ 	  Measurement Architecture(IMA) maintains a list of hash
+
+commit b26bdde5bb27f3f900e25a95e33a0c476c8c2c48
+Author: Takashi Iwai <tiwai@suse.de>
+Date:   Thu Dec 4 18:25:19 2014 +0100
+
+    KEYS: Fix stale key registration at error path
+    
+    When loading encrypted-keys module, if the last check of
+    aes_get_sizes() in init_encrypted() fails, the driver just returns an
+    error without unregistering its key type.  This results in the stale
+    entry in the list.  In addition to memory leaks, this leads to a kernel
+    crash when registering a new key type later.
+    
+    This patch fixes the problem by swapping the calls of aes_get_sizes()
+    and register_key_type(), and releasing resources properly at the error
+    paths.
+    
+    Bugzilla: https://bugzilla.opensuse.org/show_bug.cgi?id=908163
+    Cc: <stable@vger.kernel.org>
+    Signed-off-by: Takashi Iwai <tiwai@suse.de>
+    Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+
+diff --git a/security/keys/encrypted-keys/encrypted.c b/security/keys/encrypted-keys/encrypted.c
+index db9675d..7bed4ad 100644
+--- a/security/keys/encrypted-keys/encrypted.c
++++ b/security/keys/encrypted-keys/encrypted.c
+@@ -1017,10 +1017,13 @@ static int __init init_encrypted(void)
+ 	ret = encrypted_shash_alloc();
+ 	if (ret < 0)
+ 		return ret;
++	ret = aes_get_sizes();
++	if (ret < 0)
++		goto out;
+ 	ret = register_key_type(&key_type_encrypted);
+ 	if (ret < 0)
+ 		goto out;
+-	return aes_get_sizes();
++	return 0;
+ out:
+ 	encrypted_shash_release();
+ 	return ret;
