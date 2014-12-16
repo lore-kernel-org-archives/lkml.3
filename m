@@ -1,263 +1,420 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaLPMJP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 07:09:15 -0500
-Received: from mail-lb0-f173.google.com ([209.85.217.173]:49862 "EHLO
-	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaLPMJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 07:09:13 -0500
-Date: Tue, 16 Dec 2014 13:09:11 +0100
-From: Johan Hovold <johan@kernel.org>
-To: "D. Hugh Redelmeier" <hugh@mimosa.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: problem with ELAN touchscreen
-Message-ID: <20141216120911.GK6778@localhost>
-References: <alpine.LRH.2.02.1403041904350.32070@redclaw.mimosa.com>
+	id S1751091AbaLPMUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 07:20:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49610 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750840AbaLPMT5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 07:19:57 -0500
+Date: Tue, 16 Dec 2014 13:19:53 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au
+Subject: Re: mmotm 2014-12-15-17-05 uploaded
+Message-ID: <20141216121953.GC22914@dhcp22.suse.cz>
+References: <548f85ac.CKlyI3on1DaQgGu+%akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1403041904350.32070@redclaw.mimosa.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <548f85ac.CKlyI3on1DaQgGu+%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 11:27:02PM -0500, D. Hugh Redelmeier wrote:
-> I have a Lenovo Yoga 2 pro with an ELAN touchscreen.
-> I am running Fedora 20 with Fedora's 3.13.5-200.fc20.x86_64 kernel.
-> 
-> During initialization, there is a lot of delay and noise detecting the
-> touchscreen.
-> 
-> I'm not the first to report this problem but I don't know what can or
-> should be done.  But there doesn't seem to be a solution so far.
-> Can we figure one out?
+Subject: since-3.18 branch opened for mm git tree (was: Re: mmotm 2014-12-15-17-05 uploaded)
 
-I just stumbled across this message from March.
+I have just created since-3.18 branch in mm git tree
+(http://git.kernel.org/?p=linux/kernel/git/mhocko/mm.git;a=summary). It
+is based on v3.18 tag in Linus tree and mmotm-2014-12-15-17-05.
 
-The problem with your touchscreen should have been fixed in v3.18 by commits:
+As usual mmotm trees are tagged with signed tag
+(finger print BB43 1E25 7FB8 660F F2F1 D22D 48E2 09A2 B310 E347)
 
-	2a159389bf5d ("USB: core: add device-qualifier quirk")
-	0b750b3baa2d ("HID: usbhid: add always-poll quirk")
+The current shortlog says:
+Akinobu Mita (1):
+      cma: make default CMA area size zero for x86
 
-and
+Alex Elder (1):
+      printk: drop logbuf_cpu volatile qualifier
 
-	d749947561af ("USB: quirks: enable device-qualifier quirk for yet another Elan touchscreen")
-	1af39588f84c ("HID: usbhid: enable always-poll quirk for Elan Touchscreen 016f")
+Andrew Morton (9):
+      slab: improve checking for invalid gfp_flags
+      fs/binfmt_misc.c: use GFP_KERNEL instead of GFP_USER
+      include/linux/kmemleak.h: needs slab.h
+      mm/page_alloc.c:__alloc_pages_nodemask(): don't alter arg gfp_mask
+      mm-page_allocc-__alloc_pages_nodemask-dont-alter-arg-gfp_mask-fix
+      mm-introduce-do_shared_fault-and-drop-do_fault-fix-fix
+      x86-add-pmd_-for-thp-fix
+      sparc-add-pmd_-for-thp-fix
+      do_shared_fault(): check that mmap_sem is held
 
-They have also been backported to at least the v3.17 (.3+) stable kernels.
+Andrey Ryabinin (1):
+      mm: slub: fix format mismatches in slab_err() callers
 
-Have you tried any of these kernels?
+Andy Lutomirski (1):
+      init: allow CONFIG_INIT_FALLBACK=n to disable defaults if init= fails
 
-> My uneducated theories:
-> 
-> - The touchscreen is slow to initialize and talking to it before it is
->   read starts it initializing again.  This seems unlikely: the
->   USB system poked my touchscreen over 72 seconds before a good
->   outcome happened.
-> 
-> - the touchscreen needs the Windows enumeration method (see below).
-> 
-> - there is a firmware bug that could be fixed (but probably only if it
->   shows up in Windows, and I don't think that it does).
-> 
-> - something else
-> 
-> What can I do to help move this forward?
-> 
-> Here are the old reports.  My information is at the end.
-> 
-> <http://www.spinics.net/lists/linux-usb/msg94582.html>
-> 
->   (2013 September)
-> 
->   Sarah Sharp suggested that this might be a hardware bug and asked if
->   the device were still under warranty.
-> 
->   A number of instances of this behaviour can be found by googling.
->   This suggests that any bug in the hardware is in many (all?)
->   of these touchscreens.  That's the kind of problem that
->   manufacturers resist dealing with.
-> 
-> <http://www.spinics.net/lists/linux-usb/msg95796.html>
-> 
->   (Later in the same thread)
-> 
->   Sarah suggests that the device might need to be enumberated using
->   the "Windows" scheme.  She also wondered if the problematic device
->   was actually the ELAN touchscreen (but the numbering suggests so to
->   me).
-> 
->   Has anyone tried that enumeration method?
-> 
->   The thread ended here.
-> 
-> 
-> <http://www.spinics.net/lists/linux-usb/msg100342.html>
->   (2013 December)
-> 
->   Apparently the same problem. ASUS N550JV-DB72T with ELAN
->   touchscreen.
-> 
->   Sarah suggests that there might be electrical issues with the
->   internally connected touchscreen.  (I doubt that since there
->   are so many independant reports.)
-> 
->   Alan Stern suggests intermittent hardware problems.
-> 
-> <https://lists.fedoraproject.org/pipermail/test/2013-October/118402.html>
->   (2013 Oct)
-> 
->   Richard Ryniker reports the same problem with a Samsung Book 9 plus
->   with an ELAN touchscreen.
-> 
-> <http://marc.info/?l=linux-kernel&m=138299522418665&w=2>
-> 
->   (2013 October)
-> 
->   Kevin Fenzi-2 reports the same problem with a Lenovo Yoga 2 pro with
->   an ELAN touchscreen.
-> 
->   Was first thought to be a regression.  Instead, it seemed to be
->   affected by debugging code.  My guess: timing.
-> 
-> <http://marc.info/?l=linux-kernel&m=139012354602664&w=2>
-> 
->   (2014 January)
-> 
->   In the same thread, another victim (Eric) showed up.
-> 
-> <http://forums.gentoo.org/viewtopic-p-7500028.html>
-> 
->   (2013 November)
-> 
->   andretti reports the same problem with a Samsung Ativ Book 9 plus
->   and an ELAN touchscreen.
-> 
->   A suggestion was the make the xhci driver a module.  Not results
->   were reported.
-> 
-> <https://bbs.archlinux.org/viewtopic.php?id=172587>
-> 
->   (2013 November)
-> 
->   eweber reports teh same problem with a Lenovo Yoga 2 pro.
-> 
-> <keithcu.com/wordpress/?p=3270>
-> 
->   (2013 November)
-> 
->   KeithCU mentions briefly that:
-> 
-> 	My logfile fills up with USB (and other) error messages.
-> 
-> 	usb 2-7: unable to read config index 0 descriptor/start -71
-> 
-> <http://forums.debian.net/viewtopic.php?f=5&t=111550>
-> 
->   (2014 February)
-> 
->   A new Debian user hits this.  Unknown computer with ELAN touchpad.
-> 
-> 
-> Here are selected sequences of dmesg output from one boot on my system.
-> Notice that this process adds over a minute to booting time!
-> 
-> I think that the relevant status numbers are:
-> 
-> #define	EPROTO		71	/* Protocol error */
-> 
-> #define	ETIMEDOUT	110	/* Connection timed out */
-> 
-> [    4.210824] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [    4.210830] usb 2-7: can't read configurations, error -71
-> [    4.363159] usb 2-7: new full-speed USB device number 5 using xhci_hcd
-> [    6.511501] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [    6.511507] usb 2-7: can't read configurations, error -71
-> [    6.714942] usb 2-8: new high-speed USB device number 7 using xhci_hcd
-> [    6.735448] usb 2-8: New USB device found, idVendor=1bcf, idProduct=2c43
-> [    6.735454] usb 2-8: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-> [    6.735457] usb 2-8: Product: Lenovo EasyCamera
-> [    6.735459] usb 2-8: Manufacturer: J37DCB2PF
-> [    6.993789] usb 2-7: new full-speed USB device number 8 using xhci_hcd
-> [    9.141761] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [    9.141767] usb 2-7: can't read configurations, error -71
-> [    9.294483] usb 2-7: new full-speed USB device number 9 using xhci_hcd
-> [   11.442406] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   11.442413] usb 2-7: can't read configurations, error -71
-> [   11.595199] usb 2-7: new full-speed USB device number 10 using xhci_hcd
-> [   13.743377] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   13.743383] usb 2-7: can't read configurations, error -71
-> [   13.895921] usb 2-7: new full-speed USB device number 11 using xhci_hcd
-> [   16.044138] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   16.044145] usb 2-7: can't read configurations, error -71
-> [   16.044167] hub 2-0:1.0: unable to enumerate USB device on port 7
-> 
-> [   16.330480] usb 2-7: new full-speed USB device number 12 using xhci_hcd
-> 
-> [   19.500361] IPv6: ADDRCONF(NETDEV_CHANGE): wlp1s0: link becomes ready
-> [   23.475726] usb 2-7: unable to read config index 0 descriptor/start: -110
-> [   23.475733] usb 2-7: can't read configurations, error -110
-> [   23.834556] usb 2-7: new full-speed USB device number 14 using xhci_hcd
-> [   25.982084] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   25.982090] usb 2-7: can't read configurations, error -71
-> [   26.148413] usb 2-7: new full-speed USB device number 15 using xhci_hcd
-> [   28.296921] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   28.296927] usb 2-7: can't read configurations, error -71
-> [   28.463153] usb 2-7: new full-speed USB device number 16 using xhci_hcd
-> [   30.611512] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   30.611518] usb 2-7: can't read configurations, error -71
-> [   30.891225] usb 2-7: new full-speed USB device number 18 using xhci_hcd
-> [   33.039344] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   33.039349] usb 2-7: can't read configurations, error -71
-> [   33.150245] usb 2-7: new full-speed USB device number 19 using xhci_hcd
-> [   35.297560] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   35.297566] usb 2-7: can't read configurations, error -71
-> [   35.463896] usb 2-7: new full-speed USB device number 20 using xhci_hcd
-> [   37.611739] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   37.611745] usb 2-7: can't read configurations, error -71
-> [   37.722912] usb 2-7: new full-speed USB device number 21 using xhci_hcd
-> [   39.870662] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   39.870669] usb 2-7: can't read configurations, error -71
-> [   39.870780] hub 2-0:1.0: unable to enumerate USB device on port 7
-> [   40.128069] usb 2-7: new full-speed USB device number 22 using xhci_hcd
-> [   42.275231] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   42.275236] usb 2-7: can't read configurations, error -71
-> [   42.426898] usb 2-7: new full-speed USB device number 23 using xhci_hcd
-> [   44.573529] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   44.573536] usb 2-7: can't read configurations, error -71
-> [   44.725488] usb 2-7: new full-speed USB device number 24 using xhci_hcd
-> [   46.871558] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   46.871564] usb 2-7: can't read configurations, error -71
-> [   47.024161] usb 2-7: new full-speed USB device number 25 using xhci_hcd
-> [   49.170691] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   49.170697] usb 2-7: can't read configurations, error -71
-> [   49.170763] hub 2-0:1.0: unable to enumerate USB device on port 7
-> 
-> [   49.457741] usb 2-7: new full-speed USB device number 26 using xhci_hcd
-> [   51.604245] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   51.604252] usb 2-7: can't read configurations, error -71
-> [   51.757410] usb 2-7: new full-speed USB device number 27 using xhci_hcd
-> [   63.897857] usb 2-7: unable to read config index 0 descriptor/start: -110
-> [   63.897864] usb 2-7: can't read configurations, error -110
-> [   64.256685] usb 2-7: new full-speed USB device number 29 using xhci_hcd
-> [   66.402027] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   66.402033] usb 2-7: can't read configurations, error -71
-> [   66.554451] usb 2-7: new full-speed USB device number 30 using xhci_hcd
-> [   68.699773] usb 2-7: unable to read config index 0 descriptor/start: -71
-> [   68.699779] usb 2-7: can't read configurations, error -71
-> [   68.852189] usb 2-7: new full-speed USB device number 31 using xhci_hcd
-> [   75.996377] usb 2-7: unable to read config index 0 descriptor/start: -110
-> [   75.996384] usb 2-7: can't read configurations, error -110
-> [   76.356077] usb 2-7: new full-speed USB device number 33 using xhci_hcd
-> [   76.368398] usb 2-7: New USB device found, idVendor=04f3, idProduct=016f
-> [   76.368404] usb 2-7: New USB device strings: Mfr=4, Product=14, SerialNumber=0
-> [   76.368408] usb 2-7: Product: Touchscreen
-> [   76.368411] usb 2-7: Manufacturer: ELAN
-> [   76.369434] usb 2-7: ep 0x2 - rounding interval to 64 microframes, ep desc says 80 microframes
-> [   76.397653] input: ELAN Touchscreen as /devices/pci0000:00/0000:00:14.0/usb2/2-7/2-7:1.0/input/input13
-> [   76.399634] hid-multitouch 0003:04F3:016F.0002: input,hiddev0,hidraw0: USB HID v1.10 Device [ELAN Touchscreen] on usb-0000:00:14.0-7/input0
+Aneesh Kumar K.V (1):
+      mm/numa balancing: rearrange Kconfig entry
 
-Thanks,
-Johan
+Anton Blanchard (1):
+      mm/page_alloc.c: convert boot printks without log level to pr_info
+
+Christoph Lameter (5):
+      percpu: remove __get_cpu_var and __raw_get_cpu_var macros
+      percpu: update local_ops.txt to reflect this_cpu operations
+      parisc: percpu: update comments referring to __get_cpu_var
+      percpu: Convert remaining __get_cpu_var uses in 3.18-rcX
+      powerpc: Replace __get_cpu_var uses
+
+Dan Carpenter (2):
+      cpuset: lock vs unlock typo
+      sh: off by one BUG_ON() in setup_bootmem_node()
+
+Dave Hansen (2):
+      ipc/shm.c: fix overly aggressive shmdt() when calls span multiple segments
+      shmdt: use i_size_read() instead of ->i_size
+
+David Rientjes (1):
+      fs, seq_file: fallback to vmalloc instead of oom kill processes
+
+Davidlohr Bueso (11):
+      mm,fs: introduce helpers around the i_mmap_mutex
+      mm: use new helper functions around the i_mmap_mutex
+      mm: convert i_mmap_mutex to rwsem
+      mm/rmap: share the i_mmap_rwsem
+      uprobes: share the i_mmap_rwsem
+      mm/xip: share the i_mmap_rwsem
+      mm/memory-failure: share the i_mmap_rwsem
+      mm/nommu: share the i_mmap_rwsem
+      mm/memory.c: share the i_mmap_rwsem
+      mm/rmap: calculate page offset when needed
+      mm,vmacache: count number of system-wide flushes
+
+Debabrata Banerjee (1):
+      procfs: fix error handling of proc_register()
+
+Dmitry Monakhov (2):
+      ratelimit: add initialization macro
+      fault-inject: add ratelimit option
+
+Dmitry Vyukov (1):
+      mm/vmalloc.c: fix memory ordering bug
+
+Florian Fainelli (2):
+      dma-debug: introduce dma_debug_disabled
+      dma-debug: prevent early callers from crashing
+
+Ganesh Mahendran (3):
+      mm/zsmalloc: avoid duplicate assignment of prev_class
+      mm/zsmalloc: allocate exactly size of struct zs_pool
+      zram: use DEVICE_ATTR_[RW|RO|WO] to define zram sys device attribute
+
+Gregory Fong (1):
+      mm: cma: align to physical address, not CMA region position
+
+Heesub Shin (1):
+      mm/zbud: init user ops only when it is needed
+
+Heinrich Schuchardt (1):
+      fallocate: create FAN_MODIFY and IN_MODIFY events
+
+Hillf Danton (1):
+      mm: hugetlb: fix __unmap_hugepage_range()
+
+Hugh Dickins (1):
+      mm: unmapped page migration avoid unmap+remap overhead
+
+James Custer (1):
+      mm: fix invalid use of pfn_valid_within in test_pages_in_a_zone
+
+Jamie Liu (1):
+      mm: vmscan: count only dirty pages as congested
+
+Jan Kara (2):
+      fsnotify: unify inode and mount marks handling
+      fsnotify: remove destroy_list from fsnotify_mark
+
+Jesse Barnes (2):
+      mm: export find_extend_vma() and handle_mm_fault() for driver use
+      iommu/amd: use handle_mm_fault directly
+
+Jianyu Zhan (1):
+      mm, gfp: escalatedly define GFP_HIGHUSER and GFP_HIGHUSER_MOVABLE
+
+Joe Perches (2):
+      printk: remove used-once early_vprintk
+      printk: add and use LOGLEVEL_<level> defines for KERN_<LEVEL> equivalents
+
+Johannes Weiner (27):
+      mm: memcontrol: lockless page counters
+      mm: hugetlb_cgroup: convert to lockless page counters
+      kernel: res_counter: remove the unused API
+      mm: memcontrol: convert reclaim iterator to simple css refcounting
+      mm: memcontrol: take a css reference for each charged page
+      mm: memcontrol: remove obsolete kmemcg pinning tricks
+      mm: memcontrol: continue cache reclaim from offlined groups
+      mm: memcontrol: remove synchronous stock draining code
+      mm: memcontrol: update mem_cgroup_page_lruvec() documentation
+      mm: memcontrol: clarify migration where old page is uncharged
+      mm: memcontrol: uncharge pages on swapout
+      mm: memcontrol: remove unnecessary PCG_MEMSW memory+swap charge flag
+      mm: memcontrol: remove unnecessary PCG_MEM memory charge flag
+      mm: memcontrol: remove unnecessary PCG_USED pc->mem_cgroup valid flag
+      mm: memcontrol: inline memcg->move_lock locking
+      mm: memcontrol: don't pass a NULL memcg to mem_cgroup_end_move()
+      mm: memcontrol: fold mem_cgroup_start_move()/mem_cgroup_end_move()
+      mm: memcontrol: shorten the page statistics update slowpath
+      mm: memcontrol: remove bogus NULL check after mem_cgroup_from_task()
+      mm: memcontrol: pull the NULL check from __mem_cgroup_same_or_subtree()
+      mm: memcontrol: drop bogus RCU locking from mem_cgroup_same_or_subtree()
+      mm: memcontrol: remove stale page_cgroup_lock comment
+      mm: embed the memcg pointer directly into struct page
+      mm: page_cgroup: rename file to mm/swap_cgroup.c
+      mm: move page->mem_cgroup bad page handling into generic code
+      mm: vmscan: invoke slab shrinkers from shrink_zone()
+      mm: page_alloc: embed OOM killing naturally into allocation slowpath
+
+Joonsoo Kim (12):
+      mm/CMA: fix boot regression due to physical address of high_memory
+      mm/slab: reverse iteration on find_mergeable()
+      mm/debug-pagealloc: cleanup page guard code
+      mm/page_ext: resurrect struct page extending code for debugging
+      mm/debug-pagealloc: prepare boottime configurable on/off
+      mm/debug-pagealloc: make debug-pagealloc boottime configurable
+      mm/nommu: use alloc_pages_exact() rather than its own implementation
+      stacktrace: introduce snprint_stack_trace for buffer output
+      mm/page_owner: keep track of page owners
+      mm/page_owner: correct owner information for early allocated pages
+      Documentation: add new page_owner document
+      zsmalloc: merge size_class to reduce fragmentation
+
+Jungseung Lee (1):
+      fs/binfmt_elf.c: fix internal inconsistency relating to vma dump size
+
+Kirill A. Shutemov (3):
+      thp: do not mark zero-page pmd write-protected explicitly
+      mm: fix huge zero page accounting in smaps report
+      mm: replace remap_file_pages() syscall with emulation
+
+LQYMGT (1):
+      mm: slab/slub: coding style: whitespaces and tabs mixture
+
+Li Haifeng (1):
+      mm/frontswap.c: fix the condition in BUG_ON
+
+Luiz Capitulino (3):
+      hugetlb: fix hugepages= entry in kernel-parameters.txt
+      hugetlb: alloc_bootmem_huge_page(): use IS_ALIGNED()
+      hugetlb: hugetlb_register_all_nodes(): add __init marker
+
+Mahendran Ganesh (3):
+      mm/zsmalloc: support allocating obj with size of ZS_MAX_ALLOC_SIZE
+      mm/zram: correct ZRAM_ZERO flag bit position
+      mm/zswap: add __init to some functions in zswap
+
+Manfred Spraul (3):
+      ipc/sem.c: change memory barrier in sem_lock() to smp_rmb()
+      ipc/sem.c: increase SEMMSL, SEMMNI, SEMOPM
+      ipc/msg: increase MSGMNI, remove scaling
+
+Markus Elfring (1):
+      mm/zswap: delete unnecessary check before calling free_percpu()
+
+Mel Gorman (1):
+      mm: fadvise: document the fadvise(FADV_DONTNEED) behaviour for partial pages
+
+Michal Hocko (3):
+      Merge remote-tracking branch 'tj-cgroups/for-3.19' into mmotm-3.18
+      mm: memcontrol: micro-optimize mem_cgroup_split_huge_fixup()
+      mm, memcg: fix potential undefined behaviour in page stat accounting
+
+Michal Nazarewicz (1):
+      lib: bitmap: add alignment offset for bitmap_find_next_zero_area()
+
+Michele Curti (1):
+      mm/memcontrol.c: fix defined but not used compiler warning
+
+Mike Frysinger (2):
+      binfmt_misc: add comments & debug logs
+      binfmt_misc: clean up code style a bit
+
+Minchan Kim (10):
+      zsmalloc: correct fragile [kmap|kunmap]_atomic use
+      mm: support madvise(MADV_FREE)
+      mm: define MADV_FREE for some arches
+      x86: add pmd_[dirty|mkclean] for THP
+      sparc: add pmd_[dirty|mkclean] for THP
+      powerpc: add pmd_[dirty|mkclean] for THP
+      arm: add pmd_mkclean for THP
+      arm64: add pmd_[dirty|mkclean] for THP
+      mm: don't split THP page when syscall is called
+      mm: remove lock validation check for MADV_FREE
+
+Nicolas Dichtel (2):
+      fs/proc: use a rb tree for the directory entries
+      fs/proc.c: use rb_entry_safe() instead of rb_entry()
+
+Oleg Nesterov (30):
+      proc: task_state: read cred->group_info outside of task_lock()
+      proc: task_state: deuglify the max_fds calculation
+      proc: task_state: move the main seq_printf() outside of rcu_read_lock()
+      proc: task_state: ptrace_parent() doesn't need pid_alive() check
+      sched_show_task: fix unsafe usage of ->real_parent
+      exit: reparent: use ->ptrace_entry rather than ->sibling for EXIT_DEAD tasks
+      exit: reparent: cleanup the changing of ->parent
+      exit: reparent: cleanup the usage of reparent_leader()
+      exit: ptrace: shift "reap dead" code from exit_ptrace() to forget_original_parent()
+      usermodehelper: don't use CLONE_VFORK for ____call_usermodehelper()
+      usermodehelper: kill the kmod_thread_locker logic
+      exit: wait: cleanup the ptrace_reparented() checks
+      exit: wait: don't use zombie->real_parent
+      exit: wait: drop tasklist_lock before psig->c* accounting
+      exit: release_task: fix the comment about group leader accounting
+      exit: proc: don't try to flush /proc/tgid/task/tgid
+      exit: reparent: fix the dead-parent PR_SET_CHILD_SUBREAPER reparenting
+      exit: reparent: fix the cross-namespace PR_SET_CHILD_SUBREAPER reparenting
+      exit: reparent: s/while_each_thread/for_each_thread/ in find_new_reaper()
+      exit: reparent: document the ->has_child_subreaper checks
+      exit: reparent: introduce find_child_reaper()
+      exit: reparent: introduce find_alive_thread()
+      exit: reparent: avoid find_new_reaper() if no children
+      exit: reparent: call forget_original_parent() under tasklist_lock
+      exit: exit_notify: re-use "dead" list to autoreap current
+      exit: pidns: alloc_pid() leaks pid_namespace if child_reaper is exiting
+      exit: pidns: fix/update the comments in zap_pid_ns_processes()
+      oom: don't assume that a coredumping thread will exit soon
+      oom: kill the insufficient and no longer needed PT_TRACE_EXIT check
+      exit: fix race between wait_consider_task() and wait_task_zombie()
+
+Paul Bolle (1):
+      mm: Fix comment typo "CONFIG_TRANSPARNTE_HUGE"
+
+Peter Zijlstra (11):
+      locking/mutex: Don't assume TASK_RUNNING
+      sched/wait: Provide infrastructure to deal with nested blocking
+      sched/wait: Add might_sleep() checks
+      sched, exit: Deal with nested sleeps
+      sched, inotify: Deal with nested sleeps
+      sched, tty: Deal with nested sleeps
+      sched, smp: Correctly deal with nested sleeps
+      sched, modules: Fix nested sleep in add_unformed_module()
+      sched, net: Clean up sk_wait_event() vs. might_sleep()
+      sched: Debug nested sleeps
+      sched: Exclude cond_resched() from nested sleep test
+
+Pintu Kumar (4):
+      mm/vmalloc.c: replace printk with pr_warn
+      mm/vmscan.c: replace printk with pr_err
+      mm: cma: split cma-reserved in dmesg log
+      fs: proc: include cma info in proc/meminfo
+
+Pranith Kumar (1):
+      slab: replace smp_read_barrier_depends() with lockless_dereference()
+
+Prarit Bhargava (1):
+      kernel: add panic_on_warn
+
+Rickard Strandqvist (1):
+      mm/memcontrol.c: remove unused mem_cgroup_lru_names_not_uptodate()
+
+Roman Pen (1):
+      fs/mpage.c: forgotten WRITE_SYNC in case of data integrity write
+
+Sasha Levin (1):
+      mm, hugetlb: correct bit shift in hstate_sizelog()
+
+SeongJae Park (1):
+      cgroups: Documentation: fix trivial typos and wrong paragraph numberings
+
+Sergey Senozhatsky (1):
+      zsmalloc: fix zs_init cpu notifier error handling
+
+Sougata Santra (1):
+      hfsplus: fix longname handling
+
+Tejun Heo (7):
+      cgroup: separate out cgroup_calc_child_subsys_mask() from cgroup_refresh_child_subsys_mask()
+      cgroup: restructure child_subsys_mask handling in cgroup_subtree_control_write()
+      cgroup: fix the async css offline wait logic in cgroup_subtree_control_write()
+      cgroup: add cgroup_subsys->css_released()
+      cgroup: add cgroup_subsys->css_e_css_changed()
+      cgroup: implement cgroup_get_e_css()
+      mm: move swp_entry_t definition to include/linux/mm_types.h
+
+Thierry Reding (1):
+      mm/cma: make kmemleak ignore CMA regions
+
+Tony Luck (1):
+      mm/memblock.c: refactor functions to set/clear MEMBLOCK_HOTPLUG
+
+Vishnu Pratap Singh (1):
+      lib/show_mem.c: adds cma reserved information
+
+Vladimir Davydov (16):
+      cpuset: convert callback_mutex to a spinlock
+      cpuset: simplify cpuset_node_allowed API
+      slab: print slabinfo header in seq show
+      memcg: simplify unreclaimable groups handling in soft limit reclaim
+      memcg: remove activate_kmem_mutex
+      memcg: remove mem_cgroup_reclaimable check from soft reclaim
+      memcg: use generic slab iterators for showing slabinfo
+      memcg: __mem_cgroup_free: remove stale disarm_static_keys comment
+      memcg: don't check mm in __memcg_kmem_{get_cache,newpage_charge}
+      memcg: do not abuse memcg_kmem_skip_account
+      memcg: zap kmem_account_flags
+      memcg: only check memcg_kmem_skip_account in __memcg_kmem_get_cache
+      memcg: turn memcg_kmem_skip_account into a bit field
+      memcg: fix possible use-after-free in memcg_kmem_get_cache()
+      slab: fix cpuset check in fallback_alloc
+      slub: fix cpuset check in get_any_partial
+
+Vlastimil Babka (9):
+      mm: introduce single zone pcplists drain
+      mm, page_isolation: drain single zone pcplists
+      mm, cma: drain single zone pcplists
+      mm, memory_hotplug/failure: drain single zone pcplists
+      mm, compaction: pass classzone_idx and alloc_flags to watermark checking
+      mm, compaction: simplify deferred compaction
+      mm, compaction: defer only on COMPACT_COMPLETE
+      mm, compaction: always update cached scanner positions
+      mm, compaction: more focused lru and pcplists draining
+
+Wei Yuan (1):
+      mm: fix a spelling mistake
+
+Weijie Yang (2):
+      mm: mincore: add hwpoison page handle
+      mm: page_isolation: check pfn validity before access
+
+Yann Droneaud (5):
+      ia64: replace get_unused_fd() with get_unused_fd_flags(0)
+      ppc/cell: replace get_unused_fd() with get_unused_fd_flags(0)
+      binfmt_misc: replace get_unused_fd() with get_unused_fd_flags(0)
+      fs/file.c: replace get_unused_fd() with get_unused_fd_flags(0)
+      include/linux/file.h: remove get_unused_fd() macro
+
+Yu Zhao (1):
+      mm: verify compound order when freeing a page
+
+Zhang Zhen (2):
+      memory-hotplug: remove redundant call of page_to_pfn
+      mm/memcontrol.c: remove the unused arg in __memcg_kmem_get_cache()
+
+Zhihui Zhang (1):
+      mm/mempolicy.c: remove unnecessary is_valid_nodemask()
+
+Zhong Hongbo (1):
+      mm: remove the highmem zones' memmap in the highmem zone
+
+karam.lee (3):
+      zram: remove bio parameter from zram_bvec_rw()
+      zram: change parameter from vaild_io_request()
+      zram: implement rw_page operation of zram
+
+-- 
+Michal Hocko
+SUSE Labs
