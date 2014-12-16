@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750947AbaLPOZl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 09:25:41 -0500
-Received: from relay.parallels.com ([195.214.232.42]:56027 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaLPOZk (ORCPT
+	id S1751090AbaLPOZr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 09:25:47 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47534 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaLPOZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 09:25:40 -0500
-Message-ID: <1418739933.6074.15.camel@tkhai>
-Subject: [PATCH] sched/fair: Make cfs_rq::decay_counter non-atomic
-From: Kirill Tkhai <ktkhai@parallels.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Ben Segall <bsegall@google.com>, Kirill Tkhai <tkhai@yandex.ru>
-Date: Tue, 16 Dec 2014 17:25:33 +0300
-Organization: Parallels
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Tue, 16 Dec 2014 09:25:46 -0500
+Date: Tue, 16 Dec 2014 14:25:42 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jeremiah Mahler <jmmahler@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [BUG, linux-next] spawn PID 1 without CLONE_FS, wireless inop
+Message-ID: <20141216142542.GC22149@ZenIV.linux.org.uk>
+References: <20141216115537.GA1259@hudson.localdomain>
+ <20141216125615.GZ22149@ZenIV.linux.org.uk>
+ <20141216132821.GA22149@ZenIV.linux.org.uk>
+ <20141216140952.GA1224@hudson.localdomain>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.26.172]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216140952.GA1224@hudson.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 16, 2014 at 06:09:52AM -0800, Jeremiah Mahler wrote:
+> >  		ramdisk_execute_command = NULL;
+> >  		prepare_namespace();
+> > +		{
+> > +		/* HACK */
+> > +			struct path old, new;
+> > +			get_fs_root(current->fs, &new);
+> > +			get_fs_root(&init_fs, &old);
+> > +			chroot_fs_refs(&old, &new);
+> > +			path_put(&old);
+> > +			path_put(&new);
+> > +		}
+> >  	}
+> >  
+> >  	/*
+> 
+> I tested the bad commit with your patch applied but it made no
+> difference, the wireless is still down.
 
-We update decay_counter in update_cfs_rq_blocked_load()
-only. This function is always called with rq lock locked,
-so we can kill atomic actions.
+Interesting...  What happens if you move that added piece (i.e. call of
+chroot_fs_refs()) just after that if, instead of the end of the body of
+the if?
 
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
----
- kernel/sched/fair.c  |   11 ++++++-----
- kernel/sched/sched.h |    2 +-
- 2 files changed, 7 insertions(+), 6 deletions(-)
+> Not sure if it helps, but the dmesg is included below.  There are errors
+> about not being able to load the firmware that look interesting.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5f3b5a7..af990c4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2570,7 +2570,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
- static inline u64 __synchronize_entity_decay(struct sched_entity *se)
- {
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
--	u64 decays = atomic64_read(&cfs_rq->decay_counter);
-+	u64 decays = ACCESS_ONCE(cfs_rq->decay_counter);
- 
- 	decays -= se->avg.decay_count;
- 	if (!decays)
-@@ -2767,7 +2767,8 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 	if (decays) {
- 		cfs_rq->blocked_load_avg = decay_load(cfs_rq->blocked_load_avg,
- 						      decays);
--		atomic64_add(decays, &cfs_rq->decay_counter);
-+		lockdep_assert_held(&rq_of(cfs_rq)->lock);
-+		cfs_rq->decay_counter += decays;
- 		cfs_rq->last_decay = now;
- 	}
- 
-@@ -2837,7 +2838,7 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
- 	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
- 	if (sleep) {
- 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
--		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-+		se->avg.decay_count = ACCESS_ONCE(cfs_rq->decay_counter);
- 	} /* migrations, e.g. sleep=0 leave decay_count == 0 */
- }
- 
-@@ -7876,7 +7877,7 @@ void init_cfs_rq(struct cfs_rq *cfs_rq)
- 	cfs_rq->min_vruntime_copy = cfs_rq->min_vruntime;
- #endif
- #ifdef CONFIG_SMP
--	atomic64_set(&cfs_rq->decay_counter, 1);
-+	cfs_rq->decay_counter = 1;
- 	atomic_long_set(&cfs_rq->removed_load, 0);
- #endif
- }
-@@ -7928,7 +7929,7 @@ static void task_move_group_fair(struct task_struct *p, int queued)
- 		 * contribution, but we must synchronize for ongoing future
- 		 * decay.
- 		 */
--		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
-+		se->avg.decay_count = ACCESS_ONCE(cfs_rq->decay_counter);
- 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
- #endif
- 	}
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 9a2a45c..672f120 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -364,7 +364,7 @@ struct cfs_rq {
- 	 * the FAIR_GROUP_SCHED case).
- 	 */
- 	unsigned long runnable_load_avg, blocked_load_avg;
--	atomic64_t decay_counter;
-+	u64 decay_counter;
- 	u64 last_decay;
- 	atomic_long_t removed_load;
- 
-
-
-
+Errors about not being able to load the firmware clearly indicate that we
+have an attempt to load it (from a kernel thread of some sort, e.g.
+workqueue worker) getting failing with ENOENT.  So we have init_fs stuck
+behind, presumably still on initramfs under the overmounting rootfs.
