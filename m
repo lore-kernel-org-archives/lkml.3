@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaLPVhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 16:37:00 -0500
-Received: from www.sr71.net ([198.145.64.142]:33570 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750950AbaLPVg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 16:36:59 -0500
-Message-ID: <5490A5F8.6050504@sr71.net>
-Date: Tue, 16 Dec 2014 13:36:56 -0800
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Simek <monstr@monstr.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: post-3.18 performance regression in TLB flushing code
-Content-Type: multipart/mixed;
- boundary="------------020303010007070204050006"
+	id S1751452AbaLPVp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 16:45:57 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:53705 "EHLO
+	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751012AbaLPVpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 16:45:54 -0500
+From: Stefan Agner <stefan@agner.ch>
+To: tglx@linutronix.de, jason@lakedaemon.net, marc.zyngier@arm.com
+Cc: u.kleine-koenig@pengutronix.de, shawn.guo@linaro.org,
+        kernel@pengutronix.de, arnd@arndb.de, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        stefan@agner.ch
+Subject: [PATCH v3 0/3] irqchip: vf610-mscm: add support for MSCM interrupt router
+Date: Tue, 16 Dec 2014 22:45:44 +0100
+Message-Id: <1418766347-6225-1-git-send-email-stefan@agner.ch>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020303010007070204050006
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Splitted out version of the MSCM driver. My first driver based on the
+routeable domain support and was part of the Vybrid Cortex-M4 support
+patchset.
 
-I'm running the 'brk1' test from will-it-scale:
+So far the MSCM interrupt router was initialized by the boot loader
+and configured all interrupts for the Cortex-A5 CPU. There are two
+use cases where a proper driver is necessary:
+- To run Linux on the Cortex-M4. When the kernel is running on the
+  non-preconfigured CPU, the interrupt router need to be configured
+  properly.
+- To support deeper sleep modes: LPSTOP clears the interrupt router
+  configuration, hence a driver needs to restore the configuration
+  on resume.
+I created a seperate patchset for that driver which hopefully makes
+it easier to get it into mergeable state.
 
-> https://github.com/antonblanchard/will-it-scale/blob/master/tests/brk1.c
+The patchset is based on the master branch of Linus as of today.
 
-on a 8-socket/160-thread system.  It's seeing about a 6% drop in
-performance (263M -> 247M ops/sec at 80-threads) from this commit:
+Since I identified some registers likely to be used by other drivers
+(e.g. CPU ID or the CPU Generate Interrupt Register) I also added
+the "syscon" compatible string to make the registers available for
+other drivers in case needed.
 
-	commit fb7332a9fedfd62b1ba6530c86f39f0fa38afd49
-	Author: Will Deacon <will.deacon@arm.com>
-	Date:   Wed Oct 29 10:03:09 2014 +0000
+Changes since v2
+- Use two cell layout for MSCM interrupt router
+- Move peripheral interrupt properties to base device tree vfxxx.dtsi
+- Use generic two cell xlate (irq_domain_xlate_twocell)
+- Add syscon to compatible string
+- Remove some line breaks for better readability
 
-	 mmu_gather: move minimal range calculations into generic code
+Changes since v1 (part of Vybrid Cortex-M4 support)
+- Rewrite with irqdomain hierarchy
+- Implemented as proper irqchip and move to driver/irqchip/
+- Doesn't work on Cortex-M4 anymore (NVIC as parent is not yet
+  implemented)
 
-tlb_finish_mmu() goes up about 9x in the profiles (~0.4%->3.6%) and
-tlb_flush_mmu_free() takes about 3.1% of CPU time with the patch
-applied, but does not show up at all on the commit before.
+Stefan Agner (3):
+  irqchip: vf610-mscm: add support for MSCM interrupt router
+  irqchip: vf610-mscm: dt-bindings: add MSCM bindings
+  ARM: dts: vf610: add Miscellaneous System Control Module (MSCM)
 
-This isn't a major regression, but it is rather unfortunate for a patch
-that is apparently a code cleanup.  It also _looks_ to show up even when
-things are single-threaded, although I haven't looked at it in detail.
+ .../bindings/arm/freescale/fsl,vf610-mscm.txt      |  19 +++
+ arch/arm/boot/dts/vf500.dtsi                       | 128 +-------------
+ arch/arm/boot/dts/vfxxx.dtsi                       |  42 +++++
+ arch/arm/mach-imx/Kconfig                          |   1 +
+ drivers/irqchip/Kconfig                            |  11 ++
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-vf610-mscm.c                   | 186 +++++++++++++++++++++
+ 7 files changed, 264 insertions(+), 124 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/freescale/fsl,vf610-mscm.txt
+ create mode 100644 drivers/irqchip/irq-vf610-mscm.c
 
-I suspect the tlb->need_flush logic was serving some role that the
-modified code isn't capturing like in this hunk:
+-- 
+2.1.3
 
->  void tlb_flush_mmu(struct mmu_gather *tlb)
->  {
-> -       if (!tlb->need_flush)
-> -               return;
->         tlb_flush_mmu_tlbonly(tlb);
->         tlb_flush_mmu_free(tlb);
->  }
-
-tlb_flush_mmu_tlbonly() has tlb->end check (which replaces the
-->need_flush logic), but tlb_flush_mmu_free() does not.
-
-If we add a !tlb->end (patch attached) to tlb_flush_mmu(), that gets us
-back up to ~258M ops/sec, but that's still ~2% down from where we started.
-
---------------020303010007070204050006
-Content-Type: text/x-patch;
- name="fix-old-need_flush-logic.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="fix-old-need_flush-logic.patch"
-
-
-
----
-
- b/mm/memory.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff -puN mm/memory.c~fix-old-need_flush-logic mm/memory.c
---- a/mm/memory.c~fix-old-need_flush-logic	2014-12-16 13:24:27.338557014 -0800
-+++ b/mm/memory.c	2014-12-16 13:24:50.412598019 -0800
-@@ -258,6 +258,9 @@ static void tlb_flush_mmu_free(struct mm
- 
- void tlb_flush_mmu(struct mmu_gather *tlb)
- {
-+	if (!tlb->end)
-+		return;
-+
- 	tlb_flush_mmu_tlbonly(tlb);
- 	tlb_flush_mmu_free(tlb);
- }
-_
-
---------------020303010007070204050006--
