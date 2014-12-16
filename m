@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaLPQ7B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:59:01 -0500
-Received: from mail.kernel.org ([198.145.19.201]:47126 "EHLO mail.kernel.org"
+	id S1752271AbaLPQ7K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:59:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:47194 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576AbaLPQ66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:58:58 -0500
+	id S1752250AbaLPQ7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:59:07 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/18] tools: Adopt roundup_pow_of_two
-Date: Tue, 16 Dec 2014 13:57:18 -0300
-Message-Id: <1418749040-31807-17-git-send-email-acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Mitchell Krome <mitchellkrome@gmail.com>,
+        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 18/18] perf symbols: Fix use after free in filename__read_build_id
+Date: Tue, 16 Dec 2014 13:57:20 -0300
+Message-Id: <1418749040-31807-19-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1418749040-31807-1-git-send-email-acme@kernel.org>
 References: <1418749040-31807-1-git-send-email-acme@kernel.org>
@@ -26,71 +23,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Mitchell Krome <mitchellkrome@gmail.com>
 
-To replace equivalent code used in the mmap_pages command line
-parameter handling in tools/perf.
+In filename__read_build_id, phdr points to memory in buf, which gets realloced
+before a call to fseek that uses phdr->p_offset. This change stores the value
+of p_offset before buf is realloced, so the fseek can use the value safely.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Mitchell Krome <mitchellkrome@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-i44zs02xt4zexfxywpklo7km@git.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20141216021612.GA7199@mitchell
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/linux/log2.h | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ tools/perf/util/symbol-minimal.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/tools/include/linux/log2.h b/tools/include/linux/log2.h
-index 990b138362d6..41446668ccce 100644
---- a/tools/include/linux/log2.h
-+++ b/tools/include/linux/log2.h
-@@ -48,6 +48,15 @@ bool is_power_of_2(unsigned long n)
- }
+diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
+index fa585c63f56a..d7efb03b3f9a 100644
+--- a/tools/perf/util/symbol-minimal.c
++++ b/tools/perf/util/symbol-minimal.c
+@@ -129,6 +129,7 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
  
- /*
-+ * round up to nearest power of two
-+ */
-+static inline __attribute__((const))
-+unsigned long __roundup_pow_of_two(unsigned long n)
-+{
-+	return 1UL << fls_long(n - 1);
-+}
-+
-+/*
-  * round down to nearest power of two
-  */
- static inline __attribute__((const))
-@@ -141,6 +150,22 @@ unsigned long __rounddown_pow_of_two(unsigned long n)
- 	__ilog2_u64(n)				\
-  )
+ 		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
+ 			void *tmp;
++			long offset;
  
-+/**
-+ * roundup_pow_of_two - round the given value up to nearest power of two
-+ * @n - parameter
-+ *
-+ * round the given value up to the nearest power of two
-+ * - the result is undefined when n == 0
-+ * - this can be used to initialise global variables from constant data
-+ */
-+#define roundup_pow_of_two(n)			\
-+(						\
-+	__builtin_constant_p(n) ? (		\
-+		(n == 1) ? 1 :			\
-+		(1UL << (ilog2((n) - 1) + 1))	\
-+				   ) :		\
-+	__roundup_pow_of_two(n)			\
-+ )
+ 			if (need_swap) {
+ 				phdr->p_type = bswap_32(phdr->p_type);
+@@ -140,12 +141,13 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
+ 				continue;
  
- /**
-  * rounddown_pow_of_two - round the given value down to nearest power of two
+ 			buf_size = phdr->p_filesz;
++			offset = phdr->p_offset;
+ 			tmp = realloc(buf, buf_size);
+ 			if (tmp == NULL)
+ 				goto out_free;
+ 
+ 			buf = tmp;
+-			fseek(fp, phdr->p_offset, SEEK_SET);
++			fseek(fp, offset, SEEK_SET);
+ 			if (fread(buf, buf_size, 1, fp) != 1)
+ 				goto out_free;
+ 
+@@ -178,6 +180,7 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
+ 
+ 		for (i = 0, phdr = buf; i < ehdr.e_phnum; i++, phdr++) {
+ 			void *tmp;
++			long offset;
+ 
+ 			if (need_swap) {
+ 				phdr->p_type = bswap_32(phdr->p_type);
+@@ -189,12 +192,13 @@ int filename__read_build_id(const char *filename, void *bf, size_t size)
+ 				continue;
+ 
+ 			buf_size = phdr->p_filesz;
++			offset = phdr->p_offset;
+ 			tmp = realloc(buf, buf_size);
+ 			if (tmp == NULL)
+ 				goto out_free;
+ 
+ 			buf = tmp;
+-			fseek(fp, phdr->p_offset, SEEK_SET);
++			fseek(fp, offset, SEEK_SET);
+ 			if (fread(buf, buf_size, 1, fp) != 1)
+ 				goto out_free;
+ 
 -- 
 1.9.3
 
