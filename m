@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391AbaLPFme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 00:42:34 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:42281 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895AbaLPFmd (ORCPT
+	id S1751409AbaLPFnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 00:43:14 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:37741 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaLPFnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 00:42:33 -0500
-From: Chris Rorvick <chris@rorvick.com>
-To: Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Cc: Chris Rorvick <chris@rorvick.com>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Greg Donald <gdonald@gmail.com>,
-        "John L. Hammond" <john.hammond@intel.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
-        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: staging: lustre: Use mult if units not specified
-Date: Mon, 15 Dec 2014 23:41:49 -0600
-Message-Id: <1418708509-18196-1-git-send-email-chris@rorvick.com>
-X-Mailer: git-send-email 2.1.0
+	Tue, 16 Dec 2014 00:43:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpon_z5duigPptOpT1wrLkWLgDqGQq8+1J7oofujy7Q4MtA@mail.gmail.com>
+References: <20141216001058.GA31286@dtor-ws>
+	<CAKohpo=mcG99N5q_CCua8Hdydo=ydHKD-CiTJO9SsAhLvkTJHw@mail.gmail.com>
+	<CAE_wzQ_Lz7pv1io6UMAXjesVeurbC=as2BuxBrA+XXkh5b+AWA@mail.gmail.com>
+	<CAKohpon_z5duigPptOpT1wrLkWLgDqGQq8+1J7oofujy7Q4MtA@mail.gmail.com>
+Date: Mon, 15 Dec 2014 21:43:11 -0800
+Message-ID: <CAE_wzQ8OmWxtZcb5aD8TKkfthkR=N6oYF4a-9fZXcqTyTR=L-w@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq-dt: defer probing if OPP table is not ready
+From: Dmitry Torokhov <dtor@chromium.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Dmitry Torokhov <dtor@chromium.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Stefan Wahren <stefan.wahren@i2se.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Units can be passed to lprocfs_write_frac_u64_helper() via a suffix
-(e.g., "...K", "...M", etc.) tacked onto the value.  A comment states
-that "specified units override the multiplier," though the multiplier is
-overridden regardless.  Update the conditional logic so that it only
-applies when units are specified.
+On Mon, Dec 15, 2014 at 9:38 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 16 December 2014 at 11:02, Dmitry Torokhov <dtor@chromium.org> wrote:
+>> Yes we will. Which simply means that this WARN is stupid. We also will
+>> hit it if there is no opp table and the allocation below fails; or if
+>> it succeeds then dev_pm_opp_init_cpufreq_table() will fail and we'll
+>> hit this code path again.
+>>
+>> We should either drop that WARN() or handle -ENODEV there properly.
+>
+> Yeah, we should drop it. Its just too hard for such cases. You will take care
+> of that in your series?
+>
 
-Signed-off-by: Chris Rorvick <chris@rorvick.com>
----
- drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Yes, I'll address other comments and resubmit.
 
-diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-index 61e04af..92ed0a0 100644
---- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
-@@ -1910,7 +1910,7 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
- 		units <<= 10;
- 	}
- 	/* Specified units override the multiplier */
--	if (units)
-+	if (units > 1)
- 		mult = mult < 0 ? -units : units;
- 
- 	frac *= mult;
+> For your patch:
+>
+> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+
+Thanks!
+
 -- 
-2.1.0
-
+Dmitry
