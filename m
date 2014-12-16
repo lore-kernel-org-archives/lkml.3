@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750981AbaLPJ6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 04:58:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39666 "EHLO mx1.redhat.com"
+	id S1751129AbaLPJ6q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 04:58:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46668 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750809AbaLPJ6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 04:58:32 -0500
-Message-ID: <549001F6.5080202@redhat.com>
-Date: Tue, 16 Dec 2014 10:57:10 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?RGF2aWQgTGFuemVuZMO2cmZlcg==?= 
-	<david.lanzendoerfer@o2s.ch>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-mmc@vger.kernel.org,
-        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
-        Peter Griffin <peter.griffin@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
-        =?UTF-8?B?5p2O5oOz?= <lixiang@allwinnertech.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] mmc: sunxi: Reset behavior fix
-References: <20141216003412.15488.54812.stgit@dizzy-6.o2s.ch> <20141216003756.15488.34861.stgit@dizzy-6.o2s.ch>
-In-Reply-To: <20141216003756.15488.34861.stgit@dizzy-6.o2s.ch>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1750935AbaLPJ6n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 04:58:43 -0500
+From: Juergen Gross <jgross@suse.com>
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, akataria@vmware.com,
+        jongman.heo@samsung.com
+Cc: Juergen Gross <jgross@suse.com>
+Subject: [PATCH] x86: don't rely on VMWare emulating PAT MSR correctly
+Date: Tue, 16 Dec 2014 10:58:34 +0100
+Message-Id: <1418723914-9736-1-git-send-email-jgross@suse.com>
+X-Mailer: git-send-email 2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+VMWare seems not to emulate the PAT MSR correctly: reaeding
+MSR_IA32_CR_PAT returns 0 even after writing another value to it.
 
-On 16-12-14 01:37, David Lanzendörfer wrote:
-> When there is only one DES available the DMA performs a FIFO reset and waits until the reinitialization has been completed.
-> Disabling the SDXC_IDMAC_DES0_DIC bit prevents the DMA from sending an interrupt after it has finished this reinitialization.
->
-> The flags SDXC_IDMAC_DES0_FD and SDXC_IDMAC_DES0_LD are both required in order to use the controller with more than one DES.
->
-> Signed-off-by: David Lanzendörfer <david.lanzendoerfer@o2s.ch>
-> Reported-by: 李想 <lixiang@allwinnertech.com>
-> ---
->   drivers/mmc/host/sunxi-mmc.c |   12 +++++++++++-
->   1 file changed, 11 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/sunxi-mmc.c b/drivers/mmc/host/sunxi-mmc.c
-> index 50bd3d2..5331c88 100644
-> --- a/drivers/mmc/host/sunxi-mmc.c
-> +++ b/drivers/mmc/host/sunxi-mmc.c
-> @@ -310,7 +310,17 @@ static void sunxi_mmc_init_idma_des(struct sunxi_mmc_host *host,
->   	}
->
->   	pdes[0].config |= SDXC_IDMAC_DES0_FD;
-> -	pdes[i - 1].config = SDXC_IDMAC_DES0_OWN | SDXC_IDMAC_DES0_LD;
-> +
-> +	/*
-> +	 * When there is only one DES available the DMA performs a FIFO reset and waits
-> +	 * until the reinitialization has been completed.
-> +	 * Disabling the SDXC_IDMAC_DES0_DIC bit prevents the DMA from sending an interrupt
-> +	 * after it has finished this reinitialization.
-> +	 */
-> +	pdes[i - 1].config = SDXC_IDMAC_DES0_OWN;
-> +	pdes[i - 1].config |= SDXC_IDMAC_DES0_FD;
-> +	pdes[i - 1].config |= SDXC_IDMAC_DES0_LD;
-> +	pdes[i - 1].config &= ~SDXC_IDMAC_DES0_DIC;
->
->   	/*
->   	 * Avoid the io-store starting the idmac hitting io-mem before the
+Detect this bug and don't use the read value if it is 0.
 
-This is wrong. For one you are starting with an assignment, so you could just as well
-set all the flags you want with a single line / assignment. Besides that you're setting
-the FD flag, which should only be set for the first descriptor of a transfer, so for
-multi descriptor transfers this is wrong.
+Commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2 ("x86: Enable PAT to
+use cache mode translation tables") triggers this VMWare bug when the
+kernel is booted as a VMWare guest.
 
-Please see the patch which I send you which gets this right.
+Reported-by: Jongman Heo <jongman.heo@samsung.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Tested-by: Jongman Heo <jongman.heo@samsung.com>
+---
+ arch/x86/mm/pat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-Regards,
-
-Hans
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index edf299c..7ac6869 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -234,8 +234,13 @@ void pat_init(void)
+ 	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+ 
+ 	/* Boot CPU check */
+-	if (!boot_pat_state)
++	if (!boot_pat_state) {
+ 		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
++		if (!boot_pat_state) {
++			pat_disable("PAT read returns always zero, disabled.");
++			return;
++		}
++	}
+ 
+ 	wrmsrl(MSR_IA32_CR_PAT, pat);
+ 
+-- 
+2.1.2
 
