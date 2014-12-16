@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaLPBr6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Dec 2014 20:47:58 -0500
-Received: from ozlabs.org ([103.22.144.67]:41251 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074AbaLPBr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Dec 2014 20:47:57 -0500
-Date: Tue, 16 Dec 2014 12:47:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
-        Haggai Eran <haggaie@mellanox.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the infiniband tree
-Message-ID: <20141216124750.153e3fdd@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751326AbaLPBsY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Dec 2014 20:48:24 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:37495 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaLPBsW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Dec 2014 20:48:22 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/UQQO4pX7abOKhts/BrsgpgH"; protocol="application/pgp-signature"
+In-Reply-To: <CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+References: <alpine.DEB.2.00.1412150715300.27943@skynet.skynet.ie>
+	<CA+55aFzBS4p6NZcaggPmgOuRqnny4q+FcH6RM-5swJCw205JgA@mail.gmail.com>
+	<CAPM=9twW6f2OoW4h8FAvKc+5f3MSTf1jnP+NCrnrQuWc_33tRA@mail.gmail.com>
+Date: Mon, 15 Dec 2014 20:48:22 -0500
+Message-ID: <CAF6AEGvib-pnowM1pbTNt9Y-ZDuqAxrbm+aZS9+HWvWskEqpxA@mail.gmail.com>
+Subject: Re: [git pull] drm for 3.19-rc1
+From: Rob Clark <robdclark@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Daniel Vetter <daniel.vetter@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/UQQO4pX7abOKhts/BrsgpgH
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 15, 2014 at 7:48 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On 16 December 2014 at 10:35, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Sun, Dec 14, 2014 at 11:17 PM, Dave Airlie <airlied@linux.ie> wrote:
+>>>
+>>> i915:
+>>>         Initial Skylake (SKL) support
+>>>         gen3/4 reset work
+>>>         start of dri1/ums removal
+>>>         infoframe tracking
+>>>         fixes for lots of things.
+>>
+>> So I'm not sure how happy I am about this. It seems to work, but on
+>> the very first boot I get this:
+>>
+>>   ------------[ cut here ]------------
+>>   WARNING: CPU: 1 PID: 1292 at
+>> drivers/gpu/drm/i915/i915_gem_execbuffer.c:125
+>> eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]()
+>>   GPU use of dumb buffer is illegal.
+>>   Modules linked in: ip6t_rpfilter bnep ip6t_REJECT nf_reject_ipv6
+>> bluetooth nf_conntrack_ipv6 ...
+>>    video
+>>   CPU: 1 PID: 1292 Comm: Xorg Not tainted 3.18.0-09423-g988adfdffdd4 #1
+>>   Hardware name:                  /DH87RL, BIOS
+>> RLH8710H.86A.0327.2014.0924.1645 09/24/2014
+>>   Call Trace:
+>>     dump_stack+0x45/0x57
+>>     warn_slowpath_common+0x80/0xc0
+>>     warn_slowpath_fmt+0x41/0x50
+>>     ? sg_kfree+0x30/0x30
+>>     eb_lookup_vmas.isra.18+0x333/0x3d0 [i915]
+>>     i915_gem_do_execbuffer.isra.25+0x50d/0xd80 [i915]
+>>     ? unlock_page+0x6d/0x80
+>>     i915_gem_execbuffer2+0xb1/0x2c0 [i915]
+>>     drm_ioctl+0x19c/0x630 [drm]
+>>     do_vfs_ioctl+0x2e0/0x4e0
+>>     ? file_has_perm+0x87/0xa0
+>>     ? __audit_syscall_entry+0xac/0x100
+>>     SyS_ioctl+0x81/0xa0
+>>     ? do_page_fault+0xc/0x10
+>>     system_call_fastpath+0x12/0x17
+>>   ---[ end trace cb3c78163212ca1d ]---
+>>
+>> apparently Introduced by commit 355a70183848 ("drm/gem: Warn on
+>> illegal use of the dumb buffer interface v2")
+>>
+>> The commit says "the next step is to fail".
+>>
+>> And I want to make it painfully clear that if somebody breaks existing
+>> working setups, they don't get to work on the kernel.
+>>
+>> So get rid of the warning. And get rid of the notion that you can just
+>> fail. You can try to fix Xorg, and then come back to this - in a
+>> couple of years - when it no longer happens.
+>>
+>
+> I'd be inclined to just revert this for now, it is annoying we let
+> userspace away with this, but we probably need to find a better
+> way to enforce it, since the cat is out of the bag.
 
-Hi all,
+Replace w/ DRM_ERROR?  (perhaps ratelimited..)?
 
-After merging the infiniband tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+It's not a driver error, so much as a warning for userspace that it is
+doing something that is not expected to work on all hw / generations,
+and it appears to be finding more or less what it was intended to
+find, although I'm not sure the stack trace serves much purpose.
 
-drivers/infiniband/hw/mlx5/main.c: In function 'mlx5_ib_query_device':
-drivers/infiniband/hw/mlx5/main.c:248:34: error: 'MLX5_DEV_CAP_FLAG_ON_DMND=
-_PG' undeclared (first use in this function)
-  if (dev->mdev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
-                                  ^
-drivers/net/ethernet/mellanox/mlx5/core/fw.c: In function 'mlx5_query_odp_c=
-aps':
-drivers/net/ethernet/mellanox/mlx5/core/fw.c:79:30: error: 'MLX5_DEV_CAP_FL=
-AG_ON_DMND_PG' undeclared (first use in this function)
-  if (!(dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG))
-                              ^
-drivers/net/ethernet/mellanox/mlx5/core/eq.c: In function 'mlx5_start_eqs':
-drivers/net/ethernet/mellanox/mlx5/core/eq.c:459:28: error: 'MLX5_DEV_CAP_F=
-LAG_ON_DMND_PG' undeclared (first use in this function)
-  if (dev->caps.gen.flags & MLX5_DEV_CAP_FLAG_ON_DMND_PG)
-                            ^
+BR,
+-R
 
-Really?  Code added half way though the merge window not even build
-tested?
 
-I have used the infiniband tree from next-20141215 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/UQQO4pX7abOKhts/BrsgpgH
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUj49KAAoJEMDTa8Ir7ZwV16IP/15ZzM3O90EgQsDh2NCZ9HyK
-SuPkUwMoLbI+/a4TjbvxddCBtxb6WXLnxyin8uUT+92ZtH5wq/bjqL2OOeNutL1s
-x0uVOfWBu0L6FLvZlE/sdTNW5w1yQbDX6jRrSrupjGVffCYbYU+vC4p9ylceMpoF
-TeQczsZFZp8FDiKXa4nSOV4Fp2zLvZtk4G74kPyFVf6AVl/l4+Uc+UmhzjbQKk6s
-h4+RfqVo76xU5qRnWEogJiJnLV1zlgI3HN+WOZUKTDa3O4grIJMvax2odYGNPUF9
-HrQsRqyLsGcFXjH+thTEArcEpYJ5Bhq7plvK8Gv7d1FfIzxgoNqCHKVnTaWdXr2s
-yENlVsWca4pJyN9ioCvzjDRz3M4v2OtfErEc2/cC30akOGKHO8HbDWkKrGvfw9Gd
-McWGPFS11oCfYoKH5KIRBvexVJvnyLlFuxYwRCLUCN0QmJHqlJoFTy4gbnxtxukw
-qV7ncDpdTaR5eJRtU0Rz9BL3ZTFO7HDTgyE26GwNrFWThMWivstLtMV9n1Ip/D/2
-yWmq12ke48aQ27IiE68sPgHzS0yI91q7KebKd/5agxYrJaAv2QmrHMJ2AvwZRjkf
-ezvN3bnRUzeLIydVa2gRdk109ozVoGbl5ziXiYvjAnmbgYVfSIyv43neeuGNskhc
-Vv07z9NgxQeLshEZh9tf
-=HGnS
------END PGP SIGNATURE-----
-
---Sig_/UQQO4pX7abOKhts/BrsgpgH--
+> Dave.
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
