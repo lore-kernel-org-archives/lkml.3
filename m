@@ -1,106 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351AbaLPQo7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 11:44:59 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49685 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaLPQo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 11:44:58 -0500
-Date: Tue, 16 Dec 2014 08:44:44 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Athira Lekshmi <andnlnbn18@gmail.com>
-Cc: wim@iguana.be, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/8] drivers: watchdog: Fixed missing blank line warning
-Message-ID: <20141216164444.GC26966@roeck-us.net>
-References: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
+	id S1751499AbaLPQpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 11:45:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32960 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942AbaLPQpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 11:45:38 -0500
+Date: Tue, 16 Dec 2014 18:45:28 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH 00/18] uaccess: fix sparse warning on get_user for
+ bitwise types
+Message-ID: <20141216164527.GA21863@redhat.com>
+References: <1418575877-21488-1-git-send-email-mst@redhat.com>
+ <CAFiDJ5_fGWx2E1jvU+k0Tv_esRpWmC-p+kq7Y_VOr5bx2ZUFzg@mail.gmail.com>
+ <20141215101703.GA26156@redhat.com>
+ <CAFiDJ5_BSMXBsv0gmzogyJi1x9-4vAhPpZBwn-_CHYDs0pOfvA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418747129-3766-1-git-send-email-andnlnbn18@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A010203.54906189.0852,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <CAFiDJ5_BSMXBsv0gmzogyJi1x9-4vAhPpZBwn-_CHYDs0pOfvA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 09:55:22PM +0530, Athira Lekshmi wrote:
-> Added a new line after declarations to remove the warning:
-
-'Add', per SubmittingPatches, Chapter 2.
-
-You might also want to add that this is a checkpatch warning
-(not a compiler warning).
-
-> 'Missing blank line after declarations'
+On Tue, Dec 16, 2014 at 02:06:50PM +0800, Ley Foon Tan wrote:
+> On Mon, Dec 15, 2014 at 6:17 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > Thanks for the heads up.
+> > No - it will probably need a similar fix for __get_user and get_user.
+> > It's just a parse warning so it's not a blocker.
+> > Can you fix it yourself or prefer me to?
+> Do you have newer revision of this series?
+> If yes, then it is great if you can include it. Otherwise, I can fix it.
 > 
-
-"drivers" in the subject line of your patches is irrelevant. 
-On the other side, the actual drivers you are touching are missing,
-resulting in eight identical subject lines. That is not really helpful.
-
-Use something like "watchdog: wdt_pci: ..." to give the maintainer
-a hint about the modified driver.
-
-Guenter
-
-> Signed-off-by: Athira Lekshmi <andnlnbn18@gmail.com>
-> ---
->  drivers/watchdog/wdt_pci.c |    2 ++
->  1 file changed, 2 insertions(+)
+> Regards
 > 
-> diff --git a/drivers/watchdog/wdt_pci.c b/drivers/watchdog/wdt_pci.c
-> index 48b2c05..b84a180 100644
-> --- a/drivers/watchdog/wdt_pci.c
-> +++ b/drivers/watchdog/wdt_pci.c
-> @@ -279,6 +279,7 @@ static int wdtpci_get_temperature(int *temperature)
->  {
->  	unsigned short c;
->  	unsigned long flags;
-> +
->  	spin_lock_irqsave(&wdtpci_lock, flags);
->  	c = inb(WDT_RT);
->  	udelay(8);
-> @@ -366,6 +367,7 @@ static ssize_t wdtpci_write(struct file *file, const char __user *buf,
->  
->  			for (i = 0; i != count; i++) {
->  				char c;
-> +
->  				if (get_user(c, buf + i))
->  					return -EFAULT;
->  				if (c == 'V')
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Ley Foon
+
+Arnd said he'll merge whatever is not fixed in -rc1 through his tree for
+3.20.
+So it's up to you - fix it up in your tree before -rc1 or wait for
+mer to fix it after rc1 and have Arnd merge it for 3.20.
+
+-- 
+MST
