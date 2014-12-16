@@ -1,66 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751127AbaLPLfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 06:35:48 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:42084 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894AbaLPLfr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 06:35:47 -0500
-Date: Tue, 16 Dec 2014 14:35:09 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Chris Rorvick <chris@rorvick.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Fabian Frederick <fabf@skynet.be>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        James Simmons <uja.ornl@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>,
-        Greg Donald <gdonald@gmail.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        "HPDD-discuss@ml01.01.org" <HPDD-discuss@ml01.01.org>,
-        "Hammond, John" <john.hammond@intel.com>
-Subject: Re: [PATCH] drivers: staging: lustre: Use mult if units not specified
-Message-ID: <20141216113509.GI4856@mwanda>
-References: <1418708509-18196-1-git-send-email-chris@rorvick.com>
- <20141216094109.GH4856@mwanda>
- <D0B55F56.D05F1%andreas.dilger@intel.com>
+	id S1751236AbaLPLg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 06:36:59 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:43945 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022AbaLPLg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 06:36:56 -0500
+Message-ID: <549018EC.8020207@ti.com>
+Date: Tue, 16 Dec 2014 17:05:08 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D0B55F56.D05F1%andreas.dilger@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Kristo, Tero" <t-kristo@ti.com>, Nishanth Menon <nm@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca> <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca> <20141214044517.GD24110@csclub.uwaterloo.ca>
+In-Reply-To: <20141214044517.GD24110@csclub.uwaterloo.ca>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 11:14:35AM +0000, Dilger, Andreas wrote:
->
-> Sorry, that isn't right.  Chris' patch is actually doing the right thing
-> to check for units > 1.
+Hi Lennart,
 
-It's not right because it discards the negative.
+On Sunday 14 December 2014 10:15 AM, Lennart Sorensen wrote:
+> On Fri, Dec 12, 2014 at 05:08:56PM -0500, Lennart Sorensen wrote:
+>> Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
+>> crystal is not enabled at power up.  Instead the CPU falls back to using
+>> an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
+>> 20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
+>> but can also be 19.2 or 27MHz which result in much larger drift.
+>>
+>> Since this is used to drive the master counter at 32.768KHz * 375 /
+>> 2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
+>> seconds per day, and more than the 500ppm NTP is able to tolerate.
+>>
+>> Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
+>> is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
+>> by known that the real counter frequency can be determined and used.
+> s/known/knowing/
+> and a comma after that.
+>> The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 75 / 244.
+Is this applicable for OMAP5 also?
+If not can you drop omap5 from $subject?
 
+In order to make the code more simpler, can you use the following logic:
+and add documentation accordingly.
 
->  The proposed change above discards "mult"
-> entirely, which breaks the users of this function that are not in this
-> file (e.g. osc_cached_mb_seq_write() or ll_max_cached_mb_seq_write())
-> that have tunables in units of MB by default, but can also use parameters
-> with units like "4.5G" for convenience.
+diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
+index a3c0133..a80ac2d 100644
+--- a/arch/arm/mach-omap2/control.h
++++ b/arch/arm/mach-omap2/control.h
+@@ -286,6 +286,10 @@
+ #define OMAP5XXX_CONTROL_STATUS                0x134
+ #define OMAP5_DEVICETYPE_MASK          (0x7 << 6)
+ 
++/* DRA7XX CONTROL CORE BOOTSTRAP */
++#define DRA7_CTRL_CORE_BOOTSTRAP	0x6c4
++#define DRA7_SPEEDSELECT_MASK		(0x3 << 8)
++
+ /*
+  * REVISIT: This list of registers is not comprehensive - there are more
+  * that should be added.
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index fb0cb2b..84aadae 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -54,6 +54,7 @@
+ 
+ #include "soc.h"
+ #include "common.h"
++#include "control.h"
+ #include "powerdomain.h"
+ #include "omap-secure.h"
+ 
+@@ -545,6 +546,16 @@ static void __init realtime_counter_init(void)
+ 		break;
+ 	}
+ 
++	if (soc_is_dra7xx()) {
++		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
++		reg = reg & DRA7_SPEEDSELECT_MASK;
++
++		if (reg) {
++			num = 75;
++			den = 244;
++		}
++	}
++
+ 	/* Program numerator and denumerator registers */
+ 	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
+ 			NUMERATOR_DENUMERATOR_MASK;
+-- 
+1.9.1
 
-I think you are confusing lprocfs_write_frac_helper() and
-lprocfs_write_frac_u64_helper().  There is only one caller for this
-function.
-
-! grep lprocfs_write_frac_u64_helper drivers/staging/lustre/ -R | grep -v smatch  | grep -v '\.i:'
-drivers/staging/lustre/lustre/obdclass/lprocfs_status.c:        return lprocfs_write_frac_u64_helper(buffer, count, val, 1);
-drivers/staging/lustre/lustre/obdclass/lprocfs_status.c:int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
-drivers/staging/lustre/lustre/obdclass/lprocfs_status.c:EXPORT_SYMBOL(lprocfs_write_frac_u64_helper);
-drivers/staging/lustre/lustre/include/lprocfs_status.h:extern int lprocfs_write_frac_u64_helper(const char *buffer,
-
-regards,
-dan carpenter
+Thanks and regards,
+Lokesh
+>>
+>> Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+>> ---
+>>  arch/arm/mach-omap2/timer.c |  120 +++++++++++++++++++++++++++++++------------
+>>  1 file changed, 87 insertions(+), 33 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+>> index fb0cb2b..f00e4b4 100644
+>> --- a/arch/arm/mach-omap2/timer.c
+>> +++ b/arch/arm/mach-omap2/timer.c
+>> @@ -497,6 +497,7 @@ static void __init realtime_counter_init(void)
+>>  	static struct clk *sys_clk;
+>>  	unsigned long rate;
+>>  	unsigned int reg, num, den;
+>> +	bool errata_i856_workaround = false;
+>>  
+>>  	base = ioremap(REALTIME_COUNTER_BASE, SZ_32);
+>>  	if (!base) {
+>> @@ -510,39 +511,93 @@ static void __init realtime_counter_init(void)
+>>  		return;
+>>  	}
+>>  
+>> +	if (soc_is_dra7xx()) {
+>> +		#define CTRL_CORE_BOOTSTRAP 0x4A0026C4
+>> +		#define SPEEDSELECT_MASK 0x00000300
+>> +		void __iomem *corebase;
+>> +		corebase = ioremap(CTRL_CORE_BOOTSTRAP, SZ_4);
+>> +		if (!corebase)
+>> +			pr_err("%s: ioremap failed\n", __func__);
+>> +		else {
+>> +			reg = readl_relaxed(corebase) & SPEEDSELECT_MASK;
+>> +			iounmap(corebase);
+>> +			/*
+>> +			 * Errata i856 says the 32.768KHz crystal does
+>> +			 * not start at power on, so the CPU falls back in
+>> +			 * an emulated 32KHz clock instead.  This causes
+>> +			 * the master counter frequency to not be 6.144MHz
+>> +			 * This affects at least the AM572x 1.0 and
+>> +			 * 1.1 revisions.
+>> +			 *
+>> +			 * Of course any board built without a populated
+>> +			 * 32.768KHz crystal would also need this fix
+>> +			 * even if the CPU is fixed later.
+>> +			 *
+>> +			 * If the two speedselect bits are not 0, then the
+>> +			 * 32.768KHz clock driving the course counter that
+> s/course/coarse/
+>> +			 * corrects the fine counter every time it ticks is
+>> +			 * actually rate/610 rather than 32.768KHz and we
+>> +			 * should compensate to avoid the 570ppm (At 20MHz,
+>> +			 * much worse at other rates) too fast system time.
+>> +			 */
+>> +			if (reg) {
+>> +				errata_i856_workaround = true;
+>> +			}
+>> +		}
+>> +	}
+>> +
+>>  	rate = clk_get_rate(sys_clk);
+>> -	/* Numerator/denumerator values refer TRM Realtime Counter section */
+>> -	switch (rate) {
+>> -	case 12000000:
+>> -		num = 64;
+>> -		den = 125;
+>> -		break;
+>> -	case 13000000:
+>> -		num = 768;
+>> -		den = 1625;
+>> -		break;
+>> -	case 19200000:
+>> -		num = 8;
+>> -		den = 25;
+>> -		break;
+>> -	case 20000000:
+>> -		num = 192;
+>> -		den = 625;
+>> -		break;
+>> -	case 26000000:
+>> -		num = 384;
+>> -		den = 1625;
+>> -		break;
+>> -	case 27000000:
+>> -		num = 256;
+>> -		den = 1125;
+>> -		break;
+>> -	case 38400000:
+>> -	default:
+>> -		/* Program it for 38.4 MHz */
+>> -		num = 4;
+>> -		den = 25;
+>> -		break;
+>> +	if (errata_i856_workaround) {
+>> +		/*
+>> +		 * Realtime Counter frequency is not based on a real
+>> +		 * 32.768KHz time source, so calculate the real resulting
+>> +		 * frequency instead.  It is not 6.144MHz in this case.
+>> +		 *
+>> +		 * The frequency is always rate / 610 + 375 / 2 which
+>> +		 * is rate * 244 / 75 and will fit in 32 bit for all rates.
+>> +		 *
+>> +		 * The multiplication has to be first to keep accuracy
+>> +		 * with integer math as high as possible.
+>> +		 */
+>> +		num = 75;
+>> +		den = 244;
+>> +		arch_timer_freq = (rate * num) / den;
+>> +	} else {
+>> +		/* Numerator/denumerator values refer TRM Realtime Counter section */
+>> +		switch (rate) {
+>> +		case 12000000:
+>> +			num = 64;
+>> +			den = 125;
+>> +			break;
+>> +		case 13000000:
+>> +			num = 768;
+>> +			den = 1625;
+>> +			break;
+>> +		case 19200000:
+>> +			num = 8;
+>> +			den = 25;
+>> +			break;
+>> +		case 20000000:
+>> +			num = 192;
+>> +			den = 625;
+>> +			break;
+>> +		case 26000000:
+>> +			num = 384;
+>> +			den = 1625;
+>> +			break;
+>> +		case 27000000:
+>> +			num = 256;
+>> +			den = 1125;
+>> +			break;
+>> +		case 38400000:
+>> +		default:
+>> +			/* Program it for 38.4 MHz */
+>> +			num = 4;
+>> +			den = 25;
+>> +			break;
+>> +		}
+>> +		/* This divides cleanly and fits in 32 bits */
+>> +		arch_timer_freq = (rate / den) * num;
+>>  	}
+>>  
+>>  	/* Program numerator and denumerator registers */
+>> @@ -556,7 +611,6 @@ static void __init realtime_counter_init(void)
+>>  	reg |= den;
+>>  	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
+>>  
+>> -	arch_timer_freq = (rate / den) * num;
+>>  	set_cntfreq();
+>>  
+>>  	iounmap(base);
+>> -- 
+>> 1.7.10.4
+> 
+> Stupid typos.  Will make sure to include in next revision, and maybe
+> I can manage to reword the description a bit to make it flow better or
+> be clearer.
+> 
 
