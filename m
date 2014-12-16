@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaLPUq7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 15:46:59 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:62578 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaLPUq6 (ORCPT
+	id S1751387AbaLPU6x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 15:58:53 -0500
+Received: from smtprelay0046.hostedemail.com ([216.40.44.46]:51418 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750791AbaLPU6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 15:46:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <20141216192803.GC3337@twins.programming.kicks-ass.net>
-References: <CA+55aFw+axXZhez-5x8zWFw1=6OazMbj=va8nt9GZHsrxsKewQ@mail.gmail.com>
-	<CALCETrUp5kCnzFokCKVf3kn7K_d_5YP-phyNfL4rFR0tMZJi2A@mail.gmail.com>
-	<CA+55aFxn_T=UgBUwqkRJvALygrNORaB6ox3nowvHpV6yFBfDoA@mail.gmail.com>
-	<CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212049220.6439@nanos>
-	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
-	<alpine.DEB.2.11.1411212110320.6439@nanos>
-	<CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
-	<alpine.DEB.2.11.1411212207150.6439@nanos>
-	<CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
-	<20141216192803.GC3337@twins.programming.kicks-ass.net>
-Date: Tue, 16 Dec 2014 12:46:57 -0800
-X-Google-Sender-Auth: ATWv5929kN9tTFWlibLcrIwPAME
-Message-ID: <CA+55aFx9oTQHnamJ=QEGOKHe2obQEn2NfNa+hJ_Z-V1FyY7QaQ@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Dec 2014 15:58:52 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:69:355:379:541:967:973:988:989:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2393:2525:2560:2563:2682:2685:2693:2828:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4605:4823:5007:6261:7903:8660:8957:9025:9149:9388:10004:10400:10848:10881:11026:11256:11257:11473:11658:11914:12043:12050:12517:12519:12679:12806:13069:13146:13148:13161:13229:13230:13311:13357:13848:14093:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: burst61_4d3cab418a04d
+X-Filterd-Recvd-Size: 2189
+Message-ID: <1418763529.14140.9.camel@perches.com>
+Subject: newbies CheckpatchTips for multiline statements (Breaking function
+ calls)
+From: Joe Perches <joe@perches.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        kernelnewbies <kernelnewbies@kernelnewbies.org>
+Date: Tue, 16 Dec 2014 12:58:49 -0800
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 11:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> While going through this thread I wondered whatever became of this
-> patch. It seems a shame to forget about it entirely. Maybe just queued
-> for later while hunting wabbits?
+http://kernelnewbies.org/CheckpatchTips
 
-Mel Gorman took it up, cleaned up some stuff, and I think it's in -mm
-or on its way there. I'm assuming it's 3.20 material by now.
+The block about "Breaking function calls" is dubious.
 
-                         Linus
+The majority of code today uses arguments aligned to parenthesis.
+The suggested 1 tab is in fact very infrequently used.
+
+CodingStyle has this as "substantially to the right", not 1 tab.
+
+btw: there's a perferred/preferred tyop too.
+
+------------
+
+Breaking function calls
+
+Sometimes a call to a function has several variables, and you need to
+break the line in the middle of those variables. Look at this example: 
+
+ 
+        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN, GFP_KERNEL, &pdata->urb->transfer_dma);
+
+
+This line is too long, so we want to break it up. By default, vim will
+increase the indentation of the trailing line by one tab: 
+
+        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
+                GFP_KERNEL, &pdata->urb->transfer_dma);
+
+
+This style is fine, and generally perferred. However, some driver
+writers prefer to have the trailing line of a function call line up with
+the starting '('. They use tabs, followed by spaces, to align the
+trailing line: 
+
+ 
+        pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
+                                            GFP_KERNEL,
+                                            &pdata->urb->transfer_dma);
+
+
+Again, the one tab indent style is preferred, but don't change lines
+that use the other style. 
+
+
