@@ -1,146 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaLQOul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:50:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:36045 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaLQOuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 09:50:39 -0500
-Date: Wed, 17 Dec 2014 11:50:35 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Borislav Petkov <bp@suse.de>, David Ahern <dsahern@gmail.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Mitchell Krome <mitchellkrome@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 00/18] perf/core improvements and fixes
-Message-ID: <20141217145035.GE11607@kernel.org>
-References: <1418749040-31807-1-git-send-email-acme@kernel.org>
+	id S1751142AbaLQOxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 09:53:36 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:52042 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaLQOxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 09:53:35 -0500
+Date: Wed, 17 Dec 2014 15:53:32 +0100
+From: Quentin Lambert <lambert.quentin@gmail.com>
+To: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
+        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
+        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
+        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] int to bool conversion
+Message-ID: <20141217145332.GA2762@sloth>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1418749040-31807-1-git-send-email-acme@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 16, 2014 at 01:57:02PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Hi Ingo,
-> 
-> 	Please consider pulling,
-> 
-> - Arnaldo
-> 
-> The following changes since commit 41e950c033b7df997d4b38653efe6554be9b96a7:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2014-12-12 09:09:52 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-core-for-mingo
+This patch converts local variable declared as integer and used as
+boolean into actual booleans. It only patches variables that are not
+returned to limit the scope of the changes.
 
-Ingo,
+This patch was generated with Coccinelle using the semantic patch below.
 
-	Please consider pulling the perf-core-for-mingo-2 signed tag
-instead, it is exactly the same content modulo removal of some
-whitespaces at the end of a few lines in tools/perf/Makefile.perf that
-Jiri found while reading those patches,
 
-Thanks,
+Quentin Lambert (1):
+  [SCSI] mpt2sas: Convert non-returned local variable to boolean when
+    relevant
 
-- Arnaldo
- 
-> for you to fetch changes up to 67195c75a87232f055ff415fc4624ef01f24fc3d:
-> 
->   perf symbols: Fix use after free in filename__read_build_id (2014-12-16 13:38:28 -0300)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> User visible:
-> 
-> - The mmap address range for the ring buffer now is calculated using the
->   contents of /proc/sys/kernel/perf_event_mlock_kb.
-> 
->   This fixes an -EPERM case where 'trace' was trying to use more than what
->   configured on perf_event_mlock_kb. (Arnaldo Carvalho de Melo)
-> 
-> Infrastructure:
-> 
-> - Move bitops definitions so that they match the header file hierarchy
->   in the kernel sources where that code came from. (Arnaldo Carvalho de Melo)
-> 
-> - Adopt round{down,up}_pow_of_two from the kernel and use it instead of
->   equivalent code, so that we reuse more kernel code and make tools/ look
->   more like kernel source code, to encourage further contributions from
->   kernel hackers (Arnaldo Carvalho de Melo)
-> 
-> - Fix use after free in filename__read_build_id (Mitchell Krome)
-> 
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Arnaldo Carvalho de Melo (17):
->       perf evlist: Fixup brown paper bag on "hint" for --mmap-pages cmdline arg
->       perf evlist: Clarify sterror_mmap variable names
->       perf evlist: Improve the strerror_mmap method
->       perf trace: Let the perf_evlist__mmap autosize the number of pages to use
->       perf evlist: Do not use hard coded value for a mmap_pages default
->       tools: Move __ffs implementation to tools/include/asm-generic/bitops/__ffs.h
->       tools: Move code originally from linux/log2.h to tools/include/linux/
->       tools: Move code originally from asm-generic/atomic.h into tools/include/asm-generic/
->       tools: Whitespace prep patches for moving bitops.h
->       tools lib: Move asm-generic/bitops/find.h code to tools/include and tools/lib
->       tools: Introduce asm-generic/bitops.h
->       tools: Move bitops.h from tools/perf/util to tools/
->       tools: Adopt fls_long and deps
->       tools: Adopt rounddown_pow_of_two and deps
->       perf tools: Make the mmap length autotuning more robust
->       tools: Adopt roundup_pow_of_two
->       perf evlist: Use roundup_pow_of_two
-> 
-> Mitchell Krome (1):
->       perf symbols: Fix use after free in filename__read_build_id
-> 
->  tools/include/asm-generic/bitops.h        |  27 +++++
->  tools/include/asm-generic/bitops/__ffs.h  |  43 +++++++
->  tools/include/asm-generic/bitops/__fls.h  |   1 +
->  tools/include/asm-generic/bitops/atomic.h |  22 ++++
->  tools/include/asm-generic/bitops/find.h   |  33 ++++++
->  tools/include/asm-generic/bitops/fls.h    |   1 +
->  tools/include/asm-generic/bitops/fls64.h  |   1 +
->  tools/include/linux/bitops.h              |  53 +++++++++
->  tools/include/linux/log2.h                | 185 ++++++++++++++++++++++++++++++
->  tools/lib/util/find_next_bit.c            |  89 ++++++++++++++
->  tools/perf/MANIFEST                       |  13 ++-
->  tools/perf/Makefile.perf                  |  14 ++-
->  tools/perf/builtin-trace.c                |   2 +-
->  tools/perf/util/evlist.c                  |  46 ++++++--
->  tools/perf/util/include/linux/bitops.h    | 162 --------------------------
->  tools/perf/util/symbol-minimal.c          |   8 +-
->  tools/perf/util/util.h                    |  29 -----
->  17 files changed, 522 insertions(+), 207 deletions(-)
->  create mode 100644 tools/include/asm-generic/bitops.h
->  create mode 100644 tools/include/asm-generic/bitops/__ffs.h
->  create mode 100644 tools/include/asm-generic/bitops/__fls.h
->  create mode 100644 tools/include/asm-generic/bitops/atomic.h
->  create mode 100644 tools/include/asm-generic/bitops/find.h
->  create mode 100644 tools/include/asm-generic/bitops/fls.h
->  create mode 100644 tools/include/asm-generic/bitops/fls64.h
->  create mode 100644 tools/include/linux/bitops.h
->  create mode 100644 tools/include/linux/log2.h
->  create mode 100644 tools/lib/util/find_next_bit.c
->  delete mode 100644 tools/perf/util/include/linux/bitops.h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/scsi/mpt2sas/mpt2sas_base.c      | 24 ++++++++++++------------
+ drivers/scsi/mpt2sas/mpt2sas_config.c    |  5 +++--
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c       | 22 +++++++++++-----------
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c     | 17 ++++++++---------
+ drivers/scsi/mpt2sas/mpt2sas_transport.c | 27 ++++++++++++++-------------
+ 5 files changed, 48 insertions(+), 47 deletions(-)
+
+-- 
+
+
+/* match all explicit boolean functions */
+@boolean_function@
+identifier fbool;
+typedef bool;
+@@
+
+bool fbool(...) {
+...
+}
+
+/* match variables eligible for boolean conversion */
+@eligible_var exists@
+identifier f, boolean_function.fbool;
+typedef u1, u2, u4, u8, u16, u32;
+local idexpression {int, u8, u1, u2, u4, u16, u32, char} x;
+identifier xname;
+expression e1, e2;
+position p;
+@@
+
+
+f@p(...) {
+...when any
+(
+  x@xname = 1;
+|
+  x@xname = 0;
+|
+  x@xname = (e1) ? 0 : 1;
+|
+  x@xname = (e2) ? 1 : 0;
+|
+  x@xname = fbool(...);
+|
+  x@xname = fbool(...);
+|
+  x@xname = e1 && ...
+|
+  x@xname = e1 || ...
+|
+  x@xname = e1 == e2
+|
+  x@xname = e1 != e2
+|
+  x@xname = e1 < e2
+|
+  x@xname = e1 <= e2
+|
+  x@xname = e1 > e2
+|
+  x@xname = e1 >= e2
+)
+...when any
+}
+
+/* match all acceptable complex assignement */
+@valid_assign exists@
+identifier eligible_var.f, boolean_function.fbool;
+local idexpression {int, u8, u1, u2, u4, u16, u32, char} eligible_var.x;
+expression e1, e2;
+position p;
+@@
+
+f(...) {
+...when any
+(
+  x@p = (e1) ? 0 : 1;
+|
+  x@p = (e1) ? 1 : 0;
+|
+  x@p = fbool(...);
+|
+  x@p = e1 && ...
+|
+  x@p = e1 || ...
+|
+  x@p = e1 == e2
+|
+  x@p = e1 != e2
+|
+  x@p = e1 < e2
+|
+  x@p = e1 <= e2
+|
+  x@p = e1 > e2
+|
+  x@p = e1 >= e2
+)
+...when any
+}
+
+/* match any expression where x is used as an int */
+@badvar1 exists@
+identifier eligible_var.f;
+local idexpression {int, u8, u1, u2, u4, u16, u32, char} eligible_var.x;
+expression e1 != {0, 1}, e2;
+position p != {valid_assign.p};
+@@
+
+f(...) {
+...when any
+(
+  x@p = e1;
+|
+  x += e2
+|
+  e2 += x
+|
+  x *= e2
+|
+  e2 *= x
+|
+  x -= e2
+|
+  e2 -= x
+|
+  x /= e2
+|
+  e2 /= x
+|
+  e2 %= x
+|
+  x %= e2
+|
+  x &= e2
+|
+  e2 &= x
+|
+  x |= e2
+|
+  e2 |= x
+|
+  x ^= e2
+|
+  e2 ^= x
+|
+  x <<= e2
+|
+  e2 <<= x  
+|
+  x >>= e2
+|
+  e2 >>= x  
+|
+  x++
+|
+  ++x
+|
+  x--
+|
+  --x
+|
+  x + e2
+|
+  x - e2
+|
+  e2 - x
+|
+  x & e2
+|
+  x | e2
+|
+  x * e2
+|
+  x / e2
+|
+  e2 / x
+|
+  x % e2
+|
+  e2 % x
+|
+  ~x
+|
+  e2 ^ x
+|
+  x ^ e2
+|
+  x << e2
+|
+  e2 << x
+|
+  x >> e2
+|
+  e2 >> x
+|
+  return x;
+)
+...when any
+}
+
+
+
+@depends on !badvar1@
+identifier eligible_var.f;
+local idexpression {int, u8, u1, u2, u4, u16, u32, char} eligible_var.x;
+identifier eligible_var.xname;
+type t;
+expression e;
+@@
+
+
+f(...) {
+...
+(
+++ bool xname = false;
+- t xname = 0;
+|
+++ bool xname = true;
+- t xname = 1;
+|
+++ bool xname;
+- t xname;
+)
+<...
+(
+  x =
+- 1
++ true
+|
+  x =
+- 0
++ false
+|
+- x = (e) ? 1 : 0
++ x = (e) ? true : false
+|
+- x = (e) ? 0 : 1
++ x = (e) ? false : true
+)
+...>
+
+}
