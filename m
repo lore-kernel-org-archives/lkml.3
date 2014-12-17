@@ -1,126 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641AbaLQXRD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 18:17:03 -0500
-Received: from mail-bn1on0136.outbound.protection.outlook.com ([157.56.110.136]:46880
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751456AbaLQXQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 18:16:59 -0500
-X-WSS-ID: 0NGR205-07-0IE-02
-X-M-MSG: 
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-To: <rjw@rjwysocki.net>, <lenb@kernel.org>, <hdegoede@redhat.com>,
-        <tj@kernel.org>, <arnd@arndb.de>, <mjg59@srcf.ucam.org>
-CC: <hanjun.guo@linaro.org>, <leo.duran@amd.com>, <graeme.gregory@linaro.org>,
-        <linux-ide@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-acpi@lists.linaro.org>,
-        "Suravee Suthikulpanit" <Suravee.Suthikulpanit@amd.com>
-Subject: [RFC PATCH 2/2] ata: ahci_platform: Add ACPI _CLS matching
-Date: Wed, 17 Dec 2014 17:16:35 -0600
-Message-ID: <1418858195-22857-3-git-send-email-suravee.suthikulpanit@amd.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1418858195-22857-1-git-send-email-suravee.suthikulpanit@amd.com>
-References: <1418858195-22857-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1751750AbaLQXTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 18:19:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58132 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033AbaLQXTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 18:19:17 -0500
+Date: Thu, 18 Dec 2014 10:19:06 +1100
+From: NeilBrown <neilb@suse.de>
+To: Nicholas Krause <xerofoify@gmail.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers:md: Remove no longer needed fixme comment in
+ raid5.c
+Message-ID: <20141218101906.55b7772d@notabene.brown>
+In-Reply-To: <1418831373-18415-1-git-send-email-xerofoify@gmail.com>
+References: <1418831373-18415-1-git-send-email-xerofoify@gmail.com>
+X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Suravee.Suthikulpanit@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(199003)(189002)(50226001)(46102003)(48376002)(86362001)(2201001)(99396003)(33646002)(92566001)(77156002)(77096005)(101416001)(19580405001)(62966003)(68736005)(31966008)(36756003)(47776003)(20776003)(19580395003)(50466002)(64706001)(84676001)(21056001)(53416004)(107046002)(120916001)(106466001)(50986999)(97736003)(4396001)(89996001)(229853001)(76176999)(2950100001)(87936001)(105586002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB207;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB207;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB207;
-X-Forefront-PRVS: 042857DBB5
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB207;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/8N088tSaDk7hWDWj1k5nRVO"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+--Sig_/8N088tSaDk7hWDWj1k5nRVO
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This patch adds ACPI supports for AHCI platform driver, which uses _CLS
-method to match the device.
+On Wed, 17 Dec 2014 10:49:33 -0500 Nicholas Krause <xerofoify@gmail.com>
+wrote:
 
-The following is an example of ASL structure in DSDT for a SATA controller,
-which contains _CLS package to be matched by the ahci_platform driver:
+> Removes the no longer needed fix me comment related to not needing the ag=
+rument faster for the function,
+> sync_request. Due to getting warnings when building without the agrument =
+it seems that this fix me was
+> wrong and we must keep this agrument in order to avoid build warnings whe=
+n building without it.
+>=20
+> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
+> ---
+>  drivers/md/raid5.c | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index c1b0d52..c0fde2a 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -4986,7 +4986,6 @@ ret:
+>  	return reshape_sectors;
+>  }
+> =20
+> -/* FIXME go_faster isn't used */
+>  static inline sector_t sync_request(struct mddev *mddev, sector_t sector=
+_nr, int *skipped, int go_faster)
+>  {
+>  	struct r5conf *conf =3D mddev->private;
 
-  Device (AHC0) // AHCI Controller
-  {
-    Name(_HID, "AMDI0600")
-    Name (_CCA, 1)
-    Name (_CLS, Package (3)
-    {
-      0x01, // Base Class: Mass Storage
-      0x06, // Sub-Class: serial ATA
-      0x01, // Interface: AHCI
-    })
-    Name (_CRS, ResourceTemplate ()
-    {
-      Memory32Fixed (ReadWrite, 0xE0300000, 0x00010000)
-      Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive,,,) { 387 }
-    })
-  }
 
-Also, since ATA driver should not require PCI support for ATA_ACPI,
-this patch removes dependency in the driver/ata/Kconfig.
+Why do you think the comment is no longer needed.  Is "go_faster" being used
+now?  Is there a clear explanation somewhere of why "go_faster" should not =
+be
+used?
 
-Signed-off-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
----
- drivers/ata/Kconfig         |  2 +-
- drivers/ata/ahci_platform.c | 10 ++++++++++
- 2 files changed, 11 insertions(+), 1 deletion(-)
+NeilBrown
 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index cd4cccb..edb00c6 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -48,7 +48,7 @@ config ATA_VERBOSE_ERROR
- 
- config ATA_ACPI
- 	bool "ATA ACPI Support"
--	depends on ACPI && PCI
-+	depends on ACPI
- 	default y
- 	help
- 	  This option adds support for ATA-related ACPI objects.
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 06f1d59..54568ec 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -20,6 +20,9 @@
- #include <linux/platform_device.h>
- #include <linux/libata.h>
- #include <linux/ahci_platform.h>
-+#ifdef CONFIG_ATA_ACPI
-+#include <linux/acpi.h>
-+#endif
- #include "ahci.h"
- 
- static const struct ata_port_info ahci_port_info = {
-@@ -71,6 +74,10 @@ static const struct of_device_id ahci_of_match[] = {
- };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
- 
-+#ifdef CONFIG_ATA_ACPI
-+static const struct acpi_device_cls ahci_cls = {0x01, 0x06, 0x01};
-+#endif
-+
- static struct platform_driver ahci_driver = {
- 	.probe = ahci_probe,
- 	.remove = ata_platform_remove_one,
-@@ -78,6 +85,9 @@ static struct platform_driver ahci_driver = {
- 		.name = "ahci",
- 		.owner = THIS_MODULE,
- 		.of_match_table = ahci_of_match,
-+#ifdef CONFIG_ATA_ACPI
-+		.acpi_cls = &ahci_cls,
-+#endif
- 		.pm = &ahci_pm_ops,
- 	},
- };
--- 
-1.9.3
+--Sig_/8N088tSaDk7hWDWj1k5nRVO
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUBVJIPajnsnt1WYoG5AQIzOw//ZXuXWuCNFtt6bfbNMmeS7+/SENzOcDdt
+4IWNIRJv+i29K0c2telwAOeE0a2LDftgEWUnNJs2l7Sg49q5ucMo02415ViIXqbK
+oWOsYvvXGeZYqMR65EQ3gZbXo5Uh1ZrgB5+rQTffCBwYBqMaYKvQ9qKS6JGqNdXK
+kYiBIvVeUr2ucXvWicavEVkR47Vi+oUxO4t/iYKOCbDkScmSMpazviiOIaclFk6o
+k2Y7e+PipXVOWdcLF/qdMMIpFPZhR6lvADasYm/8OeMXBzZEKU4qVaarIDiLpw3z
+Tlc9G0b3nNgbzNuxE+Y3FmnhQpPwTQklQ4QmckbuQXi7Q8tAwxRuW9Kx37bh6BSJ
+ZU8+D6VZgbVJXyc9gdwA5zJvfqoyZU/rpC+6w1OJb5AN/oo2ILJfBVGB86XgWC8k
+fQwbgfhX4+NHW9/yo0InGvOMDjnBPcOVEjYnimJC8iieGkB1DgS4cqTY4xduAxnk
++YlFAse7eN6hsF/6Pfmx0YB4ETrBYcYaCrhtOW7vqt/0bGmCYGGPi7f24K2meUp6
+wgU7eXU322bQwSBtYoS1N5ZGEFcDRC/TkJpJbvxP/tpX6uxpnfmJgFjBnsi1QYdo
+JHfXjhnqrGooFtLWKp6oASc70GZnVEh3RS1Yd2//cb3erEBM73CllZ+M2+hTJZDR
+8Om/HFo0Mpc=
+=w4pT
+-----END PGP SIGNATURE-----
+
+--Sig_/8N088tSaDk7hWDWj1k5nRVO--
