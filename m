@@ -1,62 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751150AbaLQPsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:48:43 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:59865 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905AbaLQPsl (ORCPT
+	id S1751279AbaLQPsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:48:50 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:45990 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096AbaLQPss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:48:41 -0500
-From: Stefan Hengelein <stefan.hengelein@fau.de>
-To: kgene@kernel.org
-Cc: linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.szyprowski@samsung.com, Stefan Hengelein <stefan.hengelein@fau.de>
-Subject: [PATCH] ARM: SAMSUNG: remove dead #elif CONFIG_S3C24XX_DMAC
-Date: Wed, 17 Dec 2014 16:40:37 +0100
-Message-Id: <1418830837-7422-1-git-send-email-stefan.hengelein@fau.de>
-X-Mailer: git-send-email 1.9.1
+	Wed, 17 Dec 2014 10:48:48 -0500
+Date: Wed, 17 Dec 2014 12:48:37 -0300
+From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+To: Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] UBI: Fastmap: Make ubi_refill_pools() fair
+Message-ID: <20141217154837.GA2049@fox>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
+ <1416835236-25185-7-git-send-email-richard@nod.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416835236-25185-7-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The corresponding CPP-block can never be selected since there are
-conflicting Kconfig constraints:
-- CONFIG_S3C24XX_DMAC has a dependency on ARCH_S3C24XX
-- The surrounding CPP-block needs CONFIG_S3C64XX_DEV_SPI0 to be defined.
-  - CONFIG_S3C64XX_DEV_SPI0 is only selected by MACH_WLF_CRAGG_6410
-  - MACH_WLF_CRAGG_6410 however has a dependency on ARCH_S3C64XX
-    (through a surrounding if-statement in Kconfig)
-- ARCH_S3C64XX and ARCH_S3C24XX are mutually exclusive since they are
-  declared in the same choice and cannot be enabled at the same time.
+Hi Richard,
 
-Hence, the innner block
-    "#elif defined(CONFIG_S3C24XX_DMAC)"
-cannot be enabled at the same time with the surrounding block
-    "#ifdef CONFIG_S3C64XX_DEV_SPI0"
-and therefore is dead.
+On Mon, Nov 24, 2014 at 02:20:36PM +0100, Richard Weinberger wrote:
+> Currently ubi_refill_pools() first fills the first and then
+> the second one.
+> If only very few free PEBs are available the second pool can get
+> zero PEBs.
+> Change ubi_refill_pools() to distribute free PEBs fair between
+> all pools.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+Reviewed-by: Guido Martínez <guido@vanguardiasur.com.ar>
 
-This (logical) defect has been found with the undertaker tool
-(https://undertaker.cs.fau.de)
+> ---
+>  drivers/mtd/ubi/wl.c | 77 +++++++++++++++++++++++++++-------------------------
+>  1 file changed, 40 insertions(+), 37 deletions(-)
+> 
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index f028b68..c2822f7 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -583,59 +583,62 @@ static void return_unused_pool_pebs(struct ubi_device *ubi,
+>  }
+>  
+>  /**
+> - * refill_wl_pool - refills all the fastmap pool used by the
+> - * WL sub-system.
+> + * ubi_refill_pools - refills all fastmap PEB pools.
+>   * @ubi: UBI device description object
+>   */
+> -static void refill_wl_pool(struct ubi_device *ubi)
+> +void ubi_refill_pools(struct ubi_device *ubi)
+>  {
+> +	struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
+> +	struct ubi_fm_pool *pool = &ubi->fm_pool;
+>  	struct ubi_wl_entry *e;
+> -	struct ubi_fm_pool *pool = &ubi->fm_wl_pool;
+> +	int enough;
+>  
+> +	spin_lock(&ubi->wl_lock);
+> +
+> +	return_unused_pool_pebs(ubi, wl_pool);
+>  	return_unused_pool_pebs(ubi, pool);
+>  
+> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+> -		if (!ubi->free.rb_node ||
+> -		   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
+> -			break;
+> +	wl_pool->size = 0;
+> +	pool->size = 0;
+>  
+> -		e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+> -		self_check_in_wl_tree(ubi, e, &ubi->free);
+> -		rb_erase(&e->u.rb, &ubi->free);
+> -		ubi->free_count--;
+> +	for (;;) {
+> +		enough = 0;
+> +		if (pool->size < pool->max_size) {
+> +			if (!ubi->free.rb_node ||
+> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
+> +				break;
+>  
+> -		pool->pebs[pool->size] = e->pnum;
+> -	}
+> -	pool->used = 0;
+> -}
+> +			e = wl_get_wle(ubi);
+> +			if (!e)
+> +				break;
+>  
+> -/**
+> - * refill_wl_user_pool - refills all the fastmap pool used by ubi_wl_get_peb.
+> - * @ubi: UBI device description object
+> - */
+> -static void refill_wl_user_pool(struct ubi_device *ubi)
+> -{
+> -	struct ubi_fm_pool *pool = &ubi->fm_pool;
+> +			pool->pebs[pool->size] = e->pnum;
+> +			pool->size++;
+> +		} else
+> +			enough++;
+>  
+> -	return_unused_pool_pebs(ubi, pool);
+> +		if (wl_pool->size < wl_pool->max_size) {
+> +			if (!ubi->free.rb_node ||
+> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
+> +				break;
+>  
+> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
+> -		pool->pebs[pool->size] = __wl_get_peb(ubi);
+> -		if (pool->pebs[pool->size] < 0)
+> +			e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
+> +			self_check_in_wl_tree(ubi, e, &ubi->free);
+> +			rb_erase(&e->u.rb, &ubi->free);
+> +			ubi->free_count--;
+> +
+> +			wl_pool->pebs[wl_pool->size] = e->pnum;
+> +			wl_pool->size++;
+> +		} else
+> +			enough++;
+> +
+> +		if (enough == 2)
+>  			break;
+>  	}
+> +
+> +	wl_pool->used = 0;
+>  	pool->used = 0;
+> -}
+>  
+> -/**
+> - * ubi_refill_pools - refills all fastmap PEB pools.
+> - * @ubi: UBI device description object
+> - */
+> -void ubi_refill_pools(struct ubi_device *ubi)
+> -{
+> -	spin_lock(&ubi->wl_lock);
+> -	refill_wl_pool(ubi);
+> -	refill_wl_user_pool(ubi);
+>  	spin_unlock(&ubi->wl_lock);
+>  }
+>  
+> -- 
+> 1.8.4.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
----
- arch/arm/plat-samsung/devs.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-index 83c7d15..b38b601 100644
---- a/arch/arm/plat-samsung/devs.c
-+++ b/arch/arm/plat-samsung/devs.c
-@@ -1134,8 +1134,6 @@ void __init s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.filter = pl330_filter;
- #elif defined(CONFIG_S3C64XX_PL080)
- 	pd.filter = pl08x_filter_id;
--#elif defined(CONFIG_S3C24XX_DMAC)
--	pd.filter = s3c24xx_dma_filter;
- #endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
 -- 
-1.9.1
-
+Guido Martínez, VanguardiaSur
+www.vanguardiasur.com.ar
