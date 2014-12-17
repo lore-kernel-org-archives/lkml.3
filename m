@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768AbaLQVSd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:18:33 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54198 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaLQVSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:18:30 -0500
-From: Matthias Brugger <matthias.bgg@gmail.com>
-To: wim@iguana.be, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, grant.likely@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, heiko@sntech.de,
-        yingjoe.chen@gmail.com, ibanezchen@gmail.com, matthias.bgg@gmail.com,
-        greta.zhang@mediatek.com, eddie.huang@mediatek.com, wens@csie.org,
-        linux@roeck-us.net
-Subject: [PATCH v3 2/2] ARM: mediatek: dts: Add bindings for watchdog
-Date: Wed, 17 Dec 2014 22:18:05 +0100
-Message-Id: <1418851085-17787-3-git-send-email-matthias.bgg@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418851085-17787-1-git-send-email-matthias.bgg@gmail.com>
-References: <1418851085-17787-1-git-send-email-matthias.bgg@gmail.com>
+	id S1751816AbaLQVTS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:19:18 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56695 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531AbaLQVTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 16:19:16 -0500
+Date: Wed, 17 Dec 2014 22:19:12 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@fb.com" <kernel-team@fb.com>
+Subject: Re: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt
+ storms.
+Message-ID: <20141217211912.GC8457@pd.tnic>
+References: <1417746575-23299-1-git-send-email-calvinowens@fb.com>
+ <20141209180835.GF3990@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F329640BC@ORSMSX114.amr.corp.intel.com>
+ <20141210031102.GB1437888@mail.thefacebook.com>
+ <20141210192340.GF17053@pd.tnic>
+ <20141211023438.GA3239919@mail.thefacebook.com>
+ <20141211144313.GB31140@pd.tnic>
+ <20141217001711.GA7152@mail.thefacebook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141217001711.GA7152@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
----
- Documentation/devicetree/bindings/watchdog/mtk-wdt.txt | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
+On Tue, Dec 16, 2014 at 04:17:11PM -0800, Calvin Owens wrote:
+> > Right, I guess we could do something similar to what you proposed
+> > already (diff below ontop of my previous diff).
+> 
+> That looks good, thanks :)
 
-diff --git a/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-new file mode 100644
-index 0000000..af9eb5b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/mtk-wdt.txt
-@@ -0,0 +1,13 @@
-+Mediatek SoCs Watchdog timer
-+
-+Required properties:
-+
-+- compatible : should be "mediatek,mt6589-wdt"
-+- reg : Specifies base physical address and size of the registers.
-+
-+Example:
-+
-+wdt: watchdog@010000000 {
-+	compatible = "mediatek,mt6589-wdt";
-+	reg = <0x10000000 0x18>;
-+};
+Ok, thanks. I'll try to give it a run once I get a quiet minute from all
+the CVE fun recently.
+
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
