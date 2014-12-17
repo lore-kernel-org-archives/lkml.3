@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbaLQKh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:37:57 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:33969 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751159AbaLQKgU (ORCPT
+	id S1751531AbaLQKlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:41:07 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35663 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750894AbaLQKlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:36:20 -0500
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Fabrice Gasnier <fabrice.gasnier@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Minghuan Lian <Minghuan.Lian@freescale.com>,
-        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Srikanth Thokala <sthokal@xilinx.com>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
-        linux-pci@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 1/5] ARM: STi: Kconfig update for PCIe support
-Date: Wed, 17 Dec 2014 11:34:42 +0100
-Message-Id: <1418812486-12394-2-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-17_03:2014-12-17,2014-12-17,1970-01-01 signatures=0
+	Wed, 17 Dec 2014 05:41:05 -0500
+Date: Wed, 17 Dec 2014 10:40:49 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Liu Ying <Ying.Liu@freescale.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, p.zabel@pengutronix.de,
+        shawn.guo@linaro.org, kernel@pengutronix.de, mturquette@linaro.org,
+        airlied@linux.ie
+Subject: Re: [PATCH RFC 09/15] drm: imx: Add MIPI DSI host controller driver
+Message-ID: <20141217104049.GU11285@n2100.arm.linux.org.uk>
+References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+ <1418200648-32656-10-git-send-email-Ying.Liu@freescale.com>
+ <20141210131640.GD23558@ulmo.nvidia.com>
+ <54915081.6020508@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54915081.6020508@freescale.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update Kconfig:
-- MIGHT_HAVE_PCI
-- PCI_DOMAINS
+On Wed, Dec 17, 2014 at 05:44:33PM +0800, Liu Ying wrote:
+> Hi Thierry,
+> 
+> Sorry for the late response.
+> I tried to address almost all your comments locally first.
+> More feedback below.
+> 
+> On 12/10/2014 09:16 PM, Thierry Reding wrote:
+> >On Wed, Dec 10, 2014 at 04:37:22PM +0800, Liu Ying wrote:
+> >>+static int check_status(struct imx_mipi_dsi *dsi, u32 reg, u32 status,
+> >>+			int timeout, bool to_set)
+> >>+{
+> >>+	u32 val;
+> >>+	bool out = false;
+> >>+
+> >>+	val = dsi_read(dsi, reg);
+> >>+	for (;;) {
+> >>+		out = to_set ? (val & status) : !(val & status);
+> >>+		if (out)
+> >>+			break;
+> >>+
+> >>+		if (!timeout--)
+> >>+			return -EFAULT;
+> >>+
+> >>+		msleep(1);
+> >>+		val = dsi_read(dsi, reg);
+> >>+	}
+> >>+	return 0;
+> >>+}
+> >
+> >You should probably use a properly timed loop here. msleep() isn't
+> >guaranteed to return after exactly one millisecond, so your timeout is
+> >never going to be accurate. Something like the following would be better
+> >in my opinion:
+> >
+> >	timeout = jiffies + msecs_to_jiffies(timeout);
+> >
+> >	while (time_before(jiffies, timeout)) {
+> >		...
+> >	}
+> >
+> >Also timeout should be unsigned long in that case.
+> 
+> Accepted.
 
-Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
----
- arch/arm/mach-sti/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+Actually, that's a bad example: what we want to do is to assess success
+after we wait, before we decide that something has failed.  In other
+words, we don't want to wait, and decide that we failed without first
+checking for success.
 
-diff --git a/arch/arm/mach-sti/Kconfig b/arch/arm/mach-sti/Kconfig
-index 8825bc9..d1e563c 100644
---- a/arch/arm/mach-sti/Kconfig
-+++ b/arch/arm/mach-sti/Kconfig
-@@ -8,6 +8,8 @@ menuconfig ARCH_STI
- 	select ARCH_HAS_RESET_CONTROLLER
- 	select HAVE_ARM_SCU if SMP
- 	select ARCH_REQUIRE_GPIOLIB
-+	select PCI_DOMAINS if PCI
-+	select MIGHT_HAVE_PCI
- 	select ARM_ERRATA_754322
- 	select ARM_ERRATA_764369 if SMP
- 	select ARM_ERRATA_775420
+In any case, returning -EFAULT is not sane: EFAULT doesn't mean "fault"
+it means "Bad address", and it is returned to userspace to mean that
+userspace passed the kernel a bad address.  That definition does /not/
+fit what's going on here.
+
+	timeout = jiffies + msecs_to_jiffies(timeout);
+
+	do {
+		val = dsi_read(dsi, reg);
+		out = to_set ? (val & status) : !(val & status);
+		if (out)
+			break;
+
+		if (time_is_after_jiffies(timeout))
+			return -ETIMEDOUT;
+
+		msleep(1);
+	} while (1);
+
+	return 0;
+
+would be better: we only fail immediately after we have checked whether
+we succeeded, and we also do the first check immediately.
+
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
+according to speedtest.net.
