@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752030AbaLQMLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 07:11:44 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:40642 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaLQMLm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 07:11:42 -0500
-Date: Wed, 17 Dec 2014 15:11:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: samuel kihahu <skihahu@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        speakup@linux-speakup.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
-Message-ID: <20141217121119.GL4856@mwanda>
-References: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
+	id S1752034AbaLQMNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 07:13:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44845 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995AbaLQMNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 07:13:51 -0500
+Message-ID: <5491737A.5050106@suse.de>
+Date: Wed, 17 Dec 2014 13:13:46 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Gleb Natapov <gleb@kernel.org>
+CC: Paolo Bonzini <pbonzini@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, kvm-ppc@vger.kernel.org,
+        kvm@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: powerpc: kvm: book3s_paired_singles.c:  Remove
+ unused function
+References: <1417991354-19932-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1417991354-19932-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 02:56:02PM +0300, samuel kihahu wrote:
-> Replacing obsolete simple_strtoul with kstrtoul.
+
+
+On 07.12.14 23:29, Rickard Strandqvist wrote:
+> Remove the function inst_set_field() that is not used anywhere.
 > 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 
-Nope.  That's wrong.  Learn how the functions are different beyond just
-the name.
+Thanks, applied all unused function patches in KVM PPC code to
+kvm-ppc-queue.
 
-regards,
-dan carpenter
 
+Alex
