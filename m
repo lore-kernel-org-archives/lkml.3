@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270AbaLQPot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:44:49 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:60570 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750981AbaLQPoq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:44:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Sneeker. Yeh" <Sneeker.Yeh@tw.fujitsu.com>
-Cc: Sneeker Yeh <sneeker.yeh@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
-        Thomas Pugliese <thomas.pugliese@gmail.com>,
-        David Mosberger <davidm@egauge.net>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Andy Green <andy.green@linaro.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>
-Subject: Re: [PATCH 1/3] usb: host: f_usb20ho: add support for Fujitsu ehci/ohci USB 2.0 host controller
-Date: Wed, 17 Dec 2014 16:44:29 +0100
-Message-ID: <2084132.xT3x4RUEre@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <830AC58E49A426478AC39824BC0FA915D8BB402BB7@fmpitwmsex01.fmpi.sea.css.fujitsu.com>
-References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com> <94603263.7VVvg5Qn7O@wuerfel> <830AC58E49A426478AC39824BC0FA915D8BB402BB7@fmpitwmsex01.fmpi.sea.css.fujitsu.com>
+	id S1751273AbaLQPpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:45:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750949AbaLQPpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 10:45:41 -0500
+Date: Wed, 17 Dec 2014 16:45:07 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] perf: Avoid horrible stack usage
+Message-ID: <20141217154507.GA20471@krava.brq.redhat.com>
+References: <20141216115041.GW3337@twins.programming.kicks-ass.net>
+ <20141217143105.GG18257@krava.brq.redhat.com>
+ <20141217153508.GC30905@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:hnibytYt/i6DZPYSFDxwBa4DhfsnBvISto9T7iu5MZC1+g1DOMF
- 1x8N60UC5LqshnFmsBxBViwI9wpXWzRXgaOP0Adi5uK7cZgvGWug0sGeNRyAwDq2W6uxtuB
- a66sZsViCB08KSqBepbLzYtI0pYzakwxEaNklLs15bXTgJDWhti9Qgr9rcw4DjwFjoTStXK
- pA921GZsVaWzb2jb7uZTg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141217153508.GC30905@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 December 2014 23:33:02 Sneeker. Yeh wrote:
-> >
-> >No need for playing games with child devices, just see how the other drivers do
-> >it.
+On Wed, Dec 17, 2014 at 04:35:08PM +0100, Peter Zijlstra wrote:
+> On Wed, Dec 17, 2014 at 03:31:05PM +0100, Jiri Olsa wrote:
+> > looks like we could also sanitize the perf_ftrace_function_call
+> > in the same way.. like below (untested)
+> > 
+> > hum, I just noticed it actually has pt_regs arg ;-)
 > 
-> I am wondering if this is what you mentioned here? :
-> Hcd21: f_usb20ho {
->         compatible = "fujitsu,f_usb20ho";
->         ...
->         Ehci {
->                 compatible = "generic-ehci";
->                 reg = <>;
->         }
->         ohci {
->                 compatible = "generic-ohci";
->                 reg = <>;
->         }
-> }
-> By doing that, I can just use of_platform_populate() to create platform device more gracefully,
-> than using platform_device_xxx() those have been done in of_platform_populate().
-> And also, managing register offset is totally done via dts description, not in the code.
+> Bu if it has pt_regs should we not use that instead of filling one out
+> again?
 
-What I mean is leaving out the fujitsu,f_usb20ho node entirely, just put the
-two USB controllers on the bus directly and remove this driver.
+yep, I talked to Steven about that and the thing is that
+it's not guaranteed on all archs.. I'll send patch that
+take that in account
 
-	Arnd
+jirka
