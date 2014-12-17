@@ -1,76 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146AbaLQIrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 03:47:51 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:34031 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaLQIrt (ORCPT
+	id S1752156AbaLQIzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 03:55:53 -0500
+Received: from www.linutronix.de ([62.245.132.108]:53416 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaLQIzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 03:47:49 -0500
+	Wed, 17 Dec 2014 03:55:52 -0500
+Date: Wed, 17 Dec 2014 09:55:44 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>
+Subject: Re: [patch 4/4] acpi: ioapic: Respect the resource flags
+In-Reply-To: <54911823.3030602@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1412170955250.17382@nanos>
+References: <20141211191853.613107396@linutronix.de> <20141211193112.813391696@linutronix.de> <CAE9FiQV4jArUDGuhb3o2BhiVGcGxSXhADU+5=NsdqJGQOo2oJQ@mail.gmail.com> <alpine.DEB.2.11.1412120847400.16494@nanos> <548AAB67.9050005@linux.intel.com>
+ <alpine.DEB.2.11.1412121241200.16494@nanos> <54911823.3030602@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20141217083905.GA2919@katana>
-References: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
-	<20141217065814.GB1018@katana>
-	<CAMuHMdWShh+m_0c_3cnGt_2J03u0dhWytER0AqLWoLtauEh5aA@mail.gmail.com>
-	<20141217083905.GA2919@katana>
-Date: Wed, 17 Dec 2014 09:47:47 +0100
-X-Google-Sender-Auth: 5oCfIYuP_vnXvYh-92trcfpwgnY
-Message-ID: <CAMuHMdWoNxZ_gKWntANTn+oakJfVwY9np1cKs-sXoOf3vpS5Fg@mail.gmail.com>
-Subject: Re: [PATCH] i2c: sh_mobile: I2C_SH_MOBILE should depend on HAS_DMA
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Wed, 17 Dec 2014, Jiang Liu wrote:
 
-On Wed, Dec 17, 2014 at 9:39 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> On Wed, Dec 17, 2014 at 09:04:52AM +0100, Geert Uytterhoeven wrote:
->> On Wed, Dec 17, 2014 at 7:58 AM, Wolfram Sang <wsa@the-dreams.de> wrote:
->> > On Mon, Dec 15, 2014 at 02:37:04PM +0100, Geert Uytterhoeven wrote:
->> >> If NO_DMA=y:
->> >>
->> >> drivers/built-in.o: In function `sh_mobile_i2c_dma_unmap':
->> >> i2c-sh_mobile.c:(.text+0x60de42): undefined reference to `dma_unmap_single'
->> >> drivers/built-in.o: In function `sh_mobile_i2c_xfer_dma':
->> >> i2c-sh_mobile.c:(.text+0x60df22): undefined reference to `dma_map_single'
->> >> i2c-sh_mobile.c:(.text+0x60df2e): undefined reference to `dma_mapping_error'
->> >>
->> >> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> >
->> > Thanks for spotting this. However, since DMA is opt-in, isn't this
->> > dependency too much? I can't think of anything better than #ifdeffing
->> > the code, though.
->>
->> You're right.
->>
->> E.g. drivers/spi/spi.c (in SPI the mapping is handled by the core), this
->> code is #ifdefed out.
->
-> Then again, we could depend on ARM || SUPERH || (COMPILE_TEST &&
-> HAS_DMA) to skip the #ifdeffery? ARM and SUPERH don't have NO_DMA.
+> Hi Thomas,
+> 	Should I keep the development history or start from scratch
+> for this ACPI resource patch set?
 
-If ARM and SUPERH imply HAS_DMA, that formula is almost identical to
-the one I proposed in my patch?
-
-       depends on HAS_DMA
-       depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
-
-I just prefer to split dependencies in two lines where it makes sense ("hard"
-dependencies vs. "soft" (user platform configuration) dependencies).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+We better start from scratch.
