@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaLQKg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:36:57 -0500
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:33972 "EHLO
+	id S1752102AbaLQKg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:36:56 -0500
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:33973 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751193AbaLQKgV (ORCPT
+	by vger.kernel.org with ESMTP id S1751449AbaLQKgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Dec 2014 05:36:21 -0500
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -35,56 +35,37 @@ To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
 Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, kernel@stlinux.com,
         linux-pci@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 4/5] PCI: designware: Add setup bus-related to pcie_host_ops
-Date: Wed, 17 Dec 2014 11:34:45 +0100
-Message-Id: <1418812486-12394-5-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH 0/5] PCI: st: provide support for dw pcie
+Date: Wed, 17 Dec 2014 11:34:41 +0100
+Message-Id: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
  definitions=2014-12-17_03:2014-12-17,2014-12-17,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST sti SoCs PCIe IPs are built around DesignWare IP Core.
-But in these SoCs PCIe IP doesn't support IO.
+This patch-set introduces a STMicroelectronics PCIe controler.
+It's based on designware PCIe driver.
 
-To support this, add setup_bus() to pcie_host_ops.
+Gabriel Fernandez (5):
+  ARM: STi: Kconfig update for PCIe support
+  PCI: st: Add Device Tree bindings for sti pcie
+  PCI: st: Provide support for the sti PCIe controller
+  PCI: designware: Add setup bus-related to pcie_host_ops
+  PCI: st: disable IO support
 
-Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- drivers/pci/host/pcie-designware.c | 3 +++
- drivers/pci/host/pcie-designware.h | 1 +
- 2 files changed, 4 insertions(+)
+ Documentation/devicetree/bindings/pci/st-pcie.txt |  53 ++
+ arch/arm/mach-sti/Kconfig                         |   2 +
+ drivers/pci/host/Kconfig                          |   5 +
+ drivers/pci/host/Makefile                         |   1 +
+ drivers/pci/host/pci-st.c                         | 736 ++++++++++++++++++++++
+ drivers/pci/host/pcie-designware.c                |   3 +
+ drivers/pci/host/pcie-designware.h                |   1 +
+ 7 files changed, 801 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/st-pcie.txt
+ create mode 100644 drivers/pci/host/pci-st.c
 
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index df781cd..98e19bc 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -719,6 +719,9 @@ static int dw_pcie_setup(int nr, struct pci_sys_data *sys)
- 	pci_add_resource_offset(&sys->resources, &pp->mem, sys->mem_offset);
- 	pci_add_resource(&sys->resources, &pp->busn);
- 
-+	if (pp->ops->setup_bus)
-+		pp->ops->setup_bus(pp, sys);
-+
- 	return 1;
- }
- 
-diff --git a/drivers/pci/host/pcie-designware.h b/drivers/pci/host/pcie-designware.h
-index d0bbd27..5c13de7 100644
---- a/drivers/pci/host/pcie-designware.h
-+++ b/drivers/pci/host/pcie-designware.h
-@@ -73,6 +73,7 @@ struct pcie_host_ops {
- 	u32 (*get_msi_addr)(struct pcie_port *pp);
- 	u32 (*get_msi_data)(struct pcie_port *pp, int pos);
- 	void (*scan_bus)(struct pcie_port *pp);
-+	void (*setup_bus)(struct pcie_port *pp, struct pci_sys_data *sys);
- 	int (*msi_host_init)(struct pcie_port *pp, struct msi_controller *chip);
- };
- 
 -- 
 1.9.1
 
