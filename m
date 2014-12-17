@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaLQQzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 11:55:03 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36325 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751136AbaLQQy6 (ORCPT
+	id S1751158AbaLQRDh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 12:03:37 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47220 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaLQRDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 11:54:58 -0500
-Date: Wed, 17 Dec 2014 16:54:50 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] arm/rpc: avoid static keyword removal via define
-Message-ID: <20141217165450.GW11285@n2100.arm.linux.org.uk>
-References: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com>
- <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com>
- <5490146A.3000408@de.ibm.com>
- <20141216114056.GP11285@n2100.arm.linux.org.uk>
- <5491A16A.7050101@de.ibm.com>
+	Wed, 17 Dec 2014 12:03:36 -0500
+Date: Wed, 17 Dec 2014 12:01:39 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: frequent lockups in 3.18rc4
+Message-ID: <20141217170139.GB8142@laptop.dumpdata.com>
+References: <alpine.DEB.2.11.1411212110320.6439@nanos>
+ <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+ <alpine.DEB.2.11.1411212207150.6439@nanos>
+ <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+ <20141216192803.GC3337@twins.programming.kicks-ass.net>
+ <CA+55aFx9oTQHnamJ=QEGOKHe2obQEn2NfNa+hJ_Z-V1FyY7QaQ@mail.gmail.com>
+ <20141216211921.GA2395@suse.de>
+ <20141216230246.GA30905@twins.programming.kicks-ass.net>
+ <CA+55aFxyx_wcsgYJC2GXcjEvMsTg=K=uy6A=xDJdWdvZsE1VHQ@mail.gmail.com>
+ <CALCETrVLrXOZNY6Xha+TukJMTb2ni70FN==rL8KHM6FrMwWzVQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5491A16A.7050101@de.ibm.com>
+In-Reply-To: <CALCETrVLrXOZNY6Xha+TukJMTb2ni70FN==rL8KHM6FrMwWzVQ@mail.gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 04:29:46PM +0100, Christian Borntraeger wrote:
-> Am 16.12.2014 um 12:40 schrieb Russell King - ARM Linux:
-> > On Tue, Dec 16, 2014 at 12:15:54PM +0100, Christian Borntraeger wrote:
-> >> Am 15.12.2014 um 09:48 schrieb Christian Borntraeger:
-> >>> commit 4486b86368d7 ("[ARM] riscpc: fix decompressor font file handling")
-> >>> introduced Makefile magic to avoid building a file two times. Using
-> >>> -Dstatic= does break some assumptions on compiler.h that were introduced
-> >>> for READ_ONCE.
-> >>>
-> >>> Lets just use sed on the copy instead of using a define.
-> >>>
-> >>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> >>> Cc: Russell King <linux@arm.linux.org.uk>
+On Tue, Dec 16, 2014 at 04:41:16PM -0800, Andy Lutomirski wrote:
+> On Tue, Dec 16, 2014 at 4:00 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Tue, Dec 16, 2014 at 3:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 > >>
-> >> This fixed the linux-next build http://kisskb.ellerman.id.au/kisskb/target/1508/
-> >> Unless anybody complains, I will send the pull request for the access_once tree tomorrow and I have this patch applied on top.
-> > 
-> > Please give me some time to look at this.
+> >> OK, should we just stick it in the x86 tree and see if anything
+> >> explodes? ;-)
+> >
+> > Gaah, I got confused about the patches.
+> >
+> > And something did explode, it showed some Xen nasties. Xen has that
+> > odd "we don't share PMD entries between MM's" thing going on, which
+> > means that the vmalloc fault thing does actually have to occasionally
+> > walk two levels rather than just copy the top level. I'm still not
+> > sure why Xen doesn't share PMD's, since threads that shame the MM
+> > clearly can share PMD's within Xen, but I gave up on it.
 > 
-> >From all builds, the only problematic case was the rpc_defconfig.
-> So only CONFIG_ARCH_ACORN is affected.
+> Sounds like it's time to ask Konrad, the source of all Xen understanding :)
+
+Awesome :-)
 > 
-> As I said, I want to send this series this merge window, so if you
-> do not find the time to look into this before rc1, what about removing
-> this patch from my queue and we solve this later? 
-> Acorn Risc CPU is probably not the hottest platform right now, so if we 
-> fix this in rc2 or rc3 this might be ok - I guess.
+> Linus, do you have a pointer to whatever version of the patch you tried?
 
-How does compiler.h get included when building font.o?
+The patch was this:
 
-Since I haven't seen your patch series, I guess it gets included somehow
-via linux/types.h ?
+a) http://article.gmane.org/gmane.linux.kernel/1835331
 
--- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+Then Jurgen had a patch:
+https://lkml.kernel.org/g/CA+55aFxSRujj=cM1NkXYvxmo=Y1hb1e3tgLhdh1JDphzV6WKRw@mail.gmail.com
+which was one fix for one bug that ended up being fixed in QEMU - so
+it can be ignored.
+
+But my understanding of that thread was that it said patch 'a)' did not
+fix Dave's issues - and the conversation went off on NMI watchdog?
+
+I will look up the giant thread to make sense.
+
+
+> 
+> --Andy
+> 
+> >
+> > That said, making x86-64 use "read_cr3()" instead of
+> > "current->active_mm" would at least make things a bit safer wrt NMI's
+> > during the task switch, of course.  So *some* 32/64-bit consolidation
+> > should be done, but my patch went a bit too far for Xen.
+> >
+> >                       Linus
+> 
+> 
+> 
+> -- 
+> Andy Lutomirski
+> AMA Capital Management, LLC
