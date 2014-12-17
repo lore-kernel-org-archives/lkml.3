@@ -1,100 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaLQT2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 14:28:07 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:44857 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaLQT2D (ORCPT
+	id S1751165AbaLQTdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 14:33:17 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:39696 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaLQTdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 14:28:03 -0500
-Message-ID: <1418844479.9555.2.camel@hari-laptop>
-Subject: [PATCH 2/2] Staging: lustre: lproc_osc.c: used seq_puts() and
- seq_putc() instead of seq_printf()
-From: Hariharan <rhariharan.cbe@gmail.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Thu, 18 Dec 2014 00:57:59 +0530
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Dec 2014 14:33:15 -0500
+MIME-Version: 1.0
+Date: Wed, 17 Dec 2014 20:33:13 +0100
+X-Google-Sender-Auth: PXd5SXijgr6LnJr6WFlCtm_fs2o
+Message-ID: <CAMuHMdWY_ne+S3zKrEYqVyU8=S-at=+rGuEkYNauF4s2KaKNdw@mail.gmail.com>
+Subject: Enable runtime PM automatically?
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kevin Hilman <khilman@kernel.org>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Amit Daniel Kachhap <amit.daniel@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 55d1ae4a440126e5befa9de4698a7aac57319885 Mon Sep 17 00:00:00 2001
-From: Hariharan Rangasamy <rhariharan.cbe@gmail.com>
-Date: Thu, 18 Dec 2014 00:04:24 +0530
-Subject: [PATCH 2/2] Staging: lustre: lproc_osc.c: used seq_puts() and
- seq_putc() instead of seq_printf()
+On Tue, Dec 16, 2014 at 11:10 PM, Kevin Hilman <khilman@kernel.org> wrote:
+> At a deeper level, the problem with this approach is that this is more
+> generically a runtime PM dependency problem, not a genpd problem.  For
+> example, what happens when the same kind of dependency exists on a
+> platform using a custom PM domain instead of genpd (like ACPI.) ?
+>
+> What's needed to solve this problem is a generalized way to have runtime
+> PM dependencies between devices.  Runtime PM already automatically
+> handles parent devices as one type of dependent device (e.g. a parent
+> device needs to be runtime PM resumed before its child.)  So what's
+> needed is a generic way to other PM dependencies with the runtime PM
+> core (not the genpd core.)
+>
+> If runtime PM handles the dependencies corretcly, then genpd (and any
+> other PM domain) will get them "for free".
 
-used seq_puts() and seq_putc() instead of seq_printf().
+Having the proper dependencies is not sufficient. Currently drivers have to do
+something to use runtime PM.
 
-Signed-off-by: Hariharan Rangasamy <rhariharan.cbe@gmail.com>
----
- drivers/staging/lustre/lustre/osc/lproc_osc.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+By default, runtime PM is disabled for a device
+("device.power.disable_depth = 1").
 
-diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c
-b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-index f578b51..7cd9638 100644
---- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
-+++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-@@ -358,7 +358,7 @@ static int osc_checksum_type_seq_show(struct
-seq_file *m, void *v)
- 		else
- 			seq_printf(m, "%s ", cksum_name[i]);
- 	}
--	seq_printf(m, "\n");
-+	seq_putc(m, '\n');
- 	return 0;
- }
- 
-@@ -590,9 +590,9 @@ static int osc_rpc_stats_seq_show(struct seq_file
-*seq, void *v)
- 	seq_printf(seq, "pending read pages:   %d\n",
- 		   atomic_read(&cli->cl_pending_r_pages));
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
--	seq_printf(seq, "pages per rpc	 rpcs   %% cum %% |");
--	seq_printf(seq, "       rpcs   %% cum %%\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "pages per rpc	 rpcs   % cum % |");
-+	seq_puts(seq, "       rpcs   % cum %\n");
- 
- 	read_tot = lprocfs_oh_sum(&cli->cl_read_page_hist);
- 	write_tot = lprocfs_oh_sum(&cli->cl_write_page_hist);
-@@ -613,9 +613,9 @@ static int osc_rpc_stats_seq_show(struct seq_file
-*seq, void *v)
- 			break;
- 	}
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
--	seq_printf(seq, "rpcs in flight	rpcs   %% cum %% |");
--	seq_printf(seq, "       rpcs   %% cum %%\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "rpcs in flight	rpcs   % cum % |");
-+	seq_puts(seq, "       rpcs   % cum %\n");
- 
- 	read_tot = lprocfs_oh_sum(&cli->cl_read_rpc_hist);
- 	write_tot = lprocfs_oh_sum(&cli->cl_write_rpc_hist);
-@@ -636,9 +636,9 @@ static int osc_rpc_stats_seq_show(struct seq_file
-*seq, void *v)
- 			break;
- 	}
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
--	seq_printf(seq, "offset		rpcs   %% cum %% |");
--	seq_printf(seq, "       rpcs   %% cum %%\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "offset		rpcs   % cum % |");
-+	seq_puts(seq, "       rpcs   % cum %\n");
- 
- 	read_tot = lprocfs_oh_sum(&cli->cl_read_offset_hist);
- 	write_tot = lprocfs_oh_sum(&cli->cl_write_offset_hist);
--- 
-1.9.1
+However, if PM domains are active, drivers must be runtime PM-aware for the
+gpd_dev_ops.start() method to be called in the first place (perhaps this is just
+one bug that's easy to fix --- the device is "assumed suspended", but can be
+used). They must
+  1. call pm_runtime_enable() to enable runtime PM for the device,
+  2. call pm_runtime_get_sync() to prevent the device from being put in a
+    low-power state at any time. This second call has the
+"side-effect" of calling
+    gpd_dev_ops.start().
 
+Hence, if PM domains are enabled, wouldn't it make sense to
+  1. enable runtime PM by default, for all devices (bound and unbound),
+  2. call pm_runtime_get_sync(), for all devices bound to a driver.
+Of course we have to keep track if drivers call any of the pm_runtime_*()
+methods theirselves, as that would have to move them from automatic to
+manual mode.
 
+Would this be feasible?
 
+This would avoid the need to add minimal runtime PM support to each and every
+driver, because:
+  - its device resides in a PM domain, cfr. e.g. commit df0c6c80232f2ad4
+    ("gpio: rcar: Add minimal runtime PM support"),
+  - its device is a child of a device in a PM domain, cfr. e.g. commit
+    3a611e26e958b037 ("net/smsc911x: Add minimal runtime PM support").
+
+There's a similar issue for "transparent" buses that don't need a kernel driver
+(compatible = "simple-bus"). If they're in a PM domain, runtime PM must be
+enabled for them, so their bus devices are resumed when a child device on the
+bus is resumed by runtime PM. Having runtime PM enabled by default
+would avoid the need to add a minimal driver for the bus which just
+enables runtime PM, cfr. [PATCH v2 0/8] Add Simple Power-Managed Bus Support
+(https://lkml.org/lkml/2014/12/17/359).
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
