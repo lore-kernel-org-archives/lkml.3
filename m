@@ -1,87 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaLQUq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 15:46:26 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:47430 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaLQUqX (ORCPT
+	id S1751338AbaLQUy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 15:54:27 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:61054 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaLQUy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 15:46:23 -0500
-Date: Wed, 17 Dec 2014 22:46:14 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2014-12-17
-Message-ID: <20141217204614.GA15480@t440s.P-661HNU-F1>
-Mail-Followup-To: davem@davemloft.net, netdev@vger.kernel.org,
-	linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Wed, 17 Dec 2014 15:54:26 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAM_ZknU_5MYEkC7VTD3-M1vcvqoTXtg-Dy-iozpky0TSOymEgQ@mail.gmail.com>
+References: <1415218274-28132-1-git-send-email-andrey.utkin@corp.bluecherry.net>
+	<548AEE11.50303@xs4all.nl>
+	<CAM_ZknU_5MYEkC7VTD3-M1vcvqoTXtg-Dy-iozpky0TSOymEgQ@mail.gmail.com>
+Date: Wed, 17 Dec 2014 22:54:25 +0200
+Message-ID: <CAM_ZknWL+NZqizBNtb=k+im0DQrXEwOcnyhMdc4QxuWZWsVN0Q@mail.gmail.com>
+Subject: Re: [PATCH] solo6x10: just pass frame motion flag from hardware, drop
+ additional handling as complicated and unstable
+From: Andrey Utkin <andrey.utkin@corp.bluecherry.net>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-kernel@vger.kernel.org, Linux Media <linux-media@vger.kernel.org>,
+        m.chehab@samsung.com, "hans.verkuil" <hans.verkuil@cisco.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hans, is this commit anywhere in any git repository at the moment?
 
---sm4nu43k4a2Rpi4c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-Hi Dave,
-
-Here's the first direct (i.e. skipping the wireless tree) bluetooth pull
-request for you, intended for 3.19. It's just one patch: a fix from
-Marcel for for remote service discovery filtering which also fixes a
-'used uninitialized' compiler warning.
-
-Please let me know if there are any issues pulling. Thanks.
-
-Johan
-
----
-The following changes since commit 65891feac27e26115dc4cce881743a1ac33372df:
-
-  net: Disallow providing non zero VLAN ID for NIC drivers FDB add flow (2014-12-16 15:41:19 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
-
-for you to fetch changes up to ea8ae2516ac43028a01c40b58ffa80d3b0afb802:
-
-  Bluetooth: Fix bug with filter in service discovery optimization (2014-12-17 22:03:49 +0200)
-
-----------------------------------------------------------------
-Marcel Holtmann (1):
-      Bluetooth: Fix bug with filter in service discovery optimization
-
- net/bluetooth/mgmt.c | 14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
-
-
---sm4nu43k4a2Rpi4c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUkeuWAAoJECQj9vv5qNQSG0wQAKs/rxSc+p+v15Cl93vjjNDX
-kQGKomzrD8FYbFul7wFs63zB50yPR3enQr/93TyxDq5vMj+AD623sOBAUoYPsaSu
-SebzOrGFnsOjhHTLNH++luQSQFu/8mzJbZRILJCgbADVZ3j9AHleIiLkkzE/E7vX
-izGLu8MQl2hZsDU34JD4wPOSXHCO1TU4jrLipn2zit6MNe7ul165NfFeNjRtmnP8
-6s9eh6SwMRWILQT/Rm55/kTD9GfwF+IPj3JPu56QJG3flqF0OUHtRvHMl+ZrMa4J
-yGfI9ARhm9LW1l676Feg8OeqCQsE4Typ8xMUgPjaO9KoaJsqHJ8cnx96iGBbUTVQ
-OdeYYeFbjdIQkM702bPo69hwezIzcOBK6KBdc2s4WaAtUNC1+F0KoFciFhMuLeLy
-OVcqFcHsVon2DEpKwB9DBTNcr1uL2ATmMUunZIbeuIZYEMLQZdNnQjau2fSPchxV
-+cmP/jdKUR/wP4XoffUEhyn//fc9WMSwtfiajqubBb/MCTRgfAQxHq0JsIVa2qpo
-C0K2Nw2QL1XWXmr3xbxeTNT78M9G4iPqs5AcYH6llpfRruY2pY0P09JOjMMOvgin
-Zx9iJ9TsHJmQNufBsAwxkyM8vrmqUiO3w7H/E6J0M7a1rB2YNFDmu9rmNJwMLSXQ
-0fRuNgxzF4GaFKQiPzlY
-=JkT0
------END PGP SIGNATURE-----
-
---sm4nu43k4a2Rpi4c--
+-- 
+Bluecherry developer.
