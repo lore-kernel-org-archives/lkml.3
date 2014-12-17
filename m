@@ -1,41 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223AbaLQPXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:23:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49363 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaLQPXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:23:24 -0500
-Date: Wed, 17 Dec 2014 16:23:56 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-Cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Miroslav Benes <mbenes@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv7 3/3] samples: add sample live patching module
-Message-ID: <20141217152356.GC1270@pathway.suse.cz>
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
- <1418752700-14649-4-git-send-email-sjenning@redhat.com>
+	id S1751256AbaLQPXd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:23:33 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:45931 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaLQPXa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 10:23:30 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418752700-14649-4-git-send-email-sjenning@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "Kevin Hilman" <khilman@kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1418718015.28527.4.camel@AMDC1943>
+Cc: "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
+        "Tomasz Figa" <tomasz.figa@gmail.com>,
+        "Stephen Boyd" <sboyd@codeaurora.org>, "Kukjin Kim" <kgene@kernel.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>
+References: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
+ <1418129982.19339.6.camel@AMDC1943> <5486F69B.6020005@samsung.com>
+ <7hlhmfo1b0.fsf@deeprootsystems.com> <7h8ui8h7n9.fsf@deeprootsystems.com>
+ <1418718015.28527.4.camel@AMDC1943>
+Message-ID: <20141217152322.29014.7739@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
+ failure due to domain being gated
+Date: Wed, 17 Dec 2014 07:23:22 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-12-16 11:58:20, Seth Jennings wrote:
-> Add a sample live patching module.
+Quoting Krzysztof Kozlowski (2014-12-16 00:20:15)
+> On pon, 2014-12-15 at 14:26 -0800, Kevin Hilman wrote:
+> > Kevin Hilman <khilman@kernel.org> writes:
+> > 
+> > > Sylwester Nawrocki <s.nawrocki@samsung.com> writes:
+> > >
+> > >> On 09/12/14 13:59, Krzysztof Kozlowski wrote:
+> > >>> On pią, 2014-12-05 at 15:15 +0100, Krzysztof Kozlowski wrote:
+> > >>>> > Audio subsystem clocks are located in separate block. On Exynos 5420 if
+> > >>>> > clock for this block (from main clock domain) 'mau_epll' is gated then
+> > >>>> > any read or write to audss registers will block.
+> > >>>> > 
+> > >>>> > This kind of boot hang was observed on Arndale Octa and Peach Pi/Pit
+> > >>>> > after introducing runtime PM to pl330 DMA driver. After that commit the
+> > >>>> > 'mau_epll' was gated, because the "amba" clock was disabled and there
+> > >>>> > were no more users of mau_epll.
+> > >>>> > 
+> > >>>> > The system hang on one of steps:
+> > >>>> > 1. Disabling unused clocks from audss block.
+> > >>>> > 2. During audss GPIO setup (just before probing i2s0 because
+> > >>>> >    samsung_pinmux_setup() tried to access memory from audss block which was
+> > >>>> >    gated.
+> > >>>> > 
+> > >>>> > Add a workaround for this by enabling the 'mau_epll' clock in probe.
+> > >>>> > 
+> > >>>> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > >>>> > ---
+> > >>>> >  drivers/clk/samsung/clk-exynos-audss.c | 29 ++++++++++++++++++++++++++++-
+> > >>>> >  1 file changed, 28 insertions(+), 1 deletion(-)
+> > >>>
+> > >>> Sorry for pinging so quick but merge window is open and it looks like
+> > >>> booting Exynos542x boards will be broken (because pl330 will no longer
+> > >>> hold adma clock enabled so whole audss domain will be gated).
+> > >>> 
+> > >>> This is a non-intrusive workaround for that issue, as wanted by
+> > >>> Sylwester:
+> > >>> https://lkml.org/lkml/2014/12/5/223
+> > >>> 
+> > >>> Any comments on this?
+> > >>
+> > >> The patch looks OK to me, it would be good though if someone else
+> > >> has confirmed it fixes the bug. I don't have any clock patches queued
+> > >> at the moment. Perhaps you could apply it directly, Mike ?
+> > >
+> > > I confirm it fixes the boot hang in linux-next (next-20141210) on my
+> > > exynos5800-peach-pi and exynos5420-arndale-octa.  Tested both
+> > > exynos_defconfig and multi_v7_defconfig.
+> > >
+> > > Tested-by: Kevin Hilman <khilman@linaro.org>
+> > 
+> > What's the status of this patch?  linux-next is still broken for several
+> > Exynos5 platforms without this fix.
 > 
-> Signed-off-by: Seth Jennings <sjenning@redhat.com>
+> I believe not only next is broken but also current mainline because
+> runtime PM for pl330 was merged yesterday...
+> 
+> The patch received two tested-bys (Kevin's and Javier's) and Sylwester's
+> ack.
+> 
+> Mike, could you pick the patch and send it to Linus after rc1?
 
-Reviewed-by: Petr Mladek <pmladek@suse.cz>
+Will do.
 
-Best Regards,
-Petr
+Regards,
+Mike
+
+> 
+> Best regards,
+> Krzysztof
+> 
