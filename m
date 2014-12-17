@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaLQStj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:49:39 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:65125 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905AbaLQStg (ORCPT
+	id S1751887AbaLQSta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:49:30 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:41122 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaLQStZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:49:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <5491ACE6.4070108@ti.com>
-References: <54907884.2040502@ti.com> <5491ACE6.4070108@ti.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 17 Dec 2014 11:49:15 -0700
-Message-ID: <CAErSpo4hwMPOYBDZTu_fgKaUDYZ4h+jVpz5EigpErOgo6xO8mQ@mail.gmail.com>
-Subject: Re: How to fix CHECK warning: testing a 'safe expression' ?
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Christopher Li <sparse@chrisli.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Dec 2014 13:49:25 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-pm@vger.kernel.org
+Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 3/8] drivers: bus: Add Simple Power-Managed Bus DT Bindings
+Date: Wed, 17 Dec 2014 19:49:08 +0100
+Message-Id: <1418842153-17113-4-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
+References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Christopher, linux-kernel (this doesn't sound like a PCI-specific
-question)]
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+v2:
+  - New
+---
+ .../devicetree/bindings/bus/simple-pm-bus.txt      | 49 ++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
 
-On Wed, Dec 17, 2014 at 9:18 AM, Murali Karicheri <m-karicheri2@ti.com> wrote:
-> I am trying to address CHECK warnings in my driver and wondering how to
-> resolve 'warning: testing a 'safe expression' which appears when using
-> IS_ERR_OR_NULL(foo)
->
-> where foo is defined as
->
-> struct foo_type *foo;
->
-> The foo get assigned only NULL or ERR_PTR(error code). So I believe the
-> usage is correct. But then how do I make the CHECK happy of its usage?
->
-> I have tried a grep to check on the current usage of IS_ERR_OR_NULL() and
-> found 276 of them causes this warning in the v3.18 version of the kernel
-> that I am using
->
-> $ grep -r "warning: testing a 'safe expression" * | wc -l
-> 276
->
-> Can someone help me undestand what this means and how to fix the same?
->
-> I run folling for CHECK
->
-> make C=2 CF="-D__CHECK_ENDIAN__" CHECK=sparse
+diff --git a/Documentation/devicetree/bindings/bus/simple-pm-bus.txt b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+new file mode 100644
+index 0000000000000000..bc5f985fd5463afa
+--- /dev/null
++++ b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+@@ -0,0 +1,49 @@
++Simple Power-Managed Bus
++========================
++
++A Simple Power-Managed Bus is a transparent bus that doesn't need a real
++driver, as it's typically initialized by the boot loader.
++
++However, its bus controller is part of a PM domain, or under the control of a
++functional clock.  Hence, the bus controller's PM domain and/or clock must be
++enabled for child devices connected to the bus (either on-SoC or externally)
++to function.
++
++
++Generic compatible values and properties
++----------------------------------------
++
++Required properties:
++  - compatible: Must be at least one of the vendor-specific compatible values
++		from a vendor-specific section below, and "simple-bus" as a
++		fallback.
++
++Optional platform-specific properties for clock or PM domain control (at least
++one of them is required):
++  - clocks: Must contain a reference to the functional clock(s),
++  - power-domains: Must contain a reference to the PM domain.
++
++
++Vendor-specific compatible values and properties
++------------------------------------------------
++
++Renesas Bus State Controller (BSC):
++  - compatible: Must be an SoC-specific value, and "renesas,bsc" as a fallback.
++                SoC-specific values can be:
++		"renesas,bsc-r8a73a4" for R-Mobile APE6 (r8a73a4)
++		"renesas,bsc-sh73a0" for SH-Mobile AG5 (sh73a0)
++  - interrupts: Must contain a reference to the BSC interrupt, if available.
++
++
++Example:
++
++	bsc: bus@fec10000 {
++		compatible = "renesas,bsc-sh73a0", "renesas,bsc", "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0xfec10000 0x400>;
++		ranges = <0 0 0x20000000>;
++		interrupts = <0 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&zb_clk>;
++		power-domains = <&pd_a4s>;
++	};
+-- 
+1.9.1
 
-If you can share your actual code or point to it in the tree, you
-might get more specific help.
-
-Bjorn
