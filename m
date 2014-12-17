@@ -1,43 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751464AbaLQT6t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 14:58:49 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:36620 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaLQT6p (ORCPT
+	id S1751475AbaLQUB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 15:01:59 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:51942 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaLQUB5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 14:58:45 -0500
+	Wed, 17 Dec 2014 15:01:57 -0500
+Date: Wed, 17 Dec 2014 17:01:47 -0300
+From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+To: Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] UBI: Fastmap: Fix memory leaks while closing the WL
+ sub-system
+Message-ID: <20141217200147.GA11301@fox>
+References: <1417347340-6872-1-git-send-email-richard@nod.at>
+ <1417347340-6872-2-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <5491D0D2.5070103@sr71.net>
-References: <5490A5F8.6050504@sr71.net>
-	<20141217100810.GA3461@arm.com>
-	<CA+55aFyVxOw0upa=At6MmiNYEHzfPz4rE5bZUBCs9h4vKGh1iA@mail.gmail.com>
-	<20141217165310.GJ870@arm.com>
-	<5491D0D2.5070103@sr71.net>
-Date: Wed, 17 Dec 2014 11:58:44 -0800
-X-Google-Sender-Auth: qOe-Evx1UeTdWJ1KpuDzS9QIWHM
-Message-ID: <CA+55aFze3z_f4hKKg3mf3YcQX6KyDfMO7UmUUhjWx5dtjQZN1A@mail.gmail.com>
-Subject: Re: post-3.18 performance regression in TLB flushing code
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: Will Deacon <will.deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Simek <monstr@monstr.eu>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417347340-6872-2-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 10:52 AM, Dave Hansen <dave@sr71.net> wrote:
->
-> These things are also a little bit noisy, so we're well within the
-> margin of error with Linus's fix.
->
-> This also holds up on the large system.
+On Sun, Nov 30, 2014 at 12:35:35PM +0100, Richard Weinberger wrote:
+> Add a ubi_fastmap_close() to free all resources used by fastmap
+> at WL shutdown.
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-Good. I'll commit it asap.
+Either for this patch, or for a v3 if you move the
+-flush_work/+ubi_fastmap_close to shutdown_work:
 
-                          Linus
+Tested-by: Guido Martínez <guido@vanguardiasur.com.ar>
+Reviewed-by: Guido Martínez <guido@vanguardiasur.com.ar>
+
+> ---
+>  drivers/mtd/ubi/wl.c | 21 ++++++++++++++++++---
+>  1 file changed, 18 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index c2822f7..47b215f 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -2064,6 +2064,23 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>  	}
+>  }
+>  
+> +static void ubi_fastmap_close(struct ubi_device *ubi)
+> +{
+> +#ifdef CONFIG_MTD_UBI_FASTMAP
+> +	int i;
+> +
+> +	flush_work(&ubi->fm_work);
+> +	return_unused_pool_pebs(ubi, &ubi->fm_pool);
+> +	return_unused_pool_pebs(ubi, &ubi->fm_wl_pool);
+> +
+> +	if (ubi->fm) {
+> +		for (i = 0; i < ubi->fm->used_blocks; i++)
+> +			kfree(ubi->fm->e[i]);
+> +	}
+> +	kfree(ubi->fm);
+> +#endif
+> +}
+> +
+>  /**
+>   * ubi_wl_close - close the wear-leveling sub-system.
+>   * @ubi: UBI device description object
+> @@ -2071,9 +2088,7 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>  void ubi_wl_close(struct ubi_device *ubi)
+>  {
+>  	dbg_wl("close the WL sub-system");
+> -#ifdef CONFIG_MTD_UBI_FASTMAP
+> -	flush_work(&ubi->fm_work);
+> -#endif
+> +	ubi_fastmap_close(ubi);
+>  	shutdown_work(ubi);
+>  	protection_queue_destroy(ubi);
+>  	tree_destroy(&ubi->used);
+
+-- 
+Guido Martínez, VanguardiaSur
+www.vanguardiasur.com.ar
