@@ -1,89 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750AbaLQXTS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 18:19:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58132 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaLQXTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 18:19:17 -0500
-Date: Thu, 18 Dec 2014 10:19:06 +1100
-From: NeilBrown <neilb@suse.de>
-To: Nicholas Krause <xerofoify@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:md: Remove no longer needed fixme comment in
- raid5.c
-Message-ID: <20141218101906.55b7772d@notabene.brown>
-In-Reply-To: <1418831373-18415-1-git-send-email-xerofoify@gmail.com>
-References: <1418831373-18415-1-git-send-email-xerofoify@gmail.com>
-X-Mailer: Claws Mail 3.10.1-162-g4d0ed6 (GTK+ 2.24.25; x86_64-suse-linux-gnu)
+	id S1751454AbaLQXZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 18:25:12 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33862 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaLQXZJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 18:25:09 -0500
+Message-ID: <549210BB.9080603@ti.com>
+Date: Wed, 17 Dec 2014 18:24:43 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/8N088tSaDk7hWDWj1k5nRVO"; protocol="application/pgp-signature"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <gregkh@linuxfoundation.org>,
+        <vinod.koul@intel.com>, <dmaengine@vger.kernel.org>,
+        <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/2] common: dma-mapping: introduce dma_get_parent_cfg()
+ helper
+References: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com> <1418839344-14393-2-git-send-email-m-karicheri2@ti.com> <1949667.gMcOLHe7Sk@wuerfel>
+In-Reply-To: <1949667.gMcOLHe7Sk@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8N088tSaDk7hWDWj1k5nRVO
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 12/17/2014 04:56 PM, Arnd Bergmann wrote:
+> On Wednesday 17 December 2014 13:02:23 Murali Karicheri wrote:
+>> Now, in Kernel, parent device's DMA parameters has to be applied to
+>> the child as is - to enable DMA support for the device. Usually this
+>> is happened in places where parent device manually instantiates child
+>> device such as in drivers/pci/probe.c (pci_device_add() for example).
+>>
+>> Now DMA configuration is represented in device data structure not only
+>> by DMA mask and DMA params, it also includes dma_pfn_offset at least.
+>> Hence introduce common dma_get_parent_cfg() helper to apply dma
+>> configuration from parent to child, and use __weak to allow arch to
+>> override it if needed.
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> ---
+>>   drivers/base/dma-mapping.c  |   18 ++++++++++++++++++
+>>   include/linux/dma-mapping.h |    3 +++
+>>   2 files changed, 21 insertions(+)
+>>
+>> diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
+>> index 9e8bbdd..5322426 100644
+>> --- a/drivers/base/dma-mapping.c
+>> +++ b/drivers/base/dma-mapping.c
+>> @@ -339,3 +339,21 @@ void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
+>>   	vunmap(cpu_addr);
+>>   }
+>>   #endif
+>> +
+>> +int __weak dma_get_parent_cfg(struct device *dev, struct device *parent)
+>> +{
+>> +	struct device *temp = parent;
+>> +
+>> +	if (!temp)
+>> +		temp = dev->parent;
+>> +
+>> +	if (temp&&  is_device_dma_capable(temp)) {
+>> +		dev->dma_mask	= temp->dma_mask;
+>> +		dev->coherent_dma_mask = temp->coherent_dma_mask;
+>
+> As discussed, setting the pointers like this is always wrong,
+> so don't do it.
+>
+> What's wrong with using arch_setup_dma_ops() from PCI as suggested
+> previously?
+>
+> 	Arnd
 
-On Wed, 17 Dec 2014 10:49:33 -0500 Nicholas Krause <xerofoify@gmail.com>
-wrote:
+Arnd,
 
-> Removes the no longer needed fix me comment related to not needing the ag=
-rument faster for the function,
-> sync_request. Due to getting warnings when building without the agrument =
-it seems that this fix me was
-> wrong and we must keep this agrument in order to avoid build warnings whe=
-n building without it.
->=20
-> Signed-off-by: Nicholas Krause <xerofoify@gmail.com>
-> ---
->  drivers/md/raid5.c | 1 -
->  1 file changed, 1 deletion(-)
->=20
-> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-> index c1b0d52..c0fde2a 100644
-> --- a/drivers/md/raid5.c
-> +++ b/drivers/md/raid5.c
-> @@ -4986,7 +4986,6 @@ ret:
->  	return reshape_sectors;
->  }
-> =20
-> -/* FIXME go_faster isn't used */
->  static inline sector_t sync_request(struct mddev *mddev, sector_t sector=
-_nr, int *skipped, int go_faster)
->  {
->  	struct r5conf *conf =3D mddev->private;
+Thanks for the review.
+
+I had originally written a code based on that line as below. But 
+dma-ranges property is also used by ppc and other architectures in the 
+pci device DT node. So I wasn't sure how this code impact PCI driver 
+functionality on those platforms. Hence used a simpler change as all 
+that is needed for keystone is to get the dma_pfn_offset rightly set in 
+the pci slave device.
+
+Initially I had a function implemented as below for this in of_pci.c.
+
++ * of_pci_dma_configure - Setup DMA configuration for a pci device
++ * @dev:       pci device to apply DMA configuration
++ *
++ * Try to get devices's DMA configuration from DT and update it
++ * accordingly. This is a similar to of_dma_configure() for platform
++ * devices.
++ *
++ */
++void of_pci_dma_configure(struct pci_dev *dev)
++{
++       struct device *host_bridge, *parent;
++       struct pci_bus *bus = dev->bus;
++       u64 dma_addr, paddr, size;
++       int ret;
++
++       while (!pci_is_root_bus(bus))
++               bus = bus->parent;
++       host_bridge = bus->bridge;
++
++       parent = host_bridge->parent;
++       if (parent->of_node) {
++               /*
++                * if dma-coherent property exist, call arch hook to setup
++                * dma coherent operations.
++                */
++               if (of_dma_is_coherent(parent->of_node)) {
++                       set_arch_dma_coherent_ops(&dev->dev);
++                       dev_info(&dev->dev, "device is dma coherent\n");
++               }
++
++               /*
++                * if dma-ranges property doesn't exist - just return else
++                * setup the dma offset
++                */
++               ret = of_dma_get_range(parent->of_node, &dma_addr, 
+&paddr, &size);
++               if (ret < 0) {
++                       dev_info(&dev->dev, "no dma range information to 
+setup\n");
++                       printk("no dma range information to setup\n");
++                       return;
++               }
++
++               /* DMA ranges found. Calculate and set dma_pfn_offset */
++               dev->dev.dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
++               dev_info(&dev->dev, "dma_pfn_offset(%#08lx)\n", 
+dev->dev.dma_pfn_offset);
++       }
++}
++EXPORT_SYMBOL_GPL(of_pci_dma_configure);
 
 
-Why do you think the comment is no longer needed.  Is "go_faster" being used
-now?  Is there a clear explanation somewhere of why "go_faster" should not =
-be
-used?
+and then called from pci/probe.c as
 
-NeilBrown
+@@ -1527,6 +1528,9 @@ void pci_device_add(struct pci_dev *dev, struct 
+pci_bus *bus)
+         dev->dev.dma_parms = &dev->dma_parms;
+         dev->dev.coherent_dma_mask = 0xffffffffull;
 
---Sig_/8N088tSaDk7hWDWj1k5nRVO
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
++       /* Get the DMA configuration from root bridge's parent if present */
++       of_pci_dma_configure(dev);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+If you think this is a better way to implement this, I can work on a 
+patch set using this approach. Let me know.
 
-iQIVAwUBVJIPajnsnt1WYoG5AQIzOw//ZXuXWuCNFtt6bfbNMmeS7+/SENzOcDdt
-4IWNIRJv+i29K0c2telwAOeE0a2LDftgEWUnNJs2l7Sg49q5ucMo02415ViIXqbK
-oWOsYvvXGeZYqMR65EQ3gZbXo5Uh1ZrgB5+rQTffCBwYBqMaYKvQ9qKS6JGqNdXK
-kYiBIvVeUr2ucXvWicavEVkR47Vi+oUxO4t/iYKOCbDkScmSMpazviiOIaclFk6o
-k2Y7e+PipXVOWdcLF/qdMMIpFPZhR6lvADasYm/8OeMXBzZEKU4qVaarIDiLpw3z
-Tlc9G0b3nNgbzNuxE+Y3FmnhQpPwTQklQ4QmckbuQXi7Q8tAwxRuW9Kx37bh6BSJ
-ZU8+D6VZgbVJXyc9gdwA5zJvfqoyZU/rpC+6w1OJb5AN/oo2ILJfBVGB86XgWC8k
-fQwbgfhX4+NHW9/yo0InGvOMDjnBPcOVEjYnimJC8iieGkB1DgS4cqTY4xduAxnk
-+YlFAse7eN6hsF/6Pfmx0YB4ETrBYcYaCrhtOW7vqt/0bGmCYGGPi7f24K2meUp6
-wgU7eXU322bQwSBtYoS1N5ZGEFcDRC/TkJpJbvxP/tpX6uxpnfmJgFjBnsi1QYdo
-JHfXjhnqrGooFtLWKp6oASc70GZnVEh3RS1Yd2//cb3erEBM73CllZ+M2+hTJZDR
-8Om/HFo0Mpc=
-=w4pT
------END PGP SIGNATURE-----
-
---Sig_/8N088tSaDk7hWDWj1k5nRVO--
+-- 
+Murali Karicheri
+Linux Kernel, Texas Instruments
