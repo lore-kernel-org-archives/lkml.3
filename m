@@ -1,407 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaLQKCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:02:17 -0500
-Received: from bay004-omc1s17.hotmail.com ([65.54.190.28]:56870 "EHLO
-	BAY004-OMC1S17.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752332AbaLQKCP (ORCPT
+	id S1752396AbaLQKCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:02:31 -0500
+Received: from bay004-omc1s12.hotmail.com ([65.54.190.23]:60467 "EHLO
+	BAY004-OMC1S12.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752371AbaLQKC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:02:15 -0500
-X-TMN: [PWUGC83xFUfasjmp6FIRZ+/h6bG0nR4+]
+	Wed, 17 Dec 2014 05:02:29 -0500
+X-TMN: [dsx7T6iheuBv2zUfEvI62HyeaMl+n5LR]
 X-Originating-Email: [dudlx@outlook.com]
-Message-ID: <BAY407-EAS3350809A07CE714C84D2D59BD6D0@phx.gbl>
+Message-ID: <BAY407-EAS3589D1D6DEF9DBF5FF5D086BD6D0@phx.gbl>
 From: Dudley Du <dudlx@outlook.com>
 To: <dmitry.torokhov@gmail.com>, <jmmahler@gmail.com>, <rydberg@euromail.se>
 CC: <bleung@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v16 05/12] input: cyapa: add sysfs interfaces support in the cyapa
-Date: Wed, 17 Dec 2014 17:57:12 +0800
+Subject: [PATCH v16 07/12] input: cyapa: add gen3 trackpad device read baseline
+Date: Wed, 17 Dec 2014 17:57:28 +0800
 MIME-Version: 1.0
 Content-Type: text/plain; charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AdAZ3s9OeDFrgD9kSOObFhzdr3pkBw==
+Thread-Index: AdAZ3xJZKGC4l1rsTmSedU+pGaoqIg==
 Content-Language: zh-cn
-X-OriginalArrivalTime: 17 Dec 2014 09:57:13.0964 (UTC) FILETIME=[D53C3AC0:01D019DF]
+X-OriginalArrivalTime: 17 Dec 2014 09:57:29.0664 (UTC) FILETIME=[DE97DC00:01D019DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device's basic control and features supported in cyapa driver through
-sysfs file system interfaces. These interfaces are commonly used in
-pre- and after production, for trackpad device state checking, managing
-and firmware image updating.
-These interfaces including mode, firmware_version and product_id interfaces
-for reading firmware version and trackpad device product id values,
-and including update_fw interface to command firmware image update
-process. Also including baseline and calibrate interfaces for
-reading and checking trackpad device's sensors states.
+Add read baseline function supported for gen3 trackpad device,
+it can be used through sysfs baseline interface.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
 ---
- drivers/input/mouse/cyapa.c | 327 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 327 insertions(+)
+ drivers/input/mouse/cyapa_gen3.c | 72 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
-diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index 3bcfce3..406f38b 100644
---- a/drivers/input/mouse/cyapa.c
-+++ b/drivers/input/mouse/cyapa.c
-@@ -32,6 +32,8 @@
- #define CYAPA_ADAPTER_FUNC_SMBUS  2
- #define CYAPA_ADAPTER_FUNC_BOTH   3
- 
-+#define CYAPA_FW_NAME		"cyapa.bin"
-+
- const char product_id[] = "CYTRA";
- 
- static int cyapa_reinitialize(struct cyapa *cyapa);
-@@ -442,6 +444,29 @@ static int cyapa_create_input_dev(struct cyapa *cyapa)
+diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
+index cd4f1db..92b3d6d 100644
+--- a/drivers/input/mouse/cyapa_gen3.c
++++ b/drivers/input/mouse/cyapa_gen3.c
+@@ -765,6 +765,76 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
  	return 0;
  }
  
-+static void cyapa_enable_irq_for_cmd(struct cyapa *cyapa)
++static ssize_t cyapa_gen3_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
 +{
-+	struct input_dev *input = cyapa->input;
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int max_baseline, min_baseline;
++	int tries;
++	int ret;
 +
-+	if (!input || !input->users) {
-+		if (!CYAPA_BOOTLOADER(cyapa) && cyapa->ops->set_power_mode)
-+			cyapa->ops->set_power_mode(cyapa,
-+				PWR_MODE_FULL_ACTIVE, 0);
-+		enable_irq(cyapa->client->irq);
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++	if (ret < 0) {
++		dev_err(dev, "Error reading dev status. err = %d\n", ret);
++		goto out;
 +	}
-+}
-+
-+static void cyapa_disable_irq_for_cmd(struct cyapa *cyapa)
-+{
-+	struct input_dev *input = cyapa->input;
-+
-+	if (!input || !input->users) {
-+		disable_irq(cyapa->client->irq);
-+		if (!CYAPA_BOOTLOADER(cyapa) && cyapa->ops->set_power_mode)
-+			cyapa->ops->set_power_mode(cyapa, PWR_MODE_OFF, 0);
++	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
++		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
++			 ret);
++		ret = -EAGAIN;
++		goto out;
 +	}
++
++	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++			       OP_REPORT_BASELINE_MASK);
++	if (ret < 0) {
++		dev_err(dev, "Failed to send report baseline command. %d\n",
++			ret);
++		goto out;
++	}
++
++	tries = 3;  /* Try for 30 to 60 ms */
++	do {
++		usleep_range(10000, 20000);
++
++		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++		if (ret < 0) {
++			dev_err(dev, "Error reading dev status. err = %d\n",
++				ret);
++			goto out;
++		}
++		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++			break;
++	} while (--tries);
++
++	if (tries == 0) {
++		dev_err(dev, "Device timed out going to Normal state.\n");
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read max baseline. err = %d\n", ret);
++		goto out;
++	}
++	max_baseline = ret;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read min baseline. err = %d\n", ret);
++		goto out;
++	}
++	min_baseline = ret;
++
++	dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
++		max_baseline, min_baseline);
++	ret = scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_baseline);
++
++out:
++	return ret;
 +}
 +
  /*
-  * cyapa_sleep_time_to_pwr_cmd and cyapa_pwr_cmd_to_sleep_time
+  * cyapa_get_wait_time_for_pwr_cmd
   *
-@@ -783,6 +808,295 @@ static int cyapa_start_runtime(struct cyapa *cyapa)
- }
- #endif /* CONFIG_PM_RUNTIME */
+@@ -1079,6 +1149,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.update_fw = cyapa_gen3_do_fw_update,
+ 	.bl_deactivate = cyapa_gen3_bl_deactivate,
  
-+static ssize_t cyapa_show_fm_ver(struct device *dev,
-+				 struct device_attribute *attr, char *buf)
-+{
-+	int error;
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
++	.show_baseline = cyapa_gen3_show_baseline,
 +
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+	error = scnprintf(buf, PAGE_SIZE, "%d.%d\n", cyapa->fw_maj_ver,
-+			 cyapa->fw_min_ver);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	return error;
-+}
-+
-+static ssize_t cyapa_show_product_id(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int size;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+	size = scnprintf(buf, PAGE_SIZE, "%s\n", cyapa->product_id);
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	return size;
-+}
-+
-+static int cyapa_firmware(struct cyapa *cyapa, const char *fw_name)
-+{
-+	struct device *dev = &cyapa->client->dev;
-+	const struct firmware *fw;
-+	int error;
-+
-+	error = request_firmware(&fw, fw_name, dev);
-+	if (error) {
-+		dev_err(dev, "Could not load firmware from %s: %d\n",
-+			fw_name, error);
-+		return error;
-+	}
-+
-+	if (cyapa->ops->check_fw) {
-+		error = cyapa->ops->check_fw(cyapa, fw);
-+		if (error) {
-+			dev_err(dev, "Invalid CYAPA firmware image: %s\n",
-+					fw_name);
-+			goto done;
-+		}
-+	} else {
-+		dev_err(dev, "No valid device ops->check_fw handler set.\n");
-+		error = -ENODEV;
-+		goto done;
-+	}
-+
-+	/*
-+	 * Resume the potentially suspended device because doing FW
-+	 * update on a device not in the FULL mode has a chance to
-+	 * fail.
-+	 */
-+	pm_runtime_get_sync(dev);
-+
-+	/* Require IRQ support for firmware update commands. */
-+	cyapa_enable_irq_for_cmd(cyapa);
-+
-+	if (cyapa->ops->bl_enter) {
-+		error = cyapa->ops->bl_enter(cyapa);
-+		if (error) {
-+			dev_err(dev, "bl_enter failed, %d\n", error);
-+			goto err_detect;
-+		}
-+	}
-+
-+	if (cyapa->ops->bl_activate) {
-+		error = cyapa->ops->bl_activate(cyapa);
-+		if (error) {
-+			dev_err(dev, "bl_activate failed, %d\n", error);
-+			goto err_detect;
-+		}
-+	}
-+
-+	if (cyapa->ops->bl_initiate) {
-+		error = cyapa->ops->bl_initiate(cyapa, fw);
-+		if (error) {
-+			dev_err(dev, "bl_initiate failed, %d\n", error);
-+			goto err_detect;
-+		}
-+	}
-+
-+	if (cyapa->ops->update_fw) {
-+		error = cyapa->ops->update_fw(cyapa, fw);
-+		if (error) {
-+			dev_err(dev, "update_fw failed, %d\n", error);
-+			goto err_detect;
-+		}
-+	}
-+
-+	if (cyapa->ops->bl_verify_app_integrity) {
-+		error = cyapa->ops->bl_verify_app_integrity(cyapa);
-+		if (error) {
-+			dev_err(dev, "bl_verify_app_integrity failed, %d\n",
-+					error);
-+			goto err_detect;
-+		}
-+	}
-+
-+err_detect:
-+	cyapa_disable_irq_for_cmd(cyapa);
-+	pm_runtime_put_noidle(dev);
-+
-+done:
-+	release_firmware(fw);
-+	return error;
-+}
-+
-+static ssize_t cyapa_update_fw_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	char fw_name[NAME_MAX];
-+	int ret, error;
-+
-+	if (count > NAME_MAX) {
-+		dev_err(dev, "File name too long\n");
-+		return -EINVAL;
-+	}
-+
-+	memcpy(fw_name, buf, count);
-+	if (fw_name[count - 1] == '\n')
-+		fw_name[count - 1] = '\0';
-+	else
-+		fw_name[count] = '\0';
-+
-+	if (cyapa->input) {
-+		/*
-+		 * Force the input device to be registered after the firmware
-+		 * image is updated, so if the corresponding parameters updated
-+		 * in the new firmware image can taken effect immediately.
-+		 */
-+		input_unregister_device(cyapa->input);
-+		cyapa->operational = false;
-+		cyapa->input = NULL;
-+	}
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error) {
-+		/*
-+		 * Whatever, do reinitialize to try to recover TP state to
-+		 * previous state just as it entered fw update entrance.
-+		 */
-+		cyapa_reinitialize(cyapa);
-+		return error;
-+	}
-+
-+	error = cyapa_firmware(cyapa, fw_name);
-+	if (error)
-+		dev_err(dev, "firmware update failed: %d\n", error);
-+	else
-+		dev_dbg(dev, "firmware update successfully done.\n");
-+
-+	/*
-+	 * Redetect trackpad device states because firmware update process
-+	 * will reset trackpad device into bootloader mode.
-+	 */
-+	ret = cyapa_reinitialize(cyapa);
-+	if (ret) {
-+		dev_err(dev, "failed to redetect after updated: %d\n", ret);
-+		error = error ? error : ret;
-+	}
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	return error ? error : count;
-+}
-+
-+static ssize_t cyapa_calibrate_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+
-+	if (!cyapa->ops->calibrate_store) {
-+		dev_err(dev, "Calibrate operation not supported.\n");
-+		error = -ENOTSUPP;
-+	} else {
-+		cyapa_enable_irq_for_cmd(cyapa);
-+		error = cyapa->ops->calibrate_store(dev, attr, buf, count);
-+		cyapa_disable_irq_for_cmd(cyapa);
-+	}
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	return error < 0 ? error : count;
-+}
-+
-+static ssize_t cyapa_show_baseline(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	ssize_t error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+
-+	if (!cyapa->ops->show_baseline) {
-+		dev_err(dev, "Calibrate operation not supported.\n");
-+		error = -ENOTSUPP;
-+	} else {
-+		cyapa_enable_irq_for_cmd(cyapa);
-+		error = cyapa->ops->show_baseline(dev, attr, buf);
-+		cyapa_disable_irq_for_cmd(cyapa);
-+	}
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	return error;
-+}
-+
-+static char *cyapa_state_to_string(struct cyapa *cyapa)
-+{
-+	switch (cyapa->state) {
-+	case CYAPA_STATE_BL_BUSY:
-+		return "bootloader busy";
-+	case CYAPA_STATE_BL_IDLE:
-+		return "bootloader idle";
-+	case CYAPA_STATE_BL_ACTIVE:
-+		return "bootloader active";
-+	case CYAPA_STATE_GEN5_BL:
-+		return "bootloader";
-+	case CYAPA_STATE_OP:
-+	case CYAPA_STATE_GEN5_APP:
-+		return "operational";  /* Normal valid state. */
-+	default:
-+		return "invalid mode";
-+	}
-+}
-+
-+static ssize_t cyapa_show_mode(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int size;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+
-+	size = scnprintf(buf, PAGE_SIZE, "gen%d %s\n",
-+			cyapa->gen, cyapa_state_to_string(cyapa));
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+	return size;
-+}
-+
-+static DEVICE_ATTR(firmware_version, S_IRUGO, cyapa_show_fm_ver, NULL);
-+static DEVICE_ATTR(product_id, S_IRUGO, cyapa_show_product_id, NULL);
-+static DEVICE_ATTR(update_fw, S_IWUSR, NULL, cyapa_update_fw_store);
-+static DEVICE_ATTR(baseline, S_IRUGO, cyapa_show_baseline, NULL);
-+static DEVICE_ATTR(calibrate, S_IWUSR, NULL, cyapa_calibrate_store);
-+static DEVICE_ATTR(mode, S_IRUGO, cyapa_show_mode, NULL);
-+
-+static struct attribute *cyapa_sysfs_entries[] = {
-+	&dev_attr_firmware_version.attr,
-+	&dev_attr_product_id.attr,
-+	&dev_attr_update_fw.attr,
-+	&dev_attr_baseline.attr,
-+	&dev_attr_calibrate.attr,
-+	&dev_attr_mode.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group cyapa_sysfs_group = {
-+	.attrs = cyapa_sysfs_entries,
-+};
-+
-+static void cyapa_remove_sysfs_group(void *data)
-+{
-+	struct cyapa *cyapa = data;
-+
-+	sysfs_remove_group(&cyapa->client->dev.kobj, &cyapa_sysfs_group);
-+}
-+
- static int cyapa_probe(struct i2c_client *client,
- 		       const struct i2c_device_id *dev_id)
- {
-@@ -822,6 +1136,19 @@ static int cyapa_probe(struct i2c_client *client,
- 		return error;
- 	}
+ 	.state_parse = cyapa_gen3_state_parse,
+ 	.operational_check = cyapa_gen3_do_operational_check,
  
-+	error = sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group);
-+	if (error) {
-+		dev_err(dev, "failed to create sysfs entries: %d\n", error);
-+		return error;
-+	}
-+
-+	error = devm_add_action(dev, cyapa_remove_sysfs_group, cyapa);
-+	if (error) {
-+		cyapa_remove_sysfs_group(cyapa);
-+		dev_err(dev, "failed to add sysfs cleanup action: %d\n", error);
-+		return error;
-+	}
-+
- #ifdef CONFIG_PM_SLEEP
- 	if (device_can_wakeup(dev)) {
- 		error = sysfs_merge_group(&client->dev.kobj,
 -- 
 1.9.1
 
