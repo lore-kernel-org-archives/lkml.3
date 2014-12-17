@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673AbaLQWP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 17:15:57 -0500
-Received: from mout.gmx.net ([212.227.17.22]:54555 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553AbaLQWP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 17:15:56 -0500
-Message-ID: <54920096.5000409@gmx.de>
-Date: Wed, 17 Dec 2014 23:15:50 +0100
-From: Hartmut Knaack <knaack.h@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:34.0) Gecko/20100101 Firefox/34.0 SeaMonkey/2.31
+	id S1751647AbaLQWRY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 17:17:24 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:57105 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470AbaLQWRW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 17:17:22 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Srikanth Thokala <sthokal@xilinx.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@stlinux.com, linux-pci@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 4/5] PCI: designware: Add setup bus-related to pcie_host_ops
+Date: Wed, 17 Dec 2014 23:16:12 +0100
+Message-ID: <1507589.aeTeyNn1QF@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418812486-12394-5-git-send-email-gabriel.fernandez@linaro.org>
+References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org> <1418812486-12394-5-git-send-email-gabriel.fernandez@linaro.org>
 MIME-Version: 1.0
-To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [PATCH v3 3/5] iio: common: ssp_sensors: Add sensorhub iio commons
-References: <1417809290-9662-1-git-send-email-k.wrona@samsung.com> <1417809290-9662-4-git-send-email-k.wrona@samsung.com>
-In-Reply-To: <1417809290-9662-4-git-send-email-k.wrona@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:XV3nifd98XQGasYcCLZblZHnc0IL2U2MC6d2BJROdSfJgvcI7Fv
- wvOvGvffzjzXfzpx0S3J6eDc6uDgFMxQruvubKk8VCuPeJunX9EGU/XNttybYJzSdYGM5XN
- Y0V8RjAFmpegB28WQ2R4ytGWBhMmHQ778hxif1Sx6BkweCPhVkhG4Q3svmkFl5Vkyux+7tX
- qaTi39Hu1jHrk/FURHUpA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:oQnNhGGD0Ig9DUf1diHKsH4dUV6+DV90wC4b23UKW//P7zWuBqP
+ +2emUigzrhsv5louyVWKNqOWQA45egHHeJJzG3ETkQDmY5wQuxmfpUw0e9Jm75ZeZGdOSnw
+ yZ2mx0ECeY7vIRQmNlAUL3KGHi3MO0XBLj601OAZ0rn2JCCnebFOvj/jpu7VoiS0b8FgurN
+ uJkd7yNqPEWxhkdZq/tHQ==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karol Wrona schrieb am 05.12.2014 um 20:54:
-> This patch adds common library for sensorhub iio drivers.
+On Wednesday 17 December 2014 11:34:45 Gabriel FERNANDEZ wrote:
+> ST sti SoCs PCIe IPs are built around DesignWare IP Core.
+> But in these SoCs PCIe IP doesn't support IO.
 > 
-Looks good to me, overall. Just one very small nitpick.
-> Change-Id: I1038cb31c051f7e8ffde696a4121518daa5af081
-> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/iio/common/ssp_sensors/ssp_iio.c        |   82 +++++++++++++++++++++++
->  drivers/iio/common/ssp_sensors/ssp_iio_sensor.h |   56 ++++++++++++++++
->  2 files changed, 138 insertions(+)
->  create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
->  create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+> To support this, add setup_bus() to pcie_host_ops.
 > 
+> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 
-> +/* Converts time in ms to frequency */
-> +static inline void ssp_convert_to_freq(u32 time, int *integer_part,
-> +				       int *fractional)
-> +{
-> +	if (time == 0) {
-> +		*fractional = 0;
-> +		*integer_part = 0;
-> +		return;
-> +	}
-> +
-> +	*integer_part = SSP_DIVIDEND / time;
-> +	*fractional = do_div(*integer_part, SSP_DIVISOR);
-> +}
-> +
-> +/* Converts frequency to time in ms*/
-Missing whitespace at end of comment.
-> +static inline int ssp_convert_to_time(int integer_part, int fractional)
-> +{
-> +	u64 value;
-> +
-> +	value = integer_part * SSP_DIVISOR + fractional;
-> +	if (value == 0)
-> +		return 0;
-> +
-> +	return div_u64(SSP_DIVIDEND, value);
-> +}
-> +#endif /* __SSP_IIO_SENSOR_H__ */
-> 
+The dw-pcie driver should be able to tell whether the device has
+an I/O space or not, and do the right thing based on that. Don't
+add an implementation specific callback for that.
 
+	Arnd
