@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274AbaLQOUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:20:24 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51194 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaLQOUX (ORCPT
+	id S1751193AbaLQO0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 09:26:55 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:41502 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaLQO0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 09:20:23 -0500
-Message-ID: <54919119.8030208@arm.com>
-Date: Wed, 17 Dec 2014 14:20:09 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 17 Dec 2014 09:26:54 -0500
+Date: Wed, 17 Dec 2014 11:26:44 -0300
+From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+To: Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6] UBI: Fastmap: Ensure that all fastmap work is done
+ upon WL shutdown
+Message-ID: <20141217142644.GB19525@fox>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
+ <1416835236-25185-4-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-CC: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: shmobile: r8a7740: Instantiate GIC from C board
- code in legacy builds
-References: <1418823642-28154-1-git-send-email-geert+renesas@glider.be>
-In-Reply-To: <1418823642-28154-1-git-send-email-geert+renesas@glider.be>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416835236-25185-4-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/14 13:40, Geert Uytterhoeven wrote:
-> As of commit 9a1091ef0017c40a ("irqchip: gic: Support hierarchy irq
-> domain."), armadillo-legacy hangs during boot with:
+On Mon, Nov 24, 2014 at 02:20:33PM +0100, Richard Weinberger wrote:
+> ...otherwise the deferred work might run after datastructures
+> got freed and corrupt memory.
 > 
->      sh-tmu.0: ch0: used for clock events
->      sh-tmu.0: ch0: used for periodic clock events
->      sh-tmu.0: ch0: failed to request irq 230
->      sh-tmu.0: ch1: used as clock source
->      sh-cmt-48.1: ch0: failed to request irq 90
->      sh-cmt-48.1: ch0: registration failed
->     earlytimer: unable to probe sh-cmt-48 early.
->     Calibrating delay loop...
-> 
-> This happens because the IRQ numbers of the GIC are now virtual, and no
-> longer match the hardcoded hardware IRQ numbers in the platform board
-> code.
-> To fix this, instantiate the GIC from platform board code when compiling
-> a legacy kernel, like is done on sh73a0 for kzm9g-legacy.
+> Signed-off-by: Richard Weinberger <richard@nod.at>
 
-Ah, that explains why kzm9g-legacy didn't explode in -next...
+After moving it to shutdown_work():
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Reviewed-by: Guido Martínez <guido@vanguardiasur.com.ar>
+
 > ---
->  arch/arm/mach-shmobile/setup-r8a7740.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+>  drivers/mtd/ubi/wl.c | 3 +++
+>  1 file changed, 3 insertions(+)
 > 
-> diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
-> index 79ad93dfdae4ee70..d191cf4197313482 100644
-> --- a/arch/arm/mach-shmobile/setup-r8a7740.c
-> +++ b/arch/arm/mach-shmobile/setup-r8a7740.c
-> @@ -800,7 +800,14 @@ void __init r8a7740_init_irq_of(void)
->  	void __iomem *intc_msk_base = ioremap_nocache(0xe6900040, 0x10);
->  	void __iomem *pfc_inta_ctrl = ioremap_nocache(0xe605807c, 0x4);
->  
-> +#ifdef CONFIG_ARCH_SHMOBILE_LEGACY
-> +	void __iomem *gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
-> +	void __iomem *gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
-> +
-> +	gic_init(0, 29, gic_dist_base, gic_cpu_base);
-> +#else
->  	irqchip_init();
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 7f135df..cb2e571 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -2041,6 +2041,9 @@ static void protection_queue_destroy(struct ubi_device *ubi)
+>  void ubi_wl_close(struct ubi_device *ubi)
+>  {
+>  	dbg_wl("close the WL sub-system");
+> +#ifdef CONFIG_MTD_UBI_FASTMAP
+> +	flush_work(&ubi->fm_work);
 > +#endif
->  
->  	/* route signals to GIC */
->  	iowrite32(0x0, pfc_inta_ctrl);
+>  	shutdown_work(ubi);
+>  	protection_queue_destroy(ubi);
+>  	tree_destroy(&ubi->used);
+> -- 
+> 1.8.4.5
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Hopefully we'll be able to move away from this kind of thing at some
-point. Until then:
-
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
-
-	M.
 -- 
-Jazz is not dead. It just smells funny...
+Guido Martínez, VanguardiaSur
+www.vanguardiasur.com.ar
