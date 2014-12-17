@@ -1,185 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaLQC6i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 21:58:38 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:63646 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLQC6h (ORCPT
+	id S1751415AbaLQDDk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 22:03:40 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:36142 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLQDDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 21:58:37 -0500
-Message-ID: <5490F0F6.8070204@huawei.com>
-Date: Wed, 17 Dec 2014 10:56:54 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Tue, 16 Dec 2014 22:03:39 -0500
+Message-ID: <5490F24C.7090202@huawei.com>
+Date: Wed, 17 Dec 2014 11:02:36 +0800
+From: Zefan Li <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Wang Nan <wangnan0@huawei.com>, <eparis@parisplace.org>, <rlove@rlove.org>,
-        <john@johnmccutchan.com>
-Subject: [PATCH] inotify: update documentation to reflect code changes
-References: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
-In-Reply-To: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
-X-Forwarded-Message-Id: <1418785193-31576-1-git-send-email-zhenzhang.zhang@huawei.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: <eranian@gmail.com>
+CC: Stephane Eranian <eranian@googlemail.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [perf tool] cgroup support broken on Debian?
+References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu> <20141215220150.GP9845@kernel.org> <CAMsRxfJ7EnA1DTXMK-UZtua8jLdn84C=Oc4yUkjqgL9tb5sTsQ@mail.gmail.com> <alpine.DEB.2.11.1412161211540.2154@vincent-weaver-1.umelst.maine.edu> <5490E856.6050904@huawei.com> <CAMsRxfL2GrA-1N7AZM42LC+aLBRB-pvtTXs1ovLine=Hv3PFag@mail.gmail.com>
+In-Reply-To: <CAMsRxfL2GrA-1N7AZM42LC+aLBRB-pvtTXs1ovLine=Hv3PFag@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.77]
+X-Originating-IP: [10.177.18.230]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020206.5490F24F.00CD,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 233d6f7fd5ca020b17f2f3071bf5e077
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The inotify kernel interface was removed by Eric Paris
-in this commit: 2dfc1ca inotify: remove inotify in
-kernel interface.
+On 2014/12/17 10:29, Stephane Eranian wrote:
+> On Wed, Dec 17, 2014 at 3:20 AM, Zefan Li <lizefan@huawei.com> wrote:
+>> On 2014/12/17 1:17, Vince Weaver wrote:
+>>> On Mon, 15 Dec 2014, Stephane Eranian wrote:
+>>>> On Mon, Dec 15, 2014 at 11:01 PM, Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com> wrote:
+>>>
+>>>> fs is visible. The cgroup file system type is not there anymore. They are using
+>>>> tmpfs which is not ideal to detect just cgroup. Looks like now, we have to look
+>>>> at the mount point which is flaky.
+>>>
+>>> The trivial fix is to just always assume things will be under
+>>>       /sys/fs/cgroup
+>>> which looks like to be the new official mount point.
+>>>
+>>> This will break on older systems though, or systems that mount cgroupfs in
+>>> multiple locations.
+>>>
+>>> Another alternative is to change the interface to require the full
+>>> cgroupfs pathname as an argument to -G
+>>>
+>>
+>> What's the problem here?
+>>
+>> none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
+>> systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
+>>
+>> cgroup is mounted in /sys/fs/cgroup/systemd, so you should pass '/' to the -G argument:
+>>
+> Is that the only mountpoint possible?
+> The tool needs to detect a valid mount point to locate the named cgroup.
+> That's assuming that if I create cgroup foo, then it appears under
+> //sys/fs/cgroup/systemd/foo
+> 
 
-Signed-off-by: Zhang Zhen <zhenzhang.zhang@huawei.com>
----
- Documentation/filesystems/inotify.txt | 120 +---------------------------------
- 1 file changed, 2 insertions(+), 118 deletions(-)
+There can be only one cgroupfs mountpoint which has perf_event subsystem
+attached to it.
 
-diff --git a/Documentation/filesystems/inotify.txt b/Documentation/filesystems/inotify.txt
-index cfd0271..9b74b45 100644
---- a/Documentation/filesystems/inotify.txt
-+++ b/Documentation/filesystems/inotify.txt
-@@ -69,123 +69,7 @@ Prototypes:
- 	int inotify_rm_watch (int fd, __u32 mask);
+So for this setup:
 
+mount -t tmpfs /sys/fs/cgroup
+mkdir /sys/fs/cgroup/memory
+mkdir /sys/fs/cgroup/perf
+mount -t cgroup -o memory memcg /sys/fs/cgroup/memory
+mount -t cgroup -o perf_event perf /sys/fs/cgroup/perf
 
--(iii) Kernel Interface
--
--Inotify's kernel API consists a set of functions for managing watches and an
--event callback.
--
--To use the kernel API, you must first initialize an inotify instance with a set
--of inotify_operations.  You are given an opaque inotify_handle, which you use
--for any further calls to inotify.
--
--    struct inotify_handle *ih = inotify_init(my_event_handler);
--
--You must provide a function for processing events and a function for destroying
--the inotify watch.
--
--    void handle_event(struct inotify_watch *watch, u32 wd, u32 mask,
--    	              u32 cookie, const char *name, struct inode *inode)
--
--	watch - the pointer to the inotify_watch that triggered this call
--	wd - the watch descriptor
--	mask - describes the event that occurred
--	cookie - an identifier for synchronizing events
--	name - the dentry name for affected files in a directory-based event
--	inode - the affected inode in a directory-based event
--
--    void destroy_watch(struct inotify_watch *watch)
--
--You may add watches by providing a pre-allocated and initialized inotify_watch
--structure and specifying the inode to watch along with an inotify event mask.
--You must pin the inode during the call.  You will likely wish to embed the
--inotify_watch structure in a structure of your own which contains other
--information about the watch.  Once you add an inotify watch, it is immediately
--subject to removal depending on filesystem events.  You must grab a reference if
--you depend on the watch hanging around after the call.
--
--    inotify_init_watch(&my_watch->iwatch);
--    inotify_get_watch(&my_watch->iwatch);	// optional
--    s32 wd = inotify_add_watch(ih, &my_watch->iwatch, inode, mask);
--    inotify_put_watch(&my_watch->iwatch);	// optional
--
--You may use the watch descriptor (wd) or the address of the inotify_watch for
--other inotify operations.  You must not directly read or manipulate data in the
--inotify_watch.  Additionally, you must not call inotify_add_watch() more than
--once for a given inotify_watch structure, unless you have first called either
--inotify_rm_watch() or inotify_rm_wd().
--
--To determine if you have already registered a watch for a given inode, you may
--call inotify_find_watch(), which gives you both the wd and the watch pointer for
--the inotify_watch, or an error if the watch does not exist.
--
--    wd = inotify_find_watch(ih, inode, &watchp);
--
--You may use container_of() on the watch pointer to access your own data
--associated with a given watch.  When an existing watch is found,
--inotify_find_watch() bumps the refcount before releasing its locks.  You must
--put that reference with:
--
--    put_inotify_watch(watchp);
--
--Call inotify_find_update_watch() to update the event mask for an existing watch.
--inotify_find_update_watch() returns the wd of the updated watch, or an error if
--the watch does not exist.
--
--    wd = inotify_find_update_watch(ih, inode, mask);
--
--An existing watch may be removed by calling either inotify_rm_watch() or
--inotify_rm_wd().
--
--    int ret = inotify_rm_watch(ih, &my_watch->iwatch);
--    int ret = inotify_rm_wd(ih, wd);
--
--A watch may be removed while executing your event handler with the following:
--
--    inotify_remove_watch_locked(ih, iwatch);
--
--Call inotify_destroy() to remove all watches from your inotify instance and
--release it.  If there are no outstanding references, inotify_destroy() will call
--your destroy_watch op for each watch.
--
--    inotify_destroy(ih);
--
--When inotify removes a watch, it sends an IN_IGNORED event to your callback.
--You may use this event as an indication to free the watch memory.  Note that
--inotify may remove a watch due to filesystem events, as well as by your request.
--If you use IN_ONESHOT, inotify will remove the watch after the first event, at
--which point you may call the final inotify_put_watch.
--
--(iv) Kernel Interface Prototypes
--
--	struct inotify_handle *inotify_init(struct inotify_operations *ops);
--
--	inotify_init_watch(struct inotify_watch *watch);
--
--	s32 inotify_add_watch(struct inotify_handle *ih,
--		              struct inotify_watch *watch,
--			      struct inode *inode, u32 mask);
--
--	s32 inotify_find_watch(struct inotify_handle *ih, struct inode *inode,
--			       struct inotify_watch **watchp);
--
--	s32 inotify_find_update_watch(struct inotify_handle *ih,
--				      struct inode *inode, u32 mask);
--
--	int inotify_rm_wd(struct inotify_handle *ih, u32 wd);
--
--	int inotify_rm_watch(struct inotify_handle *ih,
--			     struct inotify_watch *watch);
--
--	void inotify_remove_watch_locked(struct inotify_handle *ih,
--					 struct inotify_watch *watch);
--
--	void inotify_destroy(struct inotify_handle *ih);
--
--	void get_inotify_watch(struct inotify_watch *watch);
--	void put_inotify_watch(struct inotify_watch *watch);
--
--
--(v) Internal Kernel Implementation
-+(iii) Internal Kernel Implementation
-
- Each inotify instance is represented by an inotify_handle structure.
- Inotify's userspace consumers also have an inotify_device which is
-@@ -198,7 +82,7 @@ See fs/notify/inotify/inotify_fsnotify.c and fs/notify/inotify/inotify_user.c
- for the locking and lifetime rules.
-
-
--(vi) Rationale
-+(iv) Rationale
-
- Q: What is the design decision behind not tying the watch to the open fd of
-    the watched object?
--- 
-1.8.1.4
-
-
-.
-
-
-
+The perf tool will locate the mountpoint as /sys/fs/cgroup/perf.
 
