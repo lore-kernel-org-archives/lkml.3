@@ -1,124 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaLQEcl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:32:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10776 "EHLO mga01.intel.com"
+	id S1751702AbaLQEcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:32:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:50101 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115AbaLQEck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:32:40 -0500
+	id S1751534AbaLQEcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 23:32:48 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="429971053"
+   d="scan'208";a="429971111"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org
-Subject: [Patch v1 00/17] Refine IR initialization flow and fixes bugs related to X2APIC
-Date: Wed, 17 Dec 2014 12:35:31 +0800
-Message-Id: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        x86@kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Igor Mammedov <imammedo@redhat.com>,
+        David Rientjes <rientjes@google.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org,
+        Jiang Liu <jiang.liu@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [Patch v1 01/17] x86, smpboot: Remove pointless preempt_disable() in native_smp_prepare_cpus()
+Date: Wed, 17 Dec 2014 12:35:32 +0800
+Message-Id: <1418790948-22804-2-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When converting x86 to new hierarchy irqdoamin framework, Thomas noticed
-that the interrupt remapping initialization flow is a little complex and
-has troubles in memory allocation. Then there is a joint force to
-simplify IR initialization flow, please refer to related threads at:
-https://lkml.org/lkml/2014/12/5/114
-https://lkml.org/lkml/2014/12/10/20
-https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg788792.html
+From: Thomas Gleixner <tglx@linutronix.de>
 
-This patch set is based on latest mainstream kernel and I will rebased
-it onto v3.19-rc1 once v3.19-rc1 is out. And you may access it at:
-https://github.com/jiangliu/linux.git ir_init_v1
+There is no reason to keep preemption disabled in this function.
 
-This patch set combimes above three patches to simplify IR initalization
-flow and solves memory allocation issues. While at it, this patch set
-also refines CPU X2APIC initialization code for maintenance. It also
-fixes two bugs related to X2APIC support.
-1) System hangs or panics if BIOS enables CPU X2APIC mode but kernel
-   doesn't support X2APIC.
-2) System livelocks if BIOS enables CPU X2APIC but opt-outs IR X2APIC.
+We only have two other threads live: kthreadd and idle. Neither of
+them is going to preempt. But that preempt_disable forces all the code
+inside to do GFP_ATOMIC allocations which is just insane.
 
-This patch set has been tested with on an Intel 4-socket system with
-following configuration:
----------------------------------------------------------------------------
-[CPU X2APIC]	[IR X2APIC]	[Linux IR]	[Linux X2APIC]	[Result]
-1     D		    /		    D		    D		  OK
-2     D		    /		    E		    D		  OK
-3     D		    /		    E		    E		  OK
-4     P		    /		    E		    E		  OK
-5     P		    /		    D		    D		  Panic(expected)
-6     P		    /		    E		    D		  Panic(expected)
-7     P		    H		    E		    E		  OK
-----------------------------------------------------------------------------
-CPU X2APIC: whether CPU X2APIC is enabled by hardware and BIOS
-IR X2APIC: whether interrupt remapping hardware supports X2APIC mode
-Linux IR: whether interrupt remapping is enabled by Linux kernel
-Linux X2APIC: whether X2APIC is supported by Linux kernel
-D: disabled
-E: enabled
-/: Not care
-P: CPU X2APIC pre-enabled by BIOS
-H: Hard-coded to opt-out X2APIC support in interrupt remapping hardware
+Remove it.
 
-The patch set changes the behevior of the last three rows:
-1) Row 5 and 6 panics with clear messages instead of random hang or panic.
-2) Row 7 boots successfully instead of livelocking.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141205084147.153643952@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ arch/x86/kernel/smpboot.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-The patch set also passes Fengguang's 0day test suites.
-
-Due to lack of hardware platforms for tests, tests on AMD platform are
-welcomed!
-
-Jiang Liu (11):
-  x86/apic: Panic if kernel doesn't support x2apic but BIOS has enabled
-    x2apic
-  x86/apic: Kill useless variable x2apic_enabled in function
-    enable_IR_x2apic()
-  x86/apic: Correctly detect X2APIC status in function enable_IR()
-  x86/apic: Refine enable_IR_x2apic() and related functions
-  iommu/vt-d: Prepare for killing function irq_remapping_supported()
-  iommu/vt-d: Allow IR works in XAPIC mode though CPU works in X2APIC
-    mode
-  x86/apic: Only disable CPU x2apic mode when necessary
-  iommu/irq_remapping: Kill function irq_remapping_supported() and
-    related code
-  iommu/irq_remapping: Refine function irq_remapping_prepare() for
-    maintenance
-  iommu/irq_remapping: Change variable disable_irq_remap to be static
-  iommu/irq_remapping: Normailize the way to detect whether IR is
-    enabled
-
-Joerg Roedel (2):
-  iommu/vt-d: Allocate IRQ remapping data structures only for all
-    IOMMUs
-  iommu/amd: Check for irq-remap support amd_iommu_prepare()
-
-Thomas Gleixner (4):
-  x86, smpboot: Remove pointless preempt_disable() in
-    native_smp_prepare_cpus()
-  iommu, x86: Restructure setup of the irq remapping feature
-  iommu/vt-d: Move iommu preparatory allocations to
-    irq_remap_ops.prepare
-  iommu/vt-d: Convert allocations to GFP_KERNEL
-
- arch/x86/include/asm/irq_remapping.h |    4 --
- arch/x86/kernel/apic/apic.c          |  104 ++++++++++++++++------------------
- arch/x86/kernel/smpboot.c            |    8 +--
- drivers/iommu/amd_iommu.c            |    1 -
- drivers/iommu/amd_iommu_init.c       |   10 +---
- drivers/iommu/amd_iommu_proto.h      |    1 -
- drivers/iommu/intel_irq_remapping.c  |   96 ++++++++++++++++---------------
- drivers/iommu/irq_remapping.c        |   74 ++++++++----------------
- drivers/iommu/irq_remapping.h        |    5 --
- 9 files changed, 129 insertions(+), 174 deletions(-)
-
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 7a8f5845e8eb..6d7022c683e3 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1084,7 +1084,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	unsigned int i;
+ 
+-	preempt_disable();
+ 	smp_cpu_index_default();
+ 
+ 	/*
+@@ -1102,22 +1101,19 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	}
+ 	set_cpu_sibling_map(0);
+ 
+-
+ 	if (smp_sanity_check(max_cpus) < 0) {
+ 		pr_info("SMP disabled\n");
+ 		disable_smp();
+-		goto out;
++		return;
+ 	}
+ 
+ 	default_setup_apic_routing();
+ 
+-	preempt_disable();
+ 	if (read_apic_id() != boot_cpu_physical_apicid) {
+ 		panic("Boot APIC ID in local APIC unexpected (%d vs %d)",
+ 		     read_apic_id(), boot_cpu_physical_apicid);
+ 		/* Or can we switch back to PIC here? */
+ 	}
+-	preempt_enable();
+ 
+ 	connect_bsp_APIC();
+ 
+@@ -1151,8 +1147,6 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 		uv_system_init();
+ 
+ 	set_mtrr_aps_delayed_init();
+-out:
+-	preempt_enable();
+ }
+ 
+ void arch_enable_nonboot_cpus_begin(void)
 -- 
 1.7.10.4
 
