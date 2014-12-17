@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaLQEYc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:24:32 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:57861 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaLQEYb (ORCPT
+	id S1751720AbaLQEYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:24:34 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:52565 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573AbaLQEYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:24:31 -0500
+	Tue, 16 Dec 2014 23:24:32 -0500
 From: Chris Rorvick <chris@rorvick.com>
 To: Oleg Drokin <oleg.drokin@intel.com>,
         Andreas Dilger <andreas.dilger@intel.com>
@@ -19,24 +19,40 @@ Cc: Chris Rorvick <chris@rorvick.com>,
         Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
         Dan Carpenter <dan.carpenter@oracle.com>, HPDD-discuss@ml01.01.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/2] lprocfs_write_frac_u64_helper cleanup
-Date: Tue, 16 Dec 2014 22:24:00 -0600
-Message-Id: <1418790242-14309-1-git-send-email-chris@rorvick.com>
+Subject: [PATCH v2 1/2] drivers: staging: lustre: Use mult if units not specified
+Date: Tue, 16 Dec 2014 22:24:01 -0600
+Message-Id: <1418790242-14309-2-git-send-email-chris@rorvick.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418790242-14309-1-git-send-email-chris@rorvick.com>
+References: <1418790242-14309-1-git-send-email-chris@rorvick.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added a second patch to address Dan Carpenter's concern with the
-complexity of passing the sign through `mult'.  Compile tested only.
+Units can be passed to lprocfs_write_frac_u64_helper() via a suffix
+(e.g., "...K", "...M", etc.) tacked onto the value.  A comment states
+that "specified units override the multiplier," though the multiplier is
+overridden regardless.  Update the conditional logic so that it only
+applies when units are specified.
 
-Chris Rorvick (2):
-  drivers: staging: lustre: Use mult if units not specified
-  drivers: staging: lustre: Track sign separately
+Signed-off-by: Chris Rorvick <chris@rorvick.com>
+---
+ drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
+diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+index 61e04af..92ed0a0 100644
+--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
++++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
+@@ -1910,7 +1910,7 @@ int lprocfs_write_frac_u64_helper(const char *buffer, unsigned long count,
+ 		units <<= 10;
+ 	}
+ 	/* Specified units override the multiplier */
+-	if (units)
++	if (units > 1)
+ 		mult = mult < 0 ? -units : units;
+ 
+ 	frac *= mult;
 -- 
 2.1.0
 
