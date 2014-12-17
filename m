@@ -1,214 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaLQDXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 22:23:10 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35348 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaLQDXJ (ORCPT
+	id S1751318AbaLQD35 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 22:29:57 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:35127 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLQD34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 22:23:09 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219-2
-Message-ID: <5490F70E.4010703@jp.fujitsu.com>
-Date: Wed, 17 Dec 2014 12:22:54 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 16 Dec 2014 22:29:56 -0500
+Date: Tue, 16 Dec 2014 19:29:52 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Bean Huo =?utf-8?B?6ZyN5paM5paMIChiZWFuaHVvKQ==?= 
+	<beanhuo@micron.com>
+Cc: "dwmw2@infradead.org" <dwmw2@infradead.org>, Marek Vasut <marex@denx.de>,
+        "shijie8@gmail.com" <shijie8@gmail.com>,
+        "geert+renesas@glider.be" <geert+renesas@glider.be>,
+        "grmoore@altera.com" <grmoore@altera.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [V6 PATCH 1/1] driver:mtd:spi-nor: Add quad I/O support for
+ Micron spi nor
+Message-ID: <20141217032952.GV9759@ld-irv-0074>
+References: <A765B125120D1346A63912DDE6D8B6315EF2C5@NTXXIAMBX02.xacn.micron.com>
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
-	<isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
-References: <54905F87.2030302@jp.fujitsu.com> <549061BD.3040802@jp.fujitsu.com> <5490DE23.9000602@cn.fujitsu.com>
-In-Reply-To: <5490DE23.9000602@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <A765B125120D1346A63912DDE6D8B6315EF2C5@NTXXIAMBX02.xacn.micron.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/12/17 10:36), Lai Jiangshan wrote:
-> On 12/17/2014 12:45 AM, Kamezawa Hiroyuki wrote:
->> With node online/offline, cpu<->node relationship is established.
->> Workqueue uses a info which was established at boot time but
->> it may be changed by node hotpluging.
->>
->> Once pool->node points to a stale node, following allocation failure
->> happens.
->>    ==
->>       SLUB: Unable to allocate memory on node 2 (gfp=0x80d0)
->>        cache: kmalloc-192, object size: 192, buffer size: 192, default
->> order:
->>      1, min order: 0
->>        node 0: slabs: 6172, objs: 259224, free: 245741
->>        node 1: slabs: 3261, objs: 136962, free: 127656
->>      ==
->> This patch updates per cpu workqueue pool's node affinity and
->> updates wq_numa_possible_cpumask at node online/offline event.
->> This update of mask is very important because it affects cpumasks
->> and preferred node detection.
->>
->> Unbound workqueue's per node pool are updated by
->> by wq_update_unbound_numa() at CPU_DOWN_PREPARE of the last cpu, by existing code.
->> What important here is to avoid wrong node detection when a cpu get onlined.
->> And it's handled by wq_numa_possible_cpumask update introduced by this patch.
->>
->> Changelog v3->v4:
->>   - added workqueue_node_unregister
->>   - clear wq_numa_possible_cpumask at node offline.
->>   - merged a patch which handles per cpu pools.
->>   - clear per-cpu-pool's pool->node at node offlining.
->>   - set per-cpu-pool's pool->node at node onlining.
->>   - dropped modification to get_unbound_pool()
->>   - dropped per-cpu-pool handling at cpu online/offline.
->>
->> Reported-by:  Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> ---
->>   include/linux/memory_hotplug.h |  3 +++
->>   kernel/workqueue.c             | 58 +++++++++++++++++++++++++++++++++++++++++-
->>   mm/memory_hotplug.c            |  6 ++++-
->>   3 files changed, 65 insertions(+), 2 deletions(-)
->>
->> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
->> index 8f1a419..7b4a292 100644
->> --- a/include/linux/memory_hotplug.h
->> +++ b/include/linux/memory_hotplug.h
->> @@ -270,4 +270,7 @@ extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
->>   extern struct page *sparse_decode_mem_map(unsigned long coded_mem_map,
->>   					  unsigned long pnum);
->>
->> +/* update for workqueues */
->> +void workqueue_node_register(int node);
->> +void workqueue_node_unregister(int node);
->>   #endif /* __LINUX_MEMORY_HOTPLUG_H */
->> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->> index 6202b08..f6ad05a 100644
->> --- a/kernel/workqueue.c
->> +++ b/kernel/workqueue.c
->> @@ -266,7 +266,7 @@ struct workqueue_struct {
->>   static struct kmem_cache *pwq_cache;
->>
->>   static cpumask_var_t *wq_numa_possible_cpumask;
->> -					/* possible CPUs of each node */
->> +					/* PL: possible CPUs of each node */
->>
->>   static bool wq_disable_numa;
->>   module_param_named(disable_numa, wq_disable_numa, bool, 0444);
->> @@ -4563,6 +4563,62 @@ static void restore_unbound_workers_cpumask(struct worker_pool *pool, int cpu)
->>   		WARN_ON_ONCE(set_cpus_allowed_ptr(worker->task,
->>   						  pool->attrs->cpumask) < 0);
->>   }
->> +#ifdef CONFIG_MEMORY_HOTPLUG
->> +
->> +static void workqueue_update_cpu_numa_affinity(int cpu, int node)
->> +{
->> +	struct worker_pool *pool;
->> +
->> +	if (node != cpu_to_node(cpu))
->> +		return;
->> +	cpumask_set_cpu(cpu, wq_numa_possible_cpumask[node]);
->> +	for_each_cpu_worker_pool(pool, cpu)
->> +		pool->node = node;
->
-> Again, You need to check and update all the wq->numa_pwq_tbl[oldnode],
-> but in this patchset, the required information is lost and we can't find out oldnode.
->
->
-> cpus of oldnode, 16-31(online),48,56,64,72(offline,randomly assigned to the oldnode by numa_init_array())
->
-> and then cpu#48 is allocated for newnode and online
->
-> Now, the wq->numa_pwq_tbl[oldnode]'s cpumask still have cpu#48, and it may be scheduled to cpu#48.
-> See the information of my patch 4/5
->
+On Fri, Dec 05, 2014 at 07:09:59AM +0000, Bean Huo 霍斌斌 (beanhuo) wrote:
+> This patch adds code which enables Quad I/O mode on Micron SPI NOR flashes.
+> 
+> For Micron SPI NOR flash,enabling or disabling quad I/O protocol can be done
+> By two methods, which are to use EVCR(Enhanced Volatile Configuration Register)
+> and the ENTER QUAD I/O MODE command.There is no difference between these two
+> methods.Unfortunately,for some Micron spi nor flashes,there no ENTER Quad I/O
+> command(35h),such as n25q064.But for all current Micron spi nor,if it support
+> quad I/O mode,using EVCR definitely be supported.It is a recommended method to
+> enable Quad I/O mode by EVCR,Quad I/O protocol bit 7.When EVCR bit 7 is reset
+> to 0,the SPI NOR flash will operate in quad I/O mode.
+> 
+> This patch has been tested on N25Q512A and MT25TL256BAA1ESF.Micron spi nor of 
+> spi_nor_ids[] table all support this method.
+> 
+> Signed-off-by: bean huo <beanhuo@micron.com>
+> Acked-by: Marek Vasut <marex@denx.de>
+> ---
+> v1-v2:
+> 	Modified to that capture wait_till_ready()
+> 	return value,if error,directly return its
+> 	the value.
+>  v2-v3:
+> 	Directly use the reurning error value of
+> 	read_reg and write_reg,instead of -EINVAL.
+>  v3-v4:
+> 	Modify commit logs that wraped into 80 columns.
+>  v4-v5:
+> 	Rebuild new patch based on latest linux-mtd.
+>  v5-v6:
+> 	Rebuild patch based on latest l2-mtd.
+> 	add some comments.
+> 	Add SPI_NOR_QUAD_READ flag in the spi_nor_ids[] for Micron spi nor.
+> 
+>  drivers/mtd/spi-nor/spi-nor.c |   61 +++++++++++++++++++++++++++++++++++------
+>  include/linux/mtd/spi-nor.h   |    7 +++++
+>  2 files changed, 60 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
+> index 0f8ec3c..128941e 100644
+> --- a/drivers/mtd/spi-nor/spi-nor.c
+> +++ b/drivers/mtd/spi-nor/spi-nor.c
+> @@ -560,14 +560,14 @@ static const struct spi_device_id spi_nor_ids[] = {
+>  	{ "mx66l1g55g",  INFO(0xc2261b, 0, 64 * 1024, 2048, SPI_NOR_QUAD_READ) },
+>  
+>  	/* Micron */
+> -	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64, 0) },
+> -	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, 0) },
+> -	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, 0) },
+> -	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
+> -	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
+> -	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
+> -	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
+> -	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
+> +	{ "n25q032",	 INFO(0x20ba16, 0, 64 * 1024,   64, SPI_NOR_QUAD_READ) },
+> +	{ "n25q064",     INFO(0x20ba17, 0, 64 * 1024,  128, SPI_NOR_QUAD_READ) },
+> +	{ "n25q128a11",  INFO(0x20bb18, 0, 64 * 1024,  256, SPI_NOR_QUAD_READ) },
+> +	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, SPI_NOR_QUAD_READ) },
+> +	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K | SPI_NOR_QUAD_READ) },
+> +	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+> +	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
+> +	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, SECT_4K | USE_FSR | SPI_NOR_QUAD_READ) },
 
-That will not cause page allocation failure, right ? If so, it's out of scope of this patch 1/2.
+Are you sure *all* of these support quad mode? I know some manufacturers
+have been known to reuse IDs, and I wouldn't want a false positive to
+slip in here, where an old part might not support it but the new one
+does...
 
-I think it's handled in patch 2/2, isn't it ?
+>  
+>  	/* PMC */
+>  	{ "pm25lv512",   INFO(0,        0, 32 * 1024,    2, SECT_4K_PMC) },
+> @@ -891,6 +891,44 @@ static int spansion_quad_enable(struct spi_nor *nor)
+>  	return 0;
+>  }
+>  
+> +static int micron_quad_enable(struct spi_nor *nor)
+> +{
+> +	int ret, val;
+> +
+> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
+
+sparse (rightfully) complains about this line:
+
+drivers/mtd/spi-nor/spi-nor.c: In function ‘micron_quad_enable’:
+drivers/mtd/spi-nor/spi-nor.c:898:2: warning: passing argument 3 of ‘nor->read_reg’ from incompatible pointer type [enabled by default]
+  ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
+  ^
+drivers/mtd/spi-nor/spi-nor.c:898:2: note: expected ‘u8 *’ but argument is of type ‘int *’
+drivers/mtd/spi-nor/spi-nor.c:898:54: warning: incorrect type in argument 3 (different type sizes) [sparse]
+drivers/mtd/spi-nor/spi-nor.c:898:54:    expected unsigned char [usertype] *buf [sparse]
+drivers/mtd/spi-nor/spi-nor.c:898:54:    got int *<noident> [sparse]
+
+So 'val' should be of type u8. Otherwise, you risk utilizing
+uninitialized data for the other 32-8 bits.
+
+> +	if (ret < 0) {
+> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	write_enable(nor);
+> +
+> +	/* set EVCR ,enable quad I/O */
+
+You have the space on the wrong side of the comma.
+
+> +	nor->cmd_buf[0] = val & ~EVCR_QUAD_EN_MICRON;
+> +	ret = nor->write_reg(nor, SPINOR_OP_WD_EVCR, nor->cmd_buf, 1, 0);
+> +	if (ret < 0) {
+> +		dev_err(nor->dev, "error while writing EVCR register\n");
+> +		return ret;
+> +	}
+> +
+> +	ret = spi_nor_wait_till_ready(nor);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* read EVCR and check it */
+> +	ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
+
+Same here:
+
+drivers/mtd/spi-nor/spi-nor.c:919:2: warning: passing argument 3 of ‘nor->read_reg’ from incompatible pointer type [enabled by default]
+  ret = nor->read_reg(nor, SPINOR_OP_RD_EVCR, &val, 1);
+  ^
+drivers/mtd/spi-nor/spi-nor.c:919:2: note: expected ‘u8 *’ but argument is of type ‘int *’
+drivers/mtd/spi-nor/spi-nor.c:919:54: warning: incorrect type in argument 3 (different type sizes) [sparse]
+drivers/mtd/spi-nor/spi-nor.c:919:54:    expected unsigned char [usertype] *buf [sparse]
+drivers/mtd/spi-nor/spi-nor.c:919:54:    got int *<noident> [sparse]
+
+> +	if (ret < 0) {
+> +		dev_err(nor->dev, "error %d reading EVCR\n", ret);
+> +		return ret;
+> +	}
+> +	if (val & EVCR_QUAD_EN_MICRON) {
+> +		dev_err(nor->dev, "Micron EVCR Quad bit not clear\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  static int set_quad_mode(struct spi_nor *nor, struct flash_info *info)
+>  {
+>  	int status;
+> @@ -903,6 +941,13 @@ static int set_quad_mode(struct spi_nor *nor, struct flash_info *info)
+>  			return -EINVAL;
+>  		}
+>  		return status;
+> +	case CFI_MFR_ST:
+> +		status = micron_quad_enable(nor);
+> +		if (status) {
+> +			dev_err(nor->dev, "Micron quad-read not enabled\n");
+> +			return -EINVAL;
+> +		}
+> +		return status;
+>  	default:
+>  		status = spansion_quad_enable(nor);
+>  		if (status) {
+> diff --git a/include/linux/mtd/spi-nor.h b/include/linux/mtd/spi-nor.h
+> index 63aeccf..4720b86 100644
+> --- a/include/linux/mtd/spi-nor.h
+> +++ b/include/linux/mtd/spi-nor.h
+> @@ -56,6 +56,10 @@
+>  /* Used for Spansion flashes only. */
+>  #define SPINOR_OP_BRWR		0x17	/* Bank register write */
+>  
+> +/* Used for Micron flashes only. */
+> +#define SPINOR_OP_RD_EVCR      0x65    /* Read EVCR register */
+> +#define SPINOR_OP_WD_EVCR      0x61    /* Write EVCR register */
+> +
+>  /* Status Register bits. */
+>  #define SR_WIP			1	/* Write in progress */
+>  #define SR_WEL			2	/* Write enable latch */
+> @@ -67,6 +71,9 @@
+>  
+>  #define SR_QUAD_EN_MX		0x40	/* Macronix Quad I/O */
+>  
+> +/* Enhanced Volatile Configuration Register bits */
+> +#define EVCR_QUAD_EN_MICRON    0x80    /* Micron Quad I/O */
+> +
+>  /* Flag Status Register bits */
+>  #define FSR_READY		0x80
+>  
+
+With int vs. u8 fixed up, this looks good. Hopefully I can take v7!
 
 Thanks,
--Kame
-
-
-
->
->> +}
->> +
->> +/*
->> + * When a cpu is physically added, cpu<->node relationship is established
->> + * based on firmware info. We can catch the whole view when a new NODE_DATA()
->> + * coming up (a node is added).
->> + * If we don't update the info, pool->node will points to a not-online node
->> + * and the kernel will have allocation failure.
->> + *
->> + * Update wp_numa_possible_mask at online and clear it at offline.
->> + */
->> +void workqueue_node_register(int node)
->> +{
->> +	int cpu;
->> +
->> +	mutex_lock(&wq_pool_mutex);
->> +	for_each_possible_cpu(cpu)
->> +		workqueue_update_cpu_numa_affinity(cpu, node);
->> +	/* unbound workqueue will be updated when the 1st cpu comes up.*/
->> +	mutex_unlock(&wq_pool_mutex);
->> +}
->> +
->> +void workqueue_node_unregister(int node)
->> +{
->> +	struct worker_pool *pool;
->> +	int cpu;
->> +
->> +	mutex_lock(&wq_pool_mutex);
->> +	cpumask_clear(wq_numa_possible_cpumask[node]);
->> +	for_each_possible_cpu(cpu) {
->> +		if (node == cpu_to_node(cpu))
->> +			for_each_cpu_worker_pool(pool, cpu)
->> +				pool->node = NUMA_NO_NODE;
->> +	}
->> +	/*
->> +	 * unbound workqueue's per-node pwqs are already refleshed
->> +	 * by wq_update_unbound_numa() at CPU_DOWN_PREPARE of the last cpu
->> +	 * on this node, because all cpus of this node went down.
->> +	 * (see wq_calc_node_cpumask()). per-node unbound pwqs has been replaced
->> +	 * with wq->dfl_pwq, already.
->> +	 */
->> +	mutex_unlock(&wq_pool_mutex);
->> +}
->> +
->> +#endif
->>
->>   /*
->>    * Workqueues should be brought up before normal priority CPU notifiers.
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index 9fab107..a0cb5c1 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1122,6 +1122,9 @@ static pg_data_t __ref *hotadd_new_pgdat(int nid, u64 start)
->>   	 */
->>   	reset_node_present_pages(pgdat);
->>
->> +	/* Update workqueue's numa affinity info. */
->> +	workqueue_node_register(nid);
->> +
->>   	return pgdat;
->>   }
->>
->> @@ -1958,7 +1961,8 @@ void try_offline_node(int nid)
->>
->>   	if (check_and_unmap_cpu_on_node(pgdat))
->>   		return;
->> -
->> +	/* update workqueue's numa affinity info. */
->> +	workqueue_node_unregister(nid);
->>   	/*
->>   	 * all memory/cpu of this node are removed, we can offline this
->>   	 * node now.
->
-
-
+Brian
