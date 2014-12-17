@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751116AbaLQRIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 12:08:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:52664 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaLQRIl convert rfc822-to-8bit (ORCPT
+	id S1751291AbaLQRJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 12:09:56 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:41955 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbaLQRJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 12:08:41 -0500
-Message-ID: <5491B88E.3070906@canonical.com>
-Date: Wed, 17 Dec 2014 12:08:30 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 17 Dec 2014 12:09:55 -0500
+Message-ID: <5491B8DD.5020000@redhat.com>
+Date: Wed, 17 Dec 2014 18:09:49 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Kamal Mostafa <kamal.mostafa@canonical.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        davidx.m.ertman@intel.com, jeffrey.e.pieper@intel.com,
-        jeffrey.t.kirsher@intel.com, LKML <linux-kernel@vger.kernel.org>,
-        linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: [PATCH][v3.13.y] e1000e: Fix no connectivity when driver loaded with
- cable out
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: "Wu, Feng" <feng.wu@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>
+Subject: Re: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is blocked
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com> <1418397300-10870-25-git-send-email-feng.wu@intel.com>
+In-Reply-To: <1418397300-10870-25-git-send-email-feng.wu@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-Please consider including mainline commit b20a774 in the next v3.13.y
-stable release.  It was included in the mainline tree as of v3.15-rc1. 
-It has been tested and confirmed to resolve
-http://bugs.launchpad.net/bugs/1400365 .
-
-commit b20a774495671f037e7160ea2ce8789af6b61533
-Author: David Ertman <davidx.m.ertman@intel.com>
-Date:   Tue Mar 25 04:27:55 2014 +0000
-
-    e1000e: Fix no connectivity when driver loaded with cable out
 
 
+On 12/12/2014 16:14, Feng Wu wrote:
+> This patch updates the Posted-Interrupts Descriptor when vCPU
+> is blocked.
+> 
+> pre-block:
+> - Add the vCPU to the blocked per-CPU list
+> - Clear 'SN'
 
-Sincerely,
-Joseph Salisbury
+Should SN be already clear (and NV set to POSTED_INTR_VECTOR)?  Can it
+happen that you go from sched-out to blocked without doing a sched-in first?
 
+In fact, if this is possible, what happens if vcpu->preempted &&
+vcpu->blocked?
 
+> - Set 'NV' to POSTED_INTR_WAKEUP_VECTOR
+> 
+> post-block:
+> - Remove the vCPU from the per-CPU list
+
+Paolo
+
+> Signed-off-by: Feng Wu <feng.wu@intel.com>
