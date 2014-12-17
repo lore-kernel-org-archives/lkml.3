@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaLQVaY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:30:24 -0500
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:39352 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaLQVaX (ORCPT
+	id S1751477AbaLQVfB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:35:01 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:38401 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084AbaLQVe7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:30:23 -0500
+	Wed, 17 Dec 2014 16:34:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418849927.28384.1.camel@perches.com>
-References: <1418849927.28384.1.camel@perches.com>
-From: Kevin Cernekee <cernekee@gmail.com>
-Date: Wed, 17 Dec 2014 13:30:02 -0800
-Message-ID: <CAJiQ=7DE1ojVRW6LqZg2LiqTQ0cgDY_a0nMGn=_Rs1mkuEgwoA@mail.gmail.com>
-Subject: Re: rfc: remove early_printk from a few arches? (blackfin, m68k, mips)
-To: Joe Perches <joe@perches.com>
-Cc: linux-arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>,
-        Steven Miao <realmz6@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips <linux-mips@linux-mips.org>
+In-Reply-To: <CALT56yM15FbKm6RKqUe59cWtMSfZgOR7koYcgM_J3F_TyHp2WA@mail.gmail.com>
+References: <1415100672-31425-1-git-send-email-linus.walleij@linaro.org>
+	<CACRpkdZUZJmSrHVH4BbNbANgN-BphYL_wCF=6QdXndXdXYXiZg@mail.gmail.com>
+	<CALT56yM15FbKm6RKqUe59cWtMSfZgOR7koYcgM_J3F_TyHp2WA@mail.gmail.com>
+Date: Wed, 17 Dec 2014 22:34:58 +0100
+Message-ID: <CACRpkdaPx_xqu5S9ATJNzWDUCgL9hQmvbVSa5ehbxDUtfKh95Q@mail.gmail.com>
+Subject: Re: [PATCH] power: reset: augment versatile driver for integrator
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 12:58 PM, Joe Perches <joe@perches.com> wrote:
-> It seems like early_printk can be configured into
-> a few architectures but also appear not to be used.
+On Wed, Nov 12, 2014 at 7:20 PM, Dmitry Eremin-Solenikov
+<dbaryshkov@gmail.com> wrote:
+> 2014-11-12 17:54 GMT+03:00 Linus Walleij <linus.walleij@linaro.org>:
+>> On Tue, Nov 4, 2014 at 12:31 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>
+>>> Augment the Versatile reset driver to also handle the core
+>>> module reset sequence used on the Integrator/AP and
+>>> Integrator/CP.
+>>>
+>>> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>>> Cc: David Woodhouse <dwmw2@infradead.org>
+>>> Cc: Sebastian Reichel <sre@kernel.org>
+>>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+>>> ---
+>>> Sebastian: please merge this into your power tree if you're
+>>> OK with it, the corresponding platform changes are orthogonal
+>>> so these can go separately through the ARM SoC tree.
+>>
+>> Power folks: ping on this patch.
 >
-> $ git grep -w "early_printk"
-[snip]
-> arch/mips/kernel/Makefile:obj-$(CONFIG_EARLY_PRINTK)    += early_printk.o
+> I will apply tomorrow, if Sebastian does not respond earlier.
 
-Nowadays I try to use OF_EARLYCON whenever possible, but when that has
-been unavailable, I have used arch/mips/kernel/early_printk.c to get
-console output before the serial driver is initialized.  It runs very
-early in the boot sequence and has very few dependencies, which makes
-it useful for board bringup.
+Just checking: this is applied and *will* go upstream this merge window,
+right?
 
-At least on MIPS, the EARLY_PRINTK implementation registers itself as
-a console and works with standard printk() calls.  It doesn't rely on
-arch/driver code explicitly calling early_printk().
-
-Side note: looking through kernel/printk/printk.c it looks like
-there's a space missing in the description string:
-
-MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
-        "print all kernel messages to the console.");
-
-But since CONFIG_PRINTK is a bool option, I don't know if the
-description string actually shows up anywhere.  Should it be converted
-into a comment?
+Yours,
+Linus Walleij
