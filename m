@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919AbaLQLsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 06:48:11 -0500
-Received: from smtpfree.forptr.21cn.com ([183.56.131.159]:11493 "EHLO 21cn.com"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751068AbaLQLsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 06:48:09 -0500
-HMM_SOURCE_IP: 127.0.0.1:37888.21977536
-HMM_ATTACHE_NUM: 0000
-HMM_SOURCE_TYPE: SMTP
-0/X-Total-Score: 20:
-2/X-Total-Score: 0:
-3/X-Total-Score: 0:
-4/X-Brightmail-Tracker: AAAAAA==
-X-FILTER-SCORE: to=<8d8a8f96994e8c86938f868d61978886934f8c86938f868d4f909388>, score=<1418816877nInInIIIIInIIIIInInInIrJ4z1L11L+1LL1LO1+LOIP>  
-X-REAL-FROM: dahuaditd@21cn.com
-X-Receive-IP: 114.111.166.2 dahuaditd@21cn.com
-From: "Rankin" <dahuaditd@21cn.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: linux-kernel,We are distributors of mailbox production
-Date: Wed, 17 Dec 2014 19:47:58 +0800
-X-Mailer: Windows Eudora Pro Version 3.0b35 (32)
-Reply-To: <dahuaditd@21cn.com>
+	id S1751967AbaLQLye (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 06:54:34 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43014 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaLQLyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 06:54:32 -0500
+Date: Wed, 17 Dec 2014 12:54:29 +0100
+From: Pavel Machek <pavel@denx.de>
+To: atull <atull@opensource.altera.com>,
+        kernel list <linux-kernel@vger.kernel.org>
+Cc: Michal Simek <michal.simek@xilinx.com>, gregkh@linuxfoundation.org,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
+        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        delicious.quinoa@gmail.com, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: SPDX for kernel (was Re: [PATCH v4 5/6] staging: fpga manager:
+ framework core)
+Message-ID: <20141217115429.GA21214@amd>
+References: <1418156090-23578-1-git-send-email-atull@opensource.altera.com>
+ <1418156090-23578-6-git-send-email-atull@opensource.altera.com>
+ <049ad99df824432caa190566141d1525@BN1BFFO11FD005.protection.gbl>
+ <alpine.DEB.2.02.1412121026480.27443@linuxheads99>
 MIME-Version: 1.0
-Content-type: text/plain; charset=GB2312
-Message-Id: <20141217114753.83E8E2FF8189@21cn.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1412121026480.27443@linuxheads99>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBHBmJMm010864
 
+Hi!
 
-HI,
-Good day!
-We are mailbox supplier, and we have researched & designed some new product.
-If you are interested in, I'll Email you a catalogue of our various products
-Our Advantage Small volume products , materials , packaging , custom content, etc. according to customer requirements to complete the custom value for money products and services .
-Thanks for your valuable time.
+> > > @@ -0,0 +1,485 @@
+> > > +/*
+> > > + * FPGA Manager Core
+> > > + *
+> > > + *  Copyright (C) 2013-2014 Altera Corporation
+> > > + *
+> > > + * With code from the mailing list:
+> > > + * Copyright (C) 2013 Xilinx, Inc.
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or modify it
+> > > + * under the terms and conditions of the GNU General Public License,
+> > > + * version 2, as published by the Free Software Foundation.
+> > > + *
+> > > + * This program is distributed in the hope it will be useful, but WITHOUT
+> > > + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> > > + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> > > + * more details.
+> > > + *
+> > > + * You should have received a copy of the GNU General Public License along with
+> > > + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> > > + */
+> > 
+> > Greg, Grant: What about to use just SPDX?
+> > 
+> > SPDX-License-Identifier:     GPL-2.0
+> 
+> This is a standared GPLv2 header, we're keeping it.  Our legal dept
+> wants it.
 
+This has nothing to do with Altera here, but... SPDX works great for
+u-boot and yes, I believe it would be good idea to kernel as well.
 
-Email:info@tdmailbox.com
-Web:  www.tdmailbox.com
-Tel:  086-021-60340926
-Add: Shanghai waigaoqiao free trade area 500 grams of BingKE road 3 three-story, room 301
-Skype: jimwang998@hotmail.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
