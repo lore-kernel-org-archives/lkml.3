@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751122AbaLQSUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:20:24 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:33639 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaLQSUW convert rfc822-to-8bit (ORCPT
+	id S1751418AbaLQSWg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:22:36 -0500
+Received: from smtprelay0038.hostedemail.com ([216.40.44.38]:43558 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751225AbaLQSWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:20:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <201412171854.00902@pali>
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
-	<1418155621-21644-4-git-send-email-pali.rohar@gmail.com>
-	<201412101251.30610@pali>
-	<201412171854.00902@pali>
-Date: Wed, 17 Dec 2014 18:20:21 +0000
-Message-ID: <CABz95_C1UzbRMgjDKcrdRzr2VGvAwmvWBRrP2116k3CQx+2sRg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult,
- fan_max) from driver
-From: Steven Honeyman <stevenhoneyman@gmail.com>
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
+	Wed, 17 Dec 2014 13:22:34 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3290:3352:3622:3866:3868:4321:4605:5007:6117:6119:6261:7903:10004:10400:10848:11026:11232:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13229:13255:13311:13357:13868:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: pigs54_5061b3aa59542
+X-Filterd-Recvd-Size: 1969
+Message-ID: <1418840550.14140.27.camel@perches.com>
+Subject: Re: [PATCH 2/2] Staging: lustre: lproc_osc.c: used seq_puts()
+ instead of seq_printf()
+From: Joe Perches <joe@perches.com>
+To: Hariharan Rangasamy <hariharanrangasamy@gmail.com>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Dec 2014 10:22:30 -0800
+In-Reply-To: <1418839168-7921-2-git-send-email-hariharanrangasamy@gmail.com>
+References: <1418839168-7921-1-git-send-email-hariharanrangasamy@gmail.com>
+	 <1418839168-7921-2-git-send-email-hariharanrangasamy@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 December 2014 at 17:54, Pali Rohár <pali.rohar@gmail.com> wrote:
-> On Wednesday 10 December 2014 12:51:30 Pali Rohár wrote:
->> On Tuesday 09 December 2014 21:07:01 Pali Rohár wrote:
->> > Now we have autodetection code for fan multiplier and
->> > maximal fan speed so we do not need to have those constants
->> > for each laptop in kernel driver code.
->> >
->> > Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
->> > ---
->> > !!!Please do not apply this patch until all affected
->> > machines will be tested!!!
->> >
->> > I tested autodetection code only on Dell Latitude E6440
->> > (where it worked). Other machines which needs to be tested:
->> >
->> > Dell Latitude D520
->> > Dell Latitude E6540
->> > Dell Precision WorkStation 490
->> > Dell Studio
->> > Dell XPS M140 (MXC051)
->> > ---
->>
->> Can somebody else with dell laptops test this patch series?
->
-> Steven Honeyman, can you test this autodetection patch on your
-> Latitude E6540?
+On Wed, 2014-12-17 at 23:29 +0530, Hariharan Rangasamy wrote:
+> Replaced seq_printf() with seq_puts()
+[]
+> diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
+[]
+> @@ -358,7 +358,7 @@ static int osc_checksum_type_seq_show(struct seq_file *m, void *v)
+>  		else
+>  			seq_printf(m, "%s ", cksum_name[i]);
+>  	}
+> -	seq_printf(m, "\n");
+> +	seq_puts(m, "\n");
 
-Sure. You picked the best possible time of day to ask (seriously!)
-Just applied patches 1,2,3 and so far seems exactly as before so it
-looks OK to me.
+This could be seq_putc
 
-While I was spamming "sensors" I did notice this (output trimmed for
-neatness) but it is unusual my laptop fan is ever off so it might have
-always done this and I would have never noticed:
-Each line is about 0.5 - 1 second apart:
+>  	return 0;
+>  }
+>  
+> @@ -590,7 +590,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
+>  	seq_printf(seq, "pending read pages:   %d\n",
+>  		   atomic_read(&cli->cl_pending_r_pages));
+>  
+> -	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
+> +	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
+>  	seq_printf(seq, "pages per rpc	 rpcs   %% cum %% |");
+>  	seq_printf(seq, "       rpcs   %% cum %%\n");
 
-fan2:        3186 RPM
-fan2:        3231 RPM
-<temp is low enough, fan stops>
-fan2:        10000 RPM
-fan2:        9544 RPM
-fan2:        10000 RPM
-fan2:           0 RPM
-(stays at 0 while fan is off)
-<temp back up, fan starts>
-fan2:        3236 RPM
-fan2:        3597 RPM
-
-Ever seen this before? I'd roll back and test again but this room and
-laptop are too warm for the fan to stop completely now.
+These and others could be seq_puts too, just use % instead of %%
 
 
-Thanks,
-Steven
