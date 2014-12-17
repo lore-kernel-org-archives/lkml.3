@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751270AbaLPX6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 18:58:19 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:40834 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854AbaLPX6R (ORCPT
+	id S1751306AbaLQAAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 19:00:50 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:40359 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750810AbaLQAAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 18:58:17 -0500
-Date: Tue, 16 Dec 2014 15:58:13 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
-        Len Brown <len.brown@intel.com>,
-        Chirantan Ekbote <chirantan@chromium.org>
-Subject: Re: [PATCH] PM / sleep: add configurable delay for pm_test
-Message-ID: <20141216235813.GI9759@ld-irv-0074>
-References: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
- <20141213025530.GO21347@ld-irv-0074>
- <20141213083123.GA26129@amd>
+	Tue, 16 Dec 2014 19:00:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141213083123.GA26129@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141216230246.GA30905@twins.programming.kicks-ass.net>
+References: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+	<alpine.DEB.2.11.1411212049220.6439@nanos>
+	<CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+	<alpine.DEB.2.11.1411212110320.6439@nanos>
+	<CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+	<alpine.DEB.2.11.1411212207150.6439@nanos>
+	<CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+	<20141216192803.GC3337@twins.programming.kicks-ass.net>
+	<CA+55aFx9oTQHnamJ=QEGOKHe2obQEn2NfNa+hJ_Z-V1FyY7QaQ@mail.gmail.com>
+	<20141216211921.GA2395@suse.de>
+	<20141216230246.GA30905@twins.programming.kicks-ass.net>
+Date: Tue, 16 Dec 2014 16:00:48 -0800
+X-Google-Sender-Auth: P2hvY4IHpynyHQ4mrDVxGuYCEBE
+Message-ID: <CA+55aFxyx_wcsgYJC2GXcjEvMsTg=K=uy6A=xDJdWdvZsE1VHQ@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 13, 2014 at 09:31:23AM +0100, Pavel Machek wrote:
-> On Fri 2014-12-12 18:55:30, Brian Norris wrote:
-> > On Wed, Sep 03, 2014 at 04:55:35PM -0700, Brian Norris wrote:
-> > > When CONFIG_PM_DEBUG=y, we provide a sysfs file (/sys/power/pm_test) for
-> > > selecting one of a few suspend test modes, where rather than entering a
-> > > full suspend state, the kernel will perform some subset of suspend
-> > > steps, wait 5 seconds, and then resume back to normal operation.
-> > > 
-> > > This mode is useful for (among other things) observing the state of the
-> > > system just before entering a sleep mode, for debugging or analysis
-> > > purposes. However, a constant 5 second wait is not sufficient for some
-> > > sorts of analysis; for example, on an SoC, one might want to use
-> > > external tools to probe the power states of various on-chip controllers
-> > > or clocks.
-> > > 
-> > > This patch adds a companion sysfs file (/sys/power/pm_test_delay) that
-> > > allows user-space to configure how long the system waits in this test
-> > > state before resuming. It also updates the PM debugging documentation to
-> > > mention the new file.
-> > > 
-> > > Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-> > 
-> > What do you think about this patch? It seems there is at least one other
-> > developer who is independently interested in this.
-> 
-> 40 lines of code, and new sysfs interface for use by someone who puts
-> the probes on board, anyway... (so should be able to add the single
-> mdelay himself).
+On Tue, Dec 16, 2014 at 3:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> OK, should we just stick it in the x86 tree and see if anything
+> explodes? ;-)
 
-I heard your complaint the first time:
+Gaah, I got confused about the patches.
 
-  https://lkml.org/lkml/2014/9/4/63
+And something did explode, it showed some Xen nasties. Xen has that
+odd "we don't share PMD entries between MM's" thing going on, which
+means that the vmalloc fault thing does actually have to occasionally
+walk two levels rather than just copy the top level. I'm still not
+sure why Xen doesn't share PMD's, since threads that shame the MM
+clearly can share PMD's within Xen, but I gave up on it.
 
-And I responded to it already:
+That said, making x86-64 use "read_cr3()" instead of
+"current->active_mm" would at least make things a bit safer wrt NMI's
+during the task switch, of course.  So *some* 32/64-bit consolidation
+should be done, but my patch went a bit too far for Xen.
 
-  https://lkml.org/lkml/2014/9/4/494
-
-You did not respond, but Chirantan spoke up saying he wanted such a
-patch too. He came up with a very similar solution independently:
-
-  https://chromium.googlesource.com/chromiumos/third_party/kernel/+/15bccc2c63c3475ef61d3187c73ccf1d80b18c7e
-
-But since you've decided to make the same comment again, I will detail
-more of the reasons why I think your suggestion ("go add the mdelay
-yourself") is off-base.
-
- 1. This is behind a debug config option (CONFIG_PM_DEBUG). So what's
- the problem with improving its usefulness? Non-debug users can easily
- compile it out if they're worried about 40 lines.
-
- 2. The current debug code encodes a particular policy (which kernels
- generally should not). Is it better if I submit a patch that changes
- the current magic delay to 60000 milliseconds? What about 1334
- milliseconds?
-
- 3. To continue your argument: why would I ever try to patch the
- upstream kernel, if I'm perfectly capable of doing this myself?
-
- 4. How does putting probes on a board suddenly qualify someone for
- patching and rebuilding their kernel? I noted that I have *users* who
- want to do this. Hence, I'm patching a *user* interface.
-
-Brian
+                      Linus
