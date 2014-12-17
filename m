@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaLQQqf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 11:46:35 -0500
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:55695 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411AbaLQQqB (ORCPT
+	id S1751547AbaLQQrY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 11:47:24 -0500
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:42946 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaLQQpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 11:46:01 -0500
+	Wed, 17 Dec 2014 11:45:52 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, a.zummo@towertech.it,
         rtc-linux@googlegroups.com, wim@iguana.be,
         linux-watchdog@vger.kernel.org, devicetree@vger.kernel.org,
-        linux@roeck-us.net, arnd@arndb.de
-Subject: [PATCH 7/8] rtc: bindings: Provide ST bindings for ST's LPC RTC device
-Date: Wed, 17 Dec 2014 16:45:26 +0000
-Message-Id: <1418834727-1602-8-git-send-email-lee.jones@linaro.org>
+        linux@roeck-us.net, arnd@arndb.de, David Paris <david.paris@st.com>
+Subject: [PATCH 4/8] ARM: STi: DT: STiH407: Add Device Tree node for the LPC
+Date: Wed, 17 Dec 2014 16:45:23 +0000
+Message-Id: <1418834727-1602-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
 References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
@@ -23,47 +23,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On current ST platforms the LPC controls a number of functions including
-Watchdog and Real Time Clock.  This patch provides the bindings used to
-configure LPC in RTC mode.
+On current ST platforms the LPC controls a number of functions.  This
+patch enables support for the LPC Watchdog and LPC RTC devices on LPC1
+and LPC2 respectively.
 
+Signed-off-by: David Paris <david.paris@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- .../devicetree/bindings/rtc/rtc-st-lpc.txt         | 25 ++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rtc/rtc-st-lpc.txt
+ arch/arm/boot/dts/stih407.dtsi | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/rtc/rtc-st-lpc.txt b/Documentation/devicetree/bindings/rtc/rtc-st-lpc.txt
-new file mode 100644
-index 0000000..aaf9855
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/rtc-st-lpc.txt
-@@ -0,0 +1,25 @@
-+STMicroelectronics Low Power Controller (LPC) - RTC
-+===================================================
+diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+index f539627a..97cc125 100644
+--- a/arch/arm/boot/dts/stih407.dtsi
++++ b/arch/arm/boot/dts/stih407.dtsi
+@@ -8,6 +8,7 @@
+  */
+ #include "stih407-clock.dtsi"
+ #include "stih407-pinctrl.dtsi"
++#include <dt-bindings/mfd/st-lpc.h>
+ / {
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+@@ -259,5 +260,24 @@
+ 
+ 			status = "disabled";
+ 		};
 +
-+LPC currently supports Watchdog OR Real Time Clock functionality.
++		/* Watchdog and Real-Time Clock */
++		lpc@8787000 {
++			compatible = "st,stih407-lpc";
++			reg = <0x8787000 0x1000>;
++			interrupts = <GIC_SPI 129 IRQ_TYPE_EDGE_RISING>;
++			clocks = <&clk_s_d3_flexgen CLK_LPC_0>;
++			timeout-sec = <120>;
++			st,syscfg = <&syscfg_core>;
++			st,lpc-mode = <ST_LPC_MODE_WDT>;
++		};
 +
-+[See: ../watchdog/st_lpc_wdt.txt for Watchdog options]
-+
-+Required properties
-+
-+- compatible 	: Must be one of: "st,stih407-lpc" "st,stih416-lpc"
-+				  "st,stih415-lpc" "st,stid127-lpc"
-+- reg		: LPC registers base address + size
-+- interrupts    : LPC interrupt line number and associated flags
-+- clocks	: Clock used by LPC device (See: ../clock/clock-bindings.txt)
-+- st,lpc-mode	: The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
-+		  ST_LPC_MODE_WDT [1].  One (and only one) mode must be
-+		  selected.
-+
-+Example:
-+	lpc@fde05000 {
-+		compatible	= "st,stih416-lpc-watchdog";
-+		reg		= <0xfde05000 0x1000>;
-+		clocks 		= <&clk_s_d3_flexgen CLK_LPC_0>;
-+		st,lpc-mode	= <ST_LPC_MODE_RTC>;
-+	};
++		lpc@8788000 {
++			compatible = "st,stih407-lpc";
++			reg = <0x8788000 0x1000>;
++			interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_RISING>;
++			clocks = <&clk_s_d3_flexgen CLK_LPC_1>;
++			st,lpc-mode = <ST_LPC_MODE_RTC>;
++		};
+ 	};
+ };
 -- 
 1.9.1
 
