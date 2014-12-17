@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaLQJB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:01:56 -0500
-Received: from forward5h.mail.yandex.net ([84.201.186.23]:42918 "EHLO
-	forward5h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319AbaLQJBy (ORCPT
+	id S1752191AbaLQJEd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:04:33 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:41803 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaLQJE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:01:54 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Dec 2014 04:01:54 EST
-From: Evgeniy Polyakov <zbr@ioremap.net>
-Envelope-From: drustafa@yandex.ru
-To: Joe Perches <joe@perches.com>
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        netfilter-devel <netfilter-devel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1418761033.14140.5.camel@perches.com>
-References: <1418761033.14140.5.camel@perches.com>
-Subject: Re: [PATCH netfilter-next] xt_osf: Use continue to reduce indentation
+	Wed, 17 Dec 2014 04:04:27 -0500
 MIME-Version: 1.0
-Message-Id: <8632531418806285@web23h.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 17 Dec 2014 11:51:25 +0300
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+In-Reply-To: <20141216155028.6a500d7a79eab815dbeb950e@linux-foundation.org>
+References: <20141126191145.3089.90947.stgit@zurg>
+	<20141216104218.GB22920@dhcp22.suse.cz>
+	<20141216155028.6a500d7a79eab815dbeb950e@linux-foundation.org>
+Date: Wed, 17 Dec 2014 13:04:25 +0400
+Message-ID: <CALYGNiNSA1faTB_9Ngdrsv8xS7einysdMmmVeX=T-aX_RJLobg@mail.gmail.com>
+Subject: Re: [PATCH v3] mm: prevent endless growth of anon_vma hierarchy
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Tim Hartrick <tim@edgecast.com>,
+        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone
-
-16.12.2014, 23:17, "Joe Perches" <joe@perches.com>:
-> Invert logic in test to use continue.
+On Wed, Dec 17, 2014 at 2:50 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 16 Dec 2014 11:42:18 +0100 Michal Hocko <mhocko@suse.cz> wrote:
 >
-> This routine already uses continue, use it a bit more to
-> minimize > 80 column long lines and unnecessary indentation.
+>> What happened to this patch? I do not see it merged for 3.19 and
+>> nor in the current mmotm tree (2014-12-15-17-05)
+>>
 >
-> No change in compiled object file.
+> Awaiting v4.  See Konstantin's reply to Rik's review comments.
+>
+> Konstantin, please ensure that the questions which Rik asked are
+> answered (via code comments and changelogging) in the next version?
+> Because other future readers will have the same questions.
+>
 
-Looks good. Thank you.
-Which tree should this patch go through? Please pull it in.
+Done.
 
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
+Thanks for reminding.
