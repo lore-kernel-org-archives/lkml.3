@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaLQJvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:51:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42388 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751137AbaLQJup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:50:45 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [Patch V2 2/4] xen: synchronize include/xen/interface/xen.h with xen
-Date: Wed, 17 Dec 2014 10:50:36 +0100
-Message-Id: <1418809838-14123-3-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1418809838-14123-1-git-send-email-jgross@suse.com>
-References: <1418809838-14123-1-git-send-email-jgross@suse.com>
+	id S1752064AbaLQJvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:51:48 -0500
+Received: from mail-bn1bon0140.outbound.protection.outlook.com ([157.56.111.140]:2368
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751115AbaLQJvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 04:51:44 -0500
+X-WSS-ID: 0NGQ01Z-07-ZHU-02
+X-M-MSG: 
+Message-ID: <1418808397.2582.34.camel@kxue-X58A-UD3R>
+Subject: Re: [PATCH 3/3] acpi:lpss:Refine lpss codes to fit acpi soc.
+From: Ken Xue <Ken.Xue@amd.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 17 Dec 2014 17:26:37 +0800
+In-Reply-To: <CAHp75VfoMs-A-6UQurcNsNOCcpgtGL9BjhEPK6j9CET+v=CgGg@mail.gmail.com>
+References: <1418267151-5650-1-git-send-email-Ken.Xue@amd.com>
+	 <CAHp75VfoMs-A-6UQurcNsNOCcpgtGL9BjhEPK6j9CET+v=CgGg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Ken.Xue@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(377424004)(377454003)(51704005)(24454002)(199003)(86362001)(19580405001)(77156002)(64706001)(68736005)(20776003)(107046002)(33646002)(76176999)(84676001)(62966003)(19580395003)(120916001)(77096005)(2950100001)(46102003)(23676002)(106466001)(97736003)(89996001)(4396001)(87936001)(101416001)(105586002)(99396003)(92566001)(50466002)(110136001)(47776003)(103116003)(50986999)(21056001)(50226001)(33716001)(31966008)(99106002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB206;
+X-Forefront-PRVS: 042857DBB5
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The header include/xen/interface/xen.h doesn't contain all definitions
-from Xen's version of that header. Update it accordingly.
+On Tue, 2014-12-16 at 12:27 +0200, Andy Shevchenko wrote:
+> On Thu, Dec 11, 2014 at 5:05 AM, Ken Xue <Ken.Xue@amd.com> wrote:
+> 
+> Make a commit message not empty.
+> 
+[ken]got it.
 
-Signed-off-by: Juergen Gross <jgross@suse.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
----
- arch/x86/xen/trace.c        | 2 +-
- include/xen/interface/xen.h | 6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+> > Signed-off-by: Ken Xue <Ken.Xue@amd.com>
+> > ---
+> >  drivers/acpi/acpi_lpss.c | 566 ++++++++++++++++++-----------------------------
+> >  1 file changed, 221 insertions(+), 345 deletions(-)
+> >
+> > -static int acpi_lpss_platform_notify(struct notifier_block *nb,
+> > -                                    unsigned long action, void *data)
+> 
+> Could it be just a part of this file? It seems for me that AMD doesn't
+> have anything specific which requires to have a dedicated power
+> domain. Am I wrong?
+> 
+[Ken] AMD does not have any specific PM domain now. But i believe it is
+a good and necessary feature for low power management. and AMD will have
+similar HW design. so, can you share a reason to keep it as a part of
+this file?
 
-diff --git a/arch/x86/xen/trace.c b/arch/x86/xen/trace.c
-index 520022d..8296cdf 100644
---- a/arch/x86/xen/trace.c
-+++ b/arch/x86/xen/trace.c
-@@ -29,7 +29,7 @@ static const char *xen_hypercall_names[] = {
- 	N(vcpu_op),
- 	N(set_segment_base),
- 	N(mmuext_op),
--	N(acm_op),
-+	N(xsm_op),
- 	N(nmi_op),
- 	N(sched_op),
- 	N(callback_op),
-diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
-index f68719f..a483789 100644
---- a/include/xen/interface/xen.h
-+++ b/include/xen/interface/xen.h
-@@ -67,7 +67,7 @@
- #define __HYPERVISOR_vcpu_op              24
- #define __HYPERVISOR_set_segment_base     25 /* x86/64 only */
- #define __HYPERVISOR_mmuext_op            26
--#define __HYPERVISOR_acm_op               27
-+#define __HYPERVISOR_xsm_op               27
- #define __HYPERVISOR_nmi_op               28
- #define __HYPERVISOR_sched_op             29
- #define __HYPERVISOR_callback_op          30
-@@ -75,7 +75,11 @@
- #define __HYPERVISOR_event_channel_op     32
- #define __HYPERVISOR_physdev_op           33
- #define __HYPERVISOR_hvm_op               34
-+#define __HYPERVISOR_sysctl               35
-+#define __HYPERVISOR_domctl               36
-+#define __HYPERVISOR_kexec_op             37
- #define __HYPERVISOR_tmem_op              38
-+#define __HYPERVISOR_xc_reserved_op       39 /* reserved for XenClient */
- 
- /* Architecture-specific hypercall definitions. */
- #define __HYPERVISOR_arch_0               48
--- 
-2.1.2
 
