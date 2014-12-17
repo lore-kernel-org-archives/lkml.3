@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbaLQGyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 01:54:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:46278 "EHLO mga11.intel.com"
+	id S1751937AbaLQG6T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 01:58:19 -0500
+Received: from sauhun.de ([89.238.76.85]:40838 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792AbaLQGyJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 01:54:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,592,1413270000"; 
-   d="scan'208";a="638844909"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Chris Rorvick <chris@rorvick.com>, "Drokin, Oleg" <oleg.drokin@intel.com>
-CC: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Julia Lawall <Julia.Lawall@lip6.fr>, Greg Donald <gdonald@gmail.com>,
-        "Hammond, John" <john.hammond@intel.com>,
-        Andriy Skulysh <Andriy_Skulysh@xyratex.com>,
-        Fabian Frederick <fabf@skynet.be>, James Simmons <uja.ornl@gmail.com>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "HPDD-discuss@lists.01.org" <HPDD-discuss@ml01.01.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 2/2] drivers: staging: lustre: Track sign separately
-Thread-Topic: [PATCH v2 2/2] drivers: staging: lustre: Track sign separately
-Thread-Index: AQHQGbF4PBVUumjKwk2gmAPsw3ZGK5yTafeA
-Date: Wed, 17 Dec 2014 06:54:06 +0000
-Message-ID: <D0B67685.D0A5B%andreas.dilger@intel.com>
-References: <1418790242-14309-1-git-send-email-chris@rorvick.com>
- <1418790242-14309-3-git-send-email-chris@rorvick.com>
-In-Reply-To: <1418790242-14309-3-git-send-email-chris@rorvick.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.254.108.8]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <038B0399EA6AB94A9EEB856008D98744@intel.com>
-Content-Transfer-Encoding: 8BIT
+	id S1751118AbaLQG6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 01:58:17 -0500
+Date: Wed, 17 Dec 2014 07:58:14 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: sh_mobile: I2C_SH_MOBILE should depend on HAS_DMA
+Message-ID: <20141217065814.GB1018@katana>
+References: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
+Content-Disposition: inline
+In-Reply-To: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/12/16, 9:24 PM, "Chris Rorvick" <chris@rorvick.com> wrote:
 
->The `mult' parameter is negated if the user data begins with a '-' so
->that the final value has the appropriate sign.  But `mult' is only used
->if the user data does not include a "units" suffix.  In this case,
->`mult' is overridden with the numeric scale conveyed by the units suffix,
->but retains the sign of the original value.
->
->Having `mult' serving double-duty works but is confusing.  Use a new
->local variable to store the sign of the user data instead.  This also
->fixes a pitfall of passing 0 to `mult', expecting it to be ignored when
->a units suffix is specified, but having the effect of taking the
->absolute value of the user-provided data.
->
->Signed-off-by: Chris Rorvick <chris@rorvick.com>
+--jho1yZJdad60DJr+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Both patches look good to me.
-Reviewed-by: Andreas Dilger <andreas.dilger@intel.com>
+On Mon, Dec 15, 2014 at 02:37:04PM +0100, Geert Uytterhoeven wrote:
+> If NO_DMA=3Dy:
+>=20
+> drivers/built-in.o: In function `sh_mobile_i2c_dma_unmap':
+> i2c-sh_mobile.c:(.text+0x60de42): undefined reference to `dma_unmap_singl=
+e'
+> drivers/built-in.o: In function `sh_mobile_i2c_xfer_dma':
+> i2c-sh_mobile.c:(.text+0x60df22): undefined reference to `dma_map_single'
+> i2c-sh_mobile.c:(.text+0x60df2e): undefined reference to `dma_mapping_err=
+or'
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
->---
-> drivers/staging/lustre/lustre/obdclass/lprocfs_status.c | 7 ++++---
-> 1 file changed, 4 insertions(+), 3 deletions(-)
->
->diff --git a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
->b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
->index 92ed0a0..b6c3352 100644
->--- a/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
->+++ b/drivers/staging/lustre/lustre/obdclass/lprocfs_status.c
->@@ -1864,6 +1864,7 @@ int lprocfs_write_frac_u64_helper(const char
->*buffer, unsigned long count,
-> 	char kernbuf[22], *end, *pbuf;
-> 	__u64 whole, frac = 0, units;
-> 	unsigned frac_d = 1;
->+	int sign = 1;
-> 
-> 	if (count > (sizeof(kernbuf) - 1))
-> 		return -EINVAL;
->@@ -1874,7 +1875,7 @@ int lprocfs_write_frac_u64_helper(const char
->*buffer, unsigned long count,
-> 	kernbuf[count] = '\0';
-> 	pbuf = kernbuf;
-> 	if (*pbuf == '-') {
->-		mult = -mult;
->+		sign = -1;
-> 		pbuf++;
-> 	}
-> 
->@@ -1911,11 +1912,11 @@ int lprocfs_write_frac_u64_helper(const char
->*buffer, unsigned long count,
-> 	}
-> 	/* Specified units override the multiplier */
-> 	if (units > 1)
->-		mult = mult < 0 ? -units : units;
->+		mult = units;
-> 
-> 	frac *= mult;
-> 	do_div(frac, frac_d);
->-	*val = whole * mult + frac;
->+	*val = sign * (whole * mult + frac);
-> 	return 0;
-> }
-> EXPORT_SYMBOL(lprocfs_write_frac_u64_helper);
->-- 
->2.1.0
->
->
+Thanks for spotting this. However, since DMA is opt-in, isn't this
+dependency too much? I can't think of anything better than #ifdeffing
+the code, though.
 
+> ---
+>  drivers/i2c/busses/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+> index c1351d9fb35bbc8d..f08dd20f625c184d 100644
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -753,6 +753,7 @@ config I2C_SH7760
+> =20
+>  config I2C_SH_MOBILE
+>  	tristate "SuperH Mobile I2C Controller"
+> +	depends on HAS_DMA
+>  	depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+>  	help
+>  	  If you say yes to this option, support will be included for the
+> --=20
+> 1.9.1
+>=20
 
-Cheers, Andreas
--- 
-Andreas Dilger
+--jho1yZJdad60DJr+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Lustre Software Architect
-Intel High Performance Data Division
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJUkSmGAAoJEBQN5MwUoCm2xHsP/js2TUgYoioEwKyqVFe5DaFY
+7vmdGM9QXQIvlS+hMBhdMeVbN8tb5CUF+G24XEyiqrDgbrG7PiHb84ud+XziGsfW
+h7q7r2mSDYWWEkIFJhJ/EPO4P9SSkdkbXwTM9Q978nRc85UA7Zq000WLfXT7+iO1
+t2ymXpIDyHldywsVeA2jalTJ0oe9KDHQ0Sob2Hp7ZJinYbndFwYqxnr5Ppepphke
+f20jM+gmPNZc00kzOLc16AfiZ5rurVPPPu9YdeuyyH6g38LjUMSqv6TyzojIVXhj
+93lbaLRKg+TM1B/txu9aZqKQRBDeFouGBalSPPFFQNdO6CHH3vusuqsTxobyeNCB
+Cge/xnG5LqJcPRToKusXg0sVoEyvEFAShKJ1AEJqQk3PHzMCDdrAIa0edp6EswDq
+TXejkg/mD/cBldVaQuKIF3HNP3tu27L7EKKOiLKfRtQzvajsb/Sa6Wp8L4kNKCVw
+2ZHL47jXiYd222/SyJc/uGtw9CHy6AxrQPlCgdyyyMYYB1B78dCqdu6CE3UeoYPD
+4V+8A+sA5zYw8LoyMgPh/JOX/jhnWQe2WwjgQ8b1G5ojb2RmQPs9waMKzpWSQCL9
+sRm2ebnytWMmS8b/0Rrc8U4U234lNXmMoMGwv/EKIF5hCJSbL9iXrEEqgmWllh50
+ZPoHxD1VZO4k2Qcc73q4
+=zwWr
+-----END PGP SIGNATURE-----
 
+--jho1yZJdad60DJr+--
