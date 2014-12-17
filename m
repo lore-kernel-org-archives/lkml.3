@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaLQEhE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:37:04 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:63100 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771AbaLQEhB (ORCPT
+	id S1751652AbaLQEm3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:42:29 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:35892 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458AbaLQEm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:37:01 -0500
+	Tue, 16 Dec 2014 23:42:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <1418771379-24369-5-git-send-email-dtor@chromium.org>
+In-Reply-To: <1418771379-24369-1-git-send-email-dtor@chromium.org>
 References: <1418771379-24369-1-git-send-email-dtor@chromium.org>
-	<1418771379-24369-5-git-send-email-dtor@chromium.org>
-Date: Wed, 17 Dec 2014 10:07:00 +0530
-Message-ID: <CAKohpokj=u-VhNsW1ZoRsjjPEioMO6FqzVEL3y-7vDCt07cjKw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] cpufreq-dt: defer probing if OPP table is not ready
+Date: Wed, 17 Dec 2014 10:12:27 +0530
+Message-ID: <CAKohpo=bQCR+kOmMaMuQM=7tnbuKzM8XEtmnLbuRiA4C=jCxDQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Allow cpufreq-dt to defer probe if OPP table is not ready
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: Dmitry Torokhov <dtor@chromium.org>
 Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
@@ -30,38 +29,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 17 December 2014 at 04:39, Dmitry Torokhov <dtor@chromium.org> wrote:
-> cpufreq-dt driver supports mode when OPP table is provided by platform
-> code and not device tree. However on certain platforms code that fills
-> OPP table may run after cpufreq driver tries to initialize, so let's
-> report -EPROBE_DEFER if we do not find any entires in OPP table for the
-> CPU.
->
-> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> ---
->  drivers/cpufreq/cpufreq-dt.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/drivers/cpufreq/cpufreq-dt.c b/drivers/cpufreq/cpufreq-dt.c
-> index f56147a..fde97d6 100644
-> --- a/drivers/cpufreq/cpufreq-dt.c
-> +++ b/drivers/cpufreq/cpufreq-dt.c
-> @@ -211,6 +211,17 @@ static int cpufreq_init(struct cpufreq_policy *policy)
->         /* OPPs might be populated at runtime, don't check for error here */
->         of_init_opp_table(cpu_dev);
->
-> +       /*
-> +        * But we need OPP table to function so if it is not there let's
-> +        * give platform code chance to provide it for us.
-> +        */
-> +       ret = dev_pm_opp_get_opp_count(cpu_dev);
-> +       if (ret <= 0) {
-> +               pr_debug("OPP table is not ready, deferring probe\n");
-> +               ret = -EPROBE_DEFER;
-> +               goto out_free_opp;
-> +       }
-> +
->         priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->         if (!priv) {
->                 ret = -ENOMEM;
+> Note that I am not happy with OPP code: dev_pm_opp_init_cpufreq_table() is
+> wrong in it's assumption that taking RCU lock will guarantee that number of
+> OPPs will not change - we can remove OPP from list just fine, and then
+> initialization will fail. I also think that we shoudl change API so users should
+> get a reference to their OPP table and then pass opaque dev_opp pointer to
+> accessor APIs instead of re-scanning the global list over and over and over.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Yeah, agree for both of them..
