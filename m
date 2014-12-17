@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaLQSCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:02:55 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50174 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaLQSCx (ORCPT
+	id S1751147AbaLQSIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:08:04 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:59249 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaLQSIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:02:53 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <gregkh@linuxfoundation.org>, <vinod.koul@intel.com>,
-        <dmaengine@vger.kernel.org>, <bhelgaas@google.com>,
-        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [RFC PATCH 1/2] common: dma-mapping: introduce dma_get_parent_cfg() helper
-Date: Wed, 17 Dec 2014 13:02:23 -0500
-Message-ID: <1418839344-14393-2-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com>
-References: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com>
+	Wed, 17 Dec 2014 13:08:02 -0500
+Date: Thu, 18 Dec 2014 02:07:56 +0800
+From: Tsung-Han Lin <tsunghan.tw@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging:board: fix build errors and warnings
+Message-ID: <20141217180756.GA23742@Tari7Braves>
+References: <1418059449-15108-1-git-send-email-tsunghan.tw@gmail.com>
+ <20141212113610.C88F5C40872@trevor.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141212113610.C88F5C40872@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, in Kernel, parent device's DMA parameters has to be applied to
-the child as is - to enable DMA support for the device. Usually this
-is happened in places where parent device manually instantiates child
-device such as in drivers/pci/probe.c (pci_device_add() for example).
+On Fri, Dec 12, 2014 at 11:36:10AM +0000, Grant Likely wrote:
+> On Tue,  9 Dec 2014 01:24:09 +0800
+> , Tsung-Han Lin <tsunghan.tw@gmail.com>
+>  wrote:
+> > Add dummy implementation of 'of_find_all_nodes',
+> > and remove the unnecessary 'of_can_translate_address',
+> > which is already removed in commit
+> > d9c6866be8a145e32da616d8dcbae806032d75b5 ("of: kill off
+> > of_can_translate_address"), to fix the build errors and warnings
+> > found by sparse.
+> > 
+> > Signed-off-by: Tsung-Han Lin <tsunghan.tw@gmail.com>
+> 
+> ???
+> 
+> This code is just weird. If CONFIG_OF is not enabled, then board.c
+> shouldn't be compiled at all. You can do this with a patch to the
+> Kconfig and Makefile. Also, if the functions in
+> drivers/staging/board/board.c are needed for driver support, then please
+> propose a patch that moves them in into drivers/of/base.c so that they
+> can be reviewed properly. They are so short and simple that fixing them
+> up as part of the normal review process should be sufficient.
+> 
+> As for fixing the compile error, please drop the change to
+> include/linux/of.h and resubmit.
+> 
+> g.
+> 
+> 
 
-Now DMA configuration is represented in device data structure not only
-by DMA mask and DMA params, it also includes dma_pfn_offset at least.
-Hence introduce common dma_get_parent_cfg() helper to apply dma
-configuration from parent to child, and use __weak to allow arch to
-override it if needed.
+Sorry it took me sometime to understand what I got wrong,
+and thank you for your suggestion.
+I will re-send a fix for this.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- drivers/base/dma-mapping.c  |   18 ++++++++++++++++++
- include/linux/dma-mapping.h |    3 +++
- 2 files changed, 21 insertions(+)
-
-diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
-index 9e8bbdd..5322426 100644
---- a/drivers/base/dma-mapping.c
-+++ b/drivers/base/dma-mapping.c
-@@ -339,3 +339,21 @@ void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
- 	vunmap(cpu_addr);
- }
- #endif
-+
-+int __weak dma_get_parent_cfg(struct device *dev, struct device *parent)
-+{
-+	struct device *temp = parent;
-+
-+	if (!temp)
-+		temp = dev->parent;
-+
-+	if (temp && is_device_dma_capable(temp)) {
-+		dev->dma_mask	= temp->dma_mask;
-+		dev->coherent_dma_mask = temp->coherent_dma_mask;
-+		dev->dma_parms	= temp->dma_parms;
-+		dev->dma_pfn_offset = temp->dma_pfn_offset;
-+		return 0;
-+	}
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(dma_get_parent_cfg);
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index d5d3881..eb080d6 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -127,6 +127,9 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
- 	return dma_set_mask_and_coherent(dev, mask);
- }
- 
-+extern int __weak dma_get_parent_cfg(struct device *dev,
-+					struct device *parent);
-+
- extern u64 dma_get_required_mask(struct device *dev);
- 
- #ifndef set_arch_dma_coherent_ops
--- 
-1.7.9.5
-
+I just built those codes with wrong .config and options.
