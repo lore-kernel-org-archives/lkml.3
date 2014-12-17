@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101AbaLQAc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 19:32:58 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:56164 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821AbaLQAc5 (ORCPT
+	id S1751083AbaLQAlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 19:41:39 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:60084 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821AbaLQAli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 19:32:57 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-28-5490cf383c85
-Message-id: <5490CF37.9080204@samsung.com>
-Date: Wed, 17 Dec 2014 09:32:55 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: weiyj_lk@163.com
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] extcon: Remove duplicated include from extcon-class.c
-References: <1418087319-14416-1-git-send-email-weiyj_lk@163.com>
-In-reply-to: <1418087319-14416-1-git-send-email-weiyj_lk@163.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSomtxfkKIwaMbghaXd81hs7jduILN
-	ou3fDyaLnes62R1YPBavmMLq0bdlFaPH0ntHGT0+b5ILYInisklJzcksSy3St0vgylg64Qhj
-	wWq2irNLZjI3MM5m7WLk5JAQMJF48Xo5C4QtJnHh3nq2LkYuDiGBpYwS01avZ4QpapqxjhEi
-	sYhRYv7nXiYI5zWjxO077ewgVbwCWhKzn+1nA7FZBFQlTi+aCLaCDSi+/8UNsLioQJjEyulX
-	WCDqBSV+TL4HZHNwiAiISHQ/iQQJMwtUSKxrmAY2UlggQOLEi2Vg5UICDhL75m5g7mJk5+AU
-	cJRYqAdRrSOxv3UaG4QtL7F5zVtmkMskBNaxS/w8B3ImyDUCEt8mHwLbJCEgK7HpADPEW5IS
-	B1fcYJnAKDYLyT2zkIydhWTsAkbmVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBsXT637O+
-	HYw3D1gfYhTgYFTi4Q0s7A8RYk0sK67MPcRoCnTFRGYp0eR8YMTmlcQbGpsZWZiamBobmVua
-	KYnzJkj9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAGOWb39xv9vqB6j3Rf8IfNjzXqT65
-	IfjtSj2LH4eXFWjOnN0wcY9Dv2pSyr7LcxIZP248l7PTf3ciO7s+Z9tFo/srrX7r9X/YZRnz
-	fXPswfVXZofu8ZvCyvVY9qLPmh08sWue5k06kLDf8YN2teP0Z1u2Jf/kWF70RXWla/hKP743
-	/fnJvs+FviuxFGckGmoxFxUnAgBwY2QGoAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOIsWRmVeSWpSXmKPExsVy+t9jAV2L8xNCDGbc5La4vGsOm8XtxhVs
-	Fm3/fjBZ7FzXye7A4rF4xRRWj74tqxg9lt47yujxeZNcAEtUA6NNRmpiSmqRQmpecn5KZl66
-	rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBOJYWyxJxSoFBAYnGxkr4dpgmhIW66
-	FjCNEbq+IUFwPUYGaCBhDWPG0glHGAtWs1WcXTKTuYFxNmsXIyeHhICJRNOMdYwQtpjEhXvr
-	2boYuTiEBBYxSsz/3MsE4bxmlLh9p50dpIpXQEti9rP9bCA2i4CqxOlFE8EmsQHF97+4ARYX
-	FQiTWDn9CgtEvaDEj8n3gGwODhEBEYnuJ5EgYWaBCol1DdPARgoLBEiceLEMrFxIwEFi39wN
-	zF2M7BycAo4SC/UgqnUk9rdOY4Ow5SU2r3nLPIFRYBaS+bOQlM1CUraAkXkVo2hqQXJBcVJ6
-	rpFecWJucWleul5yfu4mRnCkPpPewbiqweIQowAHoxIPb2Bhf4gQa2JZcWXuIUYJDmYlEV6L
-	RRNChHhTEiurUovy44tKc1KLDzGaAr0/kVlKNDkfmETySuINjU3MjCyNzA0tjIzNlcR5lezb
-	QoQE0hNLUrNTUwtSi2D6mDg4pRoYZd89/+0+Q+ngV6GgaI71ii087g8CX9Yc4J257m7iFuur
-	7M0rGffsXBz81Tjj6L0tha+uVFaUnnFU/HDNN0qvWo6vVDJjg0xz6OM9z2x2X5w93Yz34C+Z
-	so9GTzYEZdusnfwrmrfgxsrNZ1pkZY4HlC4OYtio9eBSSsHFbv3Ou5opnPKP1Vk2KbEUZyQa
-	ajEXFScCAKltEdnqAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 16 Dec 2014 19:41:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxyx_wcsgYJC2GXcjEvMsTg=K=uy6A=xDJdWdvZsE1VHQ@mail.gmail.com>
+References: <CA+55aFyEnuByhPM3FEdi=Q0WGuJWiBgtkWNAbRLHDpmPRaqnQA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212049220.6439@nanos> <CA+55aFzvgxAMpP7kr9qrxyo82vSucQ5G+VByOgsgoyq6y5ExOA@mail.gmail.com>
+ <alpine.DEB.2.11.1411212110320.6439@nanos> <CA+55aFyt6q7Ed-SS9GeN8jeUZu6yNM14EGyH_8rn8AF2Vv37hg@mail.gmail.com>
+ <alpine.DEB.2.11.1411212207150.6439@nanos> <CA+55aFyzg=vJqRwh2CsK8WD-E5nRPjdiasMaTBx6qygQhDrGLA@mail.gmail.com>
+ <20141216192803.GC3337@twins.programming.kicks-ass.net> <CA+55aFx9oTQHnamJ=QEGOKHe2obQEn2NfNa+hJ_Z-V1FyY7QaQ@mail.gmail.com>
+ <20141216211921.GA2395@suse.de> <20141216230246.GA30905@twins.programming.kicks-ass.net>
+ <CA+55aFxyx_wcsgYJC2GXcjEvMsTg=K=uy6A=xDJdWdvZsE1VHQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 16 Dec 2014 16:41:16 -0800
+Message-ID: <CALCETrVLrXOZNY6Xha+TukJMTb2ni70FN==rL8KHM6FrMwWzVQ@mail.gmail.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mgorman@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Dave Jones <davej@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 10:08 AM, weiyj_lk@163.com wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/extcon/extcon-class.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index 043dcd9..8319f25 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -32,7 +32,6 @@
->  #include <linux/of.h>
->  #include <linux/slab.h>
->  #include <linux/sysfs.h>
-> -#include <linux/of.h>
->  
->  /*
->   * extcon_cable_name suggests the standard cable names for commonly used
-> 
-> 
+On Tue, Dec 16, 2014 at 4:00 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Dec 16, 2014 at 3:02 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>> OK, should we just stick it in the x86 tree and see if anything
+>> explodes? ;-)
+>
+> Gaah, I got confused about the patches.
+>
+> And something did explode, it showed some Xen nasties. Xen has that
+> odd "we don't share PMD entries between MM's" thing going on, which
+> means that the vmalloc fault thing does actually have to occasionally
+> walk two levels rather than just copy the top level. I'm still not
+> sure why Xen doesn't share PMD's, since threads that shame the MM
+> clearly can share PMD's within Xen, but I gave up on it.
 
-The same patch[1] is already posted.
-[1] https://lkml.org/lkml/2014/12/8/716
+Sounds like it's time to ask Konrad, the source of all Xen understanding :)
 
-Thanks,
-Chanwoo Choi
+Linus, do you have a pointer to whatever version of the patch you tried?
 
+--Andy
+
+>
+> That said, making x86-64 use "read_cr3()" instead of
+> "current->active_mm" would at least make things a bit safer wrt NMI's
+> during the task switch, of course.  So *some* 32/64-bit consolidation
+> should be done, but my patch went a bit too far for Xen.
+>
+>                       Linus
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
