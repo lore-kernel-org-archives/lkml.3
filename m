@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaLQIYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 03:24:45 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:36616 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860AbaLQIYn (ORCPT
+	id S1752268AbaLQIZX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 03:25:23 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57171 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875AbaLQIZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 03:24:43 -0500
-Date: Wed, 17 Dec 2014 00:24:37 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Omar Sandoval <osandov@osandov.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141217082437.GA9301@infradead.org>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
- <20141215162705.GA23887@quack.suse.cz>
- <20141215165615.GA19041@infradead.org>
- <20141215221100.GA4637@mew>
- <20141216083543.GA32425@infradead.org>
- <20141216085624.GA25256@mew>
- <20141217080610.GA20335@infradead.org>
- <20141217082020.GH22149@ZenIV.linux.org.uk>
+	Wed, 17 Dec 2014 03:25:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141217082020.GH22149@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <CANqRtoRTcC_ixjY_Qr1T=2Jhh9qu_5+=Z3YRBDUJX8HWHP6Nog@mail.gmail.com>
+References: <20141216094854.22639.69181.sendpatchset@w520>
+	<54901420.50403@linaro.org>
+	<1418731028.WfBPmyK53y@avalon>
+	<CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
+	<CAMuHMdUzys9pbEjUybyDP-3=uemLZuP5WgXeyONxGmADUJJL4A@mail.gmail.com>
+	<CANqRtoRTcC_ixjY_Qr1T=2Jhh9qu_5+=Z3YRBDUJX8HWHP6Nog@mail.gmail.com>
+Date: Wed, 17 Dec 2014 09:25:19 +0100
+X-Google-Sender-Auth: vlTGGedYRagIjG8KRWDZEQicHIA
+Message-ID: <CAMuHMdVDHX4PAvNKaxBDm4n2gjHgi4qv9Ui_FgiCgLPdKAXxcw@mail.gmail.com>
+Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 08:20:21AM +0000, Al Viro wrote:
-> Where the hell would those other references come from?  We open the damn
-> thing in sys_swapon(), never put it into descriptor tables, etc. and
-> the only reason why we use filp_close() instead of fput() is that we
-> would miss ->flush() otherwise.
-> 
-> Said that, why not simply *open* it with O_DIRECT to start with and be done
-> with that?  It's not as if those guys came preopened by caller - swapon(2)
-> gets a pathname and does opening itself.
+Hi Magnus,
 
-Oops, should have dug deeper into the code.  For some reason I assumed
-the fd is passed in from userspace.
+On Wed, Dec 17, 2014 at 2:30 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
+>> Armadillo-legacy is broken, and probably won't come back (cfr.
+>> https://lkml.org/lkml/2014/12/2/339).
+>>
+>> Kzm9g-reference still hangs at "Calibrating local timer..." (it did work
+>> at some point in the past).
+>
+> When the time allows I'd like us to try to fix up these somehow. At
+> least I'll give it a go - I guess Armadillo is difficult without any
+> board.
 
-The suggestion from Al is much better, given that we never do normal
-I/O on the swapfile, just the bmap + direct bio submission which I hope
-could go away in favor of the direct I/O variant in the long run.
+To fix Armadillo, we have to instantiate the GIC from C code, which is
+a step backwards.
+
+>> Note that my local tree is based on renesas-drivers-2014-12-08-v3.18,
+>> renesas-devel-20141212-v3.18, and yesterday's upstream, with CCF,
+>> PM domain, TWD, and lots of WIP patches from the kitchen sink applied.
+>
+> The TWD portion above - is it driver code or integration stuff? If the
+> latter - is there any reason why these can't be picked up by Simon and
+> merged right away.
+
+Integration stuff. Basically it's
+http://www.spinics.net/lists/arm-kernel/msg383413.html
+
+In the mean time, I found the right clock, but I still have to repost that
+(sorry, recovering from being ill --- merge windows don't help much ;-)
+
+> My plan is to dig into sh73a0 (maybe including TWD) later today.
+
+Okay, thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
