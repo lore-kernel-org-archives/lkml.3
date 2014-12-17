@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbaLQLrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 06:47:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:46495 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaLQLrx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 06:47:53 -0500
-Message-ID: <54916D63.7060701@codeaurora.org>
-Date: Wed, 17 Dec 2014 17:17:47 +0530
-From: Chintan Pandya <cpandya@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1751919AbaLQLsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 06:48:11 -0500
+Received: from smtpfree.forptr.21cn.com ([183.56.131.159]:11493 "EHLO 21cn.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751068AbaLQLsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 06:48:09 -0500
+HMM_SOURCE_IP: 127.0.0.1:37888.21977536
+HMM_ATTACHE_NUM: 0000
+HMM_SOURCE_TYPE: SMTP
+0/X-Total-Score: 20:
+2/X-Total-Score: 0:
+3/X-Total-Score: 0:
+4/X-Brightmail-Tracker: AAAAAA==
+X-FILTER-SCORE: to=<8d8a8f96994e8c86938f868d61978886934f8c86938f868d4f909388>, score=<1418816877nInInIIIIInIIIIInInInIrJ4z1L11L+1LL1LO1+LOIP>  
+X-REAL-FROM: dahuaditd@21cn.com
+X-Receive-IP: 114.111.166.2 dahuaditd@21cn.com
+From: "Rankin" <dahuaditd@21cn.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: linux-kernel,We are distributors of mailbox production
+Date: Wed, 17 Dec 2014 19:47:58 +0800
+X-Mailer: Windows Eudora Pro Version 3.0b35 (32)
+Reply-To: <dahuaditd@21cn.com>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Michal Hocko <mhocko@suse.cz>, hannes@cmpxchg.org, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: Provide knob for force OOM into the memcg
-References: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org> <20141216133935.GK22914@dhcp22.suse.cz> <alpine.DEB.2.10.1412161430040.5142@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.10.1412161430040.5142@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=GB2312
+Message-Id: <20141217114753.83E8E2FF8189@21cn.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBHBmJMm010864
 
-On 12/17/2014 04:03 AM, David Rientjes wrote:
-> On Tue, 16 Dec 2014, Michal Hocko wrote:
->
->>> We may want to use memcg to limit the total memory
->>> footprint of all the processes within the one group.
->>> This may lead to a situation where any arbitrary
->>> process cannot get migrated to that one  memcg
->>> because its limits will be breached. Or, process can
->>> get migrated but even being most recently used
->>> process, it can get killed by in-cgroup OOM. To
->>> avoid such scenarios, provide a convenient knob
->>> by which we can forcefully trigger OOM and make
->>> a room for upcoming process.
->>>
->>> To trigger force OOM,
->>> $ echo 1>  /<memcg_path>/memory.force_oom
->>
->> What would prevent another task deplete that memory shortly after you
->> triggered OOM and end up in the same situation? E.g. while the moving
->> task is migrating its charges to the new group...
 
-Idea was to trigger an OOM until we can migrate any particular process 
-onto desired cgroup.
+HI,
+Good day!
+We are mailbox supplier, and we have researched & designed some new product.
+If you are interested in, I'll Email you a catalogue of our various products
+Our Advantage Small volume products , materials , packaging , custom content, etc. according to customer requirements to complete the custom value for money products and services .
+Thanks for your valuable time.
 
->>
->> Why cannot you simply disable OOM killer in that memcg and handle it
->> from userspace properly?
 
-Well, this can be done it seems. Let me explore around this. Thanks for 
-this suggestion.
-
-> It seems to be proposed as a shortcut so that the kernel will determine
-> the best process to kill.  That information is available to userspace so
-> it should be able to just SIGKILL the desired process (either in the
-> destination memcg or in the source memcg to allow deletion), so this
-> functionality isn't needed in the kernel.
-
-Yes, this can be seen as a shortcut because we are off-loading some 
-task-selection to be killed by OOM on kernel rather than userspace 
-decides by itself.
-
--- 
-Chintan Pandya
-
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
+Email:info@tdmailbox.com
+Web:  www.tdmailbox.com
+Tel:  086-021-60340926
+Add: Shanghai waigaoqiao free trade area 500 grams of BingKE road 3 three-story, room 301
+Skype: jimwang998@hotmail.comÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
