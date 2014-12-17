@@ -1,137 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbaLQGQx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 01:16:53 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62780 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLQGQu (ORCPT
+	id S1751709AbaLQGTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 01:19:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:35644 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbaLQGTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 01:16:50 -0500
+	Wed, 17 Dec 2014 01:19:44 -0500
+Date: Wed, 17 Dec 2014 07:19:39 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Cc: davem@davemloft.net, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        paul.burton@imgtec.com
+Subject: Re: [PATCH] dm9000: Add regulator and reset support to dm9000
+Message-ID: <20141217061939.GJ30369@pengutronix.de>
+References: <1418747624-2682-1-git-send-email-Zubair.Kakakhel@imgtec.com>
 MIME-Version: 1.0
-In-Reply-To: <20141215133817.GD8264@leverpostej>
-References: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<20141205104009.GE11889@leverpostej>
-	<CAAfSe-uz534FiZufojKa8MdBi=VFqhuoFLwof7K+FqXG--AGaw@mail.gmail.com>
-	<20141215133817.GD8264@leverpostej>
-Date: Wed, 17 Dec 2014 14:16:47 +0800
-Message-ID: <CAAfSe-u1PXP1KS5qGRKboCyJ7k-eDRizC76Xs3uwCsNyk7XZ9g@mail.gmail.com>
-Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arm@kernel.org" <arm@kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "allen.zhang@spreadtrum.com" <allen.zhang@spreadtrum.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418747624-2682-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 07:04:03 up 62 days, 17:17, 58 users,  load average: 0.03, 0.04,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark
+Hi Zubair,
 
-On Mon, Dec 15, 2014 at 9:38 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Fri, Dec 05, 2014 at 12:27:23PM +0000, Lyra Zhang wrote:
->> On Fri, Dec 5, 2014 at 6:40 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> > Hi,
->> >
->> > On Thu, Dec 04, 2014 at 11:34:15AM +0000, Chunyan Zhang wrote:
->> >> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
->> >>
->> >> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
->> >> standards based on ARMv8 multiple core architecture.Now we have only one
->> >> SoC(SC9836) based on this Platform in developing.
->> >>
->> >> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
->> >> of SC9836-UART.
->> >>
->> >> This patchset also has patches which address "sprd" prefix and DT compatible
->> >> strings for nodes which appear un-documented.
->> >>
->> >> This version code was tesed both on Fast Mode and sc9836-fpga board.
->> >> We use the latest boot-wrapper-aarch64 as the bootloader.
->> >>
->> >> Changes from v3:
->> >> * Addressed review comments:
->> >>       - Added the description of clock property for sc9836-uart
->> >>       - Revised the size of GICC to be 8KiB
->> >>       - Added another compatible string for psci-0.1
->> >
->> > I had open questions on v3 regarding your PSCI imlpementation. You
->> > mentioned that you are using the aarch64 bootwrapper, but your DT
->> > describes PSCI 0.2, and the (upstream) bootwrapper does not implement
->> > PSCI 0.2. Adding the old PSCI compatible string is _not_ sufficient if
->> > you do not have a full PSCI 0.2 implementation.
->> >
->> > Given that PSCI 0.2 requires more functionality to be implemented, I'd
->> > like to know that your implementation is spec-compliant (implementing
->> > the mandatory functions, nters the kernel in the correct state, etc),
->> > and that it has been tested.
->> >
->> > Would you be able to look at my comments from the last posting please?
->> >
->> > Thanks,
->> > Mark.
->> > --
->>
->> Hi, Mark
->>
->> Ok, I'll check it again with our related engineers.
->>
->> Actually, I had read all of your comments carefully before sending
->> each version of patches, and I replied you a few days early, I guess
->> you may miss it :)
->>
->> If we just implemented psci-0.1 until now, can we submit this path
->> without "compatible = "arm,psci-0.2"", but only with " compatible =
->> "arm,psci" ".
->
-> Elsewhere I've recommended such things are placed in the DTB by the
-> bootloader (at least for those cases where the bootlaoder is tied to the
-> firmware), as it can fill in the appropriate enable-method (and add any
-> other nodes as required).
->
-> Having compatible = "arm,psci", and a couple of other properties for now
-> is certainly preferable to describing a not-yet-implemented PSCI 0.2.
->
-> Thanks,
-> Mark.
-> --
+Several comments inline.
 
-Thank you for the replay.
-I'll still ping my colleagues to implement PSCI 0.2, and test it.
-But it perhaps would not be finished soon, because our internal
-developing code right now is based on a little old version Linux
-kernel which doesn't support  PSCI-0.2
+On Tue, Dec 16, 2014 at 04:33:44PM +0000, Zubair Lutfullah Kakakhel wrote:
+> In boards, the dm9000 chip's power and reset can be controlled by gpio.
+> 
+> It makes sense to add them to the dm9000 driver and let dt be used to
+> enable power and reset the phy.
+> 
+> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+> Signed-off-by: Paul Burton <paul.burton@imgtec.com>
+> ---
+>  .../devicetree/bindings/net/davicom-dm9000.txt     |  4 +++
+>  drivers/net/ethernet/davicom/dm9000.c              | 33 ++++++++++++++++++++++
+>  2 files changed, 37 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/net/davicom-dm9000.txt b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+> index 28767ed..dba19a2 100644
+> --- a/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+> +++ b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+> @@ -11,6 +11,8 @@ Required properties:
+>  Optional properties:
+>  - davicom,no-eeprom : Configuration EEPROM is not available
+>  - davicom,ext-phy : Use external PHY
+> +- reset-gpio : phandle of gpio that will be used to reset chip during probe
+> +- vcc-supply : phandle of regulator that will be used to enable power to chip
+>  
+>  Example:
+>  
+> @@ -21,4 +23,6 @@ Example:
+>  		interrupts = <7 4>;
+>  		local-mac-address = [00 00 de ad be ef];
+>  		davicom,no-eeprom;
+> +		reset-gpio = <&gpf 12 GPIO_ACTIVE_LOW>;
+> +		vcc-supply = <&eth0_power>;
+>  	};
+> diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+> index ef0bb58..7333b8d 100644
+> --- a/drivers/net/ethernet/davicom/dm9000.c
+> +++ b/drivers/net/ethernet/davicom/dm9000.c
+> @@ -36,6 +36,9 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/irq.h>
+>  #include <linux/slab.h>
+> +#include <linux/regulator/consumer.h>
+> +#include <linux/gpio.h>
+> +#include <linux/of_gpio.h>
+>  
+>  #include <asm/delay.h>
+>  #include <asm/irq.h>
+> @@ -1426,11 +1429,41 @@ dm9000_probe(struct platform_device *pdev)
+>  	struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);
+>  	struct board_info *db;	/* Point a board information structure */
+>  	struct net_device *ndev;
+> +	struct device *dev = &pdev->dev;
+>  	const unsigned char *mac_src;
+>  	int ret = 0;
+>  	int iosize;
+>  	int i;
+>  	u32 id_val;
+> +	int reset_gpio;
+> +	enum of_gpio_flags flags;
+> +	struct regulator *power;
+> +
+> +	power = devm_regulator_get(dev, "vcc");
+> +	if (IS_ERR(power)) {
+> +		dev_dbg(dev, "no regulator provided\n");
 
-Thanks again,
-Chunyan
+You have to check for errors here. The return value can be -EPROBE_DEFER
+in which case you have to return -EPROBE_DEFER from the driver and try
+again later.
+
+> +	} else if (!regulator_is_enabled(power)) {
+
+You must enable the regulator unconditionally to increase the reference
+counter. When this regulator is turned on because another consumer
+enabled it then this other consumer can turn it off and the dm9000 stops
+working.
+
+> +		ret = regulator_enable(power);
+> +		dev_dgb(dev, "regulator enabled\n");
+> +	}
+> +
+> +	reset_gpio = of_get_named_gpio_flags(dev->of_node, "reset-gpio", 0,
+> +					     &flags);
+
+Should be reset-gpios (plural). For some reason this is the established
+binding.
+
+> +	if (gpio_is_valid(reset_gpio)) {
+> +		ret = devm_gpio_request_one(dev, reset_gpio, flags,
+> +					    "dm9000_reset");
+> +		if (ret) {
+> +			dev_err(dev, "failed to request reset gpio %d: %d\n",
+> +				reset_gpio, ret);
+
+I think this is fatal. When A gpio is not registered for this device
+then this is fine, but when it's registered and you can't get it then
+it's fatal.
+
+> +		} else {
+> +			gpio_direction_output(reset_gpio, 0);
+> +			/* According to manual PWRST# Low Period Min 1ms */
+> +			msleep(2);
+> +			gpio_direction_output(reset_gpio, 1);
+
+No need to set the direction again. gpio_set_value should be suffice
+here.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
