@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaLQOJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:09:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47326 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227AbaLQOJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 09:09:03 -0500
-Date: Wed, 17 Dec 2014 15:09:01 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Seth Jennings <sjenning@redhat.com>
-cc: Josh Poimboeuf <jpoimboe@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv7 2/3] kernel: add support for live patching
-In-Reply-To: <1418752700-14649-3-git-send-email-sjenning@redhat.com>
-Message-ID: <alpine.LNX.2.00.1412171507020.24184@pobox.suse.cz>
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <1418752700-14649-3-git-send-email-sjenning@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751846AbaLQOLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 09:11:44 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:43237 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaLQOLm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 09:11:42 -0500
+Message-ID: <1418825500.9773.78.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: net: integer overflow in ip_idents_reserve
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        Andrey Ryabinin <a.ryabinin@samsung.com>,
+        Dave Jones <davej@redhat.com>
+Date: Wed, 17 Dec 2014 06:11:40 -0800
+In-Reply-To: <5490D920.5000104@oracle.com>
+References: <5490A1F8.6020207@oracle.com>
+	 <1418766460.9773.48.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <1418771356.3449499.203748285.4B1A82B8@webmail.messagingengine.com>
+	 <5490D920.5000104@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Dec 2014, Seth Jennings wrote:
+On Tue, 2014-12-16 at 20:15 -0500, Sasha Levin wrote:
 
-> This commit introduces code for the live patching core.  It implements
-> an ftrace-based mechanism and kernel interface for doing live patching
-> of kernel and kernel module functions.
-> 
-> It represents the greatest common functionality set between kpatch and
-> kgraft and can accept patches built using either method.
-> 
-> This first version does not implement any consistency mechanism that
-> ensures that old and new code do not run together.  In practice, ~90% of
-> CVEs are safe to apply in this way, since they simply add a conditional
-> check.  However, any function change that can not execute safely with
-> the old version of the function can _not_ be safely applied in this
-> version.
-> 
-> Signed-off-by: Seth Jennings <sjenning@redhat.com>
-> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+> I reported this one because there's usually some code to handle overflow
+> in code that expects that and here there was none (I could see).
 
-No problem there for me. So, for my patches you have
+IP ID are best effort.
 
-Signed-off-by: Miroslav Benes <mbenes@suse.cz>
+When sending one million IPv4 frames per second to a particular
+destination, the 16bit ID space is recycled so fast that really their
+precise values do not matter anymore.
+You pray that IP fragments wont be needed at all.
 
-and for the rest
+(One of the idea I had was to detect this kind of stress and fallback to
+a random generation, reducing false sharing, but this seemed a micro
+optimization targeting synthetic benchmarks )
 
-Reviewed-by: Miroslav Benes <mbenes@suse.cz>
+Thanks
 
-Thanks. Great work!
---
-Miroslav Benes
-SUSE Labs
+
