@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325AbaLQXMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 18:12:32 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:31470 "EHLO
+	id S1751462AbaLQXMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 18:12:36 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:43566 "EHLO
 	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750983AbaLQXMa (ORCPT
+	by vger.kernel.org with ESMTP id S1750983AbaLQXMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 18:12:30 -0500
+	Wed, 17 Dec 2014 18:12:33 -0500
 From: Shaohua Li <shli@fb.com>
 To: <linux-kernel@vger.kernel.org>, <x86@kernel.org>
 CC: <Kernel-team@fb.com>, Andy Lutomirski <luto@amacapital.net>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH v2 2/3] X86: add a generic API to let vdso code detect context switch
-Date: Wed, 17 Dec 2014 15:12:25 -0800
-Message-ID: <ecaea9066b4b0ff320bc03f23db56a9c2403a6b0.1418857018.git.shli@fb.com>
+Subject: [PATCH v2 1/3] X86: make VDSO data support multiple pages
+Date: Wed, 17 Dec 2014 15:12:24 -0800
+Message-ID: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
 X-Mailer: git-send-email 1.8.1
-In-Reply-To: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
-References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
 X-FB-Internal: Safe
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -38,141 +36,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vdso code can't disable preempt, so it can be preempted at any time.
-This makes a challenge to implement specific features. This patch adds a
-generic API to let vdso code detect context switch.
-
-We can use a context switch count to do the detection. The change of the
-count in giving time can be used to detect if context switch occurs.
-Andy suggested we can use a timestamp, so in next patch we can save some
-intructions. But the principle isn't changed here. This patch uses the
-timestamp approach.
+Currently vdso data is one page. Next patches will add per-cpu data to
+vdso, which requires several pages if CPU number is big. This makes VDSO
+data support multiple pages.
 
 Cc: Andy Lutomirski <luto@amacapital.net>
 Cc: H. Peter Anvin <hpa@zytor.com>
 Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Shaohua Li <shli@fb.com>
 ---
- arch/x86/Kconfig              |  4 ++++
- arch/x86/include/asm/vdso.h   | 17 +++++++++++++++++
- arch/x86/include/asm/vvar.h   |  6 ++++++
- arch/x86/kernel/asm-offsets.c |  6 ++++++
- arch/x86/vdso/vma.c           |  1 +
- kernel/sched/core.c           |  5 +++++
- 6 files changed, 39 insertions(+)
+ arch/x86/include/asm/vdso.h     | 2 +-
+ arch/x86/include/asm/vvar.h     | 8 ++++++--
+ arch/x86/kernel/asm-offsets.c   | 5 +++++
+ arch/x86/kernel/vmlinux.lds.S   | 6 +++---
+ arch/x86/tools/relocs.c         | 2 +-
+ arch/x86/vdso/vdso-layout.lds.S | 9 +++++----
+ arch/x86/vdso/vdso2c.c          | 6 +++---
+ arch/x86/vdso/vma.c             | 9 +++++----
+ 8 files changed, 29 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d69f1cd..e384147 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1943,6 +1943,10 @@ config COMPAT_VDSO
- 	  If unsure, say N: if you are compiling your own kernel, you
- 	  are unlikely to be using a buggy version of glibc.
- 
-+config VDSO_CS_DETECT
-+	def_bool y
-+	depends on X86_64
-+
- config CMDLINE_BOOL
- 	bool "Built-in kernel command line"
- 	---help---
 diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index 35ca749..d4556a3 100644
+index 8021bd2..35ca749 100644
 --- a/arch/x86/include/asm/vdso.h
 +++ b/arch/x86/include/asm/vdso.h
-@@ -49,6 +49,23 @@ extern const struct vdso_image *selected_vdso32;
+@@ -20,7 +20,7 @@ struct vdso_image {
  
- extern void __init init_vdso_image(const struct vdso_image *image);
+ 	long sym_vvar_start;  /* Negative offset to the vvar area */
  
-+#ifdef CONFIG_VDSO_CS_DETECT
-+struct vdso_percpu_data {
-+	u64 last_cs_timestamp;
-+} ____cacheline_aligned;
-+
-+struct vdso_data {
-+	int dummy;
-+	struct vdso_percpu_data vpercpu[0];
-+};
-+extern struct vdso_data vdso_data;
-+
-+static inline void vdso_set_cpu_cs_timestamp(int cpu)
-+{
-+	rdtscll(vdso_data.vpercpu[cpu].last_cs_timestamp);
-+}
-+#endif
-+
- #endif /* __ASSEMBLER__ */
- 
- #endif /* _ASM_X86_VDSO_H */
+-	long sym_vvar_page;
++	long sym_vvar_pages;
+ 	long sym_hpet_page;
+ 	long sym_VDSO32_NOTE_MASK;
+ 	long sym___kernel_sigreturn;
 diff --git a/arch/x86/include/asm/vvar.h b/arch/x86/include/asm/vvar.h
-index 62bc6f8..19ac55c 100644
+index 3f32dfc..62bc6f8 100644
 --- a/arch/x86/include/asm/vvar.h
 +++ b/arch/x86/include/asm/vvar.h
-@@ -45,6 +45,12 @@ extern char __vvar_pages;
+@@ -29,7 +29,7 @@
+ 
+ #else
+ 
+-extern char __vvar_page;
++extern char __vvar_pages;
+ 
+ #define DECLARE_VVAR(offset, type, name)				\
+ 	extern type vvar_ ## name __attribute__((visibility("hidden")));
+@@ -45,7 +45,11 @@ extern char __vvar_page;
  /* DECLARE_VVAR(offset, type, name) */
  
  DECLARE_VVAR(128, struct vsyscall_gtod_data, vsyscall_gtod_data)
-+#if defined(CONFIG_VDSO_CS_DETECT) && defined(CONFIG_X86_64)
+-
 +/*
-+ * this one needs to be last because it ends with a per-cpu array.
++ * you must update VVAR_TOTAL_SIZE to reflect all of the variables we're
++ * stuffing into the vvar area.  Don't change any of the above without
++ * also changing this math of VVAR_TOTAL_SIZE
 + */
-+DECLARE_VVAR(320, struct vdso_data, vdso_data)
-+#endif
- /*
-  * you must update VVAR_TOTAL_SIZE to reflect all of the variables we're
-  * stuffing into the vvar area.  Don't change any of the above without
+ #undef DECLARE_VVAR
+ 
+ #endif
 diff --git a/arch/x86/kernel/asm-offsets.c b/arch/x86/kernel/asm-offsets.c
-index 0ab31a9..7321cdc 100644
+index 9f6b934..0ab31a9 100644
 --- a/arch/x86/kernel/asm-offsets.c
 +++ b/arch/x86/kernel/asm-offsets.c
-@@ -17,6 +17,7 @@
+@@ -16,6 +16,7 @@
+ #include <asm/sigframe.h>
  #include <asm/bootparam.h>
  #include <asm/suspend.h>
- #include <asm/vgtod.h>
-+#include <asm/vdso.h>
++#include <asm/vgtod.h>
  
  #ifdef CONFIG_XEN
  #include <xen/interface/xen.h>
-@@ -74,6 +75,11 @@ void common(void) {
- 	DEFINE(PTREGS_SIZE, sizeof(struct pt_regs));
+@@ -71,4 +72,8 @@ void common(void) {
  
  	BLANK();
-+#ifdef CONFIG_VDSO_CS_DETECT
-+	DEFINE(VVAR_TOTAL_SIZE, ALIGN(320 + sizeof(struct vdso_data)
-+		+ sizeof(struct vdso_percpu_data) * CONFIG_NR_CPUS, PAGE_SIZE));
-+#else
- 	DEFINE(VVAR_TOTAL_SIZE,
- 		ALIGN(128 + sizeof(struct vsyscall_gtod_data), PAGE_SIZE));
-+#endif
+ 	DEFINE(PTREGS_SIZE, sizeof(struct pt_regs));
++
++	BLANK();
++	DEFINE(VVAR_TOTAL_SIZE,
++		ALIGN(128 + sizeof(struct vsyscall_gtod_data), PAGE_SIZE));
  }
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 00bf300..2efeee9 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -149,7 +149,7 @@ SECTIONS
+ 
+ 
+ 	. = ALIGN(PAGE_SIZE);
+-	__vvar_page = .;
++	__vvar_pages = .;
+ 
+ 	.vvar : AT(ADDR(.vvar) - LOAD_OFFSET) {
+ 		/* work around gold bug 13023 */
+@@ -168,10 +168,10 @@ SECTIONS
+ 		 * Pad the rest of the page with zeros.  Otherwise the loader
+ 		 * can leave garbage here.
+ 		 */
+-		. = __vvar_beginning_hack + PAGE_SIZE;
++		. = __vvar_beginning_hack + VVAR_TOTAL_SIZE;
+ 	} :data
+ 
+-       . = ALIGN(__vvar_page + PAGE_SIZE, PAGE_SIZE);
++	. = ALIGN(__vvar_pages + VVAR_TOTAL_SIZE, PAGE_SIZE);
+ 
+ 	/* Init code and data - will be freed after init */
+ 	. = ALIGN(PAGE_SIZE);
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index 0c2fae8..ea01c48 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -73,7 +73,7 @@ static const char * const sym_regex_kernel[S_NSYMTYPES] = {
+ 	"init_per_cpu__.*|"
+ 	"__end_rodata_hpage_align|"
+ #endif
+-	"__vvar_page|"
++	"__vvar_pages|"
+ 	"_end)$"
+ };
+ 
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index de2c921..413c739 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -1,4 +1,5 @@
+ #include <asm/vdso.h>
++#include <asm/asm-offsets.h>
+ 
+ /*
+  * Linker script for vDSO.  This is an ELF shared object prelinked to
+@@ -25,17 +26,17 @@ SECTIONS
+ 	 * segment.
+ 	 */
+ 
+-	vvar_start = . - 2 * PAGE_SIZE;
+-	vvar_page = vvar_start;
++	vvar_start = . - (VVAR_TOTAL_SIZE + PAGE_SIZE);
++	vvar_pages = vvar_start;
+ 
+ 	/* Place all vvars at the offsets in asm/vvar.h. */
+-#define EMIT_VVAR(name, offset) vvar_ ## name = vvar_page + offset;
++#define EMIT_VVAR(name, offset) vvar_ ## name = vvar_pages + offset;
+ #define __VVAR_KERNEL_LDS
+ #include <asm/vvar.h>
+ #undef __VVAR_KERNEL_LDS
+ #undef EMIT_VVAR
+ 
+-	hpet_page = vvar_start + PAGE_SIZE;
++	hpet_page = vvar_start + VVAR_TOTAL_SIZE;
+ 
+ 	. = SIZEOF_HEADERS;
+ 
+diff --git a/arch/x86/vdso/vdso2c.c b/arch/x86/vdso/vdso2c.c
+index 8627db2..95eda74 100644
+--- a/arch/x86/vdso/vdso2c.c
++++ b/arch/x86/vdso/vdso2c.c
+@@ -71,14 +71,14 @@ const char *outfilename;
+ /* Symbols that we need in vdso2c. */
+ enum {
+ 	sym_vvar_start,
+-	sym_vvar_page,
++	sym_vvar_pages,
+ 	sym_hpet_page,
+ 	sym_VDSO_FAKE_SECTION_TABLE_START,
+ 	sym_VDSO_FAKE_SECTION_TABLE_END,
+ };
+ 
+ const int special_pages[] = {
+-	sym_vvar_page,
++	sym_vvar_pages,
+ 	sym_hpet_page,
+ };
+ 
+@@ -89,7 +89,7 @@ struct vdso_sym {
+ 
+ struct vdso_sym required_syms[] = {
+ 	[sym_vvar_start] = {"vvar_start", true},
+-	[sym_vvar_page] = {"vvar_page", true},
++	[sym_vvar_pages] = {"vvar_pages", true},
+ 	[sym_hpet_page] = {"hpet_page", true},
+ 	[sym_VDSO_FAKE_SECTION_TABLE_START] = {
+ 		"VDSO_FAKE_SECTION_TABLE_START", false
 diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 6496c65..22b1a69 100644
+index 009495b..6496c65 100644
 --- a/arch/x86/vdso/vma.c
 +++ b/arch/x86/vdso/vma.c
-@@ -23,6 +23,7 @@
+@@ -19,6 +19,7 @@
+ #include <asm/page.h>
+ #include <asm/hpet.h>
+ #include <asm/desc.h>
++#include <asm/asm-offsets.h>
  
  #if defined(CONFIG_X86_64)
  unsigned int __read_mostly vdso64_enabled = 1;
-+DEFINE_VVAR(struct vdso_data, vdso_data);
- #endif
+@@ -133,11 +134,11 @@ static int map_vdso(const struct vdso_image *image, bool calculate_addr)
+ 		goto up_fail;
+ 	}
  
- void __init init_vdso_image(const struct vdso_image *image)
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b5797b7..d8e882d 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2232,6 +2232,11 @@ static struct rq *finish_task_switch(struct task_struct *prev)
- 	struct rq *rq = this_rq();
- 	struct mm_struct *mm = rq->prev_mm;
- 	long prev_state;
-+#ifdef CONFIG_VDSO_CS_DETECT
-+	int cpu = smp_processor_id();
-+
-+	vdso_set_cpu_cs_timestamp(cpu);
-+#endif
+-	if (image->sym_vvar_page)
++	if (image->sym_vvar_pages)
+ 		ret = remap_pfn_range(vma,
+-				      text_start + image->sym_vvar_page,
+-				      __pa_symbol(&__vvar_page) >> PAGE_SHIFT,
+-				      PAGE_SIZE,
++				      text_start + image->sym_vvar_pages,
++				      __pa_symbol(&__vvar_pages) >> PAGE_SHIFT,
++				      VVAR_TOTAL_SIZE,
+ 				      PAGE_READONLY);
  
- 	rq->prev_mm = NULL;
- 
+ 	if (ret)
 -- 
 1.8.1
 
