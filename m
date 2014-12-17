@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaLQVvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:51:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42790 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaLQVvv (ORCPT
+	id S1751502AbaLQVy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:54:56 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:60555 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117AbaLQVyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:51:51 -0500
-Date: Wed, 17 Dec 2014 13:51:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hyogi Gim <hyogi.gim@lge.com>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/rtc/interface.c: check the error after
- __rtc_read_time()
-Message-Id: <20141217135150.b02a4581cebd819f0f8f078a@linux-foundation.org>
-In-Reply-To: <20141217031524.GA22361@lge.com>
-References: <20141217031524.GA22361@lge.com>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Dec 2014 16:54:54 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        a.zummo@towertech.it, kernel@stlinux.com, rtc-linux@googlegroups.com,
+        devicetree@vger.kernel.org, wim@iguana.be, linux@roeck-us.net,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 5/8] watchdog: bindings: Provide ST bindings for ST's LPC Watchdog device
+Date: Wed, 17 Dec 2014 22:54:12 +0100
+Message-ID: <5479005.CEJLtxOOIa@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418834727-1602-6-git-send-email-lee.jones@linaro.org>
+References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org> <1418834727-1602-6-git-send-email-lee.jones@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:4fKXlDRY4gkfVp0wDDupvZWL6wp/p0TwGEzPqF+o/vYTNscVtUL
+ BPH/6kfkAxqJfbg2l0iRYPPzV0jRhenq0hAlmbFWYZhkeF5eOMe6mtRCUAQ3KYvA3T4wxY6
+ vmun2vknOp5Q34Li7jCBlufP1d63CPoMBCkOrHdmqDyBfF/Xqr6FC/sq+CzMkV2nJlUxIPf
+ hwxWvMTDjyt4eoocS43MA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Dec 2014 12:15:24 +0900 Hyogi Gim <hyogi.gim@lge.com> wrote:
-
-> Add the verification code for returned __rtc_read_time() error in
-> rtc_update_irq_enable() and rtc_timer_do_work().
+On Wednesday 17 December 2014 16:45:24 Lee Jones wrote:
+> +- compatible   : Must be one of: "st,stih407-lpc" "st,stih416-lpc"
+> +                                 "st,stih415-lpc" "st,stid127-lpc"
+> +- reg          : LPC registers base address + size
+> +- interrupts    : LPC interrupt line number and associated flags
+> +- clocks       : Clock used by LPC device (See: ../clock/clock-bindings.txt)
+> +- st,lpc-mode  : The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
+> +                 ST_LPC_MODE_WDT [1].  One (and only one) mode must be
+> +                 selected.
 > 
-> ...
-L
-> --- a/drivers/rtc/interface.c
-> +++ b/drivers/rtc/interface.c
-> @@ -489,7 +489,10 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
->  		struct rtc_time tm;
->  		ktime_t now, onesec;
->  
-> -		__rtc_read_time(rtc, &tm);
-> +		err = __rtc_read_time(rtc, &tm);
-> +		if (err < 0)
-> +			goto out;
-> +
->  		onesec = ktime_set(1, 0);
->  		now = rtc_tm_to_ktime(tm);
->  		rtc->uie_rtctimer.node.expires = ktime_add(now, onesec);
 
-I'm not sure about this part.  If __rtc_read_time() returns -EINVAL
-(due to !rtc->ops->read_time) then rtc_update_irq_enable() will go and
-call rtc_dev_update_irq_enable_emul(), inappropriately.
+I'm glad you got it to work with two drivers for the same device.
 
-On the other hand, if __rtc_read_time() returns -EINVAL because that's
-what rtc->ops->read_time() returned then perhaps
-rtc_update_irq_enable() *should* call rtc_dev_update_irq_enable_emul().
+With this binding, I'm still a bit unhappy about the st,lpc-mode property,
+in particular since you rely on a shared include file for something that
+can only be set in one way or another and always has to be present.
 
-Messy.
+Why not just use a boolean property that enforces one mode when present
+and another mode when absent?
 
+	Arnd
