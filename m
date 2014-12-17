@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbaLQNYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 08:24:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaLQNYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 08:24:16 -0500
-Date: Wed, 17 Dec 2014 14:23:30 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/18] perf evlist: Do not use hard coded value for a
- mmap_pages default
-Message-ID: <20141217132330.GB18257@krava.brq.redhat.com>
-References: <1418749040-31807-1-git-send-email-acme@kernel.org>
- <1418749040-31807-6-git-send-email-acme@kernel.org>
+	id S1751997AbaLQN02 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 08:26:28 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:63456 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaLQN01 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 08:26:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418749040-31807-6-git-send-email-acme@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPybu_2eXhh7PuOTb=qpnoOOKYwwFynowHpDL-2PdsEqQEWYTQ@mail.gmail.com>
+References: <1418226977-17128-1-git-send-email-ricardo.ribalda@gmail.com>
+ <CAAVeFuKp89U=tUwOSUYktdPamK2=HXqpnJxR7M=H0LSmSYqcDQ@mail.gmail.com> <CAPybu_2eXhh7PuOTb=qpnoOOKYwwFynowHpDL-2PdsEqQEWYTQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 17 Dec 2014 22:26:06 +0900
+Message-ID: <CAAVeFu+--Nn+o+aSngcM=WW3ZTycuAHws6wUi4t8U2bh74TRjA@mail.gmail.com>
+Subject: Re: [PATCH v4 2/4] gpio/xilinx: Convert the driver to platform device interface
+To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 01:57:07PM -0300, Arnaldo Carvalho de Melo wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> 
-> So far what is in there by default is what we were using: 512KB + the
-> control page, but the admin may change that, and if it does to a smaller
-> value, all calls to tooling for non root users start failing, requiring
-> that the user manually set --mmap_pages/-m.
-> 
-> Use instead what is in /proc/sys/kernel/perf_event_mlock_kb.
-> 
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Link: http://lkml.kernel.org/n/tip-2f6mtm8xu3wo5lhkql6jdblh@git.kernel.org
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> ---
->  tools/perf/util/evlist.c | 20 ++++++++++++++++----
->  1 file changed, 16 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-> index 7847f3885081..ac808680e61c 100644
-> --- a/tools/perf/util/evlist.c
-> +++ b/tools/perf/util/evlist.c
-> @@ -893,10 +893,22 @@ out_unmap:
->  
->  static size_t perf_evlist__mmap_size(unsigned long pages)
->  {
-> -	/* 512 kiB: default amount of unprivileged mlocked memory */
-> -	if (pages == UINT_MAX)
-> -		pages = (512 * 1024) / page_size;
-> -	else if (!is_power_of_2(pages))
-> +	if (pages == UINT_MAX) {
-> +		int max;
-> +
-> +		if (sysctl__read_int("kernel/perf_event_mlock_kb", &max) < 0) {
-> +			/*
-> +			 * Pick a once upon a time good value, i.e. things look
-> +			 * strange since we can't read a sysctl value, but lets not
-> +			 * die yet...
-> +			 */
-> +			max = 512;
-> +		} else {
-> +			max -= (page_size / 1024);
-> +		}
+On Wed, Dec 17, 2014 at 8:02 PM, Ricardo Ribalda Delgado
+<ricardo.ribalda@gmail.com> wrote:
+> Hello Alexandre
+>
+>> This should not be here. The mapping and call to gpiochip_add() are
+>> performed by of_mm_gpiochip_add(). We should thus have a
+>> of_mm_gpiochip_remove() function that undoes what _add did instead of
+>> expected all users to do unmap themselves. Can you add a patch to your
+>> series that adds this function?
+>
+>>
+>> Also I am not sure I understand why the unmapping is done only once.
+>> Both chips are supposed to have been added (and thus mapped) at this
+>> stage. Oh right I see, so this driver ends up mapping the same area
+>> twice! Not only are you iomapping the same area twice, you are
+>> unmapping it only once, and only if the chip is dual. This looks very
+>> broken.
+>>
+>
+> If you look carefully you can see that it is unmapped twice if it is
+> called twice. iounmap is called inside the  for loop.
 
-so this way you depend on value in perf_event_mlock_kb being power 2,
-otherwise:
+D'oh, you are right of course. I don't know why, but I thought the
+iounmap() was part of the if (i == 1) conditional block. >_<
 
-# echo 1000 > /proc/sys/kernel/perf_event_mlock_kb
-$ perf record ls
-failed to mmap with 22 (Invalid argument)
+>
+>
+>> Couldn't you redesign the driver the following way: only add one chip
+>> (since you have 1 DT node), with an extra member to track which GPIOs
+>> belong to the second chip (in case it is dual), and change the other
+>> functions to handle this.
+>
+> I do not mind rearranging the driver so there is only one gpio device,
+> even for dual chips, but I think this should be done in a separate
+> patch.
+>
+> What about?
+>
+> 1) Keep the current patchset
+>
+> and then
+>
+> 2) Add another patchset with
+>
+>   - xilinx-gpio: only one gpio device
+>   - add  of_mm_gpiochip_remove() to the api
+>   - xilinx gpio: use of_mm_gpiochip_remove
+>   - others: use of_mm_gpiochip_remove
 
-maybe you could use the logic/code from parse_pages_arg function
+I think this would look better this way:
 
-jirka
+- xilinx-gpio: remove offset property
+- xilinx-gpio: only one gpio device
+- add  of_mm_gpiochip_remove() to the api
+- xilinx-gpio: use of_mm_gpiochip_remove
+- xilinx-gpio: Convert the driver to platform device interface.
+
+(others: use of_mm_gpiochip_remove would be appreciated of course, but
+I won't ask you to go that far and fix everybody).
+
+The reason for this order is that your current patch would be shorter
+is the driver is turned to add one device only first. It's also
+generally better to work on cleaner code. But to switch the driver to
+single-device, you will first need to remove the offset property
+(IIUC, at least).
