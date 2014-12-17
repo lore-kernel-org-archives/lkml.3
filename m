@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751357AbaLQSAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:00:05 -0500
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:45088 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaLQSAE (ORCPT
+	id S1751447AbaLQSC6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:02:58 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:50175 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaLQSCy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:00:04 -0500
-From: Hariharan Rangasamy <hariharanrangasamy@gmail.com>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com,
-        gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Hariharan Rangasamy <hariharanrangasamy@gmail.com>
-Subject: [PATCH 2/2] Staging: lustre: lproc_osc.c: used seq_puts() instead of seq_printf()
-Date: Wed, 17 Dec 2014 23:29:28 +0530
-Message-Id: <1418839168-7921-2-git-send-email-hariharanrangasamy@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418839168-7921-1-git-send-email-hariharanrangasamy@gmail.com>
-References: <1418839168-7921-1-git-send-email-hariharanrangasamy@gmail.com>
+	Wed, 17 Dec 2014 13:02:54 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <gregkh@linuxfoundation.org>, <vinod.koul@intel.com>,
+        <dmaengine@vger.kernel.org>, <bhelgaas@google.com>,
+        <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>
+Subject: [RFC PATCH 0/2] PCI: get DMA configuration from parent device
+Date: Wed, 17 Dec 2014 13:02:22 -0500
+Message-ID: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced seq_printf() with seq_puts()
+Keystone PCI devices requires the dma_pfn_offset to be set correctly
+so that the PCI devices get the right DMA mask to function. This
+patch adds a helper function to get this configuration from the root
+bridge's parent device. The probe.c code now calls this helper to set
+the default dma configuration if the parent device is dma capable.
 
-Signed-off-by: Hariharan Rangasamy <hariharanrangasamy@gmail.com>
----
- drivers/staging/lustre/lustre/osc/lproc_osc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Typically, dma-ranges are defined in the DT node of the SoC and gets
+updated in the root bridge's parent device structure. My original
+patch for this was at [1] which was NACK-ed and this is an attempt
+to implement a better solution. This may have side effects that I am
+unware of. So sending as a RFC patch to get feedback before sending
+the formal patch. Please review and provide me the comment so that
+I can incorporate the same.
 
-diff --git a/drivers/staging/lustre/lustre/osc/lproc_osc.c b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-index f578b51..d64a400 100644
---- a/drivers/staging/lustre/lustre/osc/lproc_osc.c
-+++ b/drivers/staging/lustre/lustre/osc/lproc_osc.c
-@@ -358,7 +358,7 @@ static int osc_checksum_type_seq_show(struct seq_file *m, void *v)
- 		else
- 			seq_printf(m, "%s ", cksum_name[i]);
- 	}
--	seq_printf(m, "\n");
-+	seq_puts(m, "\n");
- 	return 0;
- }
- 
-@@ -590,7 +590,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
- 	seq_printf(seq, "pending read pages:   %d\n",
- 		   atomic_read(&cli->cl_pending_r_pages));
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
- 	seq_printf(seq, "pages per rpc	 rpcs   %% cum %% |");
- 	seq_printf(seq, "       rpcs   %% cum %%\n");
- 
-@@ -613,7 +613,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
- 			break;
- 	}
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
- 	seq_printf(seq, "rpcs in flight	rpcs   %% cum %% |");
- 	seq_printf(seq, "       rpcs   %% cum %%\n");
- 
-@@ -636,7 +636,7 @@ static int osc_rpc_stats_seq_show(struct seq_file *seq, void *v)
- 			break;
- 	}
- 
--	seq_printf(seq, "\n\t\t\tread\t\t\twrite\n");
-+	seq_puts(seq, "\n\t\t\tread\t\t\twrite\n");
- 	seq_printf(seq, "offset		rpcs   %% cum %% |");
- 	seq_printf(seq, "       rpcs   %% cum %%\n");
- 
+[1] http://www.gossamer-threads.com/lists/linux/kernel/2024591
+
+Murali Karicheri (2):
+  common: dma-mapping: introduce dma_get_parent_cfg() helper
+  PCI: get device dma configuration from parent
+
+ drivers/base/dma-mapping.c  |   18 ++++++++++++++++++
+ drivers/pci/probe.c         |   20 +++++++++++++++++---
+ include/linux/dma-mapping.h |    3 +++
+ 3 files changed, 38 insertions(+), 3 deletions(-)
+
 -- 
-1.9.1
+1.7.9.5
 
