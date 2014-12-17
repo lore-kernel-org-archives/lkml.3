@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751215AbaLQQVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 11:21:24 -0500
-Received: from plane.gmane.org ([80.91.229.3]:54502 "EHLO plane.gmane.org"
+	id S1751231AbaLQQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 11:22:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50793 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaLQQVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 11:21:23 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
-Date: Wed, 17 Dec 2014 17:17:45 +0100
-Message-ID: <5491ACA9.5020507@redhat.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com> <1418397300-10870-17-git-send-email-feng.wu@intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-Cc: iommu@lists.linux-foundation.org, kvm@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: net-2-35-193-40.cust.vodafonedsl.it
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-In-Reply-To: <1418397300-10870-17-git-send-email-feng.wu@intel.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+	id S1750905AbaLQQW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 11:22:57 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Michal Privoznik <mprivozn@redhat.com>, rafael.j.wysocki@intel.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpupower: Correctly detect if running as root
+Date: Wed, 17 Dec 2014 17:22:54 +0100
+Message-ID: <12251128.9086t2JFoE@skinner>
+User-Agent: KMail/4.14.2 (Linux/3.16.6-2-desktop; KDE/4.14.2; x86_64; ; )
+In-Reply-To: <1660884.y6rjWabQcf@vostro.rjw.lan>
+References: <b03faaf6b63a9175da0ce7ab8e0fc3da0cba4a86.1418560562.git.mprivozn@redhat.com> <1660884.y6rjWabQcf@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/12/2014 16:14, Feng Wu wrote:
-> Move struct kvm_irq_routing_table from irqchip.c to kvm_host.h,
-> so we can use it outside of irqchip.c.
+On Sunday, December 14, 2014 10:29:24 PM Rafael J. Wysocki wrote:
+> On Sunday, December 14, 2014 01:36:52 PM Michal Privoznik wrote:
+> > Some operations, like frequency-set, need root privileges. However,
+> > the way that this is detected is not correct. The getuid() is called,
+> > while in fact geteuid() should be. This way we can allow
+> > distributions or users to set SETUID flags on the cpupower binary if
+> > they want to and let regular users change the cpu frequency governor.
+> > 
+> > Signed-off-by: Michal Privoznik <mprivozn@redhat.com>
 > 
-> Signed-off-by: Feng Wu <feng.wu@intel.com>
-> ---
->  include/linux/kvm_host.h | 19 +++++++++++++++++++
->  virt/kvm/irqchip.c       | 11 -----------
->  2 files changed, 19 insertions(+), 11 deletions(-)
+> An ACK from Thomas is needed.
+Patch is correct, Thanks!
+
+Acked-by: Thomas Renninger <trenn@suse.de>
+
+     Thomas
 > 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 0b9659d..cfa85ac 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -335,6 +335,25 @@ struct kvm_kernel_irq_routing_entry {
->  	struct hlist_node link;
->  };
->  
-> +#ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
-> +
-> +struct kvm_irq_routing_table {
-> +	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
-> +	struct kvm_kernel_irq_routing_entry *rt_entries;
-> +	u32 nr_rt_entries;
-> +	/*
-> +	 * Array indexed by gsi. Each entry contains list of irq chips
-> +	 * the gsi is connected to.
-> +	 */
-> +	struct hlist_head map[0];
-> +};
-> +
-> +#else
-> +
-> +struct kvm_irq_routing_table {};
-
-If possible, just make this "struct kvm_irq_routing_table;" and pull
-this line to include/linux/kvm_types.h.
-
-Paolo
-
-> +
-> +#endif
-> +
->  #ifndef KVM_PRIVATE_MEM_SLOTS
->  #define KVM_PRIVATE_MEM_SLOTS 0
->  #endif
-> diff --git a/virt/kvm/irqchip.c b/virt/kvm/irqchip.c
-> index 7f256f3..cdf29a6 100644
-> --- a/virt/kvm/irqchip.c
-> +++ b/virt/kvm/irqchip.c
-> @@ -31,17 +31,6 @@
->  #include <trace/events/kvm.h>
->  #include "irq.h"
->  
-> -struct kvm_irq_routing_table {
-> -	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
-> -	struct kvm_kernel_irq_routing_entry *rt_entries;
-> -	u32 nr_rt_entries;
-> -	/*
-> -	 * Array indexed by gsi. Each entry contains list of irq chips
-> -	 * the gsi is connected to.
-> -	 */
-> -	struct hlist_head map[0];
-> -};
-> -
->  int kvm_irq_map_gsi(struct kvm *kvm,
->  		    struct kvm_kernel_irq_routing_entry *entries, int gsi)
->  {
-> 
+> > ---
+> > 
+> >  tools/power/cpupower/utils/cpupower.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/tools/power/cpupower/utils/cpupower.c
+> > b/tools/power/cpupower/utils/cpupower.c index 7cdcf88..9ea9143 100644
+> > --- a/tools/power/cpupower/utils/cpupower.c
+> > +++ b/tools/power/cpupower/utils/cpupower.c
+> > @@ -199,7 +199,7 @@ int main(int argc, const char *argv[])
+> > 
+> >  	}
+> >  	
+> >  	get_cpu_info(0, &cpupower_cpu_info);
+> > 
+> > -	run_as_root = !getuid();
+> > +	run_as_root = !geteuid();
+> > 
+> >  	if (run_as_root) {
+> >  	
+> >  		ret = uname(&uts);
+> >  		if (!ret && !strcmp(uts.machine, "x86_64") &&
 
