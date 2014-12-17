@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbaLQVQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:16:35 -0500
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:47226 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaLQVQd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:16:33 -0500
-Message-ID: <5491F2AC.7000103@hp.com>
-Date: Wed, 17 Dec 2014 16:16:28 -0500
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S1751642AbaLQVRj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:17:39 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56660 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470AbaLQVRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 16:17:37 -0500
+Date: Wed, 17 Dec 2014 22:17:33 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: linux-edac@vger.kernel.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -v3 0/4] RAS: Correctable Errors Collector thing
+Message-ID: <20141217211733.GB8457@pd.tnic>
+References: <1404242623-10094-1-git-send-email-bp@alien8.de>
+ <CAMY-HrCRS0RcBO0sMtwOKwYmS_+q89Kpr5Y0WyhpfQdapaQzLA@mail.gmail.com>
+ <20141217022603.GB7152@mail.thefacebook.com>
 MIME-Version: 1.0
-To: Baoquan He <bhe@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        mingo@redhat.com
-Subject: Re: [PATCH] locking/rwlocks: clean up of qrwlock
-References: <1418709640-5625-1-git-send-email-bhe@redhat.com> <20141216090128.GU3337@twins.programming.kicks-ass.net> <20141216153650.GA1758@dhcp-17-102.nay.redhat.com>
-In-Reply-To: <20141216153650.GA1758@dhcp-17-102.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141217022603.GB7152@mail.thefacebook.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2014 10:36 AM, Baoquan He wrote:
-> On 12/16/14 at 10:01am, Peter Zijlstra wrote:
->> On Tue, Dec 16, 2014 at 02:00:40PM +0800, Baoquan He wrote:
->>> In queue_read_lock_slowpath, when writer count becomes 0, we need
->>> increment the read count and get the lock. Then need call
->>> rspin_until_writer_unlock to check again if an incoming writer
->>> steals the lock in the gap. But in rspin_until_writer_unlock
->>> it only checks the writer count, namely low 8 bit of lock->cnts,
->>> no need to subtract the reader count unit specifically. So remove
->>> that subtraction to make it clearer, rspin_until_writer_unlock
->>> just takes the actual lock->cnts as the 2nd argument.
->>>
->>> And also change the code comment in queue_write_lock_slowpath to
->>> make it more exact and explicit.
->>>
->>> Signed-off-by: Baoquan He<bhe@redhat.com>
->>> ---
->>>   kernel/locking/qrwlock.c | 8 ++++----
->>>   1 file changed, 4 insertions(+), 4 deletions(-)
->>>
->>> diff --git a/kernel/locking/qrwlock.c b/kernel/locking/qrwlock.c
->>> index f956ede..ae66c10 100644
->>> --- a/kernel/locking/qrwlock.c
->>> +++ b/kernel/locking/qrwlock.c
->>> @@ -76,7 +76,7 @@ void queue_read_lock_slowpath(struct qrwlock *lock)
->>>   	while (atomic_read(&lock->cnts)&  _QW_WMASK)
->>>   		cpu_relax_lowlatency();
->>>
->>> -	cnts = atomic_add_return(_QR_BIAS,&lock->cnts) - _QR_BIAS;
->>> +	cnts = atomic_add_return(_QR_BIAS,&lock->cnts);
->>>   	rspin_until_writer_unlock(lock, cnts);
->> Did you actually look at the ASM generated? I suspect your change makes
->> it bigger.
->
-> It does make it bigger. But it doesn't matter. Because in
-> rspin_until_writer_unlock it only compqre (cnts&  _QW_WMASK)
-> with _QW_LOCKED. So using incremented reader count doesn't impact
-> the result. Anyway it will get the actual lock->cnts in
-> rspin_until_writer_unlock in next loop. I can't see why we need
-> subtract that reader count increment specifically.
->
-> When I read this code, thought there's some special usage. Finally I
-> realized it doesn't have special usage, and doesn't have to do that.
+On Tue, Dec 16, 2014 at 06:26:03PM -0800, Calvin Owens wrote:
+> Hmm. I can definitely imagine that in a scenario where you're testing
+> hardware you would want to know about all the corrected errors in
+> userspace. You could just tail dmesg watching for the message below,
+> but that's somewhat crappy.
 
-The "- _QR_BIAS" expression was added to simulate xadd() which is 
-present in x86, but not in some other architectures. There is no 
-equivalent functionality in the set of atomic helper functions. Anyway, 
-I have no objection to the change as it is in the slowpath.
+Oh yeah, we have the tracepoints for that - structured error logs. And
+yes, we will definitely have a cec=disable or similar cmdline switch to
+turn it off.
 
-Acked-by: Waiman Long <Waiman.Long@hp.com>
+> Also, figuring out what physical DIMM on the motherboard a given
+> physical address is on is rather messy as I understand it, since it
+> varies between manufacturers. I'm not sure supporting that inside the
+> kernel is a good idea, so people who care about this would still need
+> some way to get the errors in userspace too.
 
+Right, the edac drivers are all an attempt to do that pinpointing. It
+doesn't always work optimally though.
+
+There's also drivers/acpi/acpi_extlog.c which happens with fw support
+and should be much more useful; it is a new thing from Intel though and
+needs to spread out first.
+
+> Somehow exposing the array tracking the errors could be interesting,
+> although I'm not sure how useful that would actually be in practice.
+
+Yeah, that's in debugfs, see the 4th patch: "[PATCH -v3 4/4] MCE, CE:
+Add debugging glue".
+
+> That would also get more complicated as this starts to handle things
+> like corrected cache and bus errors.
+
+Right, I'm not sure what we even want to do with those, if at all. And
+what rates are those and whether we can even do proper - and what kind
+of - recovery using them. This thing wants to deal with memory errors
+only, for now at least.
+
+> This should definitely be configurable IMO: different people will
+> want to manage this in different ways. We're very aggressive about
+> offlining pages with corrected errors, for example.
+
+Ok, that sounds interesting. So you're saying, you would want to
+configure the overflow count at which to offline the page. What else?
+Decay time too?
+
+Currently, we run do_spring_cleaning() when the fill levels reach
+CLEAN_ELEMS, i.e., every time we do CLEAN_ELEMS insertion/incrementation
+operations, we decay the currently present elements.
+
+I can imagine where we want to control those aspects like wait until the
+array fills up with PFNs and run the decaying then. Or we don't run the
+decaying at all and offline pages the moment they reach saturation. And
+so on and so on...
+
+> I'll keep an eye out for buggy machines to test on ;)
+
+Cool, thanks.
+
+> > * As to why we're putting this in the kernel and enabling it by default:
+> > a userspace daemon is much more fragile than doing this in the kernel.
+> > And regardless of distro, everyone gets this.
+> 
+> I very much agree.
+
+Cool, thanks for the insights.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
