@@ -1,50 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbaLQGqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 01:46:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39788 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751813AbaLQGqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 01:46:14 -0500
-Date: Wed, 17 Dec 2014 07:46:09 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Balbir Singh <bsingharora@gmail.com>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        live-patching@vger.kernel.org, x86@kernel.org, kpatch@redhat.com,
+	id S1751922AbaLQGsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 01:48:08 -0500
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:55168 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813AbaLQGsH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 01:48:07 -0500
+Date: Tue, 16 Dec 2014 22:48:02 -0800
+From: Jeremiah Mahler <jmmahler@gmail.com>
+To: Benson Leung <bleung@google.com>
+Cc: Dudley Du <dudley.dulixin@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv7 0/3] Kernel Live Patching
-In-Reply-To: <CAKTCnz=F=r5PQejgk6yZKYzvmkFAj7TZwax1rHxnAcLVFZ0_Gg@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1412170744560.1680@pobox.suse.cz>
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <CAKTCnzk6Kn=dngyY944k_DRyTV8dssYKhBThmdfGEm6vAPBPHg@mail.gmail.com> <alpine.LNX.2.00.1412162111320.1680@pobox.suse.cz> <CAKTCnz=F=r5PQejgk6yZKYzvmkFAj7TZwax1rHxnAcLVFZ0_Gg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Subject: Re: [PATCH v15 09/12] input: cyapa: add gen5 trackpad device
+ firmware update function support
+Message-ID: <20141217064802.GA4971@hudson.localdomain>
+Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
+	Benson Leung <bleung@google.com>,
+	Dudley Du <dudley.dulixin@gmail.com>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Henrik Rydberg <rydberg@euromail.se>,
+	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1418624603-19054-1-git-send-email-dudley.dulixin@gmail.com>
+ <1418624603-19054-10-git-send-email-dudley.dulixin@gmail.com>
+ <20141216135639.GA1238@hudson.localdomain>
+ <CANLzEks+hyNGy4_c+pHPW203oZUY=ms-cF3CttkW2NyRmNt8Zw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANLzEks+hyNGy4_c+pHPW203oZUY=ms-cF3CttkW2NyRmNt8Zw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Dec 2014, Balbir Singh wrote:
+all,
 
-> >> Could you describe what this does to signing? I presume the patched
-> >> module should cause a taint on module signing?
+On Tue, Dec 16, 2014 at 12:24:37PM -0800, Benson Leung wrote:
+> On Tue, Dec 16, 2014 at 5:56 AM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> > On Mon, Dec 15, 2014 at 02:23:20PM +0800, Dudley Du wrote:
+> >> Add firmware image update function supported for gen5 trackpad device,
+> >> it can be used through sysfs update_fw interface.
+> >> TEST=test on Chromebooks.
+> >>
+> >> Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
+> >> ---
+> >>  drivers/input/mouse/Kconfig      |   1 +
+> >>  drivers/input/mouse/cyapa_gen5.c | 292 ++++++++++++++++++++++++++++++++++++++-
+> >>  2 files changed, 292 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+> >> index d8b46b0..728490e 100644
+> >> --- a/drivers/input/mouse/Kconfig
+> >> +++ b/drivers/input/mouse/Kconfig
+> >> @@ -206,6 +206,7 @@ config MOUSE_BCM5974
+> >>  config MOUSE_CYAPA
+> >>       tristate "Cypress APA I2C Trackpad support"
+> >>       depends on I2C
+> >> +     select CRC_ITU_T
+> >>       help
 > >
-> > Hmm, why should it?
+> > Just found out that if I2C_DESIGNWARE_PCI isn't enabled the touchpad
+> > won't work.  Verify this on your machines.  Then perhaps add a depends
+> > for I2C_DESIGNWARE_PCI instead of I2C since it would include the former.
 > 
-> I wanted to clarify it from a different perspective
+> This isn't strictly true on all devices, though. This is true on
+> DESIGNWARE_PCI based devices like the Acer C720 and the HP Chromebook
+> 14, but on other platforms that use Cypress trackpads, such as ARM
+> platforms like the Samsung Chromebook Series 3 DESIGNWARE_PCI is not
+> required, and will just result in a driver that's never used being
+> built.
 > 
-> If the base image is signed by X and the patched module is signed by
-> Y, is that supported. What does it imply in the case of live-patching?
+> The specific I2C bus that's being used here shouldn't matter here...
+> that's more of a platform issue. In the case with Chromebooks, it
+> might make sense to change drivers/platform/chrome/Kconfig so that
+> CHROMEOS_LAPTOP depends on I2C_DESIGNWARE_PCI, maybe.
+> 
 
-Why should that matter? Both are signed by keys that kernel is configured 
-to trust, which makes them equal (even though they are technically 
-different).
+So DESIGNWARE_PCI isn't required for all devices.  But if MOUSE_CYAPA is
+enabled some devices won't work unless I2C_DESIGNWARE_PCI is enabled.  I
+wonder if MOUSE_CYAPA should be broken up in to separate working
+configurations?  MOUSE_CYAPA_GEN5, MOUSE_CYAPA_GEN3, ?
+
+> -- 
+> Benson Leung
+> Software Engineer, Chrome OS
+> Google Inc.
+> bleung@google.com
 
 -- 
-Jiri Kosina
-SUSE Labs
+- Jeremiah Mahler
