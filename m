@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279AbaLQPsu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:48:50 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:45990 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaLQPss (ORCPT
+	id S1751317AbaLQPtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:49:14 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:34741 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaLQPtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:48:48 -0500
-Date: Wed, 17 Dec 2014 12:48:37 -0300
-From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
-To: Richard Weinberger <richard@nod.at>
-Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] UBI: Fastmap: Make ubi_refill_pools() fair
-Message-ID: <20141217154837.GA2049@fox>
-References: <1416835236-25185-1-git-send-email-richard@nod.at>
- <1416835236-25185-7-git-send-email-richard@nod.at>
+	Wed, 17 Dec 2014 10:49:13 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Wed, 17 Dec 2014 10:49:11 -0500
+To: Tero Kristo <t-kristo@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Sekhar Nori <nsekhar@ti.com>
+Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
+ AM572x errata i856.
+Message-ID: <20141217154911.GU24110@csclub.uwaterloo.ca>
+References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca>
+ <20141214044517.GD24110@csclub.uwaterloo.ca>
+ <549018EC.8020207@ti.com>
+ <20141216145856.GA23358@kahuna>
+ <54918357.8060801@ti.com>
+ <20141217145533.GS24110@csclub.uwaterloo.ca>
+ <20141217152225.GA737@kahuna>
+ <20141217152710.GT24110@csclub.uwaterloo.ca>
+ <5491A501.100@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1416835236-25185-7-git-send-email-richard@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <5491A501.100@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Wed, Dec 17, 2014 at 05:45:05PM +0200, Tero Kristo wrote:
+> Yea clock mux can be used. However, we don't have support for DRA7
+> control module clocks in the DT yet. I have posted patches with
+> support towards this a couple of weeks back, but they need some
+> revising.
+> 
+> Thus, we maybe need to apply the timer patches as is for now, and
+> fix the clock tree a bit later.
 
-On Mon, Nov 24, 2014 at 02:20:36PM +0100, Richard Weinberger wrote:
-> Currently ubi_refill_pools() first fills the first and then
-> the second one.
-> If only very few free PEBs are available the second pool can get
-> zero PEBs.
-> Change ubi_refill_pools() to distribute free PEBs fair between
-> all pools.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-Reviewed-by: Guido Martínez <guido@vanguardiasur.com.ar>
+Certainly the patches so far fix the system time issue.  I don't think
+anything else in the clock tree using this clock is that picky about
+the clock being of by 0.05% (when using 20MHz SYSCLK1, which I believe
+all boards so far do, other than the one board on my desk with a 19.2MHz
+clock because we wanted to see what happened).  Certainly if someone
+does build a baord using either 19.2 or 27MHz as supported in the
+documentation, then it becomes more relevant potentially.
 
-> ---
->  drivers/mtd/ubi/wl.c | 77 +++++++++++++++++++++++++++-------------------------
->  1 file changed, 40 insertions(+), 37 deletions(-)
-> 
-> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
-> index f028b68..c2822f7 100644
-> --- a/drivers/mtd/ubi/wl.c
-> +++ b/drivers/mtd/ubi/wl.c
-> @@ -583,59 +583,62 @@ static void return_unused_pool_pebs(struct ubi_device *ubi,
->  }
->  
->  /**
-> - * refill_wl_pool - refills all the fastmap pool used by the
-> - * WL sub-system.
-> + * ubi_refill_pools - refills all fastmap PEB pools.
->   * @ubi: UBI device description object
->   */
-> -static void refill_wl_pool(struct ubi_device *ubi)
-> +void ubi_refill_pools(struct ubi_device *ubi)
->  {
-> +	struct ubi_fm_pool *wl_pool = &ubi->fm_wl_pool;
-> +	struct ubi_fm_pool *pool = &ubi->fm_pool;
->  	struct ubi_wl_entry *e;
-> -	struct ubi_fm_pool *pool = &ubi->fm_wl_pool;
-> +	int enough;
->  
-> +	spin_lock(&ubi->wl_lock);
-> +
-> +	return_unused_pool_pebs(ubi, wl_pool);
->  	return_unused_pool_pebs(ubi, pool);
->  
-> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
-> -		if (!ubi->free.rb_node ||
-> -		   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> -			break;
-> +	wl_pool->size = 0;
-> +	pool->size = 0;
->  
-> -		e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
-> -		self_check_in_wl_tree(ubi, e, &ubi->free);
-> -		rb_erase(&e->u.rb, &ubi->free);
-> -		ubi->free_count--;
-> +	for (;;) {
-> +		enough = 0;
-> +		if (pool->size < pool->max_size) {
-> +			if (!ubi->free.rb_node ||
-> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> +				break;
->  
-> -		pool->pebs[pool->size] = e->pnum;
-> -	}
-> -	pool->used = 0;
-> -}
-> +			e = wl_get_wle(ubi);
-> +			if (!e)
-> +				break;
->  
-> -/**
-> - * refill_wl_user_pool - refills all the fastmap pool used by ubi_wl_get_peb.
-> - * @ubi: UBI device description object
-> - */
-> -static void refill_wl_user_pool(struct ubi_device *ubi)
-> -{
-> -	struct ubi_fm_pool *pool = &ubi->fm_pool;
-> +			pool->pebs[pool->size] = e->pnum;
-> +			pool->size++;
-> +		} else
-> +			enough++;
->  
-> -	return_unused_pool_pebs(ubi, pool);
-> +		if (wl_pool->size < wl_pool->max_size) {
-> +			if (!ubi->free.rb_node ||
-> +			   (ubi->free_count - ubi->beb_rsvd_pebs < 5))
-> +				break;
->  
-> -	for (pool->size = 0; pool->size < pool->max_size; pool->size++) {
-> -		pool->pebs[pool->size] = __wl_get_peb(ubi);
-> -		if (pool->pebs[pool->size] < 0)
-> +			e = find_wl_entry(ubi, &ubi->free, WL_FREE_MAX_DIFF);
-> +			self_check_in_wl_tree(ubi, e, &ubi->free);
-> +			rb_erase(&e->u.rb, &ubi->free);
-> +			ubi->free_count--;
-> +
-> +			wl_pool->pebs[wl_pool->size] = e->pnum;
-> +			wl_pool->size++;
-> +		} else
-> +			enough++;
-> +
-> +		if (enough == 2)
->  			break;
->  	}
-> +
-> +	wl_pool->used = 0;
->  	pool->used = 0;
-> -}
->  
-> -/**
-> - * ubi_refill_pools - refills all fastmap PEB pools.
-> - * @ubi: UBI device description object
-> - */
-> -void ubi_refill_pools(struct ubi_device *ubi)
-> -{
-> -	spin_lock(&ubi->wl_lock);
-> -	refill_wl_pool(ubi);
-> -	refill_wl_user_pool(ubi);
->  	spin_unlock(&ubi->wl_lock);
->  }
->  
-> -- 
-> 1.8.4.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+But I certainly don't consider fixing the clock tree urgent.  I think
+we can start shipping products with the clock tree in the current state
+(but we couldn't with the system time being that bad, which the patches
+so far fix).
 
 -- 
-Guido Martínez, VanguardiaSur
-www.vanguardiasur.com.ar
+Len Sorensen
