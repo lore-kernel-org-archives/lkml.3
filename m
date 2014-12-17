@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaLQLDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 06:03:16 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:56364 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaLQLDO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 06:03:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAVeFuKp89U=tUwOSUYktdPamK2=HXqpnJxR7M=H0LSmSYqcDQ@mail.gmail.com>
-References: <1418226977-17128-1-git-send-email-ricardo.ribalda@gmail.com> <CAAVeFuKp89U=tUwOSUYktdPamK2=HXqpnJxR7M=H0LSmSYqcDQ@mail.gmail.com>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Wed, 17 Dec 2014 12:02:53 +0100
-Message-ID: <CAPybu_2eXhh7PuOTb=qpnoOOKYwwFynowHpDL-2PdsEqQEWYTQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/4] gpio/xilinx: Convert the driver to platform device interface
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751821AbaLQLFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 06:05:35 -0500
+Received: from gate.crashing.org ([63.228.1.57]:60157 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033AbaLQLFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 06:05:33 -0500
+Message-ID: <1418814312.27103.18.camel@kernel.crashing.org>
+Subject: Re: [PATCH 13/18] powerpc/uaccess: fix sparse errors
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linuxppc-dev@lists.ozlabs.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>
+Date: Wed, 17 Dec 2014 22:05:12 +1100
+In-Reply-To: <3268591.VzqP3kr6UD@wuerfel>
+References: <1418575877-21488-1-git-send-email-mst@redhat.com>
+	 <20141216164746.GB21876@redhat.com>
+	 <1418777556.27103.7.camel@kernel.crashing.org> <3268591.VzqP3kr6UD@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alexandre
+On Wed, 2014-12-17 at 11:53 +0100, Arnd Bergmann wrote:
+> On Wednesday 17 December 2014 11:52:36 Benjamin Herrenschmidt wrote:
+> > On Tue, 2014-12-16 at 18:47 +0200, Michael S. Tsirkin wrote:
+> > > On Sun, Dec 14, 2014 at 06:52:51PM +0200, Michael S. Tsirkin wrote:
+> > > > virtio wants to read bitwise types from userspace using get_user.  At the
+> > > > moment this triggers sparse errors, since the value is passed through an
+> > > > integer.
+> > > > 
+> > > > Fix that up using __force.
+> > > > 
+> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > 
+> > > Ping.
+> > > Do powerpc maintainers consider fixing sparse errors
+> > > applicable for 3.19?
+> > > If yes, can you pls merge this patch?
+> > 
+> > Relax  Our patches are tracked in Patchwork and such fixes aren't
+> > necessarily constrained by the merge window. Michael will probably
+> > pick it up but don't expect systematic replies to patches in 2 days ...
+> > 
+> > Also, when sending a series like that where one of us only gets
+> > CCed on one of the patch, it helps to make it clear whether you
+> > only expect an ack or whether you expect us to take the patch.
+> 
+> Michael initially asked how these patches should merged, and as I
+> discussed with him on IRC, I wouldn't take them through the asm-generic
+> tree for 3.19 at this point, but I offered to take the ones that
+> are not picked up by arch maintainers through that tree for 3.20.
+> 
+> I also recommend to him to clarify this with maintainers of the
+> architectures he cares about most so they can decide whether to pick
+> it up or not, which triggered the message above.
 
-> This should not be here. The mapping and call to gpiochip_add() are
-> performed by of_mm_gpiochip_add(). We should thus have a
-> of_mm_gpiochip_remove() function that undoes what _add did instead of
-> expected all users to do unmap themselves. Can you add a patch to your
-> series that adds this function?
+Ok, I incorrectly assumed the above was a nag for not looking at his
+patch yet :)
 
->
-> Also I am not sure I understand why the unmapping is done only once.
-> Both chips are supposed to have been added (and thus mapped) at this
-> stage. Oh right I see, so this driver ends up mapping the same area
-> twice! Not only are you iomapping the same area twice, you are
-> unmapping it only once, and only if the chip is dual. This looks very
-> broken.
->
+I don't have any objection, but I'm leaving the merging for now to
+Michael (and possibly for ever, we'll see ... :) as I'm on vacation
+until end of January.
 
-If you look carefully you can see that it is unmapped twice if it is
-called twice. iounmap is called inside the  for loop.
-
-
-> Couldn't you redesign the driver the following way: only add one chip
-> (since you have 1 DT node), with an extra member to track which GPIOs
-> belong to the second chip (in case it is dual), and change the other
-> functions to handle this.
-
-I do not mind rearranging the driver so there is only one gpio device,
-even for dual chips, but I think this should be done in a separate
-patch.
-
-What about?
-
-1) Keep the current patchset
-
-and then
-
-2) Add another patchset with
-
-  - xilinx-gpio: only one gpio device
-  - add  of_mm_gpiochip_remove() to the api
-  - xilinx gpio: use of_mm_gpiochip_remove
-  - others: use of_mm_gpiochip_remove
-
-
-Regards!
+Cheers,
+Ben.
 
 
-
-
--- 
-Ricardo Ribalda
