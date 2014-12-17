@@ -1,147 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaLQBSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 20:18:43 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:52363 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922AbaLQBSl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 20:18:41 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID: logitech-hidpp: store the name of the device in struct hidpp
-Date: Wed, 17 Dec 2014 02:18:30 +0100
-Message-ID: <3321911.knGKb1BsCe@al>
-User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1418767562-4136-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com> <1418767562-4136-2-git-send-email-benjamin.tissoires@redhat.com>
+	id S1751222AbaLQBVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 20:21:41 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:39311 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaLQBVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 20:21:39 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
+ NAND_Tree which improperly strapp-in during the reset period.
+Thread-Topic: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
+ NAND_Tree which improperly strapp-in during the reset period.
+Thread-Index: AQHQFRUhpU6q9WzJvkuSsZb2JCGmhpyRg5yAgACT+QCAAOoQAA==
+Date: Wed, 17 Dec 2014 01:21:33 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFCB5D4C@penmbx01>
+References: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com>
+ <54900779.9030509@atmel.com> <5490839A.304@gmail.com>
+In-Reply-To: <5490839A.304@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: 0.0 (/)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBH1LnPa008688
 
-On Tuesday 16 December 2014 17:06:02 Benjamin Tissoires wrote:
-> If a disconnect occurs while getting the actual name of the device
-> (which can take several HID transactions), the name of the device will
-> be the hid name, provided by the Unifying Receiver.
-> This means that in some cases, the user space will see a different
-> name that what it usually sees when there is no disconnect.
+> -----Original Message-----
+> From: Florian Fainelli [mailto:f.fainelli@gmail.com]
+> Sent: Wednesday, December 17, 2014 3:10 AM
+> To: Ferre, Nicolas; Yang, Wenyou
+> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
+> NAND_Tree which improperly strapp-in during the reset period.
 > 
-> We should store the name of the device in the struct hidpp. That way,
-> if a disconnect occurs while we are accessing the name,
-> hidpp_connect_event() can fail, and the input node is not created.
+> On 16/12/14 02:20, Nicolas Ferre wrote:
+> > Le 11/12/2014 08:31, Wenyou Yang a Ã©crit :
+> >> Appearance: On some SAMA5D4EK boards, after power up, the Eth1 doesn't
+> work.
+> >>
+> >> Reason: The PIOE2 pin is connected to the NAND_Tree# of KSZ8081, But
+> >> it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
+> >>
+> >> Add phy_fixup() to disable NAND_Tree by overriding the Operation Mode
+> >> Strap Override register(i.e. Register 16h) to clear the NAND_Tree bit.
+> >>
+> >> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> >
+> > It seems correct to me.
 > 
-> The input node will be created only if we have a connection which
-> lasts long enough to retrieve all the requested information:
-> name, protocol, and specific configuration.
+> Just one minor nit, see below
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-logitech-hidpp.c | 31 ++++++++++++++++++++-----------
->  1 file changed, 20 insertions(+), 11 deletions(-)
+> >
+> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >
+> > Anyway, I add Florian in the loop as he is the one who proposed this
+> > solution. So it would have been good to have his feeling about the
+> > implementation...
+> >
+> > Bye,
+> >
+> >> ---
+> >>  arch/arm/mach-at91/board-dt-sama5.c |   18 ++++++++++++++++++
+> >>  1 file changed, 18 insertions(+)
+> >>
+> >> diff --git a/arch/arm/mach-at91/board-dt-sama5.c
+> >> b/arch/arm/mach-at91/board-dt-sama5.c
+> >> index 8fb9ef5..97f7367 100644
+> >> --- a/arch/arm/mach-at91/board-dt-sama5.c
+> >> +++ b/arch/arm/mach-at91/board-dt-sama5.c
+> >> @@ -17,6 +17,7 @@
+> >>  #include <linux/of_platform.h>
+> >>  #include <linux/phy.h>
+> >>  #include <linux/clk-provider.h>
+> >> +#include <linux/phy.h>
+> >>
+> >>  #include <asm/setup.h>
+> >>  #include <asm/irq.h>
+> >> @@ -26,8 +27,25 @@
+> >>
+> >>  #include "generic.h"
+> >>
+> >> +static int ksz8081_phy_fixup(struct phy_device *phy) {
+> >> +	int value;
+> >> +
+> >> +	value = phy_read(phy, 0x16);
+> >> +	value &= ~0x20;
+> >> +	phy_write(phy, 0x16, value);
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >>  static void __init sama5_dt_device_init(void)  {
+> >> +	if (of_machine_is_compatible("atmel,sama5d4ek") &&
+> >> +	   IS_ENABLED(CONFIG_PHYLIB)) {
+> >> +		phy_register_fixup_for_id("fc028000.etherne:00",
+> >> +						ksz8081_phy_fixup);
 > 
-> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> index c0fb5fe..4bc8714 100644
-> --- a/drivers/hid/hid-logitech-hidpp.c
-> +++ b/drivers/hid/hid-logitech-hidpp.c
-> @@ -89,6 +89,7 @@ struct hidpp_device {
->  	struct hid_device *hid_dev;
->  	struct mutex send_mutex;
->  	void *send_receive_buf;
-> +	char *name;
->  	wait_queue_head_t wait;
->  	bool answer_available;
->  	u8 protocol_major;
-> @@ -1087,6 +1088,7 @@ static void hidpp_input_close(struct input_dev *dev)
->  static struct input_dev *hidpp_allocate_input(struct hid_device *hdev)
->  {
->  	struct input_dev *input_dev = devm_input_allocate_device(&hdev->dev);
-> +	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
->  
->  	if (!input_dev)
->  		return NULL;
-> @@ -1095,7 +1097,7 @@ static struct input_dev *hidpp_allocate_input(struct hid_device *hdev)
->  	input_dev->open = hidpp_input_open;
->  	input_dev->close = hidpp_input_close;
->  
-> -	input_dev->name = hdev->name;
-> +	input_dev->name = hidpp->name;
->  	input_dev->phys = hdev->phys;
->  	input_dev->uniq = hdev->uniq;
->  	input_dev->id.bustype = hdev->bus;
-> @@ -1137,22 +1139,28 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
->  	hid_info(hdev, "HID++ %u.%u device connected.\n",
->  		 hidpp->protocol_major, hidpp->protocol_minor);
->  
-> +	if (!hidpp->name || hidpp->name == hdev->name) {
+> Matching the bus id certainly works, but I would rather match on your specific PHY
+> device 32-bits OUI to make sure that if you ever change the PHY on a different
+> design, this is not inadvertently writing to a register that is not micrel specific?
+I don't think so.
+Under the board compatible limitation, matching the bus id is enough for this case reason described above.
 
-Hm, is it ever possible that hidpp->name is NULL? probe sets the pointer
-to an array (hdev->name). Defence in depth I guess, but perhaps a
-comment could clarify this?
+Moreover the PHY OUI is default value on the sama5d4ek.
+MII_PHYSID1.15:0:  0x0022
+MII_PHYSID2.15:10: 000101b
 
-Otherwise the changes look OK. I have tested this situation:
-
- 1. Insert receiver
- 2. Return a HID++ version for the WTP.
- 3. Return -9 (ResourceError) for the device name feature request (via
-    the QEMU emulation).
- 4. Observe that this fails.
-
-So maybe you could add a comment for the above and add these tags:
-
-Reviewed-by: Peter Wu <peter@lekensteyn.nl>
-Tested-by: Peter Wu <peter@lekensteyn.nl>
-
-Kind regards,
-Peter
-
-> +		name = hidpp_get_device_name(hidpp);
-> +		if (!name) {
-> +			hid_err(hdev,
-> +				"unable to retrieve the name of the device");
-> +			return;
-> +		}
-> +
-> +		devm_name = devm_kasprintf(&hdev->dev, GFP_KERNEL, "%s", name);
-> +		kfree(name);
-> +		if (!devm_name)
-> +			return;
-> +
-> +		hidpp->name = devm_name;
-> +	}
-> +
->  	input = hidpp_allocate_input(hdev);
->  	if (!input) {
->  		hid_err(hdev, "cannot allocate new input device: %d\n", ret);
->  		return;
->  	}
->  
-> -	name = hidpp_get_device_name(hidpp);
-> -	if (!name) {
-> -		hid_err(hdev, "unable to retrieve the name of the device");
-> -	} else {
-> -		devm_name = devm_kasprintf(&hdev->dev, GFP_KERNEL, "%s", name);
-> -		if (devm_name)
-> -			input->name = devm_name;
-> -		kfree(name);
-> -	}
-> -
->  	hidpp_populate_input(hidpp, input, false);
->  
->  	ret = input_register_device(input);
-> @@ -1175,6 +1183,7 @@ static int hidpp_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  		return -ENOMEM;
->  
->  	hidpp->hid_dev = hdev;
-> +	hidpp->name = hdev->name;
->  	hid_set_drvdata(hdev, hidpp);
->  
->  	hidpp->quirks = id->driver_data;
 > 
+> >> +	}
+> >> +
+> >>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> >> }
+> >>
+> >>
+> >
+> >
 
+Best Regards,
+Wenyou Yang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
