@@ -1,138 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaLQSZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:25:16 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39931 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245AbaLQSZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:25:12 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: amit daniel kachhap <amit.daniel@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm\@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore to use restore types
-References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
-	<54901341.20106@samsung.com> <7h61dbdz5a.fsf@deeprootsystems.com>
-	<CADGdYn4WQ6i29ecTthu7eNUfSSQ--YESGyHcA1_9CdK-h53hxA@mail.gmail.com>
-Date: Wed, 17 Dec 2014 10:25:09 -0800
-In-Reply-To: <CADGdYn4WQ6i29ecTthu7eNUfSSQ--YESGyHcA1_9CdK-h53hxA@mail.gmail.com>
-	(amit daniel kachhap's message of "Wed, 17 Dec 2014 20:06:48 +0530")
-Message-ID: <7h4msub0ca.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751272AbaLQS3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:29:19 -0500
+Received: from sauhun.de ([89.238.76.85]:49464 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035AbaLQS3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 13:29:17 -0500
+Date: Wed, 17 Dec 2014 19:29:15 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-i2c@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: sh_mobile: I2C_SH_MOBILE should depend on HAS_DMA
+Message-ID: <20141217182915.GE3981@katana>
+References: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mR8QP4gmHujQHb1c"
+Content-Disposition: inline
+In-Reply-To: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-amit daniel kachhap <amit.daniel@samsung.com> writes:
 
-> On Wed, Dec 17, 2014 at 3:40 AM, Kevin Hilman <khilman@kernel.org> wrote:
->> Marek Szyprowski <m.szyprowski@samsung.com> writes:
->>
->>> Hello,
->>>
->>> On 2014-12-13 17:51, Amit Daniel Kachhap wrote:
->>>> Instead of using bool to restore suspended devices initially, use flags
->>>> like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
->>>> The first two flags will be similar to the existing true/false functionality.
->>>> The third flag may be used to force restore of suspended devices
->>>> whenever their associated power domain is turned on.
->>>>
->>>> Currently, PD power off function powers off all the associated unused
->>>> devices. The functionality added in this patch is similar to it.
->>>>
->>>> This feature may be used for those devices which are always in ON state
->>>> if the PD associated with them is ON but may need local runtime resume
->>>> and suspend during PD On/Off. These devices (like clock) may not implement
->>>> complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
->>>> subsystems interaction behaviour or any other reason.
->>>>
->>>> The model works like,
->>>>      DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
->>>>      /       pm_runtime_put. Its local runtime_suspend/resume is invoked via
->>>>     /        GPD_DEV_RESTORE_FORCE option)
->>>>    /
->>>> PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
->>>>    \ pm_runtime_put. This in turn invokes PD On/Off)
->>>>     \
->>>>      DEV3 (Similar to DEV1)
->>>>
->>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>
->>> The idea of adding new gen_pd flag and reusing runtime pm calls intead
->>> of additional notifiers looks promising, but I have some doubts.
->>
->> I agree, this is better than notifiers, but I have some doubts too.
->
-> Thanks,
->
->>
->>> don't see any guarantee that devices with GPD_DEV_RESTORE_FORCE flag
->>> will be suspended after all "normal" devices and restored before
->>> them. Without such assumption it will be hard to use this approach for
->>> iommu related activities, because device might need to use (in its
->>> suspend/resume callbacks) the functionality provided by the other
->>> device with GPD_DEV_RESTORE_FORCE flag. Maybe some additional flags
->>> like suspend/resume priority (or more flags) will solve somehow this
->>> dependency.
->>
->> At a deeper level, the problem with this approach is that this is more
->> generically a runtime PM dependency problem, not a genpd problem.  For
->> example, what happens when the same kind of dependency exists on a
->> platform using a custom PM domain instead of genpd (like ACPI.) ?
->
-> This patch does not try to solve runtime PM dependencies between
-> devices. As an example, if there are three devices D1, D2, D3 in a
-> power domain. Device D3 would update the power domain state
-> requirement using runtime PM API but devices D1 and D2 do not want to
-> control the domain but just want to be notified when the power domain
-> state changes.
+--mR8QP4gmHujQHb1c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I understand that.  
+On Mon, Dec 15, 2014 at 02:37:04PM +0100, Geert Uytterhoeven wrote:
+> If NO_DMA=3Dy:
+>=20
+> drivers/built-in.o: In function `sh_mobile_i2c_dma_unmap':
+> i2c-sh_mobile.c:(.text+0x60de42): undefined reference to `dma_unmap_singl=
+e'
+> drivers/built-in.o: In function `sh_mobile_i2c_xfer_dma':
+> i2c-sh_mobile.c:(.text+0x60df22): undefined reference to `dma_map_single'
+> i2c-sh_mobile.c:(.text+0x60df2e): undefined reference to `dma_mapping_err=
+or'
+>=20
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-The question is: what do you do when you have the same dependency
-problem and you're not using genpd (for example, some SoCs have
-implmeented their own PM domains, and ACPI devices are managed by their
-own PM domain, not genpd.)
+Applied to for-current, thanks!
 
->> What's needed to solve this problem is a generalized way to have runtime
->> PM dependencies between devices.  Runtime PM already automatically
->> handles parent devices as one type of dependent device (e.g. a parent
->> device needs to be runtime PM resumed before its child.)  So what's
->> needed is a generic way to other PM dependencies with the runtime PM
->> core (not the genpd core.)
->
-> Considering the example above with three devices, device D1 and D2 are
-> passive components in this power domain. These devices only need to
-> know the state changes of the power domains but would not control the
-> power domain themselves nor put forth constraints in the power domain
-> state changes. So I did not clearly understand as to how this example
-> could be solved by introducing changes in runtime PM core.
 
-Your solution only solves the problems for devices managed by genpd.
+--mR8QP4gmHujQHb1c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-If I understood your example correctly, what you really want to solve
-this problem more generically is to be able to tell the runtime PM core
-that D3 has a dependency on D1 and D2.  Then, whenver the runtime PM
-core is doing get/put operations for D3, it needs to also do them for D1
-and D2.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-This will accomplish the same as your proposed approach, but work for
-any devices in any PM domains.
+iQIcBAEBAgAGBQJUkct7AAoJEBQN5MwUoCm2kHIP/08aq8IEDCGmfnuAn5A+3a6t
+C1fspkLXZ5MXGVM2Pygtu24CT5cmJ+CLGBQrNDu6zIShq1nRCtZOrXAqaNTWCadO
+vzQyE1RRXIeh9dlQdKx3q75P+4KB8c5C1AL7OEwqNMM6W90vARmZf8NAwMSi4scC
+lLDUqZttEdyL+CQ7bUcVjyYvUhPIbFFQ10daPo/71xC2VyB/EyP+AkOL5MiCbKQW
+i9AhKSKoK321VTB7c+9BPJTvSty/lA6mJ93PDVlhuGQ7iF3b5/0Omnv34o9FNBRh
+8bfjehmfnJAZ8JvJut4Ptf2m20TzQ5CQj9oiop3lHqaXTH2DGPebNvaHrJPUzX38
+7ndwUEkt9vOAI48d7dY2fIqCJE/xKJNL71j1kqSzDIUkq7tDn0vWfat3A0Yqdnf/
+IP8aIRFmEhHhROF8aym5mcmkBRBwj5COAQEyDB/oHwyIomaVOcYK9TzmWaGnw8lQ
+xV7EqLziKOxrepLm3DC8a3Xid3uZ8G8UqrcrR1lUlehNRUNlqpjwrhhlXL/kvrGs
+mYMaahW7efwdjWThkAY4Dh8mnJQPY9RUz6wWKUzel5vP+agChxdfhzV0CEswdeFG
+4+83E7H0djKVIGj1ydS/ETxPkrZ2+/DKZZSVABTgEhDVeQ2mYRME94R0uPcq5pm0
+BcwOzvy3pJp3y1wQeGm+
+=ilcy
+-----END PGP SIGNATURE-----
 
-Kevin
-
+--mR8QP4gmHujQHb1c--
