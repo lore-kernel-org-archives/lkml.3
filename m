@@ -1,86 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574AbaLQVls (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:41:48 -0500
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:51811
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
+	id S1751389AbaLQVsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:48:22 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29146 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526AbaLQVlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:41:46 -0500
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] Drivers: hv: vmbus: Add device and vendor ID to vmbus devices
-Date: Wed, 17 Dec 2014 14:52:24 -0800
-Message-Id: <1418856744-16359-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751078AbaLQVsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 16:48:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="430361737"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Thomas Gleixner" <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Glenn Williamson" <glenn.p.williamson@intel.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>,
+        "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v2] X86-32: Allocate 256 bytes for pgd in PAE paging
+Date: Wed, 17 Dec 2014 13:47:39 -0800
+Message-Id: <1418852859-18852-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add vendor and device ID attributes to vmbus devices. This would allow us to
-support vmbus based devices that can support guest RDMA.
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+X86 32-bit machine and kernel use PAE paging, which currently wastes about
+4K of memory per process on Linux where we have to reserve an entire page to
+support a single 256-byte PGD structure.  It would be a very good thing if
+we could eliminate that wastage.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- drivers/hv/vmbus_drv.c |   20 ++++++++++++++++++++
- include/linux/hyperv.h |    2 ++
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ arch/x86/mm/pgtable.c | 42 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 39 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 4d6b269..215aac9 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -385,6 +385,24 @@ static ssize_t in_write_bytes_avail_show(struct device *dev,
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 6fb6927..695db92 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -1,5 +1,6 @@
+ #include <linux/mm.h>
+ #include <linux/gfp.h>
++#include <linux/slab.h>
+ #include <asm/pgalloc.h>
+ #include <asm/pgtable.h>
+ #include <asm/tlb.h>
+@@ -271,12 +272,46 @@ static void pgd_prepopulate_pmd(struct mm_struct *mm, pgd_t *pgd, pmd_t *pmds[])
+ 	}
  }
- static DEVICE_ATTR_RO(in_write_bytes_avail);
  
-+static ssize_t vendor_show(struct device *dev,
-+			   struct device_attribute *dev_atttr,
-+			   char *buf)
++/*
++ * Xen paravirt assumes pgd table should be in one page. pgd in 64 bit also
++ * needs to be in one page.
++ *
++ * But PAE without Xen only needs to allocate 256 bytes for pgd.
++ *
++ * So if kernel is compiled as PAE model without Xen, we allocate 256 bytes
++ * for pgd entries to save memory space.
++ *
++ * In other cases, one page is allocated for pgd. In theory, a kernel
++ * in PAE mode not running in Xen could allocate 256 bytes for pgd
++ * as well. But that will make the allocation and free more complex
++ * but not useful in reality. To simplify the code and testing, we just
++ * allocate one page when CONFIG_XEN is enabled regardelss kernel is running
++ * in Xen or not.
++ */
++static inline pgd_t *_pgd_alloc(void)
 +{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	return sprintf(buf, "0x%x\n", hv_dev->vendor_id);
++#if defined(CONFIG_X86_PAE) && !defined(CONFIG_XEN)
++	return kmalloc(sizeof(pgdval_t) * PTRS_PER_PGD, PGALLOC_GFP);
++#else
++	return (pgd_t *)__get_free_page(PGALLOC_GFP);
++#endif
 +}
-+static DEVICE_ATTR_RO(vendor);
 +
-+static ssize_t device_show(struct device *dev,
-+			   struct device_attribute *dev_atttr,
-+			   char *buf)
++static inline void _pgd_free(pgd_t *pgd)
 +{
-+	struct hv_device *hv_dev = device_to_hv_device(dev);
-+	return sprintf(buf, "0x%x\n", hv_dev->device_id);
++#if defined(CONFIG_X86_PAE) && !defined(CONFIG_XEN)
++	kfree(pgd);
++#else
++	free_page((unsigned long)pgd);
++#endif
 +}
-+static DEVICE_ATTR_RO(device);
 +
- /* Set up per device attributes in /sys/bus/vmbus/devices/<bus device> */
- static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_id.attr,
-@@ -409,6 +427,8 @@ static struct attribute *vmbus_attrs[] = {
- 	&dev_attr_in_write_index.attr,
- 	&dev_attr_in_read_bytes_avail.attr,
- 	&dev_attr_in_write_bytes_avail.attr,
-+	&dev_attr_vendor.attr,
-+	&dev_attr_device.attr,
- 	NULL,
- };
- ATTRIBUTE_GROUPS(vmbus);
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 476c685..6fe4dfe 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -891,6 +891,8 @@ struct hv_device {
+ pgd_t *pgd_alloc(struct mm_struct *mm)
+ {
+ 	pgd_t *pgd;
+ 	pmd_t *pmds[PREALLOCATED_PMDS];
  
- 	/* the device instance id of this device */
- 	uuid_le dev_instance;
-+	u16 vendor_id;
-+	u16 device_id;
+-	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP);
++	pgd = _pgd_alloc();
  
- 	struct device device;
+ 	if (pgd == NULL)
+ 		goto out;
+@@ -306,7 +341,7 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
+ out_free_pmds:
+ 	free_pmds(pmds);
+ out_free_pgd:
+-	free_page((unsigned long)pgd);
++	_pgd_free(pgd);
+ out:
+ 	return NULL;
+ }
+@@ -316,7 +351,8 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 	pgd_mop_up_pmds(mm, pgd);
+ 	pgd_dtor(pgd);
+ 	paravirt_pgd_free(mm, pgd);
+-	free_page((unsigned long)pgd);
++	_pgd_free(pgd);
++
+ }
  
+ /*
 -- 
-1.7.4.1
+1.8.1.2
 
