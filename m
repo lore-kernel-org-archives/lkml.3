@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165AbaLQTdR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 14:33:17 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:39696 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999AbaLQTdP (ORCPT
+	id S1751316AbaLQTfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 14:35:51 -0500
+Received: from smtprelay0254.hostedemail.com ([216.40.44.254]:53634 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750790AbaLQTfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 14:33:15 -0500
-MIME-Version: 1.0
-Date: Wed, 17 Dec 2014 20:33:13 +0100
-X-Google-Sender-Auth: PXd5SXijgr6LnJr6WFlCtm_fs2o
-Message-ID: <CAMuHMdWY_ne+S3zKrEYqVyU8=S-at=+rGuEkYNauF4s2KaKNdw@mail.gmail.com>
-Subject: Enable runtime PM automatically?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Dec 2014 14:35:50 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 40,2.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1534:1538:1568:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3870:4321:5007:6261:7514:7576:7903:9545:10011:10400:10471:10848:10967:11232:11658:11914:12043:12438:12517:12519:12555:12740:13069:13071:13255:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:1:0
+X-HE-Tag: humor64_8a07f5c398a26
+X-Filterd-Recvd-Size: 1480
+Message-ID: <1418844946.14140.34.camel@perches.com>
+Subject: Re: [PATCH 1/2] Staging: lustre: lproc_osc.c : Added #include
+ <linux/statfs.h> instead of #include <asm/statfs.h>
+From: Joe Perches <joe@perches.com>
+To: Hariharan <rhariharan.cbe@gmail.com>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Date: Wed, 17 Dec 2014 11:35:46 -0800
+In-Reply-To: <1418844306.9555.0.camel@hari-laptop>
+References: <1418844306.9555.0.camel@hari-laptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 11:10 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> At a deeper level, the problem with this approach is that this is more
-> generically a runtime PM dependency problem, not a genpd problem.  For
-> example, what happens when the same kind of dependency exists on a
-> platform using a custom PM domain instead of genpd (like ACPI.) ?
->
-> What's needed to solve this problem is a generalized way to have runtime
-> PM dependencies between devices.  Runtime PM already automatically
-> handles parent devices as one type of dependent device (e.g. a parent
-> device needs to be runtime PM resumed before its child.)  So what's
-> needed is a generic way to other PM dependencies with the runtime PM
-> core (not the genpd core.)
->
-> If runtime PM handles the dependencies corretcly, then genpd (and any
-> other PM domain) will get them "for free".
+On Thu, 2014-12-18 at 00:55 +0530, Hariharan wrote:
+> From 2a84ceb9e5043a5700d35108ec72737be5102356 Mon Sep 17 00:00:00 2001
+> From: Hariharan Rangasamy <rhariharan.cbe@gmail.com>
+> Date: Wed, 17 Dec 2014 23:57:47 +0530
+> Subject: [PATCH 1/2] Staging: lustre: lproc_osc.c : Added #include
+>  <linux/statfs.h> instead of #include <asm/statfs.h>
 
-Having the proper dependencies is not sufficient. Currently drivers have to do
-something to use runtime PM.
+Hi again.
 
-By default, runtime PM is disabled for a device
-("device.power.disable_depth = 1").
+Please use versioning in your patch subjects when
+resending.
 
-However, if PM domains are active, drivers must be runtime PM-aware for the
-gpd_dev_ops.start() method to be called in the first place (perhaps this is just
-one bug that's easy to fix --- the device is "assumed suspended", but can be
-used). They must
-  1. call pm_runtime_enable() to enable runtime PM for the device,
-  2. call pm_runtime_get_sync() to prevent the device from being put in a
-    low-power state at any time. This second call has the
-"side-effect" of calling
-    gpd_dev_ops.start().
+Please also use git send-email or trim the initial
+content generated by git format-patch when using
+evolution to send your patches.
 
-Hence, if PM domains are enabled, wouldn't it make sense to
-  1. enable runtime PM by default, for all devices (bound and unbound),
-  2. call pm_runtime_get_sync(), for all devices bound to a driver.
-Of course we have to keep track if drivers call any of the pm_runtime_*()
-methods theirselves, as that would have to move them from automatic to
-manual mode.
 
-Would this be feasible?
-
-This would avoid the need to add minimal runtime PM support to each and every
-driver, because:
-  - its device resides in a PM domain, cfr. e.g. commit df0c6c80232f2ad4
-    ("gpio: rcar: Add minimal runtime PM support"),
-  - its device is a child of a device in a PM domain, cfr. e.g. commit
-    3a611e26e958b037 ("net/smsc911x: Add minimal runtime PM support").
-
-There's a similar issue for "transparent" buses that don't need a kernel driver
-(compatible = "simple-bus"). If they're in a PM domain, runtime PM must be
-enabled for them, so their bus devices are resumed when a child device on the
-bus is resumed by runtime PM. Having runtime PM enabled by default
-would avoid the need to add a minimal driver for the bus which just
-enables runtime PM, cfr. [PATCH v2 0/8] Add Simple Power-Managed Bus Support
-(https://lkml.org/lkml/2014/12/17/359).
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
