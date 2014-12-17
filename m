@@ -1,161 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248AbaLQARu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 19:17:50 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:41383 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750875AbaLQARr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 19:17:47 -0500
-Date: Tue, 16 Dec 2014 16:17:11 -0800
-From: Calvin Owens <calvinowens@fb.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "Luck, Tony" <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-team@fb.com" <kernel-team@fb.com>
-Subject: Re: [PATCH] x86: mce: Avoid timer double-add during CMCI interrupt
- storms.
-Message-ID: <20141217001711.GA7152@mail.thefacebook.com>
-References: <1417746575-23299-1-git-send-email-calvinowens@fb.com>
- <20141209180835.GF3990@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F329640BC@ORSMSX114.amr.corp.intel.com>
- <20141210031102.GB1437888@mail.thefacebook.com>
- <20141210192340.GF17053@pd.tnic>
- <20141211023438.GA3239919@mail.thefacebook.com>
- <20141211144313.GB31140@pd.tnic>
+	id S1751122AbaLQAXY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 19:23:24 -0500
+Received: from ozlabs.org ([103.22.144.67]:35841 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750955AbaLQAXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 19:23:23 -0500
+Date: Wed, 17 Dec 2014 11:23:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: James Hogan <james.hogan@imgtec.com>, Guenter Roeck <linux@roeck-us.net>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, <linux-metag@vger.kernel.org>
+Subject: Re: linux-next: Tree for Dec 16
+Message-ID: <20141217112316.3018b44e@canb.auug.org.au>
+In-Reply-To: <20141216160857.4a9d55ecbff0d67c1c6e38fd@linux-foundation.org>
+References: <20141216154622.7c2ded16@canb.auug.org.au>
+	<20141216063549.GA1060@roeck-us.net>
+	<20141215224444.dc7f0f3c.akpm@linux-foundation.org>
+	<548FD746.1050904@roeck-us.net>
+	<548FFEA0.1060905@imgtec.com>
+	<54900D5D.4060509@imgtec.com>
+	<20141217105722.3ec1fcf5@canb.auug.org.au>
+	<20141216160857.4a9d55ecbff0d67c1c6e38fd@linux-foundation.org>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20141211144313.GB31140@pd.tnic>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2014-12-17_01:2014-12-17,2014-12-16,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=26.7046773694174
- compositescore=0.928862112264561 urlsuspect_oldscore=0.928862112264561
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.928862112264561 spamscore=0
- recipient_to_sender_domain_totalscore=46 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1412170000
-X-FB-Internal: deliver
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/Wx_60ZRqdERJ7EvtXLojZ07"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12/11 at 15:43 +0100, Borislav Petkov wrote:
-> On Wed, Dec 10, 2014 at 06:34:38PM -0800, Calvin Owens wrote:
-> > This doens't fix the original issue though: the timer double-add can
-> > still happen if the CMCI interrupt that hits the STORM threshold pops
-> > off during mce_timer_fn() and calls mce_timer_kick().
-> 
-> Right, I guess we could do something similar to what you proposed
-> already (diff below ontop of my previous diff).
+--Sig_/Wx_60ZRqdERJ7EvtXLojZ07
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-That looks good, thanks :)
- 
-> > The polling is unnecessary on a CMCI-capable machine except in STORMs,
-> > right? Wouldn't it be better to eliminate it in that case?
-> 
-> Right, the problem with error thresholding is that it only counts errors
-> and raises the APIC interrupt when a certain count has been reached.
-> But there's no way for the software to look at *each* error and try to
-> discover trends and stuff.
-> 
-> Thus, we've been working on something which looks at each memory error,
-> collects them and then decays them over time and acts only for the
-> significant ones by poisoning pages:
-> 
-> https://urldefense.proofpoint.com/v1/url?u=https://lkml.kernel.org/r/1404242623-10094-1-git-send-email-bp%40alien8.de&k=ZVNjlDMF0FElm4dQtryO4A%3D%3D%0A&r=oEb120Cp%2FehdhuY2M7qjelK5yT8IPB5WC2nEG4obDh4%3D%0A&m=Uvvje79YqtSSsaolAYcJ9N3FPGiWTIz7feUxwbhAkNc%3D%0A&s=c88a2b8458e7f07ba887d26414f2ce5b80f9180353d0895a7f4f8b47d19dbec8
-> 
-> When we have that thing in place we can probably even go a step further
-> and simply disable error thresholding because it simply doesn't give us
-> what we need.
-> 
-> Btw, we would very much welcome your thoughs on this collector thing and
-> whether it would be usable in large installations. Or if not, what else
-> would it need added.
+Hi Andrew,
 
-Ooh I like this, I'll add some thoughts over in that thread.
+On Tue, 16 Dec 2014 16:08:57 -0800 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Wed, 17 Dec 2014 10:57:22 +1100 Stephen Rothwell <sfr@canb.auug.org.au=
+> wrote:
+>=20
+> > So should I just dump that patch into my copy of your tree?  (it seems
+> > harmless and lets people get onto other stuff)
+>=20
+> yep, thanks.  I forgot to cc you on my merge of it, as usual.
 
-> > That said, I ran mce-test with your patch on top of 3.18, looks good
-> > there. But that doesn't simulate CMCI interrupts.
-> 
-> Thanks, I had a machine here which was the perfect natural error
-> injector (has faulty DIMMs). I need to dig it out and play with it again
-> :)
-> 
-> Thanks.
-> 
-> ---
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index e3f426698164..8cf2f486b81e 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -1331,6 +1331,24 @@ int ce_error_seen(void)
->  	return test_and_clear_bit(0, v);
->  }
->  
-> +static void __restart_timer(struct timer_list *t, unsigned long interval)
-> +{
-> +	unsigned long when = jiffies + interval;
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +
-> +	if (timer_pending(t)) {
-> +		if (time_before(when, t->expires))
-> +			mod_timer_pinned(t, when);
-> +	} else {
-> +		t->expires = round_jiffies(when);
-> +		add_timer_on(t, smp_processor_id());
-> +	}
-> +
-> +	local_irq_restore(flags);
-> +}
-> +
->  static void mce_timer_fn(unsigned long data)
->  {
->  	struct timer_list *t = this_cpu_ptr(&mce_timer);
-> @@ -1362,8 +1380,7 @@ static void mce_timer_fn(unsigned long data)
->  
->  done:
->  	__this_cpu_write(mce_next_interval, iv);
-> -	t->expires = jiffies + iv;
-> -	add_timer_on(t, cpu);
-> +	__restart_timer(t, iv);
->  }
->  
->  /*
-> @@ -1372,16 +1389,10 @@ done:
->  void mce_timer_kick(unsigned long interval)
->  {
->  	struct timer_list *t = this_cpu_ptr(&mce_timer);
-> -	unsigned long when = jiffies + interval;
->  	unsigned long iv = __this_cpu_read(mce_next_interval);
->  
-> -	if (timer_pending(t)) {
-> -		if (time_before(when, t->expires))
-> -			mod_timer_pinned(t, when);
-> -	} else {
-> -		t->expires = round_jiffies(when);
-> -		add_timer_on(t, smp_processor_id());
-> -	}
-> +	__restart_timer(t, interval);
-> +
->  	if (interval < iv)
->  		__this_cpu_write(mce_next_interval, interval);
->  }
-> 
-> -- 
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+OK, added.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/Wx_60ZRqdERJ7EvtXLojZ07
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUkMz4AAoJEMDTa8Ir7ZwV0qoP/0nS2cKbBcvHGtGBntuwpM2U
+p+EJCeAY7CG0mPRZy5H1eQESqLZKuim6yJuu+mM23qSIvrZMn2u8LBas4P5G6dfM
+5Xwt2kJKoc1W6Av7H2PfzzYxBSlyedt2Xbc8pwcexBi19Vie7v7uXo4zjI/tgKqF
+YZqxi6JdXFdQxUsgxAnN6/8la1yQta7n0yidEiFY3zV1NJmVo7JnwX6LzkxhrRKA
+aKQ6fIPKdC1ujilVIvWLBNznWbCyal0ij2WDB71NhCW9S/yyjj7abRzrVBiKZ3ii
+GRo1a1bJ5DvmHwTv6Cxt1ehbYp9TSdlnaxJ0/ykby5yiFuEfrk8XFIBtJQKKZ5Zs
+pNdsNRlP4u4hsg6KlK/rrqvga2ZBvcZb1/Ru6R9+DJWxTJ5c0SxKaBnNNVvMMpj/
+slu45K8n0OATz7C/VD+4KgrnIs81BB4rN5BofT0+j/KaMN2U+bExqE8UA1RHyZad
+QubUdSCCo8u5cihjSyM2qVW3/g7eoXYY54nQQlpu75iYo0a33ciA3CqjnKh7AdN1
+7RUM3St5/SN7TtF9KkeK9WK1jEf9rHK4RF1sDuIB9AEPYjTGkdy2ymeIjeEYuiJt
+TiKgl1jvVYs3SUNgmodyUGbuIkA0QSEvr3pJXwEt9mkhMAuwtwINHj6wElOrZtA/
+Ep/2TJsMGO95bFX/4zrq
+=bVNc
+-----END PGP SIGNATURE-----
+
+--Sig_/Wx_60ZRqdERJ7EvtXLojZ07--
