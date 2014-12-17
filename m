@@ -1,131 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaLQKCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:02:31 -0500
-Received: from bay004-omc1s12.hotmail.com ([65.54.190.23]:60467 "EHLO
-	BAY004-OMC1S12.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752371AbaLQKC3 (ORCPT
+	id S1752232AbaLQKBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:01:53 -0500
+Received: from bay004-omc1s11.hotmail.com ([65.54.190.22]:49818 "EHLO
+	BAY004-OMC1S11.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752185AbaLQKBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:02:29 -0500
-X-TMN: [dsx7T6iheuBv2zUfEvI62HyeaMl+n5LR]
+	Wed, 17 Dec 2014 05:01:51 -0500
+X-TMN: [NRDyfUp5lO0UCR8e+fk00p48tr/3AuNp]
 X-Originating-Email: [dudlx@outlook.com]
-Message-ID: <BAY407-EAS3589D1D6DEF9DBF5FF5D086BD6D0@phx.gbl>
+Message-ID: <BAY407-EAS96B6648AE092ACB76E358DBD6D0@phx.gbl>
 From: Dudley Du <dudlx@outlook.com>
 To: <dmitry.torokhov@gmail.com>, <jmmahler@gmail.com>, <rydberg@euromail.se>
 CC: <bleung@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v16 07/12] input: cyapa: add gen3 trackpad device read baseline
-Date: Wed, 17 Dec 2014 17:57:28 +0800
+Subject: [PATCH v16 03/12] input: cyapa: add power management interfaces support
+Date: Wed, 17 Dec 2014 17:56:49 +0800
 MIME-Version: 1.0
 Content-Type: text/plain; charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AdAZ3xJZKGC4l1rsTmSedU+pGaoqIg==
+Thread-Index: AdAZ3p2+9Tlkxz9LQiaB5sP5jTaqmQ==
 Content-Language: zh-cn
-X-OriginalArrivalTime: 17 Dec 2014 09:57:29.0664 (UTC) FILETIME=[DE97DC00:01D019DF]
+X-OriginalArrivalTime: 17 Dec 2014 09:56:50.0703 (UTC) FILETIME=[C75EE1F0:01D019DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read baseline function supported for gen3 trackpad device,
-it can be used through sysfs baseline interface.
+Add suspend_scanrate_ms power management interfaces in device's
+power group, so users or applications can control the power management
+strategy of trackpad device as their requirements.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
 ---
- drivers/input/mouse/cyapa_gen3.c | 72 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+ drivers/input/mouse/cyapa.c | 111 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 111 insertions(+)
 
-diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
-index cd4f1db..92b3d6d 100644
---- a/drivers/input/mouse/cyapa_gen3.c
-+++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -765,6 +765,76 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
- 	return 0;
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index d4560a3..73f6817 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -575,6 +575,96 @@ out:
+ 	return IRQ_HANDLED;
  }
  
-+static ssize_t cyapa_gen3_show_baseline(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
++/*
++ **************************************************************
++ * sysfs interface
++ **************************************************************
++*/
++#ifdef CONFIG_PM_SLEEP
++static ssize_t cyapa_show_suspend_scanrate(struct device *dev,
++					   struct device_attribute *attr,
++					   char *buf)
 +{
 +	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int max_baseline, min_baseline;
-+	int tries;
-+	int ret;
++	u8 pwr_cmd = cyapa->suspend_power_mode;
++	u16 sleep_time;
++	int len;
++	int error;
 +
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+	if (ret < 0) {
-+		dev_err(dev, "Error reading dev status. err = %d\n", ret);
-+		goto out;
-+	}
-+	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
-+		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
-+			 ret);
-+		ret = -EAGAIN;
-+		goto out;
-+	}
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++	pwr_cmd = cyapa->suspend_power_mode;
++	sleep_time = cyapa->suspend_sleep_time;
++	mutex_unlock(&cyapa->state_sync_lock);
 +
-+	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
-+			       OP_REPORT_BASELINE_MASK);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to send report baseline command. %d\n",
-+			ret);
-+		goto out;
++	if (pwr_cmd == PWR_MODE_BTN_ONLY) {
++		len = scnprintf(buf, PAGE_SIZE, "%s\n", BTN_ONLY_MODE_NAME);
++	} else if (pwr_cmd == PWR_MODE_OFF) {
++		len = scnprintf(buf, PAGE_SIZE, "%s\n", OFF_MODE_NAME);
++	} else {
++		if (cyapa->gen == CYAPA_GEN3)
++			sleep_time = cyapa_pwr_cmd_to_sleep_time(pwr_cmd);
++		len = scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
 +	}
 +
-+	tries = 3;  /* Try for 30 to 60 ms */
-+	do {
-+		usleep_range(10000, 20000);
-+
-+		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+		if (ret < 0) {
-+			dev_err(dev, "Error reading dev status. err = %d\n",
-+				ret);
-+			goto out;
-+		}
-+		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
-+			break;
-+	} while (--tries);
-+
-+	if (tries == 0) {
-+		dev_err(dev, "Device timed out going to Normal state.\n");
-+		ret = -ETIMEDOUT;
-+		goto out;
-+	}
-+
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to read max baseline. err = %d\n", ret);
-+		goto out;
-+	}
-+	max_baseline = ret;
-+
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to read min baseline. err = %d\n", ret);
-+		goto out;
-+	}
-+	min_baseline = ret;
-+
-+	dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
-+		max_baseline, min_baseline);
-+	ret = scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_baseline);
-+
-+out:
-+	return ret;
++	return len;
 +}
 +
- /*
-  * cyapa_get_wait_time_for_pwr_cmd
-  *
-@@ -1079,6 +1149,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
- 	.update_fw = cyapa_gen3_do_fw_update,
- 	.bl_deactivate = cyapa_gen3_bl_deactivate,
- 
-+	.show_baseline = cyapa_gen3_show_baseline,
++static ssize_t cyapa_update_suspend_scanrate(struct device *dev,
++					     struct device_attribute *attr,
++					     const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	u16 sleep_time;
++	int error;
 +
- 	.state_parse = cyapa_gen3_state_parse,
- 	.operational_check = cyapa_gen3_do_operational_check,
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++
++	if (sysfs_streq(buf, BTN_ONLY_MODE_NAME)) {
++		cyapa->suspend_power_mode = PWR_MODE_BTN_ONLY;
++	} else if (sysfs_streq(buf, OFF_MODE_NAME)) {
++		cyapa->suspend_power_mode = PWR_MODE_OFF;
++	} else if (!kstrtou16(buf, 10, &sleep_time)) {
++		cyapa->suspend_sleep_time = max_t(u16, sleep_time, 1000);
++		cyapa->suspend_power_mode =
++			cyapa_sleep_time_to_pwr_cmd(cyapa->suspend_sleep_time);
++	} else {
++		count = 0;
++	}
++
++	mutex_unlock(&cyapa->state_sync_lock);
++
++	if (!count)
++		dev_err(dev, "invalid suspend scanrate ms parameters\n");
++	return count ? count : -EINVAL;
++}
++
++static DEVICE_ATTR(suspend_scanrate_ms, S_IRUGO|S_IWUSR,
++		   cyapa_show_suspend_scanrate,
++		   cyapa_update_suspend_scanrate);
++
++static struct attribute *cyapa_power_wakeup_entries[] = {
++	&dev_attr_suspend_scanrate_ms.attr,
++	NULL,
++};
++
++static const struct attribute_group cyapa_power_wakeup_group = {
++	.name = power_group_name,
++	.attrs = cyapa_power_wakeup_entries,
++};
++
++static void cyapa_remove_power_wakeup_group(void *data)
++{
++	struct cyapa *cyapa = data;
++
++	sysfs_unmerge_group(&cyapa->client->dev.kobj,
++				&cyapa_power_wakeup_group);
++}
++#endif /* CONFIG_PM_SLEEP */
++
+ static int cyapa_probe(struct i2c_client *client,
+ 		       const struct i2c_device_id *dev_id)
+ {
+@@ -614,6 +704,27 @@ static int cyapa_probe(struct i2c_client *client,
+ 		return error;
+ 	}
  
++#ifdef CONFIG_PM_SLEEP
++	if (device_can_wakeup(dev)) {
++		error = sysfs_merge_group(&client->dev.kobj,
++					&cyapa_power_wakeup_group);
++		if (error) {
++			dev_err(dev, "failed to add power wakeup group: %d\n",
++				error);
++			return error;
++		}
++
++		error = devm_add_action(dev,
++				cyapa_remove_power_wakeup_group, cyapa);
++		if (error) {
++			cyapa_remove_power_wakeup_group(cyapa);
++			dev_err(dev, "failed to add power cleanup action: %d\n",
++				error);
++			return error;
++		}
++	}
++#endif /* CONFIG_PM_SLEEP */
++
+ 	error = devm_request_threaded_irq(dev, client->irq,
+ 					  NULL, cyapa_irq,
+ 					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 -- 
 1.9.1
 
