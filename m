@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939AbaLQSul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:50:41 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:41121 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaLQStZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:49:25 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-pm@vger.kernel.org
-Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
-        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
-        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 6/8] ARM: shmobile: kzm9g dts: Move Ethernet node to BSC
-Date: Wed, 17 Dec 2014 19:49:11 +0100
-Message-Id: <1418842153-17113-7-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
-References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
+	id S1752042AbaLQSwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:52:09 -0500
+Received: from www.sr71.net ([198.145.64.142]:42395 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353AbaLQSwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 13:52:04 -0500
+Message-ID: <5491D0D2.5070103@sr71.net>
+Date: Wed, 17 Dec 2014 10:52:02 -0800
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Michal Simek <monstr@monstr.eu>, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Subject: Re: post-3.18 performance regression in TLB flushing code
+References: <5490A5F8.6050504@sr71.net> <20141217100810.GA3461@arm.com> <CA+55aFyVxOw0upa=At6MmiNYEHzfPz4rE5bZUBCs9h4vKGh1iA@mail.gmail.com> <20141217165310.GJ870@arm.com>
+In-Reply-To: <20141217165310.GJ870@arm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the Ethernet node from the root of the device tree to the BSC node,
-as its connected to the Bus State Controller.  This allows the system to
-know the right position of the Ethernet node in the clock and PM domain
-hierarchy, and manage the clock and PM domain appropriately.
+On 12/17/2014 08:53 AM, Will Deacon wrote:
+> On Wed, Dec 17, 2014 at 04:28:23PM +0000, Linus Torvalds wrote:
+>> On Wed, Dec 17, 2014 at 2:08 AM, Will Deacon <will.deacon@arm.com> wrote:
+>> So why not just this trivial patch, to make the logic be the same it
+>> used to be (just using "end > 0" instead of the old "need_flush")?
+> 
+> Looks fine to me... Dave?
 
-Also rename the node's name from "lan9220" to "ethernet", to conform to
-ePAPR generic name recomendations.
+First of all, this is quite observable when testing single-threaded on a
+desktop.  This is a mildly crusty Sandybridge CPU from 2011.  I made 3
+runs with a single thread: ./brk1_processes -s 30 -t 1
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
-v2:
-  - s/confirm/conform/
-  - Moved from kzm9g-reference to kzm9g
----
- arch/arm/boot/dts/sh73a0-kzm9g.dts | 28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
+	   fb7332a9fed : 4323385
+	   fb7332a9fed^: 4503736
+fb7332a9fed+Linus's fix: 4516761
 
-diff --git a/arch/arm/boot/dts/sh73a0-kzm9g.dts b/arch/arm/boot/dts/sh73a0-kzm9g.dts
-index fce37b96394d0ee3..3e8aacb6ca1f2d06 100644
---- a/arch/arm/boot/dts/sh73a0-kzm9g.dts
-+++ b/arch/arm/boot/dts/sh73a0-kzm9g.dts
-@@ -84,19 +84,6 @@
- 		enable-active-high;
- 	};
- 
--	lan9220@10000000 {
--		compatible = "smsc,lan9220", "smsc,lan9115";
--		reg = <0x10000000 0x100>;
--		phy-mode = "mii";
--		interrupt-parent = <&irqpin0>;
--		interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
--		reg-io-width = <4>;
--		smsc,irq-push-pull;
--		smsc,save-mac-address;
--		vddvario-supply = <&reg_1p8v>;
--		vdd33a-supply = <&reg_3p3v>;
--	};
--
- 	leds {
- 		compatible = "gpio-leds";
- 		led1 {
-@@ -178,6 +165,21 @@
- 	};
- };
- 
-+&bsc {
-+	ethernet@10000000 {
-+		compatible = "smsc,lan9220", "smsc,lan9115";
-+		reg = <0x10000000 0x100>;
-+		phy-mode = "mii";
-+		interrupt-parent = <&irqpin0>;
-+		interrupts = <3 IRQ_TYPE_EDGE_FALLING>;
-+		reg-io-width = <4>;
-+		smsc,irq-push-pull;
-+		smsc,save-mac-address;
-+		vddvario-supply = <&reg_1p8v>;
-+		vdd33a-supply = <&reg_3p3v>;
-+	};
-+};
-+
- &cmt1 {
- 	status = "okay";
- };
--- 
-1.9.1
+These things are also a little bit noisy, so we're well within the
+margin of error with Linus's fix.
 
+This also holds up on the large system.
