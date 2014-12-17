@@ -1,259 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751107AbaLQPBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:01:47 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51237 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750946AbaLQPBp (ORCPT
+	id S1751153AbaLQPDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:03:43 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:52639 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaLQPDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:01:45 -0500
-Message-ID: <54919AC9.2090306@arm.com>
-Date: Wed, 17 Dec 2014 15:01:29 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 17 Dec 2014 10:03:42 -0500
+Date: Wed, 17 Dec 2014 12:03:32 -0300
+From: Guido =?iso-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>
+To: Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] UBI: Split __wl_get_peb()
+Message-ID: <20141217150332.GC19525@fox>
+References: <1416835236-25185-1-git-send-email-richard@nod.at>
+ <1416835236-25185-6-git-send-email-richard@nod.at>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>,
-        Eddie Huang <eddie.huang@mediatek.com>
-CC: Matthias Brugger <matthias.bgg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH v2 3/4] arm64: dts: Add mediatek MT8173 SoC and evaluation
- board dts and Makefile
-References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com> <1418825853-10934-4-git-send-email-eddie.huang@mediatek.com> <20141217143305.GC8942@leverpostej>
-In-Reply-To: <20141217143305.GC8942@leverpostej>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1416835236-25185-6-git-send-email-richard@nod.at>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/12/14 14:33, Mark Rutland wrote:
-> On Wed, Dec 17, 2014 at 02:17:32PM +0000, Eddie Huang wrote:
->> Add device tree support for MT8173 SoC and evaluation board based on it.
->>
->> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
->> ---
->>  arch/arm64/boot/dts/Makefile       |   1 +
->>  arch/arm64/boot/dts/mt8173-evb.dts |  34 +++++++++
->>  arch/arm64/boot/dts/mt8173.dtsi    | 152 +++++++++++++++++++++++++++++++++++++
->>  3 files changed, 187 insertions(+)
->>  create mode 100644 arch/arm64/boot/dts/mt8173-evb.dts
->>  create mode 100644 arch/arm64/boot/dts/mt8173.dtsi
->>
->> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
->> index f8001a6..db7661e 100644
->> --- a/arch/arm64/boot/dts/Makefile
->> +++ b/arch/arm64/boot/dts/Makefile
->> @@ -1,3 +1,4 @@
->> +dtb-$(CONFIG_ARCH_MEDIATEK) += mt8173-evb.dtb
->>  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
->>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
->>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
->> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
->> new file mode 100644
->> index 0000000..b8b2621
->> --- /dev/null
->> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
->> @@ -0,0 +1,34 @@
->> +/*
->> + * Copyright (c) 2014 MediaTek Inc.
->> + * Author: Eddie Huang <eddie.huang@mediatek.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +/dts-v1/;
->> +#include "mt8173.dtsi"
->> +
->> +/ {
->> +	model = "mediatek,mt8173-evb";
->> +
->> +	aliases {
->> +		serial0 = &uart0;
->> +		serial1 = &uart1;
->> +		serial2 = &uart2;
->> +		serial3 = &uart3;
->> +	};
->> +
->> +	memory@40000000 {
->> +		device_type = "memory";
->> +		reg = <0 0x40000000 0 0x80000000>;
->> +	};
->> +
->> +	chosen { };
->> +};
->> diff --git a/arch/arm64/boot/dts/mt8173.dtsi b/arch/arm64/boot/dts/mt8173.dtsi
->> new file mode 100644
->> index 0000000..41c1441
->> --- /dev/null
->> +++ b/arch/arm64/boot/dts/mt8173.dtsi
->> @@ -0,0 +1,152 @@
->> +/*
->> + * Copyright (c) 2014 MediaTek Inc.
->> + * Author: Eddie Huang <eddie.huang@mediatek.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + */
->> +
->> +/ {
->> +	compatible = "mediatek,mt8173";
->> +	interrupt-parent = <&sysirq>;
->> +	#address-cells = <2>;
->> +	#size-cells = <2>;
->> +
->> +	cpus {
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +
->> +		cpu-map {
->> +			cluster0 {
->> +				core0 {
->> +					cpu = <&cpu0>;
->> +				};
->> +				core1 {
->> +					cpu = <&cpu1>;
->> +				};
->> +			};
->> +
->> +			cluster1 {
->> +				core0 {
->> +					cpu = <&cpu2>;
->> +				};
->> +				core1 {
->> +					cpu = <&cpu3>;
->> +				};
->> +			};
->> +		};
->> +
->> +		cpu0: cpu@0 {
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a53";
->> +			reg = <0x000>;
->> +		};
->> +
->> +		cpu1: cpu@1 {
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a53";
->> +			reg = <0x001>;
->> +			enable-method = "psci";
->> +		};
->> +
->> +		cpu2: cpu@2 {
-> 
-> The unit-address should be 100 rather than 2, matching the reg property.
-> This should be 'cpu@100'.
-> 
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a57";
->> +			reg = <0x100>;
->> +			enable-method = "psci";
->> +		};
->> +
->> +		cpu3: cpu@3 {
-> 
-> Similarly this should be 'cpu@101'.
-> 
->> +			device_type = "cpu";
->> +			compatible = "arm,cortex-a57";
->> +			reg = <0x101>;
->> +			enable-method = "psci";
->> +		};
->> +	};
->> +
->> +	psci {
->> +		compatible = "arm,psci";
->> +		method = "smc";
->> +		cpu_suspend   = <0x84000001>;
->> +		cpu_off	      = <0x84000002>;
->> +		cpu_on	      = <0x84000003>;
->> +		affinity_info = <0x84000004>;
->> +	};
-> 
-> There is no AFFINITY_INFO function prior to PSCI 0.2, and
-> 'affinity_info' does not exist in the "arm,psci" binding.
-> 
-> I take it hotplug has been tested for all but CPU0?
-> 
->> +
->> +	uart_clk: dummy26m {
->> +		compatible = "fixed-clock";
->> +		clock-frequency = <26000000>;
->> +		#clock-cells = <0>;
->> +	};
->> +
->> +	timer {
->> +		compatible = "arm,armv8-timer";
->> +		interrupt-parent = <&gic>;
->> +		interrupts = <1 13 0xf08>,
->> +			     <1 14 0xf08>,
->> +			     <1 11 0xf08>,
->> +			     <1 10 0xf08>;
->> +	};
->> +
->> +	soc {
->> +		#address-cells = <2>;
->> +		#size-cells = <2>;
->> +		compatible = "simple-bus";
->> +		ranges;
->> +
->> +		sysirq: intpol-controller@10200620 {
->> +			compatible = "mediatek,mt8173-sysirq", "mediatek,mt6577-sysirq";
->> +			interrupt-controller;
->> +			#interrupt-cells = <3>;
->> +			interrupt-parent = <&gic>;
->> +			reg = <0 0x10200620 0 0x20>;
->> +		};
->> +
->> +		gic: interrupt-controller@10220000 {
->> +			compatible = "arm,gic-400";
->> +			#interrupt-cells = <3>;
->> +			interrupt-parent = <&gic>;
->> +			interrupt-controller;
->> +			reg = <0 0x10221000 0 0x1000>,
->> +			      <0 0x10222000 0 0x1000>,
->> +			      <0 0x10224000 0 0x2000>,
->> +			      <0 0x10226000 0 0x2000>;
->> +			interrupts = <1 9 0xf04>;
->> +		};
-> 
-> I don't think these reg entries are quite right; GICC should be 8k long.
-> 
-> Marc?
+Hi Richard,
 
-Indeed, as described in the documentation:
-http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0471b/CHDIFAEE.html
+On Mon, Nov 24, 2014 at 02:20:35PM +0100, Richard Weinberger wrote:
+> Make it two functions, wl_get_wle() and wl_get_peb().
+> wl_get_peb() works exactly like __wl_get_peb() but wl_get_wle()
+> does not call produce_free_peb().
+> While refilling the fastmap user pool we cannot release ubi->wl_lock
+> as produce_free_peb() does.
+> Hence the fastmap logic uses now wl_get_wle().
+> 
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  drivers/mtd/ubi/wl.c | 61 ++++++++++++++++++++++++++++++++--------------------
+>  1 file changed, 38 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+> index 7730b97..f028b68 100644
+> --- a/drivers/mtd/ubi/wl.c
+> +++ b/drivers/mtd/ubi/wl.c
+> @@ -499,13 +499,46 @@ out:
+>  #endif
+>  
+>  /**
+> - * __wl_get_peb - get a physical eraseblock.
+> + * wl_get_wle - get a mean wl entry to be used by wl_get_peb() or
+> + * refill_wl_user_pool().
+> + * @ubi: UBI device description object
+> + *
+> + * This function returns a a wear leveling entry in case of success and
+> + * NULL in case of failure.
+> + */
+> +static struct ubi_wl_entry *wl_get_wle(struct ubi_device *ubi)
+> +{
+> +	struct ubi_wl_entry *e;
+> +
+> +	e = find_mean_wl_entry(ubi, &ubi->free);
+> +	if (!e) {
+> +		ubi_err(ubi, "no free eraseblocks");
+> +		return NULL;
+> +	}
+> +
+> +	self_check_in_wl_tree(ubi, e, &ubi->free);
+> +
+> +	/*
+> +	 * Move the physical eraseblock to the protection queue where it will
+> +	 * be protected from being moved for some time.
+> +	 */
+> +	rb_erase(&e->u.rb, &ubi->free);
+> +	ubi->free_count--;
+> +	dbg_wl("PEB %d EC %d", e->pnum, e->ec);
+> +
+> +	return e;
+> +}
+> +
+> +/**
+> + * wl_get_peb - get a physical eraseblock.
+>   * @ubi: UBI device description object
+>   *
+>   * This function returns a physical eraseblock in case of success and a
+>   * negative error code in case of failure.
+> + * It is the low level component of ubi_wl_get_peb() in the non-fastmap
+> + * case.
+>   */
+> -static int __wl_get_peb(struct ubi_device *ubi)
+> +static int wl_get_peb(struct ubi_device *ubi)
+This bit breaks the build since (at this point) the usage of
+__wl_get_peb on refill_wl_user_pool is not changed. There's also a
+comment mentioning __wl_get_peb, which should be updated.
 
-Also it is worth noticing that given how GICV is placed, it will never
-work with 64K pages and virtualization. Pretty sad.
+I can see both changes in the next patch, but it's way better if we
+don't break the build :).
 
-Thanks,
+Besides from these two and the comments by Tanya, the patch looks good.
 
-	M.
+>  {
+>  	int err;
+>  	struct ubi_wl_entry *e;
+> @@ -524,27 +557,9 @@ retry:
+>  		goto retry;
+>  	}
+>  
+> -	e = find_mean_wl_entry(ubi, &ubi->free);
+> -	if (!e) {
+> -		ubi_err(ubi, "no free eraseblocks");
+> -		return -ENOSPC;
+> -	}
+> -
+> -	self_check_in_wl_tree(ubi, e, &ubi->free);
+> -
+> -	/*
+> -	 * Move the physical eraseblock to the protection queue where it will
+> -	 * be protected from being moved for some time.
+> -	 */
+> -	rb_erase(&e->u.rb, &ubi->free);
+> -	ubi->free_count--;
+> -	dbg_wl("PEB %d EC %d", e->pnum, e->ec);
+> -#ifndef CONFIG_MTD_UBI_FASTMAP
+> -	/* We have to enqueue e only if fastmap is disabled,
+> -	 * is fastmap enabled prot_queue_add() will be called by
+> -	 * ubi_wl_get_peb() after removing e from the pool. */
+> +	e = wl_get_wle(ubi);
+>  	prot_queue_add(ubi, e);
+> -#endif
+> +
+>  	return e->pnum;
+>  }
+>  
+> @@ -704,7 +719,7 @@ int ubi_wl_get_peb(struct ubi_device *ubi)
+>  	int peb, err;
+>  
+>  	spin_lock(&ubi->wl_lock);
+> -	peb = __wl_get_peb(ubi);
+> +	peb = wl_get_peb(ubi);
+>  	spin_unlock(&ubi->wl_lock);
+>  
+>  	if (peb < 0)
+
 -- 
-Jazz is not dead. It just smells funny...
+Guido Martínez, VanguardiaSur
+www.vanguardiasur.com.ar
