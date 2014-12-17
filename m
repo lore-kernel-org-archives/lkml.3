@@ -1,97 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaLQQxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 11:53:21 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51340 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023AbaLQQxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 11:53:20 -0500
-Date: Wed, 17 Dec 2014 16:53:10 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Hansen <dave@sr71.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Simek <monstr@monstr.eu>, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Subject: Re: post-3.18 performance regression in TLB flushing code
-Message-ID: <20141217165310.GJ870@arm.com>
-References: <5490A5F8.6050504@sr71.net>
- <20141217100810.GA3461@arm.com>
- <CA+55aFyVxOw0upa=At6MmiNYEHzfPz4rE5bZUBCs9h4vKGh1iA@mail.gmail.com>
+	id S1751469AbaLQQzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 11:55:04 -0500
+Received: from mail-bn1on0087.outbound.protection.outlook.com ([157.56.110.87]:29181
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751027AbaLQQy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 11:54:59 -0500
+From: <atull@opensource.altera.com>
+To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
+        <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>,
+        Alan Tull <atull@opensource.altera.com>
+Subject: [PATCH v5 0/6] FPGA Manager Framework
+Date: Wed, 17 Dec 2014 10:54:43 -0600
+Message-ID: <1418835289-15752-1-git-send-email-atull@opensource.altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyVxOw0upa=At6MmiNYEHzfPz4rE5bZUBCs9h4vKGh1iA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: BY1PR00CA0007.namprd00.prod.outlook.com (25.160.102.17) To
+ BN3PR0301MB1236.namprd03.prod.outlook.com (25.161.207.24)
+Authentication-Results: linuxfoundation.org; dkim=none (message not signed)
+ header.d=none;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1236;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1236;
+X-Forefront-PRVS: 042857DBB5
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(189002)(199003)(122386002)(99396003)(19580395003)(19580405001)(69596002)(120916001)(40100003)(81156004)(106356001)(105586002)(66066001)(50986999)(64706001)(42186005)(47776003)(20776003)(87976001)(46102003)(101416001)(86362001)(92566001)(2201001)(86152002)(89996001)(31966008)(4396001)(50466002)(33646002)(50226001)(21056001)(97736003)(68736005)(48376002)(53416004)(229853001)(62966003)(77156002)(107046002)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1236;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1236;
+X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 17 Dec 2014 16:54:52.4464 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1236
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 04:28:23PM +0000, Linus Torvalds wrote:
-> On Wed, Dec 17, 2014 at 2:08 AM, Will Deacon <will.deacon@arm.com> wrote:
-> >
-> > I think there are a couple of things you could try to see if that 2% comes
-> > back:
-> >
-> >   * Revert the patch and try the one here [1] instead (which only does part
-> >     (1) of the above).
-> >
-> > -- or --
-> >
-> >   * Instead of adding the tlb->end check to tlb_flush_mmu, add it to
-> >     tlb_flush_mmu_free
-> 
-> or just move the check back to tlb_flush_mmu() where it belongs.
-> 
-> I don't see why you moved it to "tlb_flush_mmu_tlbonly()" in the first
-> place, or why you'd now want to add it to tlb_flush_mmu_free().
-> 
-> Both of those helper functions have two callers:
-> 
->  - tlb_flush_mmu(). Doing it here (instead of in the helper functions)
-> is the right thing to do
-> 
->  - the "force_flush" case: we know we have added at least one page to
-> the TLB state so checking for it is pointless.
-> 
-> So I'm not seeing why you wanted to do it in tlb_flush_mmu_tlbonly(),
-> and now add it to tlb_flush_mmu_free(). That seems bogus.
+From: Alan Tull <atull@opensource.altera.com>
 
-I guess I was being overly cautious in case tlb_flush_mmu_tlbonly grows
-additional users, but you're right.
+Intended for after 3.19-rc1
 
-> So why not just this trivial patch, to make the logic be the same it
-> used to be (just using "end > 0" instead of the old "need_flush")?
+v5 includes changes from feedback from Michal, Steffen, Alan, Greg, and the
+kbuild test robot.
 
-Looks fine to me... Dave?
+The driver is under drivers/staging/fpga/
+The header is now in include/linux/fpga/
+The sysfs doc is in staging/fpga/Documentation/ABI/
+The DT binding is in staging/fpga/Documentation/bindings/
 
-Will
+Alan
 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index c3b9097251c5..6efe36a998ba 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -235,9 +235,6 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long
->  
->  static void tlb_flush_mmu_tlbonly(struct mmu_gather *tlb)
->  {
-> -	if (!tlb->end)
-> -		return;
-> -
->  	tlb_flush(tlb);
->  	mmu_notifier_invalidate_range(tlb->mm, tlb->start, tlb->end);
->  #ifdef CONFIG_HAVE_RCU_TABLE_FREE
-> @@ -259,6 +256,9 @@ static void tlb_flush_mmu_free(struct mmu_gather *tlb)
->  
->  void tlb_flush_mmu(struct mmu_gather *tlb)
->  {
-> +	if (!tlb->end)
-> +		return;
-> +
->  	tlb_flush_mmu_tlbonly(tlb);
->  	tlb_flush_mmu_free(tlb);
->  }
+Alan Tull (6):
+  doc: add bindings document for altera fpga manager
+  fpga manager: add sysfs interface document
+  staging: fpga manager: framework core
+  staging: fpga manager: add driver for socfpga fpga manager
+  arm: dts: socfpga: add altera fpga manager
+  ARM: socfpga: defconfig: enable fpga manager
+
+ arch/arm/boot/dts/socfpga.dtsi                     |    7 +
+ arch/arm/configs/socfpga_defconfig                 |    4 +
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
+ .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
+ drivers/staging/fpga/Kconfig                       |   29 +
+ drivers/staging/fpga/Makefile                      |   11 +
+ drivers/staging/fpga/fpga-mgr.c                    |  523 +++++++++++++++
+ drivers/staging/fpga/socfpga.c                     |  692 ++++++++++++++++++++
+ include/linux/fpga/fpga-mgr.h                      |  124 ++++
+ 11 files changed, 1448 insertions(+)
+ create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+ create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+ create mode 100644 drivers/staging/fpga/Kconfig
+ create mode 100644 drivers/staging/fpga/Makefile
+ create mode 100644 drivers/staging/fpga/fpga-mgr.c
+ create mode 100644 drivers/staging/fpga/socfpga.c
+ create mode 100644 include/linux/fpga/fpga-mgr.h
+
+-- 
+1.7.9.5
 
