@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaLQRRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 12:17:41 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:48094 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaLQRRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 12:17:39 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: [PATCH] KVM: move APIC types to arch/x86/
-Date: Wed, 17 Dec 2014 18:17:29 +0100
-Message-Id: <1418836649-3171-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1751431AbaLQRR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 12:17:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983AbaLQRRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 12:17:54 -0500
+Date: Wed, 17 Dec 2014 12:17:49 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Marc Dionne <marc.c.dionne@gmail.com>
+Cc: linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        Marc Dionne <marc.dionne@your-file-system.com>, agk@redhat.com
+Subject: Re: dm thin: Initialize refcount and completion earlier
+Message-ID: <20141217171749.GB27737@redhat.com>
+References: <1418821199-6890-1-git-send-email-marc.dionne@your-file-system.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418821199-6890-1-git-send-email-marc.dionne@your-file-system.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are not used anymore by IA64, move them away.
+On Wed, Dec 17 2014 at  7:59am -0500,
+Marc Dionne <marc.c.dionne@gmail.com> wrote:
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/include/asm/kvm_host.h | 10 ++++++++++
- arch/x86/kvm/ioapic.h           | 17 +++++++++++++++++
- include/linux/kvm_types.h       | 27 ---------------------------
- 3 files changed, 27 insertions(+), 27 deletions(-)
+> The commit 80e96c5484be (dm thin: do not allow thin device activation
+> while pool is suspended) delayed the initialization of the completion
+> and setting the initial refcount to 1 until after the new thin is
+> added to the pool's active thins list and the pool lock is released.
+> This opens a race with a worker thread that walks the list and calls
+> thin_get/put, noticing that the refcount goes to 0 and calling
+> complete, freezing up the system and giving the oops below:
+> 
+>  kernel: BUG: unable to handle kernel NULL pointer dereference at           (null)
+>  kernel: IP: [<ffffffff810d360b>] __wake_up_common+0x2b/0x90
+> 
+>  kernel: Call Trace:
+>  kernel: [<ffffffff810d3683>] __wake_up_locked+0x13/0x20
+>  kernel: [<ffffffff810d3dc7>] complete+0x37/0x50
+>  kernel: [<ffffffffa0595c50>] thin_put+0x20/0x30 [dm_thin_pool]
+>  kernel: [<ffffffffa059aab7>] do_worker+0x667/0x870 [dm_thin_pool]
+>  kernel: [<ffffffff816a8a4c>] ? __schedule+0x3ac/0x9a0
+>  kernel: [<ffffffff810b1aef>] process_one_work+0x14f/0x400
+>  kernel: [<ffffffff810b206b>] worker_thread+0x6b/0x490
+>  kernel: [<ffffffff810b2000>] ? rescuer_thread+0x260/0x260
+>  kernel: [<ffffffff810b6a7b>] kthread+0xdb/0x100
+>  kernel: [<ffffffff810b69a0>] ? kthread_create_on_node+0x170/0x170
+>  kernel: [<ffffffff816ad7ec>] ret_from_fork+0x7c/0xb0
+>  kernel: [<ffffffff810b69a0>] ? kthread_create_on_node+0x170/0x170
+> 
+> Set the initial refcount and initialize the completion
+> before dropping the pool lock.
+> 
+> Signed-off-by: Marc Dionne <marc.dionne@your-file-system.com>
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 0c4c88c008ce..d89c6b828c96 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -664,6 +664,16 @@ struct msr_data {
- 	u64 data;
- };
- 
-+struct kvm_lapic_irq {
-+	u32 vector;
-+	u32 delivery_mode;
-+	u32 dest_mode;
-+	u32 level;
-+	u32 trig_mode;
-+	u32 shorthand;
-+	u32 dest_id;
-+};
-+
- struct kvm_x86_ops {
- 	int (*cpu_has_kvm_support)(void);          /* __init */
- 	int (*disabled_by_bios)(void);             /* __init */
-diff --git a/arch/x86/kvm/ioapic.h b/arch/x86/kvm/ioapic.h
-index deac8d509f2a..3c9195535ffc 100644
---- a/arch/x86/kvm/ioapic.h
-+++ b/arch/x86/kvm/ioapic.h
-@@ -44,6 +44,23 @@ struct rtc_status {
- 	DECLARE_BITMAP(dest_map, KVM_MAX_VCPUS);
- };
- 
-+union kvm_ioapic_redirect_entry {
-+	u64 bits;
-+	struct {
-+		u8 vector;
-+		u8 delivery_mode:3;
-+		u8 dest_mode:1;
-+		u8 delivery_status:1;
-+		u8 polarity:1;
-+		u8 remote_irr:1;
-+		u8 trig_mode:1;
-+		u8 mask:1;
-+		u8 reserve:7;
-+		u8 reserved[4];
-+		u8 dest_id;
-+	} fields;
-+};
-+
- struct kvm_ioapic {
- 	u64 base_address;
- 	u32 ioregsel;
-diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
-index b606bb689a3e..931da7e917cf 100644
---- a/include/linux/kvm_types.h
-+++ b/include/linux/kvm_types.h
-@@ -54,33 +54,6 @@ typedef u64            hfn_t;
- 
- typedef hfn_t pfn_t;
- 
--union kvm_ioapic_redirect_entry {
--	u64 bits;
--	struct {
--		u8 vector;
--		u8 delivery_mode:3;
--		u8 dest_mode:1;
--		u8 delivery_status:1;
--		u8 polarity:1;
--		u8 remote_irr:1;
--		u8 trig_mode:1;
--		u8 mask:1;
--		u8 reserve:7;
--		u8 reserved[4];
--		u8 dest_id;
--	} fields;
--};
--
--struct kvm_lapic_irq {
--	u32 vector;
--	u32 delivery_mode;
--	u32 dest_mode;
--	u32 level;
--	u32 trig_mode;
--	u32 shorthand;
--	u32 dest_id;
--};
--
- struct gfn_to_hva_cache {
- 	u64 generation;
- 	gpa_t gpa;
--- 
-1.8.3.1
-
+Thanks, applied for 3.19, see:
+https://git.kernel.org/cgit/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=for-next&id=2b94e8960cc3f225dec058f27570505351f4bc13
