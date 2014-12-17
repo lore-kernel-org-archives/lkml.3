@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaLQOgw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:36:52 -0500
-Received: from mail-yk0-f174.google.com ([209.85.160.174]:57257 "EHLO
-	mail-yk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbaLQOgt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751889AbaLQOgt (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Dec 2014 09:36:49 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:58704 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaLQOgr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 09:36:47 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Eddie Huang <eddie.huang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        srv_heupstream@mediatek.com, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Mark Brown <broonie@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Robert Richter <rrichter@cavium.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2 0/4] Add basic support for Mediatek MT8173 SoC
+Date: Wed, 17 Dec 2014 15:35:35 +0100
+Message-ID: <1808813.15ih7rDt4r@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com>
+References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
-In-Reply-To: <7h61dbdz5a.fsf@deeprootsystems.com>
-References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
-	<54901341.20106@samsung.com>
-	<7h61dbdz5a.fsf@deeprootsystems.com>
-Date: Wed, 17 Dec 2014 20:06:48 +0530
-X-Google-Sender-Auth: RP8Glwxuv_RNGS1UhPV-kTnmgdQ
-Message-ID: <CADGdYn4WQ6i29ecTthu7eNUfSSQ--YESGyHcA1_9CdK-h53hxA@mail.gmail.com>
-Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore
- to use restore types
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: Kevin Hilman <khilman@kernel.org>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Pankaj Dubey <pankaj.dubey@samsung.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:ATJhBGLF6zXxwJ9ZNdhS6vfWS3m9qU22Q8VoIfW8wHjbVGI3PQQ
+ SDSMwug5ZucgtVM+mcSisyHddGJJftJqeg2AzCUw9rXMddRBJnKCvAQw0VMgsYqekJ8kXGg
+ CBEIY3F3J4gvLRrBV5hLquu1kk0++BMB/zdqw/1QFy1s+ljwmCDFcmjz+VkQKSsfuhtrTUF
+ l//HKjqYDLu/7f72Mysaw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 3:40 AM, Kevin Hilman <khilman@kernel.org> wrote:
-> Marek Szyprowski <m.szyprowski@samsung.com> writes:
->
->> Hello,
->>
->> On 2014-12-13 17:51, Amit Daniel Kachhap wrote:
->>> Instead of using bool to restore suspended devices initially, use flags
->>> like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
->>> The first two flags will be similar to the existing true/false functionality.
->>> The third flag may be used to force restore of suspended devices
->>> whenever their associated power domain is turned on.
->>>
->>> Currently, PD power off function powers off all the associated unused
->>> devices. The functionality added in this patch is similar to it.
->>>
->>> This feature may be used for those devices which are always in ON state
->>> if the PD associated with them is ON but may need local runtime resume
->>> and suspend during PD On/Off. These devices (like clock) may not implement
->>> complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
->>> subsystems interaction behaviour or any other reason.
->>>
->>> The model works like,
->>>      DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
->>>      /       pm_runtime_put. Its local runtime_suspend/resume is invoked via
->>>     /        GPD_DEV_RESTORE_FORCE option)
->>>    /
->>> PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
->>>    \ pm_runtime_put. This in turn invokes PD On/Off)
->>>     \
->>>      DEV3 (Similar to DEV1)
->>>
->>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>
->> The idea of adding new gen_pd flag and reusing runtime pm calls intead
->> of additional notifiers looks promising, but I have some doubts.
->
-> I agree, this is better than notifiers, but I have some doubts too.
+On Wednesday 17 December 2014 22:17:29 Eddie Huang wrote:
+> MT8173 is a SoC based on 64bit ARMv8 architecture. It contains 2 CA53 + 2 CA57 cores. MT8173 share many HW IP with MT8135 and other MT65xx series. This patchset was tested on MT8173 engineer sample, and boot to shell ok.
+> 
+> This series contains document bindings, device tree, defconfig, and one sysirq modification for MT8173.
+> 
+> Changes in v2:
+> 
+> 1. Modify mt8173.dtsi and mt8173-evb.dts according to Mark Rutland's comment, change cpu-maps, psci, clock, GIC properties.
+> 2. Modify irq-mtk-sysirq.c according to Arnd Bergmann's comment to calculate irq number from reg range.
+> 
+> 
 
-Thanks,
+Looks good to me,
 
->
->> don't see any guarantee that devices with GPD_DEV_RESTORE_FORCE flag
->> will be suspended after all "normal" devices and restored before
->> them. Without such assumption it will be hard to use this approach for
->> iommu related activities, because device might need to use (in its
->> suspend/resume callbacks) the functionality provided by the other
->> device with GPD_DEV_RESTORE_FORCE flag. Maybe some additional flags
->> like suspend/resume priority (or more flags) will solve somehow this
->> dependency.
->
-> At a deeper level, the problem with this approach is that this is more
-> generically a runtime PM dependency problem, not a genpd problem.  For
-> example, what happens when the same kind of dependency exists on a
-> platform using a custom PM domain instead of genpd (like ACPI.) ?
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-This patch does not try to solve runtime PM dependencies between
-devices. As an example, if there are three devices D1, D2, D3 in a
-power domain. Device D3 would update the power domain state
-requirement using runtime PM API but devices D1 and D2 do not want to
-control the domain but just want to be notified when the power domain
-state changes.
+In the 3.19 merge window, we had a few problems with new arm64 platforms,
+as it wasn't entirely clear to us who is a maintainer and whether patches
+were sent for review or inclusion. I see no problem including your series
+in 3.20, but we probably need to figure out the best process for making
+sure we don't miss it.
 
->
-> What's needed to solve this problem is a generalized way to have runtime
-> PM dependencies between devices.  Runtime PM already automatically
-> handles parent devices as one type of dependent device (e.g. a parent
-> device needs to be runtime PM resumed before its child.)  So what's
-> needed is a generic way to other PM dependencies with the runtime PM
-> core (not the genpd core.)
+For now, I'd suggest we do this the same way as the arm32 patches, and
+you send them to Matthias for inclusion in his tree, who will then
+send a pull request for an arm64 branch.
 
-Considering the example above with three devices, device D1 and D2 are
-passive components in this power domain. These devices only need to
-know the state changes of the power domains but would not control the
-power domain themselves nor put forth constraints in the power domain
-state changes. So I did not clearly understand as to how this example
-could be solved by introducing changes in runtime PM core.
-
-Regards,
-Amit Daniel
-
->
-> If runtime PM handles the dependencies corretcly, then genpd (and any
-> other PM domain) will get them "for free".
->
-> Kevin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	Arnd
