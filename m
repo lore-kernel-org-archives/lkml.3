@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaLQMLK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 07:11:10 -0500
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:64025 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaLQMLI (ORCPT
+	id S1751974AbaLQMLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 07:11:36 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47469 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaLQMLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 07:11:08 -0500
+	Wed, 17 Dec 2014 07:11:34 -0500
+Message-ID: <549172F1.5050303@codeaurora.org>
+Date: Wed, 17 Dec 2014 17:41:29 +0530
+From: Chintan Pandya <cpandya@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <4785362.yhOOf0IjKV@avalon>
-References: <20141216094854.22639.69181.sendpatchset@w520>
-	<CAMuHMdWT+yytt1mRZPLvzyXACcw638Sf4DBjHUTf_+iPjsNzbA@mail.gmail.com>
-	<CAMuHMdXmzah7xZMb+y_0HHE5aeOr_efCv9GZhPutjWxb39WCCw@mail.gmail.com>
-	<4785362.yhOOf0IjKV@avalon>
-Date: Wed, 17 Dec 2014 13:11:05 +0100
-X-Google-Sender-Auth: lpF52BGwPiDRmGbmhvFtFDHz-e4
-Message-ID: <CAMuHMdXu0mcdUREuXuYhJATqZPrSvbhCX4iKqn3+VczUkkg_nw@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: mhocko@suse.cz, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: Provide knob for force OOM into the memcg
+References: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org> <20141216165922.GA30984@phnom.home.cmpxchg.org>
+In-Reply-To: <20141216165922.GA30984@phnom.home.cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
 
-On Wed, Dec 17, 2014 at 1:04 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Wednesday 17 December 2014 10:42:52 Geert Uytterhoeven wrote:
->> On Wed, Dec 17, 2014 at 9:30 AM, Geert Uytterhoeven wrote:
->> > On Wed, Dec 17, 2014 at 3:08 AM, Laurent Pinchart wrote:
->> >>>> Kzm9g-reference still hangs at "Calibrating local timer..." (it did
->> >>>> work at some point in the past).
->> >>
->> >> kzm9g-reference boots for me with kzm9g_defconfig on Simon's devel branch
->> >> with
->> >>
->> > OK.
->> >
->> > I had expected the breakage to be something in my tree, either an issue in
->> > a -next branch I'm using, an interaction with the CCF patches or so, or a
->> > config issue (e.g. CONFIG_CPU_IDLE became broken lately if the TWD is
->> > not in DT).
->>
->> Kzm9g-reference hangs at "Calibrating local timer..." because I added the
->> TWD to sh73a0.dtsi (http://www.spinics.net/lists/arm-kernel/msg383413.html).
->>
->> As twd_get_clock() does
->>
->>         if (np)
->>                 twd_clk = of_clk_get(np, 0);
->>         else
->>                 twd_clk = clk_get_sys("smp_twd", NULL);
->>
->> it's not DT-without-CCF proof, and kzm9g-reference cannot get its clock :-(
->>
->> So the TWD node should be in sh73a0-kzm9g-multiplatform.dts, and we need
->> more dts files instead of less...
->>
->> Note that I added the TWD node to DT to fix a hang on kzm9g-multiplatform
->> with CONFIG_CPU_IDLE=y (recently introduced "regression" in core code)
->> after:
->>
->>      DMA: preallocated 256 KiB pool for atomic coherent allocations
->>
->> On kzm9g-legacy the TWD is instantiated from C board code
->> (machine_desc.init_time = sh73a0_earlytimer_init), so CONFIG_CPU_IDLE=y
->> does not hang. Despite https://lkml.org/lkml/2014/12/2/339.
->>
->> On kzm9g-reference, the TWD is not instantiated, causing the same hang.
->> If I instantiate the TWD from C board code there, it fails with
->>
->>     twd: can't register interrupt 29 (-22)
->>
->> which looks like a symptom of https://lkml.org/lkml/2014/12/2/339
->>
->> So no cookies for users of several -legacy and -reference platforms in
->> v3.19-rc1 this Monday...
+> Why do you move tasks around during runtime?  Rather than scanning
+> thousands or millions of page table entries to relocate a task and its
+> private memory to another configuration domain, wouldn't it be easier to
+> just keep the task in a dedicated cgroup and reconfigure that instead?
+
+Your suggestion is good. But in specific cases, we may have no choice 
+but to migrate.
+
+Take a case of an Android system where a process/app will never gets 
+killed until there is really no scope of holding it any longer in RAM. 
+So, when that process was running as a foreground process, it has to 
+belong to a group which has no memory limit and cannot be killed. Now, 
+when the same process goes into background and sits idle, it can be 
+compressed and cached into some space in RAM. These cached processes are 
+ever growing list and can be capped with some limit. Naturally, these 
+processes belongs to different category and hence different cgroup which 
+just controls such cached processes.
+
 >
-> I'm not sure if fixing that would be worth it. Should we instead try to
-> replace kzm9g-legacy and kzm9g-reference by kzm9g-multiplatform in v3.20 ?
+> There doesn't seem to be a strong usecase for charge migration that
+> couldn't be solved by doing things slightly differently from userspace.
+> Certainly not something that justifies the complexity that it adds to
+> memcg model and it's synchronization requirements from VM hotpaths.
+> Hence, I'm inclined to not add charge moving to version 2 of memcg.
 
-v3.20 is reasonable. Except that some breakage will arrive in v3.19-rc1.
-So there will be a brokenness window for the kzm9g platform between
-v3.18 and v3.20.
+Do you say charge migration is discouraged at runtime ? Difficult to 
+live with this limitation.
 
-> What are we missing ?
->
-> - The DIV6 multiparent series has been merged by Mike, and the sh73a0 CCF is
-> nearly ready.
+-- 
+Chintan Pandya
 
-Yep.
-
-> - We need proper BSC support to get LAN working, although it could be worked
-> around temporarily by specifying the BSC clock in the LAN node if I recall
-> correctly.
-
-Working on that. I hope to send out v2 later today...
-
-> - Accelerometer and RTC have no DT bindings, but they should work with the I2C
-> core OF match support.
-
-I have RTC in my DTS, and it works.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
