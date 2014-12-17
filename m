@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751347AbaLQScO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:32:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:42679 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750900AbaLQScL (ORCPT
+	id S1751443AbaLQSdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:33:37 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:53040 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087AbaLQSdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:32:11 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Seungwon Jeon <tgih.jun@samsung.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] mmc: core: stop trying to switch width when only one bit is supported
-Date: Wed, 17 Dec 2014 19:32:06 +0100
-Message-Id: <1418841126-13695-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Wed, 17 Dec 2014 13:33:35 -0500
+From: Tsung-Han Lin <tsunghan.tw@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, horms+renesas@verge.net.au,
+        damm+renesas@opensource.se, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: [PATCH v2] staging:board: remove unnecessary function
+Date: Thu, 18 Dec 2014 02:33:24 +0800
+Message-Id: <1418841204-25271-1-git-send-email-tsunghan.tw@gmail.com>
 X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mmc_select_bus_width() will try to switch to MMC_BUS_WIDTH_4 even if
-MMC_CAP_4_BIT_DATA and MMC_CAP_8_BIT_DATA are not set in host->caps.
-Return as soon as possible when those flags are not set
+Remove the unnecessary 'of_can_translate_address',
+which is already removed in commit
+d9c6866be8a145e32da616d8dcbae806032d75b5 ("of: kill off
+of_can_translate_address").
 
-Fixes: 577fb13199b11d8cd75609183649be4b5561243f (mmc: rework
-selection of bus speed mode)
-
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: <stable@vger.kernel.org> # 3.17
+Signed-off-by: Tsung-Han Lin <tsunghan.tw@gmail.com>
 ---
- drivers/mmc/core/mmc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/board/board.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
-index 02ad79229f65..7466ce098e60 100644
---- a/drivers/mmc/core/mmc.c
-+++ b/drivers/mmc/core/mmc.c
-@@ -886,7 +886,7 @@ static int mmc_select_bus_width(struct mmc_card *card)
- 	unsigned idx, bus_width = 0;
- 	int err = 0;
+diff --git a/drivers/staging/board/board.c b/drivers/staging/board/board.c
+index 6050fbdfd31f..d5a6abc84519 100644
+--- a/drivers/staging/board/board.c
++++ b/drivers/staging/board/board.c
+@@ -11,8 +11,7 @@ static bool find_by_address(u64 base_address)
+ 	struct resource res;
  
--	if (!mmc_can_ext_csd(card) &&
-+	if (!mmc_can_ext_csd(card) ||
- 	    !(host->caps & (MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA)))
- 		return 0;
- 
+ 	while (dn) {
+-		if (of_can_translate_address(dn)
+-		    && !of_address_to_resource(dn, 0, &res)) {
++		if (!of_address_to_resource(dn, 0, &res)) {
+ 			if (res.start == base_address) {
+ 				of_node_put(dn);
+ 				return true;
 -- 
 2.1.0
 
