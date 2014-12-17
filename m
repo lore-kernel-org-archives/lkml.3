@@ -1,135 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751222AbaLQBVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 20:21:41 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:39311 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaLQBVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 20:21:39 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Florian Fainelli <f.fainelli@gmail.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
- NAND_Tree which improperly strapp-in during the reset period.
-Thread-Topic: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
- NAND_Tree which improperly strapp-in during the reset period.
-Thread-Index: AQHQFRUhpU6q9WzJvkuSsZb2JCGmhpyRg5yAgACT+QCAAOoQAA==
-Date: Wed, 17 Dec 2014 01:21:33 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFCB5D4C@penmbx01>
-References: <1418283069-5648-1-git-send-email-wenyou.yang@atmel.com>
- <54900779.9030509@atmel.com> <5490839A.304@gmail.com>
-In-Reply-To: <5490839A.304@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1751384AbaLQBVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 20:21:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38265 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751075AbaLQBVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 20:21:52 -0500
+Message-ID: <1418779308.3025.1.camel@localhost>
+Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid
+ context at mm/slab.c:2849
+From: Eric Paris <eparis@redhat.com>
+To: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>, rgb@redhat.com
+Cc: Paul Moore <paul@paul-moore.com>, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, linux-audit@redhat.com
+Date: Tue, 16 Dec 2014 20:21:48 -0500
+In-Reply-To: <2966.1418778594@turing-police.cc.vt.edu>
+References: <2966.1418778594@turing-police.cc.vt.edu>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBH1LnPa008688
 
-> -----Original Message-----
-> From: Florian Fainelli [mailto:f.fainelli@gmail.com]
-> Sent: Wednesday, December 17, 2014 3:10 AM
-> To: Ferre, Nicolas; Yang, Wenyou
-> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] ARM: at91: board-dt-sama5: add phy_fixup to override
-> NAND_Tree which improperly strapp-in during the reset period.
-> 
-> On 16/12/14 02:20, Nicolas Ferre wrote:
-> > Le 11/12/2014 08:31, Wenyou Yang a Ã©crit :
-> >> Appearance: On some SAMA5D4EK boards, after power up, the Eth1 doesn't
-> work.
-> >>
-> >> Reason: The PIOE2 pin is connected to the NAND_Tree# of KSZ8081, But
-> >> it outputs LOW during the reset period, which cause the NAND_Tree# enabled.
-> >>
-> >> Add phy_fixup() to disable NAND_Tree by overriding the Operation Mode
-> >> Strap Override register(i.e. Register 16h) to clear the NAND_Tree bit.
-> >>
-> >> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> >
-> > It seems correct to me.
-> 
-> Just one minor nit, see below
-> 
-> >
-> > Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> >
-> > Anyway, I add Florian in the loop as he is the one who proposed this
-> > solution. So it would have been good to have his feeling about the
-> > implementation...
-> >
-> > Bye,
-> >
-> >> ---
-> >>  arch/arm/mach-at91/board-dt-sama5.c |   18 ++++++++++++++++++
-> >>  1 file changed, 18 insertions(+)
-> >>
-> >> diff --git a/arch/arm/mach-at91/board-dt-sama5.c
-> >> b/arch/arm/mach-at91/board-dt-sama5.c
-> >> index 8fb9ef5..97f7367 100644
-> >> --- a/arch/arm/mach-at91/board-dt-sama5.c
-> >> +++ b/arch/arm/mach-at91/board-dt-sama5.c
-> >> @@ -17,6 +17,7 @@
-> >>  #include <linux/of_platform.h>
-> >>  #include <linux/phy.h>
-> >>  #include <linux/clk-provider.h>
-> >> +#include <linux/phy.h>
-> >>
-> >>  #include <asm/setup.h>
-> >>  #include <asm/irq.h>
-> >> @@ -26,8 +27,25 @@
-> >>
-> >>  #include "generic.h"
-> >>
-> >> +static int ksz8081_phy_fixup(struct phy_device *phy) {
-> >> +	int value;
-> >> +
-> >> +	value = phy_read(phy, 0x16);
-> >> +	value &= ~0x20;
-> >> +	phy_write(phy, 0x16, value);
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >>  static void __init sama5_dt_device_init(void)  {
-> >> +	if (of_machine_is_compatible("atmel,sama5d4ek") &&
-> >> +	   IS_ENABLED(CONFIG_PHYLIB)) {
-> >> +		phy_register_fixup_for_id("fc028000.etherne:00",
-> >> +						ksz8081_phy_fixup);
-> 
-> Matching the bus id certainly works, but I would rather match on your specific PHY
-> device 32-bits OUI to make sure that if you ever change the PHY on a different
-> design, this is not inadvertently writing to a register that is not micrel specific?
-I don't think so.
-Under the board compatible limitation, matching the bus id is enough for this case reason described above.
+I haven't looked into it, but I'd place my first bet on the audit
+multicast code...
 
-Moreover the PHY OUI is default value on the sama5d4ek.
-MII_PHYSID1.15:0:  0x0022
-MII_PHYSID2.15:10: 000101b
+Richard?
 
+On Tue, 2014-12-16 at 20:09 -0500, Valdis Kletnieks wrote:
+> Not sure who's to blame here, but I'm tending towards selinux based on
+> who was holding the locks...
 > 
-> >> +	}
-> >> +
-> >>  	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> >> }
-> >>
-> >>
-> >
-> >
+> Spotted these two while booting single-user on 20141216.  20141208
+> doesn't throw these, so it's something in the last week or so..
+> 
+> Tossed it twice - once for /sbin/sulogin, and then a second time for /bin/bash.
+> 
+> [   34.061285] BUG: sleeping function called from invalid context at mm/slab.c:2849
+> [   34.062863] in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: sulogin
+> [   34.064416] 2 locks held by sulogin/885:
+> [   34.064418]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>] prepare_bprm_creds+0x28/0x8b
+> [   34.064428]  #1:  (tty_files_lock){+.+.+.}, at: [<ffffffff9123e787>] selinux_bprm_committing_creds+0x55/0x22b
+> [   34.064438] CPU: 1 PID: 885 Comm: sulogin Not tainted 3.18.0-next-20141216 #30
+> [   34.064440] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014
+> [   34.064442]  ffff880223744f10 ffff88022410f9b8 ffffffff916ba529 0000000000000375
+> [   34.064447]  ffff880223744f10 ffff88022410f9e8 ffffffff91063185 0000000000000006
+> [   34.064452]  0000000000000000 0000000000000000 0000000000000000 ffff88022410fa38
+> [   34.064457] Call Trace:
+> [   34.064463]  [<ffffffff916ba529>] dump_stack+0x50/0xa8
+> [   34.064467]  [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+> [   34.064472]  [<ffffffff910632a6>] __might_sleep+0x119/0x128
+> [   34.064477]  [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+> [   34.064480]  [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+> [   34.064484]  [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+> [   34.064488]  [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+> [   34.064492]  [<ffffffff910c263e>] audit_log_end+0x83/0x100
+> [   34.064496]  [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+> [   34.064500]  [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+> [   34.064503]  [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+> [   34.064506]  [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+> [   34.064510]  [<ffffffff9123dc2d>] inode_has_perm+0x5a/0x65
+> [   34.064514]  [<ffffffff9123e7ca>] selinux_bprm_committing_creds+0x98/0x22b
+> [   34.064519]  [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+> [   34.064522]  [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+> [   34.064527]  [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+> [   34.064542]  [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+> [   34.064545]  [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+> [   34.064548]  [<ffffffff91153669>] do_execve+0x1f/0x21
+> [   34.064552]  [<ffffffff91153967>] SyS_execve+0x25/0x29
+> [   34.064557]  [<ffffffff916c61a9>] stub_execve+0x69/0xa0
+> 
+> [   48.826654] BUG: sleeping function called from invalid context at mm/slab.c:2849
+> [   48.829282] in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: bash
+> [   48.829284] 2 locks held by bash/885:
+> [   48.829297]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>] prepare_bprm_creds+0x28/0x8b
+> [   48.829307]  #1:  (&(&newf->file_lock)->rlock){+.+.+.}, at: [<ffffffff91166b8b>] iterate_fd+0x34/0x11c
+> [   48.829310] CPU: 3 PID: 885 Comm: bash Not tainted 3.18.0-next-20141216 #30
+> [   48.829311] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014
+> [   48.829317]  ffff880223744f10 ffff88022410f928 ffffffff916ba529 0000000000000375
+> [   48.829321]  ffff880223744f10 ffff88022410f958 ffffffff91063185 0000000000000002
+> [   48.829325]  0000000000000000 0000000000000000 0000000000000000 ffff88022410f9a8
+> [   48.829327] Call Trace:
+> [   48.829333]  [<ffffffff916ba529>] dump_stack+0x50/0xa8
+> [   48.829338]  [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+> [   48.829341]  [<ffffffff910632a6>] __might_sleep+0x119/0x128
+> [   48.829347]  [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+> [   48.829350]  [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+> [   48.829356]  [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+> [   48.829360]  [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+> [   48.829367]  [<ffffffff910c263e>] audit_log_end+0x83/0x100
+> [   48.829372]  [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+> [   48.829377]  [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+> [   48.829381]  [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+> [   48.829386]  [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+> [   48.829391]  [<ffffffff9123e255>] ? selinux_file_permission+0x9b/0x9b
+> [   48.829395]  [<ffffffff9123e0b9>] file_has_perm+0x6d/0x7c
+> [   48.829400]  [<ffffffff9123e283>] match_file+0x2e/0x3b
+> [   48.829404]  [<ffffffff91166c4b>] iterate_fd+0xf4/0x11c
+> [   48.829409]  [<ffffffff9123e802>] selinux_bprm_committing_creds+0xd0/0x22b
+> [   48.829415]  [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+> [   48.829419]  [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+> [   48.829426]  [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+> [   48.829431]  [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+> [   48.829435]  [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+> [   48.829462]  [<ffffffff91153669>] do_execve+0x1f/0x21
+> [   48.829466]  [<ffffffff91153967>] SyS_execve+0x25/0x29
+> [   48.829472]  [<ffffffff916c61a9>] stub_execve+0x69/0xa0
+> 
 
-Best Regards,
-Wenyou Yang
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
