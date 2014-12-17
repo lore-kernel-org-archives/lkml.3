@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaLQKz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:55:28 -0500
-Received: from canardo.mork.no ([148.122.252.1]:40406 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaLQKzT convert rfc822-to-8bit (ORCPT
+	id S1751382AbaLQK61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:58:27 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:57406 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaLQK6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:55:19 -0500
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Joe Perches <joe@perches.com>
-Cc: Josh Triplett <josh@joshtriplett.org>, LKML <linux-kernel@vger.kernel.org>,
-        kernelnewbies <kernelnewbies@kernelnewbies.org>
-Subject: Re: newbies CheckpatchTips for multiline statements (Breaking function calls)
-Organization: m
-References: <1418763529.14140.9.camel@perches.com>
-Date: Wed, 17 Dec 2014 09:58:00 +0100
-In-Reply-To: <1418763529.14140.9.camel@perches.com> (Joe Perches's message of
-	"Tue, 16 Dec 2014 12:58:49 -0800")
-Message-ID: <87ppbi3b6v.fsf@nemi.mork.no>
-User-Agent: Gnus/5.130011 (Ma Gnus v0.11) Emacs/24.4 (gnu/linux)
+	Wed, 17 Dec 2014 05:58:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stefan Agner <stefan@agner.ch>
+Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
+        kernel@pengutronix.de, linux@arm.linux.org.uk,
+        u.kleine-koenig@pengutronix.de, jason@lakedaemon.net, olof@lixom.net,
+        daniel.lezcano@linaro.org, tglx@linutronix.de, mark.rutland@arm.com,
+        pawel.moll@arm.com, robh+dt@kernel.org, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/12] ARM: dts: add support for Vybrid running on Cortex-M4
+Date: Wed, 17 Dec 2014 11:57:06 +0100
+Message-ID: <2673866.7fjSqeaHyh@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <b090cb361e81d2f1be5d21d1a07e9340@agner.ch>
+References: <1417565531-4507-1-git-send-email-stefan@agner.ch> <2994970.DCfUQgtmcD@wuerfel> <b090cb361e81d2f1be5d21d1a07e9340@agner.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.9 (canardo.mork.no [IPv6:2001:4641::1]); Wed, 17 Dec 2014 11:52:59 +0100 (CET)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:F+hHyreeK94YnEnvN0Nn0gfiqXxQo43Ve8NpFHt5GWr3/fbp0bY
+ Vox9/oKtFOi7k+/5ln1UH2mbGMQPlnyfzh6OW/TkqUNfMXReIX4FyMtEzQoCyy4ZraB+UPO
+ Rm+FSiVRpQOZxoeVLvO6KzZ26QgFb6cq1BAwsKEJU3vdxiBlO+PqTHsjED/z7+bEfND9fWu
+ KRWAZc2V1GFZviEqzJx+w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches <joe@perches.com> writes:
+On Tuesday 16 December 2014 23:19:08 Stefan Agner wrote:
+> On 2014-12-03 12:03, Arnd Bergmann wrote:
+> > On Wednesday 03 December 2014 01:12:10 Stefan Agner wrote:
 
-> This style is fine, and generally perferred. However, some driver
-> writers prefer to have the trailing line of a function call line up with
-> the starting '('. They use tabs, followed by spaces, to align the
-> trailing line: 
->
->  
->         pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
->                                             GFP_KERNEL,
->                                             &pdata->urb->transfer_dma);
+> Just started looking in that a bit deeper and some question arose:
+> Afaik, earlycon need to be supported by the uart driver. The fsl_lpuart,
+> which is used for Vybrid's uart, does not support earlycon yet. However,
+> earlyprink already works (see ./arch/arm/include/debug/vf.S). I
+> understand that earlycon has the advantage of being able to be used on
+> multiplatform. But earlyprintk is working really early (e.g. before
+> locating the FDT), and it proved helpful for me when I started working
+> on that Cortex-M4 stuff. Should earlycon replace earlyprintk completely?
 
-It might be worth noting that the network subsystem maintainer prefers
-this style as well.  So most networking patches should probably use it.
-The exception would be files which already use the other style.
+earlyprintk will stay around for debugging early boot problems, but
+with working earlycon support, there should no longer be a reason to
+enable it by default.
 
-You should also be aware of the implications of this style: You have to
-modify all three lines if you change anything on the first line causing
-the position of the starting '(' to change.  I.e., a patch like this is
-not acceptable:
+> Maybe, on Vybrid, since it would be a good platform for automated !MMU
+> testing, it would be nice to have earlycon which can be enabled in any
+> case and would provide output even something blows up quite early... But
+> I guess I would add earlycon support as part of a new patchset and just
+> drop earlyprintk here for now.
 
-         -pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-         +p->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-                                              GFP_KERNEL,
-                                              &pdata->urb->transfer_dma);
+Yes, I think that would be good.
 
+> > 64 hash table entries sounds extremely small, doesn't that impact
+> > performance? If you have 50MB of actual RAM available, I don't think
+> > you need that.
+> 
+> Agreed. I copied that from EFM32 which is under much more memory
+> pressure...
 
-It needs to be
-
-         -pdata->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-         -                                    GFP_KERNEL,
-         -                                    &pdata->urb->transfer_dma);
-         +p->urbdata = usb_alloc_coherent(pdata->udev, ACD_URB_BUFFER_LEN,
-         +                                GFP_KERNEL,
-         +                                &pdata->urb->transfer_dma);
-
-
-Bjørn
+Ok.
+	
+	Arnd
