@@ -1,125 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533AbaLQDQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 22:16:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108AbaLQDQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 22:16:01 -0500
-Date: Wed, 17 Dec 2014 03:23:23 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH 3/5] tun: drop broken IFF_VNET_LE
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        netdev@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Tom Herbert <therbert@google.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Xi Wang <xii@google.com>, Masatake YAMATO <yamato@redhat.com>
-Message-Id: <1418786123.6058.1@smtp.corp.redhat.com>
-In-Reply-To: <1418732988-3535-4-git-send-email-mst@redhat.com>
-References: <1418732988-3535-1-git-send-email-mst@redhat.com>
-	<1418732988-3535-4-git-send-email-mst@redhat.com>
+	id S1751608AbaLQDRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 22:17:05 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:57993 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLQDRE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 22:17:04 -0500
+X-Original-SENDERIP: 165.186.175.61
+X-Original-MAILFROM: hyogi.gim@lge.com
+Date: Wed, 17 Dec 2014 12:15:24 +0900
+From: Hyogi Gim <hyogi.gim@lge.com>
+To: a.zummo@towertech.it, akpm@linux-foundation.org
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/rtc/interface.c: check the error after
+ __rtc_read_time()
+Message-ID: <20141217031524.GA22361@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add the verification code for returned __rtc_read_time() error in
+rtc_update_irq_enable() and rtc_timer_do_work().
+
+Signed-off-by: Hyogi Gim <hyogi.gim@lge.com>
+---
+ drivers/rtc/interface.c | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 45bfc28ee..fa1f119 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -489,7 +489,10 @@ int rtc_update_irq_enable(struct rtc_device *rtc, unsigned int enabled)
+ 		struct rtc_time tm;
+ 		ktime_t now, onesec;
+ 
+-		__rtc_read_time(rtc, &tm);
++		err = __rtc_read_time(rtc, &tm);
++		if (err < 0)
++			goto out;
++
+ 		onesec = ktime_set(1, 0);
+ 		now = rtc_tm_to_ktime(tm);
+ 		rtc->uie_rtctimer.node.expires = ktime_add(now, onesec);
+@@ -867,13 +870,17 @@ void rtc_timer_do_work(struct work_struct *work)
+ 	struct timerqueue_node *next;
+ 	ktime_t now;
+ 	struct rtc_time tm;
++	int err = 0;
+ 
+ 	struct rtc_device *rtc =
+ 		container_of(work, struct rtc_device, irqwork);
+ 
+ 	mutex_lock(&rtc->ops_lock);
+ again:
+-	__rtc_read_time(rtc, &tm);
++	err = __rtc_read_time(rtc, &tm);
++	if (err < 0)
++		goto out;
++
+ 	now = rtc_tm_to_ktime(tm);
+ 	while ((next = timerqueue_getnext(&rtc->timerqueue))) {
+ 		if (next->expires.tv64 > now.tv64)
+@@ -898,7 +905,6 @@ again:
+ 	/* Set next alarm */
+ 	if (next) {
+ 		struct rtc_wkalrm alarm;
+-		int err;
+ 		int retry = 3;
+ 
+ 		alarm.time = rtc_ktime_to_tm(next->expires);
+@@ -920,6 +926,7 @@ reprogram:
+ 	} else
+ 		rtc_alarm_disable(rtc);
+ 
++out:
+ 	pm_relax(rtc->dev.parent);
+ 	mutex_unlock(&rtc->ops_lock);
+ }
+-- 
+1.8.3.2
 
 
-On Tue, Dec 16, 2014 at 9:05 PM, Michael S. Tsirkin <mst@redhat.com> 
-wrote:
-> Use TUNSETVNETLE/TUNGETVNETLE instead.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  drivers/net/tun.c | 26 +++++++++++++++++++++++---
->  1 file changed, 23 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index c052bd6b..e3e8a0e 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -109,9 +109,11 @@ do {								\
->   * overload it to mean fasync when stored there.
->   */
->  #define TUN_FASYNC	IFF_ATTACH_QUEUE
-> +/* High bits in flags field are unused. */
-> +#define TUN_VNET_LE     0x80000000
->  
->  #define TUN_FEATURES (IFF_NO_PI | IFF_ONE_QUEUE | IFF_VNET_HDR | \
-> -		      IFF_VNET_LE | IFF_MULTI_QUEUE)
-> +		      IFF_MULTI_QUEUE)
->  #define GOODCOPY_LEN 128
->  
->  #define FLT_EXACT_COUNT 8
-> @@ -207,12 +209,12 @@ struct tun_struct {
->  
->  static inline u16 tun16_to_cpu(struct tun_struct *tun, __virtio16 
-> val)
->  {
-> -	return __virtio16_to_cpu(tun->flags & IFF_VNET_LE, val);
-> +	return __virtio16_to_cpu(tun->flags & TUN_VNET_LE, val);
->  }
->  
->  static inline __virtio16 cpu_to_tun16(struct tun_struct *tun, u16 
-> val)
->  {
-> -	return __cpu_to_virtio16(tun->flags & IFF_VNET_LE, val);
-> +	return __cpu_to_virtio16(tun->flags & TUN_VNET_LE, val);
->  }
->  
->  static inline u32 tun_hashfn(u32 rxhash)
-> @@ -1853,6 +1855,7 @@ static long __tun_chr_ioctl(struct file *file, 
-> unsigned int cmd,
->  	int sndbuf;
->  	int vnet_hdr_sz;
->  	unsigned int ifindex;
-> +	int le;
->  	int ret;
->  
->  	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE || _IOC_TYPE(cmd) == 
-> 0x89) {
-> @@ -2052,6 +2055,23 @@ static long __tun_chr_ioctl(struct file *file, 
-> unsigned int cmd,
->  		tun->vnet_hdr_sz = vnet_hdr_sz;
->  		break;
->  
-> +	case TUNGETVNETLE:
-> +		le = !!(tun->flags & TUN_VNET_LE);
-> +		if (put_user(le, (int __user *)argp))
-> +			ret = -EFAULT;
-> +		break;
-> +
-> +	case TUNSETVNETLE:
-> +		if (get_user(le, (int __user *)argp)) {
-> +			ret = -EFAULT;
-> +			break;
-> +		}
-> +		if (le)
-> +			tun->flags |= TUN_VNET_LE;
-> +		else
-> +			tun->flags &= ~TUN_VNET_LE;
-> +		break;
-> +
-
-A little bit different from persistent devices:
-
-- TUNSETPERSIST check argp instead
-- Userspace may check persist flags through TUNGETIFF
-
-Probably this patch may needs more modifications on userspace.
-> 
->  	case TUNATTACHFILTER:
->  		/* Can be set only for TAPs */
->  		ret = -EINVAL;
-> -- 
-> MST
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Hyogi
 
