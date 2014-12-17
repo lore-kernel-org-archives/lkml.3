@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaLQRd7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 12:33:59 -0500
-Received: from smtprelay0002.hostedemail.com ([216.40.44.2]:38984 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751108AbaLQRd6 (ORCPT
+	id S1751463AbaLQReu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 12:34:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38708 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108AbaLQRet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 12:33:58 -0500
-X-Greylist: delayed 447 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Dec 2014 12:33:57 EST
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,realty@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4321:5007:6261:6691:7903:8700:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12517:12519:12740:13019:13069:13255:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: burst02_1b7096b987645
-X-Filterd-Recvd-Size: 2276
-Message-ID: <1418837187.14140.22.camel@perches.com>
-Subject: Re: [PATCH] checkpatch: enable MAINTAINERS warning only for
- --strict,--subjective
-From: Joe Perches <realty@perches.com>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Brian Norris <computersforpeace@gmail.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 17 Dec 2014 09:26:27 -0800
-In-Reply-To: <CAJiQ=7AxGdByudruUQtHMq-SNfmumPXP7EDzo-o2QyXWrMxv6A@mail.gmail.com>
-References: <1418801732-19141-1-git-send-email-computersforpeace@gmail.com>
-	 <1418808435.14140.16.camel@perches.com>
-	 <CAJiQ=7AxGdByudruUQtHMq-SNfmumPXP7EDzo-o2QyXWrMxv6A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Dec 2014 12:34:49 -0500
+Date: Wed, 17 Dec 2014 09:34:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: phy: Restore deferred probing path
+Message-ID: <20141217173448.GB24913@kroah.com>
+References: <1417694767-18848-1-git-send-email-thierry.reding@gmail.com>
+ <20141217082958.GC3303@ulmo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141217082958.GC3303@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-17 at 07:53 -0800, Kevin Cernekee wrote:
-> On Wed, Dec 17, 2014 at 1:27 AM, Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2014-12-16 at 23:35 -0800, Brian Norris wrote:
-> >> The rule which delivers this warning is very prone to errors:
-> >>   "added, moved or deleted file(s), does MAINTAINERS need updating?"
-> >> so it should not be enabled by default.
-> >
-> > I don't think so.
-> >
-> > It's _far_ more common for people to forget to
-> > update MAINTAINERS so I think it's quite useful
-> > even if it's slightly noisy.
+On Wed, Dec 17, 2014 at 09:30:03AM +0100, Thierry Reding wrote:
+> On Thu, Dec 04, 2014 at 01:06:07PM +0100, Thierry Reding wrote:
+> > From: Thierry Reding <treding@nvidia.com>
+> > 
+> > Commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error on
+> > failure") broke platforms that rely on deferred probing to order probing
+> > of PHY and host controller drivers. The reason is that the commit simply
+> > propagates errors from __of_usb_find_phy(), which returns -ENODEV if no
+> > PHY has been registered yet for a given device tree node. The only case
+> > in which -EPROBE_DEFER would now be returned is if try_module_get() did
+> > fail, which does not make sense.
+> > 
+> > The correct thing to do is to return -EPROBE_DEFER if a PHY hasn't been
+> > registered yet. The only condition under which it makes sense to return
+> > -ENODEV is if the device tree node representing the PHY has been
+> > disabled (via the status property) because in that case the PHY will
+> > never be registered.
+> > 
+> > This patch addresses the problem by making __of_usb_find_phy() return an
+> > appropriate error code while keeping in line with the above-mentioned
+> > commit to propagate error codes rather than overwriting them. At the
+> > same time the check for a valid PHY is decoupled from the check for the
+> > try_module_get() call and a separate error code is returned if the
+> > latter fails.
+> > 
+> > Signed-off-by: Thierry Reding <treding@nvidia.com>
+> > ---
+> >  drivers/usb/phy/phy.c | 14 ++++++++++----
+> >  1 file changed, 10 insertions(+), 4 deletions(-)
 > 
-> In a recent submission I saw a bunch of these warnings too, even
-> though I had already added MAINTAINERS entries.
-> 
-> If this is just a friendly reminder ("hey, please double-check X
-> before you send") rather than an indication that a suspected problem
-> was detected in the patch, perhaps it would be better if it lived in
-> Documentation/SubmitChecklist?
+> Ping?
 
-An entry might help.
+It's the middle of the merge window, we can't do anything until 3.19-rc1
+is out at the earliest.
 
-Submit a patch to SubmitChecklist and see if the
-overall MAINTAINERS patterns error rate changes
-over a few release cycles.
+And then my vacation kicks in, so it will be a week or so more after
+that :)
 
-Another thing that might help you not see these
-by creating a .checkpatch.conf file and adding:
-"--ignore=FILE_PATH_CHANGES"
-
-
-
+greg k-h
