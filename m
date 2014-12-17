@@ -1,385 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281AbaLQU3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 15:29:17 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:46622 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995AbaLQU3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 15:29:16 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] tools lib traceevent: Add support for IP address formats
-Date: Wed, 17 Dec 2014 13:29:08 -0700
-Message-Id: <1418848148-35919-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.9.3 (Apple Git-50)
+	id S1751409AbaLQUc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 15:32:28 -0500
+Received: from void.printf.net ([192.34.86.38]:34369 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaLQUc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 15:32:27 -0500
+X-Greylist: delayed 2559 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Dec 2014 15:32:27 EST
+From: Chris Ball <chris@printf.net>
+To: Scott Branden <sbranden@broadcom.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, <linux-mmc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Ray Jui <rjui@broadcom.com>,
+        <bcm-kernel-feedback-list@broadcom.com>
+Subject: Re: [PATCH v2] mmc: sdhci: add quirk for ACMD23 broken
+References: <sbranden@broadcom.com>
+	<1417738572-10441-1-git-send-email-sbranden@broadcom.com>
+Date: Wed, 17 Dec 2014 19:48:59 +0000
+In-Reply-To: <1417738572-10441-1-git-send-email-sbranden@broadcom.com> (Scott
+	Branden's message of "Thu, 4 Dec 2014 16:16:12 -0800")
+Message-ID: <86oar2qcpg.fsf@void.printf.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds helper for following kernel formats:
-  %pi4 print an IPv4 address with leading zeros
-  %pI4 print an IPv4 address without leading zeros
-  %pi6 print an IPv6 address without colons
-  %pI6 print an IPv6 address with colons
-  %pI6c print an IPv6 address with colons
-  %pISpc print an IP address from a sockaddr
+Hi Scott, sorry for the delay,
 
-Allows these formats to be used in tracepoints.
+On Fri, Dec 05 2014, Scott Branden wrote:
+> Add quirk to handle broken auto-CMD23.
+> Some controllers do not respond after the first auto-CMD23 is issued.
+>
+> This allows CMD23 to still work (mandatory for the faster UHS-I mode)
+> rather than disabling CMD23 entirely via SDHCI_QUIRK2_HOST_NO_CMD23.
+>
+> Signed-off by: Corneliu Doban <cdoban@broadcom.com>
+> Signed-off-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  drivers/mmc/host/sdhci.c  | 3 ++-
+>  include/linux/mmc/sdhci.h | 2 ++
+>  2 files changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index ada1a3e..b37331f 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2985,7 +2985,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>  	/* Auto-CMD23 stuff only works in ADMA or PIO. */
+>  	if ((host->version >= SDHCI_SPEC_300) &&
+>  	    ((host->flags & SDHCI_USE_ADMA) ||
+> -	     !(host->flags & SDHCI_USE_SDMA))) {
+> +	     !(host->flags & SDHCI_USE_SDMA)) &&
+> +	     !(host->quirks2 & SDHCI_QUIRK2_ACMD23_BROKEN)) {
+>  		host->flags |= SDHCI_AUTO_CMD23;
+>  		DBG("%s: Auto-CMD23 available\n", mmc_hostname(mmc));
+>  	} else {
+> diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
+> index dba793e..d979cf9 100644
+> --- a/include/linux/mmc/sdhci.h
+> +++ b/include/linux/mmc/sdhci.h
+> @@ -100,6 +100,8 @@ struct sdhci_host {
+>  #define SDHCI_QUIRK2_BROKEN_DDR50			(1<<7)
+>  /* Stop command (CMD12) can set Transfer Complete when not using MMC_RSP_BUSY */
+>  #define SDHCI_QUIRK2_STOP_WITH_TC			(1<<8)
+> +/* Controller broken with using ACMD23 */
+> +#define SDHCI_QUIRK2_ACMD23_BROKEN			(1<<9)
+>  
+>  	int irq;		/* Device IRQ */
+>  	void __iomem *ioaddr;	/* Mapped address */
 
-Quite a bit of this is adapted from code in lib/vsprintf.c.
+This patch doesn't apply the quirk to any chipsets, so the patch
+doesn't actually change any behavior when run on a mainline kernel.
+Do you have a patch to apply the quirk to your chipset too?  We don't
+typically accept patches that "don't do anything" for mainline users,
+so that's why we'd like to see the chipset patch too.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/event-parse.c | 316 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 316 insertions(+)
+Thanks,
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cf3a44bf1ec3..85ab72c650d3 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -32,6 +32,7 @@
- #include <stdint.h>
- #include <limits.h>
- 
-+#include <netinet/ip6.h>
- #include "event-parse.h"
- #include "event-utils.h"
- 
-@@ -4149,6 +4150,312 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
- 	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
- }
- 
-+static void print_ip4_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	const char *fmt;
-+
-+	if (i == 'i')
-+		fmt = "%03d.%03d.%03d.%03d";
-+	else
-+		fmt = "%d.%d.%d.%d";
-+
-+	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3]);
-+}
-+
-+static inline bool ipv6_addr_v4mapped(const struct in6_addr *a)
-+{
-+	return ((unsigned long)(a->s6_addr32[0] | a->s6_addr32[1]) |
-+		(unsigned long)(a->s6_addr32[2] ^ htonl(0x0000ffff))) == 0UL;
-+}
-+
-+static inline bool ipv6_addr_is_isatap(const struct in6_addr *addr)
-+{
-+	return (addr->s6_addr32[2] | htonl(0x02000000)) == htonl(0x02005EFE);
-+}
-+
-+static void print_ip6c_addr(struct trace_seq *s, unsigned char *addr)
-+{
-+	int i, j, range;
-+	unsigned char zerolength[8];
-+	int longest = 1;
-+	int colonpos = -1;
-+	uint16_t word;
-+	uint8_t hi, lo;
-+	bool needcolon = false;
-+	bool useIPv4;
-+	struct in6_addr in6;
-+
-+	memcpy(&in6, addr, sizeof(struct in6_addr));
-+
-+	useIPv4 = ipv6_addr_v4mapped(&in6) || ipv6_addr_is_isatap(&in6);
-+
-+	memset(zerolength, 0, sizeof(zerolength));
-+
-+	if (useIPv4)
-+		range = 6;
-+	else
-+		range = 8;
-+
-+	/* find position of longest 0 run */
-+	for (i = 0; i < range; i++) {
-+		for (j = i; j < range; j++) {
-+			if (in6.s6_addr16[j] != 0)
-+				break;
-+			zerolength[i]++;
-+		}
-+	}
-+	for (i = 0; i < range; i++) {
-+		if (zerolength[i] > longest) {
-+			longest = zerolength[i];
-+			colonpos = i;
-+		}
-+	}
-+	if (longest == 1)		/* don't compress a single 0 */
-+		colonpos = -1;
-+
-+	/* emit address */
-+	for (i = 0; i < range; i++) {
-+		if (i == colonpos) {
-+			if (needcolon || i == 0)
-+				trace_seq_printf(s, ":");
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+			i += longest - 1;
-+			continue;
-+		}
-+		if (needcolon) {
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+		}
-+		/* hex u16 without leading 0s */
-+		word = ntohs(in6.s6_addr16[i]);
-+		hi = word >> 8;
-+		lo = word & 0xff;
-+		if (hi)
-+			trace_seq_printf(s, "%x%02x", hi, lo);
-+		else
-+			trace_seq_printf(s, "%x", lo);
-+
-+		needcolon = true;
-+	}
-+
-+	if (useIPv4) {
-+		if (needcolon)
-+			trace_seq_printf(s, ":");
-+		print_ip4_addr(s, 'I', &in6.s6_addr[12]);
-+	}
-+
-+	return;
-+}
-+
-+static void print_ip6_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	int j;
-+
-+	for (j = 0; j < 16; j += 2) {
-+		trace_seq_printf(s, "%02x%02x", buf[j], buf[j+1]);
-+		if (i == 'I' && j < 14)
-+			trace_seq_printf(s, ":");
-+	}
-+}
-+
-+/*
-+ * %pi4   print an IPv4 address with leading zeros
-+ * %pI4   print an IPv4 address without leading zeros
-+ * %pi6   print an IPv6 address without colons
-+ * %pI6   print an IPv6 address with colons
-+ * %pI6c  print an IPv6 address in compressed form with colons
-+ * %pISpc print an IP address based on sockaddr; p adds port.
-+ */
-+static int print_ipv4_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	unsigned char *buf;
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return 0;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return 0;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return 0;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 4) {
-+		trace_seq_printf(s, "INVALIDIPv4");
-+		return 0;
-+	}
-+	print_ip4_addr(s, i, buf);
-+
-+	return 0;
-+}
-+
-+static int print_ipv6_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0;
-+	unsigned char *buf;
-+	int rc = 0;
-+
-+	/* pI6c */
-+	if (*(ptr + 1) == 'c') {
-+		have_c = 1;
-+		ptr++;
-+		rc++;
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 16) {
-+		trace_seq_printf(s, "INVALIDIPv6");
-+		return rc;
-+	}
-+
-+	if (have_c)
-+		print_ip6c_addr(s, buf);
-+	else
-+		print_ip6_addr(s, i, buf);
-+
-+	return rc;
-+}
-+
-+static int print_ipsa_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0, have_p = 0;
-+	unsigned char *buf;
-+	struct sockaddr_storage *sa;
-+	int rc = 0;
-+
-+	/* pISpc */
-+	if (*(ptr + 1) == 'p') {
-+		have_p = 1;
-+		ptr++;
-+		rc++;
-+	}
-+	if (*(ptr + 1) == 'c') {
-+		have_c = 1;
-+		ptr++;
-+		rc++;
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	sa = (struct sockaddr_storage *) (data + arg->field.field->offset);
-+
-+	if (sa->ss_family == AF_INET) {
-+		struct sockaddr_in *sa4 = (struct sockaddr_in *) sa;
-+
-+		print_ip4_addr(s, i, (unsigned char *) &sa4->sin_addr);
-+		if (have_p)
-+			trace_seq_printf(s, ":%d", ntohs(sa4->sin_port));
-+
-+
-+	} else if (sa->ss_family == AF_INET6) {
-+		struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) sa;
-+
-+		if (have_p)
-+			trace_seq_printf(s, "[");
-+
-+		buf = (unsigned char *) &sa6->sin6_addr;
-+		if (have_c)
-+			print_ip6c_addr(s, buf);
-+		else
-+			print_ip6_addr(s, i, buf);
-+
-+		if (have_p)
-+			trace_seq_printf(s, "]:%d", ntohs(sa6->sin6_port));
-+	}
-+
-+	return rc;
-+}
-+
-+static int print_ip_arg(struct trace_seq *s, const char *ptr,
-+			void *data, int size, struct event_format *event,
-+			struct print_arg *arg)
-+{
-+	char i = *(ptr + 1);  /* 'i' or 'I' */
-+	char ver;
-+	int rc = 0;
-+
-+	ptr++;
-+	rc++;
-+
-+	ver = *(ptr + 1);
-+	ptr++;
-+	rc++;
-+
-+	switch (ver) {
-+	case '4':
-+		rc += print_ipv4_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case '6':
-+		rc += print_ipv6_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case 'S':
-+		rc += print_ipsa_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return rc;
-+}
-+
- static int is_printable_array(char *p, unsigned int len)
- {
- 	unsigned int i;
-@@ -4337,6 +4644,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 					ptr++;
- 					arg = arg->next;
- 					break;
-+				} else if (*(ptr+1) == 'I' || *(ptr+1) == 'i') {
-+					int n;
-+
-+					n = print_ip_arg(s, ptr, data, size, event, arg);
-+					if (n > 0) {
-+						ptr += n;
-+						arg = arg->next;
-+						break;
-+					}
- 				}
- 
- 				/* fall through */
+- Chris.
 -- 
-1.9.3 (Apple Git-50)
-
+Chris Ball   <http://printf.net/>
