@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750899AbaLQPnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:43:53 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55425 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750885AbaLQPnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:43:52 -0500
-Message-ID: <5491A501.100@ti.com>
-Date: Wed, 17 Dec 2014 17:45:05 +0200
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751270AbaLQPot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:44:49 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:60570 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750981AbaLQPoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 10:44:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Sneeker. Yeh" <Sneeker.Yeh@tw.fujitsu.com>
+Cc: Sneeker Yeh <sneeker.yeh@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Paul Bolle <pebolle@tiscali.nl>, Hans de Goede <hdegoede@redhat.com>,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        David Mosberger <davidm@egauge.net>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: Re: [PATCH 1/3] usb: host: f_usb20ho: add support for Fujitsu ehci/ohci USB 2.0 host controller
+Date: Wed, 17 Dec 2014 16:44:29 +0100
+Message-ID: <2084132.xT3x4RUEre@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <830AC58E49A426478AC39824BC0FA915D8BB402BB7@fmpitwmsex01.fmpi.sea.css.fujitsu.com>
+References: <1418695828-605-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com> <94603263.7VVvg5Qn7O@wuerfel> <830AC58E49A426478AC39824BC0FA915D8BB402BB7@fmpitwmsex01.fmpi.sea.css.fujitsu.com>
 MIME-Version: 1.0
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Nishanth Menon <nm@ti.com>
-CC: Lokesh Vutla <lokeshvutla@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca> <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca> <20141214044517.GD24110@csclub.uwaterloo.ca> <549018EC.8020207@ti.com> <20141216145856.GA23358@kahuna> <54918357.8060801@ti.com> <20141217145533.GS24110@csclub.uwaterloo.ca> <20141217152225.GA737@kahuna> <20141217152710.GT24110@csclub.uwaterloo.ca>
-In-Reply-To: <20141217152710.GT24110@csclub.uwaterloo.ca>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:hnibytYt/i6DZPYSFDxwBa4DhfsnBvISto9T7iu5MZC1+g1DOMF
+ 1x8N60UC5LqshnFmsBxBViwI9wpXWzRXgaOP0Adi5uK7cZgvGWug0sGeNRyAwDq2W6uxtuB
+ a66sZsViCB08KSqBepbLzYtI0pYzakwxEaNklLs15bXTgJDWhti9Qgr9rcw4DjwFjoTStXK
+ pA921GZsVaWzb2jb7uZTg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2014 05:27 PM, Lennart Sorensen wrote:
-> On Wed, Dec 17, 2014 at 09:22:25AM -0600, Nishanth Menon wrote:
->> A clock mux might do the job?
->>
->> value 1, 2 , 3 will imply sysclk1 / 610
->> value of 0 implies fixed 32768
->>
->> soemthing like
->> sys_clk32_crystal {
->>                 compatible = "fixed-clock";
->>                 clock-frequency = <32768>;
->> }
->>
->> sys_clk32_pseudo {
->>                 compatible = "fixed-clock";
->>                 compatible = "fixed-factor-clock";
->>                 clocks = <&sys_clkin1>;
->>                 clock-mult = <1>;
->>                 clock-div = <610>;
->> }
->>
->> sys_32k_ck: sys_32k_ck {
->> 	compatible = "ti,mux-clock";
->> 	clocks = <&sys_clk32_crystal>, <&sys_clk32_pseudo>, <&sys_clk32_pseudo>, <&sys_clk32_pseudo>;
->> };
->>
->> I think... The only issue is that the BOOTSTRAP register is not around
->> the usual CM1,2 address region...
->
-> OK, I like where that idea is headed.  That looks promising.
->
+On Wednesday 17 December 2014 23:33:02 Sneeker. Yeh wrote:
+> >
+> >No need for playing games with child devices, just see how the other drivers do
+> >it.
+> 
+> I am wondering if this is what you mentioned here? :
+> Hcd21: f_usb20ho {
+>         compatible = "fujitsu,f_usb20ho";
+>         ...
+>         Ehci {
+>                 compatible = "generic-ehci";
+>                 reg = <>;
+>         }
+>         ohci {
+>                 compatible = "generic-ohci";
+>                 reg = <>;
+>         }
+> }
+> By doing that, I can just use of_platform_populate() to create platform device more gracefully,
+> than using platform_device_xxx() those have been done in of_platform_populate().
+> And also, managing register offset is totally done via dts description, not in the code.
 
-Yea clock mux can be used. However, we don't have support for DRA7 
-control module clocks in the DT yet. I have posted patches with support 
-towards this a couple of weeks back, but they need some revising.
+What I mean is leaving out the fujitsu,f_usb20ho node entirely, just put the
+two USB controllers on the bus directly and remove this driver.
 
-Thus, we maybe need to apply the timer patches as is for now, and fix 
-the clock tree a bit later.
-
--Tero
-
+	Arnd
