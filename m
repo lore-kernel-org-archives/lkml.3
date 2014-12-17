@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbaLQJvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:51:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42405 "EHLO mx2.suse.de"
+	id S1752097AbaLQJwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:52:32 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:38110 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257AbaLQJup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:50:45 -0500
-From: Juergen Gross <jgross@suse.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
-        david.vrabel@citrix.com, boris.ostrovsky@oracle.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org
-Cc: Juergen Gross <jgross@suse.com>
-Subject: [Patch V2 4/4] xen: use generated hypercall symbols in arch/x86/xen/xen-head.S
-Date: Wed, 17 Dec 2014 10:50:38 +0100
-Message-Id: <1418809838-14123-5-git-send-email-jgross@suse.com>
-X-Mailer: git-send-email 2.1.2
-In-Reply-To: <1418809838-14123-1-git-send-email-jgross@suse.com>
-References: <1418809838-14123-1-git-send-email-jgross@suse.com>
+	id S1751323AbaLQJw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 04:52:29 -0500
+Date: Wed, 17 Dec 2014 10:52:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Kevin Cernekee <cernekee@gmail.com>, Jonathan Corbet <corbet@lwn.net>,
+        Thomas Gleixner <tglx@linutronix.de>, gnomes@lxorguk.ukuu.org.uk,
+        Brian Norris <computersforpeace@gmail.com>,
+        torvalds@linux-foundation.org,
+        Andrew Morton <akpm@linux-foundation.org>, linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/4] Stop maintainer abuse
+Message-ID: <20141217095227.GA8457@pd.tnic>
+References: <1418623790-28429-1-git-send-email-cernekee@gmail.com>
+ <20141216130939.166c4369@lwn.net>
+ <CAJiQ=7B76vE2ctYd2GK5+_whNnLGKtUY65qkMLdewBqfO7HfPg@mail.gmail.com>
+ <20141216223133.GB5656@pd.tnic>
+ <20141217051424.GZ17575@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20141217051424.GZ17575@thunk.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of manually list each hypercall in arch/x86/xen/xen-head.S
-use the auto generated symbol list.
+On Wed, Dec 17, 2014 at 12:14:24AM -0500, Theodore Ts'o wrote:
+>  And what's wrong for one maintainer will be right for another, and
+> vice versa.
 
-This also corrects the wrong address of xen_hypercall_mca which was
-located 32 bytes higher than it should.
+Ok, so what's wrong with "should not expect any feedback during the
+merge window"?
 
-Symbol addresses have been verified to match the correct ones via
-objdump output.
+If they get it, then that's fine. The formulation is loose on purpose.
 
-Based-on-patch-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Juergen Gross <jgross@suse.com>
----
- arch/x86/xen/xen-head.S | 63 ++++++++-----------------------------------------
- 1 file changed, 10 insertions(+), 53 deletions(-)
+And besides, when one starts working with maintainers, one soon learns
+when they are the busiest and can refrain from sending patchsets then.
 
-diff --git a/arch/x86/xen/xen-head.S b/arch/x86/xen/xen-head.S
-index 674b2225..8afdfcc 100644
---- a/arch/x86/xen/xen-head.S
-+++ b/arch/x86/xen/xen-head.S
-@@ -12,6 +12,8 @@
- 
- #include <xen/interface/elfnote.h>
- #include <xen/interface/features.h>
-+#include <xen/interface/xen.h>
-+#include <xen/interface/xen-mca.h>
- #include <asm/xen/interface.h>
- 
- #ifdef CONFIG_XEN_PVH
-@@ -85,59 +87,14 @@ ENTRY(xen_pvh_early_cpu_init)
- .pushsection .text
- 	.balign PAGE_SIZE
- ENTRY(hypercall_page)
--#define NEXT_HYPERCALL(x) \
--	ENTRY(xen_hypercall_##x) \
--	.skip 32
--
--NEXT_HYPERCALL(set_trap_table)
--NEXT_HYPERCALL(mmu_update)
--NEXT_HYPERCALL(set_gdt)
--NEXT_HYPERCALL(stack_switch)
--NEXT_HYPERCALL(set_callbacks)
--NEXT_HYPERCALL(fpu_taskswitch)
--NEXT_HYPERCALL(sched_op_compat)
--NEXT_HYPERCALL(platform_op)
--NEXT_HYPERCALL(set_debugreg)
--NEXT_HYPERCALL(get_debugreg)
--NEXT_HYPERCALL(update_descriptor)
--NEXT_HYPERCALL(ni)
--NEXT_HYPERCALL(memory_op)
--NEXT_HYPERCALL(multicall)
--NEXT_HYPERCALL(update_va_mapping)
--NEXT_HYPERCALL(set_timer_op)
--NEXT_HYPERCALL(event_channel_op_compat)
--NEXT_HYPERCALL(xen_version)
--NEXT_HYPERCALL(console_io)
--NEXT_HYPERCALL(physdev_op_compat)
--NEXT_HYPERCALL(grant_table_op)
--NEXT_HYPERCALL(vm_assist)
--NEXT_HYPERCALL(update_va_mapping_otherdomain)
--NEXT_HYPERCALL(iret)
--NEXT_HYPERCALL(vcpu_op)
--NEXT_HYPERCALL(set_segment_base)
--NEXT_HYPERCALL(mmuext_op)
--NEXT_HYPERCALL(xsm_op)
--NEXT_HYPERCALL(nmi_op)
--NEXT_HYPERCALL(sched_op)
--NEXT_HYPERCALL(callback_op)
--NEXT_HYPERCALL(xenoprof_op)
--NEXT_HYPERCALL(event_channel_op)
--NEXT_HYPERCALL(physdev_op)
--NEXT_HYPERCALL(hvm_op)
--NEXT_HYPERCALL(sysctl)
--NEXT_HYPERCALL(domctl)
--NEXT_HYPERCALL(kexec_op)
--NEXT_HYPERCALL(tmem_op) /* 38 */
--ENTRY(xen_hypercall_rsvr)
--	.skip 320
--NEXT_HYPERCALL(mca) /* 48 */
--NEXT_HYPERCALL(arch_1)
--NEXT_HYPERCALL(arch_2)
--NEXT_HYPERCALL(arch_3)
--NEXT_HYPERCALL(arch_4)
--NEXT_HYPERCALL(arch_5)
--NEXT_HYPERCALL(arch_6)
--	.balign PAGE_SIZE
-+	.skip PAGE_SIZE
-+
-+#define HYPERCALL(n) \
-+	.equ xen_hypercall_##n, hypercall_page + __HYPERVISOR_##n * 32; \
-+	.type xen_hypercall_##n, @function; .size xen_hypercall_##n, 32
-+#include <asm/xen-hypercalls.h>
-+#undef HYPERCALL
-+
- .popsection
- 
- 	ELFNOTE(Xen, XEN_ELFNOTE_GUEST_OS,       .asciz "linux")
+Or should we have subsystem maintainers each state whether they wanna
+do patchsets during the merge window or not? Or are we bikeshedding
+already?
+
+I see your point that different maintainers can be busy at different
+times but you also have to acknowledge the desire of some maintainers
+not to get new patchsets during the merge window. So we have to have a
+way to communicate that to submitters so that no explosions happen.
+
+Oh, and also the
+not-resend-in-under-a-week-and-wait-out-complete-review-first rule.
+That's my personal pet peeve.
+
+Ha, this sounds like a KS topic :-P
+
 -- 
-2.1.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
