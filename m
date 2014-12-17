@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbaLQNkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 08:40:52 -0500
-Received: from andre.telenet-ops.be ([195.130.132.53]:32860 "EHLO
-	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaLQNku (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 08:40:50 -0500
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH] ARM: shmobile: r8a7740: Instantiate GIC from C board code in legacy builds
-Date: Wed, 17 Dec 2014 14:40:42 +0100
-Message-Id: <1418823642-28154-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.9.1
+	id S1751823AbaLQNl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 08:41:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbaLQNl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 08:41:58 -0500
+Date: Wed, 17 Dec 2014 14:41:16 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 10/18] tools lib: Move asm-generic/bitops/find.h code to
+ tools/include and tools/lib
+Message-ID: <20141217134116.GD18257@krava.brq.redhat.com>
+References: <1418749040-31807-1-git-send-email-acme@kernel.org>
+ <1418749040-31807-11-git-send-email-acme@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418749040-31807-11-git-send-email-acme@kernel.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of commit 9a1091ef0017c40a ("irqchip: gic: Support hierarchy irq
-domain."), armadillo-legacy hangs during boot with:
+On Tue, Dec 16, 2014 at 01:57:12PM -0300, Arnaldo Carvalho de Melo wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> To match the Linux kernel source code structure from where this code came from.
 
-     sh-tmu.0: ch0: used for clock events
-     sh-tmu.0: ch0: used for periodic clock events
-     sh-tmu.0: ch0: failed to request irq 230
-     sh-tmu.0: ch1: used as clock source
-     sh-cmt-48.1: ch0: failed to request irq 90
-     sh-cmt-48.1: ch0: registration failed
-    earlytimer: unable to probe sh-cmt-48 early.
-    Calibrating delay loop...
+SNIP
 
-This happens because the IRQ numbers of the GIC are now virtual, and no
-longer match the hardcoded hardware IRQ numbers in the platform board
-code.
-To fix this, instantiate the GIC from platform board code when compiling
-a legacy kernel, like is done on sh73a0 for kzm9g-legacy.
+> +			goto found;
+> +		result += BITS_PER_LONG;
+> +		size -= BITS_PER_LONG;
+> +	}
+> +	if (!size)
+> +		return result;
+> +
+> +	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
+> +	if (tmp == 0UL)		/* Are any bits set? */
+> +		return result + size;	/* Nope. */
+> +found:
+> +	return result + __ffs(tmp);
+> +}
+> +#endif
+> diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+> index 67d48e20f7e1..bfd7e22bafad 100644
+> --- a/tools/perf/MANIFEST
+> +++ b/tools/perf/MANIFEST
+> @@ -4,8 +4,10 @@ tools/lib/traceevent
+>  tools/lib/api
+>  tools/lib/symbol/kallsyms.c
+>  tools/lib/symbol/kallsyms.h
+> +tools/lib/util/find_next_bit.c
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
----
- arch/arm/mach-shmobile/setup-r8a7740.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+hum, I had the impression that we will move 'generic' things under 'api' to
+be built separatelly.. so whats the current notion? ;-)
 
-diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
-index 79ad93dfdae4ee70..d191cf4197313482 100644
---- a/arch/arm/mach-shmobile/setup-r8a7740.c
-+++ b/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -800,7 +800,14 @@ void __init r8a7740_init_irq_of(void)
- 	void __iomem *intc_msk_base = ioremap_nocache(0xe6900040, 0x10);
- 	void __iomem *pfc_inta_ctrl = ioremap_nocache(0xe605807c, 0x4);
- 
-+#ifdef CONFIG_ARCH_SHMOBILE_LEGACY
-+	void __iomem *gic_dist_base = ioremap_nocache(0xc2800000, 0x1000);
-+	void __iomem *gic_cpu_base = ioremap_nocache(0xc2000000, 0x1000);
-+
-+	gic_init(0, 29, gic_dist_base, gic_cpu_base);
-+#else
- 	irqchip_init();
-+#endif
- 
- 	/* route signals to GIC */
- 	iowrite32(0x0, pfc_inta_ctrl);
--- 
-1.9.1
+what kind of code belongs to 'lib/api/...' and what to 'lib/...' ?
 
+thanks,
+jirka
