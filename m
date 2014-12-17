@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaLQNnH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 08:43:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38376 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaLQNnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 08:43:04 -0500
-Date: Wed, 17 Dec 2014 14:42:23 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Borislav Petkov <bp@suse.de>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 10/18] tools lib: Move asm-generic/bitops/find.h code to
- tools/include and tools/lib
-Message-ID: <20141217134223.GE18257@krava.brq.redhat.com>
-References: <1418749040-31807-1-git-send-email-acme@kernel.org>
- <1418749040-31807-11-git-send-email-acme@kernel.org>
+	id S1752127AbaLQNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 08:44:09 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:60694 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaLQNoI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 08:44:08 -0500
+Date: Wed, 17 Dec 2014 16:43:54 +0300
+From: samuel kihahu <skihahu@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        speakup@linux-speakup.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
+Message-ID: <20141217134354.GA585@localhost.localdomain>
+References: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
+ <20141217121119.GL4856@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="17pEHd4RhPHOinZp"
 Content-Disposition: inline
-In-Reply-To: <1418749040-31807-11-git-send-email-acme@kernel.org>
+In-Reply-To: <20141217121119.GL4856@mwanda>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 16, 2014 at 01:57:12PM -0300, Arnaldo Carvalho de Melo wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Wed, Dec 17, 2014 at 03:11:19PM +0300, Dan Carpenter wrote:
+> On Wed, Dec 17, 2014 at 02:56:02PM +0300, samuel kihahu wrote:
+> > Replacing obsolete simple_strtoul with kstrtoul.
+> > 
 > 
-> To match the Linux kernel source code structure from where this code came from.
+> Nope.  That's wrong.  Learn how the functions are different beyond just
+> the name.
+Noted, have made corrections to fit the kstrtoul and handle the return
+value.
 
-SNIP
+--17pEHd4RhPHOinZp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-staging-speakup-replace-simple_strtoul-with-kstrtoul.patch"
 
-> diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-> index 67d48e20f7e1..bfd7e22bafad 100644
-> --- a/tools/perf/MANIFEST
-> +++ b/tools/perf/MANIFEST
-> @@ -4,8 +4,10 @@ tools/lib/traceevent
->  tools/lib/api
->  tools/lib/symbol/kallsyms.c
->  tools/lib/symbol/kallsyms.h
-> +tools/lib/util/find_next_bit.c
->  tools/include/asm/bug.h
->  tools/include/asm-generic/bitops/atomic.h
-> +tools/include/asm-generic/bitops/find.h
->  tools/include/asm-generic/bitops/__ffs.h
->  tools/include/linux/compiler.h
->  tools/include/linux/export.h
-> @@ -18,6 +20,7 @@ include/linux/rbtree.h
->  include/linux/list.h
->  include/linux/hash.h
->  include/linux/stringify.h
-> +lib/find_next_bit.c
->  lib/rbtree.c
->  include/linux/swab.h
->  arch/*/include/asm/unistd*.h
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index fc4082fdf6bf..2d799da4eacc 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -233,6 +233,7 @@ LIB_H += ../../include/linux/stringify.h
->  LIB_H += util/include/linux/bitmap.h
->  LIB_H += util/include/linux/bitops.h
->  LIB_H += ../include/asm-generic/bitops/atomic.h 
-> +LIB_H += ../include/asm-generic/bitops/find.h 
+>From 71d2f7123e697b95371585b4af9a0b35262307ea Mon Sep 17 00:00:00 2001
+From: samuel kihahu <skihahu@gmail.com>
+Date: Wed, 17 Dec 2014 16:31:05 +0300
+Subject: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
 
-whitespace at the EOLN ;-)
+Replacing obsolete simple_strtoul with kstrtoul and checking the
+return status.
 
-jirka
+Signed-off-by: samuel kihahu <skihahu@gmail.com>
+---
+ drivers/staging/speakup/varhandlers.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/speakup/varhandlers.c b/drivers/staging/speakup/varhandlers.c
+index d758284..8ac9ad7 100644
+--- a/drivers/staging/speakup/varhandlers.c
++++ b/drivers/staging/speakup/varhandlers.c
+@@ -321,9 +321,10 @@ char *spk_strlwr(char *s)
+ 
+ char *spk_s2uchar(char *start, char *dest)
+ {
+-	int val = 0;
++	unsigned long val;
+ 
+-	val = simple_strtoul(skip_spaces(start), &start, 10);
++	if (kstrtoul(skip_spaces(start), &start, val))
++		return -EINVAL;
+ 	if (*start == ',')
+ 		start++;
+ 	*dest = (u_char)val;
+-- 
+1.8.3.1
+
+
+--17pEHd4RhPHOinZp--
