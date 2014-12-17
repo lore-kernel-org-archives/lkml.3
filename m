@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaLQUnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 15:43:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52470 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011AbaLQUna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 15:43:30 -0500
-Date: Wed, 17 Dec 2014 15:43:22 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: bskeggs@redhat.com
-Subject: nouveau oops in pramin_fini
-Message-ID: <20141217204322.GB27208@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, bskeggs@redhat.com
+	id S1751511AbaLQUq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 15:46:26 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47430 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999AbaLQUqX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 15:46:23 -0500
+Date: Wed, 17 Dec 2014 22:46:14 +0200
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth 2014-12-17
+Message-ID: <20141217204614.GA15480@t440s.P-661HNU-F1>
+Mail-Followup-To: davem@davemloft.net, netdev@vger.kernel.org,
+	linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sm4nu43k4a2Rpi4c"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Started seeing this during boot on one machine:
 
-[   17.371812] nouveau  [  DEVICE][0000:07:00.0] BOOT0  : 0x044500a2
-[   17.371994] nouveau  [  DEVICE][0000:07:00.0] Chipset: NV44 (NV44)
-[   17.372327] nouveau  [  DEVICE][0000:07:00.0] Family : NV40
-[   17.390081] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[   17.390446] CPU: 0 PID: 398 Comm: systemd-udevd Tainted: G        W      3.18.0+ #14
-[   17.390673] task: ffff8802205dcc60 ti: ffff880223348000 task.ti: ffff880223348000
-[   17.390847] RIP: 0010:[<ffffffffc0507ca1>]  [<ffffffffc0507ca1>] pramin_fini+0x11/0x40 [nouveau]
-[   17.391053] RSP: 0018:ffff88022334b438  EFLAGS: 00010292
-[   17.391053] RAX: 0000000000000004 RBX: 0000000000000000 RCX: 0000000000000004
-[   17.391053] RDX: ffffffffc0507c90 RSI: 000000000000cdff RDI: 0000000000000000
-[   17.391053] RBP: ffff88022334b448 R08: 0000000000000000 R09: 0000000000000000
-[   17.391053] R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022334b4d8
-[   17.391053] R13: ffffffffc05bdbe0 R14: ffffffffc05ee580 R15: ffff88022334b498
-[   17.391053] FS:  00007f85291df880(0000) GS:ffff880225e00000(0000) knlGS:0000000000000000
-[   17.391053] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   17.391053] CR2: 00007f44c895a778 CR3: 0000000223338000 CR4: 00000000000007f0
-[   17.391053] Stack:
-[   17.391053]  ffffffffc05bdbe0 ffff8802213ef480 ffff88022334b478 ffffffffc0507473
-[   17.391053]  ffff88022334b4d8 ffff88022334b498 0000000000000000 ffff8802213ef480
-[   17.391053]  ffff88022334b6c8 ffffffffc05077ab ffff8802205dcc60 ffffffffa07203ce
-[   17.391053] Call Trace:
-[   17.391053]  [<ffffffffc0507473>] shadow_method+0x93/0x100 [nouveau]
-[   17.391053]  [<ffffffffc05077ab>] nvbios_shadow+0x28b/0x3e0 [nouveau]
-[   17.391053]  [<ffffffffa07203ce>] ? __slab_alloc+0x4d8/0x529
-[   17.391053]  [<ffffffffc04f9f9d>] nouveau_bios_ctor+0x5d/0x400 [nouveau]
-[   17.391053]  [<ffffffffa0041615>] ? __ioremap_caller+0x225/0x370
-[   17.391053]  [<ffffffffc04f7942>] nouveau_object_ctor+0x32/0xc0 [nouveau]
-[   17.391053]  [<ffffffffc0548153>] nouveau_devobj_ctor+0x283/0x870 [nouveau]
-[   17.391053]  [<ffffffffc04f7942>] nouveau_object_ctor+0x32/0xc0 [nouveau]
-[   17.391053]  [<ffffffffc04f6209>] nvkm_ioctl_new+0x229/0x310 [nouveau]
-[   17.391053]  [<ffffffffc04f66f6>] nvkm_ioctl+0x2c6/0x3e0 [nouveau]
-[   17.391053]  [<ffffffffc0595282>] nvkm_client_ioctl+0x12/0x20 [nouveau]
-[   17.391053]  [<ffffffffc05862fa>] nvif_object_ioctl+0x9a/0xc0 [nouveau]
-[   17.391053]  [<ffffffffc0586957>] nvif_object_init+0xf7/0x140 [nouveau]
-[   17.391053]  [<ffffffffc0586d7b>] nvif_device_init+0x1b/0x50 [nouveau]
-[   17.391053]  [<ffffffffc058906a>] nouveau_drm_load+0x26a/0x5b0 [nouveau]
-[   17.391053]  [<ffffffffa00d064d>] ? trace_hardirqs_on+0xd/0x10
-[   17.391053]  [<ffffffffc02179e5>] drm_dev_register+0xb5/0x110 [drm]
-[   17.391053]  [<ffffffffc021aa5f>] drm_get_pci_dev+0x8f/0x1f0 [drm]
-[   17.391053]  [<ffffffffc0588aa2>] nouveau_drm_probe+0x212/0x2a0 [nouveau]
-[   17.391053]  [<ffffffffa03d9415>] local_pci_probe+0x45/0xa0
-[   17.391053]  [<ffffffffa03da0a5>] ? pci_match_device+0xe5/0x110
-[   17.391053]  [<ffffffffa03da1e9>] pci_device_probe+0xd9/0x130
-[   17.391053]  [<ffffffffa04aefa0>] driver_probe_device+0x90/0x3c0
-[   17.391053]  [<ffffffffa04af3b3>] __driver_attach+0xa3/0xb0
-[   17.391053]  [<ffffffffa04af310>] ? __device_attach+0x40/0x40
-[   17.391053]  [<ffffffffa04ace6b>] bus_for_each_dev+0x6b/0xb0
-[   17.391053]  [<ffffffffa04ae9fe>] driver_attach+0x1e/0x20
-[   17.391053]  [<ffffffffa04ae5c8>] bus_add_driver+0x188/0x260
-[   17.391053]  [<ffffffffa04b01f4>] driver_register+0x64/0xf0
-[   17.391053]  [<ffffffffa03d8f84>] __pci_register_driver+0x64/0x70
-[   17.391053]  [<ffffffffc021acba>] drm_pci_init+0xfa/0x130 [drm]
-[   17.391053]  [<ffffffffc03ed000>] ? 0xffffffffc03ed000
-[   17.391053]  [<ffffffffc03ed22c>] nouveau_drm_init+0x22c/0x1000 [nouveau]
-[   17.391053]  [<ffffffffa00002fc>] do_one_initcall+0xbc/0x1f0
-[   17.391053]  [<ffffffffa01111d1>] load_module+0x2111/0x2710
-[   17.391053]  [<ffffffffa010c320>] ? store_uevent+0x40/0x40
-[   17.391053]  [<ffffffffa0111966>] SyS_finit_module+0x86/0xb0
-[   17.391053]  [<ffffffffa072bc92>] system_call_fastpath+0x12/0x17
-[   17.391053] Code: 08 5b 41 5c 41 5d 41 5e 41 5f 5d c3 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 66 [   47.409343] ---[ end trace 2c9d5ebc1caa0748 ]--
+--sm4nu43k4a2Rpi4c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Dave,
+
+Here's the first direct (i.e. skipping the wireless tree) bluetooth pull
+request for you, intended for 3.19. It's just one patch: a fix from
+Marcel for for remote service discovery filtering which also fixes a
+'used uninitialized' compiler warning.
+
+Please let me know if there are any issues pulling. Thanks.
+
+Johan
+
+---
+The following changes since commit 65891feac27e26115dc4cce881743a1ac33372df:
+
+  net: Disallow providing non zero VLAN ID for NIC drivers FDB add flow (2014-12-16 15:41:19 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
+
+for you to fetch changes up to ea8ae2516ac43028a01c40b58ffa80d3b0afb802:
+
+  Bluetooth: Fix bug with filter in service discovery optimization (2014-12-17 22:03:49 +0200)
+
+----------------------------------------------------------------
+Marcel Holtmann (1):
+      Bluetooth: Fix bug with filter in service discovery optimization
+
+ net/bluetooth/mgmt.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+
+--sm4nu43k4a2Rpi4c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUkeuWAAoJECQj9vv5qNQSG0wQAKs/rxSc+p+v15Cl93vjjNDX
+kQGKomzrD8FYbFul7wFs63zB50yPR3enQr/93TyxDq5vMj+AD623sOBAUoYPsaSu
+SebzOrGFnsOjhHTLNH++luQSQFu/8mzJbZRILJCgbADVZ3j9AHleIiLkkzE/E7vX
+izGLu8MQl2hZsDU34JD4wPOSXHCO1TU4jrLipn2zit6MNe7ul165NfFeNjRtmnP8
+6s9eh6SwMRWILQT/Rm55/kTD9GfwF+IPj3JPu56QJG3flqF0OUHtRvHMl+ZrMa4J
+yGfI9ARhm9LW1l676Feg8OeqCQsE4Typ8xMUgPjaO9KoaJsqHJ8cnx96iGBbUTVQ
+OdeYYeFbjdIQkM702bPo69hwezIzcOBK6KBdc2s4WaAtUNC1+F0KoFciFhMuLeLy
+OVcqFcHsVon2DEpKwB9DBTNcr1uL2ATmMUunZIbeuIZYEMLQZdNnQjau2fSPchxV
++cmP/jdKUR/wP4XoffUEhyn//fc9WMSwtfiajqubBb/MCTRgfAQxHq0JsIVa2qpo
+C0K2Nw2QL1XWXmr3xbxeTNT78M9G4iPqs5AcYH6llpfRruY2pY0P09JOjMMOvgin
+Zx9iJ9TsHJmQNufBsAwxkyM8vrmqUiO3w7H/E6J0M7a1rB2YNFDmu9rmNJwMLSXQ
+0fRuNgxzF4GaFKQiPzlY
+=JkT0
+-----END PGP SIGNATURE-----
+
+--sm4nu43k4a2Rpi4c--
