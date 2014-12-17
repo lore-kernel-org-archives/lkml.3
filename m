@@ -1,147 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaLQGEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 01:04:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:45336 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaLQGEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 01:04:38 -0500
-Date: Tue, 16 Dec 2014 22:04:36 -0800
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: Changman Lee <cm224.lee@samsung.com>,
-        linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [f2fs-dev][PATCH] f2fs: use ra_meta_pages to simplify readahead
- code in restore_node_summary
-Message-ID: <20141217060436.GA7624@jaegeuk-mac02.mot-mobility.com>
-References: <003e01d0152b$a7fd0b60$f7f72220$@samsung.com>
+	id S1751581AbaLQGQx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 01:16:53 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:62780 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLQGQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 01:16:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <003e01d0152b$a7fd0b60$f7f72220$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141215133817.GD8264@leverpostej>
+References: <1417692860-18841-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20141205104009.GE11889@leverpostej>
+	<CAAfSe-uz534FiZufojKa8MdBi=VFqhuoFLwof7K+FqXG--AGaw@mail.gmail.com>
+	<20141215133817.GD8264@leverpostej>
+Date: Wed, 17 Dec 2014 14:16:47 +0800
+Message-ID: <CAAfSe-u1PXP1KS5qGRKboCyJ7k-eDRizC76Xs3uwCsNyk7XZ9g@mail.gmail.com>
+Subject: Re: [PATCH v4 0/5] Add Spreadtrum Sharkl64 Platform support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "sprdlinux@freelists.org" <sprdlinux@freelists.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "allen.zhang@spreadtrum.com" <allen.zhang@spreadtrum.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chao,
+Hi, Mark
 
-On Thu, Dec 11, 2014 at 06:16:27PM +0800, Chao Yu wrote:
-> Use more common function ra_meta_pages() with META_POR to readahead node blocks
-> in restore_node_summary() instead of ra_sum_pages(), hence we can simplify the
-> readahead code there, and also we can remove unused function ra_sum_pages().
-> 
-> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> ---
->  fs/f2fs/node.c | 67 ++++++++++++----------------------------------------------
->  1 file changed, 14 insertions(+), 53 deletions(-)
-> 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index f83326c..5824d6a 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1726,80 +1726,41 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
->  	return 0;
->  }
->  
-> -/*
-> - * ra_sum_pages() merge contiguous pages into one bio and submit.
-> - * these pre-read pages are allocated in bd_inode's mapping tree.
-> - */
-> -static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
-> -				int start, int nrpages)
-> -{
-> -	struct inode *inode = sbi->sb->s_bdev->bd_inode;
-> -	struct address_space *mapping = inode->i_mapping;
-> -	int i, page_idx = start;
-> -	struct f2fs_io_info fio = {
-> -		.type = META,
-> -		.rw = READ_SYNC | REQ_META | REQ_PRIO
-> -	};
-> -
-> -	for (i = 0; page_idx < start + nrpages; page_idx++, i++) {
-> -		/* alloc page in bd_inode for reading node summary info */
-> -		pages[i] = grab_cache_page(mapping, page_idx);
-> -		if (!pages[i])
-> -			break;
-> -		f2fs_submit_page_mbio(sbi, pages[i], page_idx, &fio);
-> -	}
-> -
-> -	f2fs_submit_merged_bio(sbi, META, READ);
-> -	return i;
-> -}
-> -
->  int restore_node_summary(struct f2fs_sb_info *sbi,
->  			unsigned int segno, struct f2fs_summary_block *sum)
->  {
->  	struct f2fs_node *rn;
->  	struct f2fs_summary *sum_entry;
-> -	struct inode *inode = sbi->sb->s_bdev->bd_inode;
->  	block_t addr;
->  	int bio_blocks = MAX_BIO_BLOCKS(sbi);
-> -	struct page *pages[bio_blocks];
-> -	int i, idx, last_offset, nrpages, err = 0;
-> +	int i, idx, last_offset, nrpages;
->  
->  	/* scan the node segment */
->  	last_offset = sbi->blocks_per_seg;
->  	addr = START_BLOCK(sbi, segno);
->  	sum_entry = &sum->entries[0];
->  
-> -	for (i = 0; !err && i < last_offset; i += nrpages, addr += nrpages) {
-> +	for (i = 0; i < last_offset; i += nrpages, addr += nrpages) {
->  		nrpages = min(last_offset - i, bio_blocks);
->  
->  		/* readahead node pages */
-> -		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
-> -		if (!nrpages)
-> -			return -ENOMEM;
-> +		ra_meta_pages(sbi, addr, nrpages, META_POR);
->  
-> -		for (idx = 0; idx < nrpages; idx++) {
-> -			if (err)
-> -				goto skip;
-> +		for (idx = addr; idx < addr + nrpages; idx++) {
-> +			struct page *page = get_meta_page(sbi, idx);
->  
-> -			lock_page(pages[idx]);
-> -			if (unlikely(!PageUptodate(pages[idx]))) {
-> -				err = -EIO;
-> -			} else {
-> -				rn = F2FS_NODE(pages[idx]);
-> -				sum_entry->nid = rn->footer.nid;
-> -				sum_entry->version = 0;
-> -				sum_entry->ofs_in_node = 0;
-> -				sum_entry++;
-> -			}
-> -			unlock_page(pages[idx]);
-> -skip:
-> -			page_cache_release(pages[idx]);
-> +			rn = F2FS_NODE(page);
-> +			sum_entry->nid = rn->footer.nid;
-> +			sum_entry->version = 0;
-> +			sum_entry->ofs_in_node = 0;
-> +			sum_entry++;
-> +			f2fs_put_page(page, 1);
->  		}
->  
-> -		invalidate_mapping_pages(inode->i_mapping, addr,
-> -							addr + nrpages);
-> +		truncate_inode_pages_range(META_MAPPING(sbi),
-> +						addr, addr + nrpages);
+On Mon, Dec 15, 2014 at 9:38 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Fri, Dec 05, 2014 at 12:27:23PM +0000, Lyra Zhang wrote:
+>> On Fri, Dec 5, 2014 at 6:40 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> > Hi,
+>> >
+>> > On Thu, Dec 04, 2014 at 11:34:15AM +0000, Chunyan Zhang wrote:
+>> >> Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
+>> >>
+>> >> Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+>> >> standards based on ARMv8 multiple core architecture.Now we have only one
+>> >> SoC(SC9836) based on this Platform in developing.
+>> >>
+>> >> This patchset adds Sharkl64 support in arm64 device tree and the serial driver
+>> >> of SC9836-UART.
+>> >>
+>> >> This patchset also has patches which address "sprd" prefix and DT compatible
+>> >> strings for nodes which appear un-documented.
+>> >>
+>> >> This version code was tesed both on Fast Mode and sc9836-fpga board.
+>> >> We use the latest boot-wrapper-aarch64 as the bootloader.
+>> >>
+>> >> Changes from v3:
+>> >> * Addressed review comments:
+>> >>       - Added the description of clock property for sc9836-uart
+>> >>       - Revised the size of GICC to be 8KiB
+>> >>       - Added another compatible string for psci-0.1
+>> >
+>> > I had open questions on v3 regarding your PSCI imlpementation. You
+>> > mentioned that you are using the aarch64 bootwrapper, but your DT
+>> > describes PSCI 0.2, and the (upstream) bootwrapper does not implement
+>> > PSCI 0.2. Adding the old PSCI compatible string is _not_ sufficient if
+>> > you do not have a full PSCI 0.2 implementation.
+>> >
+>> > Given that PSCI 0.2 requires more functionality to be implemented, I'd
+>> > like to know that your implementation is spec-compliant (implementing
+>> > the mandatory functions, nters the kernel in the correct state, etc),
+>> > and that it has been tested.
+>> >
+>> > Would you be able to look at my comments from the last posting please?
+>> >
+>> > Thanks,
+>> > Mark.
+>> > --
+>>
+>> Hi, Mark
+>>
+>> Ok, I'll check it again with our related engineers.
+>>
+>> Actually, I had read all of your comments carefully before sending
+>> each version of patches, and I replied you a few days early, I guess
+>> you may miss it :)
+>>
+>> If we just implemented psci-0.1 until now, can we submit this path
+>> without "compatible = "arm,psci-0.2"", but only with " compatible =
+>> "arm,psci" ".
+>
+> Elsewhere I've recommended such things are placed in the DTB by the
+> bootloader (at least for those cases where the bootlaoder is tied to the
+> firmware), as it can fill in the appropriate enable-method (and add any
+> other nodes as required).
+>
+> Having compatible = "arm,psci", and a couple of other properties for now
+> is certainly preferable to describing a not-yet-implemented PSCI 0.2.
+>
+> Thanks,
+> Mark.
+> --
 
-I found a bug here. :)
-The truncate_inode_pages_range uses start and end parameters as byte offsets.
-So, you should use like (addr << PAGE_CACHE_SHIFT).
+Thank you for the replay.
+I'll still ping my colleagues to implement PSCI 0.2, and test it.
+But it perhaps would not be finished soon, because our internal
+developing code right now is based on a little old version Linux
+kernel which doesn't support  PSCI-0.2
 
-Thanks,
-
->  	}
-> -	return err;
-> +	return 0;
->  }
->  
->  static void remove_nats_in_journal(struct f2fs_sb_info *sbi)
-> -- 
-> 2.1.2
+Thanks again,
+Chunyan
