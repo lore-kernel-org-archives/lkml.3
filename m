@@ -1,204 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaLQI5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 03:57:42 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:46584 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaLQI5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 03:57:40 -0500
-Subject: [PATCH v4] mm: prevent endless growth of anon_vma hierarchy
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: linux-mm <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Date: Wed, 17 Dec 2014 11:57:37 +0400
-Message-ID: <20141217085737.16381.75639.stgit@zurg>
-User-Agent: StGit/0.17.1-dirty
+	id S1752032AbaLQI7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 03:59:11 -0500
+Received: from sauhun.de ([89.238.76.85]:42478 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108AbaLQI7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 03:59:09 -0500
+Date: Wed, 17 Dec 2014 09:59:07 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux I2C <linux-i2c@vger.kernel.org>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c: sh_mobile: I2C_SH_MOBILE should depend on HAS_DMA
+Message-ID: <20141217085907.GB2919@katana>
+References: <1418650624-28174-1-git-send-email-geert@linux-m68k.org>
+ <20141217065814.GB1018@katana>
+ <CAMuHMdWShh+m_0c_3cnGt_2J03u0dhWytER0AqLWoLtauEh5aA@mail.gmail.com>
+ <20141217083905.GA2919@katana>
+ <CAMuHMdWoNxZ_gKWntANTn+oakJfVwY9np1cKs-sXoOf3vpS5Fg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XF85m9dhOBO43t/C"
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdWoNxZ_gKWntANTn+oakJfVwY9np1cKs-sXoOf3vpS5Fg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Constantly forking task causes unlimited grow of anon_vma chain.
-Each next child allocates new level of anon_vmas and links vma to all
-previous levels because pages might be inherited from any level.
 
-This patch adds heuristic which decides to reuse existing anon_vma instead
-of forking new one. It adds counter anon_vma->degree which counts linked
-vmas and directly descending anon_vmas and reuses anon_vma if counter is
-lower than two. As a result each anon_vma has either vma or at least two
-descending anon_vmas. In such trees half of nodes are leafs with alive vmas,
-thus count of anon_vmas is no more than two times bigger than count of vmas.
-This heuristic reuses anon_vmas as few as possible because each reuse adds
-false aliasing among vmas and rmap walker ought to scan more ptes when it
-searches where page is might be mapped.
+--XF85m9dhOBO43t/C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
-Reported-by: Daniel Forrest <dan.forrest@ssec.wisc.edu>
-Tested-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Link: http://lkml.kernel.org/r/20120816024610.GA5350@evergreen.ssec.wisc.edu
-Fixes: 5beb49305251 ("mm: change anon_vma linking to fix multi-process server scalability issue")
-Cc: Stable <stable@vger.kernel.org> (2.6.34+)
 
----
+> If ARM and SUPERH imply HAS_DMA, that formula is almost identical to
+> the one I proposed in my patch?
 
-v2: update degree in anon_vma_prepare for merged anon_vma
-v3: update comment and commit message
-v4: reorder anon_vma fields, update commit message, patch for current mmotm
----
- include/linux/rmap.h |   10 ++++++++++
- mm/rmap.c            |   41 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 50 insertions(+), 1 deletion(-)
+Ehrm, true :)
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 94d5bca..40bf29e 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -37,6 +37,16 @@ struct anon_vma {
- 	atomic_t refcount;
- 
- 	/*
-+	 * Count of child anon_vmas and VMAs which points to this anon_vma.
-+	 *
-+	 * This counter is used for making decision about reusing anon_vma
-+	 * instead of forking new one. See comments in function anon_vma_clone.
-+	 */
-+	unsigned degree;
-+
-+	struct anon_vma *parent;	/* Parent of this anon_vma */
-+
-+	/*
- 	 * NOTE: the LSB of the rb_root.rb_node is set by
- 	 * mm_take_all_locks() _after_ taking the above lock. So the
- 	 * rb_root must only be read/written after taking the above lock
-diff --git a/mm/rmap.c b/mm/rmap.c
-index b404783..355cf70 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -72,6 +72,8 @@ static inline struct anon_vma *anon_vma_alloc(void)
- 	anon_vma = kmem_cache_alloc(anon_vma_cachep, GFP_KERNEL);
- 	if (anon_vma) {
- 		atomic_set(&anon_vma->refcount, 1);
-+		anon_vma->degree = 1;	/* Reference for first vma */
-+		anon_vma->parent = anon_vma;
- 		/*
- 		 * Initialise the anon_vma root to point to itself. If called
- 		 * from fork, the root will be reset to the parents anon_vma.
-@@ -188,6 +190,8 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 		if (likely(!vma->anon_vma)) {
- 			vma->anon_vma = anon_vma;
- 			anon_vma_chain_link(vma, avc, anon_vma);
-+			/* vma reference or self-parent link for new root */
-+			anon_vma->degree++;
- 			allocated = NULL;
- 			avc = NULL;
- 		}
-@@ -236,6 +240,13 @@ static inline void unlock_anon_vma_root(struct anon_vma *root)
- /*
-  * Attach the anon_vmas from src to dst.
-  * Returns 0 on success, -ENOMEM on failure.
-+ *
-+ * If dst->anon_vma is NULL this function tries to find and reuse existing
-+ * anon_vma which has no vmas and only one child anon_vma. This prevents
-+ * degradation of anon_vma hierarchy to endless linear chain in case of
-+ * constantly forking task. In other hand anon_vma with more than one child
-+ * isn't reused even if was no alive vma, thus rmap walker has a good chance
-+ * to avoid scanning whole hieraryhy when it searches where page is mapped.
-  */
- int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- {
-@@ -256,7 +267,21 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
- 		anon_vma = pavc->anon_vma;
- 		root = lock_anon_vma_root(root, anon_vma);
- 		anon_vma_chain_link(dst, avc, anon_vma);
-+
-+		/*
-+		 * Reuse existing anon_vma if its degree lower than two,
-+		 * that means it has no vma and only one anon_vma child.
-+		 *
-+		 * Do not chose parent anon_vma, otherwise first child
-+		 * will always reuse it. Root anon_vma is never reused:
-+		 * it has self-parent reference and at least one child.
-+		 */
-+		if (!dst->anon_vma && anon_vma != src->anon_vma &&
-+				anon_vma->degree < 2)
-+			dst->anon_vma = anon_vma;
- 	}
-+	if (dst->anon_vma)
-+		dst->anon_vma->degree++;
- 	unlock_anon_vma_root(root);
- 	return 0;
- 
-@@ -280,6 +305,9 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	if (!pvma->anon_vma)
- 		return 0;
- 
-+	/* Drop inherited anon_vma, we'll reuse existing or allocate new. */
-+	vma->anon_vma = NULL;
-+
- 	/*
- 	 * First, attach the new VMA to the parent VMA's anon_vmas,
- 	 * so rmap can find non-COWed pages in child processes.
-@@ -288,6 +316,10 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	if (error)
- 		return error;
- 
-+	/* An existing anon_vma has been reused, all done then. */
-+	if (vma->anon_vma)
-+		return 0;
-+
- 	/* Then add our own anon_vma. */
- 	anon_vma = anon_vma_alloc();
- 	if (!anon_vma)
-@@ -301,6 +333,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	 * lock any of the anon_vmas in this anon_vma tree.
- 	 */
- 	anon_vma->root = pvma->anon_vma->root;
-+	anon_vma->parent = pvma->anon_vma;
- 	/*
- 	 * With refcounts, an anon_vma can stay around longer than the
- 	 * process it belongs to. The root anon_vma needs to be pinned until
-@@ -311,6 +344,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	vma->anon_vma = anon_vma;
- 	anon_vma_lock_write(anon_vma);
- 	anon_vma_chain_link(vma, avc, anon_vma);
-+	anon_vma->parent->degree++;
- 	anon_vma_unlock_write(anon_vma);
- 
- 	return 0;
-@@ -341,12 +375,16 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
- 		 * Leave empty anon_vmas on the list - we'll need
- 		 * to free them outside the lock.
- 		 */
--		if (RB_EMPTY_ROOT(&anon_vma->rb_root))
-+		if (RB_EMPTY_ROOT(&anon_vma->rb_root)) {
-+			anon_vma->parent->degree--;
- 			continue;
-+		}
- 
- 		list_del(&avc->same_vma);
- 		anon_vma_chain_free(avc);
- 	}
-+	if (vma->anon_vma)
-+		vma->anon_vma->degree--;
- 	unlock_anon_vma_root(root);
- 
- 	/*
-@@ -357,6 +395,7 @@ void unlink_anon_vmas(struct vm_area_struct *vma)
- 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
- 		struct anon_vma *anon_vma = avc->anon_vma;
- 
-+		BUG_ON(anon_vma->degree);
- 		put_anon_vma(anon_vma);
- 
- 		list_del(&avc->same_vma);
+>        depends on HAS_DMA
+>        depends on SUPERH || ARCH_SHMOBILE || COMPILE_TEST
+>=20
+> I just prefer to split dependencies in two lines where it makes sense ("h=
+ard"
+> dependencies vs. "soft" (user platform configuration) dependencies).
 
+I prefer my version slightly. But not worth the hazzle, I'll pick yours.
+
+Thanks!
+
+--XF85m9dhOBO43t/C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUkUXaAAoJEBQN5MwUoCm2fy4P/Re36/47sQJzKrum7vh0nsyw
+rq+JdDJXbeNhTsCPauLlzeoo5dY+d6Uan2JFR+TTy7lshMgkP2rLZK9LiOhFglSS
+zNO+z5pm3PxIg/PYMlW/zo9sRScfIO1HuK0vIggLC+tCBDML592V0CNMs+Qh6d9i
+kMqyLOG94G3omCbb7m3DWnovT8bAC1DW5CzZgBfmndCm3+JT9CifsMlar6kOPujv
+RMuL4NZTJh58nZFCyXrUNQOWMAPcLUhfbojMk2cYzgADZKN1TiYkchjFcWelobwV
+co7snDDghKkeizcXjXgq2wo8Hs1MZ3meQmUiAyNEznj9cjXAWpvywA1KBqj9KYdP
+PsrkHh2TdjeCmXMBbNs2D9Q9lU1RAJqDITQPM1mGl5PX6PYjBEK38F8smTNW3sY9
+Ap74mwlAxZ7LMTvkqcj3skQ1r0CauakjA2Xf/QBEiaI7G5h6fK3aSeojEvoe9INs
+pFXXSKbotTwkJYtD1oDrWMuzusGDIcs586kfCC+tELoPPn5pbHcCC3AfsmYOQpOp
+kcKdOpbvb1fUR6EJGLpsuBFmDy2mwB1XT+1DvsPYSSJT1OzPVzGWP+QUQYDuAQjW
+SUcbn2ltnoxaC8RJ9JUVpwQJRR1FNFVi8hiFS+TLzl5fxXcaJjVpurRdxxIOMOGP
+UoOhQwMs34RTa3mcFEyc
+=z13R
+-----END PGP SIGNATURE-----
+
+--XF85m9dhOBO43t/C--
