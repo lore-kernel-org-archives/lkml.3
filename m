@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaLQVZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:25:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995AbaLQVZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:25:22 -0500
-Date: Wed, 17 Dec 2014 16:25:10 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        uobergfe@redhat.com
-Subject: Re: [PATCH 0/9] watchdog: internally split softlockup and hardlockup
-Message-ID: <20141217212510.GN35311@redhat.com>
-References: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
+	id S1751445AbaLQVaY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:30:24 -0500
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:39352 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaLQVaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 16:30:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1415118024-194247-1-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418849927.28384.1.camel@perches.com>
+References: <1418849927.28384.1.camel@perches.com>
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Wed, 17 Dec 2014 13:30:02 -0800
+Message-ID: <CAJiQ=7DE1ojVRW6LqZg2LiqTQ0cgDY_a0nMGn=_Rs1mkuEgwoA@mail.gmail.com>
+Subject: Re: rfc: remove early_printk from a few arches? (blackfin, m68k, mips)
+To: Joe Perches <joe@perches.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        Steven Miao <realmz6@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Wed, Dec 17, 2014 at 12:58 PM, Joe Perches <joe@perches.com> wrote:
+> It seems like early_printk can be configured into
+> a few architectures but also appear not to be used.
+>
+> $ git grep -w "early_printk"
+[snip]
+> arch/mips/kernel/Makefile:obj-$(CONFIG_EARLY_PRINTK)    += early_printk.o
 
-Poke.  What can I do to move this patch forward?
+Nowadays I try to use OF_EARLYCON whenever possible, but when that has
+been unavailable, I have used arch/mips/kernel/early_printk.c to get
+console output before the serial driver is initialized.  It runs very
+early in the boot sequence and has very few dependencies, which makes
+it useful for board bringup.
 
-Cheers,
-Don
+At least on MIPS, the EARLY_PRINTK implementation registers itself as
+a console and works with standard printk() calls.  It doesn't rely on
+arch/driver code explicitly calling early_printk().
 
-On Tue, Nov 04, 2014 at 11:20:15AM -0500, Don Zickus wrote:
-> The hardlockup and softockup had always been tied together.  Due to the request
-> of KVM folks, they had a need to have one enabled but not the other.
-> Internally rework the code to split things apart more cleanly.
-> 
-> There is a bunch of churn here, but the end result should be code that should
-> be easier to maintain and fix without knowing the internals of what is going
-> on.
-> 
-> Tested by Uli and myself.
-> 
-> Ulrich Obergfell (9):
->   watchdog: new definitions and variables, initialization
->   watchdog: introduce the proc_watchdog_update() function
->   watchdog: move definition of 'watchdog_proc_mutex' outside of
->     proc_dowatchdog()
->   watchdog: introduce the proc_watchdog_common() function
->   watchdog: introduce separate handlers for parameters in
->     /proc/sys/kernel
->   watchdog: implement error handling for failure to set up hardware
->     perf events
->   watchdog: enable the new user interface of the watchdog mechanism
->   watchdog: clean up some function names and arguments
->   watchdog: introduce the hardlockup_detector_disable() function
-> 
->  arch/x86/kernel/kvm.c |    2 +-
->  include/linux/nmi.h   |   21 ++--
->  kernel/sysctl.c       |   35 +++++--
->  kernel/watchdog.c     |  277 ++++++++++++++++++++++++++++++++++++-------------
->  4 files changed, 240 insertions(+), 95 deletions(-)
-> 
+Side note: looking through kernel/printk/printk.c it looks like
+there's a space missing in the description string:
+
+MODULE_PARM_DESC(ignore_loglevel, "ignore loglevel setting, to"
+        "print all kernel messages to the console.");
+
+But since CONFIG_PRINTK is a bool option, I don't know if the
+description string actually shows up anywhere.  Should it be converted
+into a comment?
