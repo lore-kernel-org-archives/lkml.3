@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752037AbaLQEdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:33:40 -0500
+	id S1752096AbaLQEdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:33:46 -0500
 Received: from mga01.intel.com ([192.55.52.88]:36936 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267AbaLQEdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:33:38 -0500
+	id S1751267AbaLQEdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 23:33:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="429971382"
+   d="scan'208";a="429971407"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -16,10 +16,10 @@ To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
         Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <jroedel@suse.de>
-Subject: [Patch v1 09/17] iommu/vt-d: Prepare for killing function irq_remapping_supported()
-Date: Wed, 17 Dec 2014 12:35:40 +0800
-Message-Id: <1418790948-22804-10-git-send-email-jiang.liu@linux.intel.com>
+        iommu@lists.linux-foundation.org
+Subject: [Patch v1 11/17] iommu/vt-d: Allow IR works in XAPIC mode though CPU works in X2APIC mode
+Date: Wed, 17 Dec 2014 12:35:42 +0800
+Message-Id: <1418790948-22804-12-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
@@ -27,105 +27,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for killing function irq_remapping_supported() by moving code
-from intel_irq_remapping_supported() into intel_prepare_irq_remapping().
+Currently if CPU supports X2APIC, IR hardware must work in X2APIC mode
+or disabled. Change the code to support IR working in XAPIC mode when
+CPU supports X2APIC. Then the CPU APIC driver will decide how to handle
+such as configuration by:
+1) Disabling X2APIC mode
+2) Forcing X2APIC physical mode
 
-Combined with patch from Joerg at https://lkml.org/lkml/2014/12/15/487,
-so assume an signed-off from Joerg.
+This change also fixes a live locking when
+1) BIOS enables CPU X2APIC
+2) DMAR table disables X2APIC mode or IR hardware doesn't support X2APIC
+with following messages:
+[   37.863463] dmar: INTR-REMAP: Request device [[f0:1f.7] fault index 2
+[   37.863463] INTR-REMAP:[fault reason 36] Detected reserved fields in the IRTE entry
+[   37.879372] dmar: INTR-REMAP: Request device [[f0:1f.7] fault index 2
+[   37.879372] INTR-REMAP:[fault reason 36] Detected reserved fields in the IRTE entry
+[   37.895282] dmar: INTR-REMAP: Request device [[f0:1f.7] fault index 2
+[   37.895282] INTR-REMAP:[fault reason 36] Detected reserved fields in the IRTE entry
+[   37.911192] dmar: INTR-REMAP: Request device [[f0:1f.7] fault index 2
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
 ---
- drivers/iommu/intel_irq_remapping.c |   58 +++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 33 deletions(-)
+ drivers/iommu/intel_irq_remapping.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
-index d5b7a096c240..b7ce4f458b29 100644
+index a47cb31f198e..caf803ab1abc 100644
 --- a/drivers/iommu/intel_irq_remapping.c
 +++ b/drivers/iommu/intel_irq_remapping.c
-@@ -568,30 +568,6 @@ static int __init dmar_x2apic_optout(void)
+@@ -32,8 +32,9 @@ struct hpet_scope {
+ };
  
- static int __init intel_irq_remapping_supported(void)
- {
--	struct dmar_drhd_unit *drhd;
--	struct intel_iommu *iommu;
+ #define IR_X2APIC_MODE(mode) (mode ? (1 << 11) : 0)
+-#define IRTE_DEST(dest) ((x2apic_mode) ? dest : dest << 8)
++#define IRTE_DEST(dest) ((eim_mode) ? dest : dest << 8)
+ 
++static int __read_mostly eim_mode;
+ static struct ioapic_scope ir_ioapic[MAX_IO_APICS];
+ static struct hpet_scope ir_hpet[MAX_HPET_TBS];
+ 
+@@ -644,8 +645,6 @@ static int __init intel_enable_irq_remapping(void)
+ 	int eim = 0;
+ 
+ 	if (x2apic_supported()) {
+-		pr_info("Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
 -
--	if (disable_irq_remap)
--		return 0;
--	if (irq_remap_broken) {
--		printk(KERN_WARNING
--			"This system BIOS has enabled interrupt remapping\n"
--			"on a chipset that contains an erratum making that\n"
--			"feature unstable.  To maintain system stability\n"
--			"interrupt remapping is being disabled.  Please\n"
--			"contact your BIOS vendor for an update\n");
--		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
--		disable_irq_remap = 1;
--		return 0;
--	}
--
--	if (!dmar_ir_support())
--		return 0;
--
--	for_each_iommu(iommu, drhd)
--		if (!ecap_ir_support(iommu->ecap))
--			return 0;
--
- 	return 1;
- }
+ 		eim = !dmar_x2apic_optout();
+ 		if (!eim)
+ 			printk(KERN_WARNING
+@@ -683,8 +682,11 @@ static int __init intel_enable_irq_remapping(void)
+ 		if (eim && !ecap_eim_support(iommu->ecap)) {
+ 			printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
+ 			       " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
+-			goto error;
++			eim = 0;
+ 		}
++	eim_mode = eim;
++	if (eim)
++		pr_info("Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
  
-@@ -616,26 +592,42 @@ static int __init intel_prepare_irq_remapping(void)
- 	struct dmar_drhd_unit *drhd;
- 	struct intel_iommu *iommu;
- 
-+	/* First check whether IRQ remapping should be enabled */
-+	if (disable_irq_remap)
-+		return -ENODEV;
-+
-+	if (irq_remap_broken) {
-+		printk(KERN_WARNING
-+			"This system BIOS has enabled interrupt remapping\n"
-+			"on a chipset that contains an erratum making that\n"
-+			"feature unstable.  To maintain system stability\n"
-+			"interrupt remapping is being disabled.  Please\n"
-+			"contact your BIOS vendor for an update\n");
-+		add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
-+		disable_irq_remap = 1;
-+		return -ENODEV;
-+	}
-+
- 	if (dmar_table_init() < 0)
--		return -1;
-+		return -ENODEV;
-+
-+	if (!dmar_ir_support())
-+		return -ENODEV;
- 
- 	if (parse_ioapics_under_ir() != 1) {
- 		printk(KERN_INFO "Not enabling interrupt remapping\n");
- 		goto error;
- 	}
- 
--	for_each_iommu(iommu, drhd) {
--		if (!ecap_ir_support(iommu->ecap))
--			continue;
--
--		/* Do the allocations early */
--		if (intel_setup_irq_remapping(iommu))
-+	for_each_iommu(iommu, drhd)
-+		if (!ecap_ir_support(iommu->ecap) ||
-+		    intel_setup_irq_remapping(iommu))
- 			goto error;
--	}
- 	return 0;
-+
- error:
- 	intel_cleanup_irq_remapping();
--	return -1;
-+	return -ENODEV;
- }
- 
- static int __init intel_enable_irq_remapping(void)
+ 	/*
+ 	 * Enable queued invalidation for all the DRHD's.
 -- 
 1.7.10.4
 
