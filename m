@@ -1,108 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaLQEgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:36:21 -0500
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:62928 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaLQEgS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:36:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <1418771379-24369-4-git-send-email-dtor@chromium.org>
-References: <1418771379-24369-1-git-send-email-dtor@chromium.org>
-	<1418771379-24369-4-git-send-email-dtor@chromium.org>
-Date: Wed, 17 Dec 2014 10:06:17 +0530
-Message-ID: <CAKohpok0UieH=Pi4nU2tKqV1_LH+3uzMDr0B8wsN61g1BnG4pg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] PM / OPP: take RCU lock in dev_pm_opp_get_opp_count
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dmitry Torokhov <dtor@chromium.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Geert Uytterhoeven <geert+renesas@glider.be>,
-        Stefan Wahren <stefan.wahren@i2se.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Nishanth Menon <nm@ti.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752150AbaLQEhA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:37:00 -0500
+Received: from mga11.intel.com ([192.55.52.93]:55824 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751771AbaLQEdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 23:33:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="429971185"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>
+Cc: Tony Luck <tony.luck@intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [Patch v1 03/17] iommu/vt-d: Move iommu preparatory allocations to irq_remap_ops.prepare
+Date: Wed, 17 Dec 2014 12:35:34 +0800
+Message-Id: <1418790948-22804-4-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 December 2014 at 04:39, Dmitry Torokhov <dtor@chromium.org> wrote:
-> A lot of callers are missing the fact that dev_pm_opp_get_opp_count
-> needs to be called under RCU lock. Given that RCU locks can safely be
-> nested, instead of providing *_locked() API, let's take RCU lock inside
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Hmm, I asked for a *_locked() API because many users of
-dev_pm_opp_get_opp_count() are already calling it from rcu read side
-critical sections.
+The whole iommu setup for irq remapping is a convoluted mess. The
+iommu detect function gets called from mem_init() and the prepare
+callback gets called from enable_IR_x2apic() for unknown reasons.
 
-Now, there are two questions:
-- Can rcu-read side critical sections be nested ?
+Of course AMD and Intel setup differs in nonsensical ways. Intels
+prepare callback is explicit while AMDs prepare callback is implicit
+in setup_irq_remapping_ops() just to be called in the prepare call
+again.
 
-Yes, this is what the comment over rcu_read_lock() says
+Because all of this gets called from enable_IR_x2apic() and the dmar
+prepare function merily parses the ACPI tables, but does not allocate
+memory we end up with memory allocation from irq disabled context
+later on.
 
- * RCU read-side critical sections may be nested.  Any deferred actions
- * will be deferred until the outermost RCU read-side critical section
- * completes.
+AMDs iommu code at least allocates the required memory from the
+prepare function. That has issues as well, but thats not scope of this
+patch.
 
-- Would it be better to drop these double rcu_read_locks() ? i.e. either
-get a *_locked() API or fix the callers of dev_pm_opp_get_opp_count().
+The goal of this change is to distangle the allocation from the actual
+enablement. There is no point to allocate memory from irq disabled
+regions with GFP_ATOMIC just because it does not matter at that point
+in the boot stage. It matters with physical hotplug later on.
 
-@Paul: What do you say ?
+There is another issue with the current setup. Due to the conversion
+to stacked irqdomains we end up with a call into the irqdomain
+allocation code from irq disabled context, but that code does
+GFP_KERNEL allocations rightfully as there is no reason to do
+preperatory allocations with GFP_ATOMIC.
 
-> dev_pm_opp_get_opp_count() and leave callers as is.
->
-> Signed-off-by: Dmitry Torokhov <dtor@chromium.org>
-> ---
->  drivers/base/power/opp.c | 15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
-> index 413c7fe..ee5eca2 100644
-> --- a/drivers/base/power/opp.c
-> +++ b/drivers/base/power/opp.c
-> @@ -216,9 +216,7 @@ EXPORT_SYMBOL_GPL(dev_pm_opp_get_freq);
->   * This function returns the number of available opps if there are any,
->   * else returns 0 if none or the corresponding error value.
->   *
-> - * Locking: This function must be called under rcu_read_lock(). This function
-> - * internally references two RCU protected structures: device_opp and opp which
-> - * are safe as long as we are under a common RCU locked section.
-> + * Locking: This function takes rcu_read_lock().
->   */
->  int dev_pm_opp_get_opp_count(struct device *dev)
->  {
-> @@ -226,13 +224,14 @@ int dev_pm_opp_get_opp_count(struct device *dev)
->         struct dev_pm_opp *temp_opp;
->         int count = 0;
->
-> -       opp_rcu_lockdep_assert();
-> +       rcu_read_lock();
->
->         dev_opp = find_device_opp(dev);
->         if (IS_ERR(dev_opp)) {
-> -               int r = PTR_ERR(dev_opp);
-> -               dev_err(dev, "%s: device OPP not found (%d)\n", __func__, r);
-> -               return r;
-> +               count = PTR_ERR(dev_opp);
-> +               dev_err(dev, "%s: device OPP not found (%d)\n",
-> +                       __func__, count);
-> +               goto out_unlock;
->         }
->
->         list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
-> @@ -240,6 +239,8 @@ int dev_pm_opp_get_opp_count(struct device *dev)
->                         count++;
->         }
->
-> +out_unlock:
-> +       rcu_read_unlock();
->         return count;
->  }
+That change caused the allocator code to complain about GFP_KERNEL
+allocations invoked in atomic context. Boris provided a temporary
+hackaround which changed the GFP flags if irq_domain_add() got called
+from atomic context. Not pretty and we really dont want to get this
+into a mainline release for obvious reasons.
 
-Looked fine otherwise:
+Move the ACPI table parsing and the resulting memory allocations from
+the enable to the prepare function. That allows to get rid of the
+horrible hackaround in irq_domain_add() later.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+[Jiang] Rebased onto v3.19
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
+Acked-by: Joerg Roedel <joro@8bytes.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141205084147.313026156@linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel_irq_remapping.c |   64 ++++++++++++++++++++++++-----------
+ 1 file changed, 44 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 27541d440849..4b80e16e0736 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -595,22 +595,57 @@ static int __init intel_irq_remapping_supported(void)
+ 	return 1;
+ }
+ 
+-static int __init intel_enable_irq_remapping(void)
++static void __init intel_cleanup_irq_remapping(void)
++{
++	struct dmar_drhd_unit *drhd;
++	struct intel_iommu *iommu;
++
++	for_each_iommu(iommu, drhd) {
++		if (ecap_ir_support(iommu->ecap)) {
++			iommu_disable_irq_remapping(iommu);
++			intel_teardown_irq_remapping(iommu);
++		}
++	}
++
++	if (x2apic_supported())
++		pr_warn("Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
++}
++
++static int __init intel_prepare_irq_remapping(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
+ 	struct intel_iommu *iommu;
+-	bool x2apic_present;
+-	int setup = 0;
+-	int eim = 0;
+ 
+-	x2apic_present = x2apic_supported();
++	if (dmar_table_init() < 0)
++		return -1;
+ 
+ 	if (parse_ioapics_under_ir() != 1) {
+-		printk(KERN_INFO "Not enable interrupt remapping\n");
++		printk(KERN_INFO "Not enabling interrupt remapping\n");
+ 		goto error;
+ 	}
+ 
+-	if (x2apic_present) {
++	for_each_iommu(iommu, drhd) {
++		if (!ecap_ir_support(iommu->ecap))
++			continue;
++
++		/* Do the allocations early */
++		if (intel_setup_irq_remapping(iommu))
++			goto error;
++	}
++	return 0;
++error:
++	intel_cleanup_irq_remapping();
++	return -1;
++}
++
++static int __init intel_enable_irq_remapping(void)
++{
++	struct dmar_drhd_unit *drhd;
++	struct intel_iommu *iommu;
++	int setup = 0;
++	int eim = 0;
++
++	if (x2apic_supported()) {
+ 		pr_info("Queued invalidation will be enabled to support x2apic and Intr-remapping.\n");
+ 
+ 		eim = !dmar_x2apic_optout();
+@@ -678,9 +713,6 @@ static int __init intel_enable_irq_remapping(void)
+ 		if (!ecap_ir_support(iommu->ecap))
+ 			continue;
+ 
+-		if (intel_setup_irq_remapping(iommu))
+-			goto error;
+-
+ 		iommu_set_irq_remapping(iommu, eim);
+ 		setup = 1;
+ 	}
+@@ -702,15 +734,7 @@ static int __init intel_enable_irq_remapping(void)
+ 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
+ 
+ error:
+-	for_each_iommu(iommu, drhd)
+-		if (ecap_ir_support(iommu->ecap)) {
+-			iommu_disable_irq_remapping(iommu);
+-			intel_teardown_irq_remapping(iommu);
+-		}
+-
+-	if (x2apic_present)
+-		pr_warn("Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
+-
++	intel_cleanup_irq_remapping();
+ 	return -1;
+ }
+ 
+@@ -1200,7 +1224,7 @@ static int intel_alloc_hpet_msi(unsigned int irq, unsigned int id)
+ 
+ struct irq_remap_ops intel_irq_remap_ops = {
+ 	.supported		= intel_irq_remapping_supported,
+-	.prepare		= dmar_table_init,
++	.prepare		= intel_prepare_irq_remapping,
+ 	.enable			= intel_enable_irq_remapping,
+ 	.disable		= disable_irq_remapping,
+ 	.reenable		= reenable_irq_remapping,
+-- 
+1.7.10.4
+
