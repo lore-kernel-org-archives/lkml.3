@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaLQVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:54:56 -0500
-Received: from mout.kundenserver.de ([212.227.17.13]:60555 "EHLO
+	id S1751542AbaLQV5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:57:00 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:63349 "EHLO
 	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaLQVyy (ORCPT
+	with ESMTP id S1751105AbaLQV46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:54:54 -0500
+	Wed, 17 Dec 2014 16:56:58 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
-Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        a.zummo@towertech.it, kernel@stlinux.com, rtc-linux@googlegroups.com,
-        devicetree@vger.kernel.org, wim@iguana.be, linux@roeck-us.net,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 5/8] watchdog: bindings: Provide ST bindings for ST's LPC Watchdog device
-Date: Wed, 17 Dec 2014 22:54:12 +0100
-Message-ID: <5479005.CEJLtxOOIa@wuerfel>
+Cc: Murali Karicheri <m-karicheri2@ti.com>, gregkh@linuxfoundation.org,
+        vinod.koul@intel.com, dmaengine@vger.kernel.org, bhelgaas@google.com,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/2] common: dma-mapping: introduce dma_get_parent_cfg() helper
+Date: Wed, 17 Dec 2014 22:56:47 +0100
+Message-ID: <1949667.gMcOLHe7Sk@wuerfel>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418834727-1602-6-git-send-email-lee.jones@linaro.org>
-References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org> <1418834727-1602-6-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1418839344-14393-2-git-send-email-m-karicheri2@ti.com>
+References: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com> <1418839344-14393-2-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:4fKXlDRY4gkfVp0wDDupvZWL6wp/p0TwGEzPqF+o/vYTNscVtUL
- BPH/6kfkAxqJfbg2l0iRYPPzV0jRhenq0hAlmbFWYZhkeF5eOMe6mtRCUAQ3KYvA3T4wxY6
- vmun2vknOp5Q34Li7jCBlufP1d63CPoMBCkOrHdmqDyBfF/Xqr6FC/sq+CzMkV2nJlUxIPf
- hwxWvMTDjyt4eoocS43MA==
+X-Provags-ID: V03:K0:7PUlGzAuBxZOZ9AYgZ6Jm2JKtdPQK9TMe2vf37CfPggSL9wjzr1
+ F2QGgrzDIzGvQmP/q6N+B4jRWfqAb8B4eEND5FGZ6LZpS6zI7Ofy1twqa5JuG7+NXAF4xvz
+ Lex0vWGeURhtCWlE4+CxhV4IPNLHDJ1ZUUq9dsN+Dsak9P0rf7DnXMlfXNyXb5w7+JgVeC/
+ acCpH8ah/bRoAMJtXXWOA==
 X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 December 2014 16:45:24 Lee Jones wrote:
-> +- compatible   : Must be one of: "st,stih407-lpc" "st,stih416-lpc"
-> +                                 "st,stih415-lpc" "st,stid127-lpc"
-> +- reg          : LPC registers base address + size
-> +- interrupts    : LPC interrupt line number and associated flags
-> +- clocks       : Clock used by LPC device (See: ../clock/clock-bindings.txt)
-> +- st,lpc-mode  : The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
-> +                 ST_LPC_MODE_WDT [1].  One (and only one) mode must be
-> +                 selected.
+On Wednesday 17 December 2014 13:02:23 Murali Karicheri wrote:
+> Now, in Kernel, parent device's DMA parameters has to be applied to
+> the child as is - to enable DMA support for the device. Usually this
+> is happened in places where parent device manually instantiates child
+> device such as in drivers/pci/probe.c (pci_device_add() for example).
 > 
+> Now DMA configuration is represented in device data structure not only
+> by DMA mask and DMA params, it also includes dma_pfn_offset at least.
+> Hence introduce common dma_get_parent_cfg() helper to apply dma
+> configuration from parent to child, and use __weak to allow arch to
+> override it if needed.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> ---
+>  drivers/base/dma-mapping.c  |   18 ++++++++++++++++++
+>  include/linux/dma-mapping.h |    3 +++
+>  2 files changed, 21 insertions(+)
+> 
+> diff --git a/drivers/base/dma-mapping.c b/drivers/base/dma-mapping.c
+> index 9e8bbdd..5322426 100644
+> --- a/drivers/base/dma-mapping.c
+> +++ b/drivers/base/dma-mapping.c
+> @@ -339,3 +339,21 @@ void dma_common_free_remap(void *cpu_addr, size_t size, unsigned long vm_flags)
+>  	vunmap(cpu_addr);
+>  }
+>  #endif
+> +
+> +int __weak dma_get_parent_cfg(struct device *dev, struct device *parent)
+> +{
+> +	struct device *temp = parent;
+> +
+> +	if (!temp)
+> +		temp = dev->parent;
+> +
+> +	if (temp && is_device_dma_capable(temp)) {
+> +		dev->dma_mask	= temp->dma_mask;
+> +		dev->coherent_dma_mask = temp->coherent_dma_mask;
 
-I'm glad you got it to work with two drivers for the same device.
+As discussed, setting the pointers like this is always wrong,
+so don't do it.
 
-With this binding, I'm still a bit unhappy about the st,lpc-mode property,
-in particular since you rely on a shared include file for something that
-can only be set in one way or another and always has to be present.
-
-Why not just use a boolean property that enforces one mode when present
-and another mode when absent?
+What's wrong with using arch_setup_dma_ops() from PCI as suggested
+previously?
 
 	Arnd
