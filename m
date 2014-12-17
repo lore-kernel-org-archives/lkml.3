@@ -1,167 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751483AbaLQVAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:00:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38403 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750999AbaLQVAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:00:06 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8723au: os_dep: usb_intf.c:  Remove some unused functions
-References: <1418848615-1745-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-Date: Wed, 17 Dec 2014 15:59:58 -0500
-In-Reply-To: <1418848615-1745-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	(Rickard Strandqvist's message of "Wed, 17 Dec 2014 21:36:54 +0100")
-Message-ID: <wrfjmw6mt2k1.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1751545AbaLQVEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:04:47 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:42205 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751201AbaLQVEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 16:04:46 -0500
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] pxa_timer: fix session missmatch warning
+Date: Thu, 18 Dec 2014 00:04:41 +0300
+Message-Id: <1418850281-22411-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se> writes:
-> Removes some functions that are not used anywhere:
-> rtw_hw_resume23a() rtw_hw_suspend23a()
->
-> This was partially found by using a static code analysis program called cppcheck.
->
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  drivers/staging/rtl8723au/include/osdep_intf.h |    3 -
->  drivers/staging/rtl8723au/os_dep/usb_intf.c    |  100 ------------------------
->  2 files changed, 103 deletions(-)
+Fix the following warning:
 
-Signed-off-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+WARNING: drivers/clocksource/built-in.o(.text.unlikely+0x70): Section mismatch in reference from the function pxa_timer_common_init() to the function .init.text:clocksource_mmio_init()
+The function pxa_timer_common_init() references
+the function __init clocksource_mmio_init().
+This is often because pxa_timer_common_init lacks a __init
+annotation or the annotation of clocksource_mmio_init is wrong.
 
->
-> diff --git a/drivers/staging/rtl8723au/include/osdep_intf.h b/drivers/staging/rtl8723au/include/osdep_intf.h
-> index 33afa62..a157eb2 100644
-> --- a/drivers/staging/rtl8723au/include/osdep_intf.h
-> +++ b/drivers/staging/rtl8723au/include/osdep_intf.h
-> @@ -19,9 +19,6 @@
->  #include <osdep_service.h>
->  #include <drv_types.h>
->  
-> -int rtw_hw_suspend23a(struct rtw_adapter *padapter);
-> -int rtw_hw_resume23a(struct rtw_adapter *padapter);
-> -
->  int rtw_init_drv_sw23a(struct rtw_adapter *padapter);
->  int rtw_free_drv_sw23a(struct rtw_adapter *padapter);
->  int rtw_reset_drv_sw23a(struct rtw_adapter *padapter);
-> diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-> index 865743e..42eb90b 100644
-> --- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
-> +++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-> @@ -287,106 +287,6 @@ static void rtw_dev_unload(struct rtw_adapter *padapter)
->  	RT_TRACE(_module_hci_intfs_c_, _drv_err_, ("-rtw_dev_unload\n"));
->  }
->  
-> -int rtw_hw_suspend23a(struct rtw_adapter *padapter)
-> -{
-> -	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
-> -	struct net_device *pnetdev = padapter->pnetdev;
-> -	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
-> -
-> -	if ((!padapter->bup) || (padapter->bDriverStopped) ||
-> -	    (padapter->bSurpriseRemoved)) {
-> -		DBG_8723A("padapter->bup =%d bDriverStopped =%d bSurpriseRemoved = %d\n",
-> -			  padapter->bup, padapter->bDriverStopped,
-> -			  padapter->bSurpriseRemoved);
-> -		goto error_exit;
-> -	}
-> -
-> -	if (padapter) { /* system suspend */
-> -		LeaveAllPowerSaveMode23a(padapter);
-> -
-> -		DBG_8723A("==> rtw_hw_suspend23a\n");
-> -		down(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		/* padapter->net_closed = true; */
-> -		/* s1. */
-> -		if (pnetdev) {
-> -			netif_carrier_off(pnetdev);
-> -			netif_tx_stop_all_queues(pnetdev);
-> -		}
-> -
-> -		/* s2. */
-> -		rtw_disassoc_cmd23a(padapter, 500, false);
-> -
-> -		/* s2-2.  indicate disconnect to os */
-> -		/* rtw_indicate_disconnect23a(padapter); */
-> -		if (check_fwstate(pmlmepriv, _FW_LINKED)) {
-> -			_clr_fwstate_(pmlmepriv, _FW_LINKED);
-> -
-> -			rtw_led_control(padapter, LED_CTL_NO_LINK);
-> -
-> -			rtw_os_indicate_disconnect23a(padapter);
-> -
-> -			/* donnot enqueue cmd */
-> -			rtw_lps_ctrl_wk_cmd23a(padapter,
-> -					       LPS_CTRL_DISCONNECT, 0);
-> -		}
-> -		/* s2-3. */
-> -		rtw_free_assoc_resources23a(padapter, 1);
-> -
-> -		/* s2-4. */
-> -		rtw_free_network_queue23a(padapter);
-> -		rtw_ips_dev_unload23a(padapter);
-> -		pwrpriv->rf_pwrstate = rf_off;
-> -		pwrpriv->bips_processing = false;
-> -		up(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
-> -	return 0;
-> -error_exit:
-> -	DBG_8723A("%s, failed\n", __func__);
-> -	return -1;
-> -}
-> -
-> -int rtw_hw_resume23a(struct rtw_adapter *padapter)
-> -{
-> -	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
-> -	struct net_device *pnetdev = padapter->pnetdev;
-> -
-> -	if (padapter) { /* system resume */
-> -		DBG_8723A("==> rtw_hw_resume23a\n");
-> -		down(&pwrpriv->lock);
-> -		pwrpriv->bips_processing = true;
-> -		rtw_reset_drv_sw23a(padapter);
-> -
-> -		if (pm_netdev_open23a(pnetdev, false)) {
-> -			up(&pwrpriv->lock);
-> -			goto error_exit;
-> -		}
-> -
-> -		netif_device_attach(pnetdev);
-> -		netif_carrier_on(pnetdev);
-> -
-> -		if (!rtw_netif_queue_stopped(pnetdev))
-> -			netif_tx_start_all_queues(pnetdev);
-> -		else
-> -			netif_tx_wake_all_queues(pnetdev);
-> -
-> -		pwrpriv->bkeepfwalive = false;
-> -
-> -		pwrpriv->rf_pwrstate = rf_on;
-> -		pwrpriv->bips_processing = false;
-> -
-> -		up(&pwrpriv->lock);
-> -	} else {
-> -		goto error_exit;
-> -	}
-> -	return 0;
-> -error_exit:
-> -	DBG_8723A("%s, Open net dev failed\n", __func__);
-> -	return -1;
-> -}
-> -
->  static int rtw_suspend(struct usb_interface *pusb_intf, pm_message_t message)
->  {
->  	struct dvobj_priv *dvobj = usb_get_intfdata(pusb_intf);
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+---
+ drivers/clocksource/pxa_timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clocksource/pxa_timer.c b/drivers/clocksource/pxa_timer.c
+index 941f3f3..d9438af 100644
+--- a/drivers/clocksource/pxa_timer.c
++++ b/drivers/clocksource/pxa_timer.c
+@@ -163,7 +163,7 @@ static struct irqaction pxa_ost0_irq = {
+ 	.dev_id		= &ckevt_pxa_osmr0,
+ };
+ 
+-static void pxa_timer_common_init(int irq, unsigned long clock_tick_rate)
++static void __init pxa_timer_common_init(int irq, unsigned long clock_tick_rate)
+ {
+ 	timer_writel(0, OIER);
+ 	timer_writel(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
+-- 
+2.1.3
+
