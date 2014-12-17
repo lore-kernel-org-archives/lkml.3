@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838AbaLQLfg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 06:35:36 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:59317 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaLQLfe (ORCPT
+	id S1751721AbaLQLrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 06:47:55 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:46495 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaLQLrx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 06:35:34 -0500
-Message-ID: <54916A82.4010105@cogentembedded.com>
-Date: Wed, 17 Dec 2014 14:35:30 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 17 Dec 2014 06:47:53 -0500
+Message-ID: <54916D63.7060701@codeaurora.org>
+Date: Wed, 17 Dec 2014 17:17:47 +0530
+From: Chintan Pandya <cpandya@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Peter Chen <Peter.Chen@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-CC: "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: hcd: add OTG ID signal sensing
-References: <3663198.HSrURZGche@wasted.cogentembedded.com> <BN3PR0301MB08495DD76B65E14BDE460E42816D0@BN3PR0301MB0849.namprd03.prod.outlook.com>
-In-Reply-To: <BN3PR0301MB08495DD76B65E14BDE460E42816D0@BN3PR0301MB0849.namprd03.prod.outlook.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: David Rientjes <rientjes@google.com>
+CC: Michal Hocko <mhocko@suse.cz>, hannes@cmpxchg.org, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memcg: Provide knob for force OOM into the memcg
+References: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org> <20141216133935.GK22914@dhcp22.suse.cz> <alpine.DEB.2.10.1412161430040.5142@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.10.1412161430040.5142@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 12/17/2014 04:03 AM, David Rientjes wrote:
+> On Tue, 16 Dec 2014, Michal Hocko wrote:
+>
+>>> We may want to use memcg to limit the total memory
+>>> footprint of all the processes within the one group.
+>>> This may lead to a situation where any arbitrary
+>>> process cannot get migrated to that one  memcg
+>>> because its limits will be breached. Or, process can
+>>> get migrated but even being most recently used
+>>> process, it can get killed by in-cgroup OOM. To
+>>> avoid such scenarios, provide a convenient knob
+>>> by which we can forcefully trigger OOM and make
+>>> a room for upcoming process.
+>>>
+>>> To trigger force OOM,
+>>> $ echo 1>  /<memcg_path>/memory.force_oom
+>>
+>> What would prevent another task deplete that memory shortly after you
+>> triggered OOM and end up in the same situation? E.g. while the moving
+>> task is migrating its charges to the new group...
 
-On 12/17/2014 5:08 AM, Peter Chen wrote:
+Idea was to trigger an OOM until we can migrate any particular process 
+onto desired cgroup.
 
->> On the Renesas R8A7791 SoC based boards there's MAX3355 USB OTG chip and
->> mini-AB USB connector corresponding to USB port 0 driven either by EHCI/OHCI
->> or  Renesas USBHS gadget controller. And we'd like the  host/gadget drivers to
->> work based on the cable type connected. An 'extcon' driver for MAX3355 has
->> been written, so we only need to bind  to it via device tree which I'm doing in
->> this patch.
+>>
+>> Why cannot you simply disable OOM killer in that memcg and handle it
+>> from userspace properly?
 
->> I wasn't able to find a solution better than checking the cable type at the host
->> driver probe time and refusing to drive a host if B-cable is connected.
+Well, this can be done it seems. Let me explore around this. Thanks for 
+this suggestion.
 
-> You may need a dual-role/otg driver to do it, which can enable host/device function
-> according to ID pin.
+> It seems to be proposed as a shortcut so that the kernel will determine
+> the best process to kill.  That information is available to userspace so
+> it should be able to just SIGKILL the desired process (either in the
+> destination memcg or in the source memcg to allow deletion), so this
+> functionality isn't needed in the kernel.
 
-    It would have been too good if I had a dual-role controller. :-)
-    But I have what I have. IIUC, such configuration (OHCI and UDC sharing a 
-USB port) has been used on OMAP1.
+Yes, this can be seen as a shortcut because we are off-loading some 
+task-selection to be killed by OOM on kernel rather than userspace 
+decides by itself.
 
-WBR, Sergei
+-- 
+Chintan Pandya
 
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
