@@ -1,159 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751175AbaLQPax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:30:53 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:54808 "EHLO comal.ext.ti.com"
+	id S1751253AbaLQPa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:30:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47798 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750899AbaLQPav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:30:51 -0500
-Date: Wed, 17 Dec 2014 09:30:26 -0600
-From: Nishanth Menon <nm@ti.com>
-To: Lokesh Vutla <lokeshvutla@ti.com>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Kristo, Tero" <t-kristo@ti.com>, Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH V2 2/2] ARM: dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-Message-ID: <20141217153026.GB838@kahuna>
-References: <cover.1418762900.git.lsorense@csclub.uwaterloo.ca>
- <89b793993eaa492af531bd7aa9dff1f871fb4a77.1418762900.git.lsorense@csclub.uwaterloo.ca>
- <54914096.9060206@ti.com>
+	id S1751076AbaLQPa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 10:30:56 -0500
+Date: Wed, 17 Dec 2014 10:30:39 -0500
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Jiri Kosina <jkosina@suse.cz>,
+        Nestor Lopez Casado <nlopezcasad@logitech.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] HID: logitech-hidpp: detect HID++ 2.0 errors too
+Message-ID: <20141217153039.GB16047@mail.corp.redhat.com>
+References: <1418691016-30681-1-git-send-email-peter@lekensteyn.nl>
+ <1418691016-30681-2-git-send-email-peter@lekensteyn.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <54914096.9060206@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418691016-30681-2-git-send-email-peter@lekensteyn.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:06-20141217, Lokesh Vutla wrote:
-> Hi Len,
-> On Wednesday 17 December 2014 02:38 AM, Lennart Sorensen wrote:
-> > Errata i856 for the AM572x (DRA7xx) points out that the 32.768KHz external
-> > crystal is not enabled at power up.  Instead the CPU falls back to using
-> > an emulation for the 32KHz clock which is SYSCLK1/610.  SYSCLK1 is usually
-> > 20MHz on boards so far (which gives an emulated frequency of 32.786KHz),
-> > but can also be 19.2 or 27MHz which result in much larger drift.
-> > 
-> > Since this is used to drive the master counter at 32.768KHz * 375 /
-> > 2 = 6.144MHz, the emulated speed for 20MHz is of by 570ppm, or about 43
-> > seconds per day, and more than the 500ppm NTP is able to tolerate.
-> > 
-> > Checking the CTRL_CORE_BOOTSTRAP register can determine if the CPU
-> > is using the real 32.768KHz crystal or the emulated SYSCLK1/610, and
-> > by known that the real counter frequency can be determined and used.
-> > The real speed is then SYSCLK1 / 610 * 375 / 2 or SYSCLK1 * 75 / 244.
-> Looks good to me.
-> Tested this on DRA7 evm.
+On Dec 16 2014 or thereabouts, Peter Wu wrote:
+> Devices speaking HID++ 2.0 report a different error code (0xff). Detect
+> these errors too to avoid 5 second delays when the device reports an
+> error. Caught by... well, a bug in the QEMU emulation of this receiver.
 > 
-> Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+> Renamed fap to rap for HID++ 1.0 errors because it is more logical,
+> it has no functional difference.
 > 
-> Thanks and regards,
-> Lokesh
+> Signed-off-by: Peter Wu <peter@lekensteyn.nl>
+> ---
+
+Jiri, it looks like this one fall off from your radar.
+
+It's not a problem per-se, I'd like to have some feedbacks from Logitech
+first, but still, there is a bug and Peter fixed it :)
+
+Cheers,
+Benjamin
+
+>  drivers/hid/hid-logitech-hidpp.c | 17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
 > 
-> > 
-> > Signed-off-by: Len Sorensen <lsorense@csclub.uwaterloo.ca>
-> > ---
-> >  arch/arm/mach-omap2/control.h |    4 ++++
-> >  arch/arm/mach-omap2/timer.c   |   36 ++++++++++++++++++++++++++++++++++--
-> >  2 files changed, 38 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/control.h b/arch/arm/mach-omap2/control.h
-> > index a3c0133..a80ac2d 100644
-> > --- a/arch/arm/mach-omap2/control.h
-> > +++ b/arch/arm/mach-omap2/control.h
-> > @@ -286,6 +286,10 @@
-> >  #define OMAP5XXX_CONTROL_STATUS                0x134
-> >  #define OMAP5_DEVICETYPE_MASK          (0x7 << 6)
-> >  
-> > +/* DRA7XX CONTROL CORE BOOTSTRAP */
-> > +#define DRA7_CTRL_CORE_BOOTSTRAP	0x6c4
-> > +#define DRA7_SPEEDSELECT_MASK		(0x3 << 8)
-> > +
-> >  /*
-> >   * REVISIT: This list of registers is not comprehensive - there are more
-> >   * that should be added.
-> > diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> > index fb0cb2b..7d45c84 100644
-> > --- a/arch/arm/mach-omap2/timer.c
-> > +++ b/arch/arm/mach-omap2/timer.c
-> > @@ -54,6 +54,7 @@
-> >  
-> >  #include "soc.h"
-> >  #include "common.h"
-> > +#include "control.h"
-> >  #include "powerdomain.h"
-> >  #include "omap-secure.h"
-> >  
-> > @@ -496,7 +497,8 @@ static void __init realtime_counter_init(void)
-> >  	void __iomem *base;
-> >  	static struct clk *sys_clk;
-> >  	unsigned long rate;
-> > -	unsigned int reg, num, den;
-> > +	unsigned int reg;
-> > +	unsigned long long num, den;
-> >  
-> >  	base = ioremap(REALTIME_COUNTER_BASE, SZ_32);
-> >  	if (!base) {
-> > @@ -511,6 +513,35 @@ static void __init realtime_counter_init(void)
-> >  	}
-> >  
-> >  	rate = clk_get_rate(sys_clk);
-> > +
-> > +	if (soc_is_dra7xx()) {
-> > +		/*
-> > +		 * Errata i856 says the 32.768KHz crystal does not start at
-> > +		 * power on, so the CPU falls back to an emulated 32KHz clock
-> > +		 * based on sysclk / 610 instead. This causes the master counter
-> > +		 * frequency to not be 6.144MHz but at sysclk / 610 * 375 / 2
-> > +		 * (OR sysclk * 75 / 244)
-> > +		 *
-> > +		 * This affects at least the DRA7/AM572x 1.0, 1.1 revisions.
-> > +		 * Of course any board built without a populated 32.768KHz
-> > +		 * crystal would also need this fix even if the CPU is fixed
-> > +		 * later.
-> > +		 *
-> > +		 * Either case can be detected by using the two speedselect bits
-> > +		 * If they are not 0, then the 32.768KHz clock driving the
-> > +		 * coarse counter that corrects the fine counter every time it
-> > +		 * ticks is actually rate/610 rather than 32.768KHz and we
-> > +		 * should compensate to avoid the 570ppm (at 20MHz, much worse
-> > +		 * at other rates) too fast system time.
-> > +		 */
-> > +		reg = omap_ctrl_readl(DRA7_CTRL_CORE_BOOTSTRAP);
-> > +		if (reg & DRA7_SPEEDSELECT_MASK) {
-> > +			num = 75;
-> > +			den = 244;
-> > +			goto sysclk1_based;
-> > +		}
-> > +	}
-> > +
-> >  	/* Numerator/denumerator values refer TRM Realtime Counter section */
-> >  	switch (rate) {
-> >  	case 12000000:
-> > @@ -545,6 +576,7 @@ static void __init realtime_counter_init(void)
-> >  		break;
-> >  	}
-> >  
-> > +sysclk1_based:
-> >  	/* Program numerator and denumerator registers */
-> >  	reg = readl_relaxed(base + INCREMENTER_NUMERATOR_OFFSET) &
-> >  			NUMERATOR_DENUMERATOR_MASK;
-> > @@ -556,7 +588,7 @@ static void __init realtime_counter_init(void)
-> >  	reg |= den;
-> >  	writel_relaxed(reg, base + INCREMENTER_DENUMERATOR_RELOAD_OFFSET);
-> >  
-> > -	arch_timer_freq = (rate / den) * num;
-> > +	arch_timer_freq = DIV_ROUND_UP_ULL(rate * num, den);
-> >  	set_cntfreq();
-> >  
-> >  	iounmap(base);
-> > 
+> diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
+> index 2f420c0..ae23dec 100644
+> --- a/drivers/hid/hid-logitech-hidpp.c
+> +++ b/drivers/hid/hid-logitech-hidpp.c
+> @@ -105,6 +105,7 @@ struct hidpp_device {
+>  };
+>  
+>  
+> +/* HID++ 1.0 error codes */
+>  #define HIDPP_ERROR				0x8f
+>  #define HIDPP_ERROR_SUCCESS			0x00
+>  #define HIDPP_ERROR_INVALID_SUBID		0x01
+> @@ -119,6 +120,8 @@ struct hidpp_device {
+>  #define HIDPP_ERROR_REQUEST_UNAVAILABLE		0x0a
+>  #define HIDPP_ERROR_INVALID_PARAM_VALUE		0x0b
+>  #define HIDPP_ERROR_WRONG_PIN_CODE		0x0c
+> +/* HID++ 2.0 error codes */
+> +#define HIDPP20_ERROR				0xff
+>  
+>  static void hidpp_connect_event(struct hidpp_device *hidpp_dev);
+>  
+> @@ -192,9 +195,16 @@ static int hidpp_send_message_sync(struct hidpp_device *hidpp,
+>  	}
+>  
+>  	if (response->report_id == REPORT_ID_HIDPP_SHORT &&
+> -	    response->fap.feature_index == HIDPP_ERROR) {
+> +	    response->rap.sub_id == HIDPP_ERROR) {
+> +		ret = response->rap.params[1];
+> +		dbg_hid("%s:got hidpp error %02X\n", __func__, ret);
+> +		goto exit;
+> +	}
+> +
+> +	if (response->report_id == REPORT_ID_HIDPP_LONG &&
+> +	    response->fap.feature_index == HIDPP20_ERROR) {
+>  		ret = response->fap.params[1];
+> -		dbg_hid("__hidpp_send_report got hidpp error %02X\n", ret);
+> +		dbg_hid("%s:got hidpp 2.0 error %02X\n", __func__, ret);
+>  		goto exit;
+>  	}
+>  
+> @@ -271,7 +281,8 @@ static inline bool hidpp_match_answer(struct hidpp_report *question,
+>  static inline bool hidpp_match_error(struct hidpp_report *question,
+>  		struct hidpp_report *answer)
+>  {
+> -	return (answer->fap.feature_index == HIDPP_ERROR) &&
+> +	return ((answer->rap.sub_id == HIDPP_ERROR) ||
+> +	    (answer->fap.feature_index == HIDPP20_ERROR)) &&
+>  	    (answer->fap.funcindex_clientid == question->fap.feature_index) &&
+>  	    (answer->fap.params[0] == question->fap.funcindex_clientid);
+>  }
+> -- 
+> 2.1.3
 > 
-If tony is ok with the arch_timer_freq change in this patch, I am ok
-with it as well.
--- 
-Regards,
-Nishanth Menon
