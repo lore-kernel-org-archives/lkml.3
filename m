@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaLQVEr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 16:04:47 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:42205 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaLQVEq (ORCPT
+	id S1751428AbaLQVPu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 16:15:50 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:43258 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751247AbaLQVPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 16:04:46 -0500
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] pxa_timer: fix session missmatch warning
-Date: Thu, 18 Dec 2014 00:04:41 +0300
-Message-Id: <1418850281-22411-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	Wed, 17 Dec 2014 16:15:49 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Simon <longsleep@gmail.com>, Olliver Schinagl <oliver@schinagl.nl>,
+        linux-pwm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv10 0/2] Add Allwinner SoCs PWM support
+Date: Wed, 17 Dec 2014 22:15:38 +0100
+Message-Id: <1418850940-30835-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the following warning:
+Hi,
 
-WARNING: drivers/clocksource/built-in.o(.text.unlikely+0x70): Section mismatch in reference from the function pxa_timer_common_init() to the function .init.text:clocksource_mmio_init()
-The function pxa_timer_common_init() references
-the function __init clocksource_mmio_init().
-This is often because pxa_timer_common_init lacks a __init
-annotation or the annotation of clocksource_mmio_init is wrong.
+This patch series adds support for the PWM controller found on the Allwinner
+SoCs.
 
-Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
----
- drivers/clocksource/pxa_timer.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+The first patch adds the driver itself.
+The second patch adds the DT binding documentation
 
-diff --git a/drivers/clocksource/pxa_timer.c b/drivers/clocksource/pxa_timer.c
-index 941f3f3..d9438af 100644
---- a/drivers/clocksource/pxa_timer.c
-+++ b/drivers/clocksource/pxa_timer.c
-@@ -163,7 +163,7 @@ static struct irqaction pxa_ost0_irq = {
- 	.dev_id		= &ckevt_pxa_osmr0,
- };
- 
--static void pxa_timer_common_init(int irq, unsigned long clock_tick_rate)
-+static void __init pxa_timer_common_init(int irq, unsigned long clock_tick_rate)
- {
- 	timer_writel(0, OIER);
- 	timer_writel(OSSR_M0 | OSSR_M1 | OSSR_M2 | OSSR_M3, OSSR);
+Changes in v8:
+ - renamed the driver sun4i as the PWM IP is different in the next sunxi SoCs
+ - Took into account comments from Thierry
+
+Changes in v9:
+ - moved from using a mutex to a spinlock
+
+Changes in v10:
+ - rebased on v3.18
+ - corrected the module name in Kconfig
+ - Added dependancy on HAS_IOMEM and COMMON_CLK
+ - changes clk_rate in sun4i_pwm_config() to be a u64 to avoid unnecessary
+   casting
+ - removed unnecessary braces
+
+Alexandre Belloni (2):
+  pwm: Add Allwinner SoC support
+  pwm: sunxi: document OF bindings
+
+ .../devicetree/bindings/pwm/pwm-sun4i.txt          |  20 ++
+ drivers/pwm/Kconfig                                |  10 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-sun4i.c                            | 366 +++++++++++++++++++++
+ 4 files changed, 397 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sun4i.txt
+ create mode 100644 drivers/pwm/pwm-sun4i.c
+
 -- 
-2.1.3
+2.1.0
 
