@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531AbaLQKlH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:41:07 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35663 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750894AbaLQKlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:41:05 -0500
-Date: Wed, 17 Dec 2014 10:40:49 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>, dri-devel@lists.freedesktop.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, p.zabel@pengutronix.de,
-        shawn.guo@linaro.org, kernel@pengutronix.de, mturquette@linaro.org,
-        airlied@linux.ie
-Subject: Re: [PATCH RFC 09/15] drm: imx: Add MIPI DSI host controller driver
-Message-ID: <20141217104049.GU11285@n2100.arm.linux.org.uk>
-References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
- <1418200648-32656-10-git-send-email-Ying.Liu@freescale.com>
- <20141210131640.GD23558@ulmo.nvidia.com>
- <54915081.6020508@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54915081.6020508@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751962AbaLQKnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:43:49 -0500
+Received: from 8bytes.org ([81.169.241.247]:60033 "EHLO theia.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592AbaLQKnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 05:43:46 -0500
+From: Joerg Roedel <joro@8bytes.org>
+To: iommu@lists.linux-foundation.org
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jerry Hoemann <jerry.hoemann@hp.com>, linux-kernel@vger.kernel.org,
+        Joerg Roedel <jroedel@suse.de>, <stable@vger.kernel.org>
+Subject: [PATCH 1/2] iommu/vt-d: Fix dmar_domain leak in iommu_attach_device
+Date: Wed, 17 Dec 2014 11:43:36 +0100
+Message-Id: <1418813017-24888-1-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 05:44:33PM +0800, Liu Ying wrote:
-> Hi Thierry,
-> 
-> Sorry for the late response.
-> I tried to address almost all your comments locally first.
-> More feedback below.
-> 
-> On 12/10/2014 09:16 PM, Thierry Reding wrote:
-> >On Wed, Dec 10, 2014 at 04:37:22PM +0800, Liu Ying wrote:
-> >>+static int check_status(struct imx_mipi_dsi *dsi, u32 reg, u32 status,
-> >>+			int timeout, bool to_set)
-> >>+{
-> >>+	u32 val;
-> >>+	bool out = false;
-> >>+
-> >>+	val = dsi_read(dsi, reg);
-> >>+	for (;;) {
-> >>+		out = to_set ? (val & status) : !(val & status);
-> >>+		if (out)
-> >>+			break;
-> >>+
-> >>+		if (!timeout--)
-> >>+			return -EFAULT;
-> >>+
-> >>+		msleep(1);
-> >>+		val = dsi_read(dsi, reg);
-> >>+	}
-> >>+	return 0;
-> >>+}
-> >
-> >You should probably use a properly timed loop here. msleep() isn't
-> >guaranteed to return after exactly one millisecond, so your timeout is
-> >never going to be accurate. Something like the following would be better
-> >in my opinion:
-> >
-> >	timeout = jiffies + msecs_to_jiffies(timeout);
-> >
-> >	while (time_before(jiffies, timeout)) {
-> >		...
-> >	}
-> >
-> >Also timeout should be unsigned long in that case.
-> 
-> Accepted.
+From: Joerg Roedel <jroedel@suse.de>
 
-Actually, that's a bad example: what we want to do is to assess success
-after we wait, before we decide that something has failed.  In other
-words, we don't want to wait, and decide that we failed without first
-checking for success.
+Since commit 1196c2f a domain is only destroyed in the
+notifier path if it is hot-unplugged. This caused a
+domain leakage in iommu_attach_device when a driver was
+unbound from the device and bound to VFIO. In this case the
+device is attached to a new domain and unlinked from the old
+domain. At this point nothing points to the old domain
+anymore and its memory is leaked.
+Fix this by explicitly freeing the old domain in
+iommu_attach_domain.
 
-In any case, returning -EFAULT is not sane: EFAULT doesn't mean "fault"
-it means "Bad address", and it is returned to userspace to mean that
-userspace passed the kernel a bad address.  That definition does /not/
-fit what's going on here.
+Fixes: 1196c2f (iommu/vt-d: Fix dmar_domain leak in iommu_attach_device)
+Cc: <stable@vger.kernel.org> # v3.18
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+---
+ drivers/iommu/intel-iommu.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-	timeout = jiffies + msecs_to_jiffies(timeout);
-
-	do {
-		val = dsi_read(dsi, reg);
-		out = to_set ? (val & status) : !(val & status);
-		if (out)
-			break;
-
-		if (time_is_after_jiffies(timeout))
-			return -ETIMEDOUT;
-
-		msleep(1);
-	} while (1);
-
-	return 0;
-
-would be better: we only fail immediately after we have checked whether
-we succeeded, and we also do the first check immediately.
-
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 1232336..7610121 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -4428,6 +4428,10 @@ static int intel_iommu_attach_device(struct iommu_domain *domain,
+ 				domain_remove_one_dev_info(old_domain, dev);
+ 			else
+ 				domain_remove_dev_info(old_domain);
++
++			if (!domain_type_is_vm_or_si(old_domain) &&
++			     list_empty(&old_domain->devices))
++				domain_exit(old_domain);
+ 		}
+ 	}
+ 
 -- 
-FTTC broadband for 0.8mile line: currently at 9.5Mbps down 400kbps up
-according to speedtest.net.
+1.9.1
+
