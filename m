@@ -1,131 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284AbaLQAov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 19:44:51 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:49032 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750943AbaLQAou (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 19:44:50 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
-Date: Wed, 17 Dec 2014 02:44:54 +0200
-Message-ID: <2007813.TxmaWEReSL@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <54901D90.1080109@linaro.org>
-References: <20141216094854.22639.69181.sendpatchset@w520> <CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com> <54901D90.1080109@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751156AbaLQAxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 19:53:10 -0500
+Received: from gate.crashing.org ([63.228.1.57]:55077 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932AbaLQAxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 19:53:08 -0500
+Message-ID: <1418777556.27103.7.camel@kernel.crashing.org>
+Subject: Re: [PATCH 13/18] powerpc/uaccess: fix sparse errors
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-arch@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
+Date: Wed, 17 Dec 2014 11:52:36 +1100
+In-Reply-To: <20141216164746.GB21876@redhat.com>
+References: <1418575877-21488-1-git-send-email-mst@redhat.com>
+	 <1418575877-21488-14-git-send-email-mst@redhat.com>
+	 <20141216164746.GB21876@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-
-On Tuesday 16 December 2014 12:54:56 Daniel Lezcano wrote:
-> On 12/16/2014 12:46 PM, Magnus Damm wrote:
-> > On Tue, Dec 16, 2014 at 8:20 PM, Laurent Pinchart wrote:
-> >> On Tuesday 16 December 2014 12:14:40 Daniel Lezcano wrote:
-> >>> On 12/16/2014 10:48 AM, Magnus Damm wrote:
-> >>>> From: Magnus Damm <damm+renesas@opensource.se>
-> >>>> 
-> >>>> Update the TMU driver to use cpu_possible_mask as cpumask to make
-> >>>> r8a7779 SMP work as expected with or without the ARM TWD timer.
-> >>>> 
-> >>>> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> >>> 
-> >>> Applied as a 3.18 fix.
-> >> 
-> >> You're a bit too fast, I haven't had time to review the patch yet.
-> >> 
-> >>> ps: May I suggest to use the CLOCK_EVT_FEAT_DYNIRQ flag for this driver
-> >>> ?
-> >>> 
-> >>>> ---
-> >>>>    drivers/clocksource/sh_tmu.c |    2 +-
-> >>>>    1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>> 
-> >>>> --- 0001/drivers/clocksource/sh_tmu.c
-> >>>> +++ work/drivers/clocksource/sh_tmu.c       2014-12-16
-> >>>> 17:49:49.000000000 +0900 @@ -428,7 +428,7 @@ static void
-> >>>> sh_tmu_register_clockevent(s
-> >>>>     ced->features = CLOCK_EVT_FEAT_PERIODIC;
-> >>>>     ced->features |= CLOCK_EVT_FEAT_ONESHOT;
-> >>>>     ced->rating = 200;
-> >>>> -   ced->cpumask = cpumask_of(0);
-> >>>> +   ced->cpumask = cpu_possible_mask;
-> >> 
-> >> Magnus, how thoroughly have you tested this ? The TMU is indeed usable by
-> >> all CPUs, so setting the CPU mask to cpu_possible_mask makes sense, but
-> >> last time I've tried that it broke the broadcast timer due to the
-> >> heuristics used by the clock events core code.
+On Tue, 2014-12-16 at 18:47 +0200, Michael S. Tsirkin wrote:
+> On Sun, Dec 14, 2014 at 06:52:51PM +0200, Michael S. Tsirkin wrote:
+> > virtio wants to read bitwise types from userspace using get_user.  At the
+> > moment this triggers sparse errors, since the value is passed through an
+> > integer.
 > > 
-> > Uhm, so I've tested this particular patch on r8a7779 but I do agree
-> > that the TMU is used on a bunch of SoCs if that's what you mean. I
-> > don't see how it is different from any other of our timers though, and
-> > those got fixed like this earlier.
+> > Fix that up using __force.
 > > 
-> > I wonder if you may recall an earlier issue with incorrect clock event
-> > priorities and code somehow working-by-accident without the mask set
-> > as expected?
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 > 
-> Could have been fixed with : ?
-> 
-> commit 70e5975d3a04be5479a28eec4a2fb10f98ad2785
-> Author: Stephen Boyd <sboyd@codeaurora.org>
-> Date:   Thu Jun 13 11:39:50 2013 -0700
-> 
->      clockevents: Prefer CPU local devices over global devices
-> 
->      On an SMP system with only one global clockevent and a dummy
->      clockevent per CPU we run into problems. We want the dummy
->      clockevents to be registered as the per CPU tick devices, but
->      we can only achieve that if we register the dummy clockevents
->      before the global clockevent or if we artificially inflate the
->      rating of the dummy clockevents to be higher than the rating
->      of the global clockevent. Failure to do so leads to boot
->      hangs when the dummy timers are registered on all other CPUs
->      besides the CPU that accepted the global clockevent as its tick
->      device and there is no broadcast timer to poke the dummy
->      devices.
-> 
->      If we're registering multiple clockevents and one clockevent is
->      global and the other is local to a particular CPU we should
->      choose to use the local clockevent regardless of the rating of
->      the device. This way, if the clockevent is a dummy it will take
->      the tick device duty as long as there isn't a higher rated tick
->      device and any global clockevent will be bumped out into
->      broadcast mode, fixing the problem described above.
+> Ping.
+> Do powerpc maintainers consider fixing sparse errors
+> applicable for 3.19?
+> If yes, can you pls merge this patch?
 
-I think I had that patch in my tree when I noticed the breakage, since my own 
-tmu patch dates from February 2014. I'll retest it though and will let you 
-know.
+Relax :-) Our patches are tracked in Patchwork and such fixes aren't
+necessarily constrained by the merge window. Michael will probably
+pick it up but don't expect systematic replies to patches in 2 days ...
 
-> >> Could you please confirm that you've tested both CONFIG_PREEMPT_NONE and
-> >> CONFIG_PREEMPT with and without the ARM TWD times, and that you've booted
-> >> to userspace and tested timer broadcast on all CPUs ?
+Also, when sending a series like that where one of us only gets
+CCed on one of the patch, it helps to make it clear whether you
+only expect an ack or whether you expect us to take the patch.
+
+Cheers,
+Ben.
+> > ---
+> >  arch/powerpc/include/asm/uaccess.h | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
 > > 
-> > No I have not. I've booted to user space in initramfs with DT-based
-> > TWD on Multiplatform for r8a7779. Without this fix (and other r8a7779
-> > TWD bits) I see a lot of breakage. For instance, TWD and SMP boot is
-> > broken on r8a7779 - both legacy and non-legacy. I have not gotten to
-> > sh73a0 yet, but I assume it is busted too.
+> > diff --git a/arch/powerpc/include/asm/uaccess.h b/arch/powerpc/include/asm/uaccess.h
+> > index 9485b43..a0c071d 100644
+> > --- a/arch/powerpc/include/asm/uaccess.h
+> > +++ b/arch/powerpc/include/asm/uaccess.h
+> > @@ -284,7 +284,7 @@ do {								\
+> >  	if (!is_kernel_addr((unsigned long)__gu_addr))		\
+> >  		might_fault();					\
+> >  	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+> > -	(x) = (__typeof__(*(ptr)))__gu_val;			\
+> > +	(x) = (__force __typeof__(*(ptr)))__gu_val;			\
+> >  	__gu_err;						\
+> >  })
+> >  #endif /* __powerpc64__ */
+> > @@ -297,7 +297,7 @@ do {								\
+> >  	might_fault();							\
+> >  	if (access_ok(VERIFY_READ, __gu_addr, (size)))			\
+> >  		__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+> > -	(x) = (__typeof__(*(ptr)))__gu_val;				\
+> > +	(x) = (__force __typeof__(*(ptr)))__gu_val;				\
+> >  	__gu_err;							\
+> >  })
+> >  
+> > @@ -308,7 +308,7 @@ do {								\
+> >  	const __typeof__(*(ptr)) __user *__gu_addr = (ptr);	\
+> >  	__chk_user_ptr(ptr);					\
+> >  	__get_user_size(__gu_val, __gu_addr, (size), __gu_err);	\
+> > -	(x) = (__typeof__(*(ptr)))__gu_val;			\
+> > +	(x) = (__force __typeof__(*(ptr)))__gu_val;			\
+> >  	__gu_err;						\
+> >  })
+> >  
+> > -- 
+> > MST
 > > 
-> > Can you please explain to me how the TMU is any different compared to
-> > the CMT, MTU2 or STI? =)
-> > 
-> > And no, I don't have any r8a7740 board anymore. Can anyone else test?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
--- 
-Regards,
-
-Laurent Pinchart
 
