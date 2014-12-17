@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaLQMrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 07:47:41 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:41877 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaLQMrk (ORCPT
+	id S1751621AbaLQMtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 07:49:12 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52114 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLQMtL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 07:47:40 -0500
-Date: Wed, 17 Dec 2014 13:47:30 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [nohz] 2a16fc93d2c: kernel lockup on idle injection
-Message-ID: <20141217124724.GB20739@lerouge>
-References: <CAKohpo=C8Jv-+CtmDO+QJ-_=3dNwsk6_W0gtRRHmtSQ8_LgObQ@mail.gmail.com>
- <20141215234443.GA23297@lerouge>
- <CAKohpokOuOqvpNt4_y2tHPTM8nKLyEg=-gN4NDe1_mqpy=Vrow@mail.gmail.com>
- <548FFD20.1040102@linux.vnet.ibm.com>
- <alpine.DEB.2.11.1412161105470.17382@nanos>
- <20141216142029.GA27375@lerouge>
- <alpine.DEB.2.11.1412161533210.17382@nanos>
- <alpine.DEB.2.11.1412161802570.17382@nanos>
- <20141217001219.GA19459@lerouge>
- <alpine.DEB.2.11.1412171008260.17382@nanos>
+	Wed, 17 Dec 2014 07:49:11 -0500
+Message-ID: <54917BCC.9070001@arm.com>
+Date: Wed, 17 Dec 2014 12:49:16 +0000
+From: Juri Lelli <juri.lelli@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1412171008260.17382@nanos>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Luca Abeni <luca.abeni@unitn.it>, Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@gmail.com>,
+        Dario Faggioli <raistlin@linux.it>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] SCHED_DEADLINE fixes
+References: <1418813432-20797-1-git-send-email-luca.abeni@unitn.it>
+In-Reply-To: <1418813432-20797-1-git-send-email-luca.abeni@unitn.it>
+X-OriginalArrivalTime: 17 Dec 2014 12:49:07.0590 (UTC) FILETIME=[D8A2AA60:01D019F7]
+X-MC-Unique: 114121712490814901
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 10:11:58AM +0100, Thomas Gleixner wrote:
-> On Wed, 17 Dec 2014, Frederic Weisbecker wrote:
-> > On Tue, Dec 16, 2014 at 10:21:27PM +0100, Thomas Gleixner wrote:
-> > > So instead of evaluating the whole nonsense a gazillion times in a row
-> > > and firing pointless self ipis why are you not looking at the obvious
-> > > solution of sane state change tracking?
-> > 
-> > Because I had to do it wrong first before somebody like you with a fresh mind
-> > comes, look at the whole picture and propose a rethink :-)
-> 
-> Point taken.
->  
-> > >     I told all of you from the very beginning that remote accounting
-> > >     is a key mechanism for this, but you keep insisting on hacking
-> > >     around it.
-> > 
-> > I don't, and I think everybody has understood we are not going to accept
-> > hacks to solve the 1hz issue.
-> 
-> You wish.
-> 
-> > I'm pretty sure you know what this is about to maintain a project with a
-> > (variably) cruel lack of manpower ;-)
-> 
-> Oh yes! :(
->  
-> > Moreover I'm not the kind of kernel developer who ignores reviews (whether pre or
-> > post merge).
-> 
-> I know that.
->  
-> > So, no point in threatening a dependency to BROKEN or ripping out except perhaps to
-> > push me out to other projects with more thankful managers.
-> 
-> This was not directed to you, really.
-> 
-> This was directed at the folks who randomly "fix" that code by voodoo
-> bandaids instead of analyzing the root causes in the first
-> place. You're the least one to blame for that.
+Hi Luca,
 
-Well I was about to propose a bad fix for powerclamp and I sometimes take
-overengineering directions. I'm still to blame for several things 8-)
+On 17/12/14 10:50, Luca Abeni wrote:
+> Hi all,
+> 
+> I noticed some discrepancies between the schedule produced
+> by SCHED_DEADLINE and the expectations from real-time
+> scheduling theory. After some investigations, it turned out
+> that such discrepancies are due to two bugs in deadline.c,
+> which are particularly visible when using global scheduling
+> on multiple CPUs (see the two patches for more details).
+> 
+> I think the first bug (fixed in patch 0001) is particularly
+> critical, because it causes a violation of the SCHED_DEADLINE
+> guarantee (if the total load is smaller than the number of
+> CPUs, there is an upper bound for the response times. This is
+> a well known property for global EDF, but is not respected by
+> SCHED_DEADLINE - see patch 0001 for more details).
+> The second patch is IMHO also important, but less critical.
+> 
 
-Sorry I got too touchy :-)
-
-Anyway, I'll give a try to your proposition. Somehow I have always felt that
-something was wrong with this tick_nohz_can_stop_tick() called all over the place,
-that plus the IPI that's often near the scheduler IPI.
-
-I'm pretty sure this is going to help fixing some overhead issues I got reported.
+I already reviewed and tested them. They looks ok and are important
+fixes. ACK for both. :)
 
 Thanks a lot!
+
+- Juri
+
+> Luca Abeni (2):
+>   Fix migration of SCHED_DEADLINE tasks
+>   Avoid double-accounting in case of missed deadlines
+> 
+>  kernel/sched/deadline.c | 25 ++++---------------------
+>  1 file changed, 4 insertions(+), 21 deletions(-)
+> 
+
