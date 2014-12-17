@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890AbaLQNNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 08:13:49 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:65337 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaLQNNr (ORCPT
+	id S1751977AbaLQNQc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 08:16:32 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:38819 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaLQNQa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 08:13:47 -0500
+	Wed, 17 Dec 2014 08:16:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <20141217104428.GV11285@n2100.arm.linux.org.uk>
+In-Reply-To: <4583974.6IftQ5bv2t@wuerfel>
 References: <1418342706-14755-2-git-send-email-rjui@broadcom.com>
- <1918116.UxUgDPTmcq@wuerfel> <CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
  <1628217.66frkAqHMc@wuerfel> <CAAVeFuJhiten-eVLCa2sMG-nsRwjPMiZap8UJM1kNCuRyK-b1w@mail.gmail.com>
- <20141217104428.GV11285@n2100.arm.linux.org.uk>
+ <4583974.6IftQ5bv2t@wuerfel>
 From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 17 Dec 2014 22:13:26 +0900
-Message-ID: <CAAVeFuL1QEaFMkC1qQ42EEWU_=_KCyO=_waq-7eshPrVY58m0A@mail.gmail.com>
+Date: Wed, 17 Dec 2014 22:16:09 +0900
+Message-ID: <CAAVeFu+CG82UBgsQ4+RNqitUmxxaKi0P50=fjpKCqo0_ODO3jA@mail.gmail.com>
 Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ray Jui <rjui@broadcom.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Linus Walleij <linus.walleij@linaro.org>,
         Grant Likely <grant.likely@linaro.org>,
         Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>, Joe Perches <joe@perches.com>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
         Scott Branden <sbranden@broadcom.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
@@ -39,29 +38,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 7:44 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Dec 17, 2014 at 11:45:01AM +0900, Alexandre Courbot wrote:
+On Wed, Dec 17, 2014 at 7:26 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Wednesday 17 December 2014 11:45:01 Alexandre Courbot wrote:
+>>
 >> Actually we are not that far from being able to do completely without
 >> any GPIO number, and maybe that's what we should aim for. I think the
->> only remaining offender is the sysfs interface.
+>> only remaining offender is the sysfs interface. If we could reach GPIO
+>> controllers through a fixed path and just export their GPIOs there, I
+>> believe we would have fixed the whole issue.
 >
-> And that is a user API, and there's lots of users of it (eg, on Raspberry
-> Pi platforms.)  So changing it isn't going to be easy - I'd say that it's
-> impractical.
+> What about the hundreds of board files and device drivers that still
+> reference hardcoded gpio numbers? The problem seems mostly solved for
+> anything that uses DT, but there are some architectures and a number
+> of ARM platforms that don't use DT and probably never will.
 >
-> What you're suggesting would be like re-numbering Linux syscalls.
+> I would assume they could all be changed to use gpiod_lookup tables,
+> but that's a lot of work.
 
-Uh, I expressed myself poorly. What I intended to say is that once we
-have a sysfs alternative that does not rely on GPIO numbers (and thus
-have the same feature coverage as the integer interface), we can
-require new platforms to exclusively rely on gpiod/sysfs2, and
-encourage older users to switch to it if they have an issue with the
-way integers are handled or need one of the new features.
-
-I don't foresee that we will ever be able to retire the integer
-interface, however I would like to be able to say "your problem will
-be solved if you switch to gpiod" instead of having to juggle with
-potentially conflicting integer range requirements from different
-platforms. Right now the only thing that prevents us to say that is
-the lack of a consistent sysfs interface.
+Indeed, that's not something to expect, as I replied to Russell. Sorry
+about the confusion.
