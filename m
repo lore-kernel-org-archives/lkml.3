@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaLQEeM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:34:12 -0500
+	id S1752229AbaLQEeS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:34:18 -0500
 Received: from mga01.intel.com ([192.55.52.88]:37015 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752152AbaLQEeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:34:08 -0500
+	id S1752152AbaLQEeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 23:34:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="429971513"
+   d="scan'208";a="429971534"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,9 +17,9 @@ To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org
-Subject: [Patch v1 15/17] iommu/irq_remapping: Refine function irq_remapping_prepare() for maintenance
-Date: Wed, 17 Dec 2014 12:35:46 +0800
-Message-Id: <1418790948-22804-16-git-send-email-jiang.liu@linux.intel.com>
+Subject: [Patch v1 17/17] iommu/irq_remapping: Normailize the way to detect whether IR is enabled
+Date: Wed, 17 Dec 2014 12:35:48 +0800
+Message-Id: <1418790948-22804-18-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
@@ -27,42 +27,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assign intel_irq_remap_ops to remap_ops only if
-intel_irq_remap_ops.prepare() succeeds.
+Refine code by normailizing the way to detect whether IR is enabled.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- drivers/iommu/irq_remapping.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/iommu/irq_remapping.c |   38 ++++++++++++++------------------------
+ 1 file changed, 14 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index eb944ed3a463..a0b26ca853ae 100644
+index c6fdca412e71..10f4894a37e9 100644
 --- a/drivers/iommu/irq_remapping.c
 +++ b/drivers/iommu/irq_remapping.c
-@@ -204,15 +204,15 @@ int __init irq_remapping_prepare(void)
- 	if (disable_irq_remap)
- 		return -ENOSYS;
+@@ -218,7 +218,7 @@ int __init irq_remapping_enable(void)
+ {
+ 	int ret;
  
--	remap_ops = &intel_irq_remap_ops;
+-	if (!remap_ops || !remap_ops->enable)
++	if (!remap_ops->enable)
+ 		return -ENODEV;
+ 
+ 	ret = remap_ops->enable();
+@@ -231,22 +231,16 @@ int __init irq_remapping_enable(void)
+ 
+ void irq_remapping_disable(void)
+ {
+-	if (!irq_remapping_enabled ||
+-	    !remap_ops ||
+-	    !remap_ops->disable)
+-		return;
 -
--#ifdef CONFIG_AMD_IOMMU
--	if (amd_iommu_irq_ops.prepare() == 0) {
-+	if (intel_irq_remap_ops.prepare() == 0)
-+		remap_ops = &intel_irq_remap_ops;
-+	else if (IS_ENABLED(CONFIG_AMD_IOMMU) &&
-+		 amd_iommu_irq_ops.prepare() == 0)
- 		remap_ops = &amd_iommu_irq_ops;
+-	remap_ops->disable();
++	if (irq_remapping_enabled && remap_ops->disable)
++		remap_ops->disable();
+ }
+ 
+ int irq_remapping_reenable(int mode)
+ {
+-	if (!irq_remapping_enabled ||
+-	    !remap_ops ||
+-	    !remap_ops->reenable)
 -		return 0;
--	}
--#endif
--	return remap_ops->prepare();
-+	else
-+		return -ENOSYS;
-+
++	if (irq_remapping_enabled && remap_ops->reenable)
++		return remap_ops->reenable(mode);
+ 
+-	return remap_ops->reenable(mode);
 +	return 0;
  }
  
- int __init irq_remapping_enable(void)
+ int __init irq_remap_enable_fault_handling(void)
+@@ -254,7 +248,7 @@ int __init irq_remap_enable_fault_handling(void)
+ 	if (!irq_remapping_enabled)
+ 		return 0;
+ 
+-	if (!remap_ops || !remap_ops->enable_faulting)
++	if (!remap_ops->enable_faulting)
+ 		return -ENODEV;
+ 
+ 	return remap_ops->enable_faulting();
+@@ -265,7 +259,7 @@ int setup_ioapic_remapped_entry(int irq,
+ 				unsigned int destination, int vector,
+ 				struct io_apic_irq_attr *attr)
+ {
+-	if (!remap_ops || !remap_ops->setup_ioapic_entry)
++	if (!remap_ops->setup_ioapic_entry)
+ 		return -ENODEV;
+ 
+ 	return remap_ops->setup_ioapic_entry(irq, entry, destination,
+@@ -275,8 +269,7 @@ int setup_ioapic_remapped_entry(int irq,
+ static int set_remapped_irq_affinity(struct irq_data *data,
+ 				     const struct cpumask *mask, bool force)
+ {
+-	if (!config_enabled(CONFIG_SMP) || !remap_ops ||
+-	    !remap_ops->set_affinity)
++	if (!config_enabled(CONFIG_SMP) || !remap_ops->set_affinity)
+ 		return 0;
+ 
+ 	return remap_ops->set_affinity(data, mask, force);
+@@ -286,10 +279,7 @@ void free_remapped_irq(int irq)
+ {
+ 	struct irq_cfg *cfg = irq_get_chip_data(irq);
+ 
+-	if (!remap_ops || !remap_ops->free_irq)
+-		return;
+-
+-	if (irq_remapped(cfg))
++	if (irq_remapped(cfg) && remap_ops->free_irq)
+ 		remap_ops->free_irq(irq);
+ }
+ 
+@@ -301,13 +291,13 @@ void compose_remapped_msi_msg(struct pci_dev *pdev,
+ 
+ 	if (!irq_remapped(cfg))
+ 		native_compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+-	else if (remap_ops && remap_ops->compose_msi_msg)
++	else if (remap_ops->compose_msi_msg)
+ 		remap_ops->compose_msi_msg(pdev, irq, dest, msg, hpet_id);
+ }
+ 
+ static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+ {
+-	if (!remap_ops || !remap_ops->msi_alloc_irq)
++	if (!remap_ops->msi_alloc_irq)
+ 		return -ENODEV;
+ 
+ 	return remap_ops->msi_alloc_irq(pdev, irq, nvec);
+@@ -316,7 +306,7 @@ static int msi_alloc_remapped_irq(struct pci_dev *pdev, int irq, int nvec)
+ static int msi_setup_remapped_irq(struct pci_dev *pdev, unsigned int irq,
+ 				  int index, int sub_handle)
+ {
+-	if (!remap_ops || !remap_ops->msi_setup_irq)
++	if (!remap_ops->msi_setup_irq)
+ 		return -ENODEV;
+ 
+ 	return remap_ops->msi_setup_irq(pdev, irq, index, sub_handle);
+@@ -326,7 +316,7 @@ int setup_hpet_msi_remapped(unsigned int irq, unsigned int id)
+ {
+ 	int ret;
+ 
+-	if (!remap_ops || !remap_ops->alloc_hpet_msi)
++	if (!remap_ops->alloc_hpet_msi)
+ 		return -ENODEV;
+ 
+ 	ret = remap_ops->alloc_hpet_msi(irq, id);
 -- 
 1.7.10.4
 
