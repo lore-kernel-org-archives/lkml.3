@@ -1,116 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaLQSq5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:46:57 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:61788 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaLQSqz (ORCPT
+	id S1751412AbaLQSra (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:47:30 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13124 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885AbaLQSr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:46:55 -0500
-X-IronPort-AV: E=Sophos;i="5.07,595,1413270000"; 
-   d="scan'208";a="53162998"
-From: Jonathan Richardson <jonathar@broadcom.com>
-To: Tim Kryger <tim.kryger@gmail.com>
-CC: Scott Branden <sbranden@broadcom.com>,
-        Arun Ramamurthy <arun.ramamurthy@broadcom.com>,
-        Thierry Reding <thierry.reding@gmail.com>, Ray Jui <rjui@broadcom.com>,
-        <bcm-kernel-feedback-list@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
-        "Jonathan Richardson" <jonathar@broadcom.com>
-Subject: [PATCH v3 2/2] pwm: kona: Remove setting default smooth type and polarity for all channels
-Date: Wed, 17 Dec 2014 10:46:22 -0800
-Message-ID: <1418841982-29793-2-git-send-email-jonathar@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418841982-29793-1-git-send-email-jonathar@broadcom.com>
-References: <Jonathan Richardson <jonathar@broadcom.com>
- <1418841982-29793-1-git-send-email-jonathar@broadcom.com>
+	Wed, 17 Dec 2014 13:47:28 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18okzM6Qj1PTgjr8NkhqQhEuNWrZUnJAEs=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 16E74633B37
+Date: Wed, 17 Dec 2014 13:46:42 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
+        hpa@zytor.com, monstr@monstr.eu, michal.simek@xilinx.com,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, s.trumtrar@pengutronix.de,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v5 6/6] ARM: socfpga: defconfig: enable fpga manager
+Message-ID: <20141217184642.GX967@titan.lakedaemon.net>
+References: <1418835289-15752-1-git-send-email-atull@opensource.altera.com>
+ <1418835289-15752-7-git-send-email-atull@opensource.altera.com>
+ <20141217173216.GA24913@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141217173216.GA24913@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the default polarity in probe to normal for all channels caused
-the speaker pwm channel to click. The polarity does need to be set to
-normal because the hw default is inversed whereas the pwm framework
-defaults to normal. If a channel is enabled without setting the polarity
-then the signal would be inversed while linux reports normal. A check
-is now done prior to enabling the channel to ensure that the hw polarity
-matches the desired polarity and is changed if there is a discrepency. This
-prevents unnecessary settings being applied to unused channels but still
-ensures the correct polarity to be set.
+On Wed, Dec 17, 2014 at 09:32:16AM -0800, Greg KH wrote:
+> On Wed, Dec 17, 2014 at 10:54:49AM -0600, atull@opensource.altera.com wrote:
+> > From: Alan Tull <atull@opensource.altera.com>
+> > 
+> > Enable FPGA manager for Altera socfpga.
+> > 
+> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > ---
+> > v5: s/CONFIG_FPGA_MGR_ALTERA/CONFIG_FPGA_MGR_SOCFPGA/
+> > ---
+> >  arch/arm/configs/socfpga_defconfig |    4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/arch/arm/configs/socfpga_defconfig b/arch/arm/configs/socfpga_defconfig
+> > index a2956c3..f1d6a3b 100644
+> > --- a/arch/arm/configs/socfpga_defconfig
+> > +++ b/arch/arm/configs/socfpga_defconfig
+> > @@ -86,6 +86,10 @@ CONFIG_USB_DWC2=y
+> >  CONFIG_USB_DWC2_HOST=y
+> >  CONFIG_MMC=y
+> >  CONFIG_MMC_DW=y
+> > +CONFIG_STAGING=y
+> > +CONFIG_FPGA=y
+> > +CONFIG_FPGA_MGR_SYSFS=y
+> > +CONFIG_FPGA_MGR_SOCFPGA=y
+> >  CONFIG_EXT2_FS=y
+> >  CONFIG_EXT2_FS_XATTR=y
+> >  CONFIG_EXT2_FS_POSIX_ACL=y
+> 
+> Do defconfigs really matter anymore?
 
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
-Tested-by: Scott Branden <sbranden@broadcom.com>
-Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
----
- drivers/pwm/pwm-bcm-kona.c |   38 ++++++++++++++++++++++++++++++++++----
- 1 file changed, 34 insertions(+), 4 deletions(-)
+Very much so.  arm-soc uses them as a standard build test target and
+boot target on their bootfarms.  Please see the arm-buildbot mailinglist
+at:
 
-diff --git a/drivers/pwm/pwm-bcm-kona.c b/drivers/pwm/pwm-bcm-kona.c
-index a831bb2..101137d 100644
---- a/drivers/pwm/pwm-bcm-kona.c
-+++ b/drivers/pwm/pwm-bcm-kona.c
-@@ -95,6 +95,32 @@ static void kona_pwmc_apply_settings(struct kona_pwmc *kp, unsigned int chan)
- 	ndelay(400);
- }
- 
-+static void kona_pwmc_check_set_polarity(struct pwm_chip *chip,
-+	struct pwm_device *pwm)
-+{
-+	struct kona_pwmc *kp = to_kona_pwmc(chip);
-+	unsigned int chan = pwm->hwpwm;
-+	enum pwm_polarity polarity = pwm->polarity;
-+	unsigned int hw_pol;
-+	unsigned int value = 0;
-+
-+	value = hw_pol = readl(kp->base + PWM_CONTROL_OFFSET);
-+	hw_pol = (hw_pol >> PWM_CONTROL_POLARITY_SHIFT(chan)) & 0x1;
-+
-+	/*
-+	 * If current polarity not the same as h/w then set polarity so that
-+	 * they match.
-+	 */
-+	if (!hw_pol != polarity) {
-+		if (polarity == PWM_POLARITY_NORMAL)
-+			value |= 1 << PWM_CONTROL_POLARITY_SHIFT(chan);
-+		else
-+			value &= ~(1 << PWM_CONTROL_POLARITY_SHIFT(chan));
-+
-+		writel(value, kp->base + PWM_CONTROL_OFFSET);
-+	}
-+}
-+
- static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 			    int duty_ns, int period_ns)
- {
-@@ -162,6 +188,13 @@ static int kona_pwmc_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	dev_dbg(chip->dev, "pwm[%d]: period=%lu, duty_high=%lu, prescale=%lu\n",
- 		chan, pc, dc, prescale);
- 
-+	/*
-+	 * Ensure polarity is set properly. The default value for h/w and the
-+	 * PWM framework are different. If a channel is enabled without setting
-+	 * the polarity, the default value would be inconsistent to the signal.
-+	 */
-+	kona_pwmc_check_set_polarity(chip, pwm);
-+
- 	value = readl(kp->base + PWM_CONTROL_OFFSET);
- 
- 	/*
-@@ -310,11 +343,8 @@ static int kona_pwmc_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Set smooth mode, push/pull, and normal polarity for all channels */
--	for (chan = 0; chan < kp->chip.npwm; chan++) {
--		value |= (1 << PWM_CONTROL_SMOOTH_SHIFT(chan));
-+	for (chan = 0; chan < kp->chip.npwm; chan++)
- 		value |= (1 << PWM_CONTROL_TYPE_SHIFT(chan));
--		value |= (1 << PWM_CONTROL_POLARITY_SHIFT(chan));
--	}
- 
- 	writel(value, kp->base + PWM_CONTROL_OFFSET);
- 
--- 
-1.7.9.5
+  http://lists.linaro.org/mailman/listinfo/kernel-build-reports
 
+And December's results so far:
+
+  http://lists.linaro.org/pipermail/kernel-build-reports/2014-December/thread.html
+
+hth,
+
+Jason.
