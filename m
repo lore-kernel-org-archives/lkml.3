@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaLQEdD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:33:03 -0500
+	id S1751907AbaLQEdG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 23:33:06 -0500
 Received: from mga11.intel.com ([192.55.52.93]:55824 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751619AbaLQEc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:32:59 -0500
+	id S1751711AbaLQEdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 23:33:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="429971169"
+   d="scan'208";a="429971202"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Joerg Roedel <joro@8bytes.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        David Rientjes <rientjes@google.com>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Richard Weinberger <richard@nod.at>, Oren Twaig <oren@scalemp.com>
-Cc: Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, Joerg Roedel <jroedel@suse.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [Patch v1 02/17] iommu, x86: Restructure setup of the irq remapping feature
-Date: Wed, 17 Dec 2014 12:35:33 +0800
-Message-Id: <1418790948-22804-3-git-send-email-jiang.liu@linux.intel.com>
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>
+Cc: Tony Luck <tony.luck@intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: [Patch v1 04/17] iommu/vt-d: Convert allocations to GFP_KERNEL
+Date: Wed, 17 Dec 2014 12:35:35 +0800
+Message-Id: <1418790948-22804-5-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1418790948-22804-1-git-send-email-jiang.liu@linux.intel.com>
@@ -33,118 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thomas Gleixner <tglx@linutronix.de>
 
-enable_IR_x2apic() calls setup_irq_remapping_ops() which by default
-installs the intel dmar remapping ops and then calls the amd iommu irq
-remapping prepare callback to figure out whether we are running on an
-AMD machine with irq remapping hardware.
-
-Right after that it calls irq_remapping_prepare() which pointlessly
-checks:
-	if (!remap_ops || !remap_ops->prepare)
-               return -ENODEV;
-and then calls
-
-    remap_ops->prepare()
-
-which is silly in the AMD case as it got called from
-setup_irq_remapping_ops() already a few microseconds ago.
-
-Simplify this and just collapse everything into
-irq_remapping_prepare().
-
-The irq_remapping_prepare() remains still silly as it assigns blindly
-the intel ops, but that's not scope of this patch.
-
-The scope here is to move the preperatory work, i.e. memory
-allocations out of the atomic section which is required to enable irq
-remapping.
+No reason anymore to do GFP_ATOMIC allocations which are not harmful
+in the normal bootup case, but matter in the physical hotplug
+scenario.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Tested-by: Borislav Petkov <bp@alien8.de>
 Acked-by: Joerg Roedel <joro@8bytes.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20141205084147.232633738@linutronix.de
+Link: http://lkml.kernel.org/r/20141205084147.472428339@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 ---
- arch/x86/include/asm/irq_remapping.h |    2 --
- arch/x86/kernel/apic/apic.c          |    3 ---
- drivers/iommu/irq_remapping.c        |   19 +++++++------------
- 3 files changed, 7 insertions(+), 17 deletions(-)
+ drivers/iommu/intel_irq_remapping.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
-index b7747c4c2cf2..f1b619e5a50d 100644
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -33,7 +33,6 @@ struct irq_cfg;
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 4b80e16e0736..d5b7a096c240 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -481,11 +481,11 @@ static int intel_setup_irq_remapping(struct intel_iommu *iommu)
+ 	if (iommu->ir_table)
+ 		return 0;
  
- #ifdef CONFIG_IRQ_REMAP
+-	ir_table = kzalloc(sizeof(struct ir_table), GFP_ATOMIC);
++	ir_table = kzalloc(sizeof(struct ir_table), GFP_KERNEL);
+ 	if (!ir_table)
+ 		return -ENOMEM;
  
--extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
- extern void set_irq_remapping_broken(void);
- extern int irq_remapping_prepare(void);
-@@ -60,7 +59,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+-	pages = alloc_pages_node(iommu->node, GFP_ATOMIC | __GFP_ZERO,
++	pages = alloc_pages_node(iommu->node, GFP_KERNEL | __GFP_ZERO,
+ 				 INTR_REMAP_PAGE_ORDER);
  
- #else  /* CONFIG_IRQ_REMAP */
- 
--static inline void setup_irq_remapping_ops(void) { }
- static inline int irq_remapping_supported(void) { return 0; }
- static inline void set_irq_remapping_broken(void) { }
- static inline int irq_remapping_prepare(void) { return -ENODEV; }
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index ba6cc041edb1..5fd533a4c7a5 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -1597,9 +1597,6 @@ void __init enable_IR_x2apic(void)
- 	int ret, x2apic_enabled = 0;
- 	int hardware_init_ret;
- 
--	/* Make sure irq_remap_ops are initialized */
--	setup_irq_remapping_ops();
--
- 	hardware_init_ret = irq_remapping_prepare();
- 	if (hardware_init_ret && !x2apic_supported())
- 		return;
-diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
-index 2c3f5ad01098..5829131aa34a 100644
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -194,16 +194,6 @@ static __init int setup_irqremap(char *str)
- }
- early_param("intremap", setup_irqremap);
- 
--void __init setup_irq_remapping_ops(void)
--{
--	remap_ops = &intel_irq_remap_ops;
--
--#ifdef CONFIG_AMD_IOMMU
--	if (amd_iommu_irq_ops.prepare() == 0)
--		remap_ops = &amd_iommu_irq_ops;
--#endif
--}
--
- void set_irq_remapping_broken(void)
- {
- 	irq_remap_broken = 1;
-@@ -222,9 +212,14 @@ int irq_remapping_supported(void)
- 
- int __init irq_remapping_prepare(void)
- {
--	if (!remap_ops || !remap_ops->prepare)
--		return -ENODEV;
-+	remap_ops = &intel_irq_remap_ops;
- 
-+#ifdef CONFIG_AMD_IOMMU
-+	if (amd_iommu_irq_ops.prepare() == 0) {
-+		remap_ops = &amd_iommu_irq_ops;
-+		return 0;
-+	}
-+#endif
- 	return remap_ops->prepare();
- }
- 
+ 	if (!pages) {
 -- 
 1.7.10.4
 
