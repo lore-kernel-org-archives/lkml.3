@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbaLQSta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:49:30 -0500
-Received: from albert.telenet-ops.be ([195.130.137.90]:41122 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaLQStZ (ORCPT
+	id S1751865AbaLQSt3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:49:29 -0500
+Received: from laurent.telenet-ops.be ([195.130.137.89]:40697 "EHLO
+	laurent.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163AbaLQStZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Dec 2014 13:49:25 -0500
 From: Geert Uytterhoeven <geert+renesas@glider.be>
@@ -16,9 +16,9 @@ Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
         linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 3/8] drivers: bus: Add Simple Power-Managed Bus DT Bindings
-Date: Wed, 17 Dec 2014 19:49:08 +0100
-Message-Id: <1418842153-17113-4-git-send-email-geert+renesas@glider.be>
+Subject: [PATCH 8/8] ARM: shmobile: ape6evm dts: Move Ethernet node to BSC
+Date: Wed, 17 Dec 2014 19:49:13 +0100
+Message-Id: <1418842153-17113-9-git-send-email-geert+renesas@glider.be>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
 References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
@@ -26,70 +26,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move the Ethernet node from the ad-hoc lbsc node to the BSC node,
+as its connected to the Bus State Controller.  This allows the system to
+know the right position of the Ethernet node in the clock and PM domain
+hierarchy, and manage the clock and PM domain appropriately.
+
 Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
+Untested
+
 v2:
   - New
 ---
- .../devicetree/bindings/bus/simple-pm-bus.txt      | 49 ++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/bus/simple-pm-bus.txt
+ arch/arm/boot/dts/r8a73a4-ape6evm.dts | 35 +++++++++++++++--------------------
+ 1 file changed, 15 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/bus/simple-pm-bus.txt b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
-new file mode 100644
-index 0000000000000000..bc5f985fd5463afa
---- /dev/null
-+++ b/Documentation/devicetree/bindings/bus/simple-pm-bus.txt
-@@ -0,0 +1,49 @@
-+Simple Power-Managed Bus
-+========================
-+
-+A Simple Power-Managed Bus is a transparent bus that doesn't need a real
-+driver, as it's typically initialized by the boot loader.
-+
-+However, its bus controller is part of a PM domain, or under the control of a
-+functional clock.  Hence, the bus controller's PM domain and/or clock must be
-+enabled for child devices connected to the bus (either on-SoC or externally)
-+to function.
-+
-+
-+Generic compatible values and properties
-+----------------------------------------
-+
-+Required properties:
-+  - compatible: Must be at least one of the vendor-specific compatible values
-+		from a vendor-specific section below, and "simple-bus" as a
-+		fallback.
-+
-+Optional platform-specific properties for clock or PM domain control (at least
-+one of them is required):
-+  - clocks: Must contain a reference to the functional clock(s),
-+  - power-domains: Must contain a reference to the PM domain.
-+
-+
-+Vendor-specific compatible values and properties
-+------------------------------------------------
-+
-+Renesas Bus State Controller (BSC):
-+  - compatible: Must be an SoC-specific value, and "renesas,bsc" as a fallback.
-+                SoC-specific values can be:
-+		"renesas,bsc-r8a73a4" for R-Mobile APE6 (r8a73a4)
-+		"renesas,bsc-sh73a0" for SH-Mobile AG5 (sh73a0)
-+  - interrupts: Must contain a reference to the BSC interrupt, if available.
-+
-+
-+Example:
-+
-+	bsc: bus@fec10000 {
-+		compatible = "renesas,bsc-sh73a0", "renesas,bsc", "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0xfec10000 0x400>;
-+		ranges = <0 0 0x20000000>;
-+		interrupts = <0 39 IRQ_TYPE_LEVEL_HIGH>;
-+		clocks = <&zb_clk>;
-+		power-domains = <&pd_a4s>;
+diff --git a/arch/arm/boot/dts/r8a73a4-ape6evm.dts b/arch/arm/boot/dts/r8a73a4-ape6evm.dts
+index 0d50bef0123449f5..44c4cac1820a4dfe 100644
+--- a/arch/arm/boot/dts/r8a73a4-ape6evm.dts
++++ b/arch/arm/boot/dts/r8a73a4-ape6evm.dts
+@@ -72,26 +72,6 @@
+ 		regulator-always-on;
+ 	};
+ 
+-	lbsc {
+-		compatible = "simple-bus";
+-		#address-cells = <1>;
+-		#size-cells = <1>;
+-		ranges = <0 0 0 0x20000000>;
+-
+-		ethernet@8000000 {
+-			compatible = "smsc,lan9220", "smsc,lan9115";
+-			reg = <0x08000000 0x1000>;
+-			interrupt-parent = <&irqc1>;
+-			interrupts = <8 IRQ_TYPE_LEVEL_HIGH>;
+-			phy-mode = "mii";
+-			reg-io-width = <4>;
+-			smsc,irq-active-high;
+-			smsc,irq-push-pull;
+-			vdd33a-supply = <&ape6evm_fixed_3v3>;
+-			vddvario-supply = <&ape6evm_fixed_1v8>;
+-		};
+-	};
+-
+ 	leds {
+ 		compatible = "gpio-leds";
+ 		led1 {
+@@ -184,6 +164,21 @@
+ 	voltage-tolerance = <1>; /* 1% */
+ };
+ 
++&bsc {
++	ethernet@8000000 {
++		compatible = "smsc,lan9220", "smsc,lan9115";
++		reg = <0x08000000 0x1000>;
++		interrupt-parent = <&irqc1>;
++		interrupts = <8 IRQ_TYPE_LEVEL_HIGH>;
++		phy-mode = "mii";
++		reg-io-width = <4>;
++		smsc,irq-active-high;
++		smsc,irq-push-pull;
++		vdd33a-supply = <&ape6evm_fixed_3v3>;
++		vddvario-supply = <&ape6evm_fixed_1v8>;
 +	};
++};
++
+ &cmt1 {
+ 	status = "okay";
+ };
 -- 
 1.9.1
 
