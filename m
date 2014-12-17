@@ -1,95 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbaLQJm4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:42:56 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:55186 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaLQJmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:42:54 -0500
+	id S1751898AbaLQJoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:44:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751033AbaLQJoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 04:44:37 -0500
+Message-ID: <54915050.8070307@redhat.com>
+Date: Wed, 17 Dec 2014 10:43:44 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWT+yytt1mRZPLvzyXACcw638Sf4DBjHUTf_+iPjsNzbA@mail.gmail.com>
-References: <20141216094854.22639.69181.sendpatchset@w520>
-	<CAMuHMdUzys9pbEjUybyDP-3=uemLZuP5WgXeyONxGmADUJJL4A@mail.gmail.com>
-	<CANqRtoRTcC_ixjY_Qr1T=2Jhh9qu_5+=Z3YRBDUJX8HWHP6Nog@mail.gmail.com>
-	<2855304.l47b4KVhTf@avalon>
-	<CAMuHMdWT+yytt1mRZPLvzyXACcw638Sf4DBjHUTf_+iPjsNzbA@mail.gmail.com>
-Date: Wed, 17 Dec 2014 10:42:52 +0100
-X-Google-Sender-Auth: weGywYwtPGwbYYtjVMM1bLfBySg
-Message-ID: <CAMuHMdXmzah7xZMb+y_0HHE5aeOr_efCv9GZhPutjWxb39WCCw@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Graf <agraf@suse.de>, Tejun Heo <tj@kernel.org>,
+        Christoph Lameter <cl@linux.com>
+CC: akpm@linuxfoundation.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 26/35] [PATCH 26/36] powerpc: Replace __get_cpu_var uses
+References: <20140817173023.439660246@linux.com> <20140817173036.985604442@linux.com> <20140826181444.GJ31659@mtj.dyndns.org> <5490AD09.3000807@suse.de>
+In-Reply-To: <5490AD09.3000807@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent, Magnus,
 
-On Wed, Dec 17, 2014 at 9:30 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> On Wed, Dec 17, 2014 at 3:08 AM, Laurent Pinchart
-> <laurent.pinchart@ideasonboard.com> wrote:
->>> > Kzm9g-reference still hangs at "Calibrating local timer..." (it did work
->>> > at some point in the past).
+
+On 16/12/2014 23:07, Alexander Graf wrote:
+> On 26.08.14 20:14, Tejun Heo wrote:
+>> On Sun, Aug 17, 2014 at 12:30:49PM -0500, Christoph Lameter wrote:
+>>> __get_cpu_var() is used for multiple purposes in the kernel source. One of
+>>> them is address calculation via the form &__get_cpu_var(x).  This calculates
+>>> the address for the instance of the percpu variable of the current processor
+>>> based on an offset.
+>>>
+>>> Other use cases are for storing and retrieving data from the current
+>>> processors percpu area.  __get_cpu_var() can be used as an lvalue when
+>>> writing data or on the right side of an assignment.
+>> ...
+>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>> CC: Paul Mackerras <paulus@samba.org>
+>>> Signed-off-by: Christoph Lameter <cl@linux.com>
 >>
->> kzm9g-reference boots for me with kzm9g_defconfig on Simon's devel branch with
->
-> OK.
->
-> I had expected the breakage to be something in my tree, either an issue in
-> a -next branch I'm using, an interaction with the CCF patches or so, or a
-> config issue (e.g. CONFIG_CPU_IDLE became broken lately if the TWD is
-> not in DT).
+>> (Please disregard the ones I posted for v1 of the patch series)
+>>
+>> Applied to percpu/for-3.18-consistent-ops with the fix up patch rolled
+>> in.  Please let me know if this patch should be routed differently.
+>> Note that this patch was to be applied to percpu/for-3.17 but delayed
+>> due to build issues caused by cpumask_var_t.
+> 
+> Unfortunately this commit breaks e500v2 builds with KVM enabled:
+> 
+>   arch/powerpc/kvm/e500.c: In function "local_sid_setup_one":
+>   arch/powerpc/kvm/e500.c:81:29: error: macro "__this_cpu_write"
+> requires 2 arguments, but only 1 given
+>   arch/powerpc/kvm/e500.c:81:3: error: unknown type name "__this_cpu_write"
+>   arch/powerpc/kvm/e500.c:81:47: error: expected "=", ",", ";", "asm" or
+> "__attribute__" before ")" token
+>   arch/powerpc/kvm/e500.c:82:8: error: request for member "val" in
+> something not a structure or union
+>   arch/powerpc/kvm/e500.c:83:8: error: request for member "pentry" in
+> something not a structure or union
+> 
+> Looking at the offending line of code I'm not surprised:
+> 
+> -               __get_cpu_var(pcpu_sids).entry[sid] = entry;
+> +               __this_cpu_write(pcpu_sids)entry[sid], entry);
+> 
+> This doesn't quite look like valid C to me. The patch below fixes the
+> build error for me. Please check whether it's correct and if so apply it
+> directly to the tree.
 
-Kzm9g-reference hangs at "Calibrating local timer..." because I added the
-TWD to sh73a0.dtsi (http://www.spinics.net/lists/arm-kernel/msg383413.html).
+I can also ask Linus to squash it in the merge.
 
-As twd_get_clock() does
+Paolo
 
-        if (np)
-                twd_clk = of_clk_get(np, 0);
-        else
-                twd_clk = clk_get_sys("smp_twd", NULL);
-
-it's not DT-without-CCF proof, and kzm9g-reference cannot get its clock :-(
-
-So the TWD node should be in sh73a0-kzm9g-multiplatform.dts, and we need
-more dts files instead of less...
-
-Note that I added the TWD node to DT to fix a hang on kzm9g-multiplatform
-with CONFIG_CPU_IDLE=y (recently introduced "regression" in core code) after:
-
-     DMA: preallocated 256 KiB pool for atomic coherent allocations
-
-On kzm9g-legacy the TWD is instantiated from C board code
-(machine_desc.init_time = sh73a0_earlytimer_init), so CONFIG_CPU_IDLE=y
-does not hang. Despite https://lkml.org/lkml/2014/12/2/339.
-
-On kzm9g-reference, the TWD is not instantiated, causing the same hang.
-If I instantiate the TWD from C board code there, it fails with
-
-    twd: can't register interrupt 29 (-22)
-
-which looks like a symptom of https://lkml.org/lkml/2014/12/2/339
-
-So no cookies for users of several -legacy and -reference platforms in v3.19-rc1
-this Monday...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> 
+> 
+> Alex
+> 
+> 
+> From: Alexander Graf <agraf@suse.de>
+> Date: Tue, 16 Dec 2014 23:04:01 +0100
+> Subject: [PATCH] KVM: PPC: E500: Compile fix in this_cpu_write
+> 
+> Commit 69111bac42f5 (powerpc: Replace __get_cpu_var uses) introduced compile
+> breakage to the e500 target by introducing invalid automatically created C
+> syntax.
+> 
+> Fix up the breakage and make the code compile again.
+> 
+> Signed-off-by: Alexander Graf <agraf@suse.de>
+> 
+> diff --git a/arch/powerpc/kvm/e500.c b/arch/powerpc/kvm/e500.c
+> index 1609584..e1cb588 100644
+> --- a/arch/powerpc/kvm/e500.c
+> +++ b/arch/powerpc/kvm/e500.c
+> @@ -78,7 +78,7 @@ static inline int local_sid_setup_one(struct id *entry)
+> 
+>  	sid = __this_cpu_inc_return(pcpu_last_used_sid);
+>  	if (sid < NUM_TIDS) {
+> -		__this_cpu_write(pcpu_sids)entry[sid], entry);
+> +		__this_cpu_write(pcpu_sids.entry[sid], entry);
+>  		entry->val = sid;
+>  		entry->pentry = this_cpu_ptr(&pcpu_sids.entry[sid]);
+>  		ret = sid;
+> 
