@@ -1,721 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752273AbaLQKBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:01:55 -0500
-Received: from bay004-omc1s11.hotmail.com ([65.54.190.22]:49818 "EHLO
-	BAY004-OMC1S11.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752145AbaLQKBu (ORCPT
+	id S1752326AbaLQKCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:02:10 -0500
+Received: from bay004-omc1s14.hotmail.com ([65.54.190.25]:61932 "EHLO
+	BAY004-OMC1S14.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752298AbaLQKCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:01:50 -0500
-X-TMN: [pK8b96geXzj35AXPbKn2Y9aJLM1XUIMU]
+	Wed, 17 Dec 2014 05:02:07 -0500
+X-TMN: [Qcv57u0c+rxvLSW48zjRXh0afUbNOP9I]
 X-Originating-Email: [dudlx@outlook.com]
-Message-ID: <BAY407-EAS145FD8C2FD87047E65FD997BD6D0@phx.gbl>
+Message-ID: <BAY407-EAS419FC9DD50B49EB3F7C1CBDBD6D0@phx.gbl>
 From: Dudley Du <dudlx@outlook.com>
 To: <dmitry.torokhov@gmail.com>, <jmmahler@gmail.com>, <rydberg@euromail.se>
 CC: <bleung@google.com>, <linux-input@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v16 10/12] input: cyapa: add gen5 trackpad device read baseline
-Date: Wed, 17 Dec 2014 17:57:51 +0800
+Subject: [PATCH v16 04/12] input: cyapa: add runtime power management interfaces
+Date: Wed, 17 Dec 2014 17:57:05 +0800
 MIME-Version: 1.0
 Content-Type: text/plain; charset="gb2312"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AdAZ31luVgEyfcc6RmCxR7LBcLcwEA==
+Thread-Index: AdAZ3rTj0lbP/4mOTPOT6CP74p8HXw==
 Content-Language: zh-cn
-X-OriginalArrivalTime: 17 Dec 2014 09:57:53.0430 (UTC) FILETIME=[ECC24360:01D019DF]
+X-OriginalArrivalTime: 17 Dec 2014 09:57:06.0741 (UTC) FILETIME=[D0EE1650:01D019DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add read baseline function supported for gen5 trackpad device,
-it can be used through sysfs baseline interface.
+Add runtime_suspend_scanrate_ms power management interfaces in device's
+power group, so users or applications can control the runtime power
+management strategy of trackpad device as their requirements.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudley.dulixin@gmail.com>
 ---
- drivers/input/mouse/cyapa.h      |   2 +
- drivers/input/mouse/cyapa_gen5.c | 640 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 642 insertions(+)
+ drivers/input/mouse/cyapa.c | 171 +++++++++++++++++++++++++++++++++++++++++++-
+ drivers/input/mouse/cyapa.h |   4 ++
+ 2 files changed, 174 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
-index 922a473..e5de0b2 100644
---- a/drivers/input/mouse/cyapa.h
-+++ b/drivers/input/mouse/cyapa.h
-@@ -276,6 +276,8 @@ struct cyapa {
- 	u8 y_origin;  /* Y Axis Origin: 0 = top; 1 = bottom. */
- 	int electrodes_x;  /* Number of electrodes on the X Axis*/
- 	int electrodes_y;  /* Number of electrodes on the Y Axis*/
-+	int electrodes_rx;  /* Number of Rx electrodes */
-+	int aligned_electrodes_rx;  /* 4 aligned */
- 	int max_z;
+diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
+index 73f6817..3bcfce3 100644
+--- a/drivers/input/mouse/cyapa.c
++++ b/drivers/input/mouse/cyapa.c
+@@ -23,6 +23,7 @@
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
++#include <linux/pm_runtime.h>
+ #include "cyapa.h"
+ 
+ 
+@@ -327,6 +328,8 @@ static int cyapa_open(struct input_dev *input)
+ 	}
+ 
+ 	enable_irq(client->irq);
++	pm_runtime_set_active(&client->dev);
++	pm_runtime_enable(&client->dev);
+ out:
+ 	mutex_unlock(&cyapa->state_sync_lock);
+ 	return error;
+@@ -340,8 +343,10 @@ static void cyapa_close(struct input_dev *input)
+ 	mutex_lock(&cyapa->state_sync_lock);
+ 
+ 	disable_irq(client->irq);
++	pm_runtime_disable(&client->dev);
+ 	if (!CYAPA_BOOTLOADER(cyapa) && cyapa->ops->set_power_mode)
+ 		cyapa->ops->set_power_mode(cyapa, PWR_MODE_OFF, 0);
++	pm_runtime_set_suspended(&client->dev);
+ 
+ 	mutex_unlock(&cyapa->state_sync_lock);
+ }
+@@ -542,6 +547,7 @@ static irqreturn_t cyapa_irq(int irq, void *dev_id)
+ 	struct device *dev = &cyapa->client->dev;
+ 	bool cont;
+ 
++	pm_runtime_get_sync(dev);
+ 	if (device_may_wakeup(dev))
+ 		pm_wakeup_event(dev, 0);
+ 
+@@ -572,6 +578,8 @@ static irqreturn_t cyapa_irq(int irq, void *dev_id)
+ 	}
+ 
+ out:
++	pm_runtime_mark_last_busy(dev);
++	pm_runtime_put_sync_autosuspend(dev);
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -665,6 +673,116 @@ static void cyapa_remove_power_wakeup_group(void *data)
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
++#ifdef CONFIG_PM_RUNTIME
++static ssize_t cyapa_show_rt_suspend_scanrate(struct device *dev,
++					      struct device_attribute *attr,
++					      char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	u8 pwr_cmd;
++	u16 sleep_time;
++	int error;
++
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++	pwr_cmd = cyapa->runtime_suspend_power_mode;
++	sleep_time = cyapa->runtime_suspend_sleep_time;
++	mutex_unlock(&cyapa->state_sync_lock);
++
++	if (cyapa->gen == CYAPA_GEN3)
++		return scnprintf(buf, PAGE_SIZE, "%u\n",
++			cyapa_pwr_cmd_to_sleep_time(pwr_cmd));
++	return scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
++}
++
++static ssize_t cyapa_update_rt_suspend_scanrate(struct device *dev,
++						struct device_attribute *attr,
++						const char *buf, size_t count)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	u16 time;
++	int error;
++
++	if (buf == NULL || count == 0 || kstrtou16(buf, 10, &time)) {
++		dev_err(dev, "invalid runtime suspend scanrate ms parameter\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * When the suspend scanrate is changed, pm_runtime_get to resume
++	 * a potentially suspended device, update to the new pwr_cmd
++	 * and then pm_runtime_put to suspend into the new power mode.
++	 */
++	pm_runtime_get_sync(dev);
++	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
++	if (error)
++		return error;
++	cyapa->runtime_suspend_sleep_time = max_t(u16, time, 1000);
++	cyapa->runtime_suspend_power_mode =
++		cyapa_sleep_time_to_pwr_cmd(cyapa->runtime_suspend_sleep_time);
++	mutex_unlock(&cyapa->state_sync_lock);
++	pm_runtime_put_sync_autosuspend(dev);
++
++	return count;
++}
++
++static DEVICE_ATTR(runtime_suspend_scanrate_ms, S_IRUGO|S_IWUSR,
++		   cyapa_show_rt_suspend_scanrate,
++		   cyapa_update_rt_suspend_scanrate);
++
++static struct attribute *cyapa_power_runtime_entries[] = {
++	&dev_attr_runtime_suspend_scanrate_ms.attr,
++	NULL,
++};
++
++static const struct attribute_group cyapa_power_runtime_group = {
++	.name = power_group_name,
++	.attrs = cyapa_power_runtime_entries,
++};
++
++static void cyapa_remove_power_runtime_group(void *data)
++{
++	struct cyapa *cyapa = data;
++
++	sysfs_unmerge_group(&cyapa->client->dev.kobj,
++				&cyapa_power_runtime_group);
++}
++
++static int cyapa_start_runtime(struct cyapa *cyapa)
++{
++	struct device *dev = &cyapa->client->dev;
++	int error;
++
++	cyapa->runtime_suspend_power_mode = PWR_MODE_IDLE;
++	cyapa->runtime_suspend_sleep_time =
++		cyapa_pwr_cmd_to_sleep_time(cyapa->runtime_suspend_power_mode);
++
++	error = sysfs_merge_group(&dev->kobj, &cyapa_power_runtime_group);
++	if (error) {
++		dev_err(dev,
++			"failed to create power runtime group: %d\n", error);
++		return error;
++	}
++
++	error = devm_add_action(dev, cyapa_remove_power_runtime_group, cyapa);
++	if (error) {
++		cyapa_remove_power_runtime_group(cyapa);
++		dev_err(dev,
++			"failed to add power runtime cleanup action: %d\n",
++			error);
++		return error;
++	}
++
++	/* runtime is enabled until device is operational and opened. */
++	pm_runtime_set_suspended(dev);
++	pm_runtime_use_autosuspend(dev);
++	pm_runtime_set_autosuspend_delay(dev, AUTOSUSPEND_DELAY);
++
++	return 0;
++}
++#endif /* CONFIG_PM_RUNTIME */
++
+ static int cyapa_probe(struct i2c_client *client,
+ 		       const struct i2c_device_id *dev_id)
+ {
+@@ -725,6 +843,14 @@ static int cyapa_probe(struct i2c_client *client,
+ 	}
+ #endif /* CONFIG_PM_SLEEP */
+ 
++#ifdef CONFIG_PM_RUNTIME
++	error = cyapa_start_runtime(cyapa);
++	if (error) {
++		dev_err(dev, "failed to start pm_runtime: %d\n", error);
++		return error;
++	}
++#endif /* CONFIG_PM_RUNTIME */
++
+ 	error = devm_request_threaded_irq(dev, client->irq,
+ 					  NULL, cyapa_irq,
+ 					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+@@ -765,6 +891,7 @@ static int __maybe_unused cyapa_suspend(struct device *dev)
+ 	if (error)
+ 		return error;
+ 
++	pm_runtime_disable(dev);
+ 	disable_irq(client->irq);
  
  	/*
-diff --git a/drivers/input/mouse/cyapa_gen5.c b/drivers/input/mouse/cyapa_gen5.c
-index 840f5d6..2b800e3 100644
---- a/drivers/input/mouse/cyapa_gen5.c
-+++ b/drivers/input/mouse/cyapa_gen5.c
-@@ -363,6 +363,12 @@ struct gen5_app_get_parameter_data {
- 	u8 parameter_id;
- } __packed;
+@@ -781,6 +908,8 @@ static int __maybe_unused cyapa_suspend(struct device *dev)
+ 					error);
+ 	}
  
-+struct gen5_retrieve_panel_scan_data {
-+	__le16 read_offset;
-+	__le16 read_elements;
-+	u8 data_id;
-+} __packed;
++	pm_runtime_set_suspended(dev);
 +
- /* Variables to record latest gen5 trackpad power states. */
- #define GEN5_DEV_SET_PWR_STATE(cyapa, s)	((cyapa)->dev_pwr_mode = (s))
- #define GEN5_DEV_GET_PWR_STATE(cyapa)		((cyapa)->dev_pwr_mode)
-@@ -1659,6 +1665,638 @@ static int cyapa_gen5_set_power_mode(struct cyapa
-*cyapa,
+ 	if (device_may_wakeup(dev))
+ 		cyapa->irq_wake = (enable_irq_wake(client->irq) == 0);
+ 
+@@ -801,17 +930,57 @@ static int __maybe_unused cyapa_resume(struct device *dev)
+ 		cyapa->irq_wake = false;
+ 	}
+ 
++	pm_runtime_set_active(dev);
++
+ 	error = cyapa_reinitialize(cyapa);
+ 	if (error)
+ 		dev_warn(dev, "failed to reinitialize TP device: %d\n", error);
+ 
+ 	enable_irq(client->irq);
+ 
++	pm_runtime_enable(dev);
++
+ 	mutex_unlock(&cyapa->state_sync_lock);
  	return 0;
  }
  
-+static int cyapa_gen5_resume_scanning(struct cyapa *cyapa)
-+{
-+	u8 cmd[] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x04 };
-+	u8 resp_data[6];
-+	int resp_len;
-+	int error;
-+
-+	/* Try to dump all buffered data before doing command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x04))
-+		return -EINVAL;
-+
-+	/* Try to dump all buffered data when resuming scanning. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_suspend_scanning(struct cyapa *cyapa)
-+{
-+	u8 cmd[] = { 0x04, 0x00, 0x05, 0x00, 0x2f, 0x00, 0x03 };
-+	u8 resp_data[6];
-+	int resp_len;
-+	int error;
-+
-+	/* Try to dump all buffered data before doing command. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || !VALID_CMD_RESP_HEADER(resp_data, 0x03))
-+		return -EINVAL;
-+
-+	/* Try to dump all buffered data when suspending scanning. */
-+	cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
-+
-+	return 0;
-+}
-+
-+static s32 twos_complement_to_s32(s32 value, int num_bits)
-+{
-+	if (value >> (num_bits - 1))
-+		value |=  -1 << num_bits;
-+	return value;
-+}
-+
-+static s32 cyapa_parse_structure_data(u8 data_format, u8 *buf, int buf_len)
-+{
-+	int data_size;
-+	bool big_endian;
-+	bool unsigned_type;
-+	s32 value;
-+
-+	data_size = (data_format & 0x07);
-+	big_endian = ((data_format & 0x10) == 0x00);
-+	unsigned_type = ((data_format & 0x20) == 0x00);
-+
-+	if (buf_len < data_size)
-+		return 0;
-+
-+	switch (data_size) {
-+	case 1:
-+		value  = buf[0];
-+		break;
-+	case 2:
-+		if (big_endian)
-+			value = get_unaligned_be16(buf);
-+		else
-+			value = get_unaligned_le16(buf);
-+		break;
-+	case 4:
-+		if (big_endian)
-+			value = get_unaligned_be32(buf);
-+		else
-+			value = get_unaligned_le32(buf);
-+		break;
-+	default:
-+		/* Should not happen, just as default case here. */
-+		value = 0;
-+		break;
-+	}
-+
-+	if (!unsigned_type)
-+		value = twos_complement_to_s32(value, data_size * 8);
-+
-+	return value;
-+}
-+
-+static void cyapa_gen5_guess_electrodes(struct cyapa *cyapa,
-+		int *electrodes_rx, int *electrodes_tx)
-+{
-+	if (cyapa->electrodes_rx != 0) {
-+		*electrodes_rx = cyapa->electrodes_rx;
-+		*electrodes_tx = (cyapa->electrodes_x == *electrodes_rx) ?
-+				cyapa->electrodes_y : cyapa->electrodes_x;
-+	} else {
-+		*electrodes_tx = min(cyapa->electrodes_x, cyapa->electrodes_y);
-+		*electrodes_rx = max(cyapa->electrodes_x, cyapa->electrodes_y);
-+	}
-+}
-+
-+/*
-+ * Read all the global mutual or self idac data or mutual or self local PWC
-+ * data based on the @idac_data_type.
-+ * If the input value of @data_size is 0, then means read global mutual or
-+ * self idac data. For read global mutual idac data, @idac_max, @idac_min and
-+ * @idac_ave are in order used to return the max value of global mutual idac
-+ * data, the min value of global mutual idac and the average value of the
-+ * global mutual idac data. For read global self idac data, @idac_max is used
-+ * to return the global self cap idac data in Rx direction, @idac_min is used
-+ * to return the global self cap idac data in Tx direction. @idac_ave is not
-+ * used.
-+ * If the input value of @data_size is not 0, than means read the mutual or
-+ * self local PWC data. The @idac_max, @idac_min and @idac_ave are used to
-+ * return the max, min and average value of the mutual or self local PWC data.
-+ * Note, in order to raed mutual local PWC data, must read invoke this function
-+ * to read the mutual global idac data firstly to set the correct Rx number
-+ * value, otherwise, the read mutual idac and PWC data may not correct.
-+ */
-+static int cyapa_gen5_read_idac_data(struct cyapa *cyapa,
-+		u8 cmd_code, u8 idac_data_type, int *data_size,
-+		int *idac_max, int *idac_min, int *idac_ave)
-+{
-+	struct gen5_app_cmd_head *cmd_head;
-+	u8 cmd[12];
-+	u8 resp_data[256];
-+	int resp_len;
-+	int read_len;
-+	int value;
-+	u16 offset;
-+	int read_elements;
-+	bool read_global_idac;
-+	int sum, count, max_element_cnt;
-+	int tmp_max, tmp_min, tmp_ave, tmp_sum, tmp_count;
-+	int electrodes_rx, electrodes_tx;
-+	int i;
-+	int error;
-+
-+	if (cmd_code != GEN5_CMD_RETRIEVE_DATA_STRUCTURE ||
-+		(idac_data_type != GEN5_RETRIEVE_MUTUAL_PWC_DATA &&
-+		idac_data_type != GEN5_RETRIEVE_SELF_CAP_PWC_DATA) ||
-+		!data_size || !idac_max || !idac_min || !idac_ave)
-+		return -EINVAL;
-+
-+	*idac_max = INT_MIN;
-+	*idac_min = INT_MAX;
-+	sum = count = tmp_count = 0;
-+	electrodes_rx = electrodes_tx = 0;
-+	if (*data_size == 0) {
-+		/*
-+		 * Read global idac values firstly.
-+		 * Currently, no idac data exceed 4 bytes.
-+		 */
-+		read_global_idac = true;
-+		offset = 0;
-+		*data_size = 4;
-+		tmp_max = INT_MIN;
-+		tmp_min = INT_MAX;
-+		tmp_ave = tmp_sum = tmp_count = 0;
-+
-+		if (idac_data_type == GEN5_RETRIEVE_MUTUAL_PWC_DATA) {
-+			if (cyapa->aligned_electrodes_rx == 0) {
-+				cyapa_gen5_guess_electrodes(cyapa,
-+					&electrodes_rx, &electrodes_tx);
-+				cyapa->aligned_electrodes_rx =
-+					(electrodes_rx + 3) & ~3u;
-+			}
-+			max_element_cnt =
-+				(cyapa->aligned_electrodes_rx + 7) & ~7u;
-+		} else {
-+			max_element_cnt = 2;
-+		}
-+	} else {
-+		read_global_idac = false;
-+		if (*data_size > 4)
-+			*data_size = 4;
-+		/* Calculate the start offset in bytes of local PWC data. */
-+		if (idac_data_type == GEN5_RETRIEVE_MUTUAL_PWC_DATA) {
-+			offset = cyapa->aligned_electrodes_rx * (*data_size);
-+			if (cyapa->electrodes_rx == cyapa->electrodes_x)
-+				electrodes_tx = cyapa->electrodes_y;
-+			else
-+				electrodes_tx = cyapa->electrodes_x;
-+			max_element_cnt = ((cyapa->aligned_electrodes_rx + 7) &
-+						~7u) * electrodes_tx;
-+		} else if (idac_data_type == GEN5_RETRIEVE_SELF_CAP_PWC_DATA) {
-+			offset = 2;
-+			max_element_cnt = cyapa->electrodes_x +
-+						cyapa->electrodes_y;
-+			max_element_cnt = (max_element_cnt + 3) & ~3u;
-+		}
-+	}
-+
-+	memset(cmd, 0, sizeof(cmd));
-+	cmd_head = (struct gen5_app_cmd_head *)cmd;
-+	put_unaligned_le16(GEN5_OUTPUT_REPORT_ADDR, &cmd_head->addr);
-+	put_unaligned_le16(sizeof(cmd) - 2, &cmd_head->length);
-+	cmd_head->report_id = GEN5_APP_CMD_REPORT_ID;
-+	cmd_head->cmd_code = cmd_code;
-+	do {
-+		read_elements = (256 - GEN5_RESP_DATA_STRUCTURE_OFFSET) /
-+				(*data_size);
-+		read_elements = min(read_elements, max_element_cnt - count);
-+		read_len = read_elements * (*data_size);
-+
-+		put_unaligned_le16(offset, &cmd_head->parameter_data[0]);
-+		put_unaligned_le16(read_len, &cmd_head->parameter_data[2]);
-+		cmd_head->parameter_data[4] = idac_data_type;
-+		resp_len = GEN5_RESP_DATA_STRUCTURE_OFFSET + read_len;
-+		error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+				cmd, sizeof(cmd),
-+				resp_data, &resp_len,
-+				500, cyapa_gen5_sort_tsg_pip_app_resp_data,
-+				true);
-+		if (error || resp_len < GEN5_RESP_DATA_STRUCTURE_OFFSET ||
-+				!VALID_CMD_RESP_HEADER(resp_data, cmd_code) ||
-+				!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]) ||
-+				resp_data[6] != idac_data_type)
-+			return (error < 0) ? error : -EAGAIN;
-+		read_len = get_unaligned_le16(&resp_data[7]);
-+		if (read_len == 0)
-+			break;
-+
-+		*data_size = (resp_data[9] & GEN5_PWC_DATA_ELEMENT_SIZE_MASK);
-+		if (read_len < *data_size)
-+			return -EINVAL;
-+
-+		if (read_global_idac &&
-+			idac_data_type == GEN5_RETRIEVE_SELF_CAP_PWC_DATA) {
-+			/* Rx's self global idac data. */
-+			*idac_max = cyapa_parse_structure_data(
-+				resp_data[9],
-+				&resp_data[GEN5_RESP_DATA_STRUCTURE_OFFSET],
-+				*data_size);
-+			/* Tx's self global idac data. */
-+			*idac_min = cyapa_parse_structure_data(
-+				resp_data[9],
-+				&resp_data[GEN5_RESP_DATA_STRUCTURE_OFFSET +
-+					   *data_size],
-+				*data_size);
-+			break;
-+		}
-+
-+		/* Read mutual global idac or local mutual/self PWC data. */
-+		offset += read_len;
-+		for (i = 10; i < (read_len + GEN5_RESP_DATA_STRUCTURE_OFFSET);
-+				i += *data_size) {
-+			value = cyapa_parse_structure_data(resp_data[9],
-+					&resp_data[i], *data_size);
-+			*idac_min = min(value, *idac_min);
-+			*idac_max = max(value, *idac_max);
-+
-+			if (idac_data_type == GEN5_RETRIEVE_MUTUAL_PWC_DATA &&
-+				tmp_count < cyapa->aligned_electrodes_rx &&
-+				read_global_idac) {
-+				/*
-+				 * The value gap betwen global and local mutual
-+				 * idac data must bigger than 50%.
-+				 * Normally, global value bigger than 50,
-+				 * local values less than 10.
-+				 */
-+				if (!tmp_ave || value > tmp_ave / 2) {
-+					tmp_min = min(value, tmp_min);
-+					tmp_max = max(value, tmp_max);
-+					tmp_sum += value;
-+					tmp_count++;
-+
-+					tmp_ave = tmp_sum / tmp_count;
-+				}
-+			}
-+
-+			sum += value;
-+			count++;
-+
-+			if (count >= max_element_cnt)
-+				goto out;
-+		}
-+	} while (true);
-+
-+out:
-+	*idac_ave = count ? (sum / count) : 0;
-+
-+	if (read_global_idac &&
-+		idac_data_type == GEN5_RETRIEVE_MUTUAL_PWC_DATA) {
-+		if (tmp_count == 0)
-+			return 0;
-+
-+		if (tmp_count == cyapa->aligned_electrodes_rx) {
-+			cyapa->electrodes_rx = cyapa->electrodes_rx ?
-+				cyapa->electrodes_rx : electrodes_rx;
-+		} else if (tmp_count == electrodes_rx) {
-+			cyapa->electrodes_rx = cyapa->electrodes_rx ?
-+				cyapa->electrodes_rx : electrodes_rx;
-+			cyapa->aligned_electrodes_rx = electrodes_rx;
-+		} else {
-+			cyapa->electrodes_rx = cyapa->electrodes_rx ?
-+				cyapa->electrodes_rx : electrodes_tx;
-+			cyapa->aligned_electrodes_rx = tmp_count;
-+		}
-+
-+		*idac_min = tmp_min;
-+		*idac_max = tmp_max;
-+		*idac_ave = tmp_ave;
-+	}
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_read_mutual_idac_data(struct cyapa *cyapa,
-+	int *gidac_mutual_max, int *gidac_mutual_min, int *gidac_mutual_ave,
-+	int *lidac_mutual_max, int *lidac_mutual_min, int *lidac_mutual_ave)
-+{
-+	int error;
-+	int data_size;
-+
-+	*gidac_mutual_max = *gidac_mutual_min = *gidac_mutual_ave = 0;
-+	*lidac_mutual_max = *lidac_mutual_min = *lidac_mutual_ave = 0;
-+
-+	data_size = 0;
-+	error = cyapa_gen5_read_idac_data(cyapa,
-+		GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+		GEN5_RETRIEVE_MUTUAL_PWC_DATA,
-+		&data_size,
-+		gidac_mutual_max, gidac_mutual_min, gidac_mutual_ave);
-+	if (error)
-+		return error;
-+
-+	error = cyapa_gen5_read_idac_data(cyapa,
-+		GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+		GEN5_RETRIEVE_MUTUAL_PWC_DATA,
-+		&data_size,
-+		lidac_mutual_max, lidac_mutual_min, lidac_mutual_ave);
-+	return error;
-+}
-+
-+static int cyapa_gen5_read_self_idac_data(struct cyapa *cyapa,
-+		int *gidac_self_rx, int *gidac_self_tx,
-+		int *lidac_self_max, int *lidac_self_min, int *lidac_self_ave)
-+{
-+	int error;
-+	int data_size;
-+
-+	*gidac_self_rx = *gidac_self_tx = 0;
-+	*lidac_self_max = *lidac_self_min = *lidac_self_ave = 0;
-+
-+	data_size = 0;
-+	error = cyapa_gen5_read_idac_data(cyapa,
-+		GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+		GEN5_RETRIEVE_SELF_CAP_PWC_DATA,
-+		&data_size,
-+		lidac_self_max, lidac_self_min, lidac_self_ave);
-+	if (error)
-+		return error;
-+	*gidac_self_rx = *lidac_self_max;
-+	*gidac_self_tx = *lidac_self_min;
-+
-+	error = cyapa_gen5_read_idac_data(cyapa,
-+		GEN5_CMD_RETRIEVE_DATA_STRUCTURE,
-+		GEN5_RETRIEVE_SELF_CAP_PWC_DATA,
-+		&data_size,
-+		lidac_self_max, lidac_self_min, lidac_self_ave);
-+	return error;
-+}
-+
-+static ssize_t cyapa_gen5_execute_panel_scan(struct cyapa *cyapa)
-+{
-+	struct gen5_app_cmd_head *app_cmd_head;
-+	u8 cmd[7];
-+	u8 resp_data[6];
-+	int resp_len;
-+	int error;
-+
-+	memset(cmd, 0, sizeof(cmd));
-+	app_cmd_head = (struct gen5_app_cmd_head *)cmd;
-+	put_unaligned_le16(GEN5_OUTPUT_REPORT_ADDR, &app_cmd_head->addr);
-+	put_unaligned_le16(sizeof(cmd) - 2, &app_cmd_head->length);
-+	app_cmd_head->report_id = GEN5_APP_CMD_REPORT_ID;
-+	app_cmd_head->cmd_code = GEN5_CMD_EXECUTE_PANEL_SCAN;
-+	resp_len = sizeof(resp_data);
-+	error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+	if (error || resp_len != sizeof(resp_data) ||
-+			!VALID_CMD_RESP_HEADER(resp_data,
-+				GEN5_CMD_EXECUTE_PANEL_SCAN) ||
-+			!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]))
-+		return error ? error : -EAGAIN;
-+
-+	return 0;
-+}
-+
-+static int cyapa_gen5_read_panel_scan_raw_data(struct cyapa *cyapa,
-+		u8 cmd_code, u8 raw_data_type, int raw_data_max_num,
-+		int *raw_data_max, int *raw_data_min, int *raw_data_ave,
-+		u8 *buffer)
-+{
-+	struct gen5_app_cmd_head *app_cmd_head;
-+	struct gen5_retrieve_panel_scan_data *panel_sacn_data;
-+	u8 cmd[12];
-+	u8 resp_data[256];  /* Max bytes can transfer one time. */
-+	int resp_len;
-+	int read_elements;
-+	int read_len;
-+	u16 offset;
-+	s32 value;
-+	int sum, count;
-+	int data_size;
-+	s32 *intp;
-+	int i;
-+	int error;
-+
-+	if (cmd_code != GEN5_CMD_RETRIEVE_PANEL_SCAN ||
-+		(raw_data_type > GEN5_PANEL_SCAN_SELF_DIFFCOUNT) ||
-+		!raw_data_max || !raw_data_min || !raw_data_ave)
-+		return -EINVAL;
-+
-+	intp = (s32 *)buffer;
-+	*raw_data_max = INT_MIN;
-+	*raw_data_min = INT_MAX;
-+	sum = count = 0;
-+	offset = 0;
-+	/* Assume max element size is 4 currently. */
-+	read_elements = (256 - GEN5_RESP_DATA_STRUCTURE_OFFSET) / 4;
-+	read_len = read_elements * 4;
-+	app_cmd_head = (struct gen5_app_cmd_head *)cmd;
-+	put_unaligned_le16(GEN5_OUTPUT_REPORT_ADDR, &app_cmd_head->addr);
-+	put_unaligned_le16(sizeof(cmd) - 2, &app_cmd_head->length);
-+	app_cmd_head->report_id = GEN5_APP_CMD_REPORT_ID;
-+	app_cmd_head->cmd_code = cmd_code;
-+	panel_sacn_data = (struct gen5_retrieve_panel_scan_data *)
-+			app_cmd_head->parameter_data;
-+	do {
-+		put_unaligned_le16(offset, &panel_sacn_data->read_offset);
-+		put_unaligned_le16(read_elements,
-+			&panel_sacn_data->read_elements);
-+		panel_sacn_data->data_id = raw_data_type;
-+
-+		resp_len = GEN5_RESP_DATA_STRUCTURE_OFFSET + read_len;
-+		error = cyapa_i2c_pip_cmd_irq_sync(cyapa,
-+			cmd, sizeof(cmd),
-+			resp_data, &resp_len,
-+			500, cyapa_gen5_sort_tsg_pip_app_resp_data, true);
-+		if (error || resp_len < GEN5_RESP_DATA_STRUCTURE_OFFSET ||
-+				!VALID_CMD_RESP_HEADER(resp_data, cmd_code) ||
-+				!GEN5_CMD_COMPLETE_SUCCESS(resp_data[5]) ||
-+				resp_data[6] != raw_data_type)
-+			return error ? error : -EAGAIN;
-+
-+		read_elements = get_unaligned_le16(&resp_data[7]);
-+		if (read_elements == 0)
-+			break;
-+
-+		data_size = (resp_data[9] & GEN5_PWC_DATA_ELEMENT_SIZE_MASK);
-+		offset += read_elements;
-+		if (read_elements) {
-+			for (i = GEN5_RESP_DATA_STRUCTURE_OFFSET;
-+			     i < (read_elements * data_size +
-+					GEN5_RESP_DATA_STRUCTURE_OFFSET);
-+			     i += data_size) {
-+				value = cyapa_parse_structure_data(resp_data[9],
-+						&resp_data[i], data_size);
-+				*raw_data_min = min(value, *raw_data_min);
-+				*raw_data_max = max(value, *raw_data_max);
-+
-+				if (intp)
-+					put_unaligned_le32(value, &intp[count]);
-+
-+				sum += value;
-+				count++;
-+
-+			}
-+		}
-+
-+		if (count >= raw_data_max_num)
-+			break;
-+
-+		read_elements = (sizeof(resp_data) -
-+				GEN5_RESP_DATA_STRUCTURE_OFFSET) / data_size;
-+		read_len = read_elements * data_size;
-+	} while (true);
-+
-+	*raw_data_ave = count ? (sum / count) : 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t cyapa_gen5_show_baseline(struct device *dev,
-+				   struct device_attribute *attr, char *buf)
+-static SIMPLE_DEV_PM_OPS(cyapa_pm_ops, cyapa_suspend, cyapa_resume);
++#ifdef CONFIG_PM_RUNTIME
++static int cyapa_runtime_suspend(struct device *dev)
 +{
 +	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int gidac_mutual_max, gidac_mutual_min, gidac_mutual_ave;
-+	int lidac_mutual_max, lidac_mutual_min, lidac_mutual_ave;
-+	int gidac_self_rx, gidac_self_tx;
-+	int lidac_self_max, lidac_self_min, lidac_self_ave;
-+	int raw_cap_mutual_max, raw_cap_mutual_min, raw_cap_mutual_ave;
-+	int raw_cap_self_max, raw_cap_self_min, raw_cap_self_ave;
-+	int mutual_diffdata_max, mutual_diffdata_min, mutual_diffdata_ave;
-+	int self_diffdata_max, self_diffdata_min, self_diffdata_ave;
-+	int mutual_baseline_max, mutual_baseline_min, mutual_baseline_ave;
-+	int self_baseline_max, self_baseline_min, self_baseline_ave;
-+	int error, resume_error;
-+	int size;
++	int error;
 +
-+	if (cyapa->state != CYAPA_STATE_GEN5_APP)
-+		return -EBUSY;
++	if (!CYAPA_BOOTLOADER(cyapa) && cyapa->ops->set_power_mode) {
++		error = cyapa->ops->set_power_mode(cyapa,
++				cyapa->runtime_suspend_power_mode,
++				cyapa->runtime_suspend_sleep_time);
++		if (error)
++			dev_warn(dev, "runtime suspend failed: %d\n", error);
++	}
 +
-+	/* 1. Suspend Scanning*/
-+	error = cyapa_gen5_suspend_scanning(cyapa);
-+	if (error)
-+		return error;
-+
-+	/* 2.  Read global and local mutual IDAC data. */
-+	gidac_self_rx = gidac_self_tx = 0;
-+	error = cyapa_gen5_read_mutual_idac_data(cyapa,
-+				&gidac_mutual_max, &gidac_mutual_min,
-+				&gidac_mutual_ave, &lidac_mutual_max,
-+				&lidac_mutual_min, &lidac_mutual_ave);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 3.  Read global and local self IDAC data. */
-+	error = cyapa_gen5_read_self_idac_data(cyapa,
-+				&gidac_self_rx, &gidac_self_tx,
-+				&lidac_self_max, &lidac_self_min,
-+				&lidac_self_ave);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 4. Execuate panel scan. It must be executed before read data. */
-+	error = cyapa_gen5_execute_panel_scan(cyapa);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 5. Retrieve panel scan, mutual cap raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_RAW_DATA,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&raw_cap_mutual_max, &raw_cap_mutual_min,
-+				&raw_cap_mutual_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 6. Retrieve panel scan, self cap raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_RAW_DATA,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&raw_cap_self_max, &raw_cap_self_min,
-+				&raw_cap_self_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 7. Retrieve panel scan, mutual cap diffcount raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_DIFFCOUNT,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&mutual_diffdata_max, &mutual_diffdata_min,
-+				&mutual_diffdata_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 8. Retrieve panel scan, self cap diffcount raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_DIFFCOUNT,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&self_diffdata_max, &self_diffdata_min,
-+				&self_diffdata_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 9. Retrieve panel scan, mutual cap baseline raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_MUTUAL_BASELINE,
-+				cyapa->electrodes_x * cyapa->electrodes_y,
-+				&mutual_baseline_max, &mutual_baseline_min,
-+				&mutual_baseline_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+	/* 10. Retrieve panel scan, self cap baseline raw data. */
-+	error = cyapa_gen5_read_panel_scan_raw_data(cyapa,
-+				GEN5_CMD_RETRIEVE_PANEL_SCAN,
-+				GEN5_PANEL_SCAN_SELF_BASELINE,
-+				cyapa->electrodes_x + cyapa->electrodes_y,
-+				&self_baseline_max, &self_baseline_min,
-+				&self_baseline_ave,
-+				NULL);
-+	if (error)
-+		goto resume_scanning;
-+
-+resume_scanning:
-+	/* 11. Resume Scanning*/
-+	resume_error = cyapa_gen5_resume_scanning(cyapa);
-+	if (resume_error || error)
-+		return resume_error ? resume_error : error;
-+
-+	/* 12. Output data strings */
-+	size = scnprintf(buf, PAGE_SIZE, "%d %d %d %d %d %d %d %d %d %d %d ",
-+		gidac_mutual_min, gidac_mutual_max, gidac_mutual_ave,
-+		lidac_mutual_min, lidac_mutual_max, lidac_mutual_ave,
-+		gidac_self_rx, gidac_self_tx,
-+		lidac_self_min, lidac_self_max, lidac_self_ave);
-+	size += scnprintf(buf + size, PAGE_SIZE - size,
-+		"%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-+		raw_cap_mutual_min, raw_cap_mutual_max, raw_cap_mutual_ave,
-+		raw_cap_self_min, raw_cap_self_max, raw_cap_self_ave,
-+		mutual_diffdata_min, mutual_diffdata_max, mutual_diffdata_ave,
-+		self_diffdata_min, self_diffdata_max, self_diffdata_ave,
-+		mutual_baseline_min, mutual_baseline_max, mutual_baseline_ave,
-+		self_baseline_min, self_baseline_max, self_baseline_ave);
-+	return size;
++	return 0;
 +}
 +
- static bool cyapa_gen5_sort_system_info_data(struct cyapa *cyapa,
- 		u8 *buf, int len)
- {
-@@ -2050,6 +2688,8 @@ const struct cyapa_dev_ops cyapa_gen5_ops = {
- 	.bl_initiate = cyapa_gen5_bl_initiate,
- 	.update_fw = cyapa_gen5_do_fw_update,
- 
-+	.show_baseline = cyapa_gen5_show_baseline,
++static int cyapa_runtime_resume(struct device *dev)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int error;
 +
- 	.initialize = cyapa_gen5_initialize,
++	if (!CYAPA_BOOTLOADER(cyapa) && cyapa->ops->set_power_mode) {
++		error = cyapa->ops->set_power_mode(cyapa,
++				PWR_MODE_FULL_ACTIVE, 0);
++		if (error)
++			dev_warn(dev, "runtime resume failed: %d\n", error);
++	}
++
++	return 0;
++}
++#endif /* CONFIG_PM_RUNTIME */
++
++static const struct dev_pm_ops cyapa_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(cyapa_suspend, cyapa_resume)
++	SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume, NULL)
++};
  
- 	.state_parse = cyapa_gen5_state_parse,
+ static const struct i2c_device_id cyapa_id_table[] = {
+ 	{ "cyapa", 0 },
+diff --git a/drivers/input/mouse/cyapa.h b/drivers/input/mouse/cyapa.h
+index 4c09be4..922a473 100644
+--- a/drivers/input/mouse/cyapa.h
++++ b/drivers/input/mouse/cyapa.h
+@@ -253,6 +253,10 @@ struct cyapa {
+ 	/* power mode settings */
+ 	u8 suspend_power_mode;
+ 	u16 suspend_sleep_time;
++#ifdef CONFIG_PM_RUNTIME
++	u8 runtime_suspend_power_mode;
++	u16 runtime_suspend_sleep_time;
++#endif /* CONFIG_PM_RUNTIME */
+ 	u8 dev_pwr_mode;
+ 	u16 dev_sleep_time;
+ 
 -- 
 1.9.1
 
