@@ -1,77 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751162AbaLQPz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 10:55:28 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35241 "EHLO arroyo.ext.ti.com"
+	id S1751339AbaLQP42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 10:56:28 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41146 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900AbaLQPz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 10:55:26 -0500
-Message-ID: <5491A7B8.7000804@ti.com>
-Date: Wed, 17 Dec 2014 17:56:40 +0200
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1750994AbaLQP40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 10:56:26 -0500
+Date: Wed, 17 Dec 2014 16:56:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Slaby <jslaby@suse.cz>, Andy Lutomirski <luto@amacapital.net>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.12 14/66] x86_64, traps: Stop using IST for #SS
+Message-ID: <20141217155622.GA9416@pd.tnic>
+References: <cover.1417878427.git.jslaby@suse.cz>
+ <e40598270a40040461c8b8d3a8656d54fb59b9cd.1417878427.git.jslaby@suse.cz>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Lokesh Vutla <lokeshvutla@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 2/2] ARM: omap5/dra7xx: Fix counter frequency drift for
- AM572x errata i856.
-References: <cover.1418421100.git.lsorense@csclub.uwaterloo.ca> <358281a880ccd89873efeea75edaa6c953eac2bd.1418421100.git.lsorense@csclub.uwaterloo.ca> <20141214044517.GD24110@csclub.uwaterloo.ca> <549018EC.8020207@ti.com> <20141216145856.GA23358@kahuna> <54918357.8060801@ti.com> <20141217145533.GS24110@csclub.uwaterloo.ca> <20141217152225.GA737@kahuna> <20141217152710.GT24110@csclub.uwaterloo.ca> <5491A501.100@ti.com> <20141217155359.GA26990@kahuna>
-In-Reply-To: <20141217155359.GA26990@kahuna>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <e40598270a40040461c8b8d3a8656d54fb59b9cd.1417878427.git.jslaby@suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2014 05:53 PM, Nishanth Menon wrote:
-> On 17:45-20141217, Tero Kristo wrote:
->> On 12/17/2014 05:27 PM, Lennart Sorensen wrote:
->>> On Wed, Dec 17, 2014 at 09:22:25AM -0600, Nishanth Menon wrote:
->>>> A clock mux might do the job?
->>>>
->>>> value 1, 2 , 3 will imply sysclk1 / 610
->>>> value of 0 implies fixed 32768
->>>>
->>>> soemthing like
->>>> sys_clk32_crystal {
->>>>                 compatible = "fixed-clock";
->>>>                 clock-frequency = <32768>;
->>>> }
->>>>
->>>> sys_clk32_pseudo {
->>>>                 compatible = "fixed-clock";
->>>>                 compatible = "fixed-factor-clock";
->>>>                 clocks = <&sys_clkin1>;
->>>>                 clock-mult = <1>;
->>>>                 clock-div = <610>;
->>>> }
->>>>
->>>> sys_32k_ck: sys_32k_ck {
->>>> 	compatible = "ti,mux-clock";
->>>> 	clocks = <&sys_clk32_crystal>, <&sys_clk32_pseudo>, <&sys_clk32_pseudo>, <&sys_clk32_pseudo>;
->>>> };
->>>>
->>>> I think... The only issue is that the BOOTSTRAP register is not around
->>>> the usual CM1,2 address region...
->>>
->>> OK, I like where that idea is headed.  That looks promising.
->>>
->>
->> Yea clock mux can be used. However, we don't have support for DRA7
->> control module clocks in the DT yet. I have posted patches with
->> support towards this a couple of weeks back, but they need some
->> revising.
->>
->> Thus, we maybe need to apply the timer patches as is for now, and
->> fix the clock tree a bit later.
->
-> Sounds good to me, could you propose a patch in list?
+On Sat, Dec 06, 2014 at 04:07:06PM +0100, Jiri Slaby wrote:
+> From: Andy Lutomirski <luto@amacapital.net>
+> 
+> 3.12-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ===============
+> 
+> commit 6f442be2fb22be02cafa606f1769fa1e6f894441 upstream.
+> 
+> On a 32-bit kernel, this has no effect, since there are no IST stacks.
+> 
+> On a 64-bit kernel, #SS can only happen in user code, on a failed iret
+> to user space, a canonical violation on access via RSP or RBP, or a
+> genuine stack segment violation in 32-bit kernel code.  The first two
+> cases don't need IST, and the latter two cases are unlikely fatal bugs,
+> and promoting them to double faults would be fine.
+> 
+> This fixes a bug in which the espfix64 code mishandles a stack segment
+> violation.
+> 
+> This saves 4k of memory per CPU and a tiny bit of code.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> ---
+>  arch/x86/include/asm/page_32_types.h |  1 -
+>  arch/x86/include/asm/page_64_types.h | 11 +++++------
+>  arch/x86/kernel/dumpstack_64.c       |  1 -
+>  arch/x86/kernel/entry_64.S           |  2 +-
+>  arch/x86/kernel/traps.c              | 18 +-----------------
+>  5 files changed, 7 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+> index f48b17df4224..3a52ee0e726d 100644
+> --- a/arch/x86/include/asm/page_32_types.h
+> +++ b/arch/x86/include/asm/page_32_types.h
+> @@ -20,7 +20,6 @@
+>  #define THREAD_SIZE_ORDER	1
+>  #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
+>  
+> -#define STACKFAULT_STACK 0
+>  #define DOUBLEFAULT_STACK 1
+>  #define NMI_STACK 0
+>  #define DEBUG_STACK 0
+> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+> index 43dcd804ebd5..d1d2972a54db 100644
+> --- a/arch/x86/include/asm/page_64_types.h
+> +++ b/arch/x86/include/asm/page_64_types.h
+> @@ -14,12 +14,11 @@
+>  #define IRQ_STACK_ORDER 2
+>  #define IRQ_STACK_SIZE (PAGE_SIZE << IRQ_STACK_ORDER)
+>  
+> -#define STACKFAULT_STACK 1
+> -#define DOUBLEFAULT_STACK 2
+> -#define NMI_STACK 3
+> -#define DEBUG_STACK 4
+> -#define MCE_STACK 5
+> -#define N_EXCEPTION_STACKS 5  /* hw limit: 7 */
+> +#define DOUBLEFAULT_STACK 1
+> +#define NMI_STACK 2
+> +#define DEBUG_STACK 3
+> +#define MCE_STACK 4
+> +#define N_EXCEPTION_STACKS 4  /* hw limit: 7 */
+>  
+>  #define PUD_PAGE_SIZE		(_AC(1, UL) << PUD_SHIFT)
+>  #define PUD_PAGE_MASK		(~(PUD_PAGE_SIZE-1))
+> diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+> index addb207dab92..66e274a3d968 100644
+> --- a/arch/x86/kernel/dumpstack_64.c
+> +++ b/arch/x86/kernel/dumpstack_64.c
+> @@ -24,7 +24,6 @@ static char x86_stack_ids[][8] = {
+>  		[ DEBUG_STACK-1			]	= "#DB",
+>  		[ NMI_STACK-1			]	= "NMI",
+>  		[ DOUBLEFAULT_STACK-1		]	= "#DF",
+> -		[ STACKFAULT_STACK-1		]	= "#SS",
+>  		[ MCE_STACK-1			]	= "#MC",
+>  #if DEBUG_STKSZ > EXCEPTION_STKSZ
+>  		[ N_EXCEPTION_STACKS ...
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index c2ab43484b5d..e310e82de5e6 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -1510,7 +1510,7 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
+>  
+>  paranoidzeroentry_ist debug do_debug DEBUG_STACK
+>  paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+> -paranoiderrorentry stack_segment do_stack_segment
+> +errorentry stack_segment do_stack_segment
+>  #ifdef CONFIG_XEN
+>  zeroentry xen_debug do_debug
+>  zeroentry xen_int3 do_int3
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 8a2684f938b9..b2d6c58b28b0 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -221,28 +221,12 @@ DO_ERROR(X86_TRAP_OLD_MF, SIGFPE, "coprocessor segment overrun",
+>  		coprocessor_segment_overrun)
+>  DO_ERROR(X86_TRAP_TS, SIGSEGV, "invalid TSS", invalid_TSS)
+>  DO_ERROR(X86_TRAP_NP, SIGBUS, "segment not present", segment_not_present)
+> -#ifdef CONFIG_X86_32
+>  DO_ERROR(X86_TRAP_SS, SIGBUS, "stack segment", stack_segment)
+> -#endif
+>  DO_ERROR_INFO(X86_TRAP_AC, SIGBUS, "alignment check", alignment_check,
+>  		BUS_ADRALN, 0)
+>  
+>  #ifdef CONFIG_X86_64
+>  /* Runs on IST stack */
+> -dotraplinkage void do_stack_segment(struct pt_regs *regs, long error_code)
+> -{
+> -	enum ctx_state prev_state;
+> -
+> -	prev_state = exception_enter();
+> -	if (notify_die(DIE_TRAP, "stack segment", regs, error_code,
+> -		       X86_TRAP_SS, SIGBUS) != NOTIFY_STOP) {
+> -		preempt_conditional_sti(regs);
+> -		do_trap(X86_TRAP_SS, SIGBUS, "stack segment", regs, error_code, NULL);
+> -		preempt_conditional_cli(regs);
+> -	}
+> -	exception_exit(prev_state);
+> -}
+> -
+>  dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
+>  {
+>  	static const char str[] = "double fault";
+> @@ -776,7 +760,7 @@ void __init trap_init(void)
+>  	set_intr_gate(X86_TRAP_OLD_MF, &coprocessor_segment_overrun);
+>  	set_intr_gate(X86_TRAP_TS, &invalid_TSS);
+>  	set_intr_gate(X86_TRAP_NP, &segment_not_present);
+> -	set_intr_gate_ist(X86_TRAP_SS, &stack_segment, STACKFAULT_STACK);
+> +	set_intr_gate(X86_TRAP_SS, stack_segment);
 
-Yea, I can add a patch for this to the PRCM cleanup set once I get to 
-update that.
+I guess this should say "&stack_segment" in order for it to be
+consistent with the rest of the set_intr_gate() calls here.
 
--Tero
+Fortunately, this is not an issue as function designators are
+automatically promoted to function pointers, as the identical asm shows:
 
+         .loc 1 792 0
+         movq    $stack_segment, %rsi    #,
+         movl    $12, %edi       #,
+         call    set_intr_gate   #
+
+         .loc 1 792 0
+         movq    $stack_segment, %rsi    #,
+         movl    $12, %edi       #,
+         call    set_intr_gate   #
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
