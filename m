@@ -1,117 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324AbaLQTZV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 14:25:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41307 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129AbaLQTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 14:25:05 -0500
-Date: Wed, 17 Dec 2014 14:24:24 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141217192424.GB22839@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-	Peter Anvin <hpa@linux.intel.com>
-References: <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
- <20141212185454.GB4716@redhat.com>
- <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213165915.GA12756@redhat.com>
- <20141213223616.GA22559@redhat.com>
- <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
- <20141214234654.GA396@redhat.com>
- <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
- <20141217182241.GA4821@redhat.com>
- <20141217185755.GA22839@redhat.com>
+	id S1751429AbaLQT2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 14:28:03 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56732 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101AbaLQT2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 14:28:00 -0500
+Date: Wed, 17 Dec 2014 11:27:53 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Arun KS <arunks.linux@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        josh@joshtriplett.org, rostedt@goodmis.org,
+        mathieu.desnoyers@efficios.com, laijs@cn.fujitsu.com
+Subject: Re: [RCU] kernel hangs in wait_rcu_gp during suspend path
+Message-ID: <20141217192753.GS5310@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <CAKZGPAN6Ct_+FY1khP4AMSJ1RgP0zKdJ2pkczjhe-Q5HxTzsrw@mail.gmail.com>
+ <CAKZGPAN7Vk2xpooZ2uFTiyWywT9yCCiW6bSAjRbT5fGs6fRYNw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20141217185755.GA22839@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKZGPAN7Vk2xpooZ2uFTiyWywT9yCCiW6bSAjRbT5fGs6fRYNw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121719-0013-0000-0000-00000727B25C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 01:57:55PM -0500, Dave Jones wrote:
- > On Wed, Dec 17, 2014 at 01:22:41PM -0500, Dave Jones wrote:
- >  
- >  > I'm going to try your two patches on top of .18, with the same kernel
- >  > config, and see where that takes us.
- >  > Hopefully to happier places.
- > 
- > Not so much.  Died very quickly.
- > 
- > [  270.822490] BUG: unable to handle kernel paging request at 000000000249db90
- > [  270.822573] IP: [<000000336ef04084>] 0x336ef04084
- > [  270.822602] PGD 20e5ee067 PUD 20e5ef067 PMD 23126d067 PTE 94ec80
- > [  270.822633] Oops: 0006 [#1] SMP 
- > [  270.822652] Modules linked in: hidp llc2 af_key fuse bnep can_raw scsi_transport_iscsi nfnetlink can_bcm rfcomm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose sctp libcrc32c x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm coretemp hwmon x86_pkg_temp_thermal kvm_intel snd_timer kvm snd crct10dif_pclmul crc32c_intel ghash_clmulni_intel microcode pcspkr serio_raw usb_debug shpchp e1000e soundcore ptp pps_core nfsd auth_rpcgss oid_registry nfs_acl lockd grace sunrpc
- > [  270.822979] CPU: 3 PID: 9856 Comm: trinity-c93 Not tainted 3.18.0+ #105
- > [  270.823042] task: ffff8801a45416d0 ti: ffff88020e72c000 task.ti: ffff88020e72c000
- > [  270.823067] RIP: 0033:[<000000336ef04084>]  [<000000336ef04084>] 0x336ef04084
- > [  270.823096] RSP: 002b:00007fff9c3304c0  EFLAGS: 00010202
- > [  270.823117] RAX: 000000336f1b68c0 RBX: 000000000249db90 RCX: 0000000000000000
- > [  270.823142] RDX: fffffffffffffffe RSI: 00000000fbad8000 RDI: 00007fff9c3304c0
- > [  270.823168] RBP: 000000000249db90 R08: 0000000000000000 R09: 0000000000002680
- > [  270.823192] R10: 000000000000001f R11: 0000000000000246 R12: ffffffffffffffff
- > [  270.823217] R13: 000000000041edb9 R14: 00007fff9c3305f8 R15: 0000000000000001
- > [  270.823241] FS:  00007f5fd4acf740(0000) GS:ffff880245400000(0000) knlGS:0000000000000000
- > [  270.823268] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- > [  270.823288] CR2: 00007f5fd2640113 CR3: 000000020e5ed000 CR4: 00000000001407e0
- > [  270.823312] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- > [  270.823336] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
- > [  270.823360] 
- > [  270.823370] RIP  [<000000336ef04084>] 0x336ef04084
- > [  270.823392]  RSP <00007fff9c3304c0>
- > [  270.824407] CR2: 000000000249db90
- > [  270.825443] ---[ end trace d6eb8dccb8df6213 ]---
- > [  270.826448] Kernel panic - not syncing: Fatal exception
+On Tue, Dec 16, 2014 at 11:59:07AM +0530, Arun KS wrote:
+> Hello,
+> 
+> I dig little deeper to understand the situation.
+> All other cpus are in idle thread already.
+> As per my understanding, for the grace period to end, at-least one of
+> the following should happen on all online cpus,
+> 
+> 1. a context switch.
+> 2. user space switch.
+> 3. switch to idle thread.
 
-different flavour of the same thing
+This is the case for rcu_sched, and the other flavors vary a bit.
 
-[  298.759018] BUG: unable to handle kernel paging request at 00000000016edc30
-[  298.759108] IP: [<0000000000412c20>] 0x412c20
-[  298.759130] PGD 2315d1067 PUD 2315d2067 PMD 2315d7067 PTE 3c2a880
-[  298.759159] Oops: 0004 [#1] SMP 
-[  298.759177] Modules linked in: rfcomm hidp bnep llc2 af_key scsi_transport_iscsi nfnetlink can_raw can_bcm nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc bluetooth can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose sctp libcrc32c x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 rfkill coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic microcode serio_raw pcspkr snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp snd_timer shpchp snd pps_core soundcore nfsd auth_rpcgss oid_registry nfs_acl lockd grace sunrpc
-[  298.759487] CPU: 3 PID: 4568 Comm: trinity-c193 Not tainted 3.18.0+ #105
-[  298.759550] task: ffff88018c534470 ti: ffff8801deafc000 task.ti: ffff8801deafc000
-[  298.759575] RIP: 0033:[<0000000000412c20>]  [<0000000000412c20>] 0x412c20
-[  298.759601] RSP: 002b:00007fff8b5d80c0  EFLAGS: 00010202
-[  298.759621] RAX: 00000000016edc20 RBX: 00000000017769f0 RCX: 00000000016edc20
-[  298.759645] RDX: 0000000000000003 RSI: 0000000000000003 RDI: 000000336f1b76e0
-[  298.759668] RBP: 00000000016edc20 R08: 000000336f1b70fc R09: 000000336f1b7140
-[  298.759692] R10: 000000000000001f R11: 0000000000000246 R12: 0000000001776ef0
-[  298.759716] R13: 00000000017769f0 R14: 0000000000000000 R15: 0000000000000000
-[  298.759740] FS:  00007fbc02017740(0000) GS:ffff880245400000(0000) knlGS:0000000000000000
-[  298.759766] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  298.760773] CR2: 0000000000000004 CR3: 00000002315d0000 CR4: 00000000001407e0
-[  298.761788] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  298.762802] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-[  298.763812] 
-[  298.764808] RIP  [<0000000000412c20>] 0x412c20
-[  298.765806]  RSP <00007fff8b5d80c0>
-[  298.766772] CR2: 00000000016edc30
-[  298.767725] ---[ end trace eaa888b859a91308 ]---
-[  298.768672] Kernel panic - not syncing: Fatal exception
+> In this situation, since all the other cores are already in idle,  non
+> of the above are meet on all online cores.
+> So grace period is getting extended and never finishes. Below is the
+> state of runqueue when the hang happens.
+> --------------start------------------------------------
+> crash> runq
+> CPU 0 [OFFLINE]
+> 
+> CPU 1 [OFFLINE]
+> 
+> CPU 2 [OFFLINE]
+> 
+> CPU 3 [OFFLINE]
+> 
+> CPU 4 RUNQUEUE: c3192e40
+>   CURRENT: PID: 0      TASK: f0874440  COMMAND: "swapper/4"
+>   RT PRIO_ARRAY: c3192f20
+>      [no tasks queued]
+>   CFS RB_ROOT: c3192eb0
+>      [no tasks queued]
+> 
+> CPU 5 RUNQUEUE: c31a0e40
+>   CURRENT: PID: 0      TASK: f0874980  COMMAND: "swapper/5"
+>   RT PRIO_ARRAY: c31a0f20
+>      [no tasks queued]
+>   CFS RB_ROOT: c31a0eb0
+>      [no tasks queued]
+> 
+> CPU 6 RUNQUEUE: c31aee40
+>   CURRENT: PID: 0      TASK: f0874ec0  COMMAND: "swapper/6"
+>   RT PRIO_ARRAY: c31aef20
+>      [no tasks queued]
+>   CFS RB_ROOT: c31aeeb0
+>      [no tasks queued]
+> 
+> CPU 7 RUNQUEUE: c31bce40
+>   CURRENT: PID: 0      TASK: f0875400  COMMAND: "swapper/7"
+>   RT PRIO_ARRAY: c31bcf20
+>      [no tasks queued]
+>   CFS RB_ROOT: c31bceb0
+>      [no tasks queued]
+> --------------end------------------------------------
+> 
+> If my understanding is correct the below patch should help, because it
+> will expedite grace periods during suspend,
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
 
-This seems to be easily reproducable at least..
+I believe that we already covered this, but I do suggest that you give
+it a try.
 
-	Dave
+> But I wonder why it was not taken to stable trees. Can we take it?
+> Appreciate your help.
+
+I have no objection to your taking it, but have you tried it yet?
+
+							Thanx, Paul
+
+> Thanks,
+> Arun
+> 
+> On Mon, Dec 15, 2014 at 10:34 PM, Arun KS <arunks.linux@gmail.com> wrote:
+> > Hi,
+> >
+> > Here is the backtrace of the process hanging in wait_rcu_gp,
+> >
+> > PID: 247    TASK: e16e7380  CPU: 4   COMMAND: "kworker/u16:5"
+> >  #0 [<c09fead0>] (__schedule) from [<c09fcab0>]
+> >  #1 [<c09fcab0>] (schedule_timeout) from [<c09fe050>]
+> >  #2 [<c09fe050>] (wait_for_common) from [<c013b2b4>]
+> >  #3 [<c013b2b4>] (wait_rcu_gp) from [<c0142f50>]
+> >  #4 [<c0142f50>] (atomic_notifier_chain_unregister) from [<c06b2ab8>]
+> >  #5 [<c06b2ab8>] (cpufreq_interactive_disable_sched_input) from [<c06b32a8>]
+> >  #6 [<c06b32a8>] (cpufreq_governor_interactive) from [<c06abbf8>]
+> >  #7 [<c06abbf8>] (__cpufreq_governor) from [<c06ae474>]
+> >  #8 [<c06ae474>] (__cpufreq_remove_dev_finish) from [<c06ae8c0>]
+> >  #9 [<c06ae8c0>] (cpufreq_cpu_callback) from [<c0a0185c>]
+> > #10 [<c0a0185c>] (notifier_call_chain) from [<c0121888>]
+> > #11 [<c0121888>] (__cpu_notify) from [<c0121a04>]
+> > #12 [<c0121a04>] (cpu_notify_nofail) from [<c09ee7f0>]
+> > #13 [<c09ee7f0>] (_cpu_down) from [<c0121b70>]
+> > #14 [<c0121b70>] (disable_nonboot_cpus) from [<c016788c>]
+> > #15 [<c016788c>] (suspend_devices_and_enter) from [<c0167bcc>]
+> > #16 [<c0167bcc>] (pm_suspend) from [<c0167d94>]
+> > #17 [<c0167d94>] (try_to_suspend) from [<c0138460>]
+> > #18 [<c0138460>] (process_one_work) from [<c0138b18>]
+> > #19 [<c0138b18>] (worker_thread) from [<c013dc58>]
+> > #20 [<c013dc58>] (kthread) from [<c01061b8>]
+> >
+> > Will this patch helps here,
+> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
+> >
+> > I couldn't really understand why it got struck in  synchronize_rcu().
+> > Please give some pointers to debug this further.
+> >
+> > Below are the configs enable related to RCU.
+> >
+> > CONFIG_TREE_PREEMPT_RCU=y
+> > CONFIG_PREEMPT_RCU=y
+> > CONFIG_RCU_STALL_COMMON=y
+> > CONFIG_RCU_FANOUT=32
+> > CONFIG_RCU_FANOUT_LEAF=16
+> > CONFIG_RCU_FAST_NO_HZ=y
+> > CONFIG_RCU_CPU_STALL_TIMEOUT=21
+> > CONFIG_RCU_CPU_STALL_VERBOSE=y
+> >
+> > Kernel version is 3.10.28
+> > Architecture is ARM
+> >
+> > Thanks,
+> > Arun
+> 
+
