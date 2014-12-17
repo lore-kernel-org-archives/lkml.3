@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412AbaLQSra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 13:47:30 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13124 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885AbaLQSr2 (ORCPT
+	id S1751903AbaLQStb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 13:49:31 -0500
+Received: from albert.telenet-ops.be ([195.130.137.90]:41113 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484AbaLQStZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 13:47:28 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18okzM6Qj1PTgjr8NkhqQhEuNWrZUnJAEs=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 16E74633B37
-Date: Wed, 17 Dec 2014 13:46:42 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: atull@opensource.altera.com, jgunthorpe@obsidianresearch.com,
-        hpa@zytor.com, monstr@monstr.eu, michal.simek@xilinx.com,
-        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
-        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, s.trumtrar@pengutronix.de,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v5 6/6] ARM: socfpga: defconfig: enable fpga manager
-Message-ID: <20141217184642.GX967@titan.lakedaemon.net>
-References: <1418835289-15752-1-git-send-email-atull@opensource.altera.com>
- <1418835289-15752-7-git-send-email-atull@opensource.altera.com>
- <20141217173216.GA24913@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141217173216.GA24913@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Dec 2014 13:49:25 -0500
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-pm@vger.kernel.org
+Cc: Laurent Pinchart <Laurent.pinchart@ideasonboard.com>,
+        Ulrich Hecht <ulrich.hecht+renesas@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Kevin Hilman <khilman@kernel.org>,
+        linux-sh@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 5/8] ARM: shmobile: sh73a0 dtsi: Add Bus State Controller node
+Date: Wed, 17 Dec 2014 19:49:10 +0100
+Message-Id: <1418842153-17113-6-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
+References: <1418842153-17113-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 09:32:16AM -0800, Greg KH wrote:
-> On Wed, Dec 17, 2014 at 10:54:49AM -0600, atull@opensource.altera.com wrote:
-> > From: Alan Tull <atull@opensource.altera.com>
-> > 
-> > Enable FPGA manager for Altera socfpga.
-> > 
-> > Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > ---
-> > v5: s/CONFIG_FPGA_MGR_ALTERA/CONFIG_FPGA_MGR_SOCFPGA/
-> > ---
-> >  arch/arm/configs/socfpga_defconfig |    4 ++++
-> >  1 file changed, 4 insertions(+)
-> > 
-> > diff --git a/arch/arm/configs/socfpga_defconfig b/arch/arm/configs/socfpga_defconfig
-> > index a2956c3..f1d6a3b 100644
-> > --- a/arch/arm/configs/socfpga_defconfig
-> > +++ b/arch/arm/configs/socfpga_defconfig
-> > @@ -86,6 +86,10 @@ CONFIG_USB_DWC2=y
-> >  CONFIG_USB_DWC2_HOST=y
-> >  CONFIG_MMC=y
-> >  CONFIG_MMC_DW=y
-> > +CONFIG_STAGING=y
-> > +CONFIG_FPGA=y
-> > +CONFIG_FPGA_MGR_SYSFS=y
-> > +CONFIG_FPGA_MGR_SOCFPGA=y
-> >  CONFIG_EXT2_FS=y
-> >  CONFIG_EXT2_FS_XATTR=y
-> >  CONFIG_EXT2_FS_POSIX_ACL=y
-> 
-> Do defconfigs really matter anymore?
+Add a node for the Bus State Controller (BSC) on sh73a0, to which
+multiple external devices can be connected.
 
-Very much so.  arm-soc uses them as a standard build test target and
-boot target on their bootfarms.  Please see the arm-buildbot mailinglist
-at:
+The BSC is driven by the ZB clock, and located in PM domain A4S.
+A reference to the latter will be added later.
 
-  http://lists.linaro.org/mailman/listinfo/kernel-build-reports
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+v2:
+  - Postpone power-domains
+---
+ arch/arm/boot/dts/sh73a0.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-And December's results so far:
+diff --git a/arch/arm/boot/dts/sh73a0.dtsi b/arch/arm/boot/dts/sh73a0.dtsi
+index b60d0456fc7a0c00..8989b63d6993adb9 100644
+--- a/arch/arm/boot/dts/sh73a0.dtsi
++++ b/arch/arm/boot/dts/sh73a0.dtsi
+@@ -357,6 +357,16 @@
+ 		status = "disabled";
+ 	};
+ 
++	bsc: bus@fec10000 {
++		compatible = "renesas,bsc-sh73a0", "renesas,bsc", "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0xfec10000 0x400>;
++		ranges = <0 0 0x20000000>;
++		interrupts = <0 39 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&zb_clk>;
++	};
++
+ 	clocks {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+-- 
+1.9.1
 
-  http://lists.linaro.org/pipermail/kernel-build-reports/2014-December/thread.html
-
-hth,
-
-Jason.
