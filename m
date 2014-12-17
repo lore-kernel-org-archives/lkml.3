@@ -1,155 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaLQGTp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 01:19:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35644 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbaLQGTo (ORCPT
+	id S1751864AbaLQGUv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 01:20:51 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:34273 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLQGUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 01:19:44 -0500
-Date: Wed, 17 Dec 2014 07:19:39 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Cc: davem@davemloft.net, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        paul.burton@imgtec.com
-Subject: Re: [PATCH] dm9000: Add regulator and reset support to dm9000
-Message-ID: <20141217061939.GJ30369@pengutronix.de>
-References: <1418747624-2682-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+	Wed, 17 Dec 2014 01:20:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418747624-2682-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 07:04:03 up 62 days, 17:17, 58 users,  load average: 0.03, 0.04,
- 0.05
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
+References: <54584260.8030602@nvidia.com>
+	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+	<545895B2.2000101@nvidia.com>
+	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
+	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
+	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
+	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
+Date: Tue, 16 Dec 2014 22:20:49 -0800
+Message-ID: <CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zubair,
+On Tue, Dec 16, 2014 at 10:18 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
 
-Several comments inline.
+> We are routing the regulators straight to vdd of the memory and should
+> hence use vmmc to specify this. However unless I actually program 0x29
+> in the Qualcomm sdhci block I get no responses from the card.
+>
+> Which I believe is correct behavior as the SDHC specification [1] says
+> the following about BIT(0) of 0x29:
+>
+> "If this bit is cleared, the Host Controller shall immediately stop
+> driving CMD and DAT[3:0] (tri-state) and drive SDCLK to low level".
+>
+>
+> So I think 52221610d is indeed incorrect.
+>
+> [1] https://www.sdcard.org/downloads/pls/simplified_specs/archive/partA2_300.pdf
 
-On Tue, Dec 16, 2014 at 04:33:44PM +0000, Zubair Lutfullah Kakakhel wrote:
-> In boards, the dm9000 chip's power and reset can be controlled by gpio.
-> 
-> It makes sense to add them to the dm9000 driver and let dt be used to
-> enable power and reset the phy.
-> 
-> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-> Signed-off-by: Paul Burton <paul.burton@imgtec.com>
-> ---
->  .../devicetree/bindings/net/davicom-dm9000.txt     |  4 +++
->  drivers/net/ethernet/davicom/dm9000.c              | 33 ++++++++++++++++++++++
->  2 files changed, 37 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/net/davicom-dm9000.txt b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
-> index 28767ed..dba19a2 100644
-> --- a/Documentation/devicetree/bindings/net/davicom-dm9000.txt
-> +++ b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
-> @@ -11,6 +11,8 @@ Required properties:
->  Optional properties:
->  - davicom,no-eeprom : Configuration EEPROM is not available
->  - davicom,ext-phy : Use external PHY
-> +- reset-gpio : phandle of gpio that will be used to reset chip during probe
-> +- vcc-supply : phandle of regulator that will be used to enable power to chip
->  
->  Example:
->  
-> @@ -21,4 +23,6 @@ Example:
->  		interrupts = <7 4>;
->  		local-mac-address = [00 00 de ad be ef];
->  		davicom,no-eeprom;
-> +		reset-gpio = <&gpf 12 GPIO_ACTIVE_LOW>;
-> +		vcc-supply = <&eth0_power>;
->  	};
-> diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
-> index ef0bb58..7333b8d 100644
-> --- a/drivers/net/ethernet/davicom/dm9000.c
-> +++ b/drivers/net/ethernet/davicom/dm9000.c
-> @@ -36,6 +36,9 @@
->  #include <linux/platform_device.h>
->  #include <linux/irq.h>
->  #include <linux/slab.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/gpio.h>
-> +#include <linux/of_gpio.h>
->  
->  #include <asm/delay.h>
->  #include <asm/irq.h>
-> @@ -1426,11 +1429,41 @@ dm9000_probe(struct platform_device *pdev)
->  	struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);
->  	struct board_info *db;	/* Point a board information structure */
->  	struct net_device *ndev;
-> +	struct device *dev = &pdev->dev;
->  	const unsigned char *mac_src;
->  	int ret = 0;
->  	int iosize;
->  	int i;
->  	u32 id_val;
-> +	int reset_gpio;
-> +	enum of_gpio_flags flags;
-> +	struct regulator *power;
-> +
-> +	power = devm_regulator_get(dev, "vcc");
-> +	if (IS_ERR(power)) {
-> +		dev_dbg(dev, "no regulator provided\n");
+Agreed.  Host controllers that fail to implement the required internal
+regulator configured via bits 1-3 of the Power Control Register may
+still follow the specification with regard to bit zero of that same
+register.  The driver should be updated to configure bit zero
+appropriately even when an external regulator is used.
 
-You have to check for errors here. The return value can be -EPROBE_DEFER
-in which case you have to return -EPROBE_DEFER from the driver and try
-again later.
+If you like, I can propose a patch or if you have one ready, I will be
+happy to review yours.
 
-> +	} else if (!regulator_is_enabled(power)) {
-
-You must enable the regulator unconditionally to increase the reference
-counter. When this regulator is turned on because another consumer
-enabled it then this other consumer can turn it off and the dm9000 stops
-working.
-
-> +		ret = regulator_enable(power);
-> +		dev_dgb(dev, "regulator enabled\n");
-> +	}
-> +
-> +	reset_gpio = of_get_named_gpio_flags(dev->of_node, "reset-gpio", 0,
-> +					     &flags);
-
-Should be reset-gpios (plural). For some reason this is the established
-binding.
-
-> +	if (gpio_is_valid(reset_gpio)) {
-> +		ret = devm_gpio_request_one(dev, reset_gpio, flags,
-> +					    "dm9000_reset");
-> +		if (ret) {
-> +			dev_err(dev, "failed to request reset gpio %d: %d\n",
-> +				reset_gpio, ret);
-
-I think this is fatal. When A gpio is not registered for this device
-then this is fine, but when it's registered and you can't get it then
-it's fatal.
-
-> +		} else {
-> +			gpio_direction_output(reset_gpio, 0);
-> +			/* According to manual PWRST# Low Period Min 1ms */
-> +			msleep(2);
-> +			gpio_direction_output(reset_gpio, 1);
-
-No need to set the direction again. gpio_set_value should be suffice
-here.
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Thanks,
+Tim Kryger
