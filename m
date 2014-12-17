@@ -1,81 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaLQNoJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 08:44:09 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:60694 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438AbaLQNoI (ORCPT
+	id S1752158AbaLQNpw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 08:45:52 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:40525 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbaLQNpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 08:44:08 -0500
-Date: Wed, 17 Dec 2014 16:43:54 +0300
-From: samuel kihahu <skihahu@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        speakup@linux-speakup.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
-Message-ID: <20141217134354.GA585@localhost.localdomain>
-References: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
- <20141217121119.GL4856@mwanda>
+	Wed, 17 Dec 2014 08:45:51 -0500
+Message-ID: <54918902.30309@collabora.com>
+Date: Wed, 17 Dec 2014 08:45:38 -0500
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="17pEHd4RhPHOinZp"
-Content-Disposition: inline
-In-Reply-To: <20141217121119.GL4856@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jean-Michel Hautbois <jean-michel.hautbois@vodalys.com>
+CC: Philipp Zabel <p.zabel@pengutronix.de>,
+        Steve Longerbeam <slongerbeam@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBTdQ==?= =?UTF-8?B?cmVhdQ==?= 
+	<frederic.sureau@vodalys.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: i.MX6 CSC and scaler
+References: <CAL8zT=hAVi2-io3POmj9Lp1AF11ovg6bqCMPRp_w_QySAgFGtw@mail.gmail.com> <548F272E.3040808@gmail.com> <548F2DD6.70805@collabora.com> <CAL8zT=jNis3VN11xN82fci5dA5f0TwAAhkBVq2+5TaKpmm_S-Q@mail.gmail.com> <1418736635.3374.64.camel@pengutronix.de> <54903E88.2070701@collabora.com> <CAL8zT=hq5mx71eB8dBea2qAuESjcLYremb81Vj-BjjTd+iA2-g@mail.gmail.com> <5490469A.7010606@collabora.com> <CAL8zT=iFHpE6tZwkQTZ9W9H0L_F47PZv8X_AAmnV0u=A5Vk34w@mail.gmail.com>
+In-Reply-To: <CAL8zT=iFHpE6tZwkQTZ9W9H0L_F47PZv8X_AAmnV0u=A5Vk34w@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Le 2014-12-17 08:12, Jean-Michel Hautbois a écrit :
+> [10005.819862] mx6-m2m ipum2m@ipu1: call capture S_FMT first to
+> determine segmentation
 
-On Wed, Dec 17, 2014 at 03:11:19PM +0300, Dan Carpenter wrote:
-> On Wed, Dec 17, 2014 at 02:56:02PM +0300, samuel kihahu wrote:
-> > Replacing obsolete simple_strtoul with kstrtoul.
-> > 
-> 
-> Nope.  That's wrong.  Learn how the functions are different beyond just
-> the name.
-Noted, have made corrections to fit the kstrtoul and handle the return
-value.
+Please, find the part of the spec that would inforce that, if not 
+inforced, do the spec work first.
 
---17pEHd4RhPHOinZp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-staging-speakup-replace-simple_strtoul-with-kstrtoul.patch"
-
->From 71d2f7123e697b95371585b4af9a0b35262307ea Mon Sep 17 00:00:00 2001
-From: samuel kihahu <skihahu@gmail.com>
-Date: Wed, 17 Dec 2014 16:31:05 +0300
-Subject: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
-
-Replacing obsolete simple_strtoul with kstrtoul and checking the
-return status.
-
-Signed-off-by: samuel kihahu <skihahu@gmail.com>
----
- drivers/staging/speakup/varhandlers.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/speakup/varhandlers.c b/drivers/staging/speakup/varhandlers.c
-index d758284..8ac9ad7 100644
---- a/drivers/staging/speakup/varhandlers.c
-+++ b/drivers/staging/speakup/varhandlers.c
-@@ -321,9 +321,10 @@ char *spk_strlwr(char *s)
- 
- char *spk_s2uchar(char *start, char *dest)
- {
--	int val = 0;
-+	unsigned long val;
- 
--	val = simple_strtoul(skip_spaces(start), &start, 10);
-+	if (kstrtoul(skip_spaces(start), &start, val))
-+		return -EINVAL;
- 	if (*start == ',')
- 		start++;
- 	*dest = (u_char)val;
--- 
-1.8.3.1
-
-
---17pEHd4RhPHOinZp--
+Nicolas
