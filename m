@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaLQTyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 14:54:32 -0500
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:38518 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaLQTyb (ORCPT
+	id S1751366AbaLQT5h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 14:57:37 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:48367 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120AbaLQT5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 14:54:31 -0500
-Message-ID: <5491DD74.3060000@de.ibm.com>
-Date: Wed, 17 Dec 2014 20:45:56 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 17 Dec 2014 14:57:35 -0500
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] arm/rpc: avoid static keyword removal via define
-References: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com> <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com> <5490146A.3000408@de.ibm.com> <20141216114056.GP11285@n2100.arm.linux.org.uk> <5491A16A.7050101@de.ibm.com> <20141217165450.GW11285@n2100.arm.linux.org.uk>
-In-Reply-To: <20141217165450.GW11285@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121719-0021-0000-0000-00000232D671
+In-Reply-To: <CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
+References: <54584260.8030602@nvidia.com>
+	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+	<545895B2.2000101@nvidia.com>
+	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
+	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
+	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
+	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
+	<CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
+Date: Wed, 17 Dec 2014 11:57:33 -0800
+Message-ID: <CAJAp7OhAP-rDM2zyo0Yr0-7erUp4ewKJ+tC=vyU-YMP_MzXJbA@mail.gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Tim Kryger <tim.kryger@gmail.com>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.12.2014 um 17:54 schrieb Russell King - ARM Linux:
-> On Wed, Dec 17, 2014 at 04:29:46PM +0100, Christian Borntraeger wrote:
->> Am 16.12.2014 um 12:40 schrieb Russell King - ARM Linux:
->>> On Tue, Dec 16, 2014 at 12:15:54PM +0100, Christian Borntraeger wrote:
->>>> Am 15.12.2014 um 09:48 schrieb Christian Borntraeger:
->>>>> commit 4486b86368d7 ("[ARM] riscpc: fix decompressor font file handling")
->>>>> introduced Makefile magic to avoid building a file two times. Using
->>>>> -Dstatic= does break some assumptions on compiler.h that were introduced
->>>>> for READ_ONCE.
->>>>>
->>>>> Lets just use sed on the copy instead of using a define.
->>>>>
->>>>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>
->>>> This fixed the linux-next build http://kisskb.ellerman.id.au/kisskb/target/1508/
->>>> Unless anybody complains, I will send the pull request for the access_once tree tomorrow and I have this patch applied on top.
->>>
->>> Please give me some time to look at this.
+On Tue, Dec 16, 2014 at 10:20 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
+> On Tue, Dec 16, 2014 at 10:18 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
+>
+>> We are routing the regulators straight to vdd of the memory and should
+>> hence use vmmc to specify this. However unless I actually program 0x29
+>> in the Qualcomm sdhci block I get no responses from the card.
 >>
->> >From all builds, the only problematic case was the rpc_defconfig.
->> So only CONFIG_ARCH_ACORN is affected.
+>> Which I believe is correct behavior as the SDHC specification [1] says
+>> the following about BIT(0) of 0x29:
 >>
->> As I said, I want to send this series this merge window, so if you
->> do not find the time to look into this before rc1, what about removing
->> this patch from my queue and we solve this later? 
->> Acorn Risc CPU is probably not the hottest platform right now, so if we 
->> fix this in rc2 or rc3 this might be ok - I guess.
-> 
-> How does compiler.h get included when building font.o?
-> 
-> Since I haven't seen your patch series, I guess it gets included somehow
-> via linux/types.h ?
-> 
+>> "If this bit is cleared, the Host Controller shall immediately stop
+>> driving CMD and DAT[3:0] (tri-state) and drive SDCLK to low level".
+>>
+>>
+>> So I think 52221610d is indeed incorrect.
+>>
+>> [1] https://www.sdcard.org/downloads/pls/simplified_specs/archive/partA2_300.pdf
+>
+> Agreed.  Host controllers that fail to implement the required internal
+> regulator configured via bits 1-3 of the Power Control Register may
+> still follow the specification with regard to bit zero of that same
+> register.  The driver should be updated to configure bit zero
+> appropriately even when an external regulator is used.
+>
 
-The patch series can be found here
-https://lkml.org/lkml/2014/12/11/209
-or
-https://git.kernel.org/cgit/linux/kernel/git/borntraeger/linux.git/commit/?h=linux-next
+I gave it a spin on one of our Qualcomm 8974 based devices and writing
+BIT(0) only seems to be enough.
 
+> If you like, I can propose a patch or if you have one ready, I will be
+> happy to review yours.
+>
 
-font.i has
+I'm somewhat puzzled to what benefit 52221610d brings after bringing
+back the write of BIT(0). Is it just that we don't hit the BUG() on
+non-standard voltages?
 
-[..]
-# 5 "./arch/arm/include/asm/types.h" 2
-# 5 "include/uapi/linux/types.h" 2
-# 13 "include/uapi/linux/types.h"
-# 1 "./include/uapi/linux/posix_types.h" 1
+The full paragraph regarding BIT(0) reads:
 
-# 1 "include/linux/stddef.h" 1
+Before setting this bit, the SD Host Driver shall set SD Bus Voltage
+Select. If the
+Host Controller detects the No Card state, this bit shall be cleared.
+If this bit is cleared, the Host Controller shall immediately stop
+driving CMD and
+DAT[3:0] (tri-state) and drive SDCLK to low level (Refer to Section 2.2.14).
 
-# 1 "include/uapi/linux/stddef.h" 1
-# 1 "include/linux/compiler.h" 1
-# 54 "include/linux/compiler.h"
-# 1 "include/linux/compiler-gcc.h" 1
-# 106 "include/linux/compiler-gcc.h"
-# 1 "include/linux/compiler-gcc4.h" 1
-# 107 "include/linux/compiler-gcc.h" 2
-# 55 "include/linux/compiler.h" 2
-# 79 "include/linux/compiler.h"
-[..]
+So the Qualcomm HW engineers implemented the last "shall", but if
+someone else (what did nvidia do here?) also implemented the first
+"shall"s then we're back at needing a full revert of 52221610d.
 
-But I fail to follow that chain when I walk manually. Maybe its too late in the evening.
+Non-the-less, feel free to propose a patch and I will give it a test.
 
-Christian
-
+Regards,
+Bjorn
