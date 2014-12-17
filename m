@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822AbaLQJTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:19:05 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:27427 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750799AbaLQJTD (ORCPT
+	id S1751804AbaLQJXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:23:00 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53955 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaLQJW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:19:03 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: <balbi@ti.com>, <nicolas.ferre@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH 1/2] USB: gadget: udc: atmel: change setting for DMA
-Date: Wed, 17 Dec 2014 17:18:48 +0800
-Message-ID: <1418807929-31952-1-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 2.1.0.24.g4109c28
+	Wed, 17 Dec 2014 04:22:58 -0500
+Date: Wed, 17 Dec 2014 10:22:55 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Len Brown <len.brown@intel.com>,
+        Chirantan Ekbote <chirantan@chromium.org>
+Subject: Re: [PATCH] PM / sleep: add configurable delay for pm_test
+Message-ID: <20141217092255.GA4588@amd>
+References: <1409788535-28264-1-git-send-email-computersforpeace@gmail.com>
+ <20141213025530.GO21347@ld-irv-0074>
+ <20141213083123.GA26129@amd>
+ <20141216235813.GI9759@ld-irv-0074>
+ <20141217080947.GB2027@amd>
+ <20141217091057.GH7112@brian-ubuntu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141217091057.GH7112@brian-ubuntu>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the datasheet, when transfer using DMA, the control
-setting for IN packet only need END_BUF_EN, END_BUF_IE, CH_EN,
-while for OUT packet, need more two bits END_TR_EN and END_TR_IE
-to be configured.
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
+> > Make it module parameter so that the patch is two lines of code. If
+> > that does not work for you, think of something that does.
+> 
+> OK, so that's actually constructive. If lines of code is really the most
+> important factor here, then I suppose I can do that. I'd argue that a
+> module parameter is a much less sensible interface here, though, given
+> that it is coupled with the existing /sys/power/pm_test interface.
 
- drivers/usb/gadget/udc/atmel_usba_udc.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
-index ce88237..63e90f5 100644
---- a/drivers/usb/gadget/udc/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
-@@ -716,10 +716,10 @@ static int queue_dma(struct usba_udc *udc, struct usba_ep *ep,
- 	req->using_dma = 1;
- 	req->ctrl = USBA_BF(DMA_BUF_LEN, req->req.length)
- 			| USBA_DMA_CH_EN | USBA_DMA_END_BUF_IE
--			| USBA_DMA_END_TR_EN | USBA_DMA_END_TR_IE;
-+			| USBA_DMA_END_BUF_EN;
- 
--	if (ep->is_in)
--		req->ctrl |= USBA_DMA_END_BUF_EN;
-+	if (!ep->is_in)
-+		req->ctrl |= USBA_DMA_END_TR_EN | USBA_DMA_END_TR_IE;
- 
- 	/*
- 	 * Add this request to the queue and submit for DMA if
+If module parameter works for you, we have a winner, that should be
+two lines of code and two lines of documentation.
+									Pavel
 -- 
-2.1.0.24.g4109c28
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
