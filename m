@@ -1,510 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751139AbaLQQpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 11:45:42 -0500
-Received: from relay1.sgi.com ([192.48.180.66]:60688 "EHLO relay.sgi.com"
+	id S1751449AbaLQQtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 11:49:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaLQQpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 11:45:40 -0500
-Date: Wed, 17 Dec 2014 10:45:34 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Dimitri Sivanich <sivanich@sgi.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, x86@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: [Patch Part2 v6 22/27] x86, uv: Use hierarchy irqdomain to
-	manage UV interrupts
-Message-ID: <20141217164532.GB25783@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1416894816-23245-1-git-send-email-jiang.liu@linux.intel.com> <1416894816-23245-23-git-send-email-jiang.liu@linux.intel.com> <20141215213735.GA8149@sgi.com> <20141216172902.GA24760@sgi.com> <5490ED6F.4040409@linux.intel.com>
+	id S1751117AbaLQQtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 11:49:31 -0500
+Date: Wed, 17 Dec 2014 13:49:17 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Don Zickus <dzickus@redhat.com>, Richard Fowles <rfowles@redhat.com>,
+        Joe Mario <jmario@redhat.com>, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH v3] perf mem: enable sampling loads and stores
+ simultaneously
+Message-ID: <20141217164917.GA2791@kernel.org>
+References: <20141217152355.GA10053@thinkpad>
+ <20141217160749.GH11607@kernel.org>
+ <CABPqkBTyDPq9G7cPWsh0iodZDB1MwmX_MGbz2qFqarWPA8eREw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5490ED6F.4040409@linux.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <CABPqkBTyDPq9G7cPWsh0iodZDB1MwmX_MGbz2qFqarWPA8eREw@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 10:41:51AM +0800, Jiang Liu wrote:
-> On 2014/12/17 1:29, Dimitri Sivanich wrote:
-> > I answered my own question, this had never been tested on UV.
-> > 
-> > The gru driver fails with:
-> >         SGI GRU Device Driver: uv_setup_irq failed, errno=22
-> > 
-> > The info->type in uv_domain_alloc() is not set to X86_IRQ_ALLOC_TYPE_UV
-> > (info->type is never set to that value anywhere).
-> > 
-> > Adding the following to uv_setup_irq allows it to work:
-> > 
-> > --- linux.orig/arch/x86/platform/uv/uv_irq.c
-> > +++ linux/arch/x86/platform/uv/uv_irq.c
-> > @@ -187,6 +187,7 @@ int uv_setup_irq(char *irq_name, int cpu
-> >                 return -ENOMEM;
-> > 
-> >         init_irq_alloc_info(&info, cpumask_of(cpu));
-> > +       info.type = X86_IRQ_ALLOC_TYPE_UV;
-> >         info.uv_limit = limit;
-> >         info.uv_blade = mmr_blade;
-> >         info.uv_offset = mmr_offset;
-> > 
-> > On Mon, Dec 15, 2014 at 03:37:35PM -0600, Dimitri Sivanich wrote:
-> Hi Dimitri,
-> 	Thanks for reporting and fixing this bug. We will rebase the
-> tip/x86/apic branch and fold the above patch into the original patch.
-> May I assume a Tested-by from you? I have no UV systems for testing.
+Em Wed, Dec 17, 2014 at 11:38:11AM -0500, Stephane Eranian escreveu:
+> On Wed, Dec 17, 2014 at 11:07 AM, Arnaldo Carvalho de Melo
+> <acme@kernel.org> wrote:
+> > Em Wed, Dec 17, 2014 at 04:23:55PM +0100, Stephane Eranian escreveu:
+> >>
+> >> This patch modifies perf mem to default to sampling loads
+> >> and stores simultaneously. It could only do one or the other
+> >> before yet there was no hardware restriction preventing
+> >> simultaneous collection. With this patch, one run is sufficient
+> >> to collect both.
+> >>
+> >> It is still possible to sample only loads or stores by using the
+> >> -t option:
+> >>  $ perf mem -t load rec
+> >>  $ perf mem -t load rep
+> >> Or
+> >>  $ perf mem -t store rec
+> >>  $ perf mem -t store rep
+> >>
+> >> The perf report TUI will show one event at a time. The store
+> >> output will contain a Weight column which will be empty.
+> >>
+> >> In V2, we updated the man pages to reflect the change and
+> >> also simplify the initialization of the argv vector passed
+> >> to the cmd_*() functions as per LKML feedback.
+> >>
+> >> In V3, we fixed typos in the changelog.
+> >>
+> >> Signed-off-by: Stephane Eranian <eranian@google.com>
+> >
+> > So here it goes a v4, just a minor change to avoid adding another global
+> > variable and make this operation parm like the other parms inside that
+> > struct perf_mem, attached goes the interdiff from your patch to this one
+> > here, ok?
 
-287 lines of change in uv_irq.c completely untested in linux-next?  Ouch.
+> So you want me to post V4 with this one? I am fine if you add yours
+> directly on top of mine.
 
-Dimitri tested the one line change above, because the driver would
-not even load without it.  It will take some time to look through
-your extensive changes to understand and verify it works.
+Ok, then I'll do it + your ack, thanks for checking!
 
-Thanks.
-
-> Regards!
-> Gerry
+- Arnaldo
+ 
+> Acked-by: Stephane Eranian <eranian@google.com>
 > 
-> >> Was this patch ever tested on a UV system?
-> >>
-> >> Also, adding some SGI folks to the CC list, since there were none listed before.
-> >>
-> >> On Tue, Nov 25, 2014 at 01:53:31PM +0800, Jiang Liu wrote:
-> >>> Enhance UV code to support hierarchy irqdomain, it helps to make
-> >>> the architecture more clear.
-> >>>
-> >>> We should construct hwirq based on mmr_blade and mmr_offset, but
-> >>> mmr_offset is type of unsigned long, it may exceed the range of
-> >>> irq_hw_number_t. So help about the way to construct hwirq based
-> >>> on mmr_blade and mmr_offset is welcomed!
-> >>>
-> >>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-> >>> ---
-> >>>  arch/x86/include/asm/hw_irq.h |    9 ++
-> >>>  arch/x86/platform/uv/uv_irq.c |  287 ++++++++++++++++-------------------------
-> >>>  2 files changed, 117 insertions(+), 179 deletions(-)
-> >>>
-> >>> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-> >>> index 46dec7e37829..bbf90fe2a224 100644
-> >>> --- a/arch/x86/include/asm/hw_irq.h
-> >>> +++ b/arch/x86/include/asm/hw_irq.h
-> >>> @@ -123,6 +123,7 @@ enum irq_alloc_type {
-> >>>  	X86_IRQ_ALLOC_TYPE_MSI,
-> >>>  	X86_IRQ_ALLOC_TYPE_MSIX,
-> >>>  	X86_IRQ_ALLOC_TYPE_DMAR,
-> >>> +	X86_IRQ_ALLOC_TYPE_UV,
-> >>>  };
-> >>>  
-> >>>  struct irq_alloc_info {
-> >>> @@ -169,6 +170,14 @@ struct irq_alloc_info {
-> >>>  			void		*ht_update;
-> >>>  		};
-> >>>  #endif
-> >>> +#ifdef	CONFIG_X86_UV
-> >>> +		struct {
-> >>> +			int		uv_limit;
-> >>> +			int		uv_blade;
-> >>> +			unsigned long	uv_offset;
-> >>> +			char		*uv_name;
-> >>> +		};
-> >>> +#endif
-> >>>  	};
-> >>>  };
-> >>>  
-> >>> diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
-> >>> index 474912d03f40..c237ed34a498 100644
-> >>> --- a/arch/x86/platform/uv/uv_irq.c
-> >>> +++ b/arch/x86/platform/uv/uv_irq.c
-> >>> @@ -19,17 +19,31 @@
-> >>>  #include <asm/uv/uv_hub.h>
-> >>>  
-> >>>  /* MMR offset and pnode of hub sourcing interrupts for a given irq */
-> >>> -struct uv_irq_2_mmr_pnode{
-> >>> -	struct rb_node		list;
-> >>> +struct uv_irq_2_mmr_pnode {
-> >>>  	unsigned long		offset;
-> >>>  	int			pnode;
-> >>> -	int			irq;
-> >>>  };
-> >>>  
-> >>> -static DEFINE_SPINLOCK(uv_irq_lock);
-> >>> -static struct rb_root		uv_irq_root;
-> >>> +static void uv_program_mmr(struct irq_cfg *cfg, struct uv_irq_2_mmr_pnode *info)
-> >>> +{
-> >>> +	unsigned long mmr_value;
-> >>> +	struct uv_IO_APIC_route_entry *entry;
-> >>> +
-> >>> +	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
-> >>> +		     sizeof(unsigned long));
-> >>> +
-> >>> +	mmr_value = 0;
-> >>> +	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
-> >>> +	entry->vector		= cfg->vector;
-> >>> +	entry->delivery_mode	= apic->irq_delivery_mode;
-> >>> +	entry->dest_mode	= apic->irq_dest_mode;
-> >>> +	entry->polarity		= 0;
-> >>> +	entry->trigger		= 0;
-> >>> +	entry->mask		= 0;
-> >>> +	entry->dest		= cfg->dest_apicid;
-> >>>  
-> >>> -static int uv_set_irq_affinity(struct irq_data *, const struct cpumask *, bool);
-> >>> +	uv_write_global_mmr64(info->pnode, info->offset, mmr_value);
-> >>> +}
-> >>>  
-> >>>  static void uv_noop(struct irq_data *data) { }
-> >>>  
-> >>> @@ -38,6 +52,24 @@ static void uv_ack_apic(struct irq_data *data)
-> >>>  	ack_APIC_irq();
-> >>>  }
-> >>>  
-> >>> +static int
-> >>> +uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
-> >>> +		    bool force)
-> >>> +{
-> >>> +	struct irq_data *parent = data->parent_data;
-> >>> +	struct irq_cfg *cfg = irqd_cfg(data);
-> >>> +	int ret;
-> >>> +
-> >>> +	ret = parent->chip->irq_set_affinity(parent, mask, force);
-> >>> +	if (ret >= 0) {
-> >>> +		uv_program_mmr(cfg, data->chip_data);
-> >>> +		if (cfg->move_in_progress)
-> >>> +			send_cleanup_vector(cfg);
-> >>> +	}
-> >>> +
-> >>> +	return ret;
-> >>> +}
-> >>> +
-> >>>  static struct irq_chip uv_irq_chip = {
-> >>>  	.name			= "UV-CORE",
-> >>>  	.irq_mask		= uv_noop,
-> >>> @@ -46,179 +78,99 @@ static struct irq_chip uv_irq_chip = {
-> >>>  	.irq_set_affinity	= uv_set_irq_affinity,
-> >>>  };
-> >>>  
-> >>> -/*
-> >>> - * Add offset and pnode information of the hub sourcing interrupts to the
-> >>> - * rb tree for a specific irq.
-> >>> - */
-> >>> -static int uv_set_irq_2_mmr_info(int irq, unsigned long offset, unsigned blade)
-> >>> +static int uv_domain_alloc(struct irq_domain *domain, unsigned int virq,
-> >>> +			   unsigned int nr_irqs, void *arg)
-> >>>  {
-> >>> -	struct rb_node **link = &uv_irq_root.rb_node;
-> >>> -	struct rb_node *parent = NULL;
-> >>> -	struct uv_irq_2_mmr_pnode *n;
-> >>> -	struct uv_irq_2_mmr_pnode *e;
-> >>> -	unsigned long irqflags;
-> >>> -
-> >>> -	n = kmalloc_node(sizeof(struct uv_irq_2_mmr_pnode), GFP_KERNEL,
-> >>> -				uv_blade_to_memory_nid(blade));
-> >>> -	if (!n)
-> >>> +	struct uv_irq_2_mmr_pnode *chip_data;
-> >>> +	struct irq_alloc_info *info = arg;
-> >>> +	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
-> >>> +	int ret;
-> >>> +
-> >>> +	if (nr_irqs > 1 || !info || info->type != X86_IRQ_ALLOC_TYPE_UV)
-> >>> +		return -EINVAL;
-> >>> +
-> >>> +	chip_data = kmalloc_node(sizeof(*chip_data), GFP_KERNEL,
-> >>> +				 irq_data->node);
-> >>> +	if (!chip_data)
-> >>>  		return -ENOMEM;
-> >>>  
-> >>> -	n->irq = irq;
-> >>> -	n->offset = offset;
-> >>> -	n->pnode = uv_blade_to_pnode(blade);
-> >>> -	spin_lock_irqsave(&uv_irq_lock, irqflags);
-> >>> -	/* Find the right place in the rbtree: */
-> >>> -	while (*link) {
-> >>> -		parent = *link;
-> >>> -		e = rb_entry(parent, struct uv_irq_2_mmr_pnode, list);
-> >>> -
-> >>> -		if (unlikely(irq == e->irq)) {
-> >>> -			/* irq entry exists */
-> >>> -			e->pnode = uv_blade_to_pnode(blade);
-> >>> -			e->offset = offset;
-> >>> -			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
-> >>> -			kfree(n);
-> >>> -			return 0;
-> >>> -		}
-> >>> -
-> >>> -		if (irq < e->irq)
-> >>> -			link = &(*link)->rb_left;
-> >>> +	ret = irq_domain_alloc_irqs_parent(domain, virq, nr_irqs, arg);
-> >>> +	if (ret >= 0) {
-> >>> +		if (info->uv_limit == UV_AFFINITY_CPU)
-> >>> +			irq_set_status_flags(virq, IRQ_NO_BALANCING);
-> >>>  		else
-> >>> -			link = &(*link)->rb_right;
-> >>> +			irq_set_status_flags(virq, IRQ_MOVE_PCNTXT);
-> >>> +
-> >>> +		chip_data->pnode = uv_blade_to_pnode(info->uv_blade);
-> >>> +		chip_data->offset = info->uv_offset;
-> >>> +		irq_domain_set_info(domain, virq, virq, &uv_irq_chip, chip_data,
-> >>> +				    handle_percpu_irq, NULL, info->uv_name);
-> >>> +	} else {
-> >>> +		kfree(chip_data);
-> >>>  	}
-> >>>  
-> >>> -	/* Insert the node into the rbtree. */
-> >>> -	rb_link_node(&n->list, parent, link);
-> >>> -	rb_insert_color(&n->list, &uv_irq_root);
-> >>> -
-> >>> -	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
-> >>> -	return 0;
-> >>> +	return ret;
-> >>>  }
-> >>>  
-> >>> -/* Retrieve offset and pnode information from the rb tree for a specific irq */
-> >>> -int uv_irq_2_mmr_info(int irq, unsigned long *offset, int *pnode)
-> >>> +static void uv_domain_free(struct irq_domain *domain, unsigned int virq,
-> >>> +			   unsigned int nr_irqs)
-> >>>  {
-> >>> -	struct uv_irq_2_mmr_pnode *e;
-> >>> -	struct rb_node *n;
-> >>> -	unsigned long irqflags;
-> >>> -
-> >>> -	spin_lock_irqsave(&uv_irq_lock, irqflags);
-> >>> -	n = uv_irq_root.rb_node;
-> >>> -	while (n) {
-> >>> -		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
-> >>> -
-> >>> -		if (e->irq == irq) {
-> >>> -			*offset = e->offset;
-> >>> -			*pnode = e->pnode;
-> >>> -			spin_unlock_irqrestore(&uv_irq_lock, irqflags);
-> >>> -			return 0;
-> >>> -		}
-> >>> -
-> >>> -		if (irq < e->irq)
-> >>> -			n = n->rb_left;
-> >>> -		else
-> >>> -			n = n->rb_right;
-> >>> -	}
-> >>> -	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
-> >>> -	return -1;
-> >>> +	struct irq_data *irq_data = irq_domain_get_irq_data(domain, virq);
-> >>> +
-> >>> +	BUG_ON(nr_irqs != 1);
-> >>> +	kfree(irq_data->chip_data);
-> >>> +	irq_clear_status_flags(virq, IRQ_MOVE_PCNTXT);
-> >>> +	irq_clear_status_flags(virq, IRQ_NO_BALANCING);
-> >>> +	irq_domain_free_irqs_top(domain, virq, nr_irqs);
-> >>>  }
-> >>>  
-> >>>  /*
-> >>>   * Re-target the irq to the specified CPU and enable the specified MMR located
-> >>>   * on the specified blade to allow the sending of MSIs to the specified CPU.
-> >>>   */
-> >>> -static int
-> >>> -arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
-> >>> -		       unsigned long mmr_offset, int limit)
-> >>> +static void uv_domain_activate(struct irq_domain *domain,
-> >>> +			       struct irq_data *irq_data)
-> >>>  {
-> >>> -	struct irq_cfg *cfg = irq_cfg(irq);
-> >>> -	unsigned long mmr_value;
-> >>> -	struct uv_IO_APIC_route_entry *entry;
-> >>> -	int mmr_pnode;
-> >>> -
-> >>> -	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
-> >>> -			sizeof(unsigned long));
-> >>> -
-> >>> -	if (limit == UV_AFFINITY_CPU)
-> >>> -		irq_set_status_flags(irq, IRQ_NO_BALANCING);
-> >>> -	else
-> >>> -		irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
-> >>> -
-> >>> -	irq_set_chip_and_handler_name(irq, &uv_irq_chip, handle_percpu_irq,
-> >>> -				      irq_name);
-> >>> -
-> >>> -	mmr_value = 0;
-> >>> -	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
-> >>> -	entry->vector		= cfg->vector;
-> >>> -	entry->delivery_mode	= apic->irq_delivery_mode;
-> >>> -	entry->dest_mode	= apic->irq_dest_mode;
-> >>> -	entry->polarity		= 0;
-> >>> -	entry->trigger		= 0;
-> >>> -	entry->mask		= 0;
-> >>> -	entry->dest		= cfg->dest_apicid;
-> >>> -
-> >>> -	mmr_pnode = uv_blade_to_pnode(mmr_blade);
-> >>> -	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-> >>> -
-> >>> -	if (cfg->move_in_progress)
-> >>> -		send_cleanup_vector(cfg);
-> >>> -
-> >>> -	return irq;
-> >>> +	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
-> >>>  }
-> >>>  
-> >>>  /*
-> >>>   * Disable the specified MMR located on the specified blade so that MSIs are
-> >>>   * longer allowed to be sent.
-> >>>   */
-> >>> -static void arch_disable_uv_irq(int mmr_pnode, unsigned long mmr_offset)
-> >>> +static void uv_domain_deactivate(struct irq_domain *domain,
-> >>> +				 struct irq_data *irq_data)
-> >>>  {
-> >>>  	unsigned long mmr_value;
-> >>>  	struct uv_IO_APIC_route_entry *entry;
-> >>>  
-> >>> -	BUILD_BUG_ON(sizeof(struct uv_IO_APIC_route_entry) !=
-> >>> -			sizeof(unsigned long));
-> >>> -
-> >>>  	mmr_value = 0;
-> >>>  	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
-> >>>  	entry->mask = 1;
-> >>> -
-> >>> -	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-> >>> +	uv_program_mmr(irqd_cfg(irq_data), irq_data->chip_data);
-> >>>  }
-> >>>  
-> >>> -static int
-> >>> -uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
-> >>> -		    bool force)
-> >>> -{
-> >>> -	struct irq_cfg *cfg = irqd_cfg(data);
-> >>> -	unsigned int dest;
-> >>> -	unsigned long mmr_value, mmr_offset;
-> >>> -	struct uv_IO_APIC_route_entry *entry;
-> >>> -	int mmr_pnode;
-> >>> -
-> >>> -	if (apic_set_affinity(data, mask, &dest))
-> >>> -		return -1;
-> >>> -
-> >>> -	mmr_value = 0;
-> >>> -	entry = (struct uv_IO_APIC_route_entry *)&mmr_value;
-> >>> -
-> >>> -	entry->vector		= cfg->vector;
-> >>> -	entry->delivery_mode	= apic->irq_delivery_mode;
-> >>> -	entry->dest_mode	= apic->irq_dest_mode;
-> >>> -	entry->polarity		= 0;
-> >>> -	entry->trigger		= 0;
-> >>> -	entry->mask		= 0;
-> >>> -	entry->dest		= dest;
-> >>> -
-> >>> -	/* Get previously stored MMR and pnode of hub sourcing interrupts */
-> >>> -	if (uv_irq_2_mmr_info(data->irq, &mmr_offset, &mmr_pnode))
-> >>> -		return -1;
-> >>> -
-> >>> -	uv_write_global_mmr64(mmr_pnode, mmr_offset, mmr_value);
-> >>> +static struct irq_domain_ops uv_domain_ops = {
-> >>> +	.alloc = uv_domain_alloc,
-> >>> +	.free = uv_domain_free,
-> >>> +	.activate = uv_domain_activate,
-> >>> +	.deactivate = uv_domain_deactivate,
-> >>> +};
-> >>>  
-> >>> -	if (cfg->move_in_progress)
-> >>> -		send_cleanup_vector(cfg);
-> >>> +static struct irq_domain *uv_get_irq_domain(void)
-> >>> +{
-> >>> +	static struct irq_domain *uv_domain;
-> >>> +	static DEFINE_MUTEX(uv_lock);
-> >>> +
-> >>> +	mutex_lock(&uv_lock);
-> >>> +	if (uv_domain == NULL) {
-> >>> +		uv_domain = irq_domain_add_tree(NULL, &uv_domain_ops, NULL);
-> >>> +		if (uv_domain)
-> >>> +			uv_domain->parent = x86_vector_domain;
-> >>> +	}
-> >>> +	mutex_unlock(&uv_lock);
-> >>>  
-> >>> -	return IRQ_SET_MASK_OK_NOCOPY;
-> >>> +	return uv_domain;
-> >>>  }
-> >>>  
-> >>>  /*
-> >>> @@ -229,23 +181,20 @@ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
-> >>>  int uv_setup_irq(char *irq_name, int cpu, int mmr_blade,
-> >>>  		 unsigned long mmr_offset, int limit)
-> >>>  {
-> >>> -	int ret, irq;
-> >>>  	struct irq_alloc_info info;
-> >>> +	struct irq_domain *domain = uv_get_irq_domain();
-> >>> +
-> >>> +	if (!domain)
-> >>> +		return -ENOMEM;
-> >>>  
-> >>>  	init_irq_alloc_info(&info, cpumask_of(cpu));
-> >>> -	irq = irq_domain_alloc_irqs(NULL, 1, uv_blade_to_memory_nid(mmr_blade),
-> >>> -				    &info);
-> >>> -	if (irq <= 0)
-> >>> -		return -EBUSY;
-> >>> -
-> >>> -	ret = arch_enable_uv_irq(irq_name, irq, cpu, mmr_blade, mmr_offset,
-> >>> -		limit);
-> >>> -	if (ret == irq)
-> >>> -		uv_set_irq_2_mmr_info(irq, mmr_offset, mmr_blade);
-> >>> -	else
-> >>> -		irq_domain_free_irqs(irq, 1);
-> >>> +	info.uv_limit = limit;
-> >>> +	info.uv_blade = mmr_blade;
-> >>> +	info.uv_offset = mmr_offset;
-> >>> +	info.uv_name = irq_name;
-> >>>  
-> >>> -	return ret;
-> >>> +	return irq_domain_alloc_irqs(domain, 1,
-> >>> +				     uv_blade_to_memory_nid(mmr_blade), &info);
-> >>>  }
-> >>>  EXPORT_SYMBOL_GPL(uv_setup_irq);
-> >>>  
-> >>> @@ -258,26 +207,6 @@ EXPORT_SYMBOL_GPL(uv_setup_irq);
-> >>>   */
-> >>>  void uv_teardown_irq(unsigned int irq)
-> >>>  {
-> >>> -	struct uv_irq_2_mmr_pnode *e;
-> >>> -	struct rb_node *n;
-> >>> -	unsigned long irqflags;
-> >>> -
-> >>> -	spin_lock_irqsave(&uv_irq_lock, irqflags);
-> >>> -	n = uv_irq_root.rb_node;
-> >>> -	while (n) {
-> >>> -		e = rb_entry(n, struct uv_irq_2_mmr_pnode, list);
-> >>> -		if (e->irq == irq) {
-> >>> -			arch_disable_uv_irq(e->pnode, e->offset);
-> >>> -			rb_erase(n, &uv_irq_root);
-> >>> -			kfree(e);
-> >>> -			break;
-> >>> -		}
-> >>> -		if (irq < e->irq)
-> >>> -			n = n->rb_left;
-> >>> -		else
-> >>> -			n = n->rb_right;
-> >>> -	}
-> >>> -	spin_unlock_irqrestore(&uv_irq_lock, irqflags);
-> >>>  	irq_domain_free_irqs(irq, 1);
-> >>>  }
-> >>>  EXPORT_SYMBOL_GPL(uv_teardown_irq);
-> >>> -- 
-> >>> 1.7.10.4
-> >>>
-> >>> --
-> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >>> the body of a message to majordomo@vger.kernel.org
-> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>> Please read the FAQ at  http://www.tux.org/lkml/
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-
--- 
-Russ Anderson,  Kernel and Performance Software Team Manager
-SGI - Silicon Graphics Inc          rja@sgi.com
+> > diff --git a/tools/perf/Documentation/perf-mem.txt b/tools/perf/Documentation/perf-mem.txt
+> > index 1d78a4064da4..43310d8661fe 100644
+> > --- a/tools/perf/Documentation/perf-mem.txt
+> > +++ b/tools/perf/Documentation/perf-mem.txt
+> > @@ -12,11 +12,12 @@ SYNOPSIS
+> >
+> >  DESCRIPTION
+> >  -----------
+> > -"perf mem -t <TYPE> record" runs a command and gathers memory operation data
+> > +"perf mem record" runs a command and gathers memory operation data
+> >  from it, into perf.data. Perf record options are accepted and are passed through.
+> >
+> > -"perf mem -t <TYPE> report" displays the result. It invokes perf report with the
+> > -right set of options to display a memory access profile.
+> > +"perf mem report" displays the result. It invokes perf report with the
+> > +right set of options to display a memory access profile. By default, loads
+> > +and stores are sampled. Use the -t option to limit to loads or stores.
+> >
+> >  Note that on Intel systems the memory latency reported is the use-latency,
+> >  not the pure load (or store latency). Use latency includes any pipeline
+> > @@ -29,7 +30,7 @@ OPTIONS
+> >
+> >  -t::
+> >  --type=::
+> > -       Select the memory operation type: load or store (default: load)
+> > +       Select the memory operation type: load or store (default: load,store)
+> >
+> >  -D::
+> >  --dump-raw-samples=::
+> > diff --git a/tools/perf/builtin-mem.c b/tools/perf/builtin-mem.c
+> > index 24db6ffe2957..9b5663950a4d 100644
+> > --- a/tools/perf/builtin-mem.c
+> > +++ b/tools/perf/builtin-mem.c
+> > @@ -7,44 +7,47 @@
+> >  #include "util/session.h"
+> >  #include "util/data.h"
+> >
+> > -#define MEM_OPERATION_LOAD     "load"
+> > -#define MEM_OPERATION_STORE    "store"
+> > -
+> > -static const char      *mem_operation          = MEM_OPERATION_LOAD;
+> > +#define MEM_OPERATION_LOAD     0x1
+> > +#define MEM_OPERATION_STORE    0x2
+> >
+> >  struct perf_mem {
+> >         struct perf_tool        tool;
+> >         char const              *input_name;
+> >         bool                    hide_unresolved;
+> >         bool                    dump_raw;
+> > +       int                     operation;
+> >         const char              *cpu_list;
+> >         DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+> >  };
+> >
+> > -static int __cmd_record(int argc, const char **argv)
+> > +static int __cmd_record(int argc, const char **argv, struct perf_mem *mem)
+> >  {
+> >         int rec_argc, i = 0, j;
+> >         const char **rec_argv;
+> > -       char event[64];
+> >         int ret;
+> >
+> > -       rec_argc = argc + 4;
+> > +       rec_argc = argc + 7; /* max number of arguments */
+> >         rec_argv = calloc(rec_argc + 1, sizeof(char *));
+> >         if (!rec_argv)
+> >                 return -1;
+> >
+> > -       rec_argv[i++] = strdup("record");
+> > -       if (!strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > -               rec_argv[i++] = strdup("-W");
+> > -       rec_argv[i++] = strdup("-d");
+> > -       rec_argv[i++] = strdup("-e");
+> > +       rec_argv[i++] = "record";
+> >
+> > -       if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > -               sprintf(event, "cpu/mem-stores/pp");
+> > -       else
+> > -               sprintf(event, "cpu/mem-loads/pp");
+> > +       if (mem->operation & MEM_OPERATION_LOAD)
+> > +               rec_argv[i++] = "-W";
+> > +
+> > +       rec_argv[i++] = "-d";
+> > +
+> > +       if (mem->operation & MEM_OPERATION_LOAD) {
+> > +               rec_argv[i++] = "-e";
+> > +               rec_argv[i++] = "cpu/mem-loads/pp";
+> > +       }
+> > +
+> > +       if (mem->operation & MEM_OPERATION_STORE) {
+> > +               rec_argv[i++] = "-e";
+> > +               rec_argv[i++] = "cpu/mem-stores/pp";
+> > +       }
+> >
+> > -       rec_argv[i++] = strdup(event);
+> >         for (j = 1; j < argc; j++, i++)
+> >                 rec_argv[i] = argv[j];
+> >
+> > @@ -162,17 +165,17 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+> >         if (!rep_argv)
+> >                 return -1;
+> >
+> > -       rep_argv[i++] = strdup("report");
+> > -       rep_argv[i++] = strdup("--mem-mode");
+> > -       rep_argv[i++] = strdup("-n"); /* display number of samples */
+> > +       rep_argv[i++] = "report";
+> > +       rep_argv[i++] = "--mem-mode";
+> > +       rep_argv[i++] = "-n"; /* display number of samples */
+> >
+> >         /*
+> >          * there is no weight (cost) associated with stores, so don't print
+> >          * the column
+> >          */
+> > -       if (strcmp(mem_operation, MEM_OPERATION_LOAD))
+> > -               rep_argv[i++] = strdup("--sort=mem,sym,dso,symbol_daddr,"
+> > -                                      "dso_daddr,tlb,locked");
+> > +       if (!(mem->operation & MEM_OPERATION_LOAD))
+> > +               rep_argv[i++] = "--sort=mem,sym,dso,symbol_daddr,"
+> > +                               "dso_daddr,tlb,locked";
+> >
+> >         for (j = 1; j < argc; j++, i++)
+> >                 rep_argv[i] = argv[j];
+> > @@ -182,6 +185,75 @@ static int report_events(int argc, const char **argv, struct perf_mem *mem)
+> >         return ret;
+> >  }
+> >
+> > +struct mem_mode {
+> > +       const char *name;
+> > +       int mode;
+> > +};
+> > +
+> > +#define MEM_OPT(n, m) \
+> > +       { .name = n, .mode = (m) }
+> > +
+> > +#define MEM_END { .name = NULL }
+> > +
+> > +static const struct mem_mode mem_modes[]={
+> > +       MEM_OPT("load", MEM_OPERATION_LOAD),
+> > +       MEM_OPT("store", MEM_OPERATION_STORE),
+> > +       MEM_END
+> > +};
+> > +
+> > +static int
+> > +parse_mem_ops(const struct option *opt, const char *str, int unset)
+> > +{
+> > +       int *mode = (int *)opt->value;
+> > +       const struct mem_mode *m;
+> > +       char *s, *os = NULL, *p;
+> > +       int ret = -1;
+> > +
+> > +       if (unset)
+> > +               return 0;
+> > +
+> > +       /* str may be NULL in case no arg is passed to -t */
+> > +       if (str) {
+> > +               /* because str is read-only */
+> > +               s = os = strdup(str);
+> > +               if (!s)
+> > +                       return -1;
+> > +
+> > +               /* reset mode */
+> > +               *mode = 0;
+> > +
+> > +               for (;;) {
+> > +                       p = strchr(s, ',');
+> > +                       if (p)
+> > +                               *p = '\0';
+> > +
+> > +                       for (m = mem_modes; m->name; m++) {
+> > +                               if (!strcasecmp(s, m->name))
+> > +                                       break;
+> > +                       }
+> > +                       if (!m->name) {
+> > +                               fprintf(stderr, "unknown sampling op %s,"
+> > +                                           " check man page\n", s);
+> > +                               goto error;
+> > +                       }
+> > +
+> > +                       *mode |= m->mode;
+> > +
+> > +                       if (!p)
+> > +                               break;
+> > +
+> > +                       s = p + 1;
+> > +               }
+> > +       }
+> > +       ret = 0;
+> > +
+> > +       if (*mode == 0)
+> > +               *mode = MEM_OPERATION_LOAD;
+> > +error:
+> > +       free(os);
+> > +       return ret;
+> > +}
+> > +
+> >  int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >  {
+> >         struct stat st;
+> > @@ -197,10 +269,15 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >                         .ordered_events = true,
+> >                 },
+> >                 .input_name              = "perf.data",
+> > +               /*
+> > +                * default to both load an store sampling
+> > +                */
+> > +               .operation               = MEM_OPERATION_LOAD | MEM_OPERATION_STORE,
+> >         };
+> >         const struct option mem_options[] = {
+> > -       OPT_STRING('t', "type", &mem_operation,
+> > -                  "type", "memory operations(load/store)"),
+> > +       OPT_CALLBACK('t', "type", &mem.operation,
+> > +                  "type", "memory operations(load,store) Default load,store",
+> > +                   parse_mem_ops),
+> >         OPT_BOOLEAN('D', "dump-raw-samples", &mem.dump_raw,
+> >                     "dump raw samples in ASCII"),
+> >         OPT_BOOLEAN('U', "hide-unresolved", &mem.hide_unresolved,
+> > @@ -225,7 +302,7 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >         argc = parse_options_subcommand(argc, argv, mem_options, mem_subcommands,
+> >                                         mem_usage, PARSE_OPT_STOP_AT_NON_OPTION);
+> >
+> > -       if (!argc || !(strncmp(argv[0], "rec", 3) || mem_operation))
+> > +       if (!argc || !(strncmp(argv[0], "rec", 3) || mem.operation))
+> >                 usage_with_options(mem_usage, mem_options);
+> >
+> >         if (!mem.input_name || !strlen(mem.input_name)) {
+> > @@ -236,7 +313,7 @@ int cmd_mem(int argc, const char **argv, const char *prefix __maybe_unused)
+> >         }
+> >
+> >         if (!strncmp(argv[0], "rec", 3))
+> > -               return __cmd_record(argc, argv);
+> > +               return __cmd_record(argc, argv, &mem);
+> >         else if (!strncmp(argv[0], "rep", 3))
+> >                 return report_events(argc, argv, &mem);
+> >         else
