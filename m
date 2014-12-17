@@ -1,110 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaLQKIZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 05:08:25 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51006 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaLQKIX (ORCPT
+	id S1752128AbaLQKLj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 05:11:39 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26512 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaLQKLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 05:08:23 -0500
-Date: Wed, 17 Dec 2014 10:08:11 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Michal Simek <monstr@monstr.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: post-3.18 performance regression in TLB flushing code
-Message-ID: <20141217100810.GA3461@arm.com>
-References: <5490A5F8.6050504@sr71.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5490A5F8.6050504@sr71.net>
-Thread-Topic: post-3.18 performance regression in TLB flushing code
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 17 Dec 2014 05:11:38 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-8d-549156d7f572
+From: Chao Yu <chao2.yu@samsung.com>
+To: Jaegeuk Kim <jaegeuk@kernel.org>, Changman Lee <cm224.lee@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH v2] f2fs: use ra_meta_pages to simplify readahead
+ code in restore_node_summary
+Date: Wed, 17 Dec 2014 18:10:35 +0800
+Message-id: <001d01d019e1$d6ad6c10$84084430$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AdAZ4RJpAgNe/ZLxRii8aE7r89n74w==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t9jQd3rYRNDDK5cVrG4tq+RyeLJ+lnM
+	FpcWuVvs2XuSxeLyrjlsDqwem1Z1snnsXvCZyaNvyypGj8+b5AJYorhsUlJzMstSi/TtErgy
+	mvtuMBfck66YtGcWUwPjT9EuRk4OCQETiUftT5khbDGJC/fWs3UxcnEICUxnlNj3bBcLSEJI
+	4AejxNrrViA2m4CKxPKO/0wgtoiAl8Sk/SfAapgFMiXuNc0AGyQskCVx49hxsDiLgKrEtV9T
+	gOo5OHgFLCXWbw8BCfMKCEr8mHwPqlVLYv3O40wQtrzE5jVvoe5RkNhx9jUjxCo9iXOvz7BD
+	1IhLbDxyi2UCo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQI
+	Du1n0jsYVzVYHGIU4GBU4uF9eX1CiBBrYllxZe4hRgkOZiUR3s+BE0OEeFMSK6tSi/Lji0pz
+	UosPMUpzsCiJ8yrZt4UICaQnlqRmp6YWpBbBZJk4OKUaGCd/V1vQtXOqy+E9LpO6TgZ9bul/
+	8mKnpt351yFbU5oeLO2McUt9s8vHMcu1U6zj758ww79lJ31zt9/rnfij5qf0vStfuKwls5Mq
+	T/f+qj1xYLP6el0hlY78Su8WEf51ajOdzs43XKy2eO6CLsOvt3cHSvqYcEds973IkzXj8olH
+	Cwyiw3yPLlFiKc5INNRiLipOBADjv7tVaQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+Use more common function ra_meta_pages() with META_POR to readahead node blocks
+in restore_node_summary() instead of ra_sum_pages(), hence we can simplify the
+readahead code there, and also we can remove unused function ra_sum_pages().
 
-Thanks for reporting this.
+changes from v1:
+ o fix one bug when using truncate_inode_pages_range which is pointed out by
+   Jaegeuk Kim.
 
-On Tue, Dec 16, 2014 at 09:36:56PM +0000, Dave Hansen wrote:
-> I'm running the 'brk1' test from will-it-scale:
-> 
-> > https://github.com/antonblanchard/will-it-scale/blob/master/tests/brk1.c
-> 
-> on a 8-socket/160-thread system.  It's seeing about a 6% drop in
-> performance (263M -> 247M ops/sec at 80-threads) from this commit:
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c | 68 +++++++++++++---------------------------------------------
+ 1 file changed, 15 insertions(+), 53 deletions(-)
 
-This is x86, right?
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 5aa54a0..ab48b4c 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1726,80 +1726,42 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+ 	return 0;
+ }
+ 
+-/*
+- * ra_sum_pages() merge contiguous pages into one bio and submit.
+- * these pre-read pages are allocated in bd_inode's mapping tree.
+- */
+-static int ra_sum_pages(struct f2fs_sb_info *sbi, struct page **pages,
+-				int start, int nrpages)
+-{
+-	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+-	struct address_space *mapping = inode->i_mapping;
+-	int i, page_idx = start;
+-	struct f2fs_io_info fio = {
+-		.type = META,
+-		.rw = READ_SYNC | REQ_META | REQ_PRIO
+-	};
+-
+-	for (i = 0; page_idx < start + nrpages; page_idx++, i++) {
+-		/* alloc page in bd_inode for reading node summary info */
+-		pages[i] = grab_cache_page(mapping, page_idx);
+-		if (!pages[i])
+-			break;
+-		f2fs_submit_page_mbio(sbi, pages[i], page_idx, &fio);
+-	}
+-
+-	f2fs_submit_merged_bio(sbi, META, READ);
+-	return i;
+-}
+-
+ int restore_node_summary(struct f2fs_sb_info *sbi,
+ 			unsigned int segno, struct f2fs_summary_block *sum)
+ {
+ 	struct f2fs_node *rn;
+ 	struct f2fs_summary *sum_entry;
+-	struct inode *inode = sbi->sb->s_bdev->bd_inode;
+ 	block_t addr;
+ 	int bio_blocks = MAX_BIO_BLOCKS(sbi);
+-	struct page *pages[bio_blocks];
+-	int i, idx, last_offset, nrpages, err = 0;
++	int i, idx, last_offset, nrpages;
+ 
+ 	/* scan the node segment */
+ 	last_offset = sbi->blocks_per_seg;
+ 	addr = START_BLOCK(sbi, segno);
+ 	sum_entry = &sum->entries[0];
+ 
+-	for (i = 0; !err && i < last_offset; i += nrpages, addr += nrpages) {
++	for (i = 0; i < last_offset; i += nrpages, addr += nrpages) {
+ 		nrpages = min(last_offset - i, bio_blocks);
+ 
+ 		/* readahead node pages */
+-		nrpages = ra_sum_pages(sbi, pages, addr, nrpages);
+-		if (!nrpages)
+-			return -ENOMEM;
++		ra_meta_pages(sbi, addr, nrpages, META_POR);
+ 
+-		for (idx = 0; idx < nrpages; idx++) {
+-			if (err)
+-				goto skip;
++		for (idx = addr; idx < addr + nrpages; idx++) {
++			struct page *page = get_meta_page(sbi, idx);
+ 
+-			lock_page(pages[idx]);
+-			if (unlikely(!PageUptodate(pages[idx]))) {
+-				err = -EIO;
+-			} else {
+-				rn = F2FS_NODE(pages[idx]);
+-				sum_entry->nid = rn->footer.nid;
+-				sum_entry->version = 0;
+-				sum_entry->ofs_in_node = 0;
+-				sum_entry++;
+-			}
+-			unlock_page(pages[idx]);
+-skip:
+-			page_cache_release(pages[idx]);
++			rn = F2FS_NODE(page);
++			sum_entry->nid = rn->footer.nid;
++			sum_entry->version = 0;
++			sum_entry->ofs_in_node = 0;
++			sum_entry++;
++			f2fs_put_page(page, 1);
+ 		}
+ 
+-		invalidate_mapping_pages(inode->i_mapping, addr,
+-							addr + nrpages);
++		truncate_inode_pages_range(META_MAPPING(sbi),
++				addr << PAGE_CACHE_SHIFT,
++				((addr + nrpages) << PAGE_CACHE_SHIFT) - 1);
+ 	}
+-	return err;
++	return 0;
+ }
+ 
+ static void remove_nats_in_journal(struct f2fs_sb_info *sbi)
+-- 
+2.1.2
 
-> 	commit fb7332a9fedfd62b1ba6530c86f39f0fa38afd49
-> 	Author: Will Deacon <will.deacon@arm.com>
-> 	Date:   Wed Oct 29 10:03:09 2014 +0000
-> 
-> 	 mmu_gather: move minimal range calculations into generic code
-> 
-> tlb_finish_mmu() goes up about 9x in the profiles (~0.4%->3.6%) and
-> tlb_flush_mmu_free() takes about 3.1% of CPU time with the patch
-> applied, but does not show up at all on the commit before.
 
-Ouch...
-
-> This isn't a major regression, but it is rather unfortunate for a patch
-> that is apparently a code cleanup.  It also _looks_ to show up even when
-> things are single-threaded, although I haven't looked at it in detail.
-
-Ok, so there are two parts to this patch:
-
-  (1) Fixing an issue where the arch code (arm64 in my case) wanted to
-      adjust the range behind the back of the core code, which resulted
-      in negative ranges being flushed
-
-  (2) A cleanup removing the need_flush field, since we can now rely
-      on tlb->end != 0 to indicate that a flush is needed
-
-> I suspect the tlb->need_flush logic was serving some role that the
-> modified code isn't capturing like in this hunk:
-> 
-> >  void tlb_flush_mmu(struct mmu_gather *tlb)
-> >  {
-> > -       if (!tlb->need_flush)
-> > -               return;
-> >         tlb_flush_mmu_tlbonly(tlb);
-> >         tlb_flush_mmu_free(tlb);
-> >  }
-> 
-> tlb_flush_mmu_tlbonly() has tlb->end check (which replaces the
-> ->need_flush logic), but tlb_flush_mmu_free() does not.
-
-Yes, I thought tlb_flush_mmu_free wouldn't do anything if we hadn't batched,
-but actually free_pages_and_swap_cache does have work outside of the loop.
-
-> If we add a !tlb->end (patch attached) to tlb_flush_mmu(), that gets us
-> back up to ~258M ops/sec, but that's still ~2% down from where we started.
-
-I think there are a couple of things you could try to see if that 2% comes
-back:
-
-  * Revert the patch and try the one here [1] instead (which only does part
-    (1) of the above).
-
--- or --
-
-  * Instead of adding the tlb->end check to tlb_flush_mmu, add it to
-    tlb_flush_mmu_free
-
-Could you give that a go, please?
-
-Cheers,
-
-Will
-
-[1] http://www.spinics.net/lists/kernel/msg1855260.html
