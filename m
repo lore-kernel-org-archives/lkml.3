@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191AbaLQJEd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 04:04:33 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:41803 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaLQJE1 (ORCPT
+	id S1752105AbaLQJJn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 04:09:43 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:60548 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751257AbaLQJJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 04:04:27 -0500
+	Wed, 17 Dec 2014 04:09:40 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v4 4/5] ARM: mediatek: Add EINT support to MTK pinctrl
+ driver.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Russell King <linux@arm.linux.org.uk>, <srv_heupstream@mediatek.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        <linux-kernel@vger.kernel.org>, <alan.cheng@mediatek.com>,
+        <maoguang.meng@mediatek.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>, <toby.liu@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, <dandan.he@mediatek.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>
+In-Reply-To: <1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
+References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
+	 <1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Dec 2014 17:09:25 +0800
+Message-ID: <1418807365.6443.17.camel@mtksdaap41>
 MIME-Version: 1.0
-In-Reply-To: <20141216155028.6a500d7a79eab815dbeb950e@linux-foundation.org>
-References: <20141126191145.3089.90947.stgit@zurg>
-	<20141216104218.GB22920@dhcp22.suse.cz>
-	<20141216155028.6a500d7a79eab815dbeb950e@linux-foundation.org>
-Date: Wed, 17 Dec 2014 13:04:25 +0400
-Message-ID: <CALYGNiNSA1faTB_9Ngdrsv8xS7einysdMmmVeX=T-aX_RJLobg@mail.gmail.com>
-Subject: Re: [PATCH v3] mm: prevent endless growth of anon_vma hierarchy
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Tim Hartrick <tim@edgecast.com>,
-        Daniel Forrest <dan.forrest@ssec.wisc.edu>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 2:50 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 16 Dec 2014 11:42:18 +0100 Michal Hocko <mhocko@suse.cz> wrote:
->
->> What happened to this patch? I do not see it merged for 3.19 and
->> nor in the current mmotm tree (2014-12-15-17-05)
->>
->
-> Awaiting v4.  See Konstantin's reply to Rik's review comments.
->
-> Konstantin, please ensure that the questions which Rik asked are
-> answered (via code comments and changelogging) in the next version?
-> Because other future readers will have the same questions.
->
+On Wed, 2014-12-17 at 07:34 +0800, Hongzhou Yang wrote:
+> From: Maoguang Meng <maoguang.meng@mediatek.com>
+> 
+> MTK SoC support external interrupt(EINT) from most SoC pins.
+> Add EINT support to pinctrl driver.
+> 
+> Signed-off-by: Maoguang Meng <maoguang.meng@mediatek.com>
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
 
-Done.
+Hi Linus,
 
-Thanks for reminding.
+This patch add EINT support to the pinctrl driver. We've surveyed
+GPIOLIB_IRQCHIP, but we didn't use it because:
+
+- Not every GPIO pin support interrupt.
+- EINT use a different numbering to GPIO. eg, from the mt8135 table,
+GPIO29 is EINT158. It is more nature & efficient to use EINT number as
+hwirq.
+
++               MTK_EINT_FUNCTION(2, 158),
++               MTK_FUNCTION(0, "GPIO29"),
+
+Joe.C
+
+
+
