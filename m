@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448AbaLQC3b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 21:29:31 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:43435 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLQC3a (ORCPT
+	id S1751505AbaLQCao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 21:30:44 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:45220 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaLQCam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 21:29:30 -0500
+	Tue, 16 Dec 2014 21:30:42 -0500
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <5490E856.6050904@huawei.com>
-References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu>
-	<20141215220150.GP9845@kernel.org>
-	<CAMsRxfJ7EnA1DTXMK-UZtua8jLdn84C=Oc4yUkjqgL9tb5sTsQ@mail.gmail.com>
-	<alpine.DEB.2.11.1412161211540.2154@vincent-weaver-1.umelst.maine.edu>
-	<5490E856.6050904@huawei.com>
-Date: Wed, 17 Dec 2014 03:29:29 +0100
-Message-ID: <CAMsRxfL2GrA-1N7AZM42LC+aLBRB-pvtTXs1ovLine=Hv3PFag@mail.gmail.com>
-Subject: Re: [perf tool] cgroup support broken on Debian?
-From: Stephane Eranian <eranian@googlemail.com>
-To: Zefan Li <lizefan@huawei.com>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <54908DAC.3090009@ti.com>
+References: <1418378690-3466-1-git-send-email-lftan@altera.com>
+	<548AFDE9.6000909@gmail.com>
+	<548F4A99.7040409@ti.com>
+	<CAFiDJ5-b9qsLKj8Qh2+yx8_Y1nv5CG1PHyn2Se0zzZLSHWTKNg@mail.gmail.com>
+	<54908DAC.3090009@ti.com>
+Date: Wed, 17 Dec 2014 10:30:41 +0800
+X-Google-Sender-Auth: giREpa8jnAC7ODyJ_cvLaq1DOwg
+Message-ID: <CAFiDJ58etaJxO3csGzeTYq3j0a4=e-eu4MpTn3Xd8BtJmzssNA@mail.gmail.com>
+Subject: Re: [PATCH (resend)] mailbox: Add Altera mailbox driver
+From: Ley Foon Tan <lftan@altera.com>
+To: Suman Anna <s-anna@ti.com>
+Cc: Dinh Nguyen <dinh.linux@gmail.com>, Jassi Brar <jassisinghbrar@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 3:20 AM, Zefan Li <lizefan@huawei.com> wrote:
-> On 2014/12/17 1:17, Vince Weaver wrote:
->> On Mon, 15 Dec 2014, Stephane Eranian wrote:
->>> On Mon, Dec 15, 2014 at 11:01 PM, Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com> wrote:
->>
->>> fs is visible. The cgroup file system type is not there anymore. They are using
->>> tmpfs which is not ideal to detect just cgroup. Looks like now, we have to look
->>> at the mount point which is flaky.
->>
->> The trivial fix is to just always assume things will be under
->>       /sys/fs/cgroup
->> which looks like to be the new official mount point.
->>
->> This will break on older systems though, or systems that mount cgroupfs in
->> multiple locations.
->>
->> Another alternative is to change the interface to require the full
->> cgroupfs pathname as an argument to -G
->>
->
-> What's the problem here?
->
-> none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
-> systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
->
-> cgroup is mounted in /sys/fs/cgroup/systemd, so you should pass '/' to the -G argument:
->
-Is that the only mountpoint possible?
-The tool needs to detect a valid mount point to locate the named cgroup.
-That's assuming that if I create cgroup foo, then it appears under
-//sys/fs/cgroup/systemd/foo
+On Wed, Dec 17, 2014 at 3:53 AM, Suman Anna <s-anna@ti.com> wrote:
 
->         sudo perf stat -a -e cycles:u,cycles:u,cycles:u -G / -- sleep 1
+>>> I think this logic in general will conflict between interrupt and poll
+>>> mode. send_data is supposed to return -EBUSY only in polling mode and
+>>> not in interrupt mode.
+>> What is the recommended error code for this case? BTW, omap-mailbox.c
+>> also return -EBUSY if mailbox is full.
 >
+> Looks like the mbox core doesn't care about the error, it's just
+> checking for non-success case. I made that comment based on the
+> documentation in last_tx_done. OMAP mailbox is always interrupt driven,
+> and it is very rare that we will ever hit the mbox full because of the
+> Tx-ready interrupt driven Tx ticker and also the h/w fifo.
+>
+> I see that your mailbox is very similar to OMAP mailbox though without
+> the h/w fifo, but you do have support for both polling and interrupt
+> modes in your code. OMAP mailbox can do that as well, but it's
+> inefficient to use polling so the driver is strictly interrupt driven.
+Yes, you are right. So, I think -EBUSY still can use it in interrupt case.
+
+
+
+>>>>> +
+>>>>> +    mbox->mbox_base = devm_ioremap_resource(&pdev->dev, regs);
+>>>>> +    if (IS_ERR(mbox->mbox_base))
+>>>>> +            return PTR_ERR(mbox->mbox_base);
+>>>>> +
+>>>>> +    /* Check is it a sender or receiver? */
+>>>>> +    mbox->is_sender = altera_mbox_is_sender(mbox);
+>>>>> +
+>>>>> +    mbox->irq = platform_get_irq(pdev, 0);
+>>>>> +    if (mbox->irq >= 0)
+>>>>> +            mbox->intr_mode = true;
+>>>
+>>> This seems to be a poor way of setting up the mode. Is it the same IP
+>>> block but different integration on different SoCs? Or on the same SoC,
+>>> and you can use it either by interrupt driven or by polling.
+>> Yes, it can use interrupt or polling mode depends on hardware configurations.
+>> It is a soft IP and can be configured with different hardware configurations.
+>
+> OK, the platform_get_irq suggests that this decision is made by having
+> or not having the interrupts property in the DT node, is that the only
+> way of differentiating this mode?
+Yes, we don't have other DTS property to identify the interrupt mode.
+
+Regards
+Ley Foon
