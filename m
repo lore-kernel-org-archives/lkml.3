@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaLQW25 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 17:28:57 -0500
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:47268 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaLQW24 (ORCPT
+	id S1751602AbaLQWaN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 17:30:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43370 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaLQWaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 17:28:56 -0500
-Message-ID: <1418855330.3962.5.camel@u64>
-Subject: Re: [PATCH  v3] Perf Bench: Locking Microbenchmark
-From: Tuan Bui <tuan.d.bui@hp.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, dbueso@suse.de, a.p.zijlstra@chello.nl,
-        paulus@samba.org, artagnon@gmail.com, jolsa@redhat.com,
-        dvhart@linux.intel.com, Aswin Chandramouleeswaran <aswin@hp.com>,
-        Jason Low <jason.low2@hp.com>, akpm@linux-foundation.org,
-        mingo@kernel.org
-Date: Wed, 17 Dec 2014 14:28:50 -0800
-In-Reply-To: <20141211211254.GC9845@kernel.org>
-References: <1418165693.6540.5.camel@u64> <20141211211254.GC9845@kernel.org>
-Organization: HP
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
+	Wed, 17 Dec 2014 17:30:11 -0500
+Date: Wed, 17 Dec 2014 14:30:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Petr Cermak <petrcermak@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>
+Subject: Re: [PATCH 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+Message-Id: <20141217143010.ccf73cbd544ade86bb4dec3f@linux-foundation.org>
+In-Reply-To: <1418663733-15949-1-git-send-email-petrcermak@chromium.org>
+References: <1418223544-11382-1-git-send-email-petrcermak@chromium.org>
+	<1418663733-15949-1-git-send-email-petrcermak@chromium.org>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 18:12 -0300, Arnaldo Carvalho de Melo wrote:
-> > +struct timeval start, end, total;
-> > +static unsigned int start_nr = 100;
-> > +static unsigned int end_nr = 1100;
-> > +static unsigned int increment_by = 100;
-> > +static int bench_dur = NOTSET;
-> > +static int num_jobs = NOTSET;
-> > +static bool run_jobs;
-> > +static int n_pro;
-> > +
-> > +/* Shared variables between fork processes*/
-> > +unsigned int *finished, *setup;
-> > +unsigned long long *shared_workers;
-> > +char *tmp_dir;
-> 
-> Are you sure these variables aren't static?
-> 
+On Mon, 15 Dec 2014 17:15:33 +0000 Petr Cermak <petrcermak@chromium.org> wrote:
 
-Yes you are right.  I will change these to static.
+> Peak resident size of a process can be reset by writing "5" to
+> /proc/pid/clear_refs. The driving use-case for this would be getting the
+> peak RSS value, which can be retrieved from the VmHWM field in
+> /proc/pid/status, per benchmark iteration or test scenario.
 
+The term "reset" is ambiguous - it often means "reset it to zero".
 
-> > +/* Running bench vfs workload */
-> > +static void *run_bench_vfs(struct worker *workers)
-> > +{
-> > +	int fd;
-> > +	unsigned long long nr_ops = 0;
-> > +	int jobs = num_jobs;
-> > +
-> > +	sprintf(workers->str, "%s/%d-XXXXXX", tmp_dir, getpid());
-> 
-> 
-> Please use snprintf, checking for overflows on the target string
-> 
+This?
 
-Thank you for pointing this out.  I will change all sprintf to use
-snprintf and check for overflows on the target string.
-
-
-> > +
-> > +	/* finished shared var is use to signal start and end of benchmark */
-> > +	finished_tmp = (void *)mmap(0, sizeof(unsigned int), PROT_READ|PROT_WRITE,
-> > +			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-> 
-> Why do you use these void * casts before mmap alreayd returns void *?
-> 
-
-Yes the cast to void here is redundant. I will remove the cast to (void
-*) here.
-
-> > +	if (finished_tmp == (void *) -1)
-> 
-> Please use MAP_FAILED instead of its equivalent (void *) -1.
-> 
-
-I will check for MAP_FAILED here instead.  Thank you for the suggestion.
-
-
--Tuan
-
+--- a/Documentation/filesystems/proc.txt~task_mmu-add-user-space-support-for-resetting-mm-hiwater_rss-peak-rss-fix
++++ a/Documentation/filesystems/proc.txt
+@@ -488,7 +488,8 @@ To clear the bits for the file mapped pa
+ To clear the soft-dirty bit
+     > echo 4 > /proc/PID/clear_refs
+ 
+-To reset the peak resident set size ("high water mark")
++To reset the peak resident set size ("high water mark") to the process's
++current value:
+     > echo 5 > /proc/PID/clear_refs
+ 
+ Any other value written to /proc/PID/clear_refs will have no effect.
+--- a/fs/proc/task_mmu.c~task_mmu-add-user-space-support-for-resetting-mm-hiwater_rss-peak-rss-fix
++++ a/fs/proc/task_mmu.c
+@@ -859,7 +859,7 @@ static ssize_t clear_refs_write(struct f
+ 	if (type == CLEAR_REFS_MM_HIWATER_RSS) {
+ 		/*
+ 		 * Writing 5 to /proc/pid/clear_refs resets the peak resident
+-		 * set size.
++		 * set size to this mm's current rss value.
+ 		 */
+ 		down_write(&mm->mmap_sem);
+ 		reset_mm_hiwater_rss(mm);
+_
 
