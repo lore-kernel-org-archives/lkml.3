@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751541AbaLQBdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 20:33:12 -0500
-Received: from lekensteyn.nl ([178.21.112.251]:44723 "EHLO lekensteyn.nl"
+	id S1751297AbaLQBjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Dec 2014 20:39:04 -0500
+Received: from mga11.intel.com ([192.55.52.93]:29030 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbaLQBdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 20:33:10 -0500
-From: Peter Wu <peter@lekensteyn.nl>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Nestor Lopez Casado <nlopezcasad@logitech.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: logitech-hidpp: bail out if wtp_connect fails
-Date: Wed, 17 Dec 2014 02:32:52 +0100
-Message-ID: <2965951.04q6IShhJ2@al>
-User-Agent: KMail/4.14.3 (Linux/3.17.0-rc4-custom-00168-g7ec62d4; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <1771836.oYfhfEolNx@al>
-References: <1418767562-4136-1-git-send-email-benjamin.tissoires@redhat.com> <1771836.oYfhfEolNx@al>
+	id S1750932AbaLQBjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Dec 2014 20:39:02 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,590,1413270000"; 
+   d="scan'208";a="638736631"
+Message-ID: <5490DEB1.30305@intel.com>
+Date: Wed, 17 Dec 2014 09:38:57 +0800
+From: "Chen, Tiejun" <tiejun.chen@intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Spam-Score: 0.0 (/)
+To: Joerg Roedel <joro@8bytes.org>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <jroedel@suse.de>
+Subject: Re: [PATCH] kvm: iommu: Add cond_resched to legacy device assignment
+ code
+References: <1418744846-12868-1-git-send-email-joro@8bytes.org>
+In-Reply-To: <1418744846-12868-1-git-send-email-joro@8bytes.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the rapid mail, I forgot to mention something.
+On 2014/12/16 23:47, Joerg Roedel wrote:
+> From: Joerg Roedel <jroedel@suse.de>
+>
+> When assigning devices to large memory guests (>=128GB guest
+> memory in the failure case) the functions to create the
+> IOMMU page-tables for the whole guest might run for a very
+> long time. On non-preemptible kernels this might cause
+> Soft-Lockup warnings. Fix these by adding a cond_resched()
+> to the mapping and unmapping loops.
+>
+> Signed-off-by: Joerg Roedel <jroedel@suse.de>
+> ---
+>   virt/kvm/iommu.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+> index c1e6ae9..ac427e8 100644
+> --- a/virt/kvm/iommu.c
+> +++ b/virt/kvm/iommu.c
 
-wtp_connect won't work on non-HID++ devices. What about moving it down,
-between the generic routines (reading protocol and name) and
-hidpp_allocate_input? Then the connected parameter can also be dropped.
+This file is already gone after one latest commit c274e03af705, "kvm: 
+x86: move assigned-dev.c and iommu.c to arch/x86/" is introduced, so you 
+need to pull your tree firstly :)
 
-Kind regards,
-Peter
+Tiejun
 
-On Wednesday 17 December 2014 00:33:55 Peter Wu wrote:
-> On Tuesday 16 December 2014 17:06:01 Benjamin Tissoires wrote:
-> > If wtp_connect() fails, that means most of the time that the device has
-> > been disconnected. Subsequent attempts to contact the device will fail
-> > too, so it's simpler to bail out earlier.
-> > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > ---
-> >  drivers/hid/hid-logitech-hidpp.c | 15 +++++++++------
-> >  1 file changed, 9 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/drivers/hid/hid-logitech-hidpp.c b/drivers/hid/hid-logitech-hidpp.c
-> > index d008d71..c0fb5fe 100644
-> > --- a/drivers/hid/hid-logitech-hidpp.c
-> > +++ b/drivers/hid/hid-logitech-hidpp.c
-> > @@ -914,24 +914,24 @@ static int wtp_allocate(struct hid_device *hdev, const struct hid_device_id *id)
-> >  	return 0;
-> >  };
-> >  
-> > -static void wtp_connect(struct hid_device *hdev, bool connected)
-> > +static int wtp_connect(struct hid_device *hdev, bool connected)
-> >  {
-> >  	struct hidpp_device *hidpp = hid_get_drvdata(hdev);
-> >  	struct wtp_data *wd = hidpp->private_data;
-> >  	int ret;
-> >  
-> >  	if (!connected)
-> > -		return;
-> > +		return 0;
-> 
-> "0" is success, what about -1 or -ENODEV here to signal an error? The
-> following line (in hidpp_connect_event) returns on !connected, but that
-> is no reason to return 0 here.
-> 
-> ("No connection" sounds like an error condition to me as "[wtp_]connect"
-> cannot do something meaningful.)
-> 
-> Whether or not you change the return value is up to you. This patch is
-> Reviewed-by: Peter Wu <peter@lekensteyn.nl>
-> 
-> Kind regards,
-> Peter
-> 
-> >  	if (!wd->x_size) {
-> >  		ret = wtp_get_config(hidpp);
-> >  		if (ret) {
-> >  			hid_err(hdev, "Can not get wtp config: %d\n", ret);
-> > -			return;
-> > +			return ret;
-> >  		}
-> >  	}
-> >  
-> > -	hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
-> > +	return hidpp_touchpad_set_raw_report_state(hidpp, wd->mt_feature_index,
-> >  			true, true);
-> >  }
-> >  
-> > @@ -1115,8 +1115,11 @@ static void hidpp_connect_event(struct hidpp_device *hidpp)
-> >  	struct input_dev *input;
-> >  	char *name, *devm_name;
-> >  
-> > -	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP)
-> > -		wtp_connect(hdev, connected);
-> > +	if (hidpp->quirks & HIDPP_QUIRK_CLASS_WTP) {
-> > +		ret = wtp_connect(hdev, connected);
-> > +		if (ret)
-> > +			return;
-> > +	}
-> >  
-> >  	if (!connected || hidpp->delayed_input)
-> >  		return;
-> > 
 
+> @@ -137,7 +137,7 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
+>
+>   		gfn += page_size >> PAGE_SHIFT;
+>
+> -
+> +		cond_resched();
+>   	}
+>
+>   	return 0;
+> @@ -311,6 +311,8 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+>   		kvm_unpin_pages(kvm, pfn, unmap_pages);
+>
+>   		gfn += unmap_pages;
+> +
+> +		cond_resched();
+>   	}
+>   }
+>
+>
