@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaLQIZX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 03:25:23 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57171 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875AbaLQIZW (ORCPT
+	id S1752211AbaLQI25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 03:28:57 -0500
+Received: from mail-oi0-f43.google.com ([209.85.218.43]:32913 "EHLO
+	mail-oi0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaLQI2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 03:25:22 -0500
+	Wed, 17 Dec 2014 03:28:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <CANqRtoRTcC_ixjY_Qr1T=2Jhh9qu_5+=Z3YRBDUJX8HWHP6Nog@mail.gmail.com>
-References: <20141216094854.22639.69181.sendpatchset@w520>
-	<54901420.50403@linaro.org>
-	<1418731028.WfBPmyK53y@avalon>
-	<CANqRtoTpSadrrpeBxA-ym4MZBfhY_BEyTPr_sfau8dZGCKttOQ@mail.gmail.com>
-	<CAMuHMdUzys9pbEjUybyDP-3=uemLZuP5WgXeyONxGmADUJJL4A@mail.gmail.com>
-	<CANqRtoRTcC_ixjY_Qr1T=2Jhh9qu_5+=Z3YRBDUJX8HWHP6Nog@mail.gmail.com>
-Date: Wed, 17 Dec 2014 09:25:19 +0100
-X-Google-Sender-Auth: vlTGGedYRagIjG8KRWDZEQicHIA
-Message-ID: <CAMuHMdVDHX4PAvNKaxBDm4n2gjHgi4qv9Ui_FgiCgLPdKAXxcw@mail.gmail.com>
-Subject: Re: [PATCH] clocksource: sh_tmu: Set cpu_possible_mask to fix SMP broadcast
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
+In-Reply-To: <1417529192-11579-2-git-send-email-morten.rasmussen@arm.com>
+References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com> <1417529192-11579-2-git-send-email-morten.rasmussen@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 17 Dec 2014 09:28:34 +0100
+Message-ID: <CAKfTPtBGv7-Y8EevxKgzB0wmBvAtQmoFcheuZp14nPcBz5-5PQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 01/10] sched: Make load tracking frequency scale-invariant
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Michael Turquette <mturquette@linaro.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
-
-On Wed, Dec 17, 2014 at 2:30 AM, Magnus Damm <magnus.damm@gmail.com> wrote:
->> Armadillo-legacy is broken, and probably won't come back (cfr.
->> https://lkml.org/lkml/2014/12/2/339).
->>
->> Kzm9g-reference still hangs at "Calibrating local timer..." (it did work
->> at some point in the past).
+On 2 December 2014 at 15:06, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> From: Dietmar Eggemann <dietmar.eggemann@arm.com>
 >
-> When the time allows I'd like us to try to fix up these somehow. At
-> least I'll give it a go - I guess Armadillo is difficult without any
-> board.
-
-To fix Armadillo, we have to instantiate the GIC from C code, which is
-a step backwards.
-
->> Note that my local tree is based on renesas-drivers-2014-12-08-v3.18,
->> renesas-devel-20141212-v3.18, and yesterday's upstream, with CCF,
->> PM domain, TWD, and lots of WIP patches from the kitchen sink applied.
+> Apply frequency scale-invariance correction factor to load tracking.
+> Each segment of the sched_avg::runnable_avg_sum geometric series is now
+> scaled by the current frequency so the sched_avg::load_avg_contrib of each
+> entity will be invariant with frequency scaling. As a result,
+> cfs_rq::runnable_load_avg which is the sum of sched_avg::load_avg_contrib,
+> becomes invariant too. So the load level that is returned by
+> weighted_cpuload, stays relative to the max frequency of the cpu.
 >
-> The TWD portion above - is it driver code or integration stuff? If the
-> latter - is there any reason why these can't be picked up by Simon and
-> merged right away.
+> Then, we want the keep the load tracking values in a 32bits type, which
+> implies that the max value of sched_avg::{runnable|running}_avg_sum must
+> be lower than 2^32/88761=48388 (88761 is the max weight of a task). As
+> LOAD_AVG_MAX = 47742, arch_scale_freq_capacity must return a value less
+> than (48388/47742) << SCHED_CAPACITY_SHIFT = 1037 (SCHED_SCALE_CAPACITY =
+> 1024). So we define the range to [0..SCHED_SCALE_CAPACITY] in order to
+> avoid overflow.
+>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> ---
+>  kernel/sched/fair.c | 28 ++++++++++++++++------------
+>  1 file changed, 16 insertions(+), 12 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index ee76d52..b41f03d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2507,9 +2507,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
+>                                                         int runnable,
+>                                                         int running)
+>  {
+> -       u64 delta, periods;
+> -       u32 runnable_contrib;
+> -       int delta_w, decayed = 0;
+> +       u64 delta, scaled_delta, periods;
+> +       u32 runnable_contrib, scaled_runnable_contrib;
+> +       int delta_w, scaled_delta_w, decayed = 0;
+>         unsigned long scale_freq = arch_scale_freq_capacity(NULL, cpu);
+>
+>         delta = now - sa->last_runnable_update;
+> @@ -2543,11 +2543,12 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
+>                  * period and accrue it.
+>                  */
+>                 delta_w = 1024 - delta_w;
+> +               scaled_delta_w = (delta_w * scale_freq) >> SCHED_CAPACITY_SHIFT;
+> +
+>                 if (runnable)
+> -                       sa->runnable_avg_sum += delta_w;
+> +                       sa->runnable_avg_sum += scaled_delta_w;
+>                 if (running)
+> -                       sa->running_avg_sum += delta_w * scale_freq
+> -                               >> SCHED_CAPACITY_SHIFT;
+> +                       sa->running_avg_sum += scaled_delta_w;
+>                 sa->avg_period += delta_w;
+>
+>                 delta -= delta_w;
+> @@ -2565,20 +2566,23 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
+>
+>                 /* Efficiently calculate \sum (1..n_period) 1024*y^i */
+>                 runnable_contrib = __compute_runnable_contrib(periods);
+> +               scaled_runnable_contrib = (runnable_contrib * scale_freq)
+> +                                               >> SCHED_CAPACITY_SHIFT;
+> +
+>                 if (runnable)
+> -                       sa->runnable_avg_sum += runnable_contrib;
+> +                       sa->runnable_avg_sum += scaled_runnable_contrib;
+>                 if (running)
+> -                       sa->running_avg_sum += runnable_contrib * scale_freq
+> -                               >> SCHED_CAPACITY_SHIFT;
+> +                       sa->running_avg_sum += scaled_runnable_contrib;
+>                 sa->avg_period += runnable_contrib;
+>         }
+>
+>         /* Remainder of delta accrued against u_0` */
+> +       scaled_delta = (delta * scale_freq) >> SCHED_CAPACITY_SHIFT;
+> +
+>         if (runnable)
+> -               sa->runnable_avg_sum += delta;
+> +               sa->runnable_avg_sum += scaled_delta;
+>         if (running)
+> -               sa->running_avg_sum += delta * scale_freq
+> -                       >> SCHED_CAPACITY_SHIFT;
+> +               sa->running_avg_sum += scaled_delta;
+>         sa->avg_period += delta;
+>
+>         return decayed;
 
-Integration stuff. Basically it's
-http://www.spinics.net/lists/arm-kernel/msg383413.html
+Acked-by: Vincent Guittot <vincent.guittot@linaro.org>
 
-In the mean time, I found the right clock, but I still have to repost that
-(sorry, recovering from being ill --- merge windows don't help much ;-)
-
-> My plan is to dig into sh73a0 (maybe including TWD) later today.
-
-Okay, thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> --
+> 1.9.1
+>
+>
