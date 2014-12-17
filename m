@@ -1,69 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116AbaLQOc0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:32:26 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:63542 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaLQOcY (ORCPT
+	id S1752183AbaLQOdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 09:33:15 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49289 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750953AbaLQOdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 09:32:24 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-Cc: Ray Jui <rjui@broadcom.com>, linux-arm-kernel@lists.infradead.org,
-        mark.rutland@arm.com, a.zummo@towertech.it, sbranden@broadcom.com,
-        pawel.moll@arm.com, devicetree@vger.kernel.org,
-        ijc+devicetree@hellion.org.uk, Arun Ramamurthy <arunrama@broadcom.com>,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, bcm-kernel-feedback-list@broadcom.com,
-        galak@codeaurora.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCHv1] rtc: bcm-iproc: Add support for Broadcom iproc rtc
-Date: Wed, 17 Dec 2014 15:31:25 +0100
-Message-ID: <1603624.EMYvBCWhuM@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5490A9FC.6030305@broadcom.com>
-References: <1418757750-3628-1-git-send-email-arun.ramamurthy@broadcom.com> <549095CA.7090505@broadcom.com> <5490A9FC.6030305@broadcom.com>
+	Wed, 17 Dec 2014 09:33:14 -0500
+Date: Wed, 17 Dec 2014 14:33:05 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Eddie Huang <eddie.huang@mediatek.com>, marc.zyngier@arm.com
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        "srv_heupstream@mediatek.com" <srv_heupstream@mediatek.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Olof Johansson <olof@lixom.net>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Robert Richter <rrichter@cavium.com>, Mark Brown <broonie@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH v2 3/4] arm64: dts: Add mediatek MT8173 SoC and
+ evaluation board dts and Makefile
+Message-ID: <20141217143305.GC8942@leverpostej>
+References: <1418825853-10934-1-git-send-email-eddie.huang@mediatek.com>
+ <1418825853-10934-4-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:uPDQG68vqKhesXJWzQQf4YARArbEzwTWbjA/XrFqqcVcdq92NvO
- JlyhbFwyTVQAngE/+iv++nY9B0dfNaBmsGxnQQdQU3sckN7GzntaRk68lyCy3ZlOU6g3nRk
- bYoxWC3czw4k9CiN7Xj9vTzenq8INIqoyQmYJAUfnHDEreUPPEUtB8tJBg4qlAbIiMne7HL
- f0ssRwFmIHq+Ob7pFixHA==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418825853-10934-4-git-send-email-eddie.huang@mediatek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 December 2014 13:54:04 Arun Ramamurthy wrote:
-> On 14-12-16 12:27 PM, Ray Jui wrote:
-> > On 12/16/2014 12:19 PM, Arnd Bergmann wrote:
-> >>
-> >> It sounds like CRMU is some other unit aside from the RTC. Could this
-> >> be something like a generic system controller? I think it should
-> >> either have its own driver or use the syscon logic if that is what
-> >> this is.
-> >>
-> > Giving that CRMU has scattered, miscellaneous control logic for multiple
-> > different peripherals, it probably makes more sense to use the syscon
-> > logic here.
-> >
-> Arnd, thanks for the feedback. If I was to write a separate driver for 
-> the CRMU, I would have to export certain functions and create an api 
-> that only this RTC driver would use. I am not sure that is efficient or 
-> required. What is your opinion?
-> Would it be better if I use the syson api in my current driver and move 
-> the CRMU registers to separate syscon device tree entry?
+On Wed, Dec 17, 2014 at 02:17:32PM +0000, Eddie Huang wrote:
+> Add device tree support for MT8173 SoC and evaluation board based on it.
 > 
+> Signed-off-by: Eddie Huang <eddie.huang@mediatek.com>
+> ---
+>  arch/arm64/boot/dts/Makefile       |   1 +
+>  arch/arm64/boot/dts/mt8173-evb.dts |  34 +++++++++
+>  arch/arm64/boot/dts/mt8173.dtsi    | 152 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 187 insertions(+)
+>  create mode 100644 arch/arm64/boot/dts/mt8173-evb.dts
+>  create mode 100644 arch/arm64/boot/dts/mt8173.dtsi
+> 
+> diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+> index f8001a6..db7661e 100644
+> --- a/arch/arm64/boot/dts/Makefile
+> +++ b/arch/arm64/boot/dts/Makefile
+> @@ -1,3 +1,4 @@
+> +dtb-$(CONFIG_ARCH_MEDIATEK) += mt8173-evb.dtb
+>  dtb-$(CONFIG_ARCH_THUNDER) += thunder-88xx.dtb
+>  dtb-$(CONFIG_ARCH_VEXPRESS) += rtsm_ve-aemv8a.dtb foundation-v8.dtb
+>  dtb-$(CONFIG_ARCH_XGENE) += apm-mustang.dtb
+> diff --git a/arch/arm64/boot/dts/mt8173-evb.dts b/arch/arm64/boot/dts/mt8173-evb.dts
+> new file mode 100644
+> index 0000000..b8b2621
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/mt8173-evb.dts
+> @@ -0,0 +1,34 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Eddie Huang <eddie.huang@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/dts-v1/;
+> +#include "mt8173.dtsi"
+> +
+> +/ {
+> +	model = "mediatek,mt8173-evb";
+> +
+> +	aliases {
+> +		serial0 = &uart0;
+> +		serial1 = &uart1;
+> +		serial2 = &uart2;
+> +		serial3 = &uart3;
+> +	};
+> +
+> +	memory@40000000 {
+> +		device_type = "memory";
+> +		reg = <0 0x40000000 0 0x80000000>;
+> +	};
+> +
+> +	chosen { };
+> +};
+> diff --git a/arch/arm64/boot/dts/mt8173.dtsi b/arch/arm64/boot/dts/mt8173.dtsi
+> new file mode 100644
+> index 0000000..41c1441
+> --- /dev/null
+> +++ b/arch/arm64/boot/dts/mt8173.dtsi
+> @@ -0,0 +1,152 @@
+> +/*
+> + * Copyright (c) 2014 MediaTek Inc.
+> + * Author: Eddie Huang <eddie.huang@mediatek.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +/ {
+> +	compatible = "mediatek,mt8173";
+> +	interrupt-parent = <&sysirq>;
+> +	#address-cells = <2>;
+> +	#size-cells = <2>;
+> +
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu-map {
+> +			cluster0 {
+> +				core0 {
+> +					cpu = <&cpu0>;
+> +				};
+> +				core1 {
+> +					cpu = <&cpu1>;
+> +				};
+> +			};
+> +
+> +			cluster1 {
+> +				core0 {
+> +					cpu = <&cpu2>;
+> +				};
+> +				core1 {
+> +					cpu = <&cpu3>;
+> +				};
+> +			};
+> +		};
+> +
+> +		cpu0: cpu@0 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a53";
+> +			reg = <0x000>;
+> +		};
+> +
+> +		cpu1: cpu@1 {
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a53";
+> +			reg = <0x001>;
+> +			enable-method = "psci";
+> +		};
+> +
+> +		cpu2: cpu@2 {
 
-This is something that's normally up to the platform maintainers, depending
-on what works best for a given SoC. If you have a control block that
-wants to export the same high-level API for multiple drivers, that's
-fine, but if literally every register does something different, a syscon
-driver works best.
+The unit-address should be 100 rather than 2, matching the reg property.
+This should be 'cpu@100'.
 
-It's also possible that some of the functions of the CRMU already have
-abstractions, like system-reset, device-reset, regulator or clock support.
-In that case, you can still use syscon but have the more other drivers
-use that for accessing the registers.
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a57";
+> +			reg = <0x100>;
+> +			enable-method = "psci";
+> +		};
+> +
+> +		cpu3: cpu@3 {
 
-	Arnd
+Similarly this should be 'cpu@101'.
+
+> +			device_type = "cpu";
+> +			compatible = "arm,cortex-a57";
+> +			reg = <0x101>;
+> +			enable-method = "psci";
+> +		};
+> +	};
+> +
+> +	psci {
+> +		compatible = "arm,psci";
+> +		method = "smc";
+> +		cpu_suspend   = <0x84000001>;
+> +		cpu_off	      = <0x84000002>;
+> +		cpu_on	      = <0x84000003>;
+> +		affinity_info = <0x84000004>;
+> +	};
+
+There is no AFFINITY_INFO function prior to PSCI 0.2, and
+'affinity_info' does not exist in the "arm,psci" binding.
+
+I take it hotplug has been tested for all but CPU0?
+
+> +
+> +	uart_clk: dummy26m {
+> +		compatible = "fixed-clock";
+> +		clock-frequency = <26000000>;
+> +		#clock-cells = <0>;
+> +	};
+> +
+> +	timer {
+> +		compatible = "arm,armv8-timer";
+> +		interrupt-parent = <&gic>;
+> +		interrupts = <1 13 0xf08>,
+> +			     <1 14 0xf08>,
+> +			     <1 11 0xf08>,
+> +			     <1 10 0xf08>;
+> +	};
+> +
+> +	soc {
+> +		#address-cells = <2>;
+> +		#size-cells = <2>;
+> +		compatible = "simple-bus";
+> +		ranges;
+> +
+> +		sysirq: intpol-controller@10200620 {
+> +			compatible = "mediatek,mt8173-sysirq", "mediatek,mt6577-sysirq";
+> +			interrupt-controller;
+> +			#interrupt-cells = <3>;
+> +			interrupt-parent = <&gic>;
+> +			reg = <0 0x10200620 0 0x20>;
+> +		};
+> +
+> +		gic: interrupt-controller@10220000 {
+> +			compatible = "arm,gic-400";
+> +			#interrupt-cells = <3>;
+> +			interrupt-parent = <&gic>;
+> +			interrupt-controller;
+> +			reg = <0 0x10221000 0 0x1000>,
+> +			      <0 0x10222000 0 0x1000>,
+> +			      <0 0x10224000 0 0x2000>,
+> +			      <0 0x10226000 0 0x2000>;
+> +			interrupts = <1 9 0xf04>;
+> +		};
+
+I don't think these reg entries are quite right; GICC should be 8k long.
+
+Marc?
+
+Thanks,
+Mark.
