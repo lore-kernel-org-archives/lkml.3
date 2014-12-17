@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaLQObD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 09:31:03 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:52207 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaLQOa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 09:30:59 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-b2-549193a0d8c9
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: akpm@linux-foundation.org
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        David Rientjes <rientjes@google.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "nadia.derbey@bull.net" <Nadia.Derbey@bull.net>, aquini@redhat.com,
-        Joe Perches <joe@perches.com>, avagin@openvz.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kostya Serebryany <kcc@google.com>,
-        Dmitry Chernenkov <dmitryc@google.com>,
-        Andrey Konovalov <andreyknvl@google.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        kasan-dev <kasan-dev@googlegroups.com>,
-        Davidlohr Bueso <dave@stgolabs.net>, linux-mm@kvack.org
-Subject: [PATCH 2/2] mm: hugetlb: fix type of hugetlb_treat_as_movable variable
-Date: Wed, 17 Dec 2014 17:30:50 +0300
-Message-id: <1418826650-10145-2-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.2.0
-In-reply-to: <1418826650-10145-1-git-send-email-a.ryabinin@samsung.com>
-References: <548CA6B6.3060901@colorfullife.com>
- <1418826650-10145-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsVy+t/xq7oLJk8MMdi7z8xi269HbBZz1q9h
-	s+jZvZPJYsbDXywWK5ZeY7FYfXMNo8Xzhw/ZLSY8bGO3mH3/MVDi2X0mi+3P3jJZ3Hw+h8Vi
-	ZecDVov+x9/ZLS7vmsNmcW/Nf1aLffensFp8WHuKxeJE31omi7YlG5kcRDxeLNzC7DHx6UxW
-	j5fbN7B57Jx1l91jwaZSjz0TT7J5bPo0id3jxIzfLB7zTgZ6TDr8mcnjy6przB7v911l8+jb
-	sorRY+rseo/Pm+QC+KO4bFJSczLLUov07RK4MrqPT2cs+MFVce3XNdYGxjbOLkZODgkBE4lJ
-	j48xQthiEhfurWfrYuTiEBJYyijRv+oSI4TTxyRxd9pkJpAqNgE9iX+ztrOB2CICshJT/55n
-	ASliFnjGKnH9SCczSEJYwF9iT+sxVhCbRUBVoqV1LVgzr4CbxJT+6ewQ6+Qkttx6BGZzCrhL
-	LP3zFWyokECOxLGjG1knMPIuYGRYxSiaWppcUJyUnmuoV5yYW1yal66XnJ+7iRESOV92MC4+
-	ZnWIUYCDUYmH98X1CSFCrIllxZW5hxglOJiVRHg/B04MEeJNSaysSi3Kjy8qzUktPsTIxMEp
-	1cAYocdtPaW1Yv2XEycfF0wIYfjdYrVE8IO7rr5V9XEfeZZF8yzaO/nCuZRLFl5jT7irw3/y
-	JVtNm0OJbfbbrj+b9jJmHfb/em5F6lTrEy6RYo+zd3F8ndqsIubtdWH19jMH9l/OrvN5dHLJ
-	L/EHiT2Xp3yubdh/s7zC7qnFKkHDq/wrVieuXHFQiaU4I9FQi7moOBEAPbf+YXoCAAA=
+	id S1752005AbaLQObk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 09:31:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55366 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953AbaLQObi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 09:31:38 -0500
+Date: Wed, 17 Dec 2014 15:31:05 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] perf: Avoid horrible stack usage
+Message-ID: <20141217143105.GG18257@krava.brq.redhat.com>
+References: <20141216115041.GW3337@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141216115041.GW3337@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hugetlb_treat_as_movable declared as unsigned long, but
-proc_dointvec() used for parsing it:
+On Tue, Dec 16, 2014 at 12:50:41PM +0100, Peter Zijlstra wrote:
+> Both Linus (most recent) and Steve (a while ago) reported that perf
+> results in massive stack bloat.
+> 
+> The problem is that software events need a pt_regs in order to
+> properly report the event location and unwind stack. And because we
+> could not assume one was present we allocated one on stack and filled
+> it with minimal bits required for operation.
+> 
+> Now, pt_regs is quite large, so this is undesirable. Furthermore it
+> turns out that most sites actually have a pt_regs pointer available,
+> making this even more onerous, as the stack space is pointless waste.
+> 
+> This patch addresses the problem by observing that software events
+> have well defined nesting semantics, therefore we can use static
+> per-cpu storage instead of on-stack.
+> 
+> Linus made the further observation that all but the scheduler callers
+> of perf_sw_event() have a pt_regs available, so we change the regular
+> perf_sw_event() to require a valid pt_regs (where it used to be
+> optional) and add perf_sw_event_sched() for the scheduler.
+> 
+> We have a scheduler specific call instead of a more generic _noregs()
+> like construct because we can assume non-recursion from the scheduler
+> and thereby simplify the code further (_noregs would have to put the
+> recursion context call inline in order to assertain which __perf_regs
+> element to use).
+> 
+> One last note on the implementation of perf_trace_buf_prepare(); we
+> allow .regs = NULL for those cases where we already have a pt_regs
+> pointer available and do not need another.
 
-static struct ctl_table vm_table[] = {
-...
-	{
-		.procname	= "hugepages_treat_as_movable",
-		.data		= &hugepages_treat_as_movable,
-		.maxlen		= sizeof(int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
+looks like we could also sanitize the perf_ftrace_function_call
+in the same way.. like below (untested)
 
-This seems harmless, but it's better to use int type here.
+hum, I just noticed it actually has pt_regs arg ;-)
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Steven, the commit log of:
+  a1e2e31d175a ftrace: Return pt_regs to function trace callback
+
+says the pt_regs value is arch specific, but I could not find the
+ARCH_SUPPORTS_FTRACE_SAVE_REGS define..
+
+thanks,
+jirka
+
+
 ---
- include/linux/hugetlb.h | 2 +-
- mm/hugetlb.c            | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 431b7fc..7d78563 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -86,7 +86,7 @@ void free_huge_page(struct page *page);
- pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud);
- #endif
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 6fa484de2ba1..6122c216e857 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -304,7 +304,7 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
+ {
+ 	struct ftrace_entry *entry;
+ 	struct hlist_head *head;
+-	struct pt_regs regs;
++	struct pt_regs *regs;
+ 	int rctx;
  
--extern unsigned long hugepages_treat_as_movable;
-+extern int hugepages_treat_as_movable;
- extern int sysctl_hugetlb_shm_group;
- extern struct list_head huge_boot_pages;
+ 	head = this_cpu_ptr(event_function.perf_events);
+@@ -316,12 +316,12 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
  
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 85032de..be0e5d0 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -35,7 +35,7 @@
- #include <linux/node.h>
- #include "internal.h"
+ 	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
  
--unsigned long hugepages_treat_as_movable;
-+int hugepages_treat_as_movable;
+-	perf_fetch_caller_regs(&regs);
+-
+-	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
++	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, &regs, &rctx);
+ 	if (!entry)
+ 		return;
  
- int hugetlb_max_hstate __read_mostly;
- unsigned int default_hstate_idx;
--- 
-2.2.0
-
++	perf_fetch_caller_regs(&regs);
++
+ 	entry->ip = ip;
+ 	entry->parent_ip = parent_ip;
+ 	perf_trace_buf_submit(entry, ENTRY_SIZE, rctx, 0,
