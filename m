@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaLQE5G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Dec 2014 23:57:06 -0500
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:45244 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750904AbaLQE5F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Dec 2014 23:57:05 -0500
-From: Alok Kataria <akataria@vmware.com>
-To: "jgross@suse.com" <jgross@suse.com>
-CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Dunn <ddunn@vmware.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "jongman.heo@samsung.com" <jongman.heo@samsung.com>
-Subject: Re: [PATCH] x86: don't rely on VMWare emulating PAT MSR correctly
-Thread-Topic: [PATCH] x86: don't rely on VMWare emulating PAT MSR correctly
-Thread-Index: AQHQGRbhTAZtrjsHHkS6foiR7t7eE5yTwBCA
-Date: Wed, 17 Dec 2014 04:57:02 +0000
-Message-ID: <1418792295.4473.70.camel@akataria-dtop.eng.vmware.com>
-References: <1418723914-9736-1-git-send-email-jgross@suse.com>
-In-Reply-To: <1418723914-9736-1-git-send-email-jgross@suse.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.113.160.246]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <7E28A836677B72418B08A53036DFB98C@pa-exch1.vmware.com>
+	id S1751196AbaLQFHx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 00:07:53 -0500
+Received: from imap.thunk.org ([74.207.234.97]:60115 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaLQFHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 00:07:51 -0500
+Date: Wed, 17 Dec 2014 00:07:46 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: nick <xerofoify@gmail.com>, akpm@linux-foundation.org, fabf@skynet.be,
+        sasha.levin@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: Remove cramfs source code from mainline kernel?
+Message-ID: <20141217050746.GY17575@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Al Viro <viro@ZenIV.linux.org.uk>, nick <xerofoify@gmail.com>,
+	akpm@linux-foundation.org, fabf@skynet.be, sasha.levin@oracle.com,
+	linux-kernel@vger.kernel.org
+References: <5490E6F8.4030207@gmail.com>
+ <20141217024602.GG22149@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141217024602.GG22149@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBH4vYwE009405
 
-Hi,
-
-On Tue, 2014-12-16 at 10:58 +0100, Juergen Gross wrote:
-> VMWare seems not to emulate the PAT MSR correctly: reaeding
-> MSR_IA32_CR_PAT returns 0 even after writing another value to it.
+On Wed, Dec 17, 2014 at 02:46:02AM +0000, Al Viro wrote:
 > 
-> Detect this bug and don't use the read value if it is 0.
+> a) learn to use line breaks
+> b) what do we win from removing it?  If it starts becoming inconvenient to
+> maintain, it might make sense to consider removal, but as it is...  What,
+> somebody has slapped a couple of F-words in there?  "FIXME", that is...
 > 
-> Commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2 ("x86: Enable PAT to
-> use cache mode translation tables") triggers this VMWare bug when the
-> kernel is booted as a VMWare guest.
-
-Thanks for taking care of this, we are fine with this workaround. On
-newer version of our product, where PAT is virtualized correctly on our
-platform we will go back to using PAT, I will give it a spin sometime
-later to verify it.
-
-Acked-by: Alok N Kataria <akataria@vmware.com>
-
-> Reported-by: Jongman Heo <jongman.heo@samsung.com>
-> Signed-off-by: Juergen Gross <jgross@suse.com>
-> Tested-by: Jongman Heo <jongman.heo@samsung.com>
-> ---
->  arch/x86/mm/pat.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
+> Al, seriously tempted to add
 > 
-> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-> index edf299c..7ac6869 100644
-> --- a/arch/x86/mm/pat.c
-> +++ b/arch/x86/mm/pat.c
-> @@ -234,8 +234,13 @@ void pat_init(void)
->  	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
->  
->  	/* Boot CPU check */
-> -	if (!boot_pat_state)
-> +	if (!boot_pat_state) {
->  		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
-> +		if (!boot_pat_state) {
-> +			pat_disable("PAT read returns always zero, disabled.");
-> +			return;
-> +		}
-> +	}
->  
->  	wrmsrl(MSR_IA32_CR_PAT, pat);
->  
+> /* FIXME.  FIXME.  FIXME.  DO NOT remove that comment - it serves
+> a very important purpose by tormenting a certain fetishist */
+> 
+> on top of a bunch of files in fs/*.c, just to see what effect will it have...
 
-Alok
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Al, in case you didn't know, Nick Krause has been banned from LKML for
+being a troll[1][2][3].  A common troll tactic is to cc a few people
+plus the mailing list from which he is banned, in the hopes that
+people will get tricked into replying and quoting his original
+message, thus evading the ban.
+
+						- Ted
+
+[1] https://lkml.org/lkml/2014/8/4/206
+[2] http://lists.kernelnewbies.org/pipermail/kernelnewbies/2014-December/012934.html
+[3] http://lists.kernelnewbies.org/pipermail/kernelnewbies/2014-December/012938.html
+
+						- Ted
