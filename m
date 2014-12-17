@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaLQIUb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 03:20:31 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50138 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaLQIUa (ORCPT
+	id S1752213AbaLQIWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 03:22:53 -0500
+Received: from mail-oi0-f41.google.com ([209.85.218.41]:43113 "EHLO
+	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692AbaLQIWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 03:20:30 -0500
-Date: Wed, 17 Dec 2014 08:20:21 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Omar Sandoval <osandov@osandov.com>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141217082020.GH22149@ZenIV.linux.org.uk>
-References: <cover.1418618044.git.osandov@osandov.com>
- <a59510f4552a5d3557958cdb0ce1b23b3abfc75b.1418618044.git.osandov@osandov.com>
- <20141215162705.GA23887@quack.suse.cz>
- <20141215165615.GA19041@infradead.org>
- <20141215221100.GA4637@mew>
- <20141216083543.GA32425@infradead.org>
- <20141216085624.GA25256@mew>
- <20141217080610.GA20335@infradead.org>
+	Wed, 17 Dec 2014 03:22:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141217080610.GA20335@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1417529192-11579-10-git-send-email-morten.rasmussen@arm.com>
+References: <1417529192-11579-1-git-send-email-morten.rasmussen@arm.com> <1417529192-11579-10-git-send-email-morten.rasmussen@arm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Wed, 17 Dec 2014 09:22:31 +0100
+Message-ID: <CAKfTPtD6ShGQtNygfmEaiE4t7AWFh_avobmvnNsoX8nJ9Y91TQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 09/10] sched: Include blocked utilization in usage tracking
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Paul Turner <pjt@google.com>, Benjamin Segall <bsegall@google.com>,
+        Michael Turquette <mturquette@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 12:06:10AM -0800, Christoph Hellwig wrote:
+On 2 December 2014 at 15:06, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> Add the blocked utilization contribution to group sched_entity
+> utilization (se->avg.utilization_avg_contrib) and to get_cpu_usage().
+> With this change cpu usage now includes recent usage by currently
+> non-runnable tasks, hence it provides a more stable view of the cpu
+> usage. It does, however, also mean that the meaning of usage is changed:
+> A cpu may be momentarily idle while usage >0. It can no longer be
+> assumed that cpu usage >0 implies runnable tasks on the rq.
+> cfs_rq->utilization_load_avg or nr_running should be used instead to get
+> the current rq status.
 
-> > This seems to be more or less equivalent to doing a fcntl(F_SETFL) to
-> > add the O_DIRECT flag to swap_file (which is a struct file *). Swapoff
-> > calls filp_close on swap_file, so I don't see why it's necessary to
-> > clear the flag.
-> 
-> filp_lose doesn't nessecarily destroy the file structure, there might be
-> other reference to it, e.g. from dup() or descriptor passing.
+if CONFIG_FAIR_GROUP_SCHED is not set, the blocked utilization of idle
+CPUs will never be updated and their utilization will stay at last
+value just before going idle. So you can have an CPU which became idle
+a long time ago but its utilization remains high.
 
-Where the hell would those other references come from?  We open the damn
-thing in sys_swapon(), never put it into descriptor tables, etc. and
-the only reason why we use filp_close() instead of fput() is that we
-would miss ->flush() otherwise.
+You have to periodically decay and update the blocked utilization of idle CPUs
 
-Said that, why not simply *open* it with O_DIRECT to start with and be done
-with that?  It's not as if those guys came preopened by caller - swapon(2)
-gets a pathname and does opening itself.
+>
+> cc: Ingo Molnar <mingo@redhat.com>
+> cc: Peter Zijlstra <peterz@infradead.org>
+>
+> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> ---
+>  kernel/sched/fair.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index adf64df..bd950b2 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2764,7 +2764,8 @@ static long __update_entity_utilization_avg_contrib(struct sched_entity *se)
+>                 __update_task_entity_utilization(se);
+>         else
+>                 se->avg.utilization_avg_contrib =
+> -                                       group_cfs_rq(se)->utilization_load_avg;
+> +                               group_cfs_rq(se)->utilization_load_avg +
+> +                               group_cfs_rq(se)->utilization_blocked_avg;
+>
+>         return se->avg.utilization_avg_contrib - old_contrib;
+>  }
+> @@ -4827,11 +4828,12 @@ static int select_idle_sibling(struct task_struct *p, int target)
+>  static int get_cpu_usage(int cpu)
+>  {
+>         unsigned long usage = cpu_rq(cpu)->cfs.utilization_load_avg;
+> +       unsigned long blocked = cpu_rq(cpu)->cfs.utilization_blocked_avg;
+>
+> -       if (usage >= SCHED_LOAD_SCALE)
+> +       if (usage + blocked >= SCHED_LOAD_SCALE)
+>                 return capacity_orig_of(cpu);
+>
+> -       return usage;
+> +       return usage + blocked;
+>  }
+>
+>  /*
+> --
+> 1.9.1
+>
+>
