@@ -1,40 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752025AbaLRKyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:54:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839AbaLRKyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:54:13 -0500
-Message-ID: <5492B232.8050407@redhat.com>
-Date: Thu, 18 Dec 2014 11:53:38 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Jonathan Corbet <corbet@lwn.net>, Kevin Cernekee <cernekee@gmail.com>,
-        tglx@linutronix.de, gnomes@lxorguk.ukuu.org.uk,
-        computersforpeace@gmail.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC 0/4] Stop maintainer abuse
-References: <1418623790-28429-1-git-send-email-cernekee@gmail.com> <20141216130939.166c4369@lwn.net> <5492ADFC.1060006@redhat.com> <20141218104225.GA14728@pd.tnic>
-In-Reply-To: <20141218104225.GA14728@pd.tnic>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752100AbaLRK4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:56:16 -0500
+Received: from smtp1.cypress.com ([157.95.67.100]:57594 "EHLO
+	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaLRK4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 05:56:14 -0500
+X-Greylist: delayed 3268 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 05:56:12 EST
+From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v16 07/12] input: cyapa: add gen3 trackpad device read baseline function support
+Date: Thu, 18 Dec 2014 18:00:51 +0800
+Message-Id: <1418896856-15766-8-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418896856-15766-1-git-send-email-dudl@cypress.com>
+References: <1418896856-15766-1-git-send-email-dudl@cypress.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add read baseline function supported for gen3 trackpad device,
+it can be used through sysfs baseline interface.
+TEST=test on Chromebooks.
 
+Signed-off-by: Dudley Du <dudl@cypress.com>
+---
+ drivers/input/mouse/cyapa_gen3.c | 72 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
-On 18/12/2014 11:42, Borislav Petkov wrote:
-> > But a mail from your manager asking to merge a large feature after rc6
-> > will definitely make me more grumpy.
->
-> I sincerely hope it'll never be the case where managers dictate the
-> development on lkml. If this happens, we're terminally screwed.
+diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
+index cd4f1db..92b3d6d 100644
+--- a/drivers/input/mouse/cyapa_gen3.c
++++ b/drivers/input/mouse/cyapa_gen3.c
+@@ -765,6 +765,76 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
+ 	return 0;
+ }
+ 
++static ssize_t cyapa_gen3_show_baseline(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	struct cyapa *cyapa = dev_get_drvdata(dev);
++	int max_baseline, min_baseline;
++	int tries;
++	int ret;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++	if (ret < 0) {
++		dev_err(dev, "Error reading dev status. err = %d\n", ret);
++		goto out;
++	}
++	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
++		dev_warn(dev, "Trackpad device is busy. device state = 0x%x\n",
++			 ret);
++		ret = -EAGAIN;
++		goto out;
++	}
++
++	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++			       OP_REPORT_BASELINE_MASK);
++	if (ret < 0) {
++		dev_err(dev, "Failed to send report baseline command. %d\n",
++			ret);
++		goto out;
++	}
++
++	tries = 3;  /* Try for 30 to 60 ms */
++	do {
++		usleep_range(10000, 20000);
++
++		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++		if (ret < 0) {
++			dev_err(dev, "Error reading dev status. err = %d\n",
++				ret);
++			goto out;
++		}
++		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
++			break;
++	} while (--tries);
++
++	if (tries == 0) {
++		dev_err(dev, "Device timed out going to Normal state.\n");
++		ret = -ETIMEDOUT;
++		goto out;
++	}
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read max baseline. err = %d\n", ret);
++		goto out;
++	}
++	max_baseline = ret;
++
++	ret = cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
++	if (ret < 0) {
++		dev_err(dev, "Failed to read min baseline. err = %d\n", ret);
++		goto out;
++	}
++	min_baseline = ret;
++
++	dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
++		max_baseline, min_baseline);
++	ret = scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_baseline);
++
++out:
++	return ret;
++}
++
+ /*
+  * cyapa_get_wait_time_for_pwr_cmd
+  *
+@@ -1079,6 +1149,8 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
+ 	.update_fw = cyapa_gen3_do_fw_update,
+ 	.bl_deactivate = cyapa_gen3_bl_deactivate,
+ 
++	.show_baseline = cyapa_gen3_show_baseline,
++
+ 	.state_parse = cyapa_gen3_state_parse,
+ 	.operational_check = cyapa_gen3_do_operational_check,
+ 
+-- 
+1.9.1
 
-They don't; they just try. :)
-
-paolo
