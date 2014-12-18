@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaLRKVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:21:46 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:48878 "EHLO
+	id S1752338AbaLRKV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:21:56 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:48890 "EHLO
 	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbaLRKVo (ORCPT
+	with ESMTP id S1752308AbaLRKVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:21:44 -0500
+	Thu, 18 Dec 2014 05:21:54 -0500
 From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
         Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Leonid Rosenboim <lrosenboim@caviumnetworks.com>,
         Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH v2 06/12] MIPS: OCTEON: Implement the core-16057 workaround
-Date: Thu, 18 Dec 2014 13:17:58 +0300
-Message-ID: <1418897888-17669-7-git-send-email-aleksey.makarov@auriga.com>
+Subject: [PATCH v2 07/12] MIPS: OCTEON: Don't do acknowledge operations for level triggered irqs.
+Date: Thu, 18 Dec 2014 13:17:59 +0300
+Message-ID: <1418897888-17669-8-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1418897888-17669-1-git-send-email-aleksey.makarov@auriga.com>
 References: <1418897888-17669-1-git-send-email-aleksey.makarov@auriga.com>
@@ -27,47 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Disable ICache prefetch for certian Octeon II processors.
+The acknowledge bits don't exist for level triggered irqs, so setting
+them causes the simulator to terminate.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Leonid Rosenboim <lrosenboim@caviumnetworks.com>
 Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
 ---
- .../asm/mach-cavium-octeon/kernel-entry-init.h     | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/mips/cavium-octeon/octeon-irq.c | 45 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 43 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/include/asm/mach-cavium-octeon/kernel-entry-init.h b/arch/mips/include/asm/mach-cavium-octeon/kernel-entry-init.h
-index 1668ee5..21732c3 100644
---- a/arch/mips/include/asm/mach-cavium-octeon/kernel-entry-init.h
-+++ b/arch/mips/include/asm/mach-cavium-octeon/kernel-entry-init.h
-@@ -63,6 +63,28 @@ skip:
- 	li	v1, ~(7 << 7)
- 	and	v0, v0, v1
- 	ori	v0, v0, (6 << 7)
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index 2bc4aa9..5df70c5 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -752,6 +752,18 @@ static struct irq_chip octeon_irq_chip_ciu_v2 = {
+ 	.name = "CIU",
+ 	.irq_enable = octeon_irq_ciu_enable_v2,
+ 	.irq_disable = octeon_irq_ciu_disable_all_v2,
++	.irq_mask = octeon_irq_ciu_disable_local_v2,
++	.irq_unmask = octeon_irq_ciu_enable_v2,
++#ifdef CONFIG_SMP
++	.irq_set_affinity = octeon_irq_ciu_set_affinity_v2,
++	.irq_cpu_offline = octeon_irq_cpu_offline_ciu,
++#endif
++};
 +
-+	mfc0	v1, CP0_PRID_REG
-+	and	t1, v1, 0xfff8
-+	xor	t1, t1, 0x9000		# 63-P1
-+	beqz	t1, 4f
-+	and	t1, v1, 0xfff8
-+	xor	t1, t1, 0x9008		# 63-P2
-+	beqz	t1, 4f
-+	and	t1, v1, 0xfff8
-+	xor	t1, t1, 0x9100		# 68-P1
-+	beqz	t1, 4f
-+	and	t1, v1, 0xff00
-+	xor	t1, t1, 0x9200		# 66-PX
-+	bnez	t1, 5f			# Skip WAR for others.
-+	and	t1, v1, 0x00ff
-+	slti	t1, t1, 2		# 66-P1.2 and later good.
-+	beqz	t1, 5f
++static struct irq_chip octeon_irq_chip_ciu_v2_edge = {
++	.name = "CIU",
++	.irq_enable = octeon_irq_ciu_enable_v2,
++	.irq_disable = octeon_irq_ciu_disable_all_v2,
+ 	.irq_ack = octeon_irq_ciu_ack,
+ 	.irq_mask = octeon_irq_ciu_disable_local_v2,
+ 	.irq_unmask = octeon_irq_ciu_enable_v2,
+@@ -765,6 +777,18 @@ static struct irq_chip octeon_irq_chip_ciu = {
+ 	.name = "CIU",
+ 	.irq_enable = octeon_irq_ciu_enable,
+ 	.irq_disable = octeon_irq_ciu_disable_all,
++	.irq_mask = octeon_irq_ciu_disable_local,
++	.irq_unmask = octeon_irq_ciu_enable,
++#ifdef CONFIG_SMP
++	.irq_set_affinity = octeon_irq_ciu_set_affinity,
++	.irq_cpu_offline = octeon_irq_cpu_offline_ciu,
++#endif
++};
 +
-+4:	# core-16057 work around
-+	or	v0, v0, 0x2000		# Set IPREF bit.
++static struct irq_chip octeon_irq_chip_ciu_edge = {
++	.name = "CIU",
++	.irq_enable = octeon_irq_ciu_enable,
++	.irq_disable = octeon_irq_ciu_disable_all,
+ 	.irq_ack = octeon_irq_ciu_ack,
+ 	.irq_mask = octeon_irq_ciu_disable_local,
+ 	.irq_unmask = octeon_irq_ciu_enable,
+@@ -984,6 +1008,7 @@ static int octeon_irq_ciu_xlat(struct irq_domain *d,
+ }
+ 
+ static struct irq_chip *octeon_irq_ciu_chip;
++static struct irq_chip *octeon_irq_ciu_chip_edge;
+ static struct irq_chip *octeon_irq_gpio_chip;
+ 
+ static bool octeon_irq_virq_in_range(unsigned int virq)
+@@ -1014,7 +1039,7 @@ static int octeon_irq_ciu_map(struct irq_domain *d,
+ 
+ 	if (octeon_irq_ciu_is_edge(line, bit))
+ 		octeon_irq_set_ciu_mapping(virq, line, bit, 0,
+-					   octeon_irq_ciu_chip,
++					   octeon_irq_ciu_chip_edge,
+ 					   handle_edge_irq);
+ 	else
+ 		octeon_irq_set_ciu_mapping(virq, line, bit, 0,
+@@ -1196,6 +1221,7 @@ static void __init octeon_irq_init_ciu(void)
+ {
+ 	unsigned int i;
+ 	struct irq_chip *chip;
++	struct irq_chip *chip_edge;
+ 	struct irq_chip *chip_mbox;
+ 	struct irq_chip *chip_wd;
+ 	struct device_node *gpio_node;
+@@ -1212,16 +1238,19 @@ static void __init octeon_irq_init_ciu(void)
+ 	    OCTEON_IS_MODEL(OCTEON_CN52XX_PASS2_X) ||
+ 	    OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
+ 		chip = &octeon_irq_chip_ciu_v2;
++		chip_edge = &octeon_irq_chip_ciu_v2_edge;
+ 		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
+ 		chip_wd = &octeon_irq_chip_ciu_wd_v2;
+ 		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio_v2;
+ 	} else {
+ 		chip = &octeon_irq_chip_ciu;
++		chip_edge = &octeon_irq_chip_ciu_edge;
+ 		chip_mbox = &octeon_irq_chip_ciu_mbox;
+ 		chip_wd = &octeon_irq_chip_ciu_wd;
+ 		octeon_irq_gpio_chip = &octeon_irq_chip_ciu_gpio;
+ 	}
+ 	octeon_irq_ciu_chip = chip;
++	octeon_irq_ciu_chip_edge = chip_edge;
+ 	octeon_irq_ip4 = octeon_irq_ip4_mask;
+ 
+ 	/* Mips internal */
+@@ -1473,6 +1502,18 @@ static struct irq_chip octeon_irq_chip_ciu2 = {
+ 	.name = "CIU2-E",
+ 	.irq_enable = octeon_irq_ciu2_enable,
+ 	.irq_disable = octeon_irq_ciu2_disable_all,
++	.irq_mask = octeon_irq_ciu2_disable_local,
++	.irq_unmask = octeon_irq_ciu2_enable,
++#ifdef CONFIG_SMP
++	.irq_set_affinity = octeon_irq_ciu2_set_affinity,
++	.irq_cpu_offline = octeon_irq_cpu_offline_ciu,
++#endif
++};
 +
-+5:	# No core-16057 work around
- 	# Write the cavium control register
- 	dmtc0	v0, CP0_CVMCTL_REG
- 	sync
++static struct irq_chip octeon_irq_chip_ciu2_edge = {
++	.name = "CIU2-E",
++	.irq_enable = octeon_irq_ciu2_enable,
++	.irq_disable = octeon_irq_ciu2_disable_all,
+ 	.irq_ack = octeon_irq_ciu2_ack,
+ 	.irq_mask = octeon_irq_ciu2_disable_local,
+ 	.irq_unmask = octeon_irq_ciu2_enable,
+@@ -1582,7 +1623,7 @@ static int octeon_irq_ciu2_map(struct irq_domain *d,
+ 
+ 	if (octeon_irq_ciu2_is_edge(line, bit))
+ 		octeon_irq_set_ciu_mapping(virq, line, bit, 0,
+-					   &octeon_irq_chip_ciu2,
++					   &octeon_irq_chip_ciu2_edge,
+ 					   handle_edge_irq);
+ 	else
+ 		octeon_irq_set_ciu_mapping(virq, line, bit, 0,
 -- 
 2.1.3
 
