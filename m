@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaLRVkL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:40:11 -0500
-Received: from ns.gsystem.sk ([62.176.172.50]:37365 "EHLO gsystem.sk"
+	id S1751804AbaLRVle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:41:34 -0500
+Received: from ns.gsystem.sk ([62.176.172.50]:37375 "EHLO gsystem.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751738AbaLRVkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:40:09 -0500
+	id S1751211AbaLRVld (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 16:41:33 -0500
 From: Ondrej Zary <linux@rainbow-software.org>
 To: Krzysztof Helt <krzysztof.h1@wp.pl>
 Cc: linux-fbdev@vger.kernel.org,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/6] tridentfb: fix hang on Blade3D with CONFIG_CC_OPTIMIZE_FOR_SIZE
-Date: Thu, 18 Dec 2014 22:39:57 +0100
-Message-Id: <1418938797-28945-1-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH] tridentfb: fix hang on Blade3D with CONFIG_CC_OPTIMIZE_FOR_SIZE
+Date: Thu, 18 Dec 2014 22:41:22 +0100
+Message-Id: <1418938882-28984-1-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
