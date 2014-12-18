@@ -1,177 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509AbaLROo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:44:56 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:59009 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833AbaLROoz (ORCPT
+	id S1752288AbaLROsZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:48:25 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:61346 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751466AbaLROsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:44:55 -0500
-Message-ID: <5492E85C.6010802@cumulusnetworks.com>
-Date: Thu, 18 Dec 2014 06:44:44 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 18 Dec 2014 09:48:24 -0500
+Date: Thu, 18 Dec 2014 17:48:10 +0300
+From: samuel kihahu <skihahu@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        speakup@linux-speakup.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
+Message-ID: <20141218144810.GA16115@localhost.localdomain>
+References: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
+ <20141217121119.GL4856@mwanda>
+ <20141217134354.GA585@localhost.localdomain>
+ <20141217140322.GM4856@mwanda>
 MIME-Version: 1.0
-To: "Varlese, Marco" <marco.varlese@intel.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <20141217140322.GM4856@mwanda>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14, 3:29 AM, Varlese, Marco wrote:
-> From: Marco Varlese <marco.varlese@intel.com>
->
-> Switch hardware offers a list of attributes that are configurable
-> on a per port basis.
-> This patch provides a mechanism to configure switch ports by adding
-> an NDO for setting specific values to specific attributes.
-> There will be a separate patch that adds the "get" functionality via
-> another NDO and another patch that extends iproute2 to call the two
-> new NDOs.
->
-> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
-> ---
->   include/linux/netdevice.h    |  5 ++++
->   include/uapi/linux/if_link.h | 15 ++++++++++++
->   net/core/rtnetlink.c         | 54 ++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 74 insertions(+)
->
-> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> index c31f74d..4881c7b 100644
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
->    * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
->    *	Called to notify switch device port of bridge port STP
->    *	state change.
-> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
-> + *                                u32 attr, u64 value);
-> + *	Called to set specific switch ports attributes.
->    */
->   struct net_device_ops {
->   	int			(*ndo_init)(struct net_device *dev);
-> @@ -1185,6 +1188,8 @@ struct net_device_ops {
->   							    struct netdev_phys_item_id *psid);
->   	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
->   							      u8 state);
-> +	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
-> +							   u32 attr, u64 value);
->   #endif
->   };
->   
-> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-> index f7d0d2d..19cb51a 100644
-> --- a/include/uapi/linux/if_link.h
-> +++ b/include/uapi/linux/if_link.h
-> @@ -146,6 +146,7 @@ enum {
->   	IFLA_PHYS_PORT_ID,
->   	IFLA_CARRIER_CHANGES,
->   	IFLA_PHYS_SWITCH_ID,
-> +	IFLA_SWITCH_PORT_CFG,
->   	__IFLA_MAX
->   };
->   
-> @@ -603,4 +604,18 @@ enum {
->   
->   #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
->   
-> +/* Switch Port Attributes section */
-> +
-> +enum {
-> +	IFLA_ATTR_UNSPEC,
-> +	IFLA_ATTR_LEARNING,
-Any reason you want learning here ?. This is covered as part  of the 
-bridge setlink attributes.
 
-> +	IFLA_ATTR_LOOPBACK,
-> +	IFLA_ATTR_BCAST_FLOODING,
-> +	IFLA_ATTR_UCAST_FLOODING,
-> +	IFLA_ATTR_MCAST_FLOODING,
-> +	__IFLA_ATTR_MAX
-> +};
-> +
-> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
-> +
->   #endif /* _UAPI_LINUX_IF_LINK_H */
-> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-> index eaa057f..c0d1c45 100644
-> --- a/net/core/rtnetlink.c
-> +++ b/net/core/rtnetlink.c
-> @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
->   	return 0;
->   }
->   
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
-> +{
-> +	int rem, err = -EINVAL;
-> +	struct nlattr *v;
-> +	const struct net_device_ops *ops = dev->netdev_ops;
-> +
-> +	nla_for_each_nested(v, attr, rem) {
-> +		u32 op = nla_type(v);
-> +		u64 value = 0;
-> +
-> +		switch (op) {
-> +		case IFLA_ATTR_LEARNING:
-> +		case IFLA_ATTR_LOOPBACK:
-> +		case IFLA_ATTR_BCAST_FLOODING:
-> +		case IFLA_ATTR_UCAST_FLOODING:
-> +		case IFLA_ATTR_MCAST_FLOODING: {
-> +			if (nla_len(v) < sizeof(value)) {
-> +				err = -EINVAL;
-> +				break;
-> +			}
-> +
-> +			value = nla_get_u64(v);
-> +			err = ops->ndo_switch_port_set_cfg(dev,
-> +							   op,
-> +							   value);
-> +			break;
-> +		}
-> +		default:
-> +			err = -EINVAL;
-> +			break;
-> +		}
-> +		if (err)
-> +			break;
-> +	}
-> +	return err;
-> +}
-> +
-> +#endif
-> +
->   static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
->   {
->   	int rem, err = -EINVAL;
-> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
->   			status |= DO_SETLINK_NOTIFY;
->   		}
->   	}
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
-> +		err = -EOPNOTSUPP;
-> +		if (!ops->ndo_switch_port_set_cfg)
-> +			goto errout;
-> +		if (!ops->ndo_switch_parent_id_get)
-> +			goto errout;
-> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-> +		if (err < 0)
-> +			goto errout;
-> +
-> +		status |= DO_SETLINK_NOTIFY;
-> +	}
-> +#endif
->   	err = 0;
->   
->   errout:
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Dec 17, 2014 at 05:03:22PM +0300, Dan Carpenter wrote:
+> On Wed, Dec 17, 2014 at 04:43:54PM +0300, samuel kihahu wrote:
+> > On Wed, Dec 17, 2014 at 03:11:19PM +0300, Dan Carpenter wrote:
+> > > On Wed, Dec 17, 2014 at 02:56:02PM +0300, samuel kihahu wrote:
+> > > > Replacing obsolete simple_strtoul with kstrtoul.
+> > > > 
+> > > 
+> > > Nope.  That's wrong.  Learn how the functions are different beyond just
+> > > the name.
+> > Noted, have made corrections to fit the kstrtoul and handle the return
+> > value.
+> 
+> You have to compile test these things.  Really kernel programming is not
+> a good way to learn how to program.  :(
+> 
+> regards,
+> dan carpenter
+> 
+
+Appreciate the feedback, have modified the patch, tested and confirmed
+it builds.
+
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-staging-speakup-replace-simple_strtoul-with-kstrtoul.patch"
+
+>From 3d39fd533b4a75e567f76f07f5bc978adddb0721 Mon Sep 17 00:00:00 2001
+From: samuel kihahu <skihahu@gmail.com>
+Date: Thu, 18 Dec 2014 17:42:37 +0300
+Subject: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
+
+Replacing obsolete simple_strtoul with kstrtoul, checking and
+returning the correct error code.
+
+Signed-off-by: samuel kihahu <skihahu@gmail.com>
+---
+ drivers/staging/speakup/varhandlers.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/speakup/varhandlers.c b/drivers/staging/speakup/varhandlers.c
+index d758284..716ccc1 100644
+--- a/drivers/staging/speakup/varhandlers.c
++++ b/drivers/staging/speakup/varhandlers.c
+@@ -321,9 +321,13 @@ char *spk_strlwr(char *s)
+ 
+ char *spk_s2uchar(char *start, char *dest)
+ {
+-	int val = 0;
++	unsigned long val;
++	int ret;
++
++	ret = kstrtoul(skip_spaces(start), 10, &val);
++	if (IS_ERR(&ret))
++		return ERR_CAST(&ret);
+ 
+-	val = simple_strtoul(skip_spaces(start), &start, 10);
+ 	if (*start == ',')
+ 		start++;
+ 	*dest = (u_char)val;
+-- 
+1.8.3.1
+
+
+--TB36FDmn/VVEgNH/--
