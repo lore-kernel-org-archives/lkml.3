@@ -1,108 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897AbaLRD2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:28:39 -0500
-Received: from ozlabs.org ([103.22.144.67]:41021 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307AbaLRD2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:28:38 -0500
-Message-ID: <1418873316.13333.1.camel@ellerman.id.au>
-Subject: Re: selftests: standardized results output?
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: "Young, David" <dayoung@akamai.com>
-Cc: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "Shuah Khan (shuahkhan@gmail.com)" <shuahkhan@gmail.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Dec 2014 14:28:36 +1100
-In-Reply-To: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
-References: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751904AbaLRDi4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:38:56 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:39760 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531AbaLRDiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 22:38:54 -0500
+From: Chunyan Zhang <zhang.chunyan@linaro.org>
+To: m.chehab@samsung.com, david@hardeman.nu, uli-lirc@uli-eckhardt.de,
+        hans.verkuil@cisco.com, julia.lawall@lip6.fr, himangi774@gmail.com,
+        khoroshilov@ispras.ru, joe@perches.com
+Cc: arnd@linaro.org, john.stultz@linaro.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, zhang.lyra@gmail.com
+Subject: [PATCH] media: rc: Replace timeval with ktime_t in imon.c
+Date: Thu, 18 Dec 2014 11:37:13 +0800
+Message-Id: <1418873833-5084-1-git-send-email-zhang.chunyan@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <rcimonv1>
+References: <rcimonv1>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-12-15 at 11:42 -0500, Young, David wrote:
-> Hi,  I'm looking into what sorts of tools can consume the selftest output, and
-> found this on the wikipage:
-> 
-> https://kselftest.wiki.kernel.org/standardize_the_test_output
-> 
-> The current suggestion (as of the last-modified date on that wiki page for
-> October) is to use the Test Anything Protocol [TAP] for standard output.  I
-> notice that there is at least one test that conforms to TAP output, but
-> the majority of the tests are not using it.
-> 
-> There's also the kselftest.h file that suggests exit codes for the individual
-> test applications.
-> 
-> I'm interested in knowing what is the intention of this standardization, so
-> that I can put some work into a "glue" layer for a tool like buildbot,
-> autotest, or Jenkins for executing and consuming the results of these
-> selftests.
+This patch changes the 32-bit time type (timeval) to the 64-bit one
+(ktime_t), since 32-bit time types will break in the year 2038.
 
-I'm not the selftests "maintainer", but I have written a bunch of code under
-selftests, so the following is my 2c.
+I use ktime_t instead of all uses of timeval in imon.c
 
-The barrier for entry to selftests should be as low as we can make it. Our
-preference should always be for more tests, even if some of them start out a
-bit crufty.
+This patch also changes do_gettimeofday() to ktime_get() accordingly,
+since ktime_get returns a ktime_t, but do_gettimeofday returns a
+struct timeval, and the other reason is that ktime_get() uses
+the monotonic clock.
 
-As such, requiring tests to produce perfectly formatted output or error codes
-is the wrong approach in my opinion.
+This patch use a new function which is provided by another patch listed below
+to get the millisecond time difference.
 
-So ..
+http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
 
-> 1) Is this output standard a "nice to have" that won't be much enforced?
+Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+---
+ drivers/media/rc/imon.c |   49 +++++++++++++----------------------------------
+ 1 file changed, 13 insertions(+), 36 deletions(-)
 
-Yes I think so. I think at best we would hope for tests to converge on the
-standard over time, but there will always be new tests arriving that are not so
-well behaved.
-
-> 2) Will the exit codes be utilized outside of the current makefile-based
->    approach for executing the tests?  The current make target just runs all the
->    tests without really concerning itself with the exit values of the
->    individual tests.  It's simple, which isn't a bad thing, but it lacks a
->    summarized result.  Is the intention to use a different harness to consume
->    and report results?
-
-One of the advantages of producing TAP or some other standard format would be
-to avoid needing our own harness just to produce a summary.
-
-> 3) Are the TAP results intended to be the exclusive (std)output of the tests,
->    or will the tests report in a hybrid fashion?
->    Such an example would be a test that produces some verbose stdout to the
->    console, while simultaneously creating a TAP-compliant results.tap file as
->    well... or vice versa with the stdout being TAP and a more verbose but
->    free-form log.txt 
-
-We probably want to be able to do both of those.
-
-
-FWIW, (most of) the tests under tools/testing/selftests/powerpc produce subunit
-v1 output (https://pypi.python.org/pypi/python-subunit).
-
-So you can do:
-
- $ cd tools/testing/selftests/powerpc
- $ make run_tests 2>&1 | subunit-1to2 | subunit-stats --no-passthrough
- Total tests:      32
- Passed tests:     32
- Failed tests:      0
- Skipped tests:     0
- Seen tags: git_version:next-20141209-0-g5348e33
-
-
-subunit has the advantage over TAP IMO that it uses "success", "failure" and
-"error" rather than "ok", "not ok".
-
-There is now a subunit v2, which is a binary protocol. I don't think we want
-a binary protocol, but it does have the advantage of being much more robust
-than text based output.
-
-cheers
-
+diff --git a/drivers/media/rc/imon.c b/drivers/media/rc/imon.c
+index b8837dd..a641139 100644
+--- a/drivers/media/rc/imon.c
++++ b/drivers/media/rc/imon.c
+@@ -31,6 +31,7 @@
+ #include <linux/errno.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+@@ -41,7 +42,6 @@
+ #include <linux/usb/input.h>
+ #include <media/rc-core.h>
+ 
+-#include <linux/time.h>
+ #include <linux/timer.h>
+ 
+ #define MOD_AUTHOR	"Jarod Wilson <jarod@wilsonet.com>"
+@@ -1158,29 +1158,6 @@ out:
+ 	return retval;
+ }
+ 
+-static inline int tv2int(const struct timeval *a, const struct timeval *b)
+-{
+-	int usecs = 0;
+-	int sec   = 0;
+-
+-	if (b->tv_usec > a->tv_usec) {
+-		usecs = 1000000;
+-		sec--;
+-	}
+-
+-	usecs += a->tv_usec - b->tv_usec;
+-
+-	sec += a->tv_sec - b->tv_sec;
+-	sec *= 1000;
+-	usecs /= 1000;
+-	sec += usecs;
+-
+-	if (sec < 0)
+-		sec = 1000;
+-
+-	return sec;
+-}
+-
+ /**
+  * The directional pad behaves a bit differently, depending on whether this is
+  * one of the older ffdc devices or a newer device. Newer devices appear to
+@@ -1191,16 +1168,16 @@ static inline int tv2int(const struct timeval *a, const struct timeval *b)
+  */
+ static int stabilize(int a, int b, u16 timeout, u16 threshold)
+ {
+-	struct timeval ct;
+-	static struct timeval prev_time = {0, 0};
+-	static struct timeval hit_time  = {0, 0};
++	ktime_t ct;
++	static ktime_t prev_time = {0};
++	static ktime_t hit_time  = {0};
+ 	static int x, y, prev_result, hits;
+ 	int result = 0;
+-	int msec, msec_hit;
++	long msec, msec_hit;
+ 
+-	do_gettimeofday(&ct);
+-	msec = tv2int(&ct, &prev_time);
+-	msec_hit = tv2int(&ct, &hit_time);
++	ct = ktime_get();
++	msec = ktime_ms_delta(ct, prev_time);
++	msec_hit = ktime_ms_delta(ct, hit_time);
+ 
+ 	if (msec > 100) {
+ 		x = 0;
+@@ -1596,9 +1573,9 @@ static void imon_incoming_packet(struct imon_context *ictx,
+ 	int i;
+ 	u64 scancode;
+ 	int press_type = 0;
+-	int msec;
+-	struct timeval t;
+-	static struct timeval prev_time = { 0, 0 };
++	long msec;
++	ktime_t t;
++	static ktime_t prev_time = {0};
+ 	u8 ktype;
+ 
+ 	/* filter out junk data on the older 0xffdc imon devices */
+@@ -1692,10 +1669,10 @@ static void imon_incoming_packet(struct imon_context *ictx,
+ 	/* Only panel type events left to process now */
+ 	spin_lock_irqsave(&ictx->kc_lock, flags);
+ 
+-	do_gettimeofday(&t);
++	t = ktime_get();
+ 	/* KEY_MUTE repeats from knob need to be suppressed */
+ 	if (ictx->kc == KEY_MUTE && ictx->kc == ictx->last_keycode) {
+-		msec = tv2int(&t, &prev_time);
++		msec = ktime_ms_delta(t, prev_time);
+ 		if (msec < ictx->idev->rep[REP_DELAY]) {
+ 			spin_unlock_irqrestore(&ictx->kc_lock, flags);
+ 			return;
+-- 
+1.7.9.5
 
