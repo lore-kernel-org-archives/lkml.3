@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751785AbaLRAfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 19:35:50 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:63024 "HELO
+	id S1751799AbaLRAhM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 19:37:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:60636 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751201AbaLRAfs (ORCPT
+	with SMTP id S1750995AbaLRAhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 19:35:48 -0500
+	Wed, 17 Dec 2014 19:37:10 -0500
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Kevin Hilman <khilman@kernel.org>,
+To: Kevin Hilman <khilman@kernel.org>
+Cc: amit daniel kachhap <amit.daniel@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
         Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
@@ -23,14 +21,14 @@ Cc: Kevin Hilman <khilman@kernel.org>,
         Thomas Abraham <thomas.ab@samsung.com>,
         Pankaj Dubey <pankaj.dubey@samsung.com>,
         Geert Uytterhoeven <geert+renesas@glider.be>,
-        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Enable runtime PM automatically?
-Date: Thu, 18 Dec 2014 01:57:33 +0100
-Message-ID: <2631000.5asdLXAEtK@vostro.rjw.lan>
+Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API pm_genpd_dev_need_restore to use restore types
+Date: Thu, 18 Dec 2014 01:58:55 +0100
+Message-ID: <5418986.E58ik2Q1Hm@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdWY_ne+S3zKrEYqVyU8=S-at=+rGuEkYNauF4s2KaKNdw@mail.gmail.com>
-References: <CAMuHMdWY_ne+S3zKrEYqVyU8=S-at=+rGuEkYNauF4s2KaKNdw@mail.gmail.com>
+In-Reply-To: <7h4msub0ca.fsf@deeprootsystems.com>
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com> <CADGdYn4WQ6i29ecTthu7eNUfSSQ--YESGyHcA1_9CdK-h53hxA@mail.gmail.com> <7h4msub0ca.fsf@deeprootsystems.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -38,62 +36,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 17, 2014 08:33:13 PM Geert Uytterhoeven wrote:
-> On Tue, Dec 16, 2014 at 11:10 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> > At a deeper level, the problem with this approach is that this is more
-> > generically a runtime PM dependency problem, not a genpd problem.  For
-> > example, what happens when the same kind of dependency exists on a
-> > platform using a custom PM domain instead of genpd (like ACPI.) ?
+On Wednesday, December 17, 2014 10:25:09 AM Kevin Hilman wrote:
+> amit daniel kachhap <amit.daniel@samsung.com> writes:
+> 
+> > On Wed, Dec 17, 2014 at 3:40 AM, Kevin Hilman <khilman@kernel.org> wrote:
+> >> Marek Szyprowski <m.szyprowski@samsung.com> writes:
+> >>
+> >>> Hello,
+> >>>
+> >>> On 2014-12-13 17:51, Amit Daniel Kachhap wrote:
+> >>>> Instead of using bool to restore suspended devices initially, use flags
+> >>>> like GPD_DEV_SUSPEND_INIT, GPD_DEV_RESTORE_INIT and GPD_DEV_RESTORE_FORCE.
+> >>>> The first two flags will be similar to the existing true/false functionality.
+> >>>> The third flag may be used to force restore of suspended devices
+> >>>> whenever their associated power domain is turned on.
+> >>>>
+> >>>> Currently, PD power off function powers off all the associated unused
+> >>>> devices. The functionality added in this patch is similar to it.
+> >>>>
+> >>>> This feature may be used for those devices which are always in ON state
+> >>>> if the PD associated with them is ON but may need local runtime resume
+> >>>> and suspend during PD On/Off. These devices (like clock) may not implement
+> >>>> complete pm_runtime calls such as pm_runtime_get/pm_runtime_put due to
+> >>>> subsystems interaction behaviour or any other reason.
+> >>>>
+> >>>> The model works like,
+> >>>>      DEV1 (Attaches itself with PD but no calls to pm_runtime_get and
+> >>>>      /       pm_runtime_put. Its local runtime_suspend/resume is invoked via
+> >>>>     /        GPD_DEV_RESTORE_FORCE option)
+> >>>>    /
+> >>>> PD -- DEV2 (Implements complete PM runtime and calls pm_runtime_get and
+> >>>>    \ pm_runtime_put. This in turn invokes PD On/Off)
+> >>>>     \
+> >>>>      DEV3 (Similar to DEV1)
+> >>>>
+> >>>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> >>>
+> >>> The idea of adding new gen_pd flag and reusing runtime pm calls intead
+> >>> of additional notifiers looks promising, but I have some doubts.
+> >>
+> >> I agree, this is better than notifiers, but I have some doubts too.
 > >
-> > What's needed to solve this problem is a generalized way to have runtime
-> > PM dependencies between devices.  Runtime PM already automatically
-> > handles parent devices as one type of dependent device (e.g. a parent
-> > device needs to be runtime PM resumed before its child.)  So what's
-> > needed is a generic way to other PM dependencies with the runtime PM
-> > core (not the genpd core.)
+> > Thanks,
 > >
-> > If runtime PM handles the dependencies corretcly, then genpd (and any
-> > other PM domain) will get them "for free".
+> >>
+> >>> don't see any guarantee that devices with GPD_DEV_RESTORE_FORCE flag
+> >>> will be suspended after all "normal" devices and restored before
+> >>> them. Without such assumption it will be hard to use this approach for
+> >>> iommu related activities, because device might need to use (in its
+> >>> suspend/resume callbacks) the functionality provided by the other
+> >>> device with GPD_DEV_RESTORE_FORCE flag. Maybe some additional flags
+> >>> like suspend/resume priority (or more flags) will solve somehow this
+> >>> dependency.
+> >>
+> >> At a deeper level, the problem with this approach is that this is more
+> >> generically a runtime PM dependency problem, not a genpd problem.  For
+> >> example, what happens when the same kind of dependency exists on a
+> >> platform using a custom PM domain instead of genpd (like ACPI.) ?
+> >
+> > This patch does not try to solve runtime PM dependencies between
+> > devices. As an example, if there are three devices D1, D2, D3 in a
+> > power domain. Device D3 would update the power domain state
+> > requirement using runtime PM API but devices D1 and D2 do not want to
+> > control the domain but just want to be notified when the power domain
+> > state changes.
 > 
-> Having the proper dependencies is not sufficient. Currently drivers have to do
-> something to use runtime PM.
+> Yes, I understand that.  
 > 
-> By default, runtime PM is disabled for a device
-> ("device.power.disable_depth = 1").
-
-Which isn't the case for PCI devices.
-
-> However, if PM domains are active, drivers must be runtime PM-aware for the
-> gpd_dev_ops.start() method to be called in the first place (perhaps this is just
-> one bug that's easy to fix --- the device is "assumed suspended", but can be
-> used). They must
->   1. call pm_runtime_enable() to enable runtime PM for the device,
->   2. call pm_runtime_get_sync() to prevent the device from being put in a
->     low-power state at any time. This second call has the
-> "side-effect" of calling
->     gpd_dev_ops.start().
+> The question is: what do you do when you have the same dependency
+> problem and you're not using genpd (for example, some SoCs have
+> implmeented their own PM domains, and ACPI devices are managed by their
+> own PM domain, not genpd.)
 > 
-> Hence, if PM domains are enabled, wouldn't it make sense to
->   1. enable runtime PM by default, for all devices (bound and unbound),
-
-I guess you mean for devices with and without drivers here?
-
->   2. call pm_runtime_get_sync(), for all devices bound to a driver.
-> Of course we have to keep track if drivers call any of the pm_runtime_*()
-> methods theirselves, as that would have to move them from automatic to
-> manual mode.
+> >> What's needed to solve this problem is a generalized way to have runtime
+> >> PM dependencies between devices.  Runtime PM already automatically
+> >> handles parent devices as one type of dependent device (e.g. a parent
+> >> device needs to be runtime PM resumed before its child.)  So what's
+> >> needed is a generic way to other PM dependencies with the runtime PM
+> >> core (not the genpd core.)
+> >
+> > Considering the example above with three devices, device D1 and D2 are
+> > passive components in this power domain. These devices only need to
+> > know the state changes of the power domains but would not control the
+> > power domain themselves nor put forth constraints in the power domain
+> > state changes. So I did not clearly understand as to how this example
+> > could be solved by introducing changes in runtime PM core.
 > 
-> Would this be feasible?
+> Your solution only solves the problems for devices managed by genpd.
+> 
+> If I understood your example correctly, what you really want to solve
+> this problem more generically is to be able to tell the runtime PM core
+> that D3 has a dependency on D1 and D2.  Then, whenver the runtime PM
+> core is doing get/put operations for D3, it needs to also do them for D1
+> and D2.
+> 
+> This will accomplish the same as your proposed approach, but work for
+> any devices in any PM domains.
 
-PCI does something similar and IMO it would make sense to do that for all
-devices, at least where we have a known way to power them up/down without a
-driver.
-
-There's a couple of questions, though.  First, how many drivers would break
-if we enabled runtime PM by default?  Second, if we do that, how do we
-figure out the initial value of runtime PM status in general?  Finally,
-what about drivers that need to work with and without PM domains (for example,
-some systems they run on have PM domains, while some other don't)?
+Plus, it is not limited to runtime PM, really.  It affects system suspend
+too.
 
 
 -- 
