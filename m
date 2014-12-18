@@ -1,97 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaLRG2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:28:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:17327 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaLRG2h (ORCPT
+	id S1752158AbaLRG3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:29:15 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58552 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751844AbaLRG3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:28:37 -0500
-From: Ethan Zhao <ethan.zhao@oracle.com>
-To: dirk.j.brandewie@intel.com, kristen@linux.intel.com,
-        viresh.kumar@linaro.org, rjw@rjwysocki.net
-Cc: linda.knippers@hp.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
-        Ethan Zhao <ethan.zhao@oracle.com>
-Subject: [PATCH V3] cpufreq: fix a NULL pointer dereference triggered by _PPC changed notification
-Date: Thu, 18 Dec 2014 15:28:19 +0900
-Message-Id: <1418884099-27919-1-git-send-email-ethan.zhao@oracle.com>
-X-Mailer: git-send-email 1.8.3.1
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 18 Dec 2014 01:29:12 -0500
+Date: Wed, 17 Dec 2014 22:28:06 -0800
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-8qope8lxb898narnq5kmu2gf@git.kernel.org>
+Cc: mingo@kernel.org, paulus@samba.org, dsahern@gmail.com, namhyung@kernel.org,
+        dzickus@redhat.com, acme@redhat.com, eranian@google.com, hpa@zytor.com,
+        efault@gmx.de, jolsa@redhat.com, peterz@infradead.org,
+        adrian.hunter@intel.com, bp@suse.de, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com
+Reply-To: mingo@kernel.org, paulus@samba.org, dsahern@gmail.com,
+        namhyung@kernel.org, acme@redhat.com, dzickus@redhat.com,
+        eranian@google.com, hpa@zytor.com, jolsa@redhat.com, efault@gmx.de,
+        adrian.hunter@intel.com, peterz@infradead.org, bp@suse.de,
+        tglx@linutronix.de, fweisbec@gmail.com, linux-kernel@vger.kernel.org
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf evlist: Fixup brown paper bag on "hint"
+  for --mmap-pages cmdline arg
+Git-Commit-ID: 0a2138b28fd56eeb3852133691c881409885ee3f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If _PPC changed notification happens before governor was initiated while kernel
-is booting, a NULL pointer dereference will be triggered:
+Commit-ID:  0a2138b28fd56eeb3852133691c881409885ee3f
+Gitweb:     http://git.kernel.org/tip/0a2138b28fd56eeb3852133691c881409885ee3f
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Fri, 12 Dec 2014 16:07:47 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 16 Dec 2014 13:38:26 -0300
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
- IP: [<ffffffff81470453>] __cpufreq_governor+0x23/0x1e0
- PGD 0
- Oops: 0000 [#1] SMP
- ... ...
- RIP: 0010:[<ffffffff81470453>]  [<ffffffff81470453>]
- __cpufreq_governor+0x23/0x1e0
- RSP: 0018:ffff881fcfbcfbb8  EFLAGS: 00010286
- RAX: 0000000000000000 RBX: ffff881fd11b3980 RCX: ffff88407fc20000
- RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff881fd11b3980
- RBP: ffff881fcfbcfbd8 R08: 0000000000000000 R09: 000000000000000f
- R10: ffffffff818068d0 R11: 0000000000000043 R12: 0000000000000004
- R13: 0000000000000000 R14: ffffffff8196cae0 R15: 0000000000000000
- FS:  0000000000000000(0000) GS:ffff881fffc00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
- CR2: 0000000000000030 CR3: 00000000018ae000 CR4: 00000000000407f0
- DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
- DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
- Process kworker/0:3 (pid: 750, threadinfo ffff881fcfbce000, task
- ffff881fcf556400)
- Stack:
-  ffff881fffc17d00 ffff881fcfbcfc18 ffff881fd11b3980 0000000000000000
-  ffff881fcfbcfc08 ffffffff81470d08 ffff881fd11b3980 0000000000000007
-  ffff881fcfbcfc18 ffff881fffc17d00 ffff881fcfbcfd28 ffffffff81472e9a
- Call Trace:
-  [<ffffffff81470d08>] __cpufreq_set_policy+0x1b8/0x2e0
-  [<ffffffff81472e9a>] cpufreq_update_policy+0xca/0x150
-  [<ffffffff81472f20>] ? cpufreq_update_policy+0x150/0x150
-  [<ffffffff81324a96>] acpi_processor_ppc_has_changed+0x71/0x7b
-  [<ffffffff81320bcd>] acpi_processor_notify+0x55/0x115
-  [<ffffffff812f9c29>] acpi_device_notify+0x19/0x1b
-  [<ffffffff813084ca>] acpi_ev_notify_dispatch+0x41/0x5f
-  [<ffffffff812f64a4>] acpi_os_execute_deferred+0x27/0x34
+perf evlist: Fixup brown paper bag on "hint" for --mmap-pages cmdline arg
 
-The root cause is a race conditon -- cpufreq core and acpi-cpufreq driver
-were initiated, but cpufreq_governor wasn't and _PPC changed notification
-happened, __cpufreq_governor() was called within acpi_os_execute_deferred
-kernel thread context.
+When failing due to asking for a number of mmap pages that is more than
+the max, it was suggesting that an even bigger number of mmap pages
+should be specified, doh, au contraire!
 
-To fix this panic issue, add pointer checking code in __cpufreq_governor()
-before pointer policy->governor is to be dereferenced.
+Before:
 
-Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+  [acme@ssdandy linux]$ trace -m 128 usleep 1
+  Error:	Operation not permitted.
+  Hint:	Check /proc/sys/kernel/perf_event_mlock_kb (516 kB) setting.
+  Hint:	Tried using 516 kB.
+  Hint:	Try using a bigger -m/--mmap-pages value.
+  [acme@ssdandy linux]$
+
+After:
+
+  [acme@ssdandy linux]$ trace -m 128 usleep 1
+  Error:	Operation not permitted.
+  Hint:	Check /proc/sys/kernel/perf_event_mlock_kb (516 kB) setting.
+  Hint:	Tried using 516 kB.
+  Hint:	Try using a smaller -m/--mmap-pages value.
+  [acme@ssdandy linux]$
+
+And to (really) clarify what happens above, when what the user requests
+is <= max and even then it fails, a changeset is being made to tell that
+this is a per user limit, not per process (in the above example there
+was another 'perf trace' running for this user, which was using all the
+pages it could use).
+
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-8qope8lxb898narnq5kmu2gf@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- v2&v3: correct comment style.
+ tools/perf/util/evlist.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/cpufreq/cpufreq.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 4473eba..b75735c 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2021,6 +2021,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
- 	/* Don't start any governor operations if we are entering suspend */
- 	if (cpufreq_suspended)
- 		return 0;
-+	/*
-+	 * Governor might not be initiated here if _PPC changed notification
-+	 * happened, check it.
-+	 */
-+	if (!policy->governor)
-+		return -EINVAL;
- 
- 	if (policy->governor->max_transition_latency &&
- 	    policy->cpuinfo.transition_latency >
--- 
-1.8.3.1
-
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index bb5dfc5..de7515d 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1495,7 +1495,7 @@ int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, s
+ 		scnprintf(buf, size, "Error:\t%s.\n"
+ 				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
+ 				     "Hint:\tTried using %zd kB.\n"
+-				     "Hint:\tTry using a bigger -m/--mmap-pages value.",
++				     "Hint:\tTry using a smaller -m/--mmap-pages value.",
+ 				     emsg, value, evlist->mmap_len / 1024);
+ 		break;
+ 	default:
