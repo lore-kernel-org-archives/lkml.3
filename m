@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaLRBKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:10:30 -0500
-Received: from mga09.intel.com ([134.134.136.24]:42620 "EHLO mga09.intel.com"
+	id S1751820AbaLRBKm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:10:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42694 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233AbaLRBK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:10:29 -0500
+	id S1751452AbaLRBKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 20:10:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,597,1413270000"; 
-   d="scan'208";a="656017547"
+   d="scan'208";a="625625115"
 Date: Thu, 18 Dec 2014 09:10:01 +0800
 From: kbuild test robot <fengguang.wu@intel.com>
 To: Rob Clark <robdclark@gmail.com>
 Cc: kbuild-all@01.org, David Airlie <airlied@linux.ie>,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH robclark] drm: get_properties() can be static
-Message-ID: <20141218011001.GA88947@lkp-sb04>
-References: <201412180950.908XRX5k%fengguang.wu@intel.com>
+Subject: [robclark:atomic-properties 5/12] drivers/gpu/drm/drm_crtc.c:1995:5:
+ sparse: symbol 'get_properties' was not declared. Should it be static?
+Message-ID: <201412180950.908XRX5k%fengguang.wu@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201412180950.908XRX5k%fengguang.wu@intel.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: fengguang.wu@intel.com
@@ -29,23 +28,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/gpu/drm/drm_crtc.c:1995:5: sparse: symbol 'get_properties' was not declared. Should it be static?
+tree:   git://people.freedesktop.org/~robclark/linux atomic-properties
+head:   4e73d9848e88a1bdd90c2506457dc4e7583c2f58
+commit: d9224ddf063bb89803a3f4cce2dfd3d2afcb4906 [5/12] drm: refactor getproperties/getconnector
+reproduce:
+  # apt-get install sparse
+  git checkout d9224ddf063bb89803a3f4cce2dfd3d2afcb4906
+  make ARCH=x86_64 allmodconfig
+  make C=1 CF=-D__CHECK_ENDIAN__
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+
+sparse warnings: (new ones prefixed by >>)
+
+>> drivers/gpu/drm/drm_crtc.c:1995:5: sparse: symbol 'get_properties' was not declared. Should it be static?
+
+Please review and possibly fold the followup patch.
+
 ---
- drm_crtc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index dcfd64e5..a80a29b 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -1992,7 +1992,7 @@ static struct drm_encoder *drm_connector_get_encoder(struct drm_connector *conne
- }
- 
- /* helper for getconnector and getproperties ioctls */
--int get_properties(struct drm_mode_object *obj, uint32_t __user *prop_ptr,
-+static int get_properties(struct drm_mode_object *obj, uint32_t __user *prop_ptr,
- 		uint64_t __user *prop_values, uint32_t *arg_count_props)
- {
- 	int props_count = obj->properties->count;
+0-DAY kernel test infrastructure                Open Source Technology Center
+http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
