@@ -1,53 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752045AbaLRGyV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:54:21 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:43111 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaLRGyT (ORCPT
+	id S1752112AbaLRG65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:58:57 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60058 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113AbaLRG64 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:54:19 -0500
+	Thu, 18 Dec 2014 01:58:56 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20141216164527.GA21863@redhat.com>
-References: <1418575877-21488-1-git-send-email-mst@redhat.com>
-	<CAFiDJ5_fGWx2E1jvU+k0Tv_esRpWmC-p+kq7Y_VOr5bx2ZUFzg@mail.gmail.com>
-	<20141215101703.GA26156@redhat.com>
-	<CAFiDJ5_BSMXBsv0gmzogyJi1x9-4vAhPpZBwn-_CHYDs0pOfvA@mail.gmail.com>
-	<20141216164527.GA21863@redhat.com>
-Date: Thu, 18 Dec 2014 14:54:17 +0800
-X-Google-Sender-Auth: 6oPqZYGFiKjhPpRW5MyxVLar0Ec
-Message-ID: <CAFiDJ5862C1bjeh+jAp2saJHUtTBOvjp9Vz2PvfuwZ2MBocFQw@mail.gmail.com>
-Subject: Re: [PATCH 00/18] uaccess: fix sparse warning on get_user for bitwise types
-From: Ley Foon Tan <lftan@altera.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        "Kevin Hilman" <khilman@kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <20141217152322.29014.7739@quantum>
+Cc: "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
+        "Tomasz Figa" <tomasz.figa@gmail.com>,
+        "Stephen Boyd" <sboyd@codeaurora.org>, "Kukjin Kim" <kgene@kernel.org>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        "Javier Martinez Canillas" <javier.martinez@collabora.co.uk>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>
+References: <1417788934-23447-1-git-send-email-k.kozlowski@samsung.com>
+ <1418129982.19339.6.camel@AMDC1943> <5486F69B.6020005@samsung.com>
+ <7hlhmfo1b0.fsf@deeprootsystems.com> <7h8ui8h7n9.fsf@deeprootsystems.com>
+ <1418718015.28527.4.camel@AMDC1943> <20141217152322.29014.7739@quantum>
+Message-ID: <20141218065848.29014.24886@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH] clk: samsung: Fix Exynos 5420 pinctrl setup and clock disable
+ failure due to domain being gated
+Date: Wed, 17 Dec 2014 22:58:48 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 12:45 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> On Tue, Dec 16, 2014 at 02:06:50PM +0800, Ley Foon Tan wrote:
->> On Mon, Dec 15, 2014 at 6:17 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
->> > Thanks for the heads up.
->> > No - it will probably need a similar fix for __get_user and get_user.
->> > It's just a parse warning so it's not a blocker.
->> > Can you fix it yourself or prefer me to?
->> Do you have newer revision of this series?
->> If yes, then it is great if you can include it. Otherwise, I can fix it.
->>
->> Regards
->>
->> Ley Foon
->
-> Arnd said he'll merge whatever is not fixed in -rc1 through his tree for
-> 3.20.
-> So it's up to you - fix it up in your tree before -rc1 or wait for
-> mer to fix it after rc1 and have Arnd merge it for 3.20.
-I will fix it in nios2 tree.
+Quoting Mike Turquette (2014-12-17 07:23:22)
+> Quoting Krzysztof Kozlowski (2014-12-16 00:20:15)
+> > On pon, 2014-12-15 at 14:26 -0800, Kevin Hilman wrote:
+> > > Kevin Hilman <khilman@kernel.org> writes:
+> > > 
+> > > > Sylwester Nawrocki <s.nawrocki@samsung.com> writes:
+> > > >
+> > > >> On 09/12/14 13:59, Krzysztof Kozlowski wrote:
+> > > >>> On pią, 2014-12-05 at 15:15 +0100, Krzysztof Kozlowski wrote:
+> > > >>>> > Audio subsystem clocks are located in separate block. On Exynos 5420 if
+> > > >>>> > clock for this block (from main clock domain) 'mau_epll' is gated then
+> > > >>>> > any read or write to audss registers will block.
+> > > >>>> > 
+> > > >>>> > This kind of boot hang was observed on Arndale Octa and Peach Pi/Pit
+> > > >>>> > after introducing runtime PM to pl330 DMA driver. After that commit the
+> > > >>>> > 'mau_epll' was gated, because the "amba" clock was disabled and there
+> > > >>>> > were no more users of mau_epll.
+> > > >>>> > 
+> > > >>>> > The system hang on one of steps:
+> > > >>>> > 1. Disabling unused clocks from audss block.
+> > > >>>> > 2. During audss GPIO setup (just before probing i2s0 because
+> > > >>>> >    samsung_pinmux_setup() tried to access memory from audss block which was
+> > > >>>> >    gated.
+> > > >>>> > 
+> > > >>>> > Add a workaround for this by enabling the 'mau_epll' clock in probe.
+> > > >>>> > 
+> > > >>>> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > >>>> > ---
+> > > >>>> >  drivers/clk/samsung/clk-exynos-audss.c | 29 ++++++++++++++++++++++++++++-
+> > > >>>> >  1 file changed, 28 insertions(+), 1 deletion(-)
+> > > >>>
+> > > >>> Sorry for pinging so quick but merge window is open and it looks like
+> > > >>> booting Exynos542x boards will be broken (because pl330 will no longer
+> > > >>> hold adma clock enabled so whole audss domain will be gated).
+> > > >>> 
+> > > >>> This is a non-intrusive workaround for that issue, as wanted by
+> > > >>> Sylwester:
+> > > >>> https://lkml.org/lkml/2014/12/5/223
+> > > >>> 
+> > > >>> Any comments on this?
+> > > >>
+> > > >> The patch looks OK to me, it would be good though if someone else
+> > > >> has confirmed it fixes the bug. I don't have any clock patches queued
+> > > >> at the moment. Perhaps you could apply it directly, Mike ?
+> > > >
+> > > > I confirm it fixes the boot hang in linux-next (next-20141210) on my
+> > > > exynos5800-peach-pi and exynos5420-arndale-octa.  Tested both
+> > > > exynos_defconfig and multi_v7_defconfig.
+> > > >
+> > > > Tested-by: Kevin Hilman <khilman@linaro.org>
+> > > 
+> > > What's the status of this patch?  linux-next is still broken for several
+> > > Exynos5 platforms without this fix.
+> > 
+> > I believe not only next is broken but also current mainline because
+> > runtime PM for pl330 was merged yesterday...
+> > 
+> > The patch received two tested-bys (Kevin's and Javier's) and Sylwester's
+> > ack.
+> > 
+> > Mike, could you pick the patch and send it to Linus after rc1?
+> 
+> Will do.
 
-Thanks.
+To be clear, I pulled this into clk-next towards -rc1, so it won't need
+to go through as an -rc fix.
 
-Regards
-Ley Foon
+Regards,
+Mike
+
+> 
+> Regards,
+> Mike
+> 
+> > 
+> > Best regards,
+> > Krzysztof
+> > 
