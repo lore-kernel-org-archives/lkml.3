@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565AbaLRHKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 02:10:32 -0500
-Received: from mail-bn1on0131.outbound.protection.outlook.com ([157.56.110.131]:37810
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752107AbaLRHIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 02:08:04 -0500
-From: Liu Ying <Ying.Liu@freescale.com>
-To: <dri-devel@lists.freedesktop.org>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
-        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFC v2 06/14] ARM: dts: imx6qdl: Move existing MIPI DSI ports into a new 'ports' node
-Date: Thu, 18 Dec 2014 15:11:28 +0800
-Message-ID: <1418886696-11636-7-git-send-email-Ying.Liu@freescale.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
-References: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(31966008)(97736003)(110136001)(105606002)(89996001)(104016003)(62966003)(86362001)(64706001)(99396003)(47776003)(2950100001)(20776003)(48376002)(50466002)(68736005)(120916001)(21056001)(77156002)(50986999)(77096005)(87936001)(19580395003)(107046002)(50226001)(2351001)(46102003)(4396001)(92566001)(84676001)(106466001)(76176999)(19580405001)(36756003)(85426001)(6806004)(229853001)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0633;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1752624AbaLRHLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 02:11:31 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:57308 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752414AbaLRHL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 02:11:28 -0500
+Message-ID: <54927E1E.1030407@c-s.fr>
+Date: Thu, 18 Dec 2014 08:11:26 +0100
+From: leroy christophe <christophe.leroy@c-s.fr>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0633;
-X-Forefront-PRVS: 042957ACD7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0633;
-X-OriginatorOrg: freescale.com
+To: Scott Wood <scottwood@freescale.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: Re: [v2 PATCH 1/2] powerpc32: adds handling of _PAGE_RO
+References: <20141217091431.D3F761A5E0D@localhost.localdomain> <1418868868.5581.121.camel@freescale.com>
+In-Reply-To: <1418868868.5581.121.camel@freescale.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MIPI DSI node contains some ports which represent possible DRM CRTCs
-it can connect with.  Each port has a 'reg' property embedded.  This
-property will be wrongly interpretted by the MIPI DSI bus driver, because
-the driver will take each subnode which contains a 'reg' property as a
-DSI peripheral device.  This patch moves the existing MIPI DSI ports into
-a new 'ports' node so that the MIPI DSI bus driver may distinguish its
-DSI peripheral device(s) from the existing ports.
 
-Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
----
-v1->v2:
- * Newly added, as suggested by Thierry Reding.
+Le 18/12/2014 03:14, Scott Wood a écrit :
+> On Wed, 2014-12-17 at 10:14 +0100, Christophe Leroy wrote:
+>> Some powerpc like the 8xx don't have a RW bit in PTE bits but a RO (Read Only) bit.
+>> This patch implements the handling of a _PAGE_RO flag to be used in place of _PAGE_RW
+>>
+>> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+>>
+>> ---
+>> v2 is a complete rework compared to v1
+>>
+>>   arch/powerpc/include/asm/pgtable-ppc32.h | 11 ++++++-----
+>>   arch/powerpc/include/asm/pgtable.h       | 10 +++++++---
+>>   arch/powerpc/include/asm/pte-common.h    | 27 ++++++++++++++++++---------
+>>   arch/powerpc/mm/gup.c                    |  2 ++
+>>   arch/powerpc/mm/mem.c                    |  2 +-
+>>   arch/powerpc/mm/pgtable_32.c             | 24 ++++++++++++++++++++----
+>>   6 files changed, 54 insertions(+), 22 deletions(-)
+>>
+>> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
+>> index 543bb8e..64ed9e1 100644
+>> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
+>> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
+>> @@ -125,7 +125,7 @@ extern int icache_44x_need_flush;
+>>   #ifndef __ASSEMBLY__
+>>   
+>>   #define pte_clear(mm, addr, ptep) \
+>> -	do { pte_update(ptep, ~_PAGE_HASHPTE, 0); } while (0)
+>> +	do { pte_update(ptep, ~_PAGE_HASHPTE, _PAGE_RO); } while (0)
+> Is this really necessary?  It's already clearing the valid bit.
+>
+> Likewise in several other places that set or check for _PAGE_RO on pages
+> for which no access is permitted.
+>
+>> @@ -287,8 +287,9 @@ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+>>   static inline void __ptep_set_access_flags(pte_t *ptep, pte_t entry)
+>>   {
+>>   	unsigned long bits = pte_val(entry) &
+>> -		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_EXEC);
+>> -	pte_update(ptep, 0, bits);
+>> +		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_RO |
+>> +		 _PAGE_EXEC);
+>> +	pte_update(ptep, _PAGE_RO, bits);
+>>   }
+> You're unconditionally clearing _PAGE_RO, and apparently relying on the
+> undocumented behavior of pte_update() to clear "clr" before setting
+> "set".
+>
+> Instead I'd write this as:
+>
+> 	unsigned long set = pte_val(entry) &
+> 		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_EXEC);
+> 	unsigned long clr = pte_val(entry) & _PAGE_RO;
+Don't you mean ?
 
- arch/arm/boot/dts/imx6q.dtsi   | 20 +++++++++++---------
- arch/arm/boot/dts/imx6qdl.dtsi | 23 ++++++++++++++---------
- 2 files changed, 25 insertions(+), 18 deletions(-)
+	unsigned long clr = ~pte_val(entry) & _PAGE_RO;
 
-diff --git a/arch/arm/boot/dts/imx6q.dtsi b/arch/arm/boot/dts/imx6q.dtsi
-index e9f3646..9c0990b 100644
---- a/arch/arm/boot/dts/imx6q.dtsi
-+++ b/arch/arm/boot/dts/imx6q.dtsi
-@@ -292,19 +292,21 @@
- };
- 
- &mipi_dsi {
--	port@2 {
--		reg = <2>;
-+	ports {
-+		port@2 {
-+			reg = <2>;
- 
--		mipi_mux_2: endpoint {
--			remote-endpoint = <&ipu2_di0_mipi>;
-+			mipi_mux_2: endpoint {
-+				remote-endpoint = <&ipu2_di0_mipi>;
-+			};
- 		};
--	};
- 
--	port@3 {
--		reg = <3>;
-+		port@3 {
-+			reg = <3>;
- 
--		mipi_mux_3: endpoint {
--			remote-endpoint = <&ipu2_di1_mipi>;
-+			mipi_mux_3: endpoint {
-+				remote-endpoint = <&ipu2_di1_mipi>;
-+			};
- 		};
- 	};
- };
-diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-index 9596ed5..96bf2a0 100644
---- a/arch/arm/boot/dts/imx6qdl.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl.dtsi
-@@ -1009,19 +1009,24 @@
- 				reg = <0x021e0000 0x4000>;
- 				status = "disabled";
- 
--				port@0 {
--					reg = <0>;
-+				ports {
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+
-+					port@0 {
-+						reg = <0>;
- 
--					mipi_mux_0: endpoint {
--						remote-endpoint = <&ipu1_di0_mipi>;
-+						mipi_mux_0: endpoint {
-+							remote-endpoint = <&ipu1_di0_mipi>;
-+						};
- 					};
--				};
- 
--				port@1 {
--					reg = <1>;
-+					port@1 {
-+						reg = <1>;
- 
--					mipi_mux_1: endpoint {
--						remote-endpoint = <&ipu1_di1_mipi>;
-+						mipi_mux_1: endpoint {
-+							remote-endpoint = <&ipu1_di1_mipi>;
-+						};
- 					};
- 				};
- 			};
--- 
-2.1.0
+Because, we want to clear _PAGE_RO when _PAGE_RO is not set in entry.
+
+Christophe
+
+>
+> 	pte_update(ptep, clr, set);
+>
+> -Scott
+>
 
