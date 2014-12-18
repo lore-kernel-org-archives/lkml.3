@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712AbaLRQqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:46:52 -0500
-Received: from smtp-out-208.synserver.de ([212.40.185.208]:1078 "EHLO
-	smtp-out-208.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbaLRQqv (ORCPT
+	id S1751762AbaLRQrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:47:03 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:33108 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732AbaLRQrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:46:51 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30521
-Message-ID: <549304F4.5070105@metafoo.de>
-Date: Thu, 18 Dec 2014 17:46:44 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
-        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [RFC PATCH 2/2] iio: kfifo: Add resource management devm_iio_kfifo_allocate/free
-References: <1418153385-18212-1-git-send-email-k.wrona@samsung.com> <1418153385-18212-3-git-send-email-k.wrona@samsung.com>
-In-Reply-To: <1418153385-18212-3-git-send-email-k.wrona@samsung.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Dec 2014 11:47:00 -0500
+From: Robert Nachlinger <robert.nachlinger@gmail.com>
+X-Google-Original-From: Robert Nachlinger <robert.nachlinger@googlemail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Robert Nachlinger <robert.nachlinger@googlemail.com>
+Subject: [PATCH] Staging: gdm724x: fix space before comma coding style issue in gdm_mux.c
+Date: Thu, 18 Dec 2014 17:46:29 +0100
+Message-Id: <1418921189-31372-1-git-send-email-robert.nachlinger@googlemail.com>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 08:29 PM, Karol Wrona wrote:
-> iio kfifo allocate/free gained their devm_ wrappers.
->
-> Change-Id: I10c19ccd7c01491caf088b3629137425ddccd29c
-> Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-> Suggested-by: Jonathan Cameron <jic23@kernel.org>
+This is a patch to the gdm_mux.c file that fixes a space before comma coding style issue found by the checkpatch.pl tool.
 
-Looks good to me.
+Signed-off-by: Robert Nachlinger <robert.nachlinger@googlemail.com>
+---
+ drivers/staging/gdm724x/gdm_mux.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[...]
-> +struct iio_buffer *devm_iio_kfifo_allocate(struct device *dev)
-> +{
-> +	struct iio_buffer **ptr, *r;
-> +
-> +	ptr = devres_alloc(devm_iio_kfifo_release, sizeof *ptr, GFP_KERNEL);
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index b5b063a..d1ab996 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
+ static void do_rx(struct work_struct *work)
+ {
+ 	struct mux_dev *mux_dev =
+-		container_of(work, struct mux_dev , work_rx.work);
++		container_of(work, struct mux_dev, work_rx.work);
+ 	struct mux_rx *r;
+ 	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
+ 	unsigned long flags;
+-- 
+2.2.0
 
-But this should be sizeof(*ptr) to compliant with the Linux kernel coding style.
-
-[...]
