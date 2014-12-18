@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092AbaLRJUk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:20:40 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63203 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084AbaLRJUi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:20:38 -0500
-From: Karthik Nayak <karthik.188@gmail.com>
-To: trivial@kernel.org
-Cc: gregkh@linuxfoundation.org, anarey@gmail.com, linux-kernel@vger.kernel.org,
-        Karthik Nayak <karthik.188@gmail.com>
-Subject: [PATCH] Staging: rtl8192u: removed an unnecessary else statement
-Date: Thu, 18 Dec 2014 14:50:11 +0530
-Message-Id: <1418894411-9787-1-git-send-email-karthik.188@gmail.com>
-X-Mailer: git-send-email 2.1.3
+	id S1751800AbaLRJZh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:25:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751541AbaLRJZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 04:25:35 -0500
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: dri-devel@lists.freedesktop.org, airlied@gmail.com
+Cc: Gerd Hoffmann <kraxel@redhat.com>, David Airlie <airlied@linux.ie>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] bochs: ignore device if there isn't enougth memory
+Date: Thu, 18 Dec 2014 10:24:09 +0100
+Message-Id: <1418894649-11441-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As per checkpatch warning, removed an unnecessary else statement
-proceeding an if statement with a return.
+The qemu stdvga can be configured with a wide range of video memory,
+from 1 MB to 256 MB (default is 16 MB).  In case it is configured
+with only 1 or 2 MB it isn't really usable with bochsdrm, due to
+depths other than 32bpp not being supported so that isn't enough
+memory for a reasonable sized framebuffer.  So skip the device
+and let vgacon or vesafb+fbcon handle the it.
 
-Signed-off-by: Karthik Nayak <karthik.188@gmail.com>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/staging/rtl8192u/r8192U_dm.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/bochs/bochs_drv.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
-index 936565d..b3b508c 100644
---- a/drivers/staging/rtl8192u/r8192U_dm.c
-+++ b/drivers/staging/rtl8192u/r8192U_dm.c
-@@ -480,15 +480,13 @@ static void dm_bandwidth_autoswitch(struct net_device *dev)
+diff --git a/drivers/gpu/drm/bochs/bochs_drv.c b/drivers/gpu/drm/bochs/bochs_drv.c
+index 98837bd..9874d4a 100644
+--- a/drivers/gpu/drm/bochs/bochs_drv.c
++++ b/drivers/gpu/drm/bochs/bochs_drv.c
+@@ -162,8 +162,15 @@ static int bochs_kick_out_firmware_fb(struct pci_dev *pdev)
+ static int bochs_pci_probe(struct pci_dev *pdev,
+ 			   const struct pci_device_id *ent)
+ {
++	unsigned long fbsize;
+ 	int ret;
  
- 	if(priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 ||!priv->ieee80211->bandwidth_auto_switch.bautoswitch_enable){
- 		return;
--	}else{
--		if(priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false){//If send packets in 40 Mhz in 20/40
--			if(priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
--				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
--		}else{//in force send packets in 20 Mhz in 20/40
--			if(priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
--				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
--
--		}
++	fbsize = pci_resource_len(pdev, 0);
++	if (fbsize < 4 * 1024 * 1024) {
++		DRM_ERROR("less than 4 MB video memory, ignoring device\n");
++		return -ENOMEM;
 +	}
-+	if(priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false){//If send packets in 40 Mhz in 20/40
-+		if(priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
-+			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
-+	}else{//in force send packets in 20 Mhz in 20/40
-+		if(priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
-+			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
- 	}
- }	// dm_BandwidthAutoSwitch
- 
++
+ 	ret = bochs_kick_out_firmware_fb(pdev);
+ 	if (ret)
+ 		return ret;
 -- 
-2.1.3
+1.8.3.1
 
