@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752106AbaLRLNm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:13:42 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:62199 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLRLNj (ORCPT
+	id S1752072AbaLRLQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:16:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60868 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440AbaLRLQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:13:39 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-d1-5492b6e181d6
-From: Beomho Seo <beomho.seo@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: lgirdwood@gmail.com, broonie@kernel.org, beomho.seo@samsung.com,
-        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
-Subject: [PATCH] regulator: rt5033-regulator: Use regulator_nodes/of_match in
- the descriptor
-Date: Thu, 18 Dec 2014 20:13:36 +0900
-Message-id: <1418901216-19030-1-git-send-email-beomho.seo@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsWyRsSkQPfhtkkhBp9fSluc/rSN3WLqwyds
-	Fte/PGe1mHR/AovFtysdTBaXd81hs/jce4TRYsbkl2wOHB47Z91l99i0qpPNo2/LKkaPz5vk
-	AliiuGxSUnMyy1KL9O0SuDJmPEgveMJXcXv7SfYGxn6eLkZODgkBE4kbG/uZIGwxiQv31rN1
-	MXJxCAksZZToOfuVHaboy4efUIlFjBIPX+xmhnDamCRunlsL1s4moCnxfsoVFhBbRMBK4kX7
-	K3aQImaBLkaJef2XwYqEBeIkDp/eCTaWRUBVYnXTUzCbV8BN4tG/xaxdjBxA6xQk5kyyAemV
-	EPjPJtG18T4jRL2AxLfJh1ggamQlNh1ghrhOUuLgihssExgFFzAyrGIUTS1ILihOSi8y0itO
-	zC0uzUvXS87P3cQIDNvT/5717WC8ecD6EKMAB6MSD6+E3qQQIdbEsuLK3EOMpkAbJjJLiSbn
-	A6MjryTe0NjMyMLUxNTYyNzSTEmcN0HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRl6e
-	usVv+i91PHFoiXfIe2eWk/DPPTj1cP3Ve7Kz0pjuLz9QkFDjJv/E3LvoGb+81ZU53WvZph2b
-	8T9pt0NZsSjT0u4z60/8eXMg30XH8Blrc13+9svHA3a+72LZXHFA96Rh6Vu9mMeMK15PePGX
-	X4Ojb+qxWx/lde2SEh7eOWvylN9tR77ydCWW4oxEQy3mouJEAInfcPxWAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgO7DbZNCDN6cE7Y4/Wkbu8XUh0/Y
-	LK5/ec5qMen+BBaLb1c6mCwu75rDZvG59wijxYzJL9kcODx2zrrL7rFpVSebR9+WVYwenzfJ
-	BbBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
-	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMmPEgveAJX8Xt7SfZGxj7
-	eboYOTkkBEwkvnz4yQZhi0lcuLceyObiEBJYxCjx8MVuZginjUni5rm1TCBVbAKaEu+nXGEB
-	sUUErCRetL9iByliFuhilJjXfxmsSFggTuLw6Z3sIDaLgKrE6qanYDavgJvEo3+LWbsYOYDW
-	KUjMmWQzgZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgqHgmtYNxZYPFIUYBDkYl
-	Hl4JvUkhQqyJZcWVuYcYJTiYlUR4o3OAQrwpiZVVqUX58UWlOanFhxhNgZZPZJYSTc4HRmxe
-	SbyhsYmZkaWRuaGFkbG5kjivkn1biJBAemJJanZqakFqEUwfEwenVAPjTh0pJqlJR+O+7zrF
-	PPl96sr7mUwTDE15VQvVnksySBd2LJ/ZWs2ex/SwctEOJ+knTDJXZWqfpmnw1U6YrRGudf/W
-	q77ey0wXlzQYvN93VtU6mcvp/udGg2l2MpJJDMKn4netFf4Z4LuG8yRH2g/XnU8+rTwn1vA7
-	eLmewN8nD2svCrwr3q6uxFKckWioxVxUnAgAtSPNyqACAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 18 Dec 2014 06:16:27 -0500
+Date: Thu, 18 Dec 2014 03:16:10 -0800
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
+Cc: tglx@linutronix.de, luto@amacapital.net, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, hpa@zytor.com, torvalds@linux-foundation.org
+Reply-To: linux-kernel@vger.kernel.org, luto@amacapital.net,
+        torvalds@linux-foundation.org, mingo@kernel.org, hpa@zytor.com,
+        tglx@linutronix.de
+In-Reply-To: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net>
+References: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/tls: Don't validate lm in set_thread_area()
+  after all
+Git-Commit-ID: 3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is add regulator_nodes/of_match in the regulator descriptor
-for using information from DT instead of sppecific codes.
+Commit-ID:  3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
+Gitweb:     http://git.kernel.org/tip/3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Wed, 17 Dec 2014 14:48:30 -0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 18 Dec 2014 12:12:26 +0100
 
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+x86/tls: Don't validate lm in set_thread_area() after all
+
+It turns out that there's a lurking ABI issue.  GCC, when
+compiling this in a 32-bit program:
+
+struct user_desc desc = {
+	.entry_number    = idx,
+	.base_addr       = base,
+	.limit           = 0xfffff,
+	.seg_32bit       = 1,
+	.contents        = 0, /* Data, grow-up */
+	.read_exec_only  = 0,
+	.limit_in_pages  = 1,
+	.seg_not_present = 0,
+	.useable         = 0,
+};
+
+will leave .lm uninitialized.  This means that anything in the
+kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+
+Revert the .lm check in set_thread_area().  The value never did
+anything in the first place.
+
+Fixes: 0e58af4e1d21 ("x86/tls: Disallow unusual TLS segments")
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org # Only if 0e58af4e1d21 is backported
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/regulator/rt5033-regulator.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/x86/include/uapi/asm/ldt.h | 7 +++++++
+ arch/x86/kernel/tls.c           | 6 ------
+ 2 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/regulator/rt5033-regulator.c b/drivers/regulator/rt5033-regulator.c
-index 870cc49..96d2c18 100644
---- a/drivers/regulator/rt5033-regulator.c
-+++ b/drivers/regulator/rt5033-regulator.c
-@@ -36,6 +36,8 @@ static struct regulator_ops rt5033_buck_ops = {
- static const struct regulator_desc rt5033_supported_regulators[] = {
- 	[RT5033_BUCK] = {
- 		.name		= "BUCK",
-+		.of_match	= of_match_ptr("BUCK"),
-+		.regulators_node = of_match_ptr("regulators"),
- 		.id		= RT5033_BUCK,
- 		.ops		= &rt5033_buck_ops,
- 		.type		= REGULATOR_VOLTAGE,
-@@ -50,6 +52,8 @@ static const struct regulator_desc rt5033_supported_regulators[] = {
- 	},
- 	[RT5033_LDO] = {
- 		.name		= "LDO",
-+		.of_match	= of_match_ptr("LDO"),
-+		.regulators_node = of_match_ptr("regulators"),
- 		.id		= RT5033_LDO,
- 		.ops		= &rt5033_buck_ops,
- 		.type		= REGULATOR_VOLTAGE,
-@@ -64,6 +68,8 @@ static const struct regulator_desc rt5033_supported_regulators[] = {
- 	},
- 	[RT5033_SAFE_LDO] = {
- 		.name		= "SAFE_LDO",
-+		.of_match	= of_match_ptr("SAFE_LDO"),
-+		.regulators_node = of_match_ptr("regulators"),
- 		.id		= RT5033_SAFE_LDO,
- 		.ops		= &rt5033_safe_ldo_ops,
- 		.type		= REGULATOR_VOLTAGE,
-@@ -81,7 +87,7 @@ static int rt5033_regulator_probe(struct platform_device *pdev)
- 	int ret, i;
- 	struct regulator_config config = {};
+diff --git a/arch/x86/include/uapi/asm/ldt.h b/arch/x86/include/uapi/asm/ldt.h
+index 46727eb..6e1aaf7 100644
+--- a/arch/x86/include/uapi/asm/ldt.h
++++ b/arch/x86/include/uapi/asm/ldt.h
+@@ -28,6 +28,13 @@ struct user_desc {
+ 	unsigned int  seg_not_present:1;
+ 	unsigned int  useable:1;
+ #ifdef __x86_64__
++	/*
++	 * Because this bit is not present in 32-bit user code, user
++	 * programs can pass uninitialized values here.  Therefore, in
++	 * any context in which a user_desc comes from a 32-bit program,
++	 * the kernel must act as though lm == 0, regardless of the
++	 * actual value.
++	 */
+ 	unsigned int  lm:1;
+ #endif
+ };
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index 3e551ee..4e942f3 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -55,12 +55,6 @@ static bool tls_desc_okay(const struct user_desc *info)
+ 	if (info->seg_not_present)
+ 		return false;
  
--	config.dev = &pdev->dev;
-+	config.dev = rt5033->dev;
- 	config.driver_data = rt5033;
+-#ifdef CONFIG_X86_64
+-	/* The L bit makes no sense for data. */
+-	if (info->lm)
+-		return false;
+-#endif
+-
+ 	return true;
+ }
  
- 	for (i = 0; i < ARRAY_SIZE(rt5033_supported_regulators); i++) {
--- 
-1.7.9.5
-
