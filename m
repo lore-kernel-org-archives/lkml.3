@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaLROJh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:09:37 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:59159 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaLROJf (ORCPT
+	id S1752635AbaLROJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:09:46 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:63449 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaLROJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:09:35 -0500
-Date: Thu, 18 Dec 2014 14:09:30 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Tunin <hanipouspilot@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-Message-ID: <20141218140930.GA6436@srcf.ucam.org>
-References: <5492C5A3.8090700@gmail.com>
- <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
- <5492D938.1020907@gmail.com>
- <20141218135705.GD4918@srcf.ucam.org>
- <5492DEE7.8010407@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5492DEE7.8010407@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 18 Dec 2014 09:09:44 -0500
+From: Robert Nachlinger <robert.nachlinger@googlemail.com>
+To: gregkh@linuxfoundation.org
+Cc: daniel.dy.ngu@gmail.com, josh@joshtriplett.org, gulsah.1004@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Robert Nachlinger <robert.nachlinger@googlemail.com>
+Subject: [PATCH] Staging: gdm724x: fix space before comma coding style issue in gdm_mux.c
+Date: Thu, 18 Dec 2014 15:09:09 +0100
+Message-Id: <1418911749-7935-1-git-send-email-robert.nachlinger@googlemail.com>
+X-Mailer: git-send-email 2.2.0
+Signed-off-by: Robert Nachlinger <robert.nachlinger@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 05:04:23PM +0300, Dmitry Tunin wrote:
-> Sry, wrong url b4
-> 
-> https://bugzilla.kernel.org/attachment.cgi?id=125091
-
-Can you check whether acpi_osi="Windows 2012" also results in things 
-working?
-
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index b5b063a..d1ab996 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
+ static void do_rx(struct work_struct *work)
+ {
+ 	struct mux_dev *mux_dev =
+-		container_of(work, struct mux_dev , work_rx.work);
++		container_of(work, struct mux_dev, work_rx.work);
+ 	struct mux_rx *r;
+ 	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
+ 	unsigned long flags;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+2.2.0
+
