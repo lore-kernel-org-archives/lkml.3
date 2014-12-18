@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288AbaLROsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:48:25 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:61346 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466AbaLROsY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:48:24 -0500
-Date: Thu, 18 Dec 2014 17:48:10 +0300
-From: samuel kihahu <skihahu@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
-        speakup@linux-speakup.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
-Message-ID: <20141218144810.GA16115@localhost.localdomain>
-References: <1418817362-29088-1-git-send-email-skihahu@gmail.com>
- <20141217121119.GL4856@mwanda>
- <20141217134354.GA585@localhost.localdomain>
- <20141217140322.GM4856@mwanda>
+	id S1752514AbaLROs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:48:59 -0500
+Received: from fieldses.org ([174.143.236.118]:51574 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751876AbaLROs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 09:48:58 -0500
+Date: Thu, 18 Dec 2014 09:48:56 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+Message-ID: <20141218144856.GA18179@fieldses.org>
+References: <pan.2014.12.16.22.19.18@googlemail.com>
+ <20141217212159.GA11517@fieldses.org>
+ <5492C710.20104@googlemail.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="TB36FDmn/VVEgNH/"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141217140322.GM4856@mwanda>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5492C710.20104@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Wed, Dec 17, 2014 at 05:03:22PM +0300, Dan Carpenter wrote:
-> On Wed, Dec 17, 2014 at 04:43:54PM +0300, samuel kihahu wrote:
-> > On Wed, Dec 17, 2014 at 03:11:19PM +0300, Dan Carpenter wrote:
-> > > On Wed, Dec 17, 2014 at 02:56:02PM +0300, samuel kihahu wrote:
-> > > > Replacing obsolete simple_strtoul with kstrtoul.
-> > > > 
-> > > 
-> > > Nope.  That's wrong.  Learn how the functions are different beyond just
-> > > the name.
-> > Noted, have made corrections to fit the kstrtoul and handle the return
-> > value.
+On Thu, Dec 18, 2014 at 01:22:40PM +0100, Holger Hoffstätte wrote:
+> On 12/17/14 22:22, J. Bruce Fields wrote:
+> > On Tue, Dec 16, 2014 at 10:19:18PM +0000, Holger Hoffstätte wrote:
+> >> (..oddly broken directory over NFS..)
+> > That doesn't sound familiar.  A network trace showing the READDIR would
+> > be really useful.  Since this is so reproducible, I think that should be
+> > possible.  So do something like:
+> > 
+> > 	move the problem file into 3.14/
+> > 	tcpdump -s0 -wtmp.pcap -i<relevant interface>
+> > 	ls the directory on the client.
+> > 	kill tcpdump
+> > 	send us tmp.pcap and/or take a look at it with wireshark and see
+> > 	what the READDIR response looks like.
 > 
-> You have to compile test these things.  Really kernel programming is not
-> a good way to learn how to program.  :(
+> Thanks for your reply. I forgot to mention that removing other files seems to "fix" the problem, so it does not seem to be spefically the new file itself that is the cause.
 > 
-> regards,
-> dan carpenter
-> 
+> I captured the "ls 3.14 | head" sequence on both the client and the server, and put the tcpudmp files here: http://hoho.duckdns.org/linux/ - let me know if that helped.
 
-Appreciate the feedback, have modified the patch, tested and confirmed
-it builds.
+On a quick skim, the server's READDIR responses look correct.  The entry
+btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+is returned in frame 53 (with complete reassembled reply displayed by
+wireshark in frame 63).
 
---TB36FDmn/VVEgNH/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-staging-speakup-replace-simple_strtoul-with-kstrtoul.patch"
+You could double-check for me--just run "wireshark nfs-server.pcap",
+look for packets labeled "Reply ... READDIR", and expand out the READDIR
+op and directory listing.  I don't see anything obviously wrong.
 
->From 3d39fd533b4a75e567f76f07f5bc978adddb0721 Mon Sep 17 00:00:00 2001
-From: samuel kihahu <skihahu@gmail.com>
-Date: Thu, 18 Dec 2014 17:42:37 +0300
-Subject: [PATCH] staging: speakup: replace simple_strtoul with kstrtoul
+It's interesting that there's only one LOOKUP in the trace, for btrfs-20
+(returning, not suprisingly, NFS4ERR_NOENT).  If the client failed to
+parse that entry for some reason, then maybe in addition to getting the
+filename wrong it also failed to get the attributes, triggering the
+extra lookup/getattr.
 
-Replacing obsolete simple_strtoul with kstrtoul, checking and
-returning the correct error code.
+> Meanwhile I'll try older/plain (unpatched) kernels. So far reverting the client to vanilla 3.18.1 or 3.14.27 has not helped..
 
-Signed-off-by: samuel kihahu <skihahu@gmail.com>
----
- drivers/staging/speakup/varhandlers.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+I'm a little unclear: when you said "All this is on freshly baked
+3.18.1", are you describing the client, or the server, or both?
 
-diff --git a/drivers/staging/speakup/varhandlers.c b/drivers/staging/speakup/varhandlers.c
-index d758284..716ccc1 100644
---- a/drivers/staging/speakup/varhandlers.c
-+++ b/drivers/staging/speakup/varhandlers.c
-@@ -321,9 +321,13 @@ char *spk_strlwr(char *s)
- 
- char *spk_s2uchar(char *start, char *dest)
- {
--	int val = 0;
-+	unsigned long val;
-+	int ret;
-+
-+	ret = kstrtoul(skip_spaces(start), 10, &val);
-+	if (IS_ERR(&ret))
-+		return ERR_CAST(&ret);
- 
--	val = simple_strtoul(skip_spaces(start), &start, 10);
- 	if (*start == ',')
- 		start++;
- 	*dest = (u_char)val;
--- 
-1.8.3.1
-
-
---TB36FDmn/VVEgNH/--
+--b.
