@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaLROlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:41:37 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:37137 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbaLROlg (ORCPT
+	id S1752412AbaLROnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:43:21 -0500
+Received: from www.linutronix.de ([62.245.132.108]:59065 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaLROnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:41:36 -0500
+	Thu, 18 Dec 2014 09:43:20 -0500
+Date: Thu, 18 Dec 2014 15:43:06 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Eduardo Valentin <edubezval@gmail.com>
+cc: Preeti Murthy <preeti.lkml@gmail.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
+        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [PATCH] tick/powerclamp: Remove tick_nohz_idle abuse
+In-Reply-To: <20141218140106.GA6323@developer>
+Message-ID: <alpine.DEB.2.11.1412181507000.17382@nanos>
+References: <alpine.DEB.2.11.1412181110110.17382@nanos> <20141218140106.GA6323@developer>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.11.1412170953280.8347@gentwo.org>
-References: <20141210163017.092096069@linux.com>
-	<20141215075933.GD4898@js1304-P5Q-DELUXE>
-	<CAAmzW4NCpx5aJyW36fgOfu3EaDj6=uv6MUiBC+a0ggePWPXndQ@mail.gmail.com>
-	<alpine.DEB.2.11.1412170953280.8347@gentwo.org>
-Date: Thu, 18 Dec 2014 23:41:35 +0900
-Message-ID: <CAAmzW4PkfyUpUzwq7=hpzU3d_A431oMWi3+u6hrCb_Md3dAScw@mail.gmail.com>
-Subject: Re: [PATCH 0/7] slub: Fastpath optimization (especially for RT) V1
-From: Joonsoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, akpm@linuxfoundation.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>,
-        Jesper Dangaard Brouer <brouer@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-12-18 1:10 GMT+09:00 Christoph Lameter <cl@linux.com>:
-> On Wed, 17 Dec 2014, Joonsoo Kim wrote:
->
->> +       do {
->> +               tid = this_cpu_read(s->cpu_slab->tid);
->> +               c = this_cpu_ptr(s->cpu_slab);
->> +       } while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
->
->
-> Assembly code produced is a bit weird. I think the compiler undoes what
-> you wanted to do:
+On Thu, 18 Dec 2014, Eduardo Valentin wrote:
+> > The real solution is to fix the powerclamp driver by rewriting it with
+> > a sane concept, but that's beyond the scope of this.
+> > 
+> 
+> Do you have suggestions on what exactly is the expected rewriting or the
+> correct sane concepts?
 
-I checked my compiled code and it seems to be no problem.
-gcc (Ubuntu 4.8.2-19ubuntu1) 4.8.2
+There was quite some discussion about this in this very thread.
+ 
+> > So the only solution for now is to remove the calls into the core NOHZ
+> > code from the powerclamp trainwreck along with the exports.
+> > 
+> > Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
+> 
+> If I got it right, the driver is currently broken due to changes in NOHZ
+> core. So, does this patch fix power clamp behavior ?
 
-Thanks.
+The driver has been broken forever. It just worked by chance.
 
->  46fb:       49 8b 1e                mov    (%r14),%rbx                         rbx = c =s->cpu_slab?
->     46fe:       65 4c 8b 6b 08          mov    %gs:0x8(%rbx),%r13               r13 = tid
->     4703:       e8 00 00 00 00          callq  4708 <kmem_cache_alloc+0x48>     ??
->     4708:       89 c0                   mov    %eax,%eax                        ??
->     470a:       48 03 1c c5 00 00 00    add    0x0(,%rax,8),%rbx                ??
->     4711:       00
->     4712:       4c 3b 6b 08             cmp    0x8(%rbx),%r13                   tid == c->tid
->     4716:       49 89 d8                mov    %rbx,%r8
->     4719:       75 e0                   jne    46fb <kmem_cache_alloc+0x3b>
->
+Now a very well justified and correct change in the core code exposed
+that wreckage. So we have 2 choices:
+
+  1) Get rid of the abuse and let powerclamp deal with the problem.
+ 
+  2) Revert a correct patch for the sake of a 'works by chance' driver
+     or put hacky workarounds in the core. Either of that will just
+     paper over the real root cause until the next thing breaks in
+     subtle ways.
+
+#1 is the only sane decision. We cannot deal with misdesigned driver
+   code in the NOHZ core.
+
+> If I got your proposal right, in the end power clamp will be still
+> broken, but at least won't be abusing NOHZ. Is that what you are
+> proposing?
+
+Yes, the design of powerclamp stays broken, but the NOHZ abuse is
+gone. powerclamp will work, but it can't benefit from the possible
+longer idle times anymore.
+
+Thanks,
+
+	tglx
