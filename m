@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751616AbaLRTVd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:21:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48052 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaLRTVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:21:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,602,1413270000"; 
-   d="scan'208";a="650056871"
-Message-ID: <5493293A.2000802@intel.com>
-Date: Thu, 18 Dec 2014 11:21:30 -0800
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+	id S1751662AbaLRTVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:21:43 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:40260 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbaLRTVk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 14:21:40 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, m.szyprowski@samsung.com,
+        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] CMA: add the amount of cma memory in meminfo
+In-Reply-To: <548E3B5E.6050805@huawei.com>
+Organization: http://mina86.com/
+References: <547FCCE9.2020600@huawei.com> <xa1ty4qm9eq7.fsf@mina86.com> <548E3B5E.6050805@huawei.com>
+User-Agent: Notmuch/0.19~rc1+1~g03aea4f (http://notmuchmail.org) Emacs/25.0.50.3 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+X-Hashcash: 1:20:141218:iamjoonsoo.kim@lge.com::klAVN1M+tkUj+l1+:0000000000000000000000000000000000000000vPz
+X-Hashcash: 1:20:141218:aneesh.kumar@linux.vnet.ibm.com::dsVMyhBOiYdx8g2t:0000000000000000000000000000000zhT
+X-Hashcash: 1:20:141218:qiuxishi@huawei.com::U1PGs6ILQrSGcXRH:0000000000000000000000000000000000000000000dLx
+X-Hashcash: 1:20:141218:linux-kernel@vger.kernel.org::cIUpsvPsG221fnX9:0000000000000000000000000000000001Nyh
+X-Hashcash: 1:20:141218:akpm@linux-foundation.org::lFpDYIrcHpQo9deU:0000000000000000000000000000000000001VEZ
+X-Hashcash: 1:20:141218:m.szyprowski@samsung.com::EScQNrp/lyzXZ/fv:00000000000000000000000000000000000001Va7
+X-Hashcash: 1:20:141218:linux-mm@kvack.org::EzYacIfAIbq1uqQ4:00000000000000000000000000000000000000000006HHn
+Date: Thu, 18 Dec 2014 20:21:31 +0100
+Message-ID: <xa1tegrwsr0k.fsf@mina86.com>
 MIME-Version: 1.0
-To: Roopa Prabhu <roopa@cumulusnetworks.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com> <5492EFC3.8030102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com> <549313B8.6050102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com> <54931969.7040209@cumulusnetworks.com>
-In-Reply-To: <54931969.7040209@cumulusnetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
-> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
->> Removed unnecessary content for ease of reading...
->>
->>>>>>>> +/* Switch Port Attributes section */
->>>>>>>> +
->>>>>>>> +enum {
->>>>>>>> +    IFLA_ATTR_UNSPEC,
->>>>>>>> +    IFLA_ATTR_LEARNING,
->>>>>>> Any reason you want learning here ?. This is covered as part  of
->>>>>>> the bridge setlink attributes.
->>>>>>>
->>>>>> Yes, because the user may _not_ want to go through a bridge
->>>>>> interface
->>>>> necessarily.
->>>>> But, the bridge setlink/getlink interface was changed to accommodate
->>> 'self'
->>>>> for exactly such cases.
->>>>> I kind of understand your case for the other attributes (these are
->>>>> per port settings that switch asics provide).
->>>>>
->>>>> However, i don't understand the reason to pull in bridge attributes here.
->>>>>
->>>> Maybe, I am missing something so you might help. The learning attribute -
->>> in my case - it is like all other attributes: a port attribute (as you said, port
->>> settings that the switch provides per port).
->>>> So, what I was saying is "why the user shall go through a bridge to configure
->>> the learning attribute"? From my perspective, it is as any other attribute and
->>> as such configurable on the port.
->>>
->>> Thinking about this some more, i don't see why any of these attributes
->>> (except loopback. I dont understand the loopback attribute) cant be part of
->>> the birdge port attributes.
->>>
->>> With this we will end up adding l2 attributes in two places: the general link
->>> attributes and bridge attributes.
->>>
->>> And since we have gone down the path of using ndo_bridge_setlink/getlink
->>> with 'self'....we should stick to that for all l2 attributes.
->>>
->>> The idea of overloading ndo_bridge_set/getlink, was to have the same set of
->>> attributes but support both cases where the user wants to go through the
->>> bridge driver or directly to the switch port driver. So, you are not really going
->>> through the bridge driver if you use 'self' and ndo_bridge_setlink/getlink.
->>> 
+On Mon, Dec 15 2014, Xishi Qiu <qiuxishi@huawei.com> wrote:
+> The "mere white-space change" you said a few days ago，how about change like this
+> ", nid, K(...)" -> ",nid, K(xxx)"?
 
->> Roopa, one of the comments I got from Thomas Graf on my v1 patch
->> was that your patch and mine were supplementary ("I think Roopa's
->> patches are supplementary. Not all switchdev users will be backed
->> with a Linux Bridge. I therefore welcome your patches very
->> much")... I also understood by others that the patch made sense for
->> the same reason. I simply do not understand why these attributes
->> (and maybe others in the future) could not be configured directly
->> on a standard port but have to go through a bridge.
->> 
-> ok, i am very confused in that case. The whole moving of bridge
-> attributes from the bridge driver to rtnetlink.c was to make the
-> bridge attributes accessible to any driver who wants to set l2/bridge
-> attributes on their switch ports. So, its unclear to me why we are
-> doing this parallel thing again. This move to rtnetlink.c was done
-> during the recent rocker support. so, maybe scott/jiri can elaborate
-> more.
+If space is all you're changing, I wouldn't change it.
 
-
-Not sure if this will add to the confusion or help. But you do not
-need to have the bridge.ko loaded or netdev's attached to a bridge
-to use the setlink/getlink ndo ops and netlink messages. 
-
-This was intentionally done. Its already used with NIC devices to
-configure embedded bridge settings such as VEB/VEPA.
-
-I think I'm just repeating Roopa though.
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
