@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956AbaLRQxD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:53:03 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41562 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751710AbaLRQvs (ORCPT
+	id S1751430AbaLRQ5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:57:20 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:43745 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaLRQ5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:51:48 -0500
-From: Julian Brost <linux-kernel@0x4a42.net>
-To: Julian Brost <linux-kernel@0x4a42.net>,
-        Fabian Hofmann <fabian.hofmann@fau.de>
-Cc: linux-kernel@i4.cs.fau.de, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/5] perf/x86/intel/uncore: checkpatch: Replace kzalloc with kcalloc
-Date: Thu, 18 Dec 2014 17:51:37 +0100
-Message-Id: <1418921500-5630-3-git-send-email-linux-kernel@0x4a42.net>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418921500-5630-1-git-send-email-linux-kernel@0x4a42.net>
-References: <1418751050-11725-1-git-send-email-linux-kernel@0x4a42.net>
- <1418921500-5630-1-git-send-email-linux-kernel@0x4a42.net>
+	Thu, 18 Dec 2014 11:57:19 -0500
+From: Robert Nachlinger <robert.nachlinger@gmail.com>
+X-Google-Original-From: Robert Nachlinger <robert.nachlinger@googlemail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Robert Nachlinger <robert.nachlinger@googlemail.com>
+Subject: [PATCH] Staging: gdm724x: fix space before comma coding style issue in gdm_mux.c
+Date: Thu, 18 Dec 2014 17:57:06 +0100
+Message-Id: <1418921826-4248-1-git-send-email-robert.nachlinger@googlemail.com>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kzalloc was used for an array allocation where kcalloc should be used.
+This is a patch to the gdm_mux.c file that fixes a space before comma
+coding style issue found by the checkpatch.pl tool.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Julian Brost <linux-kernel@0x4a42.net>
-Signed-off-by: Fabian Hofmann <fabian.hofmann@fau.de>
+Signed-off-by: Robert Nachlinger <robert.nachlinger@googlemail.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_uncore.c | 2 +-
+ drivers/staging/gdm724x/gdm_mux.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-index 9762dbd..161655f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-@@ -725,7 +725,7 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
- 	struct attribute **attrs;
- 	int i, j;
- 
--	pmus = kzalloc(sizeof(*pmus) * type->num_boxes, GFP_KERNEL);
-+	pmus = kcalloc(type->num_boxes, sizeof(*pmus), GFP_KERNEL);
- 	if (!pmus)
- 		return -ENOMEM;
- 
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index b5b063a..d1ab996 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
+ static void do_rx(struct work_struct *work)
+ {
+ 	struct mux_dev *mux_dev =
+-		container_of(work, struct mux_dev , work_rx.work);
++		container_of(work, struct mux_dev, work_rx.work);
+ 	struct mux_rx *r;
+ 	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
+ 	unsigned long flags;
 -- 
-1.9.1
+2.2.0
 
