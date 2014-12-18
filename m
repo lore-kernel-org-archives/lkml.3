@@ -1,139 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaLRLlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:41:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34219 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751265AbaLRLlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:41:47 -0500
-Date: Thu, 18 Dec 2014 11:41:45 +0000
-From: Thomas Graf <tgraf@suug.ch>
-To: "Varlese, Marco" <marco.varlese@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
- configuration
-Message-ID: <20141218114145.GH28766@casper.infradead.org>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+	id S1752193AbaLRLmz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:42:55 -0500
+Received: from mail-bl2on0116.outbound.protection.outlook.com ([65.55.169.116]:4030
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751057AbaLRLmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 06:42:53 -0500
+X-WSS-ID: 0NGS0J9-08-4U4-02
+X-M-MSG: 
+Message-ID: <5492BDAA.90408@amd.com>
+Date: Thu, 18 Dec 2014 13:42:34 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Huang Ying <ying.huang@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [drm/radeon] BUG: unable to handle kernel paging request
+ at 03200000
+References: <1418890668.26403.6.camel@intel.com> <54928E6B.1020501@amd.com>
+ <1418891181.26403.9.camel@intel.com>
+In-Reply-To: <1418891181.26403.9.camel@intel.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.20.0.84]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.222)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(377424004)(479174004)(164054003)(377454003)(51704005)(24454002)(69234005)(199003)(64706001)(19580405001)(97736003)(575784001)(77156002)(65816999)(86362001)(54356999)(36756003)(107046002)(20776003)(65956001)(77096005)(84676001)(76176999)(120916001)(2950100001)(46102003)(23676002)(62966003)(106466001)(19580395003)(83506001)(4396001)(87936001)(101416001)(105586002)(99396003)(92566001)(50466002)(47776003)(110136001)(21056001)(50986999)(15975445007)(68736005)(33656002)(65806001)(64126003)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB206;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 at 11:29am, Varlese, Marco wrote:
-> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-> index f7d0d2d..19cb51a 100644
-> --- a/include/uapi/linux/if_link.h
-> +++ b/include/uapi/linux/if_link.h
-> @@ -146,6 +146,7 @@ enum {
->  	IFLA_PHYS_PORT_ID,
->  	IFLA_CARRIER_CHANGES,
->  	IFLA_PHYS_SWITCH_ID,
-> +	IFLA_SWITCH_PORT_CFG,
->  	__IFLA_MAX
->  };
-
-Needs an entry in ifla_policy[]
-
-        [IFLA_SWITCH_PORT_CFG] = { .type = NLA_NESTED },
-
-> @@ -603,4 +604,18 @@ enum {
->  
->  #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
->  
-> +/* Switch Port Attributes section */
-> +
-> +enum {
-> +	IFLA_ATTR_UNSPEC,
-> +	IFLA_ATTR_LEARNING,
-> +	IFLA_ATTR_LOOPBACK,
-> +	IFLA_ATTR_BCAST_FLOODING,
-> +	IFLA_ATTR_UCAST_FLOODING,
-> +	IFLA_ATTR_MCAST_FLOODING,
-> +	__IFLA_ATTR_MAX
-> +};
-> +
-> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
-
-Change the prefix to IFLA_SW_* since it's switch specific?
-
->  
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
-> +{
-> +	int rem, err = -EINVAL;
-> +	struct nlattr *v;
-> +	const struct net_device_ops *ops = dev->netdev_ops;
-> +
-> +	nla_for_each_nested(v, attr, rem) {
-> +		u32 op = nla_type(v);
-> +		u64 value = 0;
-> +
-> +		switch (op) {
-> +		case IFLA_ATTR_LEARNING:
-> +		case IFLA_ATTR_LOOPBACK:
-> +		case IFLA_ATTR_BCAST_FLOODING:
-> +		case IFLA_ATTR_UCAST_FLOODING:
-> +		case IFLA_ATTR_MCAST_FLOODING: {
-> +			if (nla_len(v) < sizeof(value)) {
-> +				err = -EINVAL;
-> +				break;
-> +			}
-
-You should validate the message before you start applying the
-changes. Otherwise if the 3rd attribute is too short you've already
-applied some changes and the user has not idea how much has been
-applied.
-
-nla_parse_nested() can help here.
 
 
-> +
-> +			value = nla_get_u64(v);
-> +			err = ops->ndo_switch_port_set_cfg(dev,
-> +							   op,
-> +							   value);
+On 12/18/2014 10:26 AM, Huang Ying wrote:
+> On Thu, 2014-12-18 at 10:20 +0200, Oded Gabbay wrote:
+>> On 12/18/2014 10:17 AM, Huang Ying wrote:
+>>> FYI, we noticed the below changes on
+>>>
+>>> commit e28740ece34d314002b1ddfa14e8fb7c7b909489 ("drm/radeon: Add radeon <--> amdkfd interface")
+>>>
+>>>
+>>> +------------------------------------------+------------+------------+
+>>> |                                          | 1c0a46255f | e28740ece3 |
+>>> +------------------------------------------+------------+------------+
+>>> | boot_successes                           | 0          | 0          |
+>>> | boot_failures                            | 10         | 13         |
+>>> | BUG:kernel_boot_hang                     | 9          | 9          |
+>>> | INFO:suspicious_RCU_usage                | 1          | 3          |
+>>> | backtrace:do_fork                        | 1          | 3          |
+>>> | BUG:unable_to_handle_kernel              | 0          | 3          |
+>>> | Oops                                     | 0          | 3          |
+>>> | Kernel_panic-not_syncing:Fatal_exception | 0          | 3          |
+>>> | backtrace:radeon_init                    | 0          | 3          |
+>>> | backtrace:kernel_init_freeable           | 0          | 3          |
+>>> | BUG:kernel_boot_crashed                  | 0          | 1          |
+>>> +------------------------------------------+------------+------------+
+>>>
+>>>
+>>> [    5.407193] Linux agpgart interface v0.103
+>>> [    5.428469] [drm] Initialized drm 1.1.0 20060810
+>>> [    5.438456] [drm] radeon kernel modesetting enabled.
+>>> [    5.439741] BUG: unable to handle kernel paging request at 03200000
+>>> [    5.440063] IP: [<03200000>] 0x3200000
+>>> [    5.440063] *pde = 00000000
+>>> [    5.440063] Oops: 0000 [#1] SMP
+>>> [    5.440063] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-g603ba7e #14
+>>> [    5.440063] task: 42e08000 ti: 42e02000 task.ti: 42e02000
+>>> [    5.440063] EIP: 0060:[<03200000>] EFLAGS: 00010246 CPU: 0
+>>> [    5.440063] EIP is at 0x3200000
+>>> [    5.440063] EAX: 00000001 EBX: 00000000 ECX: 4738b460 EDX: 45735a64
+>>> [    5.440063] ESI: 4662d0dd EDI: 401fafa0 EBP: 42e03f20 ESP: 42e03f18
+>>> [    5.440063]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+>>> [    5.440063] CR0: 8005003b CR2: 03200000 CR3: 067f0000 CR4: 00000690
+>>> [    5.440063] Stack:
+>>> [    5.440063]  44bf19b1 00000000 42e03f28 4662d20b 42e03f8c 465b6e5d 00000000 00000000
+>>> [    5.440063]  00000000 00000000 00000000 00000000 000000ea 00000000 00000000 00000101
+>>> [    5.440063]  45f2dfba 00000010 00000012 00000200 47fdcf54 47fdcf54 00000006 00000291
+>>> [    5.440063] Call Trace:
+>>> [    5.440063]  [<44bf19b1>] ? radeon_kfd_init+0x67/0xab
+>>> [    5.440063]  [<4662d20b>] radeon_init+0x12e/0x15c
+>>> [    5.440063]  [<465b6e5d>] do_one_initcall+0x25f/0x41e
+>>> [    5.440063]  [<465b7291>] kernel_init_freeable+0x275/0x423
+>>> [    5.440063]  [<455b4e52>] kernel_init+0x1c/0x293
+>>> [    5.440063]  [<455df181>] ret_from_kernel_thread+0x21/0x30
+>>> [    5.440063]  [<455b4e36>] ? rest_init+0x33e/0x33e
+>>> [    5.440063] Code:  Bad EIP value.
+>>> [    5.440063] EIP: [<03200000>] 0x3200000 SS:ESP 0068:42e03f18
+>>> [    5.440063] CR2: 0000000003200000
+>>> [    5.440063] ---[ end trace 1959b295b01c0c14 ]---
+>>> [    5.440063] Kernel panic - not syncing: Fatal exception
+>>>
+>>>
+>>> Thanks,
+>>> Huang, Ying
+>>>
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> LKP mailing list
+>>> LKP@linux.intel.com
+>>>
+>>
+>> Is this a 32-bit kernel ?
+>> Is amdkfd compiled ?
+>
+> The kconfig file is attached in the original email.  From it, it is
+> 32-bit kernel.  I don't find AMDKFD in config file.  Could you help me
+> to check it?
+>
+> Best Regards,
+> Huang, Ying
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-This avoids having individual ndos but wastes a lot of space in the
-Netlink message. Not a problem when setting configuration but you
-likely want to dump these attributes as well and we need 12 bytes
-for each attribute even though some are merely flags which could fit
-in 4 bytes.
+Are you using some specific distribution or h/w ?
+I'm compiling that commit with the Kconfig you sent me, installing it on a 
+Debian 7.7 32-bit installation inside VirtualBox, and it doesn't even boot.
 
->  static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
->  {
->  	int rem, err = -EINVAL;
-> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
->  			status |= DO_SETLINK_NOTIFY;
->  		}
->  	}
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
-> +		err = -EOPNOTSUPP;
-> +		if (!ops->ndo_switch_port_set_cfg)
-> +			goto errout;
-> +		if (!ops->ndo_switch_parent_id_get)
-> +			goto errout;
-> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-> +		if (err < 0)
-> +			goto errout;
-> +
-> +		status |= DO_SETLINK_NOTIFY;
-> +	}
-> +#endif
+Must I use a native installation ?
 
-Should return -EOPNOTSUPP if IFLA_SWITCH_PORT_CFG is provided but
-CONFIG_NET_SWITCHDEV is not set.
-
-
+	Oded
