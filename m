@@ -1,100 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881AbaLRCOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:14:38 -0500
-Received: from mail-by2on0107.outbound.protection.outlook.com ([207.46.100.107]:38623
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751553AbaLRCOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 21:14:36 -0500
-Message-ID: <1418868868.5581.121.camel@freescale.com>
-Subject: Re: [v2 PATCH 1/2] powerpc32: adds handling of _PAGE_RO
-From: Scott Wood <scottwood@freescale.com>
-To: Christophe Leroy <christophe.leroy@c-s.fr>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>,
-        "Joakim Tjernlund" <joakim.tjernlund@transmode.se>
-Date: Wed, 17 Dec 2014 20:14:28 -0600
-In-Reply-To: <20141217091431.D3F761A5E0D@localhost.localdomain>
-References: <20141217091431.D3F761A5E0D@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751952AbaLRCOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:14:49 -0500
+Received: from smtprelay0107.hostedemail.com ([216.40.44.107]:51942 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751889AbaLRCOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 21:14:46 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3871:3872:4250:4321:4419:4605:5007:6261:10004:10400:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12740:13069:13161:13229:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boats75_8087f24f9f545
+X-Filterd-Recvd-Size: 2865
+Message-ID: <1418868881.28384.8.camel@perches.com>
+Subject: Re: [PATCH 1/2] Input: touchscreen-iproc: Add Broadcom iProc
+ touchscreen driver
+From: Joe Perches <joe@perches.com>
+To: Jonathan Richardson <jonathar@broadcom.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Ray Jui <rjui@broadcom.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Date: Wed, 17 Dec 2014 18:14:41 -0800
+In-Reply-To: <1418867992-3550-2-git-send-email-jonathar@broadcom.com>
+References: <Jonathan Richardson <jonathar@broadcom.com>
+	 <1418867992-3550-1-git-send-email-jonathar@broadcom.com>
+	 <1418867992-3550-2-git-send-email-jonathar@broadcom.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.12.7-0ubuntu1 
-MIME-Version: 1.0
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BY2PR06CA049.namprd06.prod.outlook.com (10.141.250.167) To
- BY2PR0301MB0725.namprd03.prod.outlook.com (25.160.63.155)
-Authentication-Results: c-s.fr; dkim=none (message not signed) header.d=none;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0725;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0725;
-X-Forefront-PRVS: 042957ACD7
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(51704005)(199003)(377424004)(189002)(24454002)(36756003)(77156002)(105586002)(62966003)(23676002)(110136001)(99396003)(120916001)(101416001)(92566001)(89996001)(122386002)(31966008)(87976001)(97736003)(106356001)(21056001)(103116003)(50226001)(40100003)(19580405001)(42186005)(107046002)(86362001)(76176999)(50986999)(20776003)(50466002)(46102003)(47776003)(4396001)(33646002)(2950100001)(64706001)(68736005)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0725;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0725;
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-12-17 at 10:14 +0100, Christophe Leroy wrote:
-> Some powerpc like the 8xx don't have a RW bit in PTE bits but a RO (Read Only) bit.
-> This patch implements the handling of a _PAGE_RO flag to be used in place of _PAGE_RW
-> 
-> Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
-> 
-> ---
-> v2 is a complete rework compared to v1
-> 
->  arch/powerpc/include/asm/pgtable-ppc32.h | 11 ++++++-----
->  arch/powerpc/include/asm/pgtable.h       | 10 +++++++---
->  arch/powerpc/include/asm/pte-common.h    | 27 ++++++++++++++++++---------
->  arch/powerpc/mm/gup.c                    |  2 ++
->  arch/powerpc/mm/mem.c                    |  2 +-
->  arch/powerpc/mm/pgtable_32.c             | 24 ++++++++++++++++++++----
->  6 files changed, 54 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/pgtable-ppc32.h b/arch/powerpc/include/asm/pgtable-ppc32.h
-> index 543bb8e..64ed9e1 100644
-> --- a/arch/powerpc/include/asm/pgtable-ppc32.h
-> +++ b/arch/powerpc/include/asm/pgtable-ppc32.h
-> @@ -125,7 +125,7 @@ extern int icache_44x_need_flush;
->  #ifndef __ASSEMBLY__
->  
->  #define pte_clear(mm, addr, ptep) \
-> -	do { pte_update(ptep, ~_PAGE_HASHPTE, 0); } while (0)
-> +	do { pte_update(ptep, ~_PAGE_HASHPTE, _PAGE_RO); } while (0)
+On Wed, 2014-12-17 at 17:59 -0800, Jonathan Richardson wrote:
+> Add initial version of the Broadcom touchscreen driver.
 
-Is this really necessary?  It's already clearing the valid bit.
+trivia:
 
-Likewise in several other places that set or check for _PAGE_RO on pages
-for which no access is permitted.
+> diff --git a/drivers/input/touchscreen/bcm_iproc_tsc.c b/drivers/input/touchscreen/bcm_iproc_tsc.c
 
-> @@ -287,8 +287,9 @@ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
->  static inline void __ptep_set_access_flags(pte_t *ptep, pte_t entry)
->  {
->  	unsigned long bits = pte_val(entry) &
-> -		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_EXEC);
-> -	pte_update(ptep, 0, bits);
-> +		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_RO |
-> +		 _PAGE_EXEC);
-> +	pte_update(ptep, _PAGE_RO, bits);
->  }
+> +/* Bit values for REGCTL2 */
+> +#define TS_CONTROLLER_EN_BIT    (1 << 16)
+> +#define TS_CONTROLLER_AVGDATA_SHIFT 8
+> +#define TS_CONTROLLER_AVGDATA_MASK (0x7 << TS_CONTROLLER_AVGDATA_SHIFT)
+> +#define TS_CONTROLLER_PWR_LDO   (1<<5)
+> +#define TS_CONTROLLER_PWR_ADC   (1<<4)
+> +#define TS_CONTROLLER_PWR_BGP   (1<<3)
+> +#define TS_CONTROLLER_PWR_TS    (1<<2)
+> +#define TS_WIRE_MODE_BIT        (1<<1)
 
-You're unconditionally clearing _PAGE_RO, and apparently relying on the
-undocumented behavior of pte_update() to clear "clr" before setting
-"set".
+Be nicer to use the same spacing around <<
+or maybe use the BIT macro.
 
-Instead I'd write this as:
+[]
 
-	unsigned long set = pte_val(entry) &
-		(_PAGE_DIRTY | _PAGE_ACCESSED | _PAGE_RW | _PAGE_EXEC);
-	unsigned long clr = pte_val(entry) & _PAGE_RO;
+> +static int get_tsc_config(struct device_node *np, struct iproc_ts_priv *priv)
+> +{
+> +	int ret;
+> +	u32 val;
+> +	struct device *dev = &priv->pdev->dev;
+> +
+> +	priv->cfg_params = default_config;
+> +
+> +	ret = of_property_read_u32(np, "scanning_period", &val);
+> +	if (ret >= 0) {
+> +		if ((1 <= val) && (val <= 256))
+> +			priv->cfg_params.scanning_period = val;
+> +		else {
+> +			dev_err(dev, "scanning_period must be [1-256]");
+> +			return -EINVAL;
+> +		}
 
-	pte_update(ptep, clr, set);
+ret is never used so I'd probably remove it
+from all these blocks.
 
--Scott
+It's probably be nicer to invert the logic ald
+remove the else.
+
+There's a missing terminating newline too.
+
+Something like:
+
+	if (of_property_read_u32(np, "scanning_period", &val) >= 0) {
+		if (val < 1 || val > 256) {
+			dev_err(dev, "scanning_period must be [1-256]\n");
+			return -EINVAL;
+		}
+		priv->cfg_params.scanning_period = val;
+	}
+
+etc...
 
 
