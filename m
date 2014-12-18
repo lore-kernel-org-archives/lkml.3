@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751813AbaLRDJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:09:11 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:51618 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaLRDJI (ORCPT
+	id S1751860AbaLRDLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:11:35 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:34694 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaLRDLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:09:08 -0500
-Message-ID: <5492454E.8030203@gmail.com>
-Date: Thu, 18 Dec 2014 11:09:02 +0800
-From: Charles Chiou <ch1102chiou@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 17 Dec 2014 22:11:33 -0500
 MIME-Version: 1.0
-To: Oliver Neukum <oneukum@suse.de>
-CC: Christoph Hellwig <hch@infradead.org>, JBottomley@parallels.com,
-        ed.lin@promise.com, grace.chang@tw.promise.com,
-        linus.chen@tw.promise.com, victor.p@promise.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4 v4] scsi:stex.c Add S3/S4 support
-References: <548FCDC8.1010900@gmail.com> <1418722450.2448.3.camel@linux-0dmf.site>
-In-Reply-To: <1418722450.2448.3.camel@linux-0dmf.site>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1418575877-21488-6-git-send-email-mst@redhat.com>
+References: <1418575877-21488-1-git-send-email-mst@redhat.com>
+	<1418575877-21488-6-git-send-email-mst@redhat.com>
+Date: Thu, 18 Dec 2014 11:11:32 +0800
+Message-ID: <CAMk6uBm_z98dHB3WvJ==ozb4p2uRx3fQa7CWHqDdYpducwxrqg@mail.gmail.com>
+Subject: Re: [PATCH 05/18] blackfin/uaccess: fix sparse errors
+From: Steven Miao <realmz6@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
+	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
+	<linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        bfin <adi-buildroot-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 12/16/2014 05:34 PM, Oliver Neukum wrote:
-> On Tue, 2014-12-16 at 14:14 +0800, Charles Chiou wrote:
->>   From f9d84df080c16097218092630db9b5df31d487b5 Mon Sep 17 00:00:00 2001
->> From: Charles Chiou <charles.chiou@tw.promise.com>
->> Date: Fri, 7 Nov 2014 10:15:18 +0800
->> Subject: [PATCH 4/4] scsi:stex.c Add S3/S4 support
->>
->> Add S3/S4 support, add .suspend and .resume function in pci_driver.
->>
->> Pegasus need 30~40 seconds to boot up. We don't want to OS wait
->> in .resume function. Create a thread to handle device boot up.
+On Mon, Dec 15, 2014 at 12:52 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> virtio wants to read bitwise types from userspace using get_user.  At the
+> moment this triggers sparse errors, since the value is passed through an
+> integer.
 >
-> I am sorry to be obnoxious, but this patch raises another
-> question. What happens if the the system is suspended again
-> while the work scheduled in resume is still running?
+> Fix that up using __force.
 >
-> Furthermore, what happens in the case of a PCI hotunplug while
-> the work is still scheduled?
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  arch/blackfin/include/asm/uaccess.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> 	Regards
-> 		Oliver
+> diff --git a/arch/blackfin/include/asm/uaccess.h b/arch/blackfin/include/asm/uaccess.h
+> index 57701c3..6a46e7d 100644
+> --- a/arch/blackfin/include/asm/uaccess.h
+> +++ b/arch/blackfin/include/asm/uaccess.h
+> @@ -147,7 +147,7 @@ static inline int bad_user_access_length(void)
+>                 }                                               \
+>         } else                                                  \
+>                 _err = -EFAULT;                                 \
+> -       x = (typeof(*(ptr)))_val;                               \
+> +       x = (__force typeof(*(ptr)))_val;                               \
+>         _err;                                                   \
+>  })
 >
+> --
+> MST
 >
-
-Hi Oliver,
-1. When OS is going to suspend again, .suspend function is active,
-    and driver prepare a command send to device, while firmware is
-    not ready. Firmware might loss this command and host can't go
-    to sleep. I'll fix this issue by add while loop to wait device
-    ready (polling hba->mu_status) and return -EBUSY if timeout.
-    I'll fix this issue in the next version. Thanks for your help.
-
-2. When hotplug, .remove function is active. Return all commands to OS
-    with DID_NO_CONNECT status. And OS can remove the driver. After
-    experiment, it works well.
-
-BRS
-Charles
+Acked-by: Steven Miao <realmz6@gmail.com>
