@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaLRVli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:41:38 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:63587 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaLRVlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:41:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwb00OB8Y4URv+KZETezz-_exQORmWPMqeFGex==pNs3g@mail.gmail.com>
-References: <CA+55aFxVeti8pU=Y_w54oGb8syGduOySAp-ag+KsCom-c12e-Q@mail.gmail.com>
- <1417806247.4845.1@mail.thefacebook.com> <CA+55aFz3iUyV9=_rVUdO0WPoOyOKOYkcHCxb3p=2fgSHtCTNgw@mail.gmail.com>
- <20141211145408.GB16800@redhat.com> <CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
- <20141212185454.GB4716@redhat.com> <CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
- <20141213165915.GA12756@redhat.com> <20141213223616.GA22559@redhat.com>
- <CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
- <20141214234654.GA396@redhat.com> <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
- <CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
- <54934487.3010608@mit.edu> <CA+55aFwb00OB8Y4URv+KZETezz-_exQORmWPMqeFGex==pNs3g@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 18 Dec 2014 13:41:15 -0800
-Message-ID: <CALCETrUVr0SX_pWANbj09q7F1=RwYSqvbY4nAgBn5NrOboNuWA@mail.gmail.com>
-Subject: Re: save_xstate_sig (Re: frequent lockups in 3.18rc4)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751442AbaLRVqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:46:15 -0500
+Received: from omr1.cc.vt.edu ([198.82.141.52]:40114 "EHLO omr1.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751125AbaLRVqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 16:46:14 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@kernel.org, linux-kernel@vger.kernel.org,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
+In-Reply-To: Your message of "Thu, 18 Dec 2014 08:10:43 -0700."
+             <1418915443-45707-1-git-send-email-dsahern@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1418915443-45707-1-git-send-email-dsahern@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1418939104_1952P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 18 Dec 2014 16:45:04 -0500
+Message-ID: <17321.1418939104@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 1:34 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Dec 18, 2014 at 1:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>
->> I admit that my understanding of the disaster that is x86's FPU handling is
->> limited, but I'm moderately confident that save_xstate_sig is broken.
->
-> Very possible. The FPU code *is* nasty.
->
->> The code is:
->>
->>         if (user_has_fpu()) {
->>                 /* Save the live register state to the user directly. */
->>                 if (save_user_xstate(buf_fx))
->>                         return -1;
->>                 /* Update the thread's fxstate to save the fsave header. */
->>                 if (ia32_fxstate)
->>                         fpu_fxsave(&tsk->thread.fpu);
->>         } else {
->>                 sanitize_i387_state(tsk);
->>                 if (__copy_to_user(buf_fx, xsave, xstate_size))
->>                         return -1;
->>         }
->>
->> Suppose that user_has_fpu() returns true, we call save_user_xstate, and the
->> xsave instruction (or anything else in there, for that matter) causes a page
->> fault.
->>
->> The page fault handler is well within its rights to schedule.
->
-> You don't even have to page fault. Preemption..
->
-> But that shouldn't actually be the bug. This is just an optimization.
-> If we have the FPU, we save it from the FP state, rather than copying
-> it from our kernel copy. If we schedule (page fault, preemption,
-> whatever) and lose the FPU, the code still works - we'll just take a
-> TS fault, and have to reload the information.
->
+--==_Exmh_1418939104_1952P
+Content-Type: text/plain; charset=us-ascii
 
-Not if this happens:
+On Thu, 18 Dec 2014 08:10:43 -0700, David Ahern said:
+> Adds helper for following kernel formats:
+>   %pi4 print an IPv4 address with leading zeros
+>   %pI4 print an IPv4 address without leading zeros
+>   %pi6 print an IPv6 address without colons
+>   %pI6 print an IPv6 address with colons
+>   %pI6c print an IPv6 address with colons
+>   %pISpc print an IP address from a sockaddr
 
-    /*
-     * Paranoid restore. send a SIGSEGV if we fail to restore the state.
-     */
-    if (unlikely(restore_fpu_checking(tsk))) {
-        drop_init_fpu(tsk);
-        force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
-        return;
-    }
+The description for %pI6C in the changelog doesn't match the code:
 
-I have no idea what, if anything, can cause FPU restore to fail, but
-that looks like an infinite loop to me.
+> + * %pI6c  print an IPv6 address in compressed form with colons
 
-And the fact that we have an xsave instruction that can cause page
-faults *and* has an extable fixup doesn't exactly inspire confidence,
-but the code looks correct.
-
-If this is easy enough for Dave to trigger, it could be worth
-instrumenting __do_page_fault to log when a fault happens on that
-xsave instruction and to maybe also log the outcome.  Do we know
-whether your fault retry fixes solved the problem yet?
+Threw me for a loop for a while trying to figure out how pI6 and pI6c were
+different, till I read the code...
 
 
-FWIW, Dave's run of my test seems to rule out easy bugs in his CPU,
-and I couldn't trigger a bogus cr2 value on Sandy Bridge or Core 2
-Quad.
+--==_Exmh_1418939104_1952P
+Content-Type: application/pgp-signature
 
---Andy
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
 
-> So I'm with you in that there can certainly be bugs in the FPU
-> handling, but I don't think this is one.
->
->                         Linus
+iQIVAwUBVJNK4AdmEQWDXROgAQI8lQ//TJauyYWL4b8sOqpv5JI5DdP+ZDIklXbo
+zlwgE4ElDCDqhqHmDIvCMRAasARyzIWz59MKyY/uovEnJJyyJ/JjX9WhZQMC/tr9
+wOP//pU7W10nl6Q8Qh8eJM8h0LPVVGRiaOoSX6OHwjFR9Gk9xc2dDlwv/MPEqxR2
+C05qCte9mT0aCSz2eyTSxX1ERi4I1uE4W2FV4a3n+tGwpLqK31sR8VS91XD90fCF
+TbHoXQMUOucOByifxZpqj0xBLIv8wh9eyHt2tlyJBw8Xxr5kNlziJuoXzzujUIqQ
+/+hM3KxB9GWr2csLEQurrqyQtP8I49OPsye3YoT72uGTwfzJrV8tm21WKplXKTru
+SdtPrze9rqGqjE/SRWb8E67H5jV8eUVQxWI5N3GjuxMAV77KQxtyz6RigY5Ac5gb
+QXRbCqqdITyKr9mwE86pKZxjDukTBlaAChLrnfcxiIq4zH9lcQatkiXcUWhZzy5o
+uVsS5E5V9w9TpqUiH45F6D8d2zoEH/UmA/uCT27zkTSK+DbLXSJwAeTy+4k2VRbt
+4+UjtyvH7RqAaslsj1+oN3pTCmQecBtB5fxyfFe41jJTq4kmjVPAgdd4E0mWqdlS
+qPn3/yA2I7dKPG7VWvIRYkgxvMPheHF10tMy7YJFm9gugaSZAp9BXGBukhpvsxdJ
+YoFFOK5q93I=
+=2y1T
+-----END PGP SIGNATURE-----
 
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+--==_Exmh_1418939104_1952P--
