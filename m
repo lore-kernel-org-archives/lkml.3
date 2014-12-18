@@ -1,144 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaLRXoC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 18:44:02 -0500
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:1634 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751158AbaLRXn7 (ORCPT
+	id S1751483AbaLRXsf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 18:48:35 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:59750 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118AbaLRXsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 18:43:59 -0500
-From: Bjorn <bjorn@sonymobile.com>
-Date: Thu, 18 Dec 2014 15:43:53 -0800
-To: Bryan Wu <cooloney@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Cavin, Courtney" <Courtney.Cavin@sonymobile.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] leds: add Qualcomm PM8941 WLED driver
-Message-ID: <20141218234352.GE19036@sonymobile.com>
-References: <1418084551-28946-1-git-send-email-bjorn.andersson@sonymobile.com>
- <1418084551-28946-2-git-send-email-bjorn.andersson@sonymobile.com>
- <CAK5ve-LujSrARfyi6nvO1EDLyz_cqso93H2irUf9NPbke1XPdQ@mail.gmail.com>
+	Thu, 18 Dec 2014 18:48:33 -0500
+Message-ID: <549367CC.2080307@cumulusnetworks.com>
+Date: Thu, 18 Dec 2014 15:48:28 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-LujSrARfyi6nvO1EDLyz_cqso93H2irUf9NPbke1XPdQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Samudrala, Sridhar" <sridhar.samudrala@intel.com>
+CC: John Fastabend <john.r.fastabend@intel.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com> <5492EFC3.8030102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com> <549313B8.6050102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com> <54931969.7040209@cumulusnetworks.com> <5493293A.2000802@intel.com> <54935E28.8050602@cumulusnetworks.com> <549362A5.3000808@intel.com>
+In-Reply-To: <549362A5.3000808@intel.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16 Dec 16:54 PST 2014, Bryan Wu wrote:
+On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
+>
+> On 12/18/2014 3:07 PM, Roopa Prabhu wrote:
+>> On 12/18/14, 11:21 AM, John Fastabend wrote:
+>>> On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
+>>>> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
+>>>>> Removed unnecessary content for ease of reading...
+>>>>>
+>>>>>>>>>>> +/* Switch Port Attributes section */
+>>>>>>>>>>> +
+>>>>>>>>>>> +enum {
+>>>>>>>>>>> +    IFLA_ATTR_UNSPEC,
+>>>>>>>>>>> +    IFLA_ATTR_LEARNING,
+>>>>>>>>>> Any reason you want learning here ?. This is covered as part  of
+>>>>>>>>>> the bridge setlink attributes.
+>>>>>>>>>>
+>>>>>>>>> Yes, because the user may _not_ want to go through a bridge
+>>>>>>>>> interface
+>>>>>>>> necessarily.
+>>>>>>>> But, the bridge setlink/getlink interface was changed to 
+>>>>>>>> accommodate
+>>>>>> 'self'
+>>>>>>>> for exactly such cases.
+>>>>>>>> I kind of understand your case for the other attributes (these are
+>>>>>>>> per port settings that switch asics provide).
+>>>>>>>>
+>>>>>>>> However, i don't understand the reason to pull in bridge 
+>>>>>>>> attributes here.
+>>>>>>>>
+>>>>>>> Maybe, I am missing something so you might help. The learning 
+>>>>>>> attribute -
+>>>>>> in my case - it is like all other attributes: a port attribute 
+>>>>>> (as you said, port
+>>>>>> settings that the switch provides per port).
+>>>>>>> So, what I was saying is "why the user shall go through a bridge 
+>>>>>>> to configure
+>>>>>> the learning attribute"? From my perspective, it is as any other 
+>>>>>> attribute and
+>>>>>> as such configurable on the port.
+>>>>>>
+>>>>>> Thinking about this some more, i don't see why any of these 
+>>>>>> attributes
+>>>>>> (except loopback. I dont understand the loopback attribute) cant 
+>>>>>> be part of
+>>>>>> the birdge port attributes.
+>>>>>>
+>>>>>> With this we will end up adding l2 attributes in two places: the 
+>>>>>> general link
+>>>>>> attributes and bridge attributes.
+>>>>>>
+>>>>>> And since we have gone down the path of using 
+>>>>>> ndo_bridge_setlink/getlink
+>>>>>> with 'self'....we should stick to that for all l2 attributes.
+>>>>>>
+>>>>>> The idea of overloading ndo_bridge_set/getlink, was to have the 
+>>>>>> same set of
+>>>>>> attributes but support both cases where the user wants to go 
+>>>>>> through the
+>>>>>> bridge driver or directly to the switch port driver. So, you are 
+>>>>>> not really going
+>>>>>> through the bridge driver if you use 'self' and 
+>>>>>> ndo_bridge_setlink/getlink.
+>>>>>>
+>>>>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
+>>>>> was that your patch and mine were supplementary ("I think Roopa's
+>>>>> patches are supplementary. Not all switchdev users will be backed
+>>>>> with a Linux Bridge. I therefore welcome your patches very
+>>>>> much")... I also understood by others that the patch made sense for
+>>>>> the same reason. I simply do not understand why these attributes
+>>>>> (and maybe others in the future) could not be configured directly
+>>>>> on a standard port but have to go through a bridge.
+>>>>>
+>>>> ok, i am very confused in that case. The whole moving of bridge
+>>>> attributes from the bridge driver to rtnetlink.c was to make the
+>>>> bridge attributes accessible to any driver who wants to set l2/bridge
+>>>> attributes on their switch ports. So, its unclear to me why we are
+>>>> doing this parallel thing again. This move to rtnetlink.c was done
+>>>> during the recent rocker support. so, maybe scott/jiri can elaborate
+>>>> more.
+>>>
+>>> Not sure if this will add to the confusion or help. But you do not
+>>> need to have the bridge.ko loaded or netdev's attached to a bridge
+>>> to use the setlink/getlink ndo ops and netlink messages.
+>>>
+>>> This was intentionally done. Its already used with NIC devices to
+>>> configure embedded bridge settings such as VEB/VEPA.
+>>
+>> that helps my case, thanks.
+>
+> So the user interface to set/get the per-port attributes will be via 
+> 'bridge', not 'ip'
+>
+>     bridge link set dev sw0p1 port_attr bcast_flooding 1 self
+>     bridge link get dev sw0p1 port_attr bcast_flooding self
 
-> On Mon, Dec 8, 2014 at 4:22 PM, Bjorn Andersson
+yes, l2 attributes.
+>
+> We also need an interface to set per-switch attributes. Can this work?
+>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
+> where sw0 is a bridge representing the hardware switch.
 
-[..]
+Not today. We discussed this @ LPC, and one way to do this would be to 
+have a device
+representing the switch asic. This is in the works.
 
-> > diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-
-[..]
-
-> > +config LEDS_PM8941_WLED
-> > +       tristate "LED support for the Qualcomm PM8941 WLED block"
-> > +       depends on LEDS_CLASS
-> > +       depends on REGMAP
-> Here should be "select REGMAP"
-> 
-
-Thanks
-> > +       help
-> > +         This option enables support for the 'White' LED block
-> > +         on Qualcomm PM8941 PMICs.
-> > +
-
-[..]
-
-> > diff --git a/drivers/leds/leds-pm8941-wled.c b/drivers/leds/leds-pm8941-wled.c
-
-[..]
-
-> > +
-> > +struct pm8941_wled_context {
-> > +       struct pm8941_wled wled;
-> > +       struct regmap *regmap;
-> > +};
-> > +
-> 
-> I think you can just add *regmap into pm8941_wled struct and
-> pm8941_wled_context is redundant to me.
-> 
-
-Looks like a development leftover, I will fold it in.
-
-[..]
-
-> > +
-> > +static int pm8941_wled_probe(struct platform_device *pdev)
-> > +{
-> > +       struct pm8941_wled_context *ctx;
-> > +       struct regmap *regmap;
-> > +       int rc;
-> > +
-> > +       regmap = dev_get_regmap(pdev->dev.parent, NULL);
-> > +       if (!regmap) {
-> > +               dev_err(&pdev->dev, "Unable to get regmap\n");
-> > +               return -EINVAL;
-> > +       }
-> > +
-> 
-> Is this regmap mmio registers or i2c registers? Will the regmap
-> operation sleep?
-> 
-
-It's a spmi regmap, in it's current configuration it's marked as "fast" i.e. it
-will not sleep.
-
-I discussed this with Courtney before sending the patch out and as this is used
-for backlight we don't see a reason calling set_brightness() in atomic context.
-If this changes I would send out a follow up patch.
-
-> > +       ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
-> > +       if (ctx == NULL)
-> > +               return -ENOMEM;
-> > +
-> > +       ctx->regmap = regmap;
-> > +
-> > +       rc = pm8941_wled_configure(&ctx->wled, &pdev->dev);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       rc = pm8941_wled_setup(&ctx->wled);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       ctx->wled.cdev.brightness_set = pm8941_wled_set_brightness;
-> > +
-> > +       rc = led_classdev_register(&pdev->dev, &ctx->wled.cdev);
-> > +       if (rc)
-> > +               return rc;
-> > +
-> > +       platform_set_drvdata(pdev, ctx);
-> > +       dev_info(&pdev->dev, "registered led \"%s\"\n", ctx->wled.cdev.name);
-> > +
-> > +       return 0;
-> > +};
-> > +
-
-[..]
-
-> > +MODULE_DESCRIPTION("pm8941 wled driver");
-> > +MODULE_LICENSE("GPL v2");
-> > +MODULE_ALIAS("platform: pm8941-wled");
-> No space after ":"
-> 
-
-Oops.
-
-Regards,
-Bjorn
