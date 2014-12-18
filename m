@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaLROLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:11:17 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50164 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246AbaLROLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:11:15 -0500
+	id S1752660AbaLROLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:11:47 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52965 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437AbaLROLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 09:11:45 -0500
+Message-ID: <5492E09F.1000003@ti.com>
+Date: Thu, 18 Dec 2014 08:11:43 -0600
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAOMZO5DzEe91pTv+UkCbj0DzgVDOb9hjuakt9NmpTJnEk-j8UA@mail.gmail.com>
-References: <1414729631-11005-1-git-send-email-tharvey@gateworks.com>
-	<1414729631-11005-5-git-send-email-tharvey@gateworks.com>
-	<CAOMZO5DzEe91pTv+UkCbj0DzgVDOb9hjuakt9NmpTJnEk-j8UA@mail.gmail.com>
-Date: Thu, 18 Dec 2014 06:11:15 -0800
-Message-ID: <CAJ+vNU3PQYCE4tABUiqU+vGkGqBEqdVKz25W88-ByOQZxunVLw@mail.gmail.com>
-Subject: Re: [PATCH 4/5] cpufreq: imx6q: add ldo-bypass support
-From: Tim Harvey <tharvey@gateworks.com>
-To: Fabio Estevam <festevam@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Silvio F <silvio.fricke@gmail.com>, Christian Hemp <c.hemp@phytec.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Iain Paton <ipaton0@gmail.com>, Anson.Huang@freescale.com,
-        Shawn Guo <shawn.guo@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Kishon Vijay Abraham I <kishon@ti.com>, <linus.walleij@linaro.org>,
+        <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>
+CC: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        Benoit Parrot <bparrot@ti.com>
+Subject: Re: [PATCH] gpio: pcf857x: restore the initial line state of all
+ pcf lines
+References: <1418371601-22658-1-git-send-email-kishon@ti.com> <548F498F.7050202@ti.com> <549271A9.5040701@ti.com>
+In-Reply-To: <549271A9.5040701@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 6:36 AM, Fabio Estevam <festevam@gmail.com> wrote:
-> Hi Tim,
->
-> On Fri, Oct 31, 2014 at 2:27 AM, Tim Harvey <tharvey@gateworks.com> wrote:
->> When an external PMIC is used for VDD_SOC and VDD_ARM you can save power by
->> bypassing the internal LDO's provided by the anantop regulator as long as
->> you are running less than 1.2GHz. If running at 1.2GHz the IMX6 datasheets
->> state that you must use the internal LDO's to reduce ripple on the suplies.
+On 12/18/2014 12:18 AM, Kishon Vijay Abraham I wrote:
+> 
+> 
+> On Tuesday 16 December 2014 02:20 AM, Nishanth Menon wrote:
+>> On 12/12/2014 02:06 AM, Kishon Vijay Abraham I wrote:
+>>> The reset values for all the PCF lines are high and hence on shutdown
+>>> we should drive all the lines high in order to bring it to the reset state.
+>>>
+>>> This is actually required since pcf doesn't have a reset line and even after
+>>> warm reset (by invoking "reboot" in prompt) the pcf lines maintains it's
+>>> previous programmed state. This becomes a problem if the boards are designed
+>>> to work with the default initial state.
+>>>
+>>> DRA7XX_evm uses PCF8575 and one of the PCF output lines feeds to MMC/SD and
+>>> this line should be driven high in order for the MMC/SD to be detected.
+>>> This line is modelled as regulator and the hsmmc driver takes care of enabling
+>>> and disabling it. In the case of 'reboot', during shutdown path as part of it's
+>>> cleanup process the hsmmc driver disables this regulator. This makes MMC boot
+>>> not functional.
+>>>
+>>> Fixed it by driving high all the pcf lines.
+>>>
+>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>> ---
+>>>  drivers/gpio/gpio-pcf857x.c |    9 +++++++++
+>>>  1 file changed, 9 insertions(+)
+>>>
+>>> diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+>>> index 236708a..00b15b2 100644
+>>> --- a/drivers/gpio/gpio-pcf857x.c
+>>> +++ b/drivers/gpio/gpio-pcf857x.c
+>>> @@ -448,6 +448,14 @@ static int pcf857x_remove(struct i2c_client *client)
+>>>  	return status;
+>>>  }
+>>>  
+>>> +static void pcf857x_shutdown(struct i2c_client *client)
+>>> +{
+>>> +	struct pcf857x *gpio = i2c_get_clientdata(client);
+>>> +
+>>> +	/* Drive all the I/O lines high */
+>>> +	gpio->write(gpio->client, BIT(gpio->chip.ngpio) - 1);
 >>
->> A failure to bypass the LDO's when using an external PMIC will result in an
->> extra voltage drop (~125mV) between VDD_ARM_IN and VDD_ARM and VDD_SOC_IN and
->> VDD_SOC which violates the voltages specificed by the datasheets.
+>> you might force a contention here - depending on System configuration.
+>> example:
+>> +-------+
+>> |       |
+>> |  U1   |         +------+      +-----------+
+>> |       +--------->      |      |           |
+>> +-------+         |      |      |           |
+>>                   | Switch<-----+    SoC    |
+>> +-------+         |      |      |           |
+>> |       |         |      |      |           |
+>> | U2    <---------+--^---+      +-----------+
+>> |       |            |
+>> |       |            |
+>> +-------+            |
+>>                   +--+--+
+>>                   |     |
+>>                   | PCF |
+>>                   |     |
+>>                   +-----+
 >>
->> Cc: Philipp Zabel <p.zabel@pengutronix.de>
->> Cc: Shawn Guo <shawn.guo@freescale.com>
->> Signed-off-by: Tim Harvey <tharvey@gateworks.com>
->> ---
->>  drivers/cpufreq/imx6q-cpufreq.c | 51 +++++++++++++++++++++++++++++++++++++++++
->
-> Shouldn't the LDO bypass support be added into the anatop regulator
-> driver instead?
->
-> What if someone wants to use LDO bypass and not use the cpufreq driver?
+>> At low, SoC pin is connected to U2 as drive. when reset to high, you
+>> now have U1 driving to the same pin that SoC has, potentially
+>> resulting in contention.
+>>
+>>
+>> Unfortunately, at this level, you do not know what the state of the
+>> system is, blindly forcing a pin level will potentially cause
+>> contention risk depending on pin configuration.
+> 
+> Assume we are doing a reset when the system is powered on, irrespective of the
+> state of the system, we'll be forcing the pin level to the default state.
 
-Fabio,
+Yes, I dont deny that system will be fine *after* reset sequence is
+started or completed. However there is a duration between the pcf
+shutdown handler is called and the final reset handler is invoked -
+that is the duration when  the contention might cause device behavior.
+Essentially ignoring the state various drivers have asked PCF to setup
+the pins and doing a hands down configuration may have side effects we
+cant properly expect.
 
-That does make sense perhaps - I'm just not sure the best way to do it.
+> 
+> The same thing happens here so I don't think this would be a problem.
+> 
+> Thanks
+> Kishon
+> 
 
-What is needed is to determine if the cpu vddsoc and vddarm regulators
-are both 'not' the same as the anatop provided regulators (then we
-bypass the anatop regulators) so I need to do such a check after all
-regulators are registered. Perhaps I need to have a late_init call (or
-some other init call that happens after all regulators are
-registered).
 
-Phillipp/Mark - what are your thoughts here? Do the regulator core
-functions regulator_is_same() [1] and regulator_is_bypass() [2] I
-propose make sense to determine if regulators are the same and in
-bypass mode and overcome the detection issues Phillipp discussed in a
-previous thread [3]?
-
-[1] http://article.gmane.org/gmane.linux.kernel/1818320/
-[2] http://article.gmane.org/gmane.linux.kernel/1818324/
-[3] http://thread.gmane.org/gmane.linux.ports.arm.kernel/359856
-
+-- 
 Regards,
-
-Tim
+Nishanth Menon
