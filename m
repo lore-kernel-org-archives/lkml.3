@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950AbaLRQc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:32:56 -0500
-Received: from fieldses.org ([174.143.236.118]:45042 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227AbaLRQcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:32:55 -0500
-Date: Thu, 18 Dec 2014 11:32:54 -0500
-To: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
-	<holger.hoffstaette@googlemail.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-Message-ID: <20141218163254.GF18179@fieldses.org>
-References: <pan.2014.12.16.22.19.18@googlemail.com>
- <20141217212159.GA11517@fieldses.org>
- <5492C710.20104@googlemail.com>
- <20141218144856.GA18179@fieldses.org>
- <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
- <20141218151914.GB18179@fieldses.org>
- <pan.2014.12.18.15.42.53@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <pan.2014.12.18.15.42.53@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1751985AbaLRQd0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:33:26 -0500
+Received: from resqmta-po-10v.sys.comcast.net ([96.114.154.169]:58309 "EHLO
+	resqmta-po-10v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751074AbaLRQdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:33:25 -0500
+Date: Thu, 18 Dec 2014 10:33:23 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Jesper Dangaard Brouer <brouer@redhat.com>
+cc: akpm@linuxfoundation.org, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH] Slab infrastructure for array operations
+Message-ID: <alpine.DEB.2.11.1412181031520.2962@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 03:42:53PM +0000, Holger Hoffstätte wrote:
-> On Thu, 18 Dec 2014 10:19:14 -0500, J. Bruce Fields wrote:
-> 
-> > On Thu, Dec 18, 2014 at 09:58:06AM -0500, Benjamin Coddington wrote:
-> >> Frame 36 of nfs-client.pcap has this interesting string:
-> >> 
-> >> 0ff0  00 01 3b f6 fb b6 26 16 8f 7c 00 00 00 41 62 74  
-> >> ..;...&..|...Abt 1000  72 66 73 2d 32 30 00 00 00 00 00 00 00 00 30 36 
-> >>  rfs-20........06 1010  2d 66 69 78 2d 64 65 61 64 6c 6f 63 6b 2d 77 68
-> >>   -fix-deadlock-wh 1020  65 6e 2d 6d 6f 75 6e 74 69 6e 67 2d 61 2d 64
-> >> 65   en-mounting-a-de 1030  67 72 61 64 65 64 2d 66 73 2e 70 61 74 63
-> >> 68 00   graded-fs.patch.
-> > 
-> > Yes, that looks like the server messing up the encoding of the reply.
-> > 
-> > Holger, what's the difference between nfs-client.pcap and
-> > nfs-server.pcap?
-> 
-> One is the client, one is the server :-)
-> 
-> No, really. Both 3.18.1, 64it, same userland/compiler/etc. and even same 
-> CFLAGS for both kernel and userland. I built tcpdump on both (from 
-> packages) and ran them back to back literally 10 seconds apart.
+This patch adds the basic infrastructure for alloc / free operations
+on pointer arrays. It includes a fallback function.
 
-So this is two separate tests, both failed, the only difference is that
-the tcpdump was run on the client in one case and the server in the
-other?
+Allocators must define _HAVE_SLAB_ALLOCATOR_OPERATIONS in their
+header files in order to implement their own fast version for
+these array operations.
 
-> What "encoding" are we talking about here? The NFS RPC encoding?
-> (everything I know & remember about NFS is 15+ years old..)
+Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Right, I suspect there's a bug in the server's encoding of the reply to
-the READDIR rpc.  Odd that the encoding would look correct from the
-point of view of tcpdump on the server but not from the point of view of
-tcpdump on the client.
+Index: linux/include/linux/slab.h
+===================================================================
+--- linux.orig/include/linux/slab.h	2014-12-16 09:27:26.369447763 -0600
++++ linux/include/linux/slab.h	2014-12-18 10:30:33.394927526 -0600
+@@ -123,6 +123,7 @@ struct kmem_cache *memcg_create_kmem_cac
+ void kmem_cache_destroy(struct kmem_cache *);
+ int kmem_cache_shrink(struct kmem_cache *);
+ void kmem_cache_free(struct kmem_cache *, void *);
++void kmem_cache_free_array(struct kmem_cache *, int, void **);
 
---b.
+ /*
+  * Please use this macro to create slab caches. Simply specify the
+@@ -289,6 +290,7 @@ static __always_inline int kmalloc_index
+
+ void *__kmalloc(size_t size, gfp_t flags);
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t flags);
++int kmem_cache_alloc_array(struct kmem_cache *, gfp_t, int, void **);
+
+ #ifdef CONFIG_NUMA
+ void *__kmalloc_node(size_t size, gfp_t flags, int node);
+Index: linux/mm/slab_common.c
+===================================================================
+--- linux.orig/mm/slab_common.c	2014-12-12 10:27:49.360799479 -0600
++++ linux/mm/slab_common.c	2014-12-18 10:25:41.695889129 -0600
+@@ -105,6 +105,31 @@ static inline int kmem_cache_sanity_chec
+ }
+ #endif
+
++#ifndef _HAVE_SLAB_ALLOCATOR_ARRAY_OPERATIONS
++int kmem_cache_alloc_array(struct kmem_cache *s, gfp_t flags, int nr, void **p)
++{
++	int i;
++
++	for (i=0; i < nr; i++) {
++		void *x = p[i] = kmem_cache_alloc(s, flags);
++		if (!x)
++			return i;
++	}
++	return nr;
++}
++EXPORT_SYMBOL(kmem_cache_alloc_array);
++
++void kmem_cache_free_array(struct kmem_cache *s, int nr, void **p)
++{
++	int i;
++
++	for (i=0; i < nr; i++)
++		kmem_cache_free(s, p[i]);
++}
++EXPORT_SYMBOL(kmem_cache_free_array);
++
++#endif
++
+ #ifdef CONFIG_MEMCG_KMEM
+ static int memcg_alloc_cache_params(struct mem_cgroup *memcg,
+ 		struct kmem_cache *s, struct kmem_cache *root_cache)
