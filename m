@@ -1,78 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaLRQ13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:27:29 -0500
-Received: from smtprelay0235.hostedemail.com ([216.40.44.235]:58590 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751616AbaLRQ11 (ORCPT
+	id S1751591AbaLRQaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:30:09 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:35419 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaLRQaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:27:27 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:973:988:989:1260:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4250:4385:5007:6119:6261:7875:7903:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12517:12519:12663:12740:13069:13311:13357:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: crow73_6a83563aae46
-X-Filterd-Recvd-Size: 2645
-Date: Thu, 18 Dec 2014 11:27:15 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>
-Subject: Re: [PATCH] tools lib traceevent: Add support for IP address
- formats
-Message-ID: <20141218112715.42420caf@gandalf.local.home>
-In-Reply-To: <20141218155255.GF3150@kernel.org>
-References: <1418915443-45707-1-git-send-email-dsahern@gmail.com>
-	<20141218155255.GF3150@kernel.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Thu, 18 Dec 2014 11:30:07 -0500
+Date: Thu, 18 Dec 2014 17:30:04 +0100
+From: Jiri Pirko <jiri@resnulli.us>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v3 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141218163004.GB1879@nanopsycho.orion>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014 12:52:55 -0300
-Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
-
-> Em Thu, Dec 18, 2014 at 08:10:43AM -0700, David Ahern escreveu:
-> > Adds helper for following kernel formats:
-> >   %pi4 print an IPv4 address with leading zeros
-> >   %pI4 print an IPv4 address without leading zeros
-> >   %pi6 print an IPv6 address without colons
-> >   %pI6 print an IPv6 address with colons
-> >   %pI6c print an IPv6 address with colons
-> >   %pISpc print an IP address from a sockaddr
-> > 
-> > Allows these formats to be used in tracepoints.
-> > 
-> > Quite a bit of this is adapted from code in lib/vsprintf.c.
+Thu, Dec 18, 2014 at 04:30:00PM CET, marco.varlese@intel.com wrote:
+>From: Marco Varlese <marco.varlese@intel.com>
 > 
-> Can't we try as much as possible use that code directly? Something like
+>Switch hardware offers a list of attributes that are configurable on a per port
+>basis.
+>This patch provides a mechanism to configure switch ports by adding an NDO
+>for setting specific values to specific attributes.
+>There will be a separate patch that adds the "get" functionality via another
+>NDO and another patch that extends iproute2 to call the two new NDOs.
+>
+>Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+>---
+> include/linux/netdevice.h    |  5 +++
+> include/uapi/linux/if_link.h | 15 +++++++++
+> net/core/rtnetlink.c         | 73 ++++++++++++++++++++++++++++++++++++++++++++
+> 3 files changed, 93 insertions(+)
+>
+>diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+>index c31f74d..4881c7b 100644
+>--- a/include/linux/netdevice.h
+>+++ b/include/linux/netdevice.h
+>@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+>  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+>  *	Called to notify switch device port of bridge port STP
+>  *	state change.
+>+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+>+ *                                u32 attr, u64 value);
+>+ *	Called to set specific switch ports attributes.
+>  */
+> struct net_device_ops {
+> 	int			(*ndo_init)(struct net_device *dev);
+>@@ -1185,6 +1188,8 @@ struct net_device_ops {
+> 							    struct netdev_phys_item_id *psid);
+> 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
+> 							      u8 state);
+>+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
+>+							   u32 attr, u64 value);
 
-Until we have a true shared library, please no. I'm still taking code
-from here and adding it manually to trace-cmd. And also sending patches
-to here from what I add to trace-cmd.
+How about get? Userspace should be able to read the values as well.
 
-I do not want this directly linked to the kernel code. Note, the kernel
-internals have no guaranteed API, where this does.
-
-
-> we do for lib/rbtree.c in tools/perf/, or like I did recently with
-> tools/lib/util/find_next_bit.c, i.e. retain at least this kind of
-> sharing:
+> #endif
+> };
 > 
-> diff -u tools/lib/util/find_next_bit.c  lib/find_next_bit.c
-
-Unless we convert code to trace_seq, I don't think this works. My
-patches to move seq_buf.c int lib/ have made it into the kernel.
-Perhaps we can copy the seq_buf.c code into tools/lib/traceevent, but
-that would take some work.
-
--- Steve
-
+>diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+>index f7d0d2d..6ad9b91 100644
+>--- a/include/uapi/linux/if_link.h
+>+++ b/include/uapi/linux/if_link.h
+>@@ -146,6 +146,7 @@ enum {
+> 	IFLA_PHYS_PORT_ID,
+> 	IFLA_CARRIER_CHANGES,
+> 	IFLA_PHYS_SWITCH_ID,
+>+	IFLA_SWITCH_PORT_CFG,
+> 	__IFLA_MAX
+> };
 > 
-> Should show that only bits that we have not a need at the moment in
-> tools/ were left behind.
+>@@ -603,4 +604,18 @@ enum {
 > 
-> We want to either get fixes for free by directly reusing or notice it
-> easily, using diff.
+> #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
 > 
+>+/* Switch Port Attributes section */
+>+
+>+enum {
+>+	IFLA_SW_UNSPEC,
+>+	IFLA_SW_LEARNING,
+>+	IFLA_SW_LOOPBACK,
+>+	IFLA_SW_BCAST_FLOODING,
+>+	IFLA_SW_UCAST_FLOODING,
+>+	IFLA_SW_MCAST_FLOODING,
+>+	__IFLA_SW_ATTR_MAX
+>+};
+>+
+>+#define IFLA_SW_ATTR_MAX (__IFLA_SW_ATTR_MAX - 1)
+>+
+> #endif /* _UAPI_LINUX_IF_LINK_H */
+>diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+>index eaa057f..d50ca71 100644
+>--- a/net/core/rtnetlink.c
+>+++ b/net/core/rtnetlink.c
+>@@ -1223,6 +1223,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
+> 	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
+> 	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
+> 	[IFLA_PHYS_SWITCH_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
+>+	[IFLA_SWITCH_PORT_CFG]	= { .type = NLA_NESTED },
+> };
+> 
+> static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
+>@@ -1265,6 +1266,14 @@ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
+> 	[IFLA_PORT_RESPONSE]	= { .type = NLA_U16, },
+> };
+> 
+>+static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
+>+	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
+>+	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
+>+	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
+>+	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
+>+	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
+
+Please maintain namespaces. Use IFLA_SWITCH_PORT_LEARNING for example.
+That gives us place for possible future whole-switch-cfg.
+
+
+>+};
+>+
+> static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+> {
+> 	struct net *net = sock_net(skb->sk);
+>@@ -1389,6 +1398,41 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+> 	return 0;
+> }
+> 
+>+#ifdef CONFIG_NET_SWITCHDEV
+>+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
+>+{
+>+	int rem, err = -EINVAL;
+>+	struct nlattr *v;
+>+	const struct net_device_ops *ops = dev->netdev_ops;
+>+
+>+	nla_for_each_nested(v, attr, rem) {
+>+		u32 op = nla_type(v);
+>+		u64 value = 0;
+>+
+>+		switch (op) {
+>+		case IFLA_SW_LEARNING:
+>+		case IFLA_SW_LOOPBACK:
+>+		case IFLA_SW_BCAST_FLOODING:
+>+		case IFLA_SW_UCAST_FLOODING:
+>+		case IFLA_SW_MCAST_FLOODING: {
+>+			value = nla_get_u64(v);
+>+			err = ops->ndo_switch_port_set_cfg(dev,
+>+							   op,
+>+							   value);
+>+			break;
+>+		}
+>+		default:
+>+			err = -EINVAL;
+>+			break;
+>+		}
+>+		if (err)
+>+			break;
+>+	}
+>+	return err;
+>+}
+>+
+>+#endif
+>+
+> static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+> {
+> 	int rem, err = -EINVAL;
+>@@ -1740,6 +1784,35 @@ static int do_setlink(const struct sk_buff *skb,
+> 			status |= DO_SETLINK_NOTIFY;
+> 		}
+> 	}
+>+#ifdef CONFIG_NET_SWITCHDEV
+>+	if (tb[IFLA_SWITCH_PORT_CFG]) {
+>+		struct nlattr *attrs[IFLA_SW_ATTR_MAX+1];
+>+
+>+		err = -EOPNOTSUPP;
+>+		if (!ops->ndo_switch_port_set_cfg)
+>+			goto errout;
+>+		if (!ops->ndo_switch_parent_id_get)
+>+			goto errout;
+>+
+>+		err = nla_parse_nested(attrs, IFLA_SW_ATTR_MAX,
+>+				       tb[IFLA_SWITCH_PORT_CFG],
+>+				       ifla_sw_attr_policy);
+>+		if (err < 0)
+>+			return err;
+>+
+>+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+>+		if (err < 0)
+>+			goto errout;
+>+
+
+
+Would make sense to me to move this including do_setswcfg into
+net/switchdev/switchdev.c
+
+
+>+		status |= DO_SETLINK_NOTIFY;
+>+	}
+>+#else
+>+	if (tb[IFLA_SWITCH_PORT_CFG]) {
+>+		err = -EOPNOTSUPP;
+>+		goto errout;
+>+	}
+>+#endif
+>+
+> 	err = 0;
+> 
+> errout:
+>-- 
+>1.8.5.3
+>
