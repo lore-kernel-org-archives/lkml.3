@@ -1,146 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859AbaLRDYI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:24:08 -0500
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:38326 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372AbaLRDYG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:24:06 -0500
-From: Chunyan Zhang <zhang.chunyan@linaro.org>
-To: dwmw2@infradead.org, computersforpeace@gmail.com
-Cc: arnd@linaro.org, john.stultz@linaro.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, zhang.lyra@gmail.com
-Subject: [PATCH v3] mtd: test: Replace timeval with ktime_t in speedtest.c and torturetest.c
-Date: Thu, 18 Dec 2014 11:23:31 +0800
-Message-Id: <1418873011-4974-1-git-send-email-zhang.chunyan@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <mtdtestv3>
-References: <mtdtestv3>
+	id S1751897AbaLRD2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:28:39 -0500
+Received: from ozlabs.org ([103.22.144.67]:41021 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaLRD2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 22:28:38 -0500
+Message-ID: <1418873316.13333.1.camel@ellerman.id.au>
+Subject: Re: selftests: standardized results output?
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: "Young, David" <dayoung@akamai.com>
+Cc: "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "Shuah Khan (shuahkhan@gmail.com)" <shuahkhan@gmail.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 18 Dec 2014 14:28:36 +1100
+In-Reply-To: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
+References: <7F8EB1E5A1A71643ACAD0928E03FFDE90E3DABAC24@USMBX1.msg.corp.akamai.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the 32-bit time type (timeval) to the 64-bit one
-(ktime_t), since 32-bit time types will break in the year 2038.
+On Mon, 2014-12-15 at 11:42 -0500, Young, David wrote:
+> Hi,  I'm looking into what sorts of tools can consume the selftest output, and
+> found this on the wikipage:
+> 
+> https://kselftest.wiki.kernel.org/standardize_the_test_output
+> 
+> The current suggestion (as of the last-modified date on that wiki page for
+> October) is to use the Test Anything Protocol [TAP] for standard output.  I
+> notice that there is at least one test that conforms to TAP output, but
+> the majority of the tests are not using it.
+> 
+> There's also the kselftest.h file that suggests exit codes for the individual
+> test applications.
+> 
+> I'm interested in knowing what is the intention of this standardization, so
+> that I can put some work into a "glue" layer for a tool like buildbot,
+> autotest, or Jenkins for executing and consuming the results of these
+> selftests.
 
-I use ktime_t instead of timeval to define 'start' and 'finish'
-which are used to get the time for tow points.
+I'm not the selftests "maintainer", but I have written a bunch of code under
+selftests, so the following is my 2c.
 
-This patch also changes do_gettimeofday() to ktime_get() accordingly,
-since ktime_get returns a ktime_t, but do_gettimeofday returns a
-struct timeval, and the other reason is that ktime_get() uses
-the monotonic clock.
+The barrier for entry to selftests should be as low as we can make it. Our
+preference should always be for more tests, even if some of them start out a
+bit crufty.
 
-This patch is based on another patch which privides a millisecond
-time difference function 'ktime_ms_delta' in ktime.h
+As such, requiring tests to produce perfectly formatted output or error codes
+is the wrong approach in my opinion.
 
-http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
+So ..
 
-Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
----
-Changes since v2:
- - Use the new function ktime_ms_delta which is added in another
-   patch listed up.
+> 1) Is this output standard a "nice to have" that won't be much enforced?
 
-Changes since v1:
- - Add including <linux/ktime.h> in torturetest.c
----
- drivers/mtd/tests/speedtest.c   |   10 +++++-----
- drivers/mtd/tests/torturetest.c |   10 +++++-----
- 2 files changed, 10 insertions(+), 10 deletions(-)
+Yes I think so. I think at best we would hope for tests to converge on the
+standard over time, but there will always be new tests arriving that are not so
+well behaved.
 
-diff --git a/drivers/mtd/tests/speedtest.c b/drivers/mtd/tests/speedtest.c
-index 5ee9f70..87a6e25 100644
---- a/drivers/mtd/tests/speedtest.c
-+++ b/drivers/mtd/tests/speedtest.c
-@@ -22,6 +22,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/init.h>
-+#include <linux/ktime.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/err.h>
-@@ -49,7 +50,7 @@ static int pgsize;
- static int ebcnt;
- static int pgcnt;
- static int goodebcnt;
--static struct timeval start, finish;
-+static ktime_t start, finish;
- 
- static int multiblock_erase(int ebnum, int blocks)
- {
-@@ -168,12 +169,12 @@ static int read_eraseblock_by_2pages(int ebnum)
- 
- static inline void start_timing(void)
- {
--	do_gettimeofday(&start);
-+	start = ktime_get();
- }
- 
- static inline void stop_timing(void)
- {
--	do_gettimeofday(&finish);
-+	finish = ktime_get();
- }
- 
- static long calc_speed(void)
-@@ -181,8 +182,7 @@ static long calc_speed(void)
- 	uint64_t k;
- 	long ms;
- 
--	ms = (finish.tv_sec - start.tv_sec) * 1000 +
--	     (finish.tv_usec - start.tv_usec) / 1000;
-+	ms = ktime_ms_delta(finish, start);
- 	if (ms == 0)
- 		return 0;
- 	k = goodebcnt * (mtd->erasesize / 1024) * 1000;
-diff --git a/drivers/mtd/tests/torturetest.c b/drivers/mtd/tests/torturetest.c
-index eeab969..7e77ed4 100644
---- a/drivers/mtd/tests/torturetest.c
-+++ b/drivers/mtd/tests/torturetest.c
-@@ -26,6 +26,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/init.h>
-+#include <linux/ktime.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/err.h>
-@@ -79,18 +80,18 @@ static unsigned char *check_buf;
- static unsigned int erase_cycles;
- 
- static int pgsize;
--static struct timeval start, finish;
-+static ktime_t start, finish;
- 
- static void report_corrupt(unsigned char *read, unsigned char *written);
- 
- static inline void start_timing(void)
- {
--	do_gettimeofday(&start);
-+	start = ktime_get();
- }
- 
- static inline void stop_timing(void)
- {
--	do_gettimeofday(&finish);
-+	finish = ktime_get();
- }
- 
- /*
-@@ -322,8 +323,7 @@ static int __init tort_init(void)
- 			long ms;
- 
- 			stop_timing();
--			ms = (finish.tv_sec - start.tv_sec) * 1000 +
--			     (finish.tv_usec - start.tv_usec) / 1000;
-+			ms = ktime_ms_delta(finish, start);
- 			pr_info("%08u erase cycles done, took %lu "
- 			       "milliseconds (%lu seconds)\n",
- 			       erase_cycles, ms, ms / 1000);
--- 
-1.7.9.5
+> 2) Will the exit codes be utilized outside of the current makefile-based
+>    approach for executing the tests?  The current make target just runs all the
+>    tests without really concerning itself with the exit values of the
+>    individual tests.  It's simple, which isn't a bad thing, but it lacks a
+>    summarized result.  Is the intention to use a different harness to consume
+>    and report results?
+
+One of the advantages of producing TAP or some other standard format would be
+to avoid needing our own harness just to produce a summary.
+
+> 3) Are the TAP results intended to be the exclusive (std)output of the tests,
+>    or will the tests report in a hybrid fashion?
+>    Such an example would be a test that produces some verbose stdout to the
+>    console, while simultaneously creating a TAP-compliant results.tap file as
+>    well... or vice versa with the stdout being TAP and a more verbose but
+>    free-form log.txt 
+
+We probably want to be able to do both of those.
+
+
+FWIW, (most of) the tests under tools/testing/selftests/powerpc produce subunit
+v1 output (https://pypi.python.org/pypi/python-subunit).
+
+So you can do:
+
+ $ cd tools/testing/selftests/powerpc
+ $ make run_tests 2>&1 | subunit-1to2 | subunit-stats --no-passthrough
+ Total tests:      32
+ Passed tests:     32
+ Failed tests:      0
+ Skipped tests:     0
+ Seen tags: git_version:next-20141209-0-g5348e33
+
+
+subunit has the advantage over TAP IMO that it uses "success", "failure" and
+"error" rather than "ok", "not ok".
+
+There is now a subunit v2, which is a binary protocol. I don't think we want
+a binary protocol, but it does have the advantage of being much more robust
+than text based output.
+
+cheers
+
 
