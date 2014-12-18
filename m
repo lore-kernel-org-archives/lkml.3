@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaLRSBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 13:01:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:22345 "EHLO mga02.intel.com"
+	id S1751438AbaLRSC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 13:02:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096AbaLRSBo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 13:01:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,602,1413270000"; 
-   d="scan'208";a="656542771"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "Williamson, Glenn P" <glenn.p.williamson@intel.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v2] X86-32: Allocate 256 bytes for pgd in PAE paging
-Thread-Topic: [PATCH v2] X86-32: Allocate 256 bytes for pgd in PAE paging
-Thread-Index: AQHQGkMtbeFTaP8A+kS0cHcWdKFM9JyWIN8A//+Ac4A=
-Date: Thu, 18 Dec 2014 17:51:19 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205A6C1D8F@ORSMSX106.amr.corp.intel.com>
-References: <1418852859-18852-1-git-send-email-fenghua.yu@intel.com>
- <54930E14.30800@zytor.com>
-In-Reply-To: <54930E14.30800@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751078AbaLRSC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 13:02:27 -0500
+Message-ID: <549316B1.8010307@redhat.com>
+Date: Thu, 18 Dec 2014 10:02:25 -0800
+From: Andy Grover <agrover@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: Kyle McMartin <kyle@redhat.com>, linux-kernel@vger.kernel.org
+CC: nab@linux-iscsi.org, jbastian@redhat.com
+Subject: Re: [PATCH] uapi/linux/target_core_user.h: fix headers_install.sh
+ badness
+References: <20141218175714.GF5157@redacted.bos.redhat.com>
+In-Reply-To: <20141218175714.GF5157@redacted.bos.redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sent: Thursday, December 18, 2014 9:26 AM
-> To: Yu, Fenghua; Thomas Gleixner; H. Peter Anvin; Ingo Molnar; Williamson,
-> Glenn P
-> Cc: linux-kernel; x86
-> Subject: Re: [PATCH v2] X86-32: Allocate 256 bytes for pgd in PAE paging
-> 
-> On 12/17/2014 01:47 PM, Fenghua Yu wrote:
-> > From: Fenghua Yu <fenghua.yu@intel.com>
-> >
-> > X86 32-bit machine and kernel use PAE paging, which currently wastes
-> > about 4K of memory per process on Linux where we have to reserve an
-> > entire page to support a single 256-byte PGD structure.  It would be a
-> > very good thing if we could eliminate that wastage.
-> >
-> 
-> 4*8 = 32 bytes, where did 256 bytes come from?
+On 12/18/2014 09:57 AM, Kyle McMartin wrote:
+> scripts/headers_install.sh will transform __packed to
+> __attribute__((packed)), so the #ifndef is not necessary.
+> (and, in fact, it's problematic, because we'll end up with the header
+>   containing:
+> #ifndef __attribute__((packed))
+> #define __attribu...
+> and so forth.)
+>
+> Cc: stable@vger.kernel.org # 3.18
+> Signed-off-by: Kyle McMartin <kyle@redhat.com>
+>
+> ---
+> cc-ing stable@ so this headers fix gets picked up by distros.
 
-You are right. It should be 32 bytes. I will change the wording in future patch. The real calculation in code is right though.
+Acked-by: Andy Grover <agrover@redhat.com>
 
-Thanks.
-
--Fenghua
