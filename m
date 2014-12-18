@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751445AbaLRTZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:25:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59834 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbaLRTZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:25:05 -0500
-Date: Thu, 18 Dec 2014 14:24:58 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Eric Paris <eparis@redhat.com>, linux-audit@redhat.com,
-        selinux@tycho.nsa.gov, linux-kernel@vger.kernel.org
-Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid
- context at mm/slab.c:2849
-Message-ID: <20141218192458.GG29998@madcap2.tricolour.ca>
-References: <2966.1418778594@turing-police.cc.vt.edu>
- <5444.1418921116@turing-police.cc.vt.edu>
- <1418921420.5162.19.camel@localhost>
- <8832.1418930473@turing-police.cc.vt.edu>
+	id S1751450AbaLRT2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:28:35 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35887 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaLRT2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 14:28:34 -0500
+Date: Thu, 18 Dec 2014 19:28:16 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Corey Minyard <cminyard@mvista.com>
+Message-ID: <20141218192816.GC11764@sirena.org.uk>
+References: <20141215105251.16913f8c@lwn.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3bVmXubYHmwTS0KQ"
 Content-Disposition: inline
-In-Reply-To: <8832.1418930473@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141215105251.16913f8c@lwn.net>
+X-Cookie: I don't get no respect.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFC] Docs: Modernize SubmittingPatches
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/12/18, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 18 Dec 2014 11:50:20 -0500, Eric Paris said:
-> > On Thu, 2014-12-18 at 11:45 -0500, Valdis.Kletnieks@vt.edu wrote:
-> > > On Tue, 16 Dec 2014 20:09:54 -0500, Valdis Kletnieks said:
-> > > > Spotted these two while booting single-user on 20141216.  20141208
-> > > > doesn't throw these, so it's something in the last week or so..
-> > >
-> > > Gaah!  Turns out that 20141208 *is* susceptible - it had been booting
-> > > just fine for several days, but it went around the bend, apparently due
-> > > to a userspace or initrd change.
-> >
-> > $5 says you updated systemd?
-> 
-> Actually, yeah.  yum.log says:
-> 
-> Dec 12 14:08:09 Updated: systemd-218-1.fc22.x86_64
-> 
-> and things started going downhill that evening.  Damned if I know what 218
-> was doing to cause the issues.  (Other RPM update that looked vaguely
-> related was for selinux-policy, but again, damned if I know what a policy
-> file could contain that would change the behavior...)
-> 
-> Is it worth backing it to -217, or do we have a handle on the issue and
-> systemd is just the messenger?
 
-I've got a potential fix since the problem looks pretty obvious now.
+--3bVmXubYHmwTS0KQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This is stable branch material...
+On Mon, Dec 15, 2014 at 10:52:51AM -0500, Jonathan Corbet wrote:
 
-- RGB
+> +15) Sending "git pull" requests
+> +-------------------------------
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+> +If you have a series of patches, it may be most convenient to have the
+> +maintainer pull them directly into the subsystem repository with a
+> +"git pull" operation.  Note, however, that pulling patches from a developer
+> +requires a higher degree of trust than taking patches from a mailing list.
+> +As a result, many subsystem maintainers are reluctant to take pull
+> +requests, especially from new, unknown developers.
+
+Probably worth adding something like "If in doubt you can use the pull
+request as the cover letter for a normal posting of the patch series,
+giving the maintainer the option of using either or both" - that way
+even if someone guesses wrong about the pull request being appropriate
+things will most likely be OK anyway.
+
+--3bVmXubYHmwTS0KQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBAgAGBQJUkyrPAAoJECTWi3JdVIfQG5gH/AutWNTFzROkHi3dArUJZlDk
+dx+C+onDwji0d7o8KFCTJUl2fziuI5YkSFary9V3tturLu9AEzZyXz2LzSras1nY
+1rNKjKyTFoZakvBft7Mu9hQCW1Z5cBKW5RTs9JYVsPgHaM9gJpb6HekLpNvrWX9K
+2omKF8gFt4UZ1ppbqJpWjaCzsT1npycLzKl4NpXrX71fJW8oVWZN6P2KUE6LzURJ
+BOUNsA15038hgZI3gw+kFnyjQfFM1dNpEfE1TDGV5k8tZUoJ/QHM4UySD5TVz5y3
+b2HxBEjNqpqpAJBPFC8/iyWE476DO/AFL4tfK/o3WO6DqbIfGuMkPdadJqU0gmE=
+=gi+d
+-----END PGP SIGNATURE-----
+
+--3bVmXubYHmwTS0KQ--
