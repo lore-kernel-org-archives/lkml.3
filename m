@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaLRQ7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:59:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35568 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751206AbaLRQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:59:47 -0500
-Message-ID: <549307F0.7090009@zytor.com>
-Date: Thu, 18 Dec 2014 08:59:28 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751456AbaLRRAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 12:00:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:48011 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaLRRAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 12:00:41 -0500
+Message-ID: <54930835.8020009@codeaurora.org>
+Date: Thu, 18 Dec 2014 09:00:37 -0800
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, luto@amacapital.net,
-        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86/tls: Don't validate lm in set_thread_area()
- after all
-References: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net> <tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
-In-Reply-To: <tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
-Content-Type: text/plain; charset=utf-8
+To: Gregory Fong <gregory.0xf0@gmail.com>, linux-mm@kvack.org
+CC: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] mm: cma: add functions for getting allocation info
+References: <1418854236-25140-1-git-send-email-gregory.0xf0@gmail.com>
+In-Reply-To: <1418854236-25140-1-git-send-email-gregory.0xf0@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2014 03:16 AM, tip-bot for Andy Lutomirski wrote:
-> Commit-ID:  3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
-> Gitweb:     http://git.kernel.org/tip/3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
-> Author:     Andy Lutomirski <luto@amacapital.net>
-> AuthorDate: Wed, 17 Dec 2014 14:48:30 -0800
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 18 Dec 2014 12:12:26 +0100
-> 
-> x86/tls: Don't validate lm in set_thread_area() after all
-> 
-> It turns out that there's a lurking ABI issue.  GCC, when
-> compiling this in a 32-bit program:
-> 
-> struct user_desc desc = {
-> 	.entry_number    = idx,
-> 	.base_addr       = base,
-> 	.limit           = 0xfffff,
-> 	.seg_32bit       = 1,
-> 	.contents        = 0, /* Data, grow-up */
-> 	.read_exec_only  = 0,
-> 	.limit_in_pages  = 1,
-> 	.seg_not_present = 0,
-> 	.useable         = 0,
-> };
-> 
-> will leave .lm uninitialized.  This means that anything in the
-> kernel that reads user_desc.lm for 32-bit tasks is unreliable.
-> 
+On 12/17/2014 2:10 PM, Gregory Fong wrote:
+> These functions allow for retrieval of information on what is allocated from
+> within a given CMA region.  It can be useful to know the number of distinct
+> contiguous allocations and where in the region those allocations are located.
+>
+> Based on an initial version by Marc Carino <marc.ceeeee@gmail.com> in a driver
+> that used the CMA bitmap directly; this instead moves the logic into the core
+> CMA API.
+>
+> Signed-off-by: Gregory Fong <gregory.0xf0@gmail.com>
+> ---
+> This has been really useful for us to determine allocation information for a
+> CMA region.  We have had a separate driver that might not be appropriate for
+> upstream, but allowed using a user program to run CMA unit tests to verify that
+> allocations end up where they we would expect.  This addition would allow for
+> that without needing to expose the CMA bitmap.  Wanted to put this out there to
+> see if anyone else would be interested, comments and suggestions welcome.
+>
 
-No, it won't.  However, if you initialize this dynamically field by
-field rather than as an initializer, then you are correct.
+Information is definitely useful but I'm not sure how it's intended to
+be used. Do you have a sample usage of these APIs? Another option might
+be to just add regular debugfs support for each of the regions instead
+of just calling out to a separate driver.
 
-	-hpa
+Thanks,
+Laura
 
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
