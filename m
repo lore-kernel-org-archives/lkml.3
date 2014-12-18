@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751367AbaLRRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 12:18:56 -0500
-Received: from fieldses.org ([174.143.236.118]:33189 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751117AbaLRRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 12:18:54 -0500
-Date: Thu, 18 Dec 2014 12:18:52 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Benjamin Coddington <bcodding@redhat.com>
-Cc: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-Message-ID: <20141218171852.GH18179@fieldses.org>
-References: <pan.2014.12.16.22.19.18@googlemail.com>
- <20141217212159.GA11517@fieldses.org>
- <5492C710.20104@googlemail.com>
- <20141218144856.GA18179@fieldses.org>
- <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
- <20141218151914.GB18179@fieldses.org>
+	id S1751406AbaLRRUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 12:20:21 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:41699 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaLRRUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 12:20:19 -0500
+Date: Thu, 18 Dec 2014 17:20:12 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        wim@iguana.be, linux-watchdog@vger.kernel.org,
+        devicetree@vger.kernel.org, arnd@arndb.de,
+        David Paris <david.paris@st.com>
+Subject: Re: [PATCH 6/8] watchdog: st_wdt: Add new driver for ST's LPC
+ Watchdog
+Message-ID: <20141218172012.GC4525@x1>
+References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
+ <1418834727-1602-7-git-send-email-lee.jones@linaro.org>
+ <20141217180251.GA29914@roeck-us.net>
+ <20141218082652.GP13885@x1>
+ <20141218160014.GA16015@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20141218151914.GB18179@fieldses.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20141218160014.GA16015@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 10:19:14AM -0500, J. Bruce Fields wrote:
-> On Thu, Dec 18, 2014 at 09:58:06AM -0500, Benjamin Coddington wrote:
-> > Frame 36 of nfs-client.pcap has this interesting string:
+On Thu, 18 Dec 2014, Guenter Roeck wrote:
+
+> On Thu, Dec 18, 2014 at 08:26:52AM +0000, Lee Jones wrote:
+> > On Wed, 17 Dec 2014, Guenter Roeck wrote:
+> > > On Wed, Dec 17, 2014 at 04:45:25PM +0000, Lee Jones wrote:
+> > > > Signed-off-by: David Paris <david.paris@st.com>
+> > > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > > 
+> > > Hi Lee and David,
+> > > 
+> > > I still have a couple of comments below. Sorry I didn't catch those earlier.
+> > > 
+> > > Thanks,
+> > > Guenter
+> > > 
+> > > > ---
+> > > >  drivers/watchdog/Kconfig  |  13 ++
+> > > >  drivers/watchdog/Makefile |   1 +
+> > > >  drivers/watchdog/st_wdt.c | 323 ++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 337 insertions(+)
+> > > >  create mode 100644 drivers/watchdog/st_wdt.c
 > > 
-> > 0ff0  00 01 3b f6 fb b6 26 16 8f 7c 00 00 00 41 62 74   ..;...&..|...Abt
-> > 1000  72 66 73 2d 32 30 00 00 00 00 00 00 00 00 30 36   rfs-20........06
-> > 1010  2d 66 69 78 2d 64 65 61 64 6c 6f 63 6b 2d 77 68   -fix-deadlock-wh
-> > 1020  65 6e 2d 6d 6f 75 6e 74 69 6e 67 2d 61 2d 64 65   en-mounting-a-de
-> > 1030  67 72 61 64 65 64 2d 66 73 2e 70 61 74 63 68 00   graded-fs.patch.
-> 
-> Yes, that looks like the server messing up the encoding of the reply.
+> > Chopping all the crud.
+> > 
+> > [...]
+> > 
+> > > > +static struct of_device_id st_wdog_match[] = {
+> > > > +	{
+> > > > +		.compatible = "st,stih407-lpc",
+> > > > +		.data = (void *)&stih407_syscfg,
+> > > 
+> > > Nitpick: typecast to and from void * is not necessary.
+> > 
+> > Actually that's not true, but it is superfluous in this case.
+> > 
+> Point taken. Would you agree to a more detailed "typecasting a pointer
+> to and from void * is not necessary" ?
 
-And indeed looking at the git repo that matches up with the entry:
+Sure, why not? ;)
 
-	btrfs-20........06-fix-deadlock-when-mounting-a-degraded-fs.patch.
-	btrfs-20140619-006-fix-deadlock-when-mounting-a-degraded-fs.patch
-
-So a stray 8 bytes of zeroes got written there.
-
-And the reply also ends with 000000017fffffff when I believe it should
-end with two 4-byte 0's (no value follows, not EOF).
-
-So I think those 0's got written to the wrong offset.  That should be
-enough information to find the bug....
-
---b.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
