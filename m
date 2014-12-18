@@ -1,98 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493AbaLRGcG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:32:06 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58718 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497AbaLRGcD (ORCPT
+	id S1752523AbaLRGcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:32:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:18574 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbaLRGcT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:32:03 -0500
-Date: Wed, 17 Dec 2014 22:31:27 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-mvfu6x753tksnto3t6412m93@git.kernel.org>
-Cc: eranian@google.com, dsahern@gmail.com, tglx@linutronix.de,
-        dzickus@redhat.com, jolsa@redhat.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, namhyung@kernel.org,
-        hpa@zytor.com, acme@redhat.com, fweisbec@gmail.com, bp@suse.de,
-        peterz@infradead.org, adrian.hunter@intel.com, efault@gmx.de
-Reply-To: eranian@google.com, dsahern@gmail.com, paulus@samba.org,
-        mingo@kernel.org, linux-kernel@vger.kernel.org, jolsa@redhat.com,
-        dzickus@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
-        peterz@infradead.org, bp@suse.de, namhyung@kernel.org, acme@redhat.com,
-        hpa@zytor.com, efault@gmx.de, adrian.hunter@intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools: Move bitops.h from tools/perf/
- util to tools/
-Git-Commit-ID: 3967278496ffa69704b941745de393223406a83d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 18 Dec 2014 01:32:19 -0500
+Message-ID: <549274D9.5000102@oracle.com>
+Date: Thu, 18 Dec 2014 14:31:53 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: Dirk Brandewie <dirk.j.brandewie@intel.com>, kristen@linux.intel.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linda Knippers <linda.knippers@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Ethan Zhao <ethan.kernel@gmail.com>
+Subject: Re: [PATCH V3] cpufreq: fix a NULL pointer dereference triggered
+ by _PPC changed notification
+References: <1418884099-27919-1-git-send-email-ethan.zhao@oracle.com> <CAKohponG+RKcCGGNYxwm0h_6jLWt2v6PqKLyQycka3N0db8c-Q@mail.gmail.com>
+In-Reply-To: <CAKohponG+RKcCGGNYxwm0h_6jLWt2v6PqKLyQycka3N0db8c-Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3967278496ffa69704b941745de393223406a83d
-Gitweb:     http://git.kernel.org/tip/3967278496ffa69704b941745de393223406a83d
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 16 Dec 2014 10:55:42 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Dec 2014 11:17:53 -0300
+Viresh,
 
-tools: Move bitops.h from tools/perf/util to tools/
+On 2014/12/18 14:29, Viresh Kumar wrote:
+> On 18 December 2014 at 11:58, Ethan Zhao <ethan.zhao@oracle.com> wrote:
+>> If _PPC changed notification happens before governor was initiated while kernel
+>> is booting, a NULL pointer dereference will be triggered:
+>>
+>> BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+>>   IP: [<ffffffff81470453>] __cpufreq_governor+0x23/0x1e0
+>>   PGD 0
+>>   Oops: 0000 [#1] SMP
+>>   ... ...
+>>   RIP: 0010:[<ffffffff81470453>]  [<ffffffff81470453>]
+>>   __cpufreq_governor+0x23/0x1e0
+>>   RSP: 0018:ffff881fcfbcfbb8  EFLAGS: 00010286
+>>   RAX: 0000000000000000 RBX: ffff881fd11b3980 RCX: ffff88407fc20000
+>>   RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff881fd11b3980
+>>   RBP: ffff881fcfbcfbd8 R08: 0000000000000000 R09: 000000000000000f
+>>   R10: ffffffff818068d0 R11: 0000000000000043 R12: 0000000000000004
+>>   R13: 0000000000000000 R14: ffffffff8196cae0 R15: 0000000000000000
+>>   FS:  0000000000000000(0000) GS:ffff881fffc00000(0000) knlGS:0000000000000000
+>>   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>>   CR2: 0000000000000030 CR3: 00000000018ae000 CR4: 00000000000407f0
+>>   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>>   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>>   Process kworker/0:3 (pid: 750, threadinfo ffff881fcfbce000, task
+>>   ffff881fcf556400)
+>>   Stack:
+>>    ffff881fffc17d00 ffff881fcfbcfc18 ffff881fd11b3980 0000000000000000
+>>    ffff881fcfbcfc08 ffffffff81470d08 ffff881fd11b3980 0000000000000007
+>>    ffff881fcfbcfc18 ffff881fffc17d00 ffff881fcfbcfd28 ffffffff81472e9a
+>>   Call Trace:
+>>    [<ffffffff81470d08>] __cpufreq_set_policy+0x1b8/0x2e0
+>>    [<ffffffff81472e9a>] cpufreq_update_policy+0xca/0x150
+>>    [<ffffffff81472f20>] ? cpufreq_update_policy+0x150/0x150
+>>    [<ffffffff81324a96>] acpi_processor_ppc_has_changed+0x71/0x7b
+>>    [<ffffffff81320bcd>] acpi_processor_notify+0x55/0x115
+>>    [<ffffffff812f9c29>] acpi_device_notify+0x19/0x1b
+>>    [<ffffffff813084ca>] acpi_ev_notify_dispatch+0x41/0x5f
+>>    [<ffffffff812f64a4>] acpi_os_execute_deferred+0x27/0x34
+>>
+>> The root cause is a race conditon -- cpufreq core and acpi-cpufreq driver
+>> were initiated, but cpufreq_governor wasn't and _PPC changed notification
+>> happened, __cpufreq_governor() was called within acpi_os_execute_deferred
+>> kernel thread context.
+>>
+>> To fix this panic issue, add pointer checking code in __cpufreq_governor()
+>> before pointer policy->governor is to be dereferenced.
+>>
+>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>>   v2&v3: correct comment style.
+>>
+>>   drivers/cpufreq/cpufreq.c | 5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 4473eba..b75735c 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -2021,6 +2021,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>>          /* Don't start any governor operations if we are entering suspend */
+>>          if (cpufreq_suspended)
+>>                  return 0;
+>> +       /*
+>> +        * Governor might not be initiated here if _PPC changed notification
+>> +        * happened, check it.
+>> +        */
+>> +       if (!policy->governor)
+>> +               return -EINVAL;
+>>
+>>          if (policy->governor->max_transition_latency &&
+>>              policy->cpuinfo.transition_latency >
+> It will take me sometime to get cpufreq core simplified, till that time
+>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>
+> to yet another band-aid :)
+  Maybe more band-aid needed before it is be done.
 
-So that we better mirror the kernel sources and make it available for
-other tools.
+  Thanks,
+  Ethan
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-mvfu6x753tksnto3t6412m93@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/{perf/util => }/include/linux/bitops.h | 0
- tools/perf/MANIFEST                          | 1 +
- tools/perf/Makefile.perf                     | 2 +-
- 3 files changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/include/linux/bitops.h
-similarity index 100%
-rename from tools/perf/util/include/linux/bitops.h
-rename to tools/include/linux/bitops.h
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 86f115c..7729af9 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -10,6 +10,7 @@ tools/include/asm-generic/bitops/atomic.h
- tools/include/asm-generic/bitops/__ffs.h
- tools/include/asm-generic/bitops/find.h
- tools/include/asm-generic/bitops.h
-+tools/include/linux/bitops.h
- tools/include/linux/compiler.h
- tools/include/linux/export.h
- tools/include/linux/hash.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 3a73a95..28e590e 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -231,7 +231,7 @@ LIB_H += ../../include/uapi/linux/const.h
- LIB_H += ../include/linux/hash.h
- LIB_H += ../../include/linux/stringify.h
- LIB_H += util/include/linux/bitmap.h
--LIB_H += util/include/linux/bitops.h
-+LIB_H += ../include/linux/bitops.h
- LIB_H += ../include/asm-generic/bitops/atomic.h
- LIB_H += ../include/asm-generic/bitops/find.h
- LIB_H += ../include/asm-generic/bitops/__ffs.h
