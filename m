@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413AbaLRK5m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:57:42 -0500
+	id S1752046AbaLRK4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:56:14 -0500
 Received: from smtp1.cypress.com ([157.95.67.100]:57594 "EHLO
 	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaLRK4P (ORCPT
+	with ESMTP id S1751660AbaLRK4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:56:15 -0500
+	Thu, 18 Dec 2014 05:56:13 -0500
 X-Greylist: delayed 3268 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 05:56:12 EST
 From: Dudley Du <dudl@cypress.com>
 To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
 Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v16 03/12] input: cyapa: add power management interfaces support for the device
-Date: Thu, 18 Dec 2014 18:00:47 +0800
-Message-Id: <1418896856-15766-4-git-send-email-dudl@cypress.com>
+Subject: [PATCH v16 12/12] input: cyapa: add acpi device id support
+Date: Thu, 18 Dec 2014 18:00:56 +0800
+Message-Id: <1418896856-15766-13-git-send-email-dudl@cypress.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418896856-15766-1-git-send-email-dudl@cypress.com>
 References: <1418896856-15766-1-git-send-email-dudl@cypress.com>
@@ -22,145 +22,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add suspend_scanrate_ms power management interfaces in device's
-power group, so users or applications can control the power management
-strategy of trackpad device as their requirements.
+Add acpi device tree support.
+acpi device id "CYAP0000" is for old gen3 trackpad devices.
+acpi device id "CYAP0001" is for new gen5 trackpad devices.
 TEST=test on Chromebooks.
 
 Signed-off-by: Dudley Du <dudl@cypress.com>
 ---
- drivers/input/mouse/cyapa.c | 111 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 111 insertions(+)
+ drivers/input/mouse/cyapa.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index d4560a3..73f6817 100644
+index 406f38b..62ef19a 100644
 --- a/drivers/input/mouse/cyapa.c
 +++ b/drivers/input/mouse/cyapa.c
-@@ -575,6 +575,96 @@ out:
- 	return IRQ_HANDLED;
- }
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/uaccess.h>
+ #include <linux/pm_runtime.h>
++#include <linux/acpi.h>
+ #include "cyapa.h"
  
-+/*
-+ **************************************************************
-+ * sysfs interface
-+ **************************************************************
-+*/
-+#ifdef CONFIG_PM_SLEEP
-+static ssize_t cyapa_show_suspend_scanrate(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u8 pwr_cmd = cyapa->suspend_power_mode;
-+	u16 sleep_time;
-+	int len;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+	pwr_cmd = cyapa->suspend_power_mode;
-+	sleep_time = cyapa->suspend_sleep_time;
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	if (pwr_cmd == PWR_MODE_BTN_ONLY) {
-+		len = scnprintf(buf, PAGE_SIZE, "%s\n", BTN_ONLY_MODE_NAME);
-+	} else if (pwr_cmd == PWR_MODE_OFF) {
-+		len = scnprintf(buf, PAGE_SIZE, "%s\n", OFF_MODE_NAME);
-+	} else {
-+		if (cyapa->gen == CYAPA_GEN3)
-+			sleep_time = cyapa_pwr_cmd_to_sleep_time(pwr_cmd);
-+		len = scnprintf(buf, PAGE_SIZE, "%u\n", sleep_time);
-+	}
-+
-+	return len;
-+}
-+
-+static ssize_t cyapa_update_suspend_scanrate(struct device *dev,
-+					     struct device_attribute *attr,
-+					     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	u16 sleep_time;
-+	int error;
-+
-+	error = mutex_lock_interruptible(&cyapa->state_sync_lock);
-+	if (error)
-+		return error;
-+
-+	if (sysfs_streq(buf, BTN_ONLY_MODE_NAME)) {
-+		cyapa->suspend_power_mode = PWR_MODE_BTN_ONLY;
-+	} else if (sysfs_streq(buf, OFF_MODE_NAME)) {
-+		cyapa->suspend_power_mode = PWR_MODE_OFF;
-+	} else if (!kstrtou16(buf, 10, &sleep_time)) {
-+		cyapa->suspend_sleep_time = max_t(u16, sleep_time, 1000);
-+		cyapa->suspend_power_mode =
-+			cyapa_sleep_time_to_pwr_cmd(cyapa->suspend_sleep_time);
-+	} else {
-+		count = 0;
-+	}
-+
-+	mutex_unlock(&cyapa->state_sync_lock);
-+
-+	if (!count)
-+		dev_err(dev, "invalid suspend scanrate ms parameters\n");
-+	return count ? count : -EINVAL;
-+}
-+
-+static DEVICE_ATTR(suspend_scanrate_ms, S_IRUGO|S_IWUSR,
-+		   cyapa_show_suspend_scanrate,
-+		   cyapa_update_suspend_scanrate);
-+
-+static struct attribute *cyapa_power_wakeup_entries[] = {
-+	&dev_attr_suspend_scanrate_ms.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group cyapa_power_wakeup_group = {
-+	.name = power_group_name,
-+	.attrs = cyapa_power_wakeup_entries,
-+};
-+
-+static void cyapa_remove_power_wakeup_group(void *data)
-+{
-+	struct cyapa *cyapa = data;
-+
-+	sysfs_unmerge_group(&cyapa->client->dev.kobj,
-+				&cyapa_power_wakeup_group);
-+}
-+#endif /* CONFIG_PM_SLEEP */
-+
- static int cyapa_probe(struct i2c_client *client,
- 		       const struct i2c_device_id *dev_id)
- {
-@@ -614,6 +704,27 @@ static int cyapa_probe(struct i2c_client *client,
- 		return error;
- 	}
  
-+#ifdef CONFIG_PM_SLEEP
-+	if (device_can_wakeup(dev)) {
-+		error = sysfs_merge_group(&client->dev.kobj,
-+					&cyapa_power_wakeup_group);
-+		if (error) {
-+			dev_err(dev, "failed to add power wakeup group: %d\n",
-+				error);
-+			return error;
-+		}
+@@ -1315,11 +1316,23 @@ static const struct i2c_device_id cyapa_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, cyapa_id_table);
+ 
++#ifdef CONFIG_ACPI
++static const struct acpi_device_id cyapa_acpi_id[] = {
++	{ "CYAP0000", 0 },  /* Gen3 trackpad with 0x67 I2C address. */
++	{ "CYAP0001", 0 },  /* Gen5 trackpad with 0x24 I2C address. */
++	{ }
++};
++MODULE_DEVICE_TABLE(acpi, cyapa_acpi_id);
++#endif
 +
-+		error = devm_add_action(dev,
-+				cyapa_remove_power_wakeup_group, cyapa);
-+		if (error) {
-+			cyapa_remove_power_wakeup_group(cyapa);
-+			dev_err(dev, "failed to add power cleanup action: %d\n",
-+				error);
-+			return error;
-+		}
-+	}
-+#endif /* CONFIG_PM_SLEEP */
-+
- 	error = devm_request_threaded_irq(dev, client->irq,
- 					  NULL, cyapa_irq,
- 					  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ static struct i2c_driver cyapa_driver = {
+ 	.driver = {
+ 		.name = "cyapa",
+ 		.owner = THIS_MODULE,
+ 		.pm = &cyapa_pm_ops,
++#ifdef CONFIG_ACPI
++		.acpi_match_table = ACPI_PTR(cyapa_acpi_id),
++#endif
+ 	},
+ 
+ 	.probe = cyapa_probe,
 -- 
 1.9.1
 
