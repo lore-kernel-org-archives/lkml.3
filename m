@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751442AbaLRVqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:46:15 -0500
-Received: from omr1.cc.vt.edu ([198.82.141.52]:40114 "EHLO omr1.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125AbaLRVqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:46:14 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@kernel.org, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
-In-Reply-To: Your message of "Thu, 18 Dec 2014 08:10:43 -0700."
-             <1418915443-45707-1-git-send-email-dsahern@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1418915443-45707-1-git-send-email-dsahern@gmail.com>
+	id S1751646AbaLRVtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:49:22 -0500
+Received: from sender1.zohomail.com ([74.201.84.155]:29464 "EHLO
+	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150AbaLRVtV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 16:49:21 -0500
+X-Greylist: delayed 79943 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 16:49:21 EST
+Subject: [PATCH] Fixed TPACKET V3 to signal poll when block is closed
+ rather than for every packet
+From: Dan Collins <dan@dcollins.co.nz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Dec 2014 10:49:16 +1300
+Message-ID: <1418939356.3016.9.camel@voodoo.cms.waikato.ac.nz>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418939104_1952P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Dec 2014 16:45:04 -0500
-Message-ID: <17321.1418939104@turing-police.cc.vt.edu>
+X-ZohoMailClient: External
+X-Zoho-Virus-Status: 2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418939104_1952P
-Content-Type: text/plain; charset=us-ascii
+Make TPACKET_V3 signal poll when block is closed rather than for every
+packet. Side effect is that poll will be signaled when block retire
+timer expires which didn't previously happen. Issue was visible when
+sending packets at a very low frequency such that all blocks are retired
+before packets are received by TPACKET_V3. This caused avoidable packet
+loss. The fix ensures that the signal is sent when blocks are closed
+which covers the normal path where the block is filled as well as the
+path where the timer expires. The case where a block is filled without
+moving to the next block (ie. all blocks are full) will still cause poll
+to be signaled. 
 
-On Thu, 18 Dec 2014 08:10:43 -0700, David Ahern said:
-> Adds helper for following kernel formats:
->   %pi4 print an IPv4 address with leading zeros
->   %pI4 print an IPv4 address without leading zeros
->   %pi6 print an IPv6 address without colons
->   %pI6 print an IPv6 address with colons
->   %pI6c print an IPv6 address with colons
->   %pISpc print an IP address from a sockaddr
+Signed-off-by: Dan Collins <dan@dcollins.co.nz>
 
-The description for %pI6C in the changelog doesn't match the code:
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index e52a447..14e883d 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -43,6 +43,8 @@
+  *             Chetan Loke     :       Implemented TPACKET_V3 block abstraction
+  *                                     layer.
+  *                                     Copyright (C) 2011, <lokec@ccs.neu.edu>
++ *             Dan Collins : Fixed TPACKET_V3 to wake poll when block is closed
++ *                                     rather than for every packet.
+  *
+  *
+  *             This program is free software; you can redistribute it and/or
+@@ -785,6 +787,7 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
+ 
+        struct tpacket3_hdr *last_pkt;
+        struct tpacket_hdr_v1 *h1 = &pbd1->hdr.bh1;
++       struct sock *sk = &po->sk;
+ 
+        if (po->stats.stats3.tp_drops)
+                status |= TP_STATUS_LOSING;
+@@ -809,6 +812,8 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
+        /* Flush the block */
+        prb_flush_block(pkc1, pbd1, status);
+ 
++       sk->sk_data_ready(sk);
++
+        pkc1->kactive_blk_num = GET_NEXT_PRB_BLK_NUM(pkc1);
+ }
+ 
+@@ -2052,12 +2057,12 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
+        smp_wmb();
+ #endif
+ 
+-       if (po->tp_version <= TPACKET_V2)
++       if (po->tp_version <= TPACKET_V2) {
+                __packet_set_status(po, h.raw, status);
+-       else
++               sk->sk_data_ready(sk);
++       } else {
+                prb_clear_blk_fill_status(&po->rx_ring);
+-
+-       sk->sk_data_ready(sk);
++       }
+ 
+ drop_n_restore:
+        if (skb_head != skb->data && skb_shared(skb)) {
 
-> + * %pI6c  print an IPv6 address in compressed form with colons
 
-Threw me for a loop for a while trying to figure out how pI6 and pI6c were
-different, till I read the code...
-
-
---==_Exmh_1418939104_1952P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVJNK4AdmEQWDXROgAQI8lQ//TJauyYWL4b8sOqpv5JI5DdP+ZDIklXbo
-zlwgE4ElDCDqhqHmDIvCMRAasARyzIWz59MKyY/uovEnJJyyJ/JjX9WhZQMC/tr9
-wOP//pU7W10nl6Q8Qh8eJM8h0LPVVGRiaOoSX6OHwjFR9Gk9xc2dDlwv/MPEqxR2
-C05qCte9mT0aCSz2eyTSxX1ERi4I1uE4W2FV4a3n+tGwpLqK31sR8VS91XD90fCF
-TbHoXQMUOucOByifxZpqj0xBLIv8wh9eyHt2tlyJBw8Xxr5kNlziJuoXzzujUIqQ
-/+hM3KxB9GWr2csLEQurrqyQtP8I49OPsye3YoT72uGTwfzJrV8tm21WKplXKTru
-SdtPrze9rqGqjE/SRWb8E67H5jV8eUVQxWI5N3GjuxMAV77KQxtyz6RigY5Ac5gb
-QXRbCqqdITyKr9mwE86pKZxjDukTBlaAChLrnfcxiIq4zH9lcQatkiXcUWhZzy5o
-uVsS5E5V9w9TpqUiH45F6D8d2zoEH/UmA/uCT27zkTSK+DbLXSJwAeTy+4k2VRbt
-4+UjtyvH7RqAaslsj1+oN3pTCmQecBtB5fxyfFe41jJTq4kmjVPAgdd4E0mWqdlS
-qPn3/yA2I7dKPG7VWvIRYkgxvMPheHF10tMy7YJFm9gugaSZAp9BXGBukhpvsxdJ
-YoFFOK5q93I=
-=2y1T
------END PGP SIGNATURE-----
-
---==_Exmh_1418939104_1952P--
