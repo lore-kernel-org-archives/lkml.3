@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaLRJ04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:26:56 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:28027 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaLRJ0x (ORCPT
+	id S1752022AbaLRJ2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:28:54 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:45070 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaLRJ2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:26:53 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-f1-54929ddb1f82
-From: Chao Yu <chao2.yu@samsung.com>
-To: "'Changman Lee'" <cm224.lee@gmail.com>,
-        "'Jaegeuk Kim'" <jaegeuk@kernel.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-References: <001d01d019e1$d6ad6c10$84084430$@samsung.com>
- <CAN863PuF-aSNGxe6=5k9LL-9V5maHnNnd7w-Sz2GQPFz-MHC7A@mail.gmail.com>
-In-reply-to: <CAN863PuF-aSNGxe6=5k9LL-9V5maHnNnd7w-Sz2GQPFz-MHC7A@mail.gmail.com>
-Subject: RE: [f2fs-dev] [PATCH v2] f2fs: use ra_meta_pages to simplify
- readahead code in restore_node_summary
-Date: Thu, 18 Dec 2014 17:26:03 +0800
-Message-id: <005101d01aa4$c1974760$44c5d620$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQNhD51p/iodgEgv9xHljGqe1appzQKUILEFmV57J5A=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsVy+t9jQd3bcyeFGPx5pGNxpqebzeLJ+lnM
-	FpcWuVvs2XuSxeLyrjlsDqweO2fdZffYtKqTzWP3gs9MHp83yQWwRHHZpKTmZJalFunbJXBl
-	LO4TKTjOUfGo8y9bA2MLexcjJ4eEgInE5+9PoWwxiQv31rN1MXJxCAlMZ5SY8H8NlPODUeL8
-	iWesIFVsAioSyzv+M4HYIgI+Ev0//oLZzAKZEnNeT2aFaGhglHi1eA/QWA4OToFgiT+PA0Bq
-	hAXyJfYtXc0IEmYRUJWYM9sbJMwrYCmxdP1jJghbUOLH5HssICXMAuoSU6bkQkyXl9i85i0z
-	xJ0KEjvOvmaEuMBK4uC8eawQNeISG4/cYpnAKDQLyaRZCJNmIZk0C0nHAkaWVYyiqQXJBcVJ
-	6bmGesWJucWleel6yfm5mxjBcfBMagfjygaLQ4wCHIxKPLwSepNChFgTy4orcw8xSnAwK4nw
-	RucAhXhTEiurUovy44tKc1KLDzFKc7AoifMq2beFCAmkJ5akZqemFqQWwWSZODilGhh571l5
-	LZ6yP2VJ4aTjzLqzPDaEhC8IOB2Zf9gzwJJN6vTZ6Jv7dluZnKquY9qleOuJ82/10hnCfzWv
-	p/WeMzlTtz7L4feldZdvcS19+e7cvcPbJRn3TWgS6fSaZbGpOOMYY/SMzMeL2pzPW883/fQs
-	tz5hr5nGBUfWBY8+Ok2VWDV95Yc1k1MVlFiKMxINtZiLihMBch0ESn8CAAA=
+	Thu, 18 Dec 2014 04:28:50 -0500
+Date: Thu, 18 Dec 2014 09:28:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, a.zummo@towertech.it,
+        kernel@stlinux.com, rtc-linux@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wim@iguana.be, linux@roeck-us.net, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 5/8] watchdog: bindings: Provide ST bindings for ST's LPC
+ Watchdog device
+Message-ID: <20141218092844.GB4525@x1>
+References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
+ <2894129.AmAkgPJPNf@wuerfel>
+ <20141218090404.GU13885@x1>
+ <1554161.vPuSVrZM0j@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1554161.vPuSVrZM0j@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Changman,
+On Thu, 18 Dec 2014, Arnd Bergmann wrote:
 
-> -----Original Message-----
-> From: Changman Lee [mailto:cm224.lee@gmail.com]
-> Sent: Wednesday, December 17, 2014 11:20 PM
-> To: Chao Yu
-> Cc: Jaegeuk Kim; Changman Lee; linux-fsdevel@vger.kernel.org; linux-kernel@vger.kernel.org;
-> linux-f2fs-devel@lists.sourceforge.net
-> Subject: Re: [f2fs-dev] [PATCH v2] f2fs: use ra_meta_pages to simplify readahead code in
-> restore_node_summary
+> On Thursday 18 December 2014 09:04:04 Lee Jones wrote:
+> > We 
+> > On Thu, 18 Dec 2014, Arnd Bergmann wrote:
+> > 
+> > > On Thursday 18 December 2014 08:13:34 Lee Jones wrote:
+> > > > On Wed, 17 Dec 2014, Arnd Bergmann wrote:
+> > > > 
+> > > > > On Wednesday 17 December 2014 16:45:24 Lee Jones wrote:
+> > > > > > +- compatible   : Must be one of: "st,stih407-lpc" "st,stih416-lpc"
+> > > > > > +                                 "st,stih415-lpc" "st,stid127-lpc"
+> > > > > > +- reg          : LPC registers base address + size
+> > > > > > +- interrupts    : LPC interrupt line number and associated flags
+> > > > > > +- clocks       : Clock used by LPC device (See: ../clock/clock-bindings.txt)
+> > > > > > +- st,lpc-mode  : The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
+> > > > > > +                 ST_LPC_MODE_WDT [1].  One (and only one) mode must be
+> > > > > > +                 selected.
+> > > > > > 
+> > > > > 
+> > > > > I'm glad you got it to work with two drivers for the same device.
+> > > > > 
+> > > > > With this binding, I'm still a bit unhappy about the st,lpc-mode property,
+> > > > > in particular since you rely on a shared include file for something that
+> > > > > can only be set in one way or another and always has to be present.
+> > > > > 
+> > > > > Why not just use a boolean property that enforces one mode when present
+> > > > > and another mode when absent?
+> > > > 
+> > > > There is nothing stopping me from doing that, and it was a
+> > > > consideration.  I concluded that this method would be more explicit
+> > > > however.  Both when describing our choices in DT and at a functional
+> > > > level within each of the drivers.
+> > > > 
+> > > > Let me know if you fundamentally disagree and I can fix-up.
+> > > 
+> > > I generally don't like  header files that define interfaces between C code
+> > > and DT nodes. There are cases where it's the least ugly solution, but I don't
+> > > think this is one of them.
+> > > 
+> > > If you want to be more explicit about the modes, how about having one
+> > > boolean property per mode? That would also allow devices that could be
+> > > driven in either mode, e.g. if you have only one instance of this device.
+> > 
+> > Isn't this was you suggested above?
 > 
-> Hi,
+> My first suggestion was to just have one boolean property, and use one
+> driver if that is absent. The second one was to have two (or three) separate
+> boolean properties that each refer to whether a particular driver is allowed
+> to use this device or not.
 > 
-> Is there any reason to use truncate_inode_pages_range instead of
-> invalidate_mapping_pages?
-> IMHO, it seems nice to just use invalidate_mapping_pages because pages
-> of meta_inode shouldn't be dirty, locked, under writeback or mapped in
-> this function.
-> If there is my misunderstanding, let me know.
-
-I think you're right, I use truncate_inode_pages_range because just following the
-usage of readahead-invalidate pair in recovery flow, but without considering the
-difference between them.
-
-I will fix this as you suggested.
-
+> > But as I briefly mentioned to you elsewhere, there are actually 3
+> > devices (Watchdog, RTC and Global Timer).  How would you like to
+> > handle that with a Boolean property when we introduce this new driver?
 > 
-> Thanks,
-> 
-> Reviewed-by: Changman Lee <cm224.lee@samsung.com>
+> Right, this would require having more than one property, but I still think
+> it's better than the header file.
 
-And thanks for your review! :)
+I'll put my point across just once and then become subservient once
+more.  I don't agree that defining 3 properties is better than
+creating just 1.  We have lots of properties containing indexes and
+flags.  Just because we've decided to #define them in order to read
+them easily shouldn't detract from the fact that it's a better setup.
 
-Regards,
-Yu
+  st,lpc-mode <1|2|3>;
 
+Must be better than:
+
+    st,lpc-globaltimer-mode;
+    st,lpc-watchdog-mode;
+    st,lpc-rtc-mode;
+
+If each of the drivers only checks for it's own property and fails to
+probe if it's not present how will we detect and warn about a lack of
+any of the 3 properties without a central, all-knowing (MFD) driver? 
+
+This is likely to cause someone [why isn't my driver probing] issues
+and subsequently waste valuable engineering time in the future.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
