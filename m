@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751545AbaLRQnF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:43:05 -0500
-Received: from smtp-out-208.synserver.de ([212.40.185.208]:1108 "EHLO
-	smtp-out-208.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaLRQnD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:43:03 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10448
-Message-ID: <5493040F.5020206@metafoo.de>
-Date: Thu, 18 Dec 2014 17:42:55 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
-        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
+	id S1751653AbaLRQoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:44:32 -0500
+Received: from omr2.cc.vt.edu ([198.82.141.100]:39926 "EHLO omr2.cc.vt.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751598AbaLRQob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:44:31 -0500
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
+To: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
         linux-kernel@vger.kernel.org
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>
-Subject: Re: [RFC PATCH 1/2] iio: kfifo: Remove unused argument in iio_kfifo_allocate
-References: <1418153385-18212-1-git-send-email-k.wrona@samsung.com> <1418153385-18212-2-git-send-email-k.wrona@samsung.com>
-In-Reply-To: <1418153385-18212-2-git-send-email-k.wrona@samsung.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
+In-Reply-To: Your message of "Thu, 18 Dec 2014 17:34:56 +0100."
+             <201412181734.56353@pali>
+From: Valdis.Kletnieks@vt.edu
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412181208.58969@pali> <21066.1418915331@turing-police.cc.vt.edu>
+            <201412181734.56353@pali>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1418921049_3517P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 18 Dec 2014 11:44:09 -0500
+Message-ID: <5390.1418921049@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2014 08:29 PM, Karol Wrona wrote:
-> indio_dev was unused in function body plus some small style fix - add new
-> lines after "if(sth) return sth" and before the last return statement.
+--==_Exmh_1418921049_3517P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Looks good, except for the missing updates for the users.
+On Thu, 18 Dec 2014 17:34:56 +0100, Pali Roh=E1r said:
 
-Doing some digging in the git history raveled that the user of that 
-parameter in that function was removed in commit f79a909890 
-("staging:iio:buffer struct iio_buffer doesn't need an indio_dev pointer.")
+> Thanks for testing. Anyway I would like to know if your dell
+> machine supports i8k_get_fan_nominal_rpm(). Can you test without
+> above 4 lines patch?
+
+I'll give that a try this evening..
+
+
+--==_Exmh_1418921049_3517P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBVJMEWQdmEQWDXROgAQLW7hAAm3XUYAd8byH6QWSFkcNlVOHS9j8XXHds
+7+4hGfWC8dW6t3dUjJ/Ozzq/mOk2SWR3zB4z/Y9Brf0g/XCb3R5p6ztQo0gOizEQ
+05AMAcASXUmWT1mW4U5d+juLbrRTWhzBhv/7Se1Y6TiAqTgIjIBTl0EclYiTBStc
+j5ecMFKnMjbaGzXVGK5W/UK+fMGjrDIFez9HFFM+WzFCOzL+q7PfvQoQ2eQx2B8P
+2FeBwNxVNq2M99J6wXnrwchW+19i42QT87FP9gzt6bhJue53Uo89UCED9xcMgHp5
+j220iRbZkRKutXbCJBor0mY4NxWol2ZoLZKKZ8WlBIThnJslracf4datWGzhYZIx
+7d1eKCjY4FuMO7FRh4Ryf7aSnGvlQewL7SoP/bShEbB/yiG51UrEqXOzfvehmbk5
+ASjvZNGHthdNhasG/fgiaF0ffFeg3EGQA9r9Cgjr/JfDEjkQ/H26NsFgfuXdkO/M
+uuZMdtaL8aVQfNxPk5N0lezTdGXX3dcbU816jgFFXGkdenmkE8bHzPUgcSpEFVfJ
+zemDRZ0j/Y0F6y5DZjAwJcB/jAGguL4EQYNCpPYRyJbez6D1g757p1hAdxYZsfVK
+HFqG7x7NbswZjfkg5Zjt+BjL5V5irgmyj01jYOHHkRYv3sGi7L4N/TbEY7axoVLO
+GsWgYQ6JEMU=
+=/zU7
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1418921049_3517P--
