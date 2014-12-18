@@ -1,98 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566AbaLRQAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:00:47 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43841 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaLRQAp (ORCPT
+	id S1751382AbaLRQDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:03:53 -0500
+Received: from mail-oi0-f51.google.com ([209.85.218.51]:61945 "EHLO
+	mail-oi0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaLRQDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:00:45 -0500
-Date: Thu, 18 Dec 2014 08:00:14 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        wim@iguana.be, linux-watchdog@vger.kernel.org,
-        devicetree@vger.kernel.org, arnd@arndb.de,
-        David Paris <david.paris@st.com>
-Subject: Re: [PATCH 6/8] watchdog: st_wdt: Add new driver for ST's LPC
- Watchdog
-Message-ID: <20141218160014.GA16015@roeck-us.net>
-References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
- <1418834727-1602-7-git-send-email-lee.jones@linaro.org>
- <20141217180251.GA29914@roeck-us.net>
- <20141218082652.GP13885@x1>
+	Thu, 18 Dec 2014 11:03:51 -0500
+Message-ID: <5492FAD4.7070308@gmail.com>
+Date: Thu, 18 Dec 2014 08:03:32 -0800
+From: John Fastabend <john.fastabend@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141218082652.GP13885@x1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.5492FA46.062E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: "Varlese, Marco" <marco.varlese@intel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v3 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 08:26:52AM +0000, Lee Jones wrote:
-> On Wed, 17 Dec 2014, Guenter Roeck wrote:
-> > On Wed, Dec 17, 2014 at 04:45:25PM +0000, Lee Jones wrote:
-> > > Signed-off-by: David Paris <david.paris@st.com>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > Hi Lee and David,
-> > 
-> > I still have a couple of comments below. Sorry I didn't catch those earlier.
-> > 
-> > Thanks,
-> > Guenter
-> > 
-> > > ---
-> > >  drivers/watchdog/Kconfig  |  13 ++
-> > >  drivers/watchdog/Makefile |   1 +
-> > >  drivers/watchdog/st_wdt.c | 323 ++++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 337 insertions(+)
-> > >  create mode 100644 drivers/watchdog/st_wdt.c
-> 
-> Chopping all the crud.
-> 
-> [...]
-> 
-> > > +static struct of_device_id st_wdog_match[] = {
-> > > +	{
-> > > +		.compatible = "st,stih407-lpc",
-> > > +		.data = (void *)&stih407_syscfg,
-> > 
-> > Nitpick: typecast to and from void * is not necessary.
-> 
-> Actually that's not true, but it is superfluous in this case.
-> 
-Point taken. Would you agree to a more detailed "typecasting a pointer
-to and from void * is not necessary" ?
+On 12/18/2014 07:30 AM, Varlese, Marco wrote:
+> From: Marco Varlese <marco.varlese@intel.com>
+>
+> Switch hardware offers a list of attributes that are configurable on a per port
+> basis.
+> This patch provides a mechanism to configure switch ports by adding an NDO
+> for setting specific values to specific attributes.
+> There will be a separate patch that adds the "get" functionality via another
+> NDO and another patch that extends iproute2 to call the two new NDOs.
+>
+> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+> ---
+>   include/linux/netdevice.h    |  5 +++
+>   include/uapi/linux/if_link.h | 15 +++++++++
+>   net/core/rtnetlink.c         | 73 ++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 93 insertions(+)
+>
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index c31f74d..4881c7b 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+>    * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+>    *	Called to notify switch device port of bridge port STP
+>    *	state change.
+> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+> + *                                u32 attr, u64 value);
+> + *	Called to set specific switch ports attributes.
+>    */
+>   struct net_device_ops {
+>   	int			(*ndo_init)(struct net_device *dev);
+> @@ -1185,6 +1188,8 @@ struct net_device_ops {
+>   							    struct netdev_phys_item_id *psid);
+>   	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
+>   							      u8 state);
+> +	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
+> +							   u32 attr, u64 value);
+>   #endif
+>   };
+>
+> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+> index f7d0d2d..6ad9b91 100644
+> --- a/include/uapi/linux/if_link.h
+> +++ b/include/uapi/linux/if_link.h
+> @@ -146,6 +146,7 @@ enum {
+>   	IFLA_PHYS_PORT_ID,
+>   	IFLA_CARRIER_CHANGES,
+>   	IFLA_PHYS_SWITCH_ID,
+> +	IFLA_SWITCH_PORT_CFG,
+>   	__IFLA_MAX
+>   };
+>
+> @@ -603,4 +604,18 @@ enum {
+>
+>   #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+>
+> +/* Switch Port Attributes section */
 
-Guenter
+Could you also document the attributes. I think they are mostly
+clear but what is IFLA_SW_LOOPBACK. It will help later when we
+try to read the code in 6months and implement drivers.
+
+I am thinking something like
+
+/* Switch Port Attributes section
+  * IFLA_SW_LEARNING - turns learning on in the bridge
+  * IFLA_SW_LOOPBACK - does something interesting
+
+  [...]
+  */
+
+> +
+> +enum {
+> +	IFLA_SW_UNSPEC,
+> +	IFLA_SW_LEARNING,
+
+Can you address Roopa's feedback. I'm also a bit confused by the
+duplication.
+
+
+> +	IFLA_SW_LOOPBACK,
+> +	IFLA_SW_BCAST_FLOODING,
+> +	IFLA_SW_UCAST_FLOODING,
+> +	IFLA_SW_MCAST_FLOODING,
+> +	__IFLA_SW_ATTR_MAX
+> +};
+> +
+> +#define IFLA_SW_ATTR_MAX (__IFLA_SW_ATTR_MAX - 1)
+> +
+>   #endif /* _UAPI_LINUX_IF_LINK_H */
+> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+> index eaa057f..d50ca71 100644
+> --- a/net/core/rtnetlink.c
+> +++ b/net/core/rtnetlink.c
+> @@ -1223,6 +1223,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
+>   	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
+>   	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
+>   	[IFLA_PHYS_SWITCH_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
+> +	[IFLA_SWITCH_PORT_CFG]	= { .type = NLA_NESTED },
+>   };
+>
+>   static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
+> @@ -1265,6 +1266,14 @@ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
+>   	[IFLA_PORT_RESPONSE]	= { .type = NLA_U16, },
+>   };
+>
+> +static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
+> +	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
+> +	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
+> +	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
+> +	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
+> +	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
+> +};
+
+Why U64 values? What would we pass in these? Are these just boolean
+bits? Maybe the annotation above will help me understand this.
+
+
+> +
+>   static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
+>   {
+>   	struct net *net = sock_net(skb->sk);
+> @@ -1389,6 +1398,41 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+>   	return 0;
+>   }
+>
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
+> +{
+> +	int rem, err = -EINVAL;
+> +	struct nlattr *v;
+> +	const struct net_device_ops *ops = dev->netdev_ops;
+> +
+
+style nit again since its an RFC after all... Its preferred to arrange
+arguments like this as a loosly followed convention,
+
+	const struct net_device_ops *ops = dev->netdev_ops;
+	int rem, err = -EINVAL;
+	struct nlattr *v;
+
+
+> +	nla_for_each_nested(v, attr, rem) {
+> +		u32 op = nla_type(v);
+> +		u64 value = 0;
+> +
+> +		switch (op) {
+> +		case IFLA_SW_LEARNING:
+> +		case IFLA_SW_LOOPBACK:
+> +		case IFLA_SW_BCAST_FLOODING:
+> +		case IFLA_SW_UCAST_FLOODING:
+> +		case IFLA_SW_MCAST_FLOODING: {
+> +			value = nla_get_u64(v);
+
+should we validate the get_u64 'value'? Are there valid ranges or
+something?
+
+> +			err = ops->ndo_switch_port_set_cfg(dev,
+> +							   op,
+> +							   value);
+> +			break;
+> +		}
+> +		default:
+> +			err = -EINVAL;
+> +			break;
+> +		}
+> +		if (err)
+> +			break;
+> +	}
+> +	return err;
+> +}
+> +
+> +#endif
+> +
+>   static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+>   {
+>   	int rem, err = -EINVAL;
+> @@ -1740,6 +1784,35 @@ static int do_setlink(const struct sk_buff *skb,
+>   			status |= DO_SETLINK_NOTIFY;
+>   		}
+>   	}
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+> +		struct nlattr *attrs[IFLA_SW_ATTR_MAX+1];
+> +
+> +		err = -EOPNOTSUPP;
+> +		if (!ops->ndo_switch_port_set_cfg)
+> +			goto errout;
+> +		if (!ops->ndo_switch_parent_id_get)
+> +			goto errout;
+> +
+
+style nit (take it for what its worth) but I would compress the above to
+
+		if (!ops->ndo_switch_port_set_cfg ||
+		    !ops->ndo_switch_parent_id_get)
+			goto errout;
+
+I'm also wondering if we really need to check for parent_id_get() here.
+I'm not sure I see why a driver would implement port_set_cfg() and not
+parent_id_get() though so its mostly harmless.
+
+> +		err = nla_parse_nested(attrs, IFLA_SW_ATTR_MAX,
+> +				       tb[IFLA_SWITCH_PORT_CFG],
+> +				       ifla_sw_attr_policy);
+> +		if (err < 0)
+> +			return err;
+
+hmm everywhere else you use goto errout but not here?
+
+> +
+> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+> +		if (err < 0)
+> +			goto errout;
+> +
+> +		status |= DO_SETLINK_NOTIFY;
+
+hmm another question if you modify the hardware from do_setswcfg()
+for an attribute but then fail on a subsequent attribute shouldn't
+we have DO_SETLINK_MODIFY set? Say IFLA_SW_LEARNING is set but then
+the device fails on IFLA_SW_LOOPBACK.
+
+> +	}
+> +#else
+> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+> +		err = -EOPNOTSUPP;
+> +		goto errout;
+> +	}
+> +#endif
+> +
+>   	err = 0;
+>
+>   errout:
+>
+
+
+-- 
+John Fastabend         Intel Corporation
