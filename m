@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127AbaLRJp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:45:58 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45939 "EHLO
+	id S1752078AbaLRJp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:45:57 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45933 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751861AbaLRJp4 (ORCPT
+	with ESMTP id S1751876AbaLRJpz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:45:56 -0500
+	Thu, 18 Dec 2014 04:45:55 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Josh Wu <josh.wu@atmel.com>,
@@ -14,41 +14,51 @@ Cc: Josh Wu <josh.wu@atmel.com>,
         Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v4 2/3] ARM: at91: sama5d3: Add SFR
-Date: Thu, 18 Dec 2014 10:45:51 +0100
-Message-Id: <1418895952-18186-2-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH v4 1/3] ARM: at91: Add Special Function Registers binding documentation
+Date: Thu, 18 Dec 2014 10:45:50 +0100
+Message-Id: <1418895952-18186-1-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1418895952-18186-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1418895952-18186-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The sama5d3 has Special Function Registers that allow to manage OHCI, EBI and
-the UTMI clock.
+The special function registers gather some registers that allow to tweak
+features provided by IPs controlled through another register range.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 ---
- arch/arm/boot/dts/sama5d3.dtsi | 5 +++++
- 1 file changed, 5 insertions(+)
+Changes in v4:
+ - corrected the chip list
 
-diff --git a/arch/arm/boot/dts/sama5d3.dtsi b/arch/arm/boot/dts/sama5d3.dtsi
-index 5f4144d1e3a1..499b59f48055 100644
---- a/arch/arm/boot/dts/sama5d3.dtsi
-+++ b/arch/arm/boot/dts/sama5d3.dtsi
-@@ -217,6 +217,11 @@
- 				status = "disabled";
- 			};
- 
-+			sfr: sfr@f0038000 {
-+				compatible = "atmel,sama5d3-sfr", "syscon";
-+				reg = <0xf0038000 0x4000>;
-+			};
+ Documentation/devicetree/bindings/arm/atmel-at91.txt | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+index 562cda9d86d9..f39e312531f0 100644
+--- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
++++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
+@@ -136,3 +136,20 @@ Example:
+ 		compatible = "atmel,at91sam9260-rstc";
+ 		reg = <0xfffffd00 0x10>;
+ 	};
 +
- 			mmc1: mmc@f8000000 {
- 				compatible = "atmel,hsmci";
- 				reg = <0xf8000000 0x600>;
++Special Function Registers (SFR)
++
++Special Function Registers (SFR) manage specific aspects of the integrated
++memory, bridge implementations, processor and other functionality not controlled
++elsewhere.
++
++required properties:
++- compatible: Should be "atmel,<chip>-sfr", "syscon".
++  <chip> can be "sama5d3" or "sama5d4".
++- reg: Should contain registers location and length
++
++	sfr@f0038000 {
++		compatible = "atmel,sama5d3-sfr", "syscon";
++		reg = <0xf0038000 0x4000>;
++	};
++
 -- 
 2.1.0
 
