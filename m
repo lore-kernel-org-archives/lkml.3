@@ -1,113 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaLRK6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:58:33 -0500
-Received: from smtp1.cypress.com ([157.95.67.100]:57594 "EHLO
-	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743AbaLRK4N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:56:13 -0500
-X-Greylist: delayed 3268 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 05:56:12 EST
-From: Dudley Du <dudl@cypress.com>
-To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
-Cc: Dudley Du <dudl@cypress.com>, bleung@google.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v16 08/12] input: cyapa: add gen3 trackpad device force re-calibrate function support
-Date: Thu, 18 Dec 2014 18:00:52 +0800
-Message-Id: <1418896856-15766-9-git-send-email-dudl@cypress.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1418896856-15766-1-git-send-email-dudl@cypress.com>
-References: <1418896856-15766-1-git-send-email-dudl@cypress.com>
+	id S1751901AbaLRLBE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:01:04 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:40534 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751084AbaLRLBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 06:01:01 -0500
+Date: Thu, 18 Dec 2014 09:00:53 -0200
+From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+To: Chunyan Zhang <zhang.chunyan@linaro.org>
+Cc: Arnd Bergmann <arnd@linaro.org>, david@hardeman.nu,
+        uli-lirc@uli-eckhardt.de, hans.verkuil@cisco.com, julia.lawall@lip6.fr,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>, joe@perches.com,
+        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, Lyra Zhang <zhang.lyra@gmail.com>
+Subject: Re: [PATCH] media: rc: Replace timeval with ktime_t in imon.c
+Message-ID: <20141218090053.68a0aad6@recife.lan>
+In-Reply-To: <CAG2=9p9eL6kx8AfrLMw3Ct+eQcsQq5KJt=TkJ8ySmaWsWOmQ5A@mail.gmail.com>
+References: <1418873833-5084-1-git-send-email-zhang.chunyan@linaro.org>
+	<1685288.Gd2P1eSoIW@wuerfel>
+	<CAG2=9p9eL6kx8AfrLMw3Ct+eQcsQq5KJt=TkJ8ySmaWsWOmQ5A@mail.gmail.com>
+Organization: Samsung
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add force re-calibrate function supported for gen3 trackpad device,
-it can be used through sysfs calibrate interface.
-TEST=test on Chromebooks.
+Em Thu, 18 Dec 2014 17:38:14 +0800
+Chunyan Zhang <zhang.chunyan@linaro.org> escreveu:
 
-Signed-off-by: Dudley Du <dudl@cypress.com>
----
- drivers/input/mouse/cyapa_gen3.c | 59 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 59 insertions(+)
+> On Thu, Dec 18, 2014 at 3:50 PM, Arnd Bergmann <arnd@linaro.org> wrote:
+> > On Thursday 18 December 2014 11:37:13 Chunyan Zhang wrote:
+> >> This patch changes the 32-bit time type (timeval) to the 64-bit one
+> >> (ktime_t), since 32-bit time types will break in the year 2038.
+> >>
+> >> I use ktime_t instead of all uses of timeval in imon.c
+> >>
+> >> This patch also changes do_gettimeofday() to ktime_get() accordingly,
+> >> since ktime_get returns a ktime_t, but do_gettimeofday returns a
+> >> struct timeval, and the other reason is that ktime_get() uses
+> >> the monotonic clock.
+> >>
+> >> This patch use a new function which is provided by another patch listed below
+> >> to get the millisecond time difference.
+> >
+> > The patch looks great. Just a few small details that could still be
+> > improved:
 
-diff --git a/drivers/input/mouse/cyapa_gen3.c b/drivers/input/mouse/cyapa_gen3.c
-index 92b3d6d..7351fce 100644
---- a/drivers/input/mouse/cyapa_gen3.c
-+++ b/drivers/input/mouse/cyapa_gen3.c
-@@ -765,6 +765,64 @@ static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
- 	return 0;
- }
- 
-+static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t count)
-+{
-+	struct cyapa *cyapa = dev_get_drvdata(dev);
-+	int tries;
-+	int ret;
-+
-+	ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+	if (ret < 0) {
-+		dev_err(dev, "Error reading dev status: %d\n", ret);
-+		goto out;
-+	}
-+	if ((ret & CYAPA_DEV_NORMAL) != CYAPA_DEV_NORMAL) {
-+		dev_warn(dev, "Trackpad device is busy, device state: 0x%02x\n",
-+			 ret);
-+		ret = -EAGAIN;
-+		goto out;
-+	}
-+
-+	ret = cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
-+			       OP_RECALIBRATION_MASK);
-+	if (ret < 0) {
-+		dev_err(dev, "Failed to send calibrate command: %d\n",
-+			ret);
-+		goto out;
-+	}
-+
-+	tries = 20;  /* max recalibration timeout 2s. */
-+	do {
-+		/*
-+		 * For this recalibration, the max time will not exceed 2s.
-+		 * The average time is approximately 500 - 700 ms, and we
-+		 * will check the status every 100 - 200ms.
-+		 */
-+		usleep_range(100000, 200000);
-+
-+		ret = cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
-+		if (ret < 0) {
-+			dev_err(dev, "Error reading dev status: %d\n",
-+				ret);
-+			goto out;
-+		}
-+		if ((ret & CYAPA_DEV_NORMAL) == CYAPA_DEV_NORMAL)
-+			break;
-+	} while (--tries);
-+
-+	if (tries == 0) {
-+		dev_err(dev, "Failed to calibrate. Timeout.\n");
-+		ret = -ETIMEDOUT;
-+		goto out;
-+	}
-+	dev_dbg(dev, "Calibration successful.\n");
-+
-+out:
-+	return ret < 0 ? ret : count;
-+}
-+
- static ssize_t cyapa_gen3_show_baseline(struct device *dev,
- 				   struct device_attribute *attr, char *buf)
- {
-@@ -1150,6 +1208,7 @@ const struct cyapa_dev_ops cyapa_gen3_ops = {
- 	.bl_deactivate = cyapa_gen3_bl_deactivate,
- 
- 	.show_baseline = cyapa_gen3_show_baseline,
-+	.calibrate_store = cyapa_gen3_do_calibrate,
- 
- 	.state_parse = cyapa_gen3_state_parse,
- 	.operational_check = cyapa_gen3_do_operational_check,
--- 
-1.9.1
+Yes, patch looks OK. After addressing the bits pointed by Arnd:
 
+Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
+
+Feel free to merge via y2038 tree.
+
+> >
+> >> http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
+> >>
+> >> Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+> >
+> > In general, when you give a mailing list link, use the 'Link' tag
+> > under your Signed-off-by line, like
+> >
+> > Link: http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
+> >
+> > It's not used much yet, but getting more popular and seems useful to me.
+> >
+> > In this particular case, when you have patches that depend on one
+> > another, you can make do it even better by sending all three patches
+> > as a series with a [PATCH 0/3] cover letter.
+> >
+> OK, I'll send a patch-set including these three patches
+> 
+> > If the media maintainers can provide an Ack for this patch, I would
+> > suggest to queue it up in the y2038 branch together with your first
+> > patch that it depends on.
+> >
+> >> @@ -1191,16 +1168,16 @@ static inline int tv2int(const struct timeval *a, const struct timeval *b)
+> >>   */
+> >>  static int stabilize(int a, int b, u16 timeout, u16 threshold)
+> >>  {
+> >> -     struct timeval ct;
+> >> -     static struct timeval prev_time = {0, 0};
+> >> -     static struct timeval hit_time  = {0, 0};
+> >> +     ktime_t ct;
+> >> +     static ktime_t prev_time = {0};
+> >> +     static ktime_t hit_time  = {0};
+> >>       static int x, y, prev_result, hits;
+> >>       int result = 0;
+> >
+> > The "= {0}" part here is redundant, since static variables are always
+> > initialized to zero. Normally, adding the explicit initializer can
+> > help readability, but in this case I would leave it out because it shows
+> > implementation details of ktime_t that are better hidden from drivers.
+> >
+> OK, I'll modify them soon
+> 
+> Thanks,
+> Chunyan
+> 
+> >> @@ -1596,9 +1573,9 @@ static void imon_incoming_packet(struct imon_context *ictx,
+> >>       int i;
+> >>       u64 scancode;
+> >>       int press_type = 0;
+> >> -     int msec;
+> >> -     struct timeval t;
+> >> -     static struct timeval prev_time = { 0, 0 };
+> >> +     long msec;
+> >> +     ktime_t t;
+> >> +     static ktime_t prev_time = {0};
+> >>       u8 ktype;
+> >
+> > Same thing here of course.
+> >
+> >         Arnd
