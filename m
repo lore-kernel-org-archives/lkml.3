@@ -1,110 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293AbaLRI2s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 03:28:48 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:42639 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbaLRI2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 03:28:47 -0500
-Date: Thu, 18 Dec 2014 09:28:44 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: phy: Restore deferred probing path
-Message-ID: <20141218082843.GC29856@ulmo>
-References: <1417694767-18848-1-git-send-email-thierry.reding@gmail.com>
- <20141217082958.GC3303@ulmo>
- <20141217173448.GB24913@kroah.com>
+	id S1752445AbaLRI3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 03:29:06 -0500
+Received: from mail-by2on0124.outbound.protection.outlook.com ([207.46.100.124]:65005
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752431AbaLRI3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 03:29:04 -0500
+X-WSS-ID: 0NGRRKC-07-618-02
+X-M-MSG: 
+Message-ID: <54929040.8080406@amd.com>
+Date: Thu, 18 Dec 2014 10:28:48 +0200
+From: Oded Gabbay <oded.gabbay@amd.com>
+Organization: AMD
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jy6Sn24JjFx/iggw"
-Content-Disposition: inline
-In-Reply-To: <20141217173448.GB24913@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Huang Ying <ying.huang@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [drm/radeon] BUG: unable to handle kernel paging request
+ at 03200000
+References: <1418890668.26403.6.camel@intel.com> <54928E6B.1020501@amd.com>
+ <1418891181.26403.9.camel@intel.com>
+In-Reply-To: <1418891181.26403.9.camel@intel.com>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.20.0.84]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Oded.Gabbay@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(69234005)(24454002)(164054003)(479174004)(189002)(377454003)(377424004)(199003)(106466001)(21056001)(62966003)(50466002)(31966008)(20776003)(4396001)(15975445007)(120916001)(68736005)(23676002)(117636001)(107046002)(77156002)(36756003)(110136001)(105586002)(97736003)(65816999)(86362001)(92566001)(87266999)(59896002)(19580395003)(77096005)(76176999)(101416001)(65806001)(64706001)(83506001)(47776003)(575784001)(46102003)(50986999)(64126003)(99136001)(87936001)(19580405001)(65956001)(84676001)(2950100001)(54356999)(62816006);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---jy6Sn24JjFx/iggw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 17, 2014 at 09:34:48AM -0800, Greg Kroah-Hartman wrote:
-> On Wed, Dec 17, 2014 at 09:30:03AM +0100, Thierry Reding wrote:
-> > On Thu, Dec 04, 2014 at 01:06:07PM +0100, Thierry Reding wrote:
-> > > From: Thierry Reding <treding@nvidia.com>
-> > >=20
-> > > Commit 1290a958d48e ("usb: phy: propagate __of_usb_find_phy()'s error=
- on
-> > > failure") broke platforms that rely on deferred probing to order prob=
-ing
-> > > of PHY and host controller drivers. The reason is that the commit sim=
-ply
-> > > propagates errors from __of_usb_find_phy(), which returns -ENODEV if =
-no
-> > > PHY has been registered yet for a given device tree node. The only ca=
-se
-> > > in which -EPROBE_DEFER would now be returned is if try_module_get() d=
-id
-> > > fail, which does not make sense.
-> > >=20
-> > > The correct thing to do is to return -EPROBE_DEFER if a PHY hasn't be=
-en
-> > > registered yet. The only condition under which it makes sense to retu=
-rn
-> > > -ENODEV is if the device tree node representing the PHY has been
-> > > disabled (via the status property) because in that case the PHY will
-> > > never be registered.
-> > >=20
-> > > This patch addresses the problem by making __of_usb_find_phy() return=
- an
-> > > appropriate error code while keeping in line with the above-mentioned
-> > > commit to propagate error codes rather than overwriting them. At the
-> > > same time the check for a valid PHY is decoupled from the check for t=
-he
-> > > try_module_get() call and a separate error code is returned if the
-> > > latter fails.
-> > >=20
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > > ---
-> > >  drivers/usb/phy/phy.c | 14 ++++++++++----
-> > >  1 file changed, 10 insertions(+), 4 deletions(-)
-> >=20
-> > Ping?
->=20
-> It's the middle of the merge window, we can't do anything until 3.19-rc1
-> is out at the earliest.
+On 12/18/2014 10:26 AM, Huang Ying wrote:
+> On Thu, 2014-12-18 at 10:20 +0200, Oded Gabbay wrote:
+>> On 12/18/2014 10:17 AM, Huang Ying wrote:
+>>> FYI, we noticed the below changes on
+>>>
+>>> commit e28740ece34d314002b1ddfa14e8fb7c7b909489 ("drm/radeon: Add radeon <--> amdkfd interface")
+>>>
+>>>
+>>> +------------------------------------------+------------+------------+
+>>> |                                          | 1c0a46255f | e28740ece3 |
+>>> +------------------------------------------+------------+------------+
+>>> | boot_successes                           | 0          | 0          |
+>>> | boot_failures                            | 10         | 13         |
+>>> | BUG:kernel_boot_hang                     | 9          | 9          |
+>>> | INFO:suspicious_RCU_usage                | 1          | 3          |
+>>> | backtrace:do_fork                        | 1          | 3          |
+>>> | BUG:unable_to_handle_kernel              | 0          | 3          |
+>>> | Oops                                     | 0          | 3          |
+>>> | Kernel_panic-not_syncing:Fatal_exception | 0          | 3          |
+>>> | backtrace:radeon_init                    | 0          | 3          |
+>>> | backtrace:kernel_init_freeable           | 0          | 3          |
+>>> | BUG:kernel_boot_crashed                  | 0          | 1          |
+>>> +------------------------------------------+------------+------------+
+>>>
+>>>
+>>> [    5.407193] Linux agpgart interface v0.103
+>>> [    5.428469] [drm] Initialized drm 1.1.0 20060810
+>>> [    5.438456] [drm] radeon kernel modesetting enabled.
+>>> [    5.439741] BUG: unable to handle kernel paging request at 03200000
+>>> [    5.440063] IP: [<03200000>] 0x3200000
+>>> [    5.440063] *pde = 00000000
+>>> [    5.440063] Oops: 0000 [#1] SMP
+>>> [    5.440063] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-g603ba7e #14
+>>> [    5.440063] task: 42e08000 ti: 42e02000 task.ti: 42e02000
+>>> [    5.440063] EIP: 0060:[<03200000>] EFLAGS: 00010246 CPU: 0
+>>> [    5.440063] EIP is at 0x3200000
+>>> [    5.440063] EAX: 00000001 EBX: 00000000 ECX: 4738b460 EDX: 45735a64
+>>> [    5.440063] ESI: 4662d0dd EDI: 401fafa0 EBP: 42e03f20 ESP: 42e03f18
+>>> [    5.440063]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+>>> [    5.440063] CR0: 8005003b CR2: 03200000 CR3: 067f0000 CR4: 00000690
+>>> [    5.440063] Stack:
+>>> [    5.440063]  44bf19b1 00000000 42e03f28 4662d20b 42e03f8c 465b6e5d 00000000 00000000
+>>> [    5.440063]  00000000 00000000 00000000 00000000 000000ea 00000000 00000000 00000101
+>>> [    5.440063]  45f2dfba 00000010 00000012 00000200 47fdcf54 47fdcf54 00000006 00000291
+>>> [    5.440063] Call Trace:
+>>> [    5.440063]  [<44bf19b1>] ? radeon_kfd_init+0x67/0xab
+>>> [    5.440063]  [<4662d20b>] radeon_init+0x12e/0x15c
+>>> [    5.440063]  [<465b6e5d>] do_one_initcall+0x25f/0x41e
+>>> [    5.440063]  [<465b7291>] kernel_init_freeable+0x275/0x423
+>>> [    5.440063]  [<455b4e52>] kernel_init+0x1c/0x293
+>>> [    5.440063]  [<455df181>] ret_from_kernel_thread+0x21/0x30
+>>> [    5.440063]  [<455b4e36>] ? rest_init+0x33e/0x33e
+>>> [    5.440063] Code:  Bad EIP value.
+>>> [    5.440063] EIP: [<03200000>] 0x3200000 SS:ESP 0068:42e03f18
+>>> [    5.440063] CR2: 0000000003200000
+>>> [    5.440063] ---[ end trace 1959b295b01c0c14 ]---
+>>> [    5.440063] Kernel panic - not syncing: Fatal exception
+>>>
+>>>
+>>> Thanks,
+>>> Huang, Ying
+>>>
+>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> LKP mailing list
+>>> LKP@linux.intel.com
+>>>
+>>
+>> Is this a 32-bit kernel ?
+>> Is amdkfd compiled ?
+>
+> The kconfig file is attached in the original email.  From it, it is
+> 32-bit kernel.  I don't find AMDKFD in config file.  Could you help me
+> to check it?
+>
+> Best Regards,
+> Huang, Ying
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+Sorry, didn't saw the Kconfig file.
+Yes, amdkfd is not compiled - which is good because it should only support 
+64-bit kernel. But apparently something else going on here.
+Yes, I will check it.
 
-This fixes a regression that was introduced in commit 1290a958d48e which
-has been merged for v3.19-rc1, so this really should go in as soon as
-possible. I brought this up around the time of v3.18-rc5 and it's a
-shame it's been broken for so long.
-
-Thierry
-
---jy6Sn24JjFx/iggw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIbBAEBAgAGBQJUkpA7AAoJEN0jrNd/PrOhbAAP+Pte/oUCGsyGdC1PvL+aPmzO
-TEwIhhjpfMaJI/i552uIl+VSUamZSxlVCTgpNj2zgKXGRS4+dB5aL6GA7UJmBvZC
-rT07PgN+KR6lcYaXm6MHhRiFAPiPWxe2fw+l0LMULYrXbJ1mIOOs/+1MLnfGXx6t
-y2eic6GuE49h2Dkf0BtiAx5ub+bSspX2XNqje1Ws6ONc5fuMUvUeOGbWM2ej5PeF
-oct4N0G1RAz8XKd/QE87deuF5wHg0fxe2WgJE+g4BTnA69N7nQcdTmCvIm0Jjl++
-6VUQZ5LmtGhOS5vNquBbcOQaktwM1k4dJxeD2DsPvqRaACs1Ge0LjSN9j6x+UDH8
-OUf62qziw/Q/60bLHxPSV78hZMsN1i8md8+/UDH2E64E/i3SKSU+u0sJ97qSx4eq
-6XKsglDgsaNdGse4FFv4OzGgd6a/WRw/2aI9AwuVy9oB58PmjNh8CTtPI/MJfNKu
-ZxIa7jq52aQEIP8gNqm+eSLVoUcB3B3kaVwrcua/7HdZ6pORoDTv+Mysdm/NAUo1
-pAWsc3qzZxusA5NHNbbKfT58IfLIlY280Odfk97DlXV1UVozWnU3PyCdy1hWRdkk
-I+etWP3BkZZO8k9gYJZToxhLxGQURdC6d/N72TZ3am+l2uTk30UioJrx7vj342Z0
-cMqG49uABpIT2r1ACj0=
-=tW06
------END PGP SIGNATURE-----
-
---jy6Sn24JjFx/iggw--
+	Oded
