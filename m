@@ -1,139 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751605AbaLRTEa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:04:30 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:54348 "EHLO gloria.sntech.de"
+	id S1751654AbaLRTEv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:04:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549AbaLRTE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:04:28 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Stefan Hengelein <stefan.hengelein@fau.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        kgene@kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] ARM: SAMSUNG: remove dead #elif CONFIG_S3C24XX_DMAC
-Date: Thu, 18 Dec 2014 20:03:58 +0100
-Message-ID: <1645416.VNQj8YWB7M@phil>
-User-Agent: KMail/4.14.2 (Linux/3.16-3-amd64; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <CABv5NL_SLyY9-yookdTVdNXzCmUEqJ_QB6ofzw_q0H7Vcwbzfg@mail.gmail.com>
-References: <1418830837-7422-1-git-send-email-stefan.hengelein@fau.de> <2864831.LEPnyFh3Il@phil> <CABv5NL_SLyY9-yookdTVdNXzCmUEqJ_QB6ofzw_q0H7Vcwbzfg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751633AbaLRTEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 14:04:50 -0500
+Message-ID: <1418929486.5162.22.camel@localhost>
+Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid
+ context at mm/slab.c:2849
+From: Eric Paris <eparis@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, selinux@tycho.nsa.gov,
+        linux-kernel@vger.kernel.org
+Date: Thu, 18 Dec 2014 14:04:46 -0500
+In-Reply-To: <20141218184420.GF29998@madcap2.tricolour.ca>
+References: <2966.1418778594@turing-police.cc.vt.edu>
+	 <5444.1418921116@turing-police.cc.vt.edu>
+	 <1418921420.5162.19.camel@localhost>
+	 <20141218174629.GB29827@madcap2.tricolour.ca>
+	 <1418925016.5162.21.camel@localhost>
+	 <20141218184420.GF29998@madcap2.tricolour.ca>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Thu, 2014-12-18 at 13:44 -0500, Richard Guy Briggs wrote:
+> On 14/12/18, Eric Paris wrote:
+> > On Thu, 2014-12-18 at 12:46 -0500, Richard Guy Briggs wrote:
+> > > On 14/12/18, Eric Paris wrote:
+> > > > On Thu, 2014-12-18 at 11:45 -0500, Valdis.Kletnieks@vt.edu wrote:
+> > > > > On Tue, 16 Dec 2014 20:09:54 -0500, Valdis Kletnieks said:
+> > > > > > Spotted these two while booting single-user on 20141216.  20141208
+> > > > > > doesn't throw these, so it's something in the last week or so..
+> > > > > 
+> > > > > Gaah!  Turns out that 20141208 *is* susceptible - it had been booting
+> > > > > just fine for several days, but it went around the bend, apparently due
+> > > > > to a userspace or initrd change.
+> > > > 
+> > > > $5 says you updated systemd?
+> > > > 
+> > > > Richard?
+> > > 
+> > > Ok, so if you are correct, then either we justify dropping the lock (I
+> > > assume the one commone to both BUG reports [sig->cred_guard_mutex] ),
+> > > or we make yet another queue were were hoping to avoid...
+> > > 
+> > > It would also be good to narrow it down to a rule that triggers this.
+> > 
+> > I thought the first message was enough to find the problem, but:
+> > 
+> > static void kauditd_send_multicast_skb(struct sk_buff *skb)
+> > {
+> > ...
+> >         nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
+> > ...
+> > }
+> > 
+> > Since kauditd_send_multicast_skb() gets called in audit_log_end(), which
+> > can come from any context (aka even a sleeping context) you can't use
+> > GFP_KERNEL.  The audit_buffer know what context it should use.  So pass
+> > that down and use that.
+> 
+> Ok, that looks more obvious now...  We just need to change the internal
+> interface to kauditd_send_multicast_skb() to accept an audit_buffer
+> instead of just the skb and use the gfp_mask value from there instead of
+> using our own...
+> 
+> Thanks, Eric.
 
-Am Donnerstag, 18. Dezember 2014, 14:43:01 schrieb Stefan Hengelein:
-> So you actually tested the code I removed in the patch? can you
-> provide a configuration that compiles that piece of code?
+I'd suggest just sending the GFP type, not the who audit_buffer, but
+that's up to you.
 
-Yep, one of my boards (Asus eeeReader DR-900) was actually able to transmit
-stuff via the libertas spi wifi driver using the s3c64xx-spi driver.
-
-The smdk2416 is currently the only board for the s3c2416 in the kernel. I don't
-know if it had actual spi devices connected, but if it had, a suitable diff would
-look something like the diff below. Of course hooking up spi devices would
-work the same in any out-of-tree board for the supported socs.
-
-
-For people reading along, the s3c24xx spi distribution is as follows:
-s3c2410, s3c2412, s3c2440: (I think) two s3c24xx-spi
-s3c2443: one s3c64xx-spi and one s3c24xx-spi
-s3c2416: one s3c64xx-spi
-s3c2450: two s3c64xx-spi
-
-
-Heiko
-
-
------------- 8< ------------
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index 9eb2229..5210e5d 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -419,6 +419,8 @@ config MACH_SMDK2416
- 	select S3C_DEV_HSMMC1
- 	select S3C_DEV_NAND
- 	select S3C_DEV_USB_HOST
-+	select S3C64XX_DEV_SPI0
-+	select S3C2443_SETUP_SPI
- 	help
- 	  Say Y here if you are using an SMDK2416
- 
-diff --git a/arch/arm/mach-s3c24xx/mach-smdk2416.c b/arch/arm/mach-s3c24xx/mach-smdk2416.c
-index 86394f7..b6c6ff4 100644
---- a/arch/arm/mach-s3c24xx/mach-smdk2416.c
-+++ b/arch/arm/mach-s3c24xx/mach-smdk2416.c
-@@ -52,6 +52,9 @@
- #include <linux/platform_data/s3c-hsudc.h>
- #include <plat/samsung-time.h>
- 
-+#include <linux/spi/spi.h>
-+#include <linux/platform_data/spi-s3c64xx.h>
-+
- #include <plat/fb.h>
- 
- #include "common.h"
-@@ -207,6 +210,26 @@ static struct s3c_sdhci_platdata smdk2416_hsmmc1_pdata __initdata = {
- 	.cd_type		= S3C_SDHCI_CD_NONE,
- };
- 
-+struct s3c64xx_spi_csinfo libertas_cs_info = {
-+	.fb_delay = 0,
-+	.line = 128, /* gpio cs line */
-+};
-+
-+
-+static struct spi_board_info spi_board_info[] = {
-+    {
-+	.modalias		= "libertas_spi",
-+	.max_speed_hz		= 1200000,
-+	.bus_num		= 0,
-+	.irq			= 12, /* some interrupt number */
-+	.chip_select		= 0,
-+	.mode			= SPI_MODE_3,
-+	.controller_data	= &libertas_cs_info,
-+/*	.platform_data		= &foo1_pdata, */
-+    },
-+};
-+
-+
- static struct platform_device *smdk2416_devices[] __initdata = {
- 	&s3c_device_fb,
- 	&s3c_device_wdt,
-@@ -216,6 +239,7 @@ static struct platform_device *smdk2416_devices[] __initdata = {
- 	&s3c_device_hsmmc1,
- 	&s3c_device_usb_hsudc,
- 	&s3c2443_device_dma,
-+	&s3c64xx_device_spi0,
- };
- 
- static void __init smdk2416_init_time(void)
-@@ -250,6 +274,9 @@ static void __init smdk2416_machine_init(void)
- 	gpio_request(S3C2410_GPB(1), "Display Reset");
- 	gpio_direction_output(S3C2410_GPB(1), 1);
- 
-+	s3c64xx_spi0_set_platdata(NULL, 0, ARRAY_SIZE(spi_board_info));
-+	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
-+
- 	platform_add_devices(smdk2416_devices, ARRAY_SIZE(smdk2416_devices));
- 	smdk_machine_init();
- }
-diff --git a/arch/arm/mach-s3c24xx/setup-spi.c b/arch/arm/mach-s3c24xx/setup-spi.c
-index 3d47e02..d66c4e0 100644
---- a/arch/arm/mach-s3c24xx/setup-spi.c
-+++ b/arch/arm/mach-s3c24xx/setup-spi.c
-@@ -16,6 +16,7 @@
- 
- #include <mach/hardware.h>
- #include <mach/regs-gpio.h>
-+#include <mach/gpio-samsung.h>
- 
- #ifdef CONFIG_S3C64XX_DEV_SPI0
- int s3c64xx_spi0_cfg_gpio(void)
+-Eric
 
