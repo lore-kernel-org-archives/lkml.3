@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751380AbaLRUKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 15:10:48 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55319 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaLRUKq (ORCPT
+	id S1751310AbaLRURg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 15:17:36 -0500
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:57342 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162AbaLRURe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 15:10:46 -0500
-Date: Thu, 18 Dec 2014 21:10:43 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        linux-bluetooth@vger.kernel.org, marcel@holtmann.org
-Subject: Re: bluetooth: Add hci_h4p driver
-Message-ID: <20141218201043.GA15240@amd>
-References: <20141213223727.GA13894@amd>
- <1418637710.4443.11.camel@linux-0dmf.site>
- <20141218193153.GA27832@amd>
+	Thu, 18 Dec 2014 15:17:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141218193153.GA27832@amd>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CO1PR06MB078DB45B606C923F712A57BD16A0@CO1PR06MB078.namprd06.prod.outlook.com>
+References: <1418896856-15766-1-git-send-email-dudl@cypress.com>
+	<CO1PR06MB078DB45B606C923F712A57BD16A0@CO1PR06MB078.namprd06.prod.outlook.com>
+Date: Thu, 18 Dec 2014 12:17:33 -0800
+Message-ID: <CANLzEkshSQmTSDc+t=oGGRLZygU9c2S5YRZ7AZqFmXkzJqF+9g@mail.gmail.com>
+Subject: Re: [PATCH v16 00/12] input: cyapa: instruction of cyapa patches
+From: Benson Leung <bleung@google.com>
+To: Dudley Du <dudl@cypress.com>
+Cc: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "jmmahler@gmail.com" <jmmahler@gmail.com>,
+        "rydberg@euromail.se" <rydberg@euromail.se>,
+        David Solda <dso@cypress.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-On Thu 2014-12-18 20:31:53, Pavel Machek wrote:
-> Hi!
-> 
-> > > +	h4p_simple_send_frame(info, skb);
-> > > +
-> > > +	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
-> > > +						       msecs_to_jiffies(1000))) {
-> > > +		printk("h4p: negotiation did not return\n");
-> > 
-> > Memory leak in the error case
-> 
-> And memory leak in the normal case, too, no? Fixed.
+Hi Dudley,
 
-Actually, no, h4p_simple_send_frame passes skb to network stack, and
-it should free it as neccessary.
 
-								Pavel
-								
+On Thu, Dec 18, 2014 at 3:06 AM, Dudley Du <dudl@cypress.com> wrote:
+> Jeremiah,
+>
+> I re-sent the v16 patches through the new internal email server with my emal dudl@cypress.com.
+> Could you help check if all patches were fine and not broken.
+
+I tried applying your patches onto dtor's input branch master, and it
+applied clean for me. Thanks!
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Benson Leung
+Software Engineer, Chrome OS
+Google Inc.
+bleung@google.com
