@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbaLRKOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:14:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:21602 "EHLO
+	id S1752074AbaLRKOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:14:47 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:21634 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbaLRKOc (ORCPT
+	with ESMTP id S1751983AbaLRKOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:14:32 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-cd-5492a9063925
+	Thu, 18 Dec 2014 05:14:44 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-e8-5492a912f82f
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>,
         Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
@@ -19,100 +19,110 @@ Cc: lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
         Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 5/9] hwmon: thermal: Extract __set_pwm() function to only
- modify PWM duty cycle
-Date: Thu, 18 Dec 2014 11:13:07 +0100
-Message-id: <1418897591-18332-6-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 6/9] hwmon: thermal: Read PWM FAN configuration from device tree
+Date: Thu, 18 Dec 2014 11:13:08 +0100
+Message-id: <1418897591-18332-7-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-reply-to: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
 References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jQV22lZNCDO6slbGYf+Qcq8X8K9dY
-	LZbe/cRm8eP1BTaL3gVX2SzePOK2ePNwM6PF5V1z2Cw+9x5htJhxfh+TxZOFZ5gs7kzby2Zx
-	+E07qwOvx85Zd9k9HkzczeaxbtpbZo+d3xvYPfq2rGL02Hy62uPzJrkA9igum5TUnMyy1CJ9
-	uwSujKZr55kL9vFXbJjTw97AuImni5GTQ0LAROLWscVMELaYxIV769m6GLk4hASmM0rM3fOC
-	CcLpYpL4/Ok8O0gVm4CexOe7T8ESIgIzGCX2N31jB3GYBb4zSTRtXcoCUiUskCix79dkNhCb
-	RUBVYs+i64wgNq+Am8TrvS+h9ilKdD+bAFbDKeAuMec5hC0EVNP09xLzBEbeBYwMqxhFUwuS
-	C4qT0nMN9YoTc4tL89L1kvNzNzGCw/SZ1A7GlQ0WhxgFOBiVeHgl9CaFCLEmlhVX5h5ilOBg
-	VhLhjc4BCvGmJFZWpRblxxeV5qQWH2KU5mBREudVsm8LERJITyxJzU5NLUgtgskycXBKNTAu
-	SGaS0px+/cHBwNWr+VlieCWvKFYeXZGue2VBhnLLp7cqj159/zDvTs/E/uOadmEBZUXiO6RZ
-	NWZ8PefX/m5i78tK+2TT6ParxwqN/2VcXfXLzfxG/VxLrbsfgv7XN9gJHjnxm1Vkw6trL5gE
-	zN9d3M7bfm/1celE3zMfC2fnnnV1eRw7yfaZEktxRqKhFnNRcSIA83O2z08CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDLMWRmVeSWpSXmKPExsVy+t9jQV2hlZNCDFr6DS3mHznHajH/yjVW
+	i6V3P7FZ/Hh9gc2id8FVNos3j7gt3jzczGhxedccNovPvUcYLWac38dk8WThGSaLO9P2slkc
+	ftPO6sDrsXPWXXaPBxN3s3msm/aW2WPn9wZ2j74tqxg9Np+u9vi8SS6APYrLJiU1J7MstUjf
+	LoErY9GDdWwFp4Qq+vfOYWtgbOHvYuTkkBAwkeie9Z8dwhaTuHBvPVsXIxeHkMB0Ron2718Y
+	IZwuJokFty+xglSxCehJfL77lAkkISIwg1Fif9M3dhCHWeA7k0TT1qUsIFXCAgES7xafYwSx
+	WQRUJb6c7WAGsXkF3CTuL7zHArFPUaL72QQ2EJtTwF1iznMIWwiopunvJeYJjLwLGBlWMYqm
+	FiQXFCel5xrqFSfmFpfmpesl5+duYgSH6TOpHYwrGywOMQpwMCrx8EroTQoRYk0sK67MPcQo
+	wcGsJMIbnQMU4k1JrKxKLcqPLyrNSS0+xCjNwaIkzqtk3xYiJJCeWJKanZpakFoEk2Xi4JRq
+	YMzr00v8JzbdS8/y3SeZDxp/nUQNftp9Mg9NeqClYv5dJt1s4bTAqiWnuK726dSpPLjNH+9w
+	X2WW1DyX3d9dWx+9fq8zQ6ODLfPOTfYpbhGG/GfS11t72c5e7uOQNOEcD09Z0j1/2T/zS37u
+	2xDyfOP9/zOsr4mpC2XMefD035z8WbNn9nf+CVJiKc5INNRiLipOBACC//25TwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was necessary to decouple code handling writing to sysfs from the one
-responsible for setting PWM of the fan.
-Due to that, new __set_pwm() method was extracted, which is responsible for
-only setting new PWM duty cycle.
+Code for reading PWM FAN configuration data via device tree has been added.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 ---
- drivers/hwmon/pwm-fan.c | 35 ++++++++++++++++++++++-------------
- 1 file changed, 22 insertions(+), 13 deletions(-)
+ drivers/hwmon/pwm-fan.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 50 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hwmon/pwm-fan.c b/drivers/hwmon/pwm-fan.c
-index 1991d903..870e100 100644
+index 870e100..5854bb3 100644
 --- a/drivers/hwmon/pwm-fan.c
 +++ b/drivers/hwmon/pwm-fan.c
-@@ -33,21 +33,15 @@ struct pwm_fan_ctx {
- 	unsigned char pwm_value;
+@@ -30,7 +30,10 @@
+ struct pwm_fan_ctx {
+ 	struct mutex lock;
+ 	struct pwm_device *pwm;
+-	unsigned char pwm_value;
++	unsigned int pwm_value;
++	unsigned int pwm_fan_state;
++	unsigned int pwm_fan_max_state;
++	unsigned int *pwm_fan_cooling_states;
  };
  
--static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
--		       const char *buf, size_t count)
-+static int  __set_pwm(struct pwm_fan_ctx *ctx, unsigned long pwm)
- {
--	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
--	unsigned long pwm, duty;
--	ssize_t ret;
--
--	if (kstrtoul(buf, 10, &pwm) || pwm > MAX_PWM)
--		return -EINVAL;
--
--	mutex_lock(&ctx->lock);
-+	unsigned long duty;
-+	int ret;
+ static int  __set_pwm(struct pwm_fan_ctx *ctx, unsigned long pwm)
+@@ -100,6 +103,49 @@ static struct attribute *pwm_fan_attrs[] = {
  
- 	if (ctx->pwm_value == pwm)
--		goto exit_set_pwm_no_change;
-+		return 0;
+ ATTRIBUTE_GROUPS(pwm_fan);
  
-+	mutex_lock(&ctx->lock);
- 	if (pwm == 0) {
- 		pwm_disable(ctx->pwm);
- 		goto exit_set_pwm;
-@@ -66,13 +60,28 @@ static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
- 
- exit_set_pwm:
- 	ctx->pwm_value = pwm;
--exit_set_pwm_no_change:
--	ret = count;
- exit_set_pwm_err:
- 	mutex_unlock(&ctx->lock);
- 	return ret;
- }
- 
-+static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
-+		       const char *buf, size_t count)
++int pwm_fan_of_get_cooling_data(struct device *dev, struct pwm_fan_ctx *ctx)
 +{
-+	struct pwm_fan_ctx *ctx = dev_get_drvdata(dev);
-+	unsigned long pwm;
-+	int ret;
++	struct device_node *np = dev->of_node;
++	struct property *pp;
++	int len, num, i;
 +
-+	if (kstrtoul(buf, 10, &pwm) || pwm > MAX_PWM)
++	pp = of_find_property(np, "cooling-pwm-values", &len);
++	if (!pp) {
++		dev_err(dev, "Property: 'cooling-pwm-values' not found\n");
 +		return -EINVAL;
++	}
 +
-+	ret = __set_pwm(ctx, pwm);
-+	if (ret)
-+		return ret;
++	if (len == 0) {
++		dev_err(dev, "Length wrong value!\n");
++		return -EINVAL;
++	}
 +
-+	return count;
++	ctx->pwm_fan_cooling_states = devm_kzalloc(dev, len, GFP_KERNEL);
++	if (!ctx->pwm_fan_cooling_states) {
++		dev_err(dev, "Allocation failed for pwm dan cooling states\n");
++		return -ENOMEM;
++	}
++
++	num = len / sizeof(u32);
++	if (of_property_read_u32_array(np, pp->name,
++				       ctx->pwm_fan_cooling_states, num)) {
++		dev_err(dev, "Property: %s cannot be read!\n", pp->name);
++		return -EINVAL;
++	}
++
++	for (i = 0; i < num; i++) {
++		if (ctx->pwm_fan_cooling_states[i] > MAX_PWM) {
++			dev_err(dev, "PWM fan state[%d]:%d > %d\n", i,
++				ctx->pwm_fan_cooling_states[i], MAX_PWM);
++			return -EINVAL;
++		}
++	}
++
++	ctx->pwm_fan_max_state = num - 1;
++
++	return 0;
 +}
 +
- static ssize_t show_pwm(struct device *dev,
- 			struct device_attribute *attr, char *buf)
+ static int pwm_fan_probe(struct platform_device *pdev)
  {
+ 	struct device *hwmon;
+@@ -120,6 +166,9 @@ static int pwm_fan_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, ctx);
++	ret = pwm_fan_of_get_cooling_data(&pdev->dev, ctx);
++	if (ret)
++		return ret;
+ 
+ 	/* Set duty cycle to maximum allowed */
+ 	duty_cycle = ctx->pwm->period - 1;
 -- 
 2.0.0.rc2
 
