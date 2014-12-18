@@ -1,122 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751739AbaLRVLZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:11:25 -0500
-Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:55478 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751107AbaLRVLX (ORCPT
+	id S1751771AbaLRVNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:13:17 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60249 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaLRVNQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:11:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=JO3PM/JusOUONJceC7wqJlWaFQzvaYXKTnpIpNvNrD16680x6uV0aWvk
-	x4V6UX4KMEuyC3lu1d1VGQ8n/RKtbhHFZ3jQg8+CtKITFieAg1z0JOgzUVG4e0PN
-	5DAD0EOL3Gv9tBBuoDdlQrqEI7UhHmhQ5v9ke6i9JFlVEjnmoy4=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v2.2.1 (and updates to older maintenance tracks)
-Date: Thu, 18 Dec 2014 13:11:19 -0800
-Message-ID: <xmqq61d87jew.fsf@gitster.dls.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Thu, 18 Dec 2014 16:13:16 -0500
+Date: Thu, 18 Dec 2014 22:12:57 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>, LKP <lkp@01.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        Frederic Weisbecker <frederic@kernel.org>,
+        Eduardo Valentin <edubezval@gmail.com>
+Subject: Re: [PATCH] tick/powerclamp: Remove tick_nohz_idle abuse
+In-Reply-To: <20141218115239.53d17e39@jacob-VirtualBox>
+Message-ID: <alpine.DEB.2.11.1412182209010.17382@nanos>
+References: <alpine.DEB.2.11.1412181110110.17382@nanos> <54930EB1.9080309@linux.vnet.ibm.com> <DD415AA12F8FF042BF4EA69DF123C1478AF91730@ORSMSX101.amr.corp.intel.com> <20141218115239.53d17e39@jacob-VirtualBox>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Pobox-Relay-ID: 6B8274E0-86FA-11E4-A612-42529F42C9D4-77302942!pb-smtp1.pobox.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v2.2.1 is now available at
-the usual places.
+On Thu, 18 Dec 2014, Jacob Pan wrote:
+> OK I agree, also as I mentioned earlier, Peter already has a patch for
+> consolidated idle loop and remove tick_nohz_idle_enter/exit call from
+> powerclamp driver. I have been working on a few tweaks to maintain the
+> functionality and efficiency with the consolidated idle loop.
+> We can apply the patches on top of yours.
 
-This is a security-fix for CVE-2014-9390, which affects users on
-Windows and Mac OS X but not typical UNIX users.  A set of new
-releases for older maintenance tracks (v1.8.5.6, v1.9.5, v2.0.5, and
-v2.1.4) are published at the same time and they contain the same fix.
-Various implementations and ports, including Git for Windows, Git OS
-X installer, JGit & EGit, libgit2 (and Visual Studio which uses it)
-have been updated at the same time.
+No. This is equally wrong as I pointed out before. The 'unified' idle
+loop is still fake and just pretending to be idle.
 
-Even though the issue may not affect Linux users, if you are a
-hosting service whose users may fetch from your service to Windows
-or Mac OS X machines, you are strongly encouraged to update to
-protect such users who use existing versions of Git.
+If simple standard interfaces like cpu_idle() are not working from
+idle code anymore then this simply stinks. And that's what any fake
+idle thread will do.
 
-The tarballs are found at:
+The whole approach is wrong. Implement a sched fair throttler and you
+can avoid the whoile trainwreck.
+ 
+> > 1. Queue a deferable periodic timer whose handler checks if idle
+> > needs to be injected. If so, it sets rq->need_throttle for the cpu.
+> > If its already in the fake idle period, it clears rq->need_throttle
+> > and sets need_resched.
+> > 
+> The key to powerclamp driver is to achieve package level idle
+> states, which implies synchronized idle injection. From
+> power/performance standpoint, only package level idle states is worth
+> injection.
 
-    https://www.kernel.org/pub/software/scm/git/
+Then use a synchronized non deferrable timer on all cpus. It's simple
+enough.
+ 
+Thanks,
 
-The following public repositories all have a copy of the 'v2.2.1'
-tag and the 'maint' branch that the tag points at:
-
-  url = https://kernel.googlesource.com/pub/scm/git/git
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v2.2.1 Release Notes
-========================
-
-Fixes since v2.2
-----------------
-
- * We used to allow committing a path ".Git/config" with Git that is
-   running on a case sensitive filesystem, but an attempt to check out
-   such a path with Git that runs on a case insensitive filesystem
-   would have clobbered ".git/config", which is definitely not what
-   the user would have expected.  Git now prevents you from tracking
-   a path with ".Git" (in any case combination) as a path component.
-
- * On Windows, certain path components that are different from ".git"
-   are mapped to ".git", e.g. "git~1/config" is treated as if it were
-   ".git/config".  HFS+ has a similar issue, where certain unicode
-   codepoints are ignored, e.g. ".g\u200cit/config" is treated as if
-   it were ".git/config".  Pathnames with these potential issues are
-   rejected on the affected systems.  Git on systems that are not
-   affected by this issue (e.g. Linux) can also be configured to
-   reject them to ensure cross platform interoperability of the hosted
-   projects.
-
- * "git fsck" notices a tree object that records such a path that can
-   be confused with ".git", and with receive.fsckObjects configuration
-   set to true, an attempt to "git push" such a tree object will be
-   rejected.  Such a path may not be a problem on some filesystems
-   but in order to protect those on HFS+ and on case insensitive
-   filesystems, this check is enabled on all platforms.
-
-A big "thanks!" for bringing this issue to us goes to our friends in
-the Mercurial land, namely, Matt Mackall and Augie Fackler.
-
-Also contains typofixes, documentation updates and trivial code clean-ups.
-
-----------------------------------------------------------------
-
-Changes since v2.2.0 are as follows:
-
-Hartmut Henkel (1):
-      l10n: de.po: fix typos
-
-Jeff King (8):
-      unpack-trees: propagate errors adding entries to the index
-      read-tree: add tests for confusing paths like ".." and ".git"
-      verify_dotfile(): reject .git case-insensitively
-      t1450: refactor ".", "..", and ".git" fsck tests
-      fsck: notice .git case-insensitively
-      utf8: add is_hfs_dotgit() helper
-      read-cache: optionally disallow HFS+ .git variants
-      fsck: complain about HFS+ ".git" aliases in trees
-
-Johannes Schindelin (3):
-      path: add is_ntfs_dotgit() helper
-      read-cache: optionally disallow NTFS .git variants
-      fsck: complain about NTFS ".git" aliases in trees
-
-Junio C Hamano (6):
-      Start post 2.2 cycle
-      Git 1.8.5.6
-      Git 1.9.5
-      Git 2.0.5
-      Git 2.1.4
-      Git 2.2.1
+	tglx
