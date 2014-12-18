@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751451AbaLRRU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 12:20:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:51763 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138AbaLRRUX (ORCPT
+	id S1751496AbaLRRUq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 12:20:46 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:20813 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaLRRUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 12:20:23 -0500
-Date: Thu, 18 Dec 2014 17:20:12 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [RFC PATCH 1/2] common: dma-mapping: introduce
- dma_get_parent_cfg() helper
-Message-ID: <20141218172011.GB20963@e104818-lin.cambridge.arm.com>
-References: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com>
- <1949667.gMcOLHe7Sk@wuerfel>
- <549210BB.9080603@ti.com>
- <2935351.ba8Au9y4fE@wuerfel>
+	Thu, 18 Dec 2014 12:20:45 -0500
+Message-ID: <54930CE7.50008@atmel.com>
+Date: Thu, 18 Dec 2014 18:20:39 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2935351.ba8Au9y4fE@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Bo Shen <voice.shen@atmel.com>, <balbi@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] USB: gadget: udc: atmel: change setting for DMA
+References: <1418807929-31952-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1418807929-31952-1-git-send-email-voice.shen@atmel.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 12:09:17AM +0000, Arnd Bergmann wrote:
-> Will, I think we may have a problem on ARM64 now, since we only replaced
-> set_arch_dma_coherent_ops on ARM32 but not ARM64. Can you send a fix for
-> this? Without that, we don't have any coherent operations on ARM64 any
-> more, unless I'm missing something.
+Le 17/12/2014 10:18, Bo Shen a écrit :
+> According to the datasheet, when transfer using DMA, the control
+> setting for IN packet only need END_BUF_EN, END_BUF_IE, CH_EN,
+> while for OUT packet, need more two bits END_TR_EN and END_TR_IE
+> to be configured.
+> 
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-Good point, I think Will forgot about arm64 (weird ;)).
+Seems okay, even if I am not used to these aspects:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-I'll push this out since Will is on holiday, probably shortly after
--rc1.
+I would also add a "stable" tag to these patches, something like this:
 
------8<--------------------------------------------
+Fixes: 914a3f3b3754 (USB: add atmel_usba_udc driver)
+Cc: stable@vger.kernel.org # always been there...
 
->From 40ec7fd94b4efbd5d74185a062433f71c6576e20 Mon Sep 17 00:00:00 2001
-From: Catalin Marinas <catalin.marinas@arm.com>
-Date: Thu, 18 Dec 2014 17:13:49 +0000
-Subject: [PATCH] arm64: Replace set_arch_dma_coherent_ops with
- arch_setup_dma_ops
 
-Commit a3a60f81ee6f (dma-mapping: replace set_arch_dma_coherent_ops with
-arch_setup_dma_ops) changes the of_dma_configure() arch dma_ops callback
-to arch_setup_dma_ops but only the arch/arm code is updated. Subsequent
-commit 97890ba9289c (dma-mapping: detect and configure IOMMU in
-of_dma_configure) changes the arch_setup_dma_ops() prototype further to
-handle iommu. The patch makes the corresponding arm64 changes.
+Felipe,
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Will Deacon <will.deacon@arm.com>
----
- arch/arm64/include/asm/dma-mapping.h | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Can you take both of these patches as fixes?
 
-diff --git a/arch/arm64/include/asm/dma-mapping.h b/arch/arm64/include/asm/dma-mapping.h
-index d34189bceff7..9ce3e680ae1c 100644
---- a/arch/arm64/include/asm/dma-mapping.h
-+++ b/arch/arm64/include/asm/dma-mapping.h
-@@ -52,13 +52,14 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
- 	dev->archdata.dma_ops = ops;
- }
- 
--static inline int set_arch_dma_coherent_ops(struct device *dev)
-+static inline void arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
-+				      struct iommu_ops *iommu, bool coherent)
- {
--	dev->archdata.dma_coherent = true;
--	set_dma_ops(dev, &coherent_swiotlb_dma_ops);
--	return 0;
-+	dev->archdata.dma_coherent = coherent;
-+	if (coherent)
-+		set_dma_ops(dev, &coherent_swiotlb_dma_ops);
- }
--#define set_arch_dma_coherent_ops	set_arch_dma_coherent_ops
-+#define arch_setup_dma_ops	arch_setup_dma_ops
- 
- /* do not use this function in a driver */
- static inline bool is_device_dma_coherent(struct device *dev)
+> ---
+> 
+>  drivers/usb/gadget/udc/atmel_usba_udc.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/udc/atmel_usba_udc.c b/drivers/usb/gadget/udc/atmel_usba_udc.c
+> index ce88237..63e90f5 100644
+> --- a/drivers/usb/gadget/udc/atmel_usba_udc.c
+> +++ b/drivers/usb/gadget/udc/atmel_usba_udc.c
+> @@ -716,10 +716,10 @@ static int queue_dma(struct usba_udc *udc, struct usba_ep *ep,
+>  	req->using_dma = 1;
+>  	req->ctrl = USBA_BF(DMA_BUF_LEN, req->req.length)
+>  			| USBA_DMA_CH_EN | USBA_DMA_END_BUF_IE
+> -			| USBA_DMA_END_TR_EN | USBA_DMA_END_TR_IE;
+> +			| USBA_DMA_END_BUF_EN;
+>  
+> -	if (ep->is_in)
+> -		req->ctrl |= USBA_DMA_END_BUF_EN;
+> +	if (!ep->is_in)
+> +		req->ctrl |= USBA_DMA_END_TR_EN | USBA_DMA_END_TR_IE;
+>  
+>  	/*
+>  	 * Add this request to the queue and submit for DMA if
+> 
+
+
+-- 
+Nicolas Ferre
