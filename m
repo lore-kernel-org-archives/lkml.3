@@ -1,224 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591AbaLRQaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:30:09 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:35419 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaLRQaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:30:07 -0500
-Date: Thu, 18 Dec 2014 17:30:04 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: "Varlese, Marco" <marco.varlese@intel.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v3 1/1] net: Support for switch port
- configuration
-Message-ID: <20141218163004.GB1879@nanopsycho.orion>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
+	id S1751916AbaLRQa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:30:28 -0500
+Received: from fieldses.org ([174.143.236.118]:48944 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638AbaLRQa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:30:26 -0500
+Date: Thu, 18 Dec 2014 11:30:26 -0500
+To: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+Message-ID: <20141218163026.GE18179@fieldses.org>
+References: <pan.2014.12.16.22.19.18@googlemail.com>
+ <20141217212159.GA11517@fieldses.org>
+ <5492C710.20104@googlemail.com>
+ <20141218144856.GA18179@fieldses.org>
+ <pan.2014.12.18.15.35.45@googlemail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <pan.2014.12.18.15.35.45@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thu, Dec 18, 2014 at 04:30:00PM CET, marco.varlese@intel.com wrote:
->From: Marco Varlese <marco.varlese@intel.com>
+On Thu, Dec 18, 2014 at 03:35:45PM +0000, Holger Hoffstätte wrote:
+> On Thu, 18 Dec 2014 09:48:56 -0500, J. Bruce Fields wrote:
 > 
->Switch hardware offers a list of attributes that are configurable on a per port
->basis.
->This patch provides a mechanism to configure switch ports by adding an NDO
->for setting specific values to specific attributes.
->There will be a separate patch that adds the "get" functionality via another
->NDO and another patch that extends iproute2 to call the two new NDOs.
->
->Signed-off-by: Marco Varlese <marco.varlese@intel.com>
->---
-> include/linux/netdevice.h    |  5 +++
-> include/uapi/linux/if_link.h | 15 +++++++++
-> net/core/rtnetlink.c         | 73 ++++++++++++++++++++++++++++++++++++++++++++
-> 3 files changed, 93 insertions(+)
->
->diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
->index c31f74d..4881c7b 100644
->--- a/include/linux/netdevice.h
->+++ b/include/linux/netdevice.h
->@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
->  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
->  *	Called to notify switch device port of bridge port STP
->  *	state change.
->+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
->+ *                                u32 attr, u64 value);
->+ *	Called to set specific switch ports attributes.
->  */
-> struct net_device_ops {
-> 	int			(*ndo_init)(struct net_device *dev);
->@@ -1185,6 +1188,8 @@ struct net_device_ops {
-> 							    struct netdev_phys_item_id *psid);
-> 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
-> 							      u8 state);
->+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
->+							   u32 attr, u64 value);
-
-How about get? Userspace should be able to read the values as well.
-
-> #endif
-> };
+> > On a quick skim, the server's READDIR responses look correct.  The entry
+> > btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+> > is returned in frame 53 (with complete reassembled reply displayed by
+> > wireshark in frame 63).
+> > 
+> > You could double-check for me--just run "wireshark nfs-server.pcap",
+> > look for packets labeled "Reply ... READDIR", and expand out the READDIR
+> > op and directory listing.  I don't see anything obviously wrong.
 > 
->diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
->index f7d0d2d..6ad9b91 100644
->--- a/include/uapi/linux/if_link.h
->+++ b/include/uapi/linux/if_link.h
->@@ -146,6 +146,7 @@ enum {
-> 	IFLA_PHYS_PORT_ID,
-> 	IFLA_CARRIER_CHANGES,
-> 	IFLA_PHYS_SWITCH_ID,
->+	IFLA_SWITCH_PORT_CFG,
-> 	__IFLA_MAX
-> };
+> That's what I can see in Wireshark as well (#53 as part of the "20 
+> reassembled segments"). As I said in my followup I don't think there is 
+> anything wrong with that particular file since removing others "fixed" 
+> the problem. That's why I suspected NIC/TCP buggery, and since my kernels 
+> usually have a bunch of patches (the ones in that repo) I wanted to try 
+> vanilla 3.18.0/1 as well as -3.14.27 first.
 > 
->@@ -603,4 +604,18 @@ enum {
+> >> Meanwhile I'll try older/plain (unpatched) kernels. So far reverting
+> >> the client to vanilla 3.18.1 or 3.14.27 has not helped..
+> > 
+> > I'm a little unclear: when you said "All this is on freshly baked
+> > 3.18.1", are you describing the client, or the server, or both?
 > 
-> #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
-> 
->+/* Switch Port Attributes section */
->+
->+enum {
->+	IFLA_SW_UNSPEC,
->+	IFLA_SW_LEARNING,
->+	IFLA_SW_LOOPBACK,
->+	IFLA_SW_BCAST_FLOODING,
->+	IFLA_SW_UCAST_FLOODING,
->+	IFLA_SW_MCAST_FLOODING,
->+	__IFLA_SW_ATTR_MAX
->+};
->+
->+#define IFLA_SW_ATTR_MAX (__IFLA_SW_ATTR_MAX - 1)
->+
-> #endif /* _UAPI_LINUX_IF_LINK_H */
->diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
->index eaa057f..d50ca71 100644
->--- a/net/core/rtnetlink.c
->+++ b/net/core/rtnetlink.c
->@@ -1223,6 +1223,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
-> 	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
-> 	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
-> 	[IFLA_PHYS_SWITCH_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
->+	[IFLA_SWITCH_PORT_CFG]	= { .type = NLA_NESTED },
-> };
-> 
-> static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
->@@ -1265,6 +1266,14 @@ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
-> 	[IFLA_PORT_RESPONSE]	= { .type = NLA_U16, },
-> };
-> 
->+static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
->+	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
->+	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
->+	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
->+	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
->+	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
+> That was on both. As I wrote in the followups I've now also tried to
+> first downgrade the clients (didn't help) and then finally found that
+> 3.14.27 (both with and without my patches) on the server repeatably 
+> works, regardless of client. Right now I have 3.18.1 as clients and 
+> 3.14.27 on the server, and that works fine.
 
-Please maintain namespaces. Use IFLA_SWITCH_PORT_LEARNING for example.
-That gives us place for possible future whole-switch-cfg.
+The way that the server encodes readdir replies changed in 3.16, so I'd
+guess 3.15 will also work for you and 3.16 won't.
 
+--b.
 
->+};
->+
-> static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
-> {
-> 	struct net *net = sock_net(skb->sk);
->@@ -1389,6 +1398,41 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
-> 	return 0;
-> }
-> 
->+#ifdef CONFIG_NET_SWITCHDEV
->+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
->+{
->+	int rem, err = -EINVAL;
->+	struct nlattr *v;
->+	const struct net_device_ops *ops = dev->netdev_ops;
->+
->+	nla_for_each_nested(v, attr, rem) {
->+		u32 op = nla_type(v);
->+		u64 value = 0;
->+
->+		switch (op) {
->+		case IFLA_SW_LEARNING:
->+		case IFLA_SW_LOOPBACK:
->+		case IFLA_SW_BCAST_FLOODING:
->+		case IFLA_SW_UCAST_FLOODING:
->+		case IFLA_SW_MCAST_FLOODING: {
->+			value = nla_get_u64(v);
->+			err = ops->ndo_switch_port_set_cfg(dev,
->+							   op,
->+							   value);
->+			break;
->+		}
->+		default:
->+			err = -EINVAL;
->+			break;
->+		}
->+		if (err)
->+			break;
->+	}
->+	return err;
->+}
->+
->+#endif
->+
-> static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
-> {
-> 	int rem, err = -EINVAL;
->@@ -1740,6 +1784,35 @@ static int do_setlink(const struct sk_buff *skb,
-> 			status |= DO_SETLINK_NOTIFY;
-> 		}
-> 	}
->+#ifdef CONFIG_NET_SWITCHDEV
->+	if (tb[IFLA_SWITCH_PORT_CFG]) {
->+		struct nlattr *attrs[IFLA_SW_ATTR_MAX+1];
->+
->+		err = -EOPNOTSUPP;
->+		if (!ops->ndo_switch_port_set_cfg)
->+			goto errout;
->+		if (!ops->ndo_switch_parent_id_get)
->+			goto errout;
->+
->+		err = nla_parse_nested(attrs, IFLA_SW_ATTR_MAX,
->+				       tb[IFLA_SWITCH_PORT_CFG],
->+				       ifla_sw_attr_policy);
->+		if (err < 0)
->+			return err;
->+
->+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
->+		if (err < 0)
->+			goto errout;
->+
-
-
-Would make sense to me to move this including do_setswcfg into
-net/switchdev/switchdev.c
-
-
->+		status |= DO_SETLINK_NOTIFY;
->+	}
->+#else
->+	if (tb[IFLA_SWITCH_PORT_CFG]) {
->+		err = -EOPNOTSUPP;
->+		goto errout;
->+	}
->+#endif
->+
-> 	err = 0;
-> 
-> errout:
->-- 
->1.8.5.3
->
+(PS You or your mail client seem to be trimming my address from to: and
+cc: lines, I'd rather you didn't.)
