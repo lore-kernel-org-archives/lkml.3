@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751885AbaLRCpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:45:53 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:58319 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaLRCpw (ORCPT
+	id S1751853AbaLRCvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:51:14 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:37626 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452AbaLRCvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 21:45:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <54923F1F.7040301@oracle.com>
-References: <20141211145408.GB16800@redhat.com>
-	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>
-	<20141212185454.GB4716@redhat.com>
-	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>
-	<20141213165915.GA12756@redhat.com>
-	<20141213223616.GA22559@redhat.com>
-	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>
-	<20141214234654.GA396@redhat.com>
-	<CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
-	<CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
-	<20141215055707.GA26225@redhat.com>
-	<CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-	<54923F1F.7040301@oracle.com>
-Date: Wed, 17 Dec 2014 18:45:51 -0800
-X-Google-Sender-Auth: vK4dYEUWYUslHvn8C_PN8yqCNDo
-Message-ID: <CA+55aFyeNRLjNzZ8GD4bUVUZ4yUbLR56-=rYa26d_EHgy9hA7Q@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Dec 2014 21:51:12 -0500
+From: Vikram Mulukutla <markivx@codeaurora.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Lime Yang <limey@codeaurora.org>, Stephen Boyd <sboyd@codeaurora.org>,
+        Vikram Mulukutla <markivx@codeaurora.org>
+Subject: [PATCH] tracing: Fix unmapping loop in tracing_mark_write
+Date: Wed, 17 Dec 2014 18:50:56 -0800
+Message-Id: <1418871056-6614-1-git-send-email-markivx@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 6:42 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
->
-> I guess you did "just screwed up"...
+Commit 6edb2a8a385f0cdef51dae37ff23e74d76d8a6ce introduced
+an array map_pages that contains the addresses returned by
+kmap_atomic. However, when unmapping those pages, map_pages[0]
+is unmapped before map_pages[1], breaking the nesting requirement
+as specified in the documentation for kmap_atomic/kunmap_atomic.
 
-See the email to Dave, pick the fix from there, or from commit
-cf3c0a1579ef ("x86: mm: fix VM_FAULT_RETRY handling")
+This was caught by the highmem debug code present in kunmap_atomic.
+Fix the loop to do the unmapping properly.
 
-                   Linus
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Reported-by: Lime Yang <limey@codeaurora.org>
+Signed-off-by: Vikram Mulukutla <markivx@codeaurora.org>
+---
+ kernel/trace/trace.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ab76b7b..bceed34 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4931,7 +4931,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+ 	*fpos += written;
+ 
+  out_unlock:
+-	for (i = 0; i < nr_pages; i++){
++	for (i = nr_pages - 1; i >= 0; i--) {
+ 		kunmap_atomic(map_page[i]);
+ 		put_page(pages[i]);
+ 	}
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
