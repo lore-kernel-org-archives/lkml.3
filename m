@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaLRUFj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 15:05:39 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:48569 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751673AbaLRUFh (ORCPT
+	id S1751380AbaLRUKs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 15:10:48 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55319 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaLRUKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 15:05:37 -0500
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org
-Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Boris Brezillon <boris.brezillon@free-electrons.com>
-Subject: [PATCH] pwm: atmel-hlcdc: Prevent div by zero
-Date: Thu, 18 Dec 2014 21:05:30 +0100
-Message-Id: <1418933131-12270-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20141218094442.GA24383@ulmo>
-References: <20141218094442.GA24383@ulmo>
+	Thu, 18 Dec 2014 15:10:46 -0500
+Date: Thu, 18 Dec 2014 21:10:43 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
+        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
+        linux-bluetooth@vger.kernel.org, marcel@holtmann.org
+Subject: Re: bluetooth: Add hci_h4p driver
+Message-ID: <20141218201043.GA15240@amd>
+References: <20141213223727.GA13894@amd>
+ <1418637710.4443.11.camel@linux-0dmf.site>
+ <20141218193153.GA27832@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141218193153.GA27832@amd>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The slow and system clock should never return a rate of zero, but this
-might happen if the clocks property defined in the DT is referencing the
-wrong clocks.
-Prevent any division by zero from happening by testing the clk_freq value
-before calling do_div.
+Hi!
+On Thu 2014-12-18 20:31:53, Pavel Machek wrote:
+> Hi!
+> 
+> > > +	h4p_simple_send_frame(info, skb);
+> > > +
+> > > +	if (!wait_for_completion_interruptible_timeout(&info->init_completion,
+> > > +						       msecs_to_jiffies(1000))) {
+> > > +		printk("h4p: negotiation did not return\n");
+> > 
+> > Memory leak in the error case
+> 
+> And memory leak in the normal case, too, no? Fixed.
 
-Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
----
- drivers/pwm/pwm-atmel-hlcdc.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Actually, no, h4p_simple_send_frame passes skb to network stack, and
+it should free it as neccessary.
 
-diff --git a/drivers/pwm/pwm-atmel-hlcdc.c b/drivers/pwm/pwm-atmel-hlcdc.c
-index e7a785f..522f707 100644
---- a/drivers/pwm/pwm-atmel-hlcdc.c
-+++ b/drivers/pwm/pwm-atmel-hlcdc.c
-@@ -64,6 +64,9 @@ static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
- 
- 	if (!chip->errata || !chip->errata->slow_clk_erratum) {
- 		clk_freq = clk_get_rate(new_clk);
-+		if (!clk_freq)
-+			return -EINVAL;
-+
- 		clk_period_ns = (u64)NSEC_PER_SEC * 256;
- 		do_div(clk_period_ns, clk_freq);
- 	}
-@@ -73,6 +76,9 @@ static int atmel_hlcdc_pwm_config(struct pwm_chip *c,
- 	    clk_period_ns > period_ns) {
- 		new_clk = hlcdc->sys_clk;
- 		clk_freq = clk_get_rate(new_clk);
-+		if (!clk_freq)
-+			return -EINVAL;
-+
- 		clk_period_ns = (u64)NSEC_PER_SEC * 256;
- 		do_div(clk_period_ns, clk_freq);
- 	}
+								Pavel
+								
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
