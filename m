@@ -1,35 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941AbaLRCy5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:54:57 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:65080 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850AbaLRCy4 (ORCPT
+	id S1751843AbaLRC5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:57:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45950 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaLRC5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 21:54:56 -0500
+	Wed, 17 Dec 2014 21:57:17 -0500
+Date: Wed, 17 Dec 2014 18:57:16 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Frederic Jacob <frederic.jacob.78@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: fix blank line coding style in
+ comedi_bond.c
+Message-ID: <20141218025716.GA9737@kroah.com>
+References: <1418870141-10323-1-git-send-email-frederic.jacob.78@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAM7YAk-izpgFZGBoSO7P1VMXLO5i4ezSrPM4E4f7eFCw=f+3w@mail.gmail.com>
-References: <alpine.DEB.2.00.1412171520460.5263@cobra.newdream.net>
-	<CAAM7YAk-izpgFZGBoSO7P1VMXLO5i4ezSrPM4E4f7eFCw=f+3w@mail.gmail.com>
-Date: Wed, 17 Dec 2014 18:54:55 -0800
-X-Google-Sender-Auth: YBJcNzkNp2JLY04jyBhSosN4j8w
-Message-ID: <CA+55aFwf7znK=EFGbF6NN14mPuFL-1GjzZffNVU_+qj52oaKkg@mail.gmail.com>
-Subject: Re: [GIT PULL] Ceph updates for 3.19-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Yan, Zheng" <ukernel@gmail.com>
-Cc: Sage Weil <sweil@redhat.com>, ceph-devel <ceph-devel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418870141-10323-1-git-send-email-frederic.jacob.78@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 6:25 PM, Yan, Zheng <ukernel@gmail.com> wrote:
-> my commit "ceph: add inline data to pagecache"  incidentally adds
-> fs/ceph/super.j.rej.  please remove it from your branch.  sorry for
-> the inconvenience
+On Wed, Dec 17, 2014 at 09:35:41PM -0500, Frederic Jacob wrote:
+> This is a patch to the comedi_bond.c file that fixes up a blank line after declaration warning found by the checkpatch.pl tool
 
-I wish I hadn't pulled it so quickly, and could have fixed it up as
-part of the merge commit, but I pushed a separate commit to remove it.
+Please line-wrap your line properly.
 
-                 Linus
+
+> Signed-off-by: Frederic Jacob <frederic.jacob.78@gmail.com>
+
+And provide an empty line before the signed-off-by: line.
+
+Can you fix that up and resend?
+
+thanks,
+
+greg k-h
