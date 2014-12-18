@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752147AbaLRJ3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:29:42 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:25728 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541AbaLRJ3k (ORCPT
+	id S1751675AbaLRJeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:34:11 -0500
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:45067 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057AbaLRJeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:29:40 -0500
-From: He Kuang <hekuang@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>
-CC: <ananth@in.ibm.com>, <linux-kernel@vger.kernel.org>,
-        <anil.s.keshavamurthy@intel.com>, <wangnan0@huawei.com>,
-        <hekuang@huawei.com>
-Subject: [RFC]kprobes functionality with kernel-hacking disabled
-Date: Fri, 19 Dec 2014 01:41:42 +0800
-Message-ID: <1418924502-7229-1-git-send-email-hekuang@huawei.com>
-X-Mailer: git-send-email 2.2.0.33.gc18b867
+	Thu, 18 Dec 2014 04:34:07 -0500
+Message-ID: <54929F8A.3030103@de.ibm.com>
+Date: Thu, 18 Dec 2014 10:34:02 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.189]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020203.54929E7D.02B6,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 719bdbd592e1ce34bad618fae771889f
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-next@vger.kernel.org
+Subject: Re: [PATCH] arm/rpc: avoid static keyword removal via define
+References: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com> <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com> <5490146A.3000408@de.ibm.com> <20141216114056.GP11285@n2100.arm.linux.org.uk> <5491A16A.7050101@de.ibm.com> <20141217165450.GW11285@n2100.arm.linux.org.uk>
+In-Reply-To: <20141217165450.GW11285@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14121809-0009-0000-0000-0000026BC8FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kprobes is so excellent in performance analysis. But in many practical 
-performance analysis scenarios, performance & debuging related configs
-maybe disabled. So, we should recompile the kernel for further analysis,
-this is not so convinient.
+Am 17.12.2014 um 17:54 schrieb Russell King - ARM Linux:
+> On Wed, Dec 17, 2014 at 04:29:46PM +0100, Christian Borntraeger wrote:
+>> Am 16.12.2014 um 12:40 schrieb Russell King - ARM Linux:
+>>> On Tue, Dec 16, 2014 at 12:15:54PM +0100, Christian Borntraeger wrote:
+>>>> Am 15.12.2014 um 09:48 schrieb Christian Borntraeger:
+>>>>> commit 4486b86368d7 ("[ARM] riscpc: fix decompressor font file handling")
+>>>>> introduced Makefile magic to avoid building a file two times. Using
+>>>>> -Dstatic= does break some assumptions on compiler.h that were introduced
+>>>>> for READ_ONCE.
+>>>>>
+>>>>> Lets just use sed on the copy instead of using a define.
+>>>>>
+>>>>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+>>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>>
+>>>> This fixed the linux-next build http://kisskb.ellerman.id.au/kisskb/target/1508/
+>>>> Unless anybody complains, I will send the pull request for the access_once tree tomorrow and I have this patch applied on top.
+>>>
+>>> Please give me some time to look at this.
+>>
+>> >From all builds, the only problematic case was the rpc_defconfig.
+>> So only CONFIG_ARCH_ACORN is affected.
+>>
+>> As I said, I want to send this series this merge window, so if you
+>> do not find the time to look into this before rc1, what about removing
+>> this patch from my queue and we solve this later? 
+>> Acorn Risc CPU is probably not the hottest platform right now, so if we 
+>> fix this in rc2 or rc3 this might be ok - I guess.
+> 
+> How does compiler.h get included when building font.o?
+> 
+> Since I haven't seen your patch series, I guess it gets included somehow
+> via linux/types.h ?
 
-I've read this thread asked a question to use kprobes as a module
-(https://lkml.org/lkml/2012/5/15/46), and know the ftrace dependence
- issue. But when we meet a kernel compiled without CONFIG_KPROBES*, 
-the only thing we need is the basic kprobes funtionality, have ftrace 
-or not is not the major problem, in fact, most cases ftrace is disabled
-too.
+Good news.
+I found a way to fix this in my code by moving the empty debug function as a static inline function into compiler.h itself. No need to change arm code.
 
-Do you have any advices on the conflicts between kernel hacking tools and 
-practical kernel which compiled without it? If there is no kprobes 
-module, what should we use?
-
-Signed-off-by: He Kuang <hekuang@huawei.com>
-
--- 
-1.7.9.5
+Christian
 
