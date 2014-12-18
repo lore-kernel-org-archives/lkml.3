@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528AbaLRIeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 03:34:06 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:58468 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751363AbaLRIeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 03:34:04 -0500
-X-Listener-Flag: 11101
-From: Eddie Huang <eddie.huang@mediatek.com>
-To: Mark Rutland <mark.rutland@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>
-CC: <srv_heupstream@mediatek.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Alan Cox <alan@linux.intel.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        <yingjoe.chen@mediatek.com>, <yh.chen@mediatek.com>
-Subject: [PATCH 0/2] tty: serial: Add earlycon support to MT8173 SoC
-Date: Thu, 18 Dec 2014 16:33:19 +0800
-Message-ID: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com>
-X-Mailer: git-send-email 1.8.1.1.dirty
-MIME-Version: 1.0
-Content-Type: text/plain
-X-MTK: N
+	id S1752569AbaLRIfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 03:35:06 -0500
+Received: from plane.gmane.org ([80.91.229.3]:46222 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752048AbaLRIfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 03:35:04 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [v3 23/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is preempted
+Date: Thu, 18 Dec 2014 09:32:29 +0100
+Message-ID: <5492911D.3000900@redhat.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>	<1418397300-10870-24-git-send-email-feng.wu@intel.com>	<5491B924.3090200@redhat.com> <E959C4978C3B6342920538CF579893F002307C66@SHSMSX104.ccr.corp.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+Cc: iommu@lists.linux-foundation.org, kvm@vger.kernel.org
+X-Gmane-NNTP-Posting-Host: net-2-35-193-40.cust.vodafonedsl.it
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+In-Reply-To: <E959C4978C3B6342920538CF579893F002307C66@SHSMSX104.ccr.corp.intel.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series add earlycon support to Mediatek MT8173 SoC. Although 8250 driver
-already has earlycon support, but Mediatek UART has highspeed register that
-not in 8250_early.c, so I port earlycon in 8250_mtk.c, and add stdout device
-tree support.
 
-This patchset is based on 3.18, and my basic support for Mediatek MT8173 Soc [1].
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-December/311238.html
+On 18/12/2014 04:15, Wu, Feng wrote:
+> Thanks for your comments, Paolo!
+> 
+> If we use u64 new_control, we cannot use new.sn any more.
+> Maybe we can change the struct pi_desc {} like this:
+> 
+> typedef struct pid_control{
+>         u64     on      : 1,
+>         sn      : 1,
+>         rsvd_1  : 13,
+>         ndm     : 1,
+>         nv      : 8,
+>         rsvd_2  : 8,
+>         ndst    : 32;
+> }pid_control_t;
+> 
+> struct pi_desc {
+>         u32 pir[8];     /* Posted interrupt requested */
+> 		pid_control_t control;
 
-Eddie Huang (2):
-  tty: serial: 8250_mtk: Add earlycon
-  arm64: dts: Add mediatek MT8173 earlycon support
+Probably something like this to keep the union:
 
- arch/arm64/boot/dts/mt8173-evb.dts |  4 +++-
- drivers/tty/serial/8250/8250_mtk.c | 33 +++++++++++++++++++++++++++++++++
- 2 files changed, 36 insertions(+), 1 deletion(-)
+typedef union pid_control {
+	u64 full;
+	struct {
+		u64 on : 1,
+		...
+	} fields;
+};
 
---
-1.8.1.1.dirty
+>         u32 rsvd[6];
+> } __aligned(64);
+> 
+> 
+> Then we can define pid_control_t new_control, old_control. And use new_control.sn = 0.
+> 
+> What is your opinon?
+
+Sure.  Alternatively, keep using struct pi_desc new; just
+do not zero it, nor access any field outide the control word.
+
+Paolo
 
