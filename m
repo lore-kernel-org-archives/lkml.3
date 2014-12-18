@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaLRODP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:03:15 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:39994 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaLRODM (ORCPT
+	id S1752561AbaLROEa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:04:30 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:38492 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751796AbaLROE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:03:12 -0500
-Message-ID: <5492DE9E.7000806@gmail.com>
-Date: Thu, 18 Dec 2014 17:03:10 +0300
+	Thu, 18 Dec 2014 09:04:28 -0500
+Message-ID: <5492DEE7.8010407@gmail.com>
+Date: Thu, 18 Dec 2014 17:04:23 +0300
 From: Dmitry Tunin <hanipouspilot@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -28,9 +28,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is already done.
+Sry, wrong url b4
 
-https://bugzilla.kernel.org/attachment.cgi?id=160161
+https://bugzilla.kernel.org/attachment.cgi?id=125091
 
 18.12.2014 16:57, Matthew Garrett пишет:
 > Can you run acpidump and upload the ACPI tables somewhere?
