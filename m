@@ -1,125 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751588AbaLRQv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:51:27 -0500
-Received: from smtp-out-208.synserver.de ([212.40.185.208]:1065 "EHLO
-	smtp-out-208.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaLRQvZ (ORCPT
+	id S1751856AbaLRQvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:51:53 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41569 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751511AbaLRQvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:51:25 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20595
-Message-ID: <54930604.1020607@metafoo.de>
-Date: Thu, 18 Dec 2014 17:51:16 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
-MIME-Version: 1.0
-To: "Baluta, Teodora" <teodora.baluta@intel.com>,
-        "jic23@kernel.org" <jic23@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
-References: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>	 <5481153B.4070609@kernel.org> <1418047828.18463.10.camel@bebop>
-In-Reply-To: <1418047828.18463.10.camel@bebop>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Dec 2014 11:51:49 -0500
+From: Julian Brost <linux-kernel@0x4a42.net>
+To: Julian Brost <linux-kernel@0x4a42.net>,
+        Fabian Hofmann <fabian.hofmann@fau.de>
+Cc: linux-kernel@i4.cs.fau.de, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/5] perf/x86/intel/uncore: coding style: Fix alignment in macros
+Date: Thu, 18 Dec 2014 17:51:38 +0100
+Message-Id: <1418921500-5630-4-git-send-email-linux-kernel@0x4a42.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1418921500-5630-1-git-send-email-linux-kernel@0x4a42.net>
+References: <1418751050-11725-1-git-send-email-linux-kernel@0x4a42.net>
+ <1418921500-5630-1-git-send-email-linux-kernel@0x4a42.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding V4L folks to Cc for more input.
+The macro definitions were improperly aligned which is fixed by this patch.
 
-On 12/08/2014 03:10 PM, Baluta, Teodora wrote:
-> Hello,
->
-> On Vi, 2014-12-05 at 02:15 +0000, Jonathan Cameron wrote:
->> On 04/12/14 13:00, Teodora Baluta wrote:
->>> This patchset adds support for fingerprint sensors through the IIO interface.
->>> This way userspace applications collect information in a uniform way. All
->>> processing would be done in the upper layers as suggested in [0].
->>>
->>> In order to test out this proposal, a minimal implementation for UPEK's
->>> TouchChip Fingerprint Sensor via USB is also available. Although there is an
->>> existing implementation in userspace for USB fingerprint devices, including this
->>> particular device, the driver represents a proof of concept of how fingerprint
->>> sensors could be integrated in the IIO framework regardless of the used bus. For
->>> lower power requirements, the SPI bus is preferred and a kernel driver
->>> implementation makes more sense.
->>
->> So why not v4l?  These are effectively image sensors..
->
-> Well, here's why I don't think v4l would be the best option:
->
-> - an image scanner could be implemented in the v4l subsystem, but it
-> seems far more complicated for a simple fingerprint scanner - it usually
-> has drivers for webcams, TVs or video streaming devices. The v4l
-> subsystem (with all its support for colorspace, decoders, image
-> compression, frame control) seems a bit of an overkill for a very
-> straightforward fingerprint imaging sensor.
->
-> - a fingerprint device could also send out a processed information, not
-> just the image of a fingerprint. This means that the processing is done
-> in hardware - the UPEK TouchStrip chipset in libfprint has this behavior
-> (see [0]). So, the IIO framework would support a uniform way of handling
-> fingerprint devices that either do processing in software or in
-> hardware.
->
-> The way I see it now, for processed fingerprint information, an IIO
-> device could have an IIO_FINGERPRINT channel with a modifier and only
-> the sensitivity threshold attribute set. We would also need two
-> triggers: one for enrollment and one for the verification mode to
-> control the device from a userspace application.
->
-> Thanks,
-> Teodora
->
-> [0] http://www.freedesktop.org/wiki/Software/fprint/libfprint/upekts/
->
->
->>>
->>> A sysfs trigger is enabled and the device starts scanning. As soon as an image
->>> is available it is written in the character device /dev/iio:deviceX.
->>>
->>> Userspace applications will be able to calculate the expected image size using
->>> the fingerprint attributes height, width and bit depth. Other attributes
->>> introduced for the fingerprint channel in IIO represent information that aids in
->>> the fingerprint image processing. Besides these, the proposed interface offers
->>> userspace a way to read a feedback after a scan (like the swipe was too slow or
->>> too fast) through a modified fingerprint_status channel.
->>>
->>> [0] http://www.spinics.net/lists/linux-iio/msg11463.html
->>>
->>> Teodora Baluta (3):
->>>    iio: core: add support for fingerprint devices
->>>    iio: core: change channel's storagebits/realbits to u32
->>>    iio: fingerprint: add fingerprint sensor via USB
->>>
->>>   Documentation/ABI/testing/sysfs-bus-iio |  51 +++
->>>   drivers/iio/Kconfig                     |   1 +
->>>   drivers/iio/Makefile                    |   1 +
->>>   drivers/iio/fingerprint/Kconfig         |  15 +
->>>   drivers/iio/fingerprint/Makefile        |   5 +
->>>   drivers/iio/fingerprint/fp_tc.c         | 162 +++++++++
->>>   drivers/iio/fingerprint/fp_tc.h         |  22 ++
->>>   drivers/iio/fingerprint/fp_tc_usb.c     | 618 ++++++++++++++++++++++++++++++++
->>>   drivers/iio/fingerprint/fp_tc_usb.h     | 144 ++++++++
->>>   drivers/iio/industrialio-core.c         |   9 +
->>>   include/linux/iio/iio.h                 |  11 +-
->>>   include/linux/iio/types.h               |  10 +
->>>   12 files changed, 1047 insertions(+), 2 deletions(-)
->>>   create mode 100644 drivers/iio/fingerprint/Kconfig
->>>   create mode 100644 drivers/iio/fingerprint/Makefile
->>>   create mode 100644 drivers/iio/fingerprint/fp_tc.c
->>>   create mode 100644 drivers/iio/fingerprint/fp_tc.h
->>>   create mode 100644 drivers/iio/fingerprint/fp_tc_usb.c
->>>   create mode 100644 drivers/iio/fingerprint/fp_tc_usb.h
->>>
->>
->
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��*"��^n�r���z���h����&���G���h�(�階�ݢj"���m�����z�ޖ���f���h���~�mml==
->
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Julian Brost <linux-kernel@0x4a42.net>
+Signed-off-by: Fabian Hofmann <fabian.hofmann@fau.de>
+---
+ .../x86/kernel/cpu/perf_event_intel_uncore_snbep.c | 26 +++++++++++-----------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+index d817c43..7f457da 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
+@@ -114,7 +114,7 @@
+ /* IVBEP event control */
+ #define IVBEP_PMON_BOX_CTL_INT		(SNBEP_PMON_BOX_CTL_RST_CTRL | \
+ 					 SNBEP_PMON_BOX_CTL_RST_CTRS)
+-#define IVBEP_PMON_RAW_EVENT_MASK		(SNBEP_PMON_CTL_EV_SEL_MASK | \
++#define IVBEP_PMON_RAW_EVENT_MASK	(SNBEP_PMON_CTL_EV_SEL_MASK | \
+ 					 SNBEP_PMON_CTL_UMASK_MASK | \
+ 					 SNBEP_PMON_CTL_EDGE_DET | \
+ 					 SNBEP_PMON_CTL_TRESH_MASK)
+@@ -129,16 +129,16 @@
+ 				 SNBEP_PMON_CTL_EDGE_DET | \
+ 				 SNBEP_U_MSR_PMON_CTL_TRESH_MASK)
+ /* IVBEP Cbo */
+-#define IVBEP_CBO_MSR_PMON_RAW_EVENT_MASK		(IVBEP_PMON_RAW_EVENT_MASK | \
++#define IVBEP_CBO_MSR_PMON_RAW_EVENT_MASK	(IVBEP_PMON_RAW_EVENT_MASK | \
+ 						 SNBEP_CBO_PMON_CTL_TID_EN)
+ 
+-#define IVBEP_CB0_MSR_PMON_BOX_FILTER_TID		(0x1fULL << 0)
++#define IVBEP_CB0_MSR_PMON_BOX_FILTER_TID	(0x1fULL << 0)
+ #define IVBEP_CB0_MSR_PMON_BOX_FILTER_LINK	(0xfULL << 5)
+ #define IVBEP_CB0_MSR_PMON_BOX_FILTER_STATE	(0x3fULL << 17)
+-#define IVBEP_CB0_MSR_PMON_BOX_FILTER_NID		(0xffffULL << 32)
+-#define IVBEP_CB0_MSR_PMON_BOX_FILTER_OPC		(0x1ffULL << 52)
+-#define IVBEP_CB0_MSR_PMON_BOX_FILTER_C6		(0x1ULL << 61)
+-#define IVBEP_CB0_MSR_PMON_BOX_FILTER_NC		(0x1ULL << 62)
++#define IVBEP_CB0_MSR_PMON_BOX_FILTER_NID	(0xffffULL << 32)
++#define IVBEP_CB0_MSR_PMON_BOX_FILTER_OPC	(0x1ffULL << 52)
++#define IVBEP_CB0_MSR_PMON_BOX_FILTER_C6	(0x1ULL << 61)
++#define IVBEP_CB0_MSR_PMON_BOX_FILTER_NC	(0x1ULL << 62)
+ #define IVBEP_CB0_MSR_PMON_BOX_FILTER_ISOC	(0x1ULL << 63)
+ 
+ /* IVBEP home agent */
+@@ -185,20 +185,20 @@
+ #define HSWEP_CBO_MSR_OFFSET			0x10
+ 
+ 
+-#define HSWEP_CB0_MSR_PMON_BOX_FILTER_TID		(0x3fULL << 0)
++#define HSWEP_CB0_MSR_PMON_BOX_FILTER_TID	(0x3fULL << 0)
+ #define HSWEP_CB0_MSR_PMON_BOX_FILTER_LINK	(0xfULL << 6)
+ #define HSWEP_CB0_MSR_PMON_BOX_FILTER_STATE	(0x7fULL << 17)
+-#define HSWEP_CB0_MSR_PMON_BOX_FILTER_NID		(0xffffULL << 32)
+-#define HSWEP_CB0_MSR_PMON_BOX_FILTER_OPC		(0x1ffULL << 52)
+-#define HSWEP_CB0_MSR_PMON_BOX_FILTER_C6		(0x1ULL << 61)
+-#define HSWEP_CB0_MSR_PMON_BOX_FILTER_NC		(0x1ULL << 62)
++#define HSWEP_CB0_MSR_PMON_BOX_FILTER_NID	(0xffffULL << 32)
++#define HSWEP_CB0_MSR_PMON_BOX_FILTER_OPC	(0x1ffULL << 52)
++#define HSWEP_CB0_MSR_PMON_BOX_FILTER_C6	(0x1ULL << 61)
++#define HSWEP_CB0_MSR_PMON_BOX_FILTER_NC	(0x1ULL << 62)
+ #define HSWEP_CB0_MSR_PMON_BOX_FILTER_ISOC	(0x1ULL << 63)
+ 
+ 
+ /* Haswell-EP Sbox */
+ #define HSWEP_S0_MSR_PMON_CTR0			0x726
+ #define HSWEP_S0_MSR_PMON_CTL0			0x721
+-#define HSWEP_S0_MSR_PMON_BOX_CTL			0x720
++#define HSWEP_S0_MSR_PMON_BOX_CTL		0x720
+ #define HSWEP_SBOX_MSR_OFFSET			0xa
+ #define HSWEP_S_MSR_PMON_RAW_EVENT_MASK		(SNBEP_PMON_RAW_EVENT_MASK | \
+ 						 SNBEP_CBO_PMON_CTL_TID_EN)
+-- 
+1.9.1
 
