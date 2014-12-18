@@ -1,46 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaLRN2I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 08:28:08 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:58511 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaLRN2G (ORCPT
+	id S1752474AbaLRN23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 08:28:29 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:52882 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442AbaLRN21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 08:28:06 -0500
-Date: Thu, 18 Dec 2014 13:27:53 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+	Thu, 18 Dec 2014 08:28:27 -0500
+Message-ID: <5492D678.9040308@gmail.com>
+Date: Thu, 18 Dec 2014 16:28:24 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
 To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Dmitry Tunin <hanipouspilot@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
+        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>
 Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
  brightness keys
-Message-ID: <20141218132753.GA4918@srcf.ucam.org>
-References: <5492C5A3.8090700@gmail.com>
- <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+References: <5492C5A3.8090700@gmail.com> <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
 In-Reply-To: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 08:25:42AM -0500, Josh Boyer wrote:
+Josh,
 
+I agree, that a better approach is to implement opregion in a right way.
+But it will take some time. In the meantime this kind of quirks solve the problem.
+And it is quite safe.
+
+18.12.2014 16:25, Josh Boyer пишет:
+> On Thu, Dec 18, 2014 at 7:16 AM, Dmitry Tunin <hanipouspilot@gmail.com> wrote:
+>> Add "acpi_osi=" quirk for ASUS X200MA
+>> More information can be found in UX302LA bugreport
+>> https://bugzilla.kernel.org/show_bug.cgi?id=70241
+>>
+>> X200MA is affected by th e same bug and the solution has been tested
+>>
+>> I reported it to launchpad too
+>> https://bugs.launchpad.net/ubuntu/bug/1400068
+>>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+>>
+>
+> The UX301LA models have the same setup, with 16 devices instead of 8.
+> I discussed this with Matthew Garrett a bit and a more ideal approach
+> is to actually enumerate all 16 devices between the firmware and i915
+> driver.  The problem we have is that the intel opregion spec that
+> hasn't been updated since 2008 doesn't cover the additional 8 devices.
+> Anyway, that is being tracked here:
+>
+> https://bugs.freedesktop.org/show_bug.cgi?id=81762
+>
+>> ---
+>>   drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
+>>   1 file changed, 20 insertions(+)
+>>
+>> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+>> index 7556e7c..f78ed08 100644
+>> --- a/drivers/acpi/blacklist.c
+>> +++ b/drivers/acpi/blacklist.c
+>> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct
+>> dmi_system_id *d)
+>>          acpi_osi_setup("!Windows 2012");
+>>          return 0;
+>>   }
+>> +/*
+>> + * Some ASUS models firmware declares 16 devices instead of 8
+>> + * 'acpi_osi=' kernel parameter fixes it
+>> + * Without this parameters brightness keys Fn+F5 and F6 do not work
+>> + */
+>> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
+>> +{
+>> +       printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+>> +       acpi_osi_setup("");
+>> +       return 0;
+>> +}
+>
 > What does this do to the rest of the function keys?  Does everything
 > else still work as expected, including suspend and resume?
-
-Disabling OSI completely certainly runs the risk of turning off things 
-like HPET. It certainly shouldn't be done without checking the ACPI 
-tables, and it really shouldn't be done at all because this is Intel's 
-bug and they should just fix it.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+>
+>>    static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+>>          {
+>> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[]
+>> __initdata = {
+>>                       DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
+>>                  },
+>>          },
+>> +       /* Without this brightness keys do not work */
+>> +       {
+>> +       .callback = dmi_disable_osi_all,
+>> +       .ident = "ASUSTeK COMPUTER INC. X200MA",
+>> +       .matches = {
+>> +                    DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+>> +                    DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
+>> +               },
+>> +       },
+>>          {}
+>>   };
+>>
+>> --
+>> 1.9.1
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe stable" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
