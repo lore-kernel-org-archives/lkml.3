@@ -1,399 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751431AbaLRPKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:10:53 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43991 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaLRPKv (ORCPT
+	id S1751267AbaLRPQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:16:27 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:37053 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaLRPQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:10:51 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] tools lib traceevent: Add support for IP address formats
-Date: Thu, 18 Dec 2014 08:10:43 -0700
-Message-Id: <1418915443-45707-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.9.3 (Apple Git-50)
+	Thu, 18 Dec 2014 10:16:25 -0500
+Message-ID: <5492EFC3.8030102@cumulusnetworks.com>
+Date: Thu, 18 Dec 2014 07:16:19 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: "Varlese, Marco" <marco.varlese@intel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds helper for following kernel formats:
-  %pi4 print an IPv4 address with leading zeros
-  %pI4 print an IPv4 address without leading zeros
-  %pi6 print an IPv6 address without colons
-  %pI6 print an IPv6 address with colons
-  %pI6c print an IPv6 address with colons
-  %pISpc print an IP address from a sockaddr
+On 12/18/14, 6:55 AM, Varlese, Marco wrote:
+>> -----Original Message-----
+>> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
+>> Sent: Thursday, December 18, 2014 2:45 PM
+>> To: Varlese, Marco
+>> Cc: netdev@vger.kernel.org; Fastabend, John R; Thomas Graf; Jiri Pirko;
+>> sfeldma@gmail.com; linux-kernel@vger.kernel.org
+>> Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+>> configuration
+>>
+>> On 12/18/14, 3:29 AM, Varlese, Marco wrote:
+>>> From: Marco Varlese <marco.varlese@intel.com>
+>>>
+>>> Switch hardware offers a list of attributes that are configurable on a
+>>> per port basis.
+>>> This patch provides a mechanism to configure switch ports by adding an
+>>> NDO for setting specific values to specific attributes.
+>>> There will be a separate patch that adds the "get" functionality via
+>>> another NDO and another patch that extends iproute2 to call the two
+>>> new NDOs.
+>>>
+>>> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+>>> ---
+>>>    include/linux/netdevice.h    |  5 ++++
+>>>    include/uapi/linux/if_link.h | 15 ++++++++++++
+>>>    net/core/rtnetlink.c         | 54
+>> ++++++++++++++++++++++++++++++++++++++++++++
+>>>    3 files changed, 74 insertions(+)
+>>>
+>>> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+>>> index c31f74d..4881c7b 100644
+>>> --- a/include/linux/netdevice.h
+>>> +++ b/include/linux/netdevice.h
+>>> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct
+>> net_device *dev,
+>>>     * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+>>>     *	Called to notify switch device port of bridge port STP
+>>>     *	state change.
+>>> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+>>> + *                                u32 attr, u64 value);
+>>> + *	Called to set specific switch ports attributes.
+>>>     */
+>>>    struct net_device_ops {
+>>>    	int			(*ndo_init)(struct net_device *dev);
+>>> @@ -1185,6 +1188,8 @@ struct net_device_ops {
+>>>    							    struct
+>> netdev_phys_item_id *psid);
+>>>    	int			(*ndo_switch_port_stp_update)(struct
+>> net_device *dev,
+>>>    							      u8 state);
+>>> +	int			(*ndo_switch_port_set_cfg)(struct
+>> net_device *dev,
+>>> +							   u32 attr, u64 value);
+>>>    #endif
+>>>    };
+>>>
+>>> diff --git a/include/uapi/linux/if_link.h
+>>> b/include/uapi/linux/if_link.h index f7d0d2d..19cb51a 100644
+>>> --- a/include/uapi/linux/if_link.h
+>>> +++ b/include/uapi/linux/if_link.h
+>>> @@ -146,6 +146,7 @@ enum {
+>>>    	IFLA_PHYS_PORT_ID,
+>>>    	IFLA_CARRIER_CHANGES,
+>>>    	IFLA_PHYS_SWITCH_ID,
+>>> +	IFLA_SWITCH_PORT_CFG,
+>>>    	__IFLA_MAX
+>>>    };
+>>>
+>>> @@ -603,4 +604,18 @@ enum {
+>>>
+>>>    #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+>>>
+>>> +/* Switch Port Attributes section */
+>>> +
+>>> +enum {
+>>> +	IFLA_ATTR_UNSPEC,
+>>> +	IFLA_ATTR_LEARNING,
+>> Any reason you want learning here ?. This is covered as part  of the bridge
+>> setlink attributes.
+>>
+> Yes, because the user may _not_ want to go through a bridge interface necessarily.
+But, the bridge setlink/getlink interface was changed to accommodate 
+'self' for exactly such cases.
+I kind of understand your case for the other attributes (these are per 
+port settings that switch asics provide).
 
-Allows these formats to be used in tracepoints.
+However, i don't understand the reason to pull in bridge attributes here.
 
-Quite a bit of this is adapted from code in lib/vsprintf.c.
-
-v2:
-- pass ptr+1 to print_ip_arg per Namhyung's comments
-- added field length checks to sockaddr function
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/event-parse.c | 326 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 326 insertions(+)
-
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cf3a44bf1ec3..48d57c9fc476 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -32,6 +32,7 @@
- #include <stdint.h>
- #include <limits.h>
- 
-+#include <netinet/ip6.h>
- #include "event-parse.h"
- #include "event-utils.h"
- 
-@@ -4149,6 +4150,322 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
- 	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
- }
- 
-+static void print_ip4_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	const char *fmt;
-+
-+	if (i == 'i')
-+		fmt = "%03d.%03d.%03d.%03d";
-+	else
-+		fmt = "%d.%d.%d.%d";
-+
-+	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3]);
-+}
-+
-+static inline bool ipv6_addr_v4mapped(const struct in6_addr *a)
-+{
-+	return ((unsigned long)(a->s6_addr32[0] | a->s6_addr32[1]) |
-+		(unsigned long)(a->s6_addr32[2] ^ htonl(0x0000ffff))) == 0UL;
-+}
-+
-+static inline bool ipv6_addr_is_isatap(const struct in6_addr *addr)
-+{
-+	return (addr->s6_addr32[2] | htonl(0x02000000)) == htonl(0x02005EFE);
-+}
-+
-+static void print_ip6c_addr(struct trace_seq *s, unsigned char *addr)
-+{
-+	int i, j, range;
-+	unsigned char zerolength[8];
-+	int longest = 1;
-+	int colonpos = -1;
-+	uint16_t word;
-+	uint8_t hi, lo;
-+	bool needcolon = false;
-+	bool useIPv4;
-+	struct in6_addr in6;
-+
-+	memcpy(&in6, addr, sizeof(struct in6_addr));
-+
-+	useIPv4 = ipv6_addr_v4mapped(&in6) || ipv6_addr_is_isatap(&in6);
-+
-+	memset(zerolength, 0, sizeof(zerolength));
-+
-+	if (useIPv4)
-+		range = 6;
-+	else
-+		range = 8;
-+
-+	/* find position of longest 0 run */
-+	for (i = 0; i < range; i++) {
-+		for (j = i; j < range; j++) {
-+			if (in6.s6_addr16[j] != 0)
-+				break;
-+			zerolength[i]++;
-+		}
-+	}
-+	for (i = 0; i < range; i++) {
-+		if (zerolength[i] > longest) {
-+			longest = zerolength[i];
-+			colonpos = i;
-+		}
-+	}
-+	if (longest == 1)		/* don't compress a single 0 */
-+		colonpos = -1;
-+
-+	/* emit address */
-+	for (i = 0; i < range; i++) {
-+		if (i == colonpos) {
-+			if (needcolon || i == 0)
-+				trace_seq_printf(s, ":");
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+			i += longest - 1;
-+			continue;
-+		}
-+		if (needcolon) {
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+		}
-+		/* hex u16 without leading 0s */
-+		word = ntohs(in6.s6_addr16[i]);
-+		hi = word >> 8;
-+		lo = word & 0xff;
-+		if (hi)
-+			trace_seq_printf(s, "%x%02x", hi, lo);
-+		else
-+			trace_seq_printf(s, "%x", lo);
-+
-+		needcolon = true;
-+	}
-+
-+	if (useIPv4) {
-+		if (needcolon)
-+			trace_seq_printf(s, ":");
-+		print_ip4_addr(s, 'I', &in6.s6_addr[12]);
-+	}
-+
-+	return;
-+}
-+
-+static void print_ip6_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	int j;
-+
-+	for (j = 0; j < 16; j += 2) {
-+		trace_seq_printf(s, "%02x%02x", buf[j], buf[j+1]);
-+		if (i == 'I' && j < 14)
-+			trace_seq_printf(s, ":");
-+	}
-+}
-+
-+/*
-+ * %pi4   print an IPv4 address with leading zeros
-+ * %pI4   print an IPv4 address without leading zeros
-+ * %pi6   print an IPv6 address without colons
-+ * %pI6   print an IPv6 address with colons
-+ * %pI6c  print an IPv6 address in compressed form with colons
-+ * %pISpc print an IP address based on sockaddr; p adds port.
-+ */
-+static int print_ipv4_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	unsigned char *buf;
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return 0;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return 0;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return 0;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 4) {
-+		trace_seq_printf(s, "INVALIDIPv4");
-+		return 0;
-+	}
-+	print_ip4_addr(s, i, buf);
-+
-+	return 0;
-+}
-+
-+static int print_ipv6_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0;
-+	unsigned char *buf;
-+	int rc = 0;
-+
-+	/* pI6c */
-+	if (*ptr == 'c') {
-+		have_c = 1;
-+		ptr++;
-+		rc++;
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 16) {
-+		trace_seq_printf(s, "INVALIDIPv6");
-+		return rc;
-+	}
-+
-+	if (have_c)
-+		print_ip6c_addr(s, buf);
-+	else
-+		print_ip6_addr(s, i, buf);
-+
-+	return rc;
-+}
-+
-+static int print_ipsa_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0, have_p = 0;
-+	unsigned char *buf;
-+	struct sockaddr_storage *sa;
-+	int rc = 0;
-+
-+	/* pISpc */
-+	if (*ptr == 'p') {
-+		have_p = 1;
-+		ptr++;
-+		rc++;
-+	}
-+	if (*ptr == 'c') {
-+		have_c = 1;
-+		ptr++;
-+		rc++;
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	sa = (struct sockaddr_storage *) (data + arg->field.field->offset);
-+
-+	if (sa->ss_family == AF_INET) {
-+		struct sockaddr_in *sa4 = (struct sockaddr_in *) sa;
-+
-+		if (arg->field.field->size < sizeof(struct sockaddr_in)) {
-+			trace_seq_printf(s, "INVALIDIPv4");
-+			return rc;
-+		}
-+
-+		print_ip4_addr(s, i, (unsigned char *) &sa4->sin_addr);
-+		if (have_p)
-+			trace_seq_printf(s, ":%d", ntohs(sa4->sin_port));
-+
-+
-+	} else if (sa->ss_family == AF_INET6) {
-+		struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) sa;
-+
-+		if (arg->field.field->size < sizeof(struct sockaddr_in6)) {
-+			trace_seq_printf(s, "INVALIDIPv6");
-+			return rc;
-+		}
-+
-+		if (have_p)
-+			trace_seq_printf(s, "[");
-+
-+		buf = (unsigned char *) &sa6->sin6_addr;
-+		if (have_c)
-+			print_ip6c_addr(s, buf);
-+		else
-+			print_ip6_addr(s, i, buf);
-+
-+		if (have_p)
-+			trace_seq_printf(s, "]:%d", ntohs(sa6->sin6_port));
-+	}
-+
-+	return rc;
-+}
-+
-+static int print_ip_arg(struct trace_seq *s, const char *ptr,
-+			void *data, int size, struct event_format *event,
-+			struct print_arg *arg)
-+{
-+	char i = *ptr;  /* 'i' or 'I' */
-+	char ver;
-+	int rc = 0;
-+
-+	ptr++;
-+	rc++;
-+
-+	ver = *ptr;
-+	ptr++;
-+	rc++;
-+
-+	switch (ver) {
-+	case '4':
-+		rc += print_ipv4_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case '6':
-+		rc += print_ipv6_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case 'S':
-+		rc += print_ipsa_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return rc;
-+}
-+
- static int is_printable_array(char *p, unsigned int len)
- {
- 	unsigned int i;
-@@ -4337,6 +4654,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 					ptr++;
- 					arg = arg->next;
- 					break;
-+				} else if (*(ptr+1) == 'I' || *(ptr+1) == 'i') {
-+					int n;
-+
-+					n = print_ip_arg(s, ptr+1, data, size, event, arg);
-+					if (n > 0) {
-+						ptr += n;
-+						arg = arg->next;
-+						break;
-+					}
- 				}
- 
- 				/* fall through */
--- 
-1.9.3 (Apple Git-50)
+>
+>>> +	IFLA_ATTR_LOOPBACK,
+>>> +	IFLA_ATTR_BCAST_FLOODING,
+>>> +	IFLA_ATTR_UCAST_FLOODING,
+>>> +	IFLA_ATTR_MCAST_FLOODING,
+>>> +	__IFLA_ATTR_MAX
+>>> +};
+>>> +
+>>> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
+>>> +
+>>>    #endif /* _UAPI_LINUX_IF_LINK_H */
+>>> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c index
+>>> eaa057f..c0d1c45 100644
+>>> --- a/net/core/rtnetlink.c
+>>> +++ b/net/core/rtnetlink.c
+>>> @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device
+>> *dev, struct nlattr *tb[])
+>>>    	return 0;
+>>>    }
+>>>
+>>> +#ifdef CONFIG_NET_SWITCHDEV
+>>> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr) {
+>>> +	int rem, err = -EINVAL;
+>>> +	struct nlattr *v;
+>>> +	const struct net_device_ops *ops = dev->netdev_ops;
+>>> +
+>>> +	nla_for_each_nested(v, attr, rem) {
+>>> +		u32 op = nla_type(v);
+>>> +		u64 value = 0;
+>>> +
+>>> +		switch (op) {
+>>> +		case IFLA_ATTR_LEARNING:
+>>> +		case IFLA_ATTR_LOOPBACK:
+>>> +		case IFLA_ATTR_BCAST_FLOODING:
+>>> +		case IFLA_ATTR_UCAST_FLOODING:
+>>> +		case IFLA_ATTR_MCAST_FLOODING: {
+>>> +			if (nla_len(v) < sizeof(value)) {
+>>> +				err = -EINVAL;
+>>> +				break;
+>>> +			}
+>>> +
+>>> +			value = nla_get_u64(v);
+>>> +			err = ops->ndo_switch_port_set_cfg(dev,
+>>> +							   op,
+>>> +							   value);
+>>> +			break;
+>>> +		}
+>>> +		default:
+>>> +			err = -EINVAL;
+>>> +			break;
+>>> +		}
+>>> +		if (err)
+>>> +			break;
+>>> +	}
+>>> +	return err;
+>>> +}
+>>> +
+>>> +#endif
+>>> +
+>>>    static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+>>>    {
+>>>    	int rem, err = -EINVAL;
+>>> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
+>>>    			status |= DO_SETLINK_NOTIFY;
+>>>    		}
+>>>    	}
+>>> +#ifdef CONFIG_NET_SWITCHDEV
+>>> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+>>> +		err = -EOPNOTSUPP;
+>>> +		if (!ops->ndo_switch_port_set_cfg)
+>>> +			goto errout;
+>>> +		if (!ops->ndo_switch_parent_id_get)
+>>> +			goto errout;
+>>> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+>>> +		if (err < 0)
+>>> +			goto errout;
+>>> +
+>>> +		status |= DO_SETLINK_NOTIFY;
+>>> +	}
+>>> +#endif
+>>>    	err = 0;
+>>>
+>>>    errout:
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
