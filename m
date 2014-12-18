@@ -1,62 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaLRLCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:02:34 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:59086 "EHLO
-	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaLRLCd (ORCPT
+	id S1752143AbaLRLCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:02:47 -0500
+Received: from smtp1.cypress.com ([157.95.67.100]:57927 "EHLO
+	smtp1.cypress.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951AbaLRLCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:02:33 -0500
-From: Aleksey Makarov <aleksey.makarov@auriga.com>
-To: <linux-mips@linux-mips.org>
-CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH] MIPS: Remove unneeded #ifdef __KERNEL__ from asm/processor.h
-Date: Thu, 18 Dec 2014 13:59:53 +0300
-Message-ID: <1418900405-18900-1-git-send-email-aleksey.makarov@auriga.com>
-X-Mailer: git-send-email 2.1.3
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [80.240.102.213]
+	Thu, 18 Dec 2014 06:02:44 -0500
+From: Dudley Du <dudl@cypress.com>
+To: dmitry.torokhov@gmail.com, jmmahler@gmail.com, rydberg@euromail.se
+Cc: Dudley Du <dudl@cypress.com>, bleung@google.com, dso@cypress.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v16 00/12] input: cyapa: instruction of cyapa patches
+Date: Thu, 18 Dec 2014 18:00:44 +0800
+Message-Id: <1418896856-15766-1-git-send-email-dudl@cypress.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+V16 patches have below updates, details of other updates see history list:
+1) Fix all miss-spelling and space issue.
+2) Rename variables and functions with much more clearer names.
+3) Initialize and document tries near where it will be used.
+4) Modify cmd buffer to struct for more descriptive way.
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
----
- arch/mips/include/asm/processor.h | 6 ------
- 1 file changed, 6 deletions(-)
 
-diff --git a/arch/mips/include/asm/processor.h b/arch/mips/include/asm/processor.h
-index f1df4cb..6c10e94 100644
---- a/arch/mips/include/asm/processor.h
-+++ b/arch/mips/include/asm/processor.h
-@@ -54,9 +54,7 @@ extern unsigned int vced_count, vcei_count;
- #define TASK_SIZE	0x7fff8000UL
- #endif
- 
--#ifdef __KERNEL__
- #define STACK_TOP_MAX	TASK_SIZE
--#endif
- 
- #define TASK_IS_32BIT_ADDR 1
- 
-@@ -73,11 +71,7 @@ extern unsigned int vced_count, vcei_count;
- #define TASK_SIZE32	0x7fff8000UL
- #define TASK_SIZE64	0x10000000000UL
- #define TASK_SIZE (test_thread_flag(TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
--
--#ifdef __KERNEL__
- #define STACK_TOP_MAX	TASK_SIZE64
--#endif
--
- 
- #define TASK_SIZE_OF(tsk)						\
- 	(test_tsk_thread_flag(tsk, TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
--- 
-2.1.3
+This patch series is aimed to re-design the cyapa driver to support
+old gen3 trackpad devices and new gen5 trackpad devices in one
+cyapa driver, it's for easily productions support based on
+customers' requirements. And add sysfs functions and interfaces
+supported that required by users and customers.
 
+Since the earlier gen3 and the latest gen5 trackpad devices using
+two different chipsets, and have different protocols and interfaces,
+so if supported these two type trackpad devices in two different drivers,
+then it will be difficult to manage productions and later firmware updates.
+e.g.: It will cause customer don't know which one trackpad device firmware
+image to use and update when it has been used and integrated
+in same one productions, so here we support these two trackpad
+devices in same on driver.
+
+
+Dudley Du (12):
+  input: cyapa: re-design driver to support multi-trackpad in one driver
+  input: cyapa: add gen5 trackpad device basic functions support
+  input: cyapa: add power management interfaces support for the device
+  input: cyapa: add runtime power management interfaces support for the
+    device
+  input: cyapa: add sysfs interfaces support in the cyapa driver
+  input: cyapa: add gen3 trackpad device firmware update function
+    support
+  input: cyapa: add gen3 trackpad device read baseline function support
+  input: cyapa: add gen3 trackpad device force re-calibrate function
+    support
+  input: cyapa: add gen5 trackpad device firmware update function
+    support
+  input: cyapa: add gen5 trackpad device read baseline function support
+  input: cyapa: add gen5 trackpad device force re-calibrate function
+    support
+  input: cyapa: add acpi device id support
+
+ drivers/input/mouse/Kconfig      |    1 +
+ drivers/input/mouse/Makefile     |    3 +-
+ drivers/input/mouse/cyapa.c      | 1692 ++++++++++++++---------
+ drivers/input/mouse/cyapa.h      |  314 +++++
+ drivers/input/mouse/cyapa_gen3.c | 1220 +++++++++++++++++
+ drivers/input/mouse/cyapa_gen5.c | 2767 ++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 5325 insertions(+), 672 deletions(-)
+ create mode 100644 drivers/input/mouse/cyapa.h
+ create mode 100644 drivers/input/mouse/cyapa_gen3.c
+ create mode 100644 drivers/input/mouse/cyapa_gen5.c
+
+
+History patch series modifications list:
+V15 patches have below main updates compared with v14 patches:
+1) Fix all warning errors of sparse tool when running with "make C=1".
+2) Change variable name "unique_str" to "product_id" for clearer meanings.
+3) Update cyapa_i2c_write function to return error directly when length > 31.
+
+V14 patches have below main updates compared with v13 patches:
+1) Correct 9 miss spelling issues of "bufferred" to "buffered".
+2) Fix the upgrade issue of removing MOUSE_CYAPA config when make oldconfig
+   by replase "depends on I2C && CRC_ITU_T" with
+	"depends on I2C"
+	"select CRC_ITU_T"
+   in patch 9.
+
+V13 patches have below main updates compared with v12 patches:
+1) Remove all debugfs interface, including read_fw and raw_data interfaces.
+2) This patches are made based linux next-20141208.
+
+V12 patches have below main updates compared with v11 patches:
+1) Add check that when TP is detected but not operational, do not exit driver
+   immediately, but wait and export the update_fw interface for recovering.
+2) Re-arrange the function codes, remove unnesseary protype definitions in
+   the header file.
+
+V11 patches have below main updates compared with v10 patches:
+1) Add add acpi device id supported for old gen3 and new gen5 trackpad devices.
+2) Fix the unable to update firmware issue when cyapa_open is not called
+   which means the irq for firwmare update process is not enabled. This fix
+   by checking if the irq is enabled, if not then enable irq before start to
+   do firmware update.
+
+V10 patches have below main updates compared with v9 patches:
+1) Modify code to following kernel code style.
+   e.g.: correct to use error as return name when there is only error path,
+   and fix the checkpatch.sh wanting in the driver.
+2) Remove cyapa_remove method and use input open and close interface to
+   following device resouse management infrastructure.
+3) Modify cyapa_detect method to return tristate issue to make the return value
+   much more consistent and clear.
+4) Use platform supplied functions as possible instead of driver
+   specific rewritten version.
+
+V9 patches have below updates compared with v8 patches:
+1) Removed all async thread stuff from the driver.
+2) Split driver into 18 patches for each function change one patch.
+
+V8 patches have below updates compared with v7 patches:
+1) [PATCH v8 01/13] - Remove the async thread for device detect in
+   probe routine, now the device detect process is completely done within
+   the device probe routine.
+2) [PATCH v8 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+3) [PATCH v8 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
+
+V7 patches have below updates compared with v6 patches:
+1) [PATCH v7 01/13] - Split the irq cmd hander function to separated
+   function cyapa_default_irq_cmd_handler() and set it to interface
+   cyapa_default_ops.irq_cmd_handler.
+2) [PATCH v7 06/13] - Add cyapa->gen check in cyapa_gen3_irq_cmd_handler()
+   to avoid miss-enter when device protocol is still in detecting.
+
+
+V6 patches have below updates compared with v5 patches:
+1) Remove patch 14 of the lid filtering from the cyapa driver.
+
+V5 patches have below updates compared with v4 patches:
+1) Uses get_device()/put_device() instead of kobject_get()/kobject_put();
+2) Fix memories freed before debugfs entries issue;
+3) Make cyapa_debugs_root valid in driver module level
+   in module_init()/moudle_exit() ;
+4) Fix i2c_transfer() may return partial transfer issues.
+5) Add cyapa->removed flag to avoid detecting thread may still running
+   when driver module is removed.
+6) Fix the meanings of some comments and return error code not clear issue.
