@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391AbaLRGay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:30:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58654 "EHLO
+	id S1752421AbaLRGbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:31:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58675 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370AbaLRGaw (ORCPT
+	with ESMTP id S1752343AbaLRGbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:30:52 -0500
-Date: Wed, 17 Dec 2014 22:30:12 -0800
+	Thu, 18 Dec 2014 01:31:07 -0500
+Date: Wed, 17 Dec 2014 22:30:30 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-1ldjhvioch1uczilno5e1epl@git.kernel.org>
-Cc: bp@suse.de, peterz@infradead.org, efault@gmx.de, eranian@google.com,
-        acme@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        jolsa@redhat.com, paulus@samba.org, mingo@kernel.org,
-        fweisbec@gmail.com, hpa@zytor.com, dsahern@gmail.com,
-        namhyung@kernel.org, dzickus@redhat.com, adrian.hunter@intel.com
-Reply-To: dsahern@gmail.com, namhyung@kernel.org, hpa@zytor.com,
-        adrian.hunter@intel.com, dzickus@redhat.com, efault@gmx.de,
-        eranian@google.com, acme@redhat.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, bp@suse.de, peterz@infradead.org,
-        paulus@samba.org, fweisbec@gmail.com, mingo@kernel.org,
-        jolsa@redhat.com
+Message-ID: <tip-6xmwcvgm2rvoayv2mf9n5sf8@git.kernel.org>
+Cc: dzickus@redhat.com, adrian.hunter@intel.com, tglx@linutronix.de,
+        jolsa@redhat.com, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        efault@gmx.de, dsahern@gmail.com, eranian@google.com,
+        peterz@infradead.org, acme@redhat.com, paulus@samba.org,
+        mingo@kernel.org, bp@suse.de, hpa@zytor.com, fweisbec@gmail.com
+Reply-To: namhyung@kernel.org, linux-kernel@vger.kernel.org, dsahern@gmail.com,
+        efault@gmx.de, jolsa@redhat.com, tglx@linutronix.de,
+        adrian.hunter@intel.com, dzickus@redhat.com, fweisbec@gmail.com,
+        hpa@zytor.com, mingo@kernel.org, paulus@samba.org, acme@redhat.com,
+        bp@suse.de, peterz@infradead.org, eranian@google.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools: Move code originally from asm-generic/
- atomic.h into tools/include/asm-generic/
-Git-Commit-ID: cae68d4f6a0a1f8fb7c979f356e994a3c17543c1
+Subject: [tip:perf/urgent] tools:
+  Whitespace prep patches for moving bitops.h
+Git-Commit-ID: 93c49b3e535659102aa1ca28b775b48e3594036c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -37,16 +36,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cae68d4f6a0a1f8fb7c979f356e994a3c17543c1
-Gitweb:     http://git.kernel.org/tip/cae68d4f6a0a1f8fb7c979f356e994a3c17543c1
+Commit-ID:  93c49b3e535659102aa1ca28b775b48e3594036c
+Gitweb:     http://git.kernel.org/tip/93c49b3e535659102aa1ca28b775b48e3594036c
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Mon, 15 Dec 2014 16:44:26 -0300
+AuthorDate: Mon, 15 Dec 2014 17:08:00 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Dec 2014 11:11:52 -0300
+CommitDate: Wed, 17 Dec 2014 11:11:56 -0300
 
-tools: Move code originally from asm-generic/atomic.h into tools/include/asm-generic/
-
-To match the Linux kernel source code structure from where this code came from.
+tools: Whitespace prep patches for moving bitops.h
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -59,91 +56,35 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-1ldjhvioch1uczilno5e1epl@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-6xmwcvgm2rvoayv2mf9n5sf8@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/asm-generic/bitops/atomic.h | 22 ++++++++++++++++++++++
- tools/perf/MANIFEST                       |  1 +
- tools/perf/Makefile.perf                  |  1 +
- tools/perf/util/include/linux/bitops.h    | 16 +---------------
- 4 files changed, 25 insertions(+), 15 deletions(-)
+ tools/perf/util/include/linux/bitops.h | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/tools/include/asm-generic/bitops/atomic.h b/tools/include/asm-generic/bitops/atomic.h
-new file mode 100644
-index 0000000..4bccd7c3
---- /dev/null
-+++ b/tools/include/asm-generic/bitops/atomic.h
-@@ -0,0 +1,22 @@
-+#ifndef _TOOLS_LINUX_ASM_GENERIC_BITOPS_ATOMIC_H_
-+#define _TOOLS_LINUX_ASM_GENERIC_BITOPS_ATOMIC_H_
-+
-+#include <asm/types.h>
-+
-+static inline void set_bit(int nr, unsigned long *addr)
-+{
-+	addr[nr / __BITS_PER_LONG] |= 1UL << (nr % __BITS_PER_LONG);
-+}
-+
-+static inline void clear_bit(int nr, unsigned long *addr)
-+{
-+	addr[nr / __BITS_PER_LONG] &= ~(1UL << (nr % __BITS_PER_LONG));
-+}
-+
-+static __always_inline int test_bit(unsigned int nr, const unsigned long *addr)
-+{
-+	return ((1UL << (nr % __BITS_PER_LONG)) &
-+		(((unsigned long *)addr)[nr / __BITS_PER_LONG])) != 0;
-+}
-+
-+#endif /* _TOOLS_LINUX_ASM_GENERIC_BITOPS_ATOMIC_H_ */
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index db7827f..67d48e2 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -5,6 +5,7 @@ tools/lib/api
- tools/lib/symbol/kallsyms.c
- tools/lib/symbol/kallsyms.h
- tools/include/asm/bug.h
-+tools/include/asm-generic/bitops/atomic.h
- tools/include/asm-generic/bitops/__ffs.h
- tools/include/linux/compiler.h
- tools/include/linux/export.h
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index ec2be64..604349d 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -232,6 +232,7 @@ LIB_H += ../include/linux/hash.h
- LIB_H += ../../include/linux/stringify.h
- LIB_H += util/include/linux/bitmap.h
- LIB_H += util/include/linux/bitops.h
-+LIB_H += ../include/asm-generic/bitops/atomic.h
- LIB_H += ../include/asm-generic/bitops/__ffs.h
- LIB_H += ../include/linux/compiler.h
- LIB_H += ../include/linux/log2.h
 diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index 762bb83..71f017d 100644
+index 71f017d..58c4a25 100644
 --- a/tools/perf/util/include/linux/bitops.h
 +++ b/tools/perf/util/include/linux/bitops.h
-@@ -29,21 +29,7 @@
- 	     (bit) < (size);					\
- 	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+@@ -10,13 +10,14 @@
+ #endif
  
--static inline void set_bit(int nr, unsigned long *addr)
--{
--	addr[nr / BITS_PER_LONG] |= 1UL << (nr % BITS_PER_LONG);
--}
--
--static inline void clear_bit(int nr, unsigned long *addr)
--{
--	addr[nr / BITS_PER_LONG] &= ~(1UL << (nr % BITS_PER_LONG));
--}
--
--static __always_inline int test_bit(unsigned int nr, const unsigned long *addr)
--{
--	return ((1UL << (nr % BITS_PER_LONG)) &
--		(((unsigned long *)addr)[nr / BITS_PER_LONG])) != 0;
--}
-+#include <asm-generic/bitops/atomic.h>
+ #define BITS_PER_LONG __WORDSIZE
+-#define BITS_PER_BYTE           8
+-#define BITS_TO_LONGS(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
+-#define BITS_TO_U64(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
+-#define BITS_TO_U32(nr)         DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
+-#define BITS_TO_BYTES(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE)
+-#define BIT_WORD(nr)            ((nr) / BITS_PER_LONG)
+-#define BIT_MASK(nr)            (1UL << ((nr) % BITS_PER_LONG))
++
++#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
++#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
++#define BITS_PER_BYTE		8
++#define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
++#define BITS_TO_U64(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u64))
++#define BITS_TO_U32(nr)		DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(u32))
++#define BITS_TO_BYTES(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE)
  
- static inline unsigned long hweight_long(unsigned long w)
- {
+ #define for_each_set_bit(bit, addr, size) \
+ 	for ((bit) = find_first_bit((addr), (size));		\
