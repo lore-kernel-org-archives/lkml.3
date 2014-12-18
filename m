@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaLROLr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:11:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:52965 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437AbaLROLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:11:45 -0500
-Message-ID: <5492E09F.1000003@ti.com>
-Date: Thu, 18 Dec 2014 08:11:43 -0600
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751577AbaLROUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:20:44 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35308 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaLROUn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 09:20:43 -0500
+Date: Thu, 18 Dec 2014 15:20:27 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] perf ftrace: Factor regs retrieval for function tracer
+Message-ID: <20141218142027.GE30905@twins.programming.kicks-ass.net>
+References: <20141216115041.GW3337@twins.programming.kicks-ass.net>
+ <20141217143105.GG18257@krava.brq.redhat.com>
+ <20141217153508.GC30905@twins.programming.kicks-ass.net>
+ <20141217154507.GA20471@krava.brq.redhat.com>
+ <20141218140847.GA18898@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>, <linus.walleij@linaro.org>,
-        <gnurou@gmail.com>, <linux-gpio@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <nsekhar@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        Benoit Parrot <bparrot@ti.com>
-Subject: Re: [PATCH] gpio: pcf857x: restore the initial line state of all
- pcf lines
-References: <1418371601-22658-1-git-send-email-kishon@ti.com> <548F498F.7050202@ti.com> <549271A9.5040701@ti.com>
-In-Reply-To: <549271A9.5040701@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20141218140847.GA18898@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2014 12:18 AM, Kishon Vijay Abraham I wrote:
-> 
-> 
-> On Tuesday 16 December 2014 02:20 AM, Nishanth Menon wrote:
->> On 12/12/2014 02:06 AM, Kishon Vijay Abraham I wrote:
->>> The reset values for all the PCF lines are high and hence on shutdown
->>> we should drive all the lines high in order to bring it to the reset state.
->>>
->>> This is actually required since pcf doesn't have a reset line and even after
->>> warm reset (by invoking "reboot" in prompt) the pcf lines maintains it's
->>> previous programmed state. This becomes a problem if the boards are designed
->>> to work with the default initial state.
->>>
->>> DRA7XX_evm uses PCF8575 and one of the PCF output lines feeds to MMC/SD and
->>> this line should be driven high in order for the MMC/SD to be detected.
->>> This line is modelled as regulator and the hsmmc driver takes care of enabling
->>> and disabling it. In the case of 'reboot', during shutdown path as part of it's
->>> cleanup process the hsmmc driver disables this regulator. This makes MMC boot
->>> not functional.
->>>
->>> Fixed it by driving high all the pcf lines.
->>>
->>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>> ---
->>>  drivers/gpio/gpio-pcf857x.c |    9 +++++++++
->>>  1 file changed, 9 insertions(+)
->>>
->>> diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
->>> index 236708a..00b15b2 100644
->>> --- a/drivers/gpio/gpio-pcf857x.c
->>> +++ b/drivers/gpio/gpio-pcf857x.c
->>> @@ -448,6 +448,14 @@ static int pcf857x_remove(struct i2c_client *client)
->>>  	return status;
->>>  }
->>>  
->>> +static void pcf857x_shutdown(struct i2c_client *client)
->>> +{
->>> +	struct pcf857x *gpio = i2c_get_clientdata(client);
->>> +
->>> +	/* Drive all the I/O lines high */
->>> +	gpio->write(gpio->client, BIT(gpio->chip.ngpio) - 1);
->>
->> you might force a contention here - depending on System configuration.
->> example:
->> +-------+
->> |       |
->> |  U1   |         +------+      +-----------+
->> |       +--------->      |      |           |
->> +-------+         |      |      |           |
->>                   | Switch<-----+    SoC    |
->> +-------+         |      |      |           |
->> |       |         |      |      |           |
->> | U2    <---------+--^---+      +-----------+
->> |       |            |
->> |       |            |
->> +-------+            |
->>                   +--+--+
->>                   |     |
->>                   | PCF |
->>                   |     |
->>                   +-----+
->>
->> At low, SoC pin is connected to U2 as drive. when reset to high, you
->> now have U1 driving to the same pin that SoC has, potentially
->> resulting in contention.
->>
->>
->> Unfortunately, at this level, you do not know what the state of the
->> system is, blindly forcing a pin level will potentially cause
->> contention risk depending on pin configuration.
-> 
-> Assume we are doing a reset when the system is powered on, irrespective of the
-> state of the system, we'll be forcing the pin level to the default state.
-
-Yes, I dont deny that system will be fine *after* reset sequence is
-started or completed. However there is a duration between the pcf
-shutdown handler is called and the final reset handler is invoked -
-that is the duration when  the contention might cause device behavior.
-Essentially ignoring the state various drivers have asked PCF to setup
-the pins and doing a hands down configuration may have side effects we
-cant properly expect.
-
-> 
-> The same thing happens here so I don't think this would be a problem.
-> 
-> Thanks
-> Kishon
-> 
+On Thu, Dec 18, 2014 at 03:08:47PM +0100, Jiri Olsa wrote:
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index 6fa484de2ba1..54bffedd28b6 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -304,7 +304,7 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
+>  {
+>  	struct ftrace_entry *entry;
+>  	struct hlist_head *head;
+> -	struct pt_regs regs;
+> +	struct pt_regs **regsp, *regs = pt_regs;
+>  	int rctx;
+>  
+>  	head = this_cpu_ptr(event_function.perf_events);
+> @@ -316,16 +316,24 @@ perf_ftrace_function_call(unsigned long ip, unsigned long parent_ip,
+>  
+>  	BUILD_BUG_ON(ENTRY_SIZE > PERF_MAX_TRACE_SIZE);
+>  
+> -	perf_fetch_caller_regs(&regs);
+> +	/*
+> +	 * The ftrace_ops is registered with SAVE_REGS_IF_SUPPORTED,
+> +	 * so if we got pt_regs defined, we don't need to retrieve
+> +	 * regs buffer through perf_trace_buf_prepare.
+> +	 */
+> +	regsp = pt_regs ? NULL : &regs;
+>  
+> -	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, NULL, &rctx);
+> +	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, regsp, &rctx);
+>  	if (!entry)
+>  		return;
+>  
+> +	if (regsp)
+> +		perf_fetch_caller_regs(regs);
+> +
 
 
--- 
-Regards,
-Nishanth Menon
+Would not something like:
+
+	struct pt_regs *regs;
+
+	entry = perf_trace_buf_prepare(ENTRY_SIZE, TRACE_FN, &regs, &rctx);
+	if (!pt_regs) {
+		perf_fetch_caller_regs(regs);
+		pt_regs = regs;
+	}
+
+Be simpler?
