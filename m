@@ -1,48 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476AbaLROnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:43:45 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:59541 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752AbaLROnn (ORCPT
+	id S1752509AbaLROo4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:44:56 -0500
+Received: from ext3.cumulusnetworks.com ([198.211.106.187]:59009 "EHLO
+	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833AbaLROoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:43:43 -0500
-Date: Thu, 18 Dec 2014 14:43:37 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Tunin <hanipouspilot@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-Message-ID: <20141218144337.GA7613@srcf.ucam.org>
-References: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
- <5492D938.1020907@gmail.com>
- <20141218135705.GD4918@srcf.ucam.org>
- <5492DEE7.8010407@gmail.com>
- <20141218140930.GA6436@srcf.ucam.org>
- <5492E32E.2030602@gmail.com>
- <20141218142629.GA6924@srcf.ucam.org>
- <5492E5F9.2000504@gmail.com>
- <20141218143623.GA7335@srcf.ucam.org>
- <5492E753.7090505@gmail.com>
+	Thu, 18 Dec 2014 09:44:55 -0500
+Message-ID: <5492E85C.6010802@cumulusnetworks.com>
+Date: Thu, 18 Dec 2014 06:44:44 -0800
+From: Roopa Prabhu <roopa@cumulusnetworks.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5492E753.7090505@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: "Varlese, Marco" <marco.varlese@intel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The actual fix is known - Intel need to fix their code to match their 
-specification. Applying this patch may break functionality that other 
-users are depending on.
+On 12/18/14, 3:29 AM, Varlese, Marco wrote:
+> From: Marco Varlese <marco.varlese@intel.com>
+>
+> Switch hardware offers a list of attributes that are configurable
+> on a per port basis.
+> This patch provides a mechanism to configure switch ports by adding
+> an NDO for setting specific values to specific attributes.
+> There will be a separate patch that adds the "get" functionality via
+> another NDO and another patch that extends iproute2 to call the two
+> new NDOs.
+>
+> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+> ---
+>   include/linux/netdevice.h    |  5 ++++
+>   include/uapi/linux/if_link.h | 15 ++++++++++++
+>   net/core/rtnetlink.c         | 54 ++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 74 insertions(+)
+>
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index c31f74d..4881c7b 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+>    * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+>    *	Called to notify switch device port of bridge port STP
+>    *	state change.
+> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+> + *                                u32 attr, u64 value);
+> + *	Called to set specific switch ports attributes.
+>    */
+>   struct net_device_ops {
+>   	int			(*ndo_init)(struct net_device *dev);
+> @@ -1185,6 +1188,8 @@ struct net_device_ops {
+>   							    struct netdev_phys_item_id *psid);
+>   	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
+>   							      u8 state);
+> +	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
+> +							   u32 attr, u64 value);
+>   #endif
+>   };
+>   
+> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+> index f7d0d2d..19cb51a 100644
+> --- a/include/uapi/linux/if_link.h
+> +++ b/include/uapi/linux/if_link.h
+> @@ -146,6 +146,7 @@ enum {
+>   	IFLA_PHYS_PORT_ID,
+>   	IFLA_CARRIER_CHANGES,
+>   	IFLA_PHYS_SWITCH_ID,
+> +	IFLA_SWITCH_PORT_CFG,
+>   	__IFLA_MAX
+>   };
+>   
+> @@ -603,4 +604,18 @@ enum {
+>   
+>   #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+>   
+> +/* Switch Port Attributes section */
+> +
+> +enum {
+> +	IFLA_ATTR_UNSPEC,
+> +	IFLA_ATTR_LEARNING,
+Any reason you want learning here ?. This is covered as part  of the 
+bridge setlink attributes.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> +	IFLA_ATTR_LOOPBACK,
+> +	IFLA_ATTR_BCAST_FLOODING,
+> +	IFLA_ATTR_UCAST_FLOODING,
+> +	IFLA_ATTR_MCAST_FLOODING,
+> +	__IFLA_ATTR_MAX
+> +};
+> +
+> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
+> +
+>   #endif /* _UAPI_LINUX_IF_LINK_H */
+> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+> index eaa057f..c0d1c45 100644
+> --- a/net/core/rtnetlink.c
+> +++ b/net/core/rtnetlink.c
+> @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+>   	return 0;
+>   }
+>   
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
+> +{
+> +	int rem, err = -EINVAL;
+> +	struct nlattr *v;
+> +	const struct net_device_ops *ops = dev->netdev_ops;
+> +
+> +	nla_for_each_nested(v, attr, rem) {
+> +		u32 op = nla_type(v);
+> +		u64 value = 0;
+> +
+> +		switch (op) {
+> +		case IFLA_ATTR_LEARNING:
+> +		case IFLA_ATTR_LOOPBACK:
+> +		case IFLA_ATTR_BCAST_FLOODING:
+> +		case IFLA_ATTR_UCAST_FLOODING:
+> +		case IFLA_ATTR_MCAST_FLOODING: {
+> +			if (nla_len(v) < sizeof(value)) {
+> +				err = -EINVAL;
+> +				break;
+> +			}
+> +
+> +			value = nla_get_u64(v);
+> +			err = ops->ndo_switch_port_set_cfg(dev,
+> +							   op,
+> +							   value);
+> +			break;
+> +		}
+> +		default:
+> +			err = -EINVAL;
+> +			break;
+> +		}
+> +		if (err)
+> +			break;
+> +	}
+> +	return err;
+> +}
+> +
+> +#endif
+> +
+>   static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+>   {
+>   	int rem, err = -EINVAL;
+> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
+>   			status |= DO_SETLINK_NOTIFY;
+>   		}
+>   	}
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+> +		err = -EOPNOTSUPP;
+> +		if (!ops->ndo_switch_port_set_cfg)
+> +			goto errout;
+> +		if (!ops->ndo_switch_parent_id_get)
+> +			goto errout;
+> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+> +		if (err < 0)
+> +			goto errout;
+> +
+> +		status |= DO_SETLINK_NOTIFY;
+> +	}
+> +#endif
+>   	err = 0;
+>   
+>   errout:
+
