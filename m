@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812AbaLRW3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:29:19 -0500
-Received: from mail-by2on0078.outbound.protection.outlook.com ([207.46.100.78]:48864
+	id S1751849AbaLRW3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 17:29:24 -0500
+Received: from mail-by2on0098.outbound.protection.outlook.com ([207.46.100.98]:42720
 	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751125AbaLRW3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 17:29:17 -0500
+	id S1751125AbaLRW3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 17:29:21 -0500
 From: <atull@opensource.altera.com>
 To: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
         <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
@@ -26,10 +26,12 @@ CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
         <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
         <yvanderv@opensource.altera.com>,
         Alan Tull <atull@opensource.altera.com>
-Subject: [PATCH v6 0/4] FPGA Manager Framework
-Date: Thu, 18 Dec 2014 16:29:04 -0600
-Message-ID: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+Subject: [PATCH v6 1/4] doc: add bindings document for altera fpga manager
+Date: Thu, 18 Dec 2014 16:29:05 -0600
+Message-ID: <1418941748-16111-2-git-send-email-atull@opensource.altera.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [64.129.157.38]
@@ -42,9 +44,9 @@ X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1241;
 X-Exchange-Antispam-Report-Test: UriScan:;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB1241;
 X-Forefront-PRVS: 042957ACD7
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(77156002)(47776003)(21056001)(62966003)(68736005)(19580405001)(42186005)(81156004)(120916001)(89996001)(106356001)(122386002)(2201001)(92566001)(229853001)(20776003)(50986999)(53416004)(46102003)(50466002)(33646002)(50226001)(87976001)(66066001)(4396001)(97736003)(86152002)(64706001)(105586002)(99396003)(86362001)(19580395003)(69596002)(107046002)(48376002)(40100003)(101416001)(31966008)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1241;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(77156002)(47776003)(21056001)(62966003)(68736005)(19580405001)(42186005)(81156004)(120916001)(89996001)(106356001)(122386002)(2201001)(92566001)(229853001)(20776003)(50986999)(53416004)(46102003)(50466002)(33646002)(76176999)(50226001)(87976001)(66066001)(4396001)(97736003)(2950100001)(86152002)(64706001)(105586002)(99396003)(86362001)(19580395003)(69596002)(107046002)(48376002)(40100003)(101416001)(31966008)(7059030)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1241;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
 X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1241;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0650;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0745;
 X-OriginatorOrg: opensource.altera.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -52,37 +54,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Tull <atull@opensource.altera.com>
 
-Dropping the changes to socfpga DTS and defconfig from this
-patch set.
+New bindings document for Altera fpga manager.
 
-Kernel doc fixes and other minor fixes as listed in the patches.
+Signed-off-by: Alan Tull <atull@opensource.altera.com>
+---
+v5 : Move bindings to drivers/staging/fpga/Documentation/bindings
 
-Alan
-
-Alan Tull (4):
-  doc: add bindings document for altera fpga manager
-  fpga manager: add sysfs interface document
-  staging: fpga manager: framework core
-  staging: fpga manager: add driver for socfpga fpga manager
-
- drivers/staging/Kconfig                            |    2 +
- drivers/staging/Makefile                           |    1 +
- .../Documentation/ABI/sysfs-class-fpga-manager     |   38 ++
- .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +
- drivers/staging/fpga/Kconfig                       |   29 +
- drivers/staging/fpga/Makefile                      |    9 +
- drivers/staging/fpga/fpga-mgr.c                    |  551 ++++++++++++++++
- drivers/staging/fpga/socfpga.c                     |  694 ++++++++++++++++++++
- include/linux/fpga/fpga-mgr.h                      |  124 ++++
- 9 files changed, 1465 insertions(+)
- create mode 100644 drivers/staging/fpga/Documentation/ABI/sysfs-class-fpga-manager
+v6 : No change in this patch for v6 of the patch set
+---
+ .../Documentation/bindings/altera-fpga-mgr.txt     |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
  create mode 100644 drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
- create mode 100644 drivers/staging/fpga/Kconfig
- create mode 100644 drivers/staging/fpga/Makefile
- create mode 100644 drivers/staging/fpga/fpga-mgr.c
- create mode 100644 drivers/staging/fpga/socfpga.c
- create mode 100644 include/linux/fpga/fpga-mgr.h
 
+diff --git a/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt b/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+new file mode 100644
+index 0000000..373af7b
+--- /dev/null
++++ b/drivers/staging/fpga/Documentation/bindings/altera-fpga-mgr.txt
+@@ -0,0 +1,17 @@
++Altera FPGA Manager
++
++Required properties:
++- compatible : should contain "altr,fpga-mgr"
++- reg        : base address and size for memory mapped io.
++               - The first index is for FPGA manager register access.
++               - The second index is for writing FPGA configuration data.
++- interrupts : interrupt for the FPGA Manager device.
++
++Example:
++
++	hps_0_fpgamgr: fpgamgr@0xff706000 {
++		compatible = "altr,fpga-mgr";
++		reg = <0xFF706000 0x1000
++		       0xFFB90000 0x1000>;
++		interrupts = <0 175 4>;
++	};
 -- 
 1.7.9.5
 
