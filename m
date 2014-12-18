@@ -1,79 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbaLROnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:43:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:59065 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaLROnU (ORCPT
+	id S1752476AbaLROnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:43:45 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:59541 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbaLROnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:43:20 -0500
-Date: Thu, 18 Dec 2014 15:43:06 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Eduardo Valentin <edubezval@gmail.com>
-cc: Preeti Murthy <preeti.lkml@gmail.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Frederic Weisbecker <frederic@kernel.org>,
-        "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, LKP <lkp@01.org>,
-        Peter Zijlstra <peterz@infradead.org>, Zhang Rui <rui.zhang@intel.com>
-Subject: Re: [PATCH] tick/powerclamp: Remove tick_nohz_idle abuse
-In-Reply-To: <20141218140106.GA6323@developer>
-Message-ID: <alpine.DEB.2.11.1412181507000.17382@nanos>
-References: <alpine.DEB.2.11.1412181110110.17382@nanos> <20141218140106.GA6323@developer>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 18 Dec 2014 09:43:43 -0500
+Date: Thu, 18 Dec 2014 14:43:37 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Dmitry Tunin <hanipouspilot@gmail.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Aaron Lu <aaron.lu@intel.com>
+Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
+ brightness keys
+Message-ID: <20141218144337.GA7613@srcf.ucam.org>
+References: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
+ <5492D938.1020907@gmail.com>
+ <20141218135705.GD4918@srcf.ucam.org>
+ <5492DEE7.8010407@gmail.com>
+ <20141218140930.GA6436@srcf.ucam.org>
+ <5492E32E.2030602@gmail.com>
+ <20141218142629.GA6924@srcf.ucam.org>
+ <5492E5F9.2000504@gmail.com>
+ <20141218143623.GA7335@srcf.ucam.org>
+ <5492E753.7090505@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5492E753.7090505@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, Eduardo Valentin wrote:
-> > The real solution is to fix the powerclamp driver by rewriting it with
-> > a sane concept, but that's beyond the scope of this.
-> > 
-> 
-> Do you have suggestions on what exactly is the expected rewriting or the
-> correct sane concepts?
+The actual fix is known - Intel need to fix their code to match their 
+specification. Applying this patch may break functionality that other 
+users are depending on.
 
-There was quite some discussion about this in this very thread.
- 
-> > So the only solution for now is to remove the calls into the core NOHZ
-> > code from the powerclamp trainwreck along with the exports.
-> > 
-> > Fixes: d6d71ee4a14a "PM: Introduce Intel PowerClamp Driver"
-> 
-> If I got it right, the driver is currently broken due to changes in NOHZ
-> core. So, does this patch fix power clamp behavior ?
-
-The driver has been broken forever. It just worked by chance.
-
-Now a very well justified and correct change in the core code exposed
-that wreckage. So we have 2 choices:
-
-  1) Get rid of the abuse and let powerclamp deal with the problem.
- 
-  2) Revert a correct patch for the sake of a 'works by chance' driver
-     or put hacky workarounds in the core. Either of that will just
-     paper over the real root cause until the next thing breaks in
-     subtle ways.
-
-#1 is the only sane decision. We cannot deal with misdesigned driver
-   code in the NOHZ core.
-
-> If I got your proposal right, in the end power clamp will be still
-> broken, but at least won't be abusing NOHZ. Is that what you are
-> proposing?
-
-Yes, the design of powerclamp stays broken, but the NOHZ abuse is
-gone. powerclamp will work, but it can't benefit from the possible
-longer idle times anymore.
-
-Thanks,
-
-	tglx
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
