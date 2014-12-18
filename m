@@ -1,47 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaLRTon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:44:43 -0500
-Received: from static.68.134.40.188.clients.your-server.de ([188.40.134.68]:51559
-	"EHLO mail02.iobjects.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751087AbaLRTol (ORCPT
+	id S1751256AbaLRTvl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:51:41 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:48516 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751096AbaLRTvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:44:41 -0500
-Message-ID: <54932EA5.9090803@googlemail.com>
-Date: Thu, 18 Dec 2014 20:44:37 +0100
-From: =?UTF-8?B?SG9sZ2VyIEhvZmZzdMOkdHRl?= 
-	<holger.hoffstaette@googlemail.com>
-Organization: Applied Asynchrony, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 14:51:39 -0500
+Date: Thu, 18 Dec 2014 20:51:32 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Jim Davis <jim.epost@gmail.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org
+Subject: Re: randconfig build error with next-20141204, in drivers/pwm
+Message-ID: <20141218205132.3025b1ef@bbrezillon>
+In-Reply-To: <20141218094442.GA24383@ulmo>
+References: <CA+r1Zhj2ugeO7yqfmnbmkF4xqmZiiSbvq0zVXDMXdfOYGiHcRg@mail.gmail.com>
+	<20141218094442.GA24383@ulmo>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-References: <pan.2014.12.16.22.19.18@googlemail.com> <20141217212159.GA11517@fieldses.org> <5492C710.20104@googlemail.com> <20141218144856.GA18179@fieldses.org> <alpine.OSX.2.19.9992.1412180955000.62182@planck.local> <20141218151914.GB18179@fieldses.org> <pan.2014.12.18.15.42.53@googlemail.com> <20141218163254.GF18179@fieldses.org> <549303FC.9090604@googlemail.com> <20141218170653.GG18179@fieldses.org>
-In-Reply-To: <20141218170653.GG18179@fieldses.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 18:06, J. Bruce Fields wrote:
-> Whoops, now I see, the server-side trace has the same problem, I
-> just overlooked it the first time.
+Hi Thierry,
 
-Excellent, so we know it's the server's fault. Really would have been odd to not have it in the server trace.
+On Thu, 18 Dec 2014 10:44:44 +0100
+Thierry Reding <thierry.reding@gmail.com> wrote:
 
->> ..in order to rule out a mistake on my part with the two separate
->> runs (which prevents correlated analysis) I was just about to boot
->> the server back into 3.18.1 and re-run both client- and server-side
->> traces simultaneously. However I have to head out for a bit first;
->> will post that later today.
+> On Thu, Dec 04, 2014 at 09:10:55AM -0700, Jim Davis wrote:
+> > Building with the attached random configuration file,
+> > 
+> > ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!  
 > 
-> So this might still be interesting, but it's not a high priority.
+> This took a while to figure out. The attached patch fixes this build
+> failure, though the driver should probably be fixed to avoid division by
+> zero, just in case. Adding Boris for visibility.
 
-Then I guess I'll better keep my feet still and don't muddle the waters further, looks like you found what you need. If you still need it just holler.
+Thanks for fixing this build issue. I'll propose a patch to prevent
+this div by 0 from happening.
 
-Let me know if there's anything I can do to help/patch/test!
+> 
+> Thierry
+> 
+> From 7933af1d2e5f3941d934eec88f32f5547ee218c3 Mon Sep 17 00:00:00 2001
+> From: Thierry Reding <thierry.reding@gmail.com>
+> Date: Thu, 18 Dec 2014 10:09:42 +0100
+> Subject: [PATCH] pwm: atmel-hlcdc: Depend on HAVE_CLK
+> 
+> The include/linux/clk.h header defines dummy implementations for the
+> various clk_*() functions if HAVE_CLK is not selected to improve build
+> coverage in randconfig builds.
+> 
+> The dummy implementation of clk_get_rate() returns 0, which causes the
+> Atmel HLCDC PWM driver's atmel_hlcdc_pwm_config() implementation to end
+> up calling:
+> 
+> 	do_div(clk_period_ns, 0)
+> 
+> On x86, do_div(n, base) will end up evaluating to this:
+> 
+> 	n >>= ilog2(base)
+> 
+> with base = 0, the implementation of ilog2() will call ____ilog2_NaN(),
+> which is purposely undefined and results in a linker failure:
+> 
+> 	ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!
+> 
+> The implementation of do_div() checks that base is a power of 2 before
+> calling ilog2(). The compiler doesn't optimize this away, presumably
+> because is_power_of_2() is an inline function and the compiler doesn't
+> or can't inspect it closely enough. ilog2() being a macro it still ends
+> up generating the ____ilog2_NaN() because of the constant 0.
+> 
+> The root of the problem is that the driver really should be checking
+> before possibly dividing by zero. That should eventually be fixed, but
+> for now just assume that the clock runs at a sensible frequency when
+> available.
+> 
+> Reported-by: Jim Davis <jim.epost@gmail.com>
+> Signed-off-by: Thierry Reding <thierry.reding@gmail.com>
 
-thanks
-Holger
+Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+
+> ---
+>  drivers/pwm/Kconfig | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index a3ecf5809634..468af1b4ca30 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -53,6 +53,7 @@ config PWM_ATMEL
+>  config PWM_ATMEL_HLCDC_PWM
+>  	tristate "Atmel HLCDC PWM support"
+>  	depends on MFD_ATMEL_HLCDC
+> +	depends on HAVE_CLK
+>  	help
+>  	  Generic PWM framework driver for the PWM output of the HLCDC
+>  	  (Atmel High-end LCD Controller). This PWM output is mainly used
+
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
