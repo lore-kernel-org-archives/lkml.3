@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaLROzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:55:20 -0500
-Received: from mga03.intel.com ([134.134.136.65]:42337 "EHLO mga03.intel.com"
+	id S1751361AbaLROz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 09:55:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:54051 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083AbaLROzR convert rfc822-to-8bit (ORCPT
+	id S1751083AbaLROzy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:55:17 -0500
+	Thu, 18 Dec 2014 09:55:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,601,1413270000"; 
-   d="scan'208";a="656419341"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: "Wu, Feng" <feng.wu@intel.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
-CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 21/26] x86, irq: Define a global vector for VT-d
- Posted-Interrupts
-Thread-Topic: [v3 21/26] x86, irq: Define a global vector for VT-d
- Posted-Interrupts
-Thread-Index: AQHQFiBjmG+fiWL9RUSaRPekCidPsJyVeE9Q
-Date: Thu, 18 Dec 2014 14:54:55 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC048BF@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-22-git-send-email-feng.wu@intel.com>
-In-Reply-To: <1418397300-10870-22-git-send-email-feng.wu@intel.com>
+   d="scan'208";a="639743219"
+From: "Varlese, Marco" <marco.varlese@intel.com>
+To: Roopa Prabhu <roopa@cumulusnetworks.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Thread-Topic: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Thread-Index: AdAaqPMciB9+ZS56Q6O2uHwvQZyp6AAKDZcAAABJxuA=
+Date: Thu, 18 Dec 2014 14:55:52 +0000
+Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+ <5492E85C.6010802@cumulusnetworks.com>
+In-Reply-To: <5492E85C.6010802@cumulusnetworks.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
+x-originating-ip: [163.33.239.181]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -46,147 +39,168 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Feng Wu wrote on 2014-12-12:
-> Currently, we use a global vector as the Posted-Interrupts
-> Notification Event for all the vCPUs in the system. We need to
-> introduce another global vector for VT-d Posted-Interrtups, which will
-> be used to wakeup the sleep vCPU when an external interrupt from a direct-assigned device happens for that vCPU.
+> -----Original Message-----
+> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
+> Sent: Thursday, December 18, 2014 2:45 PM
+> To: Varlese, Marco
+> Cc: netdev@vger.kernel.org; Fastabend, John R; Thomas Graf; Jiri Pirko;
+> sfeldma@gmail.com; linux-kernel@vger.kernel.org
+> Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+> configuration
+> 
+> On 12/18/14, 3:29 AM, Varlese, Marco wrote:
+> > From: Marco Varlese <marco.varlese@intel.com>
+> >
+> > Switch hardware offers a list of attributes that are configurable on a
+> > per port basis.
+> > This patch provides a mechanism to configure switch ports by adding an
+> > NDO for setting specific values to specific attributes.
+> > There will be a separate patch that adds the "get" functionality via
+> > another NDO and another patch that extends iproute2 to call the two
+> > new NDOs.
+> >
+> > Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+> > ---
+> >   include/linux/netdevice.h    |  5 ++++
+> >   include/uapi/linux/if_link.h | 15 ++++++++++++
+> >   net/core/rtnetlink.c         | 54
+> ++++++++++++++++++++++++++++++++++++++++++++
+> >   3 files changed, 74 insertions(+)
+> >
+> > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> > index c31f74d..4881c7b 100644
+> > --- a/include/linux/netdevice.h
+> > +++ b/include/linux/netdevice.h
+> > @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct
+> net_device *dev,
+> >    * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+> >    *	Called to notify switch device port of bridge port STP
+> >    *	state change.
+> > + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
+> > + *                                u32 attr, u64 value);
+> > + *	Called to set specific switch ports attributes.
+> >    */
+> >   struct net_device_ops {
+> >   	int			(*ndo_init)(struct net_device *dev);
+> > @@ -1185,6 +1188,8 @@ struct net_device_ops {
+> >   							    struct
+> netdev_phys_item_id *psid);
+> >   	int			(*ndo_switch_port_stp_update)(struct
+> net_device *dev,
+> >   							      u8 state);
+> > +	int			(*ndo_switch_port_set_cfg)(struct
+> net_device *dev,
+> > +							   u32 attr, u64 value);
+> >   #endif
+> >   };
+> >
+> > diff --git a/include/uapi/linux/if_link.h
+> > b/include/uapi/linux/if_link.h index f7d0d2d..19cb51a 100644
+> > --- a/include/uapi/linux/if_link.h
+> > +++ b/include/uapi/linux/if_link.h
+> > @@ -146,6 +146,7 @@ enum {
+> >   	IFLA_PHYS_PORT_ID,
+> >   	IFLA_CARRIER_CHANGES,
+> >   	IFLA_PHYS_SWITCH_ID,
+> > +	IFLA_SWITCH_PORT_CFG,
+> >   	__IFLA_MAX
+> >   };
+> >
+> > @@ -603,4 +604,18 @@ enum {
+> >
+> >   #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+> >
+> > +/* Switch Port Attributes section */
+> > +
+> > +enum {
+> > +	IFLA_ATTR_UNSPEC,
+> > +	IFLA_ATTR_LEARNING,
+> Any reason you want learning here ?. This is covered as part  of the bridge
+> setlink attributes.
 > 
 
-Hi Feng, 
+Yes, because the user may _not_ want to go through a bridge interface necessarily. 
 
-Since the idea of two global vectors mechanism is from me, please add me to the comments.
-
-> Signed-off-by: Feng Wu <feng.wu@intel.com>
-> ---
->  arch/x86/include/asm/entry_arch.h  |  2 ++
->  arch/x86/include/asm/hardirq.h     |  1 +
->  arch/x86/include/asm/hw_irq.h      |  2 ++
->  arch/x86/include/asm/irq_vectors.h |  1 +
->  arch/x86/kernel/entry_64.S         |  2 ++
->  arch/x86/kernel/irq.c              | 27 +++++++++++++++++++++++++++
->  arch/x86/kernel/irqinit.c          |  2 ++
->  7 files changed, 37 insertions(+)
-> diff --git a/arch/x86/include/asm/entry_arch.h
-> b/arch/x86/include/asm/entry_arch.h index dc5fa66..27ca0af 100644 ---
-> a/arch/x86/include/asm/entry_arch.h +++
-> b/arch/x86/include/asm/entry_arch.h @@ -23,6 +23,8 @@
-> BUILD_INTERRUPT(x86_platform_ipi, X86_PLATFORM_IPI_VECTOR)  #ifdef
-> CONFIG_HAVE_KVM BUILD_INTERRUPT3(kvm_posted_intr_ipi, POSTED_INTR_VECTOR,
->  		 smp_kvm_posted_intr_ipi)
-> +BUILD_INTERRUPT3(kvm_posted_intr_wakeup_ipi, POSTED_INTR_WAKEUP_VECTOR,
-> +		 smp_kvm_posted_intr_wakeup_ipi)
->  #endif
->  
->  /*
-> diff --git a/arch/x86/include/asm/hardirq.h
-> b/arch/x86/include/asm/hardirq.h index 0f5fb6b..9866065 100644
-> --- a/arch/x86/include/asm/hardirq.h
-> +++ b/arch/x86/include/asm/hardirq.h
-> @@ -14,6 +14,7 @@ typedef struct {
->  #endif #ifdef CONFIG_HAVE_KVM 	unsigned int kvm_posted_intr_ipis;
->  +	unsigned int kvm_posted_intr_wakeup_ipis; #endif 	unsigned int
->  x86_platform_ipis;	/* arch dependent */ 	unsigned int apic_perf_irqs;
-> diff --git a/arch/x86/include/asm/hw_irq.h
-> b/arch/x86/include/asm/hw_irq.h index e7ae6eb..38fac9b 100644
-> --- a/arch/x86/include/asm/hw_irq.h
-> +++ b/arch/x86/include/asm/hw_irq.h
-> @@ -29,6 +29,7 @@
->  extern asmlinkage void apic_timer_interrupt(void);  extern asmlinkage
-> void x86_platform_ipi(void);  extern asmlinkage void
-> kvm_posted_intr_ipi(void); +extern asmlinkage void
-> kvm_posted_intr_wakeup_ipi(void);
->  extern asmlinkage void error_interrupt(void);  extern asmlinkage void
-> irq_work_interrupt(void);
-> 
-> @@ -92,6 +93,7 @@ extern void
-> trace_call_function_single_interrupt(void);
->  #define trace_irq_move_cleanup_interrupt  irq_move_cleanup_interrupt
-> #define trace_reboot_interrupt  reboot_interrupt  #define
-> trace_kvm_posted_intr_ipi kvm_posted_intr_ipi
-> +#define trace_kvm_posted_intr_wakeup_ipi kvm_posted_intr_wakeup_ipi
->  #endif /* CONFIG_TRACING */
->  
->  struct irq_domain;
-> diff --git a/arch/x86/include/asm/irq_vectors.h
-> b/arch/x86/include/asm/irq_vectors.h index b26cb12..dca94f2 100644 ---
-> a/arch/x86/include/asm/irq_vectors.h +++
-> b/arch/x86/include/asm/irq_vectors.h @@ -105,6 +105,7 @@
->  /* Vector for KVM to deliver posted interrupt IPI */  #ifdef
->  CONFIG_HAVE_KVM #define POSTED_INTR_VECTOR		0xf2 +#define
->  POSTED_INTR_WAKEUP_VECTOR	0xf1 #endif
->  
->  /*
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index e61c14a..a598447 100644 --- a/arch/x86/kernel/entry_64.S +++
-> b/arch/x86/kernel/entry_64.S @@ -960,6 +960,8 @@ apicinterrupt
-> X86_PLATFORM_IPI_VECTOR \  #ifdef CONFIG_HAVE_KVM
->  apicinterrupt3 POSTED_INTR_VECTOR \
->  	kvm_posted_intr_ipi smp_kvm_posted_intr_ipi
-> +apicinterrupt3 POSTED_INTR_WAKEUP_VECTOR \
-> +	kvm_posted_intr_wakeup_ipi smp_kvm_posted_intr_wakeup_ipi
->  #endif
->  
->  #ifdef CONFIG_X86_MCE_THRESHOLD
-> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c index
-> 922d285..47408c3 100644
-> --- a/arch/x86/kernel/irq.c
-> +++ b/arch/x86/kernel/irq.c
-> @@ -237,6 +237,9 @@ __visible void smp_x86_platform_ipi(struct pt_regs
-> *regs)  }
-> 
->  #ifdef CONFIG_HAVE_KVM
-> +void (*wakeup_handler_callback)(void) = NULL;
-> +EXPORT_SYMBOL_GPL(wakeup_handler_callback); +
->  /*
->   * Handler for POSTED_INTERRUPT_VECTOR.
->   */
-> @@ -256,6 +259,30 @@ __visible void smp_kvm_posted_intr_ipi(struct
-> pt_regs *regs)
-> 
->  	set_irq_regs(old_regs);
->  }
-> +
-> +/*
-> + * Handler for POSTED_INTERRUPT_WAKEUP_VECTOR.
-> + */
-> +__visible void smp_kvm_posted_intr_wakeup_ipi(struct pt_regs *regs) {
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> +
-> +	ack_APIC_irq();
-> +
-> +	irq_enter();
-> +
-> +	exit_idle();
-> +
-> +	inc_irq_stat(kvm_posted_intr_wakeup_ipis);
-> +
-> +	if (wakeup_handler_callback)
-> +		wakeup_handler_callback();
-> +
-> +	irq_exit();
-> +
-> +	set_irq_regs(old_regs);
-> +}
-> +
->  #endif
->  
->  __visible void smp_trace_x86_platform_ipi(struct pt_regs *regs) diff
-> --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c index
-> 70e181e..844673c 100644 --- a/arch/x86/kernel/irqinit.c +++
-> b/arch/x86/kernel/irqinit.c @@ -144,6 +144,8 @@ static void __init
-> apic_intr_init(void)  #ifdef CONFIG_HAVE_KVM
->  	/* IPI for KVM to deliver posted interrupt */
->  	alloc_intr_gate(POSTED_INTR_VECTOR, kvm_posted_intr_ipi);
-> +	/* IPI for KVM to deliver interrupt to wake up tasks */
-> +	alloc_intr_gate(POSTED_INTR_WAKEUP_VECTOR,
-> +kvm_posted_intr_wakeup_ipi);
->  #endif
->  
->  	/* IPI vectors for APIC spurious and error interrupts */
-
-
-Best regards,
-Yang
-
+> > +	IFLA_ATTR_LOOPBACK,
+> > +	IFLA_ATTR_BCAST_FLOODING,
+> > +	IFLA_ATTR_UCAST_FLOODING,
+> > +	IFLA_ATTR_MCAST_FLOODING,
+> > +	__IFLA_ATTR_MAX
+> > +};
+> > +
+> > +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
+> > +
+> >   #endif /* _UAPI_LINUX_IF_LINK_H */
+> > diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c index
+> > eaa057f..c0d1c45 100644
+> > --- a/net/core/rtnetlink.c
+> > +++ b/net/core/rtnetlink.c
+> > @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device
+> *dev, struct nlattr *tb[])
+> >   	return 0;
+> >   }
+> >
+> > +#ifdef CONFIG_NET_SWITCHDEV
+> > +static int do_setswcfg(struct net_device *dev, struct nlattr *attr) {
+> > +	int rem, err = -EINVAL;
+> > +	struct nlattr *v;
+> > +	const struct net_device_ops *ops = dev->netdev_ops;
+> > +
+> > +	nla_for_each_nested(v, attr, rem) {
+> > +		u32 op = nla_type(v);
+> > +		u64 value = 0;
+> > +
+> > +		switch (op) {
+> > +		case IFLA_ATTR_LEARNING:
+> > +		case IFLA_ATTR_LOOPBACK:
+> > +		case IFLA_ATTR_BCAST_FLOODING:
+> > +		case IFLA_ATTR_UCAST_FLOODING:
+> > +		case IFLA_ATTR_MCAST_FLOODING: {
+> > +			if (nla_len(v) < sizeof(value)) {
+> > +				err = -EINVAL;
+> > +				break;
+> > +			}
+> > +
+> > +			value = nla_get_u64(v);
+> > +			err = ops->ndo_switch_port_set_cfg(dev,
+> > +							   op,
+> > +							   value);
+> > +			break;
+> > +		}
+> > +		default:
+> > +			err = -EINVAL;
+> > +			break;
+> > +		}
+> > +		if (err)
+> > +			break;
+> > +	}
+> > +	return err;
+> > +}
+> > +
+> > +#endif
+> > +
+> >   static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+> >   {
+> >   	int rem, err = -EINVAL;
+> > @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
+> >   			status |= DO_SETLINK_NOTIFY;
+> >   		}
+> >   	}
+> > +#ifdef CONFIG_NET_SWITCHDEV
+> > +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+> > +		err = -EOPNOTSUPP;
+> > +		if (!ops->ndo_switch_port_set_cfg)
+> > +			goto errout;
+> > +		if (!ops->ndo_switch_parent_id_get)
+> > +			goto errout;
+> > +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+> > +		if (err < 0)
+> > +			goto errout;
+> > +
+> > +		status |= DO_SETLINK_NOTIFY;
+> > +	}
+> > +#endif
+> >   	err = 0;
+> >
+> >   errout:
 
