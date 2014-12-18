@@ -1,107 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaLRUu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 15:50:29 -0500
-Received: from mail-bn1bon0088.outbound.protection.outlook.com ([157.56.111.88]:9680
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1751291AbaLRU7m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 15:59:42 -0500
+Received: from mail-by2on0095.outbound.protection.outlook.com ([207.46.100.95]:5824
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751125AbaLRUu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 15:50:27 -0500
-Date: Thu, 18 Dec 2014 14:50:09 -0600
+	id S1751107AbaLRU7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 15:59:40 -0500
+Date: Thu, 18 Dec 2014 14:59:32 -0600
 From: atull <atull@opensource.altera.com>
 X-X-Sender: atull@linuxheads99
-To: Grant Likely <grant.likely@linaro.org>
-CC: Pavel Machek <pavel@denx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "Michal Simek" <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Randy Dunlap" <rdunlap@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Rob Herring <robh+dt@kernel.org>, "Ira Snyder" <iws@ovro.caltech.edu>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, <philip@balister.org>,
-        rubini <rubini@gnudd.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Jason <jason@lakedaemon.net>, <kyle.teske@ni.com>,
-        Nicolas Pitre <nico@linaro.org>, "Balbi, Felipe" <balbi@ti.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Rob Landley <rob@landley.net>,
-        David Miller <davem@davemloft.net>, <cesarb@cesarb.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Linus Walleij" <linus.walleij@linaro.org>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        <dinguyen@opensource.altera.com>,
-        Yves Vandervennet <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v2 2/3] fpga manager: framework core
-In-Reply-To: <CACxGe6sa=ysJAjx5TQZH5sKoas1PkoUUR4zT=Z35+uF6rrk-vw@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1412181447160.25208@linuxheads99>
-References: <1414007405-32186-1-git-send-email-atull@opensource.altera.com> <1414007405-32186-3-git-send-email-atull@opensource.altera.com> <20141024105200.GA20775@amd> <CACxGe6sa=ysJAjx5TQZH5sKoas1PkoUUR4zT=Z35+uF6rrk-vw@mail.gmail.com>
+To: Michal Simek <michal.simek@xilinx.com>
+CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
+        <hpa@zytor.com>, <monstr@monstr.eu>, <rdunlap@infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 4/6] staging: fpga manager: add driver for socfpga
+ fpga manager
+In-Reply-To: <6eecb422024845acaffe10e4c81faac9@BN1AFFO11FD047.protection.gbl>
+Message-ID: <alpine.DEB.2.02.1412181456530.30233@linuxheads99>
+References: <1418835289-15752-1-git-send-email-atull@opensource.altera.com> <1418835289-15752-5-git-send-email-atull@opensource.altera.com> <6eecb422024845acaffe10e4c81faac9@BN1AFFO11FD047.protection.gbl>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 X-Originating-IP: [64.129.157.38]
-X-ClientProxiedBy: BY1PR00CA0011.namprd00.prod.outlook.com (25.160.102.21) To
- CY1PR0301MB1241.namprd03.prod.outlook.com (25.161.212.151)
+X-ClientProxiedBy: DM2PR07CA0019.namprd07.prod.outlook.com (10.141.52.147) To
+ BN3PR0301MB1235.namprd03.prod.outlook.com (25.161.207.23)
 Authentication-Results: spf=none (sender IP is )
  smtp.mailfrom=atull@opensource.altera.com; 
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1241;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB1241;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1235;
 X-Forefront-PRVS: 042957ACD7
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(199003)(189002)(24454002)(77156002)(47776003)(62966003)(68736005)(110136001)(21056001)(42186005)(81156004)(106356001)(92566001)(122386002)(120916001)(50986999)(20776003)(83506001)(93886004)(53416004)(46102003)(50466002)(76176999)(54356999)(66066001)(87976001)(97736003)(4396001)(33716001)(2950100001)(86152002)(64706001)(23726002)(105586002)(99396003)(46406003)(86362001)(69596002)(107046002)(101416001)(40100003)(31966008)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:CY1PR0301MB1241;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB1241;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0635;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(51704005)(51914003)(24454002)(164054003)(189002)(199003)(54356999)(50986999)(110136001)(76176999)(77156002)(62966003)(46406003)(50466002)(33716001)(21056001)(99396003)(87976001)(40100003)(122386002)(46102003)(47776003)(64706001)(20776003)(101416001)(120916001)(2950100001)(19580395003)(53416004)(83506001)(4396001)(66066001)(68736005)(42186005)(23726002)(69596002)(106356001)(81156004)(105586002)(31966008)(97736003)(86152002)(19580405001)(92566001)(107046002)(86362001)(7059030);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1235;H:linuxheads99.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
 X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 18 Dec 2014 20:59:34.8807 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1235
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Dec 2014, Grant Likely wrote:
+On Thu, 18 Dec 2014, Michal Simek wrote:
 
-> >> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-> >> +{
-> >> +     int ret;
-> >> +
-> >> +     if (test_and_set_bit_lock(FPGA_MGR_BUSY, &mgr->flags))
-> >> +             return -EBUSY;
-> >> +
-> >> +     dev_info(mgr->dev, "writing buffer to %s\n", mgr->name);
-> >> +
-> >> +     ret = __fpga_mgr_write(mgr, buf, count);
-> >> +     clear_bit_unlock(FPGA_MGR_BUSY, &mgr->flags);
-> >> +
-> >> +     return ret;
-> >> +}
-> >> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
-> >
-> > Is the EBUSY -- userspace please try again, but you don't know when to
-> > try again -- right interface? I mean, normally kernel would wait, so
-> > that userland does not have to poll?
+Hi Michal,
+
+> > +
+> > +	/* Write out remaining non 32-bit chunks. */
+> > +	switch (count) {
+> > +	case 3:
+> > +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x00ffffff);
+> > +		break;
+> > +	case 2:
+> > +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x0000ffff);
+> > +		break;
+> > +	case 1:
+> > +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x000000ff);
+> > +		break;
+> > +	default:
+> > +		/* This will never happen. */
 > 
-> Custom locking schemes are just wrong. A mutex is the right thing to
-> do here and then an -EBUSY isn't required.
+> why not just return any error code here even if this can't happen.
 > 
 
-I've changed it to a mutex in the next version.
+OK. Will be in v6.
 
-> >
-> >> +static ssize_t fpga_mgr_firmware_store(struct device *dev,
-> >> +                                    struct device_attribute *attr,
-> >> +                                    const char *buf, size_t count)
-> >> +{
-> >> +     struct fpga_manager *mgr = dev_get_drvdata(dev);
-> >> +     unsigned int len;
-> >> +     char image_name[NAME_MAX];
 > 
-> Hard coding a string length is a warning sign. That is the sort of
-> thing that can memdup() or strdup() can handle.
+> add it to one line.
+> 
+> The rest is looks good to me. I think this is good to go in.
+> 
+> Acked-by: Michal Simek <michal.simek@xilinx.com>
+> 
+> Thanks,
+> Michal
 > 
 
-OK, I'll fix it using kstrdup() in v6.
+Thanks for the feedback.  So patches 1-4 look good now?
+
+For v6 I will leave out patches 5/6 and 6/6.
 
 Alan
