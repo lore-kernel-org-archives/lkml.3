@@ -1,1862 +1,831 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522AbaLRQU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:20:59 -0500
-Received: from resqmta-ch2-07v.sys.comcast.net ([69.252.207.39]:53364 "EHLO
-	resqmta-ch2-07v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751417AbaLRQUS (ORCPT
+	id S1751557AbaLRQWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:22:31 -0500
+Received: from mail-oi0-f48.google.com ([209.85.218.48]:52870 "EHLO
+	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059AbaLRQW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:20:18 -0500
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: m.chehab@samsung.com, hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
-        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
-        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/3] media: au0828 - convert to use videobuf2
-Date: Thu, 18 Dec 2014 09:20:10 -0700
-Message-Id: <14b955f13c972a55bcfeaf6734f3487c320260bb.1418918402.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
-References: <cover.1418918401.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
-References: <cover.1418918401.git.shuahkh@osg.samsung.com>
+	Thu, 18 Dec 2014 11:22:29 -0500
+MIME-Version: 1.0
+X-Google-Sender-Delegation: getarunks@gmail.com
+In-Reply-To: <20141217192448.GR5310@linux.vnet.ibm.com>
+References: <CAKZGPAN6Ct_+FY1khP4AMSJ1RgP0zKdJ2pkczjhe-Q5HxTzsrw@mail.gmail.com>
+	<CAKZGPAN7Vk2xpooZ2uFTiyWywT9yCCiW6bSAjRbT5fGs6fRYNw@mail.gmail.com>
+	<CAKZGPAND7TPZKbTqG-zL_Vx=E_k3kio=onwppTJqVcVSmjOR6w@mail.gmail.com>
+	<20141217192448.GR5310@linux.vnet.ibm.com>
+Date: Thu, 18 Dec 2014 21:52:28 +0530
+X-Google-Sender-Auth: ZbgxaXvyLub4HosHGTgSbDQjCMs
+Message-ID: <CAKZGPAPNpci1UriB=vtT3OHcVQnMNtwi7qbT+d_Uqvp+A_xENw@mail.gmail.com>
+Subject: Re: [RCU] kernel hangs in wait_rcu_gp during suspend path
+From: Arun KS <arunks.linux@gmail.com>
+To: Paul McKenney <paulmck@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        josh@joshtriplett.org, rostedt@goodmis.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        laijs@cn.fujitsu.com, Arun KS <getarunks@gmail.com>
+Content-Type: multipart/mixed; boundary=089e0118401096f66b050a7fffa1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert au0828 to use videobuf2. Tested with NTSC.
-Tested video and vbi devices with xawtv, tvtime,
-and vlc. Ran v4l2-compliance to ensure there are
-no new regressions in video and vbi now has 3 fewer
-failures.
+--089e0118401096f66b050a7fffa1
+Content-Type: text/plain; charset=UTF-8
 
-video before:
-test VIDIOC_G_FMT: FAIL 3 failures
-Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+Hi Paul,
 
-Video after:
-test VIDIOC_G_FMT: FAIL 3 failures
-Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+On Thu, Dec 18, 2014 at 12:54 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Dec 16, 2014 at 11:00:20PM +0530, Arun KS wrote:
+>> Hello,
+>>
+>> Adding some more info.
+>>
+>> Below is the rcu_data data structure corresponding to cpu4.
+>
+> This shows that RCU is idle.  What was the state of the system at the
+> time you collected this data?
 
-vbi before:
-test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: FAIL
-test VIDIOC_EXPBUF: FAIL
-test USERPTR: FAIL
-Total: 72, Succeeded: 66, Failed: 6, Warnings: 0
+System initiated a suspend sequence and currently at disable_nonboot_cpus().
+It has hotplugged 0, 1 and 2 successfully.  And even successful in hot
+plugging cpu3.
+But while calling the CPU_POST_DEAD notifier for cpu3, another driver tried to
+unregister an atomic notifier. Which eventually calls syncronize_rcu()
+which hangs the suspend task.
 
-vbi after:
-test VIDIOC_REQBUFS/CREATE_BUFS/QUERYBUF: OK
-test VIDIOC_EXPBUF: OK (Not Supported)
-test USERPTR: OK
-Total: 72, Succeeded: 69, Failed: 3, Warnings: 0
+bt as follows,
+PID: 202    TASK: edcd2a00  CPU: 4   COMMAND: "kworker/u16:4"
+ #0 [<c0a1f8c0>] (__schedule) from [<c0a1d054>]
+ #1 [<c0a1d054>] (schedule_timeout) from [<c0a1f018>]
+ #2 [<c0a1f018>] (wait_for_common) from [<c013c570>]
+ #3 [<c013c570>] (wait_rcu_gp) from [<c014407c>]
+ #4 [<c014407c>] (atomic_notifier_chain_unregister) from [<c06be62c>]
+ #5 [<c06be62c>] (cpufreq_interactive_disable_sched_input) from [<c06bee1c>]
+ #6 [<c06bee1c>] (cpufreq_governor_interactive) from [<c06b7724>]
+ #7 [<c06b7724>] (__cpufreq_governor) from [<c06b9f74>]
+ #8 [<c06b9f74>] (__cpufreq_remove_dev_finish) from [<c06ba3a4>]
+ #9 [<c06ba3a4>] (cpufreq_cpu_callback) from [<c0a22674>]
+#10 [<c0a22674>] (notifier_call_chain) from [<c012284c>]
+#11 [<c012284c>] (__cpu_notify) from [<c01229dc>]
+#12 [<c01229dc>] (cpu_notify_nofail) from [<c0a0dd1c>]
+#13 [<c0a0dd1c>] (_cpu_down) from [<c0122b48>]
+#14 [<c0122b48>] (disable_nonboot_cpus) from [<c0168cd8>]
+#15 [<c0168cd8>] (suspend_devices_and_enter) from [<c0169018>]
+#16 [<c0169018>] (pm_suspend) from [<c01691e0>]
+#17 [<c01691e0>] (try_to_suspend) from [<c01396f0>]
+#18 [<c01396f0>] (process_one_work) from [<c0139db0>]
+#19 [<c0139db0>] (worker_thread) from [<c013efa4>]
+#20 [<c013efa4>] (kthread) from [<c01061f8>]
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- drivers/media/usb/au0828/Kconfig        |   2 +-
- drivers/media/usb/au0828/au0828-cards.c |   2 +-
- drivers/media/usb/au0828/au0828-vbi.c   | 122 ++--
- drivers/media/usb/au0828/au0828-video.c | 949 +++++++++++++-------------------
- drivers/media/usb/au0828/au0828.h       |  61 +-
- 5 files changed, 444 insertions(+), 692 deletions(-)
+But the other cores 4-7 are active. I can see them going to idle tasks
+coming out from idle because of interrupts, scheduling kworkers etc.
+So when I took the data, all the online cores(4-7) were in idle as
+shown below from runq data structures.
 
-diff --git a/drivers/media/usb/au0828/Kconfig b/drivers/media/usb/au0828/Kconfig
-index 1d410ac..78b797e 100644
---- a/drivers/media/usb/au0828/Kconfig
-+++ b/drivers/media/usb/au0828/Kconfig
-@@ -4,7 +4,7 @@ config VIDEO_AU0828
- 	depends on I2C && INPUT && DVB_CORE && USB
- 	select I2C_ALGOBIT
- 	select VIDEO_TVEEPROM
--	select VIDEOBUF_VMALLOC
-+	select VIDEOBUF2_VMALLOC
- 	select DVB_AU8522_DTV if MEDIA_SUBDRV_AUTOSELECT
- 	select MEDIA_TUNER_XC5000 if MEDIA_SUBDRV_AUTOSELECT
- 	select MEDIA_TUNER_MXL5007T if MEDIA_SUBDRV_AUTOSELECT
-diff --git a/drivers/media/usb/au0828/au0828-cards.c b/drivers/media/usb/au0828/au0828-cards.c
-index 9eb77ac..ae2e563 100644
---- a/drivers/media/usb/au0828/au0828-cards.c
-+++ b/drivers/media/usb/au0828/au0828-cards.c
-@@ -39,7 +39,7 @@ static void hvr950q_cs5340_audio(void *priv, int enable)
- struct au0828_board au0828_boards[] = {
- 	[AU0828_BOARD_UNKNOWN] = {
- 		.name	= "Unknown board",
--		.tuner_type = UNSET,
-+		.tuner_type = -1U,
- 		.tuner_addr = ADDR_UNSET,
- 	},
- 	[AU0828_BOARD_HAUPPAUGE_HVR850] = {
-diff --git a/drivers/media/usb/au0828/au0828-vbi.c b/drivers/media/usb/au0828/au0828-vbi.c
-index 932d24f..f67247c 100644
---- a/drivers/media/usb/au0828/au0828-vbi.c
-+++ b/drivers/media/usb/au0828/au0828-vbi.c
-@@ -28,111 +28,67 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- 
--static unsigned int vbibufs = 5;
--module_param(vbibufs, int, 0644);
--MODULE_PARM_DESC(vbibufs, "number of vbi buffers, range 2-32");
--
- /* ------------------------------------------------------------------ */
- 
--static void
--free_buffer(struct videobuf_queue *vq, struct au0828_buffer *buf)
-+static int vbi_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-+			   unsigned int *nbuffers, unsigned int *nplanes,
-+			   unsigned int sizes[], void *alloc_ctxs[])
- {
--	struct au0828_fh     *fh  = vq->priv_data;
--	struct au0828_dev    *dev = fh->dev;
--	unsigned long flags = 0;
--	if (in_interrupt())
--		BUG();
--
--	/* We used to wait for the buffer to finish here, but this didn't work
--	   because, as we were keeping the state as VIDEOBUF_QUEUED,
--	   videobuf_queue_cancel marked it as finished for us.
--	   (Also, it could wedge forever if the hardware was misconfigured.)
--
--	   This should be safe; by the time we get here, the buffer isn't
--	   queued anymore. If we ever start marking the buffers as
--	   VIDEOBUF_ACTIVE, it won't be, though.
--	*/
--	spin_lock_irqsave(&dev->slock, flags);
--	if (dev->isoc_ctl.vbi_buf == buf)
--		dev->isoc_ctl.vbi_buf = NULL;
--	spin_unlock_irqrestore(&dev->slock, flags);
-+	struct au0828_dev *dev = vb2_get_drv_priv(vq);
-+	unsigned long img_size = dev->vbi_width * dev->vbi_height * 2;
-+	unsigned long size;
- 
--	videobuf_vmalloc_free(&buf->vb);
--	buf->vb.state = VIDEOBUF_NEEDS_INIT;
--}
--
--static int
--vbi_setup(struct videobuf_queue *q, unsigned int *count, unsigned int *size)
--{
--	struct au0828_fh     *fh  = q->priv_data;
--	struct au0828_dev    *dev = fh->dev;
-+	size = fmt ? (fmt->fmt.vbi.samples_per_line *
-+		(fmt->fmt.vbi.count[0] + fmt->fmt.vbi.count[1])) : img_size;
-+	if (size < img_size)
-+		return -EINVAL;
- 
--	*size = dev->vbi_width * dev->vbi_height * 2;
-+	*nplanes = 1;
-+	sizes[0] = size;
- 
--	if (0 == *count)
--		*count = vbibufs;
--	if (*count < 2)
--		*count = 2;
--	if (*count > 32)
--		*count = 32;
- 	return 0;
- }
- 
--static int
--vbi_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
--	    enum v4l2_field field)
-+static int vbi_buffer_prepare(struct vb2_buffer *vb)
- {
--	struct au0828_fh     *fh  = q->priv_data;
--	struct au0828_dev    *dev = fh->dev;
-+	struct au0828_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
- 	struct au0828_buffer *buf = container_of(vb, struct au0828_buffer, vb);
--	int                  rc = 0;
-+	unsigned long size;
- 
--	buf->vb.size = dev->vbi_width * dev->vbi_height * 2;
-+	size = dev->vbi_width * dev->vbi_height * 2;
- 
--	if (0 != buf->vb.baddr  &&  buf->vb.bsize < buf->vb.size)
-+	if (vb2_plane_size(vb, 0) < size) {
-+		pr_err("%s data will not fit into plane (%lu < %lu)\n",
-+			__func__, vb2_plane_size(vb, 0), size);
- 		return -EINVAL;
--
--	buf->vb.width  = dev->vbi_width;
--	buf->vb.height = dev->vbi_height;
--	buf->vb.field  = field;
--
--	if (VIDEOBUF_NEEDS_INIT == buf->vb.state) {
--		rc = videobuf_iolock(q, &buf->vb, NULL);
--		if (rc < 0)
--			goto fail;
- 	}
-+	vb2_set_plane_payload(&buf->vb, 0, size);
- 
--	buf->vb.state = VIDEOBUF_PREPARED;
- 	return 0;
--
--fail:
--	free_buffer(q, buf);
--	return rc;
- }
- 
- static void
--vbi_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
--{
--	struct au0828_buffer    *buf     = container_of(vb,
--							struct au0828_buffer,
--							vb);
--	struct au0828_fh        *fh      = vq->priv_data;
--	struct au0828_dev       *dev     = fh->dev;
--	struct au0828_dmaqueue  *vbiq    = &dev->vbiq;
--
--	buf->vb.state = VIDEOBUF_QUEUED;
--	list_add_tail(&buf->vb.queue, &vbiq->active);
--}
--
--static void vbi_release(struct videobuf_queue *q, struct videobuf_buffer *vb)
-+vbi_buffer_queue(struct vb2_buffer *vb)
- {
-+	struct au0828_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
- 	struct au0828_buffer *buf = container_of(vb, struct au0828_buffer, vb);
--	free_buffer(q, buf);
-+	struct au0828_dmaqueue *vbiq = &dev->vbiq;
-+	unsigned long flags = 0;
-+
-+	buf->mem = vb2_plane_vaddr(vb, 0);
-+	buf->length = vb2_plane_size(vb, 0);
-+
-+	spin_lock_irqsave(&dev->slock, flags);
-+	list_add_tail(&buf->list, &vbiq->active);
-+	spin_unlock_irqrestore(&dev->slock, flags);
- }
- 
--struct videobuf_queue_ops au0828_vbi_qops = {
--	.buf_setup    = vbi_setup,
--	.buf_prepare  = vbi_prepare,
--	.buf_queue    = vbi_queue,
--	.buf_release  = vbi_release,
-+struct vb2_ops au0828_vbi_qops = {
-+	.queue_setup     = vbi_queue_setup,
-+	.buf_prepare     = vbi_buffer_prepare,
-+	.buf_queue       = vbi_buffer_queue,
-+	.start_streaming = au0828_start_analog_streaming,
-+	.stop_streaming  = au0828_stop_vbi_streaming,
-+	.wait_prepare    = vb2_ops_wait_prepare,
-+	.wait_finish     = vb2_ops_wait_finish,
- };
-diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-index 5f337b1..3011ca8 100644
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -219,9 +219,6 @@ static int au0828_init_isoc(struct au0828_dev *dev, int max_packets,
- 
- 	au0828_isocdbg("au0828: called au0828_prepare_isoc\n");
- 
--	/* De-allocates all pending stuff */
--	au0828_uninit_isoc(dev);
--
- 	dev->isoc_ctl.isoc_copy = isoc_copy;
- 	dev->isoc_ctl.num_bufs = num_bufs;
- 
-@@ -285,8 +282,6 @@ static int au0828_init_isoc(struct au0828_dev *dev, int max_packets,
- 		}
- 	}
- 
--	init_waitqueue_head(&dma_q->wq);
--
- 	/* submit urbs and enables IRQ */
- 	for (i = 0; i < dev->isoc_ctl.num_bufs; i++) {
- 		rc = usb_submit_urb(dev->isoc_ctl.urb[i], GFP_ATOMIC);
-@@ -309,16 +304,12 @@ static inline void buffer_filled(struct au0828_dev *dev,
- 				  struct au0828_buffer *buf)
- {
- 	/* Advice that buffer was filled */
--	au0828_isocdbg("[%p/%d] wakeup\n", buf, buf->vb.i);
--
--	buf->vb.state = VIDEOBUF_DONE;
--	buf->vb.field_count++;
--	v4l2_get_timestamp(&buf->vb.ts);
-+	au0828_isocdbg("[%p/%d] wakeup\n", buf, buf->top_field);
- 
--	dev->isoc_ctl.buf = NULL;
--
--	list_del(&buf->vb.queue);
--	wake_up(&buf->vb.done);
-+	buf->vb.v4l2_buf.sequence = dev->frame_count++;
-+	buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED;
-+	v4l2_get_timestamp(&buf->vb.v4l2_buf.timestamp);
-+	vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
- }
- 
- static inline void vbi_buffer_filled(struct au0828_dev *dev,
-@@ -326,16 +317,12 @@ static inline void vbi_buffer_filled(struct au0828_dev *dev,
- 				     struct au0828_buffer *buf)
- {
- 	/* Advice that buffer was filled */
--	au0828_isocdbg("[%p/%d] wakeup\n", buf, buf->vb.i);
--
--	buf->vb.state = VIDEOBUF_DONE;
--	buf->vb.field_count++;
--	v4l2_get_timestamp(&buf->vb.ts);
-+	au0828_isocdbg("[%p/%d] wakeup\n", buf, buf->top_field);
- 
--	dev->isoc_ctl.vbi_buf = NULL;
--
--	list_del(&buf->vb.queue);
--	wake_up(&buf->vb.done);
-+	buf->vb.v4l2_buf.sequence = dev->vbi_frame_count++;
-+	buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED;
-+	v4l2_get_timestamp(&buf->vb.v4l2_buf.timestamp);
-+	vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
- }
- 
- /*
-@@ -354,8 +341,8 @@ static void au0828_copy_video(struct au0828_dev *dev,
- 	if (len == 0)
- 		return;
- 
--	if (dma_q->pos + len > buf->vb.size)
--		len = buf->vb.size - dma_q->pos;
-+	if (dma_q->pos + len > buf->length)
-+		len = buf->length - dma_q->pos;
- 
- 	startread = p;
- 	remain = len;
-@@ -373,11 +360,11 @@ static void au0828_copy_video(struct au0828_dev *dev,
- 	lencopy = bytesperline - currlinedone;
- 	lencopy = lencopy > remain ? remain : lencopy;
- 
--	if ((char *)startwrite + lencopy > (char *)outp + buf->vb.size) {
-+	if ((char *)startwrite + lencopy > (char *)outp + buf->length) {
- 		au0828_isocdbg("Overflow of %zi bytes past buffer end (1)\n",
- 			       ((char *)startwrite + lencopy) -
--			       ((char *)outp + buf->vb.size));
--		remain = (char *)outp + buf->vb.size - (char *)startwrite;
-+			       ((char *)outp + buf->length));
-+		remain = (char *)outp + buf->length - (char *)startwrite;
- 		lencopy = remain;
- 	}
- 	if (lencopy <= 0)
-@@ -395,11 +382,11 @@ static void au0828_copy_video(struct au0828_dev *dev,
- 			lencopy = bytesperline;
- 
- 		if ((char *)startwrite + lencopy > (char *)outp +
--		    buf->vb.size) {
-+		    buf->length) {
- 			au0828_isocdbg("Overflow %zi bytes past buf end (2)\n",
- 				       ((char *)startwrite + lencopy) -
--				       ((char *)outp + buf->vb.size));
--			lencopy = remain = (char *)outp + buf->vb.size -
-+				       ((char *)outp + buf->length));
-+			lencopy = remain = (char *)outp + buf->length -
- 					   (char *)startwrite;
- 		}
- 		if (lencopy <= 0)
-@@ -435,7 +422,11 @@ static inline void get_next_buf(struct au0828_dmaqueue *dma_q,
- 	}
- 
- 	/* Get the next buffer */
--	*buf = list_entry(dma_q->active.next, struct au0828_buffer, vb.queue);
-+	*buf = list_entry(dma_q->active.next, struct au0828_buffer, list);
-+	/* Cleans up buffer - Useful for testing for frame/URB loss */
-+	list_del(&(*buf)->list);
-+	dma_q->pos = 0;
-+	(*buf)->vb_buf = (*buf)->mem;
- 	dev->isoc_ctl.buf = *buf;
- 
- 	return;
-@@ -473,8 +464,8 @@ static void au0828_copy_vbi(struct au0828_dev *dev,
- 
- 	bytesperline = dev->vbi_width;
- 
--	if (dma_q->pos + len > buf->vb.size)
--		len = buf->vb.size - dma_q->pos;
-+	if (dma_q->pos + len > buf->length)
-+		len = buf->length - dma_q->pos;
- 
- 	startread = p;
- 	startwrite = outp + (dma_q->pos / 2);
-@@ -497,7 +488,6 @@ static inline void vbi_get_next_buf(struct au0828_dmaqueue *dma_q,
- 				    struct au0828_buffer **buf)
- {
- 	struct au0828_dev *dev = container_of(dma_q, struct au0828_dev, vbiq);
--	char *outp;
- 
- 	if (list_empty(&dma_q->active)) {
- 		au0828_isocdbg("No active queue to serve\n");
-@@ -507,13 +497,12 @@ static inline void vbi_get_next_buf(struct au0828_dmaqueue *dma_q,
- 	}
- 
- 	/* Get the next buffer */
--	*buf = list_entry(dma_q->active.next, struct au0828_buffer, vb.queue);
-+	*buf = list_entry(dma_q->active.next, struct au0828_buffer, list);
- 	/* Cleans up buffer - Useful for testing for frame/URB loss */
--	outp = videobuf_to_vmalloc(&(*buf)->vb);
--	memset(outp, 0x00, (*buf)->vb.size);
--
-+	list_del(&(*buf)->list);
-+	dma_q->pos = 0;
-+	(*buf)->vb_buf = (*buf)->mem;
- 	dev->isoc_ctl.vbi_buf = *buf;
--
- 	return;
- }
- 
-@@ -549,11 +538,11 @@ static inline int au0828_isoc_copy(struct au0828_dev *dev, struct urb *urb)
- 
- 	buf = dev->isoc_ctl.buf;
- 	if (buf != NULL)
--		outp = videobuf_to_vmalloc(&buf->vb);
-+		outp = vb2_plane_vaddr(&buf->vb, 0);
- 
- 	vbi_buf = dev->isoc_ctl.vbi_buf;
- 	if (vbi_buf != NULL)
--		vbioutp = videobuf_to_vmalloc(&vbi_buf->vb);
-+		vbioutp = vb2_plane_vaddr(&vbi_buf->vb, 0);
- 
- 	for (i = 0; i < urb->number_of_packets; i++) {
- 		int status = urb->iso_frame_desc[i].status;
-@@ -593,8 +582,8 @@ static inline int au0828_isoc_copy(struct au0828_dev *dev, struct urb *urb)
- 				if (vbi_buf == NULL)
- 					vbioutp = NULL;
- 				else
--					vbioutp = videobuf_to_vmalloc(
--						&vbi_buf->vb);
-+					vbioutp = vb2_plane_vaddr(
-+						&vbi_buf->vb, 0);
- 
- 				/* Video */
- 				if (buf != NULL)
-@@ -603,7 +592,7 @@ static inline int au0828_isoc_copy(struct au0828_dev *dev, struct urb *urb)
- 				if (buf == NULL)
- 					outp = NULL;
- 				else
--					outp = videobuf_to_vmalloc(&buf->vb);
-+					outp = vb2_plane_vaddr(&buf->vb, 0);
- 
- 				/* As long as isoc traffic is arriving, keep
- 				   resetting the timer */
-@@ -657,130 +646,59 @@ static inline int au0828_isoc_copy(struct au0828_dev *dev, struct urb *urb)
- 	return rc;
- }
- 
--static int
--buffer_setup(struct videobuf_queue *vq, unsigned int *count,
--	     unsigned int *size)
-+static int queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-+		       unsigned int *nbuffers, unsigned int *nplanes,
-+		       unsigned int sizes[], void *alloc_ctxs[])
- {
--	struct au0828_fh *fh = vq->priv_data;
--	*size = (fh->dev->width * fh->dev->height * 16 + 7) >> 3;
-+	struct au0828_dev *dev = vb2_get_drv_priv(vq);
-+	unsigned long img_size = dev->height * dev->bytesperline;
-+	unsigned long size;
- 
--	if (0 == *count)
--		*count = AU0828_DEF_BUF;
-+	size = fmt ? fmt->fmt.pix.sizeimage : img_size;
-+	if (size < img_size)
-+		return -EINVAL;
- 
--	if (*count < AU0828_MIN_BUF)
--		*count = AU0828_MIN_BUF;
--	return 0;
--}
-+	*nplanes = 1;
-+	sizes[0] = size;
- 
--/* This is called *without* dev->slock held; please keep it that way */
--static void free_buffer(struct videobuf_queue *vq, struct au0828_buffer *buf)
--{
--	struct au0828_fh     *fh  = vq->priv_data;
--	struct au0828_dev    *dev = fh->dev;
--	unsigned long flags = 0;
--	if (in_interrupt())
--		BUG();
--
--	/* We used to wait for the buffer to finish here, but this didn't work
--	   because, as we were keeping the state as VIDEOBUF_QUEUED,
--	   videobuf_queue_cancel marked it as finished for us.
--	   (Also, it could wedge forever if the hardware was misconfigured.)
--
--	   This should be safe; by the time we get here, the buffer isn't
--	   queued anymore. If we ever start marking the buffers as
--	   VIDEOBUF_ACTIVE, it won't be, though.
--	*/
--	spin_lock_irqsave(&dev->slock, flags);
--	if (dev->isoc_ctl.buf == buf)
--		dev->isoc_ctl.buf = NULL;
--	spin_unlock_irqrestore(&dev->slock, flags);
--
--	videobuf_vmalloc_free(&buf->vb);
--	buf->vb.state = VIDEOBUF_NEEDS_INIT;
-+	return 0;
- }
- 
- static int
--buffer_prepare(struct videobuf_queue *vq, struct videobuf_buffer *vb,
--						enum v4l2_field field)
-+buffer_prepare(struct vb2_buffer *vb)
- {
--	struct au0828_fh     *fh  = vq->priv_data;
- 	struct au0828_buffer *buf = container_of(vb, struct au0828_buffer, vb);
--	struct au0828_dev    *dev = fh->dev;
--	int                  rc = 0, urb_init = 0;
-+	struct au0828_dev    *dev = vb2_get_drv_priv(vb->vb2_queue);
- 
--	buf->vb.size = (fh->dev->width * fh->dev->height * 16 + 7) >> 3;
-+	buf->length = dev->height * dev->bytesperline;
- 
--	if (0 != buf->vb.baddr  &&  buf->vb.bsize < buf->vb.size)
-+	if (vb2_plane_size(vb, 0) < buf->length) {
-+		pr_err("%s data will not fit into plane (%lu < %lu)\n",
-+			__func__, vb2_plane_size(vb, 0), buf->length);
- 		return -EINVAL;
--
--	buf->vb.width  = dev->width;
--	buf->vb.height = dev->height;
--	buf->vb.field  = field;
--
--	if (VIDEOBUF_NEEDS_INIT == buf->vb.state) {
--		rc = videobuf_iolock(vq, &buf->vb, NULL);
--		if (rc < 0) {
--			pr_info("videobuf_iolock failed\n");
--			goto fail;
--		}
- 	}
--
--	if (!dev->isoc_ctl.num_bufs)
--		urb_init = 1;
--
--	if (urb_init) {
--		rc = au0828_init_isoc(dev, AU0828_ISO_PACKETS_PER_URB,
--				      AU0828_MAX_ISO_BUFS, dev->max_pkt_size,
--				      au0828_isoc_copy);
--		if (rc < 0) {
--			pr_info("au0828_init_isoc failed\n");
--			goto fail;
--		}
--	}
--
--	buf->vb.state = VIDEOBUF_PREPARED;
-+	vb2_set_plane_payload(&buf->vb, 0, buf->length);
- 	return 0;
--
--fail:
--	free_buffer(vq, buf);
--	return rc;
- }
- 
- static void
--buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
-+buffer_queue(struct vb2_buffer *vb)
- {
- 	struct au0828_buffer    *buf     = container_of(vb,
- 							struct au0828_buffer,
- 							vb);
--	struct au0828_fh        *fh      = vq->priv_data;
--	struct au0828_dev       *dev     = fh->dev;
-+	struct au0828_dev       *dev     = vb2_get_drv_priv(vb->vb2_queue);
- 	struct au0828_dmaqueue  *vidq    = &dev->vidq;
-+	unsigned long flags = 0;
- 
--	buf->vb.state = VIDEOBUF_QUEUED;
--	list_add_tail(&buf->vb.queue, &vidq->active);
--}
--
--static void buffer_release(struct videobuf_queue *vq,
--				struct videobuf_buffer *vb)
--{
--	struct au0828_buffer   *buf  = container_of(vb,
--						    struct au0828_buffer,
--						    vb);
-+	buf->mem = vb2_plane_vaddr(vb, 0);
-+	buf->length = vb2_plane_size(vb, 0);
- 
--	free_buffer(vq, buf);
-+	spin_lock_irqsave(&dev->slock, flags);
-+	list_add_tail(&buf->list, &vidq->active);
-+	spin_unlock_irqrestore(&dev->slock, flags);
- }
- 
--static struct videobuf_queue_ops au0828_video_qops = {
--	.buf_setup      = buffer_setup,
--	.buf_prepare    = buffer_prepare,
--	.buf_queue      = buffer_queue,
--	.buf_release    = buffer_release,
--};
--
--/* ------------------------------------------------------------------
--   V4L2 interface
--   ------------------------------------------------------------------*/
--
- static int au0828_i2s_init(struct au0828_dev *dev)
- {
- 	/* Enable i2s mode */
-@@ -829,7 +747,7 @@ static int au0828_analog_stream_enable(struct au0828_dev *d)
- 	return 0;
- }
- 
--int au0828_analog_stream_disable(struct au0828_dev *d)
-+static int au0828_analog_stream_disable(struct au0828_dev *d)
- {
- 	dprintk(1, "au0828_analog_stream_disable called\n");
- 	au0828_writereg(d, AU0828_SENSORCTRL_100, 0x0);
-@@ -862,78 +780,141 @@ static int au0828_stream_interrupt(struct au0828_dev *dev)
- 	return 0;
- }
- 
--/*
-- * au0828_release_resources
-- * unregister v4l2 devices
-- */
--void au0828_analog_unregister(struct au0828_dev *dev)
-+int au0828_start_analog_streaming(struct vb2_queue *vq, unsigned int count)
- {
--	dprintk(1, "au0828_release_resources called\n");
--	mutex_lock(&au0828_sysfs_lock);
-+	struct au0828_dev *dev = vb2_get_drv_priv(vq);
-+	int rc = 0;
- 
--	if (dev->vdev)
--		video_unregister_device(dev->vdev);
--	if (dev->vbi_dev)
--		video_unregister_device(dev->vbi_dev);
-+	dprintk(1, "au0828_start_analog_streaming called %d\n",
-+		dev->streaming_users);
- 
--	mutex_unlock(&au0828_sysfs_lock);
--}
-+	if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
-+		dev->frame_count = 0;
-+	else
-+		dev->vbi_frame_count = 0;
-+
-+	if (dev->streaming_users == 0) {
-+		/* If we were doing ac97 instead of i2s, it would go here...*/
-+		au0828_i2s_init(dev);
-+		rc = au0828_init_isoc(dev, AU0828_ISO_PACKETS_PER_URB,
-+				   AU0828_MAX_ISO_BUFS, dev->max_pkt_size,
-+				   au0828_isoc_copy);
-+		if (rc < 0) {
-+			pr_info("au0828_init_isoc failed\n");
-+			return rc;
-+		}
- 
-+		if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
-+			v4l2_device_call_all(&dev->v4l2_dev, 0, video,
-+						s_stream, 1);
-+			dev->vid_timeout_running = 1;
-+			mod_timer(&dev->vid_timeout, jiffies + (HZ / 10));
-+		} else if (vq->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
-+			dev->vbi_timeout_running = 1;
-+			mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
-+		}
-+	}
-+	dev->streaming_users++;
-+	return rc;
-+}
- 
--/* Usage lock check functions */
--static int res_get(struct au0828_fh *fh, unsigned int bit)
-+static void au0828_stop_streaming(struct vb2_queue *vq)
- {
--	struct au0828_dev    *dev = fh->dev;
-+	struct au0828_dev *dev = vb2_get_drv_priv(vq);
-+	struct au0828_dmaqueue *vidq = &dev->vidq;
-+	unsigned long flags = 0;
-+	int i;
- 
--	if (fh->resources & bit)
--		/* have it already allocated */
--		return 1;
-+	dprintk(1, "au0828_stop_streaming called %d\n", dev->streaming_users);
- 
--	/* is it free? */
--	if (dev->resources & bit) {
--		/* no, someone else uses it */
--		return 0;
-+	if (dev->streaming_users-- == 1)
-+		au0828_uninit_isoc(dev);
-+
-+	spin_lock_irqsave(&dev->slock, flags);
-+	if (dev->isoc_ctl.buf != NULL) {
-+		vb2_buffer_done(&dev->isoc_ctl.buf->vb, VB2_BUF_STATE_ERROR);
-+		dev->isoc_ctl.buf = NULL;
- 	}
--	/* it's free, grab it */
--	fh->resources  |= bit;
--	dev->resources |= bit;
--	dprintk(1, "res: get %d\n", bit);
-+	while (!list_empty(&vidq->active)) {
-+		struct au0828_buffer *buf;
- 
--	return 1;
--}
-+		buf = list_entry(vidq->active.next, struct au0828_buffer, list);
-+		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
-+		list_del(&buf->list);
-+	}
- 
--static int res_check(struct au0828_fh *fh, unsigned int bit)
--{
--	return fh->resources & bit;
--}
-+	v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
- 
--static int res_locked(struct au0828_dev *dev, unsigned int bit)
--{
--	return dev->resources & bit;
-+	for (i = 0; i < AU0828_MAX_INPUT; i++) {
-+		if (AUVI_INPUT(i).audio_setup == NULL)
-+			continue;
-+		(AUVI_INPUT(i).audio_setup)(dev, 0);
-+	}
-+	spin_unlock_irqrestore(&dev->slock, flags);
-+
-+	dev->vid_timeout_running = 0;
-+	del_timer_sync(&dev->vid_timeout);
- }
- 
--static void res_free(struct au0828_fh *fh, unsigned int bits)
-+void au0828_stop_vbi_streaming(struct vb2_queue *vq)
- {
--	struct au0828_dev    *dev = fh->dev;
-+	struct au0828_dev *dev = vb2_get_drv_priv(vq);
-+	struct au0828_dmaqueue *vbiq = &dev->vbiq;
-+	unsigned long flags = 0;
-+
-+	dprintk(1, "au0828_stop_vbi_streaming called %d\n",
-+		dev->streaming_users);
-+
-+	if (dev->streaming_users-- == 1)
-+		au0828_uninit_isoc(dev);
-+
-+	spin_lock_irqsave(&dev->slock, flags);
-+	if (dev->isoc_ctl.vbi_buf != NULL) {
-+		vb2_buffer_done(&dev->isoc_ctl.vbi_buf->vb,
-+				VB2_BUF_STATE_ERROR);
-+		dev->isoc_ctl.vbi_buf = NULL;
-+	}
-+	while (!list_empty(&vbiq->active)) {
-+		struct au0828_buffer *buf;
- 
--	BUG_ON((fh->resources & bits) != bits);
-+		buf = list_entry(vbiq->active.next, struct au0828_buffer, list);
-+		list_del(&buf->list);
-+		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
-+	}
-+	spin_unlock_irqrestore(&dev->slock, flags);
- 
--	fh->resources  &= ~bits;
--	dev->resources &= ~bits;
--	dprintk(1, "res: put %d\n", bits);
-+	dev->vbi_timeout_running = 0;
-+	del_timer_sync(&dev->vbi_timeout);
- }
- 
--static int get_ressource(struct au0828_fh *fh)
-+static struct vb2_ops au0828_video_qops = {
-+	.queue_setup     = queue_setup,
-+	.buf_prepare     = buffer_prepare,
-+	.buf_queue       = buffer_queue,
-+	.start_streaming = au0828_start_analog_streaming,
-+	.stop_streaming  = au0828_stop_streaming,
-+	.wait_prepare    = vb2_ops_wait_prepare,
-+	.wait_finish     = vb2_ops_wait_finish,
-+};
-+
-+/* ------------------------------------------------------------------
-+   V4L2 interface
-+   ------------------------------------------------------------------*/
-+/*
-+ * au0828_analog_unregister
-+ * unregister v4l2 devices
-+ */
-+void au0828_analog_unregister(struct au0828_dev *dev)
- {
--	switch (fh->type) {
--	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
--		return AU0828_RESOURCE_VIDEO;
--	case V4L2_BUF_TYPE_VBI_CAPTURE:
--		return AU0828_RESOURCE_VBI;
--	default:
--		BUG();
--		return 0;
--	}
-+	dprintk(1, "au0828_analog_unregister called\n");
-+	mutex_lock(&au0828_sysfs_lock);
-+
-+	if (dev->vdev)
-+		video_unregister_device(dev->vdev);
-+	if (dev->vbi_dev)
-+		video_unregister_device(dev->vbi_dev);
-+
-+	mutex_unlock(&au0828_sysfs_lock);
- }
- 
- /* This function ensures that video frames continue to be delivered even if
-@@ -951,8 +932,8 @@ static void au0828_vid_buffer_timeout(unsigned long data)
- 
- 	buf = dev->isoc_ctl.buf;
- 	if (buf != NULL) {
--		vid_data = videobuf_to_vmalloc(&buf->vb);
--		memset(vid_data, 0x00, buf->vb.size); /* Blank green frame */
-+		vid_data = vb2_plane_vaddr(&buf->vb, 0);
-+		memset(vid_data, 0x00, buf->length); /* Blank green frame */
- 		buffer_filled(dev, dma_q, buf);
- 	}
- 	get_next_buf(dma_q, &buf);
-@@ -975,8 +956,8 @@ static void au0828_vbi_buffer_timeout(unsigned long data)
- 
- 	buf = dev->isoc_ctl.vbi_buf;
- 	if (buf != NULL) {
--		vbi_data = videobuf_to_vmalloc(&buf->vb);
--		memset(vbi_data, 0x00, buf->vb.size);
-+		vbi_data = vb2_plane_vaddr(&buf->vb, 0);
-+		memset(vbi_data, 0x00, buf->length);
- 		vbi_buffer_filled(dev, dma_q, buf);
- 	}
- 	vbi_get_next_buf(dma_q, &buf);
-@@ -986,14 +967,12 @@ static void au0828_vbi_buffer_timeout(unsigned long data)
- 	spin_unlock_irqrestore(&dev->slock, flags);
- }
- 
--
- static int au0828_v4l2_open(struct file *filp)
- {
--	int ret = 0;
- 	struct video_device *vdev = video_devdata(filp);
- 	struct au0828_dev *dev = video_drvdata(filp);
--	struct au0828_fh *fh;
- 	int type;
-+	int ret = 0;
- 
- 	switch (vdev->vfl_type) {
- 	case VFL_TYPE_GRABBER:
-@@ -1006,85 +985,60 @@ static int au0828_v4l2_open(struct file *filp)
- 		return -EINVAL;
- 	}
- 
--	fh = kzalloc(sizeof(struct au0828_fh), GFP_KERNEL);
--	if (NULL == fh) {
--		dprintk(1, "Failed allocate au0828_fh struct!\n");
--		return -ENOMEM;
--	}
--
--	fh->type = type;
--	fh->dev = dev;
--	v4l2_fh_init(&fh->fh, vdev);
--	filp->private_data = fh;
-+	dprintk(1,
-+		"%s called std_set %d dev_state %d stream users %d users %d\n",
-+		__func__, dev->std_set_in_tuner_core, dev->dev_state,
-+		dev->streaming_users, dev->users);
- 
--	if (mutex_lock_interruptible(&dev->lock)) {
--		kfree(fh);
-+	if (mutex_lock_interruptible(&dev->lock))
- 		return -ERESTARTSYS;
-+
-+	ret = v4l2_fh_open(filp);
-+	if (ret) {
-+		au0828_isocdbg("%s: v4l2_fh_open() returned error %d\n",
-+				__func__, ret);
-+		mutex_unlock(&dev->lock);
-+		return ret;
- 	}
-+
- 	if (dev->users == 0) {
- 		au0828_analog_stream_enable(dev);
- 		au0828_analog_stream_reset(dev);
--
--		/* If we were doing ac97 instead of i2s, it would go here...*/
--		au0828_i2s_init(dev);
--
- 		dev->stream_state = STREAM_OFF;
- 		dev->dev_state |= DEV_INITIALIZED;
- 	}
--
- 	dev->users++;
- 	mutex_unlock(&dev->lock);
--
--	videobuf_queue_vmalloc_init(&fh->vb_vidq, &au0828_video_qops,
--				    NULL, &dev->slock,
--				    V4L2_BUF_TYPE_VIDEO_CAPTURE,
--				    V4L2_FIELD_INTERLACED,
--				    sizeof(struct au0828_buffer), fh,
--				    &dev->lock);
--
--	/* VBI Setup */
--	videobuf_queue_vmalloc_init(&fh->vb_vbiq, &au0828_vbi_qops,
--				    NULL, &dev->slock,
--				    V4L2_BUF_TYPE_VBI_CAPTURE,
--				    V4L2_FIELD_SEQ_TB,
--				    sizeof(struct au0828_buffer), fh,
--				    &dev->lock);
--	v4l2_fh_add(&fh->fh);
- 	return ret;
- }
- 
- static int au0828_v4l2_close(struct file *filp)
- {
- 	int ret;
--	struct au0828_fh *fh = filp->private_data;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(filp);
-+	struct video_device *vdev = video_devdata(filp);
-+
-+	dprintk(1,
-+		"%s called std_set %d dev_state %d stream users %d users %d\n",
-+		__func__, dev->std_set_in_tuner_core, dev->dev_state,
-+		dev->streaming_users, dev->users);
- 
--	v4l2_fh_del(&fh->fh);
--	v4l2_fh_exit(&fh->fh);
- 	mutex_lock(&dev->lock);
--	if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
-+	if (vdev->vfl_type == VFL_TYPE_GRABBER && dev->vid_timeout_running) {
- 		/* Cancel timeout thread in case they didn't call streamoff */
- 		dev->vid_timeout_running = 0;
- 		del_timer_sync(&dev->vid_timeout);
--
--		videobuf_stop(&fh->vb_vidq);
--		res_free(fh, AU0828_RESOURCE_VIDEO);
--	}
--
--	if (res_check(fh, AU0828_RESOURCE_VBI)) {
-+	} else if (vdev->vfl_type == VFL_TYPE_VBI &&
-+			dev->vbi_timeout_running) {
- 		/* Cancel timeout thread in case they didn't call streamoff */
- 		dev->vbi_timeout_running = 0;
- 		del_timer_sync(&dev->vbi_timeout);
--
--		videobuf_stop(&fh->vb_vbiq);
--		res_free(fh, AU0828_RESOURCE_VBI);
- 	}
- 
--	if (dev->users == 1 && video_is_registered(video_devdata(filp))) {
--		au0828_analog_stream_disable(dev);
--
--		au0828_uninit_isoc(dev);
-+	if (dev->dev_state == DEV_DISCONNECTED)
-+		goto end;
- 
-+	if (dev->users == 1) {
- 		/* Save some power by putting tuner to sleep */
- 		v4l2_device_call_all(&dev->v4l2_dev, 0, core, s_power, 0);
- 		dev->std_set_in_tuner_core = 0;
-@@ -1095,13 +1049,10 @@ static int au0828_v4l2_close(struct file *filp)
- 		if (ret < 0)
- 			pr_info("Au0828 can't set alternate to 0!\n");
- 	}
--	mutex_unlock(&dev->lock);
--
--	videobuf_mmap_free(&fh->vb_vidq);
--	videobuf_mmap_free(&fh->vb_vbiq);
--	kfree(fh);
-+end:
-+	_vb2_fop_release(filp, NULL);
- 	dev->users--;
--	wake_up_interruptible_nr(&dev->open, 1);
-+	mutex_unlock(&dev->lock);
- 	return 0;
- }
- 
-@@ -1113,6 +1064,9 @@ static void au0828_init_tuner(struct au0828_dev *dev)
- 		.type = V4L2_TUNER_ANALOG_TV,
- 	};
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	if (dev->std_set_in_tuner_core)
- 		return;
- 	dev->std_set_in_tuner_core = 1;
-@@ -1125,98 +1079,6 @@ static void au0828_init_tuner(struct au0828_dev *dev)
- 	i2c_gate_ctrl(dev, 0);
- }
- 
--static ssize_t au0828_v4l2_read(struct file *filp, char __user *buf,
--				size_t count, loff_t *pos)
--{
--	struct au0828_fh *fh = filp->private_data;
--	struct au0828_dev *dev = fh->dev;
--	int rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (mutex_lock_interruptible(&dev->lock))
--		return -ERESTARTSYS;
--	au0828_init_tuner(dev);
--	mutex_unlock(&dev->lock);
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		if (res_locked(dev, AU0828_RESOURCE_VIDEO))
--			return -EBUSY;
--
--		return videobuf_read_stream(&fh->vb_vidq, buf, count, pos, 0,
--					filp->f_flags & O_NONBLOCK);
--	}
--
--	if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
--		if (!res_get(fh, AU0828_RESOURCE_VBI))
--			return -EBUSY;
--
--		if (dev->vbi_timeout_running == 0) {
--			/* Handle case where caller tries to read without
--			   calling streamon first */
--			dev->vbi_timeout_running = 1;
--			mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
--		}
--
--		return videobuf_read_stream(&fh->vb_vbiq, buf, count, pos, 0,
--					    filp->f_flags & O_NONBLOCK);
--	}
--
--	return 0;
--}
--
--static unsigned int au0828_v4l2_poll(struct file *filp, poll_table *wait)
--{
--	struct au0828_fh *fh = filp->private_data;
--	struct au0828_dev *dev = fh->dev;
--	unsigned long req_events = poll_requested_events(wait);
--	unsigned int res;
--
--	if (check_dev(dev) < 0)
--		return POLLERR;
--
--	res = v4l2_ctrl_poll(filp, wait);
--	if (!(req_events & (POLLIN | POLLRDNORM)))
--		return res;
--
--	if (mutex_lock_interruptible(&dev->lock))
--		return -ERESTARTSYS;
--	au0828_init_tuner(dev);
--	mutex_unlock(&dev->lock);
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		if (!res_get(fh, AU0828_RESOURCE_VIDEO))
--			return POLLERR;
--		return res | videobuf_poll_stream(filp, &fh->vb_vidq, wait);
--	}
--	if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
--		if (!res_get(fh, AU0828_RESOURCE_VBI))
--			return POLLERR;
--		return res | videobuf_poll_stream(filp, &fh->vb_vbiq, wait);
--	}
--	return POLLERR;
--}
--
--static int au0828_v4l2_mmap(struct file *filp, struct vm_area_struct *vma)
--{
--	struct au0828_fh *fh    = filp->private_data;
--	struct au0828_dev *dev   = fh->dev;
--	int		 rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
--		rc = videobuf_mmap_mapper(&fh->vb_vidq, vma);
--	else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE)
--		rc = videobuf_mmap_mapper(&fh->vb_vbiq, vma);
--
--	return rc;
--}
--
- static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
- 			     struct v4l2_format *format)
- {
-@@ -1268,13 +1130,14 @@ static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
- 	return 0;
- }
- 
--
- static int vidioc_querycap(struct file *file, void  *priv,
- 			   struct v4l2_capability *cap)
- {
- 	struct video_device *vdev = video_devdata(file);
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	strlcpy(cap->driver, "au0828", sizeof(cap->driver));
- 	strlcpy(cap->card, dev->board.name, sizeof(cap->card));
-@@ -1300,6 +1163,8 @@ static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
- 	if (f->index)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called\n", __func__);
-+
- 	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
- 	strcpy(f->description, "Packed YUV2");
- 
-@@ -1312,8 +1177,10 @@ static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
- static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
- 					struct v4l2_format *f)
- {
--	struct au0828_fh *fh  = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	f->fmt.pix.width = dev->width;
- 	f->fmt.pix.height = dev->height;
-@@ -1329,8 +1196,10 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
- static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
- 				  struct v4l2_format *f)
- {
--	struct au0828_fh *fh  = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	return au0828_set_format(dev, VIDIOC_TRY_FMT, f);
- }
-@@ -1338,15 +1207,17 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
- static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
- 				struct v4l2_format *f)
- {
--	struct au0828_fh *fh  = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 	int rc;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	rc = check_dev(dev);
- 	if (rc < 0)
- 		return rc;
- 
--	if (videobuf_queue_is_busy(&fh->vb_vidq)) {
-+	if (vb2_is_busy(&dev->vb_vidq)) {
- 		pr_info("%s queue busy\n", __func__);
- 		rc = -EBUSY;
- 		goto out;
-@@ -1359,8 +1230,16 @@ out:
- 
- static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id norm)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
-+	if (norm == dev->std)
-+		return 0;
-+
-+	if (dev->streaming_users > 0)
-+		return -EBUSY;
- 
- 	dev->std = norm;
- 
-@@ -1383,8 +1262,10 @@ static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id norm)
- 
- static int vidioc_g_std(struct file *file, void *priv, v4l2_std_id *norm)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	*norm = dev->std;
- 	return 0;
-@@ -1393,8 +1274,7 @@ static int vidioc_g_std(struct file *file, void *priv, v4l2_std_id *norm)
- static int vidioc_enum_input(struct file *file, void *priv,
- 				struct v4l2_input *input)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 	unsigned int tmp;
- 
- 	static const char *inames[] = {
-@@ -1407,6 +1287,9 @@ static int vidioc_enum_input(struct file *file, void *priv,
- 		[AU0828_VMUX_DEBUG] = "tv debug"
- 	};
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	tmp = input->index;
- 
- 	if (tmp >= AU0828_MAX_INPUT)
-@@ -1432,8 +1315,11 @@ static int vidioc_enum_input(struct file *file, void *priv,
- 
- static int vidioc_g_input(struct file *file, void *priv, unsigned int *i)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	*i = dev->ctrl_input;
- 	return 0;
- }
-@@ -1442,6 +1328,9 @@ static void au0828_s_input(struct au0828_dev *dev, int index)
- {
- 	int i;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	switch (AUVI_INPUT(index).type) {
- 	case AU0828_VMUX_SVIDEO:
- 		dev->input_type = AU0828_VMUX_SVIDEO;
-@@ -1491,8 +1380,7 @@ static void au0828_s_input(struct au0828_dev *dev, int index)
- 
- static int vidioc_s_input(struct file *file, void *priv, unsigned int index)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	dprintk(1, "VIDIOC_S_INPUT in function %s, input=%d\n", __func__,
- 		index);
-@@ -1510,6 +1398,8 @@ static int vidioc_enumaudio(struct file *file, void *priv, struct v4l2_audio *a)
- 	if (a->index > 1)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called\n", __func__);
-+
- 	if (a->index == 0)
- 		strcpy(a->name, "Television");
- 	else
-@@ -1521,8 +1411,10 @@ static int vidioc_enumaudio(struct file *file, void *priv, struct v4l2_audio *a)
- 
- static int vidioc_g_audio(struct file *file, void *priv, struct v4l2_audio *a)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	a->index = dev->ctrl_ainput;
- 	if (a->index == 0)
-@@ -1536,22 +1428,26 @@ static int vidioc_g_audio(struct file *file, void *priv, struct v4l2_audio *a)
- 
- static int vidioc_s_audio(struct file *file, void *priv, const struct v4l2_audio *a)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	if (a->index != dev->ctrl_ainput)
- 		return -EINVAL;
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 	return 0;
- }
- 
- static int vidioc_g_tuner(struct file *file, void *priv, struct v4l2_tuner *t)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	if (t->index != 0)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	strcpy(t->name, "Auvitek tuner");
- 
- 	au0828_init_tuner(dev);
-@@ -1564,12 +1460,14 @@ static int vidioc_g_tuner(struct file *file, void *priv, struct v4l2_tuner *t)
- static int vidioc_s_tuner(struct file *file, void *priv,
- 				const struct v4l2_tuner *t)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	if (t->index != 0)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	au0828_init_tuner(dev);
- 	i2c_gate_ctrl(dev, 1);
- 	v4l2_device_call_all(&dev->v4l2_dev, 0, tuner, s_tuner, t);
-@@ -1585,11 +1483,12 @@ static int vidioc_s_tuner(struct file *file, void *priv,
- static int vidioc_g_frequency(struct file *file, void *priv,
- 				struct v4l2_frequency *freq)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	if (freq->tuner != 0)
- 		return -EINVAL;
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 	freq->frequency = dev->ctrl_freq;
- 	return 0;
- }
-@@ -1597,13 +1496,15 @@ static int vidioc_g_frequency(struct file *file, void *priv,
- static int vidioc_s_frequency(struct file *file, void *priv,
- 				const struct v4l2_frequency *freq)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 	struct v4l2_frequency new_freq = *freq;
- 
- 	if (freq->tuner != 0)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	au0828_init_tuner(dev);
- 	i2c_gate_ctrl(dev, 1);
- 
-@@ -1625,8 +1526,10 @@ static int vidioc_s_frequency(struct file *file, void *priv,
- static int vidioc_g_fmt_vbi_cap(struct file *file, void *priv,
- 				struct v4l2_format *format)
- {
--	struct au0828_fh      *fh  = priv;
--	struct au0828_dev     *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	format->fmt.vbi.samples_per_line = dev->vbi_width;
- 	format->fmt.vbi.sample_format = V4L2_PIX_FMT_GREY;
-@@ -1646,12 +1549,14 @@ static int vidioc_g_fmt_vbi_cap(struct file *file, void *priv,
- static int vidioc_cropcap(struct file *file, void *priv,
- 			  struct v4l2_cropcap *cc)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
- 
- 	if (cc->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)
- 		return -EINVAL;
- 
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
-+
- 	cc->bounds.left = 0;
- 	cc->bounds.top = 0;
- 	cc->bounds.width = dev->width;
-@@ -1665,105 +1570,14 @@ static int vidioc_cropcap(struct file *file, void *priv,
- 	return 0;
- }
- 
--static int vidioc_streamon(struct file *file, void *priv,
--			   enum v4l2_buf_type type)
--{
--	struct au0828_fh      *fh  = priv;
--	struct au0828_dev     *dev = fh->dev;
--	int                   rc = -EINVAL;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (unlikely(type != fh->type))
--		return -EINVAL;
--
--	dprintk(1, "vidioc_streamon fh=%p t=%d fh->res=%d dev->res=%d\n",
--		fh, type, fh->resources, dev->resources);
--
--	if (unlikely(!res_get(fh, get_ressource(fh))))
--		return -EBUSY;
--
--	au0828_init_tuner(dev);
--	if (type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		au0828_analog_stream_enable(dev);
--		v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 1);
--	}
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		rc = videobuf_streamon(&fh->vb_vidq);
--		dev->vid_timeout_running = 1;
--		mod_timer(&dev->vid_timeout, jiffies + (HZ / 10));
--	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
--		rc = videobuf_streamon(&fh->vb_vbiq);
--		dev->vbi_timeout_running = 1;
--		mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
--	}
--
--	return rc;
--}
--
--static int vidioc_streamoff(struct file *file, void *priv,
--			    enum v4l2_buf_type type)
--{
--	struct au0828_fh      *fh  = priv;
--	struct au0828_dev     *dev = fh->dev;
--	int                   rc;
--	int                   i;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE &&
--	    fh->type != V4L2_BUF_TYPE_VBI_CAPTURE)
--		return -EINVAL;
--	if (type != fh->type)
--		return -EINVAL;
--
--	dprintk(1, "vidioc_streamoff fh=%p t=%d fh->res=%d dev->res=%d\n",
--		fh, type, fh->resources, dev->resources);
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
--		dev->vid_timeout_running = 0;
--		del_timer_sync(&dev->vid_timeout);
--
--		au0828_analog_stream_disable(dev);
--		v4l2_device_call_all(&dev->v4l2_dev, 0, video, s_stream, 0);
--		rc = au0828_stream_interrupt(dev);
--		if (rc != 0)
--			return rc;
--
--		for (i = 0; i < AU0828_MAX_INPUT; i++) {
--			if (AUVI_INPUT(i).audio_setup == NULL)
--				continue;
--			(AUVI_INPUT(i).audio_setup)(dev, 0);
--		}
--
--		if (res_check(fh, AU0828_RESOURCE_VIDEO)) {
--			videobuf_streamoff(&fh->vb_vidq);
--			res_free(fh, AU0828_RESOURCE_VIDEO);
--		}
--	} else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
--		dev->vbi_timeout_running = 0;
--		del_timer_sync(&dev->vbi_timeout);
--
--		if (res_check(fh, AU0828_RESOURCE_VBI)) {
--			videobuf_streamoff(&fh->vb_vbiq);
--			res_free(fh, AU0828_RESOURCE_VBI);
--		}
--	}
--
--	return 0;
--}
--
- #ifdef CONFIG_VIDEO_ADV_DEBUG
- static int vidioc_g_register(struct file *file, void *priv,
- 			     struct v4l2_dbg_register *reg)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	reg->val = au0828_read(dev, reg->reg);
- 	reg->size = 1;
-@@ -1773,8 +1587,10 @@ static int vidioc_g_register(struct file *file, void *priv,
- static int vidioc_s_register(struct file *file, void *priv,
- 			     const struct v4l2_dbg_register *reg)
- {
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
-+	struct au0828_dev *dev = video_drvdata(file);
-+
-+	dprintk(1, "%s called std_set %d dev_state %d\n", __func__,
-+		dev->std_set_in_tuner_core, dev->dev_state);
- 
- 	return au0828_writereg(dev, reg->reg, reg->val);
- }
-@@ -1784,93 +1600,13 @@ static int vidioc_log_status(struct file *file, void *fh)
- {
- 	struct video_device *vdev = video_devdata(file);
- 
-+	dprintk(1, "%s called\n", __func__);
-+
- 	v4l2_ctrl_log_status(file, fh);
- 	v4l2_device_call_all(vdev->v4l2_dev, 0, core, log_status);
- 	return 0;
- }
- 
--static int vidioc_reqbufs(struct file *file, void *priv,
--			  struct v4l2_requestbuffers *rb)
--{
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
--	int rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
--		rc = videobuf_reqbufs(&fh->vb_vidq, rb);
--	else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE)
--		rc = videobuf_reqbufs(&fh->vb_vbiq, rb);
--
--	return rc;
--}
--
--static int vidioc_querybuf(struct file *file, void *priv,
--			   struct v4l2_buffer *b)
--{
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
--	int rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
--		rc = videobuf_querybuf(&fh->vb_vidq, b);
--	else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE)
--		rc = videobuf_querybuf(&fh->vb_vbiq, b);
--
--	return rc;
--}
--
--static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *b)
--{
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
--	int rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
--		rc = videobuf_qbuf(&fh->vb_vidq, b);
--	else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE)
--		rc = videobuf_qbuf(&fh->vb_vbiq, b);
--
--	return rc;
--}
--
--static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *b)
--{
--	struct au0828_fh *fh = priv;
--	struct au0828_dev *dev = fh->dev;
--	int rc;
--
--	rc = check_dev(dev);
--	if (rc < 0)
--		return rc;
--
--	/* Workaround for a bug in the au0828 hardware design that sometimes
--	   results in the colorspace being inverted */
--	if (dev->greenscreen_detected == 1) {
--		dprintk(1, "Detected green frame.  Resetting stream...\n");
--		au0828_analog_stream_reset(dev);
--		dev->greenscreen_detected = 0;
--	}
--
--	if (fh->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
--		rc = videobuf_dqbuf(&fh->vb_vidq, b, file->f_flags & O_NONBLOCK);
--	else if (fh->type == V4L2_BUF_TYPE_VBI_CAPTURE)
--		rc = videobuf_dqbuf(&fh->vb_vbiq, b, file->f_flags & O_NONBLOCK);
--
--	return rc;
--}
--
- void au0828_v4l2_suspend(struct au0828_dev *dev)
- {
- 	struct urb *urb;
-@@ -1938,9 +1674,9 @@ static struct v4l2_file_operations au0828_v4l_fops = {
- 	.owner      = THIS_MODULE,
- 	.open       = au0828_v4l2_open,
- 	.release    = au0828_v4l2_close,
--	.read       = au0828_v4l2_read,
--	.poll       = au0828_v4l2_poll,
--	.mmap       = au0828_v4l2_mmap,
-+	.read       = vb2_fop_read,
-+	.poll       = vb2_fop_poll,
-+	.mmap       = vb2_fop_mmap,
- 	.unlocked_ioctl = video_ioctl2,
- };
- 
-@@ -1957,17 +1693,23 @@ static const struct v4l2_ioctl_ops video_ioctl_ops = {
- 	.vidioc_g_audio             = vidioc_g_audio,
- 	.vidioc_s_audio             = vidioc_s_audio,
- 	.vidioc_cropcap             = vidioc_cropcap,
--	.vidioc_reqbufs             = vidioc_reqbufs,
--	.vidioc_querybuf            = vidioc_querybuf,
--	.vidioc_qbuf                = vidioc_qbuf,
--	.vidioc_dqbuf               = vidioc_dqbuf,
-+
-+	.vidioc_reqbufs             = vb2_ioctl_reqbufs,
-+	.vidioc_create_bufs         = vb2_ioctl_create_bufs,
-+	.vidioc_prepare_buf         = vb2_ioctl_prepare_buf,
-+	.vidioc_querybuf            = vb2_ioctl_querybuf,
-+	.vidioc_qbuf                = vb2_ioctl_qbuf,
-+	.vidioc_dqbuf               = vb2_ioctl_dqbuf,
-+
- 	.vidioc_s_std               = vidioc_s_std,
- 	.vidioc_g_std               = vidioc_g_std,
- 	.vidioc_enum_input          = vidioc_enum_input,
- 	.vidioc_g_input             = vidioc_g_input,
- 	.vidioc_s_input             = vidioc_s_input,
--	.vidioc_streamon            = vidioc_streamon,
--	.vidioc_streamoff           = vidioc_streamoff,
-+
-+	.vidioc_streamon            = vb2_ioctl_streamon,
-+	.vidioc_streamoff           = vb2_ioctl_streamoff,
-+
- 	.vidioc_g_tuner             = vidioc_g_tuner,
- 	.vidioc_s_tuner             = vidioc_s_tuner,
- 	.vidioc_g_frequency         = vidioc_g_frequency,
-@@ -1988,6 +1730,42 @@ static const struct video_device au0828_video_template = {
- 	.tvnorms                    = V4L2_STD_NTSC_M | V4L2_STD_PAL_M,
- };
- 
-+static int au0828_vb2_setup(struct au0828_dev *dev)
-+{
-+	int rc;
-+	struct vb2_queue *q;
-+
-+	/* Setup Videobuf2 for Video capture */
-+	q = &dev->vb_vidq;
-+	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-+	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
-+	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
-+	q->drv_priv = dev;
-+	q->buf_struct_size = sizeof(struct au0828_buffer);
-+	q->ops = &au0828_video_qops;
-+	q->mem_ops = &vb2_vmalloc_memops;
-+
-+	rc = vb2_queue_init(q);
-+	if (rc < 0)
-+		return rc;
-+
-+	/* Setup Videobuf2 for VBI capture */
-+	q = &dev->vb_vbiq;
-+	q->type = V4L2_BUF_TYPE_VBI_CAPTURE;
-+	q->io_modes = VB2_READ | VB2_MMAP | VB2_USERPTR;
-+	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
-+	q->drv_priv = dev;
-+	q->buf_struct_size = sizeof(struct au0828_buffer);
-+	q->ops = &au0828_vbi_qops;
-+	q->mem_ops = &vb2_vmalloc_memops;
-+
-+	rc = vb2_queue_init(q);
-+	if (rc < 0)
-+		return rc;
-+
-+	return 0;
-+}
-+
- /**************************************************************************/
- 
- int au0828_analog_register(struct au0828_dev *dev,
-@@ -2039,9 +1817,7 @@ int au0828_analog_register(struct au0828_dev *dev,
- 
- 	/* init video dma queues */
- 	INIT_LIST_HEAD(&dev->vidq.active);
--	INIT_LIST_HEAD(&dev->vidq.queued);
- 	INIT_LIST_HEAD(&dev->vbiq.active);
--	INIT_LIST_HEAD(&dev->vbiq.queued);
- 
- 	dev->vid_timeout.function = au0828_vid_buffer_timeout;
- 	dev->vid_timeout.data = (unsigned long) dev;
-@@ -2078,18 +1854,34 @@ int au0828_analog_register(struct au0828_dev *dev,
- 		goto err_vdev;
- 	}
- 
-+	mutex_init(&dev->vb_queue_lock);
-+	mutex_init(&dev->vb_vbi_queue_lock);
-+
- 	/* Fill the video capture device struct */
- 	*dev->vdev = au0828_video_template;
- 	dev->vdev->v4l2_dev = &dev->v4l2_dev;
- 	dev->vdev->lock = &dev->lock;
-+	dev->vdev->queue = &dev->vb_vidq;
-+	dev->vdev->queue->lock = &dev->vb_queue_lock;
- 	strcpy(dev->vdev->name, "au0828a video");
- 
- 	/* Setup the VBI device */
- 	*dev->vbi_dev = au0828_video_template;
- 	dev->vbi_dev->v4l2_dev = &dev->v4l2_dev;
- 	dev->vbi_dev->lock = &dev->lock;
-+	dev->vbi_dev->queue = &dev->vb_vbiq;
-+	dev->vbi_dev->queue->lock = &dev->vb_vbi_queue_lock;
- 	strcpy(dev->vbi_dev->name, "au0828a vbi");
- 
-+	/* initialize videobuf2 stuff */
-+	retval = au0828_vb2_setup(dev);
-+	if (retval != 0) {
-+		dprintk(1, "unable to setup videobuf2 queues (error = %d).\n",
-+			retval);
-+		ret = -ENODEV;
-+		goto err_vbi_dev;
-+	}
-+
- 	/* Register the v4l2 device */
- 	video_set_drvdata(dev->vdev, dev);
- 	retval = video_register_device(dev->vdev, VFL_TYPE_GRABBER, -1);
-@@ -2110,6 +1902,7 @@ int au0828_analog_register(struct au0828_dev *dev,
- 		goto err_vbi_dev;
- 	}
- 
-+
- 	dprintk(1, "%s completed!\n", __func__);
- 
- 	return 0;
-diff --git a/drivers/media/usb/au0828/au0828.h b/drivers/media/usb/au0828/au0828.h
-index 36815a3..eb15187 100644
---- a/drivers/media/usb/au0828/au0828.h
-+++ b/drivers/media/usb/au0828/au0828.h
-@@ -28,7 +28,7 @@
- 
- /* Analog */
- #include <linux/videodev2.h>
--#include <media/videobuf-vmalloc.h>
-+#include <media/videobuf2-vmalloc.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-ctrls.h>
- #include <media/v4l2-fh.h>
-@@ -126,17 +126,7 @@ enum au0828_dev_state {
- 	DEV_MISCONFIGURED = 0x04
- };
- 
--struct au0828_fh {
--	/* must be the first field of this struct! */
--	struct v4l2_fh fh;
--
--	struct au0828_dev *dev;
--	unsigned int  resources;
--
--	struct videobuf_queue        vb_vidq;
--	struct videobuf_queue        vb_vbiq;
--	enum v4l2_buf_type           type;
--};
-+struct au0828_dev;
- 
- struct au0828_usb_isoc_ctl {
- 		/* max packet size of isoc transaction */
-@@ -177,21 +167,20 @@ struct au0828_usb_isoc_ctl {
- /* buffer for one video frame */
- struct au0828_buffer {
- 	/* common v4l buffer stuff -- must be first */
--	struct videobuf_buffer vb;
-+	struct vb2_buffer vb;
-+	struct list_head list;
- 
--	struct list_head frame;
-+	void *mem;
-+	unsigned long length;
- 	int top_field;
--	int receiving;
-+	/* pointer to vmalloc memory address in vb */
-+	char *vb_buf;
- };
- 
- struct au0828_dmaqueue {
- 	struct list_head       active;
--	struct list_head       queued;
--
--	wait_queue_head_t          wq;
--
- 	/* Counters to control buffer fill */
--	int                        pos;
-+	int                    pos;
- };
- 
- struct au0828_dev {
-@@ -220,14 +209,26 @@ struct au0828_dev {
- 	struct au0828_rc *ir;
- #endif
- 
--	int users;
--	unsigned int resources;	/* resources in use */
- 	struct video_device *vdev;
- 	struct video_device *vbi_dev;
-+
-+	/* Videobuf2 */
-+	struct vb2_queue vb_vidq;
-+	struct vb2_queue vb_vbiq;
-+	struct mutex vb_queue_lock;
-+	struct mutex vb_vbi_queue_lock;
-+
-+	unsigned int frame_count;
-+	unsigned int vbi_frame_count;
-+
- 	struct timer_list vid_timeout;
- 	int vid_timeout_running;
- 	struct timer_list vbi_timeout;
- 	int vbi_timeout_running;
-+
-+	int users;
-+	int streaming_users;
-+
- 	int width;
- 	int height;
- 	int vbi_width;
-@@ -242,7 +243,6 @@ struct au0828_dev {
- 	__u8 isoc_in_endpointaddr;
- 	u8 isoc_init_ok;
- 	int greenscreen_detected;
--	unsigned int frame_count;
- 	int ctrl_freq;
- 	int input_type;
- 	int std_set_in_tuner_core;
-@@ -277,6 +277,7 @@ struct au0828_dev {
- 	char *dig_transfer_buffer[URB_COUNT];
- };
- 
-+
- /* ----------------------------------------------------------- */
- #define au0828_read(dev, reg) au0828_readreg(dev, reg)
- #define au0828_write(dev, reg, value) au0828_writereg(dev, reg, value)
-@@ -309,13 +310,15 @@ extern int au0828_i2c_unregister(struct au0828_dev *dev);
- 
- /* ----------------------------------------------------------- */
- /* au0828-video.c */
--int au0828_analog_register(struct au0828_dev *dev,
-+extern int au0828_analog_register(struct au0828_dev *dev,
- 			   struct usb_interface *interface);
--int au0828_analog_stream_disable(struct au0828_dev *d);
--void au0828_analog_unregister(struct au0828_dev *dev);
-+extern void au0828_analog_unregister(struct au0828_dev *dev);
-+extern int au0828_start_analog_streaming(struct vb2_queue *vq,
-+						unsigned int count);
-+extern void au0828_stop_vbi_streaming(struct vb2_queue *vq);
- #ifdef CONFIG_VIDEO_AU0828_V4L2
--void au0828_v4l2_suspend(struct au0828_dev *dev);
--void au0828_v4l2_resume(struct au0828_dev *dev);
-+extern void au0828_v4l2_suspend(struct au0828_dev *dev);
-+extern void au0828_v4l2_resume(struct au0828_dev *dev);
- #else
- static inline void au0828_v4l2_suspend(struct au0828_dev *dev) { };
- static inline void au0828_v4l2_resume(struct au0828_dev *dev) { };
-@@ -329,7 +332,7 @@ void au0828_dvb_suspend(struct au0828_dev *dev);
- void au0828_dvb_resume(struct au0828_dev *dev);
- 
- /* au0828-vbi.c */
--extern struct videobuf_queue_ops au0828_vbi_qops;
-+extern struct vb2_ops au0828_vbi_qops;
- 
- #define dprintk(level, fmt, arg...)\
- 	do { if (au0828_debug & level)\
--- 
-2.1.0
+------start--------------
+crash> runq
+CPU 0 [OFFLINE]
 
+CPU 1 [OFFLINE]
+
+CPU 2 [OFFLINE]
+
+CPU 3 [OFFLINE]
+
+CPU 4 RUNQUEUE: c5439040
+  CURRENT: PID: 0      TASK: f0c9d400  COMMAND: "swapper/4"
+  RT PRIO_ARRAY: c5439130
+     [no tasks queued]
+  CFS RB_ROOT: c54390c0
+     [no tasks queued]
+
+CPU 5 RUNQUEUE: c5447040
+  CURRENT: PID: 0      TASK: f0c9aa00  COMMAND: "swapper/5"
+  RT PRIO_ARRAY: c5447130
+     [no tasks queued]
+  CFS RB_ROOT: c54470c0
+     [no tasks queued]
+
+CPU 6 RUNQUEUE: c5455040
+  CURRENT: PID: 0      TASK: f0c9ce00  COMMAND: "swapper/6"
+  RT PRIO_ARRAY: c5455130
+     [no tasks queued]
+  CFS RB_ROOT: c54550c0
+     [no tasks queued]
+
+CPU 7 RUNQUEUE: c5463040
+  CURRENT: PID: 0      TASK: f0c9b000  COMMAND: "swapper/7"
+  RT PRIO_ARRAY: c5463130
+     [no tasks queued]
+  CFS RB_ROOT: c54630c0
+     [no tasks queued]
+------end--------------
+
+but one strange thing i can see is that rcu_read_lock_nesting for idle
+tasks running on cpu 5 and cpu 6 are set to 1.
+
+PID: 0      TASK: f0c9d400  CPU: 4   COMMAND: "swapper/4"
+  rcu_read_lock_nesting = 0,
+
+PID: 0      TASK: f0c9aa00  CPU: 5   COMMAND: "swapper/5"
+  rcu_read_lock_nesting = 1,
+
+PID: 0      TASK: f0c9ce00  CPU: 6   COMMAND: "swapper/6"
+  rcu_read_lock_nesting = 1,
+
+PID: 0      TASK: f0c9b000  CPU: 7   COMMAND: "swapper/7"
+  rcu_read_lock_nesting = 0,
+
+Does this means that the current grace period(suspend thread is
+waiting on) is getting extended infinitely?
+Also attaching the per_cpu rcu_data for online and offline cores.
+
+Thanks,
+Arun
+
+>
+>                                                         Thanx, Paul
+>
+>> struct rcu_data {
+>>   completed = 5877,
+>>   gpnum = 5877,
+>>   passed_quiesce = true,
+>>   qs_pending = false,
+>>   beenonline = true,
+>>   preemptible = true,
+>>   mynode = 0xc117f340 <rcu_preempt_state>,
+>>   grpmask = 16,
+>>   nxtlist = 0xedaaec00,
+>>   nxttail = {0xc54366c4, 0xe84d350c, 0xe84d350c, 0xe84d350c},
+>>   nxtcompleted = {4294967035, 5878, 5878, 5878},
+>>   qlen_lazy = 105,
+>>   qlen = 415,
+>>   qlen_last_fqs_check = 0,
+>>   n_cbs_invoked = 86323,
+>>   n_nocbs_invoked = 0,
+>>   n_cbs_orphaned = 0,
+>>   n_cbs_adopted = 139,
+>>   n_force_qs_snap = 0,
+>>   blimit = 10,
+>>   dynticks = 0xc5436758,
+>>   dynticks_snap = 7582140,
+>>   dynticks_fqs = 41,
+>>   offline_fqs = 0,
+>>   n_rcu_pending = 59404,
+>>   n_rp_qs_pending = 5,
+>>   n_rp_report_qs = 4633,
+>>   n_rp_cb_ready = 32,
+>>   n_rp_cpu_needs_gp = 41088,
+>>   n_rp_gp_completed = 2844,
+>>   n_rp_gp_started = 1150,
+>>   n_rp_need_nothing = 9657,
+>>   barrier_head = {
+>>     next = 0x0,
+>>     func = 0x0
+>>   },
+>>   oom_head = {
+>>     next = 0x0,
+>>     func = 0x0
+>>   },
+>>   cpu = 4,
+>>   rsp = 0xc117f340 <rcu_preempt_state>
+>> }
+>>
+>>
+>>
+>> Also pasting complete rcu_preempt_state.
+>>
+>>
+>>
+>> rcu_preempt_state = $9 = {
+>>   node = {{
+>>       lock = {
+>>         raw_lock = {
+>>           {
+>>             slock = 3129850509,
+>>             tickets = {
+>>               owner = 47757,
+>>               next = 47757
+>>             }
+>>           }
+>>         },
+>>         magic = 3735899821,
+>>         owner_cpu = 4294967295,
+>>         owner = 0xffffffff
+>>       },
+>>       gpnum = 5877,
+>>       completed = 5877,
+>>       qsmask = 0,
+>>       expmask = 0,
+>>       qsmaskinit = 240,
+>>       grpmask = 0,
+>>       grplo = 0,
+>>       grphi = 7,
+>>       grpnum = 0 '\000',
+>>       level = 0 '\000',
+>>       parent = 0x0,
+>>       blkd_tasks = {
+>>         next = 0xc117f378 <rcu_preempt_state+56>,
+>>         prev = 0xc117f378 <rcu_preempt_state+56>
+>>       },
+>>       gp_tasks = 0x0,
+>>       exp_tasks = 0x0,
+>>       need_future_gp = {1, 0},
+>>       fqslock = {
+>>         raw_lock = {
+>>           {
+>>             slock = 0,
+>>             tickets = {
+>>               owner = 0,
+>>               next = 0
+>>             }
+>>           }
+>>         },
+>>         magic = 3735899821,
+>>         owner_cpu = 4294967295,
+>>         owner = 0xffffffff
+>>       }
+>>     }},
+>>   level = {0xc117f340 <rcu_preempt_state>},
+>>   levelcnt = {1, 0, 0, 0, 0},
+>>   levelspread = "\b",
+>>   rda = 0xc115e6b0 <rcu_preempt_data>,
+>>   call = 0xc01975ac <call_rcu>,
+>>   fqs_state = 0 '\000',
+>>   boost = 0 '\000',
+>>   gpnum = 5877,
+>>   completed = 5877,
+>>   gp_kthread = 0xf0c9e600,
+>>   gp_wq = {
+>>     lock = {
+>>       {
+>>         rlock = {
+>>           raw_lock = {
+>>             {
+>>               slock = 2160230594,
+>>               tickets = {
+>>                 owner = 32962,
+>>                 next = 32962
+>>               }
+>>             }
+>>           },
+>>           magic = 3735899821,
+>>           owner_cpu = 4294967295,
+>>           owner = 0xffffffff
+>>         }
+>>       }
+>>     },
+>>     task_list = {
+>>       next = 0xf0cd1f20,
+>>       prev = 0xf0cd1f20
+>>     }
+>>   },
+>>   gp_flags = 1,
+>>   orphan_lock = {
+>>     raw_lock = {
+>>       {
+>>         slock = 327685,
+>>         tickets = {
+>>           owner = 5,
+>>           next = 5
+>>         }
+>>       }
+>>     },
+>>     magic = 3735899821,
+>>     owner_cpu = 4294967295,
+>>     owner = 0xffffffff
+>>   },
+>>   orphan_nxtlist = 0x0,
+>>   orphan_nxttail = 0xc117f490 <rcu_preempt_state+336>,
+>>   orphan_donelist = 0x0,
+>>   orphan_donetail = 0xc117f498 <rcu_preempt_state+344>,
+>>   qlen_lazy = 0,
+>>   qlen = 0,
+>>   onoff_mutex = {
+>>     count = {
+>>       counter = 1
+>>     },
+>>     wait_lock = {
+>>       {
+>>         rlock = {
+>>           raw_lock = {
+>>             {
+>>               slock = 811479134,
+>>               tickets = {
+>>                 owner = 12382,
+>>                 next = 12382
+>>               }
+>>             }
+>>           },
+>>           magic = 3735899821,
+>>           owner_cpu = 4294967295,
+>>           owner = 0xffffffff
+>>         }
+>>       }
+>>     },
+>>     wait_list = {
+>>       next = 0xc117f4bc <rcu_preempt_state+380>,
+>>       prev = 0xc117f4bc <rcu_preempt_state+380>
+>>     },
+>>     owner = 0x0,
+>>     name = 0x0,
+>>     magic = 0xc117f4a8 <rcu_preempt_state+360>
+>>   },
+>>   barrier_mutex = {
+>>     count = {
+>>       counter = 1
+>>     },
+>>     wait_lock = {
+>>       {
+>>         rlock = {
+>>           raw_lock = {
+>>             {
+>>               slock = 0,
+>>               tickets = {
+>>                 owner = 0,
+>>                 next = 0
+>>               }
+>>             }
+>>           },
+>>           magic = 3735899821,
+>>           owner_cpu = 4294967295,
+>>           owner = 0xffffffff
+>>         }
+>>       }
+>>     },
+>>     wait_list = {
+>>       next = 0xc117f4e4 <rcu_preempt_state+420>,
+>>       prev = 0xc117f4e4 <rcu_preempt_state+420>
+>>     },
+>>     owner = 0x0,
+>>     name = 0x0,
+>>     magic = 0xc117f4d0 <rcu_preempt_state+400>
+>>   },
+>>   barrier_cpu_count = {
+>>     counter = 0
+>>   },
+>>   barrier_completion = {
+>>     done = 0,
+>>     wait = {
+>>       lock = {
+>>         {
+>>           rlock = {
+>>             raw_lock = {
+>>               {
+>>                 slock = 0,
+>>                 tickets = {
+>>                   owner = 0,
+>>                   next = 0
+>>                 }
+>>               }
+>>             },
+>>             magic = 0,
+>>             owner_cpu = 0,
+>>             owner = 0x0
+>>           }
+>>         }
+>>       },
+>>       task_list = {
+>>         next = 0x0,
+>>         prev = 0x0
+>>       }
+>>     }
+>>   },
+>>   n_barrier_done = 0,
+>>   expedited_start = {
+>>     counter = 0
+>>   },
+>>   expedited_done = {
+>>     counter = 0
+>>   },
+>>   expedited_wrap = {
+>>     counter = 0
+>>   },
+>>   expedited_tryfail = {
+>>     counter = 0
+>>   },
+>>   expedited_workdone1 = {
+>>     counter = 0
+>>   },
+>>   expedited_workdone2 = {
+>>     counter = 0
+>>   },
+>>   expedited_normal = {
+>>     counter = 0
+>>   },
+>>   expedited_stoppedcpus = {
+>>     counter = 0
+>>   },
+>>   expedited_done_tries = {
+>>     counter = 0
+>>   },
+>>   expedited_done_lost = {
+>>     counter = 0
+>>   },
+>>   expedited_done_exit = {
+>>     counter = 0
+>>   },
+>>   jiffies_force_qs = 4294963917,
+>>   n_force_qs = 4028,
+>>   n_force_qs_lh = 0,
+>>   n_force_qs_ngp = 0,
+>>   gp_start = 4294963911,
+>>   jiffies_stall = 4294966011,
+>>   gp_max = 17,
+>>   name = 0xc0d833ab "rcu_preempt",
+>>   abbr = 112 'p',
+>>   flavors = {
+>>     next = 0xc117f2ec <rcu_bh_state+556>,
+>>     prev = 0xc117f300 <rcu_struct_flavors>
+>>   },
+>>   wakeup_work = {
+>>     flags = 3,
+>>     llnode = {
+>>       next = 0x0
+>>     },
+>>     func = 0xc0195aa8 <rsp_wakeup>
+>>   }
+>> }
+>>
+>> Hope this helps.
+>>
+>> Thanks,
+>> Arun
+>>
+>>
+>> On Tue, Dec 16, 2014 at 11:59 AM, Arun KS <arunks.linux@gmail.com> wrote:
+>> > Hello,
+>> >
+>> > I dig little deeper to understand the situation.
+>> > All other cpus are in idle thread already.
+>> > As per my understanding, for the grace period to end, at-least one of
+>> > the following should happen on all online cpus,
+>> >
+>> > 1. a context switch.
+>> > 2. user space switch.
+>> > 3. switch to idle thread.
+>> >
+>> > In this situation, since all the other cores are already in idle,  non
+>> > of the above are meet on all online cores.
+>> > So grace period is getting extended and never finishes. Below is the
+>> > state of runqueue when the hang happens.
+>> > --------------start------------------------------------
+>> > crash> runq
+>> > CPU 0 [OFFLINE]
+>> >
+>> > CPU 1 [OFFLINE]
+>> >
+>> > CPU 2 [OFFLINE]
+>> >
+>> > CPU 3 [OFFLINE]
+>> >
+>> > CPU 4 RUNQUEUE: c3192e40
+>> >   CURRENT: PID: 0      TASK: f0874440  COMMAND: "swapper/4"
+>> >   RT PRIO_ARRAY: c3192f20
+>> >      [no tasks queued]
+>> >   CFS RB_ROOT: c3192eb0
+>> >      [no tasks queued]
+>> >
+>> > CPU 5 RUNQUEUE: c31a0e40
+>> >   CURRENT: PID: 0      TASK: f0874980  COMMAND: "swapper/5"
+>> >   RT PRIO_ARRAY: c31a0f20
+>> >      [no tasks queued]
+>> >   CFS RB_ROOT: c31a0eb0
+>> >      [no tasks queued]
+>> >
+>> > CPU 6 RUNQUEUE: c31aee40
+>> >   CURRENT: PID: 0      TASK: f0874ec0  COMMAND: "swapper/6"
+>> >   RT PRIO_ARRAY: c31aef20
+>> >      [no tasks queued]
+>> >   CFS RB_ROOT: c31aeeb0
+>> >      [no tasks queued]
+>> >
+>> > CPU 7 RUNQUEUE: c31bce40
+>> >   CURRENT: PID: 0      TASK: f0875400  COMMAND: "swapper/7"
+>> >   RT PRIO_ARRAY: c31bcf20
+>> >      [no tasks queued]
+>> >   CFS RB_ROOT: c31bceb0
+>> >      [no tasks queued]
+>> > --------------end------------------------------------
+>> >
+>> > If my understanding is correct the below patch should help, because it
+>> > will expedite grace periods during suspend,
+>> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
+>> >
+>> > But I wonder why it was not taken to stable trees. Can we take it?
+>> > Appreciate your help.
+>> >
+>> > Thanks,
+>> > Arun
+>> >
+>> > On Mon, Dec 15, 2014 at 10:34 PM, Arun KS <arunks.linux@gmail.com> wrote:
+>> >> Hi,
+>> >>
+>> >> Here is the backtrace of the process hanging in wait_rcu_gp,
+>> >>
+>> >> PID: 247    TASK: e16e7380  CPU: 4   COMMAND: "kworker/u16:5"
+>> >>  #0 [<c09fead0>] (__schedule) from [<c09fcab0>]
+>> >>  #1 [<c09fcab0>] (schedule_timeout) from [<c09fe050>]
+>> >>  #2 [<c09fe050>] (wait_for_common) from [<c013b2b4>]
+>> >>  #3 [<c013b2b4>] (wait_rcu_gp) from [<c0142f50>]
+>> >>  #4 [<c0142f50>] (atomic_notifier_chain_unregister) from [<c06b2ab8>]
+>> >>  #5 [<c06b2ab8>] (cpufreq_interactive_disable_sched_input) from [<c06b32a8>]
+>> >>  #6 [<c06b32a8>] (cpufreq_governor_interactive) from [<c06abbf8>]
+>> >>  #7 [<c06abbf8>] (__cpufreq_governor) from [<c06ae474>]
+>> >>  #8 [<c06ae474>] (__cpufreq_remove_dev_finish) from [<c06ae8c0>]
+>> >>  #9 [<c06ae8c0>] (cpufreq_cpu_callback) from [<c0a0185c>]
+>> >> #10 [<c0a0185c>] (notifier_call_chain) from [<c0121888>]
+>> >> #11 [<c0121888>] (__cpu_notify) from [<c0121a04>]
+>> >> #12 [<c0121a04>] (cpu_notify_nofail) from [<c09ee7f0>]
+>> >> #13 [<c09ee7f0>] (_cpu_down) from [<c0121b70>]
+>> >> #14 [<c0121b70>] (disable_nonboot_cpus) from [<c016788c>]
+>> >> #15 [<c016788c>] (suspend_devices_and_enter) from [<c0167bcc>]
+>> >> #16 [<c0167bcc>] (pm_suspend) from [<c0167d94>]
+>> >> #17 [<c0167d94>] (try_to_suspend) from [<c0138460>]
+>> >> #18 [<c0138460>] (process_one_work) from [<c0138b18>]
+>> >> #19 [<c0138b18>] (worker_thread) from [<c013dc58>]
+>> >> #20 [<c013dc58>] (kthread) from [<c01061b8>]
+>> >>
+>> >> Will this patch helps here,
+>> >> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=d1d74d14e98a6be740a6f12456c7d9ad47be9c9c
+>> >>
+>> >> I couldn't really understand why it got struck in  synchronize_rcu().
+>> >> Please give some pointers to debug this further.
+>> >>
+>> >> Below are the configs enable related to RCU.
+>> >>
+>> >> CONFIG_TREE_PREEMPT_RCU=y
+>> >> CONFIG_PREEMPT_RCU=y
+>> >> CONFIG_RCU_STALL_COMMON=y
+>> >> CONFIG_RCU_FANOUT=32
+>> >> CONFIG_RCU_FANOUT_LEAF=16
+>> >> CONFIG_RCU_FAST_NO_HZ=y
+>> >> CONFIG_RCU_CPU_STALL_TIMEOUT=21
+>> >> CONFIG_RCU_CPU_STALL_VERBOSE=y
+>> >>
+>> >> Kernel version is 3.10.28
+>> >> Architecture is ARM
+>> >>
+>> >> Thanks,
+>> >> Arun
+>>
+>
+
+--089e0118401096f66b050a7fffa1
+Content-Type: text/plain; charset=US-ASCII; name="rcu_data_offline_cpus_0_3.txt"
+Content-Disposition: attachment; filename="rcu_data_offline_cpus_0_3.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i3uc5wrp0
+
+Y3Jhc2g+IHN0cnVjdCByY3VfZGF0YSBDNTQyODZCMA0Kc3RydWN0IHJjdV9kYXRhIHsNCiAgY29t
+cGxldGVkID0gMjgzMywNCiAgZ3BudW0gPSAyODMzLA0KICBwYXNzZWRfcXVpZXNjZSA9IGZhbHNl
+LA0KICBxc19wZW5kaW5nID0gZmFsc2UsDQogIGJlZW5vbmxpbmUgPSB0cnVlLA0KICBwcmVlbXB0
+aWJsZSA9IHRydWUsDQogIG15bm9kZSA9IDB4YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPiwN
+CiAgZ3JwbWFzayA9IDgsDQogIG54dGxpc3QgPSAweDAsDQogIG54dHRhaWwgPSB7MHhjNTQyODZj
+NCwgMHhjNTQyODZjNCwgMHhjNTQyODZjNCwgMHgwfSwNCiAgbnh0Y29tcGxldGVkID0gezAsIDQy
+OTQ5NjcxMzYsIDQyOTQ5NjcxMzcsIDQyOTQ5NjcxMzd9LA0KICBxbGVuX2xhenkgPSAwLA0KICBx
+bGVuID0gMCwNCiAgcWxlbl9sYXN0X2Zxc19jaGVjayA9IDAsDQogIG5fY2JzX2ludm9rZWQgPSA2
+MDksDQogIG5fbm9jYnNfaW52b2tlZCA9IDAsDQogIG5fY2JzX29ycGhhbmVkID0gMTMsDQogIG5f
+Y2JzX2Fkb3B0ZWQgPSAwLA0KICBuX2ZvcmNlX3FzX3NuYXAgPSAxNDI4LA0KICBibGltaXQgPSAx
+MCwNCiAgZHludGlja3MgPSAweGM1NDI4NzU4LA0KICBkeW50aWNrc19zbmFwID0gMTMyMDYwNTMs
+DQogIGR5bnRpY2tzX2ZxcyA9IDE2LA0KICBvZmZsaW5lX2ZxcyA9IDAsDQogIG5fcmN1X3BlbmRp
+bmcgPSAxODEsDQogIG5fcnBfcXNfcGVuZGluZyA9IDEsDQogIG5fcnBfcmVwb3J0X3FzID0gMjEs
+DQogIG5fcnBfY2JfcmVhZHkgPSAwLA0KICBuX3JwX2NwdV9uZWVkc19ncCA9IDAsDQogIG5fcnBf
+Z3BfY29tcGxldGVkID0gMjIsDQogIG5fcnBfZ3Bfc3RhcnRlZCA9IDgsDQogIG5fcnBfbmVlZF9u
+b3RoaW5nID0gMTMwLA0KICBiYXJyaWVyX2hlYWQgPSB7DQogICAgbmV4dCA9IDB4MCwNCiAgICBm
+dW5jID0gMHgwDQogIH0sDQogIG9vbV9oZWFkID0gew0KICAgIG5leHQgPSAweDAsDQogICAgZnVu
+YyA9IDB4MA0KICB9LA0KICBjcHUgPSAzLA0KICByc3AgPSAweGMxMTdmMzQwIDxyY3VfcHJlZW1w
+dF9zdGF0ZT4NCn0NCg0KY3Jhc2g+IHN0cnVjdCByY3VfZGF0YSBDNTQxQTZCMA0Kc3RydWN0IHJj
+dV9kYXRhIHsNCiAgY29tcGxldGVkID0gNTg3NywNCiAgZ3BudW0gPSA1ODc3LA0KICBwYXNzZWRf
+cXVpZXNjZSA9IHRydWUsDQogIHFzX3BlbmRpbmcgPSBmYWxzZSwNCiAgYmVlbm9ubGluZSA9IHRy
+dWUsDQogIHByZWVtcHRpYmxlID0gdHJ1ZSwNCiAgbXlub2RlID0gMHhjMTE3ZjM0MCA8cmN1X3By
+ZWVtcHRfc3RhdGU+LA0KICBncnBtYXNrID0gNCwNCiAgbnh0bGlzdCA9IDB4MCwNCiAgbnh0dGFp
+bCA9IHsweGM1NDFhNmM0LCAweGM1NDFhNmM0LCAweGM1NDFhNmM0LCAweDB9LA0KICBueHRjb21w
+bGV0ZWQgPSB7MCwgNTg3NywgNTg3OCwgNTg3OH0sDQogIHFsZW5fbGF6eSA9IDAsDQogIHFsZW4g
+PSAwLA0KICBxbGVuX2xhc3RfZnFzX2NoZWNrID0gMCwNCiAgbl9jYnNfaW52b2tlZCA9IDYxNTY1
+LA0KICBuX25vY2JzX2ludm9rZWQgPSAwLA0KICBuX2Nic19vcnBoYW5lZCA9IDEzOSwNCiAgbl9j
+YnNfYWRvcHRlZCA9IDEwMCwNCiAgbl9mb3JjZV9xc19zbmFwID0gMCwNCiAgYmxpbWl0ID0gMTAs
+DQogIGR5bnRpY2tzID0gMHhjNTQxYTc1OCwNCiAgZHludGlja3Nfc25hcCA9IDEzOTAxMDE3LA0K
+ICBkeW50aWNrc19mcXMgPSA3NSwNCiAgb2ZmbGluZV9mcXMgPSAwLA0KICBuX3JjdV9wZW5kaW5n
+ID0gMTY1NDYsDQogIG5fcnBfcXNfcGVuZGluZyA9IDMsDQogIG5fcnBfcmVwb3J0X3FzID0gNDUz
+OSwNCiAgbl9ycF9jYl9yZWFkeSA9IDY5LA0KICBuX3JwX2NwdV9uZWVkc19ncCA9IDc4MiwNCiAg
+bl9ycF9ncF9jb21wbGV0ZWQgPSA0MTk2LA0KICBuX3JwX2dwX3N0YXJ0ZWQgPSAxNzM5LA0KICBu
+X3JwX25lZWRfbm90aGluZyA9IDUyMjEsDQogIGJhcnJpZXJfaGVhZCA9IHsNCiAgICBuZXh0ID0g
+MHgwLA0KICAgIGZ1bmMgPSAweDANCiAgfSwNCiAgb29tX2hlYWQgPSB7DQogICAgbmV4dCA9IDB4
+MCwNCiAgICBmdW5jID0gMHgwDQogIH0sDQogIGNwdSA9IDIsDQogIHJzcCA9IDB4YzExN2YzNDAg
+PHJjdV9wcmVlbXB0X3N0YXRlPg0KfQ0KDQpjcmFzaD4gc3RydWN0IHJjdV9kYXRhIEM1NDBDNkIw
+DQpzdHJ1Y3QgcmN1X2RhdGEgew0KICBjb21wbGV0ZWQgPSA1ODc3LA0KICBncG51bSA9IDU4Nzcs
+DQogIHBhc3NlZF9xdWllc2NlID0gdHJ1ZSwNCiAgcXNfcGVuZGluZyA9IGZhbHNlLA0KICBiZWVu
+b25saW5lID0gdHJ1ZSwNCiAgcHJlZW1wdGlibGUgPSB0cnVlLA0KICBteW5vZGUgPSAweGMxMTdm
+MzQwIDxyY3VfcHJlZW1wdF9zdGF0ZT4sDQogIGdycG1hc2sgPSAyLA0KICBueHRsaXN0ID0gMHgw
+LA0KICBueHR0YWlsID0gezB4YzU0MGM2YzQsIDB4YzU0MGM2YzQsIDB4YzU0MGM2YzQsIDB4MH0s
+DQogIG54dGNvbXBsZXRlZCA9IHs0Mjk0OTY3MDMwLCA1ODc4LCA1ODc4LCA1ODc4fSwNCiAgcWxl
+bl9sYXp5ID0gMCwNCiAgcWxlbiA9IDAsDQogIHFsZW5fbGFzdF9mcXNfY2hlY2sgPSAwLA0KICBu
+X2Nic19pbnZva2VkID0gNzQyOTIsDQogIG5fbm9jYnNfaW52b2tlZCA9IDAsDQogIG5fY2JzX29y
+cGhhbmVkID0gMTAwLA0KICBuX2Nic19hZG9wdGVkID0gNjUsDQogIG5fZm9yY2VfcXNfc25hcCA9
+IDAsDQogIGJsaW1pdCA9IDEwLA0KICBkeW50aWNrcyA9IDB4YzU0MGM3NTgsDQogIGR5bnRpY2tz
+X3NuYXAgPSAxMDc1MzQzMywNCiAgZHludGlja3NfZnFzID0gNjksDQogIG9mZmxpbmVfZnFzID0g
+MCwNCiAgbl9yY3VfcGVuZGluZyA9IDE4MzUwLA0KICBuX3JwX3FzX3BlbmRpbmcgPSA2LA0KICBu
+X3JwX3JlcG9ydF9xcyA9IDUwMDksDQogIG5fcnBfY2JfcmVhZHkgPSA1MCwNCiAgbl9ycF9jcHVf
+bmVlZHNfZ3AgPSA5MTUsDQogIG5fcnBfZ3BfY29tcGxldGVkID0gNDQyMywNCiAgbl9ycF9ncF9z
+dGFydGVkID0gMTgyNiwNCiAgbl9ycF9uZWVkX25vdGhpbmcgPSA2MTI3LA0KICBiYXJyaWVyX2hl
+YWQgPSB7DQogICAgbmV4dCA9IDB4MCwNCiAgICBmdW5jID0gMHgwDQogIH0sDQogIG9vbV9oZWFk
+ID0gew0KICAgIG5leHQgPSAweDAsDQogICAgZnVuYyA9IDB4MA0KICB9LA0KICBjcHUgPSAxLA0K
+ICByc3AgPSAweGMxMTdmMzQwIDxyY3VfcHJlZW1wdF9zdGF0ZT4NCn0NCmNyYXNoPiBzdHJ1Y3Qg
+cmN1X2RhdGEgQzUzRkU2QjANCnN0cnVjdCByY3VfZGF0YSB7DQogIGNvbXBsZXRlZCA9IDU4Nzcs
+DQogIGdwbnVtID0gNTg3NywNCiAgcGFzc2VkX3F1aWVzY2UgPSB0cnVlLA0KICBxc19wZW5kaW5n
+ID0gZmFsc2UsDQogIGJlZW5vbmxpbmUgPSB0cnVlLA0KICBwcmVlbXB0aWJsZSA9IHRydWUsDQog
+IG15bm9kZSA9IDB4YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPiwNCiAgZ3JwbWFzayA9IDEs
+DQogIG54dGxpc3QgPSAweDAsDQogIG54dHRhaWwgPSB7MHhjNTNmZTZjNCwgMHhjNTNmZTZjNCwg
+MHhjNTNmZTZjNCwgMHgwfSwNCiAgbnh0Y29tcGxldGVkID0gezQyOTQ5NjY5OTcsIDU4NzUsIDU4
+NzYsIDU4NzZ9LA0KICBxbGVuX2xhenkgPSAwLA0KICBxbGVuID0gMCwNCiAgcWxlbl9sYXN0X2Zx
+c19jaGVjayA9IDAsDQogIG5fY2JzX2ludm9rZWQgPSAxMjMxNzUsDQogIG5fbm9jYnNfaW52b2tl
+ZCA9IDAsDQogIG5fY2JzX29ycGhhbmVkID0gNTIsDQogIG5fY2JzX2Fkb3B0ZWQgPSAwLA0KICBu
+X2ZvcmNlX3FzX3NuYXAgPSAwLA0KICBibGltaXQgPSAxMCwNCiAgZHludGlja3MgPSAweGM1M2Zl
+NzU4LA0KICBkeW50aWNrc19zbmFwID0gNjMzMDQ0NiwNCiAgZHludGlja3NfZnFzID0gNDYsDQog
+IG9mZmxpbmVfZnFzID0gMCwNCiAgbl9yY3VfcGVuZGluZyA9IDIyNTI5LA0KICBuX3JwX3FzX3Bl
+bmRpbmcgPSAzLA0KICBuX3JwX3JlcG9ydF9xcyA9IDUyOTAsDQogIG5fcnBfY2JfcmVhZHkgPSAy
+NzksDQogIG5fcnBfY3B1X25lZWRzX2dwID0gNzQwLA0KICBuX3JwX2dwX2NvbXBsZXRlZCA9IDI3
+MDcsDQogIG5fcnBfZ3Bfc3RhcnRlZCA9IDEyMDgsDQogIG5fcnBfbmVlZF9ub3RoaW5nID0gMTIz
+MDUsDQogIGJhcnJpZXJfaGVhZCA9IHsNCiAgICBuZXh0ID0gMHgwLA0KICAgIGZ1bmMgPSAweDAN
+CiAgfSwNCiAgb29tX2hlYWQgPSB7DQogICAgbmV4dCA9IDB4MCwNCiAgICBmdW5jID0gMHgwDQog
+IH0sDQogIGNwdSA9IDAsDQogIHJzcCA9IDB4YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPg0K
+fQ0KDQo=
+--089e0118401096f66b050a7fffa1
+Content-Type: text/plain; charset=US-ASCII; name="rcu_data_online_cpus_4_7.txt"
+Content-Disposition: attachment; filename="rcu_data_online_cpus_4_7.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i3uc5wse1
+
+Y3Jhc2g+IHN0cnVjdCByY3VfZGF0YSBjNTQzNjZiMA0Kc3RydWN0IHJjdV9kYXRhIHsNCiAgY29t
+cGxldGVkID0gNTg3NywNCiAgZ3BudW0gPSA1ODc3LA0KICBwYXNzZWRfcXVpZXNjZSA9IHRydWUs
+DQogIHFzX3BlbmRpbmcgPSBmYWxzZSwNCiAgYmVlbm9ubGluZSA9IHRydWUsDQogIHByZWVtcHRp
+YmxlID0gdHJ1ZSwNCiAgbXlub2RlID0gMHhjMTE3ZjM0MCA8cmN1X3ByZWVtcHRfc3RhdGU+LA0K
+ICBncnBtYXNrID0gMTYsDQogIG54dGxpc3QgPSAweGVkYWFlYzAwLA0KICBueHR0YWlsID0gezB4
+YzU0MzY2YzQsIDB4ZTg0ZDM1MGMsIDB4ZTg0ZDM1MGMsIDB4ZTg0ZDM1MGN9LA0KICBueHRjb21w
+bGV0ZWQgPSB7NDI5NDk2NzAzNSwgNTg3OCwgNTg3OCwgNTg3OH0sDQogIHFsZW5fbGF6eSA9IDEw
+NSwNCiAgcWxlbiA9IDQxNSwNCiAgcWxlbl9sYXN0X2Zxc19jaGVjayA9IDAsDQogIG5fY2JzX2lu
+dm9rZWQgPSA4NjMyMywNCiAgbl9ub2Nic19pbnZva2VkID0gMCwNCiAgbl9jYnNfb3JwaGFuZWQg
+PSAwLA0KICBuX2Nic19hZG9wdGVkID0gMTM5LA0KICBuX2ZvcmNlX3FzX3NuYXAgPSAwLA0KICBi
+bGltaXQgPSAxMCwNCiAgZHludGlja3MgPSAweGM1NDM2NzU4LA0KICBkeW50aWNrc19zbmFwID0g
+NzU4MjE0MCwNCiAgZHludGlja3NfZnFzID0gNDEsDQogIG9mZmxpbmVfZnFzID0gMCwNCiAgbl9y
+Y3VfcGVuZGluZyA9IDU5NDA0LA0KICBuX3JwX3FzX3BlbmRpbmcgPSA1LA0KICBuX3JwX3JlcG9y
+dF9xcyA9IDQ2MzMsDQogIG5fcnBfY2JfcmVhZHkgPSAzMiwNCiAgbl9ycF9jcHVfbmVlZHNfZ3Ag
+PSA0MTA4OCwNCiAgbl9ycF9ncF9jb21wbGV0ZWQgPSAyODQ0LA0KICBuX3JwX2dwX3N0YXJ0ZWQg
+PSAxMTUwLA0KICBuX3JwX25lZWRfbm90aGluZyA9IDk2NTcsDQogIGJhcnJpZXJfaGVhZCA9IHsN
+CiAgICBuZXh0ID0gMHgwLA0KICAgIGZ1bmMgPSAweDANCiAgfSwNCiAgb29tX2hlYWQgPSB7DQog
+ICAgbmV4dCA9IDB4MCwNCiAgICBmdW5jID0gMHgwDQogIH0sDQogIGNwdSA9IDQsDQogIHJzcCA9
+IDB4YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPg0KfQ0KDQpjcmFzaD4gc3RydWN0IHJjdV9k
+YXRhIGM1NDQ0NmIwDQpzdHJ1Y3QgcmN1X2RhdGEgew0KICBjb21wbGV0ZWQgPSA1ODc3LA0KICBn
+cG51bSA9IDU4NzcsDQogIHBhc3NlZF9xdWllc2NlID0gdHJ1ZSwNCiAgcXNfcGVuZGluZyA9IGZh
+bHNlLA0KICBiZWVub25saW5lID0gdHJ1ZSwNCiAgcHJlZW1wdGlibGUgPSB0cnVlLA0KICBteW5v
+ZGUgPSAweGMxMTdmMzQwIDxyY3VfcHJlZW1wdF9zdGF0ZT4sDQogIGdycG1hc2sgPSAzMiwNCiAg
+bnh0bGlzdCA9IDB4Y2Y5ZTg1NmMsDQogIG54dHRhaWwgPSB7MHhjNTQ0NDZjNCwgMHhjZmIzMDUw
+YywgMHhjZmIzMDUwYywgMHhjZmIzMDUwY30sDQogIG54dGNvbXBsZXRlZCA9IHswLCA1ODc4LCA1
+ODc4LCA1ODc4fSwNCiAgcWxlbl9sYXp5ID0gMCwNCiAgcWxlbiA9IDExNywNCiAgcWxlbl9sYXN0
+X2Zxc19jaGVjayA9IDAsDQogIG5fY2JzX2ludm9rZWQgPSAzNjk1MSwNCiAgbl9ub2Nic19pbnZv
+a2VkID0gMCwNCiAgbl9jYnNfb3JwaGFuZWQgPSAwLA0KICBuX2Nic19hZG9wdGVkID0gMCwNCiAg
+bl9mb3JjZV9xc19zbmFwID0gMTQyOCwNCiAgYmxpbWl0ID0gMTAsDQogIGR5bnRpY2tzID0gMHhj
+NTQ0NDc1OCwNCiAgZHludGlja3Nfc25hcCA9IDg2MDM0LA0KICBkeW50aWNrc19mcXMgPSA0NiwN
+CiAgb2ZmbGluZV9mcXMgPSAwLA0KICBuX3JjdV9wZW5kaW5nID0gNDkxMDQsDQogIG5fcnBfcXNf
+cGVuZGluZyA9IDMsDQogIG5fcnBfcmVwb3J0X3FzID0gMjM2MCwNCiAgbl9ycF9jYl9yZWFkeSA9
+IDE4LA0KICBuX3JwX2NwdV9uZWVkc19ncCA9IDQwMTA2LA0KICBuX3JwX2dwX2NvbXBsZXRlZCA9
+IDEzMzQsDQogIG5fcnBfZ3Bfc3RhcnRlZCA9IDc5MSwNCiAgbl9ycF9uZWVkX25vdGhpbmcgPSA0
+NDk1LA0KICBiYXJyaWVyX2hlYWQgPSB7DQogICAgbmV4dCA9IDB4MCwNCiAgICBmdW5jID0gMHgw
+DQogIH0sDQogIG9vbV9oZWFkID0gew0KICAgIG5leHQgPSAweDAsDQogICAgZnVuYyA9IDB4MA0K
+ICB9LA0KICBjcHUgPSA1LA0KICByc3AgPSAweGMxMTdmMzQwIDxyY3VfcHJlZW1wdF9zdGF0ZT4N
+Cn0NCg0KY3Jhc2g+IHN0cnVjdCByY3VfZGF0YSBjNTQ1MjZiMA0Kc3RydWN0IHJjdV9kYXRhIHsN
+CiAgY29tcGxldGVkID0gNTg3NywNCiAgZ3BudW0gPSA1ODc3LA0KICBwYXNzZWRfcXVpZXNjZSA9
+IHRydWUsDQogIHFzX3BlbmRpbmcgPSBmYWxzZSwNCiAgYmVlbm9ubGluZSA9IHRydWUsDQogIHBy
+ZWVtcHRpYmxlID0gdHJ1ZSwNCiAgbXlub2RlID0gMHhjMTE3ZjM0MCA8cmN1X3ByZWVtcHRfc3Rh
+dGU+LA0KICBncnBtYXNrID0gNjQsDQogIG54dGxpc3QgPSAweGU2MTNkMjAwLA0KICBueHR0YWls
+ID0gezB4YzU0NTI2YzQsIDB4ZTZmYzlkMGMsIDB4ZTZmYzlkMGMsIDB4ZTZmYzlkMGN9LA0KICBu
+eHRjb21wbGV0ZWQgPSB7MCwgNTg3OCwgNTg3OCwgNTg3OH0sDQogIHFsZW5fbGF6eSA9IDIsDQog
+IHFsZW4gPSAzNSwNCiAgcWxlbl9sYXN0X2Zxc19jaGVjayA9IDAsDQogIG5fY2JzX2ludm9rZWQg
+PSAzNDQ1OSwNCiAgbl9ub2Nic19pbnZva2VkID0gMCwNCiAgbl9jYnNfb3JwaGFuZWQgPSAwLA0K
+ICBuX2Nic19hZG9wdGVkID0gMCwNCiAgbl9mb3JjZV9xc19zbmFwID0gMTQyOCwNCiAgYmxpbWl0
+ID0gMTAsDQogIGR5bnRpY2tzID0gMHhjNTQ1Mjc1OCwNCiAgZHludGlja3Nfc25hcCA9IDExNjg0
+MCwNCiAgZHludGlja3NfZnFzID0gNDcsDQogIG9mZmxpbmVfZnFzID0gMCwNCiAgbl9yY3VfcGVu
+ZGluZyA9IDQ4NDg2LA0KICBuX3JwX3FzX3BlbmRpbmcgPSAzLA0KICBuX3JwX3JlcG9ydF9xcyA9
+IDIyMjMsDQogIG5fcnBfY2JfcmVhZHkgPSAyNCwNCiAgbl9ycF9jcHVfbmVlZHNfZ3AgPSA0MDEw
+MSwNCiAgbl9ycF9ncF9jb21wbGV0ZWQgPSAxMjI2LA0KICBuX3JwX2dwX3N0YXJ0ZWQgPSA3ODks
+DQogIG5fcnBfbmVlZF9ub3RoaW5nID0gNDEyMywNCiAgYmFycmllcl9oZWFkID0gew0KICAgIG5l
+eHQgPSAweDAsDQogICAgZnVuYyA9IDB4MA0KICB9LA0KICBvb21faGVhZCA9IHsNCiAgICBuZXh0
+ID0gMHgwLA0KICAgIGZ1bmMgPSAweDANCiAgfSwNCiAgY3B1ID0gNiwNCiAgcnNwID0gMHhjMTE3
+ZjM0MCA8cmN1X3ByZWVtcHRfc3RhdGU+DQp9DQoNCmNyYXNoPiBzdHJ1Y3QgcmN1X2RhdGEgYzU0
+NjA2YjANCnN0cnVjdCByY3VfZGF0YSB7DQogIGNvbXBsZXRlZCA9IDU4NzcsDQogIGdwbnVtID0g
+NTg3NywNCiAgcGFzc2VkX3F1aWVzY2UgPSB0cnVlLA0KICBxc19wZW5kaW5nID0gZmFsc2UsDQog
+IGJlZW5vbmxpbmUgPSB0cnVlLA0KICBwcmVlbXB0aWJsZSA9IHRydWUsDQogIG15bm9kZSA9IDB4
+YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPiwNCiAgZ3JwbWFzayA9IDEyOCwNCiAgbnh0bGlz
+dCA9IDB4ZGVjMzJhNmMsDQogIG54dHRhaWwgPSB7MHhjNTQ2MDZjNCwgMHhlNmZjZjEwYywgMHhl
+NmZjZjEwYywgMHhlNmZjZjEwY30sDQogIG54dGNvbXBsZXRlZCA9IHswLCA1ODc4LCA1ODc4LCA1
+ODc4fSwNCiAgcWxlbl9sYXp5ID0gMSwNCiAgcWxlbiA9IDMwLA0KICBxbGVuX2xhc3RfZnFzX2No
+ZWNrID0gMCwNCiAgbl9jYnNfaW52b2tlZCA9IDMxOTk4LA0KICBuX25vY2JzX2ludm9rZWQgPSAw
+LA0KICBuX2Nic19vcnBoYW5lZCA9IDAsDQogIG5fY2JzX2Fkb3B0ZWQgPSAwLA0KICBuX2ZvcmNl
+X3FzX3NuYXAgPSAxNDI4LA0KICBibGltaXQgPSAxMCwNCiAgZHludGlja3MgPSAweGM1NDYwNzU4
+LA0KICBkeW50aWNrc19zbmFwID0gNTc4NDYsDQogIGR5bnRpY2tzX2ZxcyA9IDU0LA0KICBvZmZs
+aW5lX2ZxcyA9IDAsDQogIG5fcmN1X3BlbmRpbmcgPSA0NzUwMiwNCiAgbl9ycF9xc19wZW5kaW5n
+ID0gMiwNCiAgbl9ycF9yZXBvcnRfcXMgPSAyMTQyLA0KICBuX3JwX2NiX3JlYWR5ID0gMzcsDQog
+IG5fcnBfY3B1X25lZWRzX2dwID0gNDAwNDksDQogIG5fcnBfZ3BfY29tcGxldGVkID0gMTIyMywN
+CiAgbl9ycF9ncF9zdGFydGVkID0gNjYxLA0KICBuX3JwX25lZWRfbm90aGluZyA9IDMzOTAsDQog
+IGJhcnJpZXJfaGVhZCA9IHsNCiAgICBuZXh0ID0gMHgwLA0KICAgIGZ1bmMgPSAweDANCiAgfSwN
+CiAgb29tX2hlYWQgPSB7DQogICAgbmV4dCA9IDB4MCwNCiAgICBmdW5jID0gMHgwDQogIH0sDQog
+IGNwdSA9IDcsDQogIHJzcCA9IDB4YzExN2YzNDAgPHJjdV9wcmVlbXB0X3N0YXRlPg0KfQ0K
+--089e0118401096f66b050a7fffa1
+Content-Type: text/plain; charset=US-ASCII; name="rcu_preept_state.txt"
+Content-Disposition: attachment; filename="rcu_preept_state.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_i3uc5wsh2
+
+DQpyY3VfcHJlZW1wdF9zdGF0ZSA9ICQ5ID0gew0KICBub2RlID0ge3sNCiAgICAgIGxvY2sgPSB7
+DQogICAgICAgIHJhd19sb2NrID0gew0KICAgICAgICAgIHsNCiAgICAgICAgICAgIHNsb2NrID0g
+MzEyOTg1MDUwOSwNCiAgICAgICAgICAgIHRpY2tldHMgPSB7DQogICAgICAgICAgICAgIG93bmVy
+ID0gNDc3NTcsDQogICAgICAgICAgICAgIG5leHQgPSA0Nzc1Nw0KICAgICAgICAgICAgfQ0KICAg
+ICAgICAgIH0NCiAgICAgICAgfSwNCiAgICAgICAgbWFnaWMgPSAzNzM1ODk5ODIxLA0KICAgICAg
+ICBvd25lcl9jcHUgPSA0Mjk0OTY3Mjk1LA0KICAgICAgICBvd25lciA9IDB4ZmZmZmZmZmYNCiAg
+ICAgIH0sDQogICAgICBncG51bSA9IDU4NzcsDQogICAgICBjb21wbGV0ZWQgPSA1ODc3LA0KICAg
+ICAgcXNtYXNrID0gMCwNCiAgICAgIGV4cG1hc2sgPSAwLA0KICAgICAgcXNtYXNraW5pdCA9IDI0
+MCwNCiAgICAgIGdycG1hc2sgPSAwLA0KICAgICAgZ3JwbG8gPSAwLA0KICAgICAgZ3JwaGkgPSA3
+LA0KICAgICAgZ3JwbnVtID0gMCAnXDAwMCcsDQogICAgICBsZXZlbCA9IDAgJ1wwMDAnLA0KICAg
+ICAgcGFyZW50ID0gMHgwLA0KICAgICAgYmxrZF90YXNrcyA9IHsNCiAgICAgICAgbmV4dCA9IDB4
+YzExN2YzNzggPHJjdV9wcmVlbXB0X3N0YXRlKzU2PiwNCiAgICAgICAgcHJldiA9IDB4YzExN2Yz
+NzggPHJjdV9wcmVlbXB0X3N0YXRlKzU2Pg0KICAgICAgfSwNCiAgICAgIGdwX3Rhc2tzID0gMHgw
+LA0KICAgICAgZXhwX3Rhc2tzID0gMHgwLA0KICAgICAgbmVlZF9mdXR1cmVfZ3AgPSB7MSwgMH0s
+DQogICAgICBmcXNsb2NrID0gew0KICAgICAgICByYXdfbG9jayA9IHsNCiAgICAgICAgICB7DQog
+ICAgICAgICAgICBzbG9jayA9IDAsDQogICAgICAgICAgICB0aWNrZXRzID0gew0KICAgICAgICAg
+ICAgICBvd25lciA9IDAsDQogICAgICAgICAgICAgIG5leHQgPSAwDQogICAgICAgICAgICB9DQog
+ICAgICAgICAgfQ0KICAgICAgICB9LA0KICAgICAgICBtYWdpYyA9IDM3MzU4OTk4MjEsDQogICAg
+ICAgIG93bmVyX2NwdSA9IDQyOTQ5NjcyOTUsDQogICAgICAgIG93bmVyID0gMHhmZmZmZmZmZg0K
+ICAgICAgfQ0KICAgIH19LA0KICBsZXZlbCA9IHsweGMxMTdmMzQwIDxyY3VfcHJlZW1wdF9zdGF0
+ZT59LA0KICBsZXZlbGNudCA9IHsxLCAwLCAwLCAwLCAwfSwNCiAgbGV2ZWxzcHJlYWQgPSAiXGIi
+LA0KICByZGEgPSAweGMxMTVlNmIwIDxyY3VfcHJlZW1wdF9kYXRhPiwNCiAgY2FsbCA9IDB4YzAx
+OTc1YWMgPGNhbGxfcmN1PiwNCiAgZnFzX3N0YXRlID0gMCAnXDAwMCcsDQogIGJvb3N0ID0gMCAn
+XDAwMCcsDQogIGdwbnVtID0gNTg3NywNCiAgY29tcGxldGVkID0gNTg3NywNCiAgZ3Bfa3RocmVh
+ZCA9IDB4ZjBjOWU2MDAsDQogIGdwX3dxID0gew0KICAgIGxvY2sgPSB7DQogICAgICB7DQogICAg
+ICAgIHJsb2NrID0gew0KICAgICAgICAgIHJhd19sb2NrID0gew0KICAgICAgICAgICAgew0KICAg
+ICAgICAgICAgICBzbG9jayA9IDIxNjAyMzA1OTQsDQogICAgICAgICAgICAgIHRpY2tldHMgPSB7
+DQogICAgICAgICAgICAgICAgb3duZXIgPSAzMjk2MiwNCiAgICAgICAgICAgICAgICBuZXh0ID0g
+MzI5NjINCiAgICAgICAgICAgICAgfQ0KICAgICAgICAgICAgfQ0KICAgICAgICAgIH0sDQogICAg
+ICAgICAgbWFnaWMgPSAzNzM1ODk5ODIxLA0KICAgICAgICAgIG93bmVyX2NwdSA9IDQyOTQ5Njcy
+OTUsDQogICAgICAgICAgb3duZXIgPSAweGZmZmZmZmZmDQogICAgICAgIH0NCiAgICAgIH0NCiAg
+ICB9LA0KICAgIHRhc2tfbGlzdCA9IHsNCiAgICAgIG5leHQgPSAweGYwY2QxZjIwLA0KICAgICAg
+cHJldiA9IDB4ZjBjZDFmMjANCiAgICB9DQogIH0sDQogIGdwX2ZsYWdzID0gMSwNCiAgb3JwaGFu
+X2xvY2sgPSB7DQogICAgcmF3X2xvY2sgPSB7DQogICAgICB7DQogICAgICAgIHNsb2NrID0gMzI3
+Njg1LA0KICAgICAgICB0aWNrZXRzID0gew0KICAgICAgICAgIG93bmVyID0gNSwNCiAgICAgICAg
+ICBuZXh0ID0gNQ0KICAgICAgICB9DQogICAgICB9DQogICAgfSwNCiAgICBtYWdpYyA9IDM3MzU4
+OTk4MjEsDQogICAgb3duZXJfY3B1ID0gNDI5NDk2NzI5NSwNCiAgICBvd25lciA9IDB4ZmZmZmZm
+ZmYNCiAgfSwNCiAgb3JwaGFuX254dGxpc3QgPSAweDAsDQogIG9ycGhhbl9ueHR0YWlsID0gMHhj
+MTE3ZjQ5MCA8cmN1X3ByZWVtcHRfc3RhdGUrMzM2PiwNCiAgb3JwaGFuX2RvbmVsaXN0ID0gMHgw
+LA0KICBvcnBoYW5fZG9uZXRhaWwgPSAweGMxMTdmNDk4IDxyY3VfcHJlZW1wdF9zdGF0ZSszNDQ+
+LA0KICBxbGVuX2xhenkgPSAwLA0KICBxbGVuID0gMCwNCiAgb25vZmZfbXV0ZXggPSB7DQogICAg
+Y291bnQgPSB7DQogICAgICBjb3VudGVyID0gMQ0KICAgIH0sDQogICAgd2FpdF9sb2NrID0gew0K
+ICAgICAgew0KICAgICAgICBybG9jayA9IHsNCiAgICAgICAgICByYXdfbG9jayA9IHsNCiAgICAg
+ICAgICAgIHsNCiAgICAgICAgICAgICAgc2xvY2sgPSA4MTE0NzkxMzQsDQogICAgICAgICAgICAg
+IHRpY2tldHMgPSB7DQogICAgICAgICAgICAgICAgb3duZXIgPSAxMjM4MiwNCiAgICAgICAgICAg
+ICAgICBuZXh0ID0gMTIzODINCiAgICAgICAgICAgICAgfQ0KICAgICAgICAgICAgfQ0KICAgICAg
+ICAgIH0sDQogICAgICAgICAgbWFnaWMgPSAzNzM1ODk5ODIxLA0KICAgICAgICAgIG93bmVyX2Nw
+dSA9IDQyOTQ5NjcyOTUsDQogICAgICAgICAgb3duZXIgPSAweGZmZmZmZmZmDQogICAgICAgIH0N
+CiAgICAgIH0NCiAgICB9LA0KICAgIHdhaXRfbGlzdCA9IHsNCiAgICAgIG5leHQgPSAweGMxMTdm
+NGJjIDxyY3VfcHJlZW1wdF9zdGF0ZSszODA+LA0KICAgICAgcHJldiA9IDB4YzExN2Y0YmMgPHJj
+dV9wcmVlbXB0X3N0YXRlKzM4MD4NCiAgICB9LA0KICAgIG93bmVyID0gMHgwLA0KICAgIG5hbWUg
+PSAweDAsDQogICAgbWFnaWMgPSAweGMxMTdmNGE4IDxyY3VfcHJlZW1wdF9zdGF0ZSszNjA+DQog
+IH0sDQogIGJhcnJpZXJfbXV0ZXggPSB7DQogICAgY291bnQgPSB7DQogICAgICBjb3VudGVyID0g
+MQ0KICAgIH0sDQogICAgd2FpdF9sb2NrID0gew0KICAgICAgew0KICAgICAgICBybG9jayA9IHsN
+CiAgICAgICAgICByYXdfbG9jayA9IHsNCiAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgc2xv
+Y2sgPSAwLA0KICAgICAgICAgICAgICB0aWNrZXRzID0gew0KICAgICAgICAgICAgICAgIG93bmVy
+ID0gMCwNCiAgICAgICAgICAgICAgICBuZXh0ID0gMA0KICAgICAgICAgICAgICB9DQogICAgICAg
+ICAgICB9DQogICAgICAgICAgfSwNCiAgICAgICAgICBtYWdpYyA9IDM3MzU4OTk4MjEsDQogICAg
+ICAgICAgb3duZXJfY3B1ID0gNDI5NDk2NzI5NSwNCiAgICAgICAgICBvd25lciA9IDB4ZmZmZmZm
+ZmYNCiAgICAgICAgfQ0KICAgICAgfQ0KICAgIH0sDQogICAgd2FpdF9saXN0ID0gew0KICAgICAg
+bmV4dCA9IDB4YzExN2Y0ZTQgPHJjdV9wcmVlbXB0X3N0YXRlKzQyMD4sDQogICAgICBwcmV2ID0g
+MHhjMTE3ZjRlNCA8cmN1X3ByZWVtcHRfc3RhdGUrNDIwPg0KICAgIH0sDQogICAgb3duZXIgPSAw
+eDAsDQogICAgbmFtZSA9IDB4MCwNCiAgICBtYWdpYyA9IDB4YzExN2Y0ZDAgPHJjdV9wcmVlbXB0
+X3N0YXRlKzQwMD4NCiAgfSwNCiAgYmFycmllcl9jcHVfY291bnQgPSB7DQogICAgY291bnRlciA9
+IDANCiAgfSwNCiAgYmFycmllcl9jb21wbGV0aW9uID0gew0KICAgIGRvbmUgPSAwLA0KICAgIHdh
+aXQgPSB7DQogICAgICBsb2NrID0gew0KICAgICAgICB7DQogICAgICAgICAgcmxvY2sgPSB7DQog
+ICAgICAgICAgICByYXdfbG9jayA9IHsNCiAgICAgICAgICAgICAgew0KICAgICAgICAgICAgICAg
+IHNsb2NrID0gMCwNCiAgICAgICAgICAgICAgICB0aWNrZXRzID0gew0KICAgICAgICAgICAgICAg
+ICAgb3duZXIgPSAwLA0KICAgICAgICAgICAgICAgICAgbmV4dCA9IDANCiAgICAgICAgICAgICAg
+ICB9DQogICAgICAgICAgICAgIH0NCiAgICAgICAgICAgIH0sDQogICAgICAgICAgICBtYWdpYyA9
+IDAsDQogICAgICAgICAgICBvd25lcl9jcHUgPSAwLA0KICAgICAgICAgICAgb3duZXIgPSAweDAN
+CiAgICAgICAgICB9DQogICAgICAgIH0NCiAgICAgIH0sDQogICAgICB0YXNrX2xpc3QgPSB7DQog
+ICAgICAgIG5leHQgPSAweDAsDQogICAgICAgIHByZXYgPSAweDANCiAgICAgIH0NCiAgICB9DQog
+IH0sDQogIG5fYmFycmllcl9kb25lID0gMCwNCiAgZXhwZWRpdGVkX3N0YXJ0ID0gew0KICAgIGNv
+dW50ZXIgPSAwDQogIH0sDQogIGV4cGVkaXRlZF9kb25lID0gew0KICAgIGNvdW50ZXIgPSAwDQog
+IH0sDQogIGV4cGVkaXRlZF93cmFwID0gew0KICAgIGNvdW50ZXIgPSAwDQogIH0sDQogIGV4cGVk
+aXRlZF90cnlmYWlsID0gew0KICAgIGNvdW50ZXIgPSAwDQogIH0sDQogIGV4cGVkaXRlZF93b3Jr
+ZG9uZTEgPSB7DQogICAgY291bnRlciA9IDANCiAgfSwNCiAgZXhwZWRpdGVkX3dvcmtkb25lMiA9
+IHsNCiAgICBjb3VudGVyID0gMA0KICB9LA0KICBleHBlZGl0ZWRfbm9ybWFsID0gew0KICAgIGNv
+dW50ZXIgPSAwDQogIH0sDQogIGV4cGVkaXRlZF9zdG9wcGVkY3B1cyA9IHsNCiAgICBjb3VudGVy
+ID0gMA0KICB9LA0KICBleHBlZGl0ZWRfZG9uZV90cmllcyA9IHsNCiAgICBjb3VudGVyID0gMA0K
+ICB9LA0KICBleHBlZGl0ZWRfZG9uZV9sb3N0ID0gew0KICAgIGNvdW50ZXIgPSAwDQogIH0sDQog
+IGV4cGVkaXRlZF9kb25lX2V4aXQgPSB7DQogICAgY291bnRlciA9IDANCiAgfSwNCiAgamlmZmll
+c19mb3JjZV9xcyA9IDQyOTQ5NjM5MTcsDQogIG5fZm9yY2VfcXMgPSA0MDI4LA0KICBuX2ZvcmNl
+X3FzX2xoID0gMCwNCiAgbl9mb3JjZV9xc19uZ3AgPSAwLA0KICBncF9zdGFydCA9IDQyOTQ5NjM5
+MTEsDQogIGppZmZpZXNfc3RhbGwgPSA0Mjk0OTY2MDExLA0KICBncF9tYXggPSAxNywNCiAgbmFt
+ZSA9IDB4YzBkODMzYWIgInJjdV9wcmVlbXB0IiwNCiAgYWJiciA9IDExMiAncCcsDQogIGZsYXZv
+cnMgPSB7DQogICAgbmV4dCA9IDB4YzExN2YyZWMgPHJjdV9iaF9zdGF0ZSs1NTY+LA0KICAgIHBy
+ZXYgPSAweGMxMTdmMzAwIDxyY3Vfc3RydWN0X2ZsYXZvcnM+DQogIH0sDQogIHdha2V1cF93b3Jr
+ID0gew0KICAgIGZsYWdzID0gMywNCiAgICBsbG5vZGUgPSB7DQogICAgICBuZXh0ID0gMHgwDQog
+ICAgfSwNCiAgICBmdW5jID0gMHhjMDE5NWFhOCA8cnNwX3dha2V1cD4NCiAgfQ0KDQoNCg==
+--089e0118401096f66b050a7fffa1--
