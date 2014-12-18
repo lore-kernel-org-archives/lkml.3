@@ -1,205 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267AbaLRPQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:16:27 -0500
-Received: from ext3.cumulusnetworks.com ([198.211.106.187]:37053 "EHLO
-	ext3.cumulusnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaLRPQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:16:25 -0500
-Message-ID: <5492EFC3.8030102@cumulusnetworks.com>
-Date: Thu, 18 Dec 2014 07:16:19 -0800
-From: Roopa Prabhu <roopa@cumulusnetworks.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1751339AbaLRPTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:19:17 -0500
+Received: from fieldses.org ([174.143.236.118]:34622 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968AbaLRPTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:19:16 -0500
+Date: Thu, 18 Dec 2014 10:19:14 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Benjamin Coddington <bcodding@redhat.com>
+Cc: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
+	<holger.hoffstaette@googlemail.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+Message-ID: <20141218151914.GB18179@fieldses.org>
+References: <pan.2014.12.16.22.19.18@googlemail.com>
+ <20141217212159.GA11517@fieldses.org>
+ <5492C710.20104@googlemail.com>
+ <20141218144856.GA18179@fieldses.org>
+ <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
 MIME-Version: 1.0
-To: "Varlese, Marco" <marco.varlese@intel.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14, 6:55 AM, Varlese, Marco wrote:
->> -----Original Message-----
->> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
->> Sent: Thursday, December 18, 2014 2:45 PM
->> To: Varlese, Marco
->> Cc: netdev@vger.kernel.org; Fastabend, John R; Thomas Graf; Jiri Pirko;
->> sfeldma@gmail.com; linux-kernel@vger.kernel.org
->> Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
->> configuration
->>
->> On 12/18/14, 3:29 AM, Varlese, Marco wrote:
->>> From: Marco Varlese <marco.varlese@intel.com>
->>>
->>> Switch hardware offers a list of attributes that are configurable on a
->>> per port basis.
->>> This patch provides a mechanism to configure switch ports by adding an
->>> NDO for setting specific values to specific attributes.
->>> There will be a separate patch that adds the "get" functionality via
->>> another NDO and another patch that extends iproute2 to call the two
->>> new NDOs.
->>>
->>> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
->>> ---
->>>    include/linux/netdevice.h    |  5 ++++
->>>    include/uapi/linux/if_link.h | 15 ++++++++++++
->>>    net/core/rtnetlink.c         | 54
->> ++++++++++++++++++++++++++++++++++++++++++++
->>>    3 files changed, 74 insertions(+)
->>>
->>> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
->>> index c31f74d..4881c7b 100644
->>> --- a/include/linux/netdevice.h
->>> +++ b/include/linux/netdevice.h
->>> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct
->> net_device *dev,
->>>     * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
->>>     *	Called to notify switch device port of bridge port STP
->>>     *	state change.
->>> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
->>> + *                                u32 attr, u64 value);
->>> + *	Called to set specific switch ports attributes.
->>>     */
->>>    struct net_device_ops {
->>>    	int			(*ndo_init)(struct net_device *dev);
->>> @@ -1185,6 +1188,8 @@ struct net_device_ops {
->>>    							    struct
->> netdev_phys_item_id *psid);
->>>    	int			(*ndo_switch_port_stp_update)(struct
->> net_device *dev,
->>>    							      u8 state);
->>> +	int			(*ndo_switch_port_set_cfg)(struct
->> net_device *dev,
->>> +							   u32 attr, u64 value);
->>>    #endif
->>>    };
->>>
->>> diff --git a/include/uapi/linux/if_link.h
->>> b/include/uapi/linux/if_link.h index f7d0d2d..19cb51a 100644
->>> --- a/include/uapi/linux/if_link.h
->>> +++ b/include/uapi/linux/if_link.h
->>> @@ -146,6 +146,7 @@ enum {
->>>    	IFLA_PHYS_PORT_ID,
->>>    	IFLA_CARRIER_CHANGES,
->>>    	IFLA_PHYS_SWITCH_ID,
->>> +	IFLA_SWITCH_PORT_CFG,
->>>    	__IFLA_MAX
->>>    };
->>>
->>> @@ -603,4 +604,18 @@ enum {
->>>
->>>    #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
->>>
->>> +/* Switch Port Attributes section */
->>> +
->>> +enum {
->>> +	IFLA_ATTR_UNSPEC,
->>> +	IFLA_ATTR_LEARNING,
->> Any reason you want learning here ?. This is covered as part  of the bridge
->> setlink attributes.
->>
-> Yes, because the user may _not_ want to go through a bridge interface necessarily.
-But, the bridge setlink/getlink interface was changed to accommodate 
-'self' for exactly such cases.
-I kind of understand your case for the other attributes (these are per 
-port settings that switch asics provide).
+On Thu, Dec 18, 2014 at 09:58:06AM -0500, Benjamin Coddington wrote:
+> Frame 36 of nfs-client.pcap has this interesting string:
+> 
+> 0ff0  00 01 3b f6 fb b6 26 16 8f 7c 00 00 00 41 62 74   ..;...&..|...Abt
+> 1000  72 66 73 2d 32 30 00 00 00 00 00 00 00 00 30 36   rfs-20........06
+> 1010  2d 66 69 78 2d 64 65 61 64 6c 6f 63 6b 2d 77 68   -fix-deadlock-wh
+> 1020  65 6e 2d 6d 6f 75 6e 74 69 6e 67 2d 61 2d 64 65   en-mounting-a-de
+> 1030  67 72 61 64 65 64 2d 66 73 2e 70 61 74 63 68 00   graded-fs.patch.
 
-However, i don't understand the reason to pull in bridge attributes here.
+Yes, that looks like the server messing up the encoding of the reply.
 
->
->>> +	IFLA_ATTR_LOOPBACK,
->>> +	IFLA_ATTR_BCAST_FLOODING,
->>> +	IFLA_ATTR_UCAST_FLOODING,
->>> +	IFLA_ATTR_MCAST_FLOODING,
->>> +	__IFLA_ATTR_MAX
->>> +};
->>> +
->>> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
->>> +
->>>    #endif /* _UAPI_LINUX_IF_LINK_H */
->>> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c index
->>> eaa057f..c0d1c45 100644
->>> --- a/net/core/rtnetlink.c
->>> +++ b/net/core/rtnetlink.c
->>> @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device
->> *dev, struct nlattr *tb[])
->>>    	return 0;
->>>    }
->>>
->>> +#ifdef CONFIG_NET_SWITCHDEV
->>> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr) {
->>> +	int rem, err = -EINVAL;
->>> +	struct nlattr *v;
->>> +	const struct net_device_ops *ops = dev->netdev_ops;
->>> +
->>> +	nla_for_each_nested(v, attr, rem) {
->>> +		u32 op = nla_type(v);
->>> +		u64 value = 0;
->>> +
->>> +		switch (op) {
->>> +		case IFLA_ATTR_LEARNING:
->>> +		case IFLA_ATTR_LOOPBACK:
->>> +		case IFLA_ATTR_BCAST_FLOODING:
->>> +		case IFLA_ATTR_UCAST_FLOODING:
->>> +		case IFLA_ATTR_MCAST_FLOODING: {
->>> +			if (nla_len(v) < sizeof(value)) {
->>> +				err = -EINVAL;
->>> +				break;
->>> +			}
->>> +
->>> +			value = nla_get_u64(v);
->>> +			err = ops->ndo_switch_port_set_cfg(dev,
->>> +							   op,
->>> +							   value);
->>> +			break;
->>> +		}
->>> +		default:
->>> +			err = -EINVAL;
->>> +			break;
->>> +		}
->>> +		if (err)
->>> +			break;
->>> +	}
->>> +	return err;
->>> +}
->>> +
->>> +#endif
->>> +
->>>    static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
->>>    {
->>>    	int rem, err = -EINVAL;
->>> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
->>>    			status |= DO_SETLINK_NOTIFY;
->>>    		}
->>>    	}
->>> +#ifdef CONFIG_NET_SWITCHDEV
->>> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
->>> +		err = -EOPNOTSUPP;
->>> +		if (!ops->ndo_switch_port_set_cfg)
->>> +			goto errout;
->>> +		if (!ops->ndo_switch_parent_id_get)
->>> +			goto errout;
->>> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
->>> +		if (err < 0)
->>> +			goto errout;
->>> +
->>> +		status |= DO_SETLINK_NOTIFY;
->>> +	}
->>> +#endif
->>>    	err = 0;
->>>
->>>    errout:
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Holger, what's the difference between nfs-client.pcap and
+nfs-server.pcap?
+
+--b.
+
+> 
+> ...
+> 
+> Ben
+> 
+> On Thu, 18 Dec 2014, J. Bruce Fields wrote:
+> 
+> > On Thu, Dec 18, 2014 at 01:22:40PM +0100, Holger Hoffstätte wrote:
+> > > On 12/17/14 22:22, J. Bruce Fields wrote:
+> > > > On Tue, Dec 16, 2014 at 10:19:18PM +0000, Holger Hoffstätte wrote:
+> > > >> (..oddly broken directory over NFS..)
+> > > > That doesn't sound familiar.  A network trace showing the READDIR would
+> > > > be really useful.  Since this is so reproducible, I think that should be
+> > > > possible.  So do something like:
+> > > >
+> > > > 	move the problem file into 3.14/
+> > > > 	tcpdump -s0 -wtmp.pcap -i<relevant interface>
+> > > > 	ls the directory on the client.
+> > > > 	kill tcpdump
+> > > > 	send us tmp.pcap and/or take a look at it with wireshark and see
+> > > > 	what the READDIR response looks like.
+> > >
+> > > Thanks for your reply. I forgot to mention that removing other files seems to "fix" the problem, so it does not seem to be spefically the new file itself that is the cause.
+> > >
+> > > I captured the "ls 3.14 | head" sequence on both the client and the server, and put the tcpudmp files here: http://hoho.duckdns.org/linux/ - let me know if that helped.
+> >
+> > On a quick skim, the server's READDIR responses look correct.  The entry
+> > btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
+> > is returned in frame 53 (with complete reassembled reply displayed by
+> > wireshark in frame 63).
+> >
+> > You could double-check for me--just run "wireshark nfs-server.pcap",
+> > look for packets labeled "Reply ... READDIR", and expand out the READDIR
+> > op and directory listing.  I don't see anything obviously wrong.
+> >
+> > It's interesting that there's only one LOOKUP in the trace, for btrfs-20
+> > (returning, not suprisingly, NFS4ERR_NOENT).  If the client failed to
+> > parse that entry for some reason, then maybe in addition to getting the
+> > filename wrong it also failed to get the attributes, triggering the
+> > extra lookup/getattr.
+> >
+> > > Meanwhile I'll try older/plain (unpatched) kernels. So far reverting the client to vanilla 3.18.1 or 3.14.27 has not helped..
+> >
+> > I'm a little unclear: when you said "All this is on freshly baked
+> > 3.18.1", are you describing the client, or the server, or both?
+> >
+> > --b.
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
 
