@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaLRJeL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:34:11 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:45067 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057AbaLRJeH (ORCPT
+	id S1751794AbaLRJhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:37:18 -0500
+Received: from mga11.intel.com ([192.55.52.93]:7057 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaLRJhP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:34:07 -0500
-Message-ID: <54929F8A.3030103@de.ibm.com>
-Date: Thu, 18 Dec 2014 10:34:02 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 04:37:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,599,1413270000"; 
+   d="scan'208";a="639562623"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 1/3 V2] mei: add ABI documentation for
+ fw_status exported through sysfs
+Thread-Topic: [char-misc-next 1/3 V2] mei: add ABI documentation for
+ fw_status exported through sysfs
+Thread-Index: AQHQCjsERLi9osFcq0OziaUBHOD0bpyVNePQ
+Date: Thu, 18 Dec 2014 09:37:12 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B2CCED19D@HASMSX106.ger.corp.intel.com>
+References: <1417090049-23219-1-git-send-email-tomas.winkler@intel.com>
+In-Reply-To: <1417090049-23219-1-git-send-email-tomas.winkler@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.11]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-next@vger.kernel.org
-Subject: Re: [PATCH] arm/rpc: avoid static keyword removal via define
-References: <1418633287-5019-1-git-send-email-borntraeger@de.ibm.com> <1418633287-5019-2-git-send-email-borntraeger@de.ibm.com> <5490146A.3000408@de.ibm.com> <20141216114056.GP11285@n2100.arm.linux.org.uk> <5491A16A.7050101@de.ibm.com> <20141217165450.GW11285@n2100.arm.linux.org.uk>
-In-Reply-To: <20141217165450.GW11285@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121809-0009-0000-0000-0000026BC8FD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.12.2014 um 17:54 schrieb Russell King - ARM Linux:
-> On Wed, Dec 17, 2014 at 04:29:46PM +0100, Christian Borntraeger wrote:
->> Am 16.12.2014 um 12:40 schrieb Russell King - ARM Linux:
->>> On Tue, Dec 16, 2014 at 12:15:54PM +0100, Christian Borntraeger wrote:
->>>> Am 15.12.2014 um 09:48 schrieb Christian Borntraeger:
->>>>> commit 4486b86368d7 ("[ARM] riscpc: fix decompressor font file handling")
->>>>> introduced Makefile magic to avoid building a file two times. Using
->>>>> -Dstatic= does break some assumptions on compiler.h that were introduced
->>>>> for READ_ONCE.
->>>>>
->>>>> Lets just use sed on the copy instead of using a define.
->>>>>
->>>>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->>>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>>
->>>> This fixed the linux-next build http://kisskb.ellerman.id.au/kisskb/target/1508/
->>>> Unless anybody complains, I will send the pull request for the access_once tree tomorrow and I have this patch applied on top.
->>>
->>> Please give me some time to look at this.
->>
->> >From all builds, the only problematic case was the rpc_defconfig.
->> So only CONFIG_ARCH_ACORN is affected.
->>
->> As I said, I want to send this series this merge window, so if you
->> do not find the time to look into this before rc1, what about removing
->> this patch from my queue and we solve this later? 
->> Acorn Risc CPU is probably not the hottest platform right now, so if we 
->> fix this in rc2 or rc3 this might be ok - I guess.
-> 
-> How does compiler.h get included when building font.o?
-> 
-> Since I haven't seen your patch series, I guess it gets included somehow
-> via linux/types.h ?
 
-Good news.
-I found a way to fix this in my code by moving the empty debug function as a static inline function into compiler.h itself. No need to change arm code.
 
-Christian
+> 
+> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> ---
+> V2: rephrase the description
+>  Documentation/ABI/testing/sysfs-class-mei | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+>
+Greg you've  included 'mei: export fw status registers through sysfs' to 3.19-rc1 pull request 
+but left this documentation patch out.
+ 
+Thanks
+Tomas
+
 
