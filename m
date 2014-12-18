@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaLRNjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 08:39:48 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:37620 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577AbaLRNjr (ORCPT
+	id S1752450AbaLRNkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 08:40:01 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60354 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaLRNjs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 08:39:47 -0500
-Message-ID: <5492D91D.1060200@atmel.com>
-Date: Thu, 18 Dec 2014 14:39:41 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Josh Wu <josh.wu@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v4 1/3] ARM: at91: Add Special Function Registers binding
- documentation
-References: <1418895952-18186-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1418895952-18186-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 18 Dec 2014 08:39:48 -0500
+Message-ID: <1418909978.2236.0.camel@pengutronix.de>
+Subject: Re: Weird/Unneeded call to msleep in exynos_mipi_dsi_wr_data in
+ exynos_mipi_dsi_common.c
+From: Lucas Stach <l.stach@pengutronix.de>
+To: nick <xerofoify@gmail.com>
+Cc: Krzysztof =?UTF-8?Q?Koz=C5=82owski?= <k.kozlowski@samsung.com>,
+        inki.dae@samsung.com, linux-fbdev@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, dh09.lee@samsung.com,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        tomi.valkeinen@ti.com, kgene@kernel.org, plagnioj@jcrosoft.com,
+        linux-arm-kernel@lists.infradead.org
+Date: Thu, 18 Dec 2014 14:39:38 +0100
+In-Reply-To: <5492D80E.3010906@gmail.com>
+References: <54920A54.2060608@gmail.com> <5492ABE7.1060900@samsung.com>
+	 <5492D80E.3010906@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.6-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
+X-SA-Exim-Mail-From: l.stach@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 18/12/2014 10:45, Alexandre Belloni a écrit :
-> The special function registers gather some registers that allow to tweak
-> features provided by IPs controlled through another register range.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+Am Donnerstag, den 18.12.2014, 08:35 -0500 schrieb nick:
+> Krzysztof,
+> If we look at the code for this function, it already is handling the data correctly. In addition  the locks 
+> seem to be better protection then msleep. Further more is no reason for this delay as we are neither resetting 
+> the hardware or waiting for the hardware here so why is it needed? I don't have Exynos based hardware lying
+> around through to test it.
 
-It seems okay. For the whole series:
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+If you can't test it, don't touch it. It's that simple.
 
-And stacked on top of at91-3.20-dt.
-
-But I will modify the size of the reg property to 0x60.
-
-Thanks, bye.
-
-> ---
-> Changes in v4:
->  - corrected the chip list
-> 
->  Documentation/devicetree/bindings/arm/atmel-at91.txt | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/atmel-at91.txt b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> index 562cda9d86d9..f39e312531f0 100644
-> --- a/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> +++ b/Documentation/devicetree/bindings/arm/atmel-at91.txt
-> @@ -136,3 +136,20 @@ Example:
->  		compatible = "atmel,at91sam9260-rstc";
->  		reg = <0xfffffd00 0x10>;
->  	};
-> +
-> +Special Function Registers (SFR)
-> +
-> +Special Function Registers (SFR) manage specific aspects of the integrated
-> +memory, bridge implementations, processor and other functionality not controlled
-> +elsewhere.
-> +
-> +required properties:
-> +- compatible: Should be "atmel,<chip>-sfr", "syscon".
-> +  <chip> can be "sama5d3" or "sama5d4".
-> +- reg: Should contain registers location and length
-> +
-> +	sfr@f0038000 {
-> +		compatible = "atmel,sama5d3-sfr", "syscon";
-> +		reg = <0xf0038000 0x4000>;
-> +	};
-> +
-> 
-
-
+Regards,
+Lucas
 -- 
-Nicolas Ferre
+Pengutronix e.K.             | Lucas Stach                 |
+Industrial Linux Solutions   | http://www.pengutronix.de/  |
+
