@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866AbaLRCAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:00:22 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:5068 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaLRB77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:59:59 -0500
-X-IronPort-AV: E=Sophos;i="5.07,597,1413270000"; 
-   d="scan'208";a="53501075"
-From: Jonathan Richardson <jonathar@broadcom.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Ray Jui <rjui@broadcom.com>, Jonathan Richardson <jonathar@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: [PATCH 2/2] Input: touchscreen-iproc: add device tree bindings
-Date: Wed, 17 Dec 2014 17:59:52 -0800
-Message-ID: <1418867992-3550-3-git-send-email-jonathar@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418867992-3550-1-git-send-email-jonathar@broadcom.com>
-References: <Jonathan Richardson <jonathar@broadcom.com>
- <1418867992-3550-1-git-send-email-jonathar@broadcom.com>
+	id S1751711AbaLRCGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:06:03 -0500
+Received: from ozlabs.org ([103.22.144.67]:35052 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252AbaLRCGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 21:06:01 -0500
+Date: Thu, 18 Dec 2014 13:05:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>
+Subject: linux-next: build failure after merge of the modules tree
+Message-ID: <20141218130553.5c134d80@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/6C+zPfjC/QOrZAqIAs28+ZZ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documents the touchscreen device tree binding for Broadcom iProc family
-of SoCs.
+--Sig_/6C+zPfjC/QOrZAqIAs28+ZZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
-Tested-by: Scott Branden <sbranden@broadcom.com>
-Signed-off-by: Jonathan Richardson <jonathar@broadcom.com>
----
- .../input/touchscreen/brcm,iproc-touchscreen.txt   |   70 ++++++++++++++++++++
- 1 file changed, 70 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
+Hi Rusty,
 
-diff --git a/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt b/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
-new file mode 100644
-index 0000000..eb28822
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
-@@ -0,0 +1,70 @@
-+* Broadcom's IPROC Touchscreen Controller
-+
-+Required properties:
-+- compatible: must be "brcm,iproc-touchscreen"
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+- clocks:  The clock provided by the SOC to driver the tsc
-+- clock-name:  name for the clock
-+- interrupts: The touchscreen controller's interrupt
-+
-+Optional properties:
-+- scanning_period: Time between scans. Each step is 1024 us.  Valid 1-256.
-+- debounce_timeout: Each step is 512 us.  Valid 0-255
-+- settling_timeout: The settling duration (in ms) is the amount of time
-+                    the tsc waits to allow the voltage to settle after
-+                    turning on the drivers in detection mode.
-+                    Valid values: 0-11
-+                    0 =  0.008 ms
-+                    1 =  0.01 ms
-+                    2 =  0.02 ms
-+                    3 =  0.04 ms
-+                    4 =  0.08 ms
-+                    5 =  0.16 ms
-+                    6 =  0.32 ms
-+                    7 =  0.64 ms
-+                    8 =  1.28 ms
-+                    9 =  2.56 ms
-+                   10 =  5.12 ms
-+                   11 = 10.24 ms
-+- touch_timeout: The continuous number of scan periods in which touch is
-+                not detected before the controller returns to idle state.
-+                Valid values 0-255.
-+- average_data: Number of data samples which are averaged before a final
-+                data point is placed into the FIFO
-+                Valid values 0-7
-+                0 =   1 sample
-+                1 =   2 samples
-+                2 =   4 samples
-+                3 =   8 samples
-+                4 =  16 samples
-+                5 =  32 samples
-+                6 =  64 samples
-+                7 = 128 samples
-+- fifo_threshold: Interrupt is generated whenever the number of fifo
-+                entries exceeds this value
-+                Valid values 0-31
-+- ts-rotation: Touch screen controller and display panel orientation angle.
-+		0 = Tsc x_min y_min placed at LCD x_min y_min. None
-+		1 = Tsc x_min y_max placed at LCD x_min y_min. 90 degrees
-+		2 = Tsc x_max y_max placed at LCD x_min y_min. 180 degrees
-+		3 = Tsc x_max y_min placed at LCD x_min y_min. 270 degrees
-+Example:
-+
-+	touchscreen: tsc@0x180A6000 {
-+		compatible = "brcm,iproc-touchscreen";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		reg = <0x180A6000 0x40>;
-+		clocks = <&adc_clk>;
-+		clock-names = "tsc_clk";
-+		interrupts = <GIC_SPI 164 IRQ_TYPE_LEVEL_HIGH>;
-+
-+		scanning_period = <5>;
-+		debounce_timeout = <40>;
-+		settling_timeout = <7>;
-+		touch_timeout = <10>;
-+		average_data = <5>;
-+		fifo_threshold = <1>;
-+		ts-rotation = <2>;
-+	};
--- 
-1.7.9.5
+After merging the modules tree, today's linux-next build (powerpc ppc64_def=
+config)
+failed like this:
 
+kernel/params.c: In function 'add_sysfs_param':
+kernel/params.c:649:9: error: 'struct module_kobject' has no member named '=
+kp'
+  if ((mk->kp->perm & (S_IWUSR | S_IWGRP | S_IWOTH)) !=3D 0)
+         ^
+
+Caused by commit 12491941a26c ("param: do not set store func without write =
+perm").
+
+I have used the modules tree from next-20141217 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/6C+zPfjC/QOrZAqIAs28+ZZ
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUkjaGAAoJEMDTa8Ir7ZwVNCAQAIiTpkk0vVCV8FHqXSFQovO3
+Qd4eg/aOVrw3Fqf2+bhTF8WqHS198ITHUReLq2pu7PF4wH5/33ARrxWxxkI6oyRQ
+8U8EmB3KJ8DGFVZ8deA/hsYEfQo/Vd9O5ot4Of3zTg6PzrfUhSbc/XLZyM0uylK6
+Qjbryk8fpZhNRQStK387wuxdXqj+iWlqqfpOhITteGLndT3LiwplFLeqRTkdAr2Y
+iKN5lmEtQtkK6TpNhkgz4TzvsmIWLitAT7iYNowDFGJHcW9LpQxuhuNsMLFvFC7Z
+TIMy+4WyRHu1NfRjkzGrkZxt3U+2f1SZqRnFCaZQnw8s8ypUwSQL/RCV+go+Efkj
+t9dWPbj5C0aDaejxVP3CBMEndUR86tjVLC/BiO8MNe6bKj/IHxVTm2Jjpql70Q86
+zTefoNOgledUzdCZ4dGugMy7oNJW4gvWtHSnT4cl/yBDElftYmPQZw+M112mUq3A
+EnLMMgGwUskjne/VnmirX4f+Iv6okbwQycMp8n6yZpAkTAjdbRUtDIWdvAOUNxFV
+VsVa1c6yTxQf1RfDe8bkDx2A1AFvHemF4mvxBpmgK1h5dTxp1WJuJrc4EMYZHqKW
+AyIpfstcQg9W0AhMV0RrRn+muli3YDRN3ru38fZISCRhWmQ2Nh31nFeTV1RkXTrM
+yl5Q29l2OtTPTjRKPYeQ
+=aFN9
+-----END PGP SIGNATURE-----
+
+--Sig_/6C+zPfjC/QOrZAqIAs28+ZZ--
