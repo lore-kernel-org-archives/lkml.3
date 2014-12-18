@@ -1,136 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaLRTCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:02:55 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36720 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751078AbaLRTCx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:02:53 -0500
-Message-ID: <549324B9.2030506@ti.com>
-Date: Thu, 18 Dec 2014 14:02:17 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751415AbaLRTDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:03:36 -0500
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:47861 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaLRTDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 14:03:34 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <vinod.koul@intel.com>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <dmaengine@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <bhelgaas@google.com>, <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [RFC PATCH 1/2] common: dma-mapping: introduce dma_get_parent_cfg()
- helper
-References: <1418839344-14393-1-git-send-email-m-karicheri2@ti.com> <1949667.gMcOLHe7Sk@wuerfel> <549210BB.9080603@ti.com> <2935351.ba8Au9y4fE@wuerfel>
-In-Reply-To: <2935351.ba8Au9y4fE@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <549307F0.7090009@zytor.com>
+References: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net>
+	<tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
+	<549307F0.7090009@zytor.com>
+Date: Thu, 18 Dec 2014 11:03:33 -0800
+X-Google-Sender-Auth: VU0NYQ5pw0WR0eBHv8e320j0Y9U
+Message-ID: <CA+55aFwULSs-xiyQbpUezx3ebJOfRHz4uBE3Vw7S0dXVWbfEhQ@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86/tls: Don't validate lm in set_thread_area()
+ after all
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/2014 07:09 PM, Arnd Bergmann wrote:
-> On Wednesday 17 December 2014 18:24:43 Murali Karicheri wrote:
->> On 12/17/2014 04:56 PM, Arnd Bergmann wrote:
->>> On Wednesday 17 December 2014 13:02:23 Murali Karicheri wrote:
->>>
->>> What's wrong with using arch_setup_dma_ops() from PCI as suggested
->>> previously?
->>>
->
-> +Will Deacon
->
->> I had originally written a code based on that line as below. But
->> dma-ranges property is also used by ppc and other architectures in the
->> pci device DT node. So I wasn't sure how this code impact PCI driver
->> functionality on those platforms. Hence used a simpler change as all
->> that is needed for keystone is to get the dma_pfn_offset rightly set in
->> the pci slave device.
->
-> But in your patch, you don't call arch_setup_dma_ops() at all.
->
->> Initially I had a function implemented as below for this in of_pci.c.
+On Thu, Dec 18, 2014 at 8:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
 >>
->> + * of_pci_dma_configure - Setup DMA configuration for a pci device
->> + * @dev:       pci device to apply DMA configuration
->> + *
->> + * Try to get devices's DMA configuration from DT and update it
->> + * accordingly. This is a similar to of_dma_configure() for platform
->> + * devices.
->> + *
->> + */
->> +void of_pci_dma_configure(struct pci_dev *dev)
->> +{
->> +       struct device *host_bridge, *parent;
->> +       struct pci_bus *bus = dev->bus;
->> +       u64 dma_addr, paddr, size;
->> +       int ret;
->> +
->> +       while (!pci_is_root_bus(bus))
->> +               bus = bus->parent;
->> +       host_bridge = bus->bridge;
->> +
->> +       parent = host_bridge->parent;
->> +       if (parent->of_node) {
+>> will leave .lm uninitialized.  This means that anything in the
+>> kernel that reads user_desc.lm for 32-bit tasks is unreliable.
 >
-> so far it looks good, although we may want to introduce
-> a helper function to get the of_node.
+> No, it won't.  However, if you initialize this dynamically field by
+> field rather than as an initializer, then you are correct.
 
-Will add
+Actually, even with a full initializer, unnamed parts of a structure
+(so padding bytes between things, but for bitfields also unnamed
+alignment fields etc) are basically "all bets are off". They are *not*
+guaranteed to be initialized to zero.
 
->
->> +               /*
->> +                * if dma-coherent property exist, call arch hook to setup
->> +                * dma coherent operations.
->> +                */
->> +               if (of_dma_is_coherent(parent->of_node)) {
->> +                       set_arch_dma_coherent_ops(&dev->dev);
->> +                       dev_info(&dev->dev, "device is dma coherent\n");
->> +               }
->
-> set_arch_dma_coherent_ops no longer exists. Just keep the flag in a
-> local variable
+So if you have a structure like
 
-Ok.
+   struct {
+       unsigned int a:5;
+       unsigned int b;
+   } x = { .a = 0, .b = 0 };
 
->
->> +               /*
->> +                * if dma-ranges property doesn't exist - just return else
->> +                * setup the dma offset
->> +                */
->> +               ret = of_dma_get_range(parent->of_node,&dma_addr,
->> &paddr,&size);
->> +               if (ret<  0) {
->> +                       dev_info(&dev->dev, "no dma range information to
->> setup\n");
->> +                       printk("no dma range information to setup\n");
->> +                       return;
->> +               }
->> +
->> +               /* DMA ranges found. Calculate and set dma_pfn_offset */
->> +               dev->dev.dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
->> +               dev_info(&dev->dev, "dma_pfn_offset(%#08lx)\n",
->> dev->dev.dma_pfn_offset);
->
-> Same for the offset and size here, then pass all of the above into
-> arch_setup_dma_ops. This is also where we need to hook up the iommu
-> support once we decide how to make that work with the ARM SMMU.
+afaik the compiler is not guaranteed to initialize the left-over bits
+in the first word. Because they simply don't "exist" as far as the C
+language is concerned.
 
-Ok. I will make this similar to of_dma_configure() that can be called 
-from pci/probe.c
+On the other hand, if you do
 
-Murali
->
-> Will, I think we may have a problem on ARM64 now, since we only replaced
-> set_arch_dma_coherent_ops on ARM32 but not ARM64. Can you send a fix for
-> this? Without that, we don't have any coherent operations on ARM64 any
-> more, unless I'm missing something.
->
-> 	Arnd
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+   struct {
+        unsigned int a:5, unused:27;
+        unsigned int b;
+   } x = { .a = 0, .b = 0 };
 
+then the 'unused' bits are guaranteed to be initialized to zero.
 
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
+(Static allocations in the BSS are obviously zeroed for other reasons,
+so there are no "left-over" bits there to worry about,. So in practice
+the above is only about dynamic initializers).
+
+                         Linus
