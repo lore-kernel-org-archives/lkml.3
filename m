@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbaLRMbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 07:31:19 -0500
-Received: from static.68.134.40.188.clients.your-server.de ([188.40.134.68]:50867
-	"EHLO mail02.iobjects.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096AbaLRMbS (ORCPT
+	id S1752318AbaLRMhz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 07:37:55 -0500
+Received: from mail.eperm.de ([89.247.134.16]:55086 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096AbaLRMhy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 07:31:18 -0500
-X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 07:31:17 EST
-Message-ID: <5492C710.20104@googlemail.com>
-Date: Thu, 18 Dec 2014 13:22:40 +0100
-From: =?UTF-8?B?SG9sZ2VyIEhvZmZzdMOkdHRl?= 
-	<holger.hoffstaette@googlemail.com>
-Organization: Applied Asynchrony, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 07:37:54 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: leroy christophe <christophe.leroy@c-s.fr>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-crypto <linux-crypto@vger.kernel.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: Re: algif_hash: splice of data > 2**16
+Date: Thu, 18 Dec 2014 13:37:48 +0100
+Message-ID: <20272672.S6U6VsnYQl@tauon>
+User-Agent: KMail/4.14.3 (Linux/3.17.6-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <5492C6FC.50005@c-s.fr>
+References: <8707521.TbV00HIEUx@tauon> <5492C6FC.50005@c-s.fr>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-References: <pan.2014.12.16.22.19.18@googlemail.com> <20141217212159.GA11517@fieldses.org>
-In-Reply-To: <20141217212159.GA11517@fieldses.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/17/14 22:22, J. Bruce Fields wrote:
-> On Tue, Dec 16, 2014 at 10:19:18PM +0000, Holger HoffstÃ¤tte wrote:
->> (..oddly broken directory over NFS..)
-> That doesn't sound familiar.  A network trace showing the READDIR would
-> be really useful.  Since this is so reproducible, I think that should be
-> possible.  So do something like:
-> 
-> 	move the problem file into 3.14/
-> 	tcpdump -s0 -wtmp.pcap -i<relevant interface>
-> 	ls the directory on the client.
-> 	kill tcpdump
-> 	send us tmp.pcap and/or take a look at it with wireshark and see
-> 	what the READDIR response looks like.
+Am Donnerstag, 18. Dezember 2014, 13:22:20 schrieb leroy christophe:
 
-Thanks for your reply. I forgot to mention that removing other files seems to "fix" the problem, so it does not seem to be spefically the new file itself that is the cause.
+Hi Leroy, Herbert,
 
-I captured the "ls 3.14 | head" sequence on both the client and the server, and put the tcpudmp files here: http://hoho.duckdns.org/linux/ - let me know if that helped.
+>Le 18/12/2014 13:15, Stephan Mueller a écrit :
+>> Hi Herbert,
+>> 
+>> While testing the vmsplice/splice interface of algif_hash I was made
+>> aware of the problem that data blobs larger than 16 pages do not seem
+>> to be hashed properly.
+>> 
+>> For testing, a file is mmap()ed and handed to vmsplice / splice. If
+>> the file is smaller than 2**16, the interface returns the proper
+>> hash. However, when the file is larger, only the first 2**16 bytes
+>> seem to be used.
+>> 
+>> When adding printk's to hash_sendpage, I see that this function is
+>> invoked exactly 16 times where the first 15 invocations have the
+>> MSG_MORE flag set and the last invocation does not have MSG_MORE.
+>
+>Hi Stephan,
+>
+>I have already noticed the same issue and proposed a patch, but I never
+>got any feedback and it has never been merged, allthought I pinged it
+>a few times.
+>
+>See https://lkml.org/lkml/2014/4/18/276
 
-Meanwhile I'll try older/plain (unpatched) kernels. So far reverting the client to vanilla 3.18.1 or 3.14.27 has not helped..
+Thanks a lot for pointing to this patch.
 
-Thanks,
-Holger
+Herbert, do you see a problem in this patch? If no, would it be possible 
+that you ping the VFS maintainer as I guess your word carries more 
+weight?
 
+In any case, I will test that patch tonight.
+
+Thanks
+Stephan
