@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063AbaLRGDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:03:41 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:26463 "EHLO
+	id S1751936AbaLRGJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:09:20 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:27611 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbaLRGDh (ORCPT
+	with ESMTP id S1751228AbaLRGJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:03:37 -0500
-X-AuditID: cbfee68d-f79296d000004278-4d-54926e3677b6
+	Thu, 18 Dec 2014 01:09:17 -0500
+X-AuditID: cbfee68d-f79296d000004278-da-54926f896a72
 From: Jingoo Han <jg1.han@samsung.com>
-To: "'Gabriel FERNANDEZ'" <gabriel.fernandez@st.com>
-Cc: "'Rob Herring'" <robh+dt@kernel.org>, "'Pawel Moll'" <pawel.moll@arm.com>,
-        "'Mark Rutland'" <mark.rutland@arm.com>,
-        "'Ian Campbell'" <ijc+devicetree@hellion.org.uk>,
-        "'Kumar Gala'" <galak@codeaurora.org>,
-        "'Srinivas Kandagatla'" <srinivas.kandagatla@gmail.com>,
-        "'Maxime Coquelin'" <maxime.coquelin@st.com>,
-        "'Patrice Chotard'" <patrice.chotard@st.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Mohit Kumar'" <mohit.kumar@st.com>,
-        "'Grant Likely'" <grant.likely@linaro.org>,
-        "'Gabriel Fernandez'" <gabriel.fernandez@linaro.org>,
-        "'Fabrice Gasnier'" <fabrice.gasnier@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        "'Thierry Reding'" <treding@nvidia.com>,
-        "'Minghuan Lian'" <Minghuan.Lian@freescale.com>,
-        "'Magnus Damm'" <damm@opensource.se>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'Tanmay Inamdar'" <tinamdar@apm.com>,
-        "'Murali Karicheri'" <m-karicheri2@ti.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Sachin Kamat'" <sachin.kamat@samsung.com>,
-        "'Andrew Lunn'" <andrew@lunn.ch>,
-        "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
-        "'Srikanth Thokala'" <sthokal@xilinx.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@stlinux.com, linux-pci@vger.kernel.org,
-        "'Lee Jones'" <lee.jones@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
- <1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
-In-reply-to: <1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH 3/5] PCI: st: Provide support for the sti PCIe controller
-Date: Thu, 18 Dec 2014 15:03:42 +0900
-Message-id: <000f01d01a88$60405e50$20c11af0$%han@samsung.com>
+To: gyungoh@gmail.com, sameo@linux.intel.com, lee.jones@linaro.org,
+        grant.likely@linaro.org, robh+dt@kernel.org, cooloney@gmail.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        trivial@kernel.org
+Cc: akpm@linux-foundation.org, jic23@kernel.org,
+        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
+        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
+        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1418881671-3495-1-git-send-email-jack.yoo@skyworksinc.com>
+ <1418881671-3495-3-git-send-email-jack.yoo@skyworksinc.com>
+In-reply-to: <1418881671-3495-3-git-send-email-jack.yoo@skyworksinc.com>
+Subject: Re: [PATCH v10 2/6] backlight: Add support Skyworks SKY81452 backlight
+ driver
+Date: Thu, 18 Dec 2014 15:09:21 +0900
+Message-id: <001101d01a89$2a629590$7f27c0b0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AdAZ5UiZcB2xGMD6QHqYU+xlLbDfywAoWfyA
+Thread-index: AdAahj3j9g4K+VQCSN2TIoKz/2vHHgAAoCwg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0yTZxTH97y3lmqX1w70kWQz4pSIAbnvGMWwDyZPTDQk8sldWMU3QAaF
-	tGDwg0q41Dm5dDTorExFKFBS1tEuSzGbKYVx0XErikSgRJBysTJFMFCnrrSY8O13zvM/5/9/
-	kiOmZRouWJyhyBWUCnlmCCdhjIGxJeHxisrkSG15KPSP22l4W9kpgrrCdJiz74WJqccU3Ozo
-	Y+FqwwwFjTU2Foon/qGgwl3Dgu0/K4K+eQOCoRoHCy9GOlkYmC7lYGL5bwTmqWEWhu5Uc9B7
-	o4uD0SEp2PQXGSgvs3GgfzRIweT9Wg5c0yU0tFR5EFR3P0SgudrMwEXHLij5q0MEDxz3OFC/
-	/hZ+MRlpmFlcZGD0zcfQskxg7mU3k7ibvDQtImK8YUSkuKiUI288lYgMlZdR5F17BUVadeMi
-	csucRwwNSxwxN13iyNjwnxyx1F0grdZXFCkrWuCIYcUhIuW/N6GkoJOSQ6eFzIwzgnL/4e8k
-	6T3OYjbH3YbytVX1ogJ05Wf0IwoQYz4WL3icnJ+34gGnycsSsYzXIzzXb2E+iDqstaz/4TbC
-	12ZHkb/wIDztGabWVBy/By8ttYvWOJCPxv3uMd8qmn8vwQM9g+sTFQhfb66m11QB/DHccFnt
-	40+8XN9o8m1i+N3Y/XzJ15fyCXjZUrTOW/CK1unLRPNh2PJHIevnHdhifO7ViL1ZQ/Hk2/AP
-	IVrNzcgvCcR3Zxd8GTCvluDx3p51Lx6/1toZ/+yn2Gyj/V/ejtsaRxgNwroNzroNzroNzroN
-	FrcQ04SChJzUHNWpNGVUhEqepcpTpEWkZmeZkfdQ779zlVnRqO2gHfFiFLJZuj2iMlnGys+o
-	zmbZUZw30U90cFBqtve2FbkpUTHx0RAXGxcT/cWB+JBt0p3BqydkfJo8V/heEHIEZYoyL1NQ
-	2RElDgguQMeuPG3v+LXzo4z8xq872+7tbUv47YVTORJ59Kuj12rGDuodKpfksUud9Nk3rder
-	kufPabMOG85vaXaVrprqncwe7rS+PlCmdj/bl/T5hYgBsko0GQemPL1fihITrNmFASNdO+dm
-	0OaTR0QFoVKNYSUo0pIY2rL8pHc2Rbnp3x+ON4QwqnR5VBitVMn/By8qzrOjAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFJsWRmVeSWpSXmKPExsVy+t9jAV2zvEkhBruXSVucv3uI2eLvpGPs
-	FkuaMixeHtK0uP/4FpPF/CPnWC2mL3/OZLFi4QFWi5b7Z5gs+t8sZLU48GcHo8W5VysZLS4v
-	vMRq8eHGMVaLC0972Czufz3KaLHp8TVWi8u75rBZnJ13nM3i9mVeiwNL21ks+noPsFksvX6R
-	yeLR6cVsFs+etjJbbJz6i9FizomrjBYTpq9lsWi/pGzRuvcIu8WVS6fYLNq+xVnMXb+G2eL5
-	p08sFrd/81ls/Oph8fLjCRYHVY+P6z8xeqyZt4bRo6W5h83j969JjB6X+3qZPP4d7mfy2Dnr
-	LrvHgk2lHiuXf2Hz2LSqk83jzrU9bB6bl9R77Nzxmcmjt/kdm8fKH5fYPfq2rGIMEI1qYLTJ
-	SE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAQamkkJZYk4p
-	UCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj5L0W1oI3BxkrJk9dxt7AOG0GYxcj
-	J4eEgInEkR2LWSFsMYkL99azdTFycQgJLGKUmPniNiOE84tR4umva0wgVWwCahJfvhxmB7FF
-	BIwkzr+5A9bBLPCfS+LCyYtQHf2MErPXzmEGqeIU8JVY3t0GZgsD2ctWrAebxCKgKvHm7Rew
-	OK+ArcTXzc1QtqDEj8n3WEBsZgEtic3bmlghbHmJzWveAtVwAN2qLvHory7METs3rWWEKBGR
-	2PfiHeMERqFZSCbNQjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRnK6f
-	Se9gXNVgcYhRgINRiYdXQm9SiBBrYllxZe4hRgkOZiUR3ugcoBBvSmJlVWpRfnxRaU5q8SFG
-	U6BHJzJLiSbnA3NJXkm8obGJmZGlkZmFkYm5uZI4r5J9W4iQQHpiSWp2ampBahFMHxMHp1QD
-	o7ZsWn+VhpHlUX6buS0X5z1y+JqotXCeMGfk7uUXnrW1Pdwos2ZDq7Qhx5/XK1cfL1L6pJCw
-	/1Oxud/+Mxd8PtV5hInUZXl3l9xUfjZ1lsfTiSpefSzPA5JVnkfyvXnzs11VTu4H034Ne5+K
-	7i6LaFnfnlcKLLNiMq4kfhUrZquTPG0TlvpJiaU4I9FQi7moOBEA+9PJbe0DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA02SfUxTVxjGc+4997Y0ktxVlEMjMTTTJSTAQAovikTNspw/lsVFjGDiR4E7
+	MJbStPi5aIDB+JIPS4yuc0UWFcFKYzEMnHO1YMRP0FpBhALKsKLo5tBMKbiWuoT/nnPe58nv
+	eZNXyso/cArpDm2+qNeqNUpehi0h8WVR5XnG1M+fdSjguNXCQ8+Qg4XK2UkOjoyO8XC14zAD
+	9V13OLg1UY2g5kUDB3ZvO4KO/o3w4fFzDtoHh1mwFZ9DcGeiCYGreBhD4UknBmfDPQ5GipoZ
+	aOz1sDD85iqC7uq/OHBePM7Dqb67DAw0t0ig9ug5DC2jHgZKfu+SwM1KDk4X/4DBNW3F8OdI
+	EQPW+gEeXv3hZNZEUIvZguivxvscdVZXMdRs6sb0zOsYerrkLEvHbHcRne2sYWiHaUhCmxqn
+	eDrRO4iprbmcpwX2HkwHH1ziafexaUzN179ZH7pZlpwlanbsFvUxKdtlOYWT41jXv29v2YCL
+	KUDujAoUJCVCPLnWfl8S0ItJr9vKVyCZVC6cQuRhSy37v+m3C29RYPALIteqbzP+gVx4j8ih
+	28l+zQvLydRUp8RvChG8iJh/tLP+BytYMHna72UC8RJErIMTyB8JEigxHmnh/HqhkEbqO/vm
+	imBhGbk04plDBAurydG2TklAf0L+rXNjv2aFSNLaVsQF9FLSapn00aS+rp+RxzNR/u8QIY5U
+	PTvPBiwh5LLn5dwKRJgNIv/UvecDLIG8rXPgQDac2OwfVw4jV87041pETPPIpnlk0zyyaR7i
+	BMLNaJGoy9QZMrL1sdEGda5hlzY7OjMv14Z8d3lzdryqHT2yr3IgQYqUC4LDoo2pck6927Av
+	14FUvkaHWcWizDzfKWvzt8WuSIgDVbxqRVxiUoIyNDhC8W6DXMhW54s7RVEn6rfpd2lEgwMx
+	0iBFAdryhTE6q3KlZkm8t/iYLP/R1q8Psut6VTeeq8qSw9PSY6K84eNj32/e9F2Sbu+nJDFt
+	+7rXWr0yO/Pbr7r0D5akpywLuxwc+XPNl+7ui4XLFdKcPe6hd6ElLurJmFam2xpj1q7X7Dk7
+	tL+v9MDMwdKCJHNUeWrTaFbshpS/XT1Pan56qsSGHHVsJKs3qP8D6jDjTZIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA2WTfUxTVxjGc+5XL4Qm1wrzjJkMbzJcjAVaEV4S2aeSk8xt3SyJ27LUa7kr
+	ZP0gvWDExKQSMKizIIbgGgI6N4TS0omLwIaTgEaIU3EVJQQBkWlFmZupziniWhoXsp2/fuc5
+	7/O855ycw9OaQS6ZL7KXyE67ZBW5eOb8/E1Bu8dRa8yovCtAQ8DHwaXrfTTsm59loe7GNAdn
+	uw9Q0HTmIgu/zLgRVN87wkLvXBeC7pF8eD51l4WusQkaOir8CC7OtCIYrphgYNe3QQaCR35l
+	YbLcS8GxoRANEw/PIhhw/8FC8McGDr67dpmCUW+7Cmrq/Qy03whRUHnqjArO72OhuWI3A8NP
+	Awz8NllOQaBplIP7p4PUWyuIr9GHSGftFZYE3fsp0ugZYEjLg3TSXNlGk+mOy4jM91dTpNtz
+	XUVaj4U5MjM0xpAO7x6OuHovMWTsag9HBg49ZUjj4EeGZZ+60LpCWSqQnSmy3ewoKLJbcsX3
+	NpneNa3NytBpdTmQLabYJZucK67faNDmFVkjtyembJOspRHJICmKmP7G/xPyjXlaeGHcrH3f
+	+PG/Hn3Gf8aWdlS4a/YWUzxStr1qdJhyofGte1Ecj4VM/NMPj1CMX8JD4wFuL4rnNcI3CJ9z
+	X6CiCxrhCcJfXVgXZU5IxeFwvypalCjMIdz4dS8dndCCj8G3R+aomL0S4cDYzEJunEBwbV07
+	G+Wlwmbc1H9NFWVGeA33TIYWWqiFXFx/sl8V4yX48cFxJsq0sAqfOFnOxvhVfMI3G+nGR/a6
+	Ek8900blREGP9985TsdKEvHPod9RDdJ4FiV5FiV5FiV5FlkOI8aLkuRic7Gy1WLTpymSTSm1
+	W9LMDlsHWnjGt17pQl4X9CGBR2KCGqfVGjWstE0ps/UhzNNiovoza0RSF0hlO2Snw+QstcpK
+	H1obOegBOjnJ7Ih8CnuJSbcmM0ufo88CfWZ2trhMLb6526gRLFKJ/KUsF8vOFz6Kj0t2oaPv
+	fPFylyX8p2/DUVfLakNqk+bKuScblpg+dLSO+td8Ppi03GarS2jI1213LedeV3+QM+wq+f50
+	Uqd65eOdhqtV5roqtz8vlW+e2Ehn++89Cr99/K9TLcqh+IPqwzefF/akt5HqFQ+ntZsy14dW
+	J2y532brHM+astSoni39u+yTHfVBkVEKJd0q2qlI/wA1hLgv3AMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -93,782 +76,489 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 17, 2014 7:35 PM, Gabriel FERNANDEZ wrote:
+On Thursday, December 18, 2014 2:48 PM, Gyungoh Yoo wrote:
 > 
-> sti pcie is built around a Synopsis Designware PCIe IP.
+> From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
-> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> ---
->  drivers/pci/host/Kconfig  |   5 +
->  drivers/pci/host/Makefile |   1 +
->  drivers/pci/host/pci-st.c | 713 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 719 insertions(+)
->  create mode 100644 drivers/pci/host/pci-st.c
-> 
-> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> index c4b6568..999d2b9 100644
-> --- a/drivers/pci/host/Kconfig
-> +++ b/drivers/pci/host/Kconfig
-> @@ -102,4 +102,9 @@ config PCI_LAYERSCAPE
->  	help
->  	  Say Y here if you want PCIe controller support on Layerscape SoCs.
-> 
-> +config PCI_ST
-> +	bool "ST STiH41x PCIe controller"
-> +	depends on ARCH_STI
-> +	select PCIE_DW
-> +
->  endmenu
-> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-> index 44c2699..ca14829 100644
-> --- a/drivers/pci/host/Makefile
-> +++ b/drivers/pci/host/Makefile
-> @@ -12,3 +12,4 @@ obj-$(CONFIG_PCI_KEYSTONE) += pci-keystone-dw.o pci-keystone.o
->  obj-$(CONFIG_PCIE_XILINX) += pcie-xilinx.o
->  obj-$(CONFIG_PCI_XGENE) += pci-xgene.o
->  obj-$(CONFIG_PCI_LAYERSCAPE) += pci-layerscape.o
-> +obj-$(CONFIG_PCI_ST) += pci-st.o
-> diff --git a/drivers/pci/host/pci-st.c b/drivers/pci/host/pci-st.c
-> new file mode 100644
-> index 0000000..bd3d32d
-> --- /dev/null
-> +++ b/drivers/pci/host/pci-st.c
-> @@ -0,0 +1,713 @@
-> +/*
-> + * Copyright (C) 2014 STMicroelectronics
-> + *
-> + * STMicroelectronics PCI express Driver for sti SoCs.
-> + * ST PCIe IPs are built around a Synopsys IP Core.
-> + *
-> + * Author: Fabrice Gasnier <fabrice.gasnier@st.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2, as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_pci.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/syscon.h>
-> +#include <linux/delay.h>
-> +#include <linux/reset.h>
-> +#include <linux/phy/phy.h>
+> Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-Please, re-order these headers alphabetically.
-It enhances the readability.
+Please add the following 'Acked-by's when you send this patch
+next time.
 
-> +
-> +#include "pcie-designware.h"
-> +
-> +#define TRANSLATION_CONTROL		0x900
-> +/* Controls if area is inclusive or exclusive */
-> +#define RC_PASS_ADDR_RANGE		BIT(1)
-> +
-> +/* Base of area reserved for config accesses. Fixed size of 64K. */
-> +#define CFG_BASE_ADDRESS		0x92c
-> +#define CFG_REGION_SIZE			65536
-> +
-> +/* First 4K of config space has this BDF (bus,device,function) */
-> +#define FUNC0_BDF_NUM			0x930
-> +
-> +/* Mem regions */
-> +#define IN0_MEM_ADDR_START		0x964
-> +#define IN0_MEM_ADDR_LIMIT		0x968
-> +#define IN1_MEM_ADDR_START		0x974
-> +#define IN1_MEM_ADDR_LIMIT		0x978
-> +
-> +/* This actually contains the LTSSM state machine state */
-> +#define PORT_LOGIC_DEBUG_REG_0		0x728
-> +
-> +/* LTSSM state machine values	*/
-> +#define DEBUG_REG_0_LTSSM_MASK		0x1f
-> +#define S_DETECT_QUIET			0x00
-> +#define S_DETECT_ACT			0x01
-> +#define S_POLL_ACTIVE			0x02
-> +#define S_POLL_COMPLIANCE		0x03
-> +#define S_POLL_CONFIG			0x04
-> +#define S_PRE_DETECT_QUIET		0x05
-> +#define S_DETECT_WAIT			0x06
-> +#define S_CFG_LINKWD_START		0x07
-> +#define S_CFG_LINKWD_ACEPT		0x08
-> +#define S_CFG_LANENUM_WAIT		0x09
-> +#define S_CFG_LANENUM_ACEPT		0x0A
-> +#define S_CFG_COMPLETE			0x0B
-> +#define S_CFG_IDLE			0x0C
-> +#define S_RCVRY_LOCK			0x0D
-> +#define S_RCVRY_SPEED			0x0E
-> +#define S_RCVRY_RCVRCFG			0x0F
-> +#define S_RCVRY_IDLE			0x10
-> +#define S_L0				0x11
-> +#define S_L0S				0x12
-> +#define S_L123_SEND_EIDLE		0x13
-> +#define S_L1_IDLE			0x14
-> +#define S_L2_IDLE			0x15
-> +#define S_L2_WAKE			0x16
-> +#define S_DISABLED_ENTRY		0x17
-> +#define S_DISABLED_IDLE			0x18
-> +#define S_DISABLED			0x19
-> +#define S_LPBK_ENTRY			0x1A
-> +#define S_LPBK_ACTIVE			0x1B
-> +#define S_LPBK_EXIT			0x1C
-> +#define S_LPBK_EXIT_TIMEOUT		0x1D
-> +#define S_HOT_RESET_ENTRY		0x1E
-> +#define S_HOT_RESET			0x1F
-> +
-> +/* syscfg bits */
-> +#define PCIE_SYS_INT			BIT(5)
-> +#define PCIE_APP_REQ_RETRY_EN		BIT(3)
-> +#define PCIE_APP_LTSSM_ENABLE		BIT(2)
-> +#define PCIE_APP_INIT_RST		BIT(1)
-> +#define PCIE_DEVICE_TYPE		BIT(0)
-> +#define PCIE_DEFAULT_VAL		PCIE_DEVICE_TYPE
-> +
-> +/* Time to wait between testing the link in msecs (hardware poll interval) */
-> +#define LINK_LOOP_DELAY_MS 1
-> +/* Total amount of time to wait for the link to come up in msecs */
-> +#define LINK_WAIT_MS 120
-> +#define LINK_LOOP_COUNT (LINK_WAIT_MS / LINK_LOOP_DELAY_MS)
-> +
-> +/* st,syscfg offsets */
-> +#define SYSCFG0_REG	1
-> +#define SYSCFG1_REG	2
-> +
-> +#define to_st_pcie(x)	container_of(x, struct st_pcie, pp)
-> +
-> +/**
-> + * struct st_pcie_ops - SOC dependent data
-> + * @init: reference to controller power & reset init routine
-> + * @enable_ltssm: reference to controller link enable routine
-> + * @disable_ltssm:  reference to controller link disable routine
-> + * @phy_auto: flag when phy automatically configured
-> + */
-> +struct st_pcie_ops {
-> +	int (*init)(struct pcie_port *pp);
-> +	int (*enable_ltssm)(struct pcie_port *pp);
-> +	int (*disable_ltssm)(struct pcie_port *pp);
-> +	bool phy_auto;
-> +};
-> +
-> +/**
-> + * struct st_pcie - private data of the controller
-> + * @pp: designware pcie port
-> + * @syscfg0: PCIe configuration 0 register, regmap offset
-> + * @syscfg1: PCIe configuration 1 register, regmap offset
-> + * @phy: associated pcie phy
-> + * @config_area: PCIe configuration space
-> + * @lmi: memory made available to the controller
-> + * @data: SOC dependent data
-> + * @regmap: Syscfg registers bank in which PCIe port is configured
-> + * @pwr: power control
-> + * @rst: reset control
-> + * @reset_gpio: optional reset gpio
-> + * @config_window_start: start address of 64K config space area
-> + */
-> +struct st_pcie {
-> +	struct pcie_port pp;
-> +	int syscfg0;
-> +	int syscfg1;
-> +	struct phy *phy;
-> +	void __iomem *config_area;
-> +	struct resource	*lmi;
-> +	const struct st_pcie_ops *data;
-> +	struct regmap *regmap;
-> +	struct reset_control *pwr;
-> +	struct reset_control *rst;
-> +	int reset_gpio;
-> +	phys_addr_t config_window_start;
-> +};
-> +
-> +/*
-> + * Function to test if the link is in an operational state or not. We must
-> + * ensure the link is operational before we try to do a configuration access.
-> + */
-> +static int st_pcie_link_up(struct pcie_port *pp)
-> +{
-> +	u32 status;
-> +	int link_up;
-> +	int count = 0;
-> +
-> +	/*
-> +	 * We have to be careful here. This is used in config read/write,
-> +	 * The higher levels switch off interrupts, so you cannot use
-> +	 * jiffies to do a timeout, or reschedule
-> +	 */
-> +	do {
-> +		/*
-> +		 * What about L2? I think software intervention is
-> +		 * required to get it out of L2, so in effect the link
-> +		 * is down. Requires more work when/if we implement power
-> +		 * management
-> +		 */
-> +		status = readl_relaxed(pp->dbi_base + PORT_LOGIC_DEBUG_REG_0);
-> +		status &= DEBUG_REG_0_LTSSM_MASK;
-> +
-> +		link_up = (status == S_L0) || (status == S_L0S) ||
-> +			  (status == S_L1_IDLE);
-> +
-> +		/*
-> +		 * It can take some considerable time for the link to actually
-> +		 * come up, caused by the PLLs. Experiments indicate it takes
-> +		 * about 8ms to actually bring the link up, but this can vary
-> +		 * considerably according to the specification. This code should
-> +		 * allow sufficient time
-> +		 */
-> +		if (!link_up)
-> +			mdelay(LINK_LOOP_DELAY_MS);
-> +
-> +	} while (!link_up && ++count < LINK_LOOP_COUNT);
-> +
-> +	return link_up;
-> +}
-> +
-> +/*
-> + * On ARM platforms, we actually get a bus error returned when the PCIe IP
-> + * returns a UR or CRS instead of an OK.
-> + */
-> +static int st_pcie_abort_handler(unsigned long addr, unsigned int fsr,
-> +				 struct pt_regs *regs)
-> +{
-> +	return 0;
-> +}
-> +
-> +/*
-> + * The PCI express core IP expects the following arrangement on it's address
-> + * bus (slv_haddr) when driving config cycles.
-> + * bus_number		[31:24]
-> + * dev_number		[23:19]
-> + * func_number		[18:16]
-> + * unused		[15:12]
-> + * ext_reg_number	[11:8]
-> + * reg_number		[7:2]
-> + *
-> + * Bits [15:12] are unused.
-> + *
-> + * In the glue logic there is a 64K region of address space that can be
-> + * written/read to generate config cycles. The base address of this is
-> + * controlled by CFG_BASE_ADDRESS. There are 8 16 bit registers called
-> + * FUNC0_BDF_NUM to FUNC8_BDF_NUM. These split the bottom half of the 64K
-> + * window into 8 regions at 4K boundaries. These control the bus,device and
-> + * function number you are trying to talk to.
-> + *
-> + * The decision on whether to generate a type 0 or type 1 access is controlled
-> + * by bits 15:12 of the address you write to.  If they are zero, then a type 0
-> + * is generated, if anything else it will be a type 1. Thus the bottom 4K
-> + * region controlled by FUNC0_BDF_NUM can only generate type 0, all the others
-> + * can only generate type 1.
-> + *
-> + * We only use FUNC0_BDF_NUM and FUNC1_BDF_NUM. Which one you use is selected
-> + * by bit 12 of the address you write to. The selected register is then used
-> + * for the top 16 bits of the slv_haddr to form the bus/dev/func, bit 15:12 are
-> + * wired to zero, and bits 11:2 form the address of the register you want to
-> + * read in config space.
-> + *
-> + * We always write FUNC0_BDF_NUM as a 32 bit write. So if we want type 1
-> + * accesses we have to shift by 16 so in effect we are writing to FUNC1_BDF_NUM
-> + */
-> +static inline u32 bdf_num(int bus, int devfn, int is_root_bus)
-> +{
-> +	return ((bus << 8) | devfn) << (is_root_bus ? 0 : 16);
-> +}
-> +
-> +static inline unsigned config_addr(int where, int is_root_bus)
-> +{
-> +	return (where & ~3) | (!is_root_bus << 12);
-> +}
-> +
-> +static int st_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-> +				 unsigned int devfn, int where, int size,
-> +				 u32 *val)
-> +{
-> +	u32 data;
-> +	u32 bdf;
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +	int is_root_bus = pci_is_root_bus(bus);
-> +	int retry_count = 0;
-> +	int ret;
-> +	void __iomem *addr;
-> +
-> +	/*
-> +	 * Prerequisite
-> +	 * PCI express devices will respond to all config type 0 cycles, since
-> +	 * they are point to point links. Thus to avoid probing for multiple
-> +	 * devices on the root, dw-pcie already check for us if it is on the
-> +	 * root bus / other slots. Also, dw-pcie checks for the link being up
-> +	 * as we will hang if we issue a config request and the link is down.
-> +	 * A switch will reject requests for slots it knows do not exist.
-> +	 */
-> +	bdf = bdf_num(bus->number, devfn, is_root_bus);
-> +	addr = pcie->config_area + config_addr(where,
-> +			bus->parent->number == pp->root_bus_nr);
-> +retry:
-> +	/* Set the config packet devfn */
-> +	writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
-> +	readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
-> +
-> +	ret = dw_pcie_cfg_read(addr, where, size, &data);
-> +
-> +	/*
-> +	 * This is intended to help with when we are probing the bus. The
-> +	 * problem is that the wrapper logic doesn't have any way to
-> +	 * interrogate if the configuration request failed or not.
-> +	 * On the ARM we actually get a real bus error.
-> +	 *
-> +	 * Unfortunately this means it is impossible to tell the difference
-> +	 * between when a device doesn't exist (the switch will return a UR
-> +	 * completion) or the device does exist but isn't yet ready to accept
-> +	 * configuration requests (the device will return a CRS completion)
-> +	 *
-> +	 * The result of this is that we will miss devices when probing.
-> +	 *
-> +	 * So if we are trying to read the dev/vendor id on devfn 0 and we
-> +	 * appear to get zero back, then we retry the request.  We know that
-> +	 * zero can never be a valid device/vendor id. The specification says
-> +	 * we must retry for up to a second before we decide the device is
-> +	 * dead. If we are still dead then we assume there is nothing there and
-> +	 * return ~0
-> +	 *
-> +	 * The downside of this is that we incur a delay of 1s for every pci
-> +	 * express link that doesn't have a device connected.
-> +	 */
-> +	if (((where & ~3) == 0) && devfn == 0 && (data == 0 || data == ~0)) {
-> +		if (retry_count++ < 1000) {
-> +			mdelay(1);
-> +			goto retry;
-> +		} else {
-> +			*val = ~0;
-> +			return PCIBIOS_DEVICE_NOT_FOUND;
-> +		}
-> +	}
-> +
-> +	*val = data;
-> +	return ret;
-> +}
-> +
-> +static int st_pcie_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-> +				 unsigned int devfn, int where, int size,
-> +				 u32 val)
-> +{
-> +	u32 bdf;
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +	int is_root_bus = pci_is_root_bus(bus);
-> +	void __iomem *addr;
-> +
-> +	bdf = bdf_num(bus->number, devfn, is_root_bus);
-> +	addr = pcie->config_area + config_addr(where,
-> +			bus->parent->number == pp->root_bus_nr);
-> +
-> +	/* Set the config packet devfn */
-> +	writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
-> +	readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
-> +
-> +	return dw_pcie_cfg_write(addr, where, size, val);
-> +}
-> +
-> +static void st_pcie_board_reset(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +
-> +	if (!gpio_is_valid(pcie->reset_gpio))
-> +		return;
-> +
-> +	if (gpio_direction_output(pcie->reset_gpio, 0)) {
-> +		dev_err(pp->dev, "Cannot set PERST# (gpio %u) to output\n",
-> +			pcie->reset_gpio);
-> +		return;
-> +	}
-> +
-> +	/* From PCIe spec */
-> +	usleep_range(1000, 2000);
-> +	gpio_direction_output(pcie->reset_gpio, 1);
-> +
-> +	/*
-> +	 * PCIe specification states that you should not issue any config
-> +	 * requests until 100ms after asserting reset, so we enforce that here
-> +	 */
-> +	usleep_range(100000, 150000);
-> +}
-> +
-> +static void st_pcie_hw_setup(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +
-> +	dw_pcie_setup_rc(pp);
-> +
-> +	/* Set up the config window to the top of the PCI address space */
-> +	writel_relaxed(pcie->config_window_start,
-> +		       pp->dbi_base + CFG_BASE_ADDRESS);
-> +
-> +	/*
-> +	 * Open up memory to the PCI controller. We could do slightly
-> +	 * better than this and exclude the kernel text segment and bss etc.
-> +	 * They are base/limit registers so can be of arbitrary alignment
-> +	 * presumably
-> +	 */
-> +	writel_relaxed(pcie->lmi->start, pp->dbi_base + IN0_MEM_ADDR_START);
-> +	writel_relaxed(pcie->lmi->end, pp->dbi_base + IN0_MEM_ADDR_LIMIT);
-> +
-> +	/* Disable the 2nd region */
-> +	writel_relaxed(~0, pp->dbi_base + IN1_MEM_ADDR_START);
-> +	writel_relaxed(0, pp->dbi_base + IN1_MEM_ADDR_LIMIT);
-> +
-> +	writel_relaxed(RC_PASS_ADDR_RANGE, pp->dbi_base + TRANSLATION_CONTROL);
-> +
-> +	/* Now assert the board level reset to the other PCIe device */
-> +	st_pcie_board_reset(pp);
-> +}
-> +
-> +static irqreturn_t st_pcie_msi_irq_handler(int irq, void *arg)
-> +{
-> +	struct pcie_port *pp = arg;
-> +
-> +	return dw_handle_msi_irq(pp);
-> +}
-> +
-> +static void st_msi_init_one(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +
-> +	/*
-> +	 * Set the magic address the hardware responds to. This has to be in
-> +	 * the range the PCI controller can write to.
-> +	 */
-> +	dw_pcie_msi_init(pp);
-> +
-> +	if ((virt_to_phys((void *)pp->msi_data) < pcie->lmi->start) ||
-> +	    (virt_to_phys((void *)pp->msi_data) > pcie->lmi->end))
-> +		dev_err(pp->dev, "MSI addr miss-configured\n");
-> +}
-> +
-> +static void st_pcie_host_init(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +	int err;
-> +
-> +	/*
-> +	 * We have to initialise the PCIe cell on some hardware before we can
-> +	 * talk to the phy
-> +	 */
-> +	err = pcie->data->init(pp);
-> +	if (err)
-> +		return;
-> +
-> +	err = pcie->data->disable_ltssm(pp);
-> +	if (err) {
-> +		dev_err(pp->dev, "disable ltssm failed, %d\n", err);
-> +		return;
-> +	}
-> +
-> +	if (!pcie->data->phy_auto) {
-> +		/* Now init the associated miphy */
-> +		err = phy_init(pcie->phy);
-> +		if (err < 0) {
-> +			dev_err(pp->dev, "Cannot init PHY: %d\n", err);
-> +			return;
-> +		}
-> +	}
-> +
-> +	/* Now do all the register poking */
-> +	st_pcie_hw_setup(pp);
-> +
-> +	/* Re-enable the link */
-> +	err = pcie->data->enable_ltssm(pp);
-> +	if (err)
-> +		dev_err(pp->dev, "enable ltssm failed, %d\n", err);
-> +
-> +	if (IS_ENABLED(CONFIG_PCI_MSI))
-> +		st_msi_init_one(pp);
-> +}
-> +
-> +static struct pcie_host_ops st_pcie_host_ops = {
-> +	.rd_other_conf = st_pcie_rd_other_conf,
-> +	.wr_other_conf = st_pcie_wr_other_conf,
-> +	.link_up = st_pcie_link_up,
-> +	.host_init = st_pcie_host_init,
-> +};
-> +
-> +static int st_pcie_init(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +	int ret;
-> +
-> +	ret = reset_control_deassert(pcie->pwr);
-> +	if (ret) {
-> +		dev_err(pp->dev, "unable to bring out of powerdown\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = reset_control_deassert(pcie->rst);
-> +	if (ret) {
-> +		dev_err(pp->dev, "unable to bring out of softreset\n");
-> +		return ret;
-> +	}
-> +
-> +	/* Set device type : Root Complex */
-> +	ret = regmap_write(pcie->regmap, pcie->syscfg0, PCIE_DEVICE_TYPE);
-> +	if (ret < 0) {
-> +		dev_err(pp->dev, "unable to set device type\n");
-> +		return ret;
-> +	}
-> +
-> +	usleep_range(1000, 2000);
-> +	return ret;
-> +}
-> +
-> +/* STiH407 */
-> +static int stih407_pcie_enable_ltssm(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +
-> +	if (!pcie->syscfg1)
-> +		return -EINVAL;
-> +
-> +	return regmap_update_bits(pcie->regmap, pcie->syscfg1,
-> +				  PCIE_APP_LTSSM_ENABLE, PCIE_APP_LTSSM_ENABLE);
-> +}
-> +
-> +static int stih407_pcie_disable_ltssm(struct pcie_port *pp)
-> +{
-> +	struct st_pcie *pcie = to_st_pcie(pp);
-> +
-> +	if (!pcie->syscfg1)
-> +		return -EINVAL;
-> +
-> +	return regmap_update_bits(pcie->regmap, pcie->syscfg1,
-> +				  PCIE_APP_LTSSM_ENABLE, 0);
-> +}
-> +
-> +static struct st_pcie_ops stih407_pcie_ops = {
-> +	.init = st_pcie_init,
-> +	.enable_ltssm = stih407_pcie_enable_ltssm,
-> +	.disable_ltssm = stih407_pcie_disable_ltssm,
-> +};
-> +
-> +static const struct of_device_id st_pcie_of_match[] = {
-> +	{ .compatible = "st,stih407-pcie", .data = (void *)&stih407_pcie_ops},
-> +	{ },
-> +};
-> +
-> +#ifdef CONFIG_PM
-> +static int st_pcie_suspend(struct device *pcie_dev)
-> +{
-> +	struct st_pcie *pcie = dev_get_drvdata(pcie_dev);
-> +
-> +	/* To guarantee a real phy initialization on resume */
-> +	if (!pcie->data->phy_auto)
-> +		phy_exit(pcie->phy);
-> +
-> +	return 0;
-> +}
-> +
-> +static int st_pcie_resume(struct device *pcie_dev)
-> +{
-> +	struct st_pcie *pcie = dev_get_drvdata(pcie_dev);
-> +
-> +	st_pcie_host_init(&pcie->pp);
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +const struct dev_pm_ops st_pcie_pm_ops = {
-> +	.suspend_noirq = st_pcie_suspend,
-> +	.resume_noirq = st_pcie_resume,
-> +};
-> +
-> +static int __init st_pcie_probe(struct platform_device *pdev)
-> +{
-> +	struct resource *res;
-> +	struct st_pcie *pcie;
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct pcie_port *pp;
-> +	int ret;
-> +
-> +	pcie = devm_kzalloc(&pdev->dev, sizeof(*pcie), GFP_KERNEL);
-> +	if (!pcie)
-> +		return -ENOMEM;
-> +
-> +	memset(pcie, 0, sizeof(*pcie));
-> +
-> +	pp = &pcie->pp;
-> +	pp->dev = &pdev->dev;
-> +
-> +	/* mem regions */
-> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dbi");
-> +	pp->dbi_base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(pp->dbi_base))
-> +		return PTR_ERR(pp->dbi_base);
-> +
-> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
-> +	if (!res)
-> +		return -ENXIO;
-> +
-> +	/* Check that this has sensible values */
-> +	if ((resource_size(res) != CFG_REGION_SIZE) ||
-> +	    (res->start & (CFG_REGION_SIZE - 1))) {
-> +		dev_err(&pdev->dev, "Invalid config space properties\n");
-> +		return -EINVAL;
-> +	}
-> +	pcie->config_window_start = res->start;
-> +
-> +	pcie->config_area = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(pcie->config_area))
-> +		return PTR_ERR(pcie->config_area);
-> +
-> +	pcie->lmi = platform_get_resource_byname(pdev, IORESOURCE_MEM,
-> +						 "mem-window");
-> +	if (!pcie->lmi)
-> +		return -ENXIO;
-> +
-> +	/* regmap registers for PCIe IP configuration */
-> +	pcie->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
-> +	if (IS_ERR(pcie->regmap)) {
-> +		dev_err(&pdev->dev, "No syscfg phandle specified\n");
-> +		return PTR_ERR(pcie->regmap);
-> +	}
-> +
-> +	ret = of_property_read_u32_index(np, "st,syscfg", SYSCFG0_REG,
-> +					 &pcie->syscfg0);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "can't get syscfg0 offset (%d)\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	ret = of_property_read_u32_index(np, "st,syscfg", SYSCFG1_REG,
-> +					 &pcie->syscfg1);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "can't get syscfg1 offset (%d)\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	/* retrieve data opts from compatible */
-> +	pcie->data = of_match_node(st_pcie_of_match, np)->data;
-> +	if (!pcie->data) {
-> +		dev_err(&pdev->dev, "compatible data not provided\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	/* powerdown / resets */
-> +	pcie->pwr = devm_reset_control_get(&pdev->dev, "powerdown");
-> +	if (IS_ERR(pcie->pwr)) {
-> +		dev_err(&pdev->dev, "powerdown reset control not defined\n");
-> +		return -EINVAL;
-
-Please return PTR_ERR(pcie->pwr) instead of '-EINVAL'.
-
-> +	}
-> +
-> +	pcie->rst = devm_reset_control_get(&pdev->dev, "softreset");
-> +	if (IS_ERR(pcie->rst)) {
-> +		dev_err(&pdev->dev, "Soft reset control not defined\n");
-> +		return -EINVAL;
-
-Please return PTR_ERR(pcie->pwr) instead of '-EINVAL'.
-
-> +	}
-> +
-> +	/* phy */
-> +	if (!pcie->data->phy_auto) {
-> +		pcie->phy = devm_phy_get(&pdev->dev, "pcie_phy");
-> +		if (IS_ERR(pcie->phy)) {
-> +			dev_err(&pdev->dev, "no PHY configured\n");
-> +			return PTR_ERR(pcie->phy);
-> +		}
-> +	}
-> +
-> +	/* Claim the GPIO for PRST# if available */
-> +	pcie->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
-> +	if (!gpio_is_valid(pcie->reset_gpio))
-> +		dev_dbg(&pdev->dev, "No reset-gpio configured\n");
-> +	else {
-> +		ret = devm_gpio_request(&pdev->dev,
-> +					pcie->reset_gpio,
-> +					"PCIe reset");
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "Cannot request reset-gpio %d\n",
-> +				pcie->reset_gpio);
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	if (IS_ENABLED(CONFIG_PCI_MSI)) {
-> +		pp->msi_irq = platform_get_irq_byname(pdev, "msi");
-> +		if (pp->msi_irq <= 0) {
-> +			dev_err(&pdev->dev, "failed to get MSI irq\n");
-> +			return -ENODEV;
-> +		}
-> +
-> +		ret = devm_request_irq(&pdev->dev, pp->msi_irq,
-> +				       st_pcie_msi_irq_handler,
-> +				       IRQF_SHARED, "st-pcie-msi", pp);
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "failed to request MSI irq\n");
-> +			return -ENODEV;
-> +		}
-> +	}
-> +
-> +	if (IS_ENABLED(CONFIG_ARM)) {
-> +		/*
-> +		 * We have to hook the abort handler so that we can intercept
-> +		 * bus errors when doing config read/write that return UR,
-> +		 * which is flagged up as a bus error
-> +		 */
-> +		hook_fault_code(16+6, st_pcie_abort_handler, SIGBUS, 0,
-> +				"imprecise external abort");
-> +	}
-> +
-> +	pp->root_bus_nr = -1;
-> +	pp->ops = &st_pcie_host_ops;
-> +
-> +	ret = dw_pcie_host_init(pp);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to initialize host\n");
-> +		return ret;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, pcie);
-> +
-> +	dev_info(&pdev->dev, "Initialized\n");
-> +	return 0;
-> +}
-> +
-> +MODULE_DEVICE_TABLE(of, st_pcie_of_match);
-> +
-> +static struct platform_driver st_pcie_driver = {
-> +	.driver = {
-> +		.name = "st-pcie",
-> +		.of_match_table = st_pcie_of_match,
-> +		.pm = &st_pcie_pm_ops,
-> +	},
-> +};
-> +
-> +/* ST PCIe driver does not allow module unload */
-> +static int __init pcie_init(void)
-> +{
-> +	return platform_driver_probe(&st_pcie_driver, st_pcie_probe);
-> +}
-> +device_initcall(pcie_init);
-> +
-> +MODULE_AUTHOR("Fabrice Gasnier <fabrice.gasnier@st.com>");
-> +MODULE_DESCRIPTION("PCI express Driver for ST SoCs");
-> +MODULE_LICENSE("GPLv2");
-
-Please add one space between 'GPL' and 'v2'.
-
-s/"GPLv2"/"GPL v2"
-
-According to the license_is_gpl_compatible(), the MODULE_LICENSE() string
-for GPL v2 is "GPL v2" not "GPLv2".
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+Acked-by: Bryan Wu <cooloney@gmail.com>
 
 Best regards,
 Jingoo Han
 
+> ---
+> Changes v10:
+> Removed trivial get_brightness implementations
+> 
+> Changes v9:
+> Nothing
+> 
+> Changes v8:
+> Renamed property names for backlight with vendor prefix
+> Modified gpio-enable property to generic property for GPIO
+> 
+> Changes v7:
+> Modified licensing text to GPLv2
+> 
+> Changes v6:
+> Added new line character at the end of line of dev_err()
+> 
+> Changes v5:
+> Move sky81452-backlight.h to include/linux/platform_data
+> 
+> Changes v4:
+> Reordering header files for readability
+> Removed calling to backlight_device_unregister()
+> Removed MODULE_VERSION()
+> Modified license to GPLv2
+> 
+> Changes v3:
+> Modified DBG messages
+> 
+> Changes v2:
+> Added 'compatible' attribute in the driver
+> Added message for exception or errors
+> 
+>  drivers/video/backlight/Kconfig                  |  10 +
+>  drivers/video/backlight/Makefile                 |   1 +
+>  drivers/video/backlight/sky81452-backlight.c     | 334 +++++++++++++++++++++++
+>  include/linux/platform_data/sky81452-backlight.h |  46 ++++
+>  4 files changed, 391 insertions(+)
+>  create mode 100644 drivers/video/backlight/sky81452-backlight.c
+>  create mode 100644 include/linux/platform_data/sky81452-backlight.h
+> 
+> diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
+> index 8d03924..2586fdd 100644
+> --- a/drivers/video/backlight/Kconfig
+> +++ b/drivers/video/backlight/Kconfig
+> @@ -409,6 +409,16 @@ config BACKLIGHT_PANDORA
+>  	  If you have a Pandora console, say Y to enable the
+>  	  backlight driver.
+> 
+> +config BACKLIGHT_SKY81452
+> +	tristate "Backlight driver for SKY81452"
+> +	depends on BACKLIGHT_CLASS_DEVICE && MFD_SKY81452
+> +	help
+> +	  If you have a Skyworks SKY81452, say Y to enable the
+> +	  backlight driver.
+> +
+> +	  To compile this driver as a module, choose M here: the module will
+> +	  be called sky81452-backlight
+> +
+>  config BACKLIGHT_TPS65217
+>  	tristate "TPS65217 Backlight"
+>  	depends on BACKLIGHT_CLASS_DEVICE && MFD_TPS65217
+> diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
+> index fcd50b73..d67073f 100644
+> --- a/drivers/video/backlight/Makefile
+> +++ b/drivers/video/backlight/Makefile
+> @@ -50,6 +50,7 @@ obj-$(CONFIG_BACKLIGHT_PANDORA)		+= pandora_bl.o
+>  obj-$(CONFIG_BACKLIGHT_PCF50633)	+= pcf50633-backlight.o
+>  obj-$(CONFIG_BACKLIGHT_PWM)		+= pwm_bl.o
+>  obj-$(CONFIG_BACKLIGHT_SAHARA)		+= kb3886_bl.o
+> +obj-$(CONFIG_BACKLIGHT_SKY81452)	+= sky81452-backlight.o
+>  obj-$(CONFIG_BACKLIGHT_TOSA)		+= tosa_bl.o
+>  obj-$(CONFIG_BACKLIGHT_TPS65217)	+= tps65217_bl.o
+>  obj-$(CONFIG_BACKLIGHT_WM831X)		+= wm831x_bl.o
+> diff --git a/drivers/video/backlight/sky81452-backlight.c b/drivers/video/backlight/sky81452-
+> backlight.c
+> new file mode 100644
+> index 0000000..8105597
+> --- /dev/null
+> +++ b/drivers/video/backlight/sky81452-backlight.c
+> @@ -0,0 +1,334 @@
+> +/*
+> + * sky81452-backlight.c	SKY81452 backlight driver
+> + *
+> + * Copyright 2014 Skyworks Solutions Inc.
+> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2
+> + * as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/backlight.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/of_gpio.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +#include <linux/platform_data/sky81452-backlight.h>
+> +#include <linux/slab.h>
+> +
+> +/* registers */
+> +#define SKY81452_REG0	0x00
+> +#define SKY81452_REG1	0x01
+> +#define SKY81452_REG2	0x02
+> +#define SKY81452_REG4	0x04
+> +#define SKY81452_REG5	0x05
+> +
+> +/* bit mask */
+> +#define SKY81452_CS	0xFF
+> +#define SKY81452_EN	0x3F
+> +#define SKY81452_IGPW	0x20
+> +#define SKY81452_PWMMD	0x10
+> +#define SKY81452_PHASE	0x08
+> +#define SKY81452_ILIM	0x04
+> +#define SKY81452_VSHRT	0x03
+> +#define SKY81452_OCP	0x80
+> +#define SKY81452_OTMP	0x40
+> +#define SKY81452_SHRT	0x3F
+> +#define SKY81452_OPN	0x3F
+> +
+> +#define SKY81452_DEFAULT_NAME "lcd-backlight"
+> +#define SKY81452_MAX_BRIGHTNESS	(SKY81452_CS + 1)
+> +
+> +#define CTZ(b) __builtin_ctz(b)
+> +
+> +static int sky81452_bl_update_status(struct backlight_device *bd)
+> +{
+> +	const struct sky81452_bl_platform_data *pdata =
+> +			dev_get_platdata(bd->dev.parent);
+> +	const unsigned int brightness = (unsigned int)bd->props.brightness;
+> +	struct regmap *regmap = bl_get_data(bd);
+> +	int ret;
+> +
+> +	if (brightness > 0) {
+> +		ret = regmap_write(regmap, SKY81452_REG0, brightness - 1);
+> +		if (IS_ERR_VALUE(ret))
+> +			return ret;
+> +
+> +		return regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN,
+> +					pdata->enable << CTZ(SKY81452_EN));
+> +	}
+> +
+> +	return regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN, 0);
+> +}
+> +
+> +static const struct backlight_ops sky81452_bl_ops = {
+> +	.update_status = sky81452_bl_update_status,
+> +};
+> +
+> +static ssize_t sky81452_bl_store_enable(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
+> +	unsigned long value;
+> +	int ret;
+> +
+> +	ret = kstrtoul(buf, 16, &value);
+> +	if (IS_ERR_VALUE(ret))
+> +		return ret;
+> +
+> +	ret = regmap_update_bits(regmap, SKY81452_REG1, SKY81452_EN,
+> +					value << CTZ(SKY81452_EN));
+> +	if (IS_ERR_VALUE(ret))
+> +		return ret;
+> +
+> +	return count;
+> +}
+> +
+> +static ssize_t sky81452_bl_show_open_short(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
+> +	unsigned int reg, value = 0;
+> +	char tmp[3];
+> +	int i, ret;
+> +
+> +	reg = !strcmp(attr->attr.name, "open") ? SKY81452_REG5 : SKY81452_REG4;
+> +	ret = regmap_read(regmap, reg, &value);
+> +	if (IS_ERR_VALUE(ret))
+> +		return ret;
+> +
+> +	if (value & SKY81452_SHRT) {
+> +		*buf = 0;
+> +		for (i = 0; i < 6; i++) {
+> +			if (value & 0x01) {
+> +				sprintf(tmp, "%d ", i + 1);
+> +				strcat(buf, tmp);
+> +			}
+> +			value >>= 1;
+> +		}
+> +		strcat(buf, "\n");
+> +	} else {
+> +		strcpy(buf, "none\n");
+> +	}
+> +
+> +	return strlen(buf);
+> +}
+> +
+> +static ssize_t sky81452_bl_show_fault(struct device *dev,
+> +		struct device_attribute *attr, char *buf)
+> +{
+> +	struct regmap *regmap = bl_get_data(to_backlight_device(dev));
+> +	unsigned int value = 0;
+> +	int ret;
+> +
+> +	ret = regmap_read(regmap, SKY81452_REG4, &value);
+> +	if (IS_ERR_VALUE(ret))
+> +		return ret;
+> +
+> +	*buf = 0;
+> +
+> +	if (value & SKY81452_OCP)
+> +		strcat(buf, "over-current ");
+> +
+> +	if (value & SKY81452_OTMP)
+> +		strcat(buf, "over-temperature");
+> +
+> +	strcat(buf, "\n");
+> +	return strlen(buf);
+> +}
+> +
+> +static DEVICE_ATTR(enable, S_IWGRP | S_IWUSR, NULL, sky81452_bl_store_enable);
+> +static DEVICE_ATTR(open, S_IRUGO, sky81452_bl_show_open_short, NULL);
+> +static DEVICE_ATTR(short, S_IRUGO, sky81452_bl_show_open_short, NULL);
+> +static DEVICE_ATTR(fault, S_IRUGO, sky81452_bl_show_fault, NULL);
+> +
+> +static struct attribute *sky81452_bl_attribute[] = {
+> +	&dev_attr_enable.attr,
+> +	&dev_attr_open.attr,
+> +	&dev_attr_short.attr,
+> +	&dev_attr_fault.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group sky81452_bl_attr_group = {
+> +	.attrs = sky81452_bl_attribute,
+> +};
+> +
+> +#ifdef CONFIG_OF
+> +static struct sky81452_bl_platform_data *sky81452_bl_parse_dt(
+> +							struct device *dev)
+> +{
+> +	struct device_node *np = of_node_get(dev->of_node);
+> +	struct sky81452_bl_platform_data *pdata;
+> +	int ret;
+> +
+> +	if (!np) {
+> +		dev_err(dev, "backlight node not found.\n");
+> +		return ERR_PTR(-ENODATA);
+> +	}
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata) {
+> +		of_node_put(np);
+> +		return ERR_PTR(-ENOMEM);
+> +	}
+> +
+> +	of_property_read_string(np, "name", &pdata->name);
+> +	pdata->ignore_pwm = of_property_read_bool(np, "skyworks,ignore-pwm");
+> +	pdata->dpwm_mode = of_property_read_bool(np, "skyworks,dpwm-mode");
+> +	pdata->phase_shift = of_property_read_bool(np, "skyworks,phase-shift");
+> +	pdata->gpio_enable = of_get_gpio(np, 0);
+> +
+> +	ret = of_property_read_u32(np, "skyworks,en-channels", &pdata->enable);
+> +	if (IS_ERR_VALUE(ret))
+> +		pdata->enable = SKY81452_EN >> CTZ(SKY81452_EN);
+> +
+> +	ret = of_property_read_u32(np, "skyworks,short-detection-threshold",
+> +			&pdata->short_detection_threshold);
+> +	if (IS_ERR_VALUE(ret))
+> +		pdata->short_detection_threshold = 7;
+> +
+> +	ret = of_property_read_u32(np, "skyworks,current-limit",
+> +			&pdata->boost_current_limit);
+> +	if (IS_ERR_VALUE(ret))
+> +		pdata->boost_current_limit = 2750;
+> +
+> +	of_node_put(np);
+> +	return pdata;
+> +}
+> +#else
+> +static struct sky81452_bl_platform_data *sky81452_bl_parse_dt(
+> +							struct device *dev)
+> +{
+> +	return ERR_PTR(-EINVAL);
+> +}
+> +#endif
+> +
+> +static int sky81452_bl_init_device(struct regmap *regmap,
+> +		struct sky81452_bl_platform_data *pdata)
+> +{
+> +	unsigned int value;
+> +
+> +	value = pdata->ignore_pwm ? SKY81452_IGPW : 0;
+> +	value |= pdata->dpwm_mode ? SKY81452_PWMMD : 0;
+> +	value |= pdata->phase_shift ? 0 : SKY81452_PHASE;
+> +
+> +	if (pdata->boost_current_limit == 2300)
+> +		value |= SKY81452_ILIM;
+> +	else if (pdata->boost_current_limit != 2750)
+> +		return -EINVAL;
+> +
+> +	if (pdata->short_detection_threshold < 4 ||
+> +				pdata->short_detection_threshold > 7)
+> +		return -EINVAL;
+> +	value |= (7 - pdata->short_detection_threshold) << CTZ(SKY81452_VSHRT);
+> +
+> +	return regmap_write(regmap, SKY81452_REG2, value);
+> +}
+> +
+> +static int sky81452_bl_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct regmap *regmap = dev_get_drvdata(dev->parent);
+> +	struct sky81452_bl_platform_data *pdata = dev_get_platdata(dev);
+> +	struct backlight_device *bd;
+> +	struct backlight_properties props;
+> +	const char *name;
+> +	int ret;
+> +
+> +	if (!pdata) {
+> +		pdata = sky81452_bl_parse_dt(dev);
+> +		if (IS_ERR(pdata))
+> +			return PTR_ERR(pdata);
+> +	}
+> +
+> +	if (gpio_is_valid(pdata->gpio_enable)) {
+> +		ret = devm_gpio_request_one(dev, pdata->gpio_enable,
+> +					GPIOF_OUT_INIT_HIGH, "sky81452-en");
+> +		if (IS_ERR_VALUE(ret)) {
+> +			dev_err(dev, "failed to request GPIO. err=%d\n", ret);
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	ret = sky81452_bl_init_device(regmap, pdata);
+> +	if (IS_ERR_VALUE(ret)) {
+> +		dev_err(dev, "failed to initialize. err=%d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	memset(&props, 0, sizeof(props));
+> +	props.max_brightness = SKY81452_MAX_BRIGHTNESS,
+> +	name = pdata->name ? pdata->name : SKY81452_DEFAULT_NAME;
+> +	bd = devm_backlight_device_register(dev, name, dev, regmap,
+> +						&sky81452_bl_ops, &props);
+> +	if (IS_ERR(bd)) {
+> +		dev_err(dev, "failed to register. err=%ld\n", PTR_ERR(bd));
+> +		return PTR_ERR(bd);
+> +	}
+> +
+> +	platform_set_drvdata(pdev, bd);
+> +
+> +	ret  = sysfs_create_group(&bd->dev.kobj, &sky81452_bl_attr_group);
+> +	if (IS_ERR_VALUE(ret)) {
+> +		dev_err(dev, "failed to create attribute. err=%d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static int sky81452_bl_remove(struct platform_device *pdev)
+> +{
+> +	const struct sky81452_bl_platform_data *pdata =
+> +						dev_get_platdata(&pdev->dev);
+> +	struct backlight_device *bd = platform_get_drvdata(pdev);
+> +
+> +	sysfs_remove_group(&bd->dev.kobj, &sky81452_bl_attr_group);
+> +
+> +	bd->props.power = FB_BLANK_UNBLANK;
+> +	bd->props.brightness = 0;
+> +	backlight_update_status(bd);
+> +
+> +	if (gpio_is_valid(pdata->gpio_enable))
+> +		gpio_set_value_cansleep(pdata->gpio_enable, 0);
+> +
+> +	return 0;
+> +}
+> +
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id sky81452_bl_of_match[] = {
+> +	{ .compatible = "skyworks,sky81452-backlight", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, sky81452_bl_of_match);
+> +#endif
+> +
+> +static struct platform_driver sky81452_bl_driver = {
+> +	.driver = {
+> +		.name = "sky81452-backlight",
+> +		.of_match_table = of_match_ptr(sky81452_bl_of_match),
+> +	},
+> +	.probe = sky81452_bl_probe,
+> +	.remove = sky81452_bl_remove,
+> +};
+> +
+> +module_platform_driver(sky81452_bl_driver);
+> +
+> +MODULE_DESCRIPTION("Skyworks SKY81452 backlight driver");
+> +MODULE_AUTHOR("Gyungoh Yoo <jack.yoo@skyworksinc.com>");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/include/linux/platform_data/sky81452-backlight.h b/include/linux/platform_data/sky81452-
+> backlight.h
+> new file mode 100644
+> index 0000000..1231e9b
+> --- /dev/null
+> +++ b/include/linux/platform_data/sky81452-backlight.h
+> @@ -0,0 +1,46 @@
+> +/*
+> + * sky81452.h	SKY81452 backlight driver
+> + *
+> + * Copyright 2014 Skyworks Solutions Inc.
+> + * Author : Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2
+> + * as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but
+> + * WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along
+> + * with this program; if not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#ifndef _SKY81452_BACKLIGHT_H
+> +#define _SKY81452_BACKLIGHT_H
+> +
+> +/**
+> + * struct sky81452_platform_data
+> + * @name:	backlight driver name.
+> +		If it is not defined, default name is lcd-backlight.
+> + * @gpio_enable:GPIO number which control EN pin
+> + * @enable:	Enable mask for current sink channel 1, 2, 3, 4, 5 and 6.
+> + * @ignore_pwm:	true if DPWMI should be ignored.
+> + * @dpwm_mode:	true is DPWM dimming mode, otherwise Analog dimming mode.
+> + * @phase_shift:true is phase shift mode.
+> + * @short_detecion_threshold:	It should be one of 4, 5, 6 and 7V.
+> + * @boost_current_limit:	It should be one of 2300, 2750mA.
+> + */
+> +struct sky81452_bl_platform_data {
+> +	const char *name;
+> +	int gpio_enable;
+> +	unsigned int enable;
+> +	bool ignore_pwm;
+> +	bool dpwm_mode;
+> +	bool phase_shift;
+> +	unsigned int short_detection_threshold;
+> +	unsigned int boost_current_limit;
+> +};
+> +
+> +#endif
 > --
 > 1.9.1
 
