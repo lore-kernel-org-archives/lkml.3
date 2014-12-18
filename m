@@ -1,119 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751901AbaLRLBE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:01:04 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:40534 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084AbaLRLBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:01:01 -0500
-Date: Thu, 18 Dec 2014 09:00:53 -0200
-From: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-To: Chunyan Zhang <zhang.chunyan@linaro.org>
-Cc: Arnd Bergmann <arnd@linaro.org>, david@hardeman.nu,
-        uli-lirc@uli-eckhardt.de, hans.verkuil@cisco.com, julia.lawall@lip6.fr,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>, joe@perches.com,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Lyra Zhang <zhang.lyra@gmail.com>
-Subject: Re: [PATCH] media: rc: Replace timeval with ktime_t in imon.c
-Message-ID: <20141218090053.68a0aad6@recife.lan>
-In-Reply-To: <CAG2=9p9eL6kx8AfrLMw3Ct+eQcsQq5KJt=TkJ8ySmaWsWOmQ5A@mail.gmail.com>
-References: <1418873833-5084-1-git-send-email-zhang.chunyan@linaro.org>
-	<1685288.Gd2P1eSoIW@wuerfel>
-	<CAG2=9p9eL6kx8AfrLMw3Ct+eQcsQq5KJt=TkJ8ySmaWsWOmQ5A@mail.gmail.com>
-Organization: Samsung
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	id S1751935AbaLRLCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:02:34 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:59086 "EHLO
+	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaLRLCd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 06:02:33 -0500
+From: Aleksey Makarov <aleksey.makarov@auriga.com>
+To: <linux-mips@linux-mips.org>
+CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH] MIPS: Remove unneeded #ifdef __KERNEL__ from asm/processor.h
+Date: Thu, 18 Dec 2014 13:59:53 +0300
+Message-ID: <1418900405-18900-1-git-send-email-aleksey.makarov@auriga.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [80.240.102.213]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 18 Dec 2014 17:38:14 +0800
-Chunyan Zhang <zhang.chunyan@linaro.org> escreveu:
+From: David Daney <david.daney@cavium.com>
 
-> On Thu, Dec 18, 2014 at 3:50 PM, Arnd Bergmann <arnd@linaro.org> wrote:
-> > On Thursday 18 December 2014 11:37:13 Chunyan Zhang wrote:
-> >> This patch changes the 32-bit time type (timeval) to the 64-bit one
-> >> (ktime_t), since 32-bit time types will break in the year 2038.
-> >>
-> >> I use ktime_t instead of all uses of timeval in imon.c
-> >>
-> >> This patch also changes do_gettimeofday() to ktime_get() accordingly,
-> >> since ktime_get returns a ktime_t, but do_gettimeofday returns a
-> >> struct timeval, and the other reason is that ktime_get() uses
-> >> the monotonic clock.
-> >>
-> >> This patch use a new function which is provided by another patch listed below
-> >> to get the millisecond time difference.
-> >
-> > The patch looks great. Just a few small details that could still be
-> > improved:
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
+---
+ arch/mips/include/asm/processor.h | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Yes, patch looks OK. After addressing the bits pointed by Arnd:
+diff --git a/arch/mips/include/asm/processor.h b/arch/mips/include/asm/processor.h
+index f1df4cb..6c10e94 100644
+--- a/arch/mips/include/asm/processor.h
++++ b/arch/mips/include/asm/processor.h
+@@ -54,9 +54,7 @@ extern unsigned int vced_count, vcei_count;
+ #define TASK_SIZE	0x7fff8000UL
+ #endif
+ 
+-#ifdef __KERNEL__
+ #define STACK_TOP_MAX	TASK_SIZE
+-#endif
+ 
+ #define TASK_IS_32BIT_ADDR 1
+ 
+@@ -73,11 +71,7 @@ extern unsigned int vced_count, vcei_count;
+ #define TASK_SIZE32	0x7fff8000UL
+ #define TASK_SIZE64	0x10000000000UL
+ #define TASK_SIZE (test_thread_flag(TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
+-
+-#ifdef __KERNEL__
+ #define STACK_TOP_MAX	TASK_SIZE64
+-#endif
+-
+ 
+ #define TASK_SIZE_OF(tsk)						\
+ 	(test_tsk_thread_flag(tsk, TIF_32BIT_ADDR) ? TASK_SIZE32 : TASK_SIZE64)
+-- 
+2.1.3
 
-Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-
-Feel free to merge via y2038 tree.
-
-> >
-> >> http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
-> >>
-> >> Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
-> >
-> > In general, when you give a mailing list link, use the 'Link' tag
-> > under your Signed-off-by line, like
-> >
-> > Link: http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
-> >
-> > It's not used much yet, but getting more popular and seems useful to me.
-> >
-> > In this particular case, when you have patches that depend on one
-> > another, you can make do it even better by sending all three patches
-> > as a series with a [PATCH 0/3] cover letter.
-> >
-> OK, I'll send a patch-set including these three patches
-> 
-> > If the media maintainers can provide an Ack for this patch, I would
-> > suggest to queue it up in the y2038 branch together with your first
-> > patch that it depends on.
-> >
-> >> @@ -1191,16 +1168,16 @@ static inline int tv2int(const struct timeval *a, const struct timeval *b)
-> >>   */
-> >>  static int stabilize(int a, int b, u16 timeout, u16 threshold)
-> >>  {
-> >> -     struct timeval ct;
-> >> -     static struct timeval prev_time = {0, 0};
-> >> -     static struct timeval hit_time  = {0, 0};
-> >> +     ktime_t ct;
-> >> +     static ktime_t prev_time = {0};
-> >> +     static ktime_t hit_time  = {0};
-> >>       static int x, y, prev_result, hits;
-> >>       int result = 0;
-> >
-> > The "= {0}" part here is redundant, since static variables are always
-> > initialized to zero. Normally, adding the explicit initializer can
-> > help readability, but in this case I would leave it out because it shows
-> > implementation details of ktime_t that are better hidden from drivers.
-> >
-> OK, I'll modify them soon
-> 
-> Thanks,
-> Chunyan
-> 
-> >> @@ -1596,9 +1573,9 @@ static void imon_incoming_packet(struct imon_context *ictx,
-> >>       int i;
-> >>       u64 scancode;
-> >>       int press_type = 0;
-> >> -     int msec;
-> >> -     struct timeval t;
-> >> -     static struct timeval prev_time = { 0, 0 };
-> >> +     long msec;
-> >> +     ktime_t t;
-> >> +     static ktime_t prev_time = {0};
-> >>       u8 ktype;
-> >
-> > Same thing here of course.
-> >
-> >         Arnd
