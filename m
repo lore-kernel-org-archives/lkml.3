@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaLRGSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:18:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36072 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751113AbaLRGSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:18:22 -0500
-Message-ID: <549271A9.5040701@ti.com>
-Date: Thu, 18 Dec 2014 11:48:17 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, <linus.walleij@linaro.org>, <gnurou@gmail.com>,
-        <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <nsekhar@ti.com>
-CC: <linux-omap@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        Benoit Parrot <bparrot@ti.com>
-Subject: Re: [PATCH] gpio: pcf857x: restore the initial line state of all
- pcf lines
-References: <1418371601-22658-1-git-send-email-kishon@ti.com> <548F498F.7050202@ti.com>
-In-Reply-To: <548F498F.7050202@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	id S1752006AbaLRGU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:20:58 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:50609 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705AbaLRGU4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 01:20:56 -0500
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: dirk.j.brandewie@intel.com, kristen@linux.intel.com,
+        viresh.kumar@linaro.org, rjw@rjwysocki.net
+Cc: linda.knippers@hp.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ethan.kernel@gmail.com,
+        Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH V2] cpufreq: fix a NULL pointer dereference triggered by _PPC changed notification
+Date: Thu, 18 Dec 2014 15:20:38 +0900
+Message-Id: <1418883638-26906-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If _PPC changed notification happens before governor was initiated while kernel
+is booting, a NULL pointer dereference will be triggered:
 
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+ IP: [<ffffffff81470453>] __cpufreq_governor+0x23/0x1e0
+ PGD 0
+ Oops: 0000 [#1] SMP
+ ... ...
+ RIP: 0010:[<ffffffff81470453>]  [<ffffffff81470453>]
+ __cpufreq_governor+0x23/0x1e0
+ RSP: 0018:ffff881fcfbcfbb8  EFLAGS: 00010286
+ RAX: 0000000000000000 RBX: ffff881fd11b3980 RCX: ffff88407fc20000
+ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff881fd11b3980
+ RBP: ffff881fcfbcfbd8 R08: 0000000000000000 R09: 000000000000000f
+ R10: ffffffff818068d0 R11: 0000000000000043 R12: 0000000000000004
+ R13: 0000000000000000 R14: ffffffff8196cae0 R15: 0000000000000000
+ FS:  0000000000000000(0000) GS:ffff881fffc00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+ CR2: 0000000000000030 CR3: 00000000018ae000 CR4: 00000000000407f0
+ DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+ DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+ Process kworker/0:3 (pid: 750, threadinfo ffff881fcfbce000, task
+ ffff881fcf556400)
+ Stack:
+  ffff881fffc17d00 ffff881fcfbcfc18 ffff881fd11b3980 0000000000000000
+  ffff881fcfbcfc08 ffffffff81470d08 ffff881fd11b3980 0000000000000007
+  ffff881fcfbcfc18 ffff881fffc17d00 ffff881fcfbcfd28 ffffffff81472e9a
+ Call Trace:
+  [<ffffffff81470d08>] __cpufreq_set_policy+0x1b8/0x2e0
+  [<ffffffff81472e9a>] cpufreq_update_policy+0xca/0x150
+  [<ffffffff81472f20>] ? cpufreq_update_policy+0x150/0x150
+  [<ffffffff81324a96>] acpi_processor_ppc_has_changed+0x71/0x7b
+  [<ffffffff81320bcd>] acpi_processor_notify+0x55/0x115
+  [<ffffffff812f9c29>] acpi_device_notify+0x19/0x1b
+  [<ffffffff813084ca>] acpi_ev_notify_dispatch+0x41/0x5f
+  [<ffffffff812f64a4>] acpi_os_execute_deferred+0x27/0x34
 
-On Tuesday 16 December 2014 02:20 AM, Nishanth Menon wrote:
-> On 12/12/2014 02:06 AM, Kishon Vijay Abraham I wrote:
->> The reset values for all the PCF lines are high and hence on shutdown
->> we should drive all the lines high in order to bring it to the reset state.
->>
->> This is actually required since pcf doesn't have a reset line and even after
->> warm reset (by invoking "reboot" in prompt) the pcf lines maintains it's
->> previous programmed state. This becomes a problem if the boards are designed
->> to work with the default initial state.
->>
->> DRA7XX_evm uses PCF8575 and one of the PCF output lines feeds to MMC/SD and
->> this line should be driven high in order for the MMC/SD to be detected.
->> This line is modelled as regulator and the hsmmc driver takes care of enabling
->> and disabling it. In the case of 'reboot', during shutdown path as part of it's
->> cleanup process the hsmmc driver disables this regulator. This makes MMC boot
->> not functional.
->>
->> Fixed it by driving high all the pcf lines.
->>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  drivers/gpio/gpio-pcf857x.c |    9 +++++++++
->>  1 file changed, 9 insertions(+)
->>
->> diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
->> index 236708a..00b15b2 100644
->> --- a/drivers/gpio/gpio-pcf857x.c
->> +++ b/drivers/gpio/gpio-pcf857x.c
->> @@ -448,6 +448,14 @@ static int pcf857x_remove(struct i2c_client *client)
->>  	return status;
->>  }
->>  
->> +static void pcf857x_shutdown(struct i2c_client *client)
->> +{
->> +	struct pcf857x *gpio = i2c_get_clientdata(client);
->> +
->> +	/* Drive all the I/O lines high */
->> +	gpio->write(gpio->client, BIT(gpio->chip.ngpio) - 1);
-> 
-> you might force a contention here - depending on System configuration.
-> example:
-> +-------+
-> |       |
-> |  U1   |         +------+      +-----------+
-> |       +--------->      |      |           |
-> +-------+         |      |      |           |
->                   | Switch<-----+    SoC    |
-> +-------+         |      |      |           |
-> |       |         |      |      |           |
-> | U2    <---------+--^---+      +-----------+
-> |       |            |
-> |       |            |
-> +-------+            |
->                   +--+--+
->                   |     |
->                   | PCF |
->                   |     |
->                   +-----+
-> 
-> At low, SoC pin is connected to U2 as drive. when reset to high, you
-> now have U1 driving to the same pin that SoC has, potentially
-> resulting in contention.
-> 
-> 
-> Unfortunately, at this level, you do not know what the state of the
-> system is, blindly forcing a pin level will potentially cause
-> contention risk depending on pin configuration.
+The root cause is a race conditon -- cpufreq core and acpi-cpufreq driver
+were initiated, but cpufreq_governor wasn't and _PPC changed notification
+happened, __cpufreq_governor() was called within acpi_os_execute_deferred
+kernel thread context.
 
-Assume we are doing a reset when the system is powered on, irrespective of the
-state of the system, we'll be forcing the pin level to the default state.
+To fix this panic issue, add pointer checking code in __cpufreq_governor()
+before pointer policy->governor is to be dereferenced.
 
-The same thing happens here so I don't think this would be a problem.
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ v2: correct comment style.
 
-Thanks
-Kishon
+ drivers/cpufreq/cpufreq.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 4473eba..b75735c 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -2021,6 +2021,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+ 	/* Don't start any governor operations if we are entering suspend */
+ 	if (cpufreq_suspended)
+ 		return 0;
++	/* Governor might not be initiated here if _PPC changed notification
++	 * happened, check it.
++	 */
++	if (!policy->governor)
++		return -EINVAL;
+ 
+ 	if (policy->governor->max_transition_latency &&
+ 	    policy->cpuinfo.transition_latency >
+-- 
+1.8.3.1
+
