@@ -1,119 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841AbaLRWz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:55:59 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:57961 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbaLRWz5 (ORCPT
+	id S1751837AbaLRXDj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 18:03:39 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60565 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbaLRXDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 17:55:57 -0500
-Date: Thu, 18 Dec 2014 14:55:53 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH v2] stable_kernel_rules: reorganize and update submission
- options
-Message-ID: <20141218225553.GC9759@ld-irv-0074>
-References: <1418886676-27036-1-git-send-email-computersforpeace@gmail.com>
+	Thu, 18 Dec 2014 18:03:37 -0500
+Date: Fri, 19 Dec 2014 00:02:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+cc: Peter Zijlstra <peterz@infradead.org>, corbet@lwn.net, mingo@redhat.com,
+        hpa@zytor.com, riel@redhat.com, akpm@linux-foundation.org,
+        rientjes@google.com, ak@linux.intel.com, mgorman@suse.de,
+        raistlin@linux.it, kirill.shutemov@linux.intel.com, atomlin@redhat.com,
+        avagin@openvz.org, gorcunov@openvz.org, serge.hallyn@canonical.com,
+        athorlton@sgi.com, oleg@redhat.com, vdavydov@parallels.com,
+        daeseok.youn@gmail.com, keescook@chromium.org,
+        yangds.fnst@cn.fujitsu.com, sbauer@eng.utah.edu, vishnu.ps@samsung.com,
+        axboe@fb.com, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH RESEND v4] sched/fair: Add advisory flag for borrowing
+ a timeslice
+In-Reply-To: <54935842.5020507@oracle.com>
+Message-ID: <alpine.DEB.2.11.1412182355020.17382@nanos>
+References: <1418928259-6311-1-git-send-email-khalid.aziz@oracle.com> <20141218222846.GH30905@twins.programming.kicks-ass.net> <54935842.5020507@oracle.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418886676-27036-1-git-send-email-computersforpeace@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current organization of Documentation/stable_kernel_rules.txt
-doesn't clearly differentiate the mutually exclusive options for
-submission to the -stable review process. As I understand it, patches
-are not actually required to be mailed directly to
-stable@vger.kernel.org, but the instructions do not make this clear.
+On Thu, 18 Dec 2014, Khalid Aziz wrote:
+> On 12/18/2014 03:28 PM, Peter Zijlstra wrote:
+> > On Thu, Dec 18, 2014 at 11:44:19AM -0700, Khalid Aziz wrote:
+> > > sched/fair: Add advisory flag for borrowing a timeslice
+> > 
+> > yuck hatred and much of that.
+> > 
+> > Also, you fail to explain why a kernel side spin futex-lock is not an
+> > option.
+> > 
+> 
+> I had explained that when this question came up in the last round of
+> discussions. The queuing problem I am trying to solve stems from userspace
+> locks. Java and databases implement their own userspace locks that do not use
+> futex. Solving this with futex will not help the primary users of this
+> solution.
 
-Also, there are some established processes that are not listed --
-specifically, what I call Option 2 below.
+If we can solve it with a proper designed and well thought out
+functionality in the kernel based on a futex like mechanism, why cant
+java and databases not switch over to that and simply use it?
 
-This patch updates and reorganizes a bit, to make things clearer.
+You need to modify user space anyway, so it does not matter whether
+you modify it in a sane or in a hacky way.
 
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
----
-v2: add some more items to Option 2 to suit Greg's liking
+But its simpler to hack crap into the scheduler than coming up with a
+proper solution to the problem, right?
 
- Documentation/stable_kernel_rules.txt | 44 +++++++++++++++++++++++++++--------
- 1 file changed, 34 insertions(+), 10 deletions(-)
+> Hope this helps.
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index aee73e78c7d4..02f8331edb8b 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -32,18 +32,42 @@ Procedure for submitting patches to the -stable tree:
-  - If the patch covers files in net/ or drivers/net please follow netdev stable
-    submission guidelines as described in
-    Documentation/networking/netdev-FAQ.txt
-- - Send the patch, after verifying that it follows the above rules, to
--   stable@vger.kernel.org.  You must note the upstream commit ID in the
--   changelog of your submission, as well as the kernel version you wish
--   it to be applied to.
-- - To have the patch automatically included in the stable tree, add the tag
-+ - Security patches should not be handled (solely) by the -stable review
-+   process but should follow the procedures in Documentation/SecurityBugs.
-+
-+For all other submissions, choose one of the following procedures:
-+
-+   --- Option 1 ---
-+
-+   To have the patch automatically included in the stable tree, add the tag
-      Cc: stable@vger.kernel.org
-    in the sign-off area. Once the patch is merged it will be applied to
-    the stable tree without anything else needing to be done by the author
-    or subsystem maintainer.
-- - If the patch requires other patches as prerequisites which can be
--   cherry-picked, then this can be specified in the following format in
--   the sign-off area:
-+
-+   --- Option 2 ---
-+
-+   After the patch has been merged to Linus' tree, send an email to
-+   stable@vger.kernel.org containing the subject of the patch, the commit ID,
-+   why you think it should be applied, and what kernel version you wish it to
-+   be applied to.
-+
-+   --- Option 3 ---
-+
-+   Send the patch, after verifying that it follows the above rules, to
-+   stable@vger.kernel.org.  You must note the upstream commit ID in the
-+   changelog of your submission, as well as the kernel version you wish
-+   it to be applied to.
-+
-+Option 1 is probably the easiest and most common. Options 2 and 3 are more
-+useful if the patch isn't deemed worthy at the time it is applied to a public
-+git tree (for instance, because it deserves more regression testing first).
-+Option 3 is especially useful if the patch needs some special handling to apply
-+to an older kernel (e.g., if API's have changed in the meantime).
-+
-+Additionally, some patches submitted via Option 1 may have additional patch
-+prerequisites which can be cherry-picked. This can be specified in the following
-+format in the sign-off area:
- 
-      Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
-      Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
-@@ -57,13 +81,13 @@ Procedure for submitting patches to the -stable tree:
-      git cherry-pick fd21073
-      git cherry-pick <this commit>
- 
-+Following the submission:
-+
-  - The sender will receive an ACK when the patch has been accepted into the
-    queue, or a NAK if the patch is rejected.  This response might take a few
-    days, according to the developer's schedules.
-  - If accepted, the patch will be added to the -stable queue, for review by
-    other developers and by the relevant subsystem maintainer.
-- - Security patches should not be sent to this alias, but instead to the
--   documented security@kernel.org address.
- 
- 
- Review cycle:
--- 
-1.9.1
+Not at all.
 
+Thanks,
+
+	tglx
