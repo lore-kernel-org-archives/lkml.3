@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbaLRFsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 00:48:50 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:54771 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaLRFsr (ORCPT
+	id S1752142AbaLRFs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 00:48:58 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:43840 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaLRFsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 00:48:47 -0500
+	Thu, 18 Dec 2014 00:48:55 -0500
 From: gyungoh@gmail.com
 X-Google-Original-From: jack.yoo@skyworksinc.com
 To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
@@ -23,9 +23,9 @@ Cc: akpm@linux-foundation.org, jic23@kernel.org,
         tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: [PATCH v10 5/6] devicetree: Add vendor prefix for Skyworks Solutions, Inc.
-Date: Thu, 18 Dec 2014 14:47:50 +0900
-Message-Id: <1418881671-3495-6-git-send-email-jack.yoo@skyworksinc.com>
+Subject: [PATCH v10 6/6] devicetree: i2c: Add SKY81452 to the Trivial Devices list
+Date: Thu, 18 Dec 2014 14:47:51 +0900
+Message-Id: <1418881671-3495-7-git-send-email-jack.yoo@skyworksinc.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418881671-3495-1-git-send-email-jack.yoo@skyworksinc.com>
 References: <1418881671-3495-1-git-send-email-jack.yoo@skyworksinc.com>
@@ -62,23 +62,23 @@ Changes v3:
 Nothing
 
 Changes v2:
-Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
 
- Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ Documentation/devicetree/bindings/i2c/trivial-devices.txt | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index a344ec2..68143f0 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -140,6 +140,7 @@ sii	Seiko Instruments, Inc.
- silergy	Silergy Corp.
- sirf	SiRF Technology, Inc.
- sitronix	Sitronix Technology Corporation
-+skyworks	Skyworks Solutions, Inc.
- smsc	Standard Microsystems Corporation
- snps	Synopsys, Inc.
- solidrun	SolidRun
+diff --git a/Documentation/devicetree/bindings/i2c/trivial-devices.txt b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+index fbde415..122fa1e 100644
+--- a/Documentation/devicetree/bindings/i2c/trivial-devices.txt
++++ b/Documentation/devicetree/bindings/i2c/trivial-devices.txt
+@@ -77,6 +77,7 @@ ramtron,24c64		i2c serial eeprom  (24cxx)
+ ricoh,rs5c372a		I2C bus SERIAL INTERFACE REAL-TIME CLOCK IC
+ samsung,24ad0xd1	S524AD0XF1 (128K/256K-bit Serial EEPROM for Low Power)
+ sii,s35390a		2-wire CMOS real-time clock
++skyworks,sky81452	Skyworks SKY81452: Six-Channel White LED Driver with Touch Panel Bias Supply
+ st-micro,24c256		i2c serial eeprom  (24cxx)
+ stm,m41t00		Serial Access TIMEKEEPER
+ stm,m41t62		Serial real-time clock (RTC) with alarm
 -- 
 1.9.1
 
