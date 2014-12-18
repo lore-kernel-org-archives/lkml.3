@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979AbaLRDkg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:40:36 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:36330 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615AbaLRDke (ORCPT
+	id S1752008AbaLRDlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:41:36 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46766 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615AbaLRDle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:40:34 -0500
-Message-ID: <54924CA4.7080403@huawei.com>
-Date: Thu, 18 Dec 2014 11:40:20 +0800
-From: Zefan Li <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 17 Dec 2014 22:41:34 -0500
+Message-ID: <54924CEA.3060808@gmail.com>
+Date: Thu, 18 Dec 2014 11:41:30 +0800
+From: Charles Chiou <ch1102chiou@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Stephane Eranian <eranian@gmail.com>,
-        Stephane Eranian <eranian@googlemail.com>,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        "Arnaldo Carvalho de Melo" <arnaldo.melo@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>
-Subject: Re: [perf tool] cgroup support broken on Debian?
-References: <alpine.DEB.2.11.1412151558550.15380@vincent-weaver-1.umelst.maine.edu> <20141215220150.GP9845@kernel.org> <CAMsRxfJ7EnA1DTXMK-UZtua8jLdn84C=Oc4yUkjqgL9tb5sTsQ@mail.gmail.com> <alpine.DEB.2.11.1412161211540.2154@vincent-weaver-1.umelst.maine.edu> <5490E856.6050904@huawei.com> <CAMsRxfL2GrA-1N7AZM42LC+aLBRB-pvtTXs1ovLine=Hv3PFag@mail.gmail.com> <5490F24C.7090202@huawei.com> <CABPqkBRnrEwcKgbfXroHm6q1+dho9h7MnfqamyL7SPxsrjnTqA@mail.gmail.com>
-In-Reply-To: <CABPqkBRnrEwcKgbfXroHm6q1+dho9h7MnfqamyL7SPxsrjnTqA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
+To: Christoph Hellwig <hch@infradead.org>
+CC: JBottomley@parallels.com, Oliver Neukum <oneukum@suse.de>,
+        ed.lin@promise.com, grace.chang@tw.promise.com,
+        linus.chen@tw.promise.com, victor.p@promise.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4 v3] scsi:stex.c Add reboot support
+References: <548FCD81.7030106@gmail.com> <20141217093027.GA13198@infradead.org>
+In-Reply-To: <20141217093027.GA13198@infradead.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> What's the problem here?
->>>>
->>>> none /sys/fs/cgroup tmpfs rw,relatime,size=4k,mode=755 0 0
->>>> systemd /sys/fs/cgroup/systemd cgroup rw,nosuid,nodev,noexec,relatime,perf_event,name=systemd 0 0
->>>>
->>>> cgroup is mounted in /sys/fs/cgroup/systemd, so you should pass '/' to the -G argument:
->>>>
->>> Is that the only mountpoint possible?
->>> The tool needs to detect a valid mount point to locate the named cgroup.
->>> That's assuming that if I create cgroup foo, then it appears under
->>> //sys/fs/cgroup/systemd/foo
->>>
->>
->> There can be only one cgroupfs mountpoint which has perf_event subsystem
->> attached to it.
->>
->> So for this setup:
->>
->> mount -t tmpfs /sys/fs/cgroup
->> mkdir /sys/fs/cgroup/memory
->> mkdir /sys/fs/cgroup/perf
->> mount -t cgroup -o memory memcg /sys/fs/cgroup/memory
->> mount -t cgroup -o perf_event perf /sys/fs/cgroup/perf
->>
->> The perf tool will locate the mountpoint as /sys/fs/cgroup/perf.
->>
-> You can mount the cgroup fs for perf_event multiple times. I
-> tried and it works, though it is useless.
-> 
 
-Yes, but they are the same.
 
-> Vince, I think the correct way to detect which entry is for perf_event
-> is to look for filesystem type cgroup and option perf_event. It cannot
-> be anything else. First match is good enough.
-> .
+On 12/17/2014 05:30 PM, Christoph Hellwig wrote:
+> I'm not going to add a new reboot notifier for a driver.  If you can
+> convince the driver model / PM people to pass this information to
+> ->shutdown we can add support for this difference, but not in this way.
+>
+> Can you send me a series that just adds the hardware support for now, so
+> we can dash this PM issue out separately?
+>
 
-+1
+Hi, we need to provide this information to our device.
+We face the HW signal issue on various motherboards.
+We experiment on many motherboards, and we observe that the restart 
+signal is different on different motherboard. If device misses the 
+signal, PCI loss or volume disappearance might happen.
+
+
+To make power management easier, driver provide the shutdown or reboot 
+information to the device.
+
+Sorry, I'm not understand what is meaning of "series".
+Could you specify what you what me to send you?
+Thank you
+
+BRS
+Charles
+
+
 
