@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbaLRWaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:30:11 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:51526 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608AbaLRWaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 17:30:07 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Murali Karicheri <m-karicheri2@ti.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        robh+dt@kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, will.deacon@arm.com
-Subject: Re: [RFC v1 PATCH 1/2] of/pci: add of_pci_dma_configure() update dma configuration
-Date: Thu, 18 Dec 2014 23:29:25 +0100
-Message-ID: <21520995.3ITgVmVTeV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1418940425-2017-2-git-send-email-m-karicheri2@ti.com>
-References: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com> <1418940425-2017-2-git-send-email-m-karicheri2@ti.com>
+	id S1752009AbaLRWaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 17:30:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7786 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253AbaLRWac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 17:30:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="501202273"
+Subject: [PATCH] genirq: fix symbol export for __irq_set_affinity
+To: tglx@linutronix.de
+From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Thu, 18 Dec 2014 14:30:31 -0800
+Message-ID: <20141218223031.23847.86103.stgit@jbrandeb-cp2.jf.intel.com>
+User-Agent: StGit/0.16-44-gd947d-dirty
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:tri+b03zHEGRGu1GZ1Zq7n7ZBem5xEKOtMYAypK9PFX7cZLHsnt
- vjnOZ9RbFcITLa3U3EtBa61a2P9DFbBeb8MRxaJOB7uqkbuGev/PuTevYA5n0VOof079sFv
- zthYT6wCN/F3yxpFhv+6BlfFdE1t9gSNAEK7EI5O2hN/XVwBWyKdNtXmE7iI0rcT30OoNKN
- D73rrAYdkqICLqcI9Xfug==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 December 2014 17:07:04 Murali Karicheri wrote:
-> Add of_pci_dma_configure() to allow updating the dma configuration
-> of the pci device using the configuration from the parent of
-> the root bridge device.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+The function __irq_set_affinity is referenced by interrupt.h
+with static inlines, but if you try to use one of the inlines
+in interrupt.h (for instance to call irq_set_affinity) then
+compile fails due to a missing symbol, when building modules.
 
-Much better!
+Enabling this function means that kernel drivers can include
+an initial affinity setting for the interrupt, instead of all
+interrupts starting out life on CPU0.  It seems to have just
+been an oversight that it was not included.
 
-There is one detail that we should get right from the start here,
-which is currently wrong in the platform device code, but I have so
-far not dared change it:
+This function and the helpers that call it from interrupt.h were
+already in the kernel API, but if used would then fail to compile
+due to the lack of an export even though already defined via extern.
 
-> +	/*
-> +	 * Set default dma-mask to 32 bit. Drivers are expected to setup
-> +	 * the correct supported dma_mask.
-> +	 */
-> +	dev->coherent_dma_mask = DMA_BIT_MASK(32);
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
 
-The 32-bit mask is indeed correct as the default for almost all cases,
-and we must not set it larger than DMA_BIT_MASK(32). There is one
-corner case though, which happens on some shmobile machines that have
-a 31-bit mask on the PCI host, and I think we should use that as the
-default.
+---
 
-> +	/*
-> +	 * Set it to coherent_dma_mask by default if the architecture
-> +	 * code has not set it.
-> +	 */
-> +	if (!dev->dma_mask)
-> +		dev->dma_mask = &dev->coherent_dma_mask;
-> +
-> +	ret = of_dma_get_range(parent_np, &dma_addr, &paddr, &size);
-> +	if (ret < 0) {
-> +		dma_addr = offset = 0;
-> +		size = dev->coherent_dma_mask;
+Note: The use of EXPORT_SYMBOL_GPL was only because the next
+      latest function added to this file (irq_set_affinity_hint)
+      also used it.
+---
+ kernel/irq/manage.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Can you check one thing here? I believe the size argument as returned
-from of_dma_get_range is inclusive (e.g. 0x100000000), while the coherent
-mask by definition is exlusive (e.g. 0xffffffff), so the size needs to
-be adapted here. I haven't checked all the code here though, so I may
-be wrong.
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 8069237..8c1a5ad 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -233,6 +233,7 @@ int __irq_set_affinity(unsigned int irq, const struct cpumask *mask, bool force)
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(__irq_set_affinity);
+ 
+ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+ {
 
-> +	} else {
-> +		offset = PFN_DOWN(paddr - dma_addr);
-> +		dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
-> +	}
-> +	dev->dma_pfn_offset = offset;
-> +
-> +	coherent = of_dma_is_coherent(parent_np);
-> +	dev_dbg(dev, "device is%sdma coherent\n",
-> +		coherent ? " " : " not ");
-> +
-> +	arch_setup_dma_ops(dev, dma_addr, size, NULL, coherent);
-
-Basically, I would use limit the size argument we pass into
-arch_setup_dma_ops to the minimum of 'size' and 'dma_mask' here,
-after converting into the same format. We should make sure we do the
-same thing for platform_device as well, so it might be better to do
-it inside of arch_setup_dma_ops instead.
-
-	Arnd
