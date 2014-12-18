@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832AbaLRWiY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:38:24 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:38231 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaLRWiX (ORCPT
+	id S1751718AbaLRWmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 17:42:13 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60490 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253AbaLRWmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 17:38:23 -0500
-Date: Thu, 18 Dec 2014 14:38:19 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Karthik Nayak <karthik.188@gmail.com>
-Cc: trivial@kernel.org, gregkh@linuxfoundation.org, anarey@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: rtl8192u: removed an unnecessary else statement
-Message-ID: <20141218223819.GB6742@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Karthik Nayak <karthik.188@gmail.com>, trivial@kernel.org,
-	gregkh@linuxfoundation.org, anarey@gmail.com,
-	linux-kernel@vger.kernel.org
-References: <1418894411-9787-1-git-send-email-karthik.188@gmail.com>
+	Thu, 18 Dec 2014 17:42:12 -0500
+Date: Thu, 18 Dec 2014 23:42:03 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jesse Brandeburg <jesse.brandeburg@intel.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] genirq: fix symbol export for __irq_set_affinity
+In-Reply-To: <20141218223031.23847.86103.stgit@jbrandeb-cp2.jf.intel.com>
+Message-ID: <alpine.DEB.2.11.1412182340300.17382@nanos>
+References: <20141218223031.23847.86103.stgit@jbrandeb-cp2.jf.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1418894411-9787-1-git-send-email-karthik.188@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Karthik,
+On Thu, 18 Dec 2014, Jesse Brandeburg wrote:
 
-On Thu, Dec 18, 2014 at 02:50:11PM +0530, Karthik Nayak wrote:
-> As per checkpatch warning, removed an unnecessary else statement
-> proceeding an if statement with a return.
+> The function __irq_set_affinity is referenced by interrupt.h
+> with static inlines, but if you try to use one of the inlines
+> in interrupt.h (for instance to call irq_set_affinity) then
+> compile fails due to a missing symbol, when building modules.
 > 
-> Signed-off-by: Karthik Nayak <karthik.188@gmail.com>
-> ---
->  drivers/staging/rtl8192u/r8192U_dm.c | 16 +++++++---------
->  1 file changed, 7 insertions(+), 9 deletions(-)
+> Enabling this function means that kernel drivers can include
+> an initial affinity setting for the interrupt, instead of all
+> interrupts starting out life on CPU0.  It seems to have just
+> been an oversight that it was not included.
 > 
-> diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
-> index 936565d..b3b508c 100644
-> --- a/drivers/staging/rtl8192u/r8192U_dm.c
-> +++ b/drivers/staging/rtl8192u/r8192U_dm.c
-> @@ -480,15 +480,13 @@ static void dm_bandwidth_autoswitch(struct net_device *dev)
->  
->  	if(priv->CurrentChannelBW == HT_CHANNEL_WIDTH_20 ||!priv->ieee80211->bandwidth_auto_switch.bautoswitch_enable){
->  		return;
-> -	}else{
-> -		if(priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false){//If send packets in 40 Mhz in 20/40
-> -			if(priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
-> -				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
-> -		}else{//in force send packets in 20 Mhz in 20/40
-> -			if(priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
-> -				priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
-> -
-> -		}
-> +	}
-> +	if(priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz == false){//If send packets in 40 Mhz in 20/40
-> +		if(priv->undecorated_smoothed_pwdb <= priv->ieee80211->bandwidth_auto_switch.threshold_40Mhzto20Mhz)
-> +			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = true;
-> +	}else{//in force send packets in 20 Mhz in 20/40
-> +		if(priv->undecorated_smoothed_pwdb >= priv->ieee80211->bandwidth_auto_switch.threshold_20Mhzto40Mhz)
-> +			priv->ieee80211->bandwidth_auto_switch.bforced_tx20Mhz = false;
->  	}
->  }	// dm_BandwidthAutoSwitch
->  
-[...]
+> This function and the helpers that call it from interrupt.h were
+> already in the kernel API, but if used would then fail to compile
+> due to the lack of an export even though already defined via extern.
 
-Wow, I don't think I have ever seen a file with so many checkpatch errors!
+And why needs this to be called from modules? Just because or is there
+a legitimate reason? IOW, you forgot to describe the actual usecase.
 
-Instead of only fixing one instance of one error I would fix all
-instances of that type of error.  Since the changes would be very
-similar it should still be easy to review.
+Thanks,
 
-You could even make a whole patch series with each patch fixing one type
-of error.  Although I would keep the series to just a few at first until
-you are sure you are doing everything right.
-
--- 
-- Jeremiah Mahler
+	tglx
