@@ -1,38 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751743AbaLRVU1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:20:27 -0500
-Received: from mail-la0-f52.google.com ([209.85.215.52]:42938 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbaLRVU0 (ORCPT
+	id S1751827AbaLRVV4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:21:56 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:56455 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaLRVVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:20:26 -0500
-Message-ID: <54934516.5070304@gmail.com>
-Date: Fri, 19 Dec 2014 00:20:22 +0300
-From: Dmitry Tunin <hanipouspilot@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 16:21:55 -0500
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Josh Boyer <jwboyer@fedoraproject.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-References: <20141218135705.GD4918@srcf.ucam.org> <5492DEE7.8010407@gmail.com> <20141218140930.GA6436@srcf.ucam.org> <5492E32E.2030602@gmail.com> <20141218142629.GA6924@srcf.ucam.org> <5492E5F9.2000504@gmail.com> <20141218143623.GA7335@srcf.ucam.org> <5492E753.7090505@gmail.com> <20141218144337.GA7613@srcf.ucam.org> <20141218145054.GA7745@srcf.ucam.org> <20141218200444.GA16724@srcf.ucam.org>
-In-Reply-To: <20141218200444.GA16724@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <2110446.Lbe6oKjkNj@wuerfel>
+References: <alpine.LFD.2.11.1412031424150.470@knanqh.ubzr>
+	<alpine.LFD.2.11.1412051251280.470@knanqh.ubzr>
+	<2110446.Lbe6oKjkNj@wuerfel>
+Date: Thu, 18 Dec 2014 13:21:54 -0800
+Message-ID: <CALAqxLVzOAeOj8Rdo9=owEQ8Jy=-J1jQbaPoqxZqYJBdbwFTwA@mail.gmail.com>
+Subject: Re: [PATCH] optimize ktime_divns for constant divisors
+From: John Stultz <john.stultz@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did already. It is not that simple.
-https://bugzilla.kernel.org/show_bug.cgi?id=70241#c86
-
-18.12.2014 23:04, Matthew Garrett пишет:
-> Ah, http://cgit.freedesktop.org/~jani/drm/log/?h=didl nominally has
-> support for doing the right thing here - any chance you can try that
-> tree?
+On Fri, Dec 5, 2014 at 1:03 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 05 December 2014 13:00:22 Nicolas Pitre wrote:
+>>
+>> BTW this is worth applying despite the on-going discussion with Arnd
+>> on a separate optimization.
 >
+> Agreed
+>
+>> On Wed, 3 Dec 2014, Nicolas Pitre wrote:
+>>
+>> > At least on ARM, do_div() is optimized to turn constant divisors into
+>> > an inline multiplication by the reciprocal value at compile time.
+>> > However this optimization is missed entirely whenever ktime_divns() is
+>> > used and the slow out-of-line division code is used all the time.
+>> >
+>> > Let ktime_divns() use do_div() inline whenever the divisor is constant
+>> > and small enough.  This will make things like ktime_to_us() and
+>> > ktime_to_ms() much faster.
+>> >
+>> > Signed-off-by: Nicolas Pitre <nico@linaro.org>
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+
+Ok, I've queued the original patch up for testing.
+
+thanks
+-john
