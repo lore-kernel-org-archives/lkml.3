@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899AbaLRBXf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:23:35 -0500
-Received: from mga09.intel.com ([134.134.136.24]:7544 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727AbaLRBXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:23:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="500580328"
-Message-ID: <1418865813.18250.25.camel@schen9-desk2.jf.intel.com>
-Subject: [PATCH] sched-rt: Reduce rq lock contention by eliminating locking
- of non-feasible target
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Suruchi Kadu <suruchi.a.kadu@intel.com>,
-        Doug Nelson <doug.nelson@intel.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Dec 2014 17:23:33 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751827AbaLRB0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:26:30 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:43019 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaLRB03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 20:26:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <52558289.TJpHJaW3sy@avalon>
+References: <20141215050920.533.20169.sendpatchset@w520>
+	<52558289.TJpHJaW3sy@avalon>
+Date: Thu, 18 Dec 2014 10:26:27 +0900
+Message-ID: <CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
+Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        SH-Linux <linux-sh@vger.kernel.org>,
+        "Simon Horman [Horms]" <horms@verge.net.au>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Laurent,
 
-This patch added checks that prevent futile attempts to move rt tasks
-to cpu with active tasks of equal or higher priority.  This reduces
-run queue lock contention and improves the performance of a well
-known OLTP benchmark by 0.7%.
+On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> Hi Magnus,
+>
+> Thank you for the patch.
+>
+> On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
+>> From: Magnus Damm <damm+renesas@opensource.se>
+>>
+>> Add r8a7779 specific support for IRLM bit configuration
+>> in the INTC-IRQPIN driver. Without this code we need
+>> special workaround code in arch/arm/mach-shmobile.
+>>
+>> The IRLM bit for the INTC hardware exists on various
+>> older SH-based SoCs and is used to select between two
+>> modes for the external interrupt pins IRQ0 to IRQ3:
+>>
+>> IRLM = 0: (default from reset on r8a7779)
+>> In this mode the pins IRQ0 to IRQ3 are used together
+>> to give a value between 0 and 15 to the SoC. External
+>> logic is required for masking. This mode is not
+>> supported by the INTC-IRQPIN driver.
+>>
+>> IRLM = 1: (needs this patch or configuration elsewhere)
+>> In this mode IRQ0 to IRQ3 operate as 4 individual
+>> external interrupt pins. In this mode the SMSC ethernet
+>> chip can be used via IRQ1 on r8a7779 Marzen. This mode
+>> is the only supported mode by the INTC-IRQPIN driver.
+>>
+>> For this patch to work the r8a7779 DTS needs to pass
+>> the ICR0 register as the last register bank.
+>>
+>> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
+>> ---
+>>
+>>  Same version as sent on December 3rd.
+>>
+>>  Written against renesas-devel-20141202-v3.18-rc7 which is
+>>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
+>>
+>>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.
+>> txt |    5 +
+>>  drivers/irqchip/irq-renesas-intc-irqpi                |   50 ++++++++--
+>>  2 files changed, 46 insertions(+), 9 deletions(-)
+>>
+>> ---
+>> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-ir
+>> qpin.txt +++
+>> work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-ir
+>> qpin.txt      2014-12-03 20:25:13.000000000 +0900 @@ -9,6 +9,11 @@ Required
+>> properties:
+>>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
+>>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
+>>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
+>> +
+>> +- reg: Base address and length of each register bank used by the external
+>> +  IRQ pins driven by the interrupt controller hardware module. The base
+>> +  addresses, length and number of required register banks varies with
+>> soctype.
+>
+> Ouch. Ouch. Multiple times. Very much :-/
+>
+> I suppose it's too late to fix the DT bindings ?
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- kernel/sched/rt.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+I don't think it is ever too late, but the question is just how urgent
+it is to get rid of the Marzen C board code. With the code in this
+patch queue up we can get rid of the board code. If someone decides to
+rework the INTC IRQPIN bits then we will have to live with the Marzen
+code for longer. And if we should do it right and describe the actual
+hardware, then perhaps we should consider the non-IRQ-pin interrupts
+included in INTC for some SoCs. So it rapidly gets more complex...
 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index ee15f5a..0e4382e 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1337,7 +1337,8 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
- 	     curr->prio <= p->prio)) {
- 		int target = find_lowest_rq(p);
- 
--		if (target != -1)
-+		if (target != -1 &&
-+		    p->prio < cpu_rq(target)->rt.highest_prio.curr)
- 			cpu = target;
- 	}
- 	rcu_read_unlock();
-@@ -1613,6 +1614,12 @@ static struct rq *find_lock_lowest_rq(struct task_struct *task, struct rq *rq)
- 			break;
- 
- 		lowest_rq = cpu_rq(cpu);
-+		
-+		if (lowest_rq->rt.highest_prio.curr <= task->prio) {
-+		/* target rq has tasks of equal or higher priority, try again */
-+			lowest_rq = NULL;
-+			continue;
-+		}
- 
- 		/* if the prio of this runqueue changed, try again */
- 		if (double_lock_balance(rq, lowest_rq)) {
--- 
-1.8.3.1
+Cheers,
 
-
+/ magnus
