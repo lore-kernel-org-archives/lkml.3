@@ -1,48 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbaLRQUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:20:21 -0500
-Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:54336 "EHLO
-	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751119AbaLRQUR (ORCPT
+	id S1751491AbaLRQUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:20:38 -0500
+Received: from resqmta-ch2-06v.sys.comcast.net ([69.252.207.38]:45622 "EHLO
+	resqmta-ch2-06v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751427AbaLRQUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:20:17 -0500
+	Thu, 18 Dec 2014 11:20:19 -0500
 From: Shuah Khan <shuahkh@osg.samsung.com>
 To: m.chehab@samsung.com, hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
         prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
         laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
 Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/3] au0828 vb2 conversion
-Date: Thu, 18 Dec 2014 09:20:09 -0700
-Message-Id: <cover.1418918401.git.shuahkh@osg.samsung.com>
+Subject: [PATCH v2 3/3] media: au0828 remove video and vbi buffer timeout work-around
+Date: Thu, 18 Dec 2014 09:20:12 -0700
+Message-Id: <7210fb24807adf46f76197a12dab11358f4dcd30.1418918402.git.shuahkh@osg.samsung.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
+References: <cover.1418918401.git.shuahkh@osg.samsung.com>
+In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
+References: <cover.1418918401.git.shuahkh@osg.samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series includes patch v2 of the au0828 vb2 conversion,
-removing video and vbi buffer timeout handling, and a patch to
-not set fmt.pix.priv.
+au0828 does video and vbi buffer timeout handling to prevent
+applications such as tvtime from hanging by ensuring that the
+video frames continue to be delivered even when the ITU-656
+input isn't receiving any data. This work-around is complex
+as it introduces set and clear tier code paths in start/stop
+streaming, and close interfaces. After the vb2 conversion, the
+timeout handling is introducing instability as well as feeding
+too many blank green screens, resulting in degraded video quality.
+Without this timeout handling, both xawtv, and tvtime are working
+well with good quality video.
 
-The following work is in progress and will be as separate patches:
-- removing users and using v4l2_fh_is_singular_file() instead.
-- Changing dynamic allocation of video device structs to static
-  which will reduce the overhead to allocate at register time and
-  deallocating at unregister.
+Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+---
+ drivers/media/usb/au0828/au0828-video.c | 103 +-------------------------------
+ drivers/media/usb/au0828/au0828.h       |   5 --
+ 2 files changed, 1 insertion(+), 107 deletions(-)
+
+diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
+index ef49b2e..3bdf132 100644
+--- a/drivers/media/usb/au0828/au0828-video.c
++++ b/drivers/media/usb/au0828/au0828-video.c
+@@ -593,15 +593,6 @@ static inline int au0828_isoc_copy(struct au0828_dev *dev, struct urb *urb)
+ 					outp = NULL;
+ 				else
+ 					outp = vb2_plane_vaddr(&buf->vb, 0);
+-
+-				/* As long as isoc traffic is arriving, keep
+-				   resetting the timer */
+-				if (dev->vid_timeout_running)
+-					mod_timer(&dev->vid_timeout,
+-						  jiffies + (HZ / 10));
+-				if (dev->vbi_timeout_running)
+-					mod_timer(&dev->vbi_timeout,
+-						  jiffies + (HZ / 10));
+ 			}
  
-Shuah Khan (3):
-  media: au0828 - convert to use videobuf2
-  media: au0828 change to not zero out fmt.pix.priv
-  media: au0828 remove video and vbi buffer timeout work-around
-
- drivers/media/usb/au0828/Kconfig        |   2 +-
- drivers/media/usb/au0828/au0828-cards.c |   2 +-
- drivers/media/usb/au0828/au0828-vbi.c   | 122 ++--
- drivers/media/usb/au0828/au0828-video.c | 994 +++++++++++---------------------
- drivers/media/usb/au0828/au0828.h       |  64 +-
- 5 files changed, 414 insertions(+), 770 deletions(-)
-
+ 			if (buf != NULL) {
+@@ -804,15 +795,9 @@ int au0828_start_analog_streaming(struct vb2_queue *vq, unsigned int count)
+ 			return rc;
+ 		}
+ 
+-		if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
++		if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+ 			v4l2_device_call_all(&dev->v4l2_dev, 0, video,
+ 						s_stream, 1);
+-			dev->vid_timeout_running = 1;
+-			mod_timer(&dev->vid_timeout, jiffies + (HZ / 10));
+-		} else if (vq->type == V4L2_BUF_TYPE_VBI_CAPTURE) {
+-			dev->vbi_timeout_running = 1;
+-			mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
+-		}
+ 	}
+ 	dev->streaming_users++;
+ 	return rc;
+@@ -851,9 +836,6 @@ static void au0828_stop_streaming(struct vb2_queue *vq)
+ 		(AUVI_INPUT(i).audio_setup)(dev, 0);
+ 	}
+ 	spin_unlock_irqrestore(&dev->slock, flags);
+-
+-	dev->vid_timeout_running = 0;
+-	del_timer_sync(&dev->vid_timeout);
+ }
+ 
+ void au0828_stop_vbi_streaming(struct vb2_queue *vq)
+@@ -882,9 +864,6 @@ void au0828_stop_vbi_streaming(struct vb2_queue *vq)
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+ 	}
+ 	spin_unlock_irqrestore(&dev->slock, flags);
+-
+-	dev->vbi_timeout_running = 0;
+-	del_timer_sync(&dev->vbi_timeout);
+ }
+ 
+ static struct vb2_ops au0828_video_qops = {
+@@ -917,56 +896,6 @@ void au0828_analog_unregister(struct au0828_dev *dev)
+ 	mutex_unlock(&au0828_sysfs_lock);
+ }
+ 
+-/* This function ensures that video frames continue to be delivered even if
+-   the ITU-656 input isn't receiving any data (thereby preventing applications
+-   such as tvtime from hanging) */
+-static void au0828_vid_buffer_timeout(unsigned long data)
+-{
+-	struct au0828_dev *dev = (struct au0828_dev *) data;
+-	struct au0828_dmaqueue *dma_q = &dev->vidq;
+-	struct au0828_buffer *buf;
+-	unsigned char *vid_data;
+-	unsigned long flags = 0;
+-
+-	spin_lock_irqsave(&dev->slock, flags);
+-
+-	buf = dev->isoc_ctl.buf;
+-	if (buf != NULL) {
+-		vid_data = vb2_plane_vaddr(&buf->vb, 0);
+-		memset(vid_data, 0x00, buf->length); /* Blank green frame */
+-		buffer_filled(dev, dma_q, buf);
+-	}
+-	get_next_buf(dma_q, &buf);
+-
+-	if (dev->vid_timeout_running == 1)
+-		mod_timer(&dev->vid_timeout, jiffies + (HZ / 10));
+-
+-	spin_unlock_irqrestore(&dev->slock, flags);
+-}
+-
+-static void au0828_vbi_buffer_timeout(unsigned long data)
+-{
+-	struct au0828_dev *dev = (struct au0828_dev *) data;
+-	struct au0828_dmaqueue *dma_q = &dev->vbiq;
+-	struct au0828_buffer *buf;
+-	unsigned char *vbi_data;
+-	unsigned long flags = 0;
+-
+-	spin_lock_irqsave(&dev->slock, flags);
+-
+-	buf = dev->isoc_ctl.vbi_buf;
+-	if (buf != NULL) {
+-		vbi_data = vb2_plane_vaddr(&buf->vb, 0);
+-		memset(vbi_data, 0x00, buf->length);
+-		vbi_buffer_filled(dev, dma_q, buf);
+-	}
+-	vbi_get_next_buf(dma_q, &buf);
+-
+-	if (dev->vbi_timeout_running == 1)
+-		mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
+-	spin_unlock_irqrestore(&dev->slock, flags);
+-}
+-
+ static int au0828_v4l2_open(struct file *filp)
+ {
+ 	struct video_device *vdev = video_devdata(filp);
+@@ -1016,7 +945,6 @@ static int au0828_v4l2_close(struct file *filp)
+ {
+ 	int ret;
+ 	struct au0828_dev *dev = video_drvdata(filp);
+-	struct video_device *vdev = video_devdata(filp);
+ 
+ 	dprintk(1,
+ 		"%s called std_set %d dev_state %d stream users %d users %d\n",
+@@ -1024,17 +952,6 @@ static int au0828_v4l2_close(struct file *filp)
+ 		dev->streaming_users, dev->users);
+ 
+ 	mutex_lock(&dev->lock);
+-	if (vdev->vfl_type == VFL_TYPE_GRABBER && dev->vid_timeout_running) {
+-		/* Cancel timeout thread in case they didn't call streamoff */
+-		dev->vid_timeout_running = 0;
+-		del_timer_sync(&dev->vid_timeout);
+-	} else if (vdev->vfl_type == VFL_TYPE_VBI &&
+-			dev->vbi_timeout_running) {
+-		/* Cancel timeout thread in case they didn't call streamoff */
+-		dev->vbi_timeout_running = 0;
+-		del_timer_sync(&dev->vbi_timeout);
+-	}
+-
+ 	if (dev->dev_state == DEV_DISCONNECTED)
+ 		goto end;
+ 
+@@ -1626,11 +1543,6 @@ void au0828_v4l2_suspend(struct au0828_dev *dev)
+ 			}
+ 		}
+ 	}
+-
+-	if (dev->vid_timeout_running)
+-		del_timer_sync(&dev->vid_timeout);
+-	if (dev->vbi_timeout_running)
+-		del_timer_sync(&dev->vbi_timeout);
+ }
+ 
+ void au0828_v4l2_resume(struct au0828_dev *dev)
+@@ -1644,11 +1556,6 @@ void au0828_v4l2_resume(struct au0828_dev *dev)
+ 		au0828_init_tuner(dev);
+ 	}
+ 
+-	if (dev->vid_timeout_running)
+-		mod_timer(&dev->vid_timeout, jiffies + (HZ / 10));
+-	if (dev->vbi_timeout_running)
+-		mod_timer(&dev->vbi_timeout, jiffies + (HZ / 10));
+-
+ 	/* If we were doing ac97 instead of i2s, it would go here...*/
+ 	au0828_i2s_init(dev);
+ 
+@@ -1817,14 +1724,6 @@ int au0828_analog_register(struct au0828_dev *dev,
+ 	INIT_LIST_HEAD(&dev->vidq.active);
+ 	INIT_LIST_HEAD(&dev->vbiq.active);
+ 
+-	dev->vid_timeout.function = au0828_vid_buffer_timeout;
+-	dev->vid_timeout.data = (unsigned long) dev;
+-	init_timer(&dev->vid_timeout);
+-
+-	dev->vbi_timeout.function = au0828_vbi_buffer_timeout;
+-	dev->vbi_timeout.data = (unsigned long) dev;
+-	init_timer(&dev->vbi_timeout);
+-
+ 	dev->width = NTSC_STD_W;
+ 	dev->height = NTSC_STD_H;
+ 	dev->field_size = dev->width * dev->height;
+diff --git a/drivers/media/usb/au0828/au0828.h b/drivers/media/usb/au0828/au0828.h
+index eb15187..9dac92e 100644
+--- a/drivers/media/usb/au0828/au0828.h
++++ b/drivers/media/usb/au0828/au0828.h
+@@ -221,11 +221,6 @@ struct au0828_dev {
+ 	unsigned int frame_count;
+ 	unsigned int vbi_frame_count;
+ 
+-	struct timer_list vid_timeout;
+-	int vid_timeout_running;
+-	struct timer_list vbi_timeout;
+-	int vbi_timeout_running;
+-
+ 	int users;
+ 	int streaming_users;
+ 
 -- 
 2.1.0
 
