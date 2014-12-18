@@ -1,53 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaLRPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:52:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42735 "EHLO mx2.suse.de"
+	id S1751396AbaLRPwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:52:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57069 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbaLRPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:52:07 -0500
-Date: Thu, 18 Dec 2014 16:52:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
-        Christoph Hellwig <hch@infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
-        x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv7 1/3] kernel: add TAINT_LIVEPATCH
-In-Reply-To: <5492BE01.7040705@hitachi.com>
-Message-ID: <alpine.LNX.2.00.1412181651260.1680@pobox.suse.cz>
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <1418752700-14649-2-git-send-email-sjenning@redhat.com> <5492BE01.7040705@hitachi.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1750968AbaLRPwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:52:54 -0500
+Message-ID: <5492F84E.7020706@ti.com>
+Date: Thu, 18 Dec 2014 17:52:46 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+CC: <t-kristo@ti.com>, <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1418917790-1791-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, Masami Hiramatsu wrote:
+Fixing up Paul's email id.
 
-> > This adds a new taint flag to indicate when the kernel or a kernel
-> > module has been live patched.  This will provide a clean indication in
-> > bug reports that live patching was used.
-> > 
-> > Additionally, if the crash occurs in a live patched function, the live
-> > patch module will appear beside the patched function in the backtrace.
-> > 
-> > Signed-off-by: Seth Jennings <sjenning@redhat.com>
+cheers,
+-roger
+
+On 18/12/14 17:49, Roger Quadros wrote:
+> There are quite a few hwmods that don't have sysconfig register and so
+> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
+> on those modules after the module is enabled.
 > 
-> Looks good to me.
+> This can potentially cause a bus access error if the module is accessed
+> before the module is ready.
 > 
-> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Get rid of the redundant _find_mpu_rt_port() check from the _wait_target_ready()
+> funcion for all the SoCs. The following PRCM register access that checks the
+> module ready state has nothing to do with module's SYSCONFIG or mpu_rt_port.
+> 
+> e.g. this fixes the below DCAN bus access error on AM437x-gp-evm.
+> 
+> [   16.672978] ------------[ cut here ]------------
+> [   16.677885] WARNING: CPU: 0 PID: 1580 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x234/0x35c()
+> [   16.687946] 44000000.ocp:L3 Custom Error: MASTER M2 (64-bit) TARGET L4_PER_0 (Read): Data Access in User mode during Functional access
+> [   16.700654] Modules linked in: xhci_hcd btwilink ti_vpfe dwc3 videobuf2_core ov2659 bluetooth v4l2_common videodev ti_am335x_adc kfifo_buf industrialio c_can_platform videobuf2_dma_contig media snd_soc_tlv320aic3x pixcir_i2c_ts c_can dc
+> [   16.731144] CPU: 0 PID: 1580 Comm: rpc.statd Not tainted 3.14.26-02561-gf733aa036398 #180
+> [   16.739747] Backtrace:
+> [   16.742336] [<c0011108>] (dump_backtrace) from [<c00112a4>] (show_stack+0x18/0x1c)
+> [   16.750285]  r6:00000093 r5:00000009 r4:eab5b8a8 r3:00000000
+> [   16.756252] [<c001128c>] (show_stack) from [<c05a4418>] (dump_stack+0x20/0x28)
+> [   16.763870] [<c05a43f8>] (dump_stack) from [<c0037120>] (warn_slowpath_common+0x6c/0x8c)
+> [   16.772408] [<c00370b4>] (warn_slowpath_common) from [<c00371e4>] (warn_slowpath_fmt+0x38/0x40)
+> [   16.781550]  r8:c05d1f90 r7:c0730844 r6:c0730448 r5:80080003 r4:ed0cd210
+> [   16.788626] [<c00371b0>] (warn_slowpath_fmt) from [<c027fa94>] (l3_interrupt_handler+0x234/0x35c)
+> [   16.797968]  r3:ed0cd480 r2:c0730508
+> [   16.801747] [<c027f860>] (l3_interrupt_handler) from [<c0063758>] (handle_irq_event_percpu+0x54/0x1bc)
+> [   16.811533]  r10:ed005600 r9:c084855b r8:0000002a r7:00000000 r6:00000000 r5:0000002a
+> [   16.819780]  r4:ed0e6d80
+> [   16.822453] [<c0063704>] (handle_irq_event_percpu) from [<c00638f0>] (handle_irq_event+0x30/0x40)
+> [   16.831789]  r10:eb2b6938 r9:eb2b6960 r8:bf011420 r7:fa240100 r6:00000000 r5:0000002a
+> [   16.840052]  r4:ed005600
+> [   16.842744] [<c00638c0>] (handle_irq_event) from [<c00661d8>] (handle_fasteoi_irq+0x74/0x128)
+> [   16.851702]  r4:ed005600 r3:00000000
+> [   16.855479] [<c0066164>] (handle_fasteoi_irq) from [<c0063068>] (generic_handle_irq+0x28/0x38)
+> [   16.864523]  r4:0000002a r3:c0066164
+> [   16.868294] [<c0063040>] (generic_handle_irq) from [<c000ef60>] (handle_IRQ+0x38/0x8c)
+> [   16.876612]  r4:c081c640 r3:00000202
+> [   16.880380] [<c000ef28>] (handle_IRQ) from [<c00084f0>] (gic_handle_irq+0x30/0x5c)
+> [   16.888328]  r6:eab5ba38 r5:c0804460 r4:fa24010c r3:00000100
+> [   16.894303] [<c00084c0>] (gic_handle_irq) from [<c05a8d80>] (__irq_svc+0x40/0x50)
+> [   16.902193] Exception stack(0xeab5ba38 to 0xeab5ba80)
+> [   16.907499] ba20:                                                       00000000 00000006
+> [   16.916108] ba40: fa1d0000 fa1d0008 ed3d3000 eab5bab4 ed3d3460 c0842af4 bf011420 eb2b6960
+> [   16.924716] ba60: eb2b6938 eab5ba8c eab5ba90 eab5ba80 bf035220 bf07702c 600f0013 ffffffff
+> [   16.933317]  r7:eab5ba6c r6:ffffffff r5:600f0013 r4:bf07702c
+> [   16.939317] [<bf077000>] (c_can_plat_read_reg_aligned_to_16bit [c_can_platform]) from [<bf035220>] (c_can_get_berr_counter+0x38/0x64 [c_can])
+> [   16.952696] [<bf0351e8>] (c_can_get_berr_counter [c_can]) from [<bf010294>] (can_fill_info+0x124/0x15c [can_dev])
+> [   16.963480]  r5:ec8c9740 r4:ed3d3000
+> [   16.967253] [<bf010170>] (can_fill_info [can_dev]) from [<c0502fa8>] (rtnl_fill_ifinfo+0x58c/0x8fc)
+> [   16.976749]  r6:ec8c9740 r5:ed3d3000 r4:eb2b6780
+> [   16.981613] [<c0502a1c>] (rtnl_fill_ifinfo) from [<c0503408>] (rtnl_dump_ifinfo+0xf0/0x1dc)
+> [   16.990401]  r10:ec8c9740 r9:00000000 r8:00000000 r7:00000000 r6:ebd4d1b4 r5:ed3d3000
+> [   16.998671]  r4:00000000
+> [   17.001342] [<c0503318>] (rtnl_dump_ifinfo) from [<c050e6e4>] (netlink_dump+0xa8/0x1e0)
+> [   17.009772]  r10:00000000 r9:00000000 r8:c0503318 r7:ebf3e6c0 r6:ebd4d1b4 r5:ec8c9740
+> [   17.018050]  r4:ebd4d000
+> [   17.020714] [<c050e63c>] (netlink_dump) from [<c050ec10>] (__netlink_dump_start+0x104/0x154)
+> [   17.029591]  r6:eab5bd34 r5:ec8c9980 r4:ebd4d000
+> [   17.034454] [<c050eb0c>] (__netlink_dump_start) from [<c0505604>] (rtnetlink_rcv_msg+0x110/0x1f4)
+> [   17.043778]  r7:00000000 r6:ec8c9980 r5:00000f40 r4:ebf3e6c0
+> [   17.049743] [<c05054f4>] (rtnetlink_rcv_msg) from [<c05108e8>] (netlink_rcv_skb+0xb4/0xc8)
+> [   17.058449]  r8:eab5bdac r7:ec8c9980 r6:c05054f4 r5:ec8c9980 r4:ebf3e6c0
+> [   17.065534] [<c0510834>] (netlink_rcv_skb) from [<c0504134>] (rtnetlink_rcv+0x24/0x2c)
+> [   17.073854]  r6:ebd4d000 r5:00000014 r4:ec8c9980 r3:c0504110
+> [   17.079846] [<c0504110>] (rtnetlink_rcv) from [<c05102ac>] (netlink_unicast+0x180/0x1ec)
+> [   17.088363]  r4:ed0c6800 r3:c0504110
+> [   17.092113] [<c051012c>] (netlink_unicast) from [<c0510670>] (netlink_sendmsg+0x2ac/0x380)
+> [   17.100813]  r10:00000000 r8:00000008 r7:ec8c9980 r6:ebd4d000 r5:eab5be70 r4:eab5bee4
+> [   17.109083] [<c05103c4>] (netlink_sendmsg) from [<c04dfdb4>] (sock_sendmsg+0x90/0xb0)
+> [   17.117305]  r10:00000000 r9:eab5a000 r8:becdda3c r7:0000000c r6:ea978400 r5:eab5be70
+> [   17.125563]  r4:c05103c4
+> [   17.128225] [<c04dfd24>] (sock_sendmsg) from [<c04e1c28>] (SyS_sendto+0xb8/0xdc)
+> [   17.136001]  r6:becdda5c r5:00000014 r4:ecd37040
+> [   17.140876] [<c04e1b70>] (SyS_sendto) from [<c000e680>] (ret_fast_syscall+0x0/0x30)
+> [   17.148923]  r10:00000000 r8:c000e804 r7:00000122 r6:becdda5c r5:0000000c r4:becdda5c
+> [   17.157169] ---[ end trace 2b71e15b38f58bad ]---
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  arch/arm/mach-omap2/omap_hwmod.c | 12 ------------
+>  1 file changed, 12 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+> index 716247e..3afcc65 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+> @@ -2943,9 +2943,6 @@ static int _omap2xxx_wait_target_ready(struct omap_hwmod *oh)
+>  	if (oh->flags & HWMOD_NO_IDLEST)
+>  		return 0;
+>  
+> -	if (!_find_mpu_rt_port(oh))
+> -		return 0;
+> -
+>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
+>  
+>  	return omap2xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
+> @@ -2970,9 +2967,6 @@ static int _omap3xxx_wait_target_ready(struct omap_hwmod *oh)
+>  	if (oh->flags & HWMOD_NO_IDLEST)
+>  		return 0;
+>  
+> -	if (!_find_mpu_rt_port(oh))
+> -		return 0;
+> -
+>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
+>  
+>  	return omap3xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
+> @@ -2997,9 +2991,6 @@ static int _omap4_wait_target_ready(struct omap_hwmod *oh)
+>  	if (oh->flags & HWMOD_NO_IDLEST || !oh->clkdm)
+>  		return 0;
+>  
+> -	if (!_find_mpu_rt_port(oh))
+> -		return 0;
+> -
+>  	/* XXX check module SIDLEMODE, hardreset status */
+>  
+>  	return omap4_cminst_wait_module_ready(oh->clkdm->prcm_partition,
+> @@ -3025,9 +3016,6 @@ static int _am33xx_wait_target_ready(struct omap_hwmod *oh)
+>  	if (oh->flags & HWMOD_NO_IDLEST)
+>  		return 0;
+>  
+> -	if (!_find_mpu_rt_port(oh))
+> -		return 0;
+> -
+>  	/* XXX check module SIDLEMODE, hardreset status */
+>  
+>  	return am33xx_cm_wait_module_ready(oh->clkdm->cm_inst,
+> 
 
-Masami, just for completness -- is this just for 1/3, or for the whole 
-series? (so that I get it right once I am applying the patches to git 
-tree).
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
