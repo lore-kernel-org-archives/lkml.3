@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbaLRJIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:08:16 -0500
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:51739 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaLRJIL (ORCPT
+	id S1751764AbaLRJN1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:13:27 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:64922 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbaLRJNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:08:11 -0500
-Date: Thu, 18 Dec 2014 09:08:05 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Griffin <peter.griffin@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        a.zummo@towertech.it, kernel@stlinux.com, rtc-linux@googlegroups.com,
-        devicetree@vger.kernel.org, wim@iguana.be, arnd@arndb.de,
-        linux@roeck-us.net, linux-watchdog@vger.kernel.org
-Subject: Re: [STLinux Kernel] [PATCH 6/8] watchdog: st_wdt: Add new driver
- for ST's LPC Watchdog
-Message-ID: <20141218090805.GV13885@x1>
-References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
- <1418834727-1602-7-git-send-email-lee.jones@linaro.org>
- <20141218084314.GA25901@griffinp-ThinkPad-X1-Carbon-2nd>
+	Thu, 18 Dec 2014 04:13:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Eddie Huang <eddie.huang@mediatek.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Alan Cox <alan@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Sascha Hauer <kernel@pengutronix.de>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        YH Chen =?utf-8?B?KOmZs+aYseixqik=?= <yh.chen@mediatek.com>
+Subject: Re: [PATCH 1/2] tty: serial: 8250_mtk: Add earlycon
+Date: Thu, 18 Dec 2014 10:12:33 +0100
+Message-ID: <1822504.xkcBG8sz41@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CABuKBe+dki5ab8PexMhq36AJFCBk_dBifV86F8FKsF_es1cmJA@mail.gmail.com>
+References: <1418891601-53769-1-git-send-email-eddie.huang@mediatek.com> <1418891601-53769-2-git-send-email-eddie.huang@mediatek.com> <CABuKBe+dki5ab8PexMhq36AJFCBk_dBifV86F8FKsF_es1cmJA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20141218084314.GA25901@griffinp-ThinkPad-X1-Carbon-2nd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:DOiE1OoYx1vxN1BfsrLyAZHLmxL6NzD5TyhGXmNlF7bhtSrXlIE
+ 1c1SnVfSbZrw13nbTRnZScxWf8xx9bA4PJT8qmakTh2z0hgHLhV2RdrnOVz8Qu5rP0z+oSL
+ 68Y/qLcHqwv6FHLlvfdXuZVFv1rgua4YUxxSjIMCEHB+u79WXSxg9Mzjd6Y1Yc1fp6j2/dE
+ hLOmjUfmH5g7ruoNSjpuA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, Peter Griffin wrote:
-
-> Hi Lee,
+On Thursday 18 December 2014 09:48:31 Matthias Brugger wrote:
+> > +static void __init mtk8250_serial_putc(struct uart_port *port, int c)
+> > +{
+> > +       while ((readl(port->membase + (UART_LSR << 2)) & BOTH_EMPTY) !=
+> > +               BOTH_EMPTY)
+> > +               ;
 > 
-> On Wed, 17 Dec 2014, Lee Jones wrote:
+> Please delete newline before the semicolon.
 > 
-> > Signed-off-by: David Paris <david.paris@st.com>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  drivers/watchdog/Kconfig  |  13 ++
-> >  drivers/watchdog/Makefile |   1 +
-> >  drivers/watchdog/st_wdt.c | 323 ++++++++++++++++++++++++++++++++++++++++++++++
-> 
-> You don't have a patch which adds the new files created in this series into
-> the STI section of the MAINTAINERS file?
 
-Very true.  I will supply one, thanks.
+No, that newline is best kept in there for clarity. An even better way
+to write this would be using cpu_relax():
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	while ((readl(port->membase + (UART_LSR << 2)) & BOTH_EMPTY) != BOTH_EMPTY)
+		cpu_relax();
+
+which the kernel convention for doing busy-loops.
+
+	Arnd
