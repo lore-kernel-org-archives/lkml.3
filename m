@@ -1,216 +1,738 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751176AbaLRPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:31:09 -0500
-Received: from mga11.intel.com ([192.55.52.93]:4699 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750996AbaLRPbG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:31:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="430772537"
-From: "Varlese, Marco" <marco.varlese@intel.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH net-next v3 1/1] net: Support for switch port
- configuration
-Thread-Topic: [RFC PATCH net-next v3 1/1] net: Support for switch port
- configuration
-Thread-Index: AdAa1nB57LWo75b8QFWS6lkVHz7iAQ==
-Date: Thu, 18 Dec 2014 15:30:00 +0000
-Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751331AbaLRPbu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:31:50 -0500
+Received: from mail-bn1on0099.outbound.protection.outlook.com ([157.56.110.99]:52864
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751125AbaLRPbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:31:47 -0500
+Date: Thu, 18 Dec 2014 16:31:27 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
+To: <atull@opensource.altera.com>, <gregkh@linuxfoundation.org>,
+        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 4/6] staging: fpga manager: add driver for socfpga
+ fpga manager
+References: <1418835289-15752-1-git-send-email-atull@opensource.altera.com>
+ <1418835289-15752-5-git-send-email-atull@opensource.altera.com>
+In-Reply-To: <1418835289-15752-5-git-send-email-atull@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.000
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <6eecb422024845acaffe10e4c81faac9@BN1AFFO11FD047.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(164054003)(377454003)(51704005)(24454002)(189002)(479174004)(22564002)(64126003)(21056001)(20776003)(99396003)(47776003)(74316001)(120916001)(64706001)(65806001)(65956001)(4396001)(50466002)(46102003)(87936001)(86362001)(92566001)(6806004)(2201001)(575784001)(23746002)(50986999)(76176999)(54356999)(19580395003)(19580405001)(83506001)(107046002)(104016003)(92726002)(31966008)(15975445007)(77096005)(108616004)(2950100001)(106466001)(77156002)(62966003)(33646002)(65826006)(107986001)(2004002)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB006;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB006;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1AFFO11HUB006;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB006;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Varlese <marco.varlese@intel.com>
- 
-Switch hardware offers a list of attributes that are configurable on a per port
-basis.
-This patch provides a mechanism to configure switch ports by adding an NDO
-for setting specific values to specific attributes.
-There will be a separate patch that adds the "get" functionality via another
-NDO and another patch that extends iproute2 to call the two new NDOs.
+On 12/17/2014 05:54 PM, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Add driver to fpga manager framework to allow configuration
+> of FPGA in Altera SoCFPGA parts.
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+> v2: fpga_manager struct now contains struct device
+>     fpga_manager_register parameters now take device
+> 
+> v3: skip a version to align versions
+> 
+> v4: move to drivers/staging
+> 
+> v5: fix array_size.cocci warnings
+>     fix platform_no_drv_owner.cocci warnings
+>     Remove .owner = THIS_MODULE
+>     include asm/irq.h
+>     clean up list of includes
+>     use altera_fpga_reset for ops
+>     use enum fpga_mgr_states or u32 as needed
+>     use devm_request_irq
+>     check irq <= 0 instead of == NO_IRQ
+>     Use ARRAY_SIZE
+>     rename altera -> socfpga
+>     static const socfpga_fpga_ops
+>     header moved to linux/fpga/ folder
+>     remove ifdef'ed code
+>     use platform_get_resource and platform_get_irq
+>     move .probe and .remove lines adjacent
+>     use module_platform_driver
+>     use __maybe_unused
+>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
+>     fix "unsigned 'mode' is never < 0"
+> ---
+>  drivers/staging/fpga/Kconfig   |    5 +
+>  drivers/staging/fpga/Makefile  |    1 +
+>  drivers/staging/fpga/socfpga.c |  692 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 698 insertions(+)
+>  create mode 100644 drivers/staging/fpga/socfpga.c
+> 
+> diff --git a/drivers/staging/fpga/Kconfig b/drivers/staging/fpga/Kconfig
+> index 89ebafc..ce17342 100644
+> --- a/drivers/staging/fpga/Kconfig
+> +++ b/drivers/staging/fpga/Kconfig
+> @@ -19,6 +19,11 @@ config FPGA_MGR_SYSFS
+>  	help
+>  	  FPGA Manager SysFS interface.
+>  
+> +config FPGA_MGR_SOCFPGA
+> +	tristate "Altera SOCFPGA"
+> +	help
+> +	  FPGA manager driver support for Altera SOCFPGA.
+> +
+>  endif # FPGA
+>  
+>  endmenu
+> diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
+> index ff6c677..97f7751 100644
+> --- a/drivers/staging/fpga/Makefile
+> +++ b/drivers/staging/fpga/Makefile
+> @@ -8,3 +8,4 @@ fpga-mgr-core-y += fpga-mgr.o
+>  obj-$(CONFIG_FPGA)			+= fpga-mgr.o
+>  
+>  # FPGA Manager Drivers
+> +obj-$(CONFIG_FPGA_MGR_SOCFPGA)		+= socfpga.o
+> diff --git a/drivers/staging/fpga/socfpga.c b/drivers/staging/fpga/socfpga.c
+> new file mode 100644
+> index 0000000..ad9e99f
+> --- /dev/null
+> +++ b/drivers/staging/fpga/socfpga.c
+> @@ -0,0 +1,692 @@
+> +/*
+> + * FPGA Manager Driver for Altera SOCFPGA
+> + *
+> + *  Copyright (C) 2013-2014 Altera Corporation
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/completion.h>
+> +#include <linux/delay.h>
+> +#include <linux/fpga/fpga-mgr.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+> +#include <linux/pm.h>
+> +#include <linux/string.h>
+> +#include <linux/regulator/consumer.h>
+> +
+> +/* Register offsets */
+> +#define SOCFPGA_FPGMGR_STAT_OFST				0x0
+> +#define SOCFPGA_FPGMGR_CTL_OFST					0x4
+> +#define SOCFPGA_FPGMGR_DCLKCNT_OFST				0x8
+> +#define SOCFPGA_FPGMGR_DCLKSTAT_OFST				0xc
+> +#define SOCFPGA_FPGMGR_GPIO_INTEN_OFST				0x830
+> +#define SOCFPGA_FPGMGR_GPIO_INTMSK_OFST				0x834
+> +#define SOCFPGA_FPGMGR_GPIO_INTTYPE_LEVEL_OFST			0x838
+> +#define SOCFPGA_FPGMGR_GPIO_INT_POL_OFST			0x83c
+> +#define SOCFPGA_FPGMGR_GPIO_INTSTAT_OFST			0x840
+> +#define SOCFPGA_FPGMGR_GPIO_RAW_INTSTAT_OFST			0x844
+> +#define SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST			0x84c
+> +#define SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST			0x850
+> +
+> +/* Register bit defines */
+> +/* SOCFPGA_FPGMGR_STAT register mode field values */
+> +#define SOCFPGA_FPGMGR_STAT_POWER_UP				0x0 /*ramping*/
+> +#define SOCFPGA_FPGMGR_STAT_RESET				0x1
+> +#define SOCFPGA_FPGMGR_STAT_CFG					0x2
+> +#define SOCFPGA_FPGMGR_STAT_INIT				0x3
+> +#define SOCFPGA_FPGMGR_STAT_USER_MODE				0x4
+> +#define SOCFPGA_FPGMGR_STAT_UNKNOWN				0x5
+> +#define SOCFPGA_FPGMGR_STAT_STATE_MASK				0x7
+> +/* This is a flag value that doesn't really happen in this register field */
+> +#define SOCFPGA_FPGMGR_STAT_POWER_OFF				0x0
+> +
+> +#define MSEL_PP16_FAST_NOAES_NODC				0x0
+> +#define MSEL_PP16_FAST_AES_NODC					0x1
+> +#define MSEL_PP16_FAST_AESOPT_DC				0x2
+> +#define MSEL_PP16_SLOW_NOAES_NODC				0x4
+> +#define MSEL_PP16_SLOW_AES_NODC					0x5
+> +#define MSEL_PP16_SLOW_AESOPT_DC				0x6
+> +#define MSEL_PP32_FAST_NOAES_NODC				0x8
+> +#define MSEL_PP32_FAST_AES_NODC					0x9
+> +#define MSEL_PP32_FAST_AESOPT_DC				0xa
+> +#define MSEL_PP32_SLOW_NOAES_NODC				0xc
+> +#define MSEL_PP32_SLOW_AES_NODC					0xd
+> +#define MSEL_PP32_SLOW_AESOPT_DC				0xe
+> +#define SOCFPGA_FPGMGR_STAT_MSEL_MASK				0x000000f8
+> +#define SOCFPGA_FPGMGR_STAT_MSEL_SHIFT				3
+> +
+> +/* SOCFPGA_FPGMGR_CTL register */
+> +#define SOCFPGA_FPGMGR_CTL_EN					0x00000001
+> +#define SOCFPGA_FPGMGR_CTL_NCE					0x00000002
+> +#define SOCFPGA_FPGMGR_CTL_NCFGPULL				0x00000004
+> +
+> +#define CDRATIO_X1						0x00000000
+> +#define CDRATIO_X2						0x00000040
+> +#define CDRATIO_X4						0x00000080
+> +#define CDRATIO_X8						0x000000c0
+> +#define SOCFPGA_FPGMGR_CTL_CDRATIO_MASK				0x000000c0
+> +
+> +#define SOCFPGA_FPGMGR_CTL_AXICFGEN				0x00000100
+> +
+> +#define CFGWDTH_16						0x00000000
+> +#define CFGWDTH_32						0x00000200
+> +#define SOCFPGA_FPGMGR_CTL_CFGWDTH_MASK				0x00000200
+> +
+> +/* SOCFPGA_FPGMGR_DCLKSTAT register */
+> +#define SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE			0x1
+> +
+> +/* SOCFPGA_FPGMGR_GPIO_* registers share the same bit positions */
+> +#define SOCFPGA_FPGMGR_MON_NSTATUS				0x0001
+> +#define SOCFPGA_FPGMGR_MON_CONF_DONE				0x0002
+> +#define SOCFPGA_FPGMGR_MON_INIT_DONE				0x0004
+> +#define SOCFPGA_FPGMGR_MON_CRC_ERROR				0x0008
+> +#define SOCFPGA_FPGMGR_MON_CVP_CONF_DONE			0x0010
+> +#define SOCFPGA_FPGMGR_MON_PR_READY				0x0020
+> +#define SOCFPGA_FPGMGR_MON_PR_ERROR				0x0040
+> +#define SOCFPGA_FPGMGR_MON_PR_DONE				0x0080
+> +#define SOCFPGA_FPGMGR_MON_NCONFIG_PIN				0x0100
+> +#define SOCFPGA_FPGMGR_MON_NSTATUS_PIN				0x0200
+> +#define SOCFPGA_FPGMGR_MON_CONF_DONE_PIN			0x0400
+> +#define SOCFPGA_FPGMGR_MON_FPGA_POWER_ON			0x0800
+> +#define SOCFPGA_FPGMGR_MON_STATUS_MASK				0x0fff
+> +
+> +#define SOCFPGA_FPGMGR_NUM_SUPPLIES 3
+> +#define SOCFPGA_RESUME_TIMEOUT 3
+> +
+> +/* In power-up order. Reverse for power-down. */
+> +static const char *supply_names[SOCFPGA_FPGMGR_NUM_SUPPLIES] __maybe_unused = {
+> +	"FPGA-1.5V",
+> +	"FPGA-1.1V",
+> +	"FPGA-2.5V",
+> +};
+> +
+> +struct socfpga_fpga_priv {
+> +	void __iomem *fpga_base_addr;
+> +	void __iomem *fpga_data_addr;
+> +	struct completion status_complete;
+> +	int irq;
+> +	struct regulator *fpga_supplies[SOCFPGA_FPGMGR_NUM_SUPPLIES];
+> +};
+> +
+> +struct cfgmgr_mode {
+> +	/* Values to set in the CTRL register */
+> +	u32 ctrl;
+> +
+> +	/* flag that this table entry is a valid mode */
+> +	bool valid;
+> +};
+> +
+> +/* For SOCFPGA_FPGMGR_STAT_MSEL field */
+> +static struct cfgmgr_mode cfgmgr_modes[] = {
+> +	[MSEL_PP16_FAST_NOAES_NODC] = { CFGWDTH_16 | CDRATIO_X1, 1 },
+> +	[MSEL_PP16_FAST_AES_NODC] =   { CFGWDTH_16 | CDRATIO_X2, 1 },
+> +	[MSEL_PP16_FAST_AESOPT_DC] =  { CFGWDTH_16 | CDRATIO_X4, 1 },
+> +	[MSEL_PP16_SLOW_NOAES_NODC] = { CFGWDTH_16 | CDRATIO_X1, 1 },
+> +	[MSEL_PP16_SLOW_AES_NODC] =   { CFGWDTH_16 | CDRATIO_X2, 1 },
+> +	[MSEL_PP16_SLOW_AESOPT_DC] =  { CFGWDTH_16 | CDRATIO_X4, 1 },
+> +	[MSEL_PP32_FAST_NOAES_NODC] = { CFGWDTH_32 | CDRATIO_X1, 1 },
+> +	[MSEL_PP32_FAST_AES_NODC] =   { CFGWDTH_32 | CDRATIO_X4, 1 },
+> +	[MSEL_PP32_FAST_AESOPT_DC] =  { CFGWDTH_32 | CDRATIO_X8, 1 },
+> +	[MSEL_PP32_SLOW_NOAES_NODC] = { CFGWDTH_32 | CDRATIO_X1, 1 },
+> +	[MSEL_PP32_SLOW_AES_NODC] =   { CFGWDTH_32 | CDRATIO_X4, 1 },
+> +	[MSEL_PP32_SLOW_AESOPT_DC] =  { CFGWDTH_32 | CDRATIO_X8, 1 },
+> +};
+> +
+> +static u32 socfpga_fpga_readl(struct socfpga_fpga_priv *priv, u32 reg_offset)
+> +{
+> +	return readl(priv->fpga_base_addr + reg_offset);
+> +}
+> +
+> +static void socfpga_fpga_writel(struct socfpga_fpga_priv *priv, u32 reg_offset,
+> +				u32 value)
+> +{
+> +	writel(value, priv->fpga_base_addr + reg_offset);
+> +}
+> +
+> +static u32 socfpga_fpga_raw_readl(struct socfpga_fpga_priv *priv,
+> +				  u32 reg_offset)
+> +{
+> +	return __raw_readl(priv->fpga_base_addr + reg_offset);
+> +}
+> +
+> +static void socfpga_fpga_raw_writel(struct socfpga_fpga_priv *priv,
+> +				    u32 reg_offset, u32 value)
+> +{
+> +	__raw_writel(value, priv->fpga_base_addr + reg_offset);
+> +}
+> +
+> +static void socfpga_fpga_data_writel(struct socfpga_fpga_priv *priv, u32 value)
+> +{
+> +	writel(value, priv->fpga_data_addr);
+> +}
+> +
+> +static inline void socfpga_fpga_set_bitsl(struct socfpga_fpga_priv *priv,
+> +					  u32 offset, u32 bits)
+> +{
+> +	u32 val;
+> +
+> +	val = socfpga_fpga_readl(priv, offset);
+> +	val |= bits;
+> +	socfpga_fpga_writel(priv, offset, val);
+> +}
+> +
+> +static inline void socfpga_fpga_clr_bitsl(struct socfpga_fpga_priv *priv,
+> +					  u32 offset, u32 bits)
+> +{
+> +	u32 val;
+> +
+> +	val = socfpga_fpga_readl(priv, offset);
+> +	val &= ~bits;
+> +	socfpga_fpga_writel(priv, offset, val);
+> +}
+> +
+> +static u32 socfpga_fpga_mon_status_get(struct socfpga_fpga_priv *priv)
+> +{
+> +	return socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST) &
+> +		SOCFPGA_FPGMGR_MON_STATUS_MASK;
+> +}
+> +
+> +static u32 socfpga_fpga_state_get(struct socfpga_fpga_priv *priv)
+> +{
+> +	u32 status = socfpga_fpga_mon_status_get(priv);
+> +
+> +	if ((status & SOCFPGA_FPGMGR_MON_FPGA_POWER_ON) == 0)
+> +		return SOCFPGA_FPGMGR_STAT_POWER_OFF;
+> +
+> +	return socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_STAT_OFST) &
+> +		SOCFPGA_FPGMGR_STAT_STATE_MASK;
+> +}
+> +
+> +static void socfpga_fpga_clear_done_status(struct socfpga_fpga_priv *priv)
+> +{
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST,
+> +			    SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE);
+> +}
+> +
+> +/*
+> + * Set the DCLKCNT, wait for DCLKSTAT to report the count completed, and clear
+> + * the complete status.
+> + */
+> +static int socfpga_fpga_dclk_set_and_wait_clear(struct socfpga_fpga_priv *priv,
+> +						u32 count)
+> +{
+> +	int timeout = 2;
+> +	u32 done;
+> +
+> +	/* Clear any existing DONE status. */
+> +	if (socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST))
+> +		socfpga_fpga_clear_done_status(priv);
+> +
+> +	/* Issue the DCLK count. */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_DCLKCNT_OFST, count);
+> +
+> +	/* Poll DCLKSTAT to see if it completed in the timeout period. */
+> +	do {
+> +		done = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_DCLKSTAT_OFST);
+> +		if (done == SOCFPGA_FPGMGR_DCLKSTAT_DCNTDONE_E_DONE) {
+> +			socfpga_fpga_clear_done_status(priv);
+> +			return 0;
+> +		}
+> +		udelay(1);
+> +	} while (timeout--);
+> +
+> +	return -ETIMEDOUT;
+> +}
+> +
+> +static int socfpga_fpga_wait_for_state(struct socfpga_fpga_priv *priv,
+> +				       u32 state)
+> +{
+> +	int timeout = 2;
+> +
+> +	/*
+> +	 * HW doesn't support an interrupt for changes in state, so poll to see
+> +	 * if it matches the requested state within the timeout period.
+> +	 */
+> +	do {
+> +		if ((socfpga_fpga_state_get(priv) & state) != 0)
+> +			return 0;
+> +		msleep(20);
+> +	} while (timeout--);
+> +
+> +	return -ETIMEDOUT;
+> +}
+> +
+> +static void socfpga_fpga_enable_irqs(struct socfpga_fpga_priv *priv, u32 irqs)
+> +{
+> +	/* set irqs to level sensitive */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTTYPE_LEVEL_OFST, 0);
+> +
+> +	/* set interrupt polarity */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INT_POL_OFST, irqs);
+> +
+> +	/* clear irqs */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST, irqs);
+> +
+> +	/* unmask interrupts */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTMSK_OFST, 0);
+> +
+> +	/* enable interrupts */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTEN_OFST, irqs);
+> +}
+> +
+> +static void socfpga_fpga_disable_irqs(struct socfpga_fpga_priv *priv)
+> +{
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_INTEN_OFST, 0);
+> +}
+> +
+> +static irqreturn_t socfpga_fpga_isr(int irq, void *dev_id)
+> +{
+> +	struct socfpga_fpga_priv *priv = dev_id;
+> +	u32 irqs, st;
+> +	bool conf_done, nstatus;
+> +
+> +	/* clear irqs */
+> +	irqs = socfpga_fpga_raw_readl(priv, SOCFPGA_FPGMGR_GPIO_INTSTAT_OFST);
+> +
+> +	socfpga_fpga_raw_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST, irqs);
+> +
+> +	st = socfpga_fpga_raw_readl(priv, SOCFPGA_FPGMGR_GPIO_EXT_PORTA_OFST);
+> +	conf_done = (st & SOCFPGA_FPGMGR_MON_CONF_DONE) != 0;
+> +	nstatus = (st & SOCFPGA_FPGMGR_MON_NSTATUS) != 0;
+> +
+> +	/* success */
+> +	if (conf_done && nstatus) {
+> +		/* disable irqs */
+> +		socfpga_fpga_raw_writel(priv,
+> +					SOCFPGA_FPGMGR_GPIO_INTEN_OFST, 0);
+> +		complete(&priv->status_complete);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int socfpga_fpga_wait_for_config_done(struct socfpga_fpga_priv *priv)
+> +{
+> +	int timeout, ret = 0;
+> +
+> +	socfpga_fpga_disable_irqs(priv);
+> +	init_completion(&priv->status_complete);
+> +	socfpga_fpga_enable_irqs(priv, SOCFPGA_FPGMGR_MON_CONF_DONE);
+> +
+> +	timeout = wait_for_completion_interruptible_timeout(
+> +						&priv->status_complete,
+> +						msecs_to_jiffies(10));
+> +	if (timeout == 0)
+> +		ret = -ETIMEDOUT;
+> +
+> +	socfpga_fpga_disable_irqs(priv);
+> +	return ret;
+> +}
+> +
+> +static int socfpga_fpga_cfg_mode_get(struct socfpga_fpga_priv *priv)
+> +{
+> +	u32 msel;
+> +
+> +	msel = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_STAT_OFST);
+> +	msel &= SOCFPGA_FPGMGR_STAT_MSEL_MASK;
+> +	msel >>= SOCFPGA_FPGMGR_STAT_MSEL_SHIFT;
+> +
+> +	/* Check that this MSEL setting is supported */
+> +	if ((msel >= ARRAY_SIZE(cfgmgr_modes)) || !cfgmgr_modes[msel].valid)
+> +		return -EINVAL;
+> +
+> +	return msel;
+> +}
+> +
+> +static int socfpga_fpga_cfg_mode_set(struct socfpga_fpga_priv *priv)
+> +{
+> +	u32 ctrl_reg;
+> +	int mode;
+> +
+> +	/* get value from MSEL pins */
+> +	mode = socfpga_fpga_cfg_mode_get(priv);
+> +	if (mode < 0)
+> +		return mode;
+> +
+> +	/* Adjust CTRL for the CDRATIO */
+> +	ctrl_reg = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_CTL_OFST);
+> +	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_CDRATIO_MASK;
+> +	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_CFGWDTH_MASK;
+> +	ctrl_reg |= cfgmgr_modes[mode].ctrl;
+> +
+> +	/* Set NCE to 0. */
+> +	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_NCE;
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
+> +
+> +	return 0;
+> +}
+> +
+> +static int socfpga_fpga_reset(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	u32 ctrl_reg, status;
+> +	int ret;
+> +
+> +	/*
+> +	 * Step 1:
+> +	 *  - Set CTRL.CFGWDTH, CTRL.CDRATIO to match cfg mode
+> +	 *  - Set CTRL.NCE to 0
+> +	 */
+> +	ret = socfpga_fpga_cfg_mode_set(priv);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Step 2: Set CTRL.EN to 1 */
+> +	socfpga_fpga_set_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
+> +			       SOCFPGA_FPGMGR_CTL_EN);
+> +
+> +	/* Step 3: Set CTRL.NCONFIGPULL to 1 to put FPGA in reset */
+> +	ctrl_reg = socfpga_fpga_readl(priv, SOCFPGA_FPGMGR_CTL_OFST);
+> +	ctrl_reg |= SOCFPGA_FPGMGR_CTL_NCFGPULL;
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
+> +
+> +	/* Step 4: Wait for STATUS.MODE to report FPGA is in reset phase */
+> +	status = socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_RESET);
+> +
+> +	/* Step 5: Set CONTROL.NCONFIGPULL to 0 to release FPGA from reset */
+> +	ctrl_reg &= ~SOCFPGA_FPGMGR_CTL_NCFGPULL;
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_CTL_OFST, ctrl_reg);
+> +
+> +	/* Timeout waiting for reset */
+> +	if (status)
+> +		return -ETIMEDOUT;
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Prepare the FPGA to receive the configuration data.
+> + */
+> +static int socfpga_fpga_ops_configure_init(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	int ret;
+> +
+> +	/* Steps 1 - 5: Reset the FPGA */
+> +	ret = socfpga_fpga_reset(mgr);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* Step 6: Wait for FPGA to enter configuration phase */
+> +	if (socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_CFG))
+> +		return -ETIMEDOUT;
+> +
+> +	/* Step 7: Clear nSTATUS interrupt */
+> +	socfpga_fpga_writel(priv, SOCFPGA_FPGMGR_GPIO_PORTA_EOI_OFST,
+> +			    SOCFPGA_FPGMGR_MON_NSTATUS);
+> +
+> +	/* Step 8: Set CTRL.AXICFGEN to 1 to enable transfer of config data */
+> +	socfpga_fpga_set_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
+> +			       SOCFPGA_FPGMGR_CTL_AXICFGEN);
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Step 9: write data to the FPGA data register
+> + */
+> +static int socfpga_fpga_ops_configure_write(struct fpga_manager *mgr,
+> +					    const char *buf, size_t count)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	u32 *buffer_32 = (u32 *)buf;
+> +	size_t i = 0;
+> +
+> +	if (count <= 0)
+> +		return -EINVAL;
+> +
+> +	/* Write out the complete 32-bit chunks. */
+> +	while (count >= sizeof(u32)) {
+> +		socfpga_fpga_data_writel(priv, buffer_32[i++]);
+> +		count -= sizeof(u32);
+> +	}
+> +
+> +	/* Write out remaining non 32-bit chunks. */
+> +	switch (count) {
+> +	case 3:
+> +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x00ffffff);
+> +		break;
+> +	case 2:
+> +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x0000ffff);
+> +		break;
+> +	case 1:
+> +		socfpga_fpga_data_writel(priv, buffer_32[i++] & 0x000000ff);
+> +		break;
+> +	default:
+> +		/* This will never happen. */
 
-Signed-off-by: Marco Varlese <marco.varlese@intel.com>
----
- include/linux/netdevice.h    |  5 +++
- include/uapi/linux/if_link.h | 15 +++++++++
- net/core/rtnetlink.c         | 73 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 93 insertions(+)
+why not just return any error code here even if this can't happen.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index c31f74d..4881c7b 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
-  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
-  *	Called to notify switch device port of bridge port STP
-  *	state change.
-+ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
-+ *                                u32 attr, u64 value);
-+ *	Called to set specific switch ports attributes.
-  */
- struct net_device_ops {
- 	int			(*ndo_init)(struct net_device *dev);
-@@ -1185,6 +1188,8 @@ struct net_device_ops {
- 							    struct netdev_phys_item_id *psid);
- 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
- 							      u8 state);
-+	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
-+							   u32 attr, u64 value);
- #endif
- };
- 
-diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-index f7d0d2d..6ad9b91 100644
---- a/include/uapi/linux/if_link.h
-+++ b/include/uapi/linux/if_link.h
-@@ -146,6 +146,7 @@ enum {
- 	IFLA_PHYS_PORT_ID,
- 	IFLA_CARRIER_CHANGES,
- 	IFLA_PHYS_SWITCH_ID,
-+	IFLA_SWITCH_PORT_CFG,
- 	__IFLA_MAX
- };
- 
-@@ -603,4 +604,18 @@ enum {
- 
- #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
- 
-+/* Switch Port Attributes section */
-+
-+enum {
-+	IFLA_SW_UNSPEC,
-+	IFLA_SW_LEARNING,
-+	IFLA_SW_LOOPBACK,
-+	IFLA_SW_BCAST_FLOODING,
-+	IFLA_SW_UCAST_FLOODING,
-+	IFLA_SW_MCAST_FLOODING,
-+	__IFLA_SW_ATTR_MAX
-+};
-+
-+#define IFLA_SW_ATTR_MAX (__IFLA_SW_ATTR_MAX - 1)
-+
- #endif /* _UAPI_LINUX_IF_LINK_H */
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index eaa057f..d50ca71 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1223,6 +1223,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
- 	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
- 	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
- 	[IFLA_PHYS_SWITCH_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
-+	[IFLA_SWITCH_PORT_CFG]	= { .type = NLA_NESTED },
- };
- 
- static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
-@@ -1265,6 +1266,14 @@ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
- 	[IFLA_PORT_RESPONSE]	= { .type = NLA_U16, },
- };
- 
-+static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
-+	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
-+	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
-+	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
-+	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
-+	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
-+};
-+
- static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
- {
- 	struct net *net = sock_net(skb->sk);
-@@ -1389,6 +1398,41 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
- 	return 0;
- }
- 
-+#ifdef CONFIG_NET_SWITCHDEV
-+static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
-+{
-+	int rem, err = -EINVAL;
-+	struct nlattr *v;
-+	const struct net_device_ops *ops = dev->netdev_ops;
-+
-+	nla_for_each_nested(v, attr, rem) {
-+		u32 op = nla_type(v);
-+		u64 value = 0;
-+
-+		switch (op) {
-+		case IFLA_SW_LEARNING:
-+		case IFLA_SW_LOOPBACK:
-+		case IFLA_SW_BCAST_FLOODING:
-+		case IFLA_SW_UCAST_FLOODING:
-+		case IFLA_SW_MCAST_FLOODING: {
-+			value = nla_get_u64(v);
-+			err = ops->ndo_switch_port_set_cfg(dev,
-+							   op,
-+							   value);
-+			break;
-+		}
-+		default:
-+			err = -EINVAL;
-+			break;
-+		}
-+		if (err)
-+			break;
-+	}
-+	return err;
-+}
-+
-+#endif
-+
- static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
- {
- 	int rem, err = -EINVAL;
-@@ -1740,6 +1784,35 @@ static int do_setlink(const struct sk_buff *skb,
- 			status |= DO_SETLINK_NOTIFY;
- 		}
- 	}
-+#ifdef CONFIG_NET_SWITCHDEV
-+	if (tb[IFLA_SWITCH_PORT_CFG]) {
-+		struct nlattr *attrs[IFLA_SW_ATTR_MAX+1];
-+
-+		err = -EOPNOTSUPP;
-+		if (!ops->ndo_switch_port_set_cfg)
-+			goto errout;
-+		if (!ops->ndo_switch_parent_id_get)
-+			goto errout;
-+
-+		err = nla_parse_nested(attrs, IFLA_SW_ATTR_MAX,
-+				       tb[IFLA_SWITCH_PORT_CFG],
-+				       ifla_sw_attr_policy);
-+		if (err < 0)
-+			return err;
-+
-+		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-+		if (err < 0)
-+			goto errout;
-+
-+		status |= DO_SETLINK_NOTIFY;
-+	}
-+#else
-+	if (tb[IFLA_SWITCH_PORT_CFG]) {
-+		err = -EOPNOTSUPP;
-+		goto errout;
-+	}
-+#endif
-+
- 	err = 0;
- 
- errout:
--- 
-1.8.5.3
 
+> +		break;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int socfpga_fpga_ops_configure_complete(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	u32 status;
+> +
+> +	/*
+> +	 * Step 10:
+> +	 *  - Observe CONF_DONE and nSTATUS (active low)
+> +	 *  - if CONF_DONE = 1 and nSTATUS = 1, configuration was successful
+> +	 *  - if CONF_DONE = 0 and nSTATUS = 0, configuration failed
+> +	 */
+> +	status = socfpga_fpga_wait_for_config_done(priv);
+> +	if (status)
+> +		return status;
+> +
+> +	/* Step 11: Clear CTRL.AXICFGEN to disable transfer of config data */
+> +	socfpga_fpga_clr_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
+> +			       SOCFPGA_FPGMGR_CTL_AXICFGEN);
+> +
+> +	/*
+> +	 * Step 12:
+> +	 *  - Write 4 to DCLKCNT
+> +	 *  - Wait for STATUS.DCNTDONE = 1
+> +	 *  - Clear W1C bit in STATUS.DCNTDONE
+> +	 */
+> +	if (socfpga_fpga_dclk_set_and_wait_clear(priv, 4))
+> +		return -ETIMEDOUT;
+> +
+> +	/* Step 13: Wait for STATUS.MODE to report USER MODE */
+> +	if (socfpga_fpga_wait_for_state(priv, SOCFPGA_FPGMGR_STAT_USER_MODE))
+> +		return -ETIMEDOUT;
+> +
+> +	/* Step 14: Set CTRL.EN to 0 */
+> +	socfpga_fpga_clr_bitsl(priv, SOCFPGA_FPGMGR_CTL_OFST,
+> +			       SOCFPGA_FPGMGR_CTL_EN);
+> +
+> +	return 0;
+> +}
+> +
+> +/* Translate state register values to FPGA framework state */
+> +static const enum fpga_mgr_states socfpga_state_to_framework_state[] = {
+> +	[SOCFPGA_FPGMGR_STAT_POWER_OFF] = FPGA_MGR_STATE_POWER_OFF,
+> +	[SOCFPGA_FPGMGR_STAT_RESET] = FPGA_MGR_STATE_RESET,
+> +	[SOCFPGA_FPGMGR_STAT_CFG] = FPGA_MGR_STATE_WRITE_INIT,
+> +	[SOCFPGA_FPGMGR_STAT_INIT] = FPGA_MGR_STATE_WRITE_INIT,
+> +	[SOCFPGA_FPGMGR_STAT_USER_MODE] = FPGA_MGR_STATE_OPERATING,
+> +	[SOCFPGA_FPGMGR_STAT_UNKNOWN] = FPGA_MGR_STATE_UNKNOWN,
+> +};
+> +
+> +static enum fpga_mgr_states socfpga_fpga_ops_state(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	enum fpga_mgr_states ret;
+> +	u32 state;
+> +
+> +	state = socfpga_fpga_state_get(priv);
+> +
+> +	if (state < ARRAY_SIZE(socfpga_state_to_framework_state))
+> +		ret = socfpga_state_to_framework_state[state];
+> +	else
+> +		ret = FPGA_MGR_STATE_UNKNOWN;
+> +
+> +	return ret;
+> +}
+> +
+> +static int socfpga_fpga_regulators_on(struct socfpga_fpga_priv *priv)
+> +{
+> +	int i, ret;
+> +
+> +	for (i = 0; i < SOCFPGA_FPGMGR_NUM_SUPPLIES; i++) {
+> +		ret = regulator_enable(priv->fpga_supplies[i]);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void socfpga_fpga_regulators_power_off(struct socfpga_fpga_priv *priv)
+> +{
+> +	int i;
+> +
+> +	for (i = SOCFPGA_FPGMGR_NUM_SUPPLIES - 1; i >= 0; i--)
+> +		regulator_disable(priv->fpga_supplies[i]);
+> +}
+> +
+> +static int socfpga_fpga_regulator_probe(struct platform_device *pdev,
+> +					struct socfpga_fpga_priv *priv)
+> +{
+> +	struct regulator *supply;
+> +	unsigned int i;
+> +
+> +	if (!IS_ENABLED(CONFIG_REGULATOR))
+> +		return 0;
+> +
+> +	for (i = 0; i < SOCFPGA_FPGMGR_NUM_SUPPLIES; i++) {
+> +		supply = devm_regulator_get_optional(&pdev->dev,
+> +						     supply_names[i]);
+> +		if (IS_ERR(supply)) {
+> +			dev_err(&pdev->dev, "could not get regulators");
+> +			return -EPROBE_DEFER;
+> +		}
+> +		priv->fpga_supplies[i] = supply;
+> +	}
+> +
+> +	return socfpga_fpga_regulators_on(priv);
+> +}
+> +
+> +static int socfpga_fpga_suspend(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +
+> +	socfpga_fpga_regulators_power_off(priv);
+> +
+> +	return 0;
+> +}
+> +
+> +static int socfpga_fpga_resume(struct fpga_manager *mgr)
+> +{
+> +	struct socfpga_fpga_priv *priv = mgr->priv;
+> +	u32 state;
+> +	unsigned int timeout;
+
+add it to one line.
+
+The rest is looks good to me. I think this is good to go in.
+
+Acked-by: Michal Simek <michal.simek@xilinx.com>
+
+Thanks,
+Michal
