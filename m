@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaLRJDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:03:36 -0500
-Received: from omr1.cc.vt.edu ([198.82.141.52]:50972 "EHLO omr1.cc.vt.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752359AbaLRJDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:03:08 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Steven Honeyman <stevenhoneyman@gmail.com>
-Cc: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
-In-Reply-To: Your message of "Wed, 17 Dec 2014 18:20:21 +0000."
-             <CABz95_C1UzbRMgjDKcrdRzr2VGvAwmvWBRrP2116k3CQx+2sRg@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <1418155621-21644-4-git-send-email-pali.rohar@gmail.com> <201412101251.30610@pali> <201412171854.00902@pali>
-            <CABz95_C1UzbRMgjDKcrdRzr2VGvAwmvWBRrP2116k3CQx+2sRg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418893357_3430P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Dec 2014 04:02:37 -0500
-Message-ID: <17858.1418893357@turing-police.cc.vt.edu>
+	id S1752587AbaLRJEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:04:14 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:64399 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbaLRJEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 04:04:11 -0500
+Date: Thu, 18 Dec 2014 09:04:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, a.zummo@towertech.it,
+        kernel@stlinux.com, rtc-linux@googlegroups.com,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        wim@iguana.be, linux@roeck-us.net, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 5/8] watchdog: bindings: Provide ST bindings for ST's LPC
+ Watchdog device
+Message-ID: <20141218090404.GU13885@x1>
+References: <1418834727-1602-1-git-send-email-lee.jones@linaro.org>
+ <5479005.CEJLtxOOIa@wuerfel>
+ <20141218081334.GO13885@x1>
+ <2894129.AmAkgPJPNf@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2894129.AmAkgPJPNf@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418893357_3430P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+We 
+On Thu, 18 Dec 2014, Arnd Bergmann wrote:
 
-On Wed, 17 Dec 2014 18:20:21 +0000, Steven Honeyman said:
-> On 17 December 2014 at 17:54, Pali Roh=E1r <pali.rohar=40gmail.com> wro=
-te:
+> On Thursday 18 December 2014 08:13:34 Lee Jones wrote:
+> > On Wed, 17 Dec 2014, Arnd Bergmann wrote:
+> > 
+> > > On Wednesday 17 December 2014 16:45:24 Lee Jones wrote:
+> > > > +- compatible   : Must be one of: "st,stih407-lpc" "st,stih416-lpc"
+> > > > +                                 "st,stih415-lpc" "st,stid127-lpc"
+> > > > +- reg          : LPC registers base address + size
+> > > > +- interrupts    : LPC interrupt line number and associated flags
+> > > > +- clocks       : Clock used by LPC device (See: ../clock/clock-bindings.txt)
+> > > > +- st,lpc-mode  : The LPC can run either one of two modes ST_LPC_MODE_RTC [0] or
+> > > > +                 ST_LPC_MODE_WDT [1].  One (and only one) mode must be
+> > > > +                 selected.
+> > > > 
+> > > 
+> > > I'm glad you got it to work with two drivers for the same device.
+> > > 
+> > > With this binding, I'm still a bit unhappy about the st,lpc-mode property,
+> > > in particular since you rely on a shared include file for something that
+> > > can only be set in one way or another and always has to be present.
+> > > 
+> > > Why not just use a boolean property that enforces one mode when present
+> > > and another mode when absent?
+> > 
+> > There is nothing stopping me from doing that, and it was a
+> > consideration.  I concluded that this method would be more explicit
+> > however.  Both when describing our choices in DT and at a functional
+> > level within each of the drivers.
+> > 
+> > Let me know if you fundamentally disagree and I can fix-up.
+> 
+> I generally don't like  header files that define interfaces between C code
+> and DT nodes. There are cases where it's the least ugly solution, but I don't
+> think this is one of them.
+> 
+> If you want to be more explicit about the modes, how about having one
+> boolean property per mode? That would also allow devices that could be
+> driven in either mode, e.g. if you have only one instance of this device.
 
-> >> > Dell Latitude E6540
+Isn't this was you suggested above?
 
-> >> Can somebody else with dell laptops test this patch series?
-> >
-> > Steven Honeyman, can you test this autodetection patch on your
-> > Latitude E6540?
+Making a decision on the absence is a property is what I'm calling
+not-explicit.  If it's accidentally left off the driver(s) won't issue a
+warning, it'll just assume that the lack of this boolean property was
+intentional and go follow the Watchdog path for instance.
 
-I'm not Steven, but I have a E6530.  linux-next 20141208
-reports fan wonkyness in 'sensors':
+But as I briefly mentioned to you elsewhere, there are actually 3
+devices (Watchdog, RTC and Global Timer).  How would you like to
+handle that with a Boolean property when we introduce this new driver?
 
-i8k-virtual-0
-Adapter: Virtual device
-fan2:        83070 RPM
-
-I'll have to see if the patch series fixes that.
-
---==_Exmh_1418893357_3430P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVJKYLQdmEQWDXROgAQJNOA//fJHDaYuvj+kgTxXctIPJBkNCgXIx43li
-8JW5btNOLNAhYjm6Wi/BGcsDVjSbyJyCQ9CZ5IUp7MEOtgkhPMC6Pt4OL5MyJDrn
-sNBxI2JaGFW2ClbaUZX82XKo5REFCJytu8ha7J22wykvvOoCKwllQB8WL4rsI5Ro
-k/BrcO7AgYjnb6W2C9pWXftSoFIiA/Rr+yEKsuUIaN4SEHm9DMDFkVc4JCPJpGKL
-zENtGkDipBFFcpIrg/Mq4Dj3x7rivwFq3pIj7qm8HX+fI5ewNUO4WKY3aM24eAwH
-2xJHoNaYl6cNYkhudlJv0gUWcHuH0bmcH2KGzJqLcxSCZGdbUio4H/wgvAA7lmSh
-JaY5DMEZGKkktLm31lVvqWzC/eKYUGTWFdFLoYP3V/F7SCL9RP47i523LqpIrg8Y
-Fz5g70NxobsGyMC2hBS86tBZSup//9JLqO6tbDQvipvYqWzvANTlA128HOvmWzV0
-AmJ6Dcbziv5UEVVz7OHovFMuWq2Pjcc+sTGBDKGVq0LZzSL4NAvNNuQhrJ18947m
-RI7CN9GQKkBITaZCmjzb+kstlSuspBA8mvRV1ckRTqyKxqVDc7KMPA/ckaqfYsob
-/qSBKJtonpu4btHxz1IWKlu/zFQPxXUfs54LfR6rw8virt+Hl2QAUHyhfLj6XbEb
-gkekh73wDZc=
-=WLlw
------END PGP SIGNATURE-----
-
---==_Exmh_1418893357_3430P--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
