@@ -1,92 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbaLRG3O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:29:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58553 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaLRG3M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:29:12 -0500
-Date: Wed, 17 Dec 2014 22:28:24 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-wetzlux7mzvofu5cuji5i71i@git.kernel.org>
-Cc: hpa@zytor.com, acme@redhat.com, tglx@linutronix.de,
-        adrian.hunter@intel.com, mingo@kernel.org, bp@suse.de,
-        namhyung@kernel.org, eranian@google.com, peterz@infradead.org,
-        fweisbec@gmail.com, efault@gmx.de, jolsa@redhat.com, dsahern@gmail.com,
-        linux-kernel@vger.kernel.org, dzickus@redhat.com, paulus@samba.org
-Reply-To: acme@redhat.com, hpa@zytor.com, namhyung@kernel.org, bp@suse.de,
-        mingo@kernel.org, tglx@linutronix.de, adrian.hunter@intel.com,
-        fweisbec@gmail.com, efault@gmx.de, jolsa@redhat.com,
-        peterz@infradead.org, eranian@google.com, paulus@samba.org,
-        dzickus@redhat.com, linux-kernel@vger.kernel.org, dsahern@gmail.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf evlist:
-  Clarify sterror_mmap variable names
-Git-Commit-ID: e5d4a290da5366c397653c47c3e869a67b1bfa07
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1752090AbaLRGjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:39:49 -0500
+Received: from mail.pfak.org ([198.50.219.4]:44970 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630AbaLRGjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 01:39:48 -0500
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 01:39:47 EST
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=kieser.ca; h=message-id:date
+	:from:mime-version:to:cc:subject:references:in-reply-to
+	:content-type; q=dns; s=mail; b=WEaN17SWEGzuAHn6jcRp4itMcDQFQk+u
+	bxTZTIUX+GxMSE9atX7hbcGS+XG6YfA924oCHN3YSdWPaFkU4n6pVT1mb4OJSUay
+	5XAvg4QcAkTQK5N5U8QYOGJ97i7G4+G5uFFOP369FEpEBnin9JapUjfczdrS94UK
+	8n+c/4I6lzY=
+Message-ID: <54927487.2030700@kieser.ca>
+Date: Wed, 17 Dec 2014 22:30:31 -0800
+From: Peter Kieser <peter@kieser.ca>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: NeilBrown <neilb@suse.de>, nick <xerofoify@gmail.com>
+CC: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Question about my patch
+References: <5491043D.8020703@gmail.com> <20141217162600.69dc1933@notabene.brown>
+In-Reply-To: <20141217162600.69dc1933@notabene.brown>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms000609050302030002000207"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5d4a290da5366c397653c47c3e869a67b1bfa07
-Gitweb:     http://git.kernel.org/tip/e5d4a290da5366c397653c47c3e869a67b1bfa07
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 12 Dec 2014 15:59:51 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 16 Dec 2014 13:38:26 -0300
+This is a cryptographically signed message in MIME format.
 
-perf evlist: Clarify sterror_mmap variable names
+--------------ms000609050302030002000207
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-Prep patch for doing further checks like when the number of pages that
-is being attempted is actually below /proc/sys/kernel/perf_event_mlock_kb but
-the operation fails because the user doesn't have CAP_IPC_LOCK.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-wetzlux7mzvofu5cuji5i71i@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/evlist.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+On 2014-12-16 9:26 PM, NeilBrown wrote:
+> i.e. there is no bug here, and nothing to fix.
+>
+> Thanks,
+>
+> NeilBrown
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index de7515d..d661f25 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -1487,16 +1487,16 @@ int perf_evlist__strerror_open(struct perf_evlist *evlist __maybe_unused,
- int perf_evlist__strerror_mmap(struct perf_evlist *evlist, int err, char *buf, size_t size)
- {
- 	char sbuf[STRERR_BUFSIZE], *emsg = strerror_r(err, sbuf, sizeof(sbuf));
--	int value;
-+	int pages_attempted = evlist->mmap_len / 1024, pages_max_per_user;
- 
- 	switch (err) {
- 	case EPERM:
--		sysctl__read_int("kernel/perf_event_mlock_kb", &value);
-+		sysctl__read_int("kernel/perf_event_mlock_kb", &pages_max_per_user);
- 		scnprintf(buf, size, "Error:\t%s.\n"
- 				     "Hint:\tCheck /proc/sys/kernel/perf_event_mlock_kb (%d kB) setting.\n"
- 				     "Hint:\tTried using %zd kB.\n"
- 				     "Hint:\tTry using a smaller -m/--mmap-pages value.",
--				     emsg, value, evlist->mmap_len / 1024);
-+				     emsg, pages_max_per_user, pages_attempted);
- 		break;
- 	default:
- 		scnprintf(buf, size, "%s", emsg);
+FYI:https://lkml.org/lkml/2014/8/4/206
+
+-Peter
+
+
+
+--------------ms000609050302030002000207
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMqzCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGbzCCBVegAwIBAgICUcswDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xNDA4MTcxMDM5MDla
+Fw0xNjA4MTcxMzU1MzFaMIGOMRkwFwYDVQQNExBKSHI4SWdkNjhlbUUweVF6MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL/NmLSwzKyhFa8wVY4On4D2atW+jO4k
+qzGjt32GITxEhweeR2AeQFhmBXTwwAHGnAEWU+lQSXoIoV9Hdi8GhTeFz3A5LPTLl/wa6dmv
+8VCfYaREvoSxjEN4nsCtdU8P6NLUE4mqBe7ZiP9lDkqWgmd0fDEYjiOnJU3cdoLh5vDHOyu+
+9mmPDVEBELFgbbdQsyiINKQN5fwElQ/5hwip/5lFCrT8SYYVS7s2JwEPtvPmpl+JyOwRJakh
+VRv4Wd8Lyv/rchK4riwfMyHhuKwbbKRxs3HzSHjtsjGZ2tS1UzDEalL7ZRsHC4EvZmgBGg5E
+0l1Bz7cC4JcPIy+8G14OjZkCAwEAAaOCAtUwggLRMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUvDcOWQqoGGEK+KDc
+6opnV1iupIkwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASow
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9j
+cmwuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYB
+BQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBC
+BggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5j
+bGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAycbEJG6nvyfbv2X4npgq1ceU+y1qYmXczCBNvNRJ2yvVXc8ljjQs
+KRDzpr8JhTCg4SMZh3C3AIOBGxrYCsyaxRL3Ssfh/6Ptg3ExIfVNj6CobB1piTrusORaVDYS
+jEtZZRR4iYt9mDRo/mZRhh4QRManZYwCXPG4mrguqQ4NLYVdgTsHYgCTRymMbyrQ0+eIGdAO
+/szcirRovADyxroMclw+TTlB7nQrovIsTVteGqe0renKR0bzdWsexQEntKpBxJLy/HTSIHeQ
+HU5r7hwjk/v1aoKlimuaKbdGTJl10BYk8+pbU8JGEl1sm1cNn4MKYwhnWFRTBEPEiXP6VyNc
+PTGCA9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRk
+LjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UE
+AxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAlHL
+MAkGBSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
+MQ8XDTE0MTIxODA2MzAzMVowIwYJKoZIhvcNAQkEMRYEFEMZ4YJP7qHa1+4lZHknXv/GWjde
+MGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0D
+BzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwIC
+ASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcx
+ODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50
+IENBAgJRyzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQK
+Ew1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBT
+aWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRl
+IENsaWVudCBDQQICUcswDQYJKoZIhvcNAQEBBQAEggEAcazsJJCxbwAxfLRHLFSpO00RR4T8
+PXS6R+V1Q1IfrQ7v++dPtdGhbaorXu0KeKAgrogqeUDAGGTYWPr+9vfgDlSUr0Qk4P8L1B96
+1Vm6WayAMbQSq0Q9N3HZcfLsDpoa5FOOQrDmlhFxXQ4v5xXZCUJdCuhrf9yK1/T1v6FAZ9mt
+XA9oQWUuuxMUuaNWFB3BFPGJwyljCGOaXYFaGtJYGvAUv4IKNzxBZNQ+V2CV+ozaQ9/DViC6
+A/EzlsH7SG3zNJvjJqreyniCGo/ckvfmQIRYPGbicPW/uGemWoPRaU5GQNtOUgJQKYK7ru93
+ergjjGDoJHB6OLOOIURMqzKAcwAAAAAAAA==
+--------------ms000609050302030002000207--
