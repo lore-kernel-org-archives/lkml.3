@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312AbaLRPuU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:50:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60828 "EHLO mx1.redhat.com"
+	id S1751341AbaLRPwJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:52:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42735 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaLRPuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:50:14 -0500
-Date: Thu, 18 Dec 2014 09:49:35 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
+	id S1750968AbaLRPwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:52:07 -0500
+Date: Thu, 18 Dec 2014 16:52:03 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+cc: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
         Vojtech Pavlik <vojtech@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
         Petr Mladek <pmladek@suse.cz>, Miroslav Benes <mbenes@suse.cz>,
         Christoph Hellwig <hch@infradead.org>,
         Greg KH <gregkh@linuxfoundation.org>,
         Andy Lutomirski <luto@amacapital.net>, live-patching@vger.kernel.org,
         x86@kernel.org, kpatch@redhat.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] livepatch: use FTRACE_OPS_FL_IPMODIFY
-Message-ID: <20141218154935.GA6887@treble.redhat.com>
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com>
- <5492C0A9.3080303@hitachi.com>
+Subject: Re: [PATCHv7 1/3] kernel: add TAINT_LIVEPATCH
+In-Reply-To: <5492BE01.7040705@hitachi.com>
+Message-ID: <alpine.LNX.2.00.1412181651260.1680@pobox.suse.cz>
+References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <1418752700-14649-2-git-send-email-sjenning@redhat.com> <5492BE01.7040705@hitachi.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5492C0A9.3080303@hitachi.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 08:55:21PM +0900, Masami Hiramatsu wrote:
-> (2014/12/17 2:58), Seth Jennings wrote:
-> > changes in v7:
-> > - TODO: set IPMODIFY (not a blocker to moving forward)
+On Thu, 18 Dec 2014, Masami Hiramatsu wrote:
+
+> > This adds a new taint flag to indicate when the kernel or a kernel
+> > module has been live patched.  This will provide a clean indication in
+> > bug reports that live patching was used.
+> > 
+> > Additionally, if the crash occurs in a live patched function, the live
+> > patch module will appear beside the patched function in the backtrace.
+> > 
+> > Signed-off-by: Seth Jennings <sjenning@redhat.com>
 > 
-> Why don't you set this?
-> IPMODIFY series are not completely applied yet, but you can already
-> use the flag. All you need is just set it :)
+> Looks good to me.
+> 
+> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Yeah, I don't see any reason why we can't start using this flag now.
-How about we add this patch to the queue?
+Masami, just for completness -- is this just for 1/3, or for the whole 
+series? (so that I get it right once I am applying the patches to git 
+tree).
 
--->8--
+Thanks,
 
-Subject: livepatch: use FTRACE_OPS_FL_IPMODIFY
-
-Use the FTRACE_OPS_FL_IPMODIFY flag to prevent conflicts with other
-ftrace users who also modify regs->ip.
-
-Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
----
- kernel/livepatch/core.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-index 0004a71..bdd99975 100644
---- a/kernel/livepatch/core.c
-+++ b/kernel/livepatch/core.c
-@@ -640,7 +640,8 @@ static int klp_init_func(struct klp_object *obj, struct klp_func *func)
- 
- 	ops->private = func;
- 	ops->func = klp_ftrace_handler;
--	ops->flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_DYNAMIC;
-+	ops->flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_DYNAMIC |
-+		     FTRACE_FL_IPMODIFY;
- 	func->fops = ops;
- 	func->state = KLP_DISABLED;
- 
 -- 
-2.1.0
-
+Jiri Kosina
+SUSE Labs
