@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaLRQhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:37:18 -0500
-Received: from resqmta-po-05v.sys.comcast.net ([96.114.154.164]:35608 "EHLO
-	resqmta-po-05v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751178AbaLRQhQ (ORCPT
+	id S1751414AbaLRQmm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:42:42 -0500
+Received: from static.68.134.40.188.clients.your-server.de ([188.40.134.68]:51306
+	"EHLO mail02.iobjects.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbaLRQml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:37:16 -0500
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: m.chehab@samsung.com, hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
-        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
-        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/3] media: au0828 change to not zero out fmt.pix.priv
-Date: Thu, 18 Dec 2014 09:20:11 -0700
-Message-Id: <54b748fa5cb6883d6ce348c38328161409c1f1be.1418918402.git.shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
-References: <cover.1418918401.git.shuahkh@osg.samsung.com>
-In-Reply-To: <cover.1418918401.git.shuahkh@osg.samsung.com>
-References: <cover.1418918401.git.shuahkh@osg.samsung.com>
+	Thu, 18 Dec 2014 11:42:41 -0500
+Message-ID: <549303FC.9090604@googlemail.com>
+Date: Thu, 18 Dec 2014 17:42:36 +0100
+From: =?UTF-8?B?SG9sZ2VyIEhvZmZzdMOkdHRl?= 
+	<holger.hoffstaette@googlemail.com>
+Organization: Applied Asynchrony, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 3.18.1: broken directory with one file too many
+References: <pan.2014.12.16.22.19.18@googlemail.com> <20141217212159.GA11517@fieldses.org> <5492C710.20104@googlemail.com> <20141218144856.GA18179@fieldses.org> <alpine.OSX.2.19.9992.1412180955000.62182@planck.local> <20141218151914.GB18179@fieldses.org> <pan.2014.12.18.15.42.53@googlemail.com> <20141218163254.GF18179@fieldses.org>
+In-Reply-To: <20141218163254.GF18179@fieldses.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to zero out fmt.pix.priv in vidioc_g_fmt_vid_cap()
-vidioc_try_fmt_vid_cap(), and vidioc_s_fmt_vid_cap(). Remove it.
+On 12/18/14 17:32, J. Bruce Fields wrote:
+> So this is two separate tests, both failed, the only difference is that
+> the tcpdump was run on the client in one case and the server in the
+> other?
 
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
----
- drivers/media/usb/au0828/au0828-video.c | 2 --
- 1 file changed, 2 deletions(-)
+Exactly: client first, then I realized you'd want to look at the server-side too.
+That being said..
 
-diff --git a/drivers/media/usb/au0828/au0828-video.c b/drivers/media/usb/au0828/au0828-video.c
-index 3011ca8..ef49b2e 100644
---- a/drivers/media/usb/au0828/au0828-video.c
-+++ b/drivers/media/usb/au0828/au0828-video.c
-@@ -1104,7 +1104,6 @@ static int au0828_set_format(struct au0828_dev *dev, unsigned int cmd,
- 	format->fmt.pix.sizeimage = width * height * 2;
- 	format->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
- 	format->fmt.pix.field = V4L2_FIELD_INTERLACED;
--	format->fmt.pix.priv = 0;
- 
- 	if (cmd == VIDIOC_TRY_FMT)
- 		return 0;
-@@ -1189,7 +1188,6 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
- 	f->fmt.pix.sizeimage = dev->frame_size;
- 	f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M; /* NTSC/PAL */
- 	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
--	f->fmt.pix.priv = 0;
- 	return 0;
- }
- 
--- 
-2.1.0
+> Right, I suspect there's a bug in the server's encoding of the reply to
+> the READDIR rpc.  Odd that the encoding would look correct from the
+> point of view of tcpdump on the server but not from the point of view of
+> tcpdump on the client.
+
+..in order to rule out a mistake on my part with the two separate runs (which prevents correlated analysis) I was just about to boot the server back into 3.18.1 and re-run both client- and server-side traces simultaneously. However I have to head out for a bit first; will post that later today.
+
+Thanks so far!
+
+Holger
+
+PS: sorry for the mangled replies, that seems to be Gmane. Using email only now.
 
