@@ -1,216 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306AbaLRQPq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:15:46 -0500
-Received: from mga02.intel.com ([134.134.136.20]:61003 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaLRQPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:15:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,601,1413270000"; 
-   d="scan'208";a="656471161"
-Message-ID: <5492FC2D.7000308@intel.com>
-Date: Thu, 18 Dec 2014 08:09:17 -0800
-From: "Samudrala, Sridhar" <sridhar.samudrala@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-CC: "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v3 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
-In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD9F56@IRSMSX108.ger.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751462AbaLRQUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:20:21 -0500
+Received: from resqmta-ch2-04v.sys.comcast.net ([69.252.207.36]:54336 "EHLO
+	resqmta-ch2-04v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751119AbaLRQUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:20:17 -0500
+From: Shuah Khan <shuahkh@osg.samsung.com>
+To: m.chehab@samsung.com, hans.verkuil@cisco.com, dheitmueller@kernellabs.com,
+        prabhakar.csengg@gmail.com, sakari.ailus@linux.intel.com,
+        laurent.pinchart@ideasonboard.com, ttmesterr@gmail.com
+Cc: Shuah Khan <shuahkh@osg.samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/3] au0828 vb2 conversion
+Date: Thu, 18 Dec 2014 09:20:09 -0700
+Message-Id: <cover.1418918401.git.shuahkh@osg.samsung.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch series includes patch v2 of the au0828 vb2 conversion,
+removing video and vbi buffer timeout handling, and a patch to
+not set fmt.pix.priv.
 
-On 12/18/2014 7:30 AM, Varlese, Marco wrote:
-> From: Marco Varlese <marco.varlese@intel.com>
->   
-> Switch hardware offers a list of attributes that are configurable on a per port
-> basis.
-> This patch provides a mechanism to configure switch ports by adding an NDO
-> for setting specific values to specific attributes.
-> There will be a separate patch that adds the "get" functionality via another
-> NDO and another patch that extends iproute2 to call the two new NDOs.
->
-> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
-> ---
->   include/linux/netdevice.h    |  5 +++
->   include/uapi/linux/if_link.h | 15 +++++++++
->   net/core/rtnetlink.c         | 73 ++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 93 insertions(+)
->
-> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> index c31f74d..4881c7b 100644
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
->    * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
->    *	Called to notify switch device port of bridge port STP
->    *	state change.
-> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
-> + *                                u32 attr, u64 value);
-> + *	Called to set specific switch ports attributes.
->    */
->   struct net_device_ops {
->   	int			(*ndo_init)(struct net_device *dev);
-> @@ -1185,6 +1188,8 @@ struct net_device_ops {
->   							    struct netdev_phys_item_id *psid);
->   	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
->   							      u8 state);
-> +	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
-> +							   u32 attr, u64 value);
+The following work is in progress and will be as separate patches:
+- removing users and using v4l2_fh_is_singular_file() instead.
+- Changing dynamic allocation of video device structs to static
+  which will reduce the overhead to allocate at register time and
+  deallocating at unregister.
+ 
+Shuah Khan (3):
+  media: au0828 - convert to use videobuf2
+  media: au0828 change to not zero out fmt.pix.priv
+  media: au0828 remove video and vbi buffer timeout work-around
 
-Is it OK to have a requirement that all the attributes are 64 bit values?
-Isn't it more flexible to pass an explicit type of port attributes?
-     (*ndo_switch_port_set_cfg(struct net_device *dev,  u32 attr,  u8 
-attr_type, void *value)
+ drivers/media/usb/au0828/Kconfig        |   2 +-
+ drivers/media/usb/au0828/au0828-cards.c |   2 +-
+ drivers/media/usb/au0828/au0828-vbi.c   | 122 ++--
+ drivers/media/usb/au0828/au0828-video.c | 994 +++++++++++---------------------
+ drivers/media/usb/au0828/au0828.h       |  64 +-
+ 5 files changed, 414 insertions(+), 770 deletions(-)
 
->   #endif
->   };
->   
-> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-> index f7d0d2d..6ad9b91 100644
-> --- a/include/uapi/linux/if_link.h
-> +++ b/include/uapi/linux/if_link.h
-> @@ -146,6 +146,7 @@ enum {
->   	IFLA_PHYS_PORT_ID,
->   	IFLA_CARRIER_CHANGES,
->   	IFLA_PHYS_SWITCH_ID,
-> +	IFLA_SWITCH_PORT_CFG,
->   	__IFLA_MAX
->   };
->   
-> @@ -603,4 +604,18 @@ enum {
->   
->   #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
->   
-> +/* Switch Port Attributes section */
-> +
-> +enum {
-> +	IFLA_SW_UNSPEC,
-> +	IFLA_SW_LEARNING,
-> +	IFLA_SW_LOOPBACK,
-> +	IFLA_SW_BCAST_FLOODING,
-> +	IFLA_SW_UCAST_FLOODING,
-> +	IFLA_SW_MCAST_FLOODING,
-> +	__IFLA_SW_ATTR_MAX
-> +};
-> +
-> +#define IFLA_SW_ATTR_MAX (__IFLA_SW_ATTR_MAX - 1)
-> +
->   #endif /* _UAPI_LINUX_IF_LINK_H */
-> diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-> index eaa057f..d50ca71 100644
-> --- a/net/core/rtnetlink.c
-> +++ b/net/core/rtnetlink.c
-> @@ -1223,6 +1223,7 @@ static const struct nla_policy ifla_policy[IFLA_MAX+1] = {
->   	[IFLA_PHYS_PORT_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
->   	[IFLA_CARRIER_CHANGES]	= { .type = NLA_U32 },  /* ignored */
->   	[IFLA_PHYS_SWITCH_ID]	= { .type = NLA_BINARY, .len = MAX_PHYS_ITEM_ID_LEN },
-> +	[IFLA_SWITCH_PORT_CFG]	= { .type = NLA_NESTED },
->   };
->   
->   static const struct nla_policy ifla_info_policy[IFLA_INFO_MAX+1] = {
-> @@ -1265,6 +1266,14 @@ static const struct nla_policy ifla_port_policy[IFLA_PORT_MAX+1] = {
->   	[IFLA_PORT_RESPONSE]	= { .type = NLA_U16, },
->   };
->   
-> +static const struct nla_policy ifla_sw_attr_policy[IFLA_SW_ATTR_MAX+1] = {
-> +	[IFLA_SW_LEARNING]	= { .type = NLA_U64 },
-> +	[IFLA_SW_LOOPBACK]	= { .type = NLA_U64 },
-> +	[IFLA_SW_BCAST_FLOODING] = { .type = NLA_U64 },
-> +	[IFLA_SW_UCAST_FLOODING] = { .type = NLA_U64 },
-> +	[IFLA_SW_MCAST_FLOODING] = { .type = NLA_U64 },
-> +};
-> +
->   static int rtnl_dump_ifinfo(struct sk_buff *skb, struct netlink_callback *cb)
->   {
->   	struct net *net = sock_net(skb->sk);
-> @@ -1389,6 +1398,41 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
->   	return 0;
->   }
->   
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
-> +{
-> +	int rem, err = -EINVAL;
-> +	struct nlattr *v;
-> +	const struct net_device_ops *ops = dev->netdev_ops;
-> +
-> +	nla_for_each_nested(v, attr, rem) {
-> +		u32 op = nla_type(v);
-> +		u64 value = 0;
-> +
-> +		switch (op) {
-> +		case IFLA_SW_LEARNING:
-> +		case IFLA_SW_LOOPBACK:
-> +		case IFLA_SW_BCAST_FLOODING:
-> +		case IFLA_SW_UCAST_FLOODING:
-> +		case IFLA_SW_MCAST_FLOODING: {
-> +			value = nla_get_u64(v);
-> +			err = ops->ndo_switch_port_set_cfg(dev,
-> +							   op,
-> +							   value);
-> +			break;
-> +		}
-> +		default:
-> +			err = -EINVAL;
-> +			break;
-> +		}
-> +		if (err)
-> +			break;
-> +	}
-> +	return err;
-> +}
-> +
-> +#endif
-> +
->   static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
->   {
->   	int rem, err = -EINVAL;
-> @@ -1740,6 +1784,35 @@ static int do_setlink(const struct sk_buff *skb,
->   			status |= DO_SETLINK_NOTIFY;
->   		}
->   	}
-> +#ifdef CONFIG_NET_SWITCHDEV
-> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
-> +		struct nlattr *attrs[IFLA_SW_ATTR_MAX+1];
-> +
-> +		err = -EOPNOTSUPP;
-> +		if (!ops->ndo_switch_port_set_cfg)
-> +			goto errout;
-> +		if (!ops->ndo_switch_parent_id_get)
-> +			goto errout;
-> +
-> +		err = nla_parse_nested(attrs, IFLA_SW_ATTR_MAX,
-> +				       tb[IFLA_SWITCH_PORT_CFG],
-> +				       ifla_sw_attr_policy);
-> +		if (err < 0)
-> +			return err;
-> +
-> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-> +		if (err < 0)
-> +			goto errout;
-> +
-> +		status |= DO_SETLINK_NOTIFY;
-> +	}
-> +#else
-> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
-> +		err = -EOPNOTSUPP;
-> +		goto errout;
-> +	}
-> +#endif
-> +
->   	err = 0;
->   
->   errout:
+-- 
+2.1.0
 
