@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842AbaLRQeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:34:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:38288 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074AbaLRQd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:33:58 -0500
-Date: Thu, 18 Dec 2014 17:33:48 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] power: reset: augment versatile driver for integrator
-Message-ID: <20141218163347.GA18639@earth.universe>
-References: <1415100672-31425-1-git-send-email-linus.walleij@linaro.org>
- <CACRpkdZUZJmSrHVH4BbNbANgN-BphYL_wCF=6QdXndXdXYXiZg@mail.gmail.com>
- <CALT56yM15FbKm6RKqUe59cWtMSfZgOR7koYcgM_J3F_TyHp2WA@mail.gmail.com>
- <CACRpkdaPx_xqu5S9ATJNzWDUCgL9hQmvbVSa5ehbxDUtfKh95Q@mail.gmail.com>
+	id S1750953AbaLRQfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:35:03 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:40533 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaLRQfA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:35:00 -0500
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
+Date: Thu, 18 Dec 2014 17:34:56 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
+Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org
+References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412181208.58969@pali> <21066.1418915331@turing-police.cc.vt.edu>
+In-Reply-To: <21066.1418915331@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="bp/iNruPH9dso1Pn"
-Content-Disposition: inline
-In-Reply-To: <CACRpkdaPx_xqu5S9ATJNzWDUCgL9hQmvbVSa5ehbxDUtfKh95Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/signed;
+  boundary="nextPart1460430.1M8Crbo4gH";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201412181734.56353@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---bp/iNruPH9dso1Pn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--nextPart1460430.1M8Crbo4gH
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
-
-On Wed, Dec 17, 2014 at 10:34:58PM +0100, Linus Walleij wrote:
-> On Wed, Nov 12, 2014 at 7:20 PM, Dmitry Eremin-Solenikov
-> <dbaryshkov@gmail.com> wrote:
-> > 2014-11-12 17:54 GMT+03:00 Linus Walleij <linus.walleij@linaro.org>:
-> >> On Tue, Nov 4, 2014 at 12:31 PM, Linus Walleij <linus.walleij@linaro.o=
-rg> wrote:
-> >>
-> >>> Augment the Versatile reset driver to also handle the core
-> >>> module reset sequence used on the Integrator/AP and
-> >>> Integrator/CP.
-> >>>
-> >>> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> >>> Cc: David Woodhouse <dwmw2@infradead.org>
-> >>> Cc: Sebastian Reichel <sre@kernel.org>
-> >>> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> >>> ---
-> >>> Sebastian: please merge this into your power tree if you're
-> >>> OK with it, the corresponding platform changes are orthogonal
-> >>> so these can go separately through the ARM SoC tree.
-> >>
-> >> Power folks: ping on this patch.
-> >
-> > I will apply tomorrow, if Sebastian does not respond earlier.
+On Thursday 18 December 2014 16:08:51 Valdis.Kletnieks@vt.edu=20
+wrote:
+> On Thu, 18 Dec 2014 12:08:58 +0100, Pali Roh=C3=A1r said:
+> > So your BIOS cannot report nominal_rpm and because your
+> > machine=3D20 is not in dmi list, all 3 patches do nothing for
+> > your machine.
+> >=20
+> > But you need to set multiplier to 1, right?
+> >=20
+> > What about this patch? (on top of 3/3)
+> >=20
+> > --- a/drivers/char/i8k.c
+> > +++ b/drivers/char/i8k.c
+> > @@ -850,6 +850,10 @@ static int __init i8k_probe(void)
+> >=20
+> >  		 */
+> >  	=09
+> >  		for (fan =3D 0; fan < I8K_FAN_COUNT; ++fan) {
+> >  	=09
+> >  			i8k_fan_mult[fan] =3D I8K_FAN_DEFAULT_MULT;
+> >=20
+> > +			if (i8k_get_fan_rpm(fan) > I8K_FAN_MAX_RPM) {
+> > +				i8k_fan_mult[fan] =3D 1;
+> > +				continue;
+> > +			}
+> >=20
+> >  			for (val =3D 0; val < 256; ++val) {
 >=20
-> Just checking: this is applied and *will* go upstream this merge window,
-> right?
+> Dell Latitude E6530, linux-next 20141208 plus the 3 patches
+> you posted on Nov 30 (support labels), plus the 4 of 3
+> patches in this go around, and sensors reports:
+>=20
+> i8k-virtual-0
+> Adapter: Virtual device
+> fan2:        2774 RPM
+>=20
+> and under CPU load, that number rises to 3200 or so, so it
+> seems to be working....
+>=20
+> So you probably should fold this into the current set of
+> patches, and feel free to put this in there:
+>=20
+> Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
 
-I haven't heard of Dmitry since then and it's not in the battery
-tree. Please resend the patch (its no longer in my mailbox) and I
-will apply it to -next immediately.
+Thanks for testing. Anyway I would like to know if your dell=20
+machine supports i8k_get_fan_nominal_rpm(). Can you test without=20
+above 4 lines patch?
 
--- Sebastian
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
---bp/iNruPH9dso1Pn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--nextPart1460430.1M8Crbo4gH
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCgAGBQJUkwHoAAoJENju1/PIO/qa33EP/0T+GTP4JG2lFwIGs4N1WlpI
-A0rYnH7Qb8zx4vQT2L9C4nrgh7ooA5hHjmm3Sv5GoVpbvpCJgxHtUC1cQb3ZjDIN
-APzyR7grOBNqJZxpzNFr3uXLOpGMr/z/x2Hi0/BspOFKMr0ElxhcLobU595EtDRQ
-pMXDXlV53DMxjbnsHHDAd4BH3UgdJmq2UXg8nKy5OljKNVGHSw2miMA3aDhFUXqr
-kooknEDVdNnckFNLJPk9NxpKZInkd6xjbfIchtEDdwZS6QCgZ9SQ6WG/Tk+t+SJO
-I9ht3QdI+bs8CMhryuKl7lC3icMP7di0HvW3lojQ4FS+MfRWIRoSPgovwCihy/jQ
-B5cvCypDuz21iQOHUKZZYd5fCuo91VLA99bCrUDQi3jjzMiX13RBvLmyhytFjZ5d
-UfA8URm/B0ZjmV4dEzPU3QiBvua1LkKJ6lBWsmnHF2lt9iJ4welsJslmBu4ToRDP
-QtbqYC7+jWrntw98eUSxN/IGLvVHnHU74fPUmIsp7h7Q7epdth3Qy0xsgKWGPnHo
-V66buIASO/gYv68HAA8W1bfviZASCjfWze7fbMXGVoHBuhW+B8UqE5qKKjLy3Lk8
-yFc16bBMBmscQc9msUPbD/1HuJiMf4d4ULWyVOVc0L8mHDAr3g3zqw1lGL9uvB1P
-4BmnqNKgQ11NCCtSVVa5
-=JrUx
+iEYEABECAAYFAlSTAjAACgkQi/DJPQPkQ1K17wCeKkbz1RW9M6NdY0bxurGqAG02
+hE4AoIZHCfYW24ayEFW6eI+eIh5ACQRY
+=teUu
 -----END PGP SIGNATURE-----
 
---bp/iNruPH9dso1Pn--
+--nextPart1460430.1M8Crbo4gH--
