@@ -1,26 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaLRL3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:29:07 -0500
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:34690 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434AbaLRL3F convert rfc822-to-8bit (ORCPT
+	id S1752001AbaLRL3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:29:33 -0500
+Received: from mga02.intel.com ([134.134.136.20]:49033 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751440AbaLRL3b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:29:05 -0500
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Subject: [GIT PULL] ARC Updates for 3.19-rc1
-Thread-Topic: [GIT PULL] ARC Updates for 3.19-rc1
-Thread-Index: AdAatdGV9g2wMOGuTXiQmb61sz7YOA==
-Date: Thu, 18 Dec 2014 11:29:00 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA2307565BC8B4C@IN01WEMBXA.internal.synopsys.com>
-Accept-Language: en-US, en-IN
+	Thu, 18 Dec 2014 06:29:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="500851137"
+From: "Varlese, Marco" <marco.varlese@intel.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Thread-Topic: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Thread-Index: AdAaqPMciB9+ZS56Q6O2uHwvQZyp6A==
+Date: Thu, 18 Dec 2014 11:29:28 +0000
+Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.182]
+x-originating-ip: [163.33.239.181]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -28,46 +36,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Marco Varlese <marco.varlese@intel.com>
 
-Please pull.
+Switch hardware offers a list of attributes that are configurable
+on a per port basis.
+This patch provides a mechanism to configure switch ports by adding
+an NDO for setting specific values to specific attributes.
+There will be a separate patch that adds the "get" functionality via
+another NDO and another patch that extends iproute2 to call the two
+new NDOs.
 
-Thx,
--Vineet
+Signed-off-by: Marco Varlese <marco.varlese@intel.com>
+---
+ include/linux/netdevice.h    |  5 ++++
+ include/uapi/linux/if_link.h | 15 ++++++++++++
+ net/core/rtnetlink.c         | 54 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 74 insertions(+)
 
-------------->
-he following changes since commit 0df1f2487d2f0d04703f142813d53615d62a1da4:
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index c31f74d..4881c7b 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+  * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8 state);
+  *	Called to notify switch device port of bridge port STP
+  *	state change.
++ * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
++ *                                u32 attr, u64 value);
++ *	Called to set specific switch ports attributes.
+  */
+ struct net_device_ops {
+ 	int			(*ndo_init)(struct net_device *dev);
+@@ -1185,6 +1188,8 @@ struct net_device_ops {
+ 							    struct netdev_phys_item_id *psid);
+ 	int			(*ndo_switch_port_stp_update)(struct net_device *dev,
+ 							      u8 state);
++	int			(*ndo_switch_port_set_cfg)(struct net_device *dev,
++							   u32 attr, u64 value);
+ #endif
+ };
+ 
+diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+index f7d0d2d..19cb51a 100644
+--- a/include/uapi/linux/if_link.h
++++ b/include/uapi/linux/if_link.h
+@@ -146,6 +146,7 @@ enum {
+ 	IFLA_PHYS_PORT_ID,
+ 	IFLA_CARRIER_CHANGES,
+ 	IFLA_PHYS_SWITCH_ID,
++	IFLA_SWITCH_PORT_CFG,
+ 	__IFLA_MAX
+ };
+ 
+@@ -603,4 +604,18 @@ enum {
+ 
+ #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+ 
++/* Switch Port Attributes section */
++
++enum {
++	IFLA_ATTR_UNSPEC,
++	IFLA_ATTR_LEARNING,
++	IFLA_ATTR_LOOPBACK,
++	IFLA_ATTR_BCAST_FLOODING,
++	IFLA_ATTR_UCAST_FLOODING,
++	IFLA_ATTR_MCAST_FLOODING,
++	__IFLA_ATTR_MAX
++};
++
++#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
++
+ #endif /* _UAPI_LINUX_IF_LINK_H */
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index eaa057f..c0d1c45 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device *dev, struct nlattr *tb[])
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_NET_SWITCHDEV
++static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
++{
++	int rem, err = -EINVAL;
++	struct nlattr *v;
++	const struct net_device_ops *ops = dev->netdev_ops;
++
++	nla_for_each_nested(v, attr, rem) {
++		u32 op = nla_type(v);
++		u64 value = 0;
++
++		switch (op) {
++		case IFLA_ATTR_LEARNING:
++		case IFLA_ATTR_LOOPBACK:
++		case IFLA_ATTR_BCAST_FLOODING:
++		case IFLA_ATTR_UCAST_FLOODING:
++		case IFLA_ATTR_MCAST_FLOODING: {
++			if (nla_len(v) < sizeof(value)) {
++				err = -EINVAL;
++				break;
++			}
++
++			value = nla_get_u64(v);
++			err = ops->ndo_switch_port_set_cfg(dev,
++							   op,
++							   value);
++			break;
++		}
++		default:
++			err = -EINVAL;
++			break;
++		}
++		if (err)
++			break;
++	}
++	return err;
++}
++
++#endif
++
+ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+ {
+ 	int rem, err = -EINVAL;
+@@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
+ 			status |= DO_SETLINK_NOTIFY;
+ 		}
+ 	}
++#ifdef CONFIG_NET_SWITCHDEV
++	if (tb[IFLA_SWITCH_PORT_CFG]) {
++		err = -EOPNOTSUPP;
++		if (!ops->ndo_switch_port_set_cfg)
++			goto errout;
++		if (!ops->ndo_switch_parent_id_get)
++			goto errout;
++		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
++		if (err < 0)
++			goto errout;
++
++		status |= DO_SETLINK_NOTIFY;
++	}
++#endif
+ 	err = 0;
+ 
+ errout:
+-- 
+1.8.5.3
 
-  Linux 3.18-rc3 (2014-11-02 15:01:51 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/vgupta/arc.git/ tags/arc-3.19-rc1
-
-for you to fetch changes up to 7a70bf797a587205991b8e3153d764561de867de:
-
-  ARC: rename default defconfig (2014-12-17 15:23:56 +0530)
-
-----------------------------------------------------------------
-Minor updates for ARC for 3.19
-
-----------------------------------------------------------------
-Alexey Brodkin (1):
-      ARC: add power management options
-
-Vineet Gupta (4):
-      ARC: R-M-W assist locks only needed for !LLSC
-      ARC: document memory clobber in irq control macros
-      ARC: [nsimosci] move peripherals to match model to FPGA
-      ARC: rename default defconfig
-
- arch/arc/Kconfig                                   |  1 +
- arch/arc/Makefile                                  |  2 +-
- arch/arc/boot/dts/nsimosci.dts                     | 18 +++----
- arch/arc/configs/fpga_noramfs_defconfig            | 63 ----------------------
- .../configs/{fpga_defconfig => nsim_700_defconfig} |  0
- arch/arc/include/asm/irqflags.h                    |  9 ++++
- arch/arc/kernel/smp.c                              |  2 +
- 7 files changed, 22 insertions(+), 73 deletions(-)
- delete mode 100644 arch/arc/configs/fpga_noramfs_defconfig
- rename arch/arc/configs/{fpga_defconfig => nsim_700_defconfig} (100%)
