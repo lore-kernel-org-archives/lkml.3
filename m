@@ -1,110 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834AbaLRJyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:54:12 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:44066 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbaLRJyK (ORCPT
+	id S1751513AbaLRKF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:05:26 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:24503 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaLRKFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:54:10 -0500
-Date: Thu, 18 Dec 2014 10:54:06 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jim Davis <jim.epost@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org
-Subject: Re: randconfig build error with next-20141204, in drivers/pwm
-Message-ID: <20141218095406.GB24383@ulmo>
-References: <CA+r1Zhj2ugeO7yqfmnbmkF4xqmZiiSbvq0zVXDMXdfOYGiHcRg@mail.gmail.com>
- <20141218094442.GA24383@ulmo>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1ccMZA6j1vT5UqiK"
-Content-Disposition: inline
-In-Reply-To: <20141218094442.GA24383@ulmo>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 18 Dec 2014 05:05:22 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-be-5492a6e0aa7f
+Message-id: <5492A6DE.5020704@samsung.com>
+Date: Thu, 18 Dec 2014 11:05:18 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Kevin Hilman <khilman@kernel.org>
+Cc: amit daniel kachhap <amit.daniel@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, Ulf Hansson <ulf.hansson@linaro.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        Pankaj Dubey <pankaj.dubey@samsung.com>,
+        Geert Uytterhoeven <geert+renesas@glider.be>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC v3 1/2] PM / Domains: Extend API
+ pm_genpd_dev_need_restore to use restore types
+References: <1418489518-7252-1-git-send-email-amit.daniel@samsung.com>
+ <CADGdYn4WQ6i29ecTthu7eNUfSSQ--YESGyHcA1_9CdK-h53hxA@mail.gmail.com>
+ <7h4msub0ca.fsf@deeprootsystems.com> <5418986.E58ik2Q1Hm@vostro.rjw.lan>
+In-reply-to: <5418986.E58ik2Q1Hm@vostro.rjw.lan>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t/xy7oPlk0KMZh8TMui4WqIxdzZkxgt
+	ehdcZbN4uvkxk8WsKXuZLDY9vsZqcXnXHDaLz71HGC1mnN/HZLH2yF12i0Vbv7BbnDl9idWi
+	Yxmjxapdfxgtjq8Nd+D3mHhW12PnrLvsHov3vGTy2LSqk83jzrU9bB6bl9R7bLnazuLRt2UV
+	o8fnTXIBnFFcNimpOZllqUX6dglcGe3f+5kLTvBVXJm8lbmBcRd3FyMHh4SAicS2ryxdjJxA
+	ppjEhXvr2boYuTiEBJYySvRf+ADlfGKUmHnyPytIFa+AlsTrfxOYQWwWAVWJo8cfsIHYbAKG
+	Er1H+xhBbFGBCImTd/ewQ9QLSvyYfA9sg4iAn8S6NVeYQYYyC7xhkfh86x9Ys7BApkTbtW2s
+	ENtuMEo8+/YErJtTwEBi8twTLCCnMguoS0yZkgsSZhaQl9i85i3zBEaBWUh2zEKomoWkagEj
+	8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkJj6uoNx6TGrQ4wCHIxKPLwJuZNChFgTy4or
+	cw8xSnAwK4nwRucAhXhTEiurUovy44tKc1KLDzEycXBKNTCWXeeIclHQ9Fi812OH0EXNEwbB
+	L8r3pXJlqTU8kGDt6lOLN3Jwcrb2f3/E2aa2ID43a5KVj6ZdiNGXjAkuu1c+8Zprfcvh/tTP
+	jW4Gfy3erlhn0LXnCHO1ce7CN8/WOTUqrMk0jjR7nfLI9W1sNNOXYLfrnIYMpxJnh2+/u3X7
+	taPJ1xgTVyuxFGckGmoxFxUnAgC50WOKhwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 18/12/14 01:58, Rafael J. Wysocki wrote:
+>>>> What's needed to solve this problem is a generalized way to have runtime
+>>>> > >> PM dependencies between devices.  Runtime PM already automatically
+>>>> > >> handles parent devices as one type of dependent device (e.g. a parent
+>>>> > >> device needs to be runtime PM resumed before its child.)  So what's
+>>>> > >> needed is a generic way to other PM dependencies with the runtime PM
+>>>> > >> core (not the genpd core.)
+>>> > >
+>>> > > Considering the example above with three devices, device D1 and D2 are
+>>> > > passive components in this power domain. These devices only need to
+>>> > > know the state changes of the power domains but would not control the
+>>> > > power domain themselves nor put forth constraints in the power domain
+>>> > > state changes. So I did not clearly understand as to how this example
+>>> > > could be solved by introducing changes in runtime PM core.
+>> > 
+>> > Your solution only solves the problems for devices managed by genpd.
+>> > 
+>> > If I understood your example correctly, what you really want to solve
+>> > this problem more generically is to be able to tell the runtime PM core
+>> > that D3 has a dependency on D1 and D2.  Then, whenver the runtime PM
+>> > core is doing get/put operations for D3, it needs to also do them for D1
+>> > and D2.
 
---1ccMZA6j1vT5UqiK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Indeed, I think it would solve most of the problems if we were able to
+model the PM dependencies between devices which would then be handled
+in the PM core.  I recall something like this has been proposed a while
+ago [1].
 
-On Thu, Dec 18, 2014 at 10:44:44AM +0100, Thierry Reding wrote:
-> On Thu, Dec 04, 2014 at 09:10:55AM -0700, Jim Davis wrote:
-> > Building with the attached random configuration file,
-> >=20
-> > ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!
->=20
-> This took a while to figure out. The attached patch fixes this build
-> failure, though the driver should probably be fixed to avoid division by
-> zero, just in case. Adding Boris for visibility.
->=20
-> Thierry
+>> > This will accomplish the same as your proposed approach, but work for
+>> > any devices in any PM domains.
+>
+> Plus, it is not limited to runtime PM, really.  It affects system suspend
+> too.
 
-> From 7933af1d2e5f3941d934eec88f32f5547ee218c3 Mon Sep 17 00:00:00 2001
-> From: Thierry Reding <thierry.reding@gmail.com>
-> Date: Thu, 18 Dec 2014 10:09:42 +0100
-> Subject: [PATCH] pwm: atmel-hlcdc: Depend on HAVE_CLK
->=20
-> The include/linux/clk.h header defines dummy implementations for the
-> various clk_*() functions if HAVE_CLK is not selected to improve build
-> coverage in randconfig builds.
->=20
-> The dummy implementation of clk_get_rate() returns 0, which causes the
-> Atmel HLCDC PWM driver's atmel_hlcdc_pwm_config() implementation to end
-> up calling:
->=20
-> 	do_div(clk_period_ns, 0)
->=20
-> On x86, do_div(n, base) will end up evaluating to this:
->=20
-> 	n >>=3D ilog2(base)
->=20
-> with base =3D 0, the implementation of ilog2() will call ____ilog2_NaN(),
-> which is purposely undefined and results in a linker failure:
->=20
-> 	ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!
->=20
-> The implementation of do_div() checks that base is a power of 2 before
-> calling ilog2(). The compiler doesn't optimize this away, presumably
-> because is_power_of_2() is an inline function and the compiler doesn't
-> or can't inspect it closely enough. ilog2() being a macro it still ends
-> up generating the ____ilog2_NaN() because of the constant 0.
+[1] https://lkml.org/lkml/2009/8/26/485
 
-If I turn is_power_of_2() into a macro, then this build failure also
-goes away. I suppose the reason is that now the do_div() evaluates such
-that the branch that would reference the undefined symbol can be
-discarded.
-
-Still I think allowing that branch to remain will cause the linker
-failure on division by (constant) zero, which has some value, too.
-
-Thierry
-
---1ccMZA6j1vT5UqiK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUkqQ+AAoJEN0jrNd/PrOhQUwP/iXNoh/5gRAYB57lvDrG7I7a
-kxGGx2HqbnuWW/+z0Qj4FxelW1PQNt91ZNYDwScTOvQGn2e+XeULV1wZ7MESjtUs
-VJN7LWUTJNfpApL8lAdtMW3bF8tfy4xO0SXxKeq1nYvVA94SFT/iZEKHgkGYUC60
-NWvxOTwDtdnMGKxAzXb98iNd8S49IxyawfUFHU6eGyDL8iR4/QgN5y5uCZ9M12di
-4KQ5UCI8IILVOPWB99dc05h44Pq5QmnK3LdoNnz/6zDGuY1KQBLTBee3QJJtLdrc
-CEDduf9GFQeUq/tFV29UaW6J7SepWF5db7lUe+yIo29IS4Suj4VowYmGgMUQfoQE
-fI/c9tnjkm5SKTYYfNWEQUDg9aMCkfIyXoULMaPvBSV/GrP/kIlXn2vJptr9m8qN
-fca4bvfzDUfgxIgB80u8NtNPuPKyvV8AwOtw9CTmfNiLZNL88ks1vPVdPIdmtoFc
-N/GObJ6+fGJtAX+LTiCcX4H3xKFRolUy08yKyTBoo1spMXc8bEHQNmAHqqo79r8s
-3q0A9P04k9w1WMXj1PJF0xtElvTMdriSCpnW3230iVcgY8RlojXtDAQAQdtRe6fk
-/80VG+ajqdY73WtS/FkoNzFXvrwfJv54066sCFteiTuJWYp4Olw8am4kOjiv8IvW
-xUUH64GxJGEqOLLxWY6u
-=n1CI
------END PGP SIGNATURE-----
-
---1ccMZA6j1vT5UqiK--
+-- 
+Regards,
+Sylwester
