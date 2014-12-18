@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaLRQoc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:44:32 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:39926 "EHLO omr2.cc.vt.edu"
+	id S1751672AbaLRQpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:45:35 -0500
+Received: from omr1.cc.vt.edu ([198.82.141.52]:48687 "EHLO omr1.cc.vt.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751598AbaLRQob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:44:31 -0500
+	id S1751057AbaLRQpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:45:33 -0500
 X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-Cc: Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>, Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] i8k: Remove laptop specific config data (fan_mult, fan_max) from driver
-In-Reply-To: Your message of "Thu, 18 Dec 2014 17:34:56 +0100."
-             <201412181734.56353@pali>
+To: Paul Moore <paul@paul-moore.com>, Eric Paris <eparis@parisplace.org>,
+        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov
+Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid context at mm/slab.c:2849
+In-Reply-To: Your message of "Tue, 16 Dec 2014 20:09:54 -0500."
+             <2966.1418778594@turing-police.cc.vt.edu>
 From: Valdis.Kletnieks@vt.edu
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412181208.58969@pali> <21066.1418915331@turing-police.cc.vt.edu>
-            <201412181734.56353@pali>
+References: <2966.1418778594@turing-police.cc.vt.edu>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418921049_3517P";
+Content-Type: multipart/signed; boundary="==_Exmh_1418921116_3517P";
 	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Dec 2014 11:44:09 -0500
-Message-ID: <5390.1418921049@turing-police.cc.vt.edu>
+Date: Thu, 18 Dec 2014 11:45:16 -0500
+Message-ID: <5444.1418921116@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418921049_3517P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+--==_Exmh_1418921116_3517P
+Content-Type: text/plain; charset=us-ascii
 
-On Thu, 18 Dec 2014 17:34:56 +0100, Pali Roh=E1r said:
+On Tue, 16 Dec 2014 20:09:54 -0500, Valdis Kletnieks said:
 
-> Thanks for testing. Anyway I would like to know if your dell
-> machine supports i8k_get_fan_nominal_rpm(). Can you test without
-> above 4 lines patch?
+> Spotted these two while booting single-user on 20141216.  20141208
+> doesn't throw these, so it's something in the last week or so..
 
-I'll give that a try this evening..
+Gaah!  Turns out that 20141208 *is* susceptible - it had been booting
+just fine for several days, but it went around the bend, apparently due
+to a userspace or initrd change.
+
+egrep 'BUG|Linux vers' from my syslog:
+
+Dec  9 12:19:53 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec  9 21:19:53 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 10 12:39:45 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 10 20:56:28 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 11 10:46:49 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 11 23:53:10 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 11:13:19 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 19:26:24 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 19:33:32 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 19:42:30 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 20:00:39 turing-police kernel: [ 1109.635328] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:00:43 turing-police kernel: [ 1113.680912] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:33:15 turing-police kernel: [ 3062.345461] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:37:48 turing-police kernel: [ 3335.788891] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:41:57 turing-police kernel: [ 3584.265255] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:42:47 turing-police kernel: [ 3633.863552] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 20:51:33 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+Dec 12 21:51:04 turing-police kernel: [ 3587.132867] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 22:20:01 turing-police kernel: [ 5322.313024] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 12 23:06:00 turing-police kernel: [ 8077.463289] BUG: sleeping function called from invalid context at mm/slab.c:2849
+Dec 13 00:00:05 turing-police kernel: [11318.405826] BUG: sleeping function called from invalid context at mm/slab.c:2849
+
+I need to figure out what changed around 7:30PM on the 12th.
 
 
---==_Exmh_1418921049_3517P
+--==_Exmh_1418921116_3517P
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 Comment: Exmh version 2.5 07/13/2001
 
-iQIVAwUBVJMEWQdmEQWDXROgAQLW7hAAm3XUYAd8byH6QWSFkcNlVOHS9j8XXHds
-7+4hGfWC8dW6t3dUjJ/Ozzq/mOk2SWR3zB4z/Y9Brf0g/XCb3R5p6ztQo0gOizEQ
-05AMAcASXUmWT1mW4U5d+juLbrRTWhzBhv/7Se1Y6TiAqTgIjIBTl0EclYiTBStc
-j5ecMFKnMjbaGzXVGK5W/UK+fMGjrDIFez9HFFM+WzFCOzL+q7PfvQoQ2eQx2B8P
-2FeBwNxVNq2M99J6wXnrwchW+19i42QT87FP9gzt6bhJue53Uo89UCED9xcMgHp5
-j220iRbZkRKutXbCJBor0mY4NxWol2ZoLZKKZ8WlBIThnJslracf4datWGzhYZIx
-7d1eKCjY4FuMO7FRh4Ryf7aSnGvlQewL7SoP/bShEbB/yiG51UrEqXOzfvehmbk5
-ASjvZNGHthdNhasG/fgiaF0ffFeg3EGQA9r9Cgjr/JfDEjkQ/H26NsFgfuXdkO/M
-uuZMdtaL8aVQfNxPk5N0lezTdGXX3dcbU816jgFFXGkdenmkE8bHzPUgcSpEFVfJ
-zemDRZ0j/Y0F6y5DZjAwJcB/jAGguL4EQYNCpPYRyJbez6D1g757p1hAdxYZsfVK
-HFqG7x7NbswZjfkg5Zjt+BjL5V5irgmyj01jYOHHkRYv3sGi7L4N/TbEY7axoVLO
-GsWgYQ6JEMU=
-=/zU7
+iQIVAwUBVJMEnAdmEQWDXROgAQKvNxAAor6BZKRb4N1EONZaw9sNm2i8V+AWqxQd
+dxRGVBqBhY/dhWTfwuuePwhewe76Nf1pfgf/OwQBx0S6CrU+pkmPEbpdTbxL9fAo
+svqAQ0Wp0dpvyu0DI6O8ianguOw258u5bysTe1F2p+wv68WzFSC8eBelNywVVvrr
+FiDwOK3Ggfu9O426X6FO1EvL6e41eUXbV7slA/JH7+7oSFdZkWlArucf8uD1l34z
+DAQ7ywtiV477nkhW511/yAK+Nbz3E8remWNfsu2qTY/RM9coNGkOdlhpq2mGoMAB
+HPqJWTujLyS8NzaTB/hzf3mq9jMvDXmfOjizijB/nkykrC0qOJJxWFTAIewWQICz
+t2MQMhymBbokehX1J11UISEhuEj2v0dwxzYFB9C/wmedNg7xFzEAUBEY68IbTPZx
+naSjHVAU8RVi/mHGHec0us6gZVjC3+M5i/U6+GoFTBAD14fRKnx8q2CDXw5RnmV/
+1BLJPuMf4DWK/tvHzO4C09m6dSHilgkeZ1QCxUcpUuKXFTndYfAiUo3AN4Sp7JAk
++80N8ckjA0710BqZ8TVJR1vEg5NuouORKZfAVvreFC+3cL/1D0QQzNRHEo1PTT6/
+86vCklSBN2oLmlzI/HBdjl/VgSt4WIAw3b3ocR+YyDUq0TdPV6ebtpxYcCNJC4Dg
+/MIgKvOya2Q=
+=Tr3z
 -----END PGP SIGNATURE-----
 
---==_Exmh_1418921049_3517P--
+--==_Exmh_1418921116_3517P--
