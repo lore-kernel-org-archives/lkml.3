@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339AbaLRPTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:19:17 -0500
-Received: from fieldses.org ([174.143.236.118]:34622 "EHLO fieldses.org"
+	id S1751379AbaLRPU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:20:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28874 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968AbaLRPTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:19:16 -0500
-Date: Thu, 18 Dec 2014 10:19:14 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Benjamin Coddington <bcodding@redhat.com>
-Cc: Holger =?utf-8?Q?Hoffst=C3=A4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-Message-ID: <20141218151914.GB18179@fieldses.org>
-References: <pan.2014.12.16.22.19.18@googlemail.com>
- <20141217212159.GA11517@fieldses.org>
- <5492C710.20104@googlemail.com>
- <20141218144856.GA18179@fieldses.org>
- <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
+	id S1751132AbaLRPUy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:20:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,601,1413270000"; 
+   d="scan'208";a="639757030"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
+CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 12/26] KVM: Initialize VT-d Posted-Interrupts Descriptor
+Thread-Topic: [v3 12/26] KVM: Initialize VT-d Posted-Interrupts Descriptor
+Thread-Index: AQHQFiDtxb5SKKBrwUimVMToMZVzKZyVfTEA
+Date: Thu, 18 Dec 2014 15:19:40 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04985@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-13-git-send-email-feng.wu@intel.com>
+In-Reply-To: <1418397300-10870-13-git-send-email-feng.wu@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 09:58:06AM -0500, Benjamin Coddington wrote:
-> Frame 36 of nfs-client.pcap has this interesting string:
+Feng Wu wrote on 2014-12-12:
+> This patch initializes the VT-d Posted-Interrupts Descriptor.
 > 
-> 0ff0  00 01 3b f6 fb b6 26 16 8f 7c 00 00 00 41 62 74   ..;...&..|...Abt
-> 1000  72 66 73 2d 32 30 00 00 00 00 00 00 00 00 30 36   rfs-20........06
-> 1010  2d 66 69 78 2d 64 65 61 64 6c 6f 63 6b 2d 77 68   -fix-deadlock-wh
-> 1020  65 6e 2d 6d 6f 75 6e 74 69 6e 67 2d 61 2d 64 65   en-mounting-a-de
-> 1030  67 72 61 64 65 64 2d 66 73 2e 70 61 74 63 68 00   graded-fs.patch.
+> Signed-off-by: Feng Wu <feng.wu@intel.com>
+> ---
+>  arch/x86/kvm/vmx.c | 27 +++++++++++++++++++++++++++
+>  1 file changed, 27 insertions(+)
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c index
+> 0b1383e..66ca275 100644 --- a/arch/x86/kvm/vmx.c +++
+> b/arch/x86/kvm/vmx.c @@ -45,6 +45,7 @@
+>  #include <asm/perf_event.h>
+>  #include <asm/debugreg.h>
+>  #include <asm/kexec.h>
+> +#include <asm/irq_remapping.h>
+> 
+>  #include "trace.h"
+> @@ -4433,6 +4434,30 @@ static void ept_set_mmio_spte_mask(void)
+>  	kvm_mmu_set_mmio_spte_mask((0x3ull << 62) | 0x6ull);  }
+> +static void pi_desc_init(struct vcpu_vmx *vmx) {
+> +	unsigned int dest;
+> +
+> +	if (!irq_remapping_cap(IRQ_POSTING_CAP))
+> +		return;
+> +
+> +	/*
+> +	 * Initialize Posted-Interrupt Descriptor
+> +	 */
+> +
+> +	pi_clear_sn(&vmx->pi_desc);
+> +	vmx->pi_desc.nv = POSTED_INTR_VECTOR;
 
-Yes, that looks like the server messing up the encoding of the reply.
+Here.
 
-Holger, what's the difference between nfs-client.pcap and
-nfs-server.pcap?
+> +
+> +	/* Physical mode for Notificaiton Event */
+> +	vmx->pi_desc.ndm = 0;
 
---b.
+And from here..
 
+> +	dest = cpu_physical_id(vmx->vcpu.cpu);
+> +
+> +	if (x2apic_enabled())
+> +		vmx->pi_desc.ndst = dest;
+> +	else
+> +		vmx->pi_desc.ndst = (dest << 8) & 0xFF00; }
+> +
+
+..to here are useless. The right place to update PI descriptor is where vcpu got loaded not in initialization.
+
+>  /*
+>   * Sets up the vmcs for emulated real mode.
+>   */
+> @@ -4476,6 +4501,8 @@ static int vmx_vcpu_setup(struct vcpu_vmx *vmx)
 > 
-> ...
-> 
-> Ben
-> 
-> On Thu, 18 Dec 2014, J. Bruce Fields wrote:
-> 
-> > On Thu, Dec 18, 2014 at 01:22:40PM +0100, Holger Hoffstätte wrote:
-> > > On 12/17/14 22:22, J. Bruce Fields wrote:
-> > > > On Tue, Dec 16, 2014 at 10:19:18PM +0000, Holger Hoffstätte wrote:
-> > > >> (..oddly broken directory over NFS..)
-> > > > That doesn't sound familiar.  A network trace showing the READDIR would
-> > > > be really useful.  Since this is so reproducible, I think that should be
-> > > > possible.  So do something like:
-> > > >
-> > > > 	move the problem file into 3.14/
-> > > > 	tcpdump -s0 -wtmp.pcap -i<relevant interface>
-> > > > 	ls the directory on the client.
-> > > > 	kill tcpdump
-> > > > 	send us tmp.pcap and/or take a look at it with wireshark and see
-> > > > 	what the READDIR response looks like.
-> > >
-> > > Thanks for your reply. I forgot to mention that removing other files seems to "fix" the problem, so it does not seem to be spefically the new file itself that is the cause.
-> > >
-> > > I captured the "ls 3.14 | head" sequence on both the client and the server, and put the tcpudmp files here: http://hoho.duckdns.org/linux/ - let me know if that helped.
-> >
-> > On a quick skim, the server's READDIR responses look correct.  The entry
-> > btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-> > is returned in frame 53 (with complete reassembled reply displayed by
-> > wireshark in frame 63).
-> >
-> > You could double-check for me--just run "wireshark nfs-server.pcap",
-> > look for packets labeled "Reply ... READDIR", and expand out the READDIR
-> > op and directory listing.  I don't see anything obviously wrong.
-> >
-> > It's interesting that there's only one LOOKUP in the trace, for btrfs-20
-> > (returning, not suprisingly, NFS4ERR_NOENT).  If the client failed to
-> > parse that entry for some reason, then maybe in addition to getting the
-> > filename wrong it also failed to get the attributes, triggering the
-> > extra lookup/getattr.
-> >
-> > > Meanwhile I'll try older/plain (unpatched) kernels. So far reverting the client to vanilla 3.18.1 or 3.14.27 has not helped..
-> >
-> > I'm a little unclear: when you said "All this is on freshly baked
-> > 3.18.1", are you describing the client, or the server, or both?
-> >
-> > --b.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
+>  		vmcs_write64(POSTED_INTR_NV, POSTED_INTR_VECTOR);
+>  		vmcs_write64(POSTED_INTR_DESC_ADDR, __pa((&vmx->pi_desc)));
+> +
+> +		pi_desc_init(vmx);
+>  	}
+>  
+>  	if (ple_gap) {
+
+
+Best regards,
+Yang
+
 
