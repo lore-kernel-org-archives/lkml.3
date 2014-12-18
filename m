@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbaLRBrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:47:25 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:60134 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaLRBrY (ORCPT
+	id S1751856AbaLRBrw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:47:52 -0500
+Received: from smtprelay0250.hostedemail.com ([216.40.44.250]:50948 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751822AbaLRBrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:47:24 -0500
-From: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-To: arnd@arndb.de
-Cc: gregkh@linuxfoundation.org, michael.hennerich@analog.com,
-        linux-kernel@vger.kernel.org,
-        Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Subject: [PATCH 2/2] ad525x_dpot:Remove break after return
-Date: Thu, 18 Dec 2014 07:17:13 +0530
-Message-Id: <1418867233-5279-1-git-send-email-md.jamalmohiuddin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418867186-5221-1-git-send-email-md.jamalmohiuddin@gmail.com>
-References: <1418867186-5221-1-git-send-email-md.jamalmohiuddin@gmail.com>
+	Wed, 17 Dec 2014 20:47:51 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2692:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3872:3873:4321:4605:5007:6261:6742:8957:9038:10004:10400:10848:11026:11232:11658:11914:12296:12517:12519:12740:13019:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cakes28_26e7772f2931b
+X-Filterd-Recvd-Size: 2283
+Message-ID: <1418867265.28384.6.camel@perches.com>
+Subject: Re: [PATCH v3 1/2] watchdog: Add driver for Mediatek watchdog
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>, wim@iguana.be,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        grant.likely@linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        heiko@sntech.de, yingjoe.chen@gmail.com, ibanezchen@gmail.com,
+        greta.zhang@mediatek.com, eddie.huang@mediatek.com, wens@csie.org
+Date: Wed, 17 Dec 2014 17:47:45 -0800
+In-Reply-To: <20141218013717.GA9855@roeck-us.net>
+References: <1418851085-17787-1-git-send-email-matthias.bgg@gmail.com>
+	 <1418851085-17787-2-git-send-email-matthias.bgg@gmail.com>
+	 <20141218013717.GA9855@roeck-us.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the break statements present after return
+On Wed, 2014-12-17 at 17:37 -0800, Guenter Roeck wrote:
+> On Wed, Dec 17, 2014 at 10:18:04PM +0100, Matthias Brugger wrote:
+> > This patch adds a driver for the Mediatek SoC integrated
+> > watchdog. This driver supports watchdog and software reset
+> > for mt65xx and mt81xx SoCs.
+[]
+> > diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+[]
+> > +static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
+> > +				void *cmd)
+> > +{
+> > +	struct mtk_wdt_dev *mtk_wdt = container_of(this,
+> > +						       struct mtk_wdt_dev,
+> > +						       restart_handler);
 
-Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
----
- drivers/misc/ad525x_dpot.c |    6 ------
- 1 file changed, 6 deletions(-)
+> I don't really understand the indentation logic you are using.
+> Can you make it consistent ?
+> 
+> I would suggest to align with '(' in the previous line.
 
-diff --git a/drivers/misc/ad525x_dpot.c b/drivers/misc/ad525x_dpot.c
-index 32f9072..15e8807 100644
---- a/drivers/misc/ad525x_dpot.c
-+++ b/drivers/misc/ad525x_dpot.c
-@@ -334,7 +334,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 	case DPOT_UID(AD5246_ID):
- 	case DPOT_UID(AD5247_ID):
- 		return dpot_write_d8(dpot, value);
--		break;
- 
- 	case DPOT_UID(AD5245_ID):
- 	case DPOT_UID(AD5241_ID):
-@@ -346,7 +345,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
- 			0 : DPOT_AD5282_RDAC_AB;
- 		return dpot_write_r8d8(dpot, ctrl, value);
--		break;
- 	case DPOT_UID(AD5171_ID):
- 	case DPOT_UID(AD5273_ID):
- 		if (reg & DPOT_ADDR_OTP) {
-@@ -356,7 +354,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 			ctrl = DPOT_AD5273_FUSE;
- 		}
- 		return dpot_write_r8d8(dpot, ctrl, value);
--		break;
- 	case DPOT_UID(AD5172_ID):
- 	case DPOT_UID(AD5173_ID):
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
-@@ -368,7 +365,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 			ctrl |= DPOT_AD5170_2_3_FUSE;
- 		}
- 		return dpot_write_r8d8(dpot, ctrl, value);
--		break;
- 	case DPOT_UID(AD5170_ID):
- 		if (reg & DPOT_ADDR_OTP) {
- 			tmp = dpot_read_r8d16(dpot, tmp);
-@@ -377,7 +373,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 			ctrl = DPOT_AD5170_2_3_FUSE;
- 		}
- 		return dpot_write_r8d8(dpot, ctrl, value);
--		break;
- 	case DPOT_UID(AD5272_ID):
- 	case DPOT_UID(AD5274_ID):
- 		dpot_write_r8d8(dpot, DPOT_AD5270_1_2_4_CTRLREG << 2,
-@@ -392,7 +387,6 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 
- 		return dpot_write_r8d8(dpot, (DPOT_AD5270_1_2_4_RDAC << 2) |
- 				       (value >> 8), value & 0xFF);
--		break;
- 	default:
- 		if (reg & DPOT_ADDR_CMD)
- 			return dpot_write_d8(dpot, reg);
--- 
-1.7.9.5
+Another way is to separate the declaration and the set
+
+	struct mtk_wdt_dev *mtk_wdt;
+	void __iomem *wdt_base;
+
+	mtk_wdt = container_of(this, struct mtk_wdt_dev, restart_handler);
+	wdt_base = mtk_wdt->wdt_base;
+
+
 
