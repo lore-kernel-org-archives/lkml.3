@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752553AbaLRGcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:32:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58757 "EHLO
+	id S1752440AbaLRGdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 01:33:08 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58771 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaLRGcu (ORCPT
+	with ESMTP id S1751363AbaLRGdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 01:32:50 -0500
-Date: Wed, 17 Dec 2014 22:32:07 -0800
+	Thu, 18 Dec 2014 01:33:04 -0500
+Date: Wed, 17 Dec 2014 22:32:26 -0800
 From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-zflvep0q01dmkruf4o291l4p@git.kernel.org>
-Cc: peterz@infradead.org, hpa@zytor.com, fweisbec@gmail.com,
-        eranian@google.com, paulus@samba.org, efault@gmx.de, mingo@kernel.org,
-        jolsa@redhat.com, dzickus@redhat.com, adrian.hunter@intel.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        dsahern@gmail.com, bp@suse.de, acme@redhat.com
-Reply-To: dzickus@redhat.com, efault@gmx.de, mingo@kernel.org,
-        jolsa@redhat.com, fweisbec@gmail.com, eranian@google.com,
-        paulus@samba.org, peterz@infradead.org, hpa@zytor.com, bp@suse.de,
-        acme@redhat.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        dsahern@gmail.com, namhyung@kernel.org, adrian.hunter@intel.com
+Message-ID: <tip-6p6l5ou6jev6o7ymc4nn1n2a@git.kernel.org>
+Cc: namhyung@kernel.org, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, dzickus@redhat.com, acme@redhat.com,
+        efault@gmx.de, bp@suse.de, adrian.hunter@intel.com, paulus@samba.org,
+        peterz@infradead.org, jolsa@redhat.com, dsahern@gmail.com,
+        eranian@google.com, tglx@linutronix.de, fweisbec@gmail.com
+Reply-To: hpa@zytor.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        namhyung@kernel.org, efault@gmx.de, bp@suse.de, acme@redhat.com,
+        dzickus@redhat.com, adrian.hunter@intel.com, jolsa@redhat.com,
+        dsahern@gmail.com, peterz@infradead.org, paulus@samba.org,
+        fweisbec@gmail.com, eranian@google.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tools: Adopt rounddown_pow_of_two and deps
-Git-Commit-ID: fa37c025c5bec6704dad714365a7f62d9cb13a36
+Subject: [tip:perf/urgent] perf tools:
+  Make the mmap length autotuning more robust
+Git-Commit-ID: 1be300f4cc1ddf975f158b4ab2f880854b29306b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,20 +36,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fa37c025c5bec6704dad714365a7f62d9cb13a36
-Gitweb:     http://git.kernel.org/tip/fa37c025c5bec6704dad714365a7f62d9cb13a36
+Commit-ID:  1be300f4cc1ddf975f158b4ab2f880854b29306b
+Gitweb:     http://git.kernel.org/tip/1be300f4cc1ddf975f158b4ab2f880854b29306b
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Tue, 16 Dec 2014 12:14:11 -0300
+AuthorDate: Tue, 16 Dec 2014 12:19:00 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 17 Dec 2014 11:58:13 -0300
+CommitDate: Wed, 17 Dec 2014 11:58:14 -0300
 
-tools: Adopt rounddown_pow_of_two and deps
+perf tools: Make the mmap length autotuning more robust
 
-Will be used to make sure we pass a power of two when automatically
-setting up the perf_mmap addr range length, as the kernel code
-validating input on /proc/sys/kernel/perf_event_mlock_kb accepts any
-integer, if we plain use it to set up the mmap lenght, we may get an
-EINVAL when passing a non power of two.
+If /proc/sys/kernel/perf_event_mlock_kb is not (power of 2 + PAGE_SIZE_in_kb)
+and we let the perf tools do mmap length autosizing based on that, then, for
+non-CAP_IPC_LOCK users when /proc/sys/kernel/perf_event_paranoid is > -1, then
+we get an -EINVAL that ends up in:
+
+  [acme@ssdandy linux]$ trace usleep 1
+  Invalid argument
+  [acme@ssdandy linux]$ perf record usleep 1
+  failed to mmap with 22 (Invalid argument)
+
+After this fix:
+
+  [acme@ssdandy linux]$ trace usleep 1
+  <SNIP>
+   0.806 ( 0.006 ms): munmap(addr: 0x7f7e4740a000, len: 66467) = 0
+   0.869 ( 0.002 ms): brk(                                   ) = 0x7bb000
+   0.873 ( 0.003 ms): brk(brk: 0x7dc000                      ) = 0x7dc000
+   0.877 ( 0.001 ms): brk(                                   ) = 0x7dc000
+   0.953 ( 0.058 ms): nanosleep(rqtp: 0x7fff26ab9420         ) = 0
+   0.959 ( 0.000 ms): exit_group(
+  [acme@ssdandy linux]$ perf record usleep 1
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.017 MB perf.data (~759 samples) ]
+  [acme@ssdandy linux]$
 
 Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: Borislav Petkov <bp@suse.de>
@@ -61,159 +81,22 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-zflvep0q01dmkruf4o291l4p@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-6p6l5ou6jev6o7ymc4nn1n2a@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/include/linux/log2.h | 134 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 134 insertions(+)
+ tools/perf/util/evlist.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/include/linux/log2.h b/tools/include/linux/log2.h
-index 141b766..990b138 100644
---- a/tools/include/linux/log2.h
-+++ b/tools/include/linux/log2.h
-@@ -13,6 +13,30 @@
- #define _TOOLS_LINUX_LOG2_H
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 8eb92cf..7d88327 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -909,6 +909,8 @@ static size_t perf_evlist__mmap_size(unsigned long pages)
+ 		}
  
- /*
-+ * deal with unrepresentable constant logarithms
-+ */
-+extern __attribute__((const, noreturn))
-+int ____ilog2_NaN(void);
-+
-+/*
-+ * non-constant log of base 2 calculators
-+ * - the arch may override these in asm/bitops.h if they can be implemented
-+ *   more efficiently than using fls() and fls64()
-+ * - the arch is not required to handle n==0 if implementing the fallback
-+ */
-+static inline __attribute__((const))
-+int __ilog2_u32(u32 n)
-+{
-+	return fls(n) - 1;
-+}
-+
-+static inline __attribute__((const))
-+int __ilog2_u64(u64 n)
-+{
-+	return fls64(n) - 1;
-+}
-+
-+/*
-  *  Determine whether some value is a power of two, where zero is
-  * *not* considered a power of two.
-  */
-@@ -23,4 +47,114 @@ bool is_power_of_2(unsigned long n)
- 	return (n != 0 && ((n & (n - 1)) == 0));
- }
+ 		pages = (max * 1024) / page_size;
++		if (!is_power_of_2(pages))
++			pages = rounddown_pow_of_two(pages);
+ 	} else if (!is_power_of_2(pages))
+ 		return 0;
  
-+/*
-+ * round down to nearest power of two
-+ */
-+static inline __attribute__((const))
-+unsigned long __rounddown_pow_of_two(unsigned long n)
-+{
-+	return 1UL << (fls_long(n) - 1);
-+}
-+
-+/**
-+ * ilog2 - log of base 2 of 32-bit or a 64-bit unsigned value
-+ * @n - parameter
-+ *
-+ * constant-capable log of base 2 calculation
-+ * - this can be used to initialise global variables from constant data, hence
-+ *   the massive ternary operator construction
-+ *
-+ * selects the appropriately-sized optimised version depending on sizeof(n)
-+ */
-+#define ilog2(n)				\
-+(						\
-+	__builtin_constant_p(n) ? (		\
-+		(n) < 1 ? ____ilog2_NaN() :	\
-+		(n) & (1ULL << 63) ? 63 :	\
-+		(n) & (1ULL << 62) ? 62 :	\
-+		(n) & (1ULL << 61) ? 61 :	\
-+		(n) & (1ULL << 60) ? 60 :	\
-+		(n) & (1ULL << 59) ? 59 :	\
-+		(n) & (1ULL << 58) ? 58 :	\
-+		(n) & (1ULL << 57) ? 57 :	\
-+		(n) & (1ULL << 56) ? 56 :	\
-+		(n) & (1ULL << 55) ? 55 :	\
-+		(n) & (1ULL << 54) ? 54 :	\
-+		(n) & (1ULL << 53) ? 53 :	\
-+		(n) & (1ULL << 52) ? 52 :	\
-+		(n) & (1ULL << 51) ? 51 :	\
-+		(n) & (1ULL << 50) ? 50 :	\
-+		(n) & (1ULL << 49) ? 49 :	\
-+		(n) & (1ULL << 48) ? 48 :	\
-+		(n) & (1ULL << 47) ? 47 :	\
-+		(n) & (1ULL << 46) ? 46 :	\
-+		(n) & (1ULL << 45) ? 45 :	\
-+		(n) & (1ULL << 44) ? 44 :	\
-+		(n) & (1ULL << 43) ? 43 :	\
-+		(n) & (1ULL << 42) ? 42 :	\
-+		(n) & (1ULL << 41) ? 41 :	\
-+		(n) & (1ULL << 40) ? 40 :	\
-+		(n) & (1ULL << 39) ? 39 :	\
-+		(n) & (1ULL << 38) ? 38 :	\
-+		(n) & (1ULL << 37) ? 37 :	\
-+		(n) & (1ULL << 36) ? 36 :	\
-+		(n) & (1ULL << 35) ? 35 :	\
-+		(n) & (1ULL << 34) ? 34 :	\
-+		(n) & (1ULL << 33) ? 33 :	\
-+		(n) & (1ULL << 32) ? 32 :	\
-+		(n) & (1ULL << 31) ? 31 :	\
-+		(n) & (1ULL << 30) ? 30 :	\
-+		(n) & (1ULL << 29) ? 29 :	\
-+		(n) & (1ULL << 28) ? 28 :	\
-+		(n) & (1ULL << 27) ? 27 :	\
-+		(n) & (1ULL << 26) ? 26 :	\
-+		(n) & (1ULL << 25) ? 25 :	\
-+		(n) & (1ULL << 24) ? 24 :	\
-+		(n) & (1ULL << 23) ? 23 :	\
-+		(n) & (1ULL << 22) ? 22 :	\
-+		(n) & (1ULL << 21) ? 21 :	\
-+		(n) & (1ULL << 20) ? 20 :	\
-+		(n) & (1ULL << 19) ? 19 :	\
-+		(n) & (1ULL << 18) ? 18 :	\
-+		(n) & (1ULL << 17) ? 17 :	\
-+		(n) & (1ULL << 16) ? 16 :	\
-+		(n) & (1ULL << 15) ? 15 :	\
-+		(n) & (1ULL << 14) ? 14 :	\
-+		(n) & (1ULL << 13) ? 13 :	\
-+		(n) & (1ULL << 12) ? 12 :	\
-+		(n) & (1ULL << 11) ? 11 :	\
-+		(n) & (1ULL << 10) ? 10 :	\
-+		(n) & (1ULL <<  9) ?  9 :	\
-+		(n) & (1ULL <<  8) ?  8 :	\
-+		(n) & (1ULL <<  7) ?  7 :	\
-+		(n) & (1ULL <<  6) ?  6 :	\
-+		(n) & (1ULL <<  5) ?  5 :	\
-+		(n) & (1ULL <<  4) ?  4 :	\
-+		(n) & (1ULL <<  3) ?  3 :	\
-+		(n) & (1ULL <<  2) ?  2 :	\
-+		(n) & (1ULL <<  1) ?  1 :	\
-+		(n) & (1ULL <<  0) ?  0 :	\
-+		____ilog2_NaN()			\
-+				   ) :		\
-+	(sizeof(n) <= 4) ?			\
-+	__ilog2_u32(n) :			\
-+	__ilog2_u64(n)				\
-+ )
-+
-+
-+/**
-+ * rounddown_pow_of_two - round the given value down to nearest power of two
-+ * @n - parameter
-+ *
-+ * round the given value down to the nearest power of two
-+ * - the result is undefined when n == 0
-+ * - this can be used to initialise global variables from constant data
-+ */
-+#define rounddown_pow_of_two(n)			\
-+(						\
-+	__builtin_constant_p(n) ? (		\
-+		(1UL << ilog2(n))) :		\
-+	__rounddown_pow_of_two(n)		\
-+ )
-+
- #endif /* _TOOLS_LINUX_LOG2_H */
