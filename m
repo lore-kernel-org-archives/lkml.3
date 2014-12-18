@@ -1,150 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaLRCmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:42:22 -0500
-Received: from mail-bn1bn0106.outbound.protection.outlook.com ([157.56.110.106]:36366
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751518AbaLRCmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 21:42:21 -0500
-Message-ID: <54924009.8040207@freescale.com>
-Date: Thu, 18 Dec 2014 10:46:33 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
+	id S1751937AbaLRCn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:43:27 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26507 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382AbaLRCn0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 21:43:26 -0500
+Message-ID: <54923F1F.7040301@oracle.com>
+Date: Wed, 17 Dec 2014 21:42:39 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        <dri-devel@lists.freedesktop.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <p.zabel@pengutronix.de>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <mturquette@linaro.org>, <airlied@linux.ie>
-Subject: Re: [PATCH RFC 09/15] drm: imx: Add MIPI DSI host controller driver
-References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
- <1418200648-32656-10-git-send-email-Ying.Liu@freescale.com>
- <20141210131640.GD23558@ulmo.nvidia.com> <54915081.6020508@freescale.com>
- <20141217104049.GU11285@n2100.arm.linux.org.uk>
-In-Reply-To: <20141217104049.GU11285@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(377454003)(479174004)(51704005)(24454002)(189002)(199003)(6806004)(47776003)(64706001)(20776003)(36756003)(87936001)(97736003)(54356999)(21056001)(76176999)(120916001)(83506001)(93886004)(99136001)(99396003)(68736005)(65816999)(117636001)(110136001)(23746002)(77096005)(50466002)(31966008)(65806001)(104016003)(46102003)(106466001)(62966003)(107046002)(65956001)(86362001)(87266999)(4396001)(105606002)(84676001)(2950100001)(92566001)(59896002)(50986999)(85426001)(77156002)(217873001)(62816006);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
-X-Forefront-PRVS: 042957ACD7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
-X-OriginatorOrg: freescale.com
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?UTF-8?B?RMOibmllbCBGcmFnYQ==?= <fragabr@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Subject: Re: frequent lockups in 3.18rc4
+References: <20141211145408.GB16800@redhat.com>	<CA+55aFy1_w1NrkeopMXsxGftO5F03JzKgn-8uTQRnEAXuoiXgg@mail.gmail.com>	<20141212185454.GB4716@redhat.com>	<CA+55aFw7vJkuJ9RtVS3yhPsqDos+ii1kdJBZEeoxhb9c2=rStQ@mail.gmail.com>	<20141213165915.GA12756@redhat.com>	<20141213223616.GA22559@redhat.com>	<CA+55aFwCa1+cBGxt-v487K-QBvxGyB9bL4u34zgMep9uFW+Mgw@mail.gmail.com>	<20141214234654.GA396@redhat.com>	<CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>	<CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>	<20141215055707.GA26225@redhat.com>	<CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com> <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+In-Reply-To: <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On 12/15/2014 06:46 PM, Linus Torvalds wrote:
+> I cleaned up the patch a bit, split it up into two to clarify it, and
+> have committed it to my tree. I'm not marking the patches for stable,
+> because while I'm convinced it's a bug, I'm also not sure why even if
+> it triggers it doesn't eventually recover when the IO completes. So
+> I'd mark them for stable only if they are actually confirmed to fix
+> anything in the wild, and after they've gotten some testing in
+> general. The patches *look* straightforward, they remove more lines
+> than they add, and I think the code is more understandable too, but
+> maybe I just screwed up. Whatever. Some care is warranted, but this is
+> the first time I feel like I actually fixed something that matched at
+> least one of your lockup symptoms.
+> 
+> Anyway, it's there as
+> 
+>   26178ec11ef3 ("x86: mm: consolidate VM_FAULT_RETRY handling")
+>   7fb08eca4527 ("x86: mm: move mmap_sem unlock from mm_fault_error() to caller")
 
-On 12/17/2014 06:40 PM, Russell King - ARM Linux wrote:
-> On Wed, Dec 17, 2014 at 05:44:33PM +0800, Liu Ying wrote:
->> Hi Thierry,
->>
->> Sorry for the late response.
->> I tried to address almost all your comments locally first.
->> More feedback below.
->>
->> On 12/10/2014 09:16 PM, Thierry Reding wrote:
->>> On Wed, Dec 10, 2014 at 04:37:22PM +0800, Liu Ying wrote:
->>>> +static int check_status(struct imx_mipi_dsi *dsi, u32 reg, u32 status,
->>>> +			int timeout, bool to_set)
->>>> +{
->>>> +	u32 val;
->>>> +	bool out = false;
->>>> +
->>>> +	val = dsi_read(dsi, reg);
->>>> +	for (;;) {
->>>> +		out = to_set ? (val & status) : !(val & status);
->>>> +		if (out)
->>>> +			break;
->>>> +
->>>> +		if (!timeout--)
->>>> +			return -EFAULT;
->>>> +
->>>> +		msleep(1);
->>>> +		val = dsi_read(dsi, reg);
->>>> +	}
->>>> +	return 0;
->>>> +}
->>>
->>> You should probably use a properly timed loop here. msleep() isn't
->>> guaranteed to return after exactly one millisecond, so your timeout is
->>> never going to be accurate. Something like the following would be better
->>> in my opinion:
->>>
->>> 	timeout = jiffies + msecs_to_jiffies(timeout);
->>>
->>> 	while (time_before(jiffies, timeout)) {
->>> 		...
->>> 	}
->>>
->>> Also timeout should be unsigned long in that case.
->>
->> Accepted.
->
-> Actually, that's a bad example: what we want to do is to assess success
-> after we wait, before we decide that something has failed.  In other
-> words, we don't want to wait, and decide that we failed without first
-> checking for success.
->
-> In any case, returning -EFAULT is not sane: EFAULT doesn't mean "fault"
-> it means "Bad address", and it is returned to userspace to mean that
-> userspace passed the kernel a bad address.  That definition does /not/
-> fit what's going on here.
->
-> 	timeout = jiffies + msecs_to_jiffies(timeout);
->
-> 	do {
-> 		val = dsi_read(dsi, reg);
-> 		out = to_set ? (val & status) : !(val & status);
-> 		if (out)
-> 			break;
->
-> 		if (time_is_after_jiffies(timeout))
+I guess you did "just screwed up"...
 
-time_is_after_jiffies(a) is defined as time_before(jiffies, a).
+I've started seeing this:
 
-So, this line should be changed to
+[  240.190061] BUG: unable to handle kernel paging request at 00007f341768b000
+[  240.190061] IP: [<00007f341baf61fb>] 0x7f341baf61fb
+[  240.190061] PGD 12b3e4067 PUD 12b3e5067 PMD 29a700067 PTE 0
+[  240.190061] Oops: 0004 [#10] PREEMPT SMP
+[  240.190061] Dumping ftrace buffer:
+[  240.190061]    (ftrace buffer empty)
+[  240.190061] Modules linked in:
+[  240.190061] CPU: 6 PID: 9691 Comm: trinity-c619 Tainted: G      D        3.18.0-sasha-08443-g2b40f4a #1618
+[  240.190061] task: ffff88012b346000 ti: ffff88012b3d4000 task.ti: ffff88012b3d4000
+[  240.190061] RIP: 0033:[<00007f341baf61fb>]  [<00007f341baf61fb>] 0x7f341baf61fb
+[  240.190061] RSP: 002b:00007fff39f045f8  EFLAGS: 00010206
+[  240.190061] RAX: 00007fff39f04600 RBX: 0000000000000363 RCX: 0000000000000200
+[  240.190061] RDX: 0000000000001000 RSI: 00007f341768b000 RDI: 00007fff39f04600
+[  240.190061] RBP: 00007fff39f05640 R08: 00007f341bdf20a8 R09: 00007f341bdf2100
+[  240.190061] R10: 0000000000000000 R11: 0000000000001000 R12: 0000000000001000
+[  240.190061] R13: 0000000000001000 R14: 0000000000362000 R15: 00007fff39f04600
+[  240.190061] FS:  00007f341bffb700(0000) GS:ffff8802da400000(0000) knlGS:0000000000000000
+[  240.190061] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  240.190061] CR2: 00007f341894801c CR3: 000000012b364000 CR4: 00000000000006a0
+[  240.190061] DR0: ffffffff81000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  240.190061] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000b0602
+[  240.190061]
+[  240.190061] RIP  [<00007f341baf61fb>] 0x7f341baf61fb
+[  240.190061]  RSP <00007fff39f045f8>
+[  240.190061] CR2: 00007f341768b000
 
-	if (time_after(jiffies, timeout))
+Which was bisected down to:
 
-Right?
+	26178ec11ef3 ("x86: mm: consolidate VM_FAULT_RETRY handling")
 
-> 			return -ETIMEDOUT;
->
-> 		msleep(1);
-> 	} while (1);
->
-> 	return 0;
->
-> would be better: we only fail immediately after we have checked whether
-> we succeeded, and we also do the first check immediately.
->
 
-Does this one look better?  I use cpu_relax() instead of msleep(1).
-
-         expire = jiffies + msecs_to_jiffies(timeout);
-         for (;;) {
-                 val = dsi_read(dsi, reg);
-                 out = to_set ? (val & status) : !(val & status);
-                 if (out)
-                         break;
-
-                 if (time_after(jiffies, expire))
-                         return -ETIMEDOUT;
-
-                 cpu_relax();
-         }
-
-	return 0;
-
-Regards,
-
-Liu Ying
+Thanks,
+Sasha
