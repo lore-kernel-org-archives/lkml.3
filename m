@@ -1,63 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021AbaLRLjj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:39:39 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33190 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751844AbaLRLji (ORCPT
+	id S1752134AbaLRLlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:41:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34219 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265AbaLRLlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:39:38 -0500
+	Thu, 18 Dec 2014 06:41:47 -0500
+Date: Thu, 18 Dec 2014 11:41:45 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: "Varlese, Marco" <marco.varlese@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fastabend, John R" <john.r.fastabend@intel.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        "roopa@cumulusnetworks.com" <roopa@cumulusnetworks.com>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
+ configuration
+Message-ID: <20141218114145.GH28766@casper.infradead.org>
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20141218090053.68a0aad6@recife.lan>
-References: <1418873833-5084-1-git-send-email-zhang.chunyan@linaro.org>
-	<1685288.Gd2P1eSoIW@wuerfel>
-	<CAG2=9p9eL6kx8AfrLMw3Ct+eQcsQq5KJt=TkJ8ySmaWsWOmQ5A@mail.gmail.com>
-	<20141218090053.68a0aad6@recife.lan>
-Date: Thu, 18 Dec 2014 19:39:37 +0800
-Message-ID: <CAG2=9p_-=pDeU5C0On5Qt8fRJuW6o_zZEECvvAgPVoMgrc_5JA@mail.gmail.com>
-Subject: Re: [PATCH] media: rc: Replace timeval with ktime_t in imon.c
-From: Chunyan Zhang <zhang.chunyan@linaro.org>
-To: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
-Cc: Arnd Bergmann <arnd@linaro.org>, david@hardeman.nu,
-        uli-lirc@uli-eckhardt.de, hans.verkuil@cisco.com, julia.lawall@lip6.fr,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>, joe@perches.com,
-        John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, Lyra Zhang <zhang.lyra@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 7:00 PM, Mauro Carvalho Chehab
-<mchehab@osg.samsung.com> wrote:
-> Em Thu, 18 Dec 2014 17:38:14 +0800
-> Chunyan Zhang <zhang.chunyan@linaro.org> escreveu:
->
->> On Thu, Dec 18, 2014 at 3:50 PM, Arnd Bergmann <arnd@linaro.org> wrote:
->> > On Thursday 18 December 2014 11:37:13 Chunyan Zhang wrote:
->> >> This patch changes the 32-bit time type (timeval) to the 64-bit one
->> >> (ktime_t), since 32-bit time types will break in the year 2038.
->> >>
->> >> I use ktime_t instead of all uses of timeval in imon.c
->> >>
->> >> This patch also changes do_gettimeofday() to ktime_get() accordingly,
->> >> since ktime_get returns a ktime_t, but do_gettimeofday returns a
->> >> struct timeval, and the other reason is that ktime_get() uses
->> >> the monotonic clock.
->> >>
->> >> This patch use a new function which is provided by another patch listed below
->> >> to get the millisecond time difference.
->> >
->> > The patch looks great. Just a few small details that could still be
->> > improved:
->
-> Yes, patch looks OK. After addressing the bits pointed by Arnd:
->
-> Acked-by: Mauro Carvalho Chehab <mchehab@osg.samsung.com>
->
-> Feel free to merge via y2038 tree.
->
-Ok, thank you, I'll send the updated patch-set soon.
+On 12/18/14 at 11:29am, Varlese, Marco wrote:
+> diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+> index f7d0d2d..19cb51a 100644
+> --- a/include/uapi/linux/if_link.h
+> +++ b/include/uapi/linux/if_link.h
+> @@ -146,6 +146,7 @@ enum {
+>  	IFLA_PHYS_PORT_ID,
+>  	IFLA_CARRIER_CHANGES,
+>  	IFLA_PHYS_SWITCH_ID,
+> +	IFLA_SWITCH_PORT_CFG,
+>  	__IFLA_MAX
+>  };
 
-Chunyan
+Needs an entry in ifla_policy[]
+
+        [IFLA_SWITCH_PORT_CFG] = { .type = NLA_NESTED },
+
+> @@ -603,4 +604,18 @@ enum {
+>  
+>  #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
+>  
+> +/* Switch Port Attributes section */
+> +
+> +enum {
+> +	IFLA_ATTR_UNSPEC,
+> +	IFLA_ATTR_LEARNING,
+> +	IFLA_ATTR_LOOPBACK,
+> +	IFLA_ATTR_BCAST_FLOODING,
+> +	IFLA_ATTR_UCAST_FLOODING,
+> +	IFLA_ATTR_MCAST_FLOODING,
+> +	__IFLA_ATTR_MAX
+> +};
+> +
+> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
+
+Change the prefix to IFLA_SW_* since it's switch specific?
+
+>  
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr)
+> +{
+> +	int rem, err = -EINVAL;
+> +	struct nlattr *v;
+> +	const struct net_device_ops *ops = dev->netdev_ops;
+> +
+> +	nla_for_each_nested(v, attr, rem) {
+> +		u32 op = nla_type(v);
+> +		u64 value = 0;
+> +
+> +		switch (op) {
+> +		case IFLA_ATTR_LEARNING:
+> +		case IFLA_ATTR_LOOPBACK:
+> +		case IFLA_ATTR_BCAST_FLOODING:
+> +		case IFLA_ATTR_UCAST_FLOODING:
+> +		case IFLA_ATTR_MCAST_FLOODING: {
+> +			if (nla_len(v) < sizeof(value)) {
+> +				err = -EINVAL;
+> +				break;
+> +			}
+
+You should validate the message before you start applying the
+changes. Otherwise if the 3rd attribute is too short you've already
+applied some changes and the user has not idea how much has been
+applied.
+
+nla_parse_nested() can help here.
+
+
+> +
+> +			value = nla_get_u64(v);
+> +			err = ops->ndo_switch_port_set_cfg(dev,
+> +							   op,
+> +							   value);
+
+This avoids having individual ndos but wastes a lot of space in the
+Netlink message. Not a problem when setting configuration but you
+likely want to dump these attributes as well and we need 12 bytes
+for each attribute even though some are merely flags which could fit
+in 4 bytes.
+
+>  static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+>  {
+>  	int rem, err = -EINVAL;
+> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
+>  			status |= DO_SETLINK_NOTIFY;
+>  		}
+>  	}
+> +#ifdef CONFIG_NET_SWITCHDEV
+> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
+> +		err = -EOPNOTSUPP;
+> +		if (!ops->ndo_switch_port_set_cfg)
+> +			goto errout;
+> +		if (!ops->ndo_switch_parent_id_get)
+> +			goto errout;
+> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
+> +		if (err < 0)
+> +			goto errout;
+> +
+> +		status |= DO_SETLINK_NOTIFY;
+> +	}
+> +#endif
+
+Should return -EOPNOTSUPP if IFLA_SWITCH_PORT_CFG is provided but
+CONFIG_NET_SWITCHDEV is not set.
+
+
