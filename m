@@ -1,69 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaLRTDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:03:36 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:47861 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaLRTDe (ORCPT
+	id S1751520AbaLRTEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:04:13 -0500
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:60323 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078AbaLRTEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:03:34 -0500
+	Thu, 18 Dec 2014 14:04:12 -0500
+Date: Thu, 18 Dec 2014 22:04:09 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Latest kernel build problem in arch/x86/ia32/audit.c
+Message-ID: <20141218190409.GN9435@moon>
 MIME-Version: 1.0
-In-Reply-To: <549307F0.7090009@zytor.com>
-References: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net>
-	<tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
-	<549307F0.7090009@zytor.com>
-Date: Thu, 18 Dec 2014 11:03:33 -0800
-X-Google-Sender-Auth: VU0NYQ5pw0WR0eBHv8e320j0Y9U
-Message-ID: <CA+55aFwULSs-xiyQbpUezx3ebJOfRHz4uBE3Vw7S0dXVWbfEhQ@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86/tls: Don't validate lm in set_thread_area()
- after all
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 8:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>
->> will leave .lm uninitialized.  This means that anything in the
->> kernel that reads user_desc.lm for 32-bit tasks is unreliable.
->
-> No, it won't.  However, if you initialize this dynamically field by
-> field rather than as an initializer, then you are correct.
+Hi! Being trying to build latest repo (2dbfca5a181973558277b28b1f4c36362291f5e0)
+and ended up in
 
-Actually, even with a full initializer, unnamed parts of a structure
-(so padding bytes between things, but for bitfields also unnamed
-alignment fields etc) are basically "all bets are off". They are *not*
-guaranteed to be initialized to zero.
+  CC      arch/x86/ia32/audit.o
+arch/x86/ia32/audit.c: In function ‘ia32_classify_syscall’:
+arch/x86/ia32/audit.c:38:7: error: ‘__NR_execveat’ undeclared (first use in this function)
+  case __NR_execveat:
+       ^
+arch/x86/ia32/audit.c:38:7: note: each undeclared identifier is reported only once for each function it appears in
+make[2]: *** [arch/x86/ia32/audit.o] Error 1
+make[1]: *** [arch/x86/ia32] Error 2
+make: *** [arch/x86] Error 2
+make: *** Waiting for unfinished jobs....
 
-So if you have a structure like
+The kernel's config at https://gist.github.com/cyrillos/cd9749c4205fed698f13
+Because it's middle of merge window I guess it's not anyhow important and I'll
+try take a look myself tomorrow or on weekend, but just for info.
 
-   struct {
-       unsigned int a:5;
-       unsigned int b;
-   } x = { .a = 0, .b = 0 };
-
-afaik the compiler is not guaranteed to initialize the left-over bits
-in the first word. Because they simply don't "exist" as far as the C
-language is concerned.
-
-On the other hand, if you do
-
-   struct {
-        unsigned int a:5, unused:27;
-        unsigned int b;
-   } x = { .a = 0, .b = 0 };
-
-then the 'unused' bits are guaranteed to be initialized to zero.
-
-(Static allocations in the BSS are obviously zeroed for other reasons,
-so there are no "left-over" bits there to worry about,. So in practice
-the above is only about dynamic initializers).
-
-                         Linus
+	Cyrill
