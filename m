@@ -1,146 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaLRBV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:21:58 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:65275 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbaLRBV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:21:57 -0500
-Message-ID: <54922C31.8070402@nod.at>
-Date: Thu, 18 Dec 2014 02:21:53 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: =?windows-1252?Q?Guido_Mart=EDnez?= <guido@vanguardiasur.com.ar>
-CC: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] UBI: Fastmap: Don't allocate new ubi_wl_entry objects
-References: <1417347340-6872-1-git-send-email-richard@nod.at> <1417347340-6872-3-git-send-email-richard@nod.at> <20141218011807.GA6626@fox>
-In-Reply-To: <20141218011807.GA6626@fox>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	id S1751882AbaLRBXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:23:14 -0500
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:49505 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751284AbaLRBXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 20:23:13 -0500
+From: Andrew Milkovich <amilkovich@gmail.com>
+To: benjamin.romer@unisys.com
+Cc: david.kershner@unisys.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Andrew Milkovich <amilkovich@gmail.com>
+Subject: [PATCH] Staging: unisys: virtpci: fixed coding style errors
+Date: Wed, 17 Dec 2014 17:25:10 -0800
+Message-Id: <1418865910-21337-1-git-send-email-amilkovich@gmail.com>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guido,
+Fixed coding style errors per checkpatch.pl. Inline comments removed.
 
-Am 18.12.2014 um 02:18 schrieb Guido Martínez:
-> Hi Richard,
-> 
-> On Sun, Nov 30, 2014 at 12:35:36PM +0100, Richard Weinberger wrote:
->> There is no need to allocate new ones every time, we can reuse
->> the existing ones.
->> This makes the code cleaner and more easy to follow.
->>
->> Signed-off-by: Richard Weinberger <richard@nod.at>
->> ---
->>  drivers/mtd/ubi/fastmap.c | 31 +++++--------------------------
->>  drivers/mtd/ubi/wl.c      | 11 +++++++----
->>  2 files changed, 12 insertions(+), 30 deletions(-)
->>
->> diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
->> index db3defd..9507702 100644
->> --- a/drivers/mtd/ubi/fastmap.c
->> +++ b/drivers/mtd/ubi/fastmap.c
->> @@ -1446,19 +1446,6 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->>  	}
->>  
->>  	new_fm->used_blocks = ubi->fm_size / ubi->leb_size;
->> -
->> -	for (i = 0; i < new_fm->used_blocks; i++) {
->> -		new_fm->e[i] = kmem_cache_alloc(ubi_wl_entry_slab, GFP_KERNEL);
->> -		if (!new_fm->e[i]) {
->> -			while (i--)
->> -				kfree(new_fm->e[i]);
->> -
->> -			kfree(new_fm);
->> -			mutex_unlock(&ubi->fm_mutex);
->> -			return -ENOMEM;
->> -		}
->> -	}
->> -
->>  	old_fm = ubi->fm;
->>  	ubi->fm = NULL;
->>  
->> @@ -1494,12 +1481,9 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->>  				ubi_err(ubi, "could not erase old fastmap PEB");
->>  				goto err;
->>  			}
->> -
->> -			new_fm->e[i]->pnum = old_fm->e[i]->pnum;
->> -			new_fm->e[i]->ec = old_fm->e[i]->ec;
->> +			new_fm->e[i] = old_fm->e[i];
->>  		} else {
->> -			new_fm->e[i]->pnum = tmp_e->pnum;
->> -			new_fm->e[i]->ec = tmp_e->ec;
->> +			new_fm->e[i] = tmp_e;
->>  
->>  			if (old_fm)
->>  				ubi_wl_put_fm_peb(ubi, old_fm->e[i], i,
->> @@ -1524,16 +1508,13 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->>  							  i, 0);
->>  				goto err;
->>  			}
->> -
->> -			new_fm->e[0]->pnum = old_fm->e[0]->pnum;
->> +			new_fm->e[0] = old_fm->e[0];
->>  			new_fm->e[0]->ec = ret;
->>  		} else {
->>  			/* we've got a new anchor PEB, return the old one */
->>  			ubi_wl_put_fm_peb(ubi, old_fm->e[0], 0,
->>  					  old_fm->to_be_tortured[0]);
->> -
->> -			new_fm->e[0]->pnum = tmp_e->pnum;
->> -			new_fm->e[0]->ec = tmp_e->ec;
->> +			new_fm->e[0] = tmp_e;
->>  		}
->>  	} else {
->>  		if (!tmp_e) {
->> @@ -1546,9 +1527,7 @@ int ubi_update_fastmap(struct ubi_device *ubi)
->>  			ret = -ENOSPC;
->>  			goto err;
->>  		}
->> -
->> -		new_fm->e[0]->pnum = tmp_e->pnum;
->> -		new_fm->e[0]->ec = tmp_e->ec;
->> +		new_fm->e[0] = tmp_e;
->>  	}
->>  
->>  	down_write(&ubi->work_sem);
->> diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
->> index 47b215f..523d8a4 100644
->> --- a/drivers/mtd/ubi/wl.c
->> +++ b/drivers/mtd/ubi/wl.c
->> @@ -1014,9 +1014,6 @@ int ubi_wl_put_fm_peb(struct ubi_device *ubi, struct ubi_wl_entry *fm_e,
->>  		e = fm_e;
->>  		ubi_assert(e->ec >= 0);
->>  		ubi->lookuptbl[pnum] = e;
->> -	} else {
->> -		e->ec = fm_e->ec;
->> -		kfree(fm_e);
->>  	}
->>  
->>  	spin_unlock(&ubi->wl_lock);
->> @@ -2008,9 +2005,15 @@ int ubi_wl_init(struct ubi_device *ubi, struct ubi_attach_info *ai)
->>  
->>  	dbg_wl("found %i PEBs", found_pebs);
->>  
->> -	if (ubi->fm)
->> +	if (ubi->fm) {
->>  		ubi_assert(ubi->good_peb_count == \
->>  			   found_pebs + ubi->fm->used_blocks);
->> +
->> +		for (i = 0; i < ubi->fm->used_blocks; i++) {
->> +			e = ubi->fm->e[i];
->> +			ubi->lookuptbl[e->pnum] = e;
->> +		}
->> +	}
-> Should this be in a separate patch? The commit log doesn't mention it.
+Signed-off-by: Andrew Milkovich <amilkovich@gmail.com>
+---
+ drivers/staging/unisys/virtpci/virtpci.c | 24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
 
-Hmm, looks like a fragment from the memleak fix.
-I've split up a lot of patches, maybe some hunks sneaked into other patches.
-Anyway, will fixup!
+diff --git a/drivers/staging/unisys/virtpci/virtpci.c b/drivers/staging/unisys/virtpci/virtpci.c
+index 39b828d..1bb0946 100644
+--- a/drivers/staging/unisys/virtpci/virtpci.c
++++ b/drivers/staging/unisys/virtpci/virtpci.c
+@@ -279,10 +279,8 @@ static int add_vbus(struct add_vbus_guestpart *addparams)
+		POSTCODE_LINUX_2(VPCI_CREATE_FAILURE_PC, POSTCODE_SEVERITY_ERR);
+		return 0;
+	}
+-	write_vbus_chp_info(vbus->platform_data /* chanptr */ ,
+-			    &chipset_driver_info);
+-	write_vbus_bus_info(vbus->platform_data /* chanptr */ ,
+-			    &bus_driver_info);
++	write_vbus_chp_info(vbus->platform_data, &chipset_driver_info);
++	write_vbus_bus_info(vbus->platform_data, &bus_driver_info);
+	LOGINF("Added vbus %d; device %s created successfully\n",
+	       addparams->bus_no, BUS_ID(vbus));
+	POSTCODE_LINUX_2(VPCI_CREATE_EXIT_PC, POSTCODE_SEVERITY_INFO);
+@@ -466,8 +464,7 @@ static int pause_vhba(struct pause_virt_guestpart *pauseparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(pauseparams->chanptr);
 
-Thanks a lot for reviewing!
-//richard
+	LOGINF("Pausing vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_serverdown(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-				      &scsi.wwnn, NULL);
++	i = virtpci_device_serverdown(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i)
+		LOGINF("Paused vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -487,8 +484,7 @@ static int pause_vnic(struct pause_virt_guestpart *pauseparams)
+	LOGINF("Pausing vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_serverdown(NULL /*no parent bus */ , VIRTNIC_TYPE,
+-				      NULL, net.mac_addr);
++	i = virtpci_device_serverdown(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF(" Paused vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+@@ -508,8 +504,7 @@ static int resume_vhba(struct resume_virt_guestpart *resumeparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(resumeparams->chanptr);
+
+	LOGINF("Resuming vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_serverup(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-				    &scsi.wwnn, NULL);
++	i = virtpci_device_serverup(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i)
+		LOGINF("Resumed vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -530,8 +525,7 @@ resume_vnic(struct resume_virt_guestpart *resumeparams)
+	LOGINF("Resuming vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_serverup(NULL /*no parent bus */ , VIRTNIC_TYPE,
+-				    NULL, net.mac_addr);
++	i = virtpci_device_serverup(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF(" Resumed vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+@@ -551,8 +545,7 @@ static int delete_vhba(struct del_virt_guestpart *delparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(delparams->chanptr);
+
+	LOGINF("Deleting vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_del(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-			       &scsi.wwnn, NULL);
++	i = virtpci_device_del(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i) {
+		LOGINF("Deleted vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -574,8 +567,7 @@ static int delete_vnic(struct del_virt_guestpart *delparams)
+	LOGINF("Deleting vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_del(NULL /*no parent bus */ , VIRTNIC_TYPE, NULL,
+-			       net.mac_addr);
++	i = virtpci_device_del(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF("Deleted vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+--
+2.1.3
