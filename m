@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752463AbaLRI3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 03:29:20 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:58256 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155AbaLRI3R (ORCPT
+	id S1752501AbaLRIaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 03:30:46 -0500
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:34403 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaLRIao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 03:29:17 -0500
-Date: Thu, 18 Dec 2014 08:29:08 +0000
+	Thu, 18 Dec 2014 03:30:44 -0500
+Date: Thu, 18 Dec 2014 08:30:36 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: gyungoh@gmail.com
 Cc: sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
@@ -22,76 +22,82 @@ Cc: sameo@linux.intel.com, grant.likely@linaro.org, robh+dt@kernel.org,
         plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
         linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Subject: Re: [PATCH v10 5/6] devicetree: Add vendor prefix for Skyworks
- Solutions, Inc.
-Message-ID: <20141218082908.GQ13885@x1>
+Subject: Re: [PATCH v10 4/6] devicetree: backlight: Add new SKY81452
+ backlight binding
+Message-ID: <20141218083036.GR13885@x1>
 References: <1418881671-3495-1-git-send-email-jack.yoo@skyworksinc.com>
- <1418881671-3495-6-git-send-email-jack.yoo@skyworksinc.com>
+ <1418881671-3495-5-git-send-email-jack.yoo@skyworksinc.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418881671-3495-6-git-send-email-jack.yoo@skyworksinc.com>
+In-Reply-To: <1418881671-3495-5-git-send-email-jack.yoo@skyworksinc.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Dec 2014, gyungoh@gmail.com wrote:
+DT Ack please.
 
 > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 > 
 > Signed-off-by: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> Acked-by: Bryan Wu <cooloney@gmail.com>
 > ---
-> Changes v10:
-> Nothing
-> 
-> Changes v9:
-> Nothing
-> 
+
+[...]
+
 > Changes v8:
-> Nothing
-> 
-> Changes v7:
-> Nothing
-> 
-> Changes v6:
-> Nothing
-> 
-> Changes v5:
-> Nothing
-> 
-> Changes v4:
-> Nothing
-> 
-> Changes v3:
-> Nothing
+> Renamed property names for backlight with vendor prefix
+> Modified gpio-enable property to generic property for GPIO
+> Made up the example for backlight DT
 
-Changes v3 => v10:
-  Nothing
+[...]
 
-... might be a little more succinct.
- 
 > Changes v2:
-> Added vendor prefix for Skyworks Solutions, Inc.
+> Added reg attribute for I2C slave address
 > 
->  Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
->  1 file changed, 1 insertion(+)
+>  .../video/backlight/sky81452-backlight.txt         | 29 ++++++++++++++++++++++
+>  1 file changed, 29 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> new file mode 100644
+> index 0000000..8daebf5
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> @@ -0,0 +1,29 @@
+> +SKY81452-backlight bindings
+> +
+> +Required properties:
+> +- compatible		: Must be "skyworks,sky81452-backlight"
+> +
+> +Optional properties:
+> +- name			: Name of backlight device. Default is 'lcd-backlight'.
+> +- gpios			: GPIO to use to EN pin.
+> +			See Documentation/devicetree/bindings/gpio/gpio.txt
+> +- skyworks,en-channels	: Enable mask for current sink channel 1 to 6.
+> +- skyworks,ignore-pwm	: Ignore both PWM input
+> +- skyworks,dpwm-mode	: Enable DPWM dimming mode, otherwise Analog dimming.
+> +- skyworks,phase-shift	: Enable phase shift mode
+> +- skyworks,ovp-level	: Over-voltage protection level.
+> +			Should be between 14 or 28V.
+> +- skyworks,short-detection-threshold	: It should be one of 4, 5, 6 and 7V.
+> +- skyworks,current-limit	: It should be 2300mA or 2750mA.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+These need a DT Ack (if they are still alive).
 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index a344ec2..68143f0 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -140,6 +140,7 @@ sii	Seiko Instruments, Inc.
->  silergy	Silergy Corp.
->  sirf	SiRF Technology, Inc.
->  sitronix	Sitronix Technology Corporation
-> +skyworks	Skyworks Solutions, Inc.
->  smsc	Standard Microsystems Corporation
->  snps	Synopsys, Inc.
->  solidrun	SolidRun
+> +Example:
+> +
+> +	backlight {
+> +		compatible = "skyworks,sky81452-backlight";
+> +		name = "pwm-backlight";
+> +		skyworks,en-channels = <0x3f>;
+> +		skyworks,ignore-pwm;
+> +		skyworks,phase-shift;
+> +		skyworks,ovp-level = <20>;
+> +		skyworks,current-limit = <2300>;
+> +	};
 
 -- 
 Lee Jones
