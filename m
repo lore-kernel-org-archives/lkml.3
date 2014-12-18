@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688AbaLRKeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:34:07 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45260 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaLRKeF (ORCPT
+	id S1751819AbaLRKfr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:35:47 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:52328 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbaLRKfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:34:05 -0500
-Message-ID: <1418898812.4212.11.camel@pengutronix.de>
-Subject: Re: [PATCH RFC v2 06/14] ARM: dts: imx6qdl: Move existing MIPI DSI
- ports into a new 'ports' node
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Liu Ying <Ying.Liu@freescale.com>
-Cc: dri-devel@lists.freedesktop.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        kernel@pengutronix.de, thierry.reding@gmail.com, shawn.guo@linaro.org,
-        mturquette@linaro.org, airlied@linux.ie, linux-kernel@vger.kernel.org
-Date: Thu, 18 Dec 2014 11:33:32 +0100
-In-Reply-To: <1418886696-11636-7-git-send-email-Ying.Liu@freescale.com>
-References: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
-	 <1418886696-11636-7-git-send-email-Ying.Liu@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 18 Dec 2014 05:35:45 -0500
+Message-ID: <5492ADFC.1060006@redhat.com>
+Date: Thu, 18 Dec 2014 11:35:40 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Jonathan Corbet <corbet@lwn.net>, Kevin Cernekee <cernekee@gmail.com>
+CC: tglx@linutronix.de, bp@alien8.de, gnomes@lxorguk.ukuu.org.uk,
+        computersforpeace@gmail.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/4] Stop maintainer abuse
+References: <1418623790-28429-1-git-send-email-cernekee@gmail.com> <20141216130939.166c4369@lwn.net>
+In-Reply-To: <20141216130939.166c4369@lwn.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 18.12.2014, 15:11 +0800 schrieb Liu Ying:
-> The MIPI DSI node contains some ports which represent possible DRM CRTCs
-> it can connect with.  Each port has a 'reg' property embedded.  This
-> property will be wrongly interpretted by the MIPI DSI bus driver, because
-> the driver will take each subnode which contains a 'reg' property as a
-> DSI peripheral device.  This patch moves the existing MIPI DSI ports into
-> a new 'ports' node so that the MIPI DSI bus driver may distinguish its
-> DSI peripheral device(s) from the existing ports.
-> 
-> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-regards
-Philipp
+On 16/12/2014 19:09, Jonathan Corbet wrote:
+> In general, I worry about trying to codify things too much just because
+> different maintainers have different expectations.  As Linus noted, some
+> maintainers have their work done by the time the merge window starts and
+> can take patches just fine — until something catches fire, at least.
 
+As one of the recipients of the original evidence ("[v3 00/26] Add VT-d
+Posted-Interrupts support"), I can only agree.
+
+The timing of the series wasn't optimal for me, either: I do _not_ take
+patches during the merge window and generally would like people that are
+not KVM submaintainers to leave me alone.
+
+On the other hand, the series is complex and spans four maintainers
+(KVM, VFIO, IOMMU, x86), and it would be weird to blame people for
+posting early.  In this case the x86 parts are just one patch out of 26.
+ When x86 maintainers see something like this, they can expect the KVM
+maintainer (me) to tell them "can you review the approach" or just "can
+you give your Acked-by" once the rest of the series is mature.
+
+As an example of a different workflow, generally things go like this for me:
+
+   window   Put up fires, otherwise do non-kernel stuff
+
+   rc1-rc2  Test large features, gather small patches in a rebased queue
+
+   rc2-rc3  Big testing week: open next tree
+
+   rc3-rc6  Merge small features
+
+   rc6-     Merge bugfixes only, do non-kernel stuff, start bugging
+            submaintainers
+
+So for me the worst time to send patches is actually the week between
+rc2 and rc3.  You're pretty much guaranteed to be ignored at that time,
+unless of course the patch is for current mainline.
+
+If you send during the merge window, chances are I'll be busy doing
+something else and I won't have a fast turnaround.  But a mail from your
+manager asking to merge a large feature after rc6 will definitely make
+me more grumpy.
+
+Paolo
