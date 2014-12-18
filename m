@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752170AbaLRLxC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:53:02 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:64573 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037AbaLRLw6 (ORCPT
+	id S1752290AbaLRLxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:53:12 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:65461 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175AbaLRLxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 06:52:58 -0500
+	Thu, 18 Dec 2014 06:53:08 -0500
 From: Chunyan Zhang <zhang.chunyan@linaro.org>
 To: m.chehab@samsung.com, david@hardeman.nu, uli-lirc@uli-eckhardt.de,
         hans.verkuil@cisco.com, julia.lawall@lip6.fr, himangi774@gmail.com,
@@ -15,9 +15,9 @@ To: m.chehab@samsung.com, david@hardeman.nu, uli-lirc@uli-eckhardt.de,
         dwmw2@infradead.org, computersforpeace@gmail.com, arnd@linaro.org
 Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, zhang.lyra@gmail.com
-Subject: [PATCH 1/3] ktime.h: Introduce ktime_ms_delta
-Date: Thu, 18 Dec 2014 19:52:00 +0800
-Message-Id: <1418903522-19137-2-git-send-email-zhang.chunyan@linaro.org>
+Subject: [PATCH 2/3] mtd: test: Replace timeval with ktime_t in speedtest.c and torturetest.c
+Date: Thu, 18 Dec 2014 19:52:01 +0800
+Message-Id: <1418903522-19137-3-git-send-email-zhang.chunyan@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418903522-19137-1-git-send-email-zhang.chunyan@linaro.org>
 References: <ktime-mtd-rc-v1>
@@ -26,32 +26,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a reusable time difference function which returns
-the difference in millisecond, as often used in some driver code, e.g.
-mtd/test, media/rc, etc.
+This patch changes the 32-bit time type (timeval) to the 64-bit one
+(ktime_t), since 32-bit time types will break in the year 2038.
+
+I use ktime_t instead of timeval to define 'start' and 'finish'
+which are used to get the time for tow points.
+
+This patch also changes do_gettimeofday() to ktime_get() accordingly,
+since ktime_get returns a ktime_t, but do_gettimeofday returns a
+struct timeval, and the other reason is that ktime_get() uses
+the monotonic clock.
+
+This patch will use a new function 'ktime_ms_delta' which is introduced
+in 1/3 of this patch-set to get the millisecond time difference.
 
 Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
-Acked-by: Arnd Bergmann <arnd@linaro.org>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
 ---
- include/linux/ktime.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/mtd/tests/speedtest.c   |   10 +++++-----
+ drivers/mtd/tests/torturetest.c |   10 +++++-----
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index c9d645a..891ea92 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -186,6 +186,11 @@ static inline s64 ktime_us_delta(const ktime_t later, const ktime_t earlier)
-        return ktime_to_us(ktime_sub(later, earlier));
+diff --git a/drivers/mtd/tests/speedtest.c b/drivers/mtd/tests/speedtest.c
+index 5ee9f70..87a6e25 100644
+--- a/drivers/mtd/tests/speedtest.c
++++ b/drivers/mtd/tests/speedtest.c
+@@ -22,6 +22,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/init.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/err.h>
+@@ -49,7 +50,7 @@ static int pgsize;
+ static int ebcnt;
+ static int pgcnt;
+ static int goodebcnt;
+-static struct timeval start, finish;
++static ktime_t start, finish;
+ 
+ static int multiblock_erase(int ebnum, int blocks)
+ {
+@@ -168,12 +169,12 @@ static int read_eraseblock_by_2pages(int ebnum)
+ 
+ static inline void start_timing(void)
+ {
+-	do_gettimeofday(&start);
++	start = ktime_get();
  }
  
-+static inline s64 ktime_ms_delta(const ktime_t later, const ktime_t earlier)
-+{
-+	return ktime_to_ms(ktime_sub(later, earlier));
-+}
-+
- static inline ktime_t ktime_add_us(const ktime_t kt, const u64 usec)
+ static inline void stop_timing(void)
  {
- 	return ktime_add_ns(kt, usec * NSEC_PER_USEC);
+-	do_gettimeofday(&finish);
++	finish = ktime_get();
+ }
+ 
+ static long calc_speed(void)
+@@ -181,8 +182,7 @@ static long calc_speed(void)
+ 	uint64_t k;
+ 	long ms;
+ 
+-	ms = (finish.tv_sec - start.tv_sec) * 1000 +
+-	     (finish.tv_usec - start.tv_usec) / 1000;
++	ms = ktime_ms_delta(finish, start);
+ 	if (ms == 0)
+ 		return 0;
+ 	k = goodebcnt * (mtd->erasesize / 1024) * 1000;
+diff --git a/drivers/mtd/tests/torturetest.c b/drivers/mtd/tests/torturetest.c
+index eeab969..7e77ed4 100644
+--- a/drivers/mtd/tests/torturetest.c
++++ b/drivers/mtd/tests/torturetest.c
+@@ -26,6 +26,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/init.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/err.h>
+@@ -79,18 +80,18 @@ static unsigned char *check_buf;
+ static unsigned int erase_cycles;
+ 
+ static int pgsize;
+-static struct timeval start, finish;
++static ktime_t start, finish;
+ 
+ static void report_corrupt(unsigned char *read, unsigned char *written);
+ 
+ static inline void start_timing(void)
+ {
+-	do_gettimeofday(&start);
++	start = ktime_get();
+ }
+ 
+ static inline void stop_timing(void)
+ {
+-	do_gettimeofday(&finish);
++	finish = ktime_get();
+ }
+ 
+ /*
+@@ -322,8 +323,7 @@ static int __init tort_init(void)
+ 			long ms;
+ 
+ 			stop_timing();
+-			ms = (finish.tv_sec - start.tv_sec) * 1000 +
+-			     (finish.tv_usec - start.tv_usec) / 1000;
++			ms = ktime_ms_delta(finish, start);
+ 			pr_info("%08u erase cycles done, took %lu "
+ 			       "milliseconds (%lu seconds)\n",
+ 			       erase_cycles, ms, ms / 1000);
 -- 
 1.7.9.5
 
