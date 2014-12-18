@@ -1,93 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751365AbaLRO6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 09:58:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062AbaLRO6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 09:58:11 -0500
-Date: Thu, 18 Dec 2014 09:58:06 -0500 (EST)
-From: Benjamin Coddington <bcodding@redhat.com>
-X-X-Sender: bcodding@planck.local
-To: "J. Bruce Fields" <bfields@fieldses.org>
-cc: =?ISO-8859-15?Q?Holger_Hoffst=E4tte?= 
-	<holger.hoffstaette@googlemail.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-In-Reply-To: <20141218144856.GA18179@fieldses.org>
-Message-ID: <alpine.OSX.2.19.9992.1412180955000.62182@planck.local>
-References: <pan.2014.12.16.22.19.18@googlemail.com> <20141217212159.GA11517@fieldses.org> <5492C710.20104@googlemail.com> <20141218144856.GA18179@fieldses.org>
-User-Agent: Alpine 2.19.9992 (OSX 65 2014-06-20)
-MIME-Version: 1.0
-Content-Type: multipart/mixed; BOUNDARY="0-675064800-1418914689=:62182"
+	id S1751165AbaLRPHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:07:06 -0500
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:19598 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751062AbaLRPHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 10:07:04 -0500
+Message-Id: <681c51$op4mt8@relay.skynet.be>
+Date: 18 Dec 2014 16:05:28 +0100
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqUQAPzrklRR9Aqz/2dsb2JhbABagwZSWIIiFLRPAY8ahXIodRcBAQEBAX2EOi8jGBdrJBOIMAEI1GyPUE6CfIE0BZgHgmGHR4YNIoFFgmUxAYECI4EdAQID
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [GIT PULL REQUEST] watchdog - v3.19 merge window
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Linus,
 
---0-675064800-1418914689=:62182
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Please pull from 'master' branch of
+        git://www.linux-watchdog.org/linux-watchdog.git
 
-Frame 36 of nfs-client.pcap has this interesting string:
+It will:
+* fix the argument of watchdog_active() in imx2_wdt
+* Add power management support to the imx2_wdt watchdog.
 
-0ff0  00 01 3b f6 fb b6 26 16 8f 7c 00 00 00 41 62 74   ..;...&..|...Abt
-1000  72 66 73 2d 32 30 00 00 00 00 00 00 00 00 30 36   rfs-20........06
-1010  2d 66 69 78 2d 64 65 61 64 6c 6f 63 6b 2d 77 68   -fix-deadlock-wh
-1020  65 6e 2d 6d 6f 75 6e 74 69 6e 67 2d 61 2d 64 65   en-mounting-a-de
-1030  67 72 61 64 65 64 2d 66 73 2e 70 61 74 63 68 00   graded-fs.patch.
+This will update the following files:
 
-...
+ imx2_wdt.c |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+)
 
-Ben
+with these Changes:
 
-On Thu, 18 Dec 2014, J. Bruce Fields wrote:
+commit ba90f261cdcbf5535bb46381b1849815268daa3f
+Author: Fabio Estevam <fabio.estevam@freescale.com>
+Date:   Mon Dec 15 22:49:59 2014 -0200
 
-> On Thu, Dec 18, 2014 at 01:22:40PM +0100, Holger Hoffstätte wrote:
-> > On 12/17/14 22:22, J. Bruce Fields wrote:
-> > > On Tue, Dec 16, 2014 at 10:19:18PM +0000, Holger Hoffstätte wrote:
-> > >> (..oddly broken directory over NFS..)
-> > > That doesn't sound familiar.  A network trace showing the READDIR would
-> > > be really useful.  Since this is so reproducible, I think that should be
-> > > possible.  So do something like:
-> > >
-> > > 	move the problem file into 3.14/
-> > > 	tcpdump -s0 -wtmp.pcap -i<relevant interface>
-> > > 	ls the directory on the client.
-> > > 	kill tcpdump
-> > > 	send us tmp.pcap and/or take a look at it with wireshark and see
-> > > 	what the READDIR response looks like.
-> >
-> > Thanks for your reply. I forgot to mention that removing other files seems to "fix" the problem, so it does not seem to be spefically the new file itself that is the cause.
-> >
-> > I captured the "ls 3.14 | head" sequence on both the client and the server, and put the tcpudmp files here: http://hoho.duckdns.org/linux/ - let me know if that helped.
->
-> On a quick skim, the server's READDIR responses look correct.  The entry
-> btrfs-20141216-fix-a-warning-of-qgroup-account-on-shared-extents.patch
-> is returned in frame 53 (with complete reassembled reply displayed by
-> wireshark in frame 63).
->
-> You could double-check for me--just run "wireshark nfs-server.pcap",
-> look for packets labeled "Reply ... READDIR", and expand out the READDIR
-> op and directory listing.  I don't see anything obviously wrong.
->
-> It's interesting that there's only one LOOKUP in the trace, for btrfs-20
-> (returning, not suprisingly, NFS4ERR_NOENT).  If the client failed to
-> parse that entry for some reason, then maybe in addition to getting the
-> filename wrong it also failed to get the attributes, triggering the
-> extra lookup/getattr.
->
-> > Meanwhile I'll try older/plain (unpatched) kernels. So far reverting the client to vanilla 3.18.1 or 3.14.27 has not helped..
->
-> I'm a little unclear: when you said "All this is on freshly baked
-> 3.18.1", are you describing the client, or the server, or both?
->
-> --b.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
---0-675064800-1418914689=:62182--
+    watchdog: imx2_wdt: Fix the argument of watchdog_active()
+
+    Fix the following build warning by passing the expected argument type to
+    watchdog_active():
+
+    drivers/watchdog/imx2_wdt.c: In function 'imx2_wdt_suspend':
+    drivers/watchdog/imx2_wdt.c:340:2: warning: passing argument 1 of 'watchdog_active' from incompatible pointer type [enabled by default]
+    In file included from drivers/watchdog/imx2_wdt.c:38:0:
+    include/linux/watchdog.h:104:20: note: expected 'struct watchdog_device *' but argument is of type 'struct watchdog_device **'
+
+    Reported-by: Olof's autobuilder <build@lixom.net>
+    Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+commit aefbaf3a3fa030ed7ef3cc9456ed82e6611c1dcb
+Author: Xiubo Li <Li.Xiubo@freescale.com>
+Date:   Mon Sep 22 18:00:52 2014 +0800
+
+    watchdog: imx2_wdt: Add power management support.
+
+    Add power management operations(suspend and resume) as part of
+    dev_pm_ops for IMX2 watchdog driver.
+
+    Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+    Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index 65b84d8..d6add51 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -326,6 +326,52 @@ static void imx2_wdt_shutdown(struct platform_device *pdev)
+        }
+ }
+
++#ifdef CONFIG_PM_SLEEP
++/* Disable watchdog if it is active during suspend */
++static int imx2_wdt_suspend(struct device *dev)
++{
++       struct watchdog_device *wdog = dev_get_drvdata(dev);
++       struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
++
++       imx2_wdt_set_timeout(wdog, IMX2_WDT_MAX_TIME);
++       imx2_wdt_ping(wdog);
++
++       /* Watchdog has been stopped but IP block is still running */
++       if (!watchdog_active(wdog) && imx2_wdt_is_running(wdev))
++               del_timer_sync(&wdev->timer);
++
++       clk_disable_unprepare(wdev->clk);
++
++       return 0;
++}
++
++/* Enable watchdog and configure it if necessary */
++static int imx2_wdt_resume(struct device *dev)
++{
++       struct watchdog_device *wdog = dev_get_drvdata(dev);
++       struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
++
++       clk_prepare_enable(wdev->clk);
++
++       if (watchdog_active(wdog) && !imx2_wdt_is_running(wdev)) {
++               /* Resumes from deep sleep we need restart
++                * the watchdog again.
++                */
++               imx2_wdt_setup(wdog);
++               imx2_wdt_set_timeout(wdog, wdog->timeout);
++               imx2_wdt_ping(wdog);
++       } else if (imx2_wdt_is_running(wdev)) {
++               imx2_wdt_ping(wdog);
++               mod_timer(&wdev->timer, jiffies + wdog->timeout * HZ / 2);
++       }
++
++       return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(imx2_wdt_pm_ops, imx2_wdt_suspend,
++                        imx2_wdt_resume);
++
+ static const struct of_device_id imx2_wdt_dt_ids[] = {
+        { .compatible = "fsl,imx21-wdt", },
+        { /* sentinel */ }
+@@ -337,6 +383,7 @@ static struct platform_driver imx2_wdt_driver = {
+        .shutdown       = imx2_wdt_shutdown,
+        .driver         = {
+                .name   = DRIVER_NAME,
++               .pm     = &imx2_wdt_pm_ops,
+                .of_match_table = imx2_wdt_dt_ids,
+        },
+ };
