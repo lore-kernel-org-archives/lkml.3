@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbaLRRqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 12:46:04 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:40602 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251AbaLRRqC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 12:46:02 -0500
+	id S1751517AbaLRRqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 12:46:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39424 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751132AbaLRRqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 12:46:37 -0500
+Date: Thu, 18 Dec 2014 12:46:29 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Valdis.Kletnieks@vt.edu, Paul Moore <paul@paul-moore.com>,
+        linux-kernel@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-audit@redhat.com
+Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid
+ context at mm/slab.c:2849
+Message-ID: <20141218174629.GB29827@madcap2.tricolour.ca>
+References: <2966.1418778594@turing-police.cc.vt.edu>
+ <5444.1418921116@turing-police.cc.vt.edu>
+ <1418921420.5162.19.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1418325511-16648-1-git-send-email-dianders@chromium.org>
-References: <1418325511-16648-1-git-send-email-dianders@chromium.org>
-Date: Thu, 18 Dec 2014 09:46:00 -0800
-X-Google-Sender-Auth: YpSW7wgnQtsHpfARXww39tM9zsc
-Message-ID: <CAD=FV=Vt3q_7g=SmnV5ZCd-Evr_17BTMR9LWsFax8qOwtkSw6Q@mail.gmail.com>
-Subject: Re: [PATCH] i2c: rk3x: Account for repeated start time requirement
-From: Doug Anderson <dianders@chromium.org>
-To: Wolfram Sang <wsa@the-dreams.de>, Max Schwarz <max.schwarz@online.de>
-Cc: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Addy Ke <addy.ke@rock-chips.com>, Lin Huang <hl@rock-chips.com>,
-        yiwei cai <cyw@rock-chips.com>, Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418921420.5162.19.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 14/12/18, Eric Paris wrote:
+> On Thu, 2014-12-18 at 11:45 -0500, Valdis.Kletnieks@vt.edu wrote:
+> > On Tue, 16 Dec 2014 20:09:54 -0500, Valdis Kletnieks said:
+> > > Spotted these two while booting single-user on 20141216.  20141208
+> > > doesn't throw these, so it's something in the last week or so..
+> > 
+> > Gaah!  Turns out that 20141208 *is* susceptible - it had been booting
+> > just fine for several days, but it went around the bend, apparently due
+> > to a userspace or initrd change.
+> 
+> $5 says you updated systemd?
+> 
+> Richard?
 
-On Thu, Dec 11, 2014 at 11:18 AM, Doug Anderson <dianders@chromium.org> wrote:
-> On Rockchip I2C the controller drops SDA low in the repeated start
-> condition at half the SCL high time.
->
-> If we want to meet timing requirements, that means we need to hold SCL
-> high for (4.7us * 2) when we're sending a repeated start (.6us * 2 for
-> Fast-mode).  That lets us achieve minimum tSU;STA.  However, we don't
-> want to always hold SCL high for that long because we'd never be able
-> to make 100kHz or 400kHz speeds.
->
-> Let's fix this by doing our clock calculations twice: once taking the
-> above into account and once running at normal speeds.  We'll use the
-> slower speed when sending the start bit and the normal speed
-> otherwise.
->
-> Note: we really only need the conservative timing when sending
-> _repeated_ starts, not when sending the first start.  We don't account
-> for this so technically the first start bit will be longer too.
-> ...well, except in the case when we use the combined write/read
-> optimization which doesn't use the same code.
->
-> As part of this change we needed to account for the SDA falling time.
-> The specification indicates that this should be the same, but we'll
-> follow Designware and add a binding.  Note that we deviate from
-> Designware and assign the default SDA falling time to be the same as
-> the SCL falling time, which is incredibly likely.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Note: This is based on Addy's patch (i2c: rk3x: fix bug that cause
-> measured high_ns doesn't meet I2C specification) that can be found at
-> <https://patchwork.kernel.org/patch/5475331/>.
->
->  Documentation/devicetree/bindings/i2c/i2c-rk3x.txt |  7 +-
->  drivers/i2c/busses/i2c-rk3x.c                      | 90 +++++++++++++++++-----
->  2 files changed, 74 insertions(+), 23 deletions(-)
+Ok, so if you are correct, then either we justify dropping the lock (I
+assume the one commone to both BUG reports [sig->cred_guard_mutex] ),
+or we make yet another queue were were hoping to avoid...
 
-So apparently the person who tested this for me got mixed up and told
-me it was good, but it wasn't.  :(
+It would also be good to narrow it down to a rule that triggers this.
 
-I've sent up a new version.  I've tested it myself this time but
-certainly would appreciate any extra testing folks can do on it...
-See <https://patchwork.kernel.org/patch/5515551/>
+> > egrep 'BUG|Linux vers' from my syslog:
+> > 
+> > Dec  9 12:19:53 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+...
+> > Dec 12 19:42:30 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+> > Dec 12 20:00:39 turing-police kernel: [ 1109.635328] BUG: sleeping function called from invalid context at mm/slab.c:2849
+...
+> > Dec 12 20:42:47 turing-police kernel: [ 3633.863552] BUG: sleeping function called from invalid context at mm/slab.c:2849
+> > Dec 12 20:51:33 turing-police kernel: [    0.000000] Linux version 3.18.0-next-20141208 (source@turing-police.cc.vt.edu) (gcc version 4.9.2 20141101 (Red Hat 4.9.2-1) (GCC) ) #27 SMP PREEMPT Mon Dec 8 22:20:07 EST 2014
+> > Dec 12 21:51:04 turing-police kernel: [ 3587.132867] BUG: sleeping function called from invalid context at mm/slab.c:2849
+...
+> > I need to figure out what changed around 7:30PM on the 12th.
 
--Doug
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
