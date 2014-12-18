@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710AbaLRBOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:14:01 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:59494 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751201AbaLRBN7 (ORCPT
+	id S1751732AbaLRBRs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:17:48 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:18775 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaLRBRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:13:59 -0500
-From: Stefan Beller <sbeller@google.com>
-To: corbet@lwn.net, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Cc: Stefan Beller <sbeller@google.com>
-Subject: [PATCH] Documentation/SubmittingPatches: unify whitespace/tabs for the DCO
-Date: Wed, 17 Dec 2014 17:13:56 -0800
-Message-Id: <1418865236-19218-1-git-send-email-sbeller@google.com>
-X-Mailer: git-send-email 2.2.0.31.gad78000.dirty
+	Wed, 17 Dec 2014 20:17:46 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+X-AuditID: cbfee690-f79ab6d0000046f7-62-54922b376825
+Content-transfer-encoding: 8BIT
+Message-id: <54922B36.8050306@samsung.com>
+Date: Thu, 18 Dec 2014 10:17:42 +0900
+From: Jaewon Kim <jaewon02.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-input@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Hyunhee Kim <hyunhee.kim@samsung.com>
+Subject: Re: [PATCH v7 1/3] Input: add regulator haptic driver
+References: <1418787308-29019-1-git-send-email-jaewon02.kim@samsung.com>
+ <1418787308-29019-2-git-send-email-jaewon02.kim@samsung.com>
+ <20141217220602.GC32399@dtor-ws>
+In-reply-to: <20141217220602.GC32399@dtor-ws>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsWyRsSkSNdce1KIwY3tkhbXvzxntTi86AWj
+	xecPLewWvQuuslnc/PSN1eLyrjlsFjPO72NyYPfYOesuu0ffllWMHp83yQUwR3HZpKTmZJal
+	FunbJXBlHLjdxVpwi61ix/ptzA2MB1m7GDk5JARMJP68bmSBsMUkLtxbz9bFyMUhJLCUUaLl
+	aweQwwFWNLFdASK+iFFi+aJFTCANvAKCEj8m32MBqWEWkJc4cikbJMwsYCbxqGUdM0T9a0aJ
+	OY0bWSDqtSQOfVjDDlLPIqAq0TLJCCTMJqAt8X39YrB7RAUiJD6s+soGYosI6Etsn/2LEWQO
+	s8BVRolzf1aDJYQF7CS2NuyAWrCKUeLrujtg3ZwCuhKzZpwC+0BC4Bi7xLv3/8A2swgISHyb
+	fIgF4htZiU0HmCE+lpQ4uOIGywRGsVlI/pmF8M8sJP8sYGRexSiaWpBcUJyUXmSiV5yYW1ya
+	l66XnJ+7iREYYaf/PZuwg/HeAetDjAIcjEo8vC+uTwgRYk0sK67MPcRoCnTERGYp0eR8YBzn
+	lcQbGpsZWZiamBobmVuaKYnzvpb6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBkZXN99Sb
+	h9sz59wpP7HDekWRz6SEukuFj5XCU98/eXvOpFArsujz43vre1mdhfvOetocKjjWuuPAoR/P
+	HtZcC2aINEpmsLm8xKFhVuk6z7mfVha/M7l/UDpq4r0bSkGsT+b0Vstu3qze+ppNOWZ57bKz
+	tlxmp1fEqEpqHHv00uF9+KtrdwV8S5VYijMSDbWYi4oTAX6QZLSrAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jAV1z7UkhBp9vCllc//Kc1eLwoheM
+	Fp8/tLBb9C64ymZx89M3VovLu+awWcw4v4/Jgd1j56y77B59W1YxenzeJBfAHNXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjDmHHgdhdrwS22ih3rtzE3MB5k7WLk4JAQMJGY
+	2K7QxcgJZIpJXLi3nq2LkYtDSGARo8TyRYuYQBK8AoISPybfYwGpZxaQlzhyKRskzCxgJvGo
+	ZR0zRP1rRok5jRtZIOq1JA59WMMOUs8ioCrRMskIJMwmoC3xff1iVhBbVCBC4sOqr2wgtoiA
+	vsT22b8YQeYwC1xllDj3ZzVYQljATmJrww6oBasYJb6uuwPWzSmgKzFrxim2CYwCs5DcNwvh
+	vllI7lvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzh+n0ntYFzZYHGIUYCDUYmH9+X1
+	CSFCrIllxZW5hxglOJiVRHh3c00KEeJNSaysSi3Kjy8qzUktPsRoCvTdRGYp0eR8YGrJK4k3
+	NDYxM7I0Mje0MDI2VxLnVbJvCxESSE8sSc1OTS1ILYLpY+LglGpgPOPSy3WVJ/Ztu/JS61MS
+	s94fmVE9TWqdkPylC1nM2lbJj/9Ezrv6eibbsWkcU+wzp7pH2v/oUpL/sHl22m6m84tXcm/Q
+	vi/U8r7ONnW+ZP9P7sd1kccN280+Kqd3HYzpuZMryi3w1WLO7zjx74fvnlC59XLDDMN09Rk7
+	nfsL5//Vy3dgZhUTVWIpzkg01GIuKk4EAC/uns31AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Developers Certificate of Origin has a mixture of tabs and white
-spaces which is annoying to view if your editor explicitly views white
-space characters.
+Hi Dmity,
 
-Also remove any trailing white spaces found in the file.
+2014년 12월 18일 07:06에 Dmitry Torokhov 이(가) 쓴 글:
+> HI Jaewon,
+>
+> On Wed, Dec 17, 2014 at 12:35:06PM +0900, Jaewon Kim wrote:
+>> This patch adds support for haptic driver controlled by
+>> voltage of regulator. And this driver support for
+>> Force Feedback interface from input framework
+>>
+>> Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
+>> Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Does the driver still work if you apply the patch below on top of yours?
+>
+> Thanks.
+>
 
-Signed-off-by: Stefan Beller <sbeller@google.com>
----
+Yes, there is no problem to apply this one first.
 
-Hi,
+Thanks to review my patches.
 
-I found this issue when being asked to patch 
-Documentation/SubmittingPatches in git.git, so I'll
-send the fix to linux as well where the DCO originally 
-comes from.
-
-Thanks,
-Stefan
-
- Documentation/SubmittingPatches | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
-index 1fa1caa..1671ce3 100644
---- a/Documentation/SubmittingPatches
-+++ b/Documentation/SubmittingPatches
-@@ -223,9 +223,9 @@ Do not send more than 15 patches at once to the vger mailing lists!!!
- 
- 
- Linus Torvalds is the final arbiter of all changes accepted into the
--Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>. 
-+Linux kernel.  His e-mail address is <torvalds@linux-foundation.org>.
- He gets a lot of e-mail, so typically you should do your best to -avoid-
--sending him e-mail. 
-+sending him e-mail.
- 
- Patches which are bug fixes, are "obvious" changes, or similarly
- require little discussion should be sent or CC'd to Linus.  Patches
-@@ -387,11 +387,11 @@ can certify the below:
-             person who certified (a), (b) or (c) and I have not modified
-             it.
- 
--	(d) I understand and agree that this project and the contribution
--	    are public and that a record of the contribution (including all
--	    personal information I submit with it, including my sign-off) is
--	    maintained indefinitely and may be redistributed consistent with
--	    this project or the open source license(s) involved.
-+        (d) I understand and agree that this project and the contribution
-+            are public and that a record of the contribution (including all
-+            personal information I submit with it, including my sign-off) is
-+            maintained indefinitely and may be redistributed consistent with
-+            this project or the open source license(s) involved.
- 
- then you just add a line saying
- 
-@@ -401,7 +401,7 @@ using your real name (sorry, no pseudonyms or anonymous contributions.)
- 
- Some people also put extra tags at the end.  They'll just be ignored for
- now, but you can do this to mark internal company procedures or just
--point out some special detail about the sign-off. 
-+point out some special detail about the sign-off.
- 
- If you are a subsystem or branch maintainer, sometimes you need to slightly
- modify patches you receive in order to merge them, because the code is not
--- 
-2.2.0.31.gad78000.dirty
-
+Thanks
+Jaewon Kim
