@@ -1,240 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaLRRc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 12:32:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:52669 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033AbaLRRc4 convert rfc822-to-8bit (ORCPT
+	id S1751327AbaLRRoT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 12:44:19 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:61036 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbaLRRoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 12:32:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,601,1413270000"; 
-   d="scan'208";a="649991970"
-From: "Varlese, Marco" <marco.varlese@intel.com>
-To: Roopa Prabhu <roopa@cumulusnetworks.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fastabend, John R" <john.r.fastabend@intel.com>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC PATCH net-next v2 1/1] net: Support for switch port
- configuration
-Thread-Topic: [RFC PATCH net-next v2 1/1] net: Support for switch port
- configuration
-Thread-Index: AdAaqPMciB9+ZS56Q6O2uHwvQZyp6AAKDZcAAABJxuAAANCagAAEZHVg
-Date: Thu, 18 Dec 2014 17:25:01 +0000
-Message-ID: <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
- <5492E85C.6010802@cumulusnetworks.com>
- <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
- <5492EFC3.8030102@cumulusnetworks.com>
-In-Reply-To: <5492EFC3.8030102@cumulusnetworks.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [163.33.239.181]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 18 Dec 2014 12:44:17 -0500
+From: Doug Anderson <dianders@chromium.org>
+To: wsa@the-dreams.de, max.schwarz@online.de
+Cc: heiko@sntech.de, u.kleine-koenig@pengutronix.de, addy.ke@rock-chips.com,
+        hl@rock-chips.com, cyw@rock-chips.com,
+        Doug Anderson <dianders@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-rockchip@lists.infradead.org, linux-i2c@vger.kernel.org
+Subject: [PATCH v3] i2c: rk3x: Account for repeated start time requirement
+Date: Thu, 18 Dec 2014 09:44:07 -0800
+Message-Id: <1418924647-23795-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-
-> owner@vger.kernel.org] On Behalf Of Roopa Prabhu
-> Sent: Thursday, December 18, 2014 3:16 PM
-> To: Varlese, Marco
-> Cc: netdev@vger.kernel.org; Fastabend, John R; Thomas Graf; Jiri Pirko;
-> sfeldma@gmail.com; linux-kernel@vger.kernel.org
-> Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
-> configuration
-> 
-> On 12/18/14, 6:55 AM, Varlese, Marco wrote:
-> >> -----Original Message-----
-> >> From: Roopa Prabhu [mailto:roopa@cumulusnetworks.com]
-> >> Sent: Thursday, December 18, 2014 2:45 PM
-> >> To: Varlese, Marco
-> >> Cc: netdev@vger.kernel.org; Fastabend, John R; Thomas Graf; Jiri
-> >> Pirko; sfeldma@gmail.com; linux-kernel@vger.kernel.org
-> >> Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
-> >> configuration
-> >>
-> >> On 12/18/14, 3:29 AM, Varlese, Marco wrote:
-> >>> From: Marco Varlese <marco.varlese@intel.com>
-> >>>
-> >>> Switch hardware offers a list of attributes that are configurable on
-> >>> a per port basis.
-> >>> This patch provides a mechanism to configure switch ports by adding
-> >>> an NDO for setting specific values to specific attributes.
-> >>> There will be a separate patch that adds the "get" functionality via
-> >>> another NDO and another patch that extends iproute2 to call the two
-> >>> new NDOs.
-> >>>
-> >>> Signed-off-by: Marco Varlese <marco.varlese@intel.com>
-> >>> ---
-> >>>    include/linux/netdevice.h    |  5 ++++
-> >>>    include/uapi/linux/if_link.h | 15 ++++++++++++
-> >>>    net/core/rtnetlink.c         | 54
-> >> ++++++++++++++++++++++++++++++++++++++++++++
-> >>>    3 files changed, 74 insertions(+)
-> >>>
-> >>> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> >>> index c31f74d..4881c7b 100644
-> >>> --- a/include/linux/netdevice.h
-> >>> +++ b/include/linux/netdevice.h
-> >>> @@ -1027,6 +1027,9 @@ typedef u16 (*select_queue_fallback_t)(struct
-> >> net_device *dev,
-> >>>     * int (*ndo_switch_port_stp_update)(struct net_device *dev, u8
-> state);
-> >>>     *	Called to notify switch device port of bridge port STP
-> >>>     *	state change.
-> >>> + * int (*ndo_switch_port_set_cfg)(struct net_device *dev,
-> >>> + *                                u32 attr, u64 value);
-> >>> + *	Called to set specific switch ports attributes.
-> >>>     */
-> >>>    struct net_device_ops {
-> >>>    	int			(*ndo_init)(struct net_device *dev);
-> >>> @@ -1185,6 +1188,8 @@ struct net_device_ops {
-> >>>    							    struct
-> >> netdev_phys_item_id *psid);
-> >>>    	int			(*ndo_switch_port_stp_update)(struct
-> >> net_device *dev,
-> >>>    							      u8 state);
-> >>> +	int			(*ndo_switch_port_set_cfg)(struct
-> >> net_device *dev,
-> >>> +							   u32 attr, u64 value);
-> >>>    #endif
-> >>>    };
-> >>>
-> >>> diff --git a/include/uapi/linux/if_link.h
-> >>> b/include/uapi/linux/if_link.h index f7d0d2d..19cb51a 100644
-> >>> --- a/include/uapi/linux/if_link.h
-> >>> +++ b/include/uapi/linux/if_link.h
-> >>> @@ -146,6 +146,7 @@ enum {
-> >>>    	IFLA_PHYS_PORT_ID,
-> >>>    	IFLA_CARRIER_CHANGES,
-> >>>    	IFLA_PHYS_SWITCH_ID,
-> >>> +	IFLA_SWITCH_PORT_CFG,
-> >>>    	__IFLA_MAX
-> >>>    };
-> >>>
-> >>> @@ -603,4 +604,18 @@ enum {
-> >>>
-> >>>    #define IFLA_HSR_MAX (__IFLA_HSR_MAX - 1)
-> >>>
-> >>> +/* Switch Port Attributes section */
-> >>> +
-> >>> +enum {
-> >>> +	IFLA_ATTR_UNSPEC,
-> >>> +	IFLA_ATTR_LEARNING,
-> >> Any reason you want learning here ?. This is covered as part  of the
-> >> bridge setlink attributes.
-> >>
-> > Yes, because the user may _not_ want to go through a bridge interface
-> necessarily.
-> But, the bridge setlink/getlink interface was changed to accommodate 'self'
-> for exactly such cases.
-> I kind of understand your case for the other attributes (these are per port
-> settings that switch asics provide).
-> 
-> However, i don't understand the reason to pull in bridge attributes here.
-> 
+On Rockchip I2C the controller drops SDA low slightly too soon to meet
+the "repeated start" requirements.
 
-Maybe, I am missing something so you might help. The learning attribute - in my case - it is like all other attributes: a port attribute (as you said, port settings that the switch provides per port). 
-So, what I was saying is "why the user shall go through a bridge to configure the learning attribute"? From my perspective, it is as any other attribute and as such configurable on the port.
+>From my own experimentation over a number of rates:
+ - controller appears to drop SDA at .875x (7/8) programmed clk high.
+ - controller appears to keep SCL high for 2x programmed clk high.
 
-> >
-> >>> +	IFLA_ATTR_LOOPBACK,
-> >>> +	IFLA_ATTR_BCAST_FLOODING,
-> >>> +	IFLA_ATTR_UCAST_FLOODING,
-> >>> +	IFLA_ATTR_MCAST_FLOODING,
-> >>> +	__IFLA_ATTR_MAX
-> >>> +};
-> >>> +
-> >>> +#define IFLA_ATTR_MAX (__IFLA_ATTR_MAX - 1)
-> >>> +
-> >>>    #endif /* _UAPI_LINUX_IF_LINK_H */ diff --git
-> >>> a/net/core/rtnetlink.c b/net/core/rtnetlink.c index
-> >>> eaa057f..c0d1c45 100644
-> >>> --- a/net/core/rtnetlink.c
-> >>> +++ b/net/core/rtnetlink.c
-> >>> @@ -1389,6 +1389,46 @@ static int validate_linkmsg(struct net_device
-> >> *dev, struct nlattr *tb[])
-> >>>    	return 0;
-> >>>    }
-> >>>
-> >>> +#ifdef CONFIG_NET_SWITCHDEV
-> >>> +static int do_setswcfg(struct net_device *dev, struct nlattr *attr) {
-> >>> +	int rem, err = -EINVAL;
-> >>> +	struct nlattr *v;
-> >>> +	const struct net_device_ops *ops = dev->netdev_ops;
-> >>> +
-> >>> +	nla_for_each_nested(v, attr, rem) {
-> >>> +		u32 op = nla_type(v);
-> >>> +		u64 value = 0;
-> >>> +
-> >>> +		switch (op) {
-> >>> +		case IFLA_ATTR_LEARNING:
-> >>> +		case IFLA_ATTR_LOOPBACK:
-> >>> +		case IFLA_ATTR_BCAST_FLOODING:
-> >>> +		case IFLA_ATTR_UCAST_FLOODING:
-> >>> +		case IFLA_ATTR_MCAST_FLOODING: {
-> >>> +			if (nla_len(v) < sizeof(value)) {
-> >>> +				err = -EINVAL;
-> >>> +				break;
-> >>> +			}
-> >>> +
-> >>> +			value = nla_get_u64(v);
-> >>> +			err = ops->ndo_switch_port_set_cfg(dev,
-> >>> +							   op,
-> >>> +							   value);
-> >>> +			break;
-> >>> +		}
-> >>> +		default:
-> >>> +			err = -EINVAL;
-> >>> +			break;
-> >>> +		}
-> >>> +		if (err)
-> >>> +			break;
-> >>> +	}
-> >>> +	return err;
-> >>> +}
-> >>> +
-> >>> +#endif
-> >>> +
-> >>>    static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
-> >>>    {
-> >>>    	int rem, err = -EINVAL;
-> >>> @@ -1740,6 +1780,20 @@ static int do_setlink(const struct sk_buff *skb,
-> >>>    			status |= DO_SETLINK_NOTIFY;
-> >>>    		}
-> >>>    	}
-> >>> +#ifdef CONFIG_NET_SWITCHDEV
-> >>> +	if (tb[IFLA_SWITCH_PORT_CFG]) {
-> >>> +		err = -EOPNOTSUPP;
-> >>> +		if (!ops->ndo_switch_port_set_cfg)
-> >>> +			goto errout;
-> >>> +		if (!ops->ndo_switch_parent_id_get)
-> >>> +			goto errout;
-> >>> +		err = do_setswcfg(dev, tb[IFLA_SWITCH_PORT_CFG]);
-> >>> +		if (err < 0)
-> >>> +			goto errout;
-> >>> +
-> >>> +		status |= DO_SETLINK_NOTIFY;
-> >>> +	}
-> >>> +#endif
-> >>>    	err = 0;
-> >>>
-> >>>    errout:
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > the body of a message to majordomo@vger.kernel.org More majordomo
-> info
-> > at  http://vger.kernel.org/majordomo-info.html
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+The first rule isn't enough to meet tSU;STA requirements in
+Standard-mode on the system I tested on.  The second rule is probably
+enough to meet tHD;STA requirements in nearly all cases (especially
+after accounting for the first), but it doesn't hurt to account for it
+anyway just in case.
+
+Even though the repeated start requirement only need to be accounted
+for during a small part of the transfer, we'll adjust the timings for
+the whole transfer to meet it.  I believe that adjusting the timings
+in just the right place to switch things up for repeated start would
+require several extra interrupts and that doesn't seem terribly worth
+it.
+
+With this change and worst case rise/fall times, I see 100kHz i2c
+going to ~85kHz.  With slightly optimized rise/fall (800ns / 50ns) I
+see i2c going to ~89kHz.  Fast-mode isn't affected much because
+tSU;STA is shorter relative to tHD;STA there.
+
+As part of this change we needed to account for the SDA falling time.
+The specification indicates that this should be the same, but we'll
+follow Designware's lead and add a binding.  Note that we deviate from
+Designware and assign the default SDA falling time to be the same as
+the SCL falling time, which is incredibly likely.
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Note: This is based on Addy's patch (i2c: rk3x: fix bug that cause
+measured high_ns doesn't meet I2C specification) that can be found at
+<https://patchwork.kernel.org/patch/5475331/>.
+
+Changes in v3:
+- Totally changed code and tested myself; now actually works
+
+Changes in v2:
+- Also multiply SCL rise time by 2 for repeated start calculation
+
+ Documentation/devicetree/bindings/i2c/i2c-rk3x.txt |  7 ++-
+ drivers/i2c/busses/i2c-rk3x.c                      | 61 +++++++++++++++-------
+ 2 files changed, 48 insertions(+), 20 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+index 1885bd8..8cc75d9 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-rk3x.txt
+@@ -21,14 +21,17 @@ Required on RK3066, RK3188 :
+ Optional properties :
+ 
+  - clock-frequency : SCL frequency to use (in Hz). If omitted, 100kHz is used.
+- - i2c-scl-rising-time-ns : Number of nanoseconds the signal takes to rise
++ - i2c-scl-rising-time-ns : Number of nanoseconds the SCL signal takes to rise
+ 	(t(r) in I2C specification). If not specified this is assumed to be
+ 	the maximum the specification allows(1000 ns for Standard-mode,
+ 	300 ns for Fast-mode) which might cause slightly slower communication.
+- - i2c-scl-falling-time-ns : Number of nanoseconds the signal takes to fall
++ - i2c-scl-falling-time-ns : Number of nanoseconds the SCL signal takes to fall
+ 	(t(f) in the I2C specification). If not specified this is assumed to
+ 	be the maximum the specification allows (300 ns) which might cause
+ 	slightly slowercommunication.
++ - i2c-sda-falling-time-ns : Number of nanoseconds the SDA signal takes to fall
++	(t(f) in the I2C specification). If not specified we'll use the SCL
++	value since they are the same in nearly all cases.
+ 
+ Example:
+ 
+diff --git a/drivers/i2c/busses/i2c-rk3x.c b/drivers/i2c/busses/i2c-rk3x.c
+index 36a9224..5f96b1b 100644
+--- a/drivers/i2c/busses/i2c-rk3x.c
++++ b/drivers/i2c/busses/i2c-rk3x.c
+@@ -102,8 +102,9 @@ struct rk3x_i2c {
+ 
+ 	/* Settings */
+ 	unsigned int scl_frequency;
+-	unsigned int rise_ns;
+-	unsigned int fall_ns;
++	unsigned int scl_rise_ns;
++	unsigned int scl_fall_ns;
++	unsigned int sda_fall_ns;
+ 
+ 	/* Synchronization & notification */
+ 	spinlock_t lock;
+@@ -437,8 +438,9 @@ out:
+  *
+  * @clk_rate: I2C input clock rate
+  * @scl_rate: Desired SCL rate
+- * @rise_ns: How many ns it takes for signals to rise.
+- * @fall_ns: How many ns it takes for signals to fall.
++ * @scl_rise_ns: How many ns it takes for SCL to rise.
++ * @scl_fall_ns: How many ns it takes for SCL to fall.
++ * @sda_fall_ns: How many ns it takes for SDA to fall.
+  * @div_low: Divider output for low
+  * @div_high: Divider output for high
+  *
+@@ -447,11 +449,13 @@ out:
+  * too high, we silently use the highest possible rate.
+  */
+ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
+-			      unsigned long rise_ns, unsigned long fall_ns,
++			      unsigned long scl_rise_ns,
++			      unsigned long scl_fall_ns,
++			      unsigned long sda_fall_ns,
+ 			      unsigned long *div_low, unsigned long *div_high)
+ {
+ 	unsigned long spec_min_low_ns, spec_min_high_ns;
+-	unsigned long spec_max_data_hold_ns;
++	unsigned long spec_setup_start, spec_max_data_hold_ns;
+ 	unsigned long data_hold_buffer_ns;
+ 
+ 	unsigned long min_low_ns, min_high_ns;
+@@ -490,18 +494,35 @@ static int rk3x_i2c_calc_divs(unsigned long clk_rate, unsigned long scl_rate,
+ 	if (scl_rate <= 100000) {
+ 		/* Standard-mode */
+ 		spec_min_low_ns = 4700;
++		spec_setup_start = 4700;
+ 		spec_min_high_ns = 4000;
+ 		spec_max_data_hold_ns = 3450;
+ 		data_hold_buffer_ns = 50;
+ 	} else {
+ 		/* Fast-mode */
+ 		spec_min_low_ns = 1300;
++		spec_setup_start = 600;
+ 		spec_min_high_ns = 600;
+ 		spec_max_data_hold_ns = 900;
+ 		data_hold_buffer_ns = 50;
+ 	}
+-	min_low_ns = spec_min_low_ns + fall_ns;
+-	min_high_ns = spec_min_high_ns + rise_ns;
++	min_high_ns = scl_rise_ns + spec_min_high_ns;
++
++	/*
++	 * Timings for repeated start:
++	 * - controller appears to drop SDA at .875x (7/8) programmed clk high.
++	 * - controller appears to keep SCL high for 2x programmed clk high.
++	 *
++	 * We need to account for those rules in picking our "high" time so
++	 * we meet tSU;STA and tHD;STA times.
++	 */
++	min_high_ns = max(min_high_ns,
++		DIV_ROUND_UP((scl_rise_ns + spec_setup_start) * 1000, 875));
++	min_high_ns = max(min_high_ns,
++		DIV_ROUND_UP((scl_rise_ns + spec_setup_start +
++			      sda_fall_ns + spec_min_high_ns), 2));
++
++	min_low_ns = scl_fall_ns + spec_min_low_ns;
+ 	max_low_ns = spec_max_data_hold_ns * 2 - data_hold_buffer_ns;
+ 	min_total_ns = min_low_ns + min_high_ns;
+ 
+@@ -599,9 +620,9 @@ static void rk3x_i2c_adapt_div(struct rk3x_i2c *i2c, unsigned long clk_rate)
+ 	u64 t_low_ns, t_high_ns;
+ 	int ret;
+ 
+-	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->rise_ns,
+-				 i2c->fall_ns, &div_low, &div_high);
+-
++	ret = rk3x_i2c_calc_divs(clk_rate, i2c->scl_frequency, i2c->scl_rise_ns,
++				 i2c->scl_fall_ns, i2c->sda_fall_ns,
++				 &div_low, &div_high);
+ 	WARN_ONCE(ret != 0, "Could not reach SCL freq %u", i2c->scl_frequency);
+ 
+ 	clk_enable(i2c->clk);
+@@ -644,8 +665,9 @@ static int rk3x_i2c_clk_notifier_cb(struct notifier_block *nb, unsigned long
+ 	switch (event) {
+ 	case PRE_RATE_CHANGE:
+ 		if (rk3x_i2c_calc_divs(ndata->new_rate, i2c->scl_frequency,
+-				       i2c->rise_ns, i2c->fall_ns, &div_low,
+-				       &div_high) != 0)
++				       i2c->scl_rise_ns, i2c->scl_fall_ns,
++				       i2c->sda_fall_ns,
++				       &div_low, &div_high) != 0)
+ 			return NOTIFY_STOP;
+ 
+ 		/* scale up */
+@@ -875,15 +897,18 @@ static int rk3x_i2c_probe(struct platform_device *pdev)
+ 	 * the default maximum timing from the specification.
+ 	 */
+ 	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-rising-time-ns",
+-				 &i2c->rise_ns)) {
++				 &i2c->scl_rise_ns)) {
+ 		if (i2c->scl_frequency <= 100000)
+-			i2c->rise_ns = 1000;
++			i2c->scl_rise_ns = 1000;
+ 		else
+-			i2c->rise_ns = 300;
++			i2c->scl_rise_ns = 300;
+ 	}
+ 	if (of_property_read_u32(pdev->dev.of_node, "i2c-scl-falling-time-ns",
+-				 &i2c->fall_ns))
+-		i2c->fall_ns = 300;
++				 &i2c->scl_fall_ns))
++		i2c->scl_fall_ns = 300;
++	if (of_property_read_u32(pdev->dev.of_node, "i2c-sda-falling-time-ns",
++				 &i2c->scl_fall_ns))
++		i2c->sda_fall_ns = i2c->scl_fall_ns;
+ 
+ 	strlcpy(i2c->adap.name, "rk3x-i2c", sizeof(i2c->adap.name));
+ 	i2c->adap.owner = THIS_MODULE;
+-- 
+2.2.0.rc0.207.ga3a616c
+
