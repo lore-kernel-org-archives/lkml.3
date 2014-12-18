@@ -1,114 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751892AbaLRCjv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 21:39:51 -0500
-Received: from galahad.ideasonboard.com ([185.26.127.97]:50389 "EHLO
-	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaLRCju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 21:39:50 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
-Date: Thu, 18 Dec 2014 04:39:51 +0200
-Message-ID: <1533637.nrBHixev6I@avalon>
-User-Agent: KMail/4.14.3 (Linux/3.16.5-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
-References: <20141215050920.533.20169.sendpatchset@w520> <52558289.TJpHJaW3sy@avalon> <CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
+	id S1751909AbaLRCmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 21:42:22 -0500
+Received: from mail-bn1bn0106.outbound.protection.outlook.com ([157.56.110.106]:36366
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751518AbaLRCmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 21:42:21 -0500
+Message-ID: <54924009.8040207@freescale.com>
+Date: Thu, 18 Dec 2014 10:46:33 +0800
+From: Liu Ying <Ying.Liu@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        <dri-devel@lists.freedesktop.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <p.zabel@pengutronix.de>, <shawn.guo@linaro.org>,
+        <kernel@pengutronix.de>, <mturquette@linaro.org>, <airlied@linux.ie>
+Subject: Re: [PATCH RFC 09/15] drm: imx: Add MIPI DSI host controller driver
+References: <1418200648-32656-1-git-send-email-Ying.Liu@freescale.com>
+ <1418200648-32656-10-git-send-email-Ying.Liu@freescale.com>
+ <20141210131640.GD23558@ulmo.nvidia.com> <54915081.6020508@freescale.com>
+ <20141217104049.GU11285@n2100.arm.linux.org.uk>
+In-Reply-To: <20141217104049.GU11285@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(377454003)(479174004)(51704005)(24454002)(189002)(199003)(6806004)(47776003)(64706001)(20776003)(36756003)(87936001)(97736003)(54356999)(21056001)(76176999)(120916001)(83506001)(93886004)(99136001)(99396003)(68736005)(65816999)(117636001)(110136001)(23746002)(77096005)(50466002)(31966008)(65806001)(104016003)(46102003)(106466001)(62966003)(107046002)(65956001)(86362001)(87266999)(4396001)(105606002)(84676001)(2950100001)(92566001)(59896002)(50986999)(85426001)(77156002)(217873001)(62816006);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0630;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0630;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0630;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+Hi Russell,
 
-On Thursday 18 December 2014 10:26:27 Magnus Damm wrote:
-> On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart wrote:
-> > On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
-> >> From: Magnus Damm <damm+renesas@opensource.se>
-> >> 
-> >> Add r8a7779 specific support for IRLM bit configuration
-> >> in the INTC-IRQPIN driver. Without this code we need
-> >> special workaround code in arch/arm/mach-shmobile.
-> >> 
-> >> The IRLM bit for the INTC hardware exists on various
-> >> older SH-based SoCs and is used to select between two
-> >> modes for the external interrupt pins IRQ0 to IRQ3:
-> >> 
-> >> IRLM = 0: (default from reset on r8a7779)
-> >> In this mode the pins IRQ0 to IRQ3 are used together
-> >> to give a value between 0 and 15 to the SoC. External
-> >> logic is required for masking. This mode is not
-> >> supported by the INTC-IRQPIN driver.
-> >> 
-> >> IRLM = 1: (needs this patch or configuration elsewhere)
-> >> In this mode IRQ0 to IRQ3 operate as 4 individual
-> >> external interrupt pins. In this mode the SMSC ethernet
-> >> chip can be used via IRQ1 on r8a7779 Marzen. This mode
-> >> is the only supported mode by the INTC-IRQPIN driver.
-> >> 
-> >> For this patch to work the r8a7779 DTS needs to pass
-> >> the ICR0 register as the last register bank.
-> >> 
-> >> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
-> >> ---
-> >> 
-> >>  Same version as sent on December 3rd.
-> >>  
-> >>  Written against renesas-devel-20141202-v3.18-rc7 which is
-> >>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
-> >>  
-> >>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqp
-> >>  in.txt |    5 +
-> >>  drivers/irqchip/irq-renesas-intc-irqpi                |   50 ++++++++--
-> >>  2 files changed, 46 insertions(+), 9 deletions(-)
-> >> 
-> >> ---
-> >> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
-> >> ir qpin.txt +++
-> >> work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
-> >> irqpin.txt      2014-12-03 20:25:13.000000000 +0900
-> >> @@ -9,6 +9,11 @@
-> >> Required properties:
-> >>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
-> >>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
-> >>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
-> >> +
-> >> +- reg: Base address and length of each register bank used by the
-> >> external
-> >> +  IRQ pins driven by the interrupt controller hardware module. The base
-> >> +  addresses, length and number of required register banks varies with
-> >> soctype.
-> > 
-> > Ouch. Ouch. Multiple times. Very much :-/
-> > 
-> > I suppose it's too late to fix the DT bindings ?
-> 
-> I don't think it is ever too late, but the question is just how urgent
-> it is to get rid of the Marzen C board code. With the code in this
-> patch queue up we can get rid of the board code. If someone decides to
-> rework the INTC IRQPIN bits then we will have to live with the Marzen
-> code for longer. And if we should do it right and describe the actual
-> hardware, then perhaps we should consider the non-IRQ-pin interrupts
-> included in INTC for some SoCs. So it rapidly gets more complex...
+On 12/17/2014 06:40 PM, Russell King - ARM Linux wrote:
+> On Wed, Dec 17, 2014 at 05:44:33PM +0800, Liu Ying wrote:
+>> Hi Thierry,
+>>
+>> Sorry for the late response.
+>> I tried to address almost all your comments locally first.
+>> More feedback below.
+>>
+>> On 12/10/2014 09:16 PM, Thierry Reding wrote:
+>>> On Wed, Dec 10, 2014 at 04:37:22PM +0800, Liu Ying wrote:
+>>>> +static int check_status(struct imx_mipi_dsi *dsi, u32 reg, u32 status,
+>>>> +			int timeout, bool to_set)
+>>>> +{
+>>>> +	u32 val;
+>>>> +	bool out = false;
+>>>> +
+>>>> +	val = dsi_read(dsi, reg);
+>>>> +	for (;;) {
+>>>> +		out = to_set ? (val & status) : !(val & status);
+>>>> +		if (out)
+>>>> +			break;
+>>>> +
+>>>> +		if (!timeout--)
+>>>> +			return -EFAULT;
+>>>> +
+>>>> +		msleep(1);
+>>>> +		val = dsi_read(dsi, reg);
+>>>> +	}
+>>>> +	return 0;
+>>>> +}
+>>>
+>>> You should probably use a properly timed loop here. msleep() isn't
+>>> guaranteed to return after exactly one millisecond, so your timeout is
+>>> never going to be accurate. Something like the following would be better
+>>> in my opinion:
+>>>
+>>> 	timeout = jiffies + msecs_to_jiffies(timeout);
+>>>
+>>> 	while (time_before(jiffies, timeout)) {
+>>> 		...
+>>> 	}
+>>>
+>>> Also timeout should be unsigned long in that case.
+>>
+>> Accepted.
+>
+> Actually, that's a bad example: what we want to do is to assess success
+> after we wait, before we decide that something has failed.  In other
+> words, we don't want to wait, and decide that we failed without first
+> checking for success.
+>
+> In any case, returning -EFAULT is not sane: EFAULT doesn't mean "fault"
+> it means "Bad address", and it is returned to userspace to mean that
+> userspace passed the kernel a bad address.  That definition does /not/
+> fit what's going on here.
+>
+> 	timeout = jiffies + msecs_to_jiffies(timeout);
+>
+> 	do {
+> 		val = dsi_read(dsi, reg);
+> 		out = to_set ? (val & status) : !(val & status);
+> 		if (out)
+> 			break;
+>
+> 		if (time_is_after_jiffies(timeout))
 
-I don't think there's a need to delay getting rid of Marzen legacy code, my 
-comment wasn't an attempt to delay your efforts :-)
+time_is_after_jiffies(a) is defined as time_before(jiffies, a).
 
-Looking at the hardware we should have a single INTC DT node, not four. What 
-I'm wondering is whether we could still fix the DT bindings, or if the 
-backward compatibility requirements would make it too painful, especially 
-given that R-Car Gen2 doesn't use INTC.
+So, this line should be changed to
 
--- 
+	if (time_after(jiffies, timeout))
+
+Right?
+
+> 			return -ETIMEDOUT;
+>
+> 		msleep(1);
+> 	} while (1);
+>
+> 	return 0;
+>
+> would be better: we only fail immediately after we have checked whether
+> we succeeded, and we also do the first check immediately.
+>
+
+Does this one look better?  I use cpu_relax() instead of msleep(1).
+
+         expire = jiffies + msecs_to_jiffies(timeout);
+         for (;;) {
+                 val = dsi_read(dsi, reg);
+                 out = to_set ? (val & status) : !(val & status);
+                 if (out)
+                         break;
+
+                 if (time_after(jiffies, expire))
+                         return -ETIMEDOUT;
+
+                 cpu_relax();
+         }
+
+	return 0;
+
 Regards,
 
-Laurent Pinchart
-
+Liu Ying
