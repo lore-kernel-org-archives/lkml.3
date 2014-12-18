@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499AbaLRTV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:21:26 -0500
-Received: from omr2.cc.vt.edu ([198.82.141.100]:35376 "EHLO omr2.cc.vt.edu"
+	id S1751616AbaLRTVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:21:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:48052 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022AbaLRTVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:21:25 -0500
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.6+dev
-To: Eric Paris <eparis@redhat.com>
-Cc: Paul Moore <paul@paul-moore.com>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, linux-audit@redhat.com, rgb@redhat.com
-Subject: Re: linux-next 20141216 BUG: sleeping function called from invalid context at mm/slab.c:2849
-In-Reply-To: Your message of "Thu, 18 Dec 2014 11:50:20 -0500."
-             <1418921420.5162.19.camel@localhost>
-From: Valdis.Kletnieks@vt.edu
-References: <2966.1418778594@turing-police.cc.vt.edu> <5444.1418921116@turing-police.cc.vt.edu>
-            <1418921420.5162.19.camel@localhost>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1418930473_1952P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1751022AbaLRTVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 14:21:32 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,602,1413270000"; 
+   d="scan'208";a="650056871"
+Message-ID: <5493293A.2000802@intel.com>
+Date: Thu, 18 Dec 2014 11:21:30 -0800
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.7.0
+MIME-Version: 1.0
+To: Roopa Prabhu <roopa@cumulusnetworks.com>,
+        "Varlese, Marco" <marco.varlese@intel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
+References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com> <5492EFC3.8030102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com> <549313B8.6050102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com> <54931969.7040209@cumulusnetworks.com>
+In-Reply-To: <54931969.7040209@cumulusnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Dec 2014 14:21:13 -0500
-Message-ID: <8832.1418930473@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1418930473_1952P
-Content-Type: text/plain; charset=us-ascii
+On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
+> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
+>> Removed unnecessary content for ease of reading...
+>>
+>>>>>>>> +/* Switch Port Attributes section */
+>>>>>>>> +
+>>>>>>>> +enum {
+>>>>>>>> +    IFLA_ATTR_UNSPEC,
+>>>>>>>> +    IFLA_ATTR_LEARNING,
+>>>>>>> Any reason you want learning here ?. This is covered as part  of
+>>>>>>> the bridge setlink attributes.
+>>>>>>>
+>>>>>> Yes, because the user may _not_ want to go through a bridge
+>>>>>> interface
+>>>>> necessarily.
+>>>>> But, the bridge setlink/getlink interface was changed to accommodate
+>>> 'self'
+>>>>> for exactly such cases.
+>>>>> I kind of understand your case for the other attributes (these are
+>>>>> per port settings that switch asics provide).
+>>>>>
+>>>>> However, i don't understand the reason to pull in bridge attributes here.
+>>>>>
+>>>> Maybe, I am missing something so you might help. The learning attribute -
+>>> in my case - it is like all other attributes: a port attribute (as you said, port
+>>> settings that the switch provides per port).
+>>>> So, what I was saying is "why the user shall go through a bridge to configure
+>>> the learning attribute"? From my perspective, it is as any other attribute and
+>>> as such configurable on the port.
+>>>
+>>> Thinking about this some more, i don't see why any of these attributes
+>>> (except loopback. I dont understand the loopback attribute) cant be part of
+>>> the birdge port attributes.
+>>>
+>>> With this we will end up adding l2 attributes in two places: the general link
+>>> attributes and bridge attributes.
+>>>
+>>> And since we have gone down the path of using ndo_bridge_setlink/getlink
+>>> with 'self'....we should stick to that for all l2 attributes.
+>>>
+>>> The idea of overloading ndo_bridge_set/getlink, was to have the same set of
+>>> attributes but support both cases where the user wants to go through the
+>>> bridge driver or directly to the switch port driver. So, you are not really going
+>>> through the bridge driver if you use 'self' and ndo_bridge_setlink/getlink.
+>>> 
 
-On Thu, 18 Dec 2014 11:50:20 -0500, Eric Paris said:
-> On Thu, 2014-12-18 at 11:45 -0500, Valdis.Kletnieks@vt.edu wrote:
-> > On Tue, 16 Dec 2014 20:09:54 -0500, Valdis Kletnieks said:
-> >
-> > > Spotted these two while booting single-user on 20141216.  20141208
-> > > doesn't throw these, so it's something in the last week or so..
-> >
-> > Gaah!  Turns out that 20141208 *is* susceptible - it had been booting
-> > just fine for several days, but it went around the bend, apparently due
-> > to a userspace or initrd change.
->
-> $5 says you updated systemd?
+>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
+>> was that your patch and mine were supplementary ("I think Roopa's
+>> patches are supplementary. Not all switchdev users will be backed
+>> with a Linux Bridge. I therefore welcome your patches very
+>> much")... I also understood by others that the patch made sense for
+>> the same reason. I simply do not understand why these attributes
+>> (and maybe others in the future) could not be configured directly
+>> on a standard port but have to go through a bridge.
+>> 
+> ok, i am very confused in that case. The whole moving of bridge
+> attributes from the bridge driver to rtnetlink.c was to make the
+> bridge attributes accessible to any driver who wants to set l2/bridge
+> attributes on their switch ports. So, its unclear to me why we are
+> doing this parallel thing again. This move to rtnetlink.c was done
+> during the recent rocker support. so, maybe scott/jiri can elaborate
+> more.
 
-Actually, yeah.  yum.log says:
 
-Dec 12 14:08:09 Updated: systemd-218-1.fc22.x86_64
+Not sure if this will add to the confusion or help. But you do not
+need to have the bridge.ko loaded or netdev's attached to a bridge
+to use the setlink/getlink ndo ops and netlink messages. 
 
-and things started going downhill that evening.  Damned if I know what 218
-was doing to cause the issues.  (Other RPM update that looked vaguely
-related was for selinux-policy, but again, damned if I know what a policy
-file could contain that would change the behavior...)
+This was intentionally done. Its already used with NIC devices to
+configure embedded bridge settings such as VEB/VEPA.
 
-Is it worth backing it to -217, or do we have a handle on the issue and
-systemd is just the messenger?
+I think I'm just repeating Roopa though.
 
---==_Exmh_1418930473_1952P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBVJMpKQdmEQWDXROgAQJAsQ/+LRyvRpfXxgslVY/iQMIe9Oe1PIcV7vkj
-4xEvbLwJ8OTyMcb65u/T0eqbknBBeBpufVsD2U2W2NfobL1J7c9k3UjYEI5L0wd/
-6I6KtBmx+OITTkLl0InZmzvAiVUR2/E9QrVxt+LKPySENaHh/+t+vuQ4HanPH8RO
-ljQbyCVCs1hDf0IOZQ3Uo8IoTClHYnMB6B/DIDB7lHfH+Fm/bieWC4yNr5ium+Gz
-/j+9LYC6TCdPmqt5XJDumKaEAmHmi387SXk+/Bt/1RN5kxqaZWYrZq9YO0yBswBT
-n4UaXMMPyYjATa2NJORl/R+XQMdebRXOeaiquGOrNBjjcJhOXCE+bdhU8NWNIuXE
-3zATAQsAe7KPdCy/jzBNh/TdVi1lQU3C5ShF4hMVpq2XpREL+yR6YHgrUTs1d7vV
-uhuh9c8zarAcCQQUxmfb5AuZ/fxbBAyVBLQsTYHK15JzSRxmHI2hw8+hEZbFKZtV
-P0OcnI3HPe0sWatGYhP0wVxLjH3aT0I5lua71oJyySbf77J+JKWsGCBGkF8UHvsO
-Q5kG9hhBkzSIu28Gpt9mpCZnewPDyV+RsM2F/CfSFTRrNzVsyvTiiWVAbUbJihFt
-FSAsdHThIVFLG+kGfQ0Qv3wuxOSU6eFtsujR9d2oTuci3lKh1Ac3AgKiMQyGBPCK
-O+BdHSwKwLo=
-=UwHS
------END PGP SIGNATURE-----
-
---==_Exmh_1418930473_1952P--
