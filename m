@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751683AbaLRKNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:13:37 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:54295 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbaLRKNe (ORCPT
+	id S1751790AbaLRKNr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:13:47 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:11328 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751698AbaLRKNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:13:34 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-96-5492a8cb39ae
+	Thu, 18 Dec 2014 05:13:43 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-3b-5492a8d4d7ff
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Eduardo Valentin <edubezval@gmail.com>,
         Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
@@ -19,75 +19,80 @@ Cc: lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
         Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Lukasz Majewski <l.majewski@samsung.com>
-Subject: [PATCH 0/9] hwmon: thermal: Odroid U3: Provide support for Odroid U3
- fan
-Date: Thu, 18 Dec 2014 11:13:02 +0100
-Message-id: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH 1/9] thermal: Provide stub for
+ thermal_of_cooling_device_register() function
+Date: Thu, 18 Dec 2014 11:13:03 +0100
+Message-id: <1418897591-18332-2-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMLMWRmVeSWpSXmKPExsVy+t9jQd0zKyaFGDQ1sFjMP3KO1WL+lWus
-	FkvvfmKz+PH6AptF74KrbBZvHnFbvHm4mdHi8q45bBafe48wWsw4v4/J4snCM0wWd6btZbM4
-	/Kad1YHXY+esu+weDybuZvNYN+0ts8fO7w3sHn1bVjF6bD5d7fF5k1wAexSXTUpqTmZZapG+
-	XQJXxvqmLvaCZfwVv6+9YGpgfMbdxcjJISFgIrHr3RY2CFtM4sK99UA2F4eQwHRGiY5t/5lB
-	EkICXUwSL/vtQGw2AT2Jz3efMoEUiQjMYJTY3/SNHcRhFvjOJNG0dSkLSJWwQLBE942/rCA2
-	i4CqxJ1TO8Em8Qq4SXRfn8oOsU5RovvZBLYJjNwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl
-	5+duYgQH3TPpHYyrGiwOMQpwMCrx8EroTQoRYk0sK67MPcQowcGsJMIbnQMU4k1JrKxKLcqP
-	LyrNSS0+xCjNwaIkzqtk3xYiJJCeWJKanZpakFoEk2Xi4JRqYOTbwJH2/aNEuoXXF/74N0pc
-	KcLHNgfwxV482bgwYM+miTsYCsz+Ny3+eHjbSp5GdeWZtYzXqopPHqlM1b22sowxuehW5ylN
-	n6JZVdMOnmU9xPTzYoLsZnG2zPXCLp9W3IiO2LFvxUa9rulscUF967WCZnOnKDbvUgisORy3
-	L9vgrImlh9ZqeyWW4oxEQy3mouJEACLD45E2AgAA
+In-reply-to: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNLMWRmVeSWpSXmKPExsVy+t9jQd0rKyaFGJxbaWUx/8g5Vov5V66x
+	Wiy9+4nN4sfrC2wWvQuuslm8ecRt8ebhZkaLy7vmsFl87j3CaDHj/D4miycLzzBZ3Jm2l83i
+	8Jt2Vgdej52z7rJ7PJi4m81j3bS3zB47vzewe/RtWcXosfl0tcfnTXIB7FFcNimpOZllqUX6
+	dglcGZs7zzEWPBSsWLQpuIGxk7+LkZNDQsBE4uipW2wQtpjEhXvrgWwuDiGB6YwSd1ceZIVw
+	upgkXhxtZwapYhPQk/h89ykTSEJEYAajxP6mb+wgDrPAdyaJpq1LWUCqhAXiJB6dnw82l0VA
+	VeL3t29gNq+Am8S+48sZIfYpSnQ/mwAW5xRwl5jzHMIWAqpp+nuJeQIj7wJGhlWMoqkFyQXF
+	Sem5hnrFibnFpXnpesn5uZsYwUH6TGoH48oGi0OMAhyMSjy8EnqTQoRYE8uKK3MPMUpwMCuJ
+	8EbnAIV4UxIrq1KL8uOLSnNSiw8xSnOwKInzKtm3hQgJpCeWpGanphakFsFkmTg4pRoYzxx2
+	OnHu/t355vNT3y23LKgQCDvI/vlDrYbTrbczmk1/x76KDTjBtHTBjcJ01+TCxnbxR0ZqB1t1
+	ZcP9P21JfCouO9tcdWrd9OIan50Sex5l5gi+n6DUZ+Ot4H/HwS9Q/ljMvqVTc19F9338oKpd
+	wPS0/pvu9ur/J6siX93fcOVTkPu2tR9vK7EUZyQaajEXFScCAHZgRZVOAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presented patches add support for Odroid's U3 optional CPU FAN, which uses PWM
-subsystem for low level control.
+Odroid U3 fan can work without being registered as OF cooling device
+(with CONFIG_THERMAL_OF disabled).
+In this situation it can be controlled via PWM entry at
+/sys/class/hwmon/hwmon0/pwm1.
 
-After successful probe it registers itself as a cooling device for thermal
-subsystem. To preserve ability to use this fan as a PWM device a stub for
-thermal_of_cooling_device_register() has been added.
+Therefore, the thermal_of_cooling_device_register() function needs a stub
+to allow clean compilation.
 
-Moreover, some entries to device tree description for Exynos4412 and in
-particular Odroid U3 have been added.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+---
+ include/linux/thermal.h | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-Those patches were tested on Exynos4412 - Odroid U3 board.
-
-Patches were applied on:
-
-linux-soc-thermal/next branch
-SHA1: c42c7a44c7a543dcb388c1ee1a798e6ed76ad8cf
-
-with following preceding patch series:
-'thermal: exynos: Thermal code rework to use device tree'
-http://www.spinics.net/lists/linux-samsung-soc/msg37719.html
-
-Presented code utilize reworked Exynos thermal subsystem.
-
-
-Kamil Debski (1):
-  ARM: dts: Add pwm-fan node to the Odroid-U3 board
-
-Lukasz Majewski (8):
-  thermal: Provide stub for thermal_of_cooling_device_register()
-    function
-  hwmon: dts: Doc: Add DTS doc to explain how to use PWM FAN as a
-    cooling device
-  hwmon: thermal: dts: Add properties to use pwm-fan device as a cooling
-    device in Odroid U3
-  hwmon: thermal: Extract __set_pwm() function to only modify PWM duty
-    cycle
-  hwmon: thermal: Read PWM FAN configuration from device tree
-  hwmon: thermal: Code for using PWM FAN as a cooling device
-  hwmon: thermal: Provide 'default-pulse-width' property to setup FAN on
-    boot
-  hwmon: thermal: dts: Disable FAN on boot on the Odroid U3
-
- .../devicetree/bindings/hwmon/pwm-fan.txt          |  28 +++
- arch/arm/boot/dts/exynos4.dtsi                     |   2 +-
- arch/arm/boot/dts/exynos4412-odroidu3.dts          |  45 +++++
- drivers/hwmon/pwm-fan.c                            | 195 +++++++++++++++++----
- include/linux/thermal.h                            |  14 +-
- 5 files changed, 249 insertions(+), 35 deletions(-)
-
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index 99be7fc..54dce0e 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -328,6 +328,10 @@ thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
+ 				const struct thermal_zone_of_device_ops *ops);
+ void thermal_zone_of_sensor_unregister(struct device *dev,
+ 				       struct thermal_zone_device *tz);
++struct thermal_cooling_device *
++thermal_of_cooling_device_register(struct device_node *np,
++				   char *type, void *devdata,
++				   const struct thermal_cooling_device_ops *);
+ #else
+ static inline struct thermal_zone_device *
+ thermal_zone_of_sensor_register(struct device *dev, int id, void *data,
+@@ -342,6 +346,13 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
+ {
+ }
+ 
++static inline struct thermal_cooling_device *
++thermal_of_cooling_device_register(struct device_node *np,
++				   char *type, void *devdata,
++				   const struct thermal_cooling_device_ops *ops)
++{
++	return NULL;
++}
+ #endif
+ struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
+ 		void *, struct thermal_zone_device_ops *,
+@@ -357,9 +368,6 @@ void thermal_zone_device_update(struct thermal_zone_device *);
+ 
+ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+ 		const struct thermal_cooling_device_ops *);
+-struct thermal_cooling_device *
+-thermal_of_cooling_device_register(struct device_node *np, char *, void *,
+-				   const struct thermal_cooling_device_ops *);
+ void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+ struct thermal_zone_device *thermal_zone_get_zone_by_name(const char *name);
+ int thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned long *temp);
 -- 
 2.0.0.rc2
 
