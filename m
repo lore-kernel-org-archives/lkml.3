@@ -1,415 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483AbaLRIza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 03:55:30 -0500
-Received: from mail-bn1bbn0107.outbound.protection.outlook.com ([157.56.111.107]:3297
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752447AbaLRIz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 03:55:26 -0500
-X-Greylist: delayed 83888 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 03:55:25 EST
-X-WSS-ID: 0NGRSS8-07-75N-02
-X-M-MSG: 
-Message-ID: <1418892285.17614.6.camel@kxue-X58A-UD3R>
-Subject: [PATCH 1/3 V3] acpi:soc: merge common codes for creating platform
- device
-From: Ken Xue <Ken.Xue@amd.com>
-To: <andy.shevchenko@gmail.com>, <mika.westerberg@linux.intel.com>,
-        <rjw@rjwysocki.net>
-CC: <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Dec 2014 16:44:45 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Ken.Xue@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(189002)(199003)(19580395003)(77096005)(101416001)(50226001)(64706001)(103116003)(92566001)(86362001)(89996001)(87936001)(19580405001)(84676001)(50986999)(46102003)(575784001)(47776003)(229853001)(120916001)(68736005)(20776003)(4396001)(2201001)(23676002)(62966003)(50466002)(31966008)(106466001)(21056001)(33716001)(97736003)(33646002)(105586002)(107046002)(77156002)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
-X-Forefront-PRVS: 042957ACD7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1752522AbaLRIzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 03:55:40 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:39554 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447AbaLRIzh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 03:55:37 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-10-54929684824f
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mina86@mina86.com,
+        m.szyprowski@samsung.com, k.opasiak@samsung.com,
+        stern@rowland.harvard.edu, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v5] usb: gadget: f_fs: add "no_disconnect" mode
+Date: Thu, 18 Dec 2014 09:55:10 +0100
+Message-id: <1418892910-23890-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e+xgG7LtEkhBpuv81kcvF9v0bx4PZvF
+	7YnT2Cwu75rDZrFoWSuzxdojd9ktFhxvYbV4cHgnu8WE3xfYHDg99s9dw+6x7s8rJo/Zd38w
+	evRtWcXocfzGdiaPz5vkAtiiuGxSUnMyy1KL9O0SuDJm3vrIXvDBueLv4XusDYyXzLoYOTkk
+	BEwkTr3sZIWwxSQu3FvP1sXIxSEksIhRonHCBEYIp51J4szMu4wgVWwCOhJbvk8As0UEBCTW
+	v7jEDlLELPCEUWLP51lgCWEBe4ml134xg9gsAqoScx/eBFvBK+AqcX3eEXaIdXISJ49NZp3A
+	yL2AkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAQPZPewbiqweIQowAHoxIPr4TepBAh
+	1sSy4srcQ4wSHMxKIrzROUAh3pTEyqrUovz4otKc1OJDjNIcLErivEr2bSFCAumJJanZqakF
+	qUUwWSYOTqkGRs+g1rmSHedPlu68vmfLspUGevFX+SveFsx/vKF4ndbHKtVVM+fkrDjwdX5V
+	3eReL+/Fsk3M705N5onw+Cq+9UGZ0zL30n16K9YJdTjqiy62V5x8JKeZ1/LL3/rNuRbrji5m
+	7jr37MeCbV9Tbf9P/Tc3opHP7MG9sI02u65tOdBtrKnXVC53nlmJpTgj0VCLuag4EQDlgtwp
+	HgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since we can compose gadgets from many functions, there is the problem
+related to gadget breakage while FunctionFS daemon being closed. FFS
+function is userspace code so there is no way to know when it will close
+files (it doesn't matter what is the reason of this situation, it can
+be daemon logic, program breakage, process kill or any other). So when
+we have another function in gadget which, for example, sends some amount
+of data, does some software update or implements some real-time functionality,
+we may want to keep the gadget connected despite FFS function is no longer
+functional.
 
-This patch is supposed to deliver some common codes for AMD APD and
-intel LPSS. It can help to convert some specific acpi devices to be
-platform devices.
+We can't just remove one of functions from gadget since it has been
+enumerated, so the only way to keep entire gadget working is to make
+broken FFS function deactivated but still visible to host. For this
+purpose this patch introduces "no_disconnect" mode. It can be enabled
+by setting mount option "no_disconnect=1", and results with defering
+function disconnect to the moment of reopen ep0 file or filesystem
+unmount. After closing all endpoint files, FunctionFS is set to state
+FFS_DEACTIVATED.
 
-Signed-off-by: Ken Xue <Ken.Xue@amd.com>
+When ffs->state == FFS_DEACTIVATED:
+- function is still bound and visible to host,
+- setup requests are automatically stalled,
+- transfers on other endpoints are refused,
+- epfiles, except ep0, are deleted from the filesystem,
+- opening ep0 causes the function to be closed, and then FunctionFS
+  is ready for descriptors and string write,
+- altsetting change causes the function to be closed - we want to keep
+  function alive until another functions are potentialy used, altsetting
+  change means that another configuration is being selected or USB cable
+  was unplugged, which indicates that we don't need to stay longer in
+  FFS_DEACTIVATED state
+- unmounting of the FunctionFS instance causes the function to be closed.
+
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+
+Changelog:
+
+v5:
+- close function on altsetting change
+
+v4: https://lkml.org/lkml/2014/10/9/224
+- use ffs_data_reset() instead of ffs_data_clear() to reset ffs data
+  properly after ffs->ref refcount reach 0 (or under in no_disconnect
+  mode) in ffs_data_put() function
+
+v3: https://lkml.org/lkml/2014/10/9/170
+- change option name to more descriptive and less scary,
+- fix cleaning up on unmount (call ffs_data_closed() in ffs_fs_kill_sb(),
+  and ffs_data_clear() in ffs_data_closed() if ffs->opened is negative).
+
+v2: https://lkml.org/lkml/2014/10/7/109
+- delete epfiles, excepting ep0, when FFS is in "zombie" mode,
+- add description of FFS_ZOMBIE state,
+- minor cleanups.
+
+v1: https://lkml.org/lkml/2014/10/6/128
+
 ---
- drivers/acpi/Makefile   |   2 +-
- drivers/acpi/acpi_soc.c | 228 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/acpi/acpi_soc.h | 104 ++++++++++++++++++++++
- 3 files changed, 333 insertions(+), 1 deletion(-)
- create mode 100644 drivers/acpi/acpi_soc.c
- create mode 100644 drivers/acpi/acpi_soc.h
+ drivers/usb/gadget/function/f_fs.c | 56 ++++++++++++++++++++++++++++++++++----
+ drivers/usb/gadget/function/u_fs.h | 24 ++++++++++++++++
+ 2 files changed, 75 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-index f74317c..66c7457 100644
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -40,7 +40,7 @@ acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
- acpi-y				+= ec.o
- acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
- acpi-y				+= pci_root.o pci_link.o pci_irq.o
--acpi-y				+= acpi_lpss.o
-+acpi-y				+= acpi_soc.o acpi_lpss.o
- acpi-y				+= acpi_platform.o
- acpi-y				+= acpi_pnp.o
- acpi-y				+= int340x_thermal.o
-diff --git a/drivers/acpi/acpi_soc.c b/drivers/acpi/acpi_soc.c
-new file mode 100644
-index 0000000..2abbac9
---- /dev/null
-+++ b/drivers/acpi/acpi_soc.c
-@@ -0,0 +1,228 @@
-+/*
-+ * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
-+ *
-+ * Copyright (C) 2013, 2014, Intel Corporation
-+ * Copyright (C) 2014, AMD Corporation
-+ * Authors: Ken Xue <Ken.Xue@amd.com>
-+ *		Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
+diff --git a/drivers/usb/gadget/function/f_fs.c b/drivers/usb/gadget/function/f_fs.c
+index 63314ed..d49af15 100644
+--- a/drivers/usb/gadget/function/f_fs.c
++++ b/drivers/usb/gadget/function/f_fs.c
+@@ -606,6 +606,8 @@ static unsigned int ffs_ep0_poll(struct file *file, poll_table *wait)
+ 		}
+ 	case FFS_CLOSING:
+ 		break;
++	case FFS_DEACTIVATED:
++		break;
+ 	}
+ 
+ 	mutex_unlock(&ffs->mutex);
+@@ -1180,6 +1182,7 @@ struct ffs_sb_fill_data {
+ 	struct ffs_file_perms perms;
+ 	umode_t root_mode;
+ 	const char *dev_name;
++	bool no_disconnect;
+ 	struct ffs_data *ffs_data;
+ };
+ 
+@@ -1250,6 +1253,12 @@ static int ffs_fs_parse_opts(struct ffs_sb_fill_data *data, char *opts)
+ 
+ 		/* Interpret option */
+ 		switch (eq - opts) {
++		case 13:
++			if (!memcmp(opts, "no_disconnect", 13))
++				data->no_disconnect = !!value;
++			else
++				goto invalid;
++			break;
+ 		case 5:
+ 			if (!memcmp(opts, "rmode", 5))
+ 				data->root_mode  = (value & 0555) | S_IFDIR;
+@@ -1314,6 +1323,7 @@ ffs_fs_mount(struct file_system_type *t, int flags,
+ 			.gid = GLOBAL_ROOT_GID,
+ 		},
+ 		.root_mode = S_IFDIR | 0500,
++		.no_disconnect = false,
+ 	};
+ 	struct dentry *rv;
+ 	int ret;
+@@ -1330,6 +1340,7 @@ ffs_fs_mount(struct file_system_type *t, int flags,
+ 	if (unlikely(!ffs))
+ 		return ERR_PTR(-ENOMEM);
+ 	ffs->file_perms = data.perms;
++	ffs->no_disconnect = data.no_disconnect;
+ 
+ 	ffs->dev_name = kstrdup(dev_name, GFP_KERNEL);
+ 	if (unlikely(!ffs->dev_name)) {
+@@ -1361,6 +1372,7 @@ ffs_fs_kill_sb(struct super_block *sb)
+ 	kill_litter_super(sb);
+ 	if (sb->s_fs_info) {
+ 		ffs_release_dev(sb->s_fs_info);
++		ffs_data_closed(sb->s_fs_info);
+ 		ffs_data_put(sb->s_fs_info);
+ 	}
+ }
+@@ -1417,7 +1429,11 @@ static void ffs_data_opened(struct ffs_data *ffs)
+ 	ENTER();
+ 
+ 	atomic_inc(&ffs->ref);
+-	atomic_inc(&ffs->opened);
++	if (atomic_add_return(1, &ffs->opened) == 1)
++		if (ffs->state == FFS_DEACTIVATED) {
++			ffs->state = FFS_CLOSING;
++			ffs_data_reset(ffs);
++	}
+ }
+ 
+ static void ffs_data_put(struct ffs_data *ffs)
+@@ -1439,6 +1455,21 @@ static void ffs_data_closed(struct ffs_data *ffs)
+ 	ENTER();
+ 
+ 	if (atomic_dec_and_test(&ffs->opened)) {
++		if (ffs->no_disconnect) {
++			ffs->state = FFS_DEACTIVATED;
++			if (ffs->epfiles) {
++				ffs_epfiles_destroy(ffs->epfiles,
++						   ffs->eps_count);
++				ffs->epfiles = NULL;
++			}
++			if (ffs->setup_state == FFS_SETUP_PENDING)
++				__ffs_ep0_stall(ffs);
++		} else {
++			ffs->state = FFS_CLOSING;
++			ffs_data_reset(ffs);
++		}
++	}
++	if (atomic_read(&ffs->opened) < 0) {
+ 		ffs->state = FFS_CLOSING;
+ 		ffs_data_reset(ffs);
+ 	}
+@@ -1616,7 +1647,6 @@ static void ffs_epfiles_destroy(struct ffs_epfile *epfiles, unsigned count)
+ 	kfree(epfiles);
+ }
+ 
+-
+ static void ffs_func_eps_disable(struct ffs_function *func)
+ {
+ 	struct ffs_ep *ep         = func->eps;
+@@ -1629,10 +1659,12 @@ static void ffs_func_eps_disable(struct ffs_function *func)
+ 		/* pending requests get nuked */
+ 		if (likely(ep->ep))
+ 			usb_ep_disable(ep->ep);
+-		epfile->ep = NULL;
+-
+ 		++ep;
+-		++epfile;
 +
-+#include <linux/err.h>
-+#include <linux/list.h>
-+#include <linux/pm_domain.h>
-+#include <linux/platform_device.h>
-+
-+#include "acpi_soc.h"
-+#include "internal.h"
-+
-+ACPI_MODULE_NAME("acpi_soc");
-+
-+/* A list for all ACPI SOC device */
-+static LIST_HEAD(a_soc_list);
-+
-+static int is_memory(struct acpi_resource *res, void *not_used)
++		if (epfile) {
++			epfile->ep = NULL;
++			++epfile;
++		}
+ 	} while (--count);
+ 	spin_unlock_irqrestore(&func->ffs->eps_lock, flags);
+ }
+@@ -2888,6 +2920,13 @@ static int ffs_func_bind(struct usb_configuration *c,
+ 
+ /* Other USB function hooks *************************************************/
+ 
++static void ffs_reset_work(struct work_struct *work)
 +{
-+	struct resource r;
-+
-+	return !acpi_dev_resource_memory(res, &r);
++	struct ffs_data *ffs = container_of(work,
++		struct ffs_data, reset_work);
++	ffs_data_reset(ffs);
 +}
 +
-+static int acpi_soc_create_device(struct acpi_device *adev,
-+				   const struct acpi_device_id *id)
-+{
-+	struct acpi_soc_dev_private_data *pdata;
-+	struct acpi_soc_dev_desc *dev_desc;
-+	struct resource_list_entry *rentry;
-+	struct list_head resource_list;
-+	struct platform_device *pdev;
-+	int ret;
-+
-+	dev_desc = (struct acpi_soc_dev_desc *)id->driver_data;
-+	if (!dev_desc) {
-+		pdev = acpi_create_platform_device(adev);
-+		return IS_ERR_OR_NULL(pdev) ? PTR_ERR(pdev) : 1;
+ static int ffs_func_set_alt(struct usb_function *f,
+ 			    unsigned interface, unsigned alt)
+ {
+@@ -2904,6 +2943,13 @@ static int ffs_func_set_alt(struct usb_function *f,
+ 	if (ffs->func)
+ 		ffs_func_eps_disable(ffs->func);
+ 
++	if (ffs->state == FFS_DEACTIVATED) {
++		ffs->state = FFS_CLOSING;
++		INIT_WORK(&ffs->reset_work, ffs_reset_work);
++		schedule_work(&ffs->reset_work);
++		return -ENODEV;
 +	}
-+	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
 +
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list, is_memory, NULL);
-+	if (ret < 0)
-+		goto err_out;
-+
-+	list_for_each_entry(rentry, &resource_list, node)
-+		if (resource_type(&rentry->res) == IORESOURCE_MEM) {
-+			if (dev_desc->mem_size_override)
-+				pdata->mmio_size = dev_desc->mem_size_override;
-+			else
-+				pdata->mmio_size = resource_size(&rentry->res);
-+			pdata->mmio_base = ioremap(rentry->res.start,
-+						   pdata->mmio_size);
-+			break;
-+		}
-+
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	pdata->adev = adev;
-+	pdata->dev_desc = dev_desc;
-+
-+	if (dev_desc->setup) {
-+		ret = dev_desc->setup(pdata);
-+		if (ret)
-+			goto err_out;
-+	}
+ 	if (ffs->state != FFS_ACTIVE)
+ 		return -ENODEV;
+ 
+diff --git a/drivers/usb/gadget/function/u_fs.h b/drivers/usb/gadget/function/u_fs.h
+index cd128e3..284a1f0 100644
+--- a/drivers/usb/gadget/function/u_fs.h
++++ b/drivers/usb/gadget/function/u_fs.h
+@@ -19,6 +19,7 @@
+ #include <linux/usb/composite.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
++#include <linux/workqueue.h>
+ 
+ #ifdef VERBOSE_DEBUG
+ #ifndef pr_vdebug
+@@ -93,6 +94,26 @@ enum ffs_state {
+ 	FFS_ACTIVE,
+ 
+ 	/*
++	 * Function is visible to host, but it's not functional. All
++	 * setup requests are stalled and transfers on another endpoints
++	 * are refused. All epfiles, except ep0, are deleted so there
++	 * is no way to perform any operations on them.
++	 *
++	 * This state is set after closing all functionfs files, when
++	 * mount parameter "no_disconnect=1" has been set. Function will
++	 * remain in deactivated state until filesystem is umounted or
++	 * ep0 is opened again. In the second case functionfs state will
++	 * be reset, and it will be ready for descriptors and strings
++	 * writing.
++	 *
++	 * This is useful only when functionfs is composed to gadget
++	 * with another function which can perform some critical
++	 * operations, and it's strongly desired to have this operations
++	 * completed, even after functionfs files closure.
++	 */
++	FFS_DEACTIVATED,
 +
 +	/*
-+	 * This works around a known issue in ACPI tables where ACPI SOC devices
-+	 * have _PS0 and _PS3 without _PSC (and no power resources), so
-+	 * acpi_bus_init_power() will assume that the BIOS has put them into D0.
-+	 */
-+	ret = acpi_device_fix_up_power(adev);
-+	if (ret) {
-+		/* Skip the device, but continue the namespace scan. */
-+		ret = 0;
-+		goto err_out;
-+	}
+ 	 * All endpoints have been closed.  This state is also set if
+ 	 * we encounter an unrecoverable error.  The only
+ 	 * unrecoverable error is situation when after reading strings
+@@ -251,6 +272,9 @@ struct ffs_data {
+ 		kgid_t				gid;
+ 	}				file_perms;
+ 
++	bool no_disconnect;
++	struct work_struct reset_work;
 +
-+	adev->driver_data = pdata;
-+	pdev = acpi_create_platform_device(adev);
-+	if (!IS_ERR_OR_NULL(pdev)) {
-+		pdata->pdev = pdev;
-+		if (dev_desc->post_setup) {
-+			ret = dev_desc->post_setup(pdata);
-+			if (ret)
-+				goto err_out;
-+		}
-+		return 1;
-+	}
-+
-+	ret = PTR_ERR(pdev);
-+	adev->driver_data = NULL;
-+
-+ err_out:
-+	kfree(pdata);
-+	return ret;
-+}
-+
-+static int acpi_soc_platform_notify(struct notifier_block *nb,
-+				     unsigned long action, void *data)
-+{
-+	struct platform_device *pdev = to_platform_device(data);
-+	struct acpi_soc_dev_private_data *pdata;
-+	const struct acpi_device_id *id = NULL;
-+	struct acpi_soc *a_soc_entry;
-+	struct acpi_device *adev;
-+
-+	list_for_each_entry(a_soc_entry, &a_soc_list, list) {
-+		id = acpi_match_device(a_soc_entry->ids, &pdev->dev);
-+		if (id)
-+			break;
-+	}
-+
-+	if (!id || !id->driver_data)
-+		return 0;
-+
-+	if (acpi_bus_get_device(ACPI_HANDLE(&pdev->dev), &adev))
-+		return 0;
-+
-+	pdata = acpi_driver_data(adev);
-+	if (!pdata || !pdata->mmio_base)
-+		return 0;
-+
-+	switch (action) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		if (pdata->dev_desc->flags & ACPI_SOC_PM) {
-+			if (a_soc_entry->pm_domain)
-+				pdev->dev.pm_domain = a_soc_entry->pm_domain;
-+			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
-+				dev_pm_domain_attach(&pdev->dev, true);
-+			else
-+				dev_pm_domain_attach(&pdev->dev, false);
-+		}
-+		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
-+			&& a_soc_entry->attr_group)
-+			sysfs_create_group(&pdev->dev.kobj,
-+					  a_soc_entry->attr_group);
-+		break;
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		if ((pdata->dev_desc->flags & ACPI_SOC_SYSFS)
-+			&& a_soc_entry->attr_group)
-+			sysfs_remove_group(&pdev->dev.kobj,
-+					a_soc_entry->attr_group);
-+		if (pdata->dev_desc->flags & ACPI_SOC_PM) {
-+			if (a_soc_entry->pm_domain)
-+				pdev->dev.pm_domain = a_soc_entry->pm_domain;
-+			else if (pdata->dev_desc->flags & ACPI_SOC_PM_ON)
-+				dev_pm_domain_detach(&pdev->dev, true);
-+			else
-+				dev_pm_domain_detach(&pdev->dev, false);
-+		}
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct notifier_block acpi_soc_nb = {
-+	.notifier_call = acpi_soc_platform_notify,
-+};
-+
-+static void acpi_soc_bind(struct device *dev)
-+{
-+	struct acpi_soc_dev_private_data *pdata;
-+
-+	pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+
-+	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->bind)
-+		return;
-+
-+	pdata->dev_desc->bind(pdata, dev);
-+}
-+
-+static void acpi_soc_unbind(struct device *dev)
-+{
-+	struct acpi_soc_dev_private_data *pdata;
-+
-+	pdata = acpi_driver_data(ACPI_COMPANION(dev));
-+
-+	if (!pdata || !pdata->dev_desc || !pdata->dev_desc->unbind)
-+		return;
-+
-+	pdata->dev_desc->unbind(pdata, dev);
-+}
-+
-+/**
-+ * register_acpi_soc - register a new ACPI SOC
-+ * @a_soc: ACPI SOC
-+ * @disable_scan_handler: true means remove default scan handle
-+ *                      false means use default scan handle
-+ *
-+ * register a new ACPI SOC into asoc_list and install default scan handle.
-+ */
-+void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler)
-+{
-+	struct acpi_scan_handler *acpi_soc_handler;
-+	static int init;
-+
-+	INIT_LIST_HEAD(&a_soc->list);
-+	list_add(&a_soc->list, &a_soc_list);
-+
-+	acpi_soc_handler = kzalloc(sizeof(*acpi_soc_handler), GFP_KERNEL);
-+	acpi_soc_handler->ids = a_soc->ids;
-+	if (!disable_scan_handler) {
-+		acpi_soc_handler->attach = acpi_soc_create_device;
-+		acpi_soc_handler->bind = acpi_soc_bind;
-+		acpi_soc_handler->unbind = acpi_soc_unbind;
-+		if (init == 0) {
-+			init++;
-+			bus_register_notifier(&platform_bus_type, &acpi_soc_nb);
-+		}
-+	}
-+	acpi_scan_add_handler(acpi_soc_handler);
-+}
-diff --git a/drivers/acpi/acpi_soc.h b/drivers/acpi/acpi_soc.h
-new file mode 100644
-index 0000000..39a7f0a
---- /dev/null
-+++ b/drivers/acpi/acpi_soc.h
-@@ -0,0 +1,104 @@
-+/*
-+ * ACPI SOC support for Intel Lynxpoint LPSS and AMD APD.
-+ *
-+ * Copyright (C) 2013,2014 Intel Corporation
-+ * Copyright (C) 2014 AMD Corporation
-+ * Authors: Ken Xue <Ken.Xue@amd.com>
-+ *		Mika Westerberg <mika.westerberg@linux.intel.com>
-+ *		Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#ifndef _ACPI_SOC_H
-+#define _ACPI_SOC_H
-+
-+#include <linux/platform_device.h>
-+#include <linux/acpi.h>
-+#include <linux/clk.h>
-+#include <linux/pm.h>
-+
-+struct acpi_soc_dev_private_data;
-+
-+/**
-+ * struct acpi_soc - acpi soc
-+ * @list: list head
-+ * @ids: all acpi device ids for acpi soc
-+ * @pm_domain: power domain for all acpi device;can be NULL
-+ * @attr_group: attribute group for sysfs support of acpi soc;can be NULL
-+ */
-+struct acpi_soc {
-+	struct list_head	list;
-+	struct acpi_device_id	*ids;
-+	struct dev_pm_domain	*pm_domain;
-+	struct attribute_group	*attr_group;
-+};
-+
-+
-+/**
-+ * device flags of acpi_soc_dev_desc.
-+ * bit 16 to 31 reserved for acpi soc.
-+ * bit 0 ~15 reserved for private flags.
-+ * ACPI_SOC_SYSFS : add device attributes in sysfs
-+ * ACPI_SOC_PM : attach power domain to device
-+ * ACPI_SOC_PM_ON : power on device when attach power domain
-+ */
-+#define ACPI_SOC_SYSFS	BIT(16)
-+#define ACPI_SOC_PM	BIT(17)
-+#define ACPI_SOC_PM_ON	BIT(18)
-+
-+/**
-+ * struct acpi_soc_dev_desc - a descriptor for acpi device
-+ * @flags: device flags like ACPI_SOC_SYSFS ACPI_SOC_PM ACPI_SOC_PM_ON
-+ * @clk: clock device
-+ * @fixed_clk_rate: fixed rate input clock source for acpi device;
-+ *			0 means no fixed rate input clock source
-+ * @mem_size_override: a workaround for override device memsize;
-+ *			0 means no needs for this WA
-+ * @prv_offset: reg offest of lpss features
-+ * @setup: a hook routine to set device resource during create platform device
-+ * @post_setup: a hook routine after platform device is created
-+ * @bind: a hook of acpi_scan_handler.bind
-+ * @unbind: a hook of acpi_scan_handler.unbind
-+ *
-+ * device description defined as acpi_device_id.driver_data
-+ */
-+struct acpi_soc_dev_desc {
-+	unsigned int flags;
-+	struct clk *clk;
-+	unsigned int fixed_clk_rate;
-+	size_t mem_size_override;
-+	unsigned int prv_offset;
-+	int (*setup)(struct acpi_soc_dev_private_data *pdata);
-+	int (*post_setup)(struct acpi_soc_dev_private_data *pdata);
-+	void (*bind)(struct acpi_soc_dev_private_data *pdata,
-+				struct device *dev);
-+	void (*unbind)(struct acpi_soc_dev_private_data *pdata,
-+				struct device *dev);
-+};
-+
-+#define ACPI_SOC_REG_CONTEXT_MAX		10
-+
-+/**
-+ * struct acpi_soc_dev_private_data - acpi device private data
-+ * @mmio_base: virtual memory base addr of the device
-+ * @mmio_size: device memory size
-+ * @dev_desc: device description
-+ * @pdev: platform device
-+ * @adev: acpi device
-+ * @prv_reg_ctx: reg context for power management
-+ */
-+struct acpi_soc_dev_private_data {
-+	void __iomem *mmio_base;
-+	resource_size_t mmio_size;
-+
-+	struct acpi_soc_dev_desc *dev_desc;
-+	struct platform_device *pdev;
-+	struct acpi_device *adev;
-+	u32 prv_reg_ctx[ACPI_SOC_REG_CONTEXT_MAX];
-+};
-+
-+void register_acpi_soc(struct acpi_soc *a_soc, bool disable_scan_handler);
-+
-+#endif
+ 	/*
+ 	 * The endpoint files, filled by ffs_epfiles_create(),
+ 	 * destroyed by ffs_epfiles_destroy().
 -- 
 1.9.1
-
-
 
