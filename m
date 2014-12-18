@@ -1,241 +1,804 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751344AbaLRSQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 13:16:29 -0500
-Received: from mout.gmx.net ([212.227.17.21]:52091 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138AbaLRSQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 13:16:27 -0500
-From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
-To: jarod@wilsonet.com
-Subject: mceusb: sysfs: cannot create duplicate filename '/class/rc/rc0' (race condition between multiple RC_CORE devices)
-Date: Thu, 18 Dec 2014 19:16:13 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-0.slh.2-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        m.chehab@samsung.com
+	id S1751412AbaLRSQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 13:16:44 -0500
+Received: from mail-bn1bon0080.outbound.protection.outlook.com ([157.56.111.80]:1969
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751138AbaLRSQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 13:16:41 -0500
+Date: Thu, 18 Dec 2014 19:16:18 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: <atull@opensource.altera.com>, <gregkh@linuxfoundation.org>,
+        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
+        <michal.simek@xilinx.com>, <rdunlap@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
+        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
+        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
+        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
+        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
+        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
+        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
+        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
+        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
+        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
+        <yvanderv@opensource.altera.com>
+Subject: Re: [PATCH v5 3/6] staging: fpga manager: framework core
+References: <1418835289-15752-1-git-send-email-atull@opensource.altera.com>
+ <1418835289-15752-4-git-send-email-atull@opensource.altera.com>
+In-Reply-To: <1418835289-15752-4-git-send-email-atull@opensource.altera.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 8bit
-Message-Id: <201412181916.18051.s.L-H@gmx.de>
-X-Provags-ID: V03:K0:qJwar8YZgBrowJ5c4vemReniRFqLE1E0gcfMk8zi82WMq9lTztN
- cQniw7SyKJHffj8sg73KWrD1ONewmEv+WIQr+zI5YJkJ2KtiXaR5DogWQyisy+E+WxUGuew
- E7/p6avSwIkiwfkSNx6Tw505hDU6zu24T01qaWW6scT8Dhmkn07ISX/x6dUchKvVRaVIHlx
- v4/cqU8bz1Cxml+Co/Qiw==
-X-UI-Out-Filterresults: notjunk:1;
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.001
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <05395a89d783481b8b7c06bb299b53e0@BL2FFO11FD020.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(479174004)(24454002)(164054003)(377454003)(51704005)(22564002)(199003)(54356999)(104016003)(64126003)(92566001)(575784001)(86362001)(2201001)(65956001)(65806001)(106466001)(46102003)(107046002)(50986999)(76176999)(120916001)(6806004)(19580405001)(19580395003)(99396003)(2950100001)(83506001)(4396001)(31966008)(77156002)(62966003)(21056001)(92726002)(74316001)(50466002)(77096005)(15975445007)(23746002)(47776003)(20776003)(108616004)(64706001)(87936001)(65826006)(2004002)(107986001)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB023;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB023;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB023;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB023;
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Alan,
 
-Occassionally, but not readily reproducably, I hit a race condition 
-between mceusb and other connected RC_CORE devices when mceusb tries 
-to create /class/rc/rc0, which is -by then- already taken by another 
-RC_CORE device. The other involved IR devices (physically only one)
-are part of a PCIe TeVii s480 s2.1 twin-tuner DVB-S2 card and aren't 
-actually supposed to receive IR signals (IR receiver not connected):
+first of all - there are these kernel-doc warnings.
 
-mceusb device transceiver:
-Bus 002 Device 004: ID 0609:0334 SMK Manufacturing, Inc. eHome Infrared Receiver
+Info(drivers/staging/fpga/fpga-mgr.c:37): Scanning doc for fpga_mgr_low_level_state
+Warning(drivers/staging/fpga/fpga-mgr.c:43): No description found for return value of 'fpga_mgr_low_level_state'
+Info(drivers/staging/fpga/fpga-mgr.c:51): Scanning doc for __fpga_mgr_reset
+Warning(drivers/staging/fpga/fpga-mgr.c:55): No description found for return value of '__fpga_mgr_reset'
+Info(drivers/staging/fpga/fpga-mgr.c:69): Scanning doc for fpga_mgr_reset
+Warning(drivers/staging/fpga/fpga-mgr.c:73): No description found for return value of 'fpga_mgr_reset'
+Info(drivers/staging/fpga/fpga-mgr.c:88): Scanning doc for __fpga_mgr_stage_init
+Warning(drivers/staging/fpga/fpga-mgr.c:92): No description found for return value of '__fpga_mgr_stage_write_init'
+Info(drivers/staging/fpga/fpga-mgr.c:108): Scanning doc for __fpga_mgr_stage_write
+Warning(drivers/staging/fpga/fpga-mgr.c:115): No description found for return value of '__fpga_mgr_stage_write'
+Info(drivers/staging/fpga/fpga-mgr.c:129): Scanning doc for __fpga_mgr_stage_complete
+Warning(drivers/staging/fpga/fpga-mgr.c:133): No description found for return value of '__fpga_mgr_stage_write_complete'
+Info(drivers/staging/fpga/fpga-mgr.c:151): Scanning doc for __fpga_mgr_write
+Warning(drivers/staging/fpga/fpga-mgr.c:158): No description found for return value of '__fpga_mgr_write'
+Info(drivers/staging/fpga/fpga-mgr.c:173): Scanning doc for fpga_mgr_write
+Warning(drivers/staging/fpga/fpga-mgr.c:179): No description found for return value of 'fpga_mgr_write'
+Info(drivers/staging/fpga/fpga-mgr.c:195): Scanning doc for fpga_mgr_firmware_write
+Warning(drivers/staging/fpga/fpga-mgr.c:204): No description found for return value of 'fpga_mgr_firmware_write'
+Info(drivers/staging/fpga/fpga-mgr.c:234): Scanning doc for fpga_mgr_name
+Warning(drivers/staging/fpga/fpga-mgr.c:239): No description found for return value of 'fpga_mgr_name'
+Info(drivers/staging/fpga/fpga-mgr.c:414): Scanning doc for fpga_mgr_register
+Warning(drivers/staging/fpga/fpga-mgr.c:423): No description found for return value of 'fpga_mgr_register'
+Info(drivers/staging/fpga/fpga-mgr.c:480): Scanning doc for fpga_mgr_remove
+Warning(drivers/staging/fpga/fpga-mgr.c:484): No description found for parameter 'pdev'
+Warning(drivers/staging/fpga/fpga-mgr.c:484): Excess function parameter 'dev' description in 'fpga_mgr_remove'
 
-DVB-T receiver (no RC_CORE device)
-Bus 001 Device 004: ID 0ccd:0069 TerraTec Electronic GmbH Cinergy T XE (Version 2, AF9015)
 
-twin-tuner DVB-S2 PCIe device, TeVii s480 v2.1 (physically one IR 
-receiver (NEC protocol), logically recognized as two RC_CORE devices):
-04:00.0 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.1 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.2 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.3 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.4 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.5 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.6 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller                                                                                                                                                                                                                                                                                
-04:00.7 USB controller: MosChip Semiconductor Technology Ltd. MCS9990 PCIe to 4‐Port USB 2.0 Host Controller
-	Bus 006 Device 003: ID 9022:d660 TeVii Technology Ltd. DVB-S2 S660
-	Bus 003 Device 003: ID 9022:d660 TeVii Technology Ltd. DVB-S2 S660
+On 12/17/2014 05:54 PM, atull@opensource.altera.com wrote:
+> From: Alan Tull <atull@opensource.altera.com>
+> 
+> Supports standard ops for low level FPGA drivers.
+> Various manufacturors' FPGAs can be supported by adding low
+> level drivers.  Each driver needs to register its ops
+> using fpga_mgr_register().
+> 
+> Exports methods of doing operations to program  FPGAs. These
+> should be sufficient for individual drivers to request FPGA
+> programming directly if desired.
+> 
+> Adds a sysfs interface.  The sysfs interface can be compiled out
+> where desired in production builds.
+> 
+> Resume is supported by calling low level driver's resume
+> function, then reloading the firmware image.
+> 
+> The following are exported as GPL:
+> * fpga_mgr_reset
+>    Reset the FGPA.
+> 
+> * fpga_mgr_write
+>    Write a image (in buffer) to the FPGA.
+> 
+> * fpga_mgr_firmware_write
+>    Request firmware by file name and write it to the FPGA.
+> 
+> * fpga_mgr_name
+>    Get name of FPGA manager.
+> 
+> * fpga_mgr_state
+>    Get a state of framework as a string.
+> 
+> * fpga_mgr_register and fpga_mgr_remove
+>    Register/unregister low level fpga manager driver.
+> 
+> The following sysfs files are created:
+> * /sys/class/fpga_manager/<fpga>/name
+>   Name of low level driver.
+> 
+> * /sys/class/fpga_manager/<fpga>/firmware
+>   Name of FPGA image file to load using firmware class.
+>   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
+> 
+>   read: read back name of image file previous loaded
+>   $ cat /sys/class/fpga_manager/<fpga>/firmware
+> 
+> * /sys/class/fpga_manager/<fpga>/reset
+>   reset the FPGA
+>   $ echo 1 > /sys/class/fpga_manager/<fpga>/reset
+> 
+> * /sys/class/fpga_manager/<fpga>/state
+>   State of fpga framework state machine
+> 
+> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> ---
+> v2: s/mangager/manager/
+>     check for invalid request_nr
+>     add fpga reset interface
+>     rework the state code
+>     remove FPGA_MGR_FAIL flag
+>     add _ERR states to fpga manager states enum
+>     low level state op now returns a state enum value
+>     initialize framework state from driver state op
+>     remove unused fpga read stuff
+>     merge sysfs.c into fpga-mgr.c
+>     move suspend/resume from bus.c to fpga-mgr.c
+> 
+> v3: Add struct device to fpga_manager (not as a pointer)
+>     Add to_fpga_manager
+>     Don't get irq in fpga-mgr.c (let low level driver do it)
+>     remove from struct fpga_manager: nr, np, parent
+>     get rid of fpga_mgr_get_new_minor()
+>     simplify fpga_manager_register:
+>       reorder parameters
+>       use dev instead of pdev
+>     get rid of code that used to make more sense when this
+>       was a char driver, don't alloc_chrdev_region
+>     use a mutex instead of flags
+> 
+> v4: Move to drivers/staging
+> 
+> v5: Make some things be static
+>     Kconfig: add 'if FPGA'
+>     Makefile: s/fpga-mgr-core.o/fpga-mgr.o/
+>     clean up includes
+>     use enum fpga_mgr_states instead of int
+>     static const char *state_str
+>     use DEVICE_ATTR_RO/RW/WO and ATTRIBUTE_GROUPS
+>     return -EINVAL instead of BUG_ON
+>     move ida_simple_get after kzalloc
+>     clean up fpga_mgr_remove
+>     fpga-mgr.h: remove '#if IS_ENABLED(CONFIG_FPGA)'
+>     add kernel-doc documentation
+>     Move header to new include/linux/fpga folder
+>     static const struct fpga_mgr_ops
+>     dev_info msg simplified
+> ---
+>  drivers/staging/Kconfig         |    2 +
+>  drivers/staging/Makefile        |    1 +
+>  drivers/staging/fpga/Kconfig    |   24 ++
+>  drivers/staging/fpga/Makefile   |   10 +
+>  drivers/staging/fpga/fpga-mgr.c |  523 +++++++++++++++++++++++++++++++++++++++
+>  include/linux/fpga/fpga-mgr.h   |  124 ++++++++++
+>  6 files changed, 684 insertions(+)
+>  create mode 100644 drivers/staging/fpga/Kconfig
+>  create mode 100644 drivers/staging/fpga/Makefile
+>  create mode 100644 drivers/staging/fpga/fpga-mgr.c
+>  create mode 100644 include/linux/fpga/fpga-mgr.h
+> 
+> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+> index 4690ae9..4338a4c 100644
+> --- a/drivers/staging/Kconfig
+> +++ b/drivers/staging/Kconfig
+> @@ -108,4 +108,6 @@ source "drivers/staging/skein/Kconfig"
+>  
+>  source "drivers/staging/unisys/Kconfig"
+>  
+> +source "drivers/staging/fpga/Kconfig"
+> +
+>  endif # STAGING
+> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+> index c780a0e..43654a2 100644
+> --- a/drivers/staging/Makefile
+> +++ b/drivers/staging/Makefile
+> @@ -46,3 +46,4 @@ obj-$(CONFIG_MTD_SPINAND_MT29F)	+= mt29f_spinand/
+>  obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
+>  obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
+>  obj-$(CONFIG_UNISYSSPAR)	+= unisys/
+> +obj-$(CONFIG_FPGA)		+= fpga/
+> diff --git a/drivers/staging/fpga/Kconfig b/drivers/staging/fpga/Kconfig
+> new file mode 100644
+> index 0000000..89ebafc
+> --- /dev/null
+> +++ b/drivers/staging/fpga/Kconfig
+> @@ -0,0 +1,24 @@
+> +#
+> +# FPGA framework configuration
+> +#
+> +
+> +menu "FPGA devices"
+> +
+> +config FPGA
+> +	tristate "FPGA Framework"
+> +	help
+> +	  Say Y here if you want support for configuring FPGAs from the
+> +	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
+> +	  manager drivers.
+> +
+> +if FPGA
+> +
+> +config FPGA_MGR_SYSFS
+> +	bool "FPGA Manager SysFS Interface"
+> +	depends on SYSFS
+> +	help
+> +	  FPGA Manager SysFS interface.
+> +
+> +endif # FPGA
+> +
+> +endmenu
+> diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
+> new file mode 100644
+> index 0000000..ff6c677
+> --- /dev/null
+> +++ b/drivers/staging/fpga/Makefile
+> @@ -0,0 +1,10 @@
+> +#
+> +# Makefile for the fpga framework and fpga manager drivers.
+> +#
+> +
+> +fpga-mgr-core-y += fpga-mgr.o
 
-dmesg excerpt from kernel 3.18.1-rc1, but this already happened 
-randomly with older kernels:
+remove this line - it is unused.
 
-[...]
-dvb_usb_dw2102: unknown parameter 'keymap' ignored
-dvb-usb: found a 'TeVii S480.1 USB' in cold state, will try to load a firmware
-dvb-usb: downloading firmware from file 'dvb-usb-s660.fw'
-dw2102: start downloading DW210X firmware
-[...]
-usb 1-1.5: dvb_usb_v2: found a 'TerraTec Cinergy T USB XE' in cold state
-[...]
-usb 1-1.5: dvb_usb_v2: downloading firmware from file 'dvb-usb-af9015.fw'
-usb 2-1.6: New USB device found, idVendor=0609, idProduct=0334
-usb 2-1.6: New USB device strings: Mfr=1, Product=2, SerialNumber=3
-usb 2-1.6: Product: MCE TRANCEIVR Emulator Device 2006
-usb 2-1.6: Manufacturer: SMK CORPORATION
-usb 2-1.6: SerialNumber: PA070620045513C
-[...]
-usb 3-1: USB disconnect, device number 2
-usb 1-1.5: dvb_usb_v2: found a 'TerraTec Cinergy T USB XE' in warm state
-[...]
-dvb-usb: found a 'TeVii S480.1 USB' in warm state.
-dvb-usb: will pass the complete MPEG2 transport stream to the software demuxer.
-DVB: registering new adapter (TeVii S480.1 USB)
-dvb-usb: MAC address: 40:40:40:40:40:40
-Invalid probe, probably not a DS3000
-dvb-usb: no frontend was attached by 'TeVii S480.1 USB'
-[...]
-Registered IR keymap rc-tevii-nec
-input: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.1/usb3/3-1/rc/rc0/input18
-rc0: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.1/usb3/3-1/rc/rc0
-dvb-usb: schedule remote query interval to 150 msecs.
-dvb-usb: TeVii S480.1 USB successfully initialized and connected.
-dvb-usb: found a 'TeVii S480.2 USB' in cold state, will try to load a firmware
-dvb-usb: downloading firmware from file 'dvb-usb-s660.fw'
-dw2102: start downloading DW210X firmware
-[...]
-Registered IR keymap rc-rc6-mce
-------------[ cut here ]------------
-WARNING: CPU: 3 PID: 308 at /tmp/buildd/linux-aptosid-3.18/fs/sysfs/dir.c:31 sysfs_warn_dup+0x55/0x70()
-sysfs: cannot create duplicate filename '/class/rc/rc0'
-Modules linked in: rt2800usb(+) rt2x00usb rt2800lib rt2x00lib mac80211 cfg80211 crc_ccitt rc_rc6_mce mceusb(+) rc_tevii_nec ds3000 nls_utf8 nls_cp437 vfat fat intel_rapl x86_pkg_temp_thermal intel_powerclamp coretemp iTCO_wdt eeepc_wmi iTCO_vendor_support asus_wmi sparse_keymap kvm_intel rfkill evdev kvm crct10dif_pclmul crc32_pclmul snd_hda_codec_hdmi snd_hda_codec_realtek dvb_usb_af9015(+) ghash_clmulni_intel snd_hda_codec_generic dvb_usb_v2 aesni_intel dvb_usb_dw2102(+) aes_x86_64 dvb_usb lrw gf128mul psmouse glue_helper dvb_core ablk_helper serio_raw cryptd rc_core pcspkr snd_hda_intel i2c_i801 snd_hda_controller snd_hda_codec snd_hwdep snd_pcm snd_timer snd soundcore lpc_ich mfd_core battery tpm_infineon wmi i915 button video i2c_algo_bit drm_kms_helper drm i2c_core mei_me intel_gtt
- mei ie31200_edac edac_core processor nct6775 hwmon_vid fuse parport_pc ppdev lp parport autofs4 ext4 crc16 jbd2 mbcache dm_mod sg sd_mod ohci_pci crc32c_intel ahci libahci libata scsi_mod xhci_pci xhci_hcd ohci_hcd ehci_pci ehci_hcd r8169 mii usbcore usb_common thermal fan
-CPU: 3 PID: 308 Comm: systemd-udevd Not tainted 3.18.0-0.slh.2-aptosid-amd64 #1 aptosid 3.18-4
-Hardware name: System manufacturer System Product Name/P8H77-M PRO, BIOS 1503 03/17/2014
- 0000000000000009 00000000acb81fbf 0000000000000009 ffffffff814ddd08
- ffff8807f048b8a0 ffffffff8105f3fd ffff8807f0e45000 ffff8807f0114438
- ffff8807f3550bb8 ffff8807f3550bb8 ffffffffffffffef ffffffff8105f478
-Call Trace:
- [<ffffffff814ddd08>] ? dump_stack+0x49/0x6a
- [<ffffffff8105f3fd>] ? warn_slowpath_common+0x6d/0x90
- [<ffffffff8105f478>] ? warn_slowpath_fmt+0x58/0x80
- [<ffffffff811e8042>] ? kernfs_path+0x42/0x50
- [<ffffffff811eb3d5>] ? sysfs_warn_dup+0x55/0x70
- [<ffffffff811eb72e>] ? sysfs_do_create_link_sd.isra.2+0xbe/0xd0
- [<ffffffff81362f24>] ? device_add+0x3b4/0x660
- [<ffffffffa01238ec>] ? rc_register_device+0x1bc/0x600 [rc_core]
- [<ffffffffa0d47f55>] ? mceusb_dev_probe+0x405/0xadd [mceusb]
- [<ffffffff8126eaf8>] ? ida_get_new_above+0x1f8/0x220
- [<ffffffffa003669b>] ? usb_probe_interface+0x1ab/0x2d0 [usbcore]
- [<ffffffff81365c87>] ? driver_probe_device+0x87/0x260
- [<ffffffff81365f2b>] ? __driver_attach+0x7b/0x80
- [<ffffffff81365eb0>] ? __device_attach+0x50/0x50
- [<ffffffff81363d4b>] ? bus_for_each_dev+0x6b/0xc0
- [<ffffffff81365428>] ? bus_add_driver+0x178/0x230
- [<ffffffff8136655e>] ? driver_register+0x5e/0xf0
- [<ffffffffa003504b>] ? usb_register_driver+0x7b/0x160 [usbcore]
- [<ffffffffa0d4b000>] ? 0xffffffffa0d4b000
- [<ffffffffa0d4b000>] ? 0xffffffffa0d4b000
- [<ffffffff81002108>] ? do_one_initcall+0x98/0x200
- [<ffffffff810cf144>] ? load_module+0x1ce4/0x22b0
- [<ffffffff810cc330>] ? __symbol_put+0xa0/0xa0
- [<ffffffff811804de>] ? kernel_read+0x4e/0x80
- [<ffffffff810cf87d>] ? SyS_finit_module+0x8d/0xa0
- [<ffffffff814e3d29>] ? system_call_fastpath+0x12/0x17
----[ end trace a644812bec4f2609 ]---
-mceusb 2-1.6:1.0: remote dev registration failed
-mceusb 2-1.6:1.0: mceusb_dev_probe: device setup failed!
-mceusb: probe of 2-1.6:1.0 failed with error -12
-usbcore: registered new interface driver mceusb
-dvb-usb: TeVii S480.1 USB successfully deinitialized and disconnected.
-usb 6-1: USB disconnect, device number 2
-usb 2-1.5: reset high-speed USB device number 3 using ehci-pci
-dvb-usb: found a 'TeVii S480.2 USB' in warm state.
-dvb-usb: will pass the complete MPEG2 transport stream to the software demuxer.
-DVB: registering new adapter (TeVii S480.2 USB)
-dvb-usb: MAC address: 90:90:90:90:90:90
-Invalid probe, probably not a DS3000
-dvb-usb: no frontend was attached by 'TeVii S480.2 USB'
-Registered IR keymap rc-tevii-nec
-input: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.3/usb6/6-1/rc/rc0/input20
-rc0: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.3/usb6/6-1/rc/rc0
-dvb-usb: schedule remote query interval to 150 msecs.
-dvb-usb: TeVii S480.2 USB successfully initialized and connected.
-usbcore: registered new interface driver dw2102
-dvb-usb: TeVii S480.2 USB successfully deinitialized and disconnected.
-[...]
-usb 1-1.5: dvb_usb_v2: will pass the complete MPEG2 transport stream to the software demuxer
-DVB: registering new adapter (TerraTec Cinergy T USB XE)
-i2c i2c-9: af9013: firmware version 5.1.0.0
-usb 1-1.5: DVB: registering adapter 0 frontend 0 (Afatech AF9013)...
-mc44s803: successfully identified (ID = 14)
-usb 1-1.5: dvb_usb_v2: 'TerraTec Cinergy T USB XE' successfully initialized and connected
-usbcore: registered new interface driver dvb_usb_af9015
-[...]
-usb 3-1: new high-speed USB device number 3 using ehci-pci
-usb 3-1: config 1 interface 0 altsetting 0 bulk endpoint 0x81 has invalid maxpacket 2
-usb 3-1: New USB device found, idVendor=9022, idProduct=d660
-usb 3-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-usb 3-1: Product: DVBS2BOX
-usb 3-1: Manufacturer: TBS-Tech
-dvb-usb: found a 'TeVii S660 USB' in cold state, will try to load a firmware
-dvb-usb: downloading firmware from file 'dvb-usb-s660.fw'
-dw2102: start downloading DW210X firmware
-usb 6-1: new high-speed USB device number 3 using ehci-pci
-dvb-usb: found a 'TeVii S660 USB' in warm state.
-dvb-usb: will pass the complete MPEG2 transport stream to the software demuxer.
-DVB: registering new adapter (TeVii S660 USB)
-usb 6-1: config 1 interface 0 altsetting 0 bulk endpoint 0x81 has invalid maxpacket 2
-[...]
-usb 6-1: New USB device found, idVendor=9022, idProduct=d660
-usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
-usb 6-1: Product: DVBS2BOX
-usb 6-1: Manufacturer: TBS-Tech
-dvb-usb: found a 'TeVii S660 USB' in cold state, will try to load a firmware
-dvb-usb: downloading firmware from file 'dvb-usb-s660.fw'
-dw2102: start downloading DW210X firmware
-dvb-usb: found a 'TeVii S660 USB' in warm state.
-dvb-usb: will pass the complete MPEG2 transport stream to the software demuxer.
-DVB: registering new adapter (TeVii S660 USB)
-dvb-usb: MAC address: 00:18:bd:5a:be:8b
-DS3000 chip version: 0.192 attached.
-ts2020_attach: Find tuner TS2020!
-dw2102: Attached ds3000+ts2020!
-usb 3-1: DVB: registering adapter 1 frontend 0 (Montage Technology DS3000)...
-Registered IR keymap rc-tevii-nec
-input: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.1/usb3/3-1/rc/rc0/input25
-rc0: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.1/usb3/3-1/rc/rc0
-dvb-usb: schedule remote query interval to 150 msecs.
-dvb-usb: TeVii S660 USB successfully initialized and connected.
-dvb-usb: MAC address: 00:18:bd:5a:be:8c
-DS3000 chip version: 0.192 attached.
-ts2020_attach: Find tuner TS2020!
-dw2102: Attached ds3000+ts2020!
-usb 6-1: DVB: registering adapter 2 frontend 0 (Montage Technology DS3000)...
-Registered IR keymap rc-tevii-nec
-input: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.3/usb6/6-1/rc/rc1/input26
-rc1: IR-receiver inside an USB DVB receiver as /devices/pci0000:00/0000:00:1c.5/0000:04:00.3/usb6/6-1/rc/rc1
-dvb-usb: schedule remote query interval to 150 msecs.
-dvb-usb: TeVii S660 USB successfully initialized and connected.
-[...]
-ds3000_firmware_ondemand: Waiting for firmware upload (dvb-fe-ds3000.fw)...
-ds3000_firmware_ondemand: Waiting for firmware upload(2)...
-ds3000_firmware_ondemand: Waiting for firmware upload (dvb-fe-ds3000.fw)...
-ds3000_firmware_ondemand: Waiting for firmware upload(2)...
-[...]
+> +
+> +# Core FPGA Manager Framework
+> +obj-$(CONFIG_FPGA)			+= fpga-mgr.o
+> +
+> +# FPGA Manager Drivers
+> diff --git a/drivers/staging/fpga/fpga-mgr.c b/drivers/staging/fpga/fpga-mgr.c
+> new file mode 100644
+> index 0000000..671b114
+> --- /dev/null
+> +++ b/drivers/staging/fpga/fpga-mgr.c
+> @@ -0,0 +1,523 @@
+> +/*
+> + * FPGA Manager Core
+> + *
+> + *  Copyright (C) 2013-2014 Altera Corporation
+> + *
+> + * With code from the mailing list:
+> + * Copyright (C) 2013 Xilinx, Inc.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/delay.h>
+> +#include <linux/firmware.h>
+> +#include <linux/fpga/fpga-mgr.h>
+> +#include <linux/idr.h>
+> +#include <linux/module.h>
+> +#include <linux/mutex.h>
+> +#include <linux/pm.h>
+> +#include <linux/slab.h>
+> +
+> +static DEFINE_MUTEX(fpga_mgr_mutex);
+> +static DEFINE_IDA(fpga_mgr_ida);
+> +static struct class *fpga_mgr_class;
+> +
+> +static LIST_HEAD(fpga_manager_list);
+> +
+> +/**
+> + * fpga_mgr_low_level_state - get FPGA state from low level driver
+> + * @mgr: fpga manager
+> + *
+> + * This will be used to initialize framework state
+> + */
+> +static enum fpga_mgr_states fpga_mgr_low_level_state(struct fpga_manager *mgr)
+> +{
+> +	if (!mgr || !mgr->mops || !mgr->mops->state)
+> +		return FPGA_MGR_STATE_UNKNOWN;
+> +
+> +	return mgr->mops->state(mgr);
+> +}
+> +
+> +/**
+> + * __fpga_mgr_reset - unlocked version of fpga_mgr_reset
+> + * @mgr: fpga manager
+> + */
+> +static int __fpga_mgr_reset(struct fpga_manager *mgr)
+> +{
+> +	int ret;
+> +
+> +	if (!mgr->mops->reset)
+> +		return -EINVAL;
+> +
+> +	ret = mgr->mops->reset(mgr);
+> +
+> +	mgr->state = fpga_mgr_low_level_state(mgr);
+> +
+> +	return ret;
+> +}
+> +
+> +/**
+> + * fpga_mgr_reset - reset the fpga
+> + * @mgr: fpga manager
+> + */
+> +int fpga_mgr_reset(struct fpga_manager *mgr)
+> +{
+> +	int ret;
+> +
+> +	if (!mutex_trylock(&mgr->lock))
+> +		return -EBUSY;
+> +
+> +	ret = __fpga_mgr_reset(mgr);
+> +
+> +	mutex_unlock(&mgr->lock);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_reset);
+> +
+> +/**
+> + * __fpga_mgr_stage_init - prepare fpga for configuration
+> + * @mgr: fpga manager
+> + */
+> +static int __fpga_mgr_stage_write_init(struct fpga_manager *mgr)
+> +{
+> +	int ret;
+> +
+> +	if (mgr->mops->write_init) {
+> +		mgr->state = FPGA_MGR_STATE_WRITE_INIT;
+> +		ret = mgr->mops->write_init(mgr);
+> +		if (ret) {
+> +			mgr->state = FPGA_MGR_STATE_WRITE_INIT_ERR;
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * __fpga_mgr_stage_write - write buffer to fpga
+> + * @mgr: fpga manager
+> + * @buf: buffer contain fpga image
+> + * @count: byte count of buf
+> + */
+> +static int __fpga_mgr_stage_write(struct fpga_manager *mgr, const char *buf,
+> +				  size_t count)
+> +{
+> +	int ret;
+> +
+> +	mgr->state = FPGA_MGR_STATE_WRITE;
+> +	ret = mgr->mops->write(mgr, buf, count);
+> +	if (ret) {
+> +		mgr->state = FPGA_MGR_STATE_WRITE_ERR;
+> +		return ret;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * __fpga_mgr_stage_complete - after writing, place fpga in operating state
+> + * @mgr: fpga manager
+> + */
+> +static int __fpga_mgr_stage_write_complete(struct fpga_manager *mgr)
+> +{
+> +	int ret;
+> +
+> +	if (mgr->mops->write_complete) {
+> +		mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE;
+> +		ret = mgr->mops->write_complete(mgr);
+> +		if (ret) {
+> +			mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE_ERR;
+> +			return ret;
+> +		}
+> +	}
+> +
+> +	mgr->state = fpga_mgr_low_level_state(mgr);
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * __fpga_mgr_write - whole fpga image write cycle
+> + * @mgr: fpga manager
+> + * @buf: buffer contain fpga image
+> + * @count: byte count of buf
+> + */
+> +static int __fpga_mgr_write(struct fpga_manager *mgr, const char *buf,
+> +			    size_t count)
+> +{
+> +	int ret;
+> +
+> +	ret = __fpga_mgr_stage_write_init(mgr);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = __fpga_mgr_stage_write(mgr, buf, count);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return __fpga_mgr_stage_write_complete(mgr);
+> +}
+> +
+> +/**
+> + * fpga_mgr_write - do complete fpga image write cycle
+> + * @mgr: fpga manager
+> + * @buf: buffer contain fpga image
+> + * @count: byte count of buf
+> + */
+> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
+> +{
+> +	int ret;
+> +
+> +	if (!mutex_trylock(&mgr->lock))
+> +		return -EBUSY;
+> +
+> +	dev_info(&mgr->dev, "writing buffer to %s\n", mgr->name);
+> +
+> +	ret = __fpga_mgr_write(mgr, buf, count);
+> +	mutex_unlock(&mgr->lock);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
+> +
+> +/**
+> + * fpga_mgr_firmware_write - request firmware and write to fpga
+> + * @mgr: fpga manager
+> + * @image_name: name of image file on the firmware search path
+> + *
+> + * Grab lock, request firmware, and write out to the FPGA.
+> + * Update the state before each step to provide info on what step
+> + * failed if there is a failure.
+> + */
+> +int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name)
+> +{
+> +	const struct firmware *fw;
+> +	int ret;
+> +
+> +	if (!mutex_trylock(&mgr->lock))
+> +		return -EBUSY;
+> +
+> +	dev_info(&mgr->dev, "writing %s to %s\n", image_name, mgr->name);
+> +
+> +	mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ;
+> +	ret = request_firmware(&fw, image_name, &mgr->dev);
+> +	if (ret) {
+> +		mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ_ERR;
+> +		goto fw_wr_exit;
+> +	}
+> +
+> +	ret = __fpga_mgr_write(mgr, fw->data, fw->size);
+> +	if (ret)
+> +		goto fw_wr_exit;
+> +
+> +	strcpy(mgr->image_name, image_name);
+> +
+> +fw_wr_exit:
+> +	mutex_unlock(&mgr->lock);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_firmware_write);
+> +
+> +/**
+> + * fpga_mgr_name - returns the fpga manager name
+> + * @mgr: fpga manager
+> + * @buf: buffer to receive the name
+> + */
+> +int fpga_mgr_name(struct fpga_manager *mgr, char *buf)
+> +{
+> +	if (!mgr)
+> +		return -ENODEV;
+> +
+> +	return sprintf(buf, "%s\n", mgr->name);
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_name);
+> +
+> +#if IS_ENABLED(CONFIG_FPGA_MGR_SYSFS)
 
-This can be recovered by reloading mceusb
-# modprobe -r mceusb
-# modprobe mceusb
+remove this line
 
-usbcore: deregistering interface driver mceusb
-Registered IR keymap rc-rc6-mce
-input: Media Center Ed. eHome Infrared Remote Transceiver (0609:0334) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.6/2-1.6:1.0/rc/rc2/input27
-rc2: Media Center Ed. eHome Infrared Remote Transceiver (0609:0334) as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.6/2-1.6:1.0/rc/rc2
-IR RC5(x/sz) protocol handler initialized
-IR NEC protocol handler initialized
-IR RC6 protocol handler initialized
-IR Sony protocol handler initialized
-IR JVC protocol handler initialized
-IR SANYO protocol handler initialized
-IR Sharp protocol handler initialized
-input: MCE IR Keyboard/Mouse (mceusb) as /devices/virtual/input/input28
-lirc_dev: IR Remote Control driver registered, major 249 
-IR MCE Keyboard/mouse protocol handler initialized
-IR XMP protocol handler initialized
-rc rc2: lirc_dev: driver ir-lirc-codec (mceusb) registered at minor = 0
-IR LIRC bridge handler initialized
-mceusb 2-1.6:1.0: Registered SMK CORPORATION MCE TRANCEIVR Emulator Device 2006 with mce emulator interface version 1
-mceusb 2-1.6:1.0: 2 tx ports (0x0 cabled) and 2 rx sensors (0x1 active)
-usbcore: registered new interface driver mceusb
+> +static const char * const state_str[] = {
+> +	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
+> +	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
+> +	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
+> +	[FPGA_MGR_STATE_RESET] =		"reset",
+> +
+> +	/* write sequence */
+> +	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
+> +	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
+> +	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
+> +	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
+> +	[FPGA_MGR_STATE_WRITE] =		"write",
+> +	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
+> +	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
+> +	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
+> +
+> +	[FPGA_MGR_STATE_OPERATING] =		"operating",
+> +};
+> +
+> +/*
+> + * class attributes
+> + */
+> +static ssize_t name_show(struct device *dev,
+> +			 struct device_attribute *attr, char *buf)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +
+> +	return fpga_mgr_name(mgr, buf);
+> +}
+> +
+> +static ssize_t state_show(struct device *dev,
+> +			  struct device_attribute *attr, char *buf)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +
+> +	return sprintf(buf, "%s\n", state_str[mgr->state]);
+> +}
+> +
+> +static ssize_t firmware_show(struct device *dev,
+> +			     struct device_attribute *attr, char *buf)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +
+> +	return sprintf(buf, "%s\n", mgr->image_name);
+> +}
+> +
+> +static ssize_t firmware_store(struct device *dev,
+> +			      struct device_attribute *attr,
+> +			      const char *buf, size_t count)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +	unsigned int len;
+> +	char image_name[NAME_MAX];
+> +	int ret;
+> +
+> +	/* lose terminating \n */
+> +	strcpy(image_name, buf);
+> +	len = strlen(image_name);
+> +	if (image_name[len - 1] == '\n')
+> +		image_name[len - 1] = 0;
+> +
+> +	ret = fpga_mgr_firmware_write(mgr, image_name);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return count;
+> +}
+> +
+> +static ssize_t reset_store(struct device *dev,
+> +			   struct device_attribute *attr,
+> +			   const char *buf, size_t count)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +	unsigned long val;
+> +	int ret;
+> +
+> +	ret = kstrtoul(buf, 0, &val);
+> +	if (ret)
+> +		return ret;
+> +
+> +	if (val == 1) {
+> +		ret = fpga_mgr_reset(mgr);
+> +		if (ret)
+> +			return ret;
+> +	} else {
+> +		return -EINVAL;
+> +	}
+> +
+> +	return count;
+> +}
+> +
+> +static DEVICE_ATTR_RO(name);
+> +static DEVICE_ATTR_RO(state);
+> +static DEVICE_ATTR_RW(firmware);
+> +static DEVICE_ATTR_WO(reset);
+> +
+> +static struct attribute *fpga_mgr_attrs[] = {
+> +	&dev_attr_name.attr,
+> +	&dev_attr_state.attr,
+> +	&dev_attr_firmware.attr,
+> +	&dev_attr_reset.attr,
+> +	NULL,
+> +};
+> +ATTRIBUTE_GROUPS(fpga_mgr);
+> +#else
+> +#define fpga_mgr_groups NULL
+> +#endif /* CONFIG_FPGA_MGR_SYSFS */
 
-Regards
-	Stefan Lippers-Hollmann
+remove these 3 lines and look below.
+
+> +
+> +static int fpga_mgr_suspend(struct device *dev)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +
+> +	if (!mgr)
+> +		return -ENODEV;
+> +
+> +	if (mgr->mops->suspend)
+> +		return mgr->mops->suspend(mgr);
+> +
+> +	return 0;
+> +}
+> +
+> +static int fpga_mgr_resume(struct device *dev)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +	int ret = 0;
+> +
+> +	if (!mgr)
+> +		return -ENODEV;
+> +
+> +	if (mgr->mops->resume) {
+> +		ret = mgr->mops->resume(mgr);
+> +		if (ret)
+> +			return ret;
+> +	}
+> +
+> +	if (strlen(mgr->image_name) != 0)
+> +		fpga_mgr_firmware_write(mgr, mgr->image_name);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
+> +	.suspend	= fpga_mgr_suspend,
+> +	.resume		= fpga_mgr_resume,
+> +};
+> +
+> +static void fpga_mgr_dev_release(struct device *dev)
+> +{
+> +	struct fpga_manager *mgr = to_fpga_manager(dev);
+> +
+> +	dev_dbg(dev, "releasing '%s'\n", mgr->name);
+> +
+> +	if (mgr->mops->fpga_remove)
+> +		mgr->mops->fpga_remove(mgr);
+> +
+> +	mgr->mops = NULL;
+> +
+> +	mutex_lock(&fpga_mgr_mutex);
+> +	list_del(&mgr->list);
+> +	mutex_unlock(&fpga_mgr_mutex);
+> +
+> +	ida_simple_remove(&fpga_mgr_ida, mgr->dev.id);
+> +	kfree(mgr);
+> +}
+> +
+> +/**
+> + * fpga_mgr_register - register a low level fpga manager driver
+> + * @dev: fpga manager device
+> + * @name: fpga manager name
+> + * @mops: pointer to structure of fpga manager ops
+> + * @priv: fpga manager private data
+> + */
+> +int fpga_mgr_register(struct device *dev, const char *name,
+> +		      const struct fpga_manager_ops *mops,
+> +		      void *priv)
+> +{
+> +	struct fpga_manager *mgr;
+> +	int id, ret;
+> +
+> +	if (!mops || !name || !strlen(name))
+> +		return -EINVAL;
+> +
+> +	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
+> +	if (!mgr)
+> +		return -ENOMEM;
+> +
+> +	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
+> +	if (id < 0)
+> +		return id;
+> +
+> +	mutex_init(&mgr->lock);
+> +
+> +	mgr->name = name;
+> +	mgr->mops = mops;
+> +	mgr->priv = priv;
+> +
+> +	/*
+> +	 * Initialize framework state by requesting low level driver read state
+> +	 * from device.  FPGA may be in reset mode or may have been programmed
+> +	 * by bootloader or EEPROM.
+> +	 */
+> +	mgr->state = fpga_mgr_low_level_state(mgr);
+> +
+> +	INIT_LIST_HEAD(&mgr->list);
+> +	mutex_lock(&fpga_mgr_mutex);
+> +	list_add(&mgr->list, &fpga_manager_list);
+> +	mutex_unlock(&fpga_mgr_mutex);
+> +
+> +	device_initialize(&mgr->dev);
+> +	mgr->dev.class = fpga_mgr_class;
+> +	mgr->dev.parent = dev;
+> +	mgr->dev.of_node = dev->of_node;
+> +	mgr->dev.release = fpga_mgr_dev_release;
+> +	mgr->dev.id = id;
+> +	dev_set_name(&mgr->dev, "%d", id);
+> +	ret = device_add(&mgr->dev);
+> +	if (ret)
+> +		goto error_device;
+> +
+> +	dev_info(&mgr->dev, "%s registered\n", mgr->name);
+> +
+> +	return 0;
+> +
+> +error_device:
+> +	ida_simple_remove(&fpga_mgr_ida, id);
+> +	kfree(mgr);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_register);
+> +
+> +/**
+> + * fpga_mgr_remove - remove a low level fpga manager driver
+> + * @dev: fpga manager device
+> + */
+> +void fpga_mgr_remove(struct platform_device *pdev)
+> +{
+> +	struct list_head *tmp;
+> +	struct fpga_manager *mgr = NULL;
+> +
+> +	list_for_each(tmp, &fpga_manager_list) {
+> +		mgr = list_entry(tmp, struct fpga_manager, list);
+> +		if (mgr->dev.parent == &pdev->dev) {
+> +			device_unregister(&mgr->dev);
+> +			break;
+> +		}
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(fpga_mgr_remove);
+> +
+> +static int __init fpga_mgr_dev_init(void)
+> +{
+> +	pr_info("FPGA Manager framework driver\n");
+> +
+> +	fpga_mgr_class = class_create(THIS_MODULE, "fpga_manager");
+> +	if (IS_ERR(fpga_mgr_class))
+> +		return PTR_ERR(fpga_mgr_class);
+> +
+> +	fpga_mgr_class->dev_groups = fpga_mgr_groups;
+
+
+Write this here.
+       if (IS_ENABLED(CONFIG_FPGA_MGR_SYSFS)) {
+             fpga_mgr_class->dev_groups = fpga_mgr_groups;
+       }
+
+I have tested it and it is working just fine. You can compile this
+driver with SYSFS=n
+The whole code is built and config option just export it.
+I think it is better than having #if there.
+
+Greg: Is there any problem with this solution?
+
+BTW: I have pushed my branch to zero day testing system to get better coverage
+
+Thanks,
+Michal
+
+
