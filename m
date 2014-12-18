@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbaLRDOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:14:37 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:48188 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719AbaLRDOf (ORCPT
+	id S1751993AbaLRDPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:15:21 -0500
+Received: from mga01.intel.com ([192.55.52.88]:35600 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751719AbaLRDPT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:14:35 -0500
+	Wed, 17 Dec 2014 22:15:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,598,1413270000"; 
+   d="scan'208";a="649568512"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGiD0lOD9GQH6kUSYRNw+5OxzD5yUq/Bg
+Date: Thu, 18 Dec 2014 03:14:59 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-26-git-send-email-feng.wu@intel.com>
+ <5491C0A2.7040503@redhat.com>
+In-Reply-To: <5491C0A2.7040503@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1533637.nrBHixev6I@avalon>
-References: <20141215050920.533.20169.sendpatchset@w520>
-	<52558289.TJpHJaW3sy@avalon>
-	<CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
-	<1533637.nrBHixev6I@avalon>
-Date: Thu, 18 Dec 2014 12:14:33 +0900
-Message-ID: <CANqRtoTrBx=wscHCCRDw2SRrA_YWbCB3+q7aOdvQjiiCkSan+Q@mail.gmail.com>
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
 
-On Thu, Dec 18, 2014 at 11:39 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> On Thursday 18 December 2014 10:26:27 Magnus Damm wrote:
->> On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart wrote:
->> > On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
->> >> From: Magnus Damm <damm+renesas@opensource.se>
->> >>
->> >> Add r8a7779 specific support for IRLM bit configuration
->> >> in the INTC-IRQPIN driver. Without this code we need
->> >> special workaround code in arch/arm/mach-shmobile.
->> >>
->> >> The IRLM bit for the INTC hardware exists on various
->> >> older SH-based SoCs and is used to select between two
->> >> modes for the external interrupt pins IRQ0 to IRQ3:
->> >>
->> >> IRLM = 0: (default from reset on r8a7779)
->> >> In this mode the pins IRQ0 to IRQ3 are used together
->> >> to give a value between 0 and 15 to the SoC. External
->> >> logic is required for masking. This mode is not
->> >> supported by the INTC-IRQPIN driver.
->> >>
->> >> IRLM = 1: (needs this patch or configuration elsewhere)
->> >> In this mode IRQ0 to IRQ3 operate as 4 individual
->> >> external interrupt pins. In this mode the SMSC ethernet
->> >> chip can be used via IRQ1 on r8a7779 Marzen. This mode
->> >> is the only supported mode by the INTC-IRQPIN driver.
->> >>
->> >> For this patch to work the r8a7779 DTS needs to pass
->> >> the ICR0 register as the last register bank.
->> >>
->> >> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
->> >> ---
->> >>
->> >>  Same version as sent on December 3rd.
->> >>
->> >>  Written against renesas-devel-20141202-v3.18-rc7 which is
->> >>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
->> >>
->> >>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqp
->> >>  in.txt |    5 +
->> >>  drivers/irqchip/irq-renesas-intc-irqpi                |   50 ++++++++--
->> >>  2 files changed, 46 insertions(+), 9 deletions(-)
->> >>
->> >> ---
->> >> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
->> >> ir qpin.txt +++
->> >> work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-
->> >> irqpin.txt      2014-12-03 20:25:13.000000000 +0900
->> >> @@ -9,6 +9,11 @@
->> >> Required properties:
->> >>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
->> >>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
->> >>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
->> >> +
->> >> +- reg: Base address and length of each register bank used by the
->> >> external
->> >> +  IRQ pins driven by the interrupt controller hardware module. The base
->> >> +  addresses, length and number of required register banks varies with
->> >> soctype.
->> >
->> > Ouch. Ouch. Multiple times. Very much :-/
->> >
->> > I suppose it's too late to fix the DT bindings ?
->>
->> I don't think it is ever too late, but the question is just how urgent
->> it is to get rid of the Marzen C board code. With the code in this
->> patch queue up we can get rid of the board code. If someone decides to
->> rework the INTC IRQPIN bits then we will have to live with the Marzen
->> code for longer. And if we should do it right and describe the actual
->> hardware, then perhaps we should consider the non-IRQ-pin interrupts
->> included in INTC for some SoCs. So it rapidly gets more complex...
->
-> I don't think there's a need to delay getting rid of Marzen legacy code, my
-> comment wasn't an attempt to delay your efforts :-)
 
-Thanks. Just to be clear, I've never had any problems with board code
-written in C. =)
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo Bonzini
+> Sent: Thursday, December 18, 2014 1:43 AM
+> To: Wu, Feng; Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
+> Gleb Natapov; Paolo Bonzini; dwmw2@infradead.org; joro@8bytes.org; Alex
+> Williamson; Jiang Liu
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; KVM list;
+> Eric Auger
+> Subject: Re: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+> 
+> 
+> 
+> On 12/12/2014 16:14, Feng Wu wrote:
+> > Currently, we don't support urgent interrupt, all interrupts
+> > are recognized as non-urgent interrupt, so we cannot send
+> > posted-interrupt when 'SN' is set.
+> 
+> Can this happen?  If the vcpu is in guest mode, it cannot have been
+> scheduled out, and that's the only case when SN is set.
+> 
+> Paolo
 
-> Looking at the hardware we should have a single INTC DT node, not four. What
-> I'm wondering is whether we could still fix the DT bindings, or if the
-> backward compatibility requirements would make it too painful, especially
-> given that R-Car Gen2 doesn't use INTC.
+Currently, the only place where SN is set is vCPU is preempted and waiting for
+the next scheduling in the runqueue. But I am not sure whether we need to
+set SN for other purpose in future. Adding SN checking here is just to follow
+the Spec. non-urgent interrupts are suppressed when SN is set.
 
-My feeling is that it is a waste of time for existing SoCs. Only old
-stuff is using it from the mobile line (r8a7740 and sh73a0) and R-Car
-Gen1 (r8a7779 and r8a7778). If for some unknown reason new SoCs come
-out that make use of this hardware then we can rework at that point.
+Thanks,
+Feng
 
-If you want to poke around with interrupts on old systems then how
-about looking into DT-enabled PINT support for sh73a0 and others?
-
-Cheers,
-
-/ magnus
+> 
+> > Signed-off-by: Feng Wu
+> <feng.wu-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+> > ---
+> >  arch/x86/kvm/vmx.c | 11 +++++++++--
+> >  1 file changed, 9 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > index a1c83a2..0aee151 100644
+> > --- a/arch/x86/kvm/vmx.c
+> > +++ b/arch/x86/kvm/vmx.c
+> > @@ -4401,15 +4401,22 @@ static int vmx_vm_has_apicv(struct kvm *kvm)
+> >  static void vmx_deliver_posted_interrupt(struct kvm_vcpu *vcpu, int
+> vector)
+> >  {
+> >  	struct vcpu_vmx *vmx = to_vmx(vcpu);
+> > -	int r;
+> > +	int r, sn;
+> >
+> >  	if (pi_test_and_set_pir(vector, &vmx->pi_desc))
+> >  		return;
+> >
+> > +	/*
+> > +	 * Currently, we don't support urgent interrupt, all interrupts
+> > +	 * are recognized as non-urgent interrupt, so we cannot send
+> > +	 * posted-interrupt when 'SN' is set.
+> > +	 */
+> > +	sn = pi_test_sn(&vmx->pi_desc);
+> > +
+> >  	r = pi_test_and_set_on(&vmx->pi_desc);
+> >  	kvm_make_request(KVM_REQ_EVENT, vcpu);
+> >  #ifdef CONFIG_SMP
+> > -	if (!r && (vcpu->mode == IN_GUEST_MODE))
+> > +	if (!r && !sn && (vcpu->mode == IN_GUEST_MODE))
+> >  		apic->send_IPI_mask(get_cpu_mask(vcpu->cpu),
+> >  				POSTED_INTR_VECTOR);
+> >  	else
+> > --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
