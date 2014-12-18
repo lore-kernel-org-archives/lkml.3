@@ -1,211 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216AbaLRJqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 04:46:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:49877 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751884AbaLRJqq (ORCPT
+	id S1751834AbaLRJyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 04:54:12 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:44066 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaLRJyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 04:46:46 -0500
-X-AuditID: cbfee68d-f79296d000004278-0c-5492a2854fad
-From: Namjae Jeon <namjae.jeon@samsung.com>
-To: Dave Chinner <david@fromorbit.com>, Brian Foster <bfoster@redhat.com>
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ashish Sangwan <a.sangwan@samsung.com>
-Subject: [PATCH 11/11] xfstests: Test multiple fallocate insert/collapse range
- calls
-Date: Thu, 18 Dec 2014 18:46:44 +0900
-Message-id: <002101d01aa7$88b49120$9a1db360$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AdAaocPEtqyEIaxFT9uC1DRH3ZAq9g==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGIsWRmVeSWpSXmKPExsWyRsSkRLd10aQQg1VzRSyWTrzEbPHuc5XF
-	lmP3GC327D3JYnF51xw2i0V9txgd2DxOLZLwWH1hK6PH+31X2Tz6tqxi9Pi8SS6ANYrLJiU1
-	J7MstUjfLoEr48LCJWwFt5Qqfn4paGCcLtPFyMkhIWAicenEQkYIW0ziwr31bF2MXBxCAksZ
-	JSbOescGU3R++n9WiMR0RonzV44yQjh/GSU6l8wBynBwsAloS/zZIgrSICLgKXH37CmwZmaB
-	KolDvffYQWxhgTCJ5VcugsVZBFQlvj58xgbSyitgKXG7ORkkzCsgKPFj8j0WiFYtifU7jzNB
-	2PISm9e8ZYa4R0Fix9nXjBCr9CRebrgMVSMise/FO7DTJAQOsUu8Wb0FapeAxLfJh1hAdkkI
-	yEpsOgA1R1Li4IobLBMYxWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CJDveLE3OLSvHS9
-	5PzcTYzA6Dv971nvDsbbB6wPMQpwMCrx8ErqTQoRYk0sK67MPcRoCnTRRGYp0eR8YIznlcQb
-	GpsZWZiamBobmVuaKYnzKkr9DBYSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAuHJZeOOa/UmH
-	OrezbIliM6/P/Do/Olqgu4R7bXDwk0ezQ6Q/F1+aPN3mZ/eeIv6EaUViq29ZfTmxTSosQ+y5
-	zL93Ry8VTJx7veLFWbFvHO3VrSunOrWsitgVniXJcVZqp0LsW5dVYVWLxOblP1tT2PzrBMcu
-	U7lWlWfVQlY/E4NzT01K57BZocRSnJFoqMVcVJwIANV0mX25AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrAIsWRmVeSWpSXmKPExsVy+t9jQd3WRZNCDB684bZYOvESs8W7z1UW
-	W47dY7TYs/cki8XlXXPYLBb13WJ0YPM4tUjCY/WFrYwe7/ddZfPo27KK0ePzJrkA1qgGRpuM
-	1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoAOUFMoSc0qB
-	QgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBkXFi5hK7ilVPHzS0ED43SZLkZODgkB
-	E4nz0/+zQthiEhfurWfrYuTiEBKYzihx/spRRgjnL6NE55I5QFUcHGwC2hJ/toiCNIgIeErc
-	PXuKDcRmFqiSONR7jx3EFhYIk1h+5SJYnEVAVeLrw2dsIK28ApYSt5uTQcK8AoISPybfY4Fo
-	1ZJYv/M4E4QtL7F5zVtmiHsUJHacfc0IsUpP4uWGy1A1IhL7XrxjnMAoMAvJqFlIRs1CMmoW
-	kpYFjCyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYJj+5nUDsaVDRaHGAU4GJV4eCX0JoUI
-	sSaWFVfmHmKU4GBWEuGNzgEK8aYkVlalFuXHF5XmpBYfYjQFenQis5Rocj4w7eSVxBsam5gZ
-	WRqZG1oYGZsrifMq2beFCAmkJ5akZqemFqQWwfQxcXBKNTD2W2SJpGrc58qxDd3w43ti09x4
-	fufCSUdWOvDf+B38oyp3adHCznWrFFdVZ1572z1hFnuZr9g2VpNnQQfYFwrd1p8Um6415UJu
-	EKNHPHdvyfc3jevvT3uY2+3n9Xip0GuWPd/+C7Pez+R02ftu88K6oAzWLwv6BKTiW3NkWDtz
-	vMLn1GsXn1JiKc5INNRiLipOBACpGS6vAwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 18 Dec 2014 04:54:10 -0500
+Date: Thu, 18 Dec 2014 10:54:06 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Jim Davis <jim.epost@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-pwm@vger.kernel.org
+Subject: Re: randconfig build error with next-20141204, in drivers/pwm
+Message-ID: <20141218095406.GB24383@ulmo>
+References: <CA+r1Zhj2ugeO7yqfmnbmkF4xqmZiiSbvq0zVXDMXdfOYGiHcRg@mail.gmail.com>
+ <20141218094442.GA24383@ulmo>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1ccMZA6j1vT5UqiK"
+Content-Disposition: inline
+In-Reply-To: <20141218094442.GA24383@ulmo>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This testcase(043) tries to test finsert range a single alternate block
-mulitiple times and test merge code of collase range.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-Cc: Brian Foster <bfoster@redhat.com>
----
- tests/generic/043     | 107 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tests/generic/043.out |   7 ++++
- tests/generic/group   |   1 +
- 3 files changed, 115 insertions(+)
- create mode 100644 tests/generic/043
- create mode 100644 tests/generic/043.out
+--1ccMZA6j1vT5UqiK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/tests/generic/043 b/tests/generic/043
-new file mode 100644
-index 0000000..6aebc1e
---- /dev/null
-+++ b/tests/generic/043
-@@ -0,0 +1,107 @@
-+#! /bin/bash
-+# FS QA Test No. generic/043
-+#
-+# Test multiple fallocate insert/collapse range calls on same file.
-+# For different blocksizes, Call insert range a single alternate block
-+# multiple times until the file is left with 1024 extents and as much
-+# number of extents. And Call collapse range about the previously inserted
-+# ranges to test merge code of collapse range.
-+# Also check for file system consistency after completing this operation
-+# for each blocksize.
-+#-----------------------------------------------------------------------
-+# Copyright (c) 2014 Samsung Electronics.  All Rights Reserved.
-+#
-+# This program is free software; you can redistribute it and/or
-+# modify it under the terms of the GNU General Public License as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope that it would be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write the Free Software Foundation,
-+# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+#
-+#-----------------------------------------------------------------------
-+#
-+
-+seq=`basename $0`
-+seqres=$RESULT_DIR/$seq
-+echo "QA output created by $seq"
-+
-+here=`pwd`
-+tmp=/tmp/$$
-+status=1	# failure is the default!
-+trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
-+
-+# get standard environment, filters and checks
-+. ./common/rc
-+. ./common/filter
-+
-+# real QA test starts here
-+_supported_fs generic
-+_supported_os Linux
-+
-+_require_scratch
-+_require_xfs_io_command "fiemap"
-+_require_xfs_io_command "finsert"
-+_require_xfs_io_command "fcollapse"
-+_do_die_on_error=y
-+testfile=$SCRATCH_MNT/$seq.$$
-+BLOCKS=1024
-+
-+for (( BSIZE = 1024; BSIZE <= 4096; BSIZE *= 2 )); do
-+
-+	length=$(($BLOCKS * $BSIZE))
-+	case $FSTYP in
-+	xfs)
-+	_scratch_mkfs -b size=$BSIZE >> $seqres.full 2>&1
-+	;;
-+	ext4)
-+	_scratch_mkfs -b $BSIZE >> $seqres.full 2>&1
-+	;;
-+	esac
-+	_scratch_mount >> $seqres.full 2>&1
-+
-+	# Write file
-+	$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $testfile > /dev/null
-+
-+
-+	# Insert alternate blocks 
-+	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-+		offset=$((($j*$BSIZE)*2))
-+		$XFS_IO_PROG -c "finsert $offset $BSIZE" $testfile > /dev/null
-+	done
-+
-+	# Check if 1024 extents are present
-+	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
-+
-+	_check_scratch_fs
-+	if [ $? -ne 0 ]; then
-+		status=1
-+		exit
-+	fi
-+
-+	# Collapse alternate blocks 
-+	for (( j=0; j < $(($BLOCKS/2)); j++ )); do
-+		offset=$((($j*$BSIZE)))
-+		$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $testfile > /dev/null
-+	done
-+
-+	# Check if 1 extents are present
-+	$XFS_IO_PROG -c "fiemap -v" $testfile | grep "^ *[0-9]*:" |wc -l
-+
-+	_check_scratch_fs
-+	if [ $? -ne 0 ]; then
-+		status=1
-+		exit
-+	fi
-+
-+	umount $SCRATCH_MNT
-+done
-+
-+# success, all done
-+status=0
-+exit
-diff --git a/tests/generic/043.out b/tests/generic/043.out
-new file mode 100644
-index 0000000..fd4b804
---- /dev/null
-+++ b/tests/generic/043.out
-@@ -0,0 +1,7 @@
-+QA output created by 043
-+1024
-+1
-+1024
-+1
-+1024
-+1
-diff --git a/tests/generic/group b/tests/generic/group
-index c0944b3..0a10bdd 100644
---- a/tests/generic/group
-+++ b/tests/generic/group
-@@ -45,6 +45,7 @@
- 040 auto quick prealloc
- 041 auto quick prealloc
- 042 auto quick prealloc
-+043 auto quick prealloc
- 053 acl repair auto quick
- 062 attr udf auto quick
- 068 other auto freeze dangerous stress
--- 
-1.8.5.5
+On Thu, Dec 18, 2014 at 10:44:44AM +0100, Thierry Reding wrote:
+> On Thu, Dec 04, 2014 at 09:10:55AM -0700, Jim Davis wrote:
+> > Building with the attached random configuration file,
+> >=20
+> > ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!
+>=20
+> This took a while to figure out. The attached patch fixes this build
+> failure, though the driver should probably be fixed to avoid division by
+> zero, just in case. Adding Boris for visibility.
+>=20
+> Thierry
 
+> From 7933af1d2e5f3941d934eec88f32f5547ee218c3 Mon Sep 17 00:00:00 2001
+> From: Thierry Reding <thierry.reding@gmail.com>
+> Date: Thu, 18 Dec 2014 10:09:42 +0100
+> Subject: [PATCH] pwm: atmel-hlcdc: Depend on HAVE_CLK
+>=20
+> The include/linux/clk.h header defines dummy implementations for the
+> various clk_*() functions if HAVE_CLK is not selected to improve build
+> coverage in randconfig builds.
+>=20
+> The dummy implementation of clk_get_rate() returns 0, which causes the
+> Atmel HLCDC PWM driver's atmel_hlcdc_pwm_config() implementation to end
+> up calling:
+>=20
+> 	do_div(clk_period_ns, 0)
+>=20
+> On x86, do_div(n, base) will end up evaluating to this:
+>=20
+> 	n >>=3D ilog2(base)
+>=20
+> with base =3D 0, the implementation of ilog2() will call ____ilog2_NaN(),
+> which is purposely undefined and results in a linker failure:
+>=20
+> 	ERROR: "____ilog2_NaN" [drivers/pwm/pwm-atmel-hlcdc.ko] undefined!
+>=20
+> The implementation of do_div() checks that base is a power of 2 before
+> calling ilog2(). The compiler doesn't optimize this away, presumably
+> because is_power_of_2() is an inline function and the compiler doesn't
+> or can't inspect it closely enough. ilog2() being a macro it still ends
+> up generating the ____ilog2_NaN() because of the constant 0.
+
+If I turn is_power_of_2() into a macro, then this build failure also
+goes away. I suppose the reason is that now the do_div() evaluates such
+that the branch that would reference the undefined symbol can be
+discarded.
+
+Still I think allowing that branch to remain will cause the linker
+failure on division by (constant) zero, which has some value, too.
+
+Thierry
+
+--1ccMZA6j1vT5UqiK
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUkqQ+AAoJEN0jrNd/PrOhQUwP/iXNoh/5gRAYB57lvDrG7I7a
+kxGGx2HqbnuWW/+z0Qj4FxelW1PQNt91ZNYDwScTOvQGn2e+XeULV1wZ7MESjtUs
+VJN7LWUTJNfpApL8lAdtMW3bF8tfy4xO0SXxKeq1nYvVA94SFT/iZEKHgkGYUC60
+NWvxOTwDtdnMGKxAzXb98iNd8S49IxyawfUFHU6eGyDL8iR4/QgN5y5uCZ9M12di
+4KQ5UCI8IILVOPWB99dc05h44Pq5QmnK3LdoNnz/6zDGuY1KQBLTBee3QJJtLdrc
+CEDduf9GFQeUq/tFV29UaW6J7SepWF5db7lUe+yIo29IS4Suj4VowYmGgMUQfoQE
+fI/c9tnjkm5SKTYYfNWEQUDg9aMCkfIyXoULMaPvBSV/GrP/kIlXn2vJptr9m8qN
+fca4bvfzDUfgxIgB80u8NtNPuPKyvV8AwOtw9CTmfNiLZNL88ks1vPVdPIdmtoFc
+N/GObJ6+fGJtAX+LTiCcX4H3xKFRolUy08yKyTBoo1spMXc8bEHQNmAHqqo79r8s
+3q0A9P04k9w1WMXj1PJF0xtElvTMdriSCpnW3230iVcgY8RlojXtDAQAQdtRe6fk
+/80VG+ajqdY73WtS/FkoNzFXvrwfJv54066sCFteiTuJWYp4Olw8am4kOjiv8IvW
+xUUH64GxJGEqOLLxWY6u
+=n1CI
+-----END PGP SIGNATURE-----
+
+--1ccMZA6j1vT5UqiK--
