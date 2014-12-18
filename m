@@ -1,131 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaLRLNn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 06:13:43 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:59243 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbaLRLNj (ORCPT
+	id S1752106AbaLRLNm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 06:13:42 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:62199 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaLRLNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Dec 2014 06:13:39 -0500
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 2/3] i8k: Autodetect maximal fan speed and fan RPM multiplier
-Date: Thu, 18 Dec 2014 12:13:35 +0100
-User-Agent: KMail/1.13.7 (Linux/3.18.0-031800rc5-generic; KDE/4.14.2; x86_64; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>,
-        linux-kernel@vger.kernel.org
-References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com> <201412101250.13891@pali> <548853CB.7000704@roeck-us.net>
-In-Reply-To: <548853CB.7000704@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1511995.XDp1mBtrhd";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201412181213.36143@pali>
+X-AuditID: cbfee68e-f79b46d000002b74-d1-5492b6e181d6
+From: Beomho Seo <beomho.seo@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: lgirdwood@gmail.com, broonie@kernel.org, beomho.seo@samsung.com,
+        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
+Subject: [PATCH] regulator: rt5033-regulator: Use regulator_nodes/of_match in
+ the descriptor
+Date: Thu, 18 Dec 2014 20:13:36 +0900
+Message-id: <1418901216-19030-1-git-send-email-beomho.seo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsWyRsSkQPfhtkkhBp9fSluc/rSN3WLqwyds
+	Fte/PGe1mHR/AovFtysdTBaXd81hs/jce4TRYsbkl2wOHB47Z91l99i0qpPNo2/LKkaPz5vk
+	AliiuGxSUnMyy1KL9O0SuDJmPEgveMJXcXv7SfYGxn6eLkZODgkBE4kbG/uZIGwxiQv31rN1
+	MXJxCAksZZToOfuVHaboy4efUIlFjBIPX+xmhnDamCRunlsL1s4moCnxfsoVFhBbRMBK4kX7
+	K3aQImaBLkaJef2XwYqEBeIkDp/eCTaWRUBVYnXTUzCbV8BN4tG/xaxdjBxA6xQk5kyyAemV
+	EPjPJtG18T4jRL2AxLfJh1ggamQlNh1ghrhOUuLgihssExgFFzAyrGIUTS1ILihOSi8y0itO
+	zC0uzUvXS87P3cQIDNvT/5717WC8ecD6EKMAB6MSD6+E3qQQIdbEsuLK3EOMpkAbJjJLiSbn
+	A6MjryTe0NjMyMLUxNTYyNzSTEmcN0HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRl6e
+	usVv+i91PHFoiXfIe2eWk/DPPTj1cP3Ve7Kz0pjuLz9QkFDjJv/E3LvoGb+81ZU53WvZph2b
+	8T9pt0NZsSjT0u4z60/8eXMg30XH8Blrc13+9svHA3a+72LZXHFA96Rh6Vu9mMeMK15PePGX
+	X4Ojb+qxWx/lde2SEh7eOWvylN9tR77ydCWW4oxEQy3mouJEAInfcPxWAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgO7DbZNCDN6cE7Y4/Wkbu8XUh0/Y
+	LK5/ec5qMen+BBaLb1c6mCwu75rDZvG59wijxYzJL9kcODx2zrrL7rFpVSebR9+WVYwenzfJ
+	BbBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gDd
+	oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMmPEgveAJX8Xt7SfZGxj7
+	eboYOTkkBEwkvnz4yQZhi0lcuLceyObiEBJYxCjx8MVuZginjUni5rm1TCBVbAKaEu+nXGEB
+	sUUErCRetL9iByliFuhilJjXfxmsSFggTuLw6Z3sIDaLgKrE6qanYDavgJvEo3+LWbsYOYDW
+	KUjMmWQzgZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgqHgmtYNxZYPFIUYBDkYl
+	Hl4JvUkhQqyJZcWVuYcYJTiYlUR4o3OAQrwpiZVVqUX58UWlOanFhxhNgZZPZJYSTc4HRmxe
+	SbyhsYmZkaWRuaGFkbG5kjivkn1biJBAemJJanZqakFqEUwfEwenVAPjTh0pJqlJR+O+7zrF
+	PPl96sr7mUwTDE15VQvVnksySBd2LJ/ZWs2ex/SwctEOJ+knTDJXZWqfpmnw1U6YrRGudf/W
+	q77ey0wXlzQYvN93VtU6mcvp/udGg2l2MpJJDMKn4netFf4Z4LuG8yRH2g/XnU8+rTwn1vA7
+	eLmewN8nD2svCrwr3q6uxFKckWioxVxUnAgAtSPNyqACAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1511995.XDp1mBtrhd
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+This patch is add regulator_nodes/of_match in the regulator descriptor
+for using information from DT instead of sppecific codes.
 
-On Wednesday 10 December 2014 15:08:11 Guenter Roeck wrote:
-> On 12/10/2014 03:50 AM, Pali Roh=C3=A1r wrote:
-> > On Tuesday 09 December 2014 23:42:08 Guenter Roeck wrote:
-> >> On Tue, Dec 09, 2014 at 09:23:22PM +0100, Pali Roh=C3=A1r wrote:
-> >>> On Tuesday 09 December 2014 21:20:23 Guenter Roeck wrote:
-> >>>> On Tue, Dec 09, 2014 at 09:07:00PM +0100, Pali Roh=C3=A1r=20
-wrote:
-> >>>>> This patch adds new function i8k_get_fan_nominal_rpm()
-> >>>>> for doing SMM call which will return nominal fan RPM
-> >>>>> for specified fan speed. It returns nominal RPM value
-> >>>>> at which fan operate when speed is set. It looks like
-> >>>>> RPM value is not accurate, but still provides very
-> >>>>> useful information.
-> >>>>>=20
-> >>>>> First it can be used to validate if certain fan speed
-> >>>>> could be accepted by SMM for setting fan speed and we
-> >>>>> can use this routine to detect maximal fan speed.
-> >>>>>=20
-> >>>>> Second it returns RPM value, so we can check if value
-> >>>>> looks correct with multiplier 30 or multiplier 1 (until
-> >>>>> now only these two multiplier was used). If RPM value
-> >>>>> with multiplier 30 is too high, then multiplier 1 is
-> >>>>> used.
-> >>>>>=20
-> >>>>> In case when SMM reports that new function is not
-> >>>>> supported we will fallback to old hardcoded values.
-> >>>>> Maximal fan speed would be 2 and RPM multiplier 30.
-> >>>>>=20
-> >>>>> Signed-off-by: Pali Roh=C3=A1r <pali.rohar@gmail.com>
-> >>>>> ---
-> >>>>> I tested this patch only on my Dell Latitude E6440 and
-> >>>>> autodetection worked fine Before appying this patch it
-> >>>>> should be tested on some other dell machines too but if
-> >>>>> machine does not support i8k_get_fan_nominal_rpm()
-> >>>>> driver should fallback to old values. So patch should
-> >>>>> be without regressions.
-> >>>>=20
-> >>>> It looks like many of your error checks are unnecessary.
-> >>>> Why did you add those ?
-> >>>>=20
-> >>>> Please refrain from adding unnecessary code.
-> >>>>=20
-> >>>> Guenter
-> >>>=20
-> >>> Which error checks do you mean?
-> >>=20
-> >> There are several you added. I noticed the ones around
-> >> 'index', which would only be hit on coding errors. At that
-> >> point I stopped looking further and did not verify which of
-> >> the other added error checks are unnecessary as well.
-> >>=20
-> >> A quick additional check reveals that the fan variable
-> >> range check in i8k_get_fan_nominal_rpm is completely
-> >> unnecessary - if the range was wrong, the calling code
-> >> would fail as well, since you unconditionally write into
-> >> an array indexed by the very same variable. Given the
-> >> simplicity of the calling code, it can even be
-> >> mathematically proven that the error condition you are
-> >> checking can never happen.
-> >>=20
-> >> With that I really stopped looking further.
-> >>=20
-> >> Guenter
-> >=20
-> > Should I remove those access out-of-array checks?
->=20
-> If you want me to look into it further. In general, I don't
-> accept code like this, since it increases kernel size for no
-> good reason. It also makes it more difficult to find _real_
-> problems in the code since it distracts from seeing those.
->=20
-> Guenter
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+---
+ drivers/regulator/rt5033-regulator.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Ok, I will rework this patch and drop that first cosmetic.
+diff --git a/drivers/regulator/rt5033-regulator.c b/drivers/regulator/rt5033-regulator.c
+index 870cc49..96d2c18 100644
+--- a/drivers/regulator/rt5033-regulator.c
++++ b/drivers/regulator/rt5033-regulator.c
+@@ -36,6 +36,8 @@ static struct regulator_ops rt5033_buck_ops = {
+ static const struct regulator_desc rt5033_supported_regulators[] = {
+ 	[RT5033_BUCK] = {
+ 		.name		= "BUCK",
++		.of_match	= of_match_ptr("BUCK"),
++		.regulators_node = of_match_ptr("regulators"),
+ 		.id		= RT5033_BUCK,
+ 		.ops		= &rt5033_buck_ops,
+ 		.type		= REGULATOR_VOLTAGE,
+@@ -50,6 +52,8 @@ static const struct regulator_desc rt5033_supported_regulators[] = {
+ 	},
+ 	[RT5033_LDO] = {
+ 		.name		= "LDO",
++		.of_match	= of_match_ptr("LDO"),
++		.regulators_node = of_match_ptr("regulators"),
+ 		.id		= RT5033_LDO,
+ 		.ops		= &rt5033_buck_ops,
+ 		.type		= REGULATOR_VOLTAGE,
+@@ -64,6 +68,8 @@ static const struct regulator_desc rt5033_supported_regulators[] = {
+ 	},
+ 	[RT5033_SAFE_LDO] = {
+ 		.name		= "SAFE_LDO",
++		.of_match	= of_match_ptr("SAFE_LDO"),
++		.regulators_node = of_match_ptr("regulators"),
+ 		.id		= RT5033_SAFE_LDO,
+ 		.ops		= &rt5033_safe_ldo_ops,
+ 		.type		= REGULATOR_VOLTAGE,
+@@ -81,7 +87,7 @@ static int rt5033_regulator_probe(struct platform_device *pdev)
+ 	int ret, i;
+ 	struct regulator_config config = {};
+ 
+-	config.dev = &pdev->dev;
++	config.dev = rt5033->dev;
+ 	config.driver_data = rt5033;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(rt5033_supported_regulators); i++) {
+-- 
+1.7.9.5
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1511995.XDp1mBtrhd
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlSStuAACgkQi/DJPQPkQ1J6ZgCgq93tIgluca1rd7MHRy5KThMF
-c5cAn3ie1X64U+6F2fq/EmgtWZrRz0mw
-=fs7R
------END PGP SIGNATURE-----
-
---nextPart1511995.XDp1mBtrhd--
