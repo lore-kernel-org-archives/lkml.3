@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaLRG3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 01:29:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:58580 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbaLRG3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752206AbaLRG3i (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Dec 2014 01:29:38 -0500
-Date: Wed, 17 Dec 2014 22:28:58 -0800
-From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
-Message-ID: <tip-3banj3yh0sjz41obxtgiel3a@git.kernel.org>
-Cc: hpa@zytor.com, tglx@linutronix.de, paulus@samba.org, peterz@infradead.org,
-        bp@suse.de, mingo@kernel.org, fweisbec@gmail.com, jolsa@redhat.com,
-        efault@gmx.de, dzickus@redhat.com, dsahern@gmail.com,
-        eranian@google.com, namhyung@kernel.org, acme@redhat.com,
-        linux-kernel@vger.kernel.org, adrian.hunter@intel.com
-Reply-To: hpa@zytor.com, tglx@linutronix.de, paulus@samba.org,
-        peterz@infradead.org, bp@suse.de, mingo@kernel.org, fweisbec@gmail.com,
-        efault@gmx.de, jolsa@redhat.com, dzickus@redhat.com, dsahern@gmail.com,
-        eranian@google.com, namhyung@kernel.org, acme@redhat.com,
-        adrian.hunter@intel.com, linux-kernel@vger.kernel.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf trace:
-  Let the perf_evlist__mmap autosize the number of pages to use
-Git-Commit-ID: 38d5447d64f367d1f4804ed5c7048d39de4d3311
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:52906 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbaLRG3f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 01:29:35 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418884099-27919-1-git-send-email-ethan.zhao@oracle.com>
+References: <1418884099-27919-1-git-send-email-ethan.zhao@oracle.com>
+Date: Thu, 18 Dec 2014 11:59:34 +0530
+Message-ID: <CAKohponG+RKcCGGNYxwm0h_6jLWt2v6PqKLyQycka3N0db8c-Q@mail.gmail.com>
+Subject: Re: [PATCH V3] cpufreq: fix a NULL pointer dereference triggered by
+ _PPC changed notification
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Ethan Zhao <ethan.zhao@oracle.com>
+Cc: Dirk Brandewie <dirk.j.brandewie@intel.com>, kristen@linux.intel.com,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linda Knippers <linda.knippers@hp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Ethan Zhao <ethan.kernel@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  38d5447d64f367d1f4804ed5c7048d39de4d3311
-Gitweb:     http://git.kernel.org/tip/38d5447d64f367d1f4804ed5c7048d39de4d3311
-Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Fri, 12 Dec 2014 17:28:32 -0300
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 16 Dec 2014 13:38:26 -0300
+On 18 December 2014 at 11:58, Ethan Zhao <ethan.zhao@oracle.com> wrote:
+> If _PPC changed notification happens before governor was initiated while kernel
+> is booting, a NULL pointer dereference will be triggered:
+>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
+>  IP: [<ffffffff81470453>] __cpufreq_governor+0x23/0x1e0
+>  PGD 0
+>  Oops: 0000 [#1] SMP
+>  ... ...
+>  RIP: 0010:[<ffffffff81470453>]  [<ffffffff81470453>]
+>  __cpufreq_governor+0x23/0x1e0
+>  RSP: 0018:ffff881fcfbcfbb8  EFLAGS: 00010286
+>  RAX: 0000000000000000 RBX: ffff881fd11b3980 RCX: ffff88407fc20000
+>  RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff881fd11b3980
+>  RBP: ffff881fcfbcfbd8 R08: 0000000000000000 R09: 000000000000000f
+>  R10: ffffffff818068d0 R11: 0000000000000043 R12: 0000000000000004
+>  R13: 0000000000000000 R14: ffffffff8196cae0 R15: 0000000000000000
+>  FS:  0000000000000000(0000) GS:ffff881fffc00000(0000) knlGS:0000000000000000
+>  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+>  CR2: 0000000000000030 CR3: 00000000018ae000 CR4: 00000000000407f0
+>  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>  Process kworker/0:3 (pid: 750, threadinfo ffff881fcfbce000, task
+>  ffff881fcf556400)
+>  Stack:
+>   ffff881fffc17d00 ffff881fcfbcfc18 ffff881fd11b3980 0000000000000000
+>   ffff881fcfbcfc08 ffffffff81470d08 ffff881fd11b3980 0000000000000007
+>   ffff881fcfbcfc18 ffff881fffc17d00 ffff881fcfbcfd28 ffffffff81472e9a
+>  Call Trace:
+>   [<ffffffff81470d08>] __cpufreq_set_policy+0x1b8/0x2e0
+>   [<ffffffff81472e9a>] cpufreq_update_policy+0xca/0x150
+>   [<ffffffff81472f20>] ? cpufreq_update_policy+0x150/0x150
+>   [<ffffffff81324a96>] acpi_processor_ppc_has_changed+0x71/0x7b
+>   [<ffffffff81320bcd>] acpi_processor_notify+0x55/0x115
+>   [<ffffffff812f9c29>] acpi_device_notify+0x19/0x1b
+>   [<ffffffff813084ca>] acpi_ev_notify_dispatch+0x41/0x5f
+>   [<ffffffff812f64a4>] acpi_os_execute_deferred+0x27/0x34
+>
+> The root cause is a race conditon -- cpufreq core and acpi-cpufreq driver
+> were initiated, but cpufreq_governor wasn't and _PPC changed notification
+> happened, __cpufreq_governor() was called within acpi_os_execute_deferred
+> kernel thread context.
+>
+> To fix this panic issue, add pointer checking code in __cpufreq_governor()
+> before pointer policy->governor is to be dereferenced.
+>
+> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  v2&v3: correct comment style.
+>
+>  drivers/cpufreq/cpufreq.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 4473eba..b75735c 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -2021,6 +2021,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
+>         /* Don't start any governor operations if we are entering suspend */
+>         if (cpufreq_suspended)
+>                 return 0;
+> +       /*
+> +        * Governor might not be initiated here if _PPC changed notification
+> +        * happened, check it.
+> +        */
+> +       if (!policy->governor)
+> +               return -EINVAL;
+>
+>         if (policy->governor->max_transition_latency &&
+>             policy->cpuinfo.transition_latency >
 
-perf trace: Let the perf_evlist__mmap autosize the number of pages to use
+It will take me sometime to get cpufreq core simplified, till that time
 
-So that normal users can run 'trace', we were using a hardcoded 1024
-pages value that was more than the default /proc/sys/kernel/perf_event_mlock_kb
-setting.
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-3banj3yh0sjz41obxtgiel3a@git.kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 327541e..badfabc 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -2485,7 +2485,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.user_freq     = UINT_MAX,
- 			.user_interval = ULLONG_MAX,
- 			.no_buffering  = true,
--			.mmap_pages    = 1024,
-+			.mmap_pages    = UINT_MAX,
- 		},
- 		.output = stdout,
- 		.show_comm = true,
+to yet another band-aid :)
