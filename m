@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbaLRVvl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 16:51:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:49244 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211AbaLRVvk (ORCPT
+	id S1751552AbaLRVxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 16:53:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56919 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaLRVx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 16:51:40 -0500
-Date: Thu, 18 Dec 2014 16:51:38 -0500 (EST)
-Message-Id: <20141218.165138.2005282332695465620.davem@davemloft.net>
-To: dan@dcollins.co.nz
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixed TPACKET V3 to signal poll when block is closed
- rather than for every packet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1418939356.3016.9.camel@voodoo.cms.waikato.ac.nz>
-References: <1418939356.3016.9.camel@voodoo.cms.waikato.ac.nz>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 18 Dec 2014 13:51:40 -0800 (PST)
+	Thu, 18 Dec 2014 16:53:29 -0500
+Date: Thu, 18 Dec 2014 13:53:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Hariharan Rangasamy <hariharanrangasamy@gmail.com>
+Cc: marek.belisko@gmail.com, gregkh@linuxfoundations.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: Subject: [PATCH] Staging: ft1000: ft1000_hw.c:  replaced asm
+ header includes with linux headers
+Message-ID: <20141218215328.GA9128@kroah.com>
+References: <1418928322.6387.4.camel@hari-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418928322.6387.4.camel@hari-laptop>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Collins <dan@dcollins.co.nz>
-Date: Fri, 19 Dec 2014 10:49:16 +1300
-
-> Make TPACKET_V3 signal poll when block is closed rather than for every
-> packet. Side effect is that poll will be signaled when block retire
-> timer expires which didn't previously happen. Issue was visible when
-> sending packets at a very low frequency such that all blocks are retired
-> before packets are received by TPACKET_V3. This caused avoidable packet
-> loss. The fix ensures that the signal is sent when blocks are closed
-> which covers the normal path where the block is filled as well as the
-> path where the timer expires. The case where a block is filled without
-> moving to the next block (ie. all blocks are full) will still cause poll
-> to be signaled. 
+On Fri, Dec 19, 2014 at 12:15:22AM +0530, Hariharan Rangasamy wrote:
 > 
-> Signed-off-by: Dan Collins <dan@dcollins.co.nz>
+> used #include <linux/io.h> instead of <asm/io.h>
+> used #include <linux/bitops.h> instead of <asm/bitops.h>
+> 
+> Signed-off-by: Hariharan Rangasamy <hariharanrangasamy@gmail.com>
 
-Your email client has corrupted the patch, turning TAB characters into
-sequences of SPACE characters.
+Your subject line looks crazy, not to mention you used my wrong email
+address :(
 
-Please turn off all formatting in your email client, read:
+Please fix up and resend.
 
-	Documentation/email-clients.txt
+thanks,
 
-for help.
+greg k-h
