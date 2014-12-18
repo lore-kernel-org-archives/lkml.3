@@ -1,44 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbaLRFcv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 00:32:51 -0500
-Received: from [103.39.77.245] ([103.39.77.245]:52986 "EHLO a.glaiwang.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372AbaLRFcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 00:32:50 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 00:32:50 EST
-Date: Thu, 18 Dec 2014 13:27:03 +0800
-From: "REPLY" <sales@xjtfood.com>
-Reply-To: sales@xjftfood.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Tomato paste cooperation
-Message-ID: <201412181327036566849@a.glaiwang.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
+	id S1751906AbaLRFsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 00:48:10 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:64515 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732AbaLRFsI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 00:48:08 -0500
+From: gyungoh@gmail.com
+X-Google-Original-From: jack.yoo@skyworksinc.com
+To: sameo@linux.intel.com, lee.jones@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, jg1.han@samsung.com, cooloney@gmail.com,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        trivial@kernel.org
+Cc: akpm@linux-foundation.org, jic23@kernel.org,
+        thomas.petazzoni@free-electrons.com, ktsai@capellamicro.com,
+        hs@denx.de, stwiss.opensource@diasemi.com, matti.vaittinen@nsn.com,
+        broonie@kernel.org, jason@lakedaemon.net, heiko@sntech.de,
+        shawn.guo@freescale.com, florian.vaussard@epfl.ch, andrew@lunn.ch,
+        antonynpavlov@gmail.com, hytszk@gmail.com, plagnioj@jcrosoft.com,
+        tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH v10 0/6] Add Skyworks SKY81452 device drivers
+Date: Thu, 18 Dec 2014 14:47:45 +0900
+Message-Id: <1418881671-3495-1-git-send-email-jack.yoo@skyworksinc.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBI5X0ts014724
 
-Hi Sir, 
+From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
 
-Update price for ketchup 
+This patch set includes regulator and backlight driver for SKY81452.
+Also it includes documents for device tree and module.
+sky81452-regulator was already applied. So this series doesn't
+include it.
 
-If you have any interest or questions, please reply me please just connect me. 
+v10:
+Removed trivial get_brightness implementations for sky81452-backlight
 
-(4500 grams of ketchup;3000 grams of ketchup;2200 grams of ketchup......70 grams of ketchup) 
+v9:
+Removed the change to remove MODULE_VERSION() for sky81452-regulator
 
-Free sample can be provided if you want.
+v8:
+Renamed property names for backlight with vendor prefix
+Modified gpio-enable property to generic property for GPIO
+Made up the example for backlight DT
+Changed the DT parsing of regulator using regulator_node and of_match
 
-Waiting for your reply. 
+v7:
+Modified licensing text to GPLv2
+Splitted Kconfig renaming from DT patch
 
-Have a nice day! 
+v6:
+Added new line character at the end of line of dev_err()
 
-ANNA 
- (SKYPE ID: lee.anna65)
------------------ 
-Export Department
-XINJIANG FIRST FOODˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+v5:
+Changed DT for regulator : 'lout' node should be defined under 'regulator'
+Removed compatible string from sky81452-regulator driver
+Modified sky81452-regulator to return EINVAL when of_node is NULL
+Move sky81452-backlight.h to include/linux/platform_data
+
+v4:
+Removed MODULE_VERSION()
+Modified license to GPLv2
+Removed calling to backlight_device_unregister() in sky81452-backlight
+
+v3:
+Cleaned-up DBG messages
+Cleaned-up DT
+Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+Assigned mfd_cell.of_compatible for binding device node
+Modified error messages
+Modified sky81452-regulator to return ENODATA when of_node is NULL
+
+v2:
+Split the patches for each sub-system
+Added 'reg' attribute for I2C address in device tree documents
+Added 'compatible' attribute in child drivers
+Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+Added message for exception or errors.
+Added vendor prefix for Skyworks Solutions, Inc.
+Add SKY81452 to the Trivial Devices list
+
+Gyungoh Yoo (6):
+  mfd: Add support for Skyworks SKY81452 driver
+  backlight: Add support Skyworks SKY81452 backlight driver
+  devicetree: mfd: Add new SKY81452 mfd binding
+  devicetree: backlight: Add new SKY81452 backlight binding
+  devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+  devicetree: i2c: Add SKY81452 to the Trivial Devices list
+
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+ Documentation/devicetree/bindings/mfd/sky81452.txt |  36 +++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ .../video/backlight/sky81452-backlight.txt         |  29 ++
+ drivers/mfd/Kconfig                                |  12 +
+ drivers/mfd/Makefile                               |   1 +
+ drivers/mfd/sky81452.c                             | 108 +++++++
+ drivers/video/backlight/Kconfig                    |  10 +
+ drivers/video/backlight/Makefile                   |   1 +
+ drivers/video/backlight/sky81452-backlight.c       | 334 +++++++++++++++++++++
+ include/linux/mfd/sky81452.h                       |  31 ++
+ include/linux/platform_data/sky81452-backlight.h   |  46 +++
+ 12 files changed, 610 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+ create mode 100644 drivers/mfd/sky81452.c
+ create mode 100644 drivers/video/backlight/sky81452-backlight.c
+ create mode 100644 include/linux/mfd/sky81452.h
+ create mode 100644 include/linux/platform_data/sky81452-backlight.h
+
+-- 
+1.9.1
+
