@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbaLRKQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 05:16:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265AbaLRKOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 05:14:45 -0500
-Message-ID: <5492A8F0.9030107@redhat.com>
-Date: Thu, 18 Dec 2014 11:14:08 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751666AbaLRKUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 05:20:31 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:48819 "EHLO
+	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062AbaLRKUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 05:20:30 -0500
+From: Aleksey Makarov <aleksey.makarov@auriga.com>
+To: <linux-mips@linux-mips.org>
+CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>
+Subject: [PATCH v2 00/12] MIPS: OCTEON: Some partial support for Octeon III
+Date: Thu, 18 Dec 2014 13:17:52 +0300
+Message-ID: <1418897888-17669-1-git-send-email-aleksey.makarov@auriga.com>
+X-Mailer: git-send-email 2.1.3
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Borislav Petkov <bp@alien8.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefan Hajnoczi <stefanha@redhat.com>, Fam Zheng <famz@redhat.com>
-Subject: patch tracking tools (was Re: Maintainer abuse)
-References: <alpine.DEB.2.11.1412130016090.16494@nanos>	<20141212234336.GA28451@pd.tnic> <20141213135231.5684cf9d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20141213135231.5684cf9d@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [80.240.102.213]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes in v2:
 
+- Do not introduce cvmx-rst-defs.h. Define all the required
+  symbols in csrc-octeon.c
+- The patch "MIPS: Remove unneeded #ifdef __KERNEL__ from
+  asm/processor.h" will be sent separately as it is not
+  OCTEON specific
 
-On 13/12/2014 14:52, One Thousand Gnomes wrote:
-> Is it the year for a Google summer of code project or similar to turn
-> patchwork into a proper patch management tool (one that collects the
-> patches, provides a good maintainer interface, tells people automatically
-> that their patches are queued, deletes repeats, gives them status urls
-> they can give to managers or check, and also has the right bits
-> maintainer side to actually do stuff like send out "your patch set no
-> longer merges, please update" emails, and tell the maintainer if it
-> merges, the coding style important bits, etc and with buttons for "merge
-> me"
+Summary:        
 
-People from the QEMU project are working on something like this.
+These patches fix some issues in the Cavium Octeon code and
+introduce some partial support for Octeon III and little-endian.
 
-Right now the only public tool is "patches", which is a) a server that
-gathers patch series and Reviewed-bys, and detects when they are
-applied; b) a tool to query the list and also apply patches/pull
-requests; c) a notmuch plugin that lets you query the list from Emacs.
-The tool is pretty simple; the server produces a simple JSON file with
-the patches from the last 30 days, the client tools download it and
-operate on a local copy.
+Aleksey Makarov (1):
+  MIPS: OCTEON: Delete unused COP2 saving code
 
-These tools are at https://github.com/stefanha/patches.  A sample
-database is at http://wiki.qemu.org/patches/patches.json (you can play
-with it: "patches fetch http://wiki.qemu.org/patches/patches.json").
+Chandrakala Chavva (1):
+  MIPS: OCTEON: Use correct instruction to read 64-bit COP0 register
 
-If you want to see how a server is set up, see
-https://github.com/stefanha/qemu-patches.
+David Daney (10):
+  MIPS: OCTEON: Save/Restore wider multiply registers in OCTEON III CPUs
+  MIPS: OCTEON: Fix FP context save.
+  MIPS: OCTEON: Save and restore CP2 SHA3 state
+  MIPS: OCTEON: Implement the core-16057 workaround
+  MIPS: OCTEON: Don't do acknowledge operations for level triggered
+    irqs.
+  MIPS: OCTEON: Add ability to used an initrd from a named memory block.
+  MIPS: OCTEON: Add little-endian support to asm/octeon/octeon.h
+  MIPS: OCTEON: Implement DCache errata workaround for all CN6XXX
+  MIPS: OCTEON: Update octeon-model.h code for new SoCs.
+  MIPS: OCTEON: Handle OCTEON III in csrc-octeon.
 
-Also, we've added a "--message-id" to "git am" in order to help the
-"patches" server detect what was applied.  The client tool already did
-that when applying patches, but the next version of git will let
-submaintainers contribute to the tracking even if they prefer "git am"
-to "patches apply".
+ arch/mips/cavium-octeon/csrc-octeon.c              |  34 ++++
+ arch/mips/cavium-octeon/octeon-irq.c               |  45 ++++-
+ arch/mips/cavium-octeon/setup.c                    |  81 +++++++-
+ arch/mips/include/asm/bootinfo.h                   |   1 +
+ .../asm/mach-cavium-octeon/kernel-entry-init.h     |  22 +++
+ arch/mips/include/asm/mach-cavium-octeon/war.h     |   3 +
+ arch/mips/include/asm/octeon/octeon-model.h        |  65 +++++-
+ arch/mips/include/asm/octeon/octeon.h              | 148 +++++++++++---
+ arch/mips/include/asm/processor.h                  |   2 +
+ arch/mips/include/asm/ptrace.h                     |   4 +-
+ arch/mips/kernel/asm-offsets.c                     |   1 +
+ arch/mips/kernel/octeon_switch.S                   | 218 +++++++++++++--------
+ arch/mips/kernel/setup.c                           |  19 +-
+ arch/mips/mm/uasm.c                                |   2 +-
+ 14 files changed, 518 insertions(+), 127 deletions(-)
 
-The "patches" tool is operated mostly from the command line.  There is
-also a new tool in the works which scans the mailing list, applies what
-it founds, checks it with checkpatch.pl, and compiles them.  It uses
-Docker to quickly set up a compilation environment (and of course for
-buzzword compliancy).  It also has a web interface that lets you do
-simple searches.
+-- 
+2.1.3
 
-This is more experimental and does not yet have a public instance
-(source is at https://github.com/famz/patchew).
-
-One thing that makes automation a bit easier for QEMU is that it does
-not have a merge window; while we do have a central committer that takes
-pull requests, the phases are a bit more traditional (2 month
-development, 2 weeks preparation for freeze, 1 month feature freeze).
-For Linux it would be more important for the tool to know which patches
-are for which tree, possibly based on the destination mailing lists.
-
-Paolo
