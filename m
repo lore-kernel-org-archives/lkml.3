@@ -1,142 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbaLRDRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 22:17:04 -0500
-Received: from mga01.intel.com ([192.55.52.88]:26154 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751628AbaLRDRB convert rfc822-to-8bit (ORCPT
+	id S1751859AbaLRDYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 22:24:08 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:38326 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaLRDYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 22:17:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,598,1413270000"; 
-   d="scan'208";a="639422142"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Paolo Bonzini <pbonzini@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "x86@kernel.org" <x86@kernel.org>, Gleb Natapov <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        Alex Williamson <alex.williamson@redhat.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>, Eric Auger <eric.auger@linaro.org>,
-        "Wu, Feng" <feng.wu@intel.com>
-Subject: RE: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
- is blocked
-Thread-Topic: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
- is blocked
-Thread-Index: AQHQGhyWLl8wct5qTkqk5aJ8G13nUpyUpILQ
-Date: Thu, 18 Dec 2014 03:16:53 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F002307C7B@SHSMSX104.ccr.corp.intel.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-25-git-send-email-feng.wu@intel.com>
- <5491B8DD.5020000@redhat.com>
-In-Reply-To: <5491B8DD.5020000@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 17 Dec 2014 22:24:06 -0500
+From: Chunyan Zhang <zhang.chunyan@linaro.org>
+To: dwmw2@infradead.org, computersforpeace@gmail.com
+Cc: arnd@linaro.org, john.stultz@linaro.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhang.lyra@gmail.com
+Subject: [PATCH v3] mtd: test: Replace timeval with ktime_t in speedtest.c and torturetest.c
+Date: Thu, 18 Dec 2014 11:23:31 +0800
+Message-Id: <1418873011-4974-1-git-send-email-zhang.chunyan@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <mtdtestv3>
+References: <mtdtestv3>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch changes the 32-bit time type (timeval) to the 64-bit one
+(ktime_t), since 32-bit time types will break in the year 2038.
 
+I use ktime_t instead of timeval to define 'start' and 'finish'
+which are used to get the time for tow points.
 
-> -----Original Message-----
-> From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
-> Behalf Of Paolo Bonzini
-> Sent: Thursday, December 18, 2014 1:10 AM
-> To: Wu, Feng; Thomas Gleixner; Ingo Molnar; H. Peter Anvin; x86@kernel.org;
-> Gleb Natapov; Paolo Bonzini; dwmw2@infradead.org; joro@8bytes.org; Alex
-> Williamson
-> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org; KVM list;
-> Eric Auger
-> Subject: Re: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
-> is blocked
-> 
-> 
-> 
-> On 12/12/2014 16:14, Feng Wu wrote:
-> > This patch updates the Posted-Interrupts Descriptor when vCPU
-> > is blocked.
-> >
-> > pre-block:
-> > - Add the vCPU to the blocked per-CPU list
-> > - Clear 'SN'
-> 
-> Should SN be already clear (and NV set to POSTED_INTR_VECTOR)? 
+This patch also changes do_gettimeofday() to ktime_get() accordingly,
+since ktime_get returns a ktime_t, but do_gettimeofday returns a
+struct timeval, and the other reason is that ktime_get() uses
+the monotonic clock.
 
-I think the SN bit should be clear here, Adding it here is just to make sure
-SN is clear when vCPU is blocked, so it can receive wakeup notification event later.
+This patch is based on another patch which privides a millisecond
+time difference function 'ktime_ms_delta' in ktime.h
 
-> Can it
-> happen that you go from sched-out to blocked without doing a sched-in first?
-> 
+http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
 
-I cannot imagine this scenario, can you please be more specific? Thanks a lot!
+Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+---
+Changes since v2:
+ - Use the new function ktime_ms_delta which is added in another
+   patch listed up.
 
-> In fact, if this is possible, what happens if vcpu->preempted &&
-> vcpu->blocked?
+Changes since v1:
+ - Add including <linux/ktime.h> in torturetest.c
+---
+ drivers/mtd/tests/speedtest.c   |   10 +++++-----
+ drivers/mtd/tests/torturetest.c |   10 +++++-----
+ 2 files changed, 10 insertions(+), 10 deletions(-)
 
-In fact, vcpu->preempted && vcpu->blocked happens sometimes, but I think there is
-no issues. Please refer to the following case:
+diff --git a/drivers/mtd/tests/speedtest.c b/drivers/mtd/tests/speedtest.c
+index 5ee9f70..87a6e25 100644
+--- a/drivers/mtd/tests/speedtest.c
++++ b/drivers/mtd/tests/speedtest.c
+@@ -22,6 +22,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/init.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/err.h>
+@@ -49,7 +50,7 @@ static int pgsize;
+ static int ebcnt;
+ static int pgcnt;
+ static int goodebcnt;
+-static struct timeval start, finish;
++static ktime_t start, finish;
+ 
+ static int multiblock_erase(int ebnum, int blocks)
+ {
+@@ -168,12 +169,12 @@ static int read_eraseblock_by_2pages(int ebnum)
+ 
+ static inline void start_timing(void)
+ {
+-	do_gettimeofday(&start);
++	start = ktime_get();
+ }
+ 
+ static inline void stop_timing(void)
+ {
+-	do_gettimeofday(&finish);
++	finish = ktime_get();
+ }
+ 
+ static long calc_speed(void)
+@@ -181,8 +182,7 @@ static long calc_speed(void)
+ 	uint64_t k;
+ 	long ms;
+ 
+-	ms = (finish.tv_sec - start.tv_sec) * 1000 +
+-	     (finish.tv_usec - start.tv_usec) / 1000;
++	ms = ktime_ms_delta(finish, start);
+ 	if (ms == 0)
+ 		return 0;
+ 	k = goodebcnt * (mtd->erasesize / 1024) * 1000;
+diff --git a/drivers/mtd/tests/torturetest.c b/drivers/mtd/tests/torturetest.c
+index eeab969..7e77ed4 100644
+--- a/drivers/mtd/tests/torturetest.c
++++ b/drivers/mtd/tests/torturetest.c
+@@ -26,6 +26,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/init.h>
++#include <linux/ktime.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/err.h>
+@@ -79,18 +80,18 @@ static unsigned char *check_buf;
+ static unsigned int erase_cycles;
+ 
+ static int pgsize;
+-static struct timeval start, finish;
++static ktime_t start, finish;
+ 
+ static void report_corrupt(unsigned char *read, unsigned char *written);
+ 
+ static inline void start_timing(void)
+ {
+-	do_gettimeofday(&start);
++	start = ktime_get();
+ }
+ 
+ static inline void stop_timing(void)
+ {
+-	do_gettimeofday(&finish);
++	finish = ktime_get();
+ }
+ 
+ /*
+@@ -322,8 +323,7 @@ static int __init tort_init(void)
+ 			long ms;
+ 
+ 			stop_timing();
+-			ms = (finish.tv_sec - start.tv_sec) * 1000 +
+-			     (finish.tv_usec - start.tv_usec) / 1000;
++			ms = ktime_ms_delta(finish, start);
+ 			pr_info("%08u erase cycles done, took %lu "
+ 			       "milliseconds (%lu seconds)\n",
+ 			       erase_cycles, ms, ms / 1000);
+-- 
+1.7.9.5
 
-kvm_vcpu_block() 
-	-> vcpu->blocked = true;
-	-> prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
-
-	before schedule() is called, this vcpu is woken up by another guy, so
-	the state of the vcpu associated thread is changed to TASK_RUNNING,
-	then preemption happens after interrupts or the following schedule() is
-	hit, this will call kvm_sched_out(), in which current->state == TASK_RUNNING
-	and vcpu->preempted is set to true. So now vcpu->preempted and vcpu->blocked
-	are both true. In vmx_vcpu_put(), we will check vcpu->preempted first, so
-	the vCPU will not be blocked, and the vcpu->blocked will be set the false in
-	vmx_vcpu_load().
-
-	But maybe I need do a little change to the vmx_vcpu_load() like below:
-
-                /*
-                 * Delete the vCPU from the related wakeup queue
-                 * if we are resuming from blocked state
-                 */
-                if (vcpu->blocked) {
-                        vcpu->blocked = false;
-+						/* if wakeup_cpu == -1, the vcpu is currently not blocked on any
-+						  pCPU, don't need dequeue here */
-+						if (vcpu->wakeup_cpu != -1) {
-               		         spin_lock_irqsave(&per_cpu(blocked_vcpu_on_cpu_lock,
-                                vcpu->wakeup_cpu), flags);
-                    	     list_del(&vcpu->blocked_vcpu_list);
-                        	 spin_unlock_irqrestore(&per_cpu(blocked_vcpu_on_cpu_lock,
-                                vcpu->wakeup_cpu), flags);
-                        	 vcpu->wakeup_cpu = -1;
-+						}
-                }
-
-Any ideas about this? Thanks a lot!
-
-Thanks,
-Feng
-
-
-	-> schedule();
-
-
-> 
-> > - Set 'NV' to POSTED_INTR_WAKEUP_VECTOR
-> >
-> > post-block:
-> > - Remove the vCPU from the per-CPU list
-> 
-> Paolo
-> 
-> > Signed-off-by: Feng Wu <feng.wu@intel.com>
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
