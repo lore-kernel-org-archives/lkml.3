@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaLRNkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 08:40:15 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:52576 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbaLRNkL (ORCPT
+	id S1752512AbaLRNnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 08:43:04 -0500
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:63167 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752044AbaLRNnD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 08:40:11 -0500
-Message-ID: <5492D938.1020907@gmail.com>
-Date: Thu, 18 Dec 2014 16:40:08 +0300
-From: Dmitry Tunin <hanipouspilot@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 08:43:03 -0500
 MIME-Version: 1.0
-To: Josh Boyer <jwboyer@fedoraproject.org>
-CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH v3 1/2] acpi: Add "acpi_osi=" for ASUS X200MA to enable,
- brightness keys
-References: <5492C5A3.8090700@gmail.com> <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-In-Reply-To: <CA+5PVA43jLUp4K9=56nwgQJEyLB9EkEynb2PqfEhBWD8q-m-DQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <2864831.LEPnyFh3Il@phil>
+References: <1418830837-7422-1-git-send-email-stefan.hengelein@fau.de>
+	<1921250.jGHJ6gZqGf@wuerfel>
+	<2864831.LEPnyFh3Il@phil>
+Date: Thu, 18 Dec 2014 14:43:01 +0100
+X-Google-Sender-Auth: SSiSXIjcPt1U-tb3Zz_Na-kptjw
+Message-ID: <CABv5NL_SLyY9-yookdTVdNXzCmUEqJ_QB6ofzw_q0H7Vcwbzfg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: SAMSUNG: remove dead #elif CONFIG_S3C24XX_DMAC
+From: Stefan Hengelein <stefan.hengelein@fau.de>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        kgene@kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did not notice the inline question.
-The rest of the keys work as they did before.
-Now other regressions have been noticed.
-Many people use acpi_osi= as a boot paremeter, since there
-is no other way to get Fn+F5 and F6 working.
+So you actually tested the code I removed in the patch? can you
+provide a configuration that compiles that piece of code?
 
-18.12.2014 16:25, Josh Boyer пишет:
-> On Thu, Dec 18, 2014 at 7:16 AM, Dmitry Tunin <hanipouspilot@gmail.com> wrote:
->> Add "acpi_osi=" quirk for ASUS X200MA
->> More information can be found in UX302LA bugreport
->> https://bugzilla.kernel.org/show_bug.cgi?id=70241
+2014-12-17 17:16 GMT+01:00 Heiko Stübner <heiko@sntech.de>:
+> Am Mittwoch, 17. Dezember 2014, 16:52:40 schrieb Arnd Bergmann:
+>> On Wednesday 17 December 2014 16:40:37 Stefan Hengelein wrote:
+>> > The corresponding CPP-block can never be selected since there are
+>> > conflicting Kconfig constraints:
+>> > - CONFIG_S3C24XX_DMAC has a dependency on ARCH_S3C24XX
+>> > - The surrounding CPP-block needs CONFIG_S3C64XX_DEV_SPI0 to be defined.
+>> >
+>> >   - CONFIG_S3C64XX_DEV_SPI0 is only selected by MACH_WLF_CRAGG_6410
+>> >   - MACH_WLF_CRAGG_6410 however has a dependency on ARCH_S3C64XX
+>> >
+>> >     (through a surrounding if-statement in Kconfig)
+>> >
+>> > - ARCH_S3C64XX and ARCH_S3C24XX are mutually exclusive since they are
+>> >
+>> >   declared in the same choice and cannot be enabled at the same time.
+>> >
+>> > Hence, the innner block
+>> >
+>> >     "#elif defined(CONFIG_S3C24XX_DMAC)"
+>> >
+>> > cannot be enabled at the same time with the surrounding block
+>> >
+>> >     "#ifdef CONFIG_S3C64XX_DEV_SPI0"
+>> >
+>> > and therefore is dead.
+>> >
+>> > This (logical) defect has been found with the undertaker tool
+>> > (https://undertaker.cs.fau.de)
 >>
->> X200MA is affected by th e same bug and the solution has been tested
+>> Nice catch!
 >>
->> I reported it to launchpad too
->> https://bugs.launchpad.net/ubuntu/bug/1400068
+>> > Signed-off-by: Stefan Hengelein <stefan.hengelein@fau.de>
+>> > ---
+>> >
+>> >  arch/arm/plat-samsung/devs.c | 2 --
+>> >  1 file changed, 2 deletions(-)
+>> >
+>> > diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
+>> > index 83c7d15..b38b601 100644
+>> > --- a/arch/arm/plat-samsung/devs.c
+>> > +++ b/arch/arm/plat-samsung/devs.c
+>> > @@ -1134,8 +1134,6 @@ void __init s3c64xx_spi0_set_platdata(int
+>> > (*cfg_gpio)(void), int src_clk_nr,>
+>> >     pd.filter = pl330_filter;
+>> >
+>> >  #elif defined(CONFIG_S3C64XX_PL080)
+>> >
+>> >     pd.filter = pl08x_filter_id;
+>> >
+>> > -#elif defined(CONFIG_S3C24XX_DMAC)
+>> > -   pd.filter = s3c24xx_dma_filter;
+>> >
+>> >  #endif
+>> >
+>> >     s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
 >>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
->>
+>> This was introduced in 7f99ef2284b46f ("ARM: SAMSUNG: set
+>> s3c24xx_dma_filter for s3c64xx-spi0 device"), but never used on s3c24xx as
+>> far as I can tell. Heiko, can you comment on the patch? Did this
+>> simply get obsoleted by the DT conversion of s3c2416 and s3c2443?
 >
-> The UX301LA models have the same setup, with 16 devices instead of 8.
-> I discussed this with Matthew Garrett a bit and a more ideal approach
-> is to actually enumerate all 16 devices between the firmware and i915
-> driver.  The problem we have is that the intel opregion spec that
-> hasn't been updated since 2008 doesn't cover the additional 8 devices.
-> Anyway, that is being tracked here:
+> We just have no in-tree users currently.
 >
-> https://bugs.freedesktop.org/show_bug.cgi?id=81762
+> The S3C2416 and S3C2450 use the same type of spi controllers as the s3c64xx.
+> When writing the s3c24xx dma driver I also used this to test the driver. The
+> change was necessary to make the driver talk to my s3c2416 device, so it made
+> sense at the time.
 >
->> ---
->>   drivers/acpi/blacklist.c | 20 ++++++++++++++++++++
->>   1 file changed, 20 insertions(+)
->>
->> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
->> index 7556e7c..f78ed08 100644
->> --- a/drivers/acpi/blacklist.c
->> +++ b/drivers/acpi/blacklist.c
->> @@ -162,6 +162,17 @@ static int __init dmi_disable_osi_win8(const struct
->> dmi_system_id *d)
->>          acpi_osi_setup("!Windows 2012");
->>          return 0;
->>   }
->> +/*
->> + * Some ASUS models firmware declares 16 devices instead of 8
->> + * 'acpi_osi=' kernel parameter fixes it
->> + * Without this parameters brightness keys Fn+F5 and F6 do not work
->> + */
->> +static int __init dmi_disable_osi_all(const struct dmi_system_id *d)
->> +{
->> +       printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
->> +       acpi_osi_setup("");
->> +       return 0;
->> +}
+> As the s3c24xx-dma driver currently is still lacking dt support [burried
+> somewhere on my todo list], board files are also currently the only way to do
+> fast spi on those at all.
 >
-> What does this do to the rest of the function keys?  Does everything
-> else still work as expected, including suspend and resume?
+> So removing this is dependent on how hard we want to make it for downstream
+> users [there seem to be a small number of those]. If this were part of
+> removing all non-dt cruft from the driver after s3c64xx migrated to be dt-only
+> I wouldn't object, but as it only affects the 2 lines of s3c24xx support,
+> personally I'd like to keep it around :-) .
 >
->>    static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->>          {
->> @@ -371,6 +382,15 @@ static struct dmi_system_id acpi_osi_dmi_table[]
->> __initdata = {
->>                       DMI_MATCH(DMI_PRODUCT_NAME, "1015PX"),
->>                  },
->>          },
->> +       /* Without this brightness keys do not work */
->> +       {
->> +       .callback = dmi_disable_osi_all,
->> +       .ident = "ASUSTeK COMPUTER INC. X200MA",
->> +       .matches = {
->> +                    DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
->> +                    DMI_MATCH(DMI_PRODUCT_NAME, "X200MA"),
->> +               },
->> +       },
->>          {}
->>   };
->>
->> --
->> 1.9.1
->> --
->> To unsubscribe from this list: send the line "unsubscribe stable" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> Heiko
