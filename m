@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751414AbaLRQmm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:42:42 -0500
-Received: from static.68.134.40.188.clients.your-server.de ([188.40.134.68]:51306
-	"EHLO mail02.iobjects.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbaLRQml (ORCPT
+	id S1751545AbaLRQnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:43:05 -0500
+Received: from smtp-out-208.synserver.de ([212.40.185.208]:1108 "EHLO
+	smtp-out-208.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbaLRQnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:42:41 -0500
-Message-ID: <549303FC.9090604@googlemail.com>
-Date: Thu, 18 Dec 2014 17:42:36 +0100
-From: =?UTF-8?B?SG9sZ2VyIEhvZmZzdMOkdHRl?= 
-	<holger.hoffstaette@googlemail.com>
-Organization: Applied Asynchrony, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 11:43:03 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 10448
+Message-ID: <5493040F.5020206@metafoo.de>
+Date: Thu, 18 Dec 2014 17:42:55 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.18.1: broken directory with one file too many
-References: <pan.2014.12.16.22.19.18@googlemail.com> <20141217212159.GA11517@fieldses.org> <5492C710.20104@googlemail.com> <20141218144856.GA18179@fieldses.org> <alpine.OSX.2.19.9992.1412180955000.62182@planck.local> <20141218151914.GB18179@fieldses.org> <pan.2014.12.18.15.42.53@googlemail.com> <20141218163254.GF18179@fieldses.org>
-In-Reply-To: <20141218163254.GF18179@fieldses.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Karol Wrona <k.wrona@samsung.com>, Jonathan Cameron <jic23@kernel.org>,
+        linux-iio@vger.kernel.org, Hartmut Knaack <knaack.h@gmx.de>,
+        linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Karol Wrona <wrona.vy@gmail.com>
+Subject: Re: [RFC PATCH 1/2] iio: kfifo: Remove unused argument in iio_kfifo_allocate
+References: <1418153385-18212-1-git-send-email-k.wrona@samsung.com> <1418153385-18212-2-git-send-email-k.wrona@samsung.com>
+In-Reply-To: <1418153385-18212-2-git-send-email-k.wrona@samsung.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/14 17:32, J. Bruce Fields wrote:
-> So this is two separate tests, both failed, the only difference is that
-> the tcpdump was run on the client in one case and the server in the
-> other?
+On 12/09/2014 08:29 PM, Karol Wrona wrote:
+> indio_dev was unused in function body plus some small style fix - add new
+> lines after "if(sth) return sth" and before the last return statement.
 
-Exactly: client first, then I realized you'd want to look at the server-side too.
-That being said..
+Looks good, except for the missing updates for the users.
 
-> Right, I suspect there's a bug in the server's encoding of the reply to
-> the READDIR rpc.  Odd that the encoding would look correct from the
-> point of view of tcpdump on the server but not from the point of view of
-> tcpdump on the client.
-
-..in order to rule out a mistake on my part with the two separate runs (which prevents correlated analysis) I was just about to boot the server back into 3.18.1 and re-run both client- and server-side traces simultaneously. However I have to head out for a bit first; will post that later today.
-
-Thanks so far!
-
-Holger
-
-PS: sorry for the mangled replies, that seems to be Gmane. Using email only now.
-
+Doing some digging in the git history raveled that the user of that 
+parameter in that function was removed in commit f79a909890 
+("staging:iio:buffer struct iio_buffer doesn't need an indio_dev pointer.")
