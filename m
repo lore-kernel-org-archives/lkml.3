@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820AbaLRQvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:51:49 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41551 "EHLO
+	id S1751891AbaLRQwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:52:24 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41585 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751534AbaLRQvr (ORCPT
+	by vger.kernel.org with ESMTP id S1751534AbaLRQvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:51:47 -0500
+	Thu, 18 Dec 2014 11:51:50 -0500
 From: Julian Brost <linux-kernel@0x4a42.net>
 To: Julian Brost <linux-kernel@0x4a42.net>,
         Fabian Hofmann <fabian.hofmann@fau.de>
@@ -15,9 +15,9 @@ Cc: linux-kernel@i4.cs.fau.de, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/5] perf/x86/intel/uncore: checkpatch: Replace deprecated macro.
-Date: Thu, 18 Dec 2014 17:51:36 +0100
-Message-Id: <1418921500-5630-2-git-send-email-linux-kernel@0x4a42.net>
+Subject: [PATCH v2 4/5] perf/x86/intel/uncore: checkpatch: Remove unnecessary line continuation
+Date: Thu, 18 Dec 2014 17:51:39 +0100
+Message-Id: <1418921500-5630-5-git-send-email-linux-kernel@0x4a42.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1418921500-5630-1-git-send-email-linux-kernel@0x4a42.net>
 References: <1418751050-11725-1-git-send-email-linux-kernel@0x4a42.net>
@@ -26,8 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DEFINE_PCI_DEVICE_TABLE macro is deprecated and was replaced with an
-appropriate struct.
+This patch removes an accidentally placed line continuation backslash.
 
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
@@ -44,18 +43,18 @@ Signed-off-by: Fabian Hofmann <fabian.hofmann@fau.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-index f9ed429..d817c43 100644
+index 7f457da..da905c2 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore_snbep.c
-@@ -2196,7 +2196,7 @@ static struct intel_uncore_type *hswep_pci_uncores[] = {
- 	NULL,
+@@ -510,7 +510,7 @@ static struct intel_uncore_ops snbep_uncore_msr_ops = {
+ 
+ static struct intel_uncore_ops snbep_uncore_pci_ops = {
+ 	SNBEP_UNCORE_PCI_OPS_COMMON_INIT(),
+-	.enable_event	= snbep_uncore_pci_enable_event,	\
++	.enable_event	= snbep_uncore_pci_enable_event,
  };
  
--static DEFINE_PCI_DEVICE_TABLE(hswep_uncore_pci_ids) = {
-+static const struct pci_device_id hswep_uncore_pci_ids[] = {
- 	{ /* Home Agent 0 */
- 		PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2f30),
- 		.driver_data = UNCORE_PCI_DEV_DATA(HSWEP_PCI_UNCORE_HA, 0),
+ static struct event_constraint snbep_uncore_cbox_constraints[] = {
 -- 
 1.9.1
 
