@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaLRHLv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 02:11:51 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:52874 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373AbaLRHLs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 02:11:48 -0500
-From: Brian Norris <computersforpeace@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH] stable_kernel_rules: reorganize and update submission options
-Date: Wed, 17 Dec 2014 23:11:16 -0800
-Message-Id: <1418886676-27036-1-git-send-email-computersforpeace@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1752067AbaLRHWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 02:22:43 -0500
+Received: from mail-by2on0106.outbound.protection.outlook.com ([207.46.100.106]:31712
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751323AbaLRHWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 02:22:41 -0500
+From: Liu Ying <Ying.Liu@freescale.com>
+To: <dri-devel@lists.freedesktop.org>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>, <kernel@pengutronix.de>,
+        <p.zabel@pengutronix.de>, <thierry.reding@gmail.com>,
+        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH RFC v2 02/14] of: Add vendor prefix for Himax Technologies Inc.
+Date: Thu, 18 Dec 2014 15:11:24 +0800
+Message-ID: <1418886696-11636-3-git-send-email-Ying.Liu@freescale.com>
+X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
+References: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Ying.Liu@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(199003)(189002)(86362001)(50986999)(92566001)(50466002)(31966008)(64706001)(76176999)(97736003)(50226001)(4396001)(89996001)(120916001)(110136001)(99396003)(20776003)(47776003)(106466001)(85426001)(46102003)(36756003)(21056001)(105606002)(104016003)(2351001)(107046002)(229853001)(87936001)(84676001)(48376002)(77096005)(68736005)(2950100001)(19580395003)(19580405001)(62966003)(6806004)(77156002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0640;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0640;
+X-Forefront-PRVS: 042957ACD7
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0640;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 18 Dec 2014 07:07:46.2119
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0640
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current organization of Documentation/stable_kernel_rules.txt
-doesn't clearly differentiate the mutually exclusive options for
-submission to the -stable review process. As I understand it, patches
-are not actually required to be mailed directly to
-stable@vger.kernel.org, but the instructions do not make this clear.
-
-Also, there are some established processes that are not listed --
-specifically, what I call Option 2 below.
-
-This patch updates and reorganizes a bit, to make things clearer.
-
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
 ---
-This patch brough to you as a follow-up of:
+v1->v2:
+ * None.
 
-  https://lkml.org/lkml/2014/9/5/757
+ Documentation/devicetree/bindings/vendor-prefixes.txt | 1 +
+ 1 file changed, 1 insertion(+)
 
-I don't profess to know your mind, Greg, but this is my attempt at codifying
-what I've observed.
-
- Documentation/stable_kernel_rules.txt | 42 ++++++++++++++++++++++++++---------
- 1 file changed, 32 insertions(+), 10 deletions(-)
-
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index aee73e78c7d4..a34adcb462b0 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -32,18 +32,40 @@ Procedure for submitting patches to the -stable tree:
-  - If the patch covers files in net/ or drivers/net please follow netdev stable
-    submission guidelines as described in
-    Documentation/networking/netdev-FAQ.txt
-- - Send the patch, after verifying that it follows the above rules, to
--   stable@vger.kernel.org.  You must note the upstream commit ID in the
--   changelog of your submission, as well as the kernel version you wish
--   it to be applied to.
-- - To have the patch automatically included in the stable tree, add the tag
-+ - Security patches should not be handled (solely) by the -stable review
-+   process but should follow the procedures in Documentation/SecurityBugs.
-+
-+For all other submissions, choose one of the following procedures:
-+
-+   --- Option 1 ---
-+
-+   To have the patch automatically included in the stable tree, add the tag
-      Cc: stable@vger.kernel.org
-    in the sign-off area. Once the patch is merged it will be applied to
-    the stable tree without anything else needing to be done by the author
-    or subsystem maintainer.
-- - If the patch requires other patches as prerequisites which can be
--   cherry-picked, then this can be specified in the following format in
--   the sign-off area:
-+
-+   --- Option 2 ---
-+
-+   Send an email to stable@vger.kernel.org that just contains the commit ID
-+   of the patch -- after it has been merged to Linus' tree, of course.
-+
-+   --- Option 3 ---
-+
-+   Send the patch, after verifying that it follows the above rules, to
-+   stable@vger.kernel.org.  You must note the upstream commit ID in the
-+   changelog of your submission, as well as the kernel version you wish
-+   it to be applied to.
-+
-+Option 1 is probably the easiest and most common. Options 2 and 3 are more
-+useful if the patch isn't deemed worthy at the time it is applied to a public
-+git tree (for instance, because it deserves more regression testing first).
-+Option 3 is especially useful if the patch needs some special handling to apply
-+to an older kernel (e.g., if API's have changed in the meantime).
-+
-+Additionally, some patches submitted via Option 1 may have additional patch
-+prerequisites which can be cherry-picked. This can be specified in the following
-+format in the sign-off area:
- 
-      Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
-      Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
-@@ -57,13 +79,13 @@ Procedure for submitting patches to the -stable tree:
-      git cherry-pick fd21073
-      git cherry-pick <this commit>
- 
-+Following the submission:
-+
-  - The sender will receive an ACK when the patch has been accepted into the
-    queue, or a NAK if the patch is rejected.  This response might take a few
-    days, according to the developer's schedules.
-  - If accepted, the patch will be added to the -stable queue, for review by
-    other developers and by the relevant subsystem maintainer.
-- - Security patches should not be sent to this alias, but instead to the
--   documented security@kernel.org address.
- 
- 
- Review cycle:
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 78efebb..3cee528 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -69,6 +69,7 @@ hannstar	HannStar Display Corporation
+ haoyu	Haoyu Microelectronic Co. Ltd.
+ hisilicon	Hisilicon Limited.
+ hit	Hitachi Ltd.
++himax	Himax Technologies, Inc.
+ honeywell	Honeywell
+ hp	Hewlett Packard
+ i2se	I2SE GmbH
 -- 
-1.9.1
+2.1.0
 
