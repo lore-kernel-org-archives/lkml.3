@@ -1,154 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085AbaLRMIF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 07:08:05 -0500
-Received: from mail-by2on0144.outbound.protection.outlook.com ([207.46.100.144]:36192
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751849AbaLRMID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 07:08:03 -0500
-X-WSS-ID: 0NGS1P7-08-5YP-02
-X-M-MSG: 
-Message-ID: <5492C390.6040305@amd.com>
-Date: Thu, 18 Dec 2014 14:07:44 +0200
-From: Oded Gabbay <oded.gabbay@amd.com>
-Organization: AMD
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752157AbaLRMPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 07:15:36 -0500
+Received: from mail.eperm.de ([89.247.134.16]:55082 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849AbaLRMPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 07:15:35 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-crypto <linux-crypto@vger.kernel.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: algif_hash: splice of data > 2**16
+Date: Thu, 18 Dec 2014 13:15:28 +0100
+Message-ID: <8707521.TbV00HIEUx@tauon>
+User-Agent: KMail/4.14.3 (Linux/3.17.6-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
-Subject: Re: [LKP] [drm/radeon] BUG: unable to handle kernel paging request
- at 03200000
-References: <1418890668.26403.6.camel@intel.com> <54928E6B.1020501@amd.com>
- <1418891181.26403.9.camel@intel.com> <5492BDAA.90408@amd.com>
-In-Reply-To: <5492BDAA.90408@amd.com>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.20.0.84]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Oded.Gabbay@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(51704005)(69234005)(24454002)(164054003)(479174004)(189002)(377454003)(377424004)(199003)(21056001)(106466001)(62966003)(31966008)(50466002)(20776003)(4396001)(15975445007)(68736005)(23676002)(99396003)(77156002)(107046002)(36756003)(110136001)(105586002)(97736003)(80316001)(65816999)(86362001)(92566001)(93886004)(87266999)(33656002)(59896002)(19580395003)(77096005)(76176999)(101416001)(65806001)(64706001)(83506001)(575784001)(46102003)(47776003)(120916001)(64126003)(87936001)(19580405001)(50986999)(65956001)(84676001)(2950100001)(54356999);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR02MB203;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR02MB203;
-X-Forefront-PRVS: 042957ACD7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR02MB203;
-X-OriginatorOrg: amd4.onmicrosoft.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Herbert,
 
+While testing the vmsplice/splice interface of algif_hash I was made 
+aware of the problem that data blobs larger than 16 pages do not seem to 
+be hashed properly.
 
-On 12/18/2014 01:42 PM, Oded Gabbay wrote:
->
->
-> On 12/18/2014 10:26 AM, Huang Ying wrote:
->> On Thu, 2014-12-18 at 10:20 +0200, Oded Gabbay wrote:
->>> On 12/18/2014 10:17 AM, Huang Ying wrote:
->>>> FYI, we noticed the below changes on
->>>>
->>>> commit e28740ece34d314002b1ddfa14e8fb7c7b909489 ("drm/radeon: Add radeon
->>>> <--> amdkfd interface")
->>>>
->>>>
->>>> +------------------------------------------+------------+------------+
->>>> |                                          | 1c0a46255f | e28740ece3 |
->>>> +------------------------------------------+------------+------------+
->>>> | boot_successes                           | 0          | 0          |
->>>> | boot_failures                            | 10         | 13         |
->>>> | BUG:kernel_boot_hang                     | 9          | 9          |
->>>> | INFO:suspicious_RCU_usage                | 1          | 3          |
->>>> | backtrace:do_fork                        | 1          | 3          |
->>>> | BUG:unable_to_handle_kernel              | 0          | 3          |
->>>> | Oops                                     | 0          | 3          |
->>>> | Kernel_panic-not_syncing:Fatal_exception | 0          | 3          |
->>>> | backtrace:radeon_init                    | 0          | 3          |
->>>> | backtrace:kernel_init_freeable           | 0          | 3          |
->>>> | BUG:kernel_boot_crashed                  | 0          | 1          |
->>>> +------------------------------------------+------------+------------+
->>>>
->>>>
->>>> [    5.407193] Linux agpgart interface v0.103
->>>> [    5.428469] [drm] Initialized drm 1.1.0 20060810
->>>> [    5.438456] [drm] radeon kernel modesetting enabled.
->>>> [    5.439741] BUG: unable to handle kernel paging request at 03200000
->>>> [    5.440063] IP: [<03200000>] 0x3200000
->>>> [    5.440063] *pde = 00000000
->>>> [    5.440063] Oops: 0000 [#1] SMP
->>>> [    5.440063] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.18.0-g603ba7e #14
->>>> [    5.440063] task: 42e08000 ti: 42e02000 task.ti: 42e02000
->>>> [    5.440063] EIP: 0060:[<03200000>] EFLAGS: 00010246 CPU: 0
->>>> [    5.440063] EIP is at 0x3200000
->>>> [    5.440063] EAX: 00000001 EBX: 00000000 ECX: 4738b460 EDX: 45735a64
->>>> [    5.440063] ESI: 4662d0dd EDI: 401fafa0 EBP: 42e03f20 ESP: 42e03f18
->>>> [    5.440063]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
->>>> [    5.440063] CR0: 8005003b CR2: 03200000 CR3: 067f0000 CR4: 00000690
->>>> [    5.440063] Stack:
->>>> [    5.440063]  44bf19b1 00000000 42e03f28 4662d20b 42e03f8c 465b6e5d
->>>> 00000000 00000000
->>>> [    5.440063]  00000000 00000000 00000000 00000000 000000ea 00000000
->>>> 00000000 00000101
->>>> [    5.440063]  45f2dfba 00000010 00000012 00000200 47fdcf54 47fdcf54
->>>> 00000006 00000291
->>>> [    5.440063] Call Trace:
->>>> [    5.440063]  [<44bf19b1>] ? radeon_kfd_init+0x67/0xab
->>>> [    5.440063]  [<4662d20b>] radeon_init+0x12e/0x15c
->>>> [    5.440063]  [<465b6e5d>] do_one_initcall+0x25f/0x41e
->>>> [    5.440063]  [<465b7291>] kernel_init_freeable+0x275/0x423
->>>> [    5.440063]  [<455b4e52>] kernel_init+0x1c/0x293
->>>> [    5.440063]  [<455df181>] ret_from_kernel_thread+0x21/0x30
->>>> [    5.440063]  [<455b4e36>] ? rest_init+0x33e/0x33e
->>>> [    5.440063] Code:  Bad EIP value.
->>>> [    5.440063] EIP: [<03200000>] 0x3200000 SS:ESP 0068:42e03f18
->>>> [    5.440063] CR2: 0000000003200000
->>>> [    5.440063] ---[ end trace 1959b295b01c0c14 ]---
->>>> [    5.440063] Kernel panic - not syncing: Fatal exception
->>>>
->>>>
->>>> Thanks,
->>>> Huang, Ying
->>>>
->>>>
->>>>
->>>>
->>>> _______________________________________________
->>>> LKP mailing list
->>>> LKP@linux.intel.com
->>>>
->>>
->>> Is this a 32-bit kernel ?
->>> Is amdkfd compiled ?
->>
->> The kconfig file is attached in the original email.  From it, it is
->> 32-bit kernel.  I don't find AMDKFD in config file.  Could you help me
->> to check it?
->>
->> Best Regards,
->> Huang, Ying
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
-> Are you using some specific distribution or h/w ?
-> I'm compiling that commit with the Kconfig you sent me, installing it on a
-> Debian 7.7 32-bit installation inside VirtualBox, and it doesn't even boot.
->
-> Must I use a native installation ?
->
->      Oded
-I tried also running it more or less like you do, in qemu, but I don't get past 
-the line:
-Booting the kernel.
+For testing, a file is mmap()ed and handed to vmsplice / splice. If the 
+file is smaller than 2**16, the interface returns the proper hash. 
+However, when the file is larger, only the first 2**16 bytes seem to be 
+used.
 
-I'm not used to working with 32-bit kernels, as amdkfd doesn't support that at 
-all. Could you give me some help to make the kernel run at all ?
+When adding printk's to hash_sendpage, I see that this function is 
+invoked exactly 16 times where the first 15 invocations have the 
+MSG_MORE flag set and the last invocation does not have MSG_MORE.
 
-	Oded
+To invoke the vmsplice/splice interface, I use my current implementation 
+of libkcapi available at [1]. That library uses the following calls:
+
+vmsplice(handle->pipes[1], iov, iovlen, SPLICE_F_GIFT);
+splice(handle->pipes[0], NULL, handle->opfd, NULL, inlen, 0);
+read(handle->opfd, out, outlen);
+
+The return code of splice() is always 65536 irrespectively of the 
+following variations:
+
+- have one iovec pointing to the entire buffer of the mmap()ed file
+
+- have multiple iovecs with all pointing to at most 2**16 bytes
+
+- invoke splice/read multiple times with at most 2**16 bytes
+
+My guess of the problem is that the maximum buffer size for the pipe is 
+16 pages. These 16 pages are filled with the repeated invocation of 
+hash_sendpage.
+
+Is there a specific way of how the splice interface is to be called so 
+that the pages are released? Or is there a need to change hash_sendpage 
+such that after the af_alg_wait_for_completion call, some form of 
+"releasing/putting" of the used page needs to be added?
+
+Note, hashing the large mmap()ed file with one iovec using the sendmsg() 
+interface works flawlessly.
+
+[1] http://www.chronox.de/libkcapi.html
+
+Thanks
+Stephan
+
