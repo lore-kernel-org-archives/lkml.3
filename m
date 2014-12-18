@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419AbaLRP7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 10:59:12 -0500
-Received: from mout.kundenserver.de ([212.227.126.130]:53199 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbaLRP7L (ORCPT
+	id S1751528AbaLRP75 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 10:59:57 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:56518 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133AbaLRP74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 10:59:11 -0500
-Message-ID: <5492F9A4.3070805@i2se.com>
-Date: Thu, 18 Dec 2014 16:58:28 +0100
-From: Stefan Wahren <stefan.wahren@i2se.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 18 Dec 2014 10:59:56 -0500
+Message-ID: <5492F9F9.7090207@gmail.com>
+Date: Thu, 18 Dec 2014 08:59:53 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Fabio Estevam <festevam@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH RFC] clk: mxs: Fix invalid 32-bit access to frac registers
-References: <1418570933-21585-1-git-send-email-stefan.wahren@i2se.com> <CAOMZO5CQjpYtrNTT65-ikJua4N_osYj4UVgm3EV+sEvVWF59cg@mail.gmail.com> <5491379F.3090607@i2se.com> <201412171700.52323.marex@denx.de>
-In-Reply-To: <201412171700.52323.marex@denx.de>
-Content-Type: text/plain; charset=windows-1252
+To: Arnaldo Carvalho de Melo <arnaldo.melo@gmail.com>
+CC: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] tools lib traceevent: Add support for IP address formats
+References: <1418915443-45707-1-git-send-email-dsahern@gmail.com> <20141218155255.GF3150@kernel.org>
+In-Reply-To: <20141218155255.GF3150@kernel.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:11J4OzC96tBCJHkFLKlRejnnRsby8Uk7yqpyeFJaduRPqUVMsZo
- d8HEP6d1BQtfom5cSdQMQKyh05QkkJsdlBBzVXkhMQSEIKEuS1wetpQ2MylsTAVC29zeZYk
- 2V12vAl2q4H2VYo1vZVLoDfG492xGPC+EDKaxluctPk77tzFAsDgWsGJo+U+103VGPIJyli
- VeKtemeDwtNmtrNJHttBA==
-X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
-
-Am 17.12.2014 um 17:00 schrieb Marek Vasut:
-> On Wednesday, December 17, 2014 at 08:58:23 AM, Stefan Wahren wrote:
->> Hi Fabio,
+On 12/18/14 8:52 AM, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Dec 18, 2014 at 08:10:43AM -0700, David Ahern escreveu:
+>> Adds helper for following kernel formats:
+>>    %pi4 print an IPv4 address with leading zeros
+>>    %pI4 print an IPv4 address without leading zeros
+>>    %pi6 print an IPv6 address without colons
+>>    %pI6 print an IPv6 address with colons
+>>    %pI6c print an IPv6 address with colons
+>>    %pISpc print an IP address from a sockaddr
 >>
->> Am 17.12.2014 um 03:44 schrieb Fabio Estevam:
->>> Hi Stefan,
->>>
->>> On Sun, Dec 14, 2014 at 3:16 PM, Stefan Wahren <stefan.wahren@i2se.com> 
-> wrote:
->>>> Btw i hope this patch also fixes a SPI communication issue with our
->>>> hardware which forces us to bypass ref_io1 for ssp2.
->>> Does this patch fix the SPI issue?
->> unfortunately not. If the 3.19-rc1 has been released, i send the fixed
->> patch.
+>> Allows these formats to be used in tracepoints.
 >>
->> I've the theory that's an initialization issue. I've never heard of SPI
->> problems from the U-Boot users and we are using imx-bootlets.
->>
->> I'll try to test it with U-Boot.
-> Please keep me in the loop, I'd be interested in what you find. Thanks!
+>> Quite a bit of this is adapted from code in lib/vsprintf.c.
 >
-> Best regards,
-> Marek Vasut
+> Can't we try as much as possible use that code directly? Something like
 
-i tested it with U-Boot, but the issue still exists. If there is any
-progress, i'll inform you.
+By my reading of that file I don't see how it can be reused directly.
 
-Stefan
+David
 
