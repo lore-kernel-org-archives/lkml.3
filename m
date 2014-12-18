@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaLRFTH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 00:19:07 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:62525 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732AbaLRFTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 00:19:06 -0500
-From: Frederic Jacob <frederic.jacob.78@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: linux-kernel@vger.kernel.org, Frederic Jacob <frederic.jacob.78@gmail.com>
-Subject: [PATCHv2] Staging: comedi: fix blank line coding style in comedi_bond.c
-Date: Thu, 18 Dec 2014 00:15:07 -0500
-Message-Id: <1418879707-3690-1-git-send-email-frederic.jacob.78@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20141218025716.GA9737@kroah.com>
-References: <20141218025716.GA9737@kroah.com>
+	id S1751836AbaLRFcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 00:32:51 -0500
+Received: from [103.39.77.245] ([103.39.77.245]:52986 "EHLO a.glaiwang.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751372AbaLRFcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 00:32:50 -0500
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 00:32:50 EST
+Date: Thu, 18 Dec 2014 13:27:03 +0800
+From: "REPLY" <sales@xjtfood.com>
+Reply-To: sales@xjftfood.com
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: Tomato paste cooperation
+Message-ID: <201412181327036566849@a.glaiwang.com>
+X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="GB2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBI5X0ts014724
 
- This is a patch to the comedi_bond.c file that fixes up a blank line after
- declaration warning found by the checkpatch.pl tool 
+Hi Sir, 
 
-Signed-off-by: Frederic Jacob <frederic.jacob.78@gmail.com>
----
-v2: Fix description line-wrap and add a line before Signed-off-by
- drivers/staging/comedi/drivers/comedi_bond.c | 1 +
- 1 file changed, 1 insertion(+)
+Update price for ketchup 
 
-diff --git a/drivers/staging/comedi/drivers/comedi_bond.c b/drivers/staging/comedi/drivers/comedi_bond.c
-index 85b2f4a..221d381 100644
---- a/drivers/staging/comedi/drivers/comedi_bond.c
-+++ b/drivers/staging/comedi/drivers/comedi_bond.c
-@@ -261,6 +261,7 @@ static int do_dev_config(struct comedi_device *dev, struct comedi_devconfig *it)
- 			{
- 				/* Append dev:subdev to devpriv->name */
- 				char buf[20];
-+
- 				snprintf(buf, sizeof(buf), "%u:%u ",
- 					 bdev->minor, bdev->subdev);
- 				strlcat(devpriv->name, buf,
--- 
-1.9.1
+If you have any interest or questions, please reply me please just connect me. 
 
+(4500 grams of ketchup;3000 grams of ketchup;2200 grams of ketchup......70 grams of ketchup) 
+
+Free sample can be provided if you want.
+
+Waiting for your reply. 
+
+Have a nice day! 
+
+ANNA 
+ (SKYPE ID: lee.anna65)
+----------------- 
+Export Department
+XINJIANG FIRST FOODÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
