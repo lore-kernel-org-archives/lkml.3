@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662AbaLRTVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 14:21:43 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40260 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621AbaLRTVk convert rfc822-to-8bit (ORCPT
+	id S1751319AbaLRTYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 14:24:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:25324 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaLRTYR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 14:21:40 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, m.szyprowski@samsung.com,
-        aneesh.kumar@linux.vnet.ibm.com, iamjoonsoo.kim@lge.com,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] CMA: add the amount of cma memory in meminfo
-In-Reply-To: <548E3B5E.6050805@huawei.com>
-Organization: http://mina86.com/
-References: <547FCCE9.2020600@huawei.com> <xa1ty4qm9eq7.fsf@mina86.com> <548E3B5E.6050805@huawei.com>
-User-Agent: Notmuch/0.19~rc1+1~g03aea4f (http://notmuchmail.org) Emacs/25.0.50.3 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-X-Hashcash: 1:20:141218:iamjoonsoo.kim@lge.com::klAVN1M+tkUj+l1+:0000000000000000000000000000000000000000vPz
-X-Hashcash: 1:20:141218:aneesh.kumar@linux.vnet.ibm.com::dsVMyhBOiYdx8g2t:0000000000000000000000000000000zhT
-X-Hashcash: 1:20:141218:qiuxishi@huawei.com::U1PGs6ILQrSGcXRH:0000000000000000000000000000000000000000000dLx
-X-Hashcash: 1:20:141218:linux-kernel@vger.kernel.org::cIUpsvPsG221fnX9:0000000000000000000000000000000001Nyh
-X-Hashcash: 1:20:141218:akpm@linux-foundation.org::lFpDYIrcHpQo9deU:0000000000000000000000000000000000001VEZ
-X-Hashcash: 1:20:141218:m.szyprowski@samsung.com::EScQNrp/lyzXZ/fv:00000000000000000000000000000000000001Va7
-X-Hashcash: 1:20:141218:linux-mm@kvack.org::EzYacIfAIbq1uqQ4:00000000000000000000000000000000000000000006HHn
-Date: Thu, 18 Dec 2014 20:21:31 +0100
-Message-ID: <xa1tegrwsr0k.fsf@mina86.com>
+	Thu, 18 Dec 2014 14:24:17 -0500
+Date: Thu, 18 Dec 2014 14:23:14 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: mingo@redhat.com, peterz@infradead.org, jgross@suse.com,
+        "Luis R. Rodriguez" <mcgrof@suse.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, luto@amacapital.net,
+        david.vrabel@citrix.com, JBeulich@suse.com, hpa@zytor.com,
+        masami.hiramatsu.pt@hitachi.com, xen-devel@lists.xenproject.org,
+        tglx@linutronix.de, Borislav Petkov <bp@suse.de>, bpoirier@suse.de
+Subject: Re: [Xen-devel] [PATCH v2 2/2] x86/xen: allow privcmd hypercalls to
+ be preempted
+Message-ID: <20141218192313.GA19507@laptop.dumpdata.com>
+References: <1418254487-9988-1-git-send-email-mcgrof@do-not-panic.com>
+ <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418254487-9988-3-git-send-email-mcgrof@do-not-panic.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 15 2014, Xishi Qiu <qiuxishi@huawei.com> wrote:
-> The "mere white-space change" you said a few days ago，how about change like this
-> ", nid, K(...)" -> ",nid, K(xxx)"?
+> index 0000000..b5a3e98
+> --- /dev/null
+> +++ b/drivers/xen/preempt.c
+> @@ -0,0 +1,17 @@
+> +/*
+> + * Preemptible hypercalls
+> + *
+> + * Copyright (C) 2014 Citrix Systems R&D ltd.
+> + *
+> + * This source code is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of the
+> + * License, or (at your option) any later version.
+> + */
+> +
+> +#include <xen/xen-ops.h>
+> +
+> +#ifndef CONFIG_PREEMPT
+> +DEFINE_PER_CPU(bool, xen_in_preemptible_hcall);
+> +EXPORT_SYMBOL_GPL(xen_in_preemptible_hcall);
+> +#endif
 
-If space is all you're changing, I wouldn't change it.
+Please also add this in the patch:
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +--<mpn@google.com>--<xmpp:mina86@jabber.org>--ooO--(_)--Ooo--
+
+diff --git a/drivers/xen/preempt.c b/drivers/xen/preempt.c
+index b5a3e98..5d773dc 100644
+--- a/drivers/xen/preempt.c
++++ b/drivers/xen/preempt.c
+@@ -13,5 +13,5 @@
+ 
+ #ifndef CONFIG_PREEMPT
+ DEFINE_PER_CPU(bool, xen_in_preemptible_hcall);
+-EXPORT_SYMBOL_GPL(xen_in_preemptible_hcall);
++EXPORT_PER_CPU_SYMBOL_GPL(xen_in_preemptible_hcall);
+ #endif
