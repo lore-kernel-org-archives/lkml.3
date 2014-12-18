@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbaLRWHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:07:38 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43073 "EHLO bear.ext.ti.com"
+	id S1751850AbaLRWHh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 17:07:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:43072 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751477AbaLRWHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751224AbaLRWHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Dec 2014 17:07:34 -0500
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
@@ -12,51 +12,44 @@ To: <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
         <robh+dt@kernel.org>, <devicetree@vger.kernel.org>, <arnd@arndb.de>,
         <linux-arm-kernel@lists.infradead.org>
 CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [RFC v1 PATCH 2/2] PCI: update dma configuration from DT
-Date: Thu, 18 Dec 2014 17:07:05 -0500
-Message-ID: <1418940425-2017-3-git-send-email-m-karicheri2@ti.com>
+Subject: [RFC v1 PATCH 0/2] PCI: get DMA configuration from parent device
+Date: Thu, 18 Dec 2014 17:07:03 -0500
+Message-ID: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com>
-References: <1418940425-2017-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-if there is a DT node available for the root bridge's parent device,
-use the dma configuration from that device node. For example, keystone
-PCI devices would require dma_pfn_offset to be set correctly in the
-device structure of the pci device in order to have the correct dma mask.
-The DT node will have dma-ranges defined for this. This also support using
-the DT property dma-coherent to allow coherent DMA operation by the
-PCI device.
+PCI devices on Keystone doesn't have correct dma_pfn_offset set. This patch
+add capability to set the dma configuration such as dma-mask, dma_pfn_offset,
+and dma ops etc using the same information from DT. The prior RFCs and
+discussions are available at [1] and [2] below.
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- drivers/pci/probe.c |    2 ++
- 1 file changed, 2 insertions(+)
+This patch make use of a recent dma API addeded to latest master and I could
+only compile this as the latest kernel doesn't boot up on Keystone platforms.
+So I am continue to send RFC version so that this gets a wider review before
+sending the formal patch.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 23212f8..d7dcd6c 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -6,6 +6,7 @@
- #include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/pci.h>
-+#include <linux/of_pci.h>
- #include <linux/pci_hotplug.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -1520,6 +1521,7 @@ void pci_device_add(struct pci_dev *dev, struct pci_bus *bus)
- 	dev->dev.dma_mask = &dev->dma_mask;
- 	dev->dev.dma_parms = &dev->dma_parms;
- 	dev->dev.coherent_dma_mask = 0xffffffffull;
-+	of_pci_dma_configure(dev);
- 
- 	pci_set_dma_max_seg_size(dev, 65536);
- 	pci_set_dma_seg_boundary(dev, 0xffffffff);
+[2] : https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg790244.html
+[1] : http://www.gossamer-threads.com/lists/linux/kernel/2024591
+
+Change history:
+	v1 - updates based on the comments against initial RFC.
+	   - Added a helper function to get the OF node of the parent
+	   - Added an API in of_pci.c to update DMA configuration of the pci
+	     device.
+
+Murali Karicheri (2):
+  of/pci: add of_pci_dma_configure() update dma configuration
+  PCI: update dma configuration from DT
+
+ drivers/of/of_pci.c    |   71 ++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/pci/probe.c    |    2 ++
+ include/linux/of_pci.h |   12 ++++++++
+ 3 files changed, 85 insertions(+)
+
 -- 
 1.7.9.5
 
