@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751623AbaLRQ7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 11:59:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35552 "EHLO mx1.redhat.com"
+	id S1751744AbaLRQ7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 11:59:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:35568 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547AbaLRQ67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 11:58:59 -0500
-Message-ID: <549307A5.3060305@redhat.com>
-Date: Thu, 18 Dec 2014 17:58:13 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
+	id S1751206AbaLRQ7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 11:59:47 -0500
+Message-ID: <549307F0.7090009@zytor.com>
+Date: Thu, 18 Dec 2014 08:59:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>, "Wu, Feng" <feng.wu@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
-CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com> <1418397300-10870-14-git-send-email-feng.wu@intel.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: linux-kernel@vger.kernel.org, luto@amacapital.net,
+        torvalds@linux-foundation.org, mingo@kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/urgent] x86/tls: Don't validate lm in set_thread_area()
+ after all
+References: <d7875b60e28c512f6a6fc0baf5714d58e7eaadbb.1418856405.git.luto@amacapital.net> <tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
+In-Reply-To: <tip-3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0@git.kernel.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 18/12/2014 15:49, Zhang, Yang Z wrote:
->>> Here, we introduce a similar way with 'apic_arb_prio' to handle
->>> guest lowest priority interrtups when VT-d PI is used. Here is
->>> the ideas: - Each vCPU has a counter 'round_robin_counter'. -
->>> When guests sets an interrupts to lowest priority, we choose the
->>> vCPU with smallest 'round_robin_counter' as the destination, then
->>> increase it.
+On 12/18/2014 03:16 AM, tip-bot for Andy Lutomirski wrote:
+> Commit-ID:  3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
+> Gitweb:     http://git.kernel.org/tip/3fb2f4237bb452eb4e98f6a5dbd5a445b4fed9d0
+> Author:     Andy Lutomirski <luto@amacapital.net>
+> AuthorDate: Wed, 17 Dec 2014 14:48:30 -0800
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 18 Dec 2014 12:12:26 +0100
 > 
-> How this can work well? All subsequent interrupts are delivered to
-> one vCPU? It shouldn't be the best solution, need more consideration.
+> x86/tls: Don't validate lm in set_thread_area() after all
+> 
+> It turns out that there's a lurking ABI issue.  GCC, when
+> compiling this in a 32-bit program:
+> 
+> struct user_desc desc = {
+> 	.entry_number    = idx,
+> 	.base_addr       = base,
+> 	.limit           = 0xfffff,
+> 	.seg_32bit       = 1,
+> 	.contents        = 0, /* Data, grow-up */
+> 	.read_exec_only  = 0,
+> 	.limit_in_pages  = 1,
+> 	.seg_not_present = 0,
+> 	.useable         = 0,
+> };
+> 
+> will leave .lm uninitialized.  This means that anything in the
+> kernel that reads user_desc.lm for 32-bit tasks is unreliable.
+> 
 
-Well, it's a hardware limitation.  The alternative (which is easy to
-implement) is to only do PI for single-CPU interrupts.  This should work
-well for multiqueue NICs (and of course for UP guests :)), so perhaps
-it's a good idea to only support that as a first attempt.
+No, it won't.  However, if you initialize this dynamically field by
+field rather than as an initializer, then you are correct.
 
-Paolo
+	-hpa
 
-> Also, I think you should take the apic_arb_prio into consider since
-> the priority is for the whole vCPU not for one interrupt.
