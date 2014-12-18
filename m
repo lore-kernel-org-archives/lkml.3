@@ -1,105 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827AbaLRB0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:26:30 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:43019 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaLRB03 (ORCPT
+	id S1751645AbaLRBiX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:38:23 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33895 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751155AbaLRBiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:26:29 -0500
+	Wed, 17 Dec 2014 20:38:22 -0500
+Date: Wed, 17 Dec 2014 17:37:17 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: wim@iguana.be, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, grant.likely@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, heiko@sntech.de,
+        yingjoe.chen@gmail.com, ibanezchen@gmail.com, greta.zhang@mediatek.com,
+        eddie.huang@mediatek.com, wens@csie.org
+Subject: Re: [PATCH v3 1/2] watchdog: Add driver for Mediatek watchdog
+Message-ID: <20141218013717.GA9855@roeck-us.net>
+References: <1418851085-17787-1-git-send-email-matthias.bgg@gmail.com>
+ <1418851085-17787-2-git-send-email-matthias.bgg@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <52558289.TJpHJaW3sy@avalon>
-References: <20141215050920.533.20169.sendpatchset@w520>
-	<52558289.TJpHJaW3sy@avalon>
-Date: Thu, 18 Dec 2014 10:26:27 +0900
-Message-ID: <CANqRtoS34Jf+ztJYpt1faCkNQk-V0vihgxjWj2Sn61YWKZepJQ@mail.gmail.com>
-Subject: Re: [PATCH] irqchip: renesas-intc-irqpin: r8a7779 IRLM setup support
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        SH-Linux <linux-sh@vger.kernel.org>,
-        "Simon Horman [Horms]" <horms@verge.net.au>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1418851085-17787-2-git-send-email-matthias.bgg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020203.5492300D.0284,ss=1,re=0.000,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.000
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: 
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 10
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Wed, Dec 17, 2014 at 10:18:04PM +0100, Matthias Brugger wrote:
+> This patch adds a driver for the Mediatek SoC integrated
+> watchdog. This driver supports watchdog and software reset
+> for mt65xx and mt81xx SoCs.
+> 
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  drivers/watchdog/Kconfig   |  10 ++
+>  drivers/watchdog/Makefile  |   1 +
+>  drivers/watchdog/mtk_wdt.c | 256 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 267 insertions(+)
+>  create mode 100644 drivers/watchdog/mtk_wdt.c
+> 
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index d0107d4..fcbca1b 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -505,6 +505,16 @@ config MESON_WATCHDOG
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called meson_wdt.
+>  
+> +config MEDIATEK_WATCHDOG
+> +	tristate "Mediatek SoCs watchdog support"
+> +	depends on ARCH_MEDIATEK
+> +	select WATCHDOG_CORE
+> +	help
+> +	  Say Y here to include support for the watchdog timer
+> +	  in Mediatek SoCs.
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called mtk_wdt.
+> +
+>  # AVR32 Architecture
+>  
+>  config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index c569ec8..0d4821f 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -63,6 +63,7 @@ obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
+>  obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+>  obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
+>  obj-$(CONFIG_MESON_WATCHDOG) += meson_wdt.o
+> +obj-$(CONFIG_MEDIATEK_WATCHDOG) += mtk_wdt.o
+>  
+>  # AVR32 Architecture
+>  obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+> new file mode 100644
+> index 0000000..33bf763
+> --- /dev/null
+> +++ b/drivers/watchdog/mtk_wdt.c
+> @@ -0,0 +1,256 @@
+> +/*
+> + * Mediatek Watchdog Driver
+> + *
+> + * Copyright (C) 2014 Matthias Brugger
+> + *
+> + * Matthias Brugger <matthias.bgg@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * Based on sunxi_wdt.c
+> + */
+> +
+> +#include <linux/clk.h>
 
-On Thu, Dec 18, 2014 at 6:41 AM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> Hi Magnus,
->
-> Thank you for the patch.
->
-> On Monday 15 December 2014 14:09:20 Magnus Damm wrote:
->> From: Magnus Damm <damm+renesas@opensource.se>
->>
->> Add r8a7779 specific support for IRLM bit configuration
->> in the INTC-IRQPIN driver. Without this code we need
->> special workaround code in arch/arm/mach-shmobile.
->>
->> The IRLM bit for the INTC hardware exists on various
->> older SH-based SoCs and is used to select between two
->> modes for the external interrupt pins IRQ0 to IRQ3:
->>
->> IRLM = 0: (default from reset on r8a7779)
->> In this mode the pins IRQ0 to IRQ3 are used together
->> to give a value between 0 and 15 to the SoC. External
->> logic is required for masking. This mode is not
->> supported by the INTC-IRQPIN driver.
->>
->> IRLM = 1: (needs this patch or configuration elsewhere)
->> In this mode IRQ0 to IRQ3 operate as 4 individual
->> external interrupt pins. In this mode the SMSC ethernet
->> chip can be used via IRQ1 on r8a7779 Marzen. This mode
->> is the only supported mode by the INTC-IRQPIN driver.
->>
->> For this patch to work the r8a7779 DTS needs to pass
->> the ICR0 register as the last register bank.
->>
->> Signed-off-by: Magnus Damm <damm+renesas@opensource.se>
->> ---
->>
->>  Same version as sent on December 3rd.
->>
->>  Written against renesas-devel-20141202-v3.18-rc7 which is
->>  basically v3.18-rc7 plus latest arch/arm/mach-shmobile code.
->>
->>  Documentation/devicetree/bindings/interrupt-controller/renesas,intc-irqpin.
->> txt |    5 +
->>  drivers/irqchip/irq-renesas-intc-irqpi                |   50 ++++++++--
->>  2 files changed, 46 insertions(+), 9 deletions(-)
->>
->> ---
->> 0001/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-ir
->> qpin.txt +++
->> work/Documentation/devicetree/bindings/interrupt-controller/renesas,intc-ir
->> qpin.txt      2014-12-03 20:25:13.000000000 +0900 @@ -9,6 +9,11 @@ Required
->> properties:
->>      - "renesas,intc-irqpin-r8a7778" (R-Car M1A)
->>      - "renesas,intc-irqpin-r8a7779" (R-Car H1)
->>      - "renesas,intc-irqpin-sh73a0" (SH-Mobile AG5)
->> +
->> +- reg: Base address and length of each register bank used by the external
->> +  IRQ pins driven by the interrupt controller hardware module. The base
->> +  addresses, length and number of required register banks varies with
->> soctype.
->
-> Ouch. Ouch. Multiple times. Very much :-/
->
-> I suppose it's too late to fix the DT bindings ?
+Is this include needed ?
 
-I don't think it is ever too late, but the question is just how urgent
-it is to get rid of the Marzen C board code. With the code in this
-patch queue up we can get rid of the board code. If someone decides to
-rework the INTC IRQPIN bits then we will have to live with the Marzen
-code for longer. And if we should do it right and describe the actual
-hardware, then perhaps we should consider the non-IRQ-pin interrupts
-included in INTC for some SoCs. So it rapidly gets more complex...
+> +#include <linux/err.h>
+> +#include <linux/init.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/types.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/notifier.h>
+> +#include <linux/reboot.h>
+> +#include <linux/delay.h>
+> +
+> +#define WDT_MAX_TIMEOUT		31
+> +#define WDT_MIN_TIMEOUT		1
+> +#define WDT_LENGTH_TIMEOUT(n)	((n) << 5)
+> +
+> +#define WDT_LENGTH		0x04
+> +#define WDT_LENGTH_KEY		0x8
+> +
+> +#define WDT_RST			0x08
+> +#define WDT_RST_RELOAD		0x1971
+> +
+> +#define WDT_MODE		0x00
+> +#define WDT_MODE_EN		(1 << 0)
+> +#define WDT_MODE_EXT_POL_LOW	(0 << 1)
+> +#define WDT_MODE_EXT_POL_HIGH	(1 << 1)
+> +#define WDT_MODE_EXRST_EN	(1 << 2)
+> +#define WDT_MODE_IRQ_EN		(1 << 3)
+> +#define WDT_MODE_AUTO_START	(1 << 4)
+> +#define WDT_MODE_DUAL_EN	(1 << 6)
+> +#define WDT_MODE_KEY		0x22000000
+> +
+> +#define WDT_SWRST		0x14
+> +#define WDT_SWRST_KEY		0x1209
+> +
+> +#define DRV_NAME		"mtk-wdt"
+> +#define DRV_VERSION		"1.0"
+> +
+> +static bool nowayout = WATCHDOG_NOWAYOUT;
+> +static unsigned int timeout = WDT_MAX_TIMEOUT;
+> +
+> +struct mtk_wdt_dev {
+> +	struct watchdog_device wdt_dev;
+> +	void __iomem *wdt_base;
+> +	struct notifier_block restart_handler;
+> +};
+> +
+> +static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
+> +				void *cmd)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt = container_of(this,
+> +						       struct mtk_wdt_dev,
+> +						       restart_handler);
 
-Cheers,
+I don't really understand the indentation logic you are using.
+Can you make it consistent ?
 
-/ magnus
+I would suggest to align with '(' in the previous line.
+
+> +	void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +
+> +	/* Reset system */
+> +	writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
+> +
+> +	while (1) {
+> +		mdelay(5);
+> +		writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
+
+By switching those two lines you can remove the initial writel().
+
+> +	}
+> +
+> +	return NOTIFY_DONE;
+> +}
+> +
+> +static int mtk_wdt_ping(struct watchdog_device *wdt_dev)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +	void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +
+> +	iowrite32(WDT_RST_RELOAD, wdt_base + WDT_RST);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mtk_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				unsigned int timeout)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +	void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +	u32 reg;
+> +
+> +	mtk_wdt->wdt_dev.timeout = timeout;
+
+	wdt_dev->timeout = timeout;
+
+would be less complex.
+
+> +
+> +	/*
+> +	 * One bit is the value of 512 ticks
+> +	 * The clock has 32 KHz
+> +	 */
+> +	reg = WDT_LENGTH_TIMEOUT(timeout << 6) | WDT_LENGTH_KEY;
+> +	iowrite32(reg, wdt_base + WDT_LENGTH);
+> +
+> +	mtk_wdt_ping(wdt_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mtk_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +	void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +	u32 reg;
+> +
+> +	reg = readl(wdt_base + WDT_MODE);
+> +	reg &= ~(WDT_MODE_EN);
+
+Unnecessary ( )
+
+> +	iowrite32(reg, wdt_base + WDT_MODE);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mtk_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	u32 reg;
+> +	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+> +	void __iomem *wdt_base = mtk_wdt->wdt_base;
+> +	u32 ret;
+> +
+> +	ret = mtk_wdt_set_timeout(&mtk_wdt->wdt_dev,
+> +			mtk_wdt->wdt_dev.timeout);
+
+Why not just wdt_dev and wdt_dev->timeout ?
+
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	reg = ioread32(wdt_base + WDT_MODE);
+> +	reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
+> +	reg |= (WDT_MODE_EN | WDT_MODE_KEY);
+> +	iowrite32(reg, wdt_base + WDT_MODE);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct watchdog_info mtk_wdt_info = {
+> +	.identity	= DRV_NAME,
+> +	.options	= WDIOF_SETTIMEOUT |
+> +			  WDIOF_KEEPALIVEPING |
+> +			  WDIOF_MAGICCLOSE,
+> +};
+> +
+> +static const struct watchdog_ops mtk_wdt_ops = {
+> +	.owner		= THIS_MODULE,
+> +	.start		= mtk_wdt_start,
+> +	.stop		= mtk_wdt_stop,
+> +	.ping		= mtk_wdt_ping,
+> +	.set_timeout	= mtk_wdt_set_timeout,
+> +};
+> +
+> +static int mtk_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt;
+> +	struct resource *res;
+> +	int err;
+> +
+> +	mtk_wdt = devm_kzalloc(&pdev->dev, sizeof(*mtk_wdt), GFP_KERNEL);
+> +	if (!mtk_wdt)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, mtk_wdt);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	mtk_wdt->wdt_base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(mtk_wdt->wdt_base))
+> +		return PTR_ERR(mtk_wdt->wdt_base);
+> +
+> +	mtk_wdt->wdt_dev.info = &mtk_wdt_info;
+> +	mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
+> +	mtk_wdt->wdt_dev.timeout = WDT_MAX_TIMEOUT;
+> +	mtk_wdt->wdt_dev.max_timeout = WDT_MAX_TIMEOUT;
+> +	mtk_wdt->wdt_dev.min_timeout = WDT_MIN_TIMEOUT;
+> +	mtk_wdt->wdt_dev.parent = &pdev->dev;
+> +
+> +	watchdog_init_timeout(&mtk_wdt->wdt_dev, timeout, &pdev->dev);
+> +	watchdog_set_nowayout(&mtk_wdt->wdt_dev, nowayout);
+> +
+> +	watchdog_set_drvdata(&mtk_wdt->wdt_dev, mtk_wdt);
+> +
+> +	mtk_wdt_stop(&mtk_wdt->wdt_dev);
+> +
+> +	err = watchdog_register_device(&mtk_wdt->wdt_dev);
+> +	if (unlikely(err))
+> +		return err;
+> +
+> +	mtk_wdt->restart_handler.notifier_call = mtk_reset_handler;
+> +	mtk_wdt->restart_handler.priority = 128;
+> +	err = register_restart_handler(&mtk_wdt->restart_handler);
+> +	if (err)
+> +		dev_warn(&pdev->dev,
+> +			"cannot register restart handler (err=%d)\n", err);
+> +
+> +	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
+> +			mtk_wdt->wdt_dev.timeout, nowayout);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mtk_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct mtk_wdt_dev *mtk_wdt = platform_get_drvdata(pdev);
+> +
+> +	unregister_restart_handler(&mtk_wdt->restart_handler);
+> +
+> +	watchdog_unregister_device(&mtk_wdt->wdt_dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id mtk_wdt_dt_ids[] = {
+> +	{ .compatible = "mediatek,mt6589-wdt" },
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, mtk_wdt_dt_ids);
+> +
+> +static struct platform_driver mtk_wdt_driver = {
+> +	.probe		= mtk_wdt_probe,
+> +	.remove		= mtk_wdt_remove,
+> +	.driver		= {
+> +		.owner		= THIS_MODULE,
+> +		.name		= DRV_NAME,
+> +		.of_match_table	= mtk_wdt_dt_ids,
+> +	},
+> +};
+> +
+> +module_platform_driver(mtk_wdt_driver);
+> +
+> +module_param(timeout, uint, 0);
+> +MODULE_PARM_DESC(timeout, "Watchdog heartbeat in seconds");
+> +
+> +module_param(nowayout, bool, 0);
+> +MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default="
+> +			__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+> +
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Matthias Brugger <matthias.bgg@gmail.com>");
+> +MODULE_DESCRIPTION("Mediatek WatchDog Timer Driver");
+> +MODULE_VERSION(DRV_VERSION);
+> -- 
+> 1.9.1
+> 
