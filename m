@@ -1,139 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325AbaLRX0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 18:26:33 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61576 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107AbaLRX0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 18:26:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="501225207"
-Message-ID: <549362A5.3000808@intel.com>
-Date: Thu, 18 Dec 2014 15:26:29 -0800
-From: "Samudrala, Sridhar" <sridhar.samudrala@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751463AbaLRXad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 18:30:33 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:56048 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116AbaLRXac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 18:30:32 -0500
 MIME-Version: 1.0
-To: Roopa Prabhu <roopa@cumulusnetworks.com>,
-        John Fastabend <john.r.fastabend@intel.com>
-CC: "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com> <5492E85C.6010802@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com> <5492EFC3.8030102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com> <549313B8.6050102@cumulusnetworks.com> <C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com> <54931969.7040209@cumulusnetworks.com> <5493293A.2000802@intel.com> <54935E28.8050602@cumulusnetworks.com>
-In-Reply-To: <54935E28.8050602@cumulusnetworks.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
+ <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 18 Dec 2014 15:30:09 -0800
+Message-ID: <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+To: Shaohua Li <shli@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 12/18/2014 3:07 PM, Roopa Prabhu wrote:
-> On 12/18/14, 11:21 AM, John Fastabend wrote:
->> On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
->>> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
->>>> Removed unnecessary content for ease of reading...
->>>>
->>>>>>>>>> +/* Switch Port Attributes section */
->>>>>>>>>> +
->>>>>>>>>> +enum {
->>>>>>>>>> +    IFLA_ATTR_UNSPEC,
->>>>>>>>>> +    IFLA_ATTR_LEARNING,
->>>>>>>>> Any reason you want learning here ?. This is covered as part  of
->>>>>>>>> the bridge setlink attributes.
->>>>>>>>>
->>>>>>>> Yes, because the user may _not_ want to go through a bridge
->>>>>>>> interface
->>>>>>> necessarily.
->>>>>>> But, the bridge setlink/getlink interface was changed to 
->>>>>>> accommodate
->>>>> 'self'
->>>>>>> for exactly such cases.
->>>>>>> I kind of understand your case for the other attributes (these are
->>>>>>> per port settings that switch asics provide).
->>>>>>>
->>>>>>> However, i don't understand the reason to pull in bridge 
->>>>>>> attributes here.
->>>>>>>
->>>>>> Maybe, I am missing something so you might help. The learning 
->>>>>> attribute -
->>>>> in my case - it is like all other attributes: a port attribute (as 
->>>>> you said, port
->>>>> settings that the switch provides per port).
->>>>>> So, what I was saying is "why the user shall go through a bridge 
->>>>>> to configure
->>>>> the learning attribute"? From my perspective, it is as any other 
->>>>> attribute and
->>>>> as such configurable on the port.
->>>>>
->>>>> Thinking about this some more, i don't see why any of these 
->>>>> attributes
->>>>> (except loopback. I dont understand the loopback attribute) cant 
->>>>> be part of
->>>>> the birdge port attributes.
->>>>>
->>>>> With this we will end up adding l2 attributes in two places: the 
->>>>> general link
->>>>> attributes and bridge attributes.
->>>>>
->>>>> And since we have gone down the path of using 
->>>>> ndo_bridge_setlink/getlink
->>>>> with 'self'....we should stick to that for all l2 attributes.
->>>>>
->>>>> The idea of overloading ndo_bridge_set/getlink, was to have the 
->>>>> same set of
->>>>> attributes but support both cases where the user wants to go 
->>>>> through the
->>>>> bridge driver or directly to the switch port driver. So, you are 
->>>>> not really going
->>>>> through the bridge driver if you use 'self' and 
->>>>> ndo_bridge_setlink/getlink.
->>>>>
->>>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
->>>> was that your patch and mine were supplementary ("I think Roopa's
->>>> patches are supplementary. Not all switchdev users will be backed
->>>> with a Linux Bridge. I therefore welcome your patches very
->>>> much")... I also understood by others that the patch made sense for
->>>> the same reason. I simply do not understand why these attributes
->>>> (and maybe others in the future) could not be configured directly
->>>> on a standard port but have to go through a bridge.
->>>>
->>> ok, i am very confused in that case. The whole moving of bridge
->>> attributes from the bridge driver to rtnetlink.c was to make the
->>> bridge attributes accessible to any driver who wants to set l2/bridge
->>> attributes on their switch ports. So, its unclear to me why we are
->>> doing this parallel thing again. This move to rtnetlink.c was done
->>> during the recent rocker support. so, maybe scott/jiri can elaborate
->>> more.
->>
->> Not sure if this will add to the confusion or help. But you do not
->> need to have the bridge.ko loaded or netdev's attached to a bridge
->> to use the setlink/getlink ndo ops and netlink messages.
->>
->> This was intentionally done. Its already used with NIC devices to
->> configure embedded bridge settings such as VEB/VEPA.
+On Wed, Dec 17, 2014 at 3:12 PM, Shaohua Li <shli@fb.com> wrote:
+> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..). We
+> use the following method to compute the thread cpu time:
 >
-> that helps my case, thanks.
-
-So the user interface to set/get the per-port attributes will be via 
-'bridge', not 'ip'
-
-     bridge link set dev sw0p1 port_attr bcast_flooding 1 self
-     bridge link get dev sw0p1 port_attr bcast_flooding self
-
-We also need an interface to set per-switch attributes. Can this work?
-     bridge link set dev sw0 sw_attr bcast_flooding 1 master
-where sw0 is a bridge representing the hardware switch.
-
->>
->> I think I'm just repeating Roopa though.
->>
+>     t0 = process start
+>     t1 = most recent context switch time
+>     t2 = time at which the vsyscall is invoked
 >
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>     thread_cpu_time = sum(time slices between t0 to t1) + (t2 - t1)
+>                 = current->se.sum_exec_runtime + now - sched_clock()
+>
+> At context switch time We stash away
+>
+>     adj_sched_time = sum_exec_runtime - sched_clock()
+>
+> in a per-cpu struct in the VVAR page and then compute
+>
+>     thread_cpu_time = adj_sched_time + now
+>
+> All computations are done in nanosecs on systems where TSC is stable. If
+> TSC is unstable, we fallback to a regular syscall.
+>     Benchmark data:
+>
+>     for (i = 0; i < 100000000; i++) {
+>             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+>             sum += ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+>     }
 
+A bunch of the time spent processing a CLOCK_THREAD_CPUTIME_ID syscall
+is spent taking various locks, and I think it could be worth adding a
+fast path for the read-my-own-clock case in which we just disable
+preemption and read the thing without any locks.
+
+If we're actually going to go the vdso route, I'd like to make the
+scheduler hooks clean.  Peterz and/or John, what's the right way to
+get an arch-specific callback with sum_exec_runtime and an up to date
+sched_clock value during a context switch?  I'd much rather not add
+yet another rdtsc instruction to the scheduler.
+
+--Andy
+
+>
+>     Baseline:
+>     real    1m3.428s
+>     user    0m5.190s
+>     sys     0m58.220s
+>
+>     patched:
+>     real    0m4.912s
+>     user    0m4.910s
+>     sys     0m0.000s
+>
+> This should speed up profilers that need to query thread cpu time a lot
+> to do fine-grained timestamps.
+>
+> No statistically significant regression was detected on x86_64 context
+> switch code. Most archs that don't support vsyscalls will have this code
+> disabled via jump labels.
+>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Kumar Sundararajan <kumar@fb.com>
+> Signed-off-by: Arun Sharma <asharma@fb.com>
+> Signed-off-by: Chris Mason <clm@fb.com>
+> Signed-off-by: Shaohua Li <shli@fb.com>
+> ---
+>  arch/x86/include/asm/vdso.h    |  9 +++++-
+>  arch/x86/kernel/tsc.c          | 14 +++++++++
+>  arch/x86/vdso/vclock_gettime.c | 69 ++++++++++++++++++++++++++++++++++++++++++
+>  arch/x86/vdso/vma.c            | 10 +++++-
+>  kernel/sched/core.c            |  3 ++
+>  5 files changed, 103 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+> index d4556a3..fcdf611 100644
+> --- a/arch/x86/include/asm/vdso.h
+> +++ b/arch/x86/include/asm/vdso.h
+> @@ -52,14 +52,21 @@ extern void __init init_vdso_image(const struct vdso_image *image);
+>  #ifdef CONFIG_VDSO_CS_DETECT
+>  struct vdso_percpu_data {
+>         u64 last_cs_timestamp;
+> +
+> +       u64 adj_sched_time;
+> +       u64 cyc2ns_offset;
+> +       u32 cyc2ns_mul;
+>  } ____cacheline_aligned;
+>
+>  struct vdso_data {
+> -       int dummy;
+> +       unsigned int thread_cputime_disabled;
+>         struct vdso_percpu_data vpercpu[0];
+>  };
+>  extern struct vdso_data vdso_data;
+>
+> +struct static_key;
+> +extern struct static_key vcpu_thread_cputime_enabled;
+> +
+>  static inline void vdso_set_cpu_cs_timestamp(int cpu)
+>  {
+>         rdtscll(vdso_data.vpercpu[cpu].last_cs_timestamp);
+> diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+> index b7e50bb..dd3b281 100644
+> --- a/arch/x86/kernel/tsc.c
+> +++ b/arch/x86/kernel/tsc.c
+> @@ -21,6 +21,7 @@
+>  #include <asm/hypervisor.h>
+>  #include <asm/nmi.h>
+>  #include <asm/x86_init.h>
+> +#include <asm/vdso.h>
+>
+>  unsigned int __read_mostly cpu_khz;    /* TSC clocks / usec, not used here */
+>  EXPORT_SYMBOL(cpu_khz);
+> @@ -263,6 +264,11 @@ static void set_cyc2ns_scale(unsigned long cpu_khz, int cpu)
+>         data->cyc2ns_offset = ns_now -
+>                 mul_u64_u32_shr(tsc_now, data->cyc2ns_mul, CYC2NS_SCALE_FACTOR);
+>
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +       vdso_data.vpercpu[cpu].cyc2ns_mul = data->cyc2ns_mul;
+> +       vdso_data.vpercpu[cpu].cyc2ns_offset = data->cyc2ns_offset;
+> +#endif
+> +
+>         cyc2ns_write_end(cpu, data);
+>
+>  done:
+> @@ -989,6 +995,10 @@ void mark_tsc_unstable(char *reason)
+>                 tsc_unstable = 1;
+>                 clear_sched_clock_stable();
+>                 disable_sched_clock_irqtime();
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +               vdso_data.thread_cputime_disabled = 1;
+> +               static_key_slow_dec(&vcpu_thread_cputime_enabled);
+> +#endif
+>                 pr_info("Marking TSC unstable due to %s\n", reason);
+>                 /* Change only the rating, when not registered */
+>                 if (clocksource_tsc.mult)
+> @@ -1202,6 +1212,10 @@ void __init tsc_init(void)
+>
+>         tsc_disabled = 0;
+>         static_key_slow_inc(&__use_tsc);
+> +#ifdef CONFIG_VDSO_CS_DETECT
+> +       vdso_data.thread_cputime_disabled = !cpu_has(&boot_cpu_data,
+> +                       X86_FEATURE_RDTSCP);
+> +#endif
+>
+>         if (!no_sched_irq_time)
+>                 enable_sched_clock_irqtime();
+> diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+> index 9793322..0aa39b1 100644
+> --- a/arch/x86/vdso/vclock_gettime.c
+> +++ b/arch/x86/vdso/vclock_gettime.c
+> @@ -17,6 +17,7 @@
+>  #include <asm/vvar.h>
+>  #include <asm/unistd.h>
+>  #include <asm/msr.h>
+> +#include <asm/vdso.h>
+>  #include <linux/math64.h>
+>  #include <linux/time.h>
+>
+> @@ -289,6 +290,62 @@ notrace static void do_monotonic_coarse(struct timespec *ts)
+>         } while (unlikely(gtod_read_retry(gtod, seq)));
+>  }
+>
+> +#if defined(CONFIG_VDSO_CS_DETECT) && defined(CONFIG_X86_64)
+> +#define CYC2NS_SCALE_FACTOR 10 /* 2^10, carefully chosen */
+> +notrace static inline u64 __cycles_2_ns(u64 cyc, u64 scale, u64 offset)
+> +{
+> +       u64 ns = offset;
+> +       ns += mul_u64_u32_shr(cyc, scale, CYC2NS_SCALE_FACTOR);
+> +       return ns;
+> +}
+> +
+> +notrace static inline u64 vdso_get_cpu_cs_timestamp(int cpu)
+> +{
+> +       return VVAR(vdso_data).vpercpu[cpu].last_cs_timestamp;
+> +}
+> +
+> +#define THREAD_CPU_TIME_MAX_LOOP 20
+> +notrace static u64 do_thread_cpu_time(void)
+> +{
+> +       unsigned int p;
+> +       u64 tscval;
+> +       u64 adj_sched_time;
+> +       u64 scale;
+> +       u64 offset;
+> +       const struct vdso_data *vp = &VVAR(vdso_data);
+> +       int cpuo, cpun;
+> +       int loop = 0;
+> +
+> +       do {
+> +               loop++;
+> +               if (loop > THREAD_CPU_TIME_MAX_LOOP)
+> +                       return -1LL;
+> +
+> +               rdtscpll(tscval, p);
+> +               cpuo = p & VGETCPU_CPU_MASK;
+> +               adj_sched_time = vp->vpercpu[cpuo].adj_sched_time;
+> +               scale = vp->vpercpu[cpuo].cyc2ns_mul;
+> +               offset = vp->vpercpu[cpuo].cyc2ns_offset;
+> +
+> +               cpun = __getcpu() & VGETCPU_CPU_MASK;
+> +               /*
+> +                * The CPU check goarantees this runs in the same cpu, so no
+> +                * barrier required
+> +                */
+> +       } while (unlikely(cpuo != cpun ||
+> +                       tscval <= vdso_get_cpu_cs_timestamp(cpun)));
+> +
+> +       return __cycles_2_ns(tscval, scale, offset) + adj_sched_time;
+> +}
+> +
+> +notrace static inline void ns_to_ts(u64 ns, struct timespec *ts)
+> +{
+> +       u32 rem;
+> +       ts->tv_sec = div_u64_rem(ns, NSEC_PER_SEC, &rem);
+> +       ts->tv_nsec = rem;
+> +}
+> +#endif
+> +
+>  notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+>  {
+>         switch (clock) {
+> @@ -306,6 +363,18 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+>         case CLOCK_MONOTONIC_COARSE:
+>                 do_monotonic_coarse(ts);
+>                 break;
+> +#if defined(CONFIG_VDSO_CS_DETECT) && defined(CONFIG_X86_64)
+> +       case CLOCK_THREAD_CPUTIME_ID: {
+> +               u64 time;
+> +               if (VVAR(vdso_data).thread_cputime_disabled)
+> +                       goto fallback;
+> +               time = do_thread_cpu_time();
+> +               if (time == -1LL)
+> +                       goto fallback;
+> +               ns_to_ts(time, ts);
+> +               break;
+> +       }
+> +#endif
+>         default:
+>                 goto fallback;
+>         }
+> diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+> index 22b1a69..237b3af 100644
+> --- a/arch/x86/vdso/vma.c
+> +++ b/arch/x86/vdso/vma.c
+> @@ -12,6 +12,8 @@
+>  #include <linux/random.h>
+>  #include <linux/elf.h>
+>  #include <linux/cpu.h>
+> +#include <linux/jump_label.h>
+> +#include <asm/vsyscall.h>
+>  #include <asm/vgtod.h>
+>  #include <asm/proto.h>
+>  #include <asm/vdso.h>
+> @@ -23,7 +25,11 @@
+>
+>  #if defined(CONFIG_X86_64)
+>  unsigned int __read_mostly vdso64_enabled = 1;
+> -DEFINE_VVAR(struct vdso_data, vdso_data);
+> +
+> +DEFINE_VVAR(struct vdso_data, vdso_data) = {
+> +       .thread_cputime_disabled = 1,
+> +};
+> +struct static_key vcpu_thread_cputime_enabled;
+>  #endif
+>
+>  void __init init_vdso_image(const struct vdso_image *image)
+> @@ -275,6 +281,8 @@ static int __init init_vdso(void)
+>         init_vdso_image(&vdso_image_x32);
+>  #endif
+>
+> +       if (!vdso_data.thread_cputime_disabled)
+> +               static_key_slow_inc(&vcpu_thread_cputime_enabled);
+>         cpu_notifier_register_begin();
+>
+>         on_each_cpu(vgetcpu_cpu_init, NULL, 1);
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index d8e882d..03e6175 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2236,6 +2236,9 @@ static struct rq *finish_task_switch(struct task_struct *prev)
+>         int cpu = smp_processor_id();
+>
+>         vdso_set_cpu_cs_timestamp(cpu);
+> +       if (static_key_false(&vcpu_thread_cputime_enabled))
+> +               vdso_data.vpercpu[cpu].adj_sched_time =
+> +                       current->se.sum_exec_runtime - sched_clock();
+>  #endif
+>
+>         rq->prev_mm = NULL;
+> --
+> 1.8.1
+>
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
