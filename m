@@ -1,55 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbaLRBsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Dec 2014 20:48:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39327 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611AbaLRBsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Dec 2014 20:48:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,597,1413270000"; 
-   d="scan'208";a="639387913"
-Date: Thu, 18 Dec 2014 09:28:44 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Juri Lelli <juri.lelli@arm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>
-Subject: Re: [PATCH v6 0/7] sched: support dl task migration during cpu
- hotplug and other fixes
-Message-ID: <20141218012843.GA4685@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
+	id S1751890AbaLRBuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Dec 2014 20:50:22 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58172 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaLRBuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Dec 2014 20:50:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20141217231930.GA13582@cerebellum.variantweb.net>
+References: <1417488587-28609-1-git-send-email-minchan@kernel.org>
+	<20141217231930.GA13582@cerebellum.variantweb.net>
+Date: Thu, 18 Dec 2014 09:50:20 +0800
+Message-ID: <CADAEsF8AMf0U8JSf3Bhmm5xBf-XsQYMJijRXKZUYXYToAiW3oA@mail.gmail.com>
+Subject: Re: [RFC 0/6] zsmalloc support compaction
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Nitin Gupta <ngupta@vflare.org>,
+        Dan Streetman <ddstreet@ieee.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Luigi Semenzato <semenzato@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>, juno.choi@lge.com,
+        seungho1.park@lge.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Juri,
-On Wed, Nov 26, 2014 at 08:44:00AM +0800, Wanpeng Li wrote:
->I collect recent send out patches to one patchset in order to get review easily.
+2014-12-18 7:19 GMT+08:00 Seth Jennings <sjennings@variantweb.net>:
+> On Tue, Dec 02, 2014 at 11:49:41AM +0900, Minchan Kim wrote:
+>> Recently, there was issue about zsmalloc fragmentation and
+>> I got a report from Juno that new fork failed although there
+>> are plenty of free pages in the system.
+>> His investigation revealed zram is one of the culprit to make
+>> heavy fragmentation so there was no more contiguous 16K page
+>> for pgd to fork in the ARM.
+>>
+>> This patchset implement *basic* zsmalloc compaction support
+>> and zram utilizes it so admin can do
+>>       "echo 1 > /sys/block/zram0/compact"
+>>
+>> Actually, ideal is that mm migrate code is aware of zram pages and
+>> migrate them out automatically without admin's manual opeartion
+>> when system is out of contiguous page. Howver, we need more thinking
+>> before adding more hooks to migrate.c. Even though we implement it,
+>> we need manual trigger mode, too so I hope we could enhance
+>> zram migration stuff based on this primitive functions in future.
+>>
+>> I just tested it on only x86 so need more testing on other arches.
+>> Additionally, I should have a number for zsmalloc regression
+>> caused by indirect layering. Unfortunately, I don't have any
+>> ARM test machine on my desk. I will get it soon and test it.
+>> Anyway, before further work, I'd like to hear opinion.
+>>
+>> Pathset is based on v3.18-rc6-mmotm-2014-11-26-15-45.
 >
->For 7/7 I will remove rd->span related modification if Pang's effort merged.
->https://lkml.org/lkml/2014/11/17/443
+> Hey Minchan, sorry it has taken a while for me to look at this.
 >
->Wanpeng Li (7):
->  sched/deadline: fix start high-res preemption tick for a non-leftmost task
->  sched/deadline: fix rt runtime corrupt when dl refuse a smaller bandwidth
->  sched/deadline: fix dl entity is still mark yield after replenishing
->  sched/deadline: reduce overhead if there are no scheduling parameters changed
->  sched/fair: fix idle balance when remaining tasks are all non-CFS tasks
->  sched: fix start hrtick for short schedule slices on UP
->  sched/deadline: support dl task migration during cpu hotplug
+> I have prototyped this for zbud to and I see you face some of the same
+> issues, some of them much worse for zsmalloc like large number of
+> objects to move to reclaim a page (with zbud, the max is 1).
 >
-> kernel/sched/core.c     | 27 +++++++++++++++++----
-> kernel/sched/deadline.c | 62 +++++++++++++++++++++++++++++++++++++++++++++----
-> kernel/sched/fair.c     |  2 +-
-> kernel/sched/sched.h    |  3 ++-
-> 4 files changed, 84 insertions(+), 10 deletions(-)
+> I see you are using zsmalloc itself for allocating the handles.  Why not
+> kmalloc()?  Then you wouldn't need to track the handle_class stuff and
+> adjust the class sizes (just in the interest of changing only what is
+> need to achieve the functionality).
 >
->-- 
->1.9.1
+> I used kmalloc() but that is not without issue as the handles can be
+> allocated from many slabs and any slab that contains a handle can't be
+> freed, basically resulting in the handles themselves needing to be
+> compacted, which they can't be because the user handle is a pointer to
+> them.
+>
+> One way to fix this, but it would be some amount of work, is to have the
+> user (zswap/zbud) provide the space for the handle to zbud/zsmalloc.
+> The zswap/zbud layer knows the size of the device (i.e. handle space)
+> and could allocate a statically sized vmalloc area for holding handles
+> so they don't get spread all over memory.  I haven't fully explored this
+> idea yet.
+>
+> It is pretty limiting having the user trigger the compaction. Can we
+> have a work item that periodically does some amount of compaction?
+> Maybe also have something analogous to direct reclaim that, when
+> zs_malloc fails to secure a new page, it will try to compact to get one?
+> I understand this is a first step.  Maybe too much.
+
+Yes, User do not know when to do the compaction.
+Actually, zsmalloc's responsibility is to keep the fragmentation in a low level.
+How about dynamically monitoring the fragmentation and do the compaction when
+there are too much fragmentation.
+
+I am working on another patch to collect statistics of zsmalloc
+objects. Maybe that will
+be helpful for this.
+
+Thanks.
+
+>
+> Also worth pointing out that the fullness groups are very coarse.
+> Combining the objects from a ZS_ALMOST_EMPTY zspage and ZS_ALMOST_FULL
+> zspage, might not result in very tight packing.  In the worst case, the
+> destination zspage would be slightly over 1/4 full (see
+> fullness_threshold_frac)
+>
+> It also seems that you start with the smallest size classes first.
+> Seems like if we start with the biggest first, we move fewer objects and
+> reclaim more pages.
+>
+> It does add a lot of code :-/  Not sure if there is any way around that
+> though if we want this functionality for zsmalloc.
+>
+> Seth
+>
+>>
+>> Thanks.
+>>
+>> Minchan Kim (6):
+>>   zsmalloc: expand size class to support sizeof(unsigned long)
+>>   zsmalloc: add indrection layer to decouple handle from object
+>>   zsmalloc: implement reverse mapping
+>>   zsmalloc: encode alloced mark in handle object
+>>   zsmalloc: support compaction
+>>   zram: support compaction
+>>
+>>  drivers/block/zram/zram_drv.c |  24 ++
+>>  drivers/block/zram/zram_drv.h |   1 +
+>>  include/linux/zsmalloc.h      |   1 +
+>>  mm/zsmalloc.c                 | 596 +++++++++++++++++++++++++++++++++++++-----
+>>  4 files changed, 552 insertions(+), 70 deletions(-)
+>>
+>> --
+>> 2.0.0
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
