@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967AbaLRWqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 17:46:25 -0500
-Received: from mga03.intel.com ([134.134.136.65]:3641 "EHLO mga03.intel.com"
+	id S1751991AbaLRWqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 17:46:42 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26402 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796AbaLRWqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 17:46:24 -0500
+	id S1751637AbaLRWql convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 17:46:41 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,603,1413270000"; 
-   d="scan'208";a="626252202"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc V2 RESEND] mei: add ABI documentation for fw_status exported through sysfs
-Date: Fri, 19 Dec 2014 00:44:59 +0200
-Message-Id: <1418942699-18751-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.9.3
+X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
+   d="scan'208";a="501208681"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [char-misc-next 1/3 V2] mei: add ABI documentation for
+ fw_status exported through sysfs
+Thread-Topic: [char-misc-next 1/3 V2] mei: add ABI documentation for
+ fw_status exported through sysfs
+Thread-Index: AQHQCjsERLi9osFcq0OziaUBHOD0bpyVNePQgAC0RQCAACmg4A==
+Date: Thu, 18 Dec 2014 22:46:37 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B2CCEF909@HASMSX106.ger.corp.intel.com>
+References: <1417090049-23219-1-git-send-email-tomas.winkler@intel.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B2CCED19D@HASMSX106.ger.corp.intel.com>
+ <20141218221504.GC10229@kroah.com>
+In-Reply-To: <20141218221504.GC10229@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2: rephrase the description
 
- Documentation/ABI/testing/sysfs-class-mei | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-class-mei b/Documentation/ABI/testing/sysfs-class-mei
-index 0ec8b8178c41..80d9888a8ece 100644
---- a/Documentation/ABI/testing/sysfs-class-mei
-+++ b/Documentation/ABI/testing/sysfs-class-mei
-@@ -14,3 +14,18 @@ Description:
- 		The /sys/class/mei/meiN directory is created for
- 		each probed mei device
- 
-+What:		/sys/class/mei/meiN/fw_status
-+Date:		Nov 2014
-+KernelVersion:	3.19
-+Contact:	Tomas Winkler <tomas.winkler@intel.com>
-+Description:	Display fw status registers content
-+
-+		The ME FW writes its status information into fw status
-+		registers for BIOS and OS to monitor fw health.
-+
-+		The register contains running state, power management
-+		state, error codes, and others. The way the registers
-+		are decoded depends on PCH or SoC generation.
-+		Also number of registers varies between 1 and 6
-+		depending on generation.
-+
--- 
-1.9.3
+> -----Original Message-----
+> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, December 19, 2014 00:15
+> To: Winkler, Tomas
+> Cc: arnd@arndb.de; linux-kernel@vger.kernel.org
+> Subject: Re: [char-misc-next 1/3 V2] mei: add ABI documentation for fw_status
+> exported through sysfs
+> 
+> On Thu, Dec 18, 2014 at 09:37:12AM +0000, Winkler, Tomas wrote:
+> >
+> >
+> > >
+> > > Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+> > > ---
+> > > V2: rephrase the description
+> > >  Documentation/ABI/testing/sysfs-class-mei | 15 +++++++++++++++
+> > >  1 file changed, 15 insertions(+)
+> > >
+> > Greg you've  included 'mei: export fw status registers through sysfs' to 3.19-rc1
+> pull request
+> > but left this documentation patch out.
+> 
+> I don't remember what happened there, can you resend and I will queue it
+> up for after 3.19-rc1?
+
+
+Thanks
+Done
 
