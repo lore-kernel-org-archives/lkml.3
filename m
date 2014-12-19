@@ -1,180 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaLSJ3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:29:41 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:63310 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLSJ3i (ORCPT
+	id S1752099AbaLSJ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:29:40 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:64318 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaLSJ3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Dec 2014 04:29:38 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-cb-5493f0005dbe
+X-AuditID: cbfec7f4-b7f126d000001e9a-bb-5493efffd019
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
         linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/2] regulator: max77693: Let core parse DT and drop board
- files support
-Date: Fri, 19 Dec 2014 10:29:18 +0100
-Message-id: <1418981359-16457-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH 0/2] regulator: Simplify max77693 driver
+Date: Fri, 19 Dec 2014 10:29:17 +0100
+Message-id: <1418981359-16457-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1418981359-16457-1-git-send-email-k.kozlowski@samsung.com>
-References: <1418981359-16457-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xq7oMHyaHGMz6bGEx9eETNovXLwwt
-	7n89ymjx7UoHk8XlXXPYLE53szqweeycdZfdY9OqTjaPO9f2sHnMOxno0bdlFaPH501yAWxR
-	XDYpqTmZZalF+nYJXBmb3lxlLDipUNF2fg1LA+MaqS5GTg4JAROJju8P2CBsMYkL99YD2Vwc
-	QgJLGSXuz5nEDuH0MUm0vvjBCFLFJmAssXn5ErAqEYFNjBIdjxeDJZgFDCV+vvvDDmILC0RJ
-	bFi8Gmwsi4CqxL8/08HivALuEkuPnIVaJydx8thkVhCbU8BD4s2OiWBxIaCavfvvMk1g5F3A
-	yLCKUTS1NLmgOCk910ivODG3uDQvXS85P3cTIySkvu5gXHrM6hCjAAejEg/vh8bJIUKsiWXF
-	lbmHGCU4mJVEeB2PA4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwMkQeTz5r+2DVv+hb5lWZhXPW
-	60vdW/VyhXBxZeCC3F5l/YWiTydqvti47PreNdcmWVQejimMCLrH97w8INd/z6zdJSq1DwuP
-	+RZGHOzTv2H9r8X+4TXtJcvDZkbOeMTytDAhba5BeNVKZ8XF3/ertcW6Gb9ad6pB7vTfnrZP
-	7XJpAcEJu10/K7EUZyQaajEXFScCAAVuVecHAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t/xq7r/308OMVg2Uc9i6sMnbBavXxha
+	3P96lNHi25UOJovLu+awWZzuZnVg89g56y67x6ZVnWwed67tYfOYdzLQo2/LKkaPz5vkAtii
+	uGxSUnMyy1KL9O0SuDI6G1czFnxmrVjf2MLUwPiUpYuRk0NCwESi5fABJghbTOLCvfVsXYxc
+	HEICSxkl7s+9xA7h9DFJ3F79hRGkik3AWGLz8iVgVSICmxglOh4vBkswCxhK/Hz3hx3EFhaw
+	kHi4uIUZxGYRUJX4s+IiWJxXwF1i9bt5bBDr5CROHpvMOoGRewEjwypG0dTS5ILipPRcQ73i
+	xNzi0rx0veT83E2MkBD5soNx8TGrQ4wCHIxKPLwvqyaHCLEmlhVX5h5ilOBgVhLhdTwOFOJN
+	SaysSi3Kjy8qzUktPsTIxMEp1cCouP1DyqLJH8J37jwsrdG6q79rnUP/1sf3maK72qQnhd/R
+	/yp45+aEfb+Eu2MOhBbrrTn38+Su/JSa1G4rnnVKS3WbRafwc7x3MgrQleLOm58+MUCGbbKF
+	V41e1OtzUwI79KSt3otUnHON1qlfd1uzZYvTXDnHMt7Omd9SNBRPvr94wWRGp5USS3FGoqEW
+	c1FxIgD96o5A7wEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify the driver by removing board file support and letting
-regulator core to parse DT.
+Hi,
 
-The max77693 regulator driver is used only on Exynos based boards which
-are DT-only. Board files are not supported.
+Simplify the max77693 regulator driver by moving DT parse code out
+to regulator core.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
+This removes also board file support. Exynos based boards are DT-only.
+This removal allows bigger simplification of driver so overall diffstat
+is nice: -95 deletions, 12 additions.
+
+The patch 2/2 depends on first patch so please apply everything at once
+or leave second patch for later.
+
+Best regards,
+Krzysztof
+
+Krzysztof Kozlowski (2):
+  regulator: max77693: Let core parse DT and drop board files support
+  mfd: max77693: Remove unused structures
+
  drivers/regulator/max77693.c | 93 +++++---------------------------------------
- 1 file changed, 9 insertions(+), 84 deletions(-)
+ include/linux/mfd/max77693.h | 12 +-----
+ 2 files changed, 10 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/regulator/max77693.c b/drivers/regulator/max77693.c
-index 07b313e51b21..9665a488e2f1 100644
---- a/drivers/regulator/max77693.c
-+++ b/drivers/regulator/max77693.c
-@@ -128,6 +128,8 @@ static struct regulator_ops max77693_charger_ops = {
- #define regulator_desc_esafeout(_num)	{			\
- 	.name		= "ESAFEOUT"#_num,			\
- 	.id		= MAX77693_ESAFEOUT##_num,		\
-+	.of_match	= of_match_ptr("ESAFEOUT"#_num),	\
-+	.regulators_node	= of_match_ptr("regulators"),	\
- 	.n_voltages	= 4,					\
- 	.ops		= &max77693_safeout_ops,		\
- 	.type		= REGULATOR_VOLTAGE,			\
-@@ -145,6 +147,8 @@ static const struct regulator_desc regulators[] = {
- 	{
- 		.name = "CHARGER",
- 		.id = MAX77693_CHARGER,
-+		.of_match = of_match_ptr("CHARGER"),
-+		.regulators_node = of_match_ptr("regulators"),
- 		.ops = &max77693_charger_ops,
- 		.type = REGULATOR_CURRENT,
- 		.owner = THIS_MODULE,
-@@ -154,102 +158,23 @@ static const struct regulator_desc regulators[] = {
- 	},
- };
- 
--#ifdef CONFIG_OF
--static int max77693_pmic_dt_parse_rdata(struct device *dev,
--					struct max77693_regulator_data **rdata)
--{
--	struct device_node *np;
--	struct of_regulator_match *rmatch;
--	struct max77693_regulator_data *tmp;
--	int i, matched = 0;
--
--	np = of_get_child_by_name(dev->parent->of_node, "regulators");
--	if (!np)
--		return -EINVAL;
--
--	rmatch = devm_kzalloc(dev,
--		 sizeof(*rmatch) * ARRAY_SIZE(regulators), GFP_KERNEL);
--	if (!rmatch) {
--		of_node_put(np);
--		return -ENOMEM;
--	}
--
--	for (i = 0; i < ARRAY_SIZE(regulators); i++)
--		rmatch[i].name = regulators[i].name;
--
--	matched = of_regulator_match(dev, np, rmatch, ARRAY_SIZE(regulators));
--	of_node_put(np);
--	if (matched <= 0)
--		return matched;
--	*rdata = devm_kzalloc(dev, sizeof(**rdata) * matched, GFP_KERNEL);
--	if (!(*rdata))
--		return -ENOMEM;
--
--	tmp = *rdata;
--
--	for (i = 0; i < matched; i++) {
--		tmp->initdata = rmatch[i].init_data;
--		tmp->of_node = rmatch[i].of_node;
--		tmp->id = regulators[i].id;
--		tmp++;
--	}
--
--	return matched;
--}
--#else
--static int max77693_pmic_dt_parse_rdata(struct device *dev,
--					struct max77693_regulator_data **rdata)
--{
--	return 0;
--}
--#endif /* CONFIG_OF */
--
--static int max77693_pmic_init_rdata(struct device *dev,
--				    struct max77693_regulator_data **rdata)
--{
--	struct max77693_platform_data *pdata;
--	int num_regulators = 0;
--
--	pdata = dev_get_platdata(dev->parent);
--	if (pdata) {
--		*rdata = pdata->regulators;
--		num_regulators = pdata->num_regulators;
--	}
--
--	if (!(*rdata) && dev->parent->of_node)
--		num_regulators = max77693_pmic_dt_parse_rdata(dev, rdata);
--
--	return num_regulators;
--}
--
- static int max77693_pmic_probe(struct platform_device *pdev)
- {
- 	struct max77693_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct max77693_regulator_data *rdata = NULL;
--	int num_rdata, i;
-+	int i;
- 	struct regulator_config config = { };
- 
--	num_rdata = max77693_pmic_init_rdata(&pdev->dev, &rdata);
--	if (!rdata || num_rdata <= 0) {
--		dev_err(&pdev->dev, "No init data supplied.\n");
--		return -ENODEV;
--	}
--
--	config.dev = &pdev->dev;
-+	config.dev = iodev->dev;
- 	config.regmap = iodev->regmap;
- 
--	for (i = 0; i < num_rdata; i++) {
--		int id = rdata[i].id;
-+	for (i = 0; i < ARRAY_SIZE(regulators); i++) {
- 		struct regulator_dev *rdev;
- 
--		config.init_data = rdata[i].initdata;
--		config.of_node = rdata[i].of_node;
--
- 		rdev = devm_regulator_register(&pdev->dev,
--						&regulators[id], &config);
-+						&regulators[i], &config);
- 		if (IS_ERR(rdev)) {
- 			dev_err(&pdev->dev,
--				"Failed to initialize regulator-%d\n", id);
-+				"Failed to initialize regulator-%d\n", i);
- 			return PTR_ERR(rdev);
- 		}
- 	}
 -- 
 1.9.1
 
