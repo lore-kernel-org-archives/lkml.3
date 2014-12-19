@@ -1,33 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbaLSOKb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:10:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46228 "EHLO
+	id S1753203AbaLSOLF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:11:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46271 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279AbaLSOKZ (ORCPT
+	with ESMTP id S1752791AbaLSOLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:10:25 -0500
-Date: Fri, 19 Dec 2014 06:09:17 -0800
+	Fri, 19 Dec 2014 09:11:02 -0500
+Date: Fri, 19 Dec 2014 06:09:39 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-c3468952f073a9d4efa1e60c04c6e640ed9cf9d0@git.kernel.org>
-Cc: grant.likely@linaro.org, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, rdunlap@infradead.org, tony.luck@intel.com,
-        mingo@kernel.org, joro@8bytes.org, gregkh@linuxfoundation.org,
-        prarit@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        bp@alien8.de, bhelgaas@google.com, rjw@rjwysocki.net,
-        konrad.wilk@oracle.com, yinghai@kernel.org, tglx@linutronix.de
-Reply-To: tglx@linutronix.de, konrad.wilk@oracle.com, rjw@rjwysocki.net,
-        yinghai@kernel.org, linux-kernel@vger.kernel.org, prarit@redhat.com,
-        gregkh@linuxfoundation.org, hpa@zytor.com, bhelgaas@google.com,
-        bp@alien8.de, benh@kernel.crashing.org, jiang.liu@linux.intel.com,
-        rdunlap@infradead.org, grant.likely@linaro.org, joro@8bytes.org,
-        mingo@kernel.org, tony.luck@intel.com
-In-Reply-To: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-8643e28da27d6d50f772409b8dc80bdab52239fb@git.kernel.org>
+Cc: bhe@redhat.com, joro@8bytes.org, fenghua.yu@intel.com, bhelgaas@google.com,
+        grant.likely@linaro.org, aubrey.li@linux.intel.com, bp@alien8.de,
+        lambert.quentin@gmail.com, rdunlap@infradead.org, tglx@linutronix.de,
+        vgoyal@redhat.com, jiang.liu@linux.intel.com, mingo@kernel.org,
+        christian.gmeiner@gmail.com, rafael.j.wysocki@intel.com,
+        hpa@linux.intel.com, yinghai@kernel.org, matt.fleming@intel.com,
+        tony.luck@intel.com, gregkh@linuxfoundation.org, hpa@zytor.com,
+        konrad.wilk@oracle.com, benh@kernel.crashing.org, rjw@rjwysocki.net,
+        linux-kernel@vger.kernel.org, prarit@redhat.com, ryan@desfo.org
+Reply-To: tglx@linutronix.de, rdunlap@infradead.org, vgoyal@redhat.com,
+        jiang.liu@linux.intel.com, mingo@kernel.org, fenghua.yu@intel.com,
+        grant.likely@linaro.org, bhelgaas@google.com, joro@8bytes.org,
+        bhe@redhat.com, aubrey.li@linux.intel.com, lambert.quentin@gmail.com,
+        bp@alien8.de, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, prarit@redhat.com, ryan@desfo.org,
+        yinghai@kernel.org, hpa@linux.intel.com, rafael.j.wysocki@intel.com,
+        christian.gmeiner@gmail.com, matt.fleming@intel.com,
+        tony.luck@intel.com
+In-Reply-To: <1414397531-28254-14-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-14-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/apic] x86, irq:
-  Move HT IRQ related code from io_apic.c into htirq.c
-Git-Commit-ID: c3468952f073a9d4efa1e60c04c6e640ed9cf9d0
+  Move IOAPIC related declarations from hw_irq.h into io_apic.h
+Git-Commit-ID: 8643e28da27d6d50f772409b8dc80bdab52239fb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,279 +47,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c3468952f073a9d4efa1e60c04c6e640ed9cf9d0
-Gitweb:     http://git.kernel.org/tip/c3468952f073a9d4efa1e60c04c6e640ed9cf9d0
+Commit-ID:  8643e28da27d6d50f772409b8dc80bdab52239fb
+Gitweb:     http://git.kernel.org/tip/8643e28da27d6d50f772409b8dc80bdab52239fb
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:03 +0800
+AuthorDate: Mon, 27 Oct 2014 16:12:04 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:17 +0100
 
-x86, irq: Move HT IRQ related code from io_apic.c into htirq.c
+x86, irq: Move IOAPIC related declarations from hw_irq.h into io_apic.h
 
-Create arch/x86/kernel/apic/htirq.c to host Hypertransport IRQ related
-code, preparing for enabling hierarchy irqdomain.
+Clean up code by moving IOAPIC related declarations from hw_irq.h into
+io_apic.h.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Grant Likely <grant.likely@linaro.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414397531-28254-13-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Baoquan He <bhe@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
+Cc: Aubrey <aubrey.li@linux.intel.com>
+Cc: Ryan Desfosses <ryan@desfo.org>
+Cc: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-14-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/kernel/apic/Makefile  |   1 +
- arch/x86/kernel/apic/htirq.c   | 107 +++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/apic/io_apic.c |  92 -----------------------------------
- 3 files changed, 108 insertions(+), 92 deletions(-)
+ arch/x86/include/asm/hw_irq.h      | 33 ---------------------------------
+ arch/x86/include/asm/io_apic.h     | 20 +++++++++++++++++++-
+ arch/x86/kernel/apic/io_apic.c     | 10 ++++++++++
+ arch/x86/kernel/crash.c            |  1 +
+ arch/x86/kernel/machine_kexec_32.c |  1 +
+ arch/x86/kernel/machine_kexec_64.c |  1 +
+ arch/x86/kernel/reboot.c           |  1 +
+ drivers/pci/hotplug/ibmphp_core.c  |  1 +
+ 8 files changed, 34 insertions(+), 34 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
-index aac3007..8bb12dd 100644
---- a/arch/x86/kernel/apic/Makefile
-+++ b/arch/x86/kernel/apic/Makefile
-@@ -7,6 +7,7 @@ obj-y				+= hw_nmi.o
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index a723577..9662290 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -159,39 +159,6 @@ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
+ #endif	/* CONFIG_X86_LOCAL_APIC */
  
- obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
- obj-$(CONFIG_PCI_MSI)		+= msi.o
-+obj-$(CONFIG_HT_IRQ)		+= htirq.o
- obj-$(CONFIG_SMP)		+= ipi.o
- 
- ifeq ($(CONFIG_X86_64),y)
-diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
-new file mode 100644
-index 0000000..a4980c5
---- /dev/null
-+++ b/arch/x86/kernel/apic/htirq.c
-@@ -0,0 +1,107 @@
-+/*
-+ * Support Hypertransport IRQ
-+ *
-+ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
-+ *	Moved from arch/x86/kernel/apic/io_apic.c.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/mm.h>
-+#include <linux/interrupt.h>
-+#include <linux/init.h>
-+#include <linux/device.h>
-+#include <linux/pci.h>
-+#include <linux/htirq.h>
-+#include <asm/hw_irq.h>
-+#include <asm/apic.h>
-+#include <asm/hypertransport.h>
-+
-+/*
-+ * Hypertransport interrupt support
-+ */
-+static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
-+{
-+	struct ht_irq_msg msg;
-+
-+	fetch_ht_irq_msg(irq, &msg);
-+
-+	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
-+	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
-+
-+	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
-+	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
-+
-+	write_ht_irq_msg(irq, &msg);
-+}
-+
-+static int
-+ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
-+{
-+	struct irq_cfg *cfg = data->chip_data;
-+	unsigned int dest;
-+	int ret;
-+
-+	ret = apic_set_affinity(data, mask, &dest);
-+	if (ret)
-+		return ret;
-+
-+	target_ht_irq(data->irq, dest, cfg->vector);
-+	return IRQ_SET_MASK_OK_NOCOPY;
-+}
-+
-+static struct irq_chip ht_irq_chip = {
-+	.name			= "PCI-HT",
-+	.irq_mask		= mask_ht_irq,
-+	.irq_unmask		= unmask_ht_irq,
-+	.irq_ack		= apic_ack_edge,
-+	.irq_set_affinity	= ht_set_affinity,
-+	.irq_retrigger		= apic_retrigger_irq,
-+	.flags			= IRQCHIP_SKIP_SET_WAKE,
-+};
-+
-+int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
-+{
-+	struct irq_cfg *cfg;
-+	struct ht_irq_msg msg;
-+	unsigned dest;
-+	int err;
-+
-+	if (disable_apic)
-+		return -ENXIO;
-+
-+	cfg = irq_cfg(irq);
-+	err = assign_irq_vector(irq, cfg, apic->target_cpus());
-+	if (err)
-+		return err;
-+
-+	err = apic->cpu_mask_to_apicid_and(cfg->domain,
-+					   apic->target_cpus(), &dest);
-+	if (err)
-+		return err;
-+
-+	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
-+
-+	msg.address_lo =
-+		HT_IRQ_LOW_BASE |
-+		HT_IRQ_LOW_DEST_ID(dest) |
-+		HT_IRQ_LOW_VECTOR(cfg->vector) |
-+		((apic->irq_dest_mode == 0) ?
-+			HT_IRQ_LOW_DM_PHYSICAL :
-+			HT_IRQ_LOW_DM_LOGICAL) |
-+		HT_IRQ_LOW_RQEOI_EDGE |
-+		((apic->irq_delivery_mode != dest_LowestPrio) ?
-+			HT_IRQ_LOW_MT_FIXED :
-+			HT_IRQ_LOW_MT_ARBITRATED) |
-+		HT_IRQ_LOW_IRQ_MASKED;
-+
-+	write_ht_irq_msg(irq, &msg);
-+
-+	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
-+				      handle_edge_irq, "edge");
-+
-+	dev_dbg(&dev->dev, "irq %d for HT\n", irq);
-+
-+	return 0;
-+}
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 653fe21..b1acb68 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -32,7 +32,6 @@
- #include <linux/module.h>
- #include <linux/syscore_ops.h>
- #include <linux/irqdomain.h>
--#include <linux/htirq.h>
- #include <linux/freezer.h>
- #include <linux/kthread.h>
- #include <linux/jiffies.h>	/* time_after() */
-@@ -49,7 +48,6 @@
- #include <asm/dma.h>
- #include <asm/timer.h>
- #include <asm/i8259.h>
--#include <asm/hypertransport.h>
- #include <asm/setup.h>
- #include <asm/irq_remapping.h>
- #include <asm/hw_irq.h>
-@@ -2450,96 +2448,6 @@ static int __init ioapic_init_ops(void)
- 
- device_initcall(ioapic_init_ops);
- 
--/*
-- * Hypertransport interrupt support
-- */
--#ifdef CONFIG_HT_IRQ
--
--static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
--{
--	struct ht_irq_msg msg;
--	fetch_ht_irq_msg(irq, &msg);
--
--	msg.address_lo &= ~(HT_IRQ_LOW_VECTOR_MASK | HT_IRQ_LOW_DEST_ID_MASK);
--	msg.address_hi &= ~(HT_IRQ_HIGH_DEST_ID_MASK);
--
--	msg.address_lo |= HT_IRQ_LOW_VECTOR(vector) | HT_IRQ_LOW_DEST_ID(dest);
--	msg.address_hi |= HT_IRQ_HIGH_DEST_ID(dest);
--
--	write_ht_irq_msg(irq, &msg);
--}
--
--static int
--ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
--{
--	struct irq_cfg *cfg = data->chip_data;
--	unsigned int dest;
--	int ret;
--
--	ret = apic_set_affinity(data, mask, &dest);
--	if (ret)
--		return ret;
--
--	target_ht_irq(data->irq, dest, cfg->vector);
--	return IRQ_SET_MASK_OK_NOCOPY;
--}
--
--static struct irq_chip ht_irq_chip = {
--	.name			= "PCI-HT",
--	.irq_mask		= mask_ht_irq,
--	.irq_unmask		= unmask_ht_irq,
--	.irq_ack		= apic_ack_edge,
--	.irq_set_affinity	= ht_set_affinity,
--	.irq_retrigger		= apic_retrigger_irq,
--	.flags			= IRQCHIP_SKIP_SET_WAKE,
+-/* IOAPIC */
+-#ifdef CONFIG_X86_IO_APIC
+-struct io_apic_irq_attr {
+-	int ioapic;
+-	int ioapic_pin;
+-	int trigger;
+-	int polarity;
 -};
 -
--int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+-static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
+-					int ioapic, int ioapic_pin,
+-					int trigger, int polarity)
 -{
--	struct irq_cfg *cfg;
--	struct ht_irq_msg msg;
--	unsigned dest;
--	int err;
--
--	if (disable_apic)
--		return -ENXIO;
--
--	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
--
--	msg.address_lo =
--		HT_IRQ_LOW_BASE |
--		HT_IRQ_LOW_DEST_ID(dest) |
--		HT_IRQ_LOW_VECTOR(cfg->vector) |
--		((apic->irq_dest_mode == 0) ?
--			HT_IRQ_LOW_DM_PHYSICAL :
--			HT_IRQ_LOW_DM_LOGICAL) |
--		HT_IRQ_LOW_RQEOI_EDGE |
--		((apic->irq_delivery_mode != dest_LowestPrio) ?
--			HT_IRQ_LOW_MT_FIXED :
--			HT_IRQ_LOW_MT_ARBITRATED) |
--		HT_IRQ_LOW_IRQ_MASKED;
--
--	write_ht_irq_msg(irq, &msg);
--
--	irq_set_chip_and_handler_name(irq, &ht_irq_chip,
--				      handle_edge_irq, "edge");
--
--	dev_printk(KERN_DEBUG, &dev->dev, "irq %d for HT\n", irq);
--
--	return 0;
+-	irq_attr->ioapic	= ioapic;
+-	irq_attr->ioapic_pin	= ioapic_pin;
+-	irq_attr->trigger	= trigger;
+-	irq_attr->polarity	= polarity;
 -}
--#endif /* CONFIG_HT_IRQ */
 -
- static int
- io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+-extern void setup_IO_APIC(void);
+-extern void enable_IO_APIC(void);
+-extern void disable_IO_APIC(void);
+-extern void setup_ioapic_dest(void);
+-extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
+-extern void print_IO_APICs(void);
+-
+-extern unsigned long io_apic_irqs;
+-#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
+-#else	/* CONFIG_X86_IO_APIC */
+-#define IO_APIC_IRQ(x)	0
+-static inline void print_IO_APICs(void) {}
+-#endif	/* CONFIG_X86_IO_APIC */
+-
+ /* Statistics */
+ extern atomic_t irq_err_count;
+ extern atomic_t irq_mis_count;
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index bdd45c2..b7f1499 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -132,6 +132,10 @@ extern int noioapicquirk;
+ /* -1 if "noapic" boot option passed */
+ extern int noioapicreroute;
+ 
++extern unsigned long io_apic_irqs;
++
++#define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
++
+ /*
+  * If we use the IO-APIC for IRQ routing, disable automatic
+  * assignment of PCI IRQ's.
+@@ -139,7 +143,6 @@ extern int noioapicreroute;
+ #define io_apic_assign_pci_irqs \
+ 	(mp_irq_entries && !skip_ioapic_setup && io_apic_irqs)
+ 
+-struct io_apic_irq_attr;
+ struct irq_cfg;
+ extern void ioapic_insert_resources(void);
+ 
+@@ -157,6 +160,13 @@ extern int restore_ioapic_entries(void);
+ extern void setup_ioapic_ids_from_mpc(void);
+ extern void setup_ioapic_ids_from_mpc_nocheck(void);
+ 
++struct io_apic_irq_attr {
++	int ioapic;
++	int ioapic_pin;
++	int trigger;
++	int polarity;
++};
++
+ enum ioapic_domain_type {
+ 	IOAPIC_DOMAIN_INVALID,
+ 	IOAPIC_DOMAIN_LEGACY,
+@@ -226,11 +236,19 @@ static inline void io_apic_modify(unsigned int apic, unsigned int reg, unsigned
+ 
+ extern void io_apic_eoi(unsigned int apic, unsigned int vector);
+ 
++extern void setup_IO_APIC(void);
++extern void enable_IO_APIC(void);
++extern void disable_IO_APIC(void);
++extern void setup_ioapic_dest(void);
++extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
++extern void print_IO_APICs(void);
+ #else  /* !CONFIG_X86_IO_APIC */
+ 
++#define IO_APIC_IRQ(x)		0
+ #define io_apic_assign_pci_irqs 0
+ #define setup_ioapic_ids_from_mpc x86_init_noop
+ static inline void ioapic_insert_resources(void) { }
++static inline void print_IO_APICs(void) {}
+ #define gsi_top (NR_IRQS_LEGACY)
+ static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ static inline u32 mp_pin_to_gsi(int ioapic, int pin) { return UINT_MAX; }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index b1acb68..8dcdb7b 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -3023,6 +3023,16 @@ int mp_ioapic_registered(u32 gsi_base)
+ 	return 0;
+ }
+ 
++static inline void set_io_apic_irq_attr(struct io_apic_irq_attr *irq_attr,
++					int ioapic, int ioapic_pin,
++					int trigger, int polarity)
++{
++	irq_attr->ioapic	= ioapic;
++	irq_attr->ioapic_pin	= ioapic_pin;
++	irq_attr->trigger	= trigger;
++	irq_attr->polarity	= polarity;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
  {
+diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
+index f5ab56d..aceb2f9 100644
+--- a/arch/x86/kernel/crash.c
++++ b/arch/x86/kernel/crash.c
+@@ -28,6 +28,7 @@
+ #include <asm/nmi.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/hpet.h>
+ #include <linux/kdebug.h>
+ #include <asm/cpu.h>
+diff --git a/arch/x86/kernel/machine_kexec_32.c b/arch/x86/kernel/machine_kexec_32.c
+index 72e8e31..469b23d 100644
+--- a/arch/x86/kernel/machine_kexec_32.c
++++ b/arch/x86/kernel/machine_kexec_32.c
+@@ -20,6 +20,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/cpufeature.h>
+ #include <asm/desc.h>
+ #include <asm/cacheflush.h>
+diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
+index 4859810..415480d 100644
+--- a/arch/x86/kernel/machine_kexec_64.c
++++ b/arch/x86/kernel/machine_kexec_64.c
+@@ -22,6 +22,7 @@
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+ #include <asm/mmu_context.h>
++#include <asm/io_apic.h>
+ #include <asm/debugreg.h>
+ #include <asm/kexec-bzimage64.h>
+ 
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 17962e6..bae6c60 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -12,6 +12,7 @@
+ #include <acpi/reboot.h>
+ #include <asm/io.h>
+ #include <asm/apic.h>
++#include <asm/io_apic.h>
+ #include <asm/desc.h>
+ #include <asm/hpet.h>
+ #include <asm/pgtable.h>
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index d261e62..96c5c72 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -36,6 +36,7 @@
+ #include <linux/wait.h>
+ #include "../pci.h"
+ #include <asm/pci_x86.h>		/* for struct irq_routing_table */
++#include <asm/io_apic.h>
+ #include "ibmphp.h"
+ 
+ #define attn_on(sl)  ibmphp_hpc_writeslot (sl, HPC_SLOT_ATTNON)
