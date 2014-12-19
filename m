@@ -1,143 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894AbaLSQQQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:16:16 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37004 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751218AbaLSQQP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:16:15 -0500
-Date: Fri, 19 Dec 2014 17:15:49 +0100
-From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-To: atull <atull@opensource.altera.com>
-Cc: Michal Simek <michal.simek@xilinx.com>, gregkh@linuxfoundation.org,
-        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
-        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
-        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
-        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
- fpga manager
-Message-ID: <20141219161549.GH13070@pengutronix.de>
-References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
- <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
- <20141219085516.GF13070@pengutronix.de>
- <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
- <20141219150714.GG13070@pengutronix.de>
- <alpine.DEB.2.02.1412190955090.16892@linuxheads99>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752284AbaLSQQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:16:40 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:51187 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491AbaLSQQj convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 19 Dec 2014 11:16:39 -0500
+Message-Id: <54945D760200007800051157@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 19 Dec 2014 16:16:38 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "David Vrabel" <david.vrabel@citrix.com>,
+        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "xen-devel" <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: xen/x86: properly retrieve NMI reason
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1412190955090.16892@linuxheads99>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 17:10:45 up 65 days,  3:24, 76 users,  load average: 0,08, 0,10,
- 0,08
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: str@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 09:55:34AM -0600, atull wrote:
-> On Fri, 19 Dec 2014, Steffen Trumtrar wrote:
-> 
-> > On Fri, Dec 19, 2014 at 03:05:50PM +0100, Michal Simek wrote:
-> > > On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
-> > > > Hi!
-> > > > 
-> > > > Just a minor nitpick, but...
-> > > > 
-> > > > On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
-> > > >> From: Alan Tull <atull@opensource.altera.com>
-> > > >>
-> > > >> Add driver to fpga manager framework to allow configuration
-> > > >> of FPGA in Altera SoCFPGA parts.
-> > > >>
-> > > >> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> > > >> Acked-by: Michal Simek <michal.simek@xilinx.com>
-> > > >> ---
-> > > >> v2: fpga_manager struct now contains struct device
-> > > >>     fpga_manager_register parameters now take device
-> > > >>
-> > > >> v3: skip a version to align versions
-> > > >>
-> > > >> v4: move to drivers/staging
-> > > >>
-> > > >> v5: fix array_size.cocci warnings
-> > > >>     fix platform_no_drv_owner.cocci warnings
-> > > >>     Remove .owner = THIS_MODULE
-> > > >>     include asm/irq.h
-> > > >>     clean up list of includes
-> > > >>     use altera_fpga_reset for ops
-> > > >>     use enum fpga_mgr_states or u32 as needed
-> > > >>     use devm_request_irq
-> > > >>     check irq <= 0 instead of == NO_IRQ
-> > > >>     Use ARRAY_SIZE
-> > > >>     rename altera -> socfpga
-> > > >>     static const socfpga_fpga_ops
-> > > >>     header moved to linux/fpga/ folder
-> > > >>     remove ifdef'ed code
-> > > >>     use platform_get_resource and platform_get_irq
-> > > >>     move .probe and .remove lines adjacent
-> > > >>     use module_platform_driver
-> > > >>     use __maybe_unused
-> > > >>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
-> > > >>     fix "unsigned 'mode' is never < 0"
-> > > >>
-> > > >> v6: return error for (unused) default of case statement
-> > > >> ---
-> > > >   ^^^
-> > > > 
-> > > > ...if you remove these, than that changelog will not land in the final
-> > > > commit which I would prefer. Nobody cares for the changelog of a
-> > > > patch once it is in its final state. And this is a rather noisy one.
-> > > > When someone in the future looks at this, he will see two lines of
-> > > > information and 10 times that of uninteresting noise.
-> > > > 
-> > > > Not a dealbreaker, but just something to consider for future patches.
-> > > 
-> > > 
-> > > When you run git-am you will see that changelog is not there.
-> > > 
-> > 
-> > Ah, great. It seems like git-am does indeed know now how to handle this.
-> > There are some commits in mainline that have this changelog added,
-> > because there where two '---' lines in the patch.
-> > 
-> > Then go on kind sirs with whatever you where doing and don't pay any
-> > attention to my comment... :-)
-> > 
-> > Regards,
-> > Steffen
-> > 
-> 
-> git format-patch adds the second ---
-> 
+Using the native code here can't work properly, as the hypervisor would
+normally have cleared the two reason bits by the time Dom0 gets to see
+the NMI (if passed to it at all). There's a shared info field for this,
+and there's an existing hook to use - just fit the two together. Note
+that the hook can (and should) be used irrespective of whether being in
+Dom0, as accessing port 0x61 in a DomU would be even worse, while the
+shared info field would just hold zero all the time.
 
-Yeah, of course. But where does the first one come from?
-Do you keep a changelog in your commits?
-That is what git notes is for, no?!
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+---
+ arch/x86/xen/enlighten.c    |   22 +++++++++++++++++-
+ include/xen/interface/nmi.h |   52 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 1 deletion(-)
 
-Regards,
-Steffen
+--- 3.18/arch/x86/xen/enlighten.c
++++ 3.18-xen-x86-NMI-reason/arch/x86/xen/enlighten.c
+@@ -40,6 +40,7 @@
+ #include <xen/interface/physdev.h>
+ #include <xen/interface/vcpu.h>
+ #include <xen/interface/memory.h>
++#include <xen/interface/nmi.h>
+ #include <xen/interface/xen-mca.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
+@@ -66,6 +67,7 @@
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
+ #include <asm/hypervisor.h>
++#include <asm/mach_traps.h>
+ #include <asm/mwait.h>
+ #include <asm/pci_x86.h>
+ #include <asm/pat.h>
+@@ -1357,6 +1359,21 @@ static const struct machine_ops xen_mach
+ 	.emergency_restart = xen_emergency_restart,
+ };
+ 
++static unsigned char xen_get_nmi_reason(void)
++{
++	unsigned char reason = 0;
++
++	/* Construct a value which looks like it came from port 0x61. */
++	if (test_bit(_XEN_NMIREASON_io_error,
++		     &HYPERVISOR_shared_info->arch.nmi_reason))
++		reason |= NMI_REASON_IOCHK;
++	if (test_bit(_XEN_NMIREASON_pci_serr,
++		     &HYPERVISOR_shared_info->arch.nmi_reason))
++		reason |= NMI_REASON_SERR;
++
++	return reason;
++}
++
+ static void __init xen_boot_params_init_edd(void)
+ {
+ #if IS_ENABLED(CONFIG_EDD)
+@@ -1541,9 +1558,12 @@ asmlinkage __visible void __init xen_sta
+ 	pv_info = xen_info;
+ 	pv_init_ops = xen_init_ops;
+ 	pv_apic_ops = xen_apic_ops;
+-	if (!xen_pvh_domain())
++	if (!xen_pvh_domain()) {
+ 		pv_cpu_ops = xen_cpu_ops;
+ 
++		x86_platform.get_nmi_reason = xen_get_nmi_reason;
++	}
++
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		x86_init.resources.memory_setup = xen_auto_xlated_memory_setup;
+ 	else
+--- /usr/local/src/linux-3.18/include/xen/interface/nmi.h	1970-01-01 01:00:00.000000000 +0100
++++ 3.18-xen-x86-NMI-reason/include/xen/interface/nmi.h
+@@ -0,0 +1,52 @@
++/******************************************************************************
++ * nmi.h
++ * 
++ * NMI callback registration and reason codes.
++ * 
++ * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
++ */
++
++#ifndef __XEN_PUBLIC_NMI_H__
++#define __XEN_PUBLIC_NMI_H__
++
++#include <xen/interface/xen.h>
++
++/*
++ * NMI reason codes:
++ * Currently these are x86-specific, stored in arch_shared_info.nmi_reason.
++ */
++ /* I/O-check error reported via ISA port 0x61, bit 6. */
++#define _XEN_NMIREASON_io_error     0
++#define XEN_NMIREASON_io_error      (1UL << _XEN_NMIREASON_io_error)
++ /* PCI SERR reported via ISA port 0x61, bit 7. */
++#define _XEN_NMIREASON_pci_serr     1
++#define XEN_NMIREASON_pci_serr      (1UL << _XEN_NMIREASON_pci_serr)
++ /* Unknown hardware-generated NMI. */
++#define _XEN_NMIREASON_unknown      2
++#define XEN_NMIREASON_unknown       (1UL << _XEN_NMIREASON_unknown)
++
++/*
++ * long nmi_op(unsigned int cmd, void *arg)
++ * NB. All ops return zero on success, else a negative error code.
++ */
++
++/*
++ * Register NMI callback for this (calling) VCPU. Currently this only makes
++ * sense for domain 0, vcpu 0. All other callers will be returned EINVAL.
++ * arg == pointer to xennmi_callback structure.
++ */
++#define XENNMI_register_callback   0
++struct xennmi_callback {
++    unsigned long handler_address;
++    unsigned long pad;
++};
++typedef struct xennmi_callback xennmi_callback_t;
++DEFINE_XEN_GUEST_HANDLE(xennmi_callback_t);
++
++/*
++ * Deregister NMI callback for this (calling) VCPU.
++ * arg == NULL.
++ */
++#define XENNMI_unregister_callback 1
++
++#endif /* __XEN_PUBLIC_NMI_H__ */
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+
