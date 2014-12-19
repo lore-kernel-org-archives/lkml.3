@@ -1,144 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341AbaLSTCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 14:02:31 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:47865 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaLSTC2 (ORCPT
+	id S1752487AbaLSTDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 14:03:07 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:56742 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaLSTDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 14:02:28 -0500
+	Fri, 19 Dec 2014 14:03:04 -0500
+Message-ID: <54947695.3020108@gmail.com>
+Date: Fri, 19 Dec 2014 19:03:49 +0000
+From: Emil Velikov <emil.l.velikov@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpxvE4x_-PV=KN0HKY5cNug-ss9m5KCjNdebR1LDOJi5w@mail.gmail.com>
-References: <1417563767-32181-1-git-send-email-dianders@chromium.org>
-	<CAPDyKFpxvE4x_-PV=KN0HKY5cNug-ss9m5KCjNdebR1LDOJi5w@mail.gmail.com>
-Date: Fri, 19 Dec 2014 11:02:26 -0800
-X-Google-Sender-Auth: 18lBf32lWk1mRArA1fdfQJEep_Y
-Message-ID: <CAD=FV=UCyOXfMqu_MYbd5pKOpgXPB87LQ7hCegeeY9vzsy6QAg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Fixes for SDIO interrupts for dw_mmc
-From: Doug Anderson <dianders@chromium.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chris Ball <chris@printf.net>,
-        =?UTF-8?B?R3LDqWdvcnkgU291dGFkw6k=?= <gsoutade@neotion.com>,
-        Joe Perches <joe@perches.com>, Axel Lin <axel.lin@ingics.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Steve Longerbeam <slongerbeam@gmail.com>
+CC: emil.l.velikov@gmail.com, Fabio Estevam <fabio.estevam@freescale.com>,
+        linux-fbdev@vger.kernel.org,
+        Steve Longerbeam <steve_longerbeam@mentor.com>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        Denis Carikli <denis@eukrea.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [PATCH v2 3/7] drm_modes: add videomode_from_drm_display_mode
+References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com> <1418954426-21909-4-git-send-email-steve_longerbeam@mentor.com> <1418986984.3165.64.camel@pengutronix.de>
+In-Reply-To: <1418986984.3165.64.camel@pengutronix.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ulf,
-
-On Fri, Dec 19, 2014 at 2:17 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 3 December 2014 at 00:42, Doug Anderson <dianders@chromium.org> wrote:
->> Bing Zhao at Marvell found a problem with dw_mmc where interrupts
->> weren't firing sometimes.  He tracked it down to a read-modify-write
->> problem with the INTMASK.  These patches fix the problem.
+On 19/12/14 11:03, Philipp Zabel wrote:
+> Am Donnerstag, den 18.12.2014, 18:00 -0800 schrieb Steve Longerbeam:
+>> Add conversion from drm_display_mode to videomode.
 >>
->> Note: I've picked up a > 1-year old series here to make another
->> attempt at landing it upstream.  These patches have been in shipping
->> Chromebooks for the last year.  Note that v3 to v4 has no changes
->> other than a rebase and a small commit message update.
+>> Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
+>> ---
+>>  drivers/gpu/drm/drm_modes.c |   40 ++++++++++++++++++++++++++++++++++++++++
+>>  include/drm/drm_modes.h     |    2 ++
+>>  2 files changed, 42 insertions(+)
 >>
->> The first two patches extend the "init_card()" mechanism of MMC core
->> to actually be called for all card types, not just SDIO.  That could
->> be applied any time and should fix at least one longstanding bug
->> (untested).
->>
->> The third patch is a cleanup patch to use init_card() to move things
->> around a bit so we don't need to handle SDIO cards in such a strange
->> place.  On earlier versions of this patch Seungwon brought up a few
->> points which I have _not_ addressed.  See
->> <https://patchwork.kernel.org/patch/3049071/>.  Other than talk of
->> cards with out of band interrupts maybe being able to gate their
->> clocks, he wanted to use MMC_QUIRK_BROKEN_CLK_GATING.  I didn't do
->> that because of the ordering of init_card() and when the quirks are
->> set.  Some users of init_card() like pandora_wl1251_init_card() rely
->> on it being called very early in the process.
->> pandora_wl1251_init_card() hardcodes a vendor and device and thus need
->> to be called super early.  On the other hand the code that adds quirks
->> _reads_ the vendor and device.  It can't possibly move before
->> init_card().  If folks are willing to take an additional host op of
->> init_card_late() I can certainly go that way, though.
->>
->> The fourth patch is (I think) reviewed and ready to go assuming the
->> other two land.
->
-> I have queued this up for 3.20.
+>> diff --git a/drivers/gpu/drm/drm_modes.c b/drivers/gpu/drm/drm_modes.c
+>> index 6d8b941..583a391 100644
+>> --- a/drivers/gpu/drm/drm_modes.c
+>> +++ b/drivers/gpu/drm/drm_modes.c
+>> @@ -615,6 +615,46 @@ void drm_display_mode_from_videomode(const struct videomode *vm,
+>>  }
+>>  EXPORT_SYMBOL_GPL(drm_display_mode_from_videomode);
+>>  
+>> +/**
+>> + * videomode_from_drm_display_mode - fill in @vm using @dmode,
+>> + * @dmode: drm_display_mode structure to use as source
+>> + * @vm: videomode structure to use as destination
+>> + *
+>> + * Fills out @vm using the display mode specified in @dmode.
+>> + */
+>> +void videomode_from_drm_display_mode(const struct drm_display_mode *dmode,
+>> +				     struct videomode *vm)
+>> +{
+>> +	vm->hactive = dmode->hdisplay;
+>> +	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
+>> +	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
+>> +	vm->hback_porch = dmode->htotal - dmode->hsync_end;
+>> +
+>> +	vm->vactive = dmode->vdisplay;
+>> +	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
+>> +	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
+>> +	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
+>> +
+>> +	vm->pixelclock = dmode->clock * 1000;
+>> +
+>> +	vm->flags = 0;
+>> +	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
+>> +		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
+>> +	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
+>> +		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
+>> +	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
+>> +		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
+>> +	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
+>> +		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
+>> +	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
+>> +		vm->flags |= DISPLAY_FLAGS_INTERLACED;
+>> +	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
+>> +		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
+>> +	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
+>> +		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
+>> +}
+>> +EXPORT_SYMBOL_GPL(videomode_from_drm_display_mode);
+> 
+> Is it ok for drm_modes to export a function that doesn't start with
+> drm_ ? We could just rename this to drm_display_mode_to_videomode if
+> necessary. I can fix it up as I apply it, but I'd like to know which is
+> preferred.
+> 
+Non-native English speaker here, and drm_display_mode_to_videomode
+sounds better. Plus I think that *to* functions are more common than
+*from* ones.
 
-Thanks!
+I'm not a drm dev, so just my 2c :)
 
+Cheers,
+Emil
 
-> It was a bit hard to follow the
-> updated the revisions, please don't send patches "in-reply-to" for
-> future sets.
-
-Very strange.  I didn't send out anything in-reply-to other than what
-git-send-email usually does.  I believe I had:
-
-[0] - no in reply to.
- [1] - in reply to [0]
- [2] - in reply to [0]
- [3] - in reply to [0]
- [4] - in reply to [0]
-
-Is there some other way you'd prefer?
-
-Looking full headers in <https://patchwork.kernel.org/patch/5425241/>,
-I confirm it is "in-reply-to"
-"1417563767-32181-1-git-send-email-dianders@chromium.org".  Patchwork
-doesn't keep cover letters, but you can see at
-<http://www.spinics.net/lists/linux-mmc/msg29699.html>) that there is
-no in-reply-to.
-
-I'm more than happy to adjust my workflow if you can give me some
-specifics.  Thanks!  :)
-
-
-> In v5, I don't find a patch 1/4. Anyway, I have taken patch 2->4.
-
-Ah, maybe because it wasn't sent to linux-mmc?  I messed that up and
-will try to do better in the future.  Sorry.  :(  You were in the To
-line, though.  You can see at
-<https://patchwork.kernel.org/patch/5425241/>.
-
-Do you want me to repost it and CC linux-mmc with Tony's Ack?
-
----
-
-Note: patchwork seems to find all my patches:
-
-pwclient list -w dianders@chromium.org -p ""
-
-5425241 New          [v5,1/4] ARM: OMAP2+: Make sure
-pandora_wl1251_init_card() applies to SDIO only
-5425291 New          [v5,1/4] ARM: OMAP2+: Make sure
-pandora_wl1251_init_card() applies to SDIO only
-5425311 New          [v5,1/4] ARM: OMAP2+: Make sure
-pandora_wl1251_init_card() applies to SDIO only
-5425231 New          [v5,2/4] mmc: core: Support the optional
-init_card() callback for MMC and SD
-5425301 New          [v5,2/4] mmc: core: Support the optional
-init_card() callback for MMC and SD
-5425271 New          [v5,3/4] mmc: dw_mmc: Cleanup disable of low
-power mode w/ SDIO interrupts
-5425281 New          [v5,3/4] mmc: dw_mmc: Cleanup disable of low
-power mode w/ SDIO interrupts
-5425251 New          [v5,4/4] mmc: dw_mmc: Protect read-modify-write
-of INTMASK with a lock
-5425261 New          [v5,4/4] mmc: dw_mmc: Protect read-modify-write
-of INTMASK with a lock
