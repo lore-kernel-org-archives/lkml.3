@@ -1,114 +1,645 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaLSVPP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 16:15:15 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:55167 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384AbaLSVPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 16:15:12 -0500
-Date: Fri, 19 Dec 2014 16:15:05 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Chintan Pandya <cpandya@codeaurora.org>
-Cc: mhocko@suse.cz, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: Provide knob for force OOM into the memcg
-Message-ID: <20141219211505.GA6838@phnom.home.cmpxchg.org>
-References: <1418736335-30915-1-git-send-email-cpandya@codeaurora.org>
- <20141216165922.GA30984@phnom.home.cmpxchg.org>
- <549172F1.5050303@codeaurora.org>
+	id S1752576AbaLSVUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 16:20:12 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:54253 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751414AbaLSVUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 16:20:09 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Kevin Hilman <khilman@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
+Date: Fri, 19 Dec 2014 22:41:54 +0100
+Message-ID: <9470157.PyHoGoSGz1@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
+References: <472992175.g1ArEYGFPo@vostro.rjw.lan> <2635409.SWsBMlb9s4@vostro.rjw.lan> <CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <549172F1.5050303@codeaurora.org>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 17, 2014 at 05:41:29PM +0530, Chintan Pandya wrote:
+On Friday, December 19, 2014 09:13:29 AM Geert Uytterhoeven wrote:
+> On Fri, Dec 19, 2014 at 3:03 AM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > --- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
+> > +++ linux-pm/arch/mips/configs/lemote2f_defconfig
+> > @@ -37,7 +37,7 @@ CONFIG_MIPS32_N32=y
+> >  CONFIG_PM=y
+>   ^^^^^^^^^^^
+> >  CONFIG_HIBERNATION=y
+> >  CONFIG_PM_STD_PARTITION="/dev/hda3"
+> > -CONFIG_PM_RUNTIME=y
+> > +CONFIG_PM=y
+>    ^^^^^^^^^^^
+> Now we have two of them
 > 
-> >Why do you move tasks around during runtime?  Rather than scanning
-> >thousands or millions of page table entries to relocate a task and its
-> >private memory to another configuration domain, wouldn't it be easier to
-> >just keep the task in a dedicated cgroup and reconfigure that instead?
+> >  CONFIG_CPU_FREQ=y
+> >  CONFIG_CPU_FREQ_DEBUG=y
+> >  CONFIG_CPU_FREQ_STAT=m
 > 
-> Your suggestion is good. But in specific cases, we may have no choice but to
-> migrate.
-> 
-> Take a case of an Android system where a process/app will never gets killed
-> until there is really no scope of holding it any longer in RAM. So, when
-> that process was running as a foreground process, it has to belong to a
-> group which has no memory limit and cannot be killed. Now, when the same
-> process goes into background and sits idle, it can be compressed and cached
-> into some space in RAM. These cached processes are ever growing list and can
-> be capped with some limit. Naturally, these processes belongs to different
-> category and hence different cgroup which just controls such cached
-> processes.
+> Other defconfig files may be affected, too.
 
-This is a valid usecase that should supported, but there has to be a
-better way to do it then to move potentially hundreds of megabytes,
-page by page, during the task switch.  It's a massive amount of work.
+Good catch, I felt I might have forgotten about something ...
 
-But there are also several problematic design implications in moving
-memory along with a task.
+Fixed up patch is appended, thanks!
 
-For one, moving a task involves two separate cgroups that can have an
-arbitrary number of controllers attached to them.  If this complex
-operation fails, you have no idea which component is at fault - was it
-a generic cgroup problem, or does the move violate a rule in one of
-the controllers?  And *if* it fails, what action do you take?  Does
-the app simply remain a foreground app?  Likewise, if you move the
-task but fail to migrate some pages, do you leave them behind in the
-foreground group where they are exempt from reclaim?  Conflating task
-organization and resource control like this just isn't a good idea.
 
-Secondly, memory tracked through cgroups does not belong to the task,
-it belongs to the cgroup, and we are limited to unreliable heuristics
-when determining a task-page relationship.  The pages that can't be
-attributed properly - like unmapped page cache - again will be left
-behind, polluting your reclaim-exempt foreground group.
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: PM: Eliminate CONFIG_PM_RUNTIME
 
-Another aspect is that the foreground domain is variable in size, but
-you are assigning it a minimum amount of space by statically limiting
-the background apps.  If the foreground doesn't use that space, you
-end up killing cached apps for no reason and waste even more memory.
-Imagine you run a large app like Maps and then switch to a tiny note
-taking app to look something up.  Now you're kicking Maps out of the
-cache for no reason.
+Having switched over all of the users of CONFIG_PM_RUNTIME to use
+CONFIG_PM directly, turn the latter into a user-selectable option
+and drop the former entirely from the tree.
 
-The last point is a much more generic problem.  Static limits are not
-suited to efficiently partition a machine for realistic workloads.
-This is why version 2 will move away from the idea of static hard
-limits as the primary means of partitioning, and towards a model that
-has the user configure upper and lower boundaries for the expected
-workingset size of each group.  Static limits will be relegated to
-failsafe measures and hard requirements.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+---
+ arch/arm/configs/ape6evm_defconfig         |    2 +-
+ arch/arm/configs/armadillo800eva_defconfig |    2 +-
+ arch/arm/configs/bcm_defconfig             |    2 +-
+ arch/arm/configs/bockw_defconfig           |    2 +-
+ arch/arm/configs/davinci_all_defconfig     |    2 +-
+ arch/arm/configs/exynos_defconfig          |    2 +-
+ arch/arm/configs/ezx_defconfig             |    1 -
+ arch/arm/configs/hisi_defconfig            |    2 +-
+ arch/arm/configs/imote2_defconfig          |    1 -
+ arch/arm/configs/imx_v6_v7_defconfig       |    2 +-
+ arch/arm/configs/keystone_defconfig        |    2 +-
+ arch/arm/configs/kzm9g_defconfig           |    2 +-
+ arch/arm/configs/lager_defconfig           |    2 +-
+ arch/arm/configs/mackerel_defconfig        |    1 -
+ arch/arm/configs/marzen_defconfig          |    2 +-
+ arch/arm/configs/omap1_defconfig           |    1 -
+ arch/arm/configs/prima2_defconfig          |    2 +-
+ arch/arm/configs/sama5_defconfig           |    2 +-
+ arch/arm/configs/shmobile_defconfig        |    2 +-
+ arch/arm/configs/sunxi_defconfig           |    2 +-
+ arch/arm/configs/tegra_defconfig           |    2 +-
+ arch/arm/configs/u8500_defconfig           |    2 +-
+ arch/arm/configs/vt8500_v6_v7_defconfig    |    2 +-
+ arch/arm/mach-omap2/Kconfig                |    6 +++---
+ arch/mips/configs/db1xxx_defconfig         |    2 +-
+ arch/mips/configs/lemote2f_defconfig       |    1 -
+ arch/mips/configs/loongson3_defconfig      |    2 +-
+ arch/mips/configs/nlm_xlp_defconfig        |    2 +-
+ arch/mips/configs/nlm_xlr_defconfig        |    2 +-
+ arch/powerpc/configs/ps3_defconfig         |    2 +-
+ arch/sh/Kconfig                            |    2 +-
+ arch/sh/configs/apsh4ad0a_defconfig        |    2 +-
+ arch/sh/configs/sdk7786_defconfig          |    2 +-
+ drivers/usb/host/isp1760-hcd.c             |    2 +-
+ drivers/usb/host/oxu210hp-hcd.c            |    2 +-
+ include/linux/devfreq.h                    |    2 +-
+ kernel/power/Kconfig                       |   16 ++++++----------
+ 37 files changed, 39 insertions(+), 48 deletions(-)
 
-Setting a group's lower boundary will tell the kernel how much memory
-the group requires at a minimum to function properly, and the kernel
-will try to avoid reclaiming and OOM killing groups within their lower
-boundary at the expense of groups that are in excess of theirs.  Your
-configuration can be rephrased using this: by putting all apps into
-their own groups, and setting the lower boundary to infinity for the
-foreground apps and to zero for the background apps, the kernel will
-always reclaim and OOM kill the background apps first.
+Index: linux-pm/arch/arm/configs/ape6evm_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/ape6evm_defconfig
++++ linux-pm/arch/arm/configs/ape6evm_defconfig
+@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ CONFIG_BINFMT_MISC=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/armadillo800eva_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/armadillo800eva_defconfig
++++ linux-pm/arch/arm/configs/armadillo800eva_defconfig
+@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/bcm_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/bcm_defconfig
++++ linux-pm/arch/arm/configs/bcm_defconfig
+@@ -39,7 +39,7 @@ CONFIG_CPU_IDLE=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_PACKET_DIAG=y
+Index: linux-pm/arch/arm/configs/bockw_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/bockw_defconfig
++++ linux-pm/arch/arm/configs/bockw_defconfig
+@@ -29,7 +29,7 @@ CONFIG_ZBOOT_ROM_BSS=0x0
+ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_VFP=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/davinci_all_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/davinci_all_defconfig
++++ linux-pm/arch/arm/configs/davinci_all_defconfig
+@@ -49,7 +49,7 @@ CONFIG_CPU_FREQ_GOV_PERFORMANCE=m
+ CONFIG_CPU_FREQ_GOV_POWERSAVE=m
+ CONFIG_CPU_FREQ_GOV_ONDEMAND=m
+ CONFIG_CPU_IDLE=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/exynos_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/exynos_defconfig
++++ linux-pm/arch/arm/configs/exynos_defconfig
+@@ -27,7 +27,7 @@ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_CMDLINE="root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M console=ttySAC1,115200 init=/linuxrc mem=256M"
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/ezx_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/ezx_defconfig
++++ linux-pm/arch/arm/configs/ezx_defconfig
+@@ -39,7 +39,6 @@ CONFIG_BINFMT_AOUT=m
+ CONFIG_BINFMT_MISC=m
+ CONFIG_PM=y
+ CONFIG_APM_EMULATION=y
+-CONFIG_PM_RUNTIME=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/hisi_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/hisi_defconfig
++++ linux-pm/arch/arm/configs/hisi_defconfig
+@@ -18,7 +18,7 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_NEON=y
+ CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_FROM_BOOTLOADER=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/imote2_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/imote2_defconfig
++++ linux-pm/arch/arm/configs/imote2_defconfig
+@@ -31,7 +31,6 @@ CONFIG_BINFMT_AOUT=m
+ CONFIG_BINFMT_MISC=m
+ CONFIG_PM=y
+ CONFIG_APM_EMULATION=y
+-CONFIG_PM_RUNTIME=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/imx_v6_v7_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/imx_v6_v7_defconfig
++++ linux-pm/arch/arm/configs/imx_v6_v7_defconfig
+@@ -54,7 +54,7 @@ CONFIG_ARM_IMX6Q_CPUFREQ=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ CONFIG_BINFMT_MISC=m
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_PM_TEST_SUSPEND=y
+ CONFIG_NET=y
+Index: linux-pm/arch/arm/configs/keystone_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/keystone_defconfig
++++ linux-pm/arch/arm/configs/keystone_defconfig
+@@ -30,7 +30,7 @@ CONFIG_HIGHMEM=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_SUSPEND is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/kzm9g_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/kzm9g_defconfig
++++ linux-pm/arch/arm/configs/kzm9g_defconfig
+@@ -43,7 +43,7 @@ CONFIG_KEXEC=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/lager_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/lager_defconfig
++++ linux-pm/arch/arm/configs/lager_defconfig
+@@ -37,7 +37,7 @@ CONFIG_AUTO_ZRELADDR=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/mackerel_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/mackerel_defconfig
++++ linux-pm/arch/arm/configs/mackerel_defconfig
+@@ -28,7 +28,6 @@ CONFIG_KEXEC=y
+ CONFIG_VFP=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_PM=y
+-CONFIG_PM_RUNTIME=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/marzen_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/marzen_defconfig
++++ linux-pm/arch/arm/configs/marzen_defconfig
+@@ -33,7 +33,7 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_VFP=y
+ CONFIG_KEXEC=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/omap1_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/omap1_defconfig
++++ linux-pm/arch/arm/configs/omap1_defconfig
+@@ -63,7 +63,6 @@ CONFIG_FPE_NWFPE=y
+ CONFIG_BINFMT_MISC=y
+ CONFIG_PM=y
+ # CONFIG_SUSPEND is not set
+-CONFIG_PM_RUNTIME=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/prima2_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/prima2_defconfig
++++ linux-pm/arch/arm/configs/prima2_defconfig
+@@ -18,7 +18,7 @@ CONFIG_PREEMPT=y
+ CONFIG_AEABI=y
+ CONFIG_KEXEC=y
+ CONFIG_BINFMT_MISC=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+ CONFIG_BLK_DEV_LOOP=y
+ CONFIG_BLK_DEV_RAM=y
+Index: linux-pm/arch/arm/configs/sama5_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/sama5_defconfig
++++ linux-pm/arch/arm/configs/sama5_defconfig
+@@ -32,7 +32,7 @@ CONFIG_VFP=y
+ CONFIG_NEON=y
+ CONFIG_KERNEL_MODE_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_PM_ADVANCED_DEBUG=y
+ CONFIG_NET=y
+Index: linux-pm/arch/arm/configs/shmobile_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/shmobile_defconfig
++++ linux-pm/arch/arm/configs/shmobile_defconfig
+@@ -39,7 +39,7 @@ CONFIG_KEXEC=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/sunxi_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/sunxi_defconfig
++++ linux-pm/arch/arm/configs/sunxi_defconfig
+@@ -11,7 +11,7 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/tegra_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/tegra_defconfig
++++ linux-pm/arch/arm/configs/tegra_defconfig
+@@ -46,7 +46,7 @@ CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/u8500_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/u8500_defconfig
++++ linux-pm/arch/arm/configs/u8500_defconfig
+@@ -25,7 +25,7 @@ CONFIG_CPU_IDLE=y
+ CONFIG_ARM_U8500_CPUIDLE=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
+===================================================================
+--- linux-pm.orig/arch/arm/configs/vt8500_v6_v7_defconfig
++++ linux-pm/arch/arm/configs/vt8500_v6_v7_defconfig
+@@ -16,7 +16,7 @@ CONFIG_ARM_APPENDED_DTB=y
+ CONFIG_ARM_ATAG_DTB_COMPAT=y
+ CONFIG_VFP=y
+ CONFIG_NEON=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_UNIX=y
+ CONFIG_INET=y
+Index: linux-pm/arch/mips/configs/db1xxx_defconfig
+===================================================================
+--- linux-pm.orig/arch/mips/configs/db1xxx_defconfig
++++ linux-pm/arch/mips/configs/db1xxx_defconfig
+@@ -36,7 +36,7 @@ CONFIG_PCI=y
+ CONFIG_PCI_REALLOC_ENABLE_AUTO=y
+ CONFIG_PCCARD=y
+ CONFIG_PCMCIA_ALCHEMY_DEVBOARD=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_PACKET_DIAG=y
+Index: linux-pm/arch/mips/configs/lemote2f_defconfig
+===================================================================
+--- linux-pm.orig/arch/mips/configs/lemote2f_defconfig
++++ linux-pm/arch/mips/configs/lemote2f_defconfig
+@@ -37,7 +37,6 @@ CONFIG_MIPS32_N32=y
+ CONFIG_PM=y
+ CONFIG_HIBERNATION=y
+ CONFIG_PM_STD_PARTITION="/dev/hda3"
+-CONFIG_PM_RUNTIME=y
+ CONFIG_CPU_FREQ=y
+ CONFIG_CPU_FREQ_DEBUG=y
+ CONFIG_CPU_FREQ_STAT=m
+Index: linux-pm/arch/mips/configs/loongson3_defconfig
+===================================================================
+--- linux-pm.orig/arch/mips/configs/loongson3_defconfig
++++ linux-pm/arch/mips/configs/loongson3_defconfig
+@@ -58,7 +58,7 @@ CONFIG_BINFMT_MISC=m
+ CONFIG_MIPS32_COMPAT=y
+ CONFIG_MIPS32_O32=y
+ CONFIG_MIPS32_N32=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+ CONFIG_UNIX=y
+Index: linux-pm/arch/mips/configs/nlm_xlp_defconfig
+===================================================================
+--- linux-pm.orig/arch/mips/configs/nlm_xlp_defconfig
++++ linux-pm/arch/mips/configs/nlm_xlp_defconfig
+@@ -61,7 +61,7 @@ CONFIG_BINFMT_MISC=y
+ CONFIG_MIPS32_COMPAT=y
+ CONFIG_MIPS32_O32=y
+ CONFIG_MIPS32_N32=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+Index: linux-pm/arch/mips/configs/nlm_xlr_defconfig
+===================================================================
+--- linux-pm.orig/arch/mips/configs/nlm_xlr_defconfig
++++ linux-pm/arch/mips/configs/nlm_xlr_defconfig
+@@ -41,7 +41,7 @@ CONFIG_PCI=y
+ CONFIG_PCI_MSI=y
+ CONFIG_PCI_DEBUG=y
+ CONFIG_BINFMT_MISC=m
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+Index: linux-pm/arch/powerpc/configs/ps3_defconfig
+===================================================================
+--- linux-pm.orig/arch/powerpc/configs/ps3_defconfig
++++ linux-pm/arch/powerpc/configs/ps3_defconfig
+@@ -36,7 +36,7 @@ CONFIG_KEXEC=y
+ CONFIG_SCHED_SMT=y
+ CONFIG_CMDLINE_BOOL=y
+ CONFIG_CMDLINE=""
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+ # CONFIG_SECCOMP is not set
+ # CONFIG_PCI is not set
+Index: linux-pm/arch/sh/configs/apsh4ad0a_defconfig
+===================================================================
+--- linux-pm.orig/arch/sh/configs/apsh4ad0a_defconfig
++++ linux-pm/arch/sh/configs/apsh4ad0a_defconfig
+@@ -47,7 +47,7 @@ CONFIG_PREEMPT=y
+ CONFIG_BINFMT_MISC=y
+ CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+Index: linux-pm/arch/sh/configs/sdk7786_defconfig
+===================================================================
+--- linux-pm.orig/arch/sh/configs/sdk7786_defconfig
++++ linux-pm/arch/sh/configs/sdk7786_defconfig
+@@ -82,7 +82,7 @@ CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+ CONFIG_BINFMT_MISC=y
+ CONFIG_PM=y
+ CONFIG_PM_DEBUG=y
+-CONFIG_PM_RUNTIME=y
++CONFIG_PM=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_NET=y
+ CONFIG_PACKET=y
+Index: linux-pm/arch/arm/mach-omap2/Kconfig
+===================================================================
+--- linux-pm.orig/arch/arm/mach-omap2/Kconfig
++++ linux-pm/arch/arm/mach-omap2/Kconfig
+@@ -15,7 +15,7 @@ config ARCH_OMAP3
+ 	select ARM_CPU_SUSPEND if PM
+ 	select OMAP_INTERCONNECT
+ 	select PM_OPP if PM
+-	select PM_RUNTIME if CPU_IDLE
++	select PM if CPU_IDLE
+ 	select SOC_HAS_OMAP2_SDRC
+ 
+ config ARCH_OMAP4
+@@ -32,7 +32,7 @@ config ARCH_OMAP4
+ 	select PL310_ERRATA_588369 if CACHE_L2X0
+ 	select PL310_ERRATA_727915 if CACHE_L2X0
+ 	select PM_OPP if PM
+-	select PM_RUNTIME if CPU_IDLE
++	select PM if CPU_IDLE
+ 	select ARM_ERRATA_754322
+ 	select ARM_ERRATA_775420
+ 
+@@ -103,7 +103,7 @@ config ARCH_OMAP2PLUS_TYPICAL
+ 	select I2C_OMAP
+ 	select MENELAUS if ARCH_OMAP2
+ 	select NEON if CPU_V7
+-	select PM_RUNTIME
++	select PM
+ 	select REGULATOR
+ 	select TWL4030_CORE if ARCH_OMAP3 || ARCH_OMAP4
+ 	select TWL4030_POWER if ARCH_OMAP3 || ARCH_OMAP4
+Index: linux-pm/arch/sh/Kconfig
+===================================================================
+--- linux-pm.orig/arch/sh/Kconfig
++++ linux-pm/arch/sh/Kconfig
+@@ -223,7 +223,7 @@ config CPU_SHX3
+ config ARCH_SHMOBILE
+ 	bool
+ 	select ARCH_SUSPEND_POSSIBLE
+-	select PM_RUNTIME
++	select PM
+ 
+ config CPU_HAS_PMU
+        depends on CPU_SH4 || CPU_SH4A
+Index: linux-pm/drivers/usb/host/isp1760-hcd.c
+===================================================================
+--- linux-pm.orig/drivers/usb/host/isp1760-hcd.c
++++ linux-pm/drivers/usb/host/isp1760-hcd.c
+@@ -1739,7 +1739,7 @@ static int isp1760_hub_status_data(struc
+ 	int retval = 1;
+ 	unsigned long flags;
+ 
+-	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
++	/* if !PM, root hub timers won't get shut down ... */
+ 	if (!HC_IS_RUNNING(hcd->state))
+ 		return 0;
+ 
+Index: linux-pm/drivers/usb/host/oxu210hp-hcd.c
+===================================================================
+--- linux-pm.orig/drivers/usb/host/oxu210hp-hcd.c
++++ linux-pm/drivers/usb/host/oxu210hp-hcd.c
+@@ -3087,7 +3087,7 @@ static int oxu_hub_status_data(struct us
+ 	int ports, i, retval = 1;
+ 	unsigned long flags;
+ 
+-	/* if !PM_RUNTIME, root hub timers won't get shut down ... */
++	/* if !PM, root hub timers won't get shut down ... */
+ 	if (!HC_IS_RUNNING(hcd->state))
+ 		return 0;
+ 
+Index: linux-pm/include/linux/devfreq.h
+===================================================================
+--- linux-pm.orig/include/linux/devfreq.h
++++ linux-pm/include/linux/devfreq.h
+@@ -188,7 +188,7 @@ extern struct devfreq *devm_devfreq_add_
+ extern void devm_devfreq_remove_device(struct device *dev,
+ 				  struct devfreq *devfreq);
+ 
+-/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
++/* Supposed to be called by PM callbacks */
+ extern int devfreq_suspend_device(struct devfreq *devfreq);
+ extern int devfreq_resume_device(struct devfreq *devfreq);
+ 
+Index: linux-pm/kernel/power/Kconfig
+===================================================================
+--- linux-pm.orig/kernel/power/Kconfig
++++ linux-pm/kernel/power/Kconfig
+@@ -94,7 +94,7 @@ config PM_STD_PARTITION
+ config PM_SLEEP
+ 	def_bool y
+ 	depends on SUSPEND || HIBERNATE_CALLBACKS
+-	select PM_RUNTIME
++	select PM
+ 
+ config PM_SLEEP_SMP
+ 	def_bool y
+@@ -130,23 +130,19 @@ config PM_WAKELOCKS_GC
+ 	depends on PM_WAKELOCKS
+ 	default y
+ 
+-config PM_RUNTIME
+-	bool "Run-time PM core functionality"
++config PM
++	bool "Device power management core functionality"
+ 	---help---
+ 	  Enable functionality allowing I/O devices to be put into energy-saving
+-	  (low power) states at run time (or autosuspended) after a specified
+-	  period of inactivity and woken up in response to a hardware-generated
++	  (low power) states, for example after a specified period of inactivity
++	  (autosuspended), and woken up in response to a hardware-generated
+ 	  wake-up event or a driver's request.
+ 
+ 	  Hardware support is generally required for this functionality to work
+ 	  and the bus type drivers of the buses the devices are on are
+-	  responsible for the actual handling of the autosuspend requests and
++	  responsible for the actual handling of device suspend requests and
+ 	  wake-up events.
+ 
+-config PM
+-	def_bool y
+-	depends on PM_SLEEP || PM_RUNTIME
+-
+ config PM_DEBUG
+ 	bool "Power Management Debug Support"
+ 	depends on PM
 
-You get the same foreground app protection as before, but with several
-advantages.
-
-Firstly, it separates the task grouping of an app from memory policy,
-which allows you to track your apps as self-contained bundles of tasks
-and memory.  You are no longer required to conflate unrelated apps for
-the sake of memory policy, only to reshuffle and break them apart
-again using inaccurate separation heuristics that will end up
-polluting *both* domains.
-
-Secondly, background apps will no longer get killed based on a static
-quota, but based on actual memory pressure.  You configure the policy,
-and the kernel decides on demand where to get the required memory.
-
-And lastly, you don't have to physically move thousands of pages on
-every task switch anymore, AND pay the synchronization overhead that
-stems from pages changing cgroups during runtime.
-
-Your use case is valid, but charge migration doesn't seem to be the
-right answer here.  And I really doubt it's ever the right answer.
