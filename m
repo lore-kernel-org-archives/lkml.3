@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaLSOEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:04:34 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:45845 "EHLO
+	id S1752772AbaLSOEu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:04:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45865 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaLSOEc (ORCPT
+	with ESMTP id S1752098AbaLSOEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:04:32 -0500
-Date: Fri, 19 Dec 2014 06:03:28 -0800
-From: tip-bot for Yinghai Lu <tipbot@zytor.com>
-Message-ID: <tip-5411dc4ccb25de133701774dd2a3cf3f7e246f17@git.kernel.org>
-Cc: hpa@zytor.com, yinghai@kernel.org, bhelgaas@google.com, tglx@linutronix.de,
-        konrad.wilk@oracle.com, gregkh@linuxfoundation.org, bp@alien8.de,
-        joro@8bytes.org, rjw@rjwysocki.net, sebastian@breakpoint.cc,
-        rdunlap@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, prarit@redhat.com, grant.likely@linaro.org,
-        jiang.liu@linux.intel.com, tony.luck@intel.com
-Reply-To: jiang.liu@linux.intel.com, grant.likely@linaro.org,
-        benh@kernel.crashing.org, prarit@redhat.com, tony.luck@intel.com,
-        linux-kernel@vger.kernel.org, rjw@rjwysocki.net, rdunlap@infradead.org,
-        sebastian@breakpoint.cc, mingo@kernel.org, tglx@linutronix.de,
-        bhelgaas@google.com, hpa@zytor.com, yinghai@kernel.org,
-        konrad.wilk@oracle.com, joro@8bytes.org, bp@alien8.de,
-        gregkh@linuxfoundation.org
-In-Reply-To: <1414387308-27148-11-git-send-email-jiang.liu@linux.intel.com>
-References: <1414387308-27148-11-git-send-email-jiang.liu@linux.intel.com>
+	Fri, 19 Dec 2014 09:04:48 -0500
+Date: Fri, 19 Dec 2014 06:03:45 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-67dc5e701fda884d49ed5c1904986bd5333610f4@git.kernel.org>
+Cc: tony.luck@intel.com, prarit@redhat.com, jiang.liu@linux.intel.com,
+        konrad.wilk@oracle.com, rjw@rjwysocki.net, tglx@linutronix.de,
+        bhelgaas@google.com, joro@8bytes.org, linux-kernel@vger.kernel.org,
+        rdunlap@infradead.org, mingo@kernel.org, gregkh@linuxfoundation.org,
+        hpa@zytor.com, bp@alien8.de, yinghai@kernel.org,
+        benh@kernel.crashing.org, grant.likely@linaro.org
+Reply-To: konrad.wilk@oracle.com, tony.luck@intel.com, prarit@redhat.com,
+        jiang.liu@linux.intel.com, yinghai@kernel.org,
+        benh@kernel.crashing.org, grant.likely@linaro.org, bp@alien8.de,
+        hpa@zytor.com, joro@8bytes.org, linux-kernel@vger.kernel.org,
+        rdunlap@infradead.org, mingo@kernel.org, gregkh@linuxfoundation.org,
+        rjw@rjwysocki.net, tglx@linutronix.de, bhelgaas@google.com
+In-Reply-To: <1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/apic] x86, irq:
-  Prefer assigned ID in APIC ID register for x86_64
-Git-Commit-ID: 5411dc4ccb25de133701774dd2a3cf3f7e246f17
+  Remove __init marker for functions will be used by IOAPIC hotplug
+Git-Commit-ID: 67dc5e701fda884d49ed5c1904986bd5333610f4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -41,116 +40,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5411dc4ccb25de133701774dd2a3cf3f7e246f17
-Gitweb:     http://git.kernel.org/tip/5411dc4ccb25de133701774dd2a3cf3f7e246f17
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 27 Oct 2014 13:21:40 +0800
+Commit-ID:  67dc5e701fda884d49ed5c1904986bd5333610f4
+Gitweb:     http://git.kernel.org/tip/67dc5e701fda884d49ed5c1904986bd5333610f4
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:41 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:15 +0100
 
-x86, irq: Prefer assigned ID in APIC ID register for x86_64
+x86, irq: Remove __init marker for functions will be used by IOAPIC hotplug
 
-Perfer the assigned ID in APIC ID register for x86_64 if it's still
-available.
+Remove __init marker for functions which will be used by IOAPIC hotplug
+at runtime.
 
-[ tglx: Added comments ]
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
 Cc: Grant Likely <grant.likely@linaro.org>
 Cc: Prarit Bhargava <prarit@redhat.com>
-Link: http://lkml.kernel.org/r/1414387308-27148-11-git-send-email-jiang.liu@linux.intel.com
+Link: http://lkml.kernel.org/r/1414387308-27148-12-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c | 45 ++++++++++++++++++++++++++++++++++++------
- 1 file changed, 39 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/io_apic.h |  4 ++--
+ arch/x86/kernel/apic/io_apic.c | 18 +++++++++---------
+ 2 files changed, 11 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 0aeed5c..0b31aeb 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -188,8 +188,8 @@ extern int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ extern u32 mp_pin_to_gsi(int ioapic, int pin);
+ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+-extern void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-				      struct ioapic_domain_cfg *cfg);
++extern void mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			       struct ioapic_domain_cfg *cfg);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 654b69b..86fd286 100644
+index 86fd286..60f25e88 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3580,26 +3580,59 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
+@@ -3459,7 +3459,7 @@ io_apic_setup_irq_pin(unsigned int irq, int node, struct io_apic_irq_attr *attr)
+ 	return ret;
+ }
+ 
+-static int __init io_apic_get_redir_entries(int ioapic)
++static int io_apic_get_redir_entries(int ioapic)
+ {
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3505,7 +3505,7 @@ int __init arch_probe_nr_irqs(void)
+ }
+ 
+ #ifdef CONFIG_X86_32
+-static int __init io_apic_get_unique_id(int ioapic, int apic_id)
++static int io_apic_get_unique_id(int ioapic, int apic_id)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	static physid_mask_t apic_id_map = PHYSID_MASK_NONE;
+@@ -3580,7 +3580,7 @@ static int __init io_apic_get_unique_id(int ioapic, int apic_id)
  	return apic_id;
  }
  
--static u8 __init io_apic_unique_id(u8 id)
-+static u8 __init io_apic_unique_id(int idx, u8 id)
+-static u8 __init io_apic_unique_id(int idx, u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
  {
  	if ((boot_cpu_data.x86_vendor == X86_VENDOR_INTEL) &&
  	    !APIC_XAPIC(apic_version[boot_cpu_physical_apicid]))
--		return io_apic_get_unique_id(nr_ioapics, id);
-+		return io_apic_get_unique_id(idx, id);
- 	else
+@@ -3589,7 +3589,7 @@ static u8 __init io_apic_unique_id(int idx, u8 id)
  		return id;
  }
  #else
--static u8 __init io_apic_unique_id(u8 id)
-+static u8 __init io_apic_unique_id(int idx, u8 id)
+-static u8 __init io_apic_unique_id(int idx, u8 id)
++static u8 io_apic_unique_id(int idx, u8 id)
  {
--	int i;
-+	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_00 reg_00;
  	DECLARE_BITMAP(used, 256);
-+	unsigned long flags;
-+	u8 new_id;
-+	int i;
- 
- 	bitmap_zero(used, 256);
- 	for_each_ioapic(i)
- 		__set_bit(mpc_ioapic_id(i), used);
-+
-+	/* Hand out the requested id if available */
- 	if (!test_bit(id, used))
- 		return id;
--	return find_first_zero_bit(used, 256);
-+
-+	/*
-+	 * Read the current id from the ioapic and keep it if
-+	 * available.
-+	 */
-+	raw_spin_lock_irqsave(&ioapic_lock, flags);
-+	reg_00.raw = io_apic_read(idx, 0);
-+	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+	new_id = reg_00.bits.ID;
-+	if (!test_bit(new_id, used)) {
-+		apic_printk(APIC_VERBOSE, KERN_INFO
-+			"IOAPIC[%d]: Using reg apic_id %d instead of %d\n",
-+			 idx, new_id, id);
-+		return new_id;
-+	}
-+
-+	/*
-+	 * Get the next free id and write it to the ioapic.
-+	 */
-+	new_id = find_first_zero_bit(used, 256);
-+	reg_00.bits.ID = new_id;
-+	raw_spin_lock_irqsave(&ioapic_lock, flags);
-+	io_apic_write(idx, 0, reg_00.raw);
-+	reg_00.raw = io_apic_read(idx, 0);
-+	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
-+	/* Sanity check */
-+	BUG_ON(reg_00.bits.ID != new_id);
-+
-+	return new_id;
+@@ -3636,7 +3636,7 @@ static u8 __init io_apic_unique_id(int idx, u8 id)
  }
  #endif
  
-@@ -3865,7 +3898,7 @@ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 		return;
- 	}
+-static int __init io_apic_get_version(int ioapic)
++static int io_apic_get_version(int ioapic)
+ {
+ 	union IO_APIC_reg_01	reg_01;
+ 	unsigned long flags;
+@@ -3840,7 +3840,7 @@ int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ 	return gsi - gsi_cfg->gsi_base;
+ }
  
--	ioapics[idx].mp_config.apicid = io_apic_unique_id(id);
-+	ioapics[idx].mp_config.apicid = io_apic_unique_id(idx, id);
- 	ioapics[idx].mp_config.apicver = io_apic_get_version(idx);
+-static __init int bad_ioapic(unsigned long address)
++static int bad_ioapic(unsigned long address)
+ {
+ 	if (nr_ioapics >= MAX_IO_APICS) {
+ 		pr_warn("WARNING: Max # of I/O APICs (%d) exceeded (found %d), skipping\n",
+@@ -3854,7 +3854,7 @@ static __init int bad_ioapic(unsigned long address)
+ 	return 0;
+ }
  
- 	/*
+-static __init int bad_ioapic_register(int idx)
++static int bad_ioapic_register(int idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_01 reg_01;
+@@ -3873,8 +3873,8 @@ static __init int bad_ioapic_register(int idx)
+ 	return 0;
+ }
+ 
+-void __init mp_register_ioapic(int id, u32 address, u32 gsi_base,
+-			       struct ioapic_domain_cfg *cfg)
++void mp_register_ioapic(int id, u32 address, u32 gsi_base,
++			struct ioapic_domain_cfg *cfg)
+ {
+ 	int idx = 0;
+ 	int entries;
