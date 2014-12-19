@@ -1,133 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751568AbaLSQFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:05:50 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:55806 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062AbaLSQFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:05:48 -0500
-Date: Fri, 19 Dec 2014 08:02:37 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use
- PWM FAN as a cooling device
-Message-ID: <20141219160237.GA2199@roeck-us.net>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
- <1418899337.23532.9.camel@collabora.co.uk>
- <20141219163224.34796e5d@amdc2363>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751768AbaLSQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:10:57 -0500
+Received: from mail.emea.novell.com ([130.57.118.101]:58235 "EHLO
+	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142AbaLSQK4 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 19 Dec 2014 11:10:56 -0500
+Message-Id: <54945C1E020000780005114E@mail.emea.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.1 
+Date: Fri, 19 Dec 2014 16:10:54 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: "Yinghai Lu" <yinghai@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: fix step size adjustment during initial memory
+ mapping
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20141219163224.34796e5d@amdc2363>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54944CDB.0521,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 04:32:24PM +0100, Lukasz Majewski wrote:
-> Hi Sjoerd,
-> 
-> Thanks for your feedback and sorry for a late reply.
-> 
-> > On Thu, 2014-12-18 at 11:13 +0100, Lukasz Majewski wrote:
-> > > Several new properties to allow PWM fan working as a cooling device
-> > > have been combined into this single commit.
-> > > 
-> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > > ---
-> > >  .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
-> > > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
-> > > 610757c..3877810 100644 ---
-> > > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
-> > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
-> > > +3,38 @@ Bindings for a fan connected to the PWM lines Required
-> > > properties:
-> > >  - compatible	: "pwm-fan"
-> > >  - pwms		: the PWM that is used to control the PWM fan
-> > > +- cooling-pwm-values      : PWM duty cycle values relative to
-> > > +			    cooling-max-pwm-value correspondig to
-> > > +			    proper cooling states
-> > > +- default-pulse-width     : Property specifying default pulse
-> > > width for FAN
-> > > +			    at system boot (zero to disable FAN on
-> > > boot).
-> > > +			    Allowed range is 0 to 255
-> > 
-> > The 0..255 range seems somewhat random. Would be nicer to either use
-> > the approach of pwm-backlight (iotw, have the range go from the first
-> > to the last entry of cooling-pwm-values) 
-> 
-> I'm OK to change the default-pulse-width to be similar to
-> "default-brightness-level" (as it is in
-> Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt)
-> 
-> > or simply have be the duty
-> > lenght in NS as entries instead of the current indirection.
-> 
-> I'd prefer to keep the indirection - as it is utilized in the current
-> pwm-fan.c driver.
-> 
-FWIW, devicetree information is supposed to be implementation independent.
-So this is a poor argument.
+The old scheme can lead to failure in certain cases - the problem is
+that after bumping step_size the next (non-final) iteration is only
+guaranteed to make available a memory block the size of what step_size
+was before. E.g. for a memory block [0,3004600000) we'd have
 
-> 
-> Enabling pan to full RPM was the default behaviour in the current
-> pwm-fan.c file.
-> 
-> To be honest, there is no need to enable fan to full RPM speed in this
-> board for following reasons:
-> 1. In Odroid the FAN is optional (stacked on top of a heat sink) - very
-> often it is just enough to only have the heat sink.
-> 
-> 2. Odroid has thermal enabled by default and IMHO it would be more
-> feasible to allow thermal to control fan from the very beginning.
-> 
-> However, I can also understand if the policy for hwmon implies a rule
-> to enable by default all fans to full RPM speed.
-> 
-Why and how does that all suggest that the current default behavior
-should be changed ?
+iter	start		end		step		amount
+1	3004400000	30045fffff	 2M		  2M
+2	3004000000	30043fffff	64M		  4M
+3	3000000000	3003ffffff	 2G		 64M
+4	2000000000	2fffffffff	64G		 64G
 
-Guenter
+Yet to map 64G with 4k pages (as happens e.g. under PV Xen) we need
+slightly over 128M, but the first three iterations made only about 70M
+available.
+
+The condition (new_mapped_ram_size > mapped_ram_size) for bumping
+step_size is just not suitable. Instead we want to bump it when we know
+we have enough memory available to cover a block of the new step_size.
+And rather than making that condition more complicated than needed,
+simply adjust step_size by the largest possible factor we know we can
+cover at that point - which is shifting it left by one less than the
+difference between page table level shifts. (Interestingly the original
+STEP_SIZE_SHIFT definition had a comment hinting at that having been
+the intention, just that it should have been PUD_SHIFT-PMD_SHIFT-1
+instead of (PUD_SHIFT-PMD_SHIFT)/2, and of course for non-PAE 32-bit we
+can't really use these two constants as they're equal there.)
+
+Furthermore the comment in get_new_step_size() didn't get updated
+when the bottom-down mapping logic got added. Yet while an overflow
+(flushing step_size to zero) of the shift doesn't matter for the
+top-down method, it does for bottom-up because round_up(x, 0) = 0,
+and an upper range boundary of zero can't really work well.
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/mm/init.c |   34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
+
+--- 3.18/arch/x86/mm/init.c
++++ 3.18-x86-init-mem-steps/arch/x86/mm/init.c
+@@ -409,20 +409,20 @@ static unsigned long __init init_range_m
+ static unsigned long __init get_new_step_size(unsigned long step_size)
+ {
+ 	/*
+-	 * Explain why we shift by 5 and why we don't have to worry about
+-	 * 'step_size << 5' overflowing:
+-	 *
+-	 * initial mapped size is PMD_SIZE (2M).
++	 * Initial mapped size is PMD_SIZE (2M).
+ 	 * We can not set step_size to be PUD_SIZE (1G) yet.
+ 	 * In worse case, when we cross the 1G boundary, and
+ 	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (2M + 8k)
+-	 * to map 1G range with PTE. Use 5 as shift for now.
++	 * to map 1G range with PTE. Hence we use one less than the
++	 * difference of page table level shifts.
+ 	 *
+-	 * Don't need to worry about overflow, on 32bit, when step_size
+-	 * is 0, round_down() returns 0 for start, and that turns it
+-	 * into 0x100000000ULL.
++	 * Don't need to worry about overflow in the top-down case, on 32bit,
++	 * when step_size is 0, round_down() returns 0 for start, and that
++	 * turns it into 0x100000000ULL.
++	 * In the bottom-up case, round_up(x, 0) returns 0 though too, which
++	 * needs to be taken into consideration by the code below.
+ 	 */
+-	return step_size << 5;
++	return step_size << (PMD_SHIFT - PAGE_SHIFT - 1);
+ }
+ 
+ /**
+@@ -442,7 +442,6 @@ static void __init memory_map_top_down(u
+ 	unsigned long step_size;
+ 	unsigned long addr;
+ 	unsigned long mapped_ram_size = 0;
+-	unsigned long new_mapped_ram_size;
+ 
+ 	/* xen has big range in reserved near end of ram, skip it at first.*/
+ 	addr = memblock_find_in_range(map_start, map_end, PMD_SIZE, PMD_SIZE);
+@@ -467,14 +466,12 @@ static void __init memory_map_top_down(u
+ 				start = map_start;
+ 		} else
+ 			start = map_start;
+-		new_mapped_ram_size = init_range_memory_mapping(start,
++		mapped_ram_size += init_range_memory_mapping(start,
+ 							last_start);
+ 		last_start = start;
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+-		/* only increase step_size after big range get mapped */
+-		if (new_mapped_ram_size > mapped_ram_size)
++		if (mapped_ram_size >= step_size)
+ 			step_size = get_new_step_size(step_size);
+-		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ 
+ 	if (real_end < map_end)
+@@ -495,7 +492,7 @@ static void __init memory_map_top_down(u
+ static void __init memory_map_bottom_up(unsigned long map_start,
+ 					unsigned long map_end)
+ {
+-	unsigned long next, new_mapped_ram_size, start;
++	unsigned long next, start;
+ 	unsigned long mapped_ram_size = 0;
+ 	/* step_size need to be small so pgt_buf from BRK could cover it */
+ 	unsigned long step_size = PMD_SIZE;
+@@ -510,19 +507,18 @@ static void __init memory_map_bottom_up(
+ 	 * for page table.
+ 	 */
+ 	while (start < map_end) {
+-		if (map_end - start > step_size) {
++		if (step_size && map_end - start > step_size) {
+ 			next = round_up(start + 1, step_size);
+ 			if (next > map_end)
+ 				next = map_end;
+ 		} else
+ 			next = map_end;
+ 
+-		new_mapped_ram_size = init_range_memory_mapping(start, next);
++		mapped_ram_size += init_range_memory_mapping(start, next);
+ 		start = next;
+ 
+-		if (new_mapped_ram_size > mapped_ram_size)
++		if (mapped_ram_size >= step_size)
+ 			step_size = get_new_step_size(step_size);
+-		mapped_ram_size += new_mapped_ram_size;
+ 	}
+ }
+ 
+
+
