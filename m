@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaLSAcz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 19:32:55 -0500
-Received: from sender1.zohomail.com ([74.201.84.155]:30300 "EHLO
-	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaLSAcx (ORCPT
+	id S1751778AbaLSAdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 19:33:19 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:50162 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaLSAdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 19:32:53 -0500
-From: Dan Collins <dan@dcollins.co.nz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan <dan@dcollins.co.nz>
-Subject: [PATCH] Fixed TPACKET V3 to signal poll when block is closed rather than every packet
-Date: Fri, 19 Dec 2014 13:32:19 +1300
-Message-Id: <1418949139-21299-1-git-send-email-dan@dcollins.co.nz>
-X-Mailer: git-send-email 2.1.3
-X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_3_09124_0
-X-ZohoMail-Owner: <1418949139-21299-1-git-send-email-dan@dcollins.co.nz>+zmo_0_<dan@dcollins.co.nz>
-X-ZohoMail-Sender: 130.217.250.111
-X-Zoho-Virus-Status: 2
-X-ZohoMailClient: External
+	Thu, 18 Dec 2014 19:33:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141219003044.GA2804333@devbig257.prn2.facebook.com>
+References: <8559794d3a1924408a811a2881ab916fffb6015b.1418857018.git.shli@fb.com>
+ <95a7ba1a95a6251439d5ca2d3d56fe7f0778cb95.1418857018.git.shli@fb.com>
+ <CALCETrVyrOXNFk5OhPGukg+VmOEsHW93NLAd6LvkKFtV7H76kw@mail.gmail.com>
+ <CALCETrV2+qkuj3WinOW-Ro_PjtZBhLaXwSHCeWpMpTJnog83EQ@mail.gmail.com> <20141219003044.GA2804333@devbig257.prn2.facebook.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 18 Dec 2014 16:32:55 -0800
+Message-ID: <CALCETrXTMa9A+iF--C9TV=fuC_twV9=RU++aZ1s6YzB-H=xxPw@mail.gmail.com>
+Subject: Re: [PATCH v2 3/3] X86: Add a thread cpu time implementation to vDSO
+To: Shaohua Li <shli@fb.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Kernel-team@fb.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan <dan@dcollins.co.nz>
+On Thu, Dec 18, 2014 at 4:30 PM, Shaohua Li <shli@fb.com> wrote:
+> On Thu, Dec 18, 2014 at 04:22:59PM -0800, Andy Lutomirski wrote:
+>> On Thu, Dec 18, 2014 at 3:30 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> > On Wed, Dec 17, 2014 at 3:12 PM, Shaohua Li <shli@fb.com> wrote:
+>> >> This primarily speeds up clock_gettime(CLOCK_THREAD_CPUTIME_ID, ..). We
+>> >> use the following method to compute the thread cpu time:
+>> >>
+>> >>     t0 = process start
+>> >>     t1 = most recent context switch time
+>> >>     t2 = time at which the vsyscall is invoked
+>> >>
+>> >>     thread_cpu_time = sum(time slices between t0 to t1) + (t2 - t1)
+>> >>                 = current->se.sum_exec_runtime + now - sched_clock()
+>> >>
+>> >> At context switch time We stash away
+>> >>
+>> >>     adj_sched_time = sum_exec_runtime - sched_clock()
+>> >>
+>> >> in a per-cpu struct in the VVAR page and then compute
+>> >>
+>> >>     thread_cpu_time = adj_sched_time + now
+>> >>
+>> >> All computations are done in nanosecs on systems where TSC is stable. If
+>> >> TSC is unstable, we fallback to a regular syscall.
+>> >>     Benchmark data:
+>> >>
+>> >>     for (i = 0; i < 100000000; i++) {
+>> >>             clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+>> >>             sum += ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+>> >>     }
+>> >
+>> > A bunch of the time spent processing a CLOCK_THREAD_CPUTIME_ID syscall
+>> > is spent taking various locks, and I think it could be worth adding a
+>> > fast path for the read-my-own-clock case in which we just disable
+>> > preemption and read the thing without any locks.
+>> >
+>> > If we're actually going to go the vdso route, I'd like to make the
+>> > scheduler hooks clean.  Peterz and/or John, what's the right way to
+>> > get an arch-specific callback with sum_exec_runtime and an up to date
+>> > sched_clock value during a context switch?  I'd much rather not add
+>> > yet another rdtsc instruction to the scheduler.
+>>
+>> Bad news: this patch is incorrect, I think.  Take a look at
+>> update_rq_clock -- it does fancy things involving irq time and
+>> paravirt steal time.  So this patch could result in extremely
+>> non-monotonic results.
+>
+> Yes, it's not precise. But bear in mind, CONFIG_IRQ_TIME_ACCOUNTING is a
+> optional feature. Actually it's added not long time ago. I thought it's
+> acceptable the time isn't precise just like what we have before the
+> feature is added.
+>
 
-Make TPACKET_V3 signal poll when block is closed rather than for every
-packet. Side effect is that poll will be signaled when block retire
-timer expires which didn't previously happen. Issue was visible when
-sending packets at a very low frequency such that all blocks are retired
-before packets are received by TPACKET_V3. This caused avoidable packet
-loss. The fix ensures that the signal is sent when blocks are closed
-which covers the normal path where the block is filled as well as the
-path where the timer expires. The case where a block is filled without
-moving to the next block (ie. all blocks are full) will still cause poll
-to be signaled.
+Nonetheless, I think that the vdso accelerated functions should be
+careful to remain interchangeable with the syscall equivalents.  If
+that means that some kconfig magic needs to be added to prevent this
+code from being enabled when it won't work, then so be it.  But it
+might be better to use a different clock id entirely, and I don't
+really understand the logic behind all the clock ids.
 
-Signed-off-by: Dan Collins <dan@dcollins.co.nz>
----
- net/packet/af_packet.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+John?
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index e52a447..14e883d 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -43,6 +43,8 @@
-  *		Chetan Loke	:	Implemented TPACKET_V3 block abstraction
-  *					layer.
-  *					Copyright (C) 2011, <lokec@ccs.neu.edu>
-+ *		Dan Collins : Fixed TPACKET_V3 to wake poll when block is closed
-+ *					rather than for every packet.
-  *
-  *
-  *		This program is free software; you can redistribute it and/or
-@@ -785,6 +787,7 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
- 
- 	struct tpacket3_hdr *last_pkt;
- 	struct tpacket_hdr_v1 *h1 = &pbd1->hdr.bh1;
-+	struct sock *sk = &po->sk;
- 
- 	if (po->stats.stats3.tp_drops)
- 		status |= TP_STATUS_LOSING;
-@@ -809,6 +812,8 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
- 	/* Flush the block */
- 	prb_flush_block(pkc1, pbd1, status);
- 
-+	sk->sk_data_ready(sk);
-+
- 	pkc1->kactive_blk_num = GET_NEXT_PRB_BLK_NUM(pkc1);
- }
- 
-@@ -2052,12 +2057,12 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
- 	smp_wmb();
- #endif
- 
--	if (po->tp_version <= TPACKET_V2)
-+	if (po->tp_version <= TPACKET_V2) {
- 		__packet_set_status(po, h.raw, status);
--	else
-+		sk->sk_data_ready(sk);
-+	} else {
- 		prb_clear_blk_fill_status(&po->rx_ring);
--
--	sk->sk_data_ready(sk);
-+	}
- 
- drop_n_restore:
- 	if (skb_head != skb->data && skb_shared(skb)) {
+--Andy
+
+> Thanks,
+> Shaohua
+
+
+
 -- 
-2.1.3
-
-
+Andy Lutomirski
+AMA Capital Management, LLC
