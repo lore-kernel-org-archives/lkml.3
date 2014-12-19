@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaLSDuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 22:50:04 -0500
-Received: from sender1.zohomail.com ([74.201.84.155]:30836 "EHLO
-	sender1.zohomail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaLSDuC (ORCPT
+	id S1751815AbaLSD56 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 22:57:58 -0500
+Received: from smtprelay0168.hostedemail.com ([216.40.44.168]:43128 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751567AbaLSD55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 22:50:02 -0500
-From: Dan Collins <dan@dcollins.co.nz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Collins <dan@dcollins.co.nz>
-Subject: [PATCH] Fixed TPACKET V3 to signal poll when block is closed rather than every packet
-Date: Fri, 19 Dec 2014 16:49:25 +1300
-Message-Id: <1418960965-29522-1-git-send-email-dan@dcollins.co.nz>
-X-Mailer: git-send-email 2.1.3
-X-ZohoMail: Ss  SS_10 UW UB CHF_INT_SMD_EXT  SGR4_3_09124_1
-X-ZohoMail-Owner: <1418960965-29522-1-git-send-email-dan@dcollins.co.nz>+zmo_0_<dan@dcollins.co.nz>
-X-ZohoMail-Sender: 130.217.250.111
-X-Zoho-Virus-Status: 2
-X-ZohoMailClient: External
+	Thu, 18 Dec 2014 22:57:57 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2895:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3870:3871:3873:3874:4321:4470:5007:6261:7903:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:14096:14097:21063:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: hall13_453006ab3b126
+X-Filterd-Recvd-Size: 2185
+Message-ID: <1418961473.25129.3.camel@perches.com>
+Subject: Re: [PATCH] checkpatch: Fix MAINTAINERS search pattern
+From: Joe Perches <joe@perches.com>
+To: "Chickles, Derek" <Derek.Chickles@caviumnetworks.com>
+Cc: "apw@canonical.com" <apw@canonical.com>,
+        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cernekee@gmail.com" <cernekee@gmail.com>
+Date: Thu, 18 Dec 2014 19:57:53 -0800
+In-Reply-To: <BLUPR07MB4845BEE1160E5945E113E8AFE6B0@BLUPR07MB484.namprd07.prod.outlook.com>
+References: <1418801732-19141-1-git-send-email-computersforpeace@gmail.com>
+	 <1418933533-8364-1-git-send-email-dchickles@caviumnetworks.com>
+	 <1418937472.28384.14.camel@perches.com>
+	 <BLUPR07MB4845BEE1160E5945E113E8AFE6B0@BLUPR07MB484.namprd07.prod.outlook.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make TPACKET_V3 signal poll when block is closed rather than for every
-packet. Side effect is that poll will be signaled when block retire
-timer expires which didn't previously happen. Issue was visible when
-sending packets at a very low frequency such that all blocks are retired
-before packets are received by TPACKET_V3. This caused avoidable packet
-loss. The fix ensures that the signal is sent when blocks are closed
-which covers the normal path where the block is filled as well as the
-path where the timer expires. The case where a block is filled without
-moving to the next block (ie. all blocks are full) will still cause poll
-to be signaled.
+On Fri, 2014-12-19 at 02:34 +0000, Chickles, Derek wrote:
+> > On Thu, 2014-12-18 at 12:12 -0800, Derek Chickles wrote:
+> > > This fixes the check that was supposed to prevent the MAINTAINERS
+> > > warning from appearing when you run checkpatch.pl on a patch that
+> > > includes new files/directories and an updated MAINTAINERS file.
+> > 
+> > This suggested patch doesn't work.
+> > 
+> > $realfile isn't set until the file shows up
+> > in the patch itself.
+> > 
+> > The current test looks at the changelog
+> > before the files are modified and is correct.
+> > 
+> 
+> Thanks, you're right. My mistake was trying to run checkpatch.pl on a diff.
+> My patch works on diffs while the original code does not. This is by chance
+> really because MAINTAINERS is early in the patch. Using format-patch on
+> something that is committed is clearly the correct solution.
 
-Signed-off-by: Dan Collins <dan@dcollins.co.nz>
----
- net/packet/af_packet.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+Both tests can be used.
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index e52a447..6880f34 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -785,6 +785,7 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
- 
- 	struct tpacket3_hdr *last_pkt;
- 	struct tpacket_hdr_v1 *h1 = &pbd1->hdr.bh1;
-+	struct sock *sk = &po->sk;
- 
- 	if (po->stats.stats3.tp_drops)
- 		status |= TP_STATUS_LOSING;
-@@ -809,6 +810,8 @@ static void prb_close_block(struct tpacket_kbdq_core *pkc1,
- 	/* Flush the block */
- 	prb_flush_block(pkc1, pbd1, status);
- 
-+	sk->sk_data_ready(sk);
-+
- 	pkc1->kactive_blk_num = GET_NEXT_PRB_BLK_NUM(pkc1);
- }
- 
-@@ -2052,12 +2055,12 @@ static int tpacket_rcv(struct sk_buff *skb, struct net_device *dev,
- 	smp_wmb();
- #endif
- 
--	if (po->tp_version <= TPACKET_V2)
-+	if (po->tp_version <= TPACKET_V2) {
- 		__packet_set_status(po, h.raw, status);
--	else
-+		sk->sk_data_ready(sk);
-+	} else {
- 		prb_clear_blk_fill_status(&po->rx_ring);
--
--	sk->sk_data_ready(sk);
-+	}
- 
- drop_n_restore:
- 	if (skb_head != skb->data && skb_shared(skb)) {
--- 
-2.1.3
+Send another patch without deleting the first test
+and that'd be good to me.
 
 
