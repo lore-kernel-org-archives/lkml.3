@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbaLSIWB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 03:22:01 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:12765 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373AbaLSIV7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 03:21:59 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee690-f79ab6d0000046f7-1f-5493e01eba1f
-Content-transfer-encoding: 8BIT
-Message-id: <5493E01E.6090806@samsung.com>
-Date: Fri, 19 Dec 2014 17:21:50 +0900
-From: jonghwa3.lee@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120411
- Thunderbird/11.0.1
-To: myungjoo.ham@samsung.com
-Cc: =?UTF-8?B?7J207KKF7ZmU?= <jonghwa3.lee@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "sre@kernel.org" <sre@kernel.org>,
-        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "anton@enomsg.org" <anton@enomsg.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        =?UTF-8?B?7LWc7LCs7Jqw?= <cw00.choi@samsung.com>
-Subject: Re: [PATCH RESEND v2 02/10] power: charger-manager: Use
- power_supply_changed() not private uevent.
-References: <1443120167.38671418974875751.JavaMail.weblogic@epmlwas08d>
-In-reply-to: <1443120167.38671418974875751.JavaMail.weblogic@epmlwas08d>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkQFfuweQQg/mfzS0ObtW0uP7lOavF
-	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
-	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEdx2aSk5mSWpRbp2yVwZTx5/5KloEGg4sj/QywN
-	jBN5uxg5OSQETCRWbv3MDGGLSVy4t56ti5GLQ0hgKaPE7tMv2WGKvp+eyw6RmM4osbz7ICNI
-	gldAUOLH5HssXYwcHMwC8hJHLmWDhJkF1CUmzVvEDFH/mlFi4/K7bBD1WhIf9l9iBbFZBFQl
-	fh++yAJiswnISbxt+gY2U1QgTOLqhONgcREBGYmrG7ezgAxiFtjELPHq7zewi4QFciV+N/0H
-	Gyok4C4xr/sOE8gRnAIeEs3//EDqJQS+skt0TzgPtUxA4tvkQ2CHSgjISmw6APWxpMTBFTdY
-	JjCKzULyziyEd2YheWcBI/MqRtHUguSC4qT0IhO94sTc4tK8dL3k/NxNjMAIPf3v2YQdjPcO
-	WB9iFOBgVOLhfVA8OUSINbGsuDL3EKMp0BETmaVEk/OBaSCvJN7Q2MzIwtTE1NjI3NJMSZz3
-	tdTPYCGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MSvd+pUXocTA8txC8uOaOkcD5+Gqvdyz9
-	E8sTHl0tmDuPS4p5S5ceq3Vg58seNt+7Uzr4TvFoLc6qvLvMRnTdjDdSObuLO2+fndrypjko
-	MUl6Qdy5yW92VrYrrj+VxnXm4N7mZPbHDgXuTN833pvoneP999ilOoN9auKJbEeigmTEDWVC
-	FTYqsRRnJBpqMRcVJwIAJj6bMMsCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+xoK7cg8khBt239S0ObtW0uP7lOavF
-	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
-	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEc1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZ
-	GOoaWlqYKynkJeam2iq5+AToumXmAF2npFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiu
-	x8gADSSsYcx48v4lS0GDQMWR/4dYGhgn8nYxcnJICJhIfD89lx3CFpO4cG89WxcjF4eQwHRG
-	ieXdBxlBErwCghI/Jt9j6WLk4GAWkJc4cikbJMwsoC4xad4iZoj614wSG5ffZYOo15L4sP8S
-	K4jNIqAq8fvwRRYQm01ATuJt0zewmaICYRJXJxwHi4sIyEhc3bidBWQQs8AmZolXf7+BXSQs
-	kCvxu+k/2FAhAXeJed13mECO4BTwkGj+5zeBUWAWkvNmIZw3C8l5CxiZVzGKphYkFxQnpeca
-	6hUn5haX5qXrJefnbmIEx/8zqR2MKxssDjEKcDAq8fB2FE4OEWJNLCuuzD3EKMHBrCTC63gc
-	KMSbklhZlVqUH19UmpNafIjRFOi5icxSosn5wNSUVxJvaGxiZmRpZG5oYWRsriTOq2TfFiIk
-	kJ5YkpqdmlqQWgTTx8TBKdXAyKbMPpdJ4+3Nm76nWJJbF3wqWrpKJiB8tcD+b8sqXjzastE8
-	a0re4ssa1d5cgWH9Lp9yenbeFpxwKyey61KWetsfa/vmfTea0ydsjLl26Vvi1bg7e52/rlGW
-	43Pselb79nxJbNYNxuhHm01b/OU/TzLeut3S6eZLs9IHfLfy5IQnnij6z7PQVomlOCPRUIu5
-	qDgRAONmTKQVAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752249AbaLSIXP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 03:23:15 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:37468 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751802AbaLSIXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 03:23:13 -0500
+From: Mugunthan V N <mugunthanvnm@ti.com>
+To: <bcousson@baylibre.com>, <tony@atomide.com>
+CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
+Subject: [PATCH 1/1] ARM: dts: dra7-evm: fix qspi device tree partition size
+Date: Fri, 19 Dec 2014 13:53:05 +0530
+Message-ID: <1418977385-7886-1-git-send-email-mugunthanvnm@ti.com>
+X-Mailer: git-send-email 2.2.1.62.g3f15098
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014년 12월 19일 16:41, MyungJoo Ham wrote:
+64KiB is allocated for qspi dtb partition which is not
+sufficient, so updating the partition table size to 512KiB
+for device tree partition.
 
->>   
->>  Whenever battery status is changed, charger manager tries to trigger uevent
->> through private interface. This patch modifies it to use power_supply_changed()
->> since it belongs to power supply subsystem.
->>
->> Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
-> 
-> The original uevent_notify() has two additional mechanisms:
-> C1. Save events in suspend-again context and show them up at wakeup.
-> C2. If the new event is a duplicated event, ignore it.
-> 
-> Questions:
-> Q1. Have you checked if C1 is met with the modification? Besides, have
-> you made it sure that the modification won't change the behavior of
-> suspend-again context? (whether "theoretical" or "experimental")
+This also aligns the QSPI partition definitions between
+kernel and U-Boot.
 
+Fixes: dc2dd5b8 ("ARM: dts: dra7: Add qspi device")
 
-It won't ruin suspend-again context because it just changes the location where
-the charger manager's notice to go.
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+---
 
-> Q2. Do you still support C2?
->   For example, if we have notifited the user that we are charging
->   30 seconds ago, we should never bother the user with another message
->   that declares that it is charging unless we have notified that
->   we are not charging since then.
-> 
+This patch is tested on Linux next and the boot logs at [1]
 
+[1] - http://pastebin.ubuntu.com/9567672/
 
-Above case never happens. If charging state is not changed, the report will not
-be triggered. Maybe current driver will send same event repeatedly even though,
-these patch series will guarantee not to do so.
+---
+ arch/arm/boot/dts/dra7-evm.dts | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-And also if we have a status changing while short time wake-up which expects
-suspend-again proceeds in near future, I think it is better to notify it to the
-user not to keep until undetermined 'TRUE' wake-up.
-
-Thanks,
-Jonghwa
-
-> Cheers,
-> MyungJoo.
-> 
->> ---
->>  drivers/power/charger-manager.c |   91 +++++----------------------------------
->>  1 file changed, 11 insertions(+), 80 deletions(-)
->>
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{��h����ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
-
+diff --git a/arch/arm/boot/dts/dra7-evm.dts b/arch/arm/boot/dts/dra7-evm.dts
+index 736092b..235d001 100644
+--- a/arch/arm/boot/dts/dra7-evm.dts
++++ b/arch/arm/boot/dts/dra7-evm.dts
+@@ -499,23 +499,23 @@
+ 		};
+ 		partition@5 {
+ 			label = "QSPI.u-boot-spl-os";
+-			reg = <0x00140000 0x00010000>;
++			reg = <0x00140000 0x00080000>;
+ 		};
+ 		partition@6 {
+ 			label = "QSPI.u-boot-env";
+-			reg = <0x00150000 0x00010000>;
++			reg = <0x001c0000 0x00010000>;
+ 		};
+ 		partition@7 {
+ 			label = "QSPI.u-boot-env.backup1";
+-			reg = <0x00160000 0x0010000>;
++			reg = <0x001d0000 0x0010000>;
+ 		};
+ 		partition@8 {
+ 			label = "QSPI.kernel";
+-			reg = <0x00170000 0x0800000>;
++			reg = <0x001e0000 0x0800000>;
+ 		};
+ 		partition@9 {
+ 			label = "QSPI.file-system";
+-			reg = <0x00970000 0x01690000>;
++			reg = <0x009e0000 0x01620000>;
+ 		};
+ 	};
+ };
+-- 
+2.2.1.62.g3f15098
 
