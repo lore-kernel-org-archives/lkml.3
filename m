@@ -1,198 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949AbaLSFWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:22:48 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:46649 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaLSFWr (ORCPT
+	id S1751962AbaLSF0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:26:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51899 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaLSF0I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:22:47 -0500
-Message-ID: <5493B5CE.7010000@ti.com>
-Date: Fri, 19 Dec 2014 10:51:18 +0530
-From: Lokesh Vutla <lokeshvutla@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 19 Dec 2014 00:26:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="640124534"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQIAAFxZwgAAD1tCAAAHl0IAAAhPw
+Date: Fri, 19 Dec 2014 05:25:44 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC050B1@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
+	<5491C0A2.7040503@redhat.com>
+	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+	<5492926E.8070207@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ADA0@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
-        Paul Walmsley <paul@pwsan.com>
-CC: <t-kristo@ti.com>, <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
- without sysc
-References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com>
-In-Reply-To: <5492F84E.7020706@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Roger,
-On Thursday 18 December 2014 09:22 PM, Roger Quadros wrote:
-> Fixing up Paul's email id.
+Wu, Feng wrote on 2014-12-19:
 > 
-> cheers,
-> -roger
 > 
-> On 18/12/14 17:49, Roger Quadros wrote:
->> There are quite a few hwmods that don't have sysconfig register and so
->> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
->> on those modules after the module is enabled.
->>
->> This can potentially cause a bus access error if the module is accessed
->> before the module is ready.
->>
->> Get rid of the redundant _find_mpu_rt_port() check from the _wait_target_ready()
->> funcion for all the SoCs. The following PRCM register access that checks the
->> module ready state has nothing to do with module's SYSCONFIG or mpu_rt_port.
-Yes, makes sense. This patch looks good to me.
-Tested this on AM437x-gp-evm.
-
-Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
-
-May be good idea to warn every time if enabling of module is failed?
-Unrelated to this patch though.
-
-diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
-index 4c6b7b2..db67b66 100644
---- a/arch/arm/mach-omap2/omap_hwmod.c
-+++ b/arch/arm/mach-omap2/omap_hwmod.c
-@@ -2243,7 +2243,7 @@ static int _enable(struct omap_hwmod *oh)
- 		if (soc_ops.disable_module)
- 			soc_ops.disable_module(oh);
- 		_disable_clocks(oh);
--		pr_debug("omap_hwmod: %s: _wait_target_ready: %d\n",
-+		pr_warn("omap_hwmod: %s: _wait_target_ready failed : %d\n",
- 			 oh->name, r);
- 
- 		if (oh->clkdm)
-
-
-Thanks and regards,
-Lokesh
-
->>
->> e.g. this fixes the below DCAN bus access error on AM437x-gp-evm.
->>
->> [   16.672978] ------------[ cut here ]------------
->> [   16.677885] WARNING: CPU: 0 PID: 1580 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x234/0x35c()
->> [   16.687946] 44000000.ocp:L3 Custom Error: MASTER M2 (64-bit) TARGET L4_PER_0 (Read): Data Access in User mode during Functional access
->> [   16.700654] Modules linked in: xhci_hcd btwilink ti_vpfe dwc3 videobuf2_core ov2659 bluetooth v4l2_common videodev ti_am335x_adc kfifo_buf industrialio c_can_platform videobuf2_dma_contig media snd_soc_tlv320aic3x pixcir_i2c_ts c_can dc
->> [   16.731144] CPU: 0 PID: 1580 Comm: rpc.statd Not tainted 3.14.26-02561-gf733aa036398 #180
->> [   16.739747] Backtrace:
->> [   16.742336] [<c0011108>] (dump_backtrace) from [<c00112a4>] (show_stack+0x18/0x1c)
->> [   16.750285]  r6:00000093 r5:00000009 r4:eab5b8a8 r3:00000000
->> [   16.756252] [<c001128c>] (show_stack) from [<c05a4418>] (dump_stack+0x20/0x28)
->> [   16.763870] [<c05a43f8>] (dump_stack) from [<c0037120>] (warn_slowpath_common+0x6c/0x8c)
->> [   16.772408] [<c00370b4>] (warn_slowpath_common) from [<c00371e4>] (warn_slowpath_fmt+0x38/0x40)
->> [   16.781550]  r8:c05d1f90 r7:c0730844 r6:c0730448 r5:80080003 r4:ed0cd210
->> [   16.788626] [<c00371b0>] (warn_slowpath_fmt) from [<c027fa94>] (l3_interrupt_handler+0x234/0x35c)
->> [   16.797968]  r3:ed0cd480 r2:c0730508
->> [   16.801747] [<c027f860>] (l3_interrupt_handler) from [<c0063758>] (handle_irq_event_percpu+0x54/0x1bc)
->> [   16.811533]  r10:ed005600 r9:c084855b r8:0000002a r7:00000000 r6:00000000 r5:0000002a
->> [   16.819780]  r4:ed0e6d80
->> [   16.822453] [<c0063704>] (handle_irq_event_percpu) from [<c00638f0>] (handle_irq_event+0x30/0x40)
->> [   16.831789]  r10:eb2b6938 r9:eb2b6960 r8:bf011420 r7:fa240100 r6:00000000 r5:0000002a
->> [   16.840052]  r4:ed005600
->> [   16.842744] [<c00638c0>] (handle_irq_event) from [<c00661d8>] (handle_fasteoi_irq+0x74/0x128)
->> [   16.851702]  r4:ed005600 r3:00000000
->> [   16.855479] [<c0066164>] (handle_fasteoi_irq) from [<c0063068>] (generic_handle_irq+0x28/0x38)
->> [   16.864523]  r4:0000002a r3:c0066164
->> [   16.868294] [<c0063040>] (generic_handle_irq) from [<c000ef60>] (handle_IRQ+0x38/0x8c)
->> [   16.876612]  r4:c081c640 r3:00000202
->> [   16.880380] [<c000ef28>] (handle_IRQ) from [<c00084f0>] (gic_handle_irq+0x30/0x5c)
->> [   16.888328]  r6:eab5ba38 r5:c0804460 r4:fa24010c r3:00000100
->> [   16.894303] [<c00084c0>] (gic_handle_irq) from [<c05a8d80>] (__irq_svc+0x40/0x50)
->> [   16.902193] Exception stack(0xeab5ba38 to 0xeab5ba80)
->> [   16.907499] ba20:                                                       00000000 00000006
->> [   16.916108] ba40: fa1d0000 fa1d0008 ed3d3000 eab5bab4 ed3d3460 c0842af4 bf011420 eb2b6960
->> [   16.924716] ba60: eb2b6938 eab5ba8c eab5ba90 eab5ba80 bf035220 bf07702c 600f0013 ffffffff
->> [   16.933317]  r7:eab5ba6c r6:ffffffff r5:600f0013 r4:bf07702c
->> [   16.939317] [<bf077000>] (c_can_plat_read_reg_aligned_to_16bit [c_can_platform]) from [<bf035220>] (c_can_get_berr_counter+0x38/0x64 [c_can])
->> [   16.952696] [<bf0351e8>] (c_can_get_berr_counter [c_can]) from [<bf010294>] (can_fill_info+0x124/0x15c [can_dev])
->> [   16.963480]  r5:ec8c9740 r4:ed3d3000
->> [   16.967253] [<bf010170>] (can_fill_info [can_dev]) from [<c0502fa8>] (rtnl_fill_ifinfo+0x58c/0x8fc)
->> [   16.976749]  r6:ec8c9740 r5:ed3d3000 r4:eb2b6780
->> [   16.981613] [<c0502a1c>] (rtnl_fill_ifinfo) from [<c0503408>] (rtnl_dump_ifinfo+0xf0/0x1dc)
->> [   16.990401]  r10:ec8c9740 r9:00000000 r8:00000000 r7:00000000 r6:ebd4d1b4 r5:ed3d3000
->> [   16.998671]  r4:00000000
->> [   17.001342] [<c0503318>] (rtnl_dump_ifinfo) from [<c050e6e4>] (netlink_dump+0xa8/0x1e0)
->> [   17.009772]  r10:00000000 r9:00000000 r8:c0503318 r7:ebf3e6c0 r6:ebd4d1b4 r5:ec8c9740
->> [   17.018050]  r4:ebd4d000
->> [   17.020714] [<c050e63c>] (netlink_dump) from [<c050ec10>] (__netlink_dump_start+0x104/0x154)
->> [   17.029591]  r6:eab5bd34 r5:ec8c9980 r4:ebd4d000
->> [   17.034454] [<c050eb0c>] (__netlink_dump_start) from [<c0505604>] (rtnetlink_rcv_msg+0x110/0x1f4)
->> [   17.043778]  r7:00000000 r6:ec8c9980 r5:00000f40 r4:ebf3e6c0
->> [   17.049743] [<c05054f4>] (rtnetlink_rcv_msg) from [<c05108e8>] (netlink_rcv_skb+0xb4/0xc8)
->> [   17.058449]  r8:eab5bdac r7:ec8c9980 r6:c05054f4 r5:ec8c9980 r4:ebf3e6c0
->> [   17.065534] [<c0510834>] (netlink_rcv_skb) from [<c0504134>] (rtnetlink_rcv+0x24/0x2c)
->> [   17.073854]  r6:ebd4d000 r5:00000014 r4:ec8c9980 r3:c0504110
->> [   17.079846] [<c0504110>] (rtnetlink_rcv) from [<c05102ac>] (netlink_unicast+0x180/0x1ec)
->> [   17.088363]  r4:ed0c6800 r3:c0504110
->> [   17.092113] [<c051012c>] (netlink_unicast) from [<c0510670>] (netlink_sendmsg+0x2ac/0x380)
->> [   17.100813]  r10:00000000 r8:00000008 r7:ec8c9980 r6:ebd4d000 r5:eab5be70 r4:eab5bee4
->> [   17.109083] [<c05103c4>] (netlink_sendmsg) from [<c04dfdb4>] (sock_sendmsg+0x90/0xb0)
->> [   17.117305]  r10:00000000 r9:eab5a000 r8:becdda3c r7:0000000c r6:ea978400 r5:eab5be70
->> [   17.125563]  r4:c05103c4
->> [   17.128225] [<c04dfd24>] (sock_sendmsg) from [<c04e1c28>] (SyS_sendto+0xb8/0xdc)
->> [   17.136001]  r6:becdda5c r5:00000014 r4:ecd37040
->> [   17.140876] [<c04e1b70>] (SyS_sendto) from [<c000e680>] (ret_fast_syscall+0x0/0x30)
->> [   17.148923]  r10:00000000 r8:c000e804 r7:00000122 r6:becdda5c r5:0000000c r4:becdda5c
->> [   17.157169] ---[ end trace 2b71e15b38f58bad ]---
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> ---
->>  arch/arm/mach-omap2/omap_hwmod.c | 12 ------------
->>  1 file changed, 12 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
->> index 716247e..3afcc65 100644
->> --- a/arch/arm/mach-omap2/omap_hwmod.c
->> +++ b/arch/arm/mach-omap2/omap_hwmod.c
->> @@ -2943,9 +2943,6 @@ static int _omap2xxx_wait_target_ready(struct omap_hwmod *oh)
->>  	if (oh->flags & HWMOD_NO_IDLEST)
->>  		return 0;
->>  
->> -	if (!_find_mpu_rt_port(oh))
->> -		return 0;
->> -
->>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
->>  
->>  	return omap2xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
->> @@ -2970,9 +2967,6 @@ static int _omap3xxx_wait_target_ready(struct omap_hwmod *oh)
->>  	if (oh->flags & HWMOD_NO_IDLEST)
->>  		return 0;
->>  
->> -	if (!_find_mpu_rt_port(oh))
->> -		return 0;
->> -
->>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
->>  
->>  	return omap3xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
->> @@ -2997,9 +2991,6 @@ static int _omap4_wait_target_ready(struct omap_hwmod *oh)
->>  	if (oh->flags & HWMOD_NO_IDLEST || !oh->clkdm)
->>  		return 0;
->>  
->> -	if (!_find_mpu_rt_port(oh))
->> -		return 0;
->> -
->>  	/* XXX check module SIDLEMODE, hardreset status */
->>  
->>  	return omap4_cminst_wait_module_ready(oh->clkdm->prcm_partition,
->> @@ -3025,9 +3016,6 @@ static int _am33xx_wait_target_ready(struct omap_hwmod *oh)
->>  	if (oh->flags & HWMOD_NO_IDLEST)
->>  		return 0;
->>  
->> -	if (!_find_mpu_rt_port(oh))
->> -		return 0;
->> -
->>  	/* XXX check module SIDLEMODE, hardreset status */
->>  
->>  	return am33xx_cm_wait_module_ready(oh->clkdm->cm_inst,
->>
+> Zhang, Yang Z wrote on 2014-12-19:
+>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
+>> set
+>> 
+>> Wu, Feng wrote on 2014-12-19:
+>>> 
+>>> 
+>>> Zhang, Yang Z wrote on 2014-12-19:
+>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>> is set
+>>>> 
+>>>> Wu, Feng wrote on 2014-12-19:
+>>>>> 
+>>>>> 
+>>>>> iommu-bounces@lists.linux-foundation.org wrote on
+>>>> mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
+>>>>>> Cc: iommu@lists.linux-foundation.org;
+>>>>>> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+>>>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>>>> is set
+>>>>>> 
+>>>>>> Paolo Bonzini wrote on 2014-12-18:
+>>>>>>> 
+>>>>>>> 
+>>>>>>> On 18/12/2014 04:14, Wu, Feng wrote:
+>>>>>>>> 
+>>>>>>>> 
+>>>>>>>> linux-kernel-owner@vger.kernel.org wrote on
+>>>>>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
+>>>>>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
+>>>>>>>>> dwmw2@infradead.org;
+>>>>>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex Williamson;
+>>>>>>>>> joro-zLv9SwRftAIdnm+Jiang Liu Cc:
+>>>>>>>>> iommu@lists.linux-foundation.org;
+>>>>>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; KVM list;
+>>>>>>>>> Eric Auger Subject: Re: [v3 25/26] KVM: Suppress
+>>>>>>>>> posted-interrupt when 'SN' is set
+>>>>>>>>> 
+>>>>>>>>> 
+>>>>>>>>> 
+>>>>>>>>> On 12/12/2014 16:14, Feng Wu wrote:
+>>>>>>>>>> Currently, we don't support urgent interrupt, all
+>>>>>>>>>> interrupts are recognized as non-urgent interrupt, so we
+>>>>>>>>>> cannot send posted-interrupt when 'SN' is set.
+>>>>>>>>> 
+>>>>>>>>> Can this happen?  If the vcpu is in guest mode, it cannot
+>>>>>>>>> have been scheduled out, and that's the only case when SN is set.
+>>>>>>>>> 
+>>>>>>>>> Paolo
+>>>>>>>> 
+>>>>>>>> Currently, the only place where SN is set is vCPU is
+>>>>>>>> preempted and
+>>>>>> 
+>>>>>> If the vCPU is preempted, shouldn't the subsequent be ignored?
+>>>>>> What happens if a PI is occurs when vCPU is preempted?
+>>>>> 
+>>>>> If a vCPU is preempted, the 'SN' bit is set, the subsequent
+>>>>> interrupts are suppressed for posting.
+>>>> 
+>>>> I mean what happens if we don't set SN bit. From my point, if
+>>>> preempter already disabled the interrupt, it is ok to leave SN
+>>>> bit as zero. But if preempter enabled the interrupt, doesn't this
+>>>> mean he allow interrupt to happen? BTW, since there already has
+>>>> ON bit, so this means there only have one interrupt arrived at
+>>>> most and it doesn't hurt performance. Do we really need to set SN bit?
+>>> 
+>>> 
+>>> See this scenario:
+>>> vCPU0 is running on pCPU0
+>>> --> vCPU0 is preempted by vCPU1
+>>> --> Then vCPU1 is running on pCPU0 and vCPU0 is waiting for
+>>> --> schedule in runqueue
+>>> 
+>>> If the we don't set SN for vCPU0, then all subsequent interrupts
+>>> for
+>>> vCPU0 is posted to vCPU1, this will consume hardware and software
+>> 
+>> The PI vector for vCPU1 is notification vector, but the PI vector
+>> for
+>> vCPU0 should be wakeup vector. Why vCPU1 will consume this PI event?
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Wakeup vector is only used for blocking case, when vCPU is preempted
+> and waiting in the runqueue, the NV is the notification vector.
+
+I see your point. But from performance point, if we can schedule the vCPU to another PCPU to handle the interrupt, it would helpful. But I remember current KVM will not schedule the vCPU in run queue (even though it got preempted) to another pCPU to run(Am I right?). So it may hard to do it.
+
 > 
+> Thanks,
+> Feng
+> 
+>> 
+>>> efforts and in fact it is not needed at all. If SN is set for
+>>> vCPU0, VT-d hardware will not issue Notification Event for vCPU0
+>>> when an interrupt is for it, but just setting the related PIR bit.
+>>> 
+>>> Thanks,
+>>> Feng
+>>> 
+>>>> 
+>>>>> 
+>>>>> Thanks,
+>>>>> Feng
+>>>>> 
+>>>>>> 
+>>>>>>>> waiting for the next scheduling in the runqueue. But I am not
+>>>>>>>> sure whether we need to set SN for other purpose in future.
+>>>>>>>> Adding SN checking here is just to follow the Spec.
+>>>>>>>> non-urgent interrupts are suppressed
+>>>>>>> when SN is set.
+>>>>>>> 
+>>>>>>> I would change that to a WARN_ON_ONCE then.
+>>>>>> 
+>>>>>> 
+>>>>>> Best regards,
+>>>>>> Yang
+>>>>>> 
+>>>>>> 
+>>>>>> _______________________________________________
+>>>>>> iommu mailing list
+>>>>>> iommu@lists.linux-foundation.org
+>>>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>>>> 
+>>>> 
+>>>> Best regards,
+>>>> Yang
+>>>> 
+>> 
+>> 
+>> Best regards,
+>> Yang
+>>
+
+
+Best regards,
+Yang
+
 
