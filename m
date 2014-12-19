@@ -1,63 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaLSBqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 20:46:46 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:61453 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751253AbaLSBqp (ORCPT
+	id S1751987AbaLSBsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 20:48:03 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53880 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158AbaLSBsA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 20:46:45 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Nishanth Menon <nm@ti.com>, Kevin Hilman <khilman@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: Stop BUGing the system
-Date: Fri, 19 Dec 2014 03:08:32 +0100
-Message-ID: <3146996.LXve8MJFme@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponxz0=n5g9uBOt=JqBMdtdi9mnsrh34emxZDO=PJikVaw@mail.gmail.com>
-References: <1418831495-26958-1-git-send-email-nm@ti.com> <20141218144915.GA29004@kahuna> <CAKohponxz0=n5g9uBOt=JqBMdtdi9mnsrh34emxZDO=PJikVaw@mail.gmail.com>
+	Thu, 18 Dec 2014 20:48:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="656798588"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@kernel.org" <gleb@kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+        "Sankaran, Rajesh" <rajesh.sankaran@intel.com>
+CC: "eric.auger@linaro.org" <eric.auger@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
+ VT-d PI
+Thread-Topic: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu()
+ for VT-d PI
+Thread-Index: AQHQFiCrJgBr1evklkuo8VNfnV0dX5yWHx3ggAAMspA=
+Date: Fri, 19 Dec 2014 01:47:54 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC04E94@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-14-git-send-email-feng.wu@intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC048A2@SHSMSX104.ccr.corp.intel.com>
+ <549307A5.3060305@redhat.com>
+ <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00230A5F8@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 19, 2014 07:11:19 AM Viresh Kumar wrote:
-> On 18 December 2014 at 20:19, Nishanth Menon <nm@ti.com> wrote:
-> > I can add "could be unstable" -> the point being there can be psuedo
-> > errors reported in the system - example - clock framework bugs. Dont
-> > just stop the boot. example: what if cpufreq was a driver module - it
-> > would not have rescued the system because cpufreq had'nt detected the
-> > logic - if we are going to force this on the system, we should probably
-> > not do this in cpufreq code, instead should be somewhere generic.
-> >
-> > While I do empathise (and had infact advocated in the past) of not
-> > favouring system attempting to continue at an invalid configuration and
-> > our attempt to rescue has failed - given that we cannot provide a
-> > consistent behavior (it is not a core system behavior) and potential of
-> > a false-postive (example clk framework or underlying bug), it should be
-> > good enough to "enhance" WARN to be "severe sounding enough" to
-> > flag it for developer and continue while keeping the system alive as
-> > much as possible.
+Wu, Feng wrote on 2014-12-19:
 > 
-> There is no way out for the kernel to know if its a false positive or a real
-> bug. And in the worst case, it can screw up a platform completely.
 > 
-> I am still not sure if changing it to a WARN would be good idea.
+> Paolo Bonzini wrote on 2014-12-19:
+>> jiang.liu@linux.intel.com
+>> Cc: eric.auger@linaro.org; linux-kernel@vger.kernel.org;
+>> iommu@lists.linux-foundation.org; kvm@vger.kernel.org
+>> Subject: Re: [v3 13/26] KVM: Define a new interface
+>> kvm_find_dest_vcpu() for VT-d PI
+>> 
+>> 
+>> 
+>> On 18/12/2014 15:49, Zhang, Yang Z wrote:
+>>>>> Here, we introduce a similar way with 'apic_arb_prio' to handle
+>>>>> guest lowest priority interrtups when VT-d PI is used. Here is
+>>>>> the
+>>>>> ideas: - Each vCPU has a counter 'round_robin_counter'. - When
+>>>>> guests sets an interrupts to lowest priority, we choose the vCPU
+>>>>> with smallest 'round_robin_counter' as the destination, then
+>>>>> increase it.
+>>> 
+>>> How this can work well? All subsequent interrupts are delivered to
+>>> one vCPU? It shouldn't be the best solution, need more consideration.
+>> 
+>> Well, it's a hardware limitation.  The alternative (which is easy to
+>> implement) is to only do PI for single-CPU interrupts.  This should
+>> work well for multiqueue NICs (and of course for UP guests :)), so
+>> perhaps it's a good idea to only support that as a first attempt.
+>> 
+>> Paolo
 > 
-> @Rafael: Thoughts ?
+> Paolo, what do you mean by "single-CPU interrupts"? Do you mean we
 
-I'm a bit divided here.  On the one hand I don't like BUG_ON() as a rule and it
-is used in too many places where it doesn't have to be used.
+It should be same idea as I mentioned on another thread: deliver the interrupt to a single CPU(maybe the first matched VCPU?)
 
-On the other hand, in this particular case, I'm not sure if allowing the system
-to run without cpufreq when it might rely on it for CPU cooling, for one example,
-is a good idea.
+> don't support lowest priority interrupts for PI? But Linux OS uses
+> lowest priority for most of the case? If so, we can hardly get benefit
+> from this feature for Linux guest OS.
+> 
+> Thanks,
+> Feng
+> 
+>> 
+>>> Also, I think you should take the apic_arb_prio into consider
+>>> since the priority is for the whole vCPU not for one interrupt.
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Best regards,
+Yang
+
+
