@@ -1,164 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaLSXjs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 18:39:48 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:48308 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673AbaLSXjr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 18:39:47 -0500
-Date: Sat, 20 Dec 2014 08:39:37 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ganesh Mahendran <opensource.ganesh@gmail.com>, ngupta@vflare.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm/zsmalloc: add statistics support
-Message-ID: <20141219233937.GA11975@blaptop>
-References: <1418993719-14291-1-git-send-email-opensource.ganesh@gmail.com>
- <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
+	id S1752560AbaLSXpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 18:45:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751462AbaLSXpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 18:45:40 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, sgrubb@redhat.com, eparis@parisplace.org,
+        Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
+Date: Fri, 19 Dec 2014 18:45:34 -0500
+Message-ID: <1730418.jbUzzkIQ2a@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
+References: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219143244.1e5fabad8b6733204486f5bc@linux-foundation.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 02:32:44PM -0800, Andrew Morton wrote:
-> On Fri, 19 Dec 2014 20:55:19 +0800 Ganesh Mahendran <opensource.ganesh@gmail.com> wrote:
+On Thursday, December 18, 2014 11:09:27 PM Richard Guy Briggs wrote:
+> Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
+> audit_log_end(), which can come from any context (aka even a sleeping
+> context) GFP_KERNEL can't be used.  Since the audit_buffer knows what
+> context it should use, pass that down and use that.
 > 
-> > Keeping fragmentation of zsmalloc in a low level is our target. But now
-> > we still need to add the debug code in zsmalloc to get the quantitative data.
-> > 
-> > This patch adds a new configuration CONFIG_ZSMALLOC_STAT to enable the
-> > statistics collection for developers. Currently only the objects statatitics
-> > in each class are collected. User can get the information via debugfs.
-> >      cat /sys/kernel/debug/zsmalloc/pool-1/...
+> See: https://lkml.org/lkml/2014/12/16/542
 > 
-> Is everyone OK with this now?
+> BUG: sleeping function called from invalid context at mm/slab.c:2849
+> in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: sulogin
+> 2 locks held by sulogin/885:
+>   #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>]
+> prepare_bprm_creds+0x28/0x8b #1:  (tty_files_lock){+.+.+.}, at:
+> [<ffffffff9123e787>] selinux_bprm_committing_creds+0x55/0x22b CPU: 1 PID:
+> 885 Comm: sulogin Not tainted 3.18.0-next-20141216 #30 Hardware name: Dell
+> Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014 ffff880223744f10
+> ffff88022410f9b8 ffffffff916ba529 0000000000000375 ffff880223744f10
+> ffff88022410f9e8 ffffffff91063185 0000000000000006 0000000000000000
+> 0000000000000000 0000000000000000 ffff88022410fa38 Call Trace:
+>   [<ffffffff916ba529>] dump_stack+0x50/0xa8
+>   [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+>   [<ffffffff910632a6>] __might_sleep+0x119/0x128
+>   [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+>   [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+>   [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+>   [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+>   [<ffffffff910c263e>] audit_log_end+0x83/0x100
+>   [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+>   [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+>   [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+>   [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+>   [<ffffffff9123dc2d>] inode_has_perm+0x5a/0x65
+>   [<ffffffff9123e7ca>] selinux_bprm_committing_creds+0x98/0x22b
+>   [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+>   [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+>   [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+>   [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+>   [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+>   [<ffffffff91153669>] do_execve+0x1f/0x21
+>   [<ffffffff91153967>] SyS_execve+0x25/0x29
+>   [<ffffffff916c61a9>] stub_execve+0x69/0xa0
+> 
+> Cc: stable@vger.kernel.org #v3.16-rc1
+> Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+> Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> ---
+>  kernel/audit.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 
-Hmm, how about passing straightforward name from the user(ex, zram) when
-it creates zsmalloc? (ex, ex, zs_create_pool(gfp, zram0)).
-Then, we should fix debugfs_create_dir can return errno to propagate the error
-to end user who can know it was failed ENOMEM or EEXIST.
+Looks good to me, thanks.
 
+I've got this patch (and the PID filter fix) queued up to go to Linus for 
+v3.19; considering that -rc1 is due on Sunday I think I'll hold this until 
+early next week (targeting -rc2) just in case something nasty appears after 
+the merge window closes.
+
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index 7b83c55..ce484fb 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -429,7 +429,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
+>   * This function doesn't consume an skb as might be expected since it has
+> to * copy it anyways.
+>   */
+> -static void kauditd_send_multicast_skb(struct sk_buff *skb)
+> +static void kauditd_send_multicast_skb(struct sk_buff *skb, gfp_t gfp_mask)
+> {
+>  	struct sk_buff		*copy;
+>  	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
+> @@ -448,11 +448,11 @@ static void kauditd_send_multicast_skb(struct sk_buff
+> *skb) * no reason for new multicast clients to continue with this
+>  	 * non-compliance.
+>  	 */
+> -	copy = skb_copy(skb, GFP_KERNEL);
+> +	copy = skb_copy(skb, gfp_mask);
+>  	if (!copy)
+>  		return;
 > 
-> > --- a/include/linux/zsmalloc.h
-> > +++ b/include/linux/zsmalloc.h
-> > @@ -48,4 +48,13 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
-> >  
-> >  unsigned long zs_get_total_pages(struct zs_pool *pool);
-> >  
-> > +#ifdef CONFIG_ZSMALLOC_STAT
-> > +int get_zs_pool_index(struct zs_pool *pool);
+> -	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
+> +	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, gfp_mask);
+>  }
 > 
-> The name is inconsistent with the rest of zsmalloc and with preferred
-> kernel naming conventions.  Should be "zs_get_pool_index".
+>  /*
+> @@ -1949,7 +1949,7 @@ void audit_log_end(struct audit_buffer *ab)
+>  		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
 > 
-> > +#else
-> > +static inline int get_zs_pool_index(struct zs_pool *pool)
-> > +{
-> > +	return -1;
-> > +}
-> > +#endif
-> > +
-> >  #endif
-> > diff --git a/mm/Kconfig b/mm/Kconfig
-> > index 1d1ae6b..95c5728 100644
-> > --- a/mm/Kconfig
-> > +++ b/mm/Kconfig
-> >
-> > ...
-> >
-> > +static int zs_stats_size_show(struct seq_file *s, void *v)
-> > +{
-> > +	int i;
-> > +	struct zs_pool *pool = (struct zs_pool *)s->private;
+>  		nlh->nlmsg_len = ab->skb->len;
+> -		kauditd_send_multicast_skb(ab->skb);
+> +		kauditd_send_multicast_skb(ab->skb, ab->gfp_mask);
 > 
-> The typecast is unneeded and undesirable (it defeats typechecking).
-> 
-> > +	struct size_class *class;
-> > +	int objs_per_zspage;
-> > +	unsigned long obj_allocated, obj_used, pages_used;
-> > +	unsigned long total_objs = 0, total_used_objs = 0, total_pages = 0;
-> > +
-> > +	seq_printf(s, " %5s %5s %13s %10s %10s\n", "class", "size",
-> > +				"obj_allocated", "obj_used", "pages_used");
-> > +
-> > +	for (i = 0; i < zs_size_classes; i++) {
-> > +		class = pool->size_class[i];
-> > +
-> > +		if (class->index != i)
-> > +			continue;
-> > +
-> > +		spin_lock(&class->lock);
-> > +		obj_allocated = zs_stat_get(class, OBJ_ALLOCATED);
-> > +		obj_used = zs_stat_get(class, OBJ_USED);
-> > +		spin_unlock(&class->lock);
-> > +
-> > +		objs_per_zspage = get_maxobj_per_zspage(class->size,
-> > +				class->pages_per_zspage);
-> > +		pages_used = obj_allocated / objs_per_zspage *
-> > +				class->pages_per_zspage;
-> > +
-> > +		seq_printf(s, " %5u %5u    %10lu %10lu %10lu\n", i,
-> > +			class->size, obj_allocated, obj_used, pages_used);
-> > +
-> > +		total_objs += obj_allocated;
-> > +		total_used_objs += obj_used;
-> > +		total_pages += pages_used;
-> > +	}
-> > +
-> > +	seq_puts(s, "\n");
-> > +	seq_printf(s, " %5s %5s    %10lu %10lu %10lu\n", "Total", "",
-> > +			total_objs, total_used_objs, total_pages);
-> > +
-> > +	return 0;
-> > +}
-> >
-> > ...
-> >
-> > +static int zs_pool_stat_create(struct zs_pool *pool)
-> > +{
-> > +	char name[10];
-> 
-> This is not good.  If the kernel creates and then destroys a pool 10000
-> times, zs_pool_index==10000 and we overrun the buffer.  Could use
-> kasprintf() in here to fix this.
-> 
-> zs_pool_index isn't a very good name - it doesn't index anything. 
-> zs_pool_id would be better.
-> 
-> > +	struct dentry *entry;
-> > +
-> > +	if (!zs_stat_root)
-> > +		return -ENODEV;
-> > +
-> > +	pool->index = atomic_inc_return(&zs_pool_index);
-> > +	snprintf(name, sizeof(name), "pool-%d", pool->index);
-> > +	entry = debugfs_create_dir(name, zs_stat_root);
-> > +	if (!entry) {
-> > +		pr_warn("pool %d, debugfs dir <%s> creation failed\n",
-> > +				pool->index, name);
-> > +		return -ENOMEM;
-> 
-> Sigh.  The debugfs interface does suck.  Doesn't matter much.
-> 
-> > +	}
-> > +	pool->stat_dentry = entry;
-> > +
-> > +	entry = debugfs_create_file("obj_in_classes", S_IFREG | S_IRUGO,
-> > +			pool->stat_dentry, pool, &zs_stat_size_ops);
-> > +	if (!entry) {
-> > +		pr_warn("pool %d, debugfs file entry <%s> creation failed\n",
-> > +				pool->index, "obj_in_classes");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> >
-> > ...
-> >
-> 
+>  		/*
+>  		 * The original kaudit unicast socket sends up messages with
+
+-- 
+paul moore
+security @ redhat
+
