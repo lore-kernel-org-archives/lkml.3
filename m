@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216AbaLSOLP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:11:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46288 "EHLO
+	id S1752882AbaLSOLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:11:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46317 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542AbaLSOLL (ORCPT
+	with ESMTP id S1752637AbaLSOLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:11:11 -0500
-Date: Fri, 19 Dec 2014 06:10:16 -0800
+	Fri, 19 Dec 2014 09:11:36 -0500
+Date: Fri, 19 Dec 2014 06:10:33 -0800
 From: tip-bot for Jiang Liu <tipbot@zytor.com>
-Message-ID: <tip-2f600025d38f8c4e7debdeae9b80b7df498c22be@git.kernel.org>
-Cc: rdunlap@infradead.org, gregkh@linuxfoundation.org, bp@alien8.de,
-        yinghai@kernel.org, joro@8bytes.org, bhelgaas@google.com,
-        mingo@kernel.org, rjw@rjwysocki.net, benh@kernel.crashing.org,
-        jiang.liu@linux.intel.com, hpa@zytor.com, tglx@linutronix.de,
-        konrad.wilk@oracle.com, linux-kernel@vger.kernel.org,
-        tony.luck@intel.com
-Reply-To: tglx@linutronix.de, konrad.wilk@oracle.com,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com,
-        jiang.liu@linux.intel.com, benh@kernel.crashing.org, hpa@zytor.com,
-        rjw@rjwysocki.net, rdunlap@infradead.org, bp@alien8.de,
-        gregkh@linuxfoundation.org, joro@8bytes.org, bhelgaas@google.com,
-        yinghai@kernel.org, mingo@kernel.org
-In-Reply-To: <1414397531-28254-16-git-send-email-jiang.liu@linux.intel.com>
-References: <1414397531-28254-16-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <tip-a9786091126233cf1333d23999bf07bdd0818486@git.kernel.org>
+Cc: prarit@redhat.com, konrad.wilk@oracle.com, rdunlap@infradead.org,
+        tony.luck@intel.com, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, hpa@zytor.com, mingo@kernel.org,
+        bhelgaas@google.com, rjw@rjwysocki.net, joro@8bytes.org,
+        gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        tglx@linutronix.de, yinghai@kernel.org, bp@alien8.de,
+        jiang.liu@linux.intel.com
+Reply-To: bp@alien8.de, jiang.liu@linux.intel.com, yinghai@kernel.org,
+        grant.likely@linaro.org, gregkh@linuxfoundation.org,
+        tglx@linutronix.de, rjw@rjwysocki.net, joro@8bytes.org,
+        mingo@kernel.org, bhelgaas@google.com, benh@kernel.crashing.org,
+        hpa@zytor.com, linux-kernel@vger.kernel.org, tony.luck@intel.com,
+        konrad.wilk@oracle.com, rdunlap@infradead.org, prarit@redhat.com
+In-Reply-To: <1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:x86/apic] x86, irq:
-  Make MSI and HT_IRQ indepenent of X86_IO_APIC
-Git-Commit-ID: 2f600025d38f8c4e7debdeae9b80b7df498c22be
+  Use helpers to access irq_cfg data structure associated with IRQ
+Git-Commit-ID: a9786091126233cf1333d23999bf07bdd0818486
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -40,18 +41,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2f600025d38f8c4e7debdeae9b80b7df498c22be
-Gitweb:     http://git.kernel.org/tip/2f600025d38f8c4e7debdeae9b80b7df498c22be
+Commit-ID:  a9786091126233cf1333d23999bf07bdd0818486
+Gitweb:     http://git.kernel.org/tip/a9786091126233cf1333d23999bf07bdd0818486
 Author:     Jiang Liu <jiang.liu@linux.intel.com>
-AuthorDate: Mon, 27 Oct 2014 16:12:06 +0800
+AuthorDate: Mon, 27 Oct 2014 16:12:07 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Tue, 16 Dec 2014 14:08:17 +0100
 
-x86, irq: Make MSI and HT_IRQ indepenent of X86_IO_APIC
+x86, irq: Use helpers to access irq_cfg data structure associated with IRQ
 
-Now we have splitted functions to support MSI and HT_IRQ into vector.c,
-and they have no dependency on IOAPIC any more. So change Kconfig files
-to make MSI and HT_IRQ independent of X86_IO_APIC.
+Use helpers to access irq_cfg data structure associated with IRQ,
+instead of accessing irq_data->chip_data directly. Later we can
+rewrite those helpers to support hierarchy irqdomain.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -64,39 +65,162 @@ Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Link: http://lkml.kernel.org/r/1414397531-28254-16-git-send-email-jiang.liu@linux.intel.com
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414397531-28254-17-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 ---
- arch/x86/Kconfig    | 4 ++--
- drivers/pci/Kconfig | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/kernel/apic/htirq.c   |  2 +-
+ arch/x86/kernel/apic/io_apic.c | 10 +++++-----
+ arch/x86/kernel/apic/msi.c     |  6 +++---
+ arch/x86/kernel/apic/vector.c  |  6 +++---
+ arch/x86/platform/uv/uv_irq.c  |  4 ++--
+ 5 files changed, 14 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 1e851b1..a39b7e5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -889,8 +889,8 @@ config X86_LOCAL_APIC
- 	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index a4980c5..816f36e 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -39,7 +39,7 @@ static void target_ht_irq(unsigned int irq, unsigned int dest, u8 vector)
+ static int
+ ht_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest;
+ 	int ret;
  
- config X86_IO_APIC
--	def_bool y
--	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC || PCI_MSI
-+	def_bool X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC
-+	depends on X86_LOCAL_APIC
- 	select IRQ_DOMAIN
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 2619cbe..3f5f604 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -501,7 +501,7 @@ static void mask_ioapic(struct irq_cfg *cfg)
  
- config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
-diff --git a/drivers/pci/Kconfig b/drivers/pci/Kconfig
-index 91a64d3..7a8f1c5 100644
---- a/drivers/pci/Kconfig
-+++ b/drivers/pci/Kconfig
-@@ -67,7 +67,7 @@ config XEN_PCIDEV_FRONTEND
- config HT_IRQ
- 	bool "Interrupts on hypertransport devices"
- 	default y
--	depends on PCI && X86_LOCAL_APIC && X86_IO_APIC
-+	depends on PCI && X86_LOCAL_APIC
- 	help
- 	   This allows native hypertransport devices to use interrupts.
+ static void mask_ioapic_irq(struct irq_data *data)
+ {
+-	mask_ioapic(data->chip_data);
++	mask_ioapic(irqd_cfg(data));
+ }
  
+ static void __unmask_ioapic(struct irq_cfg *cfg)
+@@ -520,7 +520,7 @@ static void unmask_ioapic(struct irq_cfg *cfg)
+ 
+ static void unmask_ioapic_irq(struct irq_data *data)
+ {
+-	unmask_ioapic(data->chip_data);
++	unmask_ioapic(irqd_cfg(data));
+ }
+ 
+ /*
+@@ -1801,7 +1801,7 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 		if (legacy_pic->irq_pending(irq))
+ 			was_pending = 1;
+ 	}
+-	__unmask_ioapic(data->chip_data);
++	__unmask_ioapic(irqd_cfg(data));
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+ 	return was_pending;
+@@ -1852,7 +1852,7 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+-		__target_IO_APIC_irq(irq, dest, data->chip_data);
++		__target_IO_APIC_irq(irq, dest, irqd_cfg(data));
+ 		ret = IRQ_SET_MASK_OK_NOCOPY;
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+@@ -1943,7 +1943,7 @@ static inline void ioapic_irqd_unmask(struct irq_data *data,
+ 
+ static void ack_ioapic_level(struct irq_data *data)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	int i, irq = data->irq;
+ 	unsigned long v;
+ 	bool masked;
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index ddb28f1..d6ba2d6 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -78,7 +78,7 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+ static int
+ msi_set_affinity(struct irq_data *data, const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	struct msi_msg msg;
+ 	unsigned int dest;
+ 	int ret;
+@@ -180,7 +180,7 @@ static int
+ dmar_msi_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest, irq = data->irq;
+ 	struct msi_msg msg;
+ 	int ret;
+@@ -235,7 +235,7 @@ int arch_setup_dmar_msi(unsigned int irq)
+ static int hpet_msi_set_affinity(struct irq_data *data,
+ 				 const struct cpumask *mask, bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	struct msi_msg msg;
+ 	unsigned int dest;
+ 	int ret;
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 19fcb57..6cedd79 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -321,7 +321,7 @@ void setup_vector_irq(int cpu)
+ 
+ int apic_retrigger_irq(struct irq_data *data)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned long flags;
+ 	int cpu;
+ 
+@@ -335,7 +335,7 @@ int apic_retrigger_irq(struct irq_data *data)
+ 
+ void apic_ack_edge(struct irq_data *data)
+ {
+-	irq_complete_move(data->chip_data);
++	irq_complete_move(irqd_cfg(data));
+ 	irq_move_irq(data);
+ 	ack_APIC_irq();
+ }
+@@ -348,7 +348,7 @@ void apic_ack_edge(struct irq_data *data)
+ int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		      unsigned int *dest_id)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int irq = data->irq;
+ 	int err;
+ 
+diff --git a/arch/x86/platform/uv/uv_irq.c b/arch/x86/platform/uv/uv_irq.c
+index 3e8fab7..0ce6736 100644
+--- a/arch/x86/platform/uv/uv_irq.c
++++ b/arch/x86/platform/uv/uv_irq.c
+@@ -131,7 +131,7 @@ arch_enable_uv_irq(char *irq_name, unsigned int irq, int cpu, int mmr_blade,
+ 		       unsigned long mmr_offset, int limit)
+ {
+ 	const struct cpumask *eligible_cpu = cpumask_of(cpu);
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg = irq_cfg(irq);
+ 	unsigned long mmr_value;
+ 	struct uv_IO_APIC_route_entry *entry;
+ 	int mmr_pnode, err;
+@@ -198,7 +198,7 @@ static int
+ uv_set_irq_affinity(struct irq_data *data, const struct cpumask *mask,
+ 		    bool force)
+ {
+-	struct irq_cfg *cfg = data->chip_data;
++	struct irq_cfg *cfg = irqd_cfg(data);
+ 	unsigned int dest;
+ 	unsigned long mmr_value, mmr_offset;
+ 	struct uv_IO_APIC_route_entry *entry;
