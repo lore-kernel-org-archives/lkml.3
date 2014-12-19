@@ -1,74 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861AbaLSEDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 23:03:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48868 "EHLO mx1.redhat.com"
+	id S1751860AbaLSEKY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 23:10:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38072 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387AbaLSEDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 23:03:46 -0500
-Date: Thu, 18 Dec 2014 23:03:08 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Subject: Re: frequent lockups in 3.18rc4
-Message-ID: <20141219040308.GB20022@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Chris Mason <clm@fb.com>, Mike Galbraith <umgwanakikbuti@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	=?iso-8859-1?Q?D=E2niel?= Fraga <fragabr@gmail.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-	Peter Anvin <hpa@linux.intel.com>
-References: <CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
- <20141215055707.GA26225@redhat.com>
- <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
- <CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
- <20141218051327.GA31988@redhat.com>
- <1418918059.17358.6@mail.thefacebook.com>
- <20141218161230.GA6042@redhat.com>
- <20141219024549.GB1671@redhat.com>
- <CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
- <20141219035859.GA20022@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219035859.GA20022@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751225AbaLSEKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 23:10:23 -0500
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov
+Cc: Richard Guy Briggs <rgb@redhat.com>, sgrubb@redhat.com,
+        eparis@parisplace.org, pmoore@redhat.com, Valdis.Kletnieks@vt.edu
+Subject: [PATCH] audit: use supplied gfp_mask from audit_buffer in kauditd_send_multicast_skb
+Date: Thu, 18 Dec 2014 23:09:27 -0500
+Message-Id: <d261c547d8018a18f2092e1907b06e190162b088.1418947557.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 10:58:59PM -0500, Dave Jones wrote:
- >  > lock debugging and other overheads (does this still have
- >  > DEBUG_PAGEALLOC?) you really are getting into a "real" softlockup
- >  > because things are scaling so horribly badly.
- >  > 
- >  > If you now disable spinlock debugging and lockdep, hopefully that page
- >  > table lock now doesn't always get hung up on the lockdep locking, so
- >  > it starts scaling much better, and maybe you'd not see this...
- > 
- > I can give it a shot.  Hopefully there's some further mitigation that
- > could be done to allow a workload like this to survive under a debug
- > build though, as we've caught *so many* bugs with this stuff in the past.
+Eric Paris explains: Since kauditd_send_multicast_skb() gets called in
+audit_log_end(), which can come from any context (aka even a sleeping context)
+GFP_KERNEL can't be used.  Since the audit_buffer knows what context it should
+use, pass that down and use that.
+
+See: https://lkml.org/lkml/2014/12/16/542
+
+BUG: sleeping function called from invalid context at mm/slab.c:2849
+in_atomic(): 1, irqs_disabled(): 0, pid: 885, name: sulogin
+2 locks held by sulogin/885:
+  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff91152e30>] prepare_bprm_creds+0x28/0x8b
+  #1:  (tty_files_lock){+.+.+.}, at: [<ffffffff9123e787>] selinux_bprm_committing_creds+0x55/0x22b
+CPU: 1 PID: 885 Comm: sulogin Not tainted 3.18.0-next-20141216 #30
+Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A15 06/20/2014
+  ffff880223744f10 ffff88022410f9b8 ffffffff916ba529 0000000000000375
+  ffff880223744f10 ffff88022410f9e8 ffffffff91063185 0000000000000006
+  0000000000000000 0000000000000000 0000000000000000 ffff88022410fa38
+Call Trace:
+  [<ffffffff916ba529>] dump_stack+0x50/0xa8
+  [<ffffffff91063185>] ___might_sleep+0x1b6/0x1be
+  [<ffffffff910632a6>] __might_sleep+0x119/0x128
+  [<ffffffff91140720>] cache_alloc_debugcheck_before.isra.45+0x1d/0x1f
+  [<ffffffff91141d81>] kmem_cache_alloc+0x43/0x1c9
+  [<ffffffff914e148d>] __alloc_skb+0x42/0x1a3
+  [<ffffffff914e2b62>] skb_copy+0x3e/0xa3
+  [<ffffffff910c263e>] audit_log_end+0x83/0x100
+  [<ffffffff9123b8d3>] ? avc_audit_pre_callback+0x103/0x103
+  [<ffffffff91252a73>] common_lsm_audit+0x441/0x450
+  [<ffffffff9123c163>] slow_avc_audit+0x63/0x67
+  [<ffffffff9123c42c>] avc_has_perm+0xca/0xe3
+  [<ffffffff9123dc2d>] inode_has_perm+0x5a/0x65
+  [<ffffffff9123e7ca>] selinux_bprm_committing_creds+0x98/0x22b
+  [<ffffffff91239e64>] security_bprm_committing_creds+0xe/0x10
+  [<ffffffff911515e6>] install_exec_creds+0xe/0x79
+  [<ffffffff911974cf>] load_elf_binary+0xe36/0x10d7
+  [<ffffffff9115198e>] search_binary_handler+0x81/0x18c
+  [<ffffffff91153376>] do_execveat_common.isra.31+0x4e3/0x7b7
+  [<ffffffff91153669>] do_execve+0x1f/0x21
+  [<ffffffff91153967>] SyS_execve+0x25/0x29
+  [<ffffffff916c61a9>] stub_execve+0x69/0xa0
+
+Cc: stable@vger.kernel.org #v3.16-rc1
+Reported-by: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ kernel/audit.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 7b83c55..ce484fb 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -429,7 +429,7 @@ static void kauditd_send_skb(struct sk_buff *skb)
+  * This function doesn't consume an skb as might be expected since it has to
+  * copy it anyways.
+  */
+-static void kauditd_send_multicast_skb(struct sk_buff *skb)
++static void kauditd_send_multicast_skb(struct sk_buff *skb, gfp_t gfp_mask)
+ {
+ 	struct sk_buff		*copy;
+ 	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
+@@ -448,11 +448,11 @@ static void kauditd_send_multicast_skb(struct sk_buff *skb)
+ 	 * no reason for new multicast clients to continue with this
+ 	 * non-compliance.
+ 	 */
+-	copy = skb_copy(skb, GFP_KERNEL);
++	copy = skb_copy(skb, gfp_mask);
+ 	if (!copy)
+ 		return;
  
-Turns out also that this build didn't have PROVE_LOCKING enabled.
-CONFIG_LOCKDEP was, but that just bloats the structures a little, and
-afaik doesn't incur the same runtime overhead.
+-	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
++	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, gfp_mask);
+ }
+ 
+ /*
+@@ -1949,7 +1949,7 @@ void audit_log_end(struct audit_buffer *ab)
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
+ 
+ 		nlh->nlmsg_len = ab->skb->len;
+-		kauditd_send_multicast_skb(ab->skb);
++		kauditd_send_multicast_skb(ab->skb, ab->gfp_mask);
+ 
+ 		/*
+ 		 * The original kaudit unicast socket sends up messages with
+-- 
+1.7.1
 
-I also forgot to answer the question above, PAGEALLOC is also off.
-
-So the only thing that was on that could cause spinlock overhead
-was DEBUG_SPINLOCK (and LOCK_STAT, though iirc that's not huge either)
-
-	Dave
