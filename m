@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaLSVtk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 16:49:40 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:39060 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752643AbaLSVth (ORCPT
+	id S1752700AbaLSVul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 16:50:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42946 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678AbaLSVuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 16:49:37 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Kukjin Kim <kgene@kernel.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "lin ux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH 4/4] PM: Eliminate CONFIG_PM_RUNTIME
-References: <472992175.g1ArEYGFPo@vostro.rjw.lan>
-	<2635409.SWsBMlb9s4@vostro.rjw.lan>
-	<CAMuHMdUn3KSTdh4nFL=G54SM7NWpQsmeg1GYYRz=+uXH9rbEGg@mail.gmail.com>
-	<9470157.PyHoGoSGz1@vostro.rjw.lan>
-Date: Fri, 19 Dec 2014 13:49:34 -0800
-In-Reply-To: <9470157.PyHoGoSGz1@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Fri, 19 Dec 2014 22:41:54 +0100")
-Message-ID: <7h1tnv2tu9.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 19 Dec 2014 16:50:40 -0500
+Date: Fri, 19 Dec 2014 13:50:38 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: <m.szyprowski@samsung.com>, Michal Nazarewicz <mina86@mina86.com>,
+        <aneesh.kumar@linux.vnet.ibm.com>, <iamjoonsoo.kim@lge.com>,
+        <vishnu.ps@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH V2] CMA: add the amount of cma memory in meminfo
+Message-Id: <20141219135038.6630669170af03914f9d6838@linux-foundation.org>
+In-Reply-To: <54938052.3030809@huawei.com>
+References: <54938052.3030809@huawei.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@rjwysocki.net> writes:
+On Fri, 19 Dec 2014 09:33:06 +0800 Xishi Qiu <qiuxishi@huawei.com> wrote:
 
-[...]
+> Add the amount of cma memory in the following meminfo.
+> /proc/meminfo
 
-> Fixed up patch is appended, thanks!
->
->
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: PM: Eliminate CONFIG_PM_RUNTIME
->
-> Having switched over all of the users of CONFIG_PM_RUNTIME to use
-> CONFIG_PM directly, turn the latter into a user-selectable option
-> and drop the former entirely from the tree.
->
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+We just did this.
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+> /sys/devices/system/node/nodeXX/meminfo
 
-I assume you're planning to get this in early in the v3.19-rc cycle,
-correct?  That way we can hopefully avoid conflicts with the various
-defconfig changes we're taking through the arm-soc tree.
+But not this.
 
-Also, thanks for taking care of all the tree-wide changes.  This is a
-great change.
+See
 
-Kevin
+commit 47f8f9297d2247d65ee46d8403a73b30f8d0249b
+Author: Pintu Kumar <pintu.k@samsung.com>
+Date:   Thu Dec 18 16:17:18 2014 -0800
+
+    fs/proc/meminfo.c: include cma info in proc/meminfo
+
