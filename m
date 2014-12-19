@@ -1,160 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752247AbaLSKGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 05:06:39 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:55482 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaLSKGh (ORCPT
+	id S1752084AbaLSKQl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 05:16:41 -0500
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:7351 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696AbaLSKQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 05:06:37 -0500
-Message-ID: <1418983594.29647.150.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target updates for v3.19-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sagi Grimberg <sagig@mellanox.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Date: Fri, 19 Dec 2014 02:06:34 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Dec 2014 05:16:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 19 Dec 2014 02:14:55 -0800
+Date: Fri, 19 Dec 2014 11:15:44 +0100
+From: Thierry Reding <treding@nvidia.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: Daniel Vetter <daniel.vetter@ffwll.ch>, LKP <lkp@01.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [drm/fb-helper] BUG: unable to handle kernel paging request at
+ 95d24c70
+Message-ID: <20141219101543.GA16504@ulmo.nvidia.com>
+References: <20141218170349.GC9298@wfg-t540p.sh.intel.com>
+ <20141219020445.GA10008@wfg-t540p.sh.intel.com>
+MIME-Version: 1.0
+In-Reply-To: <20141219020445.GA10008@wfg-t540p.sh.intel.com>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.2.71.5]
+X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
+ UKMAIL101.nvidia.com (10.26.138.13)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3uo+9/B/ebqu+fSQ"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+--3uo+9/B/ebqu+fSQ
+Content-Type: multipart/mixed; boundary="BOKacYhQ+x31HxR3"
+Content-Disposition: inline
 
-Here are the target-pending updates for v3.19-rc1 code.  Please go ahead
-and pull from:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The highlights this merge window include:
+On Thu, Dec 18, 2014 at 06:04:45PM -0800, Fengguang Wu wrote:
+>=20
+> Hi Thierry,
+>=20
+> FYI, here is another bisect result.
 
-  - Allow target fabric drivers to function as built-in. (Roland)
-  - Fix tcm_loop multi-TPG endpoint nexus bug. (Hannes)
-  - Move per device config_item_type into se_subsystem_api, allowing
-    configfs attributes to be defined at module_init time. (Jerome + nab)
-  - Convert existing IBLOCK/FILEIO/RAMDISK/PSCSI/TCMU drivers to use
-    external configfs attributes. (nab)
-  - A number of iser-target fixes related to active session + network portal
-    shutdown stability during extended stress testing. (Sagi + Slava)
-  - Dynamic allocation of T10-PI contexts for iser-target, fixing a potentially
-    bogus iscsi_np->tpg_np pointer reference in >= v3.14 code. (Sagi)
-  - iser-target performance + scalability improvements.  (Sagi) 
-  - Fixes for SPC-4 Persistent Reservation AllRegistrants spec compliance.
-    (Ilias + James + nab)
-  - Avoid potential short kern_sendmsg() in iscsi-target for now until Al's
-    conversion to use msghdr iteration is merged post -rc1. (Viro)
+Thanks. Looking at the cirrus driver more closely it already employs the
+big hammer upon failure and ends up calling drm_fb_helper_fini() via the
+cirrus_driver_unload() call in cirrus_driver_load()'s cleanup path.
 
-Also, Sagi has requested a number of iser-target patches (9) that
-address stability issues he's encountered during extended stress testing
-be considered for v3.10.y + v3.14.y code.  Given the amount of LOC
-involved, it will certainly require extra backporting effort.
+> commit 7bf2844ed14de049a4ccec26eb3d8b4c3d5c1971
+> Author:     Thierry Reding <treding@nvidia.com>
+> AuthorDate: Wed Dec 17 16:39:59 2014 +0100
+> Commit:     Daniel Vetter <daniel.vetter@ffwll.ch>
+> CommitDate: Wed Dec 17 22:05:08 2014 +0100
+>=20
+>     drm/fb-helper: Propagate errors from initial config failure
+>    =20
+>     Make drm_fb_helper_initial_config() return an int rather than a bool =
+so
+>     that the error can be properly propagated. While at it, update drivers
+>     to propagate errors further rather than just ignore them.
+>    =20
+>     Cc: David Airlie <airlied@linux.ie>
+>     Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+>     Cc: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+>     Cc: Rob Clark <robdclark@gmail.com>
+>     Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+>     Cc: Alex Deucher <alexander.deucher@amd.com>
+>     Cc: Christian K=C3=B6nig <christian.koenig@amd.com>
+>     Cc: Ben Skeggs <bskeggs@redhat.com>
+>     Signed-off-by: Thierry Reding <treding@nvidia.com>
+>     Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+>     Reviewed-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+>     Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Apologies in advance to Greg-KH & Co on this.  Sagi and I will be
-working post-merge to ensure they each get applied correctly.
+Using the attached patch on top of this I can no longer reproduce either
+this or the earlier result. I'll send a revised patch with this squashed
+in.
 
-Thank you,
+Thanks,
+Thierry
 
---nab
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline; filename=patch
+Content-Transfer-Encoding: quoted-printable
 
-Hannes Reinecke (1):
-  tcm_loop: Fix wrong I_T nexus association
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus=
+/cirrus_fbdev.c
+index 0682210b068b..f7e8c6530beb 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -318,26 +318,20 @@ int cirrus_fbdev_init(struct cirrus_device *cdev)
+ 	ret =3D drm_fb_helper_init(cdev->dev, &gfbdev->helper,
+ 				 cdev->num_crtc, CIRRUSFB_CONN_LIMIT);
+ 	if (ret)
+-		goto free;
++		return ret;
+=20
+ 	ret =3D drm_fb_helper_single_add_all_connectors(&gfbdev->helper);
+ 	if (ret)
+-		goto fini;
++		return ret;
+=20
+ 	/* disable all the possible outputs/crtcs before entering KMS mode */
+ 	drm_helper_disable_unused_functions(cdev->dev);
+=20
+ 	ret =3D drm_fb_helper_initial_config(&gfbdev->helper, bpp_sel);
+ 	if (ret)
+-		goto fini;
++		return ret;;
+=20
+ 	return 0;
+-
+-free:
+-	kfree(gfbdev);
+-fini:
+-	drm_fb_helper_fini(&gfbdev->helper);
+-	return ret;
+ }
+=20
+ void cirrus_fbdev_fini(struct cirrus_device *cdev)
 
-Julia Lawall (1):
-  target: remove unneeded array
+--BOKacYhQ+x31HxR3--
 
-Kyle McMartin (1):
-  uapi/linux/target_core_user.h: fix headers_install.sh badness
+--3uo+9/B/ebqu+fSQ
+Content-Type: application/pgp-signature
 
-Lino Sanfilippo (1):
-  iscsi-target: fix error path in iscsi_target_init_module()
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Markus Elfring (1):
-  target: Deletion of unnecessary checks before the function call
-    "module_put"
+iQIcBAEBAgAGBQJUk/rPAAoJEN0jrNd/PrOhbmkQAJZYWOnLEwsuKHNMyZzYMbEo
+O0cgLYPk6J/Vne4ANf1uD2m9BaOzHlNEW4FCrgwsbXNDNwBUnMhsR7R7bWbcB0oc
+qRmlbIVPlWT48RX7vJc9zEIYc3an1t/0oKrbZKXbNUznCwx2bngNDOcP9w+D+EQN
+xTyZ1Uc/ql6kb1avSB5b+Y7q/Hn3tMuHVWFgwD6w9CNZ0jZ/PdY0oQdBFjdEXOoe
+jNyEWDqpk/2GQK+qCM3U/Qrg/KeEyi1HeDBAhAp1mlusOIr0+ssqNsyQiTmup9d/
+LsYMUOY7MmknOj3gq5s+0W2Y4nc6QBDYd4PbSGAaqRqhWiCEzN2pVh1nNUkt6cVp
+LzRFL0WuiNbVH02QUta1F2Y63v+O+yifBpI1ZRKjFv9mzIr3/M1X1O1Co/SW+URR
+mi2jKDvWNS74akNKIbNpZ5fgm4GwmEatDzl1dwdgujb5ZLrGC3SN9o+G5FN3/TKg
+9DM/bOcRWbLIt2GkdJmer8BNXOmmwvYRiaNs7XESjBziNLfppIvWje7Unm3dwaL8
+A8dwzmKz+Rp8aTkx2rp3/uRJen84k77RM9q14kGe93cJE6nts9lLIibxGfPU9y4l
+8G+cnUhGVEIehX0Pn7f2Aaom4LYfZGUHN/18J8j6MHowMXvL8/UnUNES9Lx02rTd
+taZGcrDY7GAp15cGQzSz
+=n0uW
+-----END PGP SIGNATURE-----
 
-Nicholas Bellinger (22):
-  target: Move dev_cit to struct se_subsystem_api
-  target: Move dev_attrib_cit to struct se_subsystem_api
-  target: Move dev_pr_cit to struct se_subsystem_api
-  target: Move dev_wwn_cit to struct se_subsystem_api
-  target: Move dev_alua_tg_pt_gps_cit to struct se_subsystem_api
-  target: Move dev_stat_cit to struct se_subsystem_api
-  target: Add target_core_backend_configfs.h helper macros
-  target: Add EXPORT_SYMBOL for existing se_dev_set_*
-  target: Add DEF_TB_DEFAULT_ATTRIBS macro for virtual device attrs
-  target/iblock: Convert to external iblock_backend_dev_attrs
-  target/file: Convert to external fileio_backend_dev_attrs
-  target/rd: Convert to external rd_mcp_backend_dev_attrs
-  target/user: Convert to external tcmu_backend_dev_attrs
-  target/pscsi: Convert to external pscsi_backend_dev_attrs
-  target: Drop left-over internal dev attribute code
-  target: Drop left-over PHBA_PDEV set attr checks
-  iser-target: Fix wc->wr_id cast warning
-  iscsi-target: Drop left-over bogus iscsi_np->tpg_np
-  target: Fix R_HOLDER bit usage for AllRegistrants
-  target: Avoid dropping AllRegistrants reservation during unregister
-  iscsi-target: Fail connection on short sendmsg writes
-  target: Allow AllRegistrants to re-RESERVE existing reservation
-
-Roland Dreier (1):
-  target: Fix target_core_register_fabric() for built-in fabric modules
-
-Sagi Grimberg (25):
-  iscsi,iser-target: Initiate termination only once
-  iser-target: Fix flush + disconnect completion handling
-  iser-target: Parallelize CM connection establishment
-  iser-target: Fix connected_handler + teardown flow race
-  iser-target: Handle ADDR_CHANGE event for listener cm_id
-  iser-target: Fix implicit termination of connections
-  iser-target: Allocate PI contexts dynamically
-  iser-target: Fix NULL dereference in SW mode DIF
-  iscsi,iser-target: Expose supported protection ops according to t10_pi
-  iser-target: Work-around live target stack shutdown resource cleanup
-  iser-target: Remove interrupt coalescing
-  iser-target: Unite error completion handler for RX and TX
-  iser-target: Cast wr_id with uintptr_t instead of unsinged long
-  iser-target: Centralize completion elements to a context
-  iser-target: Use single CQ for TX and RX
-  iser-target: Remove redundant call to isert_conn_terminate
-  iser-target: Remove an atomic operation from the IO path
-  iser-target: Introduce isert_poll_budget
-  iser-target: Reduce CQ lock contention by batch polling
-  iser-target: Don't wait for session commands from completion context
-  iser-target: Fix logout sequence
-  iser-target: Use debug_level parameter to control logging level
-  iser-target: Adjust log levels and prettify some prints
-  iser-target: Remove code duplication
-  iscsi-target: nullify session in failed login sequence
-
- drivers/infiniband/ulp/isert/ib_isert.c       | 1599 +++++++++++++------------
- drivers/infiniband/ulp/isert/ib_isert.h       |   80 +-
- drivers/target/iscsi/iscsi_target.c           |    1 +
- drivers/target/iscsi/iscsi_target_core.h      |    1 -
- drivers/target/iscsi/iscsi_target_login.c     |   11 +-
- drivers/target/iscsi/iscsi_target_tpg.c       |    1 -
- drivers/target/iscsi/iscsi_target_transport.c |    3 +-
- drivers/target/iscsi/iscsi_target_util.c      |   26 +-
- drivers/target/loopback/tcm_loop.c            |   66 +-
- drivers/target/loopback/tcm_loop.h            |    7 +-
- drivers/target/target_core_configfs.c         |  344 ++----
- drivers/target/target_core_device.c           |   90 +-
- drivers/target/target_core_file.c             |   42 +
- drivers/target/target_core_hba.c              |    7 +-
- drivers/target/target_core_iblock.c           |   42 +
- drivers/target/target_core_internal.h         |   28 -
- drivers/target/target_core_pr.c               |  125 +-
- drivers/target/target_core_pscsi.c            |   26 +
- drivers/target/target_core_rd.c               |   41 +
- drivers/target/target_core_user.c             |   42 +
- include/target/target_core_backend.h          |   43 +
- include/target/target_core_backend_configfs.h |  120 ++
- include/uapi/linux/target_core_user.h         |    4 -
- 23 files changed, 1511 insertions(+), 1238 deletions(-)
- create mode 100644 include/target/target_core_backend_configfs.h 
-
+--3uo+9/B/ebqu+fSQ--
