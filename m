@@ -1,282 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbaLSCuZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:50:25 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:45831 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaLSCrh (ORCPT
+	id S1751844AbaLSCxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:53:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:22008 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158AbaLSCxg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:47:37 -0500
-X-AuditID: cbfee68d-f79296d000004278-bd-549391c77404
-From: Jonghwa Lee <jonghwa3.lee@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH RESEND v2 01/10] power: charger-manager: Use thermal subsystem
- interface only to get temperature.
-Date: Fri, 19 Dec 2014 11:47:21 +0900
-Message-id: <1418957250-6542-2-git-send-email-jonghwa3.lee@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1418957250-6542-1-git-send-email-jonghwa3.lee@samsung.com>
-References: <1418957250-6542-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsWyRsSkQPfExMkhBksbGS0ObtW0uP7lOavF
-	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
-	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEdx2aSk5mSWpRbp2yVwZSz/vJ6lYIZFRfvtI0wN
-	jGv1uhg5OSQETCSerJjECmGLSVy4t56ti5GLQ0hgKaNE287tzDBFF1csYodILGKUeL2nF8pp
-	Y5Jo2nKIEaSKTUBH4v++m+wgtoiAgsTm3mesIEXMAlcYJW4uXs8EkhAWKJZY0rIKrIFFQFVi
-	4oajYLt5BdwlHi46D7SbA2idgsScSTYgYU4BD4mnl5rYQGwhoJIT396yQFy0j13iyboMiDEC
-	Et8mH2KBaJWV2HQA6mhJiYMrbrBMYBRewMiwilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMw
-	Jk7/e9a7g/H2AetDjAIcjEo8vJ2Fk0OEWBPLiitzDzGaAm2YyCwlmpwPjLy8knhDYzMjC1MT
-	U2Mjc0szJXFeRamfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYWfP27f+e0aJ44Oy/J3sX
-	iivUNMa5Ll9euvd65YYdDDznXbWnFPmvZEir2ubber9Fr/fzu3QR2QexdVEL93t79NVt3Ssi
-	6zvB3LRzom9gU/tcmYedlb+zT5pEfC9ep89ZF76bJUblgOvMGYdt8ouXBcZ8e/qOT0hwhlpB
-	yq2pn76E+cXWrJuoxFKckWioxVxUnAgA7RdX/4QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t9jAd3jEyeHGGxYZ2JxcKumxfUvz1kt
-	Jj15z2wxceVkZovOs0+YLS7vmsNm8bn3CKPF7cYVbBZ3Tx1lszi9u8SBy2NC/ydGj52z7rJ7
-	bF6h5bFpVSebR9+WVYweK1Z/Z/f4vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTM
-	wFDX0NLCXEkhLzE31VbJxSdA1y0zB+g6JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
-	PUYGaCBhDWPG8s/rWQpmWFS03z7C1MC4Vq+LkZNDQsBE4uKKRewQtpjEhXvr2boYuTiEBBYx
-	Srze08sO4bQxSTRtOcQIUsUmoCPxf99NsA4RAQWJzb3PWEGKmAWuMErcXLyeCSQhLFAssaRl
-	FVgDi4CqxMQNR1lBbF4Bd4mHi84DreAAWqcgMWeSDUiYU8BD4umlJjYQWwio5MS3tywTGHkX
-	MDKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiOuWdSOxhXNlgcYhTgYFTi4e0onBwixJpY
-	VlyZe4hRgoNZSYTXPBMoxJuSWFmVWpQfX1Sak1p8iNEU6KiJzFKiyfnAdJBXEm9obGJmZGlk
-	bmhhZGyuJM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cDYtp3f/dMNJ63eJ+2b886/K91aLMV/
-	ZKncBN8E0wOin4NO+/2asscwLejOIyEGk12v+jWDyn7s+/1pxsuDqlPu1LdW/Og/s6DI2qLk
-	+r0DpS4fRXQ4lkvsPsvBl3B21f2VPw5vtxDfnWjtvfPt8k0BkzrPXDqQoFO9VdvSf+0y1hNP
-	5W6yfmbepcRSnJFoqMVcVJwIAGx4W8vPAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 18 Dec 2014 21:53:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="640078944"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is blocked
+Thread-Topic: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+ is blocked
+Thread-Index: AQHQGp5lqXFocrs29UygMrg1gFuo+5yWNqoQ
+Date: Fri, 19 Dec 2014 02:51:46 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230ABD1@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-25-git-send-email-feng.wu@intel.com>
+	<5491B8DD.5020000@redhat.com>
+ <E959C4978C3B6342920538CF579893F002307C7B@SHSMSX104.ccr.corp.intel.com>
+ <54929240.6050306@redhat.com>
+In-Reply-To: <54929240.6050306@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It drops the way of using power_supply interface to reference battery's
-temperature. Then it tries to use thermal subsystem's only. This makes driver
-more simple and also can remove ifdeferies.
 
-Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
----
- drivers/power/Kconfig                 |    1 +
- drivers/power/charger-manager.c       |  113 ++++++++-------------------------
- include/linux/power/charger-manager.h |    3 +-
- 3 files changed, 28 insertions(+), 89 deletions(-)
 
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index 8ff2511..115d153 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -317,6 +317,7 @@ config CHARGER_MANAGER
- 	bool "Battery charger manager for multiple chargers"
- 	depends on REGULATOR
- 	select EXTCON
-+	select THERMAL
- 	help
-           Say Y to enable charger-manager support, which allows multiple
-           chargers attached to a battery and multiple batteries attached to a
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 22246b9..b4b101c 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -28,13 +28,6 @@
- #include <linux/of.h>
- #include <linux/thermal.h>
- 
--/*
-- * Default termperature threshold for charging.
-- * Every temperature units are in tenth of centigrade.
-- */
--#define CM_DEFAULT_RECHARGE_TEMP_DIFF	50
--#define CM_DEFAULT_CHARGE_TEMP_MAX	500
--
- static const char * const default_event_names[] = {
- 	[CM_EVENT_UNKNOWN] = "Unknown",
- 	[CM_EVENT_BATT_FULL] = "Battery Full",
-@@ -572,40 +565,18 @@ static int check_charging_duration(struct charger_manager *cm)
- 	return ret;
- }
- 
--static int cm_get_battery_temperature_by_psy(struct charger_manager *cm,
--					int *temp)
--{
--	struct power_supply *fuel_gauge;
--
--	fuel_gauge = power_supply_get_by_name(cm->desc->psy_fuel_gauge);
--	if (!fuel_gauge)
--		return -ENODEV;
--
--	return fuel_gauge->get_property(fuel_gauge,
--				POWER_SUPPLY_PROP_TEMP,
--				(union power_supply_propval *)temp);
--}
--
- static int cm_get_battery_temperature(struct charger_manager *cm,
- 					int *temp)
- {
- 	int ret;
- 
--	if (!cm->desc->measure_battery_temp)
-+	if (!cm->tzd_batt)
- 		return -ENODEV;
- 
--#ifdef CONFIG_THERMAL
--	if (cm->tzd_batt) {
--		ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
--		if (!ret)
--			/* Calibrate temperature unit */
--			*temp /= 100;
--	} else
--#endif
--	{
--		/* if-else continued from CONFIG_THERMAL */
--		ret = cm_get_battery_temperature_by_psy(cm, temp);
--	}
-+	ret = thermal_zone_get_temp(cm->tzd_batt, (unsigned long *)temp);
-+	if (!ret)
-+		/* Calibrate temperature unit */
-+		*temp /= 100;
- 
- 	return ret;
- }
-@@ -623,7 +594,7 @@ static int cm_check_thermal_status(struct charger_manager *cm)
- 		 * occur hazadous result. We have to handle it
- 		 * depending on battery type.
- 		 */
--		dev_err(cm->dev, "Failed to get battery temperature\n");
-+		dev_dbg(cm->dev, "Failed to get battery temperature\n");
- 		return 0;
- 	}
- 
-@@ -1007,12 +978,11 @@ static enum power_supply_property default_charger_props[] = {
- 	POWER_SUPPLY_PROP_CAPACITY,
- 	POWER_SUPPLY_PROP_ONLINE,
- 	POWER_SUPPLY_PROP_CHARGE_FULL,
-+	POWER_SUPPLY_PROP_TEMP,
- 	/*
- 	 * Optional properties are:
- 	 * POWER_SUPPLY_PROP_CHARGE_NOW,
- 	 * POWER_SUPPLY_PROP_CURRENT_NOW,
--	 * POWER_SUPPLY_PROP_TEMP, and
--	 * POWER_SUPPLY_PROP_TEMP_AMBIENT,
- 	 */
- };
- 
-@@ -1417,49 +1387,6 @@ err:
- 	return ret;
- }
- 
--static int cm_init_thermal_data(struct charger_manager *cm,
--		struct power_supply *fuel_gauge)
--{
--	struct charger_desc *desc = cm->desc;
--	union power_supply_propval val;
--	int ret;
--
--	/* Verify whether fuel gauge provides battery temperature */
--	ret = fuel_gauge->get_property(fuel_gauge,
--					POWER_SUPPLY_PROP_TEMP, &val);
--
--	if (!ret) {
--		cm->charger_psy.properties[cm->charger_psy.num_properties] =
--				POWER_SUPPLY_PROP_TEMP;
--		cm->charger_psy.num_properties++;
--		cm->desc->measure_battery_temp = true;
--	}
--#ifdef CONFIG_THERMAL
--	if (ret && desc->thermal_zone) {
--		cm->tzd_batt =
--			thermal_zone_get_zone_by_name(desc->thermal_zone);
--		if (IS_ERR(cm->tzd_batt))
--			return PTR_ERR(cm->tzd_batt);
--
--		/* Use external thermometer */
--		cm->charger_psy.properties[cm->charger_psy.num_properties] =
--				POWER_SUPPLY_PROP_TEMP_AMBIENT;
--		cm->charger_psy.num_properties++;
--		cm->desc->measure_battery_temp = true;
--		ret = 0;
--	}
--#endif
--	if (cm->desc->measure_battery_temp) {
--		/* NOTICE : Default allowable minimum charge temperature is 0 */
--		if (!desc->temp_max)
--			desc->temp_max = CM_DEFAULT_CHARGE_TEMP_MAX;
--		if (!desc->temp_diff)
--			desc->temp_diff = CM_DEFAULT_RECHARGE_TEMP_DIFF;
--	}
--
--	return ret;
--}
--
- static struct of_device_id charger_manager_match[] = {
- 	{
- 		.compatible = "charger-manager",
-@@ -1474,6 +1401,7 @@ static struct charger_desc *of_cm_parse_desc(struct device *dev)
- 	u32 poll_mode = CM_POLL_DISABLE;
- 	u32 battery_stat = CM_NO_BATTERY;
- 	int num_chgs = 0;
-+	bool monitor_temp = false;
- 
- 	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
- 	if (!desc)
-@@ -1517,14 +1445,16 @@ static struct charger_desc *of_cm_parse_desc(struct device *dev)
- 
- 	of_property_read_string(np, "cm-fuel-gauge", &desc->psy_fuel_gauge);
- 
--	of_property_read_string(np, "cm-thermal-zone", &desc->thermal_zone);
--
--	of_property_read_u32(np, "cm-battery-cold", &desc->temp_min);
--	if (of_get_property(np, "cm-battery-cold-in-minus", NULL))
--		desc->temp_min *= -1;
--	of_property_read_u32(np, "cm-battery-hot", &desc->temp_max);
-+	if (!of_property_read_u32(np, "cm-battery-cold", &desc->temp_min))
-+		monitor_temp = true;
-+	if (!of_property_read_u32(np, "cm-battery-hot", &desc->temp_max))
-+		monitor_temp = true;
- 	of_property_read_u32(np, "cm-battery-temp-diff", &desc->temp_diff);
- 
-+	if (monitor_temp && of_property_read_string(np,
-+				"cm-thermal-zone", &desc->thermal_zone))
-+		desc->thermal_zone = desc->psy_fuel_gauge;
-+
- 	of_property_read_u32(np, "cm-charging-max",
- 				&desc->charging_max_duration_ms);
- 	of_property_read_u32(np, "cm-discharging-max",
-@@ -1733,7 +1663,16 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		cm->charger_psy.num_properties++;
- 	}
- 
--	ret = cm_init_thermal_data(cm, fuel_gauge);
-+	if (desc->thermal_zone) {
-+		cm->tzd_batt =
-+			thermal_zone_get_zone_by_name(desc->thermal_zone);
-+		if (!cm->tzd_batt) {
-+			pr_err("Failed to get thermal zone (%s).\n",
-+				desc->thermal_zone);
-+			return -ENODEV;
-+		}
-+	}
-+
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to initialize thermal data\n");
- 		cm->desc->measure_battery_temp = false;
-diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
-index 416ebeb..29d9b19 100644
---- a/include/linux/power/charger-manager.h
-+++ b/include/linux/power/charger-manager.h
-@@ -231,9 +231,8 @@ struct charger_manager {
- 	struct device *dev;
- 	struct charger_desc *desc;
- 
--#ifdef CONFIG_THERMAL
- 	struct thermal_zone_device *tzd_batt;
--#endif
-+
- 	bool charger_enabled;
- 
- 	unsigned long fullbatt_vchk_jiffies_at;
--- 
-1.7.9.5
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo Bonzini
+> Sent: Thursday, December 18, 2014 4:37 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> Subject: Re: [v3 24/26] KVM: Update Posted-Interrupts Descriptor when vCPU
+> is blocked
+> 
+> 
+> 
+> On 18/12/2014 04:16, Wu, Feng wrote:
+> >>> pre-block:
+> >>> - Add the vCPU to the blocked per-CPU list
+> >>> - Clear 'SN'
+> >>
+> >> Should SN be already clear (and NV set to POSTED_INTR_VECTOR)?
+> >
+> > I think the SN bit should be clear here, Adding it here is just to make sure
+> > SN is clear when vCPU is blocked, so it can receive wakeup notification event
+> later.
+> 
+> Then, please, WARN if the SN bit is set inside the if (vcpu->blocked).
+> Inside that if you can just add the vCPU to the blocked list on vcpu_put.
+> 
+> >> Can it
+> >> happen that you go from sched-out to blocked without doing a sched-in
+> first?
+> >>
+> >
+> > I cannot imagine this scenario, can you please be more specific? Thanks a lot!
+> 
+> I cannot either. :)  But it would be the case where SN is not cleared.
+> So we agree that it cannot happen.
+> 
+> >> In fact, if this is possible, what happens if vcpu->preempted &&
+> >> vcpu->blocked?
+> >
+> > In fact, vcpu->preempted && vcpu->blocked happens sometimes, but I think
+> there is
+> > no issues. Please refer to the following case:
+> 
+> I agree that there should be no issues.  But if it can happen, it's better:
+> 
+> 1) to separate the handling of preemption and blocking: preemption
+> handles SN/NV/NDST, blocking handles the wakeup list.
+> 
+Sorry, I don't quite understand this.
 
+I think handling of preemption and blocking is separated in vmx_vcpu_put().
+For vmx_vcpu_load(), the handling of SN/NV/NDST is common for preemption
+and blocking.
+
+Thanks,
+Feng
+
+> 2) to change this
+> 
+> +		} else if (vcpu->blocked) {
+> +			/*
+> +			 * The vcpu is blocked on the wait queue.
+> +			 * Store the blocked vCPU on the list of the
+> +			 * vcpu->wakeup_cpu, which is the destination
+> +			 * of the wake-up notification event.
+> 
+> to just
+> 
+> 		}
+> 		if (vcpu->blocked) {
+> 			...
+> 		}
+> > kvm_vcpu_block()
+> > 	-> vcpu->blocked = true;
+> > 	-> prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+> >
+> > 	before schedule() is called, this vcpu is woken up by another guy, so
+> > 	the state of the vcpu associated thread is changed to TASK_RUNNING,
+> > 	then preemption happens after interrupts or the following schedule() is
+> > 	hit, this will call kvm_sched_out(), in which current->state ==
+> TASK_RUNNING
+> > 	and vcpu->preempted is set to true. So now vcpu->preempted and
+> vcpu->blocked
+> > 	are both true. In vmx_vcpu_put(), we will check vcpu->preempted first, so
+> > 	the vCPU will not be blocked, and the vcpu->blocked will be set the false in
+> > 	vmx_vcpu_load().
+> >
+> > 	But maybe I need do a little change to the vmx_vcpu_load() like below:
+> >
+> >                 /*
+> >                  * Delete the vCPU from the related wakeup queue
+> >                  * if we are resuming from blocked state
+> >                  */
+> >                 if (vcpu->blocked) {
+> >                         vcpu->blocked = false;
+> > +						/* if wakeup_cpu == -1, the vcpu is currently not
+> blocked on any
+> > +						  pCPU, don't need dequeue here */
+> > +						if (vcpu->wakeup_cpu != -1) {
+> >
+> spin_lock_irqsave(&per_cpu(blocked_vcpu_on_cpu_lock,
+> >                                 vcpu->wakeup_cpu), flags);
+> >                     	     list_del(&vcpu->blocked_vcpu_list);
+> >
+> spin_unlock_irqrestore(&per_cpu(blocked_vcpu_on_cpu_lock,
+> >                                 vcpu->wakeup_cpu), flags);
+> >                         	 vcpu->wakeup_cpu = -1;
+> > +						}
+> >                 }
+> 
+> Good idea.
+> 
+> Paolo
+> 
+> > Any ideas about this? Thanks a lot!
+> >
+> > Thanks,
+> > Feng
+> >
+> >
+> > 	-> schedule();
+> >
+> >
+> >>
+> >>> - Set 'NV' to POSTED_INTR_WAKEUP_VECTOR
+> >>>
+> >>> post-block:
+> >>> - Remove the vCPU from the per-CPU list
+> >>
+> >> Paolo
+> >>
+> >>> Signed-off-by: Feng Wu <feng.wu@intel.com>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
