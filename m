@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaLSG2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 01:28:35 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58033 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732AbaLSG2e (ORCPT
+	id S1752088AbaLSG3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 01:29:35 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:33812 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaLSG3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 01:28:34 -0500
-Date: Fri, 19 Dec 2014 06:28:27 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Omar Sandoval <osandov@osandov.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        David Sterba <dsterba@suse.cz>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/8] swap: lock i_mutex for swap_writepage direct_IO
-Message-ID: <20141219062827.GV22149@ZenIV.linux.org.uk>
-References: <20141215221100.GA4637@mew>
- <20141216083543.GA32425@infradead.org>
- <20141216085624.GA25256@mew>
- <20141217080610.GA20335@infradead.org>
- <20141217082020.GH22149@ZenIV.linux.org.uk>
- <20141217082437.GA9301@infradead.org>
- <20141217145832.GA3497@mew>
- <20141217185256.GA5657@infradead.org>
- <20141217220313.GK22149@ZenIV.linux.org.uk>
- <20141219062405.GA11486@mew>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141219062405.GA11486@mew>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 19 Dec 2014 01:29:33 -0500
+From: Omar Sandoval <osandov@osandov.com>
+To: Trond Myklebust <trond.myklebust@primarydata.com>,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        Omar Sandoval <osandov@osandov.com>
+Subject: [PATCH] nfs: prevent truncate on active swapfile
+Date: Thu, 18 Dec 2014 22:29:18 -0800
+Message-Id: <13e8abe52a18c4e46ce497ff299774700cd7e1d0.1418970310.git.osandov@osandov.com>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 18, 2014 at 10:24:05PM -0800, Omar Sandoval wrote:
-> +       swap_file = file_open_name(name, O_RDWR | O_LARGEFILE | O_DIRECT, 0);
-> +       if (IS_ERR(swap_file) && PTR_ERR(swap_file) == -EINVAL)
+Most filesystems prevent truncation of an active swapfile by way of
+inode_newsize_ok, called from inode_change_ok. NFS doesn't call either
+from nfs_setattr, presumably because most of these checks are expected
+to be done server-side. However, the IS_SWAPFILE check can only be done
+client-side, and not doing so is dangerous.
 
-ITYM if (swap_file == ERR_PTR(-EINVAL)) here...
+Signed-off-by: Omar Sandoval <osandov@osandov.com>
+---
+ fs/nfs/inode.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 4bffe63..9205513 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -506,10 +506,15 @@ nfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		attr->ia_valid &= ~ATTR_MODE;
+ 
+ 	if (attr->ia_valid & ATTR_SIZE) {
++		loff_t i_size;
++
+ 		BUG_ON(!S_ISREG(inode->i_mode));
+ 
+-		if (attr->ia_size == i_size_read(inode))
++		i_size = i_size_read(inode);
++		if (attr->ia_size == i_size)
+ 			attr->ia_valid &= ~ATTR_SIZE;
++		else if (attr->ia_size < i_size && IS_SWAPFILE(inode))
++			return -ETXTBSY;
+ 	}
+ 
+ 	/* Optimization: if the end result is no change, don't RPC */
+-- 
+2.2.0
+
