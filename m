@@ -1,148 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaLSJzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:55:19 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:46552 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaLSJzP (ORCPT
+	id S1752147AbaLSJzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:55:48 -0500
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58085 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317AbaLSJzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:55:15 -0500
-Date: Fri, 19 Dec 2014 10:55:12 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: B Viswanath <marichika4@gmail.com>
-Cc: Roopa Prabhu <roopa@cumulusnetworks.com>,
-        "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port
- configuration
-Message-ID: <20141219095512.GH1848@nanopsycho.orion>
-References: <54931969.7040209@cumulusnetworks.com>
- <5493293A.2000802@intel.com>
- <54935E28.8050602@cumulusnetworks.com>
- <549362A5.3000808@intel.com>
- <549367CC.2080307@cumulusnetworks.com>
- <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com>
- <20141219082754.GE1848@nanopsycho.orion>
- <CAN+pFwJAJ71-+MZjJXPbfu5mzMp6AWNxtYR81Lx6siy3D3HfJg@mail.gmail.com>
- <20141219092308.GF1848@nanopsycho.orion>
- <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAN+pFwJr7TvJEW4x_HYPgTEvYGfi+YHgp=5vek2YiU1GLiH6_g@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+	Fri, 19 Dec 2014 04:55:46 -0500
+From: Sanchayan Maity <maitysanchayan@gmail.com>
+To: Peter.Chen@freescale.com
+Cc: stefan@agner.ch, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Sanchayan Maity <maitysanchayan@gmail.com>
+Subject: [PATCH 0/3] usb: chipidea: add one errata for revision 2.40a
+Date: Fri, 19 Dec 2014 15:25:26 +0530
+Message-Id: <cover.1418981438.git.maitysanchayan@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Dec 19, 2014 at 10:35:27AM CET, marichika4@gmail.com wrote:
->On 19 December 2014 at 14:53, Jiri Pirko <jiri@resnulli.us> wrote:
->> Fri, Dec 19, 2014 at 10:01:46AM CET, marichika4@gmail.com wrote:
->>>On 19 December 2014 at 13:57, Jiri Pirko <jiri@resnulli.us> wrote:
->>>> Fri, Dec 19, 2014 at 06:14:57AM CET, marichika4@gmail.com wrote:
->>>>>On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
->>>>>> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
->>><snipped for ease of reading>
->>>>>>>
->>>>>>>
->>>>>>> We also need an interface to set per-switch attributes. Can this work?
->>>>>>>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
->>>>>>> where sw0 is a bridge representing the hardware switch.
->>>>>>
->>>>>>
->>>>>> Not today. We discussed this @ LPC, and one way to do this would be to have
->>>>>> a device
->>>>>> representing the switch asic. This is in the works.
->>>>>
->>>>>
->>>>>Can I assume that on  platforms which house more than one asic (say
->>>>>two 24 port asics, interconnected via a 10G link or equivalent, to get
->>>>>a 48 port 'switch') , the 'rocker' driver (or similar) should expose
->>>>>them as a single set of ports, and not as two 'switch ports' ?
->>>>
->>>> Well that really depends on particular implementation and drivers. If you
->>>> have 2 pci-e devices, I think you should expose them as 2 entities. For
->>>> sure, you can have the driver to do the masking for you. I don't believe
->>>> that is correct though.
->>>>
->>>
->>>In a platform that houses two asic chips, IMO, the user is still
->>>expected to manage the router as a single entity. The configuration
->>>being applied on both asic devices need to be matching if not
->>>identical, and may not be conflicting. The FDB is to be synchronized
->>>so that (offloaded) switching can happen across the asics. Some of
->>>this stuff is asic specific anyway. Another example is that of the
->>>learning. The (hardware) learning can't be enabled on one asic, while
->>>being disabled on another one. The general use cases I have seen are
->>>all involving managing the 'router' as a single entity.  That the
->>>'router' is implemented with two asics instead of a single asic (with
->>>more ports) is to be treated as an implementation detail.  This is the
->>>usual router management method that exists today.
->>>
->>>I hope I make sense.
->>>
->>>So I am trying to figure out what this single entity that will be used
->>>from a user perspective. It can be a bridge, but our bridges are more
->>>802.1q bridges. We can use the 'self' mode, but then it means that it
->>>should reflect the entire port count, and not just an asic.
->>>
->>>So I was trying to deduce that in our switchdevice model, the best bet
->>>would be to leave the unification to the driver (i.e., to project the
->>>multiple physical asics as a single virtual switch device). Thist
->>
->> Is it possible to have the asic as just single one? Or is it possible to
->> connect asics being multiple chips maybe from multiple vendors together?
->
->I didn't understand the first question. Some times, it is possible to
+The first two patches add identification register API's. These can
+be used to get controller's revision. 
 
-I ment that there is a design with just a single asic of this type,
-instead of a pair.
+The third patch implements an errata for revision 2.40a. Not sure
+which other SOCs implement this version of the Chipidea core but
+this fixes the usb client issue observed on Vybrids. The patch was
+tested on a Toradex Colibri VF61 module with the 3.18 kernel. iperf
+tests ran for three hours plus, with these patches applied have found
+the USB client connection to be now reliable.
 
->have a single asic replace two, but its a cost factor, and others that
->are involved.
->
->AFAIK, the answer to the second question is a No. Two asics from
->different vendors may not be connected together. The interconnect
->tends to be proprietary.
+This patchset is based off on Shawn Guo's for-next branch
+https://git.kernel.org/cgit/linux/kernel/git/shawnguo/linux.git/tree/?h=for-next
 
-Okay. In that case, it might make sense to mask it on driver level.
+The credit for the patches and fix goes to Matthieu Castet and Peter Chen.
+First two patches are by Peter Chen and the third patch which fixed the
+bug we observed was reported by Matthieu Castet.
 
+The discussion of the problem and the relevant testing details can be found
+at this link: http://www.spinics.net/lists/linux-usb/msg118544.html
 
->
->> I believe that answer is "yes" in both cases. Making two separate asics
->> to appear as one for user is not correct in my opinion. Driver should
->> not do such masking. It is unclean, unextendable.
->>
->
->I am only looking for a single management entity. I am not thinking it
->needs to be at driver level. I am not sure of  any other option apart
->from creating a 'switchdev' that Roopa was mentioning.
+The first version of this patchset originally send by Peter Chen can be
+found at this link: http://www.spinics.net/lists/linux-usb/msg118753.html
 
-Well the thing is there is a common desire to make the offloading as
-transparent as possible. For example, have 4 ports of same switch and
-put them into br0. Just like that, without need to do anything else
-than you would do when bridging ordinary NICs. Introducing some
-"management entity" would break this approach.
+Comments for review are welcome :).
+Note: I am going on a vacation so will not be able to reply or do any further
+tests till Monday. Will attend and take care of any comments/requests for 
+further changes/testing from Tuesday. Apologize for the delay in advance.
 
+Sanchayan Maity (3):
+  usb: chipidea: Add identification registers access APIs
+  usb: chipidea: Add chipidea revision information
+  usb: chipidea: Add errata for revision 2.40a
 
->
->>
->>>allows any 'switch' level configurations to the bridge in 'self' mode.
->>>
->>>And  then we would need to consider stacking. Stacking differs from
->>>this multi-asic scenario since  there would be multiple CPU involved.
->>>
->>>Thanks
->>>Vissu
->>>
->>>>>
->>>>>>
->>>>>>
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>>>>> the body of a message to majordomo@vger.kernel.org
->>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ drivers/usb/chipidea/bits.h |   10 ++++++++
+ drivers/usb/chipidea/ci.h   |   53 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/usb/chipidea/core.c |   23 +++++++++++++++++--
+ drivers/usb/chipidea/udc.c  |   20 ++++++++++++++++
+ 4 files changed, 104 insertions(+), 2 deletions(-)
+
+-- 
+1.7.9.5
+
