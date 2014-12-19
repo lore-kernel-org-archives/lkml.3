@@ -1,152 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752284AbaLSQQk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:16:40 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:51187 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaLSQQj convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 19 Dec 2014 11:16:39 -0500
-Message-Id: <54945D760200007800051157@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Fri, 19 Dec 2014 16:16:38 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "David Vrabel" <david.vrabel@citrix.com>,
-        "Boris Ostrovsky" <boris.ostrovsky@oracle.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
-Cc: "xen-devel" <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: xen/x86: properly retrieve NMI reason
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752436AbaLSQRo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:17:44 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:33444 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751426AbaLSQRm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 11:17:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141218142205.GZ11764@sirena.org.uk>
+References: <1414729631-11005-1-git-send-email-tharvey@gateworks.com>
+	<1414729631-11005-5-git-send-email-tharvey@gateworks.com>
+	<CAOMZO5DzEe91pTv+UkCbj0DzgVDOb9hjuakt9NmpTJnEk-j8UA@mail.gmail.com>
+	<CAJ+vNU3PQYCE4tABUiqU+vGkGqBEqdVKz25W88-ByOQZxunVLw@mail.gmail.com>
+	<20141218142205.GZ11764@sirena.org.uk>
+Date: Fri, 19 Dec 2014 08:17:41 -0800
+Message-ID: <CAJ+vNU1YQWGFaEm8w8wtaFvUy1jig26jW3+3teMFHLB_oFyn8Q@mail.gmail.com>
+Subject: Re: [PATCH 4/5] cpufreq: imx6q: add ldo-bypass support
+From: Tim Harvey <tharvey@gateworks.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Fabio Estevam <festevam@gmail.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Silvio F <silvio.fricke@gmail.com>, Christian Hemp <c.hemp@phytec.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Iain Paton <ipaton0@gmail.com>, Anson.Huang@freescale.com,
+        Shawn Guo <shawn.guo@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the native code here can't work properly, as the hypervisor would
-normally have cleared the two reason bits by the time Dom0 gets to see
-the NMI (if passed to it at all). There's a shared info field for this,
-and there's an existing hook to use - just fit the two together. Note
-that the hook can (and should) be used irrespective of whether being in
-Dom0, as accessing port 0x61 in a DomU would be even worse, while the
-shared info field would just hold zero all the time.
+On Thu, Dec 18, 2014 at 6:22 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Dec 18, 2014 at 06:11:15AM -0800, Tim Harvey wrote:
+>> On Wed, Dec 17, 2014 at 6:36 AM, Fabio Estevam <festevam@gmail.com> wrote:
+>> > On Fri, Oct 31, 2014 at 2:27 AM, Tim Harvey <tharvey@gateworks.com> wrote:
+>> >> When an external PMIC is used for VDD_SOC and VDD_ARM you can save power by
+>> >> bypassing the internal LDO's provided by the anantop regulator as long as
+>> >> you are running less than 1.2GHz. If running at 1.2GHz the IMX6 datasheets
+>> >> state that you must use the internal LDO's to reduce ripple on the suplies.
+>> >>
+>> >> A failure to bypass the LDO's when using an external PMIC will result in an
+>> >> extra voltage drop (~125mV) between VDD_ARM_IN and VDD_ARM and VDD_SOC_IN and
+>> >> VDD_SOC which violates the voltages specificed by the datasheets.
+>
+> This description doesn't make much sense - there must of course always
+> be an external power source for the SoC and the discussion of bypassing
+> also suggests that it's not just a case of disconnecting the internal
+> LDOs.
+>
+>> What is needed is to determine if the cpu vddsoc and vddarm regulators
+>> are both 'not' the same as the anatop provided regulators (then we
+>> bypass the anatop regulators) so I need to do such a check after all
+>> regulators are registered. Perhaps I need to have a late_init call (or
+>> some other init call that happens after all regulators are
+>> registered).
+>
+>> Phillipp/Mark - what are your thoughts here? Do the regulator core
+>> functions regulator_is_same() [1] and regulator_is_bypass() [2] I
+>> propose make sense to determine if regulators are the same and in
+>> bypass mode and overcome the detection issues Phillipp discussed in a
+>> previous thread [3]?
+>
+> Please provide a clear description of what's actually going on here.
+> What does the hardware actually look like and what is being configured?
+> You're telling me the solution you've decided on, not what the problem
+> that this is supposed to solve is.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Mark,
+
+I can embellish the description with more information. Does this
+describe the issue better?
+
 ---
- arch/x86/xen/enlighten.c    |   22 +++++++++++++++++-
- include/xen/interface/nmi.h |   52 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 1 deletion(-)
 
---- 3.18/arch/x86/xen/enlighten.c
-+++ 3.18-xen-x86-NMI-reason/arch/x86/xen/enlighten.c
-@@ -40,6 +40,7 @@
- #include <xen/interface/physdev.h>
- #include <xen/interface/vcpu.h>
- #include <xen/interface/memory.h>
-+#include <xen/interface/nmi.h>
- #include <xen/interface/xen-mca.h>
- #include <xen/features.h>
- #include <xen/page.h>
-@@ -66,6 +67,7 @@
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
- #include <asm/hypervisor.h>
-+#include <asm/mach_traps.h>
- #include <asm/mwait.h>
- #include <asm/pci_x86.h>
- #include <asm/pat.h>
-@@ -1357,6 +1359,21 @@ static const struct machine_ops xen_mach
- 	.emergency_restart = xen_emergency_restart,
- };
- 
-+static unsigned char xen_get_nmi_reason(void)
-+{
-+	unsigned char reason = 0;
-+
-+	/* Construct a value which looks like it came from port 0x61. */
-+	if (test_bit(_XEN_NMIREASON_io_error,
-+		     &HYPERVISOR_shared_info->arch.nmi_reason))
-+		reason |= NMI_REASON_IOCHK;
-+	if (test_bit(_XEN_NMIREASON_pci_serr,
-+		     &HYPERVISOR_shared_info->arch.nmi_reason))
-+		reason |= NMI_REASON_SERR;
-+
-+	return reason;
-+}
-+
- static void __init xen_boot_params_init_edd(void)
- {
- #if IS_ENABLED(CONFIG_EDD)
-@@ -1541,9 +1558,12 @@ asmlinkage __visible void __init xen_sta
- 	pv_info = xen_info;
- 	pv_init_ops = xen_init_ops;
- 	pv_apic_ops = xen_apic_ops;
--	if (!xen_pvh_domain())
-+	if (!xen_pvh_domain()) {
- 		pv_cpu_ops = xen_cpu_ops;
- 
-+		x86_platform.get_nmi_reason = xen_get_nmi_reason;
-+	}
-+
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		x86_init.resources.memory_setup = xen_auto_xlated_memory_setup;
- 	else
---- /usr/local/src/linux-3.18/include/xen/interface/nmi.h	1970-01-01 01:00:00.000000000 +0100
-+++ 3.18-xen-x86-NMI-reason/include/xen/interface/nmi.h
-@@ -0,0 +1,52 @@
-+/******************************************************************************
-+ * nmi.h
-+ * 
-+ * NMI callback registration and reason codes.
-+ * 
-+ * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
-+ */
-+
-+#ifndef __XEN_PUBLIC_NMI_H__
-+#define __XEN_PUBLIC_NMI_H__
-+
-+#include <xen/interface/xen.h>
-+
-+/*
-+ * NMI reason codes:
-+ * Currently these are x86-specific, stored in arch_shared_info.nmi_reason.
-+ */
-+ /* I/O-check error reported via ISA port 0x61, bit 6. */
-+#define _XEN_NMIREASON_io_error     0
-+#define XEN_NMIREASON_io_error      (1UL << _XEN_NMIREASON_io_error)
-+ /* PCI SERR reported via ISA port 0x61, bit 7. */
-+#define _XEN_NMIREASON_pci_serr     1
-+#define XEN_NMIREASON_pci_serr      (1UL << _XEN_NMIREASON_pci_serr)
-+ /* Unknown hardware-generated NMI. */
-+#define _XEN_NMIREASON_unknown      2
-+#define XEN_NMIREASON_unknown       (1UL << _XEN_NMIREASON_unknown)
-+
-+/*
-+ * long nmi_op(unsigned int cmd, void *arg)
-+ * NB. All ops return zero on success, else a negative error code.
-+ */
-+
-+/*
-+ * Register NMI callback for this (calling) VCPU. Currently this only makes
-+ * sense for domain 0, vcpu 0. All other callers will be returned EINVAL.
-+ * arg == pointer to xennmi_callback structure.
-+ */
-+#define XENNMI_register_callback   0
-+struct xennmi_callback {
-+    unsigned long handler_address;
-+    unsigned long pad;
-+};
-+typedef struct xennmi_callback xennmi_callback_t;
-+DEFINE_XEN_GUEST_HANDLE(xennmi_callback_t);
-+
-+/*
-+ * Deregister NMI callback for this (calling) VCPU.
-+ * arg == NULL.
-+ */
-+#define XENNMI_unregister_callback 1
-+
-+#endif /* __XEN_PUBLIC_NMI_H__ */
+The IMX6 CPU family (IMX6S/IMX6DL/IMX6D/IMX6Q) have three CPU related
+voltage rails: VDD_ARM (for the ARM core(s)), VDD_SOC (for the SoC
+logic), and VDD_PU (for the GPU and VPU). All three of these have
+voltage setpoints recommended by the datasheet which vary per CPU
+frequency. They also all have internal LDO's (implemented via the
+anantop voltage regulator) such that a board does not have to have a
+complex PMIC with scalable voltages. The VDD_PU LDO is internally tied
+to the VDD_SOC input. Therefore, there are two external power inputs
+to the chip: VDD_ARM and VDD_SOC. When using a non scalable PMIC you
+can provide VDD_ARM and VDD_SOC with a set voltage level specified by
+the datasheet, and use the three internal LDO's inside the IMX6 to
+adjust the three power rails down to the proper value per CPU
+frequency setpoint. If however you have an external PMIC that is
+capable of adjusting the VDD_ARM and VDD_SOC to the IMX6 and an
+appropriate regulator driver is capable of doing so, you must
+configure the cpu nodes vddarm and vddsoc regulators to those provided
+by your PMIC and 'bypass' the internal LDO's by setting their scaling
+value to full-scale (0x1f). Failure to place the internal LDO's in
+'bypass mode' will result in a minimum of 125mV drop from the external
+input to the internal voltage rail such that the CPU operating points
+describing the voltage of the external inputs per CPU frequency will
+not be properly met.
 
+An additional benefit of using a PMIC with a regulator driver is that
+you can save power regulating the voltage with a switching regulator
+PMIC vs an inefficient LDO within the CPU. This also will help to move
+thermal power out of the IMX6 and to your PMIC.
 
+If running at 1.2GHz the IMX6 datasheets state that you must use the
+internal LDO's to reduce ripple on the supplies.
+
+----
+
+Maybe Fabio has something to add? Perhaps this should go somewhere
+under Documentation but I'm not clear where.
+
+Tim
