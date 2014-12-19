@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751729AbaLSDkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 22:40:20 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:51765 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751194AbaLSDkS (ORCPT
+	id S1751736AbaLSDtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 22:49:22 -0500
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:48338 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaLSDtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 22:40:18 -0500
-Date: Thu, 18 Dec 2014 22:40:11 -0500 (EST)
-Message-Id: <20141218.224011.175832100672931963.davem@davemloft.net>
-To: dan@dcollins.co.nz
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fixed TPACKET V3 to signal poll when block is closed
- rather than every packet
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1418949139-21299-1-git-send-email-dan@dcollins.co.nz>
-References: <1418949139-21299-1-git-send-email-dan@dcollins.co.nz>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 18 Dec 2014 19:40:16 -0800 (PST)
+	Thu, 18 Dec 2014 22:49:21 -0500
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Thu, 18 Dec 2014 22:49:18 -0500
+To: Len Sorensen <lsorense@csclub.uwaterloo.ca>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, Florian Fainelli <f.fainelli@gmail.com>,
+        linuxppc-dev@lists.ozlabs.org, Li Yang <leoli@freescale.com>
+Subject: net: ucc: tbi phy detection broken by
+ 058112c7efc9ef43bb511c137293dddbe6e42908
+Message-ID: <20141219034918.GX24110@csclub.uwaterloo.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Collins <dan@dcollins.co.nz>
-Date: Fri, 19 Dec 2014 13:32:19 +1300
+I have been trying to move an 8360 based system from a 3.0 kernel to a
+3.12 (on the way to 3.14 with ipipe/xenomai) kernel and encountered an
+oops in the ucc_geth driver when using RTBI mode on one of the ucc
+ports.  I haven't managed to find any commits to of_mdio or ucc_geth or
+fsl_pq_mdio that would appear to address this problem, so I believe it
+is still present in the latest kernel, but have not confirmed that with
+testing yet.
 
-> + *		Dan Collins : Fixed TPACKET_V3 to wake poll when block is closed
-> + *					rather than for every packet.
+Commit 058112c7efc9ef43bb511c137293dddbe6e42908 appears to have broken
+ucc support for tbi phy detection.
 
-Since we now use real version control with commit messages, this
-comment at the top of the source file is not an appropriate
-place to log your change.
+With the patch in place, I am unable to get the mdio bus to create phy
+devices for the tbi phy in the ucc on an 8360e, and the ucc_geth driver
+causes a kernel oops, while with the patch reverted, it does create them
+and the driver comes up and works.
+
+The tbi phy is needed when using a ucc in RTBI, TBI or SGMII mode.
+
+I am not convinced that the tbi phy really behaves quite like a real phy,
+which may be why get_phy_device does not work with it.  Perhaps there
+is a better way to deal with the tbi phy on the ucc for this purpose.
+
+Certainly as it is, this patch has caused a regression though, although
+probably not very many systems with ucc ports actually use one of the
+affected modes so the damage isn't that great.
+
+-- 
+Len Sorensen
