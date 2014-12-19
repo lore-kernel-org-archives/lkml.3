@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658AbaLSOv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:51:28 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:41242 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284AbaLSOv1 convert rfc822-to-8bit (ORCPT
+	id S1752559AbaLSOxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:53:48 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:39959 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaLSOxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:51:27 -0500
-Message-ID: <54943B6A.9050309@arm.com>
-Date: Fri, 19 Dec 2014 15:51:22 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 19 Dec 2014 09:53:47 -0500
+Message-ID: <54943BF8.4050008@cogentembedded.com>
+Date: Fri, 19 Dec 2014 17:53:44 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: Michael Turquette <mturquette@deferred.io>, LKP <lkp@01.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [sched] WARNING: CPU: 0 PID: 0 at arch/x86/kernel/cpu/common.c:1439
- warn_pre_alternatives()
-References: <20141210232645.GD24163@wfg-t540p.sh.intel.com>
-In-Reply-To: <20141210232645.GD24163@wfg-t540p.sh.intel.com>
-X-OriginalArrivalTime: 19 Dec 2014 14:51:24.0268 (UTC) FILETIME=[427662C0:01D01B9B]
-X-MC-Unique: 114121914512405301
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Takashi Iwai <tiwai@suse.de>
+CC: alsa-devel@alsa-project.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>,
+        Alexander Stein <alexanders83@web.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ALSA: atmel: fix building the ac97 driver for at91-multiplatform
+References: <1418944390-27719-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1418944390-27719-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
+Hello.
 
-On 11/12/14 00:26, Fengguang Wu wrote:
-> Hi Dietmar,
->
-> FYI, here is another bisect result.
+On 12/19/2014 2:13 AM, Alexandre Belloni wrote:
 
-thanks for testing this on another arch then ARM!
+> From: Arnd Bergmann <arnd@arndb.de>
 
-The problem is that the weak arch_scale_cpu_capacity calls 
-default_scale_cpu_capacity on a system which doesn't overwrite it and 
-the default one accesses the sched_domain which is not allocated that 
-early when called by scheduler_tick.
+> at91 will no longer export the mach/cpu.h and mach/hardware.h header files
+> in the future, which would break building the atmel ac97c driver.
 
-I only tested it on an ARM system which in this tree which overwrites 
-arch_scale_cpu_capacity and does not access sched_domain.
+> Since the cpu_is_* check is only used to find out whether we are running
+> on avr32 or arm/at91, we can hardcode that check in the ARM case.
 
-Have to look into it and will test the default case from now on too.
+> Unfortunately the driver is missing other work to be useful again on ARM,
+> if anyone wants to actually use it, they need to add a DT binding, and
+> the driver should really be converted to use the ASoC framework.
 
--- Dietmar
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Link: http://www.spinics.net/lists/arm-kernel/msg382068.html
+> ---
+>   sound/atmel/ac97c.c | 6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
 
+> diff --git a/sound/atmel/ac97c.c b/sound/atmel/ac97c.c
+> index b59427d5a697..83975f8d5947 100644
+> --- a/sound/atmel/ac97c.c
+> +++ b/sound/atmel/ac97c.c
+> @@ -34,10 +34,10 @@
+>   #include <linux/platform_data/dma-dw.h>
+>   #include <linux/dma/dw.h>
 >
-> https://git.linaro.org/people/mturquette/linux.git eas-next
-> commit 1fadb581b0be9420b143e43ff2f4a07ea7e45f6c
-> Author:     Dietmar Eggemann <dietmar.eggemann@arm.com>
-> AuthorDate: Tue Dec 2 14:06:24 2014 +0000
-> Commit:     Michael Turquette <mturquette@deferred.io>
-> CommitDate: Tue Dec 9 20:33:17 2014 -0800
->
->      sched: Make usage and load tracking cpu scale-invariant
->
->      Besides the existing frequency scale-invariance correction factor, apply
->      cpu scale-invariance correction factor to usage and load tracking.
->
->      Cpu scale-invariance takes cpu performance deviations due to
->      micro-architectural differences (i.e. instructions per seconds) between
->      cpus in HMP systems (e.g. big.LITTLE) and differences in the frequency
->      value of the highest OPP between cpus in SMP systems into consideration.
->
->      Each segment of the sched_avg::{running_avg_sum, runnable_avg_sum}
->      geometric series is now scaled by the cpu performance factor too so the
->      sched_avg::{utilization_avg_contrib, load_avg_contrib} of each entity will
->      be invariant from the particular cpu of the HMP/SMP system it is gathered
->      on. As a result, cfs_rq::runnable_load_avg which is the sum of
->      sched_avg::load_avg_contrib, becomes cpu scale-invariant too.
->
->      So the {usage, load} level that is returned by {get_cpu_usage,
->      weighted_cpuload} stays relative to the max cpu performance of the system.
->
->      Cc: Ingo Molnar <mingo@redhat.com>
->      Cc: Peter Zijlstra <peterz@infradead.org>
->      Signed-off-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
->
+> +#ifdef CONFIG_AVR32
+>   #include <mach/cpu.h>
+> -
+> -#ifdef CONFIG_ARCH_AT91
+> -#include <mach/hardware.h>
+> +#else
+> +#define cpu_is_at32ap7000() (0)
+
+    () around 0 not needed at all.
 
 [...]
 
+WBR, Sergei
 
