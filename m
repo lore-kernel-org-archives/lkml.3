@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928AbaLSCT1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:19:27 -0500
-Received: from mail-by2on0127.outbound.protection.outlook.com ([207.46.100.127]:32288
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751387AbaLSCTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:19:25 -0500
-X-Greylist: delayed 69097 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Dec 2014 21:19:25 EST
-Message-ID: <54938C2D.1020504@freescale.com>
-Date: Fri, 19 Dec 2014 10:23:41 +0800
-From: Liu Ying <Ying.Liu@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751940AbaLSCUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:20:50 -0500
+Received: from mga03.intel.com ([134.134.136.65]:1477 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751547AbaLSCUs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Dec 2014 21:20:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,604,1413270000"; 
+   d="scan'208";a="656824953"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+Thread-Topic: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+Thread-Index: AQHQGhYm7sLo56pczEOP78elCT7pbZyWL+DA
+Date: Fri, 19 Dec 2014 02:19:09 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230A97C@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+ <1418397300-10870-17-git-send-email-feng.wu@intel.com>
+ <5491ACA9.5020507@redhat.com>
+In-Reply-To: <5491ACA9.5020507@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Philipp Zabel <p.zabel@pengutronix.de>
-CC: <dri-devel@lists.freedesktop.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <kernel@pengutronix.de>, <thierry.reding@gmail.com>,
-        <shawn.guo@linaro.org>, <mturquette@linaro.org>, <airlied@linux.ie>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v2 05/14] ARM: imx6q: clk: Add the video_27m clock
-References: <1418886696-11636-1-git-send-email-Ying.Liu@freescale.com>
-	 <1418886696-11636-6-git-send-email-Ying.Liu@freescale.com>
- <1418898675.4212.10.camel@pengutronix.de>
-In-Reply-To: <1418898675.4212.10.camel@pengutronix.de>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Ying.Liu@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(24454002)(377454003)(189002)(51704005)(479174004)(164054003)(23676002)(2950100001)(76176999)(84676001)(106466001)(105606002)(107046002)(97736003)(77096005)(21056001)(19580395003)(83506001)(110136001)(33656002)(99136001)(77156002)(6806004)(120916001)(54356999)(62966003)(50986999)(99396003)(19580405001)(65816999)(87936001)(64706001)(47776003)(20776003)(46102003)(65806001)(85426001)(4396001)(104016003)(86362001)(68736005)(50466002)(80316001)(36756003)(32563001)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB0637;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB0637;
-X-Forefront-PRVS: 0430FA5CB7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB0637;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 19 Dec 2014 02:19:22.2551
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB0637
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
 
-On 12/18/2014 06:31 PM, Philipp Zabel wrote:
-> Am Donnerstag, den 18.12.2014, 15:11 +0800 schrieb Liu Ying:
->> This patch supports the video_27m clock which is a fixed factor
->> clock of the pll3_pfd1_540m clock.
->>
->> Signed-off-by: Liu Ying <Ying.Liu@freescale.com>
->> ---
->> v1->v2:
->>   * None.
->>
->>   arch/arm/mach-imx/clk-imx6q.c             | 1 +
->>   include/dt-bindings/clock/imx6qdl-clock.h | 3 ++-
->>   2 files changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/mach-imx/clk-imx6q.c b/arch/arm/mach-imx/clk-imx6q.c
->> index 4e79da7..9470df3 100644
->> --- a/arch/arm/mach-imx/clk-imx6q.c
->> +++ b/arch/arm/mach-imx/clk-imx6q.c
->> @@ -246,6 +246,7 @@ static void __init imx6q_clocks_init(struct device_node *ccm_node)
->>   	clk[IMX6QDL_CLK_PLL3_60M]  = imx_clk_fixed_factor("pll3_60m",  "pll3_usb_otg",   1, 8);
->>   	clk[IMX6QDL_CLK_TWD]       = imx_clk_fixed_factor("twd",       "arm",            1, 2);
->>   	clk[IMX6QDL_CLK_GPT_3M]    = imx_clk_fixed_factor("gpt_3m",    "osc",            1, 8);
->> +	clk[IMX6QDL_CLK_VIDEO_27M] = imx_clk_fixed_factor("video_27m", "pll3_pfd1_540m", 1, 20);
->
-> The HDMI TX isfr clock input is sourced from video_27m, too, according
-> to Table 33-1 "HDMI clocks".
-> I think the parent of clk[IMX6QDL_CLK_HDMI_ISFR] should be changed from
-> "pll3_pfd1_540m" to "video_27m", then.
 
-I'll add a new patch in the next version to change the hdmi_isfr
-clock's parent.
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org
+> [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo Bonzini
+> Sent: Thursday, December 18, 2014 12:18 AM
+> To: linux-kernel@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; kvm@vger.kernel.org;
+> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> Subject: Re: [v3 16/26] KVM: Make struct kvm_irq_routing_table accessible
+> 
+> 
+> 
+> On 12/12/2014 16:14, Feng Wu wrote:
+> > Move struct kvm_irq_routing_table from irqchip.c to kvm_host.h,
+> > so we can use it outside of irqchip.c.
+> >
+> > Signed-off-by: Feng Wu <feng.wu@intel.com>
+> > ---
+> >  include/linux/kvm_host.h | 19 +++++++++++++++++++
+> >  virt/kvm/irqchip.c       | 11 -----------
+> >  2 files changed, 19 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > index 0b9659d..cfa85ac 100644
+> > --- a/include/linux/kvm_host.h
+> > +++ b/include/linux/kvm_host.h
+> > @@ -335,6 +335,25 @@ struct kvm_kernel_irq_routing_entry {
+> >  	struct hlist_node link;
+> >  };
+> >
+> > +#ifdef CONFIG_HAVE_KVM_IRQ_ROUTING
+> > +
+> > +struct kvm_irq_routing_table {
+> > +	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
+> > +	struct kvm_kernel_irq_routing_entry *rt_entries;
+> > +	u32 nr_rt_entries;
+> > +	/*
+> > +	 * Array indexed by gsi. Each entry contains list of irq chips
+> > +	 * the gsi is connected to.
+> > +	 */
+> > +	struct hlist_head map[0];
+> > +};
+> > +
+> > +#else
+> > +
+> > +struct kvm_irq_routing_table {};
+> 
+> If possible, just make this "struct kvm_irq_routing_table;" and pull
+> this line to include/linux/kvm_types.h.
+> 
+> Paolo
+
+Do you mean move the definition of struct kvm_irq_routing_table
+to include/linux/kvm_types.h and add a declaration here?
 
 Thanks,
-Liu Ying
+Feng
 
->
-> regards
-> Philipp
->
+> 
+> > +
+> > +#endif
+> > +
+> >  #ifndef KVM_PRIVATE_MEM_SLOTS
+> >  #define KVM_PRIVATE_MEM_SLOTS 0
+> >  #endif
+> > diff --git a/virt/kvm/irqchip.c b/virt/kvm/irqchip.c
+> > index 7f256f3..cdf29a6 100644
+> > --- a/virt/kvm/irqchip.c
+> > +++ b/virt/kvm/irqchip.c
+> > @@ -31,17 +31,6 @@
+> >  #include <trace/events/kvm.h>
+> >  #include "irq.h"
+> >
+> > -struct kvm_irq_routing_table {
+> > -	int chip[KVM_NR_IRQCHIPS][KVM_IRQCHIP_NUM_PINS];
+> > -	struct kvm_kernel_irq_routing_entry *rt_entries;
+> > -	u32 nr_rt_entries;
+> > -	/*
+> > -	 * Array indexed by gsi. Each entry contains list of irq chips
+> > -	 * the gsi is connected to.
+> > -	 */
+> > -	struct hlist_head map[0];
+> > -};
+> > -
+> >  int kvm_irq_map_gsi(struct kvm *kvm,
+> >  		    struct kvm_kernel_irq_routing_entry *entries, int gsi)
+> >  {
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
