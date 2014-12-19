@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaLSKbk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 05:31:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43148 "EHLO mx1.redhat.com"
+	id S1752323AbaLSKdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 05:33:54 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:60769 "EHLO unicorn.mansr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaLSKbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 05:31:39 -0500
-Date: Fri, 19 Dec 2014 11:31:13 +0100
-From: Jesper Dangaard Brouer <brouer@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, akpm@linuxfoundation.org,
-        Steven Rostedt <rostedt@goodmis.org>,
+	id S1751890AbaLSKdv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 05:33:51 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Joe Perches <joe@perches.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        linux-arch <linux-arch@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Joonsoo Kim <js1304@gmail.com>,
-        brouer@redhat.com
-Subject: Re: [PATCH] Slab infrastructure for array operations
-Message-ID: <20141219113113.477fd18f@redhat.com>
-In-Reply-To: <20141218140629.393972c7bd8b3b884507264c@linux-foundation.org>
-References: <alpine.DEB.2.11.1412181031520.2962@gentwo.org>
-	<20141218140629.393972c7bd8b3b884507264c@linux-foundation.org>
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>,
+        Steven Miao <realmz6@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips <linux-mips@linux-mips.org>
+Subject: Re: rfc: remove early_printk from a few arches? (blackfin, m68k, mips)
+References: <1418849927.28384.1.camel@perches.com>
+	<alpine.DEB.2.11.1412190031530.17382@nanos>
+	<1418951658.28384.20.camel@perches.com>
+	<yw1x388ch0su.fsf@unicorn.mansr.com>
+	<1418954914.25129.1.camel@perches.com>
+Date: Fri, 19 Dec 2014 10:33:42 +0000
+In-Reply-To: <1418954914.25129.1.camel@perches.com> (Joe Perches's message of
+	"Thu, 18 Dec 2014 18:08:34 -0800")
+Message-ID: <yw1xy4q4exo9.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Joe Perches <joe@perches.com> writes:
 
-On Thu, 18 Dec 2014 14:06:29 -0800 Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri, 2014-12-19 at 01:43 +0000, Måns Rullgård wrote:
+>> What exactly are you proposing to remove?
+>
+> Optionally compile out
+> kernel/printk/printk.c:early_printk()
+> even if CONFIG_EARLY_PRINTK is enabled.
+>
+>> I see no unused code related
+>> to early printk (in any variant) under arch/mips.
+>
+> I think there could be yet another CONFIG option
+> to specifically enable the early_printk function
+> for the arches that use it.
 
-> On Thu, 18 Dec 2014 10:33:23 -0600 (CST) Christoph Lameter <cl@linux.com> wrote:
-> 
-> > This patch adds the basic infrastructure for alloc / free operations
-> > on pointer arrays.
-> 
-> Please provide the justification/reason for making this change.
+Why bother?  On MIPS it would save 132 bytes of compiled code.
 
-I agree that this needs more justification.
+> The kernel/printk/early_printk() function seems
+> used only by arm/microblaze/tile/x86.
 
-I (think) the reason behind this is a first step towards "bulk" alloc
-and free.  And the reason behind that is to save/amortize the cost of
-the locking/CAS operations.
+Rather than introduce more config complexity, you could try to remove
+the 7 remaining uses of early_printk().
 
+- arch/arm/mach-socfpga
+  Single early_printk("Early printk initialized\n") call serving no
+  apparent purpose can probably be safely deleted.  Since there are no
+  other early_printk() calls, this information seems rather useless.
 
-> > Allocators must define _HAVE_SLAB_ALLOCATOR_OPERATIONS in their
-> > header files in order to implement their own fast version for
-> > these array operations.
+- arch/microblaze, arch/tile, arch/x86
+  These all do a register_console() for the early console, so regular
+  printk() should work.  Moreover, x86 allows multiple early consoles,
+  but calling early_printk() will only output to the last one specified.
 
-I would like to see an implementation of a fast-version.  Else it is
-difficult to evaluate if the API is the right one.  E.g. if it would be
-beneficial for the MM system, we could likely restrict the API to only
-work with power-of-two, from the beginning.
-
-
-> Why?  What's driving this?
-
-The network stack have a pattern of allocating 64 SKBs while pulling
-out packets of the NICs RX-ring.  Packets are placing into the TX-ring,
-and later at TX-completing time, we free up-to 256 SKBs (depending on
-driver).
-
-Another use-case, which need smaller bulk's, could be tree-structures
-that need to expand, allocating two elems in one-shot should cut the
-alloc overhead in half.
-
-I'm implemented a prove-of-concept[1] lockless bulk alloc and free
-scheme, that demonstrate this can benefit the network stack.  Now,
-Christoph and I are trying to integrate some of the ideas into the slub
-allocator.
-
-
-[1] http://thread.gmane.org/gmane.linux.network/342347/focus=126138 
 -- 
-Best regards,
-  Jesper Dangaard Brouer
-  MSc.CS, Sr. Network Kernel Developer at Red Hat
-  Author of http://www.iptv-analyzer.org
-  LinkedIn: http://www.linkedin.com/in/brouer
+Måns Rullgård
+mans@mansr.com
