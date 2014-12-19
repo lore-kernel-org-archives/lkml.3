@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbaLSLDP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 06:03:15 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:47054 "EHLO
+	id S1752409AbaLSLHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 06:07:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36410 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaLSLDN (ORCPT
+	with ESMTP id S1751370AbaLSLHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 06:03:13 -0500
-Message-ID: <1418986984.3165.64.camel@pengutronix.de>
-Subject: Re: [PATCH v2 3/7] drm_modes: add videomode_from_drm_display_mode
+	Fri, 19 Dec 2014 06:07:11 -0500
+Message-ID: <1418987224.3165.66.camel@pengutronix.de>
+Subject: Re: [PATCH v2 1/7] gpu: ipu-di: Add ipu_di_adjust_videomode()
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: Steve Longerbeam <slongerbeam@gmail.com>
 Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
@@ -18,12 +18,12 @@ Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         Russell King <rmk+kernel@arm.linux.org.uk>,
         Fabio Estevam <fabio.estevam@freescale.com>,
         Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
-        Jiada Wang <jiada_wang@mentor.com>,
+        Jiada Wang <jiada_wang@mentor.com>, Deepak Das <deepak_das@mentor.com>,
         Steve Longerbeam <steve_longerbeam@mentor.com>
-Date: Fri, 19 Dec 2014 12:03:04 +0100
-In-Reply-To: <1418954426-21909-4-git-send-email-steve_longerbeam@mentor.com>
+Date: Fri, 19 Dec 2014 12:07:04 +0100
+In-Reply-To: <1418954426-21909-2-git-send-email-steve_longerbeam@mentor.com>
 References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
-	 <1418954426-21909-4-git-send-email-steve_longerbeam@mentor.com>
+	 <1418954426-21909-2-git-send-email-steve_longerbeam@mentor.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.9-1 
 Mime-Version: 1.0
@@ -36,67 +36,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Steve,
+
 Am Donnerstag, den 18.12.2014, 18:00 -0800 schrieb Steve Longerbeam:
-> Add conversion from drm_display_mode to videomode.
+> From: Jiada Wang <jiada_wang@mentor.com>
 > 
+> On some monitors, high resolution modes are not working, exhibiting
+> pixel column truncation problems (for example, 1280x1024 displays as
+> 1280x1022).
+> 
+> The function ipu_di_adjust_videomode() aims to fix these issues by
+> adjusting a passed videomode to IPU restrictions. The function can
+> be called from the drm_crtc_helper_funcs->mode_fixup() methods.
+> 
+> Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+> Signed-off-by: Deepak Das <deepak_das@mentor.com>
 > Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
 > ---
->  drivers/gpu/drm/drm_modes.c |   40 ++++++++++++++++++++++++++++++++++++++++
->  include/drm/drm_modes.h     |    2 ++
->  2 files changed, 42 insertions(+)
+>  drivers/gpu/ipu-v3/ipu-di.c |   29 +++++++++++++++++++++++++++++
+>  include/video/imx-ipu-v3.h  |    2 ++
+>  2 files changed, 31 insertions(+)
 > 
-> diff --git a/drivers/gpu/drm/drm_modes.c b/drivers/gpu/drm/drm_modes.c
-> index 6d8b941..583a391 100644
-> --- a/drivers/gpu/drm/drm_modes.c
-> +++ b/drivers/gpu/drm/drm_modes.c
-> @@ -615,6 +615,46 @@ void drm_display_mode_from_videomode(const struct videomode *vm,
+> diff --git a/drivers/gpu/ipu-v3/ipu-di.c b/drivers/gpu/ipu-v3/ipu-di.c
+> index c490ba4..46f9570 100644
+> --- a/drivers/gpu/ipu-v3/ipu-di.c
+> +++ b/drivers/gpu/ipu-v3/ipu-di.c
+> @@ -511,6 +511,35 @@ static void ipu_di_config_clock(struct ipu_di *di,
+>  		clk_get_rate(di->clk_di_pixel) / (clkgen0 >> 4));
 >  }
->  EXPORT_SYMBOL_GPL(drm_display_mode_from_videomode);
 >  
-> +/**
-> + * videomode_from_drm_display_mode - fill in @vm using @dmode,
-> + * @dmode: drm_display_mode structure to use as source
-> + * @vm: videomode structure to use as destination
-> + *
-> + * Fills out @vm using the display mode specified in @dmode.
+> +/*
+> + * This function is called to adjust a video mode to IPU restrictions.
+> + * It is meant to be called from drm crtc mode_fixup() methods.
 > + */
-> +void videomode_from_drm_display_mode(const struct drm_display_mode *dmode,
-> +				     struct videomode *vm)
+> +int ipu_di_adjust_videomode(struct ipu_di *di, struct videomode *mode)
 > +{
-> +	vm->hactive = dmode->hdisplay;
-> +	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
-> +	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
-> +	vm->hback_porch = dmode->htotal - dmode->hsync_end;
+> +	u32 diff;
 > +
-> +	vm->vactive = dmode->vdisplay;
-> +	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
-> +	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
-> +	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
+> +	if (mode->vfront_porch >= 2)
+> +		return 0;
 > +
-> +	vm->pixelclock = dmode->clock * 1000;
+> +	diff = 2 - mode->vfront_porch;
 > +
-> +	vm->flags = 0;
-> +	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
-> +		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
-> +	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
-> +		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
-> +	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
-> +		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
-> +	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
-> +		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
-> +	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
-> +		vm->flags |= DISPLAY_FLAGS_INTERLACED;
-> +	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
-> +		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
-> +	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
-> +		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
-> +}
-> +EXPORT_SYMBOL_GPL(videomode_from_drm_display_mode);
+> +	if (mode->vback_porch >= diff) {
+> +		mode->vfront_porch = 2;
+> +		mode->vback_porch -= diff;
 
-Is it ok for drm_modes to export a function that doesn't start with
-drm_ ? We could just rename this to drm_display_mode_to_videomode if
-necessary. I can fix it up as I apply it, but I'd like to know which is
-preferred.
+Should we also add
+
+	else if (mode->vback_porch >= 1 && mode->vsync_len > 1) {
+		mode->vback_porch--;
+		mode->vsync_len--;
+
+here and maybe move the two "mode->vback_porch = 2" to a single place
+below the conditional statement?
+
+> +	} else if (mode->vsync_len > diff) {
+> +		mode->vfront_porch = 2;
+> +		mode->vsync_len = mode->vsync_len - diff;
+
+Why use "vback_porch -= diff" above, but not "vsync_len -= diff" here?
+
+> +	} else {
+> +		dev_warn(di->ipu->dev, "failed to adjust videomode\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	dev_warn(di->ipu->dev, "videomode adapted for IPU restrictions\n");
+
+Since we can return the adjusted mode to userspace now, I think this
+should be dev_dbg.
 
 regards
 Philipp
