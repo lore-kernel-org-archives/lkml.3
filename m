@@ -1,162 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491AbaLST2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 14:28:50 -0500
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:33680 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaLST2s (ORCPT
+	id S1752540AbaLSTaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 14:30:22 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:61710 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384AbaLSTaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 14:28:48 -0500
-Message-ID: <54947C64.4030206@linux.vnet.ibm.com>
-Date: Fri, 19 Dec 2014 17:28:36 -0200
-From: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 19 Dec 2014 14:30:21 -0500
 MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
-        Paul.Clothier@imgtec.com, davem@davemloft.net, peterz@infradead.org,
-        palves@redhat.com, shuahkh@osg.samsung.com, oleg@redhat.com,
-        dhowells@redhat.com, kirjanov@gmail.com, davej@redhat.com,
-        tglx@linutronix.de, sukadev@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, sam.bobroff@au1.ibm.com,
-        Ulrich Weigand <uweigand@de.ibm.com>
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-References: <20141203052204.9DA8F1400DD@ozlabs.org> <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com>
-In-Reply-To: <548578A8.5020901@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121919-1524-0000-0000-0000015F435E
+In-Reply-To: <54945C1E020000780005114E@mail.emea.novell.com>
+References: <54945C1E020000780005114E@mail.emea.novell.com>
+Date: Fri, 19 Dec 2014 11:30:20 -0800
+X-Google-Sender-Auth: 67SZCzc20NjcXFr3Rq4ix01RCUo
+Message-ID: <CAE9FiQW7Eu+tcysOdHPjStt1uhNjDDU__THPBEG2h0FbtBsCjQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: fix step size adjustment during initial memory mapping
+From: Yinghai Lu <yinghai@kernel.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2014 08:08 AM, Anshuman Khandual wrote:
-> On 12/03/2014 12:18 PM, Anshuman Khandual wrote:
->> On 12/03/2014 10:52 AM, Michael Ellerman wrote:
->>> On Tue, 2014-02-12 at 07:56:45 UTC, Anshuman Khandual wrote:
->>>> This patch adds four new ELF core note sections for powerpc
->>>> transactional memory and one new ELF core note section for
->>>> powerpc general miscellaneous debug registers. These addition
->>>> of new ELF core note sections extends the existing ELF ABI
->>>> without affecting it in any manner.
->>>>
->>>> Acked-by: Andrew Morton <akpm@linux-foundation.org>
->>>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->>>> ---
->>>>  include/uapi/linux/elf.h | 5 +++++
->>>>  1 file changed, 5 insertions(+)
->>>>
->>>> diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
->>>> index ea9bf25..2260fc0 100644
->>>> --- a/include/uapi/linux/elf.h
->>>> +++ b/include/uapi/linux/elf.h
->>>> @@ -379,6 +379,11 @@ typedef struct elf64_shdr {
->>>>  #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
->>>>  #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
->>>>  #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
->>>> +#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
->>>> +#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
->>>> +#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
->>>> +#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
->>>> +#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
->>>
->>> This is a really terrible name, "MISC".
->>>
->>> Having said that, I guess it's accurate. We have a whole bunch of regs that
->>> have accrued over recent years that aren't accessible via ptrace.
->>>
->>> It seems to me if we're adding a misc regset we should be adding everything we
->>> might want to it that is currenty architected.
->>
->> But I believe they also need to be part of the thread_struct structure to be
->> accessible from ptrace.
-> 
-> Currently we dont context save/restore the PMC count registers (PMC1-PMC6)
-> during the process context switch. So the values of PMC1..PMC6 are not
-> thread specific in the structure. To be able to access them in ptrace
-> when the tracee has stopped, we need to context save these counters
-> in the thread struct. Shall we do that ? Then we can add them to the
-> MISC regset bucket irrespective of whats the value we get in there when
-> we probe through ptrace.
-> 
-> The same goes for MMCRA, CFAR registers as well.
-> 
->>  
->>>
->>> But currently you only include the PPR, TAR & DSCR.
->>
->> Yeah, thats what we started with.
->>
->>>
->>> Looking at Power ISA v2.07, I see the following that could be included:
->>>
->>>   MMCR2
->>>   MMCRA
->>>   PMC1
->>>   PMC2
->>>   PMC3
->>>   PMC4
->>>   PMC5
->>>   PMC6
->>>   MMCR0
->>>   EBBHR
->>>   EBBRR
->>>   BESCR
->>>   SIAR
->>>   SDAR
->>>   CFAR?
->>
->> MMCRA, PMC[1..6], EBBHR, BESCR, EBBRR, CFAR are not part of the thread struct.
-> 
-> Sorry. EBBRR, EBBHR, BESCR registers are part of the thread struct.
-> 
->>
->>>
->>> Those are all new in 2.07 except for CFAR.
->>>
->>> There might be more I missed, that was just a quick scan.
->>>
->>> Some are only accessible when EBB is in use, maybe those could be a separate
->>> regset.
->>
->> Yeah we can have one more regset for EBB specific registers.
-> 
-> Should the new EBB specific regset include only EBBRR, EBBHR, BESCR registers
-> or should it also include SIAR, SDAR, SIER, MMCR0, MMCR2 registers as well. I
-> was thinking about putting these five registers into the MISC bucket instead.
-> But from the perf code, it looks like these five registers are also related to
-> the EBB context as well.
-> 
-> Some clarity on these points would really help.
+On Fri, Dec 19, 2014 at 8:10 AM, Jan Beulich <JBeulich@suse.com> wrote:
+> The old scheme can lead to failure in certain cases - the problem is
+> that after bumping step_size the next (non-final) iteration is only
+> guaranteed to make available a memory block the size of what step_size
+> was before. E.g. for a memory block [0,3004600000) we'd have
+>
+> iter    start           end             step            amount
+> 1       3004400000      30045fffff       2M               2M
+> 2       3004000000      30043fffff      64M               4M
+> 3       3000000000      3003ffffff       2G              64M
+> 4       2000000000      2fffffffff      64G              64G
+>
+> Yet to map 64G with 4k pages (as happens e.g. under PV Xen) we need
+> slightly over 128M, but the first three iterations made only about 70M
+> available.
+>
+> The condition (new_mapped_ram_size > mapped_ram_size) for bumping
+> step_size is just not suitable. Instead we want to bump it when we know
+> we have enough memory available to cover a block of the new step_size.
+> And rather than making that condition more complicated than needed,
+> simply adjust step_size by the largest possible factor we know we can
+> cover at that point - which is shifting it left by one less than the
+> difference between page table level shifts. (Interestingly the original
+> STEP_SIZE_SHIFT definition had a comment hinting at that having been
+> the intention, just that it should have been PUD_SHIFT-PMD_SHIFT-1
+> instead of (PUD_SHIFT-PMD_SHIFT)/2, and of course for non-PAE 32-bit we
+> can't really use these two constants as they're equal there.)
 
-Hi,
-
-from the provided testcase using ptrace interface, reviewing with the help
-of Ulrich, it looks OK from GDB perspective, with the exception of a few
-concerns:
-
-The patchset seems to change the "original" ptrace requests (i.e.
-PTRACE_GETREGS/GETFPREGS/GETVRREGS...) to return the "transactional" state, and
-adds new register sets to return the "checkpointed" state. Considering that
-whenever you get a debugger interception inside a transactional block, the
-transaction will abort, we're wondering if it wouldn't make more sense to
-display the 'checkpointed' state as the normal registers since this is where the
-execution will continue from.
-
-Also, we've noticed that the 'misc' regset contains registers from different ISA
-versions (dscr and ppr appear in ISA 2.05, tar is from 2.07). I'm not sure if
-there is a way to detect presence/validity of such registers, but perhaps it
-might be a good idea to separate registers from different ISAs in different
-regsets.
-
-Regarding the inclusion of other registers along with the EBB-related ones, I'm
-sorry but I'm not familiar with them.
-
-Thanks and regards,
---
-Edjunior
-
+Acked-by: Yinghai Lu <yinghai@kernel.org>
