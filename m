@@ -1,176 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbaLSFPA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:15:00 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43481 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaLSFO6 (ORCPT
+	id S1751949AbaLSFWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:22:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46649 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaLSFWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:14:58 -0500
+	Fri, 19 Dec 2014 00:22:47 -0500
+Message-ID: <5493B5CE.7010000@ti.com>
+Date: Fri, 19 Dec 2014 10:51:18 +0530
+From: Lokesh Vutla <lokeshvutla@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <549367CC.2080307@cumulusnetworks.com>
-References: <C4896FB061E7DE4AAC93031BDCA044B104AD7B82@IRSMSX108.ger.corp.intel.com>
-	<5492E85C.6010802@cumulusnetworks.com>
-	<C4896FB061E7DE4AAC93031BDCA044B104AD9E53@IRSMSX108.ger.corp.intel.com>
-	<5492EFC3.8030102@cumulusnetworks.com>
-	<C4896FB061E7DE4AAC93031BDCA044B104ADA16F@IRSMSX108.ger.corp.intel.com>
-	<549313B8.6050102@cumulusnetworks.com>
-	<C4896FB061E7DE4AAC93031BDCA044B104ADA310@IRSMSX108.ger.corp.intel.com>
-	<54931969.7040209@cumulusnetworks.com>
-	<5493293A.2000802@intel.com>
-	<54935E28.8050602@cumulusnetworks.com>
-	<549362A5.3000808@intel.com>
-	<549367CC.2080307@cumulusnetworks.com>
-Date: Fri, 19 Dec 2014 10:44:57 +0530
-Message-ID: <CAN+pFwJyfg1+=+tXUpon0Kket56HJ=9BR3XohPhZnaX7hfPgpg@mail.gmail.com>
-Subject: Re: [RFC PATCH net-next v2 1/1] net: Support for switch port configuration
-From: B Viswanath <marichika4@gmail.com>
-To: Roopa Prabhu <roopa@cumulusnetworks.com>
-Cc: "Samudrala, Sridhar" <sridhar.samudrala@intel.com>,
-        John Fastabend <john.r.fastabend@intel.com>,
-        "Varlese, Marco" <marco.varlese@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Thomas Graf <tgraf@suug.ch>, Jiri Pirko <jiri@resnulli.us>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
+        Paul Walmsley <paul@pwsan.com>
+CC: <t-kristo@ti.com>, <nm@ti.com>, <nsekhar@ti.com>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com>
+In-Reply-To: <5492F84E.7020706@ti.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 December 2014 at 05:18, Roopa Prabhu <roopa@cumulusnetworks.com> wrote:
-> On 12/18/14, 3:26 PM, Samudrala, Sridhar wrote:
+Hi Roger,
+On Thursday 18 December 2014 09:22 PM, Roger Quadros wrote:
+> Fixing up Paul's email id.
+> 
+> cheers,
+> -roger
+> 
+> On 18/12/14 17:49, Roger Quadros wrote:
+>> There are quite a few hwmods that don't have sysconfig register and so
+>> _find_mpu_rt_port(oh) will return NULL thus preventing ready state check
+>> on those modules after the module is enabled.
 >>
+>> This can potentially cause a bus access error if the module is accessed
+>> before the module is ready.
 >>
->> On 12/18/2014 3:07 PM, Roopa Prabhu wrote:
->>>
->>> On 12/18/14, 11:21 AM, John Fastabend wrote:
->>>>
->>>> On 12/18/2014 10:14 AM, Roopa Prabhu wrote:
->>>>>
->>>>> On 12/18/14, 10:02 AM, Varlese, Marco wrote:
->>>>>>
->>>>>> Removed unnecessary content for ease of reading...
->>>>>>
->>>>>>>>>>>> +/* Switch Port Attributes section */
->>>>>>>>>>>> +
->>>>>>>>>>>> +enum {
->>>>>>>>>>>> +    IFLA_ATTR_UNSPEC,
->>>>>>>>>>>> +    IFLA_ATTR_LEARNING,
->>>>>>>>>>>
->>>>>>>>>>> Any reason you want learning here ?. This is covered as part  of
->>>>>>>>>>> the bridge setlink attributes.
->>>>>>>>>>>
->>>>>>>>>> Yes, because the user may _not_ want to go through a bridge
->>>>>>>>>> interface
->>>>>>>>>
->>>>>>>>> necessarily.
->>>>>>>>> But, the bridge setlink/getlink interface was changed to
->>>>>>>>> accommodate
->>>>>>>
->>>>>>> 'self'
->>>>>>>>>
->>>>>>>>> for exactly such cases.
->>>>>>>>> I kind of understand your case for the other attributes (these are
->>>>>>>>> per port settings that switch asics provide).
->>>>>>>>>
->>>>>>>>> However, i don't understand the reason to pull in bridge attributes
->>>>>>>>> here.
->>>>>>>>>
->>>>>>>> Maybe, I am missing something so you might help. The learning
->>>>>>>> attribute -
->>>>>>>
->>>>>>> in my case - it is like all other attributes: a port attribute (as
->>>>>>> you said, port
->>>>>>> settings that the switch provides per port).
->>>>>>>>
->>>>>>>> So, what I was saying is "why the user shall go through a bridge to
->>>>>>>> configure
->>>>>>>
->>>>>>> the learning attribute"? From my perspective, it is as any other
->>>>>>> attribute and
->>>>>>> as such configurable on the port.
->>>>>>>
->>>>>>> Thinking about this some more, i don't see why any of these
->>>>>>> attributes
->>>>>>> (except loopback. I dont understand the loopback attribute) cant be
->>>>>>> part of
->>>>>>> the birdge port attributes.
->>>>>>>
->>>>>>> With this we will end up adding l2 attributes in two places: the
->>>>>>> general link
->>>>>>> attributes and bridge attributes.
->>>>>>>
->>>>>>> And since we have gone down the path of using
->>>>>>> ndo_bridge_setlink/getlink
->>>>>>> with 'self'....we should stick to that for all l2 attributes.
->>>>>>>
->>>>>>> The idea of overloading ndo_bridge_set/getlink, was to have the same
->>>>>>> set of
->>>>>>> attributes but support both cases where the user wants to go through
->>>>>>> the
->>>>>>> bridge driver or directly to the switch port driver. So, you are not
->>>>>>> really going
->>>>>>> through the bridge driver if you use 'self' and
->>>>>>> ndo_bridge_setlink/getlink.
->>>>>>>
->>>>>> Roopa, one of the comments I got from Thomas Graf on my v1 patch
->>>>>> was that your patch and mine were supplementary ("I think Roopa's
->>>>>> patches are supplementary. Not all switchdev users will be backed
->>>>>> with a Linux Bridge. I therefore welcome your patches very
->>>>>> much")... I also understood by others that the patch made sense for
->>>>>> the same reason. I simply do not understand why these attributes
->>>>>> (and maybe others in the future) could not be configured directly
->>>>>> on a standard port but have to go through a bridge.
->>>>>>
->>>>> ok, i am very confused in that case. The whole moving of bridge
->>>>> attributes from the bridge driver to rtnetlink.c was to make the
->>>>> bridge attributes accessible to any driver who wants to set l2/bridge
->>>>> attributes on their switch ports. So, its unclear to me why we are
->>>>> doing this parallel thing again. This move to rtnetlink.c was done
->>>>> during the recent rocker support. so, maybe scott/jiri can elaborate
->>>>> more.
->>>>
->>>>
->>>> Not sure if this will add to the confusion or help. But you do not
->>>> need to have the bridge.ko loaded or netdev's attached to a bridge
->>>> to use the setlink/getlink ndo ops and netlink messages.
->>>>
->>>> This was intentionally done. Its already used with NIC devices to
->>>> configure embedded bridge settings such as VEB/VEPA.
->>>
->>>
->>> that helps my case, thanks.
->>
->>
->> So the user interface to set/get the per-port attributes will be via
->> 'bridge', not 'ip'
->>
->>     bridge link set dev sw0p1 port_attr bcast_flooding 1 self
->>     bridge link get dev sw0p1 port_attr bcast_flooding self
->
->
-> yes, l2 attributes.
->>
->>
->> We also need an interface to set per-switch attributes. Can this work?
->>     bridge link set dev sw0 sw_attr bcast_flooding 1 master
->> where sw0 is a bridge representing the hardware switch.
->
->
-> Not today. We discussed this @ LPC, and one way to do this would be to have
-> a device
-> representing the switch asic. This is in the works.
+>> Get rid of the redundant _find_mpu_rt_port() check from the _wait_target_ready()
+>> funcion for all the SoCs. The following PRCM register access that checks the
+>> module ready state has nothing to do with module's SYSCONFIG or mpu_rt_port.
+Yes, makes sense. This patch looks good to me.
+Tested this on AM437x-gp-evm.
+
+Tested-by: Lokesh Vutla <lokeshvutla@ti.com>
+
+May be good idea to warn every time if enabling of module is failed?
+Unrelated to this patch though.
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+index 4c6b7b2..db67b66 100644
+--- a/arch/arm/mach-omap2/omap_hwmod.c
++++ b/arch/arm/mach-omap2/omap_hwmod.c
+@@ -2243,7 +2243,7 @@ static int _enable(struct omap_hwmod *oh)
+ 		if (soc_ops.disable_module)
+ 			soc_ops.disable_module(oh);
+ 		_disable_clocks(oh);
+-		pr_debug("omap_hwmod: %s: _wait_target_ready: %d\n",
++		pr_warn("omap_hwmod: %s: _wait_target_ready failed : %d\n",
+ 			 oh->name, r);
+ 
+ 		if (oh->clkdm)
 
 
-Can I assume that on  platforms which house more than one asic (say
-two 24 port asics, interconnected via a 10G link or equivalent, to get
-a 48 port 'switch') , the 'rocker' driver (or similar) should expose
-them as a single set of ports, and not as two 'switch ports' ?
+Thanks and regards,
+Lokesh
 
->
->
+>>
+>> e.g. this fixes the below DCAN bus access error on AM437x-gp-evm.
+>>
+>> [   16.672978] ------------[ cut here ]------------
+>> [   16.677885] WARNING: CPU: 0 PID: 1580 at drivers/bus/omap_l3_noc.c:147 l3_interrupt_handler+0x234/0x35c()
+>> [   16.687946] 44000000.ocp:L3 Custom Error: MASTER M2 (64-bit) TARGET L4_PER_0 (Read): Data Access in User mode during Functional access
+>> [   16.700654] Modules linked in: xhci_hcd btwilink ti_vpfe dwc3 videobuf2_core ov2659 bluetooth v4l2_common videodev ti_am335x_adc kfifo_buf industrialio c_can_platform videobuf2_dma_contig media snd_soc_tlv320aic3x pixcir_i2c_ts c_can dc
+>> [   16.731144] CPU: 0 PID: 1580 Comm: rpc.statd Not tainted 3.14.26-02561-gf733aa036398 #180
+>> [   16.739747] Backtrace:
+>> [   16.742336] [<c0011108>] (dump_backtrace) from [<c00112a4>] (show_stack+0x18/0x1c)
+>> [   16.750285]  r6:00000093 r5:00000009 r4:eab5b8a8 r3:00000000
+>> [   16.756252] [<c001128c>] (show_stack) from [<c05a4418>] (dump_stack+0x20/0x28)
+>> [   16.763870] [<c05a43f8>] (dump_stack) from [<c0037120>] (warn_slowpath_common+0x6c/0x8c)
+>> [   16.772408] [<c00370b4>] (warn_slowpath_common) from [<c00371e4>] (warn_slowpath_fmt+0x38/0x40)
+>> [   16.781550]  r8:c05d1f90 r7:c0730844 r6:c0730448 r5:80080003 r4:ed0cd210
+>> [   16.788626] [<c00371b0>] (warn_slowpath_fmt) from [<c027fa94>] (l3_interrupt_handler+0x234/0x35c)
+>> [   16.797968]  r3:ed0cd480 r2:c0730508
+>> [   16.801747] [<c027f860>] (l3_interrupt_handler) from [<c0063758>] (handle_irq_event_percpu+0x54/0x1bc)
+>> [   16.811533]  r10:ed005600 r9:c084855b r8:0000002a r7:00000000 r6:00000000 r5:0000002a
+>> [   16.819780]  r4:ed0e6d80
+>> [   16.822453] [<c0063704>] (handle_irq_event_percpu) from [<c00638f0>] (handle_irq_event+0x30/0x40)
+>> [   16.831789]  r10:eb2b6938 r9:eb2b6960 r8:bf011420 r7:fa240100 r6:00000000 r5:0000002a
+>> [   16.840052]  r4:ed005600
+>> [   16.842744] [<c00638c0>] (handle_irq_event) from [<c00661d8>] (handle_fasteoi_irq+0x74/0x128)
+>> [   16.851702]  r4:ed005600 r3:00000000
+>> [   16.855479] [<c0066164>] (handle_fasteoi_irq) from [<c0063068>] (generic_handle_irq+0x28/0x38)
+>> [   16.864523]  r4:0000002a r3:c0066164
+>> [   16.868294] [<c0063040>] (generic_handle_irq) from [<c000ef60>] (handle_IRQ+0x38/0x8c)
+>> [   16.876612]  r4:c081c640 r3:00000202
+>> [   16.880380] [<c000ef28>] (handle_IRQ) from [<c00084f0>] (gic_handle_irq+0x30/0x5c)
+>> [   16.888328]  r6:eab5ba38 r5:c0804460 r4:fa24010c r3:00000100
+>> [   16.894303] [<c00084c0>] (gic_handle_irq) from [<c05a8d80>] (__irq_svc+0x40/0x50)
+>> [   16.902193] Exception stack(0xeab5ba38 to 0xeab5ba80)
+>> [   16.907499] ba20:                                                       00000000 00000006
+>> [   16.916108] ba40: fa1d0000 fa1d0008 ed3d3000 eab5bab4 ed3d3460 c0842af4 bf011420 eb2b6960
+>> [   16.924716] ba60: eb2b6938 eab5ba8c eab5ba90 eab5ba80 bf035220 bf07702c 600f0013 ffffffff
+>> [   16.933317]  r7:eab5ba6c r6:ffffffff r5:600f0013 r4:bf07702c
+>> [   16.939317] [<bf077000>] (c_can_plat_read_reg_aligned_to_16bit [c_can_platform]) from [<bf035220>] (c_can_get_berr_counter+0x38/0x64 [c_can])
+>> [   16.952696] [<bf0351e8>] (c_can_get_berr_counter [c_can]) from [<bf010294>] (can_fill_info+0x124/0x15c [can_dev])
+>> [   16.963480]  r5:ec8c9740 r4:ed3d3000
+>> [   16.967253] [<bf010170>] (can_fill_info [can_dev]) from [<c0502fa8>] (rtnl_fill_ifinfo+0x58c/0x8fc)
+>> [   16.976749]  r6:ec8c9740 r5:ed3d3000 r4:eb2b6780
+>> [   16.981613] [<c0502a1c>] (rtnl_fill_ifinfo) from [<c0503408>] (rtnl_dump_ifinfo+0xf0/0x1dc)
+>> [   16.990401]  r10:ec8c9740 r9:00000000 r8:00000000 r7:00000000 r6:ebd4d1b4 r5:ed3d3000
+>> [   16.998671]  r4:00000000
+>> [   17.001342] [<c0503318>] (rtnl_dump_ifinfo) from [<c050e6e4>] (netlink_dump+0xa8/0x1e0)
+>> [   17.009772]  r10:00000000 r9:00000000 r8:c0503318 r7:ebf3e6c0 r6:ebd4d1b4 r5:ec8c9740
+>> [   17.018050]  r4:ebd4d000
+>> [   17.020714] [<c050e63c>] (netlink_dump) from [<c050ec10>] (__netlink_dump_start+0x104/0x154)
+>> [   17.029591]  r6:eab5bd34 r5:ec8c9980 r4:ebd4d000
+>> [   17.034454] [<c050eb0c>] (__netlink_dump_start) from [<c0505604>] (rtnetlink_rcv_msg+0x110/0x1f4)
+>> [   17.043778]  r7:00000000 r6:ec8c9980 r5:00000f40 r4:ebf3e6c0
+>> [   17.049743] [<c05054f4>] (rtnetlink_rcv_msg) from [<c05108e8>] (netlink_rcv_skb+0xb4/0xc8)
+>> [   17.058449]  r8:eab5bdac r7:ec8c9980 r6:c05054f4 r5:ec8c9980 r4:ebf3e6c0
+>> [   17.065534] [<c0510834>] (netlink_rcv_skb) from [<c0504134>] (rtnetlink_rcv+0x24/0x2c)
+>> [   17.073854]  r6:ebd4d000 r5:00000014 r4:ec8c9980 r3:c0504110
+>> [   17.079846] [<c0504110>] (rtnetlink_rcv) from [<c05102ac>] (netlink_unicast+0x180/0x1ec)
+>> [   17.088363]  r4:ed0c6800 r3:c0504110
+>> [   17.092113] [<c051012c>] (netlink_unicast) from [<c0510670>] (netlink_sendmsg+0x2ac/0x380)
+>> [   17.100813]  r10:00000000 r8:00000008 r7:ec8c9980 r6:ebd4d000 r5:eab5be70 r4:eab5bee4
+>> [   17.109083] [<c05103c4>] (netlink_sendmsg) from [<c04dfdb4>] (sock_sendmsg+0x90/0xb0)
+>> [   17.117305]  r10:00000000 r9:eab5a000 r8:becdda3c r7:0000000c r6:ea978400 r5:eab5be70
+>> [   17.125563]  r4:c05103c4
+>> [   17.128225] [<c04dfd24>] (sock_sendmsg) from [<c04e1c28>] (SyS_sendto+0xb8/0xdc)
+>> [   17.136001]  r6:becdda5c r5:00000014 r4:ecd37040
+>> [   17.140876] [<c04e1b70>] (SyS_sendto) from [<c000e680>] (ret_fast_syscall+0x0/0x30)
+>> [   17.148923]  r10:00000000 r8:c000e804 r7:00000122 r6:becdda5c r5:0000000c r4:becdda5c
+>> [   17.157169] ---[ end trace 2b71e15b38f58bad ]---
+>>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap_hwmod.c | 12 ------------
+>>  1 file changed, 12 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+>> index 716247e..3afcc65 100644
+>> --- a/arch/arm/mach-omap2/omap_hwmod.c
+>> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+>> @@ -2943,9 +2943,6 @@ static int _omap2xxx_wait_target_ready(struct omap_hwmod *oh)
+>>  	if (oh->flags & HWMOD_NO_IDLEST)
+>>  		return 0;
+>>  
+>> -	if (!_find_mpu_rt_port(oh))
+>> -		return 0;
+>> -
+>>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
+>>  
+>>  	return omap2xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
+>> @@ -2970,9 +2967,6 @@ static int _omap3xxx_wait_target_ready(struct omap_hwmod *oh)
+>>  	if (oh->flags & HWMOD_NO_IDLEST)
+>>  		return 0;
+>>  
+>> -	if (!_find_mpu_rt_port(oh))
+>> -		return 0;
+>> -
+>>  	/* XXX check module SIDLEMODE, hardreset status, enabled clocks */
+>>  
+>>  	return omap3xxx_cm_wait_module_ready(oh->prcm.omap2.module_offs,
+>> @@ -2997,9 +2991,6 @@ static int _omap4_wait_target_ready(struct omap_hwmod *oh)
+>>  	if (oh->flags & HWMOD_NO_IDLEST || !oh->clkdm)
+>>  		return 0;
+>>  
+>> -	if (!_find_mpu_rt_port(oh))
+>> -		return 0;
+>> -
+>>  	/* XXX check module SIDLEMODE, hardreset status */
+>>  
+>>  	return omap4_cminst_wait_module_ready(oh->clkdm->prcm_partition,
+>> @@ -3025,9 +3016,6 @@ static int _am33xx_wait_target_ready(struct omap_hwmod *oh)
+>>  	if (oh->flags & HWMOD_NO_IDLEST)
+>>  		return 0;
+>>  
+>> -	if (!_find_mpu_rt_port(oh))
+>> -		return 0;
+>> -
+>>  	/* XXX check module SIDLEMODE, hardreset status */
+>>  
+>>  	return am33xx_cm_wait_module_ready(oh->clkdm->cm_inst,
+>>
+> 
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
