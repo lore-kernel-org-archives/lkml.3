@@ -1,929 +1,1654 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaLSOJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:09:07 -0500
-Received: from mail-bn1bon0067.outbound.protection.outlook.com ([157.56.111.67]:21088
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752707AbaLSOJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:09:01 -0500
-Date: Fri, 19 Dec 2014 15:08:43 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753178AbaLSOJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:09:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:46160 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752324AbaLSOJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:09:26 -0500
+Date: Fri, 19 Dec 2014 06:08:03 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-74afab7af7d9aeba86b3b8e39670cf7d0058f6df@git.kernel.org>
+Cc: mingo@kernel.org, gregkh@linuxfoundation.org, rjw@rjwysocki.net,
+        konrad.wilk@oracle.com, benh@kernel.crashing.org, tony.luck@intel.com,
+        linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        rdunlap@infradead.org, bhelgaas@google.com, jiang.liu@linux.intel.com,
+        prarit@redhat.com, tglx@linutronix.de, yinghai@kernel.org,
+        joro@8bytes.org, bp@alien8.de
+Reply-To: bp@alien8.de, joro@8bytes.org, bhelgaas@google.com,
+        rdunlap@infradead.org, jiang.liu@linux.intel.com, prarit@redhat.com,
+        yinghai@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        grant.likely@linaro.org, hpa@zytor.com, rjw@rjwysocki.net,
+        benh@kernel.crashing.org, konrad.wilk@oracle.com, tony.luck@intel.com,
+        mingo@kernel.org, gregkh@linuxfoundation.org
+In-Reply-To: <1414397531-28254-10-git-send-email-jiang.liu@linux.intel.com>
+References: <1414397531-28254-10-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq:
+  Move local APIC related code from io_apic.c into vector.c
+Git-Commit-ID: 74afab7af7d9aeba86b3b8e39670cf7d0058f6df
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: <atull@opensource.altera.com>, <gregkh@linuxfoundation.org>,
-        <jgunthorpe@obsidianresearch.com>, <hpa@zytor.com>, <monstr@monstr.eu>,
-        <michal.simek@xilinx.com>, <rdunlap@infradead.org>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <pantelis.antoniou@konsulko.com>, <robh+dt@kernel.org>,
-        <grant.likely@linaro.org>, <iws@ovro.caltech.edu>,
-        <linux-doc@vger.kernel.org>, <pavel@denx.de>, <broonie@kernel.org>,
-        <philip@balister.org>, <rubini@gnudd.com>, <s.trumtrar@pengutronix.de>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v6 3/4] staging: fpga manager: framework core
-References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
- <1418941748-16111-4-git-send-email-atull@opensource.altera.com>
-In-Reply-To: <1418941748-16111-4-git-send-email-atull@opensource.altera.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.006
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <0a1e30e4aa864dbb944c74c916e98f0d@BN1BFFO11FD041.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(24454002)(22564002)(164054003)(377454003)(199003)(479174004)(51704005)(4396001)(2201001)(19580395003)(19580405001)(83506001)(87936001)(92566001)(6806004)(65806001)(65956001)(77096005)(108616004)(92726002)(99396003)(2950100001)(106466001)(120916001)(15975445007)(107046002)(46102003)(104016003)(575784001)(86362001)(50986999)(76176999)(64706001)(33646002)(21056001)(31966008)(54356999)(23746002)(74316001)(62966003)(20776003)(77156002)(47776003)(50466002)(64126003)(65826006)(107986001)(2004002)(24736002)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1BFFO11HUB048;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB048;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1BFFO11HUB048;
-X-Forefront-PRVS: 0430FA5CB7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1BFFO11HUB048;
-X-OriginatorOrg: xilinx.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2014 11:29 PM, atull@opensource.altera.com wrote:
-> From: Alan Tull <atull@opensource.altera.com>
-> 
-> Supports standard ops for low level FPGA drivers.
-> Various manufacturors' FPGAs can be supported by adding low
-> level drivers.  Each driver needs to register its ops
-> using fpga_mgr_register().
-> 
-> Exports methods of doing operations to program  FPGAs. These
-> should be sufficient for individual drivers to request FPGA
-> programming directly if desired.
-> 
-> Adds a sysfs interface.  The sysfs interface can be compiled out
-> where desired in production builds.
-> 
-> Resume is supported by calling low level driver's resume
-> function, then reloading the firmware image.
-> 
-> The following are exported as GPL:
-> * fpga_mgr_reset
->    Reset the FGPA.
-> 
-> * fpga_mgr_write
->    Write a image (in buffer) to the FPGA.
-> 
-> * fpga_mgr_firmware_write
->    Request firmware by file name and write it to the FPGA.
-> 
-> * fpga_mgr_name
->    Get name of FPGA manager.
-> 
-> * fpga_mgr_state
->    Get a state of framework as a string.
-> 
-> * fpga_mgr_register and fpga_mgr_remove
->    Register/unregister low level fpga manager driver.
-> 
-> The following sysfs files are created:
-> * /sys/class/fpga_manager/<fpga>/name
->   Name of low level driver.
-> 
-> * /sys/class/fpga_manager/<fpga>/firmware
->   Name of FPGA image file to load using firmware class.
->   $ echo image.rbf > /sys/class/fpga_manager/<fpga>/firmware
-> 
->   read: read back name of image file previous loaded
->   $ cat /sys/class/fpga_manager/<fpga>/firmware
-> 
-> * /sys/class/fpga_manager/<fpga>/reset
->   reset the FPGA
->   $ echo 1 > /sys/class/fpga_manager/<fpga>/reset
-> 
-> * /sys/class/fpga_manager/<fpga>/state
->   State of fpga framework state machine
-> 
-> Signed-off-by: Alan Tull <atull@opensource.altera.com>
-> ---
-> v2: s/mangager/manager/
->     check for invalid request_nr
->     add fpga reset interface
->     rework the state code
->     remove FPGA_MGR_FAIL flag
->     add _ERR states to fpga manager states enum
->     low level state op now returns a state enum value
->     initialize framework state from driver state op
->     remove unused fpga read stuff
->     merge sysfs.c into fpga-mgr.c
->     move suspend/resume from bus.c to fpga-mgr.c
-> 
-> v3: Add struct device to fpga_manager (not as a pointer)
->     Add to_fpga_manager
->     Don't get irq in fpga-mgr.c (let low level driver do it)
->     remove from struct fpga_manager: nr, np, parent
->     get rid of fpga_mgr_get_new_minor()
->     simplify fpga_manager_register:
->       reorder parameters
->       use dev instead of pdev
->     get rid of code that used to make more sense when this
->       was a char driver, don't alloc_chrdev_region
->     use a mutex instead of flags
-> 
-> v4: Move to drivers/staging
-> 
-> v5: Make some things be static
->     Kconfig: add 'if FPGA'
->     Makefile: s/fpga-mgr-core.o/fpga-mgr.o/
->     clean up includes
->     use enum fpga_mgr_states instead of int
->     static const char *state_str
->     use DEVICE_ATTR_RO/RW/WO and ATTRIBUTE_GROUPS
->     return -EINVAL instead of BUG_ON
->     move ida_simple_get after kzalloc
->     clean up fpga_mgr_remove
->     fpga-mgr.h: remove '#if IS_ENABLED(CONFIG_FPGA)'
->     add kernel-doc documentation
->     Move header to new include/linux/fpga folder
->     static const struct fpga_mgr_ops
->     dev_info msg simplified
-> 
-> v6: no statically allocated string for image_name
->     kernel doc fixes
->     changes regarding enabling SYSFS for fpga mgr
->     Makefile cleanup
-> ---
->  drivers/staging/Kconfig         |    2 +
->  drivers/staging/Makefile        |    1 +
->  drivers/staging/fpga/Kconfig    |   24 ++
->  drivers/staging/fpga/Makefile   |    8 +
->  drivers/staging/fpga/fpga-mgr.c |  551 +++++++++++++++++++++++++++++++++++++++
->  include/linux/fpga/fpga-mgr.h   |  124 +++++++++
->  6 files changed, 710 insertions(+)
->  create mode 100644 drivers/staging/fpga/Kconfig
->  create mode 100644 drivers/staging/fpga/Makefile
->  create mode 100644 drivers/staging/fpga/fpga-mgr.c
->  create mode 100644 include/linux/fpga/fpga-mgr.h
-> 
-> diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-> index 4690ae9..4338a4c 100644
-> --- a/drivers/staging/Kconfig
-> +++ b/drivers/staging/Kconfig
-> @@ -108,4 +108,6 @@ source "drivers/staging/skein/Kconfig"
->  
->  source "drivers/staging/unisys/Kconfig"
->  
-> +source "drivers/staging/fpga/Kconfig"
-> +
->  endif # STAGING
-> diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-> index c780a0e..43654a2 100644
-> --- a/drivers/staging/Makefile
-> +++ b/drivers/staging/Makefile
-> @@ -46,3 +46,4 @@ obj-$(CONFIG_MTD_SPINAND_MT29F)	+= mt29f_spinand/
->  obj-$(CONFIG_GS_FPGABOOT)	+= gs_fpgaboot/
->  obj-$(CONFIG_CRYPTO_SKEIN)	+= skein/
->  obj-$(CONFIG_UNISYSSPAR)	+= unisys/
-> +obj-$(CONFIG_FPGA)		+= fpga/
-> diff --git a/drivers/staging/fpga/Kconfig b/drivers/staging/fpga/Kconfig
-> new file mode 100644
-> index 0000000..89ebafc
-> --- /dev/null
-> +++ b/drivers/staging/fpga/Kconfig
-> @@ -0,0 +1,24 @@
-> +#
-> +# FPGA framework configuration
-> +#
-> +
-> +menu "FPGA devices"
-> +
-> +config FPGA
-> +	tristate "FPGA Framework"
-> +	help
-> +	  Say Y here if you want support for configuring FPGAs from the
-> +	  kernel.  The FPGA framework adds a FPGA manager class and FPGA
-> +	  manager drivers.
-> +
-> +if FPGA
-> +
-> +config FPGA_MGR_SYSFS
-> +	bool "FPGA Manager SysFS Interface"
-> +	depends on SYSFS
-> +	help
-> +	  FPGA Manager SysFS interface.
-> +
-> +endif # FPGA
-> +
-> +endmenu
-> diff --git a/drivers/staging/fpga/Makefile b/drivers/staging/fpga/Makefile
-> new file mode 100644
-> index 0000000..3313c52
-> --- /dev/null
-> +++ b/drivers/staging/fpga/Makefile
-> @@ -0,0 +1,8 @@
-> +#
-> +# Makefile for the fpga framework and fpga manager drivers.
-> +#
-> +
-> +# Core FPGA Manager Framework
-> +obj-$(CONFIG_FPGA)			+= fpga-mgr.o
-> +
-> +# FPGA Manager Drivers
-> diff --git a/drivers/staging/fpga/fpga-mgr.c b/drivers/staging/fpga/fpga-mgr.c
-> new file mode 100644
-> index 0000000..daf28b5
-> --- /dev/null
-> +++ b/drivers/staging/fpga/fpga-mgr.c
-> @@ -0,0 +1,551 @@
-> +/*
-> + * FPGA Manager Core
-> + *
-> + *  Copyright (C) 2013-2014 Altera Corporation
-> + *
-> + * With code from the mailing list:
-> + * Copyright (C) 2013 Xilinx, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/delay.h>
-> +#include <linux/firmware.h>
-> +#include <linux/fpga/fpga-mgr.h>
-> +#include <linux/idr.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/pm.h>
-> +#include <linux/slab.h>
-> +
-> +static DEFINE_MUTEX(fpga_mgr_mutex);
-> +static DEFINE_IDA(fpga_mgr_ida);
-> +static struct class *fpga_mgr_class;
-> +
-> +static LIST_HEAD(fpga_manager_list);
-> +
-> +/**
-> + * fpga_mgr_low_level_state - get FPGA state from low level driver
-> + * @mgr: fpga manager
-> + *
-> + * This will be used to initialize framework state
-> + *
-> + * Return: an enum value for state.
-> + */
-> +static enum fpga_mgr_states fpga_mgr_low_level_state(struct fpga_manager *mgr)
-> +{
-> +	if (!mgr || !mgr->mops || !mgr->mops->state)
-> +		return FPGA_MGR_STATE_UNKNOWN;
-> +
-> +	return mgr->mops->state(mgr);
-> +}
-> +
-> +/**
-> + * __fpga_mgr_reset - unlocked version of fpga_mgr_reset
-> + * @mgr: fpga manager
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +static int __fpga_mgr_reset(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (!mgr->mops->reset)
-> +		return -EINVAL;
-> +
-> +	ret = mgr->mops->reset(mgr);
-> +
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +	kfree(mgr->image_name);
-> +	mgr->image_name = NULL;
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * fpga_mgr_reset - reset the fpga
-> + * @mgr: fpga manager
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +int fpga_mgr_reset(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	ret = __fpga_mgr_reset(mgr);
-> +
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_reset);
-> +
-> +/**
-> + * __fpga_mgr_stage_init - prepare fpga for configuration
-> + * @mgr: fpga manager
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +static int __fpga_mgr_stage_write_init(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (mgr->mops->write_init) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_INIT;
-> +		ret = mgr->mops->write_init(mgr);
-> +		if (ret) {
-> +			mgr->state = FPGA_MGR_STATE_WRITE_INIT_ERR;
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * __fpga_mgr_stage_write - write buffer to fpga
-> + * @mgr: fpga manager
-> + * @buf: buffer contain fpga image
-> + * @count: byte count of buf
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +static int __fpga_mgr_stage_write(struct fpga_manager *mgr, const char *buf,
-> +				  size_t count)
-> +{
-> +	int ret;
-> +
-> +	mgr->state = FPGA_MGR_STATE_WRITE;
-> +	ret = mgr->mops->write(mgr, buf, count);
-> +	if (ret) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_ERR;
-> +		return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * __fpga_mgr_stage_complete - after writing, place fpga in operating state
-> + * @mgr: fpga manager
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +static int __fpga_mgr_stage_write_complete(struct fpga_manager *mgr)
-> +{
-> +	int ret;
-> +
-> +	if (mgr->mops->write_complete) {
-> +		mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE;
-> +		ret = mgr->mops->write_complete(mgr);
-> +		if (ret) {
-> +			mgr->state = FPGA_MGR_STATE_WRITE_COMPLETE_ERR;
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * __fpga_mgr_write - whole fpga image write cycle
-> + * @mgr: fpga manager
-> + * @buf: buffer contain fpga image
-> + * @count: byte count of buf
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +static int __fpga_mgr_write(struct fpga_manager *mgr, const char *buf,
-> +			    size_t count)
-> +{
-> +	int ret;
-> +
-> +	ret = __fpga_mgr_stage_write_init(mgr);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = __fpga_mgr_stage_write(mgr, buf, count);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return __fpga_mgr_stage_write_complete(mgr);
-> +}
-> +
-> +/**
-> + * fpga_mgr_write - do complete fpga image write cycle
-> + * @mgr: fpga manager
-> + * @buf: buffer contain fpga image
-> + * @count: byte count of buf
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count)
-> +{
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	dev_info(&mgr->dev, "writing buffer to %s\n", mgr->name);
-> +
-> +	ret = __fpga_mgr_write(mgr, buf, count);
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_write);
-> +
-> +/**
-> + * fpga_mgr_firmware_write - request firmware and write to fpga
-> + * @mgr: fpga manager
-> + * @image_name: name of image file on the firmware search path
-> + *
-> + * Grab lock, request firmware, and write out to the FPGA.
-> + * Update the state before each step to provide info on what step
-> + * failed if there is a failure.
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name)
-> +{
-> +	const struct firmware *fw;
-> +	int ret;
-> +
-> +	if (!mutex_trylock(&mgr->lock))
-> +		return -EBUSY;
-> +
-> +	dev_info(&mgr->dev, "writing %s to %s\n", image_name, mgr->name);
-> +
-> +	mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ;
-> +	ret = request_firmware(&fw, image_name, &mgr->dev);
-> +	if (ret) {
-> +		mgr->state = FPGA_MGR_STATE_FIRMWARE_REQ_ERR;
-> +		goto fw_wr_exit;
-> +	}
-> +
-> +	ret = __fpga_mgr_write(mgr, fw->data, fw->size);
-> +	if (ret)
-> +		goto fw_wr_exit;
-> +
-> +	kfree(mgr->image_name);
-> +	mgr->image_name = kstrdup(image_name, GFP_KERNEL);
-> +
-> +fw_wr_exit:
-> +	mutex_unlock(&mgr->lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_firmware_write);
-> +
-> +/**
-> + * fpga_mgr_name - returns the fpga manager name
-> + * @mgr: fpga manager
-> + * @buf: buffer to receive the name
-> + *
-> + * Return: number of chars in buf excluding null byte on success;
-> + * error code otherwise.
-> + */
-> +int fpga_mgr_name(struct fpga_manager *mgr, char *buf)
-> +{
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	return sprintf(buf, "%s\n", mgr->name);
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_name);
-> +
-> +static const char * const state_str[] = {
-> +	[FPGA_MGR_STATE_UNKNOWN] =		"unknown",
-> +	[FPGA_MGR_STATE_POWER_OFF] =		"power_off",
-> +	[FPGA_MGR_STATE_POWER_UP] =		"power_up",
-> +	[FPGA_MGR_STATE_RESET] =		"reset",
-> +
-> +	/* write sequence */
-> +	[FPGA_MGR_STATE_FIRMWARE_REQ] =		"firmware_request",
-> +	[FPGA_MGR_STATE_FIRMWARE_REQ_ERR] =	"firmware_request_err",
-> +	[FPGA_MGR_STATE_WRITE_INIT] =		"write_init",
-> +	[FPGA_MGR_STATE_WRITE_INIT_ERR] =	"write_init_err",
-> +	[FPGA_MGR_STATE_WRITE] =		"write",
-> +	[FPGA_MGR_STATE_WRITE_ERR] =		"write_err",
-> +	[FPGA_MGR_STATE_WRITE_COMPLETE] =	"write_complete",
-> +	[FPGA_MGR_STATE_WRITE_COMPLETE_ERR] =	"write_complete_err",
-> +
-> +	[FPGA_MGR_STATE_OPERATING] =		"operating",
-> +};
-> +
-> +/*
-> + * class attributes
-> + */
-> +static ssize_t name_show(struct device *dev,
-> +			 struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	return fpga_mgr_name(mgr, buf);
-> +}
-> +
-> +static ssize_t state_show(struct device *dev,
-> +			  struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	return sprintf(buf, "%s\n", state_str[mgr->state]);
-> +}
-> +
-> +static ssize_t firmware_show(struct device *dev,
-> +			     struct device_attribute *attr, char *buf)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	if (!mgr->image_name)
-> +		return 0;
-> +
-> +	return sprintf(buf, "%s\n", mgr->image_name);
-> +}
-> +
-> +static ssize_t firmware_store(struct device *dev,
-> +			      struct device_attribute *attr,
-> +			      const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	unsigned int len;
-> +	char image_name[NAME_MAX];
-> +	int ret;
-> +
-> +	/* lose terminating \n */
-> +	strcpy(image_name, buf);
-> +	len = strlen(image_name);
-> +	if (image_name[len - 1] == '\n')
-> +		image_name[len - 1] = 0;
-> +
-> +	ret = fpga_mgr_firmware_write(mgr, image_name);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return count;
-> +}
-> +
-> +static ssize_t reset_store(struct device *dev,
-> +			   struct device_attribute *attr,
-> +			   const char *buf, size_t count)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	unsigned long val;
-> +	int ret;
-> +
-> +	ret = kstrtoul(buf, 0, &val);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (val == 1) {
-> +		ret = fpga_mgr_reset(mgr);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		return -EINVAL;
-> +	}
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR_RO(name);
-> +static DEVICE_ATTR_RO(state);
-> +static DEVICE_ATTR_RW(firmware);
-> +static DEVICE_ATTR_WO(reset);
-> +
-> +static struct attribute *fpga_mgr_attrs[] = {
-> +	&dev_attr_name.attr,
-> +	&dev_attr_state.attr,
-> +	&dev_attr_firmware.attr,
-> +	&dev_attr_reset.attr,
-> +	NULL,
-> +};
-> +ATTRIBUTE_GROUPS(fpga_mgr);
-> +
-> +static int fpga_mgr_suspend(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	if (mgr->mops->suspend)
-> +		return mgr->mops->suspend(mgr);
-> +
-> +	return 0;
-> +}
-> +
-> +static int fpga_mgr_resume(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +	int ret = 0;
-> +
-> +	if (!mgr)
-> +		return -ENODEV;
-> +
-> +	if (mgr->mops->resume) {
-> +		ret = mgr->mops->resume(mgr);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	if (strlen(mgr->image_name) != 0)
-> +		fpga_mgr_firmware_write(mgr, mgr->image_name);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct dev_pm_ops fpga_mgr_dev_pm_ops = {
-> +	.suspend	= fpga_mgr_suspend,
-> +	.resume		= fpga_mgr_resume,
-> +};
-> +
-> +static void fpga_mgr_dev_release(struct device *dev)
-> +{
-> +	struct fpga_manager *mgr = to_fpga_manager(dev);
-> +
-> +	dev_dbg(dev, "releasing '%s'\n", mgr->name);
-> +
-> +	if (mgr->mops->fpga_remove)
-> +		mgr->mops->fpga_remove(mgr);
-> +
-> +	mgr->mops = NULL;
-> +
-> +	mutex_lock(&fpga_mgr_mutex);
-> +	list_del(&mgr->list);
-> +	mutex_unlock(&fpga_mgr_mutex);
-> +
-> +	ida_simple_remove(&fpga_mgr_ida, mgr->dev.id);
-> +	kfree(mgr->image_name);
-> +	kfree(mgr);
-> +}
-> +
-> +/**
-> + * fpga_mgr_register - register a low level fpga manager driver
-> + * @dev: fpga manager device
-> + * @name: fpga manager name
-> + * @mops: pointer to structure of fpga manager ops
-> + * @priv: fpga manager private data
-> + *
-> + * Return: 0 on success, error code otherwise.
-> + */
-> +int fpga_mgr_register(struct device *dev, const char *name,
-> +		      const struct fpga_manager_ops *mops,
-> +		      void *priv)
-> +{
-> +	struct fpga_manager *mgr;
-> +	int id, ret;
-> +
-> +	if (!mops || !name || !strlen(name))
-> +		return -EINVAL;
-> +
-> +	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
-> +	if (!mgr)
-> +		return -ENOMEM;
-> +
-> +	id = ida_simple_get(&fpga_mgr_ida, 0, 0, GFP_KERNEL);
-> +	if (id < 0)
-> +		return id;
-> +
-> +	mutex_init(&mgr->lock);
-> +
-> +	mgr->name = name;
-> +	mgr->mops = mops;
-> +	mgr->priv = priv;
-> +
-> +	/*
-> +	 * Initialize framework state by requesting low level driver read state
-> +	 * from device.  FPGA may be in reset mode or may have been programmed
-> +	 * by bootloader or EEPROM.
-> +	 */
-> +	mgr->state = fpga_mgr_low_level_state(mgr);
-> +
-> +	INIT_LIST_HEAD(&mgr->list);
-> +	mutex_lock(&fpga_mgr_mutex);
-> +	list_add(&mgr->list, &fpga_manager_list);
-> +	mutex_unlock(&fpga_mgr_mutex);
-> +
-> +	device_initialize(&mgr->dev);
-> +	mgr->dev.class = fpga_mgr_class;
-> +	mgr->dev.parent = dev;
-> +	mgr->dev.of_node = dev->of_node;
-> +	mgr->dev.release = fpga_mgr_dev_release;
-> +	mgr->dev.id = id;
-> +	dev_set_name(&mgr->dev, "%d", id);
-> +	ret = device_add(&mgr->dev);
-> +	if (ret)
-> +		goto error_device;
-> +
-> +	dev_info(&mgr->dev, "%s registered\n", mgr->name);
-> +
-> +	return 0;
-> +
-> +error_device:
-> +	ida_simple_remove(&fpga_mgr_ida, id);
-> +	kfree(mgr);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_register);
-> +
-> +/**
-> + * fpga_mgr_remove - remove a low level fpga manager driver
-> + * @pdev: fpga manager device
-> + */
-> +void fpga_mgr_remove(struct platform_device *pdev)
-> +{
-> +	struct list_head *tmp;
-> +	struct fpga_manager *mgr = NULL;
-> +
-> +	list_for_each(tmp, &fpga_manager_list) {
-> +		mgr = list_entry(tmp, struct fpga_manager, list);
-> +		if (mgr->dev.parent == &pdev->dev) {
-> +			device_unregister(&mgr->dev);
-> +			break;
-> +		}
-> +	}
-> +}
-> +EXPORT_SYMBOL_GPL(fpga_mgr_remove);
-> +
-> +static int __init fpga_mgr_dev_init(void)
-> +{
-> +	pr_info("FPGA Manager framework driver\n");
-> +
-> +	fpga_mgr_class = class_create(THIS_MODULE, "fpga_manager");
-> +	if (IS_ERR(fpga_mgr_class))
-> +		return PTR_ERR(fpga_mgr_class);
-> +
-> +	if (IS_ENABLED(CONFIG_FPGA_MGR_SYSFS))
-> +		fpga_mgr_class->dev_groups = fpga_mgr_groups;
-> +
-> +	fpga_mgr_class->pm = &fpga_mgr_dev_pm_ops;
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit fpga_mgr_dev_exit(void)
-> +{
-> +	class_destroy(fpga_mgr_class);
-> +	ida_destroy(&fpga_mgr_ida);
-> +}
-> +
-> +MODULE_AUTHOR("Alan Tull <atull@opensource.altera.com>");
-> +MODULE_DESCRIPTION("FPGA Manager framework driver");
-> +MODULE_LICENSE("GPL v2");
-> +
-> +subsys_initcall(fpga_mgr_dev_init);
-> +module_exit(fpga_mgr_dev_exit);
-> diff --git a/include/linux/fpga/fpga-mgr.h b/include/linux/fpga/fpga-mgr.h
-> new file mode 100644
-> index 0000000..dcf2c68
-> --- /dev/null
-> +++ b/include/linux/fpga/fpga-mgr.h
-> @@ -0,0 +1,124 @@
-> +/*
-> + * FPGA Framework
-> + *
-> + *  Copyright (C) 2013-2014 Altera Corporation
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/device.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/limits.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +
-> +#ifndef _LINUX_FPGA_MGR_H
-> +#define _LINUX_FPGA_MGR_H
-> +
-> +struct fpga_manager;
-> +
-> +/**
-> + * struct fpga_manager_ops - ops for low level fpga manager drivers
-> + * @state: returns an enum value of the FPGA's state
-> + * @reset: put FPGA into reset state
-> + * @write_init: prepare the FPGA to receive confuration data
-> + * @write: write count bytes of configuration data to the FPGA
-> + * @write_complete: set FPGA to operating state after writing is done
-> + * @fpga_remove: optional: Set FPGA into a specific state during driver remove
-> + * @suspend: optional: low level fpga suspend
-> + * @resume: optional: low level fpga resume
-> + *
-> + * fpga_manager_ops are the low level functions implemented by a specific
-> + * fpga manager driver.  The optional ones are tested for NULL before being
-> + * called, so leaving them out is fine.
-> + */
-> +struct fpga_manager_ops {
-> +	enum fpga_mgr_states (*state)(struct fpga_manager *mgr);
-> +	int (*reset)(struct fpga_manager *mgr);
-> +	int (*write_init)(struct fpga_manager *mgr);
-> +	int (*write)(struct fpga_manager *mgr, const char *buf, size_t count);
-> +	int (*write_complete)(struct fpga_manager *mgr);
-> +	void (*fpga_remove)(struct fpga_manager *mgr);
-> +	int (*suspend)(struct fpga_manager *mgr);
-> +	int (*resume)(struct fpga_manager *mgr);
-> +};
-> +
-> +/**
-> + * enum fpga_mgr_states - fpga framework states
-> + * @FPGA_MGR_STATE_UNKNOWN: can't determine state
-> + * @FPGA_MGR_STATE_POWER_OFF: FPGA power is off
-> + * @FPGA_MGR_STATE_POWER_UP: FPGA reports power is up
-> + * @FPGA_MGR_STATE_RESET: FPGA in reset state
-> + * @FPGA_MGR_STATE_FIRMWARE_REQ: firmware request in progress
-> + * @FPGA_MGR_STATE_FIRMWARE_REQ_ERR: firmware request failed
-> + * @FPGA_MGR_STATE_WRITE_INIT: preparing FPGA for programming
-> + * @FPGA_MGR_STATE_WRITE_INIT_ERR: Error during WRITE_INIT stage
-> + * @FPGA_MGR_STATE_WRITE: writing image to FPGA
-> + * @FPGA_MGR_STATE_WRITE_ERR: Error while writing FPGA
-> + * @FPGA_MGR_STATE_WRITE_COMPLETE: Doing post programming steps
-> + * @FPGA_MGR_STATE_WRITE_COMPLETE_ERR: Error during WRITE_COMPLETE
-> + * @FPGA_MGR_STATE_OPERATING: FPGA is programmed and operating
-> + */
-> +enum fpga_mgr_states {
-> +	FPGA_MGR_STATE_UNKNOWN,
-> +	FPGA_MGR_STATE_POWER_OFF,
-> +	FPGA_MGR_STATE_POWER_UP,
-> +	FPGA_MGR_STATE_RESET,
-> +
-> +	/* write sequence */
-> +	FPGA_MGR_STATE_FIRMWARE_REQ,
-> +	FPGA_MGR_STATE_FIRMWARE_REQ_ERR,
-> +	FPGA_MGR_STATE_WRITE_INIT,
-> +	FPGA_MGR_STATE_WRITE_INIT_ERR,
-> +	FPGA_MGR_STATE_WRITE,
-> +	FPGA_MGR_STATE_WRITE_ERR,
-> +	FPGA_MGR_STATE_WRITE_COMPLETE,
-> +	FPGA_MGR_STATE_WRITE_COMPLETE_ERR,
-> +
-> +	FPGA_MGR_STATE_OPERATING,
-> +};
-> +
-> +/**
-> + * struct fpga_manager - fpga manager structure
-> + * @name: name of low level fpga manager
-> + * @dev: fpga manager device
-> + * @list: entry in list of all fpga managers
-> + * @lock: lock on calls to fpga manager ops
-> + * @state: state of fpga manager
-> + * @image_name: name of fpga image file if any
-> + * @mops: pointer to struct of fpga manager ops
-> + * @priv: low level driver private date
-> + */
-> +struct fpga_manager {
-> +	const char *name;
-> +	struct device dev;
-> +	struct list_head list;
-> +	struct mutex lock;	/* lock on calls to ops */
-> +	enum fpga_mgr_states state;
-> +	char *image_name;
-> +
-> +	const struct fpga_manager_ops *mops;
-> +	void *priv;
-> +};
-> +
-> +#define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
-> +
-> +int fpga_mgr_firmware_write(struct fpga_manager *mgr, const char *image_name);
-> +int fpga_mgr_write(struct fpga_manager *mgr, const char *buf, size_t count);
-> +int fpga_mgr_name(struct fpga_manager *mgr, char *buf);
-> +int fpga_mgr_reset(struct fpga_manager *mgr);
-> +int fpga_mgr_register(struct device *pdev, const char *name,
-> +		      const struct fpga_manager_ops *mops, void *priv);
-> +void fpga_mgr_remove(struct platform_device *pdev);
-> +
-> +#endif /*_LINUX_FPGA_MGR_H */
-> 
+Commit-ID:  74afab7af7d9aeba86b3b8e39670cf7d0058f6df
+Gitweb:     http://git.kernel.org/tip/74afab7af7d9aeba86b3b8e39670cf7d0058f6df
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 16:12:00 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 16 Dec 2014 14:08:16 +0100
 
- Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+x86, irq: Move local APIC related code from io_apic.c into vector.c
 
-Thanks,
-Michal
+Create arch/x86/kernel/apic/vector.c to host local APIC related code,
+prepare for making MSI/HT_IRQ independent of IOAPIC.
 
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Link: http://lkml.kernel.org/r/1414397531-28254-10-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+---
+ arch/x86/Kconfig               |   2 +-
+ arch/x86/include/asm/hw_irq.h  |  29 +-
+ arch/x86/kernel/apic/Makefile  |   2 +-
+ arch/x86/kernel/apic/io_apic.c | 649 +-------------------------------------
+ arch/x86/kernel/apic/vector.c  | 694 +++++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/irqinit.c      |  22 --
+ 6 files changed, 714 insertions(+), 684 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index bea3a015..1e851b1 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -886,11 +886,11 @@ config X86_UP_IOAPIC
+ config X86_LOCAL_APIC
+ 	def_bool y
+ 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
++	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+ 
+ config X86_IO_APIC
+ 	def_bool y
+ 	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_IOAPIC || PCI_MSI
+-	select GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+ 	select IRQ_DOMAIN
+ 
+ config X86_REROUTE_FOR_BROKEN_BOOT_IRQS
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 454c9e4..ef50db1 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -111,6 +111,8 @@ struct irq_2_irte {
+ #endif	/* CONFIG_IRQ_REMAP */
+ 
+ #ifdef	CONFIG_X86_LOCAL_APIC
++struct irq_data;
++
+ struct irq_cfg {
+ 	cpumask_var_t		domain;
+ 	cpumask_var_t		old_domain;
+@@ -134,28 +136,27 @@ struct irq_cfg {
+ 
+ extern struct irq_cfg *irq_cfg(unsigned int irq);
+ extern struct irq_cfg *irqd_cfg(struct irq_data *irq_data);
+-extern void setup_vector_irq(int cpu);
++extern struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node);
++extern void lock_vector_lock(void);
++extern void unlock_vector_lock(void);
+ extern int assign_irq_vector(int, struct irq_cfg *, const struct cpumask *);
++extern void clear_irq_vector(int irq, struct irq_cfg *cfg);
++extern void setup_vector_irq(int cpu);
+ #ifdef CONFIG_SMP
+ extern void send_cleanup_vector(struct irq_cfg *);
+ #else
+ static inline void send_cleanup_vector(struct irq_cfg *c) { }
+ #endif
++extern void irq_complete_move(struct irq_cfg *cfg);
+ 
+-struct irq_data;
+-int apic_set_affinity(struct irq_data *, const struct cpumask *,
+-		      unsigned int *dest_id);
+-#endif	/* CONFIG_X86_LOCAL_APIC */
+-
+-#ifdef CONFIG_X86_IO_APIC
+-extern void lock_vector_lock(void);
+-extern void unlock_vector_lock(void);
+-extern void __setup_vector_irq(int cpu);
+-#else
++extern int apic_retrigger_irq(struct irq_data *data);
++extern void apic_ack_edge(struct irq_data *data);
++extern int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++			     unsigned int *dest_id);
++#else	/*  CONFIG_X86_LOCAL_APIC */
+ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
+-static inline void __setup_vector_irq(int cpu) {}
+-#endif
++#endif	/* CONFIG_X86_LOCAL_APIC */
+ 
+ /* IOAPIC */
+ #ifdef CONFIG_X86_IO_APIC
+@@ -181,11 +182,13 @@ extern void enable_IO_APIC(void);
+ extern void disable_IO_APIC(void);
+ extern void setup_ioapic_dest(void);
+ extern int IO_APIC_get_PCI_irq_vector(int bus, int devfn, int pin);
++extern void print_IO_APICs(void);
+ 
+ extern unsigned long io_apic_irqs;
+ #define IO_APIC_IRQ(x) (((x) >= NR_IRQS_LEGACY) || ((1 << (x)) & io_apic_irqs))
+ #else	/* CONFIG_X86_IO_APIC */
+ #define IO_APIC_IRQ(x)	0
++static inline void print_IO_APICs(void) {}
+ #endif	/* CONFIG_X86_IO_APIC */
+ 
+ /* Statistics */
+diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+index dcb5b15..84299e5 100644
+--- a/arch/x86/kernel/apic/Makefile
++++ b/arch/x86/kernel/apic/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for local APIC drivers and for the IO-APIC code
+ #
+ 
+-obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o ipi.o
++obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o ipi.o vector.o
+ obj-y				+= hw_nmi.o
+ 
+ obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 783468e..677044d 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -61,8 +61,6 @@
+ 
+ #include <asm/apic.h>
+ 
+-#define __apicdebuginit(type) static type __init
+-
+ #define	for_each_ioapic(idx)		\
+ 	for ((idx) = 0; (idx) < nr_ioapics; (idx)++)
+ #define	for_each_ioapic_reverse(idx)	\
+@@ -83,7 +81,6 @@
+ int sis_apic_bug = -1;
+ 
+ static DEFINE_RAW_SPINLOCK(ioapic_lock);
+-static DEFINE_RAW_SPINLOCK(vector_lock);
+ static DEFINE_MUTEX(ioapic_mutex);
+ static unsigned int ioapic_dynirq_base;
+ static int ioapic_initialized;
+@@ -206,8 +203,6 @@ static int __init parse_noapic(char *str)
+ }
+ early_param("noapic", parse_noapic);
+ 
+-static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node);
+-
+ /* Will be called in mpparse/acpi/sfi codes for saving IRQ info */
+ void mp_save_irq(struct mpc_intsrc *m)
+ {
+@@ -281,67 +276,6 @@ int __init arch_early_irq_init(void)
+ 	return 0;
+ }
+ 
+-struct irq_cfg *irq_cfg(unsigned int irq)
+-{
+-	return irq_get_chip_data(irq);
+-}
+-
+-struct irq_cfg *irqd_cfg(struct irq_data *irq_data)
+-{
+-	return irq_data->chip_data;
+-}
+-
+-static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
+-{
+-	struct irq_cfg *cfg;
+-
+-	cfg = kzalloc_node(sizeof(*cfg), GFP_KERNEL, node);
+-	if (!cfg)
+-		return NULL;
+-	if (!zalloc_cpumask_var_node(&cfg->domain, GFP_KERNEL, node))
+-		goto out_cfg;
+-	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
+-		goto out_domain;
+-	INIT_LIST_HEAD(&cfg->irq_2_pin);
+-	return cfg;
+-out_domain:
+-	free_cpumask_var(cfg->domain);
+-out_cfg:
+-	kfree(cfg);
+-	return NULL;
+-}
+-
+-static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
+-{
+-	if (!cfg)
+-		return;
+-	irq_set_chip_data(at, NULL);
+-	free_cpumask_var(cfg->domain);
+-	free_cpumask_var(cfg->old_domain);
+-	kfree(cfg);
+-}
+-
+-static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
+-{
+-	int res = irq_alloc_desc_at(at, node);
+-	struct irq_cfg *cfg;
+-
+-	if (res < 0) {
+-		if (res != -EEXIST)
+-			return NULL;
+-		cfg = irq_cfg(at);
+-		if (cfg)
+-			return cfg;
+-	}
+-
+-	cfg = alloc_irq_cfg(at, node);
+-	if (cfg)
+-		irq_set_chip_data(at, cfg);
+-	else
+-		irq_free_desc(at);
+-	return cfg;
+-}
+-
+ struct io_apic {
+ 	unsigned int index;
+ 	unsigned int unused[3];
+@@ -1238,190 +1172,6 @@ out:
+ }
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+-void lock_vector_lock(void)
+-{
+-	/* Used to the online set of cpus does not change
+-	 * during assign_irq_vector.
+-	 */
+-	raw_spin_lock(&vector_lock);
+-}
+-
+-void unlock_vector_lock(void)
+-{
+-	raw_spin_unlock(&vector_lock);
+-}
+-
+-static int
+-__assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+-{
+-	/*
+-	 * NOTE! The local APIC isn't very good at handling
+-	 * multiple interrupts at the same interrupt level.
+-	 * As the interrupt level is determined by taking the
+-	 * vector number and shifting that right by 4, we
+-	 * want to spread these out a bit so that they don't
+-	 * all fall in the same interrupt level.
+-	 *
+-	 * Also, we've got to be careful not to trash gate
+-	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
+-	 */
+-	static int current_vector = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
+-	static int current_offset = VECTOR_OFFSET_START % 16;
+-	int cpu, err;
+-	cpumask_var_t tmp_mask;
+-
+-	if (cfg->move_in_progress)
+-		return -EBUSY;
+-
+-	if (!alloc_cpumask_var(&tmp_mask, GFP_ATOMIC))
+-		return -ENOMEM;
+-
+-	/* Only try and allocate irqs on cpus that are present */
+-	err = -ENOSPC;
+-	cpumask_clear(cfg->old_domain);
+-	cpu = cpumask_first_and(mask, cpu_online_mask);
+-	while (cpu < nr_cpu_ids) {
+-		int new_cpu, vector, offset;
+-
+-		apic->vector_allocation_domain(cpu, tmp_mask, mask);
+-
+-		if (cpumask_subset(tmp_mask, cfg->domain)) {
+-			err = 0;
+-			if (cpumask_equal(tmp_mask, cfg->domain))
+-				break;
+-			/*
+-			 * New cpumask using the vector is a proper subset of
+-			 * the current in use mask. So cleanup the vector
+-			 * allocation for the members that are not used anymore.
+-			 */
+-			cpumask_andnot(cfg->old_domain, cfg->domain, tmp_mask);
+-			cfg->move_in_progress =
+-			   cpumask_intersects(cfg->old_domain, cpu_online_mask);
+-			cpumask_and(cfg->domain, cfg->domain, tmp_mask);
+-			break;
+-		}
+-
+-		vector = current_vector;
+-		offset = current_offset;
+-next:
+-		vector += 16;
+-		if (vector >= first_system_vector) {
+-			offset = (offset + 1) % 16;
+-			vector = FIRST_EXTERNAL_VECTOR + offset;
+-		}
+-
+-		if (unlikely(current_vector == vector)) {
+-			cpumask_or(cfg->old_domain, cfg->old_domain, tmp_mask);
+-			cpumask_andnot(tmp_mask, mask, cfg->old_domain);
+-			cpu = cpumask_first_and(tmp_mask, cpu_online_mask);
+-			continue;
+-		}
+-
+-		if (test_bit(vector, used_vectors))
+-			goto next;
+-
+-		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask) {
+-			if (per_cpu(vector_irq, new_cpu)[vector] > VECTOR_UNDEFINED)
+-				goto next;
+-		}
+-		/* Found one! */
+-		current_vector = vector;
+-		current_offset = offset;
+-		if (cfg->vector) {
+-			cpumask_copy(cfg->old_domain, cfg->domain);
+-			cfg->move_in_progress =
+-			   cpumask_intersects(cfg->old_domain, cpu_online_mask);
+-		}
+-		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
+-			per_cpu(vector_irq, new_cpu)[vector] = irq;
+-		cfg->vector = vector;
+-		cpumask_copy(cfg->domain, tmp_mask);
+-		err = 0;
+-		break;
+-	}
+-	free_cpumask_var(tmp_mask);
+-	return err;
+-}
+-
+-int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
+-{
+-	int err;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	err = __assign_irq_vector(irq, cfg, mask);
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+-	return err;
+-}
+-
+-static void clear_irq_vector(int irq, struct irq_cfg *cfg)
+-{
+-	int cpu, vector;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	BUG_ON(!cfg->vector);
+-
+-	vector = cfg->vector;
+-	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
+-		per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+-
+-	cfg->vector = 0;
+-	cpumask_clear(cfg->domain);
+-
+-	if (likely(!cfg->move_in_progress)) {
+-		raw_spin_unlock_irqrestore(&vector_lock, flags);
+-		return;
+-	}
+-
+-	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
+-		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+-			if (per_cpu(vector_irq, cpu)[vector] != irq)
+-				continue;
+-			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+-			break;
+-		}
+-	}
+-	cfg->move_in_progress = 0;
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+-}
+-
+-void __setup_vector_irq(int cpu)
+-{
+-	/* Initialize vector_irq on a new cpu */
+-	int irq, vector;
+-	struct irq_cfg *cfg;
+-
+-	/*
+-	 * vector_lock will make sure that we don't run into irq vector
+-	 * assignments that might be happening on another cpu in parallel,
+-	 * while we setup our initial vector to irq mappings.
+-	 */
+-	raw_spin_lock(&vector_lock);
+-	/* Mark the inuse vectors */
+-	for_each_active_irq(irq) {
+-		cfg = irq_cfg(irq);
+-		if (!cfg)
+-			continue;
+-
+-		if (!cpumask_test_cpu(cpu, cfg->domain))
+-			continue;
+-		vector = cfg->vector;
+-		per_cpu(vector_irq, cpu)[vector] = irq;
+-	}
+-	/* Mark the free vectors */
+-	for (vector = 0; vector < NR_VECTORS; ++vector) {
+-		irq = per_cpu(vector_irq, cpu)[vector];
+-		if (irq <= VECTOR_UNDEFINED)
+-			continue;
+-
+-		cfg = irq_cfg(irq);
+-		if (!cpumask_test_cpu(cpu, cfg->domain))
+-			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
+-	}
+-	raw_spin_unlock(&vector_lock);
+-}
+-
+ static struct irq_chip ioapic_chip;
+ 
+ #ifdef CONFIG_X86_32
+@@ -1655,7 +1405,7 @@ void ioapic_zap_locks(void)
+ 	raw_spin_lock_init(&ioapic_lock);
+ }
+ 
+-__apicdebuginit(void) print_IO_APIC(int ioapic_idx)
++static void __init print_IO_APIC(int ioapic_idx)
+ {
+ 	union IO_APIC_reg_00 reg_00;
+ 	union IO_APIC_reg_01 reg_01;
+@@ -1712,7 +1462,7 @@ __apicdebuginit(void) print_IO_APIC(int ioapic_idx)
+ 	x86_io_apic_ops.print_entries(ioapic_idx, reg_01.bits.entries);
+ }
+ 
+-__apicdebuginit(void) print_IO_APICs(void)
++void __init print_IO_APICs(void)
+ {
+ 	int ioapic_idx;
+ 	struct irq_cfg *cfg;
+@@ -1756,205 +1506,6 @@ __apicdebuginit(void) print_IO_APICs(void)
+ 	printk(KERN_INFO ".................................... done.\n");
+ }
+ 
+-__apicdebuginit(void) print_APIC_field(int base)
+-{
+-	int i;
+-
+-	printk(KERN_DEBUG);
+-
+-	for (i = 0; i < 8; i++)
+-		pr_cont("%08x", apic_read(base + i*0x10));
+-
+-	pr_cont("\n");
+-}
+-
+-__apicdebuginit(void) print_local_APIC(void *dummy)
+-{
+-	unsigned int i, v, ver, maxlvt;
+-	u64 icr;
+-
+-	printk(KERN_DEBUG "printing local APIC contents on CPU#%d/%d:\n",
+-		smp_processor_id(), hard_smp_processor_id());
+-	v = apic_read(APIC_ID);
+-	printk(KERN_INFO "... APIC ID:      %08x (%01x)\n", v, read_apic_id());
+-	v = apic_read(APIC_LVR);
+-	printk(KERN_INFO "... APIC VERSION: %08x\n", v);
+-	ver = GET_APIC_VERSION(v);
+-	maxlvt = lapic_get_maxlvt();
+-
+-	v = apic_read(APIC_TASKPRI);
+-	printk(KERN_DEBUG "... APIC TASKPRI: %08x (%02x)\n", v, v & APIC_TPRI_MASK);
+-
+-	if (APIC_INTEGRATED(ver)) {                     /* !82489DX */
+-		if (!APIC_XAPIC(ver)) {
+-			v = apic_read(APIC_ARBPRI);
+-			printk(KERN_DEBUG "... APIC ARBPRI: %08x (%02x)\n", v,
+-			       v & APIC_ARBPRI_MASK);
+-		}
+-		v = apic_read(APIC_PROCPRI);
+-		printk(KERN_DEBUG "... APIC PROCPRI: %08x\n", v);
+-	}
+-
+-	/*
+-	 * Remote read supported only in the 82489DX and local APIC for
+-	 * Pentium processors.
+-	 */
+-	if (!APIC_INTEGRATED(ver) || maxlvt == 3) {
+-		v = apic_read(APIC_RRR);
+-		printk(KERN_DEBUG "... APIC RRR: %08x\n", v);
+-	}
+-
+-	v = apic_read(APIC_LDR);
+-	printk(KERN_DEBUG "... APIC LDR: %08x\n", v);
+-	if (!x2apic_enabled()) {
+-		v = apic_read(APIC_DFR);
+-		printk(KERN_DEBUG "... APIC DFR: %08x\n", v);
+-	}
+-	v = apic_read(APIC_SPIV);
+-	printk(KERN_DEBUG "... APIC SPIV: %08x\n", v);
+-
+-	printk(KERN_DEBUG "... APIC ISR field:\n");
+-	print_APIC_field(APIC_ISR);
+-	printk(KERN_DEBUG "... APIC TMR field:\n");
+-	print_APIC_field(APIC_TMR);
+-	printk(KERN_DEBUG "... APIC IRR field:\n");
+-	print_APIC_field(APIC_IRR);
+-
+-	if (APIC_INTEGRATED(ver)) {             /* !82489DX */
+-		if (maxlvt > 3)         /* Due to the Pentium erratum 3AP. */
+-			apic_write(APIC_ESR, 0);
+-
+-		v = apic_read(APIC_ESR);
+-		printk(KERN_DEBUG "... APIC ESR: %08x\n", v);
+-	}
+-
+-	icr = apic_icr_read();
+-	printk(KERN_DEBUG "... APIC ICR: %08x\n", (u32)icr);
+-	printk(KERN_DEBUG "... APIC ICR2: %08x\n", (u32)(icr >> 32));
+-
+-	v = apic_read(APIC_LVTT);
+-	printk(KERN_DEBUG "... APIC LVTT: %08x\n", v);
+-
+-	if (maxlvt > 3) {                       /* PC is LVT#4. */
+-		v = apic_read(APIC_LVTPC);
+-		printk(KERN_DEBUG "... APIC LVTPC: %08x\n", v);
+-	}
+-	v = apic_read(APIC_LVT0);
+-	printk(KERN_DEBUG "... APIC LVT0: %08x\n", v);
+-	v = apic_read(APIC_LVT1);
+-	printk(KERN_DEBUG "... APIC LVT1: %08x\n", v);
+-
+-	if (maxlvt > 2) {			/* ERR is LVT#3. */
+-		v = apic_read(APIC_LVTERR);
+-		printk(KERN_DEBUG "... APIC LVTERR: %08x\n", v);
+-	}
+-
+-	v = apic_read(APIC_TMICT);
+-	printk(KERN_DEBUG "... APIC TMICT: %08x\n", v);
+-	v = apic_read(APIC_TMCCT);
+-	printk(KERN_DEBUG "... APIC TMCCT: %08x\n", v);
+-	v = apic_read(APIC_TDCR);
+-	printk(KERN_DEBUG "... APIC TDCR: %08x\n", v);
+-
+-	if (boot_cpu_has(X86_FEATURE_EXTAPIC)) {
+-		v = apic_read(APIC_EFEAT);
+-		maxlvt = (v >> 16) & 0xff;
+-		printk(KERN_DEBUG "... APIC EFEAT: %08x\n", v);
+-		v = apic_read(APIC_ECTRL);
+-		printk(KERN_DEBUG "... APIC ECTRL: %08x\n", v);
+-		for (i = 0; i < maxlvt; i++) {
+-			v = apic_read(APIC_EILVTn(i));
+-			printk(KERN_DEBUG "... APIC EILVT%d: %08x\n", i, v);
+-		}
+-	}
+-	pr_cont("\n");
+-}
+-
+-__apicdebuginit(void) print_local_APICs(int maxcpu)
+-{
+-	int cpu;
+-
+-	if (!maxcpu)
+-		return;
+-
+-	preempt_disable();
+-	for_each_online_cpu(cpu) {
+-		if (cpu >= maxcpu)
+-			break;
+-		smp_call_function_single(cpu, print_local_APIC, NULL, 1);
+-	}
+-	preempt_enable();
+-}
+-
+-__apicdebuginit(void) print_PIC(void)
+-{
+-	unsigned int v;
+-	unsigned long flags;
+-
+-	if (!nr_legacy_irqs())
+-		return;
+-
+-	printk(KERN_DEBUG "\nprinting PIC contents\n");
+-
+-	raw_spin_lock_irqsave(&i8259A_lock, flags);
+-
+-	v = inb(0xa1) << 8 | inb(0x21);
+-	printk(KERN_DEBUG "... PIC  IMR: %04x\n", v);
+-
+-	v = inb(0xa0) << 8 | inb(0x20);
+-	printk(KERN_DEBUG "... PIC  IRR: %04x\n", v);
+-
+-	outb(0x0b,0xa0);
+-	outb(0x0b,0x20);
+-	v = inb(0xa0) << 8 | inb(0x20);
+-	outb(0x0a,0xa0);
+-	outb(0x0a,0x20);
+-
+-	raw_spin_unlock_irqrestore(&i8259A_lock, flags);
+-
+-	printk(KERN_DEBUG "... PIC  ISR: %04x\n", v);
+-
+-	v = inb(0x4d1) << 8 | inb(0x4d0);
+-	printk(KERN_DEBUG "... PIC ELCR: %04x\n", v);
+-}
+-
+-static int __initdata show_lapic = 1;
+-static __init int setup_show_lapic(char *arg)
+-{
+-	int num = -1;
+-
+-	if (strcmp(arg, "all") == 0) {
+-		show_lapic = CONFIG_NR_CPUS;
+-	} else {
+-		get_option(&arg, &num);
+-		if (num >= 0)
+-			show_lapic = num;
+-	}
+-
+-	return 1;
+-}
+-__setup("show_lapic=", setup_show_lapic);
+-
+-__apicdebuginit(int) print_ICs(void)
+-{
+-	if (apic_verbosity == APIC_QUIET)
+-		return 0;
+-
+-	print_PIC();
+-
+-	/* don't print out if apic is not there */
+-	if (!cpu_has_apic && !apic_from_smp_config())
+-		return 0;
+-
+-	print_local_APICs(show_lapic);
+-	print_IO_APICs();
+-
+-	return 0;
+-}
+-
+-late_initcall(print_ICs);
+-
+-
+ /* Where if anywhere is the i8259 connect in external int mode */
+ static struct { int pin, apic; } ioapic_i8259 = { -1, -1 };
+ 
+@@ -2263,20 +1814,6 @@ static unsigned int startup_ioapic_irq(struct irq_data *data)
+ 	return was_pending;
+ }
+ 
+-static int apic_retrigger_irq(struct irq_data *data)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	unsigned long flags;
+-	int cpu;
+-
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	cpu = cpumask_first_and(cfg->domain, cpu_online_mask);
+-	apic->send_IPI_mask(cpumask_of(cpu), cfg->vector);
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+-
+-	return 1;
+-}
+-
+ /*
+  * Level and edge triggered IO-APIC interrupts need different handling,
+  * so we use two separate IRQ descriptors. Edge triggered IRQs can be
+@@ -2286,113 +1823,6 @@ static int apic_retrigger_irq(struct irq_data *data)
+  * races.
+  */
+ 
+-#ifdef CONFIG_SMP
+-void send_cleanup_vector(struct irq_cfg *cfg)
+-{
+-	cpumask_var_t cleanup_mask;
+-
+-	if (unlikely(!alloc_cpumask_var(&cleanup_mask, GFP_ATOMIC))) {
+-		unsigned int i;
+-		for_each_cpu_and(i, cfg->old_domain, cpu_online_mask)
+-			apic->send_IPI_mask(cpumask_of(i), IRQ_MOVE_CLEANUP_VECTOR);
+-	} else {
+-		cpumask_and(cleanup_mask, cfg->old_domain, cpu_online_mask);
+-		apic->send_IPI_mask(cleanup_mask, IRQ_MOVE_CLEANUP_VECTOR);
+-		free_cpumask_var(cleanup_mask);
+-	}
+-	cfg->move_in_progress = 0;
+-}
+-
+-asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
+-{
+-	unsigned vector, me;
+-
+-	ack_APIC_irq();
+-	irq_enter();
+-	exit_idle();
+-
+-	me = smp_processor_id();
+-	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
+-		int irq;
+-		unsigned int irr;
+-		struct irq_desc *desc;
+-		struct irq_cfg *cfg;
+-		irq = __this_cpu_read(vector_irq[vector]);
+-
+-		if (irq <= VECTOR_UNDEFINED)
+-			continue;
+-
+-		desc = irq_to_desc(irq);
+-		if (!desc)
+-			continue;
+-
+-		cfg = irq_cfg(irq);
+-		if (!cfg)
+-			continue;
+-
+-		raw_spin_lock(&desc->lock);
+-
+-		/*
+-		 * Check if the irq migration is in progress. If so, we
+-		 * haven't received the cleanup request yet for this irq.
+-		 */
+-		if (cfg->move_in_progress)
+-			goto unlock;
+-
+-		if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
+-			goto unlock;
+-
+-		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
+-		/*
+-		 * Check if the vector that needs to be cleanedup is
+-		 * registered at the cpu's IRR. If so, then this is not
+-		 * the best time to clean it up. Lets clean it up in the
+-		 * next attempt by sending another IRQ_MOVE_CLEANUP_VECTOR
+-		 * to myself.
+-		 */
+-		if (irr  & (1 << (vector % 32))) {
+-			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
+-			goto unlock;
+-		}
+-		__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
+-unlock:
+-		raw_spin_unlock(&desc->lock);
+-	}
+-
+-	irq_exit();
+-}
+-
+-static void __irq_complete_move(struct irq_cfg *cfg, unsigned vector)
+-{
+-	unsigned me;
+-
+-	if (likely(!cfg->move_in_progress))
+-		return;
+-
+-	me = smp_processor_id();
+-
+-	if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
+-		send_cleanup_vector(cfg);
+-}
+-
+-static void irq_complete_move(struct irq_cfg *cfg)
+-{
+-	__irq_complete_move(cfg, ~get_irq_regs()->orig_ax);
+-}
+-
+-void irq_force_complete_move(int irq)
+-{
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	if (!cfg)
+-		return;
+-
+-	__irq_complete_move(cfg, cfg->vector);
+-}
+-#else
+-static inline void irq_complete_move(struct irq_cfg *cfg) { }
+-#endif
+-
+ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq_cfg *cfg)
+ {
+ 	int apic, pin;
+@@ -2413,41 +1843,6 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+ 	}
+ }
+ 
+-/*
+- * Either sets data->affinity to a valid value, and returns
+- * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
+- * leaves data->affinity untouched.
+- */
+-int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
+-		      unsigned int *dest_id)
+-{
+-	struct irq_cfg *cfg = data->chip_data;
+-	unsigned int irq = data->irq;
+-	int err;
+-
+-	if (!config_enabled(CONFIG_SMP))
+-		return -EPERM;
+-
+-	if (!cpumask_intersects(mask, cpu_online_mask))
+-		return -EINVAL;
+-
+-	err = assign_irq_vector(irq, cfg, mask);
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(mask, cfg->domain, dest_id);
+-	if (err) {
+-		if (assign_irq_vector(irq, cfg, data->affinity))
+-			pr_err("Failed to recover vector for irq %d\n", irq);
+-		return err;
+-	}
+-
+-	cpumask_copy(data->affinity, mask);
+-
+-	return 0;
+-}
+-
+-
+ int native_ioapic_set_affinity(struct irq_data *data,
+ 			       const struct cpumask *mask,
+ 			       bool force)
+@@ -2471,13 +1866,6 @@ int native_ioapic_set_affinity(struct irq_data *data,
+ 	return ret;
+ }
+ 
+-static void apic_ack_edge(struct irq_data *data)
+-{
+-	irq_complete_move(data->chip_data);
+-	irq_move_irq(data);
+-	ack_APIC_irq();
+-}
+-
+ atomic_t irq_mis_count;
+ 
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+@@ -3068,39 +2456,6 @@ static int __init ioapic_init_ops(void)
+ device_initcall(ioapic_init_ops);
+ 
+ /*
+- * Dynamic irq allocate and deallocation. Should be replaced by irq domains!
+- */
+-int arch_setup_hwirq(unsigned int irq, int node)
+-{
+-	struct irq_cfg *cfg;
+-	unsigned long flags;
+-	int ret;
+-
+-	cfg = alloc_irq_cfg(irq, node);
+-	if (!cfg)
+-		return -ENOMEM;
+-
+-	raw_spin_lock_irqsave(&vector_lock, flags);
+-	ret = __assign_irq_vector(irq, cfg, apic->target_cpus());
+-	raw_spin_unlock_irqrestore(&vector_lock, flags);
+-
+-	if (!ret)
+-		irq_set_chip_data(irq, cfg);
+-	else
+-		free_irq_cfg(irq, cfg);
+-	return ret;
+-}
+-
+-void arch_teardown_hwirq(unsigned int irq)
+-{
+-	struct irq_cfg *cfg = irq_cfg(irq);
+-
+-	free_remapped_irq(irq);
+-	clear_irq_vector(irq, cfg);
+-	free_irq_cfg(irq, cfg);
+-}
+-
+-/*
+  * MSI message composition
+  */
+ void native_compose_msi_msg(struct pci_dev *pdev,
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+new file mode 100644
+index 0000000..9ba9bd4
+--- /dev/null
++++ b/arch/x86/kernel/apic/vector.c
+@@ -0,0 +1,694 @@
++/*
++ * Local APIC related interfaces to support IOAPIC, MSI, HT_IRQ etc.
++ *
++ * Copyright (C) 1997, 1998, 1999, 2000, 2009 Ingo Molnar, Hajnalka Szabo
++ *	Moved from arch/x86/kernel/apic/io_apic.c.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/compiler.h>
++#include <linux/irqdomain.h>
++#include <linux/slab.h>
++#include <asm/hw_irq.h>
++#include <asm/apic.h>
++#include <asm/i8259.h>
++#include <asm/desc.h>
++#include <asm/irq_remapping.h>
++
++static DEFINE_RAW_SPINLOCK(vector_lock);
++
++void lock_vector_lock(void)
++{
++	/* Used to the online set of cpus does not change
++	 * during assign_irq_vector.
++	 */
++	raw_spin_lock(&vector_lock);
++}
++
++void unlock_vector_lock(void)
++{
++	raw_spin_unlock(&vector_lock);
++}
++
++struct irq_cfg *irq_cfg(unsigned int irq)
++{
++	return irq_get_chip_data(irq);
++}
++
++struct irq_cfg *irqd_cfg(struct irq_data *irq_data)
++{
++	return irq_data->chip_data;
++}
++
++static struct irq_cfg *alloc_irq_cfg(unsigned int irq, int node)
++{
++	struct irq_cfg *cfg;
++
++	cfg = kzalloc_node(sizeof(*cfg), GFP_KERNEL, node);
++	if (!cfg)
++		return NULL;
++	if (!zalloc_cpumask_var_node(&cfg->domain, GFP_KERNEL, node))
++		goto out_cfg;
++	if (!zalloc_cpumask_var_node(&cfg->old_domain, GFP_KERNEL, node))
++		goto out_domain;
++#ifdef	CONFIG_X86_IO_APIC
++	INIT_LIST_HEAD(&cfg->irq_2_pin);
++#endif
++	return cfg;
++out_domain:
++	free_cpumask_var(cfg->domain);
++out_cfg:
++	kfree(cfg);
++	return NULL;
++}
++
++struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
++{
++	int res = irq_alloc_desc_at(at, node);
++	struct irq_cfg *cfg;
++
++	if (res < 0) {
++		if (res != -EEXIST)
++			return NULL;
++		cfg = irq_cfg(at);
++		if (cfg)
++			return cfg;
++	}
++
++	cfg = alloc_irq_cfg(at, node);
++	if (cfg)
++		irq_set_chip_data(at, cfg);
++	else
++		irq_free_desc(at);
++	return cfg;
++}
++
++static void free_irq_cfg(unsigned int at, struct irq_cfg *cfg)
++{
++	if (!cfg)
++		return;
++	irq_set_chip_data(at, NULL);
++	free_cpumask_var(cfg->domain);
++	free_cpumask_var(cfg->old_domain);
++	kfree(cfg);
++}
++
++static int
++__assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
++{
++	/*
++	 * NOTE! The local APIC isn't very good at handling
++	 * multiple interrupts at the same interrupt level.
++	 * As the interrupt level is determined by taking the
++	 * vector number and shifting that right by 4, we
++	 * want to spread these out a bit so that they don't
++	 * all fall in the same interrupt level.
++	 *
++	 * Also, we've got to be careful not to trash gate
++	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
++	 */
++	static int current_vector = FIRST_EXTERNAL_VECTOR + VECTOR_OFFSET_START;
++	static int current_offset = VECTOR_OFFSET_START % 16;
++	int cpu, err;
++	cpumask_var_t tmp_mask;
++
++	if (cfg->move_in_progress)
++		return -EBUSY;
++
++	if (!alloc_cpumask_var(&tmp_mask, GFP_ATOMIC))
++		return -ENOMEM;
++
++	/* Only try and allocate irqs on cpus that are present */
++	err = -ENOSPC;
++	cpumask_clear(cfg->old_domain);
++	cpu = cpumask_first_and(mask, cpu_online_mask);
++	while (cpu < nr_cpu_ids) {
++		int new_cpu, vector, offset;
++
++		apic->vector_allocation_domain(cpu, tmp_mask, mask);
++
++		if (cpumask_subset(tmp_mask, cfg->domain)) {
++			err = 0;
++			if (cpumask_equal(tmp_mask, cfg->domain))
++				break;
++			/*
++			 * New cpumask using the vector is a proper subset of
++			 * the current in use mask. So cleanup the vector
++			 * allocation for the members that are not used anymore.
++			 */
++			cpumask_andnot(cfg->old_domain, cfg->domain, tmp_mask);
++			cfg->move_in_progress =
++			   cpumask_intersects(cfg->old_domain, cpu_online_mask);
++			cpumask_and(cfg->domain, cfg->domain, tmp_mask);
++			break;
++		}
++
++		vector = current_vector;
++		offset = current_offset;
++next:
++		vector += 16;
++		if (vector >= first_system_vector) {
++			offset = (offset + 1) % 16;
++			vector = FIRST_EXTERNAL_VECTOR + offset;
++		}
++
++		if (unlikely(current_vector == vector)) {
++			cpumask_or(cfg->old_domain, cfg->old_domain, tmp_mask);
++			cpumask_andnot(tmp_mask, mask, cfg->old_domain);
++			cpu = cpumask_first_and(tmp_mask, cpu_online_mask);
++			continue;
++		}
++
++		if (test_bit(vector, used_vectors))
++			goto next;
++
++		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask) {
++			if (per_cpu(vector_irq, new_cpu)[vector] >
++			    VECTOR_UNDEFINED)
++				goto next;
++		}
++		/* Found one! */
++		current_vector = vector;
++		current_offset = offset;
++		if (cfg->vector) {
++			cpumask_copy(cfg->old_domain, cfg->domain);
++			cfg->move_in_progress =
++			   cpumask_intersects(cfg->old_domain, cpu_online_mask);
++		}
++		for_each_cpu_and(new_cpu, tmp_mask, cpu_online_mask)
++			per_cpu(vector_irq, new_cpu)[vector] = irq;
++		cfg->vector = vector;
++		cpumask_copy(cfg->domain, tmp_mask);
++		err = 0;
++		break;
++	}
++	free_cpumask_var(tmp_mask);
++
++	return err;
++}
++
++int assign_irq_vector(int irq, struct irq_cfg *cfg, const struct cpumask *mask)
++{
++	int err;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	err = __assign_irq_vector(irq, cfg, mask);
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++	return err;
++}
++
++void clear_irq_vector(int irq, struct irq_cfg *cfg)
++{
++	int cpu, vector;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	BUG_ON(!cfg->vector);
++
++	vector = cfg->vector;
++	for_each_cpu_and(cpu, cfg->domain, cpu_online_mask)
++		per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
++
++	cfg->vector = 0;
++	cpumask_clear(cfg->domain);
++
++	if (likely(!cfg->move_in_progress)) {
++		raw_spin_unlock_irqrestore(&vector_lock, flags);
++		return;
++	}
++
++	for_each_cpu_and(cpu, cfg->old_domain, cpu_online_mask) {
++		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
++		     vector++) {
++			if (per_cpu(vector_irq, cpu)[vector] != irq)
++				continue;
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
++			break;
++		}
++	}
++	cfg->move_in_progress = 0;
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++}
++
++static void __setup_vector_irq(int cpu)
++{
++	/* Initialize vector_irq on a new cpu */
++	int irq, vector;
++	struct irq_cfg *cfg;
++
++	/*
++	 * vector_lock will make sure that we don't run into irq vector
++	 * assignments that might be happening on another cpu in parallel,
++	 * while we setup our initial vector to irq mappings.
++	 */
++	raw_spin_lock(&vector_lock);
++	/* Mark the inuse vectors */
++	for_each_active_irq(irq) {
++		cfg = irq_cfg(irq);
++		if (!cfg)
++			continue;
++
++		if (!cpumask_test_cpu(cpu, cfg->domain))
++			continue;
++		vector = cfg->vector;
++		per_cpu(vector_irq, cpu)[vector] = irq;
++	}
++	/* Mark the free vectors */
++	for (vector = 0; vector < NR_VECTORS; ++vector) {
++		irq = per_cpu(vector_irq, cpu)[vector];
++		if (irq <= VECTOR_UNDEFINED)
++			continue;
++
++		cfg = irq_cfg(irq);
++		if (!cpumask_test_cpu(cpu, cfg->domain))
++			per_cpu(vector_irq, cpu)[vector] = VECTOR_UNDEFINED;
++	}
++	raw_spin_unlock(&vector_lock);
++}
++
++/*
++ * Setup the vector to irq mappings.
++ */
++void setup_vector_irq(int cpu)
++{
++	int irq;
++
++	/*
++	 * On most of the platforms, legacy PIC delivers the interrupts on the
++	 * boot cpu. But there are certain platforms where PIC interrupts are
++	 * delivered to multiple cpu's. If the legacy IRQ is handled by the
++	 * legacy PIC, for the new cpu that is coming online, setup the static
++	 * legacy vector to irq mapping:
++	 */
++	for (irq = 0; irq < nr_legacy_irqs(); irq++)
++		per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
++
++	__setup_vector_irq(cpu);
++}
++
++int apic_retrigger_irq(struct irq_data *data)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	unsigned long flags;
++	int cpu;
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	cpu = cpumask_first_and(cfg->domain, cpu_online_mask);
++	apic->send_IPI_mask(cpumask_of(cpu), cfg->vector);
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++
++	return 1;
++}
++
++void apic_ack_edge(struct irq_data *data)
++{
++	irq_complete_move(data->chip_data);
++	irq_move_irq(data);
++	ack_APIC_irq();
++}
++
++/*
++ * Either sets data->affinity to a valid value, and returns
++ * ->cpu_mask_to_apicid of that in dest_id, or returns -1 and
++ * leaves data->affinity untouched.
++ */
++int apic_set_affinity(struct irq_data *data, const struct cpumask *mask,
++		      unsigned int *dest_id)
++{
++	struct irq_cfg *cfg = data->chip_data;
++	unsigned int irq = data->irq;
++	int err;
++
++	if (!config_enabled(CONFIG_SMP))
++		return -EPERM;
++
++	if (!cpumask_intersects(mask, cpu_online_mask))
++		return -EINVAL;
++
++	err = assign_irq_vector(irq, cfg, mask);
++	if (err)
++		return err;
++
++	err = apic->cpu_mask_to_apicid_and(mask, cfg->domain, dest_id);
++	if (err) {
++		if (assign_irq_vector(irq, cfg, data->affinity))
++			pr_err("Failed to recover vector for irq %d\n", irq);
++		return err;
++	}
++
++	cpumask_copy(data->affinity, mask);
++
++	return 0;
++}
++
++#ifdef CONFIG_SMP
++void send_cleanup_vector(struct irq_cfg *cfg)
++{
++	cpumask_var_t cleanup_mask;
++
++	if (unlikely(!alloc_cpumask_var(&cleanup_mask, GFP_ATOMIC))) {
++		unsigned int i;
++
++		for_each_cpu_and(i, cfg->old_domain, cpu_online_mask)
++			apic->send_IPI_mask(cpumask_of(i),
++					    IRQ_MOVE_CLEANUP_VECTOR);
++	} else {
++		cpumask_and(cleanup_mask, cfg->old_domain, cpu_online_mask);
++		apic->send_IPI_mask(cleanup_mask, IRQ_MOVE_CLEANUP_VECTOR);
++		free_cpumask_var(cleanup_mask);
++	}
++	cfg->move_in_progress = 0;
++}
++
++asmlinkage __visible void smp_irq_move_cleanup_interrupt(void)
++{
++	unsigned vector, me;
++
++	ack_APIC_irq();
++	irq_enter();
++	exit_idle();
++
++	me = smp_processor_id();
++	for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS; vector++) {
++		int irq;
++		unsigned int irr;
++		struct irq_desc *desc;
++		struct irq_cfg *cfg;
++
++		irq = __this_cpu_read(vector_irq[vector]);
++
++		if (irq <= VECTOR_UNDEFINED)
++			continue;
++
++		desc = irq_to_desc(irq);
++		if (!desc)
++			continue;
++
++		cfg = irq_cfg(irq);
++		if (!cfg)
++			continue;
++
++		raw_spin_lock(&desc->lock);
++
++		/*
++		 * Check if the irq migration is in progress. If so, we
++		 * haven't received the cleanup request yet for this irq.
++		 */
++		if (cfg->move_in_progress)
++			goto unlock;
++
++		if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
++			goto unlock;
++
++		irr = apic_read(APIC_IRR + (vector / 32 * 0x10));
++		/*
++		 * Check if the vector that needs to be cleanedup is
++		 * registered at the cpu's IRR. If so, then this is not
++		 * the best time to clean it up. Lets clean it up in the
++		 * next attempt by sending another IRQ_MOVE_CLEANUP_VECTOR
++		 * to myself.
++		 */
++		if (irr  & (1 << (vector % 32))) {
++			apic->send_IPI_self(IRQ_MOVE_CLEANUP_VECTOR);
++			goto unlock;
++		}
++		__this_cpu_write(vector_irq[vector], VECTOR_UNDEFINED);
++unlock:
++		raw_spin_unlock(&desc->lock);
++	}
++
++	irq_exit();
++}
++
++static void __irq_complete_move(struct irq_cfg *cfg, unsigned vector)
++{
++	unsigned me;
++
++	if (likely(!cfg->move_in_progress))
++		return;
++
++	me = smp_processor_id();
++
++	if (vector == cfg->vector && cpumask_test_cpu(me, cfg->domain))
++		send_cleanup_vector(cfg);
++}
++
++void irq_complete_move(struct irq_cfg *cfg)
++{
++	__irq_complete_move(cfg, ~get_irq_regs()->orig_ax);
++}
++
++void irq_force_complete_move(int irq)
++{
++	struct irq_cfg *cfg = irq_cfg(irq);
++
++	if (!cfg)
++		return;
++
++	__irq_complete_move(cfg, cfg->vector);
++}
++#else
++void irq_complete_move(struct irq_cfg *cfg) { }
++#endif
++
++/*
++ * Dynamic irq allocate and deallocation. Should be replaced by irq domains!
++ */
++int arch_setup_hwirq(unsigned int irq, int node)
++{
++	struct irq_cfg *cfg;
++	unsigned long flags;
++	int ret;
++
++	cfg = alloc_irq_cfg(irq, node);
++	if (!cfg)
++		return -ENOMEM;
++
++	raw_spin_lock_irqsave(&vector_lock, flags);
++	ret = __assign_irq_vector(irq, cfg, apic->target_cpus());
++	raw_spin_unlock_irqrestore(&vector_lock, flags);
++
++	if (!ret)
++		irq_set_chip_data(irq, cfg);
++	else
++		free_irq_cfg(irq, cfg);
++	return ret;
++}
++
++void arch_teardown_hwirq(unsigned int irq)
++{
++	struct irq_cfg *cfg = irq_cfg(irq);
++
++	free_remapped_irq(irq);
++	clear_irq_vector(irq, cfg);
++	free_irq_cfg(irq, cfg);
++}
++
++static void __init print_APIC_field(int base)
++{
++	int i;
++
++	printk(KERN_DEBUG);
++
++	for (i = 0; i < 8; i++)
++		pr_cont("%08x", apic_read(base + i*0x10));
++
++	pr_cont("\n");
++}
++
++static void __init print_local_APIC(void *dummy)
++{
++	unsigned int i, v, ver, maxlvt;
++	u64 icr;
++
++	printk(KERN_DEBUG "printing local APIC contents on CPU#%d/%d:\n",
++		smp_processor_id(), hard_smp_processor_id());
++	v = apic_read(APIC_ID);
++	printk(KERN_INFO "... APIC ID:      %08x (%01x)\n", v, read_apic_id());
++	v = apic_read(APIC_LVR);
++	printk(KERN_INFO "... APIC VERSION: %08x\n", v);
++	ver = GET_APIC_VERSION(v);
++	maxlvt = lapic_get_maxlvt();
++
++	v = apic_read(APIC_TASKPRI);
++	printk(KERN_DEBUG "... APIC TASKPRI: %08x (%02x)\n",
++	       v, v & APIC_TPRI_MASK);
++
++	/* !82489DX */
++	if (APIC_INTEGRATED(ver)) {
++		if (!APIC_XAPIC(ver)) {
++			v = apic_read(APIC_ARBPRI);
++			printk(KERN_DEBUG "... APIC ARBPRI: %08x (%02x)\n", v,
++			       v & APIC_ARBPRI_MASK);
++		}
++		v = apic_read(APIC_PROCPRI);
++		printk(KERN_DEBUG "... APIC PROCPRI: %08x\n", v);
++	}
++
++	/*
++	 * Remote read supported only in the 82489DX and local APIC for
++	 * Pentium processors.
++	 */
++	if (!APIC_INTEGRATED(ver) || maxlvt == 3) {
++		v = apic_read(APIC_RRR);
++		printk(KERN_DEBUG "... APIC RRR: %08x\n", v);
++	}
++
++	v = apic_read(APIC_LDR);
++	printk(KERN_DEBUG "... APIC LDR: %08x\n", v);
++	if (!x2apic_enabled()) {
++		v = apic_read(APIC_DFR);
++		printk(KERN_DEBUG "... APIC DFR: %08x\n", v);
++	}
++	v = apic_read(APIC_SPIV);
++	printk(KERN_DEBUG "... APIC SPIV: %08x\n", v);
++
++	printk(KERN_DEBUG "... APIC ISR field:\n");
++	print_APIC_field(APIC_ISR);
++	printk(KERN_DEBUG "... APIC TMR field:\n");
++	print_APIC_field(APIC_TMR);
++	printk(KERN_DEBUG "... APIC IRR field:\n");
++	print_APIC_field(APIC_IRR);
++
++	/* !82489DX */
++	if (APIC_INTEGRATED(ver)) {
++		/* Due to the Pentium erratum 3AP. */
++		if (maxlvt > 3)
++			apic_write(APIC_ESR, 0);
++
++		v = apic_read(APIC_ESR);
++		printk(KERN_DEBUG "... APIC ESR: %08x\n", v);
++	}
++
++	icr = apic_icr_read();
++	printk(KERN_DEBUG "... APIC ICR: %08x\n", (u32)icr);
++	printk(KERN_DEBUG "... APIC ICR2: %08x\n", (u32)(icr >> 32));
++
++	v = apic_read(APIC_LVTT);
++	printk(KERN_DEBUG "... APIC LVTT: %08x\n", v);
++
++	if (maxlvt > 3) {
++		/* PC is LVT#4. */
++		v = apic_read(APIC_LVTPC);
++		printk(KERN_DEBUG "... APIC LVTPC: %08x\n", v);
++	}
++	v = apic_read(APIC_LVT0);
++	printk(KERN_DEBUG "... APIC LVT0: %08x\n", v);
++	v = apic_read(APIC_LVT1);
++	printk(KERN_DEBUG "... APIC LVT1: %08x\n", v);
++
++	if (maxlvt > 2) {
++		/* ERR is LVT#3. */
++		v = apic_read(APIC_LVTERR);
++		printk(KERN_DEBUG "... APIC LVTERR: %08x\n", v);
++	}
++
++	v = apic_read(APIC_TMICT);
++	printk(KERN_DEBUG "... APIC TMICT: %08x\n", v);
++	v = apic_read(APIC_TMCCT);
++	printk(KERN_DEBUG "... APIC TMCCT: %08x\n", v);
++	v = apic_read(APIC_TDCR);
++	printk(KERN_DEBUG "... APIC TDCR: %08x\n", v);
++
++	if (boot_cpu_has(X86_FEATURE_EXTAPIC)) {
++		v = apic_read(APIC_EFEAT);
++		maxlvt = (v >> 16) & 0xff;
++		printk(KERN_DEBUG "... APIC EFEAT: %08x\n", v);
++		v = apic_read(APIC_ECTRL);
++		printk(KERN_DEBUG "... APIC ECTRL: %08x\n", v);
++		for (i = 0; i < maxlvt; i++) {
++			v = apic_read(APIC_EILVTn(i));
++			printk(KERN_DEBUG "... APIC EILVT%d: %08x\n", i, v);
++		}
++	}
++	pr_cont("\n");
++}
++
++static void __init print_local_APICs(int maxcpu)
++{
++	int cpu;
++
++	if (!maxcpu)
++		return;
++
++	preempt_disable();
++	for_each_online_cpu(cpu) {
++		if (cpu >= maxcpu)
++			break;
++		smp_call_function_single(cpu, print_local_APIC, NULL, 1);
++	}
++	preempt_enable();
++}
++
++static void __init print_PIC(void)
++{
++	unsigned int v;
++	unsigned long flags;
++
++	if (!nr_legacy_irqs())
++		return;
++
++	printk(KERN_DEBUG "\nprinting PIC contents\n");
++
++	raw_spin_lock_irqsave(&i8259A_lock, flags);
++
++	v = inb(0xa1) << 8 | inb(0x21);
++	printk(KERN_DEBUG "... PIC  IMR: %04x\n", v);
++
++	v = inb(0xa0) << 8 | inb(0x20);
++	printk(KERN_DEBUG "... PIC  IRR: %04x\n", v);
++
++	outb(0x0b, 0xa0);
++	outb(0x0b, 0x20);
++	v = inb(0xa0) << 8 | inb(0x20);
++	outb(0x0a, 0xa0);
++	outb(0x0a, 0x20);
++
++	raw_spin_unlock_irqrestore(&i8259A_lock, flags);
++
++	printk(KERN_DEBUG "... PIC  ISR: %04x\n", v);
++
++	v = inb(0x4d1) << 8 | inb(0x4d0);
++	printk(KERN_DEBUG "... PIC ELCR: %04x\n", v);
++}
++
++static int show_lapic __initdata = 1;
++static __init int setup_show_lapic(char *arg)
++{
++	int num = -1;
++
++	if (strcmp(arg, "all") == 0) {
++		show_lapic = CONFIG_NR_CPUS;
++	} else {
++		get_option(&arg, &num);
++		if (num >= 0)
++			show_lapic = num;
++	}
++
++	return 1;
++}
++__setup("show_lapic=", setup_show_lapic);
++
++static int __init print_ICs(void)
++{
++	if (apic_verbosity == APIC_QUIET)
++		return 0;
++
++	print_PIC();
++
++	/* don't print out if apic is not there */
++	if (!cpu_has_apic && !apic_from_smp_config())
++		return 0;
++
++	print_local_APICs(show_lapic);
++	print_IO_APICs();
++
++	return 0;
++}
++
++late_initcall(print_ICs);
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index fa89308..70e181e 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -99,28 +99,6 @@ void __init init_IRQ(void)
+ 	x86_init.irqs.intr_init();
+ }
+ 
+-/*
+- * Setup the vector to irq mappings.
+- */
+-void setup_vector_irq(int cpu)
+-{
+-#ifndef CONFIG_X86_IO_APIC
+-	int irq;
+-
+-	/*
+-	 * On most of the platforms, legacy PIC delivers the interrupts on the
+-	 * boot cpu. But there are certain platforms where PIC interrupts are
+-	 * delivered to multiple cpu's. If the legacy IRQ is handled by the
+-	 * legacy PIC, for the new cpu that is coming online, setup the static
+-	 * legacy vector to irq mapping:
+-	 */
+-	for (irq = 0; irq < nr_legacy_irqs(); irq++)
+-		per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
+-#endif
+-
+-	__setup_vector_irq(cpu);
+-}
+-
+ static void __init smp_intr_init(void)
+ {
+ #ifdef CONFIG_SMP
