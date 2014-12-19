@@ -1,88 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988AbaLSFhv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 00:37:51 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:17477 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751886AbaLSFhu (ORCPT
+	id S1751882AbaLSFqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 00:46:40 -0500
+Received: from mga09.intel.com ([134.134.136.24]:11207 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751003AbaLSFqj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 00:37:50 -0500
-Message-ID: <5493B997.6060606@huawei.com>
-Date: Fri, 19 Dec 2014 13:37:27 +0800
-From: Li Bin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Fri, 19 Dec 2014 00:46:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,605,1413270000"; 
+   d="scan'208";a="656907374"
+From: "Wu, Feng" <feng.wu@intel.com>
+To: "Zhang, Yang Z" <yang.z.zhang@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "Wu, Feng" <feng.wu@intel.com>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQIAAFxZwgAAD1tCAAAHl0IAAAhPwgAAKzNA=
+Date: Fri, 19 Dec 2014 05:46:33 +0000
+Message-ID: <E959C4978C3B6342920538CF579893F00230AED8@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
+	<5491C0A2.7040503@redhat.com>
+	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+	<5492926E.8070207@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ADA0@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC050B1@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC050B1@SHSMSX104.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@redhat.com>, Josh Poimboeuf <jpoimboe@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>,
-        "Steven Rostedt" <rostedt@goodmis.org>, Petr Mladek <pmladek@suse.cz>,
-        Miroslav Benes <mbenes@suse.cz>
-CC: <kpatch@redhat.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Christoph Hellwig <hch@infradead.org>, <live-patching@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>,
-        zhangdianfang <zhangdianfang@huawei.com>,
-        Hanjun Guo <guohanjun@huawei.com>, xiexiuqi <xiexiuqi@huawei.com>
-Subject: [kpatch] [PATCH] livepatch v7: move x86 specific ftrace handler code
- to arch/x86
-References: <1418752700-14649-1-git-send-email-sjenning@redhat.com> <1418752700-14649-3-git-send-email-sjenning@redhat.com>
-In-Reply-To: <1418752700-14649-3-git-send-email-sjenning@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.25.181]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The execution flow redirection related implemention in the livepatch
-ftrace handler is depended on the specific architecture. This patch
-introduces klp_arch_set_pc(like kgdb_arch_set_pc) interface to change
-the pt_regs.
 
-Signed-off-by: Li Bin <huawei.libin@huawei.com>
----
- arch/x86/include/asm/livepatch.h |    5 +++++
- kernel/livepatch/core.c          |    2 +-
- 2 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/livepatch.h b/arch/x86/include/asm/livepatch.h
-index c2ae592..4cdec4e 100644
---- a/arch/x86/include/asm/livepatch.h
-+++ b/arch/x86/include/asm/livepatch.h
-@@ -21,6 +21,7 @@
- #define _ASM_X86_LIVEPATCH_H
+> -----Original Message-----
+> From: Zhang, Yang Z
+> Sent: Friday, December 19, 2014 1:26 PM
+> To: Wu, Feng; Paolo Bonzini; kvm@vger.kernel.org
+> Cc: iommu@lists.linux-foundation.org; linux-kernel@vger.kernel.org;
+> kvm@vger.kernel.org
+> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+> 
+> Wu, Feng wrote on 2014-12-19:
+> >
+> >
+> > Zhang, Yang Z wrote on 2014-12-19:
+> >> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
+> >> set
+> >>
+> >> Wu, Feng wrote on 2014-12-19:
+> >>>
+> >>>
+> >>> Zhang, Yang Z wrote on 2014-12-19:
+> >>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+> >>>> is set
+> >>>>
+> >>>> Wu, Feng wrote on 2014-12-19:
+> >>>>>
+> >>>>>
+> >>>>> iommu-bounces@lists.linux-foundation.org wrote on
+> >>>> mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
+> >>>>>> Cc: iommu@lists.linux-foundation.org;
+> >>>>>> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+> >>>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+> >>>>>> is set
+> >>>>>>
+> >>>>>> Paolo Bonzini wrote on 2014-12-18:
+> >>>>>>>
+> >>>>>>>
+> >>>>>>> On 18/12/2014 04:14, Wu, Feng wrote:
+> >>>>>>>>
+> >>>>>>>>
+> >>>>>>>> linux-kernel-owner@vger.kernel.org wrote on
+> >>>>>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
+> >>>>>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
+> >>>>>>>>> dwmw2@infradead.org;
+> >>>>>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex
+> Williamson;
+> >>>>>>>>> joro-zLv9SwRftAIdnm+Jiang Liu Cc:
+> >>>>>>>>> iommu@lists.linux-foundation.org;
+> >>>>>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; KVM
+> list;
+> >>>>>>>>> Eric Auger Subject: Re: [v3 25/26] KVM: Suppress
+> >>>>>>>>> posted-interrupt when 'SN' is set
+> >>>>>>>>>
+> >>>>>>>>>
+> >>>>>>>>>
+> >>>>>>>>> On 12/12/2014 16:14, Feng Wu wrote:
+> >>>>>>>>>> Currently, we don't support urgent interrupt, all
+> >>>>>>>>>> interrupts are recognized as non-urgent interrupt, so we
+> >>>>>>>>>> cannot send posted-interrupt when 'SN' is set.
+> >>>>>>>>>
+> >>>>>>>>> Can this happen?  If the vcpu is in guest mode, it cannot
+> >>>>>>>>> have been scheduled out, and that's the only case when SN is set.
+> >>>>>>>>>
+> >>>>>>>>> Paolo
+> >>>>>>>>
+> >>>>>>>> Currently, the only place where SN is set is vCPU is
+> >>>>>>>> preempted and
+> >>>>>>
+> >>>>>> If the vCPU is preempted, shouldn't the subsequent be ignored?
+> >>>>>> What happens if a PI is occurs when vCPU is preempted?
+> >>>>>
+> >>>>> If a vCPU is preempted, the 'SN' bit is set, the subsequent
+> >>>>> interrupts are suppressed for posting.
+> >>>>
+> >>>> I mean what happens if we don't set SN bit. From my point, if
+> >>>> preempter already disabled the interrupt, it is ok to leave SN
+> >>>> bit as zero. But if preempter enabled the interrupt, doesn't this
+> >>>> mean he allow interrupt to happen? BTW, since there already has
+> >>>> ON bit, so this means there only have one interrupt arrived at
+> >>>> most and it doesn't hurt performance. Do we really need to set SN bit?
+> >>>
+> >>>
+> >>> See this scenario:
+> >>> vCPU0 is running on pCPU0
+> >>> --> vCPU0 is preempted by vCPU1
+> >>> --> Then vCPU1 is running on pCPU0 and vCPU0 is waiting for
+> >>> --> schedule in runqueue
+> >>>
+> >>> If the we don't set SN for vCPU0, then all subsequent interrupts
+> >>> for
+> >>> vCPU0 is posted to vCPU1, this will consume hardware and software
+> >>
+> >> The PI vector for vCPU1 is notification vector, but the PI vector
+> >> for
+> >> vCPU0 should be wakeup vector. Why vCPU1 will consume this PI event?
+> >
+> > Wakeup vector is only used for blocking case, when vCPU is preempted
+> > and waiting in the runqueue, the NV is the notification vector.
+> 
+> I see your point. But from performance point, if we can schedule the vCPU to
+> another PCPU to handle the interrupt, it would helpful. But I remember current
+> KVM will not schedule the vCPU in run queue (even though it got preempted) to
+> another pCPU to run(Am I right?). So it may hard to do it.
+> 
 
- #include <linux/module.h>
-+#include <linux/ftrace.h>
+KVM is using the Linux scheduler, when the preempted vCPU (in runqueue) is
+scheduled again depends on the scheduling algorithm itself, I think it is a little
+hard for us to get involved.
 
- #ifdef CONFIG_LIVE_PATCHING
- #ifndef CC_USING_FENTRY
-@@ -29,6 +30,10 @@
- extern int klp_write_module_reloc(struct module *mod, unsigned long type,
-                  unsigned long loc, unsigned long value);
+I think what you mentioned is a little like the urgent interrupt in VT-d PI Spec.
+For this kind of interrupts, if an interrupt is coming for an preempted vCPU
+(waiting in the run queue), we need to schedule the vCPU immediately. This
+is some real time things. And we don't support urgent interrupt so far.
 
-+static inline void klp_arch_set_pc(struct pt_regs *regs, unsigned long ip)
-+{
-+   regs->ip = ip;
-+}
- #else
- #error Live patching support is disabled; check CONFIG_LIVE_PATCHING
- #endif
-diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-index 0004a71..c4c04fd 100644
---- a/kernel/livepatch/core.c
-+++ b/kernel/livepatch/core.c
-@@ -271,7 +271,7 @@ static void notrace klp_ftrace_handler(unsigned long ip,
- {
-    struct klp_func *func = ops->private;
+Thanks,
+Feng
 
--   regs->ip = (unsigned long)func->new_func;
-+   klp_arch_set_pc(regs, (unsigned long)func->new_func);
- }
-
- static int klp_disable_func(struct klp_func *func)
--- 
-1.7.1
-
+> >
+> > Thanks,
+> > Feng
+> >
+> >>
+> >>> efforts and in fact it is not needed at all. If SN is set for
+> >>> vCPU0, VT-d hardware will not issue Notification Event for vCPU0
+> >>> when an interrupt is for it, but just setting the related PIR bit.
+> >>>
+> >>> Thanks,
+> >>> Feng
+> >>>
+> >>>>
+> >>>>>
+> >>>>> Thanks,
+> >>>>> Feng
+> >>>>>
+> >>>>>>
+> >>>>>>>> waiting for the next scheduling in the runqueue. But I am not
+> >>>>>>>> sure whether we need to set SN for other purpose in future.
+> >>>>>>>> Adding SN checking here is just to follow the Spec.
+> >>>>>>>> non-urgent interrupts are suppressed
+> >>>>>>> when SN is set.
+> >>>>>>>
+> >>>>>>> I would change that to a WARN_ON_ONCE then.
+> >>>>>>
+> >>>>>>
+> >>>>>> Best regards,
+> >>>>>> Yang
+> >>>>>>
+> >>>>>>
+> >>>>>> _______________________________________________
+> >>>>>> iommu mailing list
+> >>>>>> iommu@lists.linux-foundation.org
+> >>>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+> >>>>
+> >>>>
+> >>>> Best regards,
+> >>>> Yang
+> >>>>
+> >>
+> >>
+> >> Best regards,
+> >> Yang
+> >>
+> 
+> 
+> Best regards,
+> Yang
+> 
 
