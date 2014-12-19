@@ -1,146 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526AbaLSO2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 09:28:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751886AbaLSO2q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:28:46 -0500
-Date: Fri, 19 Dec 2014 16:28:29 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC 2/5] s390: add pci_iomap_range
-Message-ID: <20141219142829.GA13440@redhat.com>
-References: <1418679168-1011-1-git-send-email-mst@redhat.com>
- <1418679168-1011-3-git-send-email-mst@redhat.com>
- <alpine.LFD.2.11.1412191456480.1794@denkbrett>
+	id S1752584AbaLSOb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:31:29 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:9867 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751963AbaLSOb1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 09:31:27 -0500
+Date: Fri, 19 Dec 2014 09:30:37 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Message-ID: <1418999437.13012.1@mail.thefacebook.com>
+In-Reply-To: <20141219035859.GA20022@redhat.com>
+References: <CA+55aFyUtZobUADgtss7e4w-yriMtz7hKVKs=Ed72KQoQ9n2nA@mail.gmail.com>
+	<CA+55aFwE3gY+ChZtBpPtt_eY9nCj6pgF_wd8utRN9cOgRe2xOQ@mail.gmail.com>
+	<20141215055707.GA26225@redhat.com>
+	<CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
+	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+	<20141218051327.GA31988@redhat.com>
+	<1418918059.17358.6@mail.thefacebook.com>
+	<20141218161230.GA6042@redhat.com> <20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1412191456480.1794@denkbrett>
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-19_04:2014-12-19,2014-12-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=145.191669734525
+ compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.160988131301636 spamscore=0
+ recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412190144
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 03:13:37PM +0100, Sebastian Ott wrote:
-> On Mon, 15 Dec 2014, Michael S. Tsirkin wrote:
-> > From: Michael S Tsirkin <mst@redhat.com>
-> > 
-> > Virtio drivers should map the part of the range they need, not
-> > necessarily all of it.
-> > To this end, support mapping ranges within BAR on s390.
-> > Since multiple ranges can now be mapped within a BAR, we keep track of
-> > the number of mappings created, and only clear out the mapping for a BAR
-> > when this number reaches 0.
-> > 
+
+
+On Thu, Dec 18, 2014 at 10:58 PM, Dave Jones <davej@redhat.com> wrote:
+> On Thu, Dec 18, 2014 at 07:49:41PM -0800, Linus Torvalds wrote:
 > 
-> I can't say much about the users of this interface but in principle I'm
-> OK with such a change.
-
-I don't have an s390 system with pci for testing - could you help me out
-by testing this and confirming it doesn't break things?
-
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  arch/s390/include/asm/pci_io.h |  1 +
-> >  arch/s390/pci/pci.c            | 34 +++++++++++++++++++++++++++-------
-> >  2 files changed, 28 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/arch/s390/include/asm/pci_io.h b/arch/s390/include/asm/pci_io.h
-> > index d194d54..25228b3 100644
-> > --- a/arch/s390/include/asm/pci_io.h
-> > +++ b/arch/s390/include/asm/pci_io.h
-> > @@ -16,6 +16,7 @@
-> >  struct zpci_iomap_entry {
-> >  	u32 fh;
-> >  	u8 bar;
-> > +	u16 count;
-> >  };
-> > 
-> >  extern struct zpci_iomap_entry *zpci_iomap_start;
-> > diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-> > index 2fa7b14..51cb653 100644
-> > --- a/arch/s390/pci/pci.c
-> > +++ b/arch/s390/pci/pci.c
-> > @@ -259,7 +259,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count)
-> >  }
-> > 
-> >  /* Create a virtual mapping cookie for a PCI BAR */
-> > -void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
-> > +void __iomem *pci_iomap_range(struct pci_dev *pdev,
-> > +			      int bar,
-> > +			      unsigned long offset,
-> > +			      unsigned long max)
-> >  {
-> >  	struct zpci_dev *zdev =	get_zdev(pdev);
-> >  	u64 addr;
-> > @@ -270,14 +273,27 @@ void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
-> > 
-> >  	idx = zdev->bars[bar].map_idx;
-> >  	spin_lock(&zpci_iomap_lock);
-> > -	zpci_iomap_start[idx].fh = zdev->fh;
-> > -	zpci_iomap_start[idx].bar = bar;
-> > +	if (zpci_iomap_start[idx].count++) {
-> > +		BUG_ON(zpci_iomap_start[idx].fh != zdev->fh ||
-> > +		       zpci_iomap_start[idx].bar != bar);
-> > +	} else {
-> > +		zpci_iomap_start[idx].fh = zdev->fh;
-> > +		zpci_iomap_start[idx].bar = bar;
-> > +	}
-> > +	/* Detect overrun */
-> > +	BUG_ON(!zpci_iomap_start[idx].count);
-> >  	spin_unlock(&zpci_iomap_lock);
-> > 
-> >  	addr = ZPCI_IOMAP_ADDR_BASE | ((u64) idx << 48);
-> > -	return (void __iomem *) addr;
-> > +	return (void __iomem *) addr + offset;
-> >  }
-> > -EXPORT_SYMBOL_GPL(pci_iomap);
-> > +EXPORT_SYMBOL_GPL(pci_iomap_range);
-> > +
-> > +void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-> > +{
-> > +	return pci_iomap_range(dev, bar, 0, maxlen);
-> > +}
-> > +EXPORT_SYMBOL(pci_iomap);
+>  > And when spinlocks start getting  contention, *nested* spinlocks
+>  > really really hurt. And you've got all the spinlock debugging on 
+> etc,
+>  > don't you?
 > 
-> This was EXPORT_SYMBOL_GPL. I guess, for this patch, it should stay that
-> way. ...Hm, everyone else has this stuff as EXPORT_SYMBOL looks like we
-> should use that too.
-> 
-> Regards,
-> Sebastian
+> Yeah, though remember this seems to have for some reason gotten worse
+> in more recent builds. I've been running kitchen-sink debug kernels
+> for my trinity runs for the last three years, and it's only this
+> last few months that this has got to be enough of a problem that I'm
+> not seeing the more interesting bugs. (Or perhaps we're just getting
+> better at fixing them in -next now, so my runs are lasting longer..)
 
-OK, so you want two patches: one with new functionality,
-one switching to EXPORT_SYMBOL?
+I think we're also adding more and more debugging.  It's definitely a 
+good thing, but I think a lot of them are expected to stay off until 
+you're trying to track down a specific problem.  I do always run with 
+CONFIG_DEBUG_PAGEALLOC here and lock debugging/lockdep, and aside from 
+being slow haven't hit trouble.
+
+I know it's 3.16 instead of 3.17, but 16K stacks are probably 
+increasing the pressure on everything in these runs.  It's my favorite 
+kernel feature this year, but it's likely to make trinity hurt more on 
+memory constrained boxes.
+
+Your trace with hrtimer debugging yesterday made some sense, but it 
+still should have been survivable.  I mean you should have kept seeing 
+lockups from that one poor task being starved out of filling up his 
+pool.  I know you have traces with a ton more output, but I'm still 
+wondering if usb-serial and printk from NMI really get along well.  I'd 
+try with debugging back on and serial consoles off.  We carry patches 
+to make oom print less, just because the time spent on our slow 
+emulated serial console is enough to back the box up into a death 
+spiral.
+
+The fairness of spinlock debugging is a really great point too, 
+definitely worth trying with that off (and fixing, I love spinlock 
+debugging).
+
+-chris
 
 
-> > 
-> >  void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
-> >  {
-> > @@ -285,8 +301,12 @@ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
-> > 
-> >  	idx = (((__force u64) addr) & ~ZPCI_IOMAP_ADDR_BASE) >> 48;
-> >  	spin_lock(&zpci_iomap_lock);
-> > -	zpci_iomap_start[idx].fh = 0;
-> > -	zpci_iomap_start[idx].bar = 0;
-> > +	/* Detect underrun */
-> > +	BUG_ON(!zpci_iomap_start[idx].count);
-> > +	if (!--zpci_iomap_start[idx].count) {
-> > +		zpci_iomap_start[idx].fh = 0;
-> > +		zpci_iomap_start[idx].bar = 0;
-> > +	}
-> >  	spin_unlock(&zpci_iomap_lock);
-> >  }
-> >  EXPORT_SYMBOL_GPL(pci_iounmap);
-> > -- 
-> > MST
-> > 
-> > 
+
