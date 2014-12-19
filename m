@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240AbaLSSdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 13:33:00 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:46281 "EHLO
+	id S1752497AbaLSSeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 13:34:21 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:46488 "EHLO
 	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbaLSSc7 (ORCPT
+	with ESMTP id S1751165AbaLSSeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 13:32:59 -0500
-Date: Fri, 19 Dec 2014 10:32:37 -0800
+	Fri, 19 Dec 2014 13:34:19 -0500
+Date: Fri, 19 Dec 2014 10:33:43 -0800
 From: Guenter Roeck <linux@roeck-us.net>
 To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
 Cc: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Valdis.Kletnieks@vt.edu,
-        Steven Honeyman <stevenhoneyman@gmail.com>,
         Jean Delvare <jdelvare@suse.de>,
         Gabriele Mazzotta <gabriele.mzt@gmail.com>,
-        Jochen Eisinger <jochen@penguin-breeder.org>
-Subject: Re: [PATCH v2 1/2] i8k: Autodetect maximal fan speed and fan RPM
+        Steven Honeyman <stevenhoneyman@gmail.com>,
+        Jochen Eisinger <jochen@penguin-breeder.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] i8k: Autodetect maximal fan speed and fan RPM
  multiplier
-Message-ID: <20141219183237.GA6767@roeck-us.net>
+Message-ID: <20141219183343.GB6767@roeck-us.net>
 References: <1418155621-21644-1-git-send-email-pali.rohar@gmail.com>
- <1419012268-20805-1-git-send-email-pali.rohar@gmail.com>
+ <201412101250.13891@pali>
+ <548853CB.7000704@roeck-us.net>
+ <201412181213.36143@pali>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1419012268-20805-1-git-send-email-pali.rohar@gmail.com>
+In-Reply-To: <201412181213.36143@pali>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-Authenticated_sender: guenter@roeck-us.net
 X-OutGoing-Spam-Status: No, score=-1.0
@@ -34,13 +36,13 @@ X-CTCH-PVer: 0000001
 X-CTCH-Spam: Unknown
 X-CTCH-VOD: Unknown
 X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54946F59.0229,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-RefID: str=0001.0A020202.54946FB4.0150,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
 X-CTCH-Score: 0.001
 X-CTCH-ScoreCust: 0.000
 X-CTCH-Rules: C_4847,
 X-CTCH-SenderID: linux@roeck-us.net
 X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalMessages: 17
 X-CTCH-SenderID-TotalSpam: 0
 X-CTCH-SenderID-TotalSuspected: 0
 X-CTCH-SenderID-TotalConfirmed: 0
@@ -60,255 +62,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 07:04:27PM +0100, Pali Rohár wrote:
-> This patch adds new function i8k_get_fan_nominal_speed() for doing SMM call
-> which will return nominal fan RPM for specified fan speed. It returns nominal
-> RPM value at which fan operate when speed (0, 1, 2, 3) is set. It looks like
-> RPM value is not accurate, but still provides very useful information.
+On Thu, Dec 18, 2014 at 12:13:35PM +0100, Pali Rohár wrote:
+> On Wednesday 10 December 2014 15:08:11 Guenter Roeck wrote:
+> > On 12/10/2014 03:50 AM, Pali Rohár wrote:
+> > > On Tuesday 09 December 2014 23:42:08 Guenter Roeck wrote:
+> > >> On Tue, Dec 09, 2014 at 09:23:22PM +0100, Pali Rohár wrote:
+> > >>> On Tuesday 09 December 2014 21:20:23 Guenter Roeck wrote:
+> > >>>> On Tue, Dec 09, 2014 at 09:07:00PM +0100, Pali Rohár 
+> wrote:
+> > >>>>> This patch adds new function i8k_get_fan_nominal_rpm()
+> > >>>>> for doing SMM call which will return nominal fan RPM
+> > >>>>> for specified fan speed. It returns nominal RPM value
+> > >>>>> at which fan operate when speed is set. It looks like
+> > >>>>> RPM value is not accurate, but still provides very
+> > >>>>> useful information.
+> > >>>>> 
+> > >>>>> First it can be used to validate if certain fan speed
+> > >>>>> could be accepted by SMM for setting fan speed and we
+> > >>>>> can use this routine to detect maximal fan speed.
+> > >>>>> 
+> > >>>>> Second it returns RPM value, so we can check if value
+> > >>>>> looks correct with multiplier 30 or multiplier 1 (until
+> > >>>>> now only these two multiplier was used). If RPM value
+> > >>>>> with multiplier 30 is too high, then multiplier 1 is
+> > >>>>> used.
+> > >>>>> 
+> > >>>>> In case when SMM reports that new function is not
+> > >>>>> supported we will fallback to old hardcoded values.
+> > >>>>> Maximal fan speed would be 2 and RPM multiplier 30.
+> > >>>>> 
+> > >>>>> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+> > >>>>> ---
+> > >>>>> I tested this patch only on my Dell Latitude E6440 and
+> > >>>>> autodetection worked fine Before appying this patch it
+> > >>>>> should be tested on some other dell machines too but if
+> > >>>>> machine does not support i8k_get_fan_nominal_rpm()
+> > >>>>> driver should fallback to old values. So patch should
+> > >>>>> be without regressions.
+> > >>>> 
+> > >>>> It looks like many of your error checks are unnecessary.
+> > >>>> Why did you add those ?
+> > >>>> 
+> > >>>> Please refrain from adding unnecessary code.
+> > >>>> 
+> > >>>> Guenter
+> > >>> 
+> > >>> Which error checks do you mean?
+> > >> 
+> > >> There are several you added. I noticed the ones around
+> > >> 'index', which would only be hit on coding errors. At that
+> > >> point I stopped looking further and did not verify which of
+> > >> the other added error checks are unnecessary as well.
+> > >> 
+> > >> A quick additional check reveals that the fan variable
+> > >> range check in i8k_get_fan_nominal_rpm is completely
+> > >> unnecessary - if the range was wrong, the calling code
+> > >> would fail as well, since you unconditionally write into
+> > >> an array indexed by the very same variable. Given the
+> > >> simplicity of the calling code, it can even be
+> > >> mathematically proven that the error condition you are
+> > >> checking can never happen.
+> > >> 
+> > >> With that I really stopped looking further.
+> > >> 
+> > >> Guenter
+> > > 
+> > > Should I remove those access out-of-array checks?
+> > 
+> > If you want me to look into it further. In general, I don't
+> > accept code like this, since it increases kernel size for no
+> > good reason. It also makes it more difficult to find _real_
+> > problems in the code since it distracts from seeing those.
+> > 
+> > Guenter
 > 
-> First it can be used to validate if certain fan speed could be accepted by SMM
-> for setting fan speed and we can use this routine to detect maximal fan speed.
+> Ok, I will rework this patch and drop that first cosmetic.
 > 
-> Second it returns RPM value, so we can check if value looks correct with
-> multiplier 30 or multiplier 1 (until now only these two multiplier were used).
-> If RPM value with multiplier 30 is too high, then multiplier 1 is used.
-> 
-> In case when SMM reports that new function is not supported we will fallback
-> to old hardcoded values. Maximal fan speed would be 2 and RPM multiplier 30.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Tested-By: Pali Rohár <pali.rohar@gmail.com>
-> Tested-By: Steven Honeyman <stevenhoneyman@gmail.com>
-> Tested-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> ---
->  drivers/char/i8k.c |  126 +++++++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 105 insertions(+), 21 deletions(-)
-> 
-> diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
-> index 48d701c..094a6b8 100644
-> --- a/drivers/char/i8k.c
-> +++ b/drivers/char/i8k.c
-> @@ -6,6 +6,7 @@
->   * Hwmon integration:
->   * Copyright (C) 2011  Jean Delvare <jdelvare@suse.de>
->   * Copyright (C) 2013, 2014  Guenter Roeck <linux@roeck-us.net>
-> + * Copyright (C) 2014  Pali Rohár <pali.rohar@gmail.com>
->   *
->   * This program is free software; you can redistribute it and/or modify it
->   * under the terms of the GNU General Public License as published by the
-> @@ -42,12 +43,14 @@
->  #define I8K_SMM_SET_FAN		0x01a3
->  #define I8K_SMM_GET_FAN		0x00a3
->  #define I8K_SMM_GET_SPEED	0x02a3
-> +#define I8K_SMM_GET_NOM_SPEED	0x04a3
->  #define I8K_SMM_GET_TEMP	0x10a3
->  #define I8K_SMM_GET_TEMP_TYPE	0x11a3
->  #define I8K_SMM_GET_DELL_SIG1	0xfea3
->  #define I8K_SMM_GET_DELL_SIG2	0xffa3
->  
-> -#define I8K_FAN_MULT		30
-> +#define I8K_FAN_DEFAULT_MULT	30
-> +#define I8K_FAN_MAX_RPM		30000
->  #define I8K_MAX_TEMP		127
->  
->  #define I8K_FN_NONE		0x00
-> @@ -64,9 +67,9 @@ static DEFINE_MUTEX(i8k_mutex);
->  static char bios_version[4];
->  static struct device *i8k_hwmon_dev;
->  static u32 i8k_hwmon_flags;
-> -static int i8k_fan_mult;
-> -static int i8k_pwm_mult;
-> -static int i8k_fan_max = I8K_FAN_HIGH;
-> +static int i8k_fan_mult[2];
-> +static int i8k_pwm_mult[2];
-> +static int i8k_fan_max[2];
->  
-The rationale for this change is not explained in the commit log.
-
-Do you have any indication that those values would ever be different
-for the two fans, ie that you actually need arrays here ?
-
->  #define I8K_HWMON_HAVE_TEMP1	(1 << 0)
->  #define I8K_HWMON_HAVE_TEMP2	(1 << 1)
-> @@ -95,13 +98,13 @@ static bool power_status;
->  module_param(power_status, bool, 0600);
->  MODULE_PARM_DESC(power_status, "Report power status in /proc/i8k");
->  
-> -static int fan_mult = I8K_FAN_MULT;
-> +static int fan_mult;
->  module_param(fan_mult, int, 0);
-> -MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with");
-> +MODULE_PARM_DESC(fan_mult, "Factor to multiply fan speed with (default: autodetect)");
->  
-> -static int fan_max = I8K_FAN_HIGH;
-> +static int fan_max;
->  module_param(fan_max, int, 0);
-> -MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed");
-> +MODULE_PARM_DESC(fan_max, "Maximum configurable fan speed (default: autodetect)");
->  
->  static int i8k_open_fs(struct inode *inode, struct file *file);
->  static long i8k_ioctl(struct file *, unsigned int, unsigned long);
-> @@ -271,8 +274,25 @@ static int i8k_get_fan_speed(int fan)
->  {
->  	struct smm_regs regs = { .eax = I8K_SMM_GET_SPEED, };
->  
-> +	if (fan < 0 || fan >= ARRAY_SIZE(i8k_fan_mult))
-> +		return -EINVAL;
-> +
-
-This range check (and probably others) is still unnecessary.
+Fine, but as mentioned before I still dislike unnecessary
+value range checks.
 
 Guenter
-
->  	regs.ebx = fan & 0xff;
-> -	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult;
-> +	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult[fan];
-> +}
-> +
-> +/*
-> + * Read the fan nominal rpm for specific fan speed.
-> + */
-> +static int i8k_get_fan_nominal_speed(int fan, int speed)
-> +{
-> +	struct smm_regs regs = { .eax = I8K_SMM_GET_NOM_SPEED, };
-> +
-> +	if (fan < 0 || fan >= ARRAY_SIZE(i8k_fan_mult))
-> +		return -EINVAL;
-> +
-> +	regs.ebx = (fan & 0xff) | (speed << 8);
-> +	return i8k_smm(&regs) ? : (regs.eax & 0xffff) * i8k_fan_mult[fan];
->  }
->  
->  /*
-> @@ -282,9 +302,12 @@ static int i8k_set_fan(int fan, int speed)
->  {
->  	struct smm_regs regs = { .eax = I8K_SMM_SET_FAN, };
->  
-> -	speed = (speed < 0) ? 0 : ((speed > i8k_fan_max) ? i8k_fan_max : speed);
-> -	regs.ebx = (fan & 0xff) | (speed << 8);
-> +	if (speed < 0)
-> +		speed = 0;
-> +	if (fan >= 0 && fan < ARRAY_SIZE(i8k_fan_max) && speed > i8k_fan_max[fan])
-> +		speed = i8k_fan_max[fan];
->  
-> +	regs.ebx = (fan & 0xff) | (speed << 8);
->  	return i8k_smm(&regs) ? : i8k_get_fan_status(fan);
->  }
->  
-> @@ -562,7 +585,8 @@ static ssize_t i8k_hwmon_show_pwm(struct device *dev,
->  	status = i8k_get_fan_status(index);
->  	if (status < 0)
->  		return -EIO;
-> -	return sprintf(buf, "%d\n", clamp_val(status * i8k_pwm_mult, 0, 255));
-> +	return sprintf(buf, "%d\n", clamp_val(status * i8k_pwm_mult[index],
-> +					      0, 255));
->  }
->  
->  static ssize_t i8k_hwmon_set_pwm(struct device *dev,
-> @@ -576,7 +600,8 @@ static ssize_t i8k_hwmon_set_pwm(struct device *dev,
->  	err = kstrtoul(buf, 10, &val);
->  	if (err)
->  		return err;
-> -	val = clamp_val(DIV_ROUND_CLOSEST(val, i8k_pwm_mult), 0, i8k_fan_max);
-> +	val = clamp_val(DIV_ROUND_CLOSEST(val, i8k_pwm_mult[index]), 0,
-> +			i8k_fan_max[index]);
->  
->  	mutex_lock(&i8k_mutex);
->  	err = i8k_set_fan(index, val);
-> @@ -854,7 +879,9 @@ MODULE_DEVICE_TABLE(dmi, i8k_dmi_table);
->   */
->  static int __init i8k_probe(void)
->  {
-> +	const struct i8k_config_data *conf;
->  	const struct dmi_system_id *id;
-> +	int fan, val, ret;
->  
->  	/*
->  	 * Get DMI information
-> @@ -883,18 +910,75 @@ static int __init i8k_probe(void)
->  			return -ENODEV;
->  	}
->  
-> -	i8k_fan_mult = fan_mult;
-> -	i8k_fan_max = fan_max ? : I8K_FAN_HIGH;	/* Must not be 0 */
-> +	/*
-> +	 * Autodetect fan multiplier and maximal fan speed from dmi config
-> +	 * Values specified in module parameters override values from dmi
-> +	 */
->  	id = dmi_first_match(i8k_dmi_table);
->  	if (id && id->driver_data) {
-> -		const struct i8k_config_data *conf = id->driver_data;
-> +		conf = id->driver_data;
-> +		if (fan_mult <= 0 && conf->fan_mult > 0)
-> +			fan_mult = conf->fan_mult;
-> +		if (fan_max <= 0 && conf->fan_max > 0)
-> +			fan_max = conf->fan_max;
-> +	}
-> +
-> +	if (fan_mult <= 0) {
-> +		/*
-> +		 * Autodetect fan multiplier for each fan based on nominal rpm
-> +		 * First set default fan multiplier for each fan
-> +		 * And if it reports rpm value too high then set multiplier to 1
-> +		 *
-> +		 * Try also setting multiplier from current rpm, but this will
-> +		 * work only in case when fan is not turned off. It is better
-> +		 * then nothing for machines which does not support nominal rpm
-> +		 * SMM function.
-> +		 */
-> +		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_mult); ++fan) {
-> +			i8k_fan_mult[fan] = I8K_FAN_DEFAULT_MULT;
-> +			if (i8k_get_fan_speed(fan) > I8K_FAN_MAX_RPM) {
-> +				i8k_fan_mult[fan] = 1;
-> +				continue;
-> +			}
-> +			for (val = 0; val < 256; ++val) {
-> +				ret = i8k_get_fan_nominal_speed(fan, val);
-> +				if (ret > I8K_FAN_MAX_RPM) {
-> +					i8k_fan_mult[fan] = 1;
-> +					break;
-> +				} else if (ret < 0) {
-> +					break;
-> +				}
-> +			}
-> +		}
-> +	} else {
-> +		/* Fan multiplier was specified in module param or in dmi */
-> +		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_mult); ++fan)
-> +			i8k_fan_mult[fan] = fan_mult;
-> +	}
->  
-> -		if (fan_mult == I8K_FAN_MULT && conf->fan_mult)
-> -			i8k_fan_mult = conf->fan_mult;
-> -		if (fan_max == I8K_FAN_HIGH && conf->fan_max)
-> -			i8k_fan_max = conf->fan_max;
-> +	if (fan_max <= 0) {
-> +		/*
-> +		 * Autodetect maximal fan speed value for each fan
-> +		 * Speed value is valid if i8k_get_fan_nominal_speed() not fail
-> +		 */
-> +		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_max); ++fan) {
-> +			for (val = 0; val < 256; ++val) {
-> +				if (i8k_get_fan_nominal_speed(fan, val) < 0)
-> +					break;
-> +			}
-> +			--val; /* set last value which not failed */
-> +			if (val <= 0) /* Must not be 0 (and non negative) */
-> +				val = I8K_FAN_HIGH;
-> +			i8k_fan_max[fan] = val;
-> +		}
-> +	} else {
-> +		/* Maximal fan speed was specified in module param or in dmi */
-> +		for (fan = 0; fan < ARRAY_SIZE(i8k_fan_max); ++fan)
-> +			i8k_fan_max[fan] = fan_max;
->  	}
-> -	i8k_pwm_mult = DIV_ROUND_UP(255, i8k_fan_max);
-> +
-> +	for (fan = 0; fan < ARRAY_SIZE(i8k_pwm_mult); ++fan)
-> +		i8k_pwm_mult[fan] = DIV_ROUND_UP(255, i8k_fan_max[fan]);
->  
->  	return 0;
->  }
-> -- 
-> 1.7.9.5
-> 
