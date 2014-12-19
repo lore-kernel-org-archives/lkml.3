@@ -1,29 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaLSG7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 01:59:41 -0500
-Received: from mga03.intel.com ([134.134.136.65]:65297 "EHLO mga03.intel.com"
+	id S1752042AbaLSHFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 02:05:19 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13198 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751602AbaLSG7k convert rfc822-to-8bit (ORCPT
+	id S1751243AbaLSHFR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 01:59:40 -0500
+	Fri, 19 Dec 2014 02:05:17 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.07,605,1413270000"; 
-   d="scan'208";a="626422986"
-From: "Du, Changbin" <changbin.du@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+   d="scan'208";a="626425101"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: "Wu, Feng" <feng.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Wu, Hao" <hao.wu@intel.com>
-Subject: RE: [DISCUSSION] USB device remote wakeup is not working for S3 case
-Thread-Topic: [DISCUSSION] USB device remote wakeup is not working for S3
- case
-Thread-Index: AdAaujexwQVjoEsORCWW3pR7AJbQmf//tgsA//6C/XA=
-Date: Fri, 19 Dec 2014 06:55:55 +0000
-Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01C42A57@SHSMSX103.ccr.corp.intel.com>
-References: <0C18FE92A7765D4EB9EE5D38D86A563A01C428B4@SHSMSX103.ccr.corp.intel.com>
- <Pine.LNX.4.44L0.1412181028510.1745-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1412181028510.1745-100000@iolanthe.rowland.org>
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Topic: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is set
+Thread-Index: AQHQGqESVjGwCGGcx0GfXydnqyBdC5yVc2HggADGJ7CAAAKSQIAAFxZwgAAD1tCAAAHl0IAAAhPwgAAKzNCAABf3gA==
+Date: Fri, 19 Dec 2014 07:04:10 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC05187@SHSMSX104.ccr.corp.intel.com>
+References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
+	<1418397300-10870-26-git-send-email-feng.wu@intel.com>
+	<5491C0A2.7040503@redhat.com>
+	<E959C4978C3B6342920538CF579893F002307C4A@SHSMSX104.ccr.corp.intel.com>
+	<5492926E.8070207@redhat.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04938@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ABEB@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC04FED@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230ADA0@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC05059@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230AE04@SHSMSX104.ccr.corp.intel.com>
+ <A9667DDFB95DB7438FA9D7D576C3D87E0AC050B1@SHSMSX104.ccr.corp.intel.com>
+ <E959C4978C3B6342920538CF579893F00230AED8@SHSMSX104.ccr.corp.intel.com>
+In-Reply-To: <E959C4978C3B6342920538CF579893F00230AED8@SHSMSX104.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,40 +47,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There's a simple solution: Call device_set_wakeup_enable() for the device!
-> You can do this from the command line by:
+Wu, Feng wrote on 2014-12-19:
 > 
-> 	echo auto >/sys/bus/usb/devices/.../power/control
 > 
-> where the "..." is the pathname for your device.
+> Zhang, Yang Z wrote on 2014-12-19:
+>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN' is
+>> set
+>> 
+>> Wu, Feng wrote on 2014-12-19:
+>>> 
+>>> 
+>>> Zhang, Yang Z wrote on 2014-12-19:
+>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>> is set
+>>>> 
+>>>> Wu, Feng wrote on 2014-12-19:
+>>>>> 
+>>>>> 
+>>>>> Zhang, Yang Z wrote on 2014-12-19:
+>>>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>>>> is set
+>>>>>> 
+>>>>>> Wu, Feng wrote on 2014-12-19:
+>>>>>>> 
+>>>>>>> 
+>>>>>>> iommu-bounces@lists.linux-foundation.org wrote on
+>>>>>> mailto:iommu-bounces@lists.linux-foundation.org] On Behalf Of:
+>>>>>>>> Cc: iommu@lists.linux-foundation.org;
+>>>>>>>> linux-kernel@vger.kernel.org; kvm@vger.kernel.org
+>>>>>>>> Subject: RE: [v3 25/26] KVM: Suppress posted-interrupt when 'SN'
+>>>>>>>> is set
+>>>>>>>> 
+>>>>>>>> Paolo Bonzini wrote on 2014-12-18:
+>>>>>>>>> 
+>>>>>>>>> 
+>>>>>>>>> On 18/12/2014 04:14, Wu, Feng wrote:
+>>>>>>>>>> 
+>>>>>>>>>> 
+>>>>>>>>>> linux-kernel-owner@vger.kernel.org wrote on
+>>>>>>>> mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paolo:
+>>>>>>>>>>> x86@kernel.org; Gleb Natapov; Paolo Bonzini;
+>>>>>>>>>>> dwmw2@infradead.org;
+>>>>>>>>>>> joro-zLv9SwRftAIdnm+yROfE0A@public.gmane.org; Alex Williamson;
+>>>>>>>>>>> joro-zLv9SwRftAIdnm+Jiang Liu Cc:
+>>>>>>>>>>> iommu@lists.linux-foundation.org;
+>>>>>>>>>>> linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org;
+> KVM
+>> list;
+>>>>>>>>>>> Eric Auger Subject: Re: [v3 25/26] KVM: Suppress
+>>>>>>>>>>> posted-interrupt when 'SN' is set
+>>>>>>>>>>> 
+>>>>>>>>>>> 
+>>>>>>>>>>> 
+>>>>>>>>>>> On 12/12/2014 16:14, Feng Wu wrote:
+>>>>>>>>>>>> Currently, we don't support urgent interrupt, all
+>>>>>>>>>>>> interrupts are recognized as non-urgent interrupt, so we
+>>>>>>>>>>>> cannot send posted-interrupt when 'SN' is set.
+>>>>>>>>>>> 
+>>>>>>>>>>> Can this happen?  If the vcpu is in guest mode, it cannot
+>>>>>>>>>>> have been scheduled out, and that's the only case when SN is set.
+>>>>>>>>>>> 
+>>>>>>>>>>> Paolo
+>>>>>>>>>> 
+>>>>>>>>>> Currently, the only place where SN is set is vCPU is
+>>>>>>>>>> preempted and
+>>>>>>>> 
+>>>>>>>> If the vCPU is preempted, shouldn't the subsequent be ignored?
+>>>>>>>> What happens if a PI is occurs when vCPU is preempted?
+>>>>>>> 
+>>>>>>> If a vCPU is preempted, the 'SN' bit is set, the subsequent
+>>>>>>> interrupts are suppressed for posting.
+>>>>>> 
+>>>>>> I mean what happens if we don't set SN bit. From my point, if
+>>>>>> preempter already disabled the interrupt, it is ok to leave SN
+>>>>>> bit as zero. But if preempter enabled the interrupt, doesn't
+>>>>>> this mean he allow interrupt to happen? BTW, since there
+>>>>>> already has ON bit, so this means there only have one interrupt
+>>>>>> arrived at most and it doesn't hurt performance. Do we really need to set SN bit?
+>>>>> 
+>>>>> 
+>>>>> See this scenario:
+>>>>> vCPU0 is running on pCPU0
+>>>>> --> vCPU0 is preempted by vCPU1
+>>>>> --> Then vCPU1 is running on pCPU0 and vCPU0 is waiting for
+>>>>> --> schedule in runqueue
+>>>>> 
+>>>>> If the we don't set SN for vCPU0, then all subsequent interrupts
+>>>>> for
+>>>>> vCPU0 is posted to vCPU1, this will consume hardware and
+>>>>> software
+>>>> 
+>>>> The PI vector for vCPU1 is notification vector, but the PI vector
+>>>> for
+>>>> vCPU0 should be wakeup vector. Why vCPU1 will consume this PI event?
+>>> 
+>>> Wakeup vector is only used for blocking case, when vCPU is
+>>> preempted and waiting in the runqueue, the NV is the notification vector.
+>> 
+>> I see your point. But from performance point, if we can schedule the
+>> vCPU to another PCPU to handle the interrupt, it would helpful. But I
+>> remember current KVM will not schedule the vCPU in run queue (even
+>> though it got preempted) to another pCPU to run(Am I right?). So it may
+>> hard to do it.
+>> 
 > 
-Yes, this can enable auto-suspend for usb device like a mouse. And remote wakeup
-does work for RPM because rpm suspend refers to the needs_remote_wakeup flag.
-But this doesn't impact system level suspend. The correct thing is:
-	
-	echo enabled >/sys/bus/usb/devices/.../power/wakeup
+> KVM is using the Linux scheduler, when the preempted vCPU (in
+> runqueue) is scheduled again depends on the scheduling algorithm
+> itself, I think it is a little hard for us to get involved.
+> 
+> I think what you mentioned is a little like the urgent interrupt in VT-d PI Spec.
+> For this kind of interrupts, if an interrupt is coming for an
+> preempted vCPU (waiting in the run queue), we need to schedule the
+> vCPU immediately. This is some real time things. And we don't support urgent interrupt so far.
 
-This will call device_set_wakeup_enable() for the device and should work. But 
-unfortunately it seems didn't work even the wakeup file shows "enabled" which 
-means the device is wakeup enabled(Tried on 3.16 & 3.18 kernel). This is a different
-issue, I will check.
+Yes. IIRC, if we use two global vectors mechanism properly, there should no need to use hardware urgent interrupt mechanism. :)
 
-> 	if (interface->desc.bInterfaceSubClass ==
-> USB_INTERFACE_SUBCLASS_BOOT &&
-> 			interface->desc.bInterfaceProtocol ==
-> 				USB_INTERFACE_PROTOCOL_KEYBOARD) {
-> 		usbhid_set_leds(hid);
-> 		device_set_wakeup_enable(&dev->dev, 1);
-> 	}
 > 
-> How about leaving everything the way it is now?  If you want to enable
-> wakeup for something like a USB mouse, you can write a udev script to do it
-> as shown above.
+> Thanks,
+> Feng
 > 
-> Alan Stern
+>>> 
+>>> Thanks,
+>>> Feng
+>>> 
+>>>> 
+>>>>> efforts and in fact it is not needed at all. If SN is set for
+>>>>> vCPU0, VT-d hardware will not issue Notification Event for vCPU0
+>>>>> when an interrupt is for it, but just setting the related PIR bit.
+>>>>> 
+>>>>> Thanks,
+>>>>> Feng
+>>>>> 
+>>>>>> 
+>>>>>>> 
+>>>>>>> Thanks,
+>>>>>>> Feng
+>>>>>>> 
+>>>>>>>> 
+>>>>>>>>>> waiting for the next scheduling in the runqueue. But I am
+>>>>>>>>>> not sure whether we need to set SN for other purpose in future.
+>>>>>>>>>> Adding SN checking here is just to follow the Spec.
+>>>>>>>>>> non-urgent interrupts are suppressed
+>>>>>>>>> when SN is set.
+>>>>>>>>> 
+>>>>>>>>> I would change that to a WARN_ON_ONCE then.
+>>>>>>>> 
+>>>>>>>> 
+>>>>>>>> Best regards,
+>>>>>>>> Yang
+>>>>>>>> 
+>>>>>>>> 
+>>>>>>>> _______________________________________________
+>>>>>>>> iommu mailing list
+>>>>>>>> iommu@lists.linux-foundation.org
+>>>>>>>> https://lists.linuxfoundation.org/mailman/listinfo/iommu
+>>>>>> 
+>>>>>> 
+>>>>>> Best regards,
+>>>>>> Yang
+>>>>>> 
+>>>> 
+>>>> 
+>>>> Best regards,
+>>>> Yang
+>>>> 
+>> 
+>> 
+>> Best regards,
+>> Yang
+>>
 
-Could we also enable wakeup for usb mouse? Or is there any concern to enable it?
-Per my opinion, most people may expect clicking mouse can awake system.
 
-Regards,
-Du, Changbin
+Best regards,
+Yang
+
+
