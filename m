@@ -1,121 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaLSOGM (ORCPT <rfc822;w@1wt.eu>);
+	id S1752860AbaLSOGS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 09:06:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45971 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752841AbaLSOGM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Dec 2014 09:06:12 -0500
-Received: from mail-by2on0066.outbound.protection.outlook.com ([207.46.100.66]:38432
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752098AbaLSOGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 09:06:07 -0500
-Date: Fri, 19 Dec 2014 15:05:50 +0100
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+Date: Fri, 19 Dec 2014 06:05:11 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-15516a3b8633a32f03a82a2db23b87cf9600514c@git.kernel.org>
+Cc: bp@alien8.de, rjw@rjwysocki.net, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, gregkh@linuxfoundation.org, konrad.wilk@oracle.com,
+        joro@8bytes.org, grant.likely@linaro.org, rdunlap@infradead.org,
+        bhelgaas@google.com, hpa@zytor.com, pavel@ucw.cz, len.brown@intel.com,
+        benh@kernel.crashing.org, prarit@redhat.com, tony.luck@intel.com,
+        tglx@linutronix.de, yinghai@kernel.org, jiang.liu@linux.intel.com
+Reply-To: rjw@rjwysocki.net, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        bp@alien8.de, grant.likely@linaro.org, rdunlap@infradead.org,
+        bhelgaas@google.com, gregkh@linuxfoundation.org,
+        konrad.wilk@oracle.com, joro@8bytes.org, len.brown@intel.com,
+        hpa@zytor.com, pavel@ucw.cz, tglx@linutronix.de,
+        jiang.liu@linux.intel.com, yinghai@kernel.org,
+        benh@kernel.crashing.org, prarit@redhat.com, tony.luck@intel.com
+In-Reply-To: <1414387308-27148-17-git-send-email-jiang.liu@linux.intel.com>
+References: <1414387308-27148-17-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] x86, irq, ACPI:
+  Implement interfaces to support ACPI based IOAPIC hot-removal
+Git-Commit-ID: 15516a3b8633a32f03a82a2db23b87cf9600514c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        <atull@opensource.altera.com>
-CC: <gregkh@linuxfoundation.org>, <jgunthorpe@obsidianresearch.com>,
-        <hpa@zytor.com>, <monstr@monstr.eu>, <michal.simek@xilinx.com>,
-        <rdunlap@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <pantelis.antoniou@konsulko.com>,
-        <robh+dt@kernel.org>, <grant.likely@linaro.org>,
-        <iws@ovro.caltech.edu>, <linux-doc@vger.kernel.org>, <pavel@denx.de>,
-        <broonie@kernel.org>, <philip@balister.org>, <rubini@gnudd.com>,
-        <jason@lakedaemon.net>, <kyle.teske@ni.com>, <nico@linaro.org>,
-        <balbi@ti.com>, <m.chehab@samsung.com>, <davidb@codeaurora.org>,
-        <rob@landley.net>, <davem@davemloft.net>, <cesarb@cesarb.net>,
-        <sameo@linux.intel.com>, <akpm@linux-foundation.org>,
-        <linus.walleij@linaro.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <devel@driverdev.osuosl.org>,
-        <delicious.quinoa@gmail.com>, <dinguyen@opensource.altera.com>,
-        <yvanderv@opensource.altera.com>
-Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
- fpga manager
-References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
- <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
- <20141219085516.GF13070@pengutronix.de>
-In-Reply-To: <20141219085516.GF13070@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21186.006
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(377454003)(51704005)(189002)(479174004)(24454002)(199003)(164054003)(50986999)(74316001)(83506001)(23746002)(92566001)(107046002)(104016003)(50466002)(106466001)(19580395003)(19580405001)(6806004)(86362001)(99396003)(64706001)(120916001)(20776003)(46102003)(65956001)(47776003)(65806001)(108616004)(4396001)(21056001)(64126003)(76176999)(87936001)(92726002)(54356999)(77156002)(62966003)(31966008)(2950100001)(77096005)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2FFO11HUB014;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB014;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2FFO11HUB014;
-X-Forefront-PRVS: 0430FA5CB7
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2FFO11HUB014;
-X-OriginatorOrg: xilinx.com
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
-> Hi!
-> 
-> Just a minor nitpick, but...
-> 
-> On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
->> From: Alan Tull <atull@opensource.altera.com>
->>
->> Add driver to fpga manager framework to allow configuration
->> of FPGA in Altera SoCFPGA parts.
->>
->> Signed-off-by: Alan Tull <atull@opensource.altera.com>
->> Acked-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->> v2: fpga_manager struct now contains struct device
->>     fpga_manager_register parameters now take device
->>
->> v3: skip a version to align versions
->>
->> v4: move to drivers/staging
->>
->> v5: fix array_size.cocci warnings
->>     fix platform_no_drv_owner.cocci warnings
->>     Remove .owner = THIS_MODULE
->>     include asm/irq.h
->>     clean up list of includes
->>     use altera_fpga_reset for ops
->>     use enum fpga_mgr_states or u32 as needed
->>     use devm_request_irq
->>     check irq <= 0 instead of == NO_IRQ
->>     Use ARRAY_SIZE
->>     rename altera -> socfpga
->>     static const socfpga_fpga_ops
->>     header moved to linux/fpga/ folder
->>     remove ifdef'ed code
->>     use platform_get_resource and platform_get_irq
->>     move .probe and .remove lines adjacent
->>     use module_platform_driver
->>     use __maybe_unused
->>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
->>     fix "unsigned 'mode' is never < 0"
->>
->> v6: return error for (unused) default of case statement
->> ---
->   ^^^
-> 
-> ...if you remove these, than that changelog will not land in the final
-> commit which I would prefer. Nobody cares for the changelog of a
-> patch once it is in its final state. And this is a rather noisy one.
-> When someone in the future looks at this, he will see two lines of
-> information and 10 times that of uninteresting noise.
-> 
-> Not a dealbreaker, but just something to consider for future patches.
+Commit-ID:  15516a3b8633a32f03a82a2db23b87cf9600514c
+Gitweb:     http://git.kernel.org/tip/15516a3b8633a32f03a82a2db23b87cf9600514c
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Mon, 27 Oct 2014 13:21:46 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 16 Dec 2014 14:08:15 +0100
 
+x86, irq, ACPI: Implement interfaces to support ACPI based IOAPIC hot-removal
 
-When you run git-am you will see that changelog is not there.
+Implement acpi_unregister_ioapic() to support ACPI based IOAPIC hot-removal.
+An IOAPIC could only be removed when all its pins are unused.
 
-I can't see any problem here. Can you please try it or clear what
-are you referring to here?
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Link: http://lkml.kernel.org/r/1414387308-27148-17-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Thanks,
-Michal
+---
+ arch/x86/include/asm/io_apic.h |  1 +
+ arch/x86/kernel/acpi/boot.c    | 13 +++++++---
+ arch/x86/kernel/apic/io_apic.c | 55 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 65 insertions(+), 4 deletions(-)
 
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 94d05bd..ce63cf3 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -190,6 +190,7 @@ extern int mp_map_gsi_to_irq(u32 gsi, unsigned int flags);
+ extern void mp_unmap_irq(int irq);
+ extern int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 			      struct ioapic_domain_cfg *cfg);
++extern int mp_unregister_ioapic(u32 gsi_base);
+ extern int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 			    irq_hw_number_t hwirq);
+ extern void mp_irqdomain_unmap(struct irq_domain *domain, unsigned int virq);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index 0b99351..5427d9b 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -810,15 +810,20 @@ int acpi_register_ioapic(acpi_handle handle, u64 phys_addr, u32 gsi_base)
+ 
+ 	return ret;
+ }
+-
+ EXPORT_SYMBOL(acpi_register_ioapic);
+ 
+ int acpi_unregister_ioapic(acpi_handle handle, u32 gsi_base)
+ {
+-	/* TBD */
+-	return -EINVAL;
+-}
++	int ret = -ENOSYS;
++
++#ifdef CONFIG_ACPI_HOTPLUG_IOAPIC
++	mutex_lock(&acpi_ioapic_lock);
++	ret  = mp_unregister_ioapic(gsi_base);
++	mutex_unlock(&acpi_ioapic_lock);
++#endif
+ 
++	return ret;
++}
+ EXPORT_SYMBOL(acpi_unregister_ioapic);
+ 
+ static int __init acpi_parse_sbf(struct acpi_table_header *table)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 826f44f..06a0a6c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -112,6 +112,7 @@ static struct ioapic {
+ 	struct ioapic_domain_cfg irqdomain_cfg;
+ 	struct irq_domain *irqdomain;
+ 	struct mp_pin_info *pin_info;
++	struct resource *iomem_res;
+ } ioapics[MAX_IO_APICS];
+ 
+ #define mpc_ioapic_ver(ioapic_idx)	ioapics[ioapic_idx].mp_config.apicver
+@@ -250,6 +251,12 @@ static void alloc_ioapic_saved_registers(int idx)
+ 		pr_err("IOAPIC %d: suspend/resume impossible!\n", idx);
+ }
+ 
++static void free_ioapic_saved_registers(int idx)
++{
++	kfree(ioapics[idx].saved_registers);
++	ioapics[idx].saved_registers = NULL;
++}
++
+ int __init arch_early_irq_init(void)
+ {
+ 	struct irq_cfg *cfg;
+@@ -2973,6 +2980,16 @@ static int mp_irqdomain_create(int ioapic)
+ 	return 0;
+ }
+ 
++static void ioapic_destroy_irqdomain(int idx)
++{
++	if (ioapics[idx].irqdomain) {
++		irq_domain_remove(ioapics[idx].irqdomain);
++		ioapics[idx].irqdomain = NULL;
++	}
++	kfree(ioapics[idx].pin_info);
++	ioapics[idx].pin_info = NULL;
++}
++
+ void __init setup_IO_APIC(void)
+ {
+ 	int ioapic;
+@@ -3743,6 +3760,7 @@ static struct resource * __init ioapic_setup_resources(void)
+ 		snprintf(mem, IOAPIC_RESOURCE_NAME_SIZE, "IOAPIC %u", i);
+ 		mem += IOAPIC_RESOURCE_NAME_SIZE;
+ 		num++;
++		ioapics[i].iomem_res = res;
+ 	}
+ 
+ 	ioapic_resources = res;
+@@ -3971,6 +3989,43 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
+ 	return 0;
+ }
+ 
++int mp_unregister_ioapic(u32 gsi_base)
++{
++	int ioapic, pin;
++	int found = 0;
++	struct mp_pin_info *pin_info;
++
++	for_each_ioapic(ioapic)
++		if (ioapics[ioapic].gsi_config.gsi_base == gsi_base) {
++			found = 1;
++			break;
++		}
++	if (!found) {
++		pr_warn("can't find IOAPIC for GSI %d\n", gsi_base);
++		return -ENODEV;
++	}
++
++	for_each_pin(ioapic, pin) {
++		pin_info = mp_pin_info(ioapic, pin);
++		if (pin_info->count) {
++			pr_warn("pin%d on IOAPIC%d is still in use.\n",
++				pin, ioapic);
++			return -EBUSY;
++		}
++	}
++
++	/* Mark entry not present */
++	ioapics[ioapic].nr_registers  = 0;
++	ioapic_destroy_irqdomain(ioapic);
++	free_ioapic_saved_registers(ioapic);
++	if (ioapics[ioapic].iomem_res)
++		release_resource(ioapics[ioapic].iomem_res);
++	clear_fixmap(FIX_IO_APIC_BASE_0 + ioapic);
++	memset(&ioapics[ioapic], 0, sizeof(ioapics[ioapic]));
++
++	return 0;
++}
++
+ int mp_irqdomain_map(struct irq_domain *domain, unsigned int virq,
+ 		     irq_hw_number_t hwirq)
+ {
