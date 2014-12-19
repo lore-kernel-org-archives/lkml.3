@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485AbaLSNWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 08:22:31 -0500
-Received: from mga02.intel.com ([134.134.136.20]:30051 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751963AbaLSNWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 08:22:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.04,691,1406617200"; 
-   d="scan'208";a="501517093"
-Message-ID: <54942693.6080007@linux.intel.com>
-Date: Fri, 19 Dec 2014 21:22:27 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752568AbaLSNX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 08:23:57 -0500
+Received: from www.linutronix.de ([62.245.132.108]:34295 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070AbaLSNXz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 08:23:55 -0500
+Date: Fri, 19 Dec 2014 14:23:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] NOHZ update for 3.19
+Message-ID: <alpine.DEB.2.11.1412191415290.17382@nanos>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Sander Eikelenboom <linux@eikelenboom.it>, konrad.wilk@oracle.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org
-Subject: Re: Bisected Linux regression: ACPI powerbutton events don't work
- under Xen since commit b81975eade8c6495f3c4d6746d22bdc95f617777
-References: <1824124380.20141219141645@eikelenboom.it>
-In-Reply-To: <1824124380.20141219141645@eikelenboom.it>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sander,
-	Sorry for the trouble, I will investigate on next Monday.
-Regards!
-Gerry
+Linus,
 
-On 2014/12/19 21:16, Sander Eikelenboom wrote:
-> Hi,
-> 
-> When running under Xen, ACPI powerbutton events don't work anymore, 
-> there is no reaction when pressing the powerbutton.
-> 
-> On baremetal everything works fine, acpid gets the event and the 
-> machine powers down perfectly. The machine is an Intel NUC.
->  
-> Bisection has lead to:
-> 
-> b81975eade8c6495f3c4d6746d22bdc95f617777 is the first bad commit
-> commit b81975eade8c6495f3c4d6746d22bdc95f617777
-> Author: Jiang Liu <jiang.liu@linux.intel.com>
-> Date:   Mon Jun 9 16:20:11 2014 +0800
-> 
->     x86, irq: Clean up irqdomain transition code
-> 
->     Now we have completely switched to irqdomain, so clean up transition code
->     in IOAPIC drivers.
-> 
->     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->     Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->     Cc: Tony Luck <tony.luck@intel.com>
->     Cc: Joerg Roedel <joro@8bytes.org>
->     Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
->     Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->     Cc: Grant Likely <grant.likely@linaro.org>
->     Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
->     Cc: Bjorn Helgaas <bhelgaas@google.com>
->     Cc: Randy Dunlap <rdunlap@infradead.org>
->     Cc: Yinghai Lu <yinghai@kernel.org>
->     Link: http://lkml.kernel.org/r/1402302011-23642-43-git-send-email-jiang.liu@linux.intel.com
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Reverting this specific commit on linux-tip (3.19-mw) gets things working again under Xen.
-> Kernel .config is attached.
-> 
-> --
-> Sander
-> 
+please pull the latest timers-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
+
+Remove the call into the nohz idle code from the fake 'idle' thread in
+the powerclamp driver along with the export of those functions which
+was smuggeled in via the thermal tree. People have tried to hack
+around it in the nohz core code, but it just violates all rightful
+assumptions of that code about the only valid calling context
+(i.e. the proper idle task).
+The powerclamp trainwreck will still work, it just wont get the
+benefit of long idle sleeps.
+
+Thanks,
+
+	tglx
+
+------------------>
+Thomas Gleixner (1):
+      tick/powerclamp: Remove tick_nohz_idle abuse
+
+
+ drivers/thermal/intel_powerclamp.c | 2 --
+ kernel/time/tick-sched.c           | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/drivers/thermal/intel_powerclamp.c b/drivers/thermal/intel_powerclamp.c
+index 95cb7fc20e17..6cb78497076a 100644
+--- a/drivers/thermal/intel_powerclamp.c
++++ b/drivers/thermal/intel_powerclamp.c
+@@ -435,7 +435,6 @@ static int clamp_thread(void *arg)
+ 		 * allowed. thus jiffies are updated properly.
+ 		 */
+ 		preempt_disable();
+-		tick_nohz_idle_enter();
+ 		/* mwait until target jiffies is reached */
+ 		while (time_before(jiffies, target_jiffies)) {
+ 			unsigned long ecx = 1;
+@@ -451,7 +450,6 @@ static int clamp_thread(void *arg)
+ 			start_critical_timings();
+ 			atomic_inc(&idle_wakeup_counter);
+ 		}
+-		tick_nohz_idle_exit();
+ 		preempt_enable();
+ 	}
+ 	del_timer_sync(&wakeup_timer);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 1f4356037a7d..ff3ec34702e8 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -847,7 +847,6 @@ void tick_nohz_idle_enter(void)
+ 
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+ 
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -974,7 +973,6 @@ void tick_nohz_idle_exit(void)
+ 
+ 	local_irq_enable();
+ }
+-EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ 
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
