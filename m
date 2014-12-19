@@ -1,164 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaLSPNl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:13:41 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:46908 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaLSPNj (ORCPT
+	id S1752092AbaLSPPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:15:15 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:42769 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751281AbaLSPPN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:13:39 -0500
-Date: Fri, 19 Dec 2014 16:13:29 +0100 (CET)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: "Michael S. Tsirkin" <mst@redhat.com>
-cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-sh@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH RFC 2/5] s390: add pci_iomap_range
-In-Reply-To: <20141219142829.GA13440@redhat.com>
-Message-ID: <alpine.LFD.2.11.1412191549510.1794@denkbrett>
-References: <1418679168-1011-1-git-send-email-mst@redhat.com> <1418679168-1011-3-git-send-email-mst@redhat.com> <alpine.LFD.2.11.1412191456480.1794@denkbrett> <20141219142829.GA13440@redhat.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	Fri, 19 Dec 2014 10:15:13 -0500
+Date: Fri, 19 Dec 2014 10:14:29 -0500
+From: Chris Mason <clm@fb.com>
+Subject: Re: frequent lockups in 3.18rc4
+To: Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        =?iso-8859-1?q?D=E2niel?= Fraga <fragabr@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Anvin <hpa@linux.intel.com>
+Message-ID: <1419002069.13012.4@mail.thefacebook.com>
+In-Reply-To: <20141219145528.GC13404@redhat.com>
+References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
+	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
+	<20141218051327.GA31988@redhat.com>
+	<1418918059.17358.6@mail.thefacebook.com>
+	<20141218161230.GA6042@redhat.com> <20141219024549.GB1671@redhat.com>
+	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
+	<20141219035859.GA20022@redhat.com> <20141219040308.GB20022@redhat.com>
+	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
+	<20141219145528.GC13404@redhat.com>
+X-Mailer: geary/0.8.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14121915-0041-0000-0000-000002894166
+Content-Type: text/plain; charset="utf-8"; format=flowed
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2014-12-19_04:2014-12-19,2014-12-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=5 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=145.191669734525
+ compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.160988131301636 spamscore=5
+ recipient_to_sender_domain_totalscore=7 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1412190151
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Dec 2014, Michael S. Tsirkin wrote:
-> On Fri, Dec 19, 2014 at 03:13:37PM +0100, Sebastian Ott wrote:
-> > On Mon, 15 Dec 2014, Michael S. Tsirkin wrote:
-> > > From: Michael S Tsirkin <mst@redhat.com>
-> > > 
-> > > Virtio drivers should map the part of the range they need, not
-> > > necessarily all of it.
-> > > To this end, support mapping ranges within BAR on s390.
-> > > Since multiple ranges can now be mapped within a BAR, we keep track of
-> > > the number of mappings created, and only clear out the mapping for a BAR
-> > > when this number reaches 0.
-> > > 
-> > 
-> > I can't say much about the users of this interface but in principle I'm
-> > OK with such a change.
-> 
-> I don't have an s390 system with pci for testing - could you help me out
-> by testing this and confirming it doesn't break things?
 
-I did some minor tests and nothing broke...
 
+On Fri, Dec 19, 2014 at 9:55 AM, Dave Jones <davej@redhat.com> wrote:
+> On Thu, Dec 18, 2014 at 08:48:24PM -0800, Linus Torvalds wrote:
+>  > On Thu, Dec 18, 2014 at 8:03 PM, Dave Jones <davej@redhat.com> 
+> wrote:
+>  > >
+>  > > So the only thing that was on that could cause spinlock overhead
+>  > > was DEBUG_SPINLOCK (and LOCK_STAT, though iirc that's not huge 
+> either)
+>  >
+>  > So DEBUG_SPINLOCK does have one big downside if I recall correctly 
+> -
+>  > the debugging spinlocks are very much not fair. So they don't work
+>  > like the real ticket spinlocks. That might have serious effects on 
+> the
+>  > contention case, with some thread not making any progress due to 
+> just
+>  > the implementation of the debug spinlocks.
 > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > ---
-> > >  arch/s390/include/asm/pci_io.h |  1 +
-> > >  arch/s390/pci/pci.c            | 34 +++++++++++++++++++++++++++-------
-> > >  2 files changed, 28 insertions(+), 7 deletions(-)
-> > > 
-> > > diff --git a/arch/s390/include/asm/pci_io.h b/arch/s390/include/asm/pci_io.h
-> > > index d194d54..25228b3 100644
-> > > --- a/arch/s390/include/asm/pci_io.h
-> > > +++ b/arch/s390/include/asm/pci_io.h
-> > > @@ -16,6 +16,7 @@
-> > >  struct zpci_iomap_entry {
-> > >  	u32 fh;
-> > >  	u8 bar;
-> > > +	u16 count;
-> > >  };
-> > > 
-> > >  extern struct zpci_iomap_entry *zpci_iomap_start;
-> > > diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
-> > > index 2fa7b14..51cb653 100644
-> > > --- a/arch/s390/pci/pci.c
-> > > +++ b/arch/s390/pci/pci.c
-> > > @@ -259,7 +259,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count)
-> > >  }
-> > > 
-> > >  /* Create a virtual mapping cookie for a PCI BAR */
-> > > -void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
-> > > +void __iomem *pci_iomap_range(struct pci_dev *pdev,
-> > > +			      int bar,
-> > > +			      unsigned long offset,
-> > > +			      unsigned long max)
-> > >  {
-> > >  	struct zpci_dev *zdev =	get_zdev(pdev);
-> > >  	u64 addr;
-> > > @@ -270,14 +273,27 @@ void __iomem *pci_iomap(struct pci_dev *pdev, int bar, unsigned long max)
-> > > 
-> > >  	idx = zdev->bars[bar].map_idx;
-> > >  	spin_lock(&zpci_iomap_lock);
-> > > -	zpci_iomap_start[idx].fh = zdev->fh;
-> > > -	zpci_iomap_start[idx].bar = bar;
-> > > +	if (zpci_iomap_start[idx].count++) {
-> > > +		BUG_ON(zpci_iomap_start[idx].fh != zdev->fh ||
-> > > +		       zpci_iomap_start[idx].bar != bar);
-> > > +	} else {
-> > > +		zpci_iomap_start[idx].fh = zdev->fh;
-> > > +		zpci_iomap_start[idx].bar = bar;
-> > > +	}
-> > > +	/* Detect overrun */
-> > > +	BUG_ON(!zpci_iomap_start[idx].count);
-> > >  	spin_unlock(&zpci_iomap_lock);
-> > > 
-> > >  	addr = ZPCI_IOMAP_ADDR_BASE | ((u64) idx << 48);
-> > > -	return (void __iomem *) addr;
-> > > +	return (void __iomem *) addr + offset;
-> > >  }
-> > > -EXPORT_SYMBOL_GPL(pci_iomap);
-> > > +EXPORT_SYMBOL_GPL(pci_iomap_range);
-> > > +
-> > > +void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-> > > +{
-> > > +	return pci_iomap_range(dev, bar, 0, maxlen);
-> > > +}
-> > > +EXPORT_SYMBOL(pci_iomap);
-> > 
-> > This was EXPORT_SYMBOL_GPL. I guess, for this patch, it should stay that
-> > way. ...Hm, everyone else has this stuff as EXPORT_SYMBOL looks like we
-> > should use that too.
-> > 
-> > Regards,
-> > Sebastian
-> 
-> OK, so you want two patches: one with new functionality,
-> one switching to EXPORT_SYMBOL?
+> Wish DEBUG_SPINLOCK disabled, I see the same behaviour.
+> Lots of traces spewed, but it seems to run and run (at least so far).
 
-Either that or at least add a note in the patch description.
+Not quite the same, the spinlocks are gone.
 
-Regards,
-Sebastian
+-chris
 
-> 
-> 
-> > > 
-> > >  void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
-> > >  {
-> > > @@ -285,8 +301,12 @@ void pci_iounmap(struct pci_dev *pdev, void __iomem *addr)
-> > > 
-> > >  	idx = (((__force u64) addr) & ~ZPCI_IOMAP_ADDR_BASE) >> 48;
-> > >  	spin_lock(&zpci_iomap_lock);
-> > > -	zpci_iomap_start[idx].fh = 0;
-> > > -	zpci_iomap_start[idx].bar = 0;
-> > > +	/* Detect underrun */
-> > > +	BUG_ON(!zpci_iomap_start[idx].count);
-> > > +	if (!--zpci_iomap_start[idx].count) {
-> > > +		zpci_iomap_start[idx].fh = 0;
-> > > +		zpci_iomap_start[idx].bar = 0;
-> > > +	}
-> > >  	spin_unlock(&zpci_iomap_lock);
-> > >  }
-> > >  EXPORT_SYMBOL_GPL(pci_iounmap);
-> > > -- 
-> > > MST
-> > > 
-> > > 
-> 
-> 
+
 
