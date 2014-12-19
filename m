@@ -1,145 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaLSQNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 11:13:19 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:47715 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaLSQNO (ORCPT
+	id S1751894AbaLSQQQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 11:16:16 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37004 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaLSQQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 11:13:14 -0500
-X-AuditID: cbfee61a-f79c06d000004e71-f2-54944e96e922
-Date: Fri, 19 Dec 2014 17:13:01 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Eduardo Valentin <edubezval@gmail.com>,
-        Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        lm-sensors@lm-sensors.org, Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 2/9] hwmon: dts: Doc: Add DTS doc to explain how to use PWM
- FAN as a cooling device
-Message-id: <20141219171301.1527d81e@amdc2363>
-In-reply-to: <20141219160237.GA2199@roeck-us.net>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1418897591-18332-3-git-send-email-l.majewski@samsung.com>
- <1418899337.23532.9.camel@collabora.co.uk> <20141219163224.34796e5d@amdc2363>
- <20141219160237.GA2199@roeck-us.net>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAd1pflNCDH7/V7CYf+Qcq8X8K9dY
-	LZbe/cRm8eP1BTaL3gVX2SzePOK2uLxrDpvF594jjBYzzu9jsniy8AyTxZ1pe9ksDr9pZ7WY
-	fvwtqwOvx9/n11k8ds66y+7xYOJuNo91094ye+z83sDu0bdlFaPH5tPVHp83yQVwRHHZpKTm
-	ZJalFunbJXBlfD0mUHBLqmLNpTnsDYybRboYOTgkBEwkrr8K6WLkBDLFJC7cW8/WxcjFISSw
-	iFHi1Y1t7CAJIYFfjBKtZ7NBbBYBVYn7O7awgthsAnoSn+8+ZQKxRQTUJJpPtYA1Mwu8Y5ZY
-	1LyLBWSBsECmxONmfpAaXqD6lg8HwHo5BQwldv9fygKxDGh+y+5OZpAEv4CkRPu/H8wQF9lJ
-	nPu0gR2iWVDix+R7LCA2s4CWxOZtTawQtrzE5jVvmScwCs5CUjYLSdksJGULGJlXMYqmFiQX
-	FCel5xrqFSfmFpfmpesl5+duYgRH1DOpHYwrGywOMQpwMCrx8HYUTg4RYk0sK67MPcQowcGs
-	JMJr6D4lRIg3JbGyKrUoP76oNCe1+BCjNAeLkjivkn1biJBAemJJanZqakFqEUyWiYNTqoFx
-	xsNp75RdqrasWl87N71qZ/ymmUtL7lxwDm/eNCVwLneP+ZMIsfTdr8UYAgy0Wgw51zEvcXz2
-	ZiHjhOkXjKW29zp06GjUcimmrIl9mtRZwe45mX3/4yzRuQteFV+Z/MfVLn2195VdQrUJnk+6
-	6rliytVONE2aIy9yJb5zU99/Ze95H1+2qroosRRnJBpqMRcVJwIAI67WpqQCAAA=
+	Fri, 19 Dec 2014 11:16:15 -0500
+Date: Fri, 19 Dec 2014 17:15:49 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: atull <atull@opensource.altera.com>
+Cc: Michal Simek <michal.simek@xilinx.com>, gregkh@linuxfoundation.org,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
+ fpga manager
+Message-ID: <20141219161549.GH13070@pengutronix.de>
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+ <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
+ <20141219085516.GF13070@pengutronix.de>
+ <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
+ <20141219150714.GG13070@pengutronix.de>
+ <alpine.DEB.2.02.1412190955090.16892@linuxheads99>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1412190955090.16892@linuxheads99>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:10:45 up 65 days,  3:24, 76 users,  load average: 0,08, 0,10,
+ 0,08
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
-
-> On Fri, Dec 19, 2014 at 04:32:24PM +0100, Lukasz Majewski wrote:
-> > Hi Sjoerd,
-> > 
-> > Thanks for your feedback and sorry for a late reply.
-> > 
-> > > On Thu, 2014-12-18 at 11:13 +0100, Lukasz Majewski wrote:
-> > > > Several new properties to allow PWM fan working as a cooling
-> > > > device have been combined into this single commit.
+On Fri, Dec 19, 2014 at 09:55:34AM -0600, atull wrote:
+> On Fri, 19 Dec 2014, Steffen Trumtrar wrote:
+> 
+> > On Fri, Dec 19, 2014 at 03:05:50PM +0100, Michal Simek wrote:
+> > > On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
+> > > > Hi!
 > > > > 
-> > > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > > > ---
-> > > >  .../devicetree/bindings/hwmon/pwm-fan.txt          | 28
-> > > > ++++++++++++++++++++++ 1 file changed, 28 insertions(+)
+> > > > Just a minor nitpick, but...
 > > > > 
-> > > > diff --git a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt
-> > > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt index
-> > > > 610757c..3877810 100644 ---
-> > > > a/Documentation/devicetree/bindings/hwmon/pwm-fan.txt +++
-> > > > b/Documentation/devicetree/bindings/hwmon/pwm-fan.txt @@ -3,10
-> > > > +3,38 @@ Bindings for a fan connected to the PWM lines Required
-> > > > properties:
-> > > >  - compatible	: "pwm-fan"
-> > > >  - pwms		: the PWM that is used to control the
-> > > > PWM fan +- cooling-pwm-values      : PWM duty cycle values
-> > > > relative to
-> > > > +			    cooling-max-pwm-value correspondig
-> > > > to
-> > > > +			    proper cooling states
-> > > > +- default-pulse-width     : Property specifying default pulse
-> > > > width for FAN
-> > > > +			    at system boot (zero to disable
-> > > > FAN on boot).
-> > > > +			    Allowed range is 0 to 255
+> > > > On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
+> > > >> From: Alan Tull <atull@opensource.altera.com>
+> > > >>
+> > > >> Add driver to fpga manager framework to allow configuration
+> > > >> of FPGA in Altera SoCFPGA parts.
+> > > >>
+> > > >> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> > > >> Acked-by: Michal Simek <michal.simek@xilinx.com>
+> > > >> ---
+> > > >> v2: fpga_manager struct now contains struct device
+> > > >>     fpga_manager_register parameters now take device
+> > > >>
+> > > >> v3: skip a version to align versions
+> > > >>
+> > > >> v4: move to drivers/staging
+> > > >>
+> > > >> v5: fix array_size.cocci warnings
+> > > >>     fix platform_no_drv_owner.cocci warnings
+> > > >>     Remove .owner = THIS_MODULE
+> > > >>     include asm/irq.h
+> > > >>     clean up list of includes
+> > > >>     use altera_fpga_reset for ops
+> > > >>     use enum fpga_mgr_states or u32 as needed
+> > > >>     use devm_request_irq
+> > > >>     check irq <= 0 instead of == NO_IRQ
+> > > >>     Use ARRAY_SIZE
+> > > >>     rename altera -> socfpga
+> > > >>     static const socfpga_fpga_ops
+> > > >>     header moved to linux/fpga/ folder
+> > > >>     remove ifdef'ed code
+> > > >>     use platform_get_resource and platform_get_irq
+> > > >>     move .probe and .remove lines adjacent
+> > > >>     use module_platform_driver
+> > > >>     use __maybe_unused
+> > > >>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
+> > > >>     fix "unsigned 'mode' is never < 0"
+> > > >>
+> > > >> v6: return error for (unused) default of case statement
+> > > >> ---
+> > > >   ^^^
+> > > > 
+> > > > ...if you remove these, than that changelog will not land in the final
+> > > > commit which I would prefer. Nobody cares for the changelog of a
+> > > > patch once it is in its final state. And this is a rather noisy one.
+> > > > When someone in the future looks at this, he will see two lines of
+> > > > information and 10 times that of uninteresting noise.
+> > > > 
+> > > > Not a dealbreaker, but just something to consider for future patches.
 > > > 
-> > > The 0..255 range seems somewhat random. Would be nicer to either
-> > > use the approach of pwm-backlight (iotw, have the range go from
-> > > the first to the last entry of cooling-pwm-values) 
+> > > 
+> > > When you run git-am you will see that changelog is not there.
+> > > 
 > > 
-> > I'm OK to change the default-pulse-width to be similar to
-> > "default-brightness-level" (as it is in
-> > Documentation/devicetree/bindings/video/backlight/pwm-backlight.txt)
+> > Ah, great. It seems like git-am does indeed know now how to handle this.
+> > There are some commits in mainline that have this changelog added,
+> > because there where two '---' lines in the patch.
 > > 
-> > > or simply have be the duty
-> > > lenght in NS as entries instead of the current indirection.
+> > Then go on kind sirs with whatever you where doing and don't pay any
+> > attention to my comment... :-)
 > > 
-> > I'd prefer to keep the indirection - as it is utilized in the
-> > current pwm-fan.c driver.
+> > Regards,
+> > Steffen
 > > 
-> FWIW, devicetree information is supposed to be implementation
-> independent. So this is a poor argument.
-
-Many other pwm drivers use the indirection - e.g. mentioned
-pwm-backlight.
-
-
 > 
-> > 
-> > Enabling pan to full RPM was the default behaviour in the current
-> > pwm-fan.c file.
-> > 
-> > To be honest, there is no need to enable fan to full RPM speed in
-> > this board for following reasons:
-> > 1. In Odroid the FAN is optional (stacked on top of a heat sink) -
-> > very often it is just enough to only have the heat sink.
-> > 
-> > 2. Odroid has thermal enabled by default and IMHO it would be more
-> > feasible to allow thermal to control fan from the very beginning.
-> > 
-> > However, I can also understand if the policy for hwmon implies a
-> > rule to enable by default all fans to full RPM speed.
-> > 
-> Why and how does that all suggest that the current default behavior
-> should be changed ?
-
-I wanted to avoid the unpleasant sound for full speed fan when thermal
-is not enabled by default.
-
-But as I said, I fully understand the policy and I would be happy to
-comply with it as thermal should reduce the fan speed anyway at boot
-time.
-
+> git format-patch adds the second ---
 > 
-> Guenter
 
+Yeah, of course. But where does the first one come from?
+Do you keep a changelog in your commits?
+That is what git notes is for, no?!
 
+Regards,
+Steffen
 
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
