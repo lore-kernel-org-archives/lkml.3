@@ -1,91 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010AbaLSGzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 01:55:40 -0500
-Received: from cnbjrel02.sonyericsson.com ([219.141.167.166]:3498 "EHLO
-	cnbjrel02.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751194AbaLSGzi (ORCPT
+	id S1752100AbaLSG7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 01:59:41 -0500
+Received: from mga03.intel.com ([134.134.136.65]:65297 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751602AbaLSG7k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 01:55:38 -0500
-From: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-To: "'Minchan Kim'" <minchan@kernel.org>
-CC: "'Konstantin Khlebnikov'" <koct9i@gmail.com>,
-        "'Kirill A. Shutemov'" <kirill@shutemov.name>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "'n-horiguchi@ah.jp.nec.com'" <n-horiguchi@ah.jp.nec.com>
-Date: Fri, 19 Dec 2014 14:54:48 +0800
-Subject: RE: [RFC] MADV_FREE doesn't work when doesn't have swap partition
-Thread-Topic: [RFC] MADV_FREE doesn't work when doesn't have swap partition
-Thread-Index: AdAbJ5wCAC7Zqat1T/21NHUQizWRIgAMLv8Q
-Message-ID: <35FD53F367049845BC99AC72306C23D103EDAF89E152@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103E688B313EE@CNBJMBX05.corpusers.net>
- <CALYGNiOuBKz8shHSrFCp0BT5AV6XkNOCHj+LJedQQ-2YdZtM7w@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B313F2@CNBJMBX05.corpusers.net>
- <20141205143134.37139da2208c654a0d3cd942@linux-foundation.org>
- <35FD53F367049845BC99AC72306C23D103E688B313F4@CNBJMBX05.corpusers.net>
- <20141208114601.GA28846@node.dhcp.inet.fi>
- <35FD53F367049845BC99AC72306C23D103E688B313FB@CNBJMBX05.corpusers.net>
- <CALYGNiMEytHuND37f+hNdMKqCPzN0k_uha6CaeL_fyzrj-obNQ@mail.gmail.com>
- <35FD53F367049845BC99AC72306C23D103E688B31408@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103EDAF89E14C@CNBJMBX05.corpusers.net>
- <20141219010452.GC1538@bbox>
-In-Reply-To: <20141219010452.GC1538@bbox>
+	Fri, 19 Dec 2014 01:59:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,605,1413270000"; 
+   d="scan'208";a="626422986"
+From: "Du, Changbin" <changbin.du@intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Wu, Hao" <hao.wu@intel.com>
+Subject: RE: [DISCUSSION] USB device remote wakeup is not working for S3 case
+Thread-Topic: [DISCUSSION] USB device remote wakeup is not working for S3
+ case
+Thread-Index: AdAaujexwQVjoEsORCWW3pR7AJbQmf//tgsA//6C/XA=
+Date: Fri, 19 Dec 2014 06:55:55 +0000
+Message-ID: <0C18FE92A7765D4EB9EE5D38D86A563A01C42A57@SHSMSX103.ccr.corp.intel.com>
+References: <0C18FE92A7765D4EB9EE5D38D86A563A01C428B4@SHSMSX103.ccr.corp.intel.com>
+ <Pine.LNX.4.44L0.1412181028510.1745-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1412181028510.1745-100000@iolanthe.rowland.org>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id sBJ6tpJh020510
 
-> -----Original Message-----
-> From: Minchan Kim [mailto:minchan@kernel.org]
-> Sent: Friday, December 19, 2014 9:05 AM
-> To: Wang, Yalin
-> Cc: 'Konstantin Khlebnikov'; 'Kirill A. Shutemov'; 'Andrew Morton'; 'linux-
-> kernel@vger.kernel.org'; 'linux-mm@kvack.org'; 'linux-arm-
-> kernel@lists.infradead.org'; 'n-horiguchi@ah.jp.nec.com'
-> Subject: Re: [RFC] MADV_FREE doesn't work when doesn't have swap partition
+> There's a simple solution: Call device_set_wakeup_enable() for the device!
+> You can do this from the command line by:
 > 
-> On Thu, Dec 18, 2014 at 11:50:01AM +0800, Wang, Yalin wrote:
-> > I notice this commit:
-> > mm: support madvise(MADV_FREE),
-> >
-> > it can free clean anonymous pages directly, doesn't need pageout to
-> > swap partition,
-> >
-> > but I found it doesn't work on my platform, which don't enable any
-> > swap partitions.
+> 	echo auto >/sys/bus/usb/devices/.../power/control
 > 
-> Current implementation, if there is no empty slot in swap, it does instant
-> free instead of delayed free. Look at madvise_vma.
+> where the "..." is the pathname for your device.
 > 
-> >
-> > I make a change for this.
-> > Just to explain my issue clearly,
-> > Do we need some other checks to still scan anonymous pages even Don't
-> > have swap partition but have clean anonymous pages?
-> 
-> There is a few places we should consider if you want to scan anonymous page
-> withotu swap. Refer 69c854817566 and 74e3f3c3391d.
-> 
-> However, it's not simple at the moment. If we reenable anonymous scan
-> without swap, it would make much regress of reclaim. So my direction is
-> move normal anonymos pages into unevictable LRU list because they're real
-> unevictable without swap and put delayed freeing pages into anon LRU list
-> and age them.
-> 
-I understand your solution, sounds a great idea!
-When this design will be merged into main stream?
+Yes, this can enable auto-suspend for usb device like a mouse. And remote wakeup
+does work for RPM because rpm suspend refers to the needs_remote_wakeup flag.
+But this doesn't impact system level suspend. The correct thing is:
+	
+	echo enabled >/sys/bus/usb/devices/.../power/wakeup
 
-Thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This will call device_set_wakeup_enable() for the device and should work. But 
+unfortunately it seems didn't work even the wakeup file shows "enabled" which 
+means the device is wakeup enabled(Tried on 3.16 & 3.18 kernel). This is a different
+issue, I will check.
+
+> 	if (interface->desc.bInterfaceSubClass ==
+> USB_INTERFACE_SUBCLASS_BOOT &&
+> 			interface->desc.bInterfaceProtocol ==
+> 				USB_INTERFACE_PROTOCOL_KEYBOARD) {
+> 		usbhid_set_leds(hid);
+> 		device_set_wakeup_enable(&dev->dev, 1);
+> 	}
+> 
+> How about leaving everything the way it is now?  If you want to enable
+> wakeup for something like a USB mouse, you can write a udev script to do it
+> as shown above.
+> 
+> Alan Stern
+
+Could we also enable wakeup for usb mouse? Or is there any concern to enable it?
+Per my opinion, most people may expect clicking mouse can awake system.
+
+Regards,
+Du, Changbin
