@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311AbaLSCDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:03:15 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:35799 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752068AbaLSCBH (ORCPT
+	id S1752339AbaLSCDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:03:37 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:42805 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaLSCBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:01:07 -0500
+	Thu, 18 Dec 2014 21:01:05 -0500
 From: Steve Longerbeam <slongerbeam@gmail.com>
 X-Google-Original-From: Steve Longerbeam <steve_longerbeam@mentor.com>
 To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
@@ -17,11 +17,11 @@ To: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
         Fabio Estevam <fabio.estevam@freescale.com>,
         Shawn Guo <shawn.guo@linaro.org>, Denis Carikli <denis@eukrea.com>,
-        Jiada Wang <jiada_wang@mentor.com>,
+        Jiada Wang <jiada_wang@mentor.com>, Deepak Das <deepak_das@mentor.com>,
         Steve Longerbeam <steve_longerbeam@mentor.com>
-Subject: [PATCH v2 3/7] drm_modes: add videomode_from_drm_display_mode
-Date: Thu, 18 Dec 2014 18:00:22 -0800
-Message-Id: <1418954426-21909-4-git-send-email-steve_longerbeam@mentor.com>
+Subject: [PATCH v2 1/7] gpu: ipu-di: Add ipu_di_adjust_videomode()
+Date: Thu, 18 Dec 2014 18:00:20 -0800
+Message-Id: <1418954426-21909-2-git-send-email-steve_longerbeam@mentor.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
 References: <1418954426-21909-1-git-send-email-steve_longerbeam@mentor.com>
@@ -29,78 +29,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add conversion from drm_display_mode to videomode.
+From: Jiada Wang <jiada_wang@mentor.com>
 
+On some monitors, high resolution modes are not working, exhibiting
+pixel column truncation problems (for example, 1280x1024 displays as
+1280x1022).
+
+The function ipu_di_adjust_videomode() aims to fix these issues by
+adjusting a passed videomode to IPU restrictions. The function can
+be called from the drm_crtc_helper_funcs->mode_fixup() methods.
+
+Signed-off-by: Jiada Wang <jiada_wang@mentor.com>
+Signed-off-by: Deepak Das <deepak_das@mentor.com>
 Signed-off-by: Steve Longerbeam <steve_longerbeam@mentor.com>
 ---
- drivers/gpu/drm/drm_modes.c |   40 ++++++++++++++++++++++++++++++++++++++++
- include/drm/drm_modes.h     |    2 ++
- 2 files changed, 42 insertions(+)
+ drivers/gpu/ipu-v3/ipu-di.c |   29 +++++++++++++++++++++++++++++
+ include/video/imx-ipu-v3.h  |    2 ++
+ 2 files changed, 31 insertions(+)
 
-diff --git a/drivers/gpu/drm/drm_modes.c b/drivers/gpu/drm/drm_modes.c
-index 6d8b941..583a391 100644
---- a/drivers/gpu/drm/drm_modes.c
-+++ b/drivers/gpu/drm/drm_modes.c
-@@ -615,6 +615,46 @@ void drm_display_mode_from_videomode(const struct videomode *vm,
+diff --git a/drivers/gpu/ipu-v3/ipu-di.c b/drivers/gpu/ipu-v3/ipu-di.c
+index c490ba4..46f9570 100644
+--- a/drivers/gpu/ipu-v3/ipu-di.c
++++ b/drivers/gpu/ipu-v3/ipu-di.c
+@@ -511,6 +511,35 @@ static void ipu_di_config_clock(struct ipu_di *di,
+ 		clk_get_rate(di->clk_di_pixel) / (clkgen0 >> 4));
  }
- EXPORT_SYMBOL_GPL(drm_display_mode_from_videomode);
  
-+/**
-+ * videomode_from_drm_display_mode - fill in @vm using @dmode,
-+ * @dmode: drm_display_mode structure to use as source
-+ * @vm: videomode structure to use as destination
-+ *
-+ * Fills out @vm using the display mode specified in @dmode.
++/*
++ * This function is called to adjust a video mode to IPU restrictions.
++ * It is meant to be called from drm crtc mode_fixup() methods.
 + */
-+void videomode_from_drm_display_mode(const struct drm_display_mode *dmode,
-+				     struct videomode *vm)
++int ipu_di_adjust_videomode(struct ipu_di *di, struct videomode *mode)
 +{
-+	vm->hactive = dmode->hdisplay;
-+	vm->hfront_porch = dmode->hsync_start - dmode->hdisplay;
-+	vm->hsync_len = dmode->hsync_end - dmode->hsync_start;
-+	vm->hback_porch = dmode->htotal - dmode->hsync_end;
++	u32 diff;
 +
-+	vm->vactive = dmode->vdisplay;
-+	vm->vfront_porch = dmode->vsync_start - dmode->vdisplay;
-+	vm->vsync_len = dmode->vsync_end - dmode->vsync_start;
-+	vm->vback_porch = dmode->vtotal - dmode->vsync_end;
++	if (mode->vfront_porch >= 2)
++		return 0;
 +
-+	vm->pixelclock = dmode->clock * 1000;
++	diff = 2 - mode->vfront_porch;
 +
-+	vm->flags = 0;
-+	if (dmode->flags & DRM_MODE_FLAG_PHSYNC)
-+		vm->flags |= DISPLAY_FLAGS_HSYNC_HIGH;
-+	else if (dmode->flags & DRM_MODE_FLAG_NHSYNC)
-+		vm->flags |= DISPLAY_FLAGS_HSYNC_LOW;
-+	if (dmode->flags & DRM_MODE_FLAG_PVSYNC)
-+		vm->flags |= DISPLAY_FLAGS_VSYNC_HIGH;
-+	else if (dmode->flags & DRM_MODE_FLAG_NVSYNC)
-+		vm->flags |= DISPLAY_FLAGS_VSYNC_LOW;
-+	if (dmode->flags & DRM_MODE_FLAG_INTERLACE)
-+		vm->flags |= DISPLAY_FLAGS_INTERLACED;
-+	if (dmode->flags & DRM_MODE_FLAG_DBLSCAN)
-+		vm->flags |= DISPLAY_FLAGS_DOUBLESCAN;
-+	if (dmode->flags & DRM_MODE_FLAG_DBLCLK)
-+		vm->flags |= DISPLAY_FLAGS_DOUBLECLK;
++	if (mode->vback_porch >= diff) {
++		mode->vfront_porch = 2;
++		mode->vback_porch -= diff;
++	} else if (mode->vsync_len > diff) {
++		mode->vfront_porch = 2;
++		mode->vsync_len = mode->vsync_len - diff;
++	} else {
++		dev_warn(di->ipu->dev, "failed to adjust videomode\n");
++		return -EINVAL;
++	}
++
++	dev_warn(di->ipu->dev, "videomode adapted for IPU restrictions\n");
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(videomode_from_drm_display_mode);
++EXPORT_SYMBOL_GPL(ipu_di_adjust_videomode);
 +
- #ifdef CONFIG_OF
- /**
-  * of_get_drm_display_mode - get a drm_display_mode from devicetree
-diff --git a/include/drm/drm_modes.h b/include/drm/drm_modes.h
-index 91d0582..60c0144 100644
---- a/include/drm/drm_modes.h
-+++ b/include/drm/drm_modes.h
-@@ -197,6 +197,8 @@ struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
- 					      int GTF_K, int GTF_2J);
- void drm_display_mode_from_videomode(const struct videomode *vm,
- 				     struct drm_display_mode *dmode);
-+void videomode_from_drm_display_mode(const struct drm_display_mode *dmode,
-+				     struct videomode *vm);
- int of_get_drm_display_mode(struct device_node *np,
- 			    struct drm_display_mode *dmode,
- 			    int index);
+ int ipu_di_init_sync_panel(struct ipu_di *di, struct ipu_di_signal_cfg *sig)
+ {
+ 	u32 reg;
+diff --git a/include/video/imx-ipu-v3.h b/include/video/imx-ipu-v3.h
+index c74bf4a..d333d54 100644
+--- a/include/video/imx-ipu-v3.h
++++ b/include/video/imx-ipu-v3.h
+@@ -17,6 +17,7 @@
+ #include <linux/bitmap.h>
+ #include <linux/fb.h>
+ #include <media/v4l2-mediabus.h>
++#include <video/videomode.h>
+ 
+ struct ipu_soc;
+ 
+@@ -236,6 +237,7 @@ void ipu_di_put(struct ipu_di *);
+ int ipu_di_disable(struct ipu_di *);
+ int ipu_di_enable(struct ipu_di *);
+ int ipu_di_get_num(struct ipu_di *);
++int ipu_di_adjust_videomode(struct ipu_di *di, struct videomode *mode);
+ int ipu_di_init_sync_panel(struct ipu_di *, struct ipu_di_signal_cfg *sig);
+ 
+ /*
 -- 
 1.7.9.5
 
