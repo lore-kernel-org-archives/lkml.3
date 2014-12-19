@@ -1,407 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751915AbaLSCLT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Dec 2014 21:11:19 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:38204 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547AbaLSCLS (ORCPT
+	id S1751722AbaLSCOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Dec 2014 21:14:47 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:50852 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaLSCOp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Dec 2014 21:11:18 -0500
-From: David Ahern <dsahern@gmail.com>
-To: acme@kernel.org, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH v4] tools lib traceevent: Add support for IP address formats
-Date: Thu, 18 Dec 2014 19:11:11 -0700
-Message-Id: <1418955071-36241-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.9.3 (Apple Git-50)
+	Thu, 18 Dec 2014 21:14:45 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-6d-54938a13e98c
+Date: Fri, 19 Dec 2014 02:11:31 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: Re: [PATCHv4 1/8] devfreq: event: Add new devfreq_event class to
+ provide basic data for devfreq governor
+To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>
+Cc: =?utf-8?Q?=EA=B9=80=EA=B5=AD=EC=A7=84?= <kgene.kim@samsung.com>,
+        =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ABHILASH KESAVAN <a.kesavan@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        =?utf-8?Q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20141219003531060@myungjoo.ham
+Msgkey: 20141219003531060@myungjoo.ham
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20141219003531060@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <1107836838.16761418955089663.JavaMail.weblogic@epmlwas08d>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkQFe4a3KIQetaSYvLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJWxaMoSloJ1GhUXVneyNzAuUe9i5OQQElCXWLTkJBuILSFgIjG/
+	8SszhC0mceHeeqA4F1DNUkaJf3NWwBVNnf6eESIxh1Giq2kRC0iCRUBV4v7Hz0BFHBxsAnoS
+	Mz8ng4SFBUolnh6+DtYrIuAqsXItSDkXB7PAcjaJh9OfMENcoSSxZt8rsDm8AoISJ2c+YQGZ
+	IwE0c+oZa4iwmsSj5ndQN4hLXJh7iR3C5pWY0f6UBcKWk5j2dQ3UA9IS52dtYIR5ZvH3x1Bx
+	foljt3cwQdgCQOMPQtVoSfxaMQXK5pNYs/AtC0z9rlPLmWF23d8yF6pXQmJryxNWEJtZQFFi
+	SvdDdpCTmQU0Jdbv0kf1CYjtLnHh11JweEoITOSQePjiGuMERqVZSOpmIRk1C2EUspIFjCyr
+	GEVTC5ILipPSi4z0ihNzi0vz0vWS83M3MQLTwul/z/p2MN48YH2IUYCDUYmHt6NwcogQa2JZ
+	cWXuIUZTYCRNZJYSTc4HJp+8knhDYzMjC1MTU2Mjc0szJXHeBKmfwUIC6YklqdmpqQWpRfFF
+	pTmpxYcYmTg4pRoYI60SribyC92q57l5vGZu6LaIFW2GTIqTXucFifj8vMPKHMOjVvFROv3x
+	+3cca4ImW+5Z6bZ4om/vKtNfzN+DT3N+XdN8Y33GHtZ50WWzRKdp9y+pvRPmqBz6N3BdilPU
+	nqYnvLIX22pN60QCtY0vsaR87QriMsmVOFW5+8JDljUrX+xkSYpTYinOSDTUYi4qTgQAEXLZ
+	XgYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCKsWRmVeSWpSXmKPExsVy+t/tXt3gzskhBvs+Gllc3jWHzYHR4/Mm
+	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIxF
+	U5awFKzTqLiwupO9gXGJehcjJ4eQgLrEoiUn2UBsCQETianT3zNC2GISF+6tB4pzAdXMYZTo
+	alrEApJgEVCVuP/xM1CCg4NNQE9i5udkkLCwQKnE08PXweaICLhKrFwLUs7FwSywnE3i4fQn
+	zBDLlCTW7HsFNodXQFDi5MwnLCBzJIBmTj1jDRFWk3jU/A7qHnGJC3MvsUPYvBIz2p+yQNhy
+	EtO+rmGGsKUlzs/aAHfz4u+PoeL8Esdu72CCsAWAxh+EqtGS+LViCpTNJ7Fm4VsWmPpdp5Yz
+	w+y6v2UuVK+ExNaWJ6wgNrOAosSU7ofsICczC2hKrN+lj+oTENtd4sKvpWwTGGVnIUnNQtI9
+	C6EbWckCRpZVjKKpBckFxUnpFYZ6xYm5xaV56XrJ+bmbGMEp6NnCHYxfzlsfYhTgYFTi4X1Y
+	PDlEiDWxrLgy9xCjBAezkgiveSZQiDclsbIqtSg/vqg0J7X4EKMpMMomMkuJJucD02NeSbyh
+	sbGJmYmppYmFgam5kjjv/3O5IUIC6YklqdmpqQWpRTB9TBycUg2MrYKs7PrrZl3/tuKGsxPb
+	9PVqJdp22bW992bdX6y/8o1tROWv26ePnn1TquQkGn+ld831oKsqRZtnmH4vnjuN28bm4dx5
+	zx65er92DXHeUde27tAWtbLW0BA1BWEf52vLTB8xv564dP7k9uuLGw6c39aQ0BDt7Kmxaqd+
+	WPRyj+s7X6fLyE5mUWIpzkg01GIuKk4EADvXH5xXAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id sBJ2Et88019721
 
-Add helpers for the following kernel formats:
-  %pi4 print an IPv4 address with leading zeros
-  %pI4 print an IPv4 address without leading zeros
-  %pi6 print an IPv6 address without colons
-  %pI6 print an IPv6 address with colons
-  %pI6c print an IPv6 address in compressed form with colons
-  %pISpc print an IP address from a sockaddr
+>   
+>  Dear Myungjoo,
+> 
+> Thanks for your review.
+> 
+> On 12/18/2014 03:24 PM, MyungJoo Ham wrote:
+> > Hi Chanwoo,
+> > 
+> > I love the idea and I now have a little mechanical issues in your code.
+> > 
+> >> ---
+> >>  drivers/devfreq/Kconfig         |   2 +
+> >>  drivers/devfreq/Makefile        |   5 +-
+> >>  drivers/devfreq/devfreq-event.c | 449 ++++++++++++++++++++++++++++++++++++++++
+> >>  drivers/devfreq/event/Makefile  |   1 +
+> >>  include/linux/devfreq.h         | 160 ++++++++++++++
+> >>  5 files changed, 616 insertions(+), 1 deletion(-)
+> >>  create mode 100644 drivers/devfreq/devfreq-event.c
+> >>  create mode 100644 drivers/devfreq/event/Makefile
+> >>
 
-Allows these formats to be used in tracepoints.
+[]
 
-Quite a bit of this is adapted from code in lib/vsprintf.c.
+> 
+> > 
+> > 
+> > [snip]
+> > 
+> >> diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
+> >> new file mode 100644
+> >> index 0000000..0e1948e
+> >> --- /dev/null
+> >> +++ b/drivers/devfreq/devfreq-event.c
+> >> @@ -0,0 +1,449 @@
+> >> +/*
+> >> + * devfreq-event: Generic DEVFREQ Event class driver
+> > 
+> > DEVFREQ is a generic DVFS mechanism (or subsystem).
+> > 
+> > Plus, I thought devfreq-event is considered to be a "framework"
+> > for devfreq event class drivers. Am I mistaken?
+> 
+> You're right. just "class driver" description is not proper.
+> I'll modify the description of devfreq-event.c as following:
+> or If you have other opinion, would you please let me know about it?
+> 
+> 	devfreq-event: DEVFREQ-Event Framework to provide raw data of Non-CPU Devices.
 
-v4:
-- fixed pI6c description in git commit message per Valdis' comment
+devfreq-event: a framework to provide raw data and events of devfreq devices
 
-v3:
-- use of 'c' and 'p' requires 'I'
+should be enough.
 
-v2:
-- pass ptr+1 to print_ip_arg per Namhyung's comments
-- added field length checks to sockaddr function
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- tools/lib/traceevent/event-parse.c | 328 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 328 insertions(+)
+[]
+> > [snip / reversed maybe.. sorry]
+> > 
+> >> +/**
+> >> + * devfreq_event_is_enabled() - Check whether devfreq-event dev is enabled or
+> >> + *                             not.
+> >> + * @edev       : the devfreq-event device
+> >> + *
+> >> + * Note that this function check whether devfreq-event dev is enabled or not.
+> >> + * If return true, the devfreq-event dev is enabeld. If return false, the
+> >> + * devfreq-event dev is disabled.
+> >> + */
+> >> +bool devfreq_event_is_enabled(struct devfreq_event_dev *edev)
+> >> +{
+> >> +       bool enabled = false;
+> >> +
+> >> +       if (!edev || !edev->desc)
+> >> +               return enabled;
+> >> +
+> >> +       mutex_lock(&edev->lock);
+> >> +
+> >> +       if (edev->enable_count > 0)
+> >> +               enabled = true;
+> >> +
+> >> +       if (edev->desc->ops && edev->desc->ops->is_enabled)
+> >> +               enabled |= edev->desc->ops->is_enabled(edev);
+> > 
+> > What does it mean when enabled_count > 0 and ops->is_enabled() is false? or..
+> > What does it mean when enabled_count = 0 and ops->is_enabled() is true?
+> > 
+> > If you do enable_count in the subsystem, why would we rely on
+> > ops->is_enabled()? Are you assuming that a device MAY turn itself off
+> > without any kernel control (ops->disable()) and it is still a correct
+> > behabior?
+> 
+> You're right. devfreq_event_is_enabled() has ambiguous operation according to your comment.
+> 
+> I'll only control the enable_count in the subsystem without ops->is_enabled()
+> and then remove the is_enabled function in the structre devfreq_event_ops.
+> 
+> Best Regards,
+> Chanwoo Choi
+> 
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index cf3a44bf1ec3..afe20ed9fac8 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -32,6 +32,7 @@
- #include <stdint.h>
- #include <limits.h>
- 
-+#include <netinet/ip6.h>
- #include "event-parse.h"
- #include "event-utils.h"
- 
-@@ -4149,6 +4150,324 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
- 	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
- }
- 
-+static void print_ip4_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	const char *fmt;
-+
-+	if (i == 'i')
-+		fmt = "%03d.%03d.%03d.%03d";
-+	else
-+		fmt = "%d.%d.%d.%d";
-+
-+	trace_seq_printf(s, fmt, buf[0], buf[1], buf[2], buf[3]);
-+}
-+
-+static inline bool ipv6_addr_v4mapped(const struct in6_addr *a)
-+{
-+	return ((unsigned long)(a->s6_addr32[0] | a->s6_addr32[1]) |
-+		(unsigned long)(a->s6_addr32[2] ^ htonl(0x0000ffff))) == 0UL;
-+}
-+
-+static inline bool ipv6_addr_is_isatap(const struct in6_addr *addr)
-+{
-+	return (addr->s6_addr32[2] | htonl(0x02000000)) == htonl(0x02005EFE);
-+}
-+
-+static void print_ip6c_addr(struct trace_seq *s, unsigned char *addr)
-+{
-+	int i, j, range;
-+	unsigned char zerolength[8];
-+	int longest = 1;
-+	int colonpos = -1;
-+	uint16_t word;
-+	uint8_t hi, lo;
-+	bool needcolon = false;
-+	bool useIPv4;
-+	struct in6_addr in6;
-+
-+	memcpy(&in6, addr, sizeof(struct in6_addr));
-+
-+	useIPv4 = ipv6_addr_v4mapped(&in6) || ipv6_addr_is_isatap(&in6);
-+
-+	memset(zerolength, 0, sizeof(zerolength));
-+
-+	if (useIPv4)
-+		range = 6;
-+	else
-+		range = 8;
-+
-+	/* find position of longest 0 run */
-+	for (i = 0; i < range; i++) {
-+		for (j = i; j < range; j++) {
-+			if (in6.s6_addr16[j] != 0)
-+				break;
-+			zerolength[i]++;
-+		}
-+	}
-+	for (i = 0; i < range; i++) {
-+		if (zerolength[i] > longest) {
-+			longest = zerolength[i];
-+			colonpos = i;
-+		}
-+	}
-+	if (longest == 1)		/* don't compress a single 0 */
-+		colonpos = -1;
-+
-+	/* emit address */
-+	for (i = 0; i < range; i++) {
-+		if (i == colonpos) {
-+			if (needcolon || i == 0)
-+				trace_seq_printf(s, ":");
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+			i += longest - 1;
-+			continue;
-+		}
-+		if (needcolon) {
-+			trace_seq_printf(s, ":");
-+			needcolon = false;
-+		}
-+		/* hex u16 without leading 0s */
-+		word = ntohs(in6.s6_addr16[i]);
-+		hi = word >> 8;
-+		lo = word & 0xff;
-+		if (hi)
-+			trace_seq_printf(s, "%x%02x", hi, lo);
-+		else
-+			trace_seq_printf(s, "%x", lo);
-+
-+		needcolon = true;
-+	}
-+
-+	if (useIPv4) {
-+		if (needcolon)
-+			trace_seq_printf(s, ":");
-+		print_ip4_addr(s, 'I', &in6.s6_addr[12]);
-+	}
-+
-+	return;
-+}
-+
-+static void print_ip6_addr(struct trace_seq *s, char i, unsigned char *buf)
-+{
-+	int j;
-+
-+	for (j = 0; j < 16; j += 2) {
-+		trace_seq_printf(s, "%02x%02x", buf[j], buf[j+1]);
-+		if (i == 'I' && j < 14)
-+			trace_seq_printf(s, ":");
-+	}
-+}
-+
-+/*
-+ * %pi4   print an IPv4 address with leading zeros
-+ * %pI4   print an IPv4 address without leading zeros
-+ * %pi6   print an IPv6 address without colons
-+ * %pI6   print an IPv6 address with colons
-+ * %pI6c  print an IPv6 address in compressed form with colons
-+ * %pISpc print an IP address based on sockaddr; p adds port.
-+ */
-+static int print_ipv4_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	unsigned char *buf;
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return 0;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return 0;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return 0;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 4) {
-+		trace_seq_printf(s, "INVALIDIPv4");
-+		return 0;
-+	}
-+	print_ip4_addr(s, i, buf);
-+
-+	return 0;
-+}
-+
-+static int print_ipv6_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0;
-+	unsigned char *buf;
-+	int rc = 0;
-+
-+	/* pI6c */
-+	if (i == 'I' && *ptr == 'c') {
-+		have_c = 1;
-+		ptr++;
-+		rc++;
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	buf = data + arg->field.field->offset;
-+
-+	if (arg->field.field->size != 16) {
-+		trace_seq_printf(s, "INVALIDIPv6");
-+		return rc;
-+	}
-+
-+	if (have_c)
-+		print_ip6c_addr(s, buf);
-+	else
-+		print_ip6_addr(s, i, buf);
-+
-+	return rc;
-+}
-+
-+static int print_ipsa_arg(struct trace_seq *s, const char *ptr, char i,
-+			  void *data, int size, struct event_format *event,
-+			  struct print_arg *arg)
-+{
-+	char have_c = 0, have_p = 0;
-+	unsigned char *buf;
-+	struct sockaddr_storage *sa;
-+	int rc = 0;
-+
-+	/* pISpc */
-+	if (i == 'I') {
-+		if (*ptr == 'p') {
-+			have_p = 1;
-+			ptr++;
-+			rc++;
-+		}
-+		if (*ptr == 'c') {
-+			have_c = 1;
-+			ptr++;
-+			rc++;
-+		}
-+	}
-+
-+	if (arg->type == PRINT_FUNC) {
-+		process_defined_func(s, data, size, event, arg);
-+		return rc;
-+	}
-+
-+	if (arg->type != PRINT_FIELD) {
-+		trace_seq_printf(s, "ARG TYPE NOT FIELD BUT %d", arg->type);
-+		return rc;
-+	}
-+
-+	if (!arg->field.field) {
-+		arg->field.field =
-+			pevent_find_any_field(event, arg->field.name);
-+		if (!arg->field.field) {
-+			do_warning("%s: field %s not found",
-+				   __func__, arg->field.name);
-+			return rc;
-+		}
-+	}
-+
-+	sa = (struct sockaddr_storage *) (data + arg->field.field->offset);
-+
-+	if (sa->ss_family == AF_INET) {
-+		struct sockaddr_in *sa4 = (struct sockaddr_in *) sa;
-+
-+		if (arg->field.field->size < sizeof(struct sockaddr_in)) {
-+			trace_seq_printf(s, "INVALIDIPv4");
-+			return rc;
-+		}
-+
-+		print_ip4_addr(s, i, (unsigned char *) &sa4->sin_addr);
-+		if (have_p)
-+			trace_seq_printf(s, ":%d", ntohs(sa4->sin_port));
-+
-+
-+	} else if (sa->ss_family == AF_INET6) {
-+		struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) sa;
-+
-+		if (arg->field.field->size < sizeof(struct sockaddr_in6)) {
-+			trace_seq_printf(s, "INVALIDIPv6");
-+			return rc;
-+		}
-+
-+		if (have_p)
-+			trace_seq_printf(s, "[");
-+
-+		buf = (unsigned char *) &sa6->sin6_addr;
-+		if (have_c)
-+			print_ip6c_addr(s, buf);
-+		else
-+			print_ip6_addr(s, i, buf);
-+
-+		if (have_p)
-+			trace_seq_printf(s, "]:%d", ntohs(sa6->sin6_port));
-+	}
-+
-+	return rc;
-+}
-+
-+static int print_ip_arg(struct trace_seq *s, const char *ptr,
-+			void *data, int size, struct event_format *event,
-+			struct print_arg *arg)
-+{
-+	char i = *ptr;  /* 'i' or 'I' */
-+	char ver;
-+	int rc = 0;
-+
-+	ptr++;
-+	rc++;
-+
-+	ver = *ptr;
-+	ptr++;
-+	rc++;
-+
-+	switch (ver) {
-+	case '4':
-+		rc += print_ipv4_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case '6':
-+		rc += print_ipv6_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	case 'S':
-+		rc += print_ipsa_arg(s, ptr, i, data, size, event, arg);
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return rc;
-+}
-+
- static int is_printable_array(char *p, unsigned int len)
- {
- 	unsigned int i;
-@@ -4337,6 +4656,15 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 					ptr++;
- 					arg = arg->next;
- 					break;
-+				} else if (*(ptr+1) == 'I' || *(ptr+1) == 'i') {
-+					int n;
-+
-+					n = print_ip_arg(s, ptr+1, data, size, event, arg);
-+					if (n > 0) {
-+						ptr += n;
-+						arg = arg->next;
-+						break;
-+					}
- 				}
- 
- 				/* fall through */
--- 
-1.9.3 (Apple Git-50)
+[Off-Topic]
 
+The name of devfreq-event may look quite intersecting with irq-driven governors,
+which are being proposed these days.
+
+Although they may look intersecting, we can have them independently;
+this as a sub-class and that as a governor. And we can consider to
+provide a common infrastructure for irq-driven mechanisms in devfreq or
+devfreq-event when we irq-driven DVFS become more general, which I
+expect in 2 ~ 3 years.
+
+So for now, both can go independently.
+
+
+Cheers!
+MyungJoo
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
