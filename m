@@ -1,44 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933AbaLSJNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 04:13:54 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:50978 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751230AbaLSJNw (ORCPT
+	id S1752136AbaLSJOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 04:14:44 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53480 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbaLSJOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 04:13:52 -0500
-Date: Fri, 19 Dec 2014 10:13:50 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Alexander Stein <alexanders83@web.de>
-Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] ALSA: atmel: fix building the ac97 driver for
- at91-multiplatform
-Message-ID: <20141219091350.GO4885@piout.net>
-References: <1418944390-27719-1-git-send-email-alexandre.belloni@free-electrons.com>
- <27289342.ORBlKX4LWa@kongar>
+	Fri, 19 Dec 2014 04:14:41 -0500
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] fs: make generic_block_fiemap sig-tolerant PING2...
+In-Reply-To: <20141218151247.b6ccd73351f40db66818c07e@linux-foundation.org>
+References: <1413552269-32203-1-git-send-email-dmonakhov@openvz.org> <871toikt7c.fsf@openvz.org> <87zjavehsx.fsf@openvz.org> <20141218151247.b6ccd73351f40db66818c07e@linux-foundation.org>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Fri, 19 Dec 2014 12:13:50 +0300
+Message-ID: <87egrwf1dd.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <27289342.ORBlKX4LWa@kongar>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha512; protocol="application/pgp-signature"
 
-On 19/12/2014 at 09:20:47 +0100, Alexander Stein wrote :
-> I recently send 3 patches to make DT working with this driver, you were on CC :). Please refer to http://comments.gmane.org/gmane.linux.alsa.devel/131686
-> I wonder though why all 3 are listed there although they were sent to different lists.
-> 
-I know, my plan was to review them today. Maybe we could change the
-commit log if your patches are taken before that one. I must admit I
-simply kept what Arnd had written.
+--==-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
+Andrew Morton <akpm@linux-foundation.org> writes:
+
+> On Wed, 10 Dec 2014 16:49:18 +0300 Dmitry Monakhov <dmonakhov@openvz.org>=
+ wrote:
+>
+>>=20
+>> Hello. Someone please take care of this patch.
+>>=20
+>> W/o that patch unprivileged user may abuse system resources simply by sp=
+awning
+>> wast number of unkilable busyloops (works on ext2/ext3):
+>>=20
+>> truncate --size 1T test
+>> for ((i=3D0;i<1024;i++))
+>> do
+>>        filefrag test > /dev/null &
+>> done
+>>=20
+>> >> --- a/fs/ioctl.c
+>> >> +++ b/fs/ioctl.c
+>> >> @@ -379,6 +379,11 @@ int __generic_block_fiemap(struct inode *inode,
+>> >>  				past_eof =3D true;
+>> >>  		}
+>> >>  		cond_resched();
+>> >> +		if (fatal_signal_pending(current)) {
+>> >> +			ret =3D -EINTR;
+>> >> +			break;
+>> >> +		}
+>> >> +
+>> >>  	} while (1);
+>> >>=20=20
+>
+> Is FIEMAP documented anywhere (manpage)?  If so, that will need an
+> update.
+Yes you right. I just thought that it is assumed by default.
+The only place I know is Documentation/filesystems/fiemap.txt
+Please fold patch attached to original one.
+
+--==-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBCgAGBQJUk+xOAAoJELhyPTmIL6kBjyUIAJwZwQeyyx4v9SbVPPSKyNpL
+XeppPJSR6VFcstkSobFErjoKuPA8YYH0ZIPd1W4Hgi1LSFiB0LC4eOhGyRAaZNaW
+bLusOzrcNsVCh8VYlFO1gizPfxwSyXeoVvYkNElBUIyg+ETJ7+juHMymGW2zumMv
+zVklhoP9/12iQ1EDvm6swn5LZSyfGeN3bxIxIYucc8KnZH4265/pLzaEKk757gX2
+TL1mwJ2eUtL6COF9SX/FBcS+4SD0KtuIT7Zo0tTznbod865cXA/+8mWpLPPKExbZ
+WzuaQmVcW14M9ACy4367dNetnEzy0O73MAOCjRxQn8D8Qhx0+bfEOFCO0CMbfvk=
+=6Wke
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=
+Content-Type: text/x-diff
+Content-Disposition: inline;
+ filename=0001-doc-fimemap-update-signal-behaviour.patch
+
+>From f7af425b2ac920065491a478b4f4359f422b3453 Mon Sep 17 00:00:00 2001
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+Date: Fri, 19 Dec 2014 13:11:29 +0400
+Subject: [PATCH] doc: fimemap update signal behaviour
+
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ Documentation/filesystems/fiemap.txt |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/filesystems/fiemap.txt b/Documentation/filesystems/fiemap.txt
+index 1b805a0..f6d9c99 100644
+--- a/Documentation/filesystems/fiemap.txt
++++ b/Documentation/filesystems/fiemap.txt
+@@ -196,7 +196,8 @@ struct fiemap_extent_info {
+ };
+ 
+ It is intended that the file system should not need to access any of this
+-structure directly.
++structure directly. Filesystem handlers should be tolerant to signals and return
++EINTR once fatal signal received.
+ 
+ 
+ Flag checking should be done at the beginning of the ->fiemap callback via the
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.1
+
+
+--=-=-=--
