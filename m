@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbaLSWS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 17:18:27 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:7480 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448AbaLSWSY (ORCPT
+	id S1752779AbaLSWTh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 17:19:37 -0500
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:65311 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355AbaLSWTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 17:18:24 -0500
-X-IronPort-AV: E=Sophos;i="5.07,609,1413270000"; 
-   d="scan'208";a="53509595"
-From: Jonathan Richardson <jonathar@broadcom.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-CC: Ray Jui <rjui@broadcom.com>, Jonathan Richardson <jonathar@broadcom.com>,
-        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
-        "Joe Perches" <joe@perches.com>
-Subject: [PATCH v2 0/2] Add support for Broadcom iProc touchscreen
-Date: Fri, 19 Dec 2014 14:17:48 -0800
-Message-ID: <1419027470-7969-1-git-send-email-jonathar@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <Jonathan Richardson <jonathar@broadcom.com>
-References: <Jonathan Richardson <jonathar@broadcom.com>
+	Fri, 19 Dec 2014 17:19:35 -0500
+Date: Sat, 20 Dec 2014 01:19:32 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Hector Marco <hecmargi@upv.es>, Pavel Emelyanov <xemul@parallels.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Anton Blanchard <anton@samba.org>, Jiri Kosina <jkosina@suse.cz>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>, David Daney <ddaney.cavm@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arun Chandran <achandran@mvista.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ismael Ripoll <iripoll@disca.upv.es>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Hanno =?iso-8859-1?Q?B=F6ck?= <hanno@hboeck.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kees Cook <keescook@chromium.org>, Reno Robert <renorobert@gmail.com>
+Subject: Re: [PATCH] ASLRv3: randomize_va_space=3 preventing offset2lib attack
+Message-ID: <20141219221932.GH6810@moon>
+References: <5489E6D2.2060200@upv.es>
+ <5489FAAD.7000606@upv.es>
+ <20141211221158.GS18807@outflux.net>
+ <548B18AC.9@upv.es>
+ <CALCETrVAaDDvAttVkJ+1ygymE_uEZOCLtGHHN15v_VDf1PVsmA@mail.gmail.com>
+ <5494A0DF.10905@upv.es>
+ <CALCETrWB_T9ui=_JSQRLrtbNDx=sJ22im1XujhxptfZRtedeeg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWB_T9ui=_JSQRLrtbNDx=sJ22im1XujhxptfZRtedeeg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset contains initial support for the touchscreen on the Broadcom
-iProc family of SoCs. This driver has been validated with Cygnus and is expected
-to work on other iProc family of SoCs that use the same touchscreen controller.
+On Fri, Dec 19, 2014 at 02:11:37PM -0800, Andy Lutomirski wrote:
+...
+> >
+> > Therefore, I can fix the current implementation (maintaining the
+> > randomize_va_space=2) by moving the PIE executable from the mmap base
+> > area to another one for x86*, ARM* and MIPS (as s390 and PowerPC do).
+> > But we shall agree that this increment in the page table is not a
+> > issue. Otherwise, the randomize_va_space=3 shall be considered.
+> 
+> Wrt the vdso itself, though, there is an extra consideration: CRIU.  I
+> *think* that the CRIU vdso proxying scheme will work even if the vdso
+> changes sizes and is adjacent to other mappings.  Cyrill and/or Pavel,
+> am I right?
 
-Changes from v1:
-- Add missing newlines to debug messages
-- Use BIT macro for defines
-- Fix logic in get_tsc_config to improve readability
-- Get rid of unnecessary remove() function
+At least that was the idea. I've been testing old vdso from rhel5 proxified
+to 3.x series where vvar segment is present, worked well.
 
-Jonathan Richardson (2):
-  Input: touchscreen-iproc: Add Broadcom iProc touchscreen driver
-  Input: touchscreen-iproc: add device tree bindings
-
- .../input/touchscreen/brcm,iproc-touchscreen.txt   |   70 +++
- drivers/input/touchscreen/Kconfig                  |   11 +
- drivers/input/touchscreen/Makefile                 |    1 +
- drivers/input/touchscreen/bcm_iproc_tsc.c          |  535 ++++++++++++++++++++
- 4 files changed, 617 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/touchscreen/brcm,iproc-touchscreen.txt
- create mode 100644 drivers/input/touchscreen/bcm_iproc_tsc.c
-
--- 
-1.7.9.5
-
+> I'm not fundamentally opposed to mapping the vdso just like any other
+> shared library.  I still think that we should have an extra-strong
+> randomization mode in which all the libraries are randomized wrt each
+> other, though.  For many applications, the extra page table cost will
+> be negligible.
