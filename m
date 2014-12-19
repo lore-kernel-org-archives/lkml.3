@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaLSIzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 03:55:43 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:20572 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaLSIzi (ORCPT
+	id S1752322AbaLSIzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 03:55:41 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:34500 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291AbaLSIzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Dec 2014 03:55:38 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-67-5493e804257a
+X-AuditID: cbfee68f-f791c6d000004834-80-5493e803382e
 From: Jonghwa Lee <jonghwa3.lee@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, sre@kernel.org, dbaryshkov@gmail.com,
         dwmw2@infradead.org, anton@enomsg.org, pavel@ucw.cz,
         myungjoo.ham@samsung.com, cw00.choi@samsung.com,
         Jonghwa Lee <jonghwa3.lee@samsung.com>
-Subject: [PATCH V3 11/11] power: charger-manager: Support to change polling
- rate in runtime.
-Date: Fri, 19 Dec 2014 17:55:23 +0900
-Message-id: <1418979323-7188-12-git-send-email-jonghwa3.lee@samsung.com>
+Subject: [PATCH V3 07/11] power: charger-manager: Get external power souce
+ information only from EXTCON.
+Date: Fri, 19 Dec 2014 17:55:19 +0900
+Message-id: <1418979323-7188-8-git-send-email-jonghwa3.lee@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1418979323-7188-1-git-send-email-jonghwa3.lee@samsung.com>
 References: <1418979323-7188-1-git-send-email-jonghwa3.lee@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsWyRsSkQJflxeQQg0U7hCwObtW0uP7lOavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsWyRsSkUJf5xeQQg0tTLC0ObtW0uP7lOavF
 	pCfvmS0mrpzMbNF59gmzxeVdc9gsPvceYbS43biCzeLuqaNsFqd3lzhweUzo/8TosXPWXXaP
-	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEdx2aSk5mSWpRbp2yVwZfS/+89UcFas4tCb10wN
-	jKeEuhg5OCQETCQu3BftYuQEMsUkLtxbz9bFyMUhJLCUUeLXgwmsMDX3/4lBxKczSlxYfhuq
-	qI1J4vODT+wg3WwCOhL/990Es0UEFCQ29z5jBSliFrjCKHFz8XomkISwQJzEsR3vwIpYBFQl
-	9h3fxQZi8wp4SNx9NY8NYpuCxJxJNiBhTqDwn5NbwFqFBNwlGrd8ZweZKSGwi11i5ZMpjBBz
-	BCS+TT7EAtErK7HpADPEN5ISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kalecWJucWleul5yfu4m
-	RmBEnP73bOIOxvsHrA8xCnAwKvHwPiieHCLEmlhWXJl7iNEUaMNEZinR5Hxg3OWVxBsamxlZ
-	mJqYGhuZW5opifPqSP8MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAoEh5VtdTQ17/BYKGJ
-	3itl/nmf/8ae3SoWsFy08kyYb7R1m/IR4fV3bn0o+256pd3yj0aCVcqMtRI6dv3ZC/Y4V1X7
-	b9qXVrL27VddDS2xZ7UtMlmzb6/mXpDhqb659Kts0fKN4bMeC28L+GO3vevn948Pv7zMfxVx
-	++HjbzMLXqctY5444XSVEktxRqKhFnNRcSIA594sb4MCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQV2WF5NDDF43cFkc3Kppcf3Lc1aL
-	SU/eM1tMXDmZ2aLz7BNmi8u75rBZfO49wmhxu3EFm8XdU0fZLE7vLnHg8pjQ/4nRY+esu+we
-	m1doeWxa1cnm0bdlFaPHitXf2T0+b5ILYI9qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
-	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
-	j5EBGkhYw5jR/+4/U8FZsYpDb14zNTCeEupi5OCQEDCRuP9PrIuRE8gUk7hwbz1bFyMXh5DA
-	dEaJC8tvQzltTBKfH3xiB6liE9CR+L/vJpgtIqAgsbn3GStIEbPAFUaJm4vXM4EkhAXiJI7t
-	eAdWxCKgKrHv+C42EJtXwEPi7qt5bBCbFSTmTLIBCXMChf+c3ALWKiTgLtG45Tv7BEbeBYwM
-	qxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCI+6Z9A7GVQ0WhxgFOBiVeHg7CieHCLEmlhVX
-	5h5ilOBgVhLhdTwOFOJNSaysSi3Kjy8qzUktPsRoCnTURGYp0eR8YDLIK4k3NDYxM7I0Mje0
-	MDI2VxLnVbJvCxESSE8sSc1OTS1ILYLpY+LglGpg1NBo/jJlZ9Sm8u1HfJbEnInckF/tFf71
-	tZ+anwuLXN/9E28tE07lbVXgnOvc/sdaZF7okuunF3rcr9GZdm5/8M+yzIfHplbYqCpP+3nb
-	XPSz0J3ne553b/x0dUOT1AE7oYTdD57wKDQszjVuLqszar9yJ/2yr4DAjcCKq39UbuYYnxY0
-	vWAuoMRSnJFoqMVcVJwIAGe1NtXOAgAA
+	zSu0PDat6mTz6NuyitFjxerv7B6fN8kFsEdx2aSk5mSWpRbp2yVwZVzdo1RwVqhi08NlLA2M
+	HfxdjJwcEgImEktfr2aDsMUkLtxbD2RzcQgJLGWU+Hr1MSNM0YFzT6AS0xkldvbsYodw2pgk
+	Pj/4xA5SxSagI/F/300wW0RAQWJz7zNWkCJmgSuMEjcXr2cCSQgLZEkc3fYMbCyLgKpEz+Wn
+	YDavgLvEy59rgGwOoHUKEnMm2YCEOQU8JP6c3ALWKgRU0rjlO9hiCYFt7BIb/j1khZgjIPFt
+	8iEWiF5ZiU0HmCGulpQ4uOIGywRG4QWMDKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAmPi
+	9L9n/TsY7x6wPsQowMGoxMP7oHhyiBBrYllxZe4hRlOgDROZpUST84GRl1cSb2hsZmRhamJq
+	bGRuaaYkzrtQ6mewkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsa5v3P1nr/dWjnJNu9nfh6f
+	xT13k5NePOxdEscaV/w7wefCedlnto+C18uwNw1/Vwg5Fkw7VrF9myNbzw/V3gj/GZfY9jbu
+	7+DuebcyyfCvuHzVxSh+Rr8FYSccz9/Z6785KOCIpvL1pPzNDptu8ZkJ3l71QtWt4ihTxO0Z
+	bC8W+p0PNDnUfESJpTgj0VCLuag4EQCb/oEchAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQV3mF5NDDNb/NbA4uFXT4vqX56wW
+	k568Z7aYuHIys0Xn2SfMFpd3zWGz+Nx7hNHiduMKNou7p46yWZzeXeLA5TGh/xOjx85Zd9k9
+	Nq/Q8ti0qpPNo2/LKkaPFau/s3t83iQXwB7VwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pm
+	YKhraGlhrqSQl5ibaqvk4hOg65aZA3SdkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4
+	HiMDNJCwhjHj6h6lgrNCFZseLmNpYOzg72Lk5JAQMJE4cO4JG4QtJnHh3nogm4tDSGA6o8TO
+	nl3sEE4bk8TnB5/YQarYBHQk/u+7CWaLCChIbO59xgpSxCxwhVHi5uL1TCAJYYEsiaPbnjGC
+	2CwCqhI9l5+C2bwC7hIvf64BsjmA1ilIzJlkAxLmFPCQ+HNyC1irEFBJ45bv7BMYeRcwMqxi
+	FE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI64Z9I7GFc1WBxiFOBgVOLh7SicHCLEmlhWXJl7
+	iFGCg1lJhNfxOFCINyWxsiq1KD++qDQntfgQoynQUROZpUST84HJIK8k3tDYxMzI0sjc0MLI
+	2FxJnFfJvi1ESCA9sSQ1OzW1ILUIpo+Jg1OqgVHw+0QthogvRz+5N7OWxharfIkLjp2xU2/u
+	xKnfjJlfyDXNXsTq6Rexv/G25qcJLB/VC+pkFY6F30iacfmpudatzxmiRdFZh5fe+Nhtf7FM
+	S8bu10QXvaYeA4P1XrPfWV6vs573mW/mfb0mA8dNc72YC3a3qjFcaAv/+oyhzCDpeKnP/AxL
+	WyWW4oxEQy3mouJEAKM+aJXOAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,98 +53,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'polling_ms' sysfs node to change charger-manager's monitoring rate
-in runtime. It can set only bigger than 2 jiffies (for 200 HZ system it
-is 10 msecs.) as it's allowed for minimum poling rate in previous.
-It resets poller and re-configure polling rate based on new input if next
-polling time is far enough. Otherwise, it just waits expiration of timer
-and new polling rate will affects the next scheduling.
+When charger-manager checks whether external power source is available,
+it gets information from charger IC driver. However, it's not correct source,
+charger IC doesn't have responsibilty to give cable connection status.
+The charger-manager already gets cable information from EXTCON susbsystem,
+so it can re-use it.
 
 Signed-off-by: Jonghwa Lee <jonghwa3.lee@samsung.com>
 ---
- drivers/power/charger-manager.c |   62 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 62 insertions(+)
+ drivers/power/charger-manager.c |   34 ++++++++++++++--------------------
+ 1 file changed, 14 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index f5787bc..a8cabf09 100644
+index d29155d..dc15436 100644
 --- a/drivers/power/charger-manager.c
 +++ b/drivers/power/charger-manager.c
-@@ -1054,6 +1054,63 @@ static ssize_t charger_externally_control_store(struct device *dev,
- 	return count;
+@@ -115,34 +115,28 @@ static bool is_batt_present(struct charger_manager *cm)
+  * is_ext_pwr_online - See if an external power source is attached to charge
+  * @cm: the Charger Manager representing the battery.
+  *
+- * Returns true if at least one of the chargers of the battery has an external
+- * power source attached to charge the battery regardless of whether it is
+- * actually charging or not.
++ * Returns true if there is external power source.
++ * Cable connection information is only obtained by EXTCON class notification.
+  */
+ static bool is_ext_pwr_online(struct charger_manager *cm)
+ {
+-	union power_supply_propval val;
+-	struct power_supply *psy;
+-	bool online = false;
+-	int i, ret;
+ 
+-	/* If at least one of them has one, it's yes. */
+-	for (i = 0; cm->desc->psy_charger_stat[i]; i++) {
+-		psy = power_supply_get_by_name(cm->desc->psy_charger_stat[i]);
+-		if (!psy) {
+-			dev_err(cm->dev, "Cannot find power supply \"%s\"\n",
+-					cm->desc->psy_charger_stat[i]);
+-			continue;
+-		}
++	struct charger_desc *desc = cm->desc;
++	struct charger_regulator *regulators = desc->charger_regulators;
++	struct charger_cable *cables;
++	int i, j, num_cables;
+ 
+-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
+-		if (ret == 0 && val.intval) {
+-			online = true;
+-			break;
++	/* If at least one of them has one, it's yes. */
++	for (i = 0; i < desc->num_charger_regulators; i++) {
++		cables = regulators[i].cables;
++		num_cables = regulators[i].num_cables;
++		for (j = 0; j < num_cables; j++) {
++			if (cables[j].attached)
++				return true;
+ 		}
+ 	}
+ 
+-	return online;
++	return false;
  }
  
-+static ssize_t show_polling_ms(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct charger_manager *cm;
-+	ssize_t len;
-+
-+	list_for_each_entry(cm, &cm_list, entry)
-+		if (cm->charger_psy.dev == dev)
-+			break;
-+
-+	if (cm->charger_psy.dev != dev)
-+		return -EINVAL;
-+
-+	len = sprintf(buf, "%d\n", cm->desc->polling_interval_ms);
-+
-+	return len;
-+}
-+
-+static ssize_t store_polling_ms(struct device *dev,
-+				struct device_attribute *attr, const char *buf,
-+				size_t count)
-+{
-+	struct charger_manager *cm;
-+	int polling_ms;
-+	int ret;
-+
-+	ret = sscanf(buf, "%d", &polling_ms);
-+	if (ret < 0 )
-+		return -EINVAL;
-+
-+	if (polling_ms < CM_JIFFIES_SMALL * MSEC_PER_SEC / HZ)
-+		return -EINVAL;
-+
-+	list_for_each_entry(cm, &cm_list, entry)
-+		if (cm->charger_psy.dev == dev)
-+			break;
-+
-+	if (cm->charger_psy.dev != dev)
-+		return -ENODEV;
-+
-+	cm->desc->polling_interval_ms = polling_ms;
-+
-+	pr_info("Polling interval's changed to %u ms.\n",
-+		cm->desc->polling_interval_ms);
-+
-+	if (next_polling - jiffies >
-+		msecs_to_jiffies(cm->desc->polling_interval_ms)) {
-+		pr_info("Reset poller now... \n");
-+		cancel_delayed_work(&cm_monitor_work);
-+		schedule_work(&setup_polling);
-+	}
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(polling_ms, 0644, show_polling_ms, store_polling_ms);
-+
  /**
-  * charger_manager_register_sysfs - Register sysfs entry for each charger
-  * @cm: the Charger Manager representing the battery.
-@@ -1077,6 +1134,11 @@ static int charger_manager_register_sysfs(struct charger_manager *cm)
- 	int ret = 0;
- 	int i;
- 
-+	/* Create polling_ms sysfs node */
-+	ret = device_create_file(cm->charger_psy.dev, &dev_attr_polling_ms);
-+	if (ret)
-+		pr_err("Failed to create poling_ms sysfs node (%d)\n", ret);
-+
- 	/* Create sysfs entry to control charger(regulator) */
- 	for (i = 0; i < desc->num_charger_regulators; i++) {
- 		charger = &desc->charger_regulators[i];
 -- 
 1.7.9.5
 
