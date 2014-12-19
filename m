@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaLSUqS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 15:46:18 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:46643 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaLSUqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 15:46:17 -0500
+	id S1751856AbaLSUvH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 15:51:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156AbaLSUvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Dec 2014 15:51:05 -0500
+Date: Fri, 19 Dec 2014 21:51:00 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: k.khlebnikov@samsung.com, mmarek@suse.cz, syntheticpp@gmx.net,
+        yamada.m@jp.panasonic.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] kbuild changes for v3.19-rc1
+Message-ID: <20141219205100.GA4174@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyb6N47N2Jg75EmRxDTjFF2y_oy4dHNDeW_dyM4PUTDrA@mail.gmail.com>
-References: <CA+55aFyYYPgBfRdqtvqxdo==D_BOFSW3fvNULuVxPAr2vnq7Rg@mail.gmail.com>
-	<CA+55aFz6KEKdz4Nxkx2fa-FH3PZ+Aa51iA_nXobsQ-dDW5PGEg@mail.gmail.com>
-	<20141218051327.GA31988@redhat.com>
-	<1418918059.17358.6@mail.thefacebook.com>
-	<20141218161230.GA6042@redhat.com>
-	<20141219024549.GB1671@redhat.com>
-	<CA+55aFw7R+P+2xgXwUqG5uxNs=dLD59fL+6uHuhWHFtsAb1nSg@mail.gmail.com>
-	<20141219035859.GA20022@redhat.com>
-	<20141219040308.GB20022@redhat.com>
-	<CA+55aFzg0WN1_SzRagwwEDGUkKou4t+-gBNMUd-W3KM7tC+-AA@mail.gmail.com>
-	<20141219145528.GC13404@redhat.com>
-	<CA+55aFychipT9e0DenUumsGJ-=9BUTOX-OmAmQ3azMCspUrUtw@mail.gmail.com>
-	<CA+55aFyb6N47N2Jg75EmRxDTjFF2y_oy4dHNDeW_dyM4PUTDrA@mail.gmail.com>
-Date: Fri, 19 Dec 2014 12:46:16 -0800
-X-Google-Sender-Auth: You7DKQwRN81s16e-dxw32tvhMY
-Message-ID: <CA+55aFzt_4Zrnek6381JFzm+3iV9d=JAeyx+=E9F8BeiWFb56g@mail.gmail.com>
-Subject: Re: frequent lockups in 3.18rc4
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Chris Mason <clm@fb.com>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        =?UTF-8?Q?D=C3=A2niel_Fraga?= <fragabr@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Anvin <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 19, 2014 at 11:51 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I do note that we depend on the "new mwait" semantics where we do
-> mwait with interrupts disabled and a non-zero RCX value. Are there
-> possibly even any known CPU errata in that area? Not that it sounds
-> likely, but still..
+Hi Linus,
 
-Remind me what CPU you have in that machine again? The %rax value for
-the mwait cases in question seems to be 0x32, which is either C7s-HSW
-or C7s-BDW, and in both cases has the "TLB flushed" flag set.
+sorry for the late pull request. Here are the kbuild changes for
+v3.19-rc1:
 
-I'm pretty sure you have a Haswell, I'm just checking. Which model?
-I'm assuming it's family 6, model 60, stepping 3? I found you
-mentioning i5-4670T in a perf thread.. That the one?
+* Cleanups and deduplication in the main Makefile and scripts/Makefile.*
+* Sort the output of *config targets in make help
+* Old <linux/version.h> is always removed to avoid a surprise during
+  bisecting
+* Warning fix in kconfig
 
-Anyway, I don't actually believe in any CPU bugs, but you could try
-"intel_idle.max_cstate=0" and see if that makes any difference, for
-example.
+There is some more stuff in my backlog -- will submit this for 3.20-rc1.
 
-Or perhaps just "intel_idle.max_cstate=1", which leaves intel_idle
-active, but gets rid of the deeper sleep states (that incidentally
-also play games with leave_mm() etc)
+Michal
 
-                            Linus
+The following changes since commit f114040e3ea6e07372334ade75d1ee0775c355e1:
+
+  Linux 3.18-rc1 (2014-10-19 18:08:38 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
+
+for you to fetch changes up to 1846dfbde3e8a53f3673dcb1c1b79fd9b3f8d40d:
+
+  kbuild: remove redundant -rR flag of hdr-inst (2014-12-03 14:14:07 +0100)
+
+----------------------------------------------------------------
+Konstantin Khlebnikov (1):
+      Makefile: sort list of defconfig targets in make help output
+
+Masahiro Yamada (2):
+      kbuild: collect shorthands into scripts/Kbuild.include
+      kbuild: remove redundant -rR flag of hdr-inst
+
+Michal Marek (3):
+      kbuild: Remove duplicate $(cmd) definition in Makefile.clean
+      kbuild: Automatically remove stale <linux/version.h> file
+      kbuild: Fix make help-<board series> on powerpc
+
+Peter Kümmel (1):
+      kconfig: Fix warning "‘jump’ may be used uninitialized"
+
+ Makefile                     | 17 ++++++-----------
+ scripts/Kbuild.include       | 12 ++++++++++++
+ scripts/Makefile.clean       | 10 +---------
+ scripts/Makefile.headersinst |  1 -
+ scripts/kconfig/menu.c       |  4 ++--
+ 5 files changed, 21 insertions(+), 23 deletions(-)
