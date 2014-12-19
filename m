@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaLSM0h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 07:26:37 -0500
-Received: from smtprelay0113.hostedemail.com ([216.40.44.113]:43804 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752063AbaLSM0f (ORCPT
+	id S1752420AbaLSMcl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 07:32:41 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:46187 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaLSMcj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 07:26:35 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1515:1516:1518:1534:1538:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:4321:5007:6261:7974:10004:10400:10848:11026:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: magic70_906f3e69aeb5a
-X-Filterd-Recvd-Size: 1677
-Message-ID: <1418991991.25129.10.camel@perches.com>
-Subject: Re: [PATCH 3/3] [SCSI] mpt2sas: Remove unnecessary use of a boolean
- variable
-From: Joe Perches <joe@perches.com>
-To: Quentin Lambert <lambert.quentin@gmail.com>
-Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@avagotech.com>,
-        Praveen Krishnamoorthy <praveen.krishnamoorthy@avagotech.com>,
-        Sreekanth Reddy <sreekanth.reddy@avagotech.com>,
-        Abhijit Mahajan <abhijit.mahajan@avagotech.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        MPT-FusionLinux.pdl@avagotech.com, linux-scsi@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 19 Dec 2014 04:26:31 -0800
-In-Reply-To: <20141219111345.GA19938@sloth>
-References: <20141219111345.GA19938@sloth>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Dec 2014 07:32:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
+References: <20141216140921.3036.14668.stgit@dizzy-6.o2s.ch>
+Date: Fri, 19 Dec 2014 13:32:38 +0100
+Message-ID: <CAPDyKFoDQyrvZbCUYgvJFr-OVDkhm_EVc3TJ6Fuw1fD4ZQ6ABw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] mmc: sunxi: General fixup (v2)
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: =?UTF-8?Q?David_Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
+Cc: Tomeu Vizoso <tomeu.vizoso@collabora.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Hans de Goede <hdegoede@redhat.com>, Chen-Yu Tsai <wens@csie.org>,
+        =?UTF-8?B?5p2O5oOz?= <lixiang@allwinnertech.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-12-19 at 12:13 +0100, Quentin Lambert wrote:
-[]
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-[]
-> @@ -1414,12 +1414,8 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
->  	struct msix_entry *entries, *a;
->  	int r;
->  	int i;
-> -	u8 try_msix = 0;
->  
-> -	if (msix_disable == -1 || msix_disable == 0)
-> -		try_msix = 1;
-> -
-> -	if (!try_msix)
-> +	if (msix_disable != -1 || msix_disable != 0)
->  		goto try_ioapic;
+On 16 December 2014 at 15:10, David Lanzendörfer
+<david.lanzendoerfer@o2s.ch> wrote:
+> Hello
+> This patchset was inspired questions from 李想 of Allwinner and incorporates as
+> well suggestions from Hans related to spin locks.
+> For example have not all attributes of the shared host object been protected
+> by the spin lock, this has been changed.
+> Also some register names and reset behavior have been fixed now.
+> And a minor cleanup happened at the clock frequecy setting, since there has
+> been a piece of left over code which has been there because it was in the Android
+> driver and we just adapted it because we didn't have proper documentation about
+> the timing of the module.
+>
+> Looking forward to your feedback
+> Cheers David
 
-logic not the same.
+Thanks! Queued for 3.20.
 
-Now needs && not ||
+Kind regards
+Uffe
 
-
+>
+> ---
+>
+> David Lanzendörfer (3):
+>       mmc: sunxi: Lock fix
+>       mmc: sunxi: Correcting SDXC_HARDWARE_RESET bit
+>       mmc: sunxi: Removing unused code
+>
+> Hans de Goede (1):
+>       mmc: sunxi: Fix setup of last descriptor of dma transfer
+>
+>
+>  drivers/mmc/host/sunxi-mmc.c |   29 +++++++++++++++++------------
+>  1 file changed, 17 insertions(+), 12 deletions(-)
+>
+> --
+> Signature
