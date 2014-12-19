@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbaLSPFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Dec 2014 10:05:06 -0500
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:12345 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750968AbaLSPFE (ORCPT
+	id S1751698AbaLSPHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Dec 2014 10:07:45 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41830 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751218AbaLSPHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Dec 2014 10:05:04 -0500
-Message-ID: <54943E99.5060206@itdev.co.uk>
-Date: Fri, 19 Dec 2014 15:04:57 +0000
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 19 Dec 2014 10:07:44 -0500
+Date: Fri, 19 Dec 2014 16:07:14 +0100
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: atull@opensource.altera.com, gregkh@linuxfoundation.org,
+        jgunthorpe@obsidianresearch.com, hpa@zytor.com, monstr@monstr.eu,
+        rdunlap@infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, pantelis.antoniou@konsulko.com,
+        robh+dt@kernel.org, grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, pavel@denx.de, broonie@kernel.org,
+        philip@balister.org, rubini@gnudd.com, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v6 4/4] staging: fpga manager: add driver for socfpga
+ fpga manager
+Message-ID: <20141219150714.GG13070@pengutronix.de>
+References: <1418941748-16111-1-git-send-email-atull@opensource.altera.com>
+ <1418941748-16111-5-git-send-email-atull@opensource.altera.com>
+ <20141219085516.GF13070@pengutronix.de>
+ <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
 MIME-Version: 1.0
-To: Benson Leung <bleung@chromium.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Yufeng Shen <miletus@google.com>, Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Alan Bowens <Alan.Bowens@atmel.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Meerwald <pmeerw@pmeerw.net>,
-        Olof Johansson <olofj@chromium.org>, Sekhar Nori <nsekhar@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Chung-yih Wang <cywang@chromium.org>
-Subject: Re: [PATCH] Input: atmel_mxt_ts - implement T100 touch object support
-References: <1418156167-11724-1-git-send-email-nick.dyer@itdev.co.uk> <CANLzEktMgEDTu4SpNasO3A_bsLWd5QEKkmJ9FdHd3v9xamNn0Q@mail.gmail.com>
-In-Reply-To: <CANLzEktMgEDTu4SpNasO3A_bsLWd5QEKkmJ9FdHd3v9xamNn0Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2d65a072f8c14d1e839307465f177a1a@BY2FFO11FD046.protection.gbl>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 16:03:20 up 65 days,  2:17, 75 users,  load average: 0,02, 0,28,
+ 0,23
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benson-
-
-On 18/12/14 18:49, Benson Leung wrote:
-> Dmitry and Chung-Yih have had some discussion about how to handle
-> hovering fingers, and I think the direction they wanted to go was to
-> use ABS_MT_DISTANCE instead.
+On Fri, Dec 19, 2014 at 03:05:50PM +0100, Michal Simek wrote:
+> On 12/19/2014 09:55 AM, Steffen Trumtrar wrote:
+> > Hi!
+> > 
+> > Just a minor nitpick, but...
+> > 
+> > On Thu, Dec 18, 2014 at 04:29:08PM -0600, atull@opensource.altera.com wrote:
+> >> From: Alan Tull <atull@opensource.altera.com>
+> >>
+> >> Add driver to fpga manager framework to allow configuration
+> >> of FPGA in Altera SoCFPGA parts.
+> >>
+> >> Signed-off-by: Alan Tull <atull@opensource.altera.com>
+> >> Acked-by: Michal Simek <michal.simek@xilinx.com>
+> >> ---
+> >> v2: fpga_manager struct now contains struct device
+> >>     fpga_manager_register parameters now take device
+> >>
+> >> v3: skip a version to align versions
+> >>
+> >> v4: move to drivers/staging
+> >>
+> >> v5: fix array_size.cocci warnings
+> >>     fix platform_no_drv_owner.cocci warnings
+> >>     Remove .owner = THIS_MODULE
+> >>     include asm/irq.h
+> >>     clean up list of includes
+> >>     use altera_fpga_reset for ops
+> >>     use enum fpga_mgr_states or u32 as needed
+> >>     use devm_request_irq
+> >>     check irq <= 0 instead of == NO_IRQ
+> >>     Use ARRAY_SIZE
+> >>     rename altera -> socfpga
+> >>     static const socfpga_fpga_ops
+> >>     header moved to linux/fpga/ folder
+> >>     remove ifdef'ed code
+> >>     use platform_get_resource and platform_get_irq
+> >>     move .probe and .remove lines adjacent
+> >>     use module_platform_driver
+> >>     use __maybe_unused
+> >>     only need to 'if (IS_ENABLED(CONFIG_REGULATOR))' in one fn
+> >>     fix "unsigned 'mode' is never < 0"
+> >>
+> >> v6: return error for (unused) default of case statement
+> >> ---
+> >   ^^^
+> > 
+> > ...if you remove these, than that changelog will not land in the final
+> > commit which I would prefer. Nobody cares for the changelog of a
+> > patch once it is in its final state. And this is a rather noisy one.
+> > When someone in the future looks at this, he will see two lines of
+> > information and 10 times that of uninteresting noise.
+> > 
+> > Not a dealbreaker, but just something to consider for future patches.
 > 
-> http://www.spinics.net/lists/linux-input/msg33950.html
+> 
+> When you run git-am you will see that changelog is not there.
+> 
 
-Thanks for flagging this up. The patch I submitted is written against the
-Android touch devices spec, which treats ABS_MT_PRESSURE being zero as
-hover, but indeed currently the handling of BTN_TOUCH when using
-input_mt_report_pointer_emaultion() won't be quite right.
+Ah, great. It seems like git-am does indeed know now how to handle this.
+There are some commits in mainline that have this changelog added,
+because there where two '---' lines in the patch.
 
-I will have a look at straightening this out and re-post.
+Then go on kind sirs with whatever you where doing and don't pay any
+attention to my comment... :-)
 
-cheers
+Regards,
+Steffen
 
-Nick
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
